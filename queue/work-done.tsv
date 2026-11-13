@@ -4269,3 +4269,4 @@ merge:buildiq:1537:6806dd13	merge-local over 3 buildiq tasks: merged=3 red=0 fai
 merge:buildiq:1538:0c048454	merge-local over 3 buildiq tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:39:02Z
 cover:pipelinq:7f9dc8e6m916f:js3e4f21d5	PR #3709: portalSessionWarning spec (7 tests); portal components+views stmt 80.81->90.97%; suite 3961->3968 green	session-20261113T044737-f37de8e3	2026-11-13T10:39:32Z
 cover:shillinq:05639debm0c05:1b97f731	PR shillinq#2928: lib/Listener/*.php 90.7 -> 95.1%, +16 tests	session-20261113T051703-1b54bfba	2026-11-13T10:39:45Z
+cover:humaniq:a18a13fb:f545d745	PR #1110: +7 tests, lib/Repair 553->583/589 (failure paths, Loonrun flow repair)	session-20261113T081040-5e814df2	2026-11-13T10:40:11Z
