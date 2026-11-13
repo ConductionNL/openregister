@@ -3011,3 +3011,4 @@ cover:dossiq:f8a113c5m7e79:b6fccd13	already done: lib/Service/Access/*.php above
 cover:dossiq:f8a113c5m7e79:9d3a1784	already done: pcov on development shows lib/BackgroundJob 93.5% lines (616/659), target 90; -1 branch merged	session-20261113T053904-36dcee67	2026-11-13T06:51:36Z
 verify:dossiq:6303:3c18c704	6303 GREEN, 6304 GREEN: tests-only, 0 new failures (19 inherited)	session-20261113T054519-3d0ac77f	2026-11-13T06:51:40Z
 cover:buildiq:9930949bmc723:jsacfa1ec3	PR #1522: 15 tests, Step1Basics 90->98.6% lines, Step4Review branches 75->100%; suite 3821 -> 3836 green	session-20261113T034634-f20a8d77	2026-11-13T06:51:52Z
+cover:dossiq:f8a113c5m7e79:4e459503	already done: lib/Service/CaseDefinition/*.php at 96.13% (target 90)	session-20261113T061521-423d1e83	2026-11-13T06:52:26Z
