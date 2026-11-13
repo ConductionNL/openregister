@@ -5705,3 +5705,4 @@ decidiq	2126	8232ebea247d80f90f11f8c96eb75e217ab2b540	GREEN	worker-34	tree 3911 
 humaniq	1108	7419b066a58991e41ad827505b8f9828ef0c5387	GREEN	worker-44	tree of 2: PHPUnit 3885 tests 0 fail (baseline 3877, 0 fail); tests only, no JS
 humaniq	1109	109a0a03f8a00a56a3528beb4cdc6adb760cdc70	GREEN	worker-44	tree of 2: PHPUnit 3885 tests 0 fail (baseline 3877, 0 fail); tests only, no JS
 portaliq	2397	8db42abf4b56459f756e239802fa334b076a0589	GREEN	worker-34	tree 4529 tests ok (89 skipped), baseline 4527 ok, 0 new failures; tests only (note: new test inserted between headersOf docblock and method)
+filinq	2049	dd2c0c59f5bda8e27a697637958cbc2bd8072f83	RED	merge-local:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
