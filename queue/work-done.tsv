@@ -2844,3 +2844,4 @@ cover:stackiq:df113dffm5ac4:jsd48eb217	PR #1843: 3 specs, 21 tests; store module
 cover:stackiq:df113dffm5ac4:efa2a923	already done: lib/EventListener/*.php at 99.19% (974/982, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:33:42Z
 cover:stackiq:df113dffm5ac4:208b4d5f	already done: lib/Service/Stackiq 1959/2274 (86.1%) at development a05c3ddd, above the 85 target	session-20261113T061516-58aa7364	2026-11-13T06:33:43Z
 cover:stackiq:df113dffm5ac4:692f8a78	already done: lib/Service/Contactpersoon 205/205 (100%) at development a05c3ddd	session-20261113T061516-58aa7364	2026-11-13T06:33:54Z
+cover:stackiq:df113dffm5ac4:60c2c265	already done: lib/Controller/*.php at 89.95% lines (3453/3839) on current development, above 85 target	session-20261113T044737-f37de8e3	2026-11-13T06:34:03Z
