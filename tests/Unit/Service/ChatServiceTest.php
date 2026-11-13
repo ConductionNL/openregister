@@ -2,6 +2,7 @@
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatProbe;
 use Exception;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
@@ -21,7 +22,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
 use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
@@ -164,7 +165,7 @@ class ChatServiceTest extends TestCase {
 			->with(1)
 			->willReturn(5);
 
-		$result = $this->service->processMessage(1, 'user1', 'Hello');
+		$result = $this->service->processMessage(new ChatMessageRequest(1, 'user1', 'Hello'));
 
 		$this->assertSame('AI says hello', $result['message']);
 		$this->assertCount(1, $result['sources']);
@@ -186,7 +187,7 @@ class ChatServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Access denied');
 
-		$this->service->processMessage(1, 'user1', 'Hello');
+		$this->service->processMessage(new ChatMessageRequest(1, 'user1', 'Hello'));
 	}
 
 	public function testProcessMessageWithAgentConfigured(): void {
@@ -228,7 +229,7 @@ class ChatServiceTest extends TestCase {
 			->method('countByConversation')
 			->willReturn(5);
 
-		$result = $this->service->processMessage(1, 'user1', 'Hello');
+		$result = $this->service->processMessage(new ChatMessageRequest(1, 'user1', 'Hello'));
 
 		$this->assertSame('Response', $result['message']);
 	}
@@ -275,7 +276,7 @@ class ChatServiceTest extends TestCase {
 			->expects($this->once())
 			->method('update');
 
-		$result = $this->service->processMessage(1, 'user1', 'Hello');
+		$result = $this->service->processMessage(new ChatMessageRequest(1, 'user1', 'Hello'));
 
 		$this->assertSame('Response', $result['message']);
 	}
@@ -293,7 +294,7 @@ class ChatServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('DB error');
 
-		$this->service->processMessage(1, 'user1', 'Hello');
+		$this->service->processMessage(new ChatMessageRequest(1, 'user1', 'Hello'));
 	}
 
 	// --- generateConversationTitle ---
@@ -319,7 +320,7 @@ class ChatServiceTest extends TestCase {
 			->with(new TitleClaim(baseTitle: 'Title', userId: 'user1', agentId: 5))
 			->willReturn('Title (2)');
 
-		$result = $this->service->ensureUniqueTitle('Title', 'user1', 5);
+		$result = $this->service->ensureUniqueTitle(new TitleClaim(baseTitle: 'Title', userId: 'user1', agentId: 5));
 
 		$this->assertSame('Title (2)', $result);
 	}
@@ -327,14 +328,14 @@ class ChatServiceTest extends TestCase {
 	// --- testChat ---
 
 	public function testTestChatReturnsSuccess(): void {
-		$result = $this->service->testChat('openai', ['model' => 'gpt-4']);
+		$result = $this->service->testChat(new ChatProbe(provider: 'openai', config: ['model' => 'gpt-4']));
 
 		$this->assertTrue($result['success']);
 		$this->assertArrayHasKey('message', $result);
 	}
 
 	public function testTestChatWithCustomMessage(): void {
-		$result = $this->service->testChat('ollama', ['model' => 'llama2'], 'Custom test');
+		$result = $this->service->testChat(new ChatProbe(provider: 'ollama', config: ['model' => 'llama2'], testMessage: 'Custom test'));
 
 		$this->assertTrue($result['success']);
 	}
@@ -390,12 +391,9 @@ class ChatServiceTest extends TestCase {
 				return 'AI says hello';
 			});
 
-		$this->service->processMessage(
-			conversationId: 1,
-			userId: 'user1',
-			userMessage: 'Hello',
-			channel: $channel
-		);
+		$request = new ChatMessageRequest(conversationId: 1, userId: 'user1', userMessage: 'Hello');
+		$request->channel = $channel;
+		$this->service->processMessage(request: $request);
 
 		$this->assertSame($channel, $capturedChannel, 'ChatService must forward the exact StreamYieldChannel instance to ResponseGenerationHandler::generateResponse.');
 	}
@@ -433,7 +431,7 @@ class ChatServiceTest extends TestCase {
 				return 'response';
 			});
 
-		$this->service->processMessage(1, 'user1', 'Hello');
+		$this->service->processMessage(new ChatMessageRequest(1, 'user1', 'Hello'));
 
 		$this->assertNull($capturedChannel, 'Default processMessage call must pass null to generateResponse.');
 	}

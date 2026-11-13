@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Mcp\Service\Chat;
 
 use Exception;
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use Psr\Log\LoggerInterface;

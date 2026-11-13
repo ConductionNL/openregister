@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Mcp\Tool\StreamingToolInstanceWrapper;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 
 /**
  * ResponseGenerationHandler

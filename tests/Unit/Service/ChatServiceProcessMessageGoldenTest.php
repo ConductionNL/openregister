@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
 use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
@@ -37,7 +37,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
  * against fixtures/chat-process-message-golden.json. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Mcp\Service\ChatService
- * @uses   \OCA\OpenRegister\Mcp\Service\ChatMessageRequest
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest
  * @uses   \OCA\OpenRegister\Mcp\Db\Conversation
  * @uses   \OCA\OpenRegister\Notifications\Db\Message
  * @uses   \OCA\OpenRegister\Mcp\Db\Agent
@@ -212,13 +212,17 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 	 */
 	public function testProcessMessageGolden(array $s): void {
 		$service = $this->service($s);
-		$args = [7, 'u1', 'Hi there'];
+		$request = new ChatMessageRequest(7, 'u1', 'Hi there');
 		if ($s['full'] === true) {
-			$args = [7, 'u1', 'Hi there', ['v1'], ['t1'], ['k' => 1], ['app' => 'dossiq'], new StreamYieldChannel()];
+			$request->selectedViews = ['v1'];
+			$request->selectedTools = ['t1'];
+			$request->ragSettings = ['k' => 1];
+			$request->cnAiContext = ['app' => 'dossiq'];
+			$request->channel = new StreamYieldChannel();
 		}
 
 		try {
-			$result = $service->processMessage(...$args);
+			$result = $service->processMessage($request);
 			foreach ($result['timings'] as $key => $value) {
 				$this->assertMatchesRegularExpression('/^[0-9.E-]+s$/', $value, $key);
 			}
