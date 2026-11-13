@@ -5539,3 +5539,4 @@ pipelinq	3695	f67f3fa20c9a72865c1a3390cb938ee2c985e74d	GREEN	worker-52	phpunit 6
 learniq	2455	8059065c32d525d76564a2ff249ab2faa39f703c	GREEN	worker-55	6239 tests run on tree, baseline 6198 with 1 inherited failure (HigherEducationExampleSetTest), 0 new failures; tests only
 learniq	2456	a8da7e5d85e321c5cde7a952d1e9a58364313e84	GREEN	worker-55	6239 tests run on tree, baseline 6198 with 1 inherited failure (HigherEducationExampleSetTest), 0 new failures; tests only
 learniq	2457	5156e6ca0678da1c443ef5a7c46c545a20db1811	GREEN	worker-55	6239 tests run on tree, baseline 6198 with 1 inherited failure (HigherEducationExampleSetTest), 0 new failures; tests only
+versioniq	674	9d4240dd376faadbfe42cb6d484bd08b45b15e0a	GREEN	worker-55	1356 tests run (tests/phpunit-unit-only.xml), baseline 1356 with 2 inherited failures (External/SelectedReleaseInstallGoldenTest), 0 new failures; OpenAPI document and its post-processor only
