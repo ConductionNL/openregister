@@ -4300,3 +4300,4 @@ cover:pipelinq:7f9dc8e6m916f:9d3a1784	PR #3710: 6 job test files/22 tests, lib/B
 cover:pipelinq:7f9dc8e6m916f:b96c059a	already done: lib/Service/SearchConsole/ at 91.61% lines (273/298) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T10:49:09Z
 cover:pipelinq:7f9dc8e6m916f:0f859653	already done: lib/Flow/*.php 128/128 stmts (100%) after merged -1/-2 branches	session-20261113T091527-72c58830	2026-11-13T10:49:08Z
 build:pipelinq:booking-and-service-pages	already built: 804c51bd3 on development ticked every code task; only 2.4 left (swap to the library timeline widget, waits on a nextcloud-vue release)	session-20261113T104529-f43c7561	2026-11-13T10:49:16Z
+cover:dossiq:069ee2d6m7275:9b457b26	PR (9b457b26-3): CaseFlowActions::planned/stopSeries + plannedFlows, 4 tests; inherited 19F unchanged	session-20261113T064518-860c039d	2026-11-13T10:49:40Z
