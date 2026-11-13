@@ -2794,3 +2794,4 @@ cover:shillinq:05639debmd8ee:588dbc92	already done: lib/Service/External/Bunq 40
 cover:pipelinq:7f9dc8e6m1e6e:197c84b8	already done: lib/Adapter/*.php 58/58 statements covered on development; no PR	session-20261113T061518-90540a48	2026-11-13T06:27:39Z
 verify:dossiq:6300:6af14b06	6300 GREEN; 14929 tests, 0 new failures (19 inherited)	session-20261113T061521-423d1e83	2026-11-13T06:27:38Z
 fix:learniq:2418:66bff884	REVERIFY: openapi route + /api/v1 twins, ADR lint 0 errors; new head 651bdf53	session-20261113T051704-8c56f5b7	2026-11-13T06:27:47Z
+cover:keepiq:c967a31fm0090:js0023cfc7	PR #1745: +26 vitest tests over 4 dialogs; suite 6244->6270 pass; src/dialogs lines 89.3%->91.0%	session-20261113T054520-0c8540f8	2026-11-13T06:27:50Z
