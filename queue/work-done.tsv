@@ -7094,3 +7094,4 @@ review:openregister:10341:c5de804a	APPROVE openregister#10341	session-20261113T1
 build4:openregister:near-duplicate-documents-by-text	partial: PR #10410 tasks 1.1 (MinHash signature, table) and 2.1 (findTextGroups banding/union-find); 1.2, 2.2-4.1 left	session-20261113T212407-b2d64ec5	2026-11-13T22:11:06Z
 review:openregister:10388:f86d1ded	APPROVE: declarative forms, green merged with main	session-20261113T204535-8ae4a1d5	2026-11-13T22:11:06Z
 review:openregister:10385:6ea23feb	APPROVE: filter aliases narrow only; phpstan clean; required suites green merged with main	session-20261113T212411-bd385ec2	2026-11-13T22:11:30Z
+cover:pipelinq:7f9dc8e6m8ce9:05630945	PR #3795: 48 tests for lib/Middleware/Support (StandardProtocolPaths 100%, dir 54/59 lines; 5 left are loops over empty constants); suite 7243->7291, 0 failures	session-20261113T220418-8e6ce3df	2026-11-13T22:11:35Z
