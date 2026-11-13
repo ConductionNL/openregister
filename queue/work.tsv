@@ -4232,3 +4232,19 @@ cover:dossiq:069ee2d6m7275:b6fccd13	cover	dossiq	development	quality/test-covera
 cover:buildiq:70b3e29embf07:34763eb4	cover	buildiq	development	quality/test-coverage-34763eb4	lang=php;dirs=lib/Middleware/*.php;focus=thin;weight=342;coverage=88.48;target=90.0	2026-09-14T07:28:45Z
 cover:buildiq:70b3e29embf07:568ec52a	cover	buildiq	development	quality/test-coverage-568ec52a	lang=php;dirs=lib/Lifecycle/*.php;focus=thin;weight=270;coverage=88.48;target=90.0	2026-09-14T07:29:57Z
 cover:buildiq:70b3e29embf07:390adfb9	cover	buildiq	development	quality/test-coverage-390adfb9	lang=php;dirs=lib/*.php;focus=thin;weight=101;coverage=88.48;target=90.0	2026-09-14T07:32:46Z
+verify:learniq:2419:0c851504	verify	learniq	development	merge	prs=2419@5f8478f65b0bdf7c3e7b6209eef0c83832e3c581	2026-11-13T09:10:31Z
+verify:dossiq:6345:d5b82413	verify	dossiq	development	merge	prs=6345@6ff1998bfb9dc0a9a46b3e1a5e5a17bb0686c789,6346@db57410662bba29ad48741db1ec5b402dea16418,6347@ea0cb4572e9653e9a8525816df2fb561f0650993,6348@7c80d468c93540cfd3a1b631e564bd806b61ff7c	2026-11-13T09:10:31Z
+verify:buildiq:1534:977a2951	verify	buildiq	development	merge	prs=1534@d7b0899512ac2d1d5ba2f184f8fb5ff730fb5070	2026-11-13T09:10:31Z
+verify:pipelinq:3697:d0d19b96	verify	pipelinq	development	merge	prs=3697@1aed3b007eae2874af151fbaeac68b2f5d3ca26f,3698@4d89508e62cc548c69320089a31b941911d30702	2026-11-13T09:10:31Z
+merge:learniq:2436:4916a3f5	merge	learniq	development	development	prs=2436@c487c8c3f3268f7edce46f86878a9686ecc01d2f,2444@ca4915c3a16625cf85cb442e25b27fb5d403b95f,2455@8059065c32d525d76564a2ff249ab2faa39f703c,2456@a8da7e5d85e321c5cde7a952d1e9a58364313e84,2457@5156e6ca0678da1c443ef5a7c46c545a20db1811	2026-11-13T09:10:31Z
+merge:dossiq:6340:198db1f3	merge	dossiq	development	development	prs=6340@dfb4fba3fc5ebeaea9cf331c3e670ee8d0105184	2026-11-13T09:10:31Z
+merge:pipelinq:3695:7013f4a9	merge	pipelinq	development	development	prs=3695@f67f3fa20c9a72865c1a3390cb938ee2c985e74d	2026-11-13T09:10:31Z
+merge:integriq:3515:3cef6121	merge	integriq	development	development	prs=3515@9f710cc8ec5b691bd8bfb5ef3f7ecf443359950d,3516@aa4aff58cb53ab5dcba9f521e36be25c342640ba	2026-11-13T09:10:31Z
+merge:launchpad:1185:7ded26d1	merge	launchpad	development	development	prs=1185@762f505c36c8c3a22024c2350e31fd09424ff95a	2026-11-13T09:10:31Z
+gap:filinq:16:614b0a03	gap	filinq	development	16	criterion=opensourcehealth WARN;row=filinq;fix=Held by Activity 2 stars and Freshness 3 stars plus 1 medium-risk licence. Recommended, no score effect. Only worth a dependency refresh sweep.	2026-11-13T09:10:31Z
+gap:keepiq:16:614b0a03	gap	keepiq	development	16	criterion=opensourcehealth WARN;row=keepiq;fix=Held by Activity 2 stars and Freshness 3 stars plus 1 medium-risk licence. Recommended, no score effect. Only worth a dependency refresh sweep.	2026-11-13T09:10:31Z
+cover:dossiq:069ee2d6m7275:4e459503	cover	dossiq	development	quality/test-coverage-4e459503	lang=php;dirs=lib/Service/CaseDefinition/*.php;focus=thin;weight=4960;coverage=89.34;target=90.0	2026-08-15T07:41:25Z
+cover:dossiq:069ee2d6m7275:8b886c00	cover	dossiq	development	quality/test-coverage-8b886c00	lang=php;dirs=lib/Service/People/*.php;focus=thin;weight=3671;coverage=89.34;target=90.0	2026-08-15T07:41:25Z
+cover:dossiq:069ee2d6m7275:js5794e9fc	cover	dossiq	development	quality/test-coverage-js-5794e9fc	lang=js;dirs=src/views/settings/;focus=uncovered;weight=1545;coverage=88.35;target=90.0	2026-08-15T07:06:15Z
+cover:dossiq:069ee2d6m7275:js0023cfc7	cover	dossiq	development	quality/test-coverage-js-0023cfc7	lang=js;dirs=src/dialogs/*;focus=uncovered;weight=1437;coverage=88.35;target=90.0	2026-08-15T07:08:03Z
+cover:dossiq:069ee2d6m7275:js0be8c659	cover	dossiq	development	quality/test-coverage-js-0be8c659	lang=js;dirs=src/modals/*;focus=uncovered;weight=543;coverage=88.35;target=90.0	2026-08-15T07:22:57Z
