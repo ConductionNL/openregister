@@ -5788,3 +5788,4 @@ pipelinq	3725	7b4589e1ab21416e636bf07899933e56a6dcd540	REVERIFY	worker-47	merged
 pipelinq	3728	ffd501563c30176eec1ee5be1ace28b477fbfc30	CONFLICT	worker-47	l10n/en.json, nl.json (catalogue tail appends collide with 3721); clean against development alone except 3744
 pipelinq	3742	6f9cdbaf366736580e7816b468385c541fb08308	CONFLICT	worker-47	l10n en/nl .json/.js tail appends collide with earlier tree PRs; clean against development alone except 3744
 pipelinq	3743	e2687b7d18d876b7adbb89cf7aa4dccd5775c439	CONFLICT	worker-47	l10n en/nl .json/.js tail appends collide with earlier tree PRs; clean against development alone except 3744
+pipelinq	3744	5b7b3df42fd544b4c2178e67cd2da3f7172b12af	CONFLICT	worker-47	tests/vitest/keywordIntelligenceRendered.spec.js conflicts with development itself; clean against development alone except 3744
