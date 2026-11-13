@@ -2123,3 +2123,4 @@ cover:filinq:7a9ef677mc744:e01e982e	PR #2023: 29 cases for IdTokenValidator + Su
 cover:filinq:7a9ef677mc744:js450fec42	PR #2024: 31 vitest tests for 3 integration leaf widgets; suite 595->626 passing	session-20261113T041649-bbede304	2026-11-13T04:26:39Z
 cover:filinq:7a9ef677mc744:9d3a1784	PR #2025: 11 tests, lib/BackgroundJob 97.4% -> 100% lines; suite 0 failures before/after	session-20261113T041644-786bb7fc	2026-11-13T04:27:13Z
 verify:buildiq:1503:92635760	3 GREEN (1503-1505); vitest 3457 passed, phpunit unchanged; JS tests only	session-20261113T034632-47095943	2026-11-13T04:27:14Z
+cover:dossiq:6ca0231ema7d4:js5794e9fc	PR dossiq#6275: 5 settings components, 26 vitest tests; src/views/settings 66.07%->72.53% statements	session-20261113T031701-b518f7f8	2026-11-13T04:27:21Z
