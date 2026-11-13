@@ -1353,3 +1353,4 @@ cover:dossiq:6ca0231e:094a3419	opened dossiq#6217 (EmailTemplateRepository + Cas
 cover:dossiq:6ca0231e:dddb125b	already done: lib/Service/Bezwaar/ at 1748/1763 lines (99%) on development; remaining 15 are single guard throws, no PR	session-20261112T231645-3f0591a5	2026-11-13T01:15:25Z
 cover:dossiq:6ca0231e:71b49856	PR #6216: 3 tests, TakeoverStore and CaseCustodyQuery to 100%; with #6213 Custody is 626/629 lines; 0 new failures	session-20261112T233856-8f2d924b	2026-11-13T01:15:32Z
 review:openregister:10073:1fee9d01	APPROVE: docblock-only @uses additions, tests green	session-20261112T231638-72e59130	2026-11-13T01:15:34Z
+cover:dossiq:6ca0231e:8c2eee86	PR #6218: 8 tests, PackageSeedRules 100%, CaseDefinition dir 93.1%->~96%	session-20261113T004524-55adaa63	2026-11-13T01:16:03Z
