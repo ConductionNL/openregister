@@ -1481,3 +1481,4 @@ cover:integriq:9b0f5894m2367:e648f6fd	already done: lib/Service/Datasource/ 107/
 cover:shillinq:801aab65:60b3923a	PR #2827: 6 tests for EInvoiceService failure paths + UBL mapper malformed entries; 9004->9010, 1 inherited failure	session-20261113T004527-ec0338ee	2026-11-13T01:48:12Z
 cover:dossiq:6ca0231e:7593a315	PR #6222: CaseRelationStore + OutcomeCascade refusals (+19 tests); Relation 89.8%->97.3%, no new failures	session-20261113T011731-f3798045	2026-11-13T01:48:24Z
 cover:shillinq:801aab65:59477eff	PR #2828: 3 separate-process tests for the fail-closed filinq/decidiq guards (the dir's only 8 uncovered lines); suite 9004->9007, same 1 inherited failure. Note: previous event-cover task's PR is #2824	session-20261112T234655-793f46ee	2026-11-13T01:48:19Z
+cover:integriq:9b0f5894m2367:fb7c8b79	already done: lib/Service/Recipients/ 116/116 statements covered by RecipientResolverTest + golden test; no PR	session-20261113T011743-bdeb8a13	2026-11-13T01:48:49Z
