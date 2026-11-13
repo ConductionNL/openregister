@@ -7115,3 +7115,4 @@ build4:openregister:platform-collaboration-resources	partial: PR #10419 task 1.5
 review:openregister:10399:350560f4	APPROVE 10399: frontend-only Rights tab, save keeps other authorization keys; jest/eslint green; l10n reds inherited	session-20261113T205337-4c32e19e	2026-11-13T22:14:38Z
 build4:openregister:platform-reference-provider	partial: PR #10420 (task 1.5 picker reads the reference card, +5 tests); 2.1 e2e, 2.3 openspec validate, 3.1 dossiq handover left	session-20261113T213326-97cbe4c8	2026-11-13T22:14:43Z
 review:openregister:10386:7daec37d	APPROVE: spec-driven, guards before delete, tests green	session-20261113T213324-d7ae5543	2026-11-13T22:14:55Z
+review:openregister:10382:622f8b1d	APPROVE: default-closed unchanged, open only on explicit declaration; suites green, Db errors inherited	session-20261113T202603-6c9ef72f	2026-11-13T22:15:09Z
