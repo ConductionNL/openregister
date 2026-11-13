@@ -1582,3 +1582,4 @@ cover:stackiq:8cfacb29m8db8:js17dfdc2e	PR #1812: mounted specs for 4 object dial
 cover:pipelinq:f67520ecm8c58:8f2b650b	PR #3617: 15 tests in 3 files, lib/Service/Competitor 87.0% -> 96.5%, suite failures unchanged (1 inherited)	session-20261113T015005-e2235eb9	2026-11-13T02:15:11Z
 cover:stackiq:8cfacb29m8db8:jsc7b297c1	PR #1813: 2 views, 12 tests, src/views lines 86.2->89.6%	session-20261113T004519-b6b86685	2026-11-13T02:15:09Z
 cover:pipelinq:f67520ecm8c58:d4326ecd	already done: the four dirs are at 90/97 statements (92.8%), above the 85% target; 7 lines left across WorkBuckets, PersonFetch, SchemaSlugMap	session-20261113T015005-e2235eb9	2026-11-13T02:15:29Z
+cover:pipelinq:f67520ecm8c58:js00fe026a	already done: open PR on quality/test-coverage-js-00fe026a-1 (e9f50310) already covers these src/services gaps (9 specs); no duplicate opened	session-20261112T234655-793f46ee	2026-11-13T02:15:44Z
