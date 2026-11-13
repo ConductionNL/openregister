@@ -3089,3 +3089,4 @@ cover:dossiq:f8a113c5m7e79:7593a315	PR #6315: 3 phpunit tests, RoleLinkService 1
 cover:dossiq:f8a113c5m7e79:094a3419	PR dossiq#6316: 12 gateway tests + metadata fixes on 6 tests; Email dir 1351->1714/1874 lines; same 19 inherited failures	session-20261113T051703-1b54bfba	2026-11-13T07:08:48Z
 cover:integriq:92114ab0m658d:60c2c265	PRs #3495 (8 controllers, 90 tests) and #3496 (Events, Sources, 16 tests); lib/Controller/*.php 80.3% -> 90.6% with both	session-20261113T051705-4f5ad12a	2026-11-13T07:09:58Z
 verify:dossiq:6306:b381390b	GREEN 6306, 6307, 6308 (tests-only; 0 new phpunit failures; vitest 1 inherited failure)	session-20261113T053904-36dcee67	2026-11-13T07:09:57Z
+cover:dossiq:f8a113c5m7e79:28cccfd9	already done: pcov on development (today) shows lib/Repair/Support 98.9% lines (172/174), target 90	session-20261113T053904-36dcee67	2026-11-13T07:10:24Z
