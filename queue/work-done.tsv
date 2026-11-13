@@ -6907,6 +6907,7 @@ verify:versioniq:684:10f67c07	684 GREEN (tests-only, vitest 2895->2910, 0 failur
 build:hermiq:chat-translate-a-recording	PR #1719: tasks 1-6 implemented with PHPUnit+vitest; Newman/Playwright/live checks left; suite 4596 tests, no new failures	session-20261113T205332-17038cbf	2026-11-13T21:15:54Z
 verify:learniq:2487:44caf9cd	GREEN #2487: 6404 tests, 0 new failures (1 inherited)	session-20261113T210940-b751519f	2026-11-13T21:15:49Z
 verify:integriq:3551:0c53eaed	3551 GREEN, 3553 GREEN, 3552 CONFLICT (l10n with 3551); no new failures	session-20261113T205330-0e50ee62	2026-11-13T21:16:05Z
+build:opencatalogi:oai-pmh-endpoint	PR #2654: changed-since route (6.1-6.3), 14 tests, suite 5254->5268 no new failures; 6.4 live and 7.3 check:strict left	session-20261113T204539-805bb895	2026-11-13T21:16:15Z
 build4:openregister:api-explorer-in-the-app	partial: PR #10326 apiSamples curl/fetch generator + spec (2.3, 2.5); GraphiQL bundle (1.x) and RegisterApi page (2.1/2.2/2.4, needs 37-locale strings) left	session-20261113T204542-158476ba	2026-11-13T21:16:17Z
 build:opencatalogi:diwoo-metadata-on-the-publication	partial: PR #2655 does 1.1, 2.1, 2.2, 3.1 and 3.2 (lists from XSD, vocabulary, documentsoorten route, schema fields + l10n); 15 tests; suite 5254->5269, failures 2->1; listener/sitemap/announce/migration left	session-20261113T204539-e70be1ed	2026-11-13T21:16:22Z
 verify:buildiq:1571:5d54ffc0	GREEN #1571: phpunit 2917 (1 inherited), vitest 4084 pass	session-20261113T202619-0d7929e0	2026-11-13T21:16:35Z
