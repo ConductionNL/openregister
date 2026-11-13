@@ -1166,3 +1166,4 @@ cover:buildiq:8ca317f6m6d54:9d3a1784	already done: AppHealthSampleCleanup and Ru
 cover:stackiq:8cfacb29m2f4b:js0023cfc7	PR #1804: 5 vitest tests rendering ManageUserGroupsDialog (58.7% -> 97.8% stmts); vitest 1880->1885 green; noted template prop-name defect in PR	session-20261112T231633-96ffe7b8	2026-11-13T00:36:43Z
 cover:stackiq:8cfacb29m2f4b:js0be8c659	PR stackiq#1805: GrantOrganisationAccessModal +9 tests, src/modals/* lines 83.1->86.4%, vitest 1880->1889 green	session-20261112T231638-72e59130	2026-11-13T00:36:53Z
 cover:buildiq:8ca317f6m6d54:be0dcca9	already done: BuildiqToolProvider has 3 test files; reads 0% here only because it implements an OpenRegister interface absent in a bare container	session-20261112T231640-f6dda86c	2026-11-13T00:37:01Z
+cover:shillinq:801aab65:34f5c300	PR #2804: lib/Service/*.php 88.47->89.83% (risky seed tests fixed via @uses, Innovatiebox 0->100/100); 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:37:05Z
