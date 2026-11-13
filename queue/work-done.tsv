@@ -5605,3 +5605,4 @@ merge:dossiq:6359:daa852c4	merge-local over 60 dossiq tasks: merged=13 red=0 fai
 merge:dossiq:6373:bb9d5df3	merge-local over 60 dossiq tasks: merged=13 red=0 fail=0 skip=1; already in development 16; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:41:16Z
 merge:dossiq:6366:5400bc38	merge-local over 60 dossiq tasks: merged=13 red=0 fail=0 skip=1; already in development 16; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:41:16Z
 merge:dossiq:6412:536f529c	merge-local over 60 dossiq tasks: merged=13 red=0 fail=0 skip=1; already in development 16; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:41:16Z
+merge:versioniq:679:49cae245	merge-local over 1 versioniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:42:10Z
