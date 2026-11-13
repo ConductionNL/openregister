@@ -5973,3 +5973,4 @@ buildiq	1551	00b7f7e3308971b4844915a517c6d85fbb79150d	GREEN	worker-34	tests only
 hermiq	1686	07c5f2514349fb3fd330f8536f784204297f4901	GREEN	worker-01	unit 4564 on tree (baseline 4556, 0 failures); new test file only
 hermiq	1687	a15737f34553027c0fa9c4c021537f0c628eac28	GREEN	worker-01	unit 4564 on tree (baseline 4556, 0 failures); new test file only
 shillinq	2941	f2317c513bde70b1a338cdc20fd8f348123b9eb0	GREEN	worker-48	vitest tests only (4 new specs); vitest 2262/2262 (baseline 2200/2200), eslint clean, no skip/only; PHP untouched
+larpinq	1029	099fd5eba624ca68f5c80ee102adad99bc4d152c	GREEN	worker-03	tree of 1 on 8df68c64: PHP 791 run, baseline 791 with 0 failures, new failures 0; vitest 495 passed; JS spec only
