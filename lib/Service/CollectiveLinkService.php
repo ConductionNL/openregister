@@ -153,22 +153,6 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 	}//end getPageService()
 
 	/**
-	 * Active session UID, or throw if no user is logged in.
-	 *
-	 * @return string The user id.
-	 *
-	 * @throws Exception When there is no active user.
-	 */
-	private function requireUid(): string {
-		$user = $this->runtime->userSession()->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in', 401);
-		}
-
-		return $user->getUID();
-	}//end requireUid()
-
-	/**
 	 * Link an existing NC Collectives page to an OR object.
 	 *
 	 * Idempotent: a duplicate link raises a 409 Exception. Page metadata
@@ -185,7 +169,7 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function linkPage(LinkTarget $target, int $pageId): CollectiveLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 		$this->assertPageLinkable(target: $target, pageId: $pageId);
 
 		$info = $this->fetchPageInfo(pageId: $pageId, uid: $uid);
@@ -251,7 +235,7 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function createAndLinkDraft(LinkTarget $target, CollectivePageDraft $draft): CollectiveLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 
 		$title = trim($draft->title);
 		if ($title === '') {
@@ -290,7 +274,7 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 
 		try {
 			// PageService::create(collectiveId, parentId, title, templateId, userId); parent 0 is the root.
-			return (int)$pageService->create($collectiveId, 0, $title, null, $this->requireUid())->getId();
+			return (int)$pageService->create($collectiveId, 0, $title, null, $this->runtime->requireUid())->getId();
 		} catch (Throwable $e) {
 			$this->runtime->logger()->warning('CollectiveLinkService::createAndLinkPage failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Collectives page', 500);
@@ -356,7 +340,7 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function unlinkPage(string $objectUuid, int $pageId): void {
-		$this->requireUid();
+		$this->runtime->requireUid();
 
 		$deleted = $this->collectiveLinkMapper->deleteByObjectAndPage($objectUuid, $pageId);
 		if ($deleted === 0) {

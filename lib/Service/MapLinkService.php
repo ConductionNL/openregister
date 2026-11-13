@@ -127,22 +127,6 @@ class MapLinkService implements MapLinkServiceInterface {
 	}//end getFavoritesService()
 
 	/**
-	 * Active session UID, or throw if no user is logged in.
-	 *
-	 * @return string The user id.
-	 *
-	 * @throws Exception When there is no active user.
-	 */
-	private function requireUid(): string {
-		$user = $this->runtime->userSession()->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in', 401);
-		}
-
-		return $user->getUID();
-	}//end requireUid()
-
-	/**
 	 * Link an existing NC Maps favorite (POI) to an OR object.
 	 *
 	 * Idempotent: a duplicate link raises a 409 Exception. POI metadata
@@ -159,7 +143,7 @@ class MapLinkService implements MapLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the link-POI contract is owned by the integration-maps capability.
 	 */
 	public function linkPoi(LinkTarget $target, int $favoriteId): MapLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 		if ($this->isMapsAvailable() === false) {
 			throw new Exception('NC Maps is not available', 503);
 		}
@@ -211,7 +195,7 @@ class MapLinkService implements MapLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-POI contract is owned by the integration-maps capability.
 	 */
 	public function createAndLinkPoi(LinkTarget $target, PoiDraft $poi): MapLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 
 		$name = trim($poi->name);
 		if ($name === '') {
@@ -282,7 +266,7 @@ class MapLinkService implements MapLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink-POI contract is owned by the integration-maps capability.
 	 */
 	public function unlinkPoi(string $objectUuid, int $favoriteId): void {
-		$this->requireUid();
+		$this->runtime->requireUid();
 
 		$deleted = $this->mapLinkMapper->deleteByObjectAndFavorite($objectUuid, $favoriteId);
 		if ($deleted === 0) {
