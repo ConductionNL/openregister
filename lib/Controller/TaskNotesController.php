@@ -66,6 +66,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskLeafGuard;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
@@ -105,22 +110,18 @@ class TaskNotesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param TaskNotesControllerServices $services The services, bundled.
-	 * @param IUserSession $userSession Names the acting identity.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TaskNotesControllerServices $services,
-		IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->notes = $services->notes;
-		$this->guard = new TaskLeafGuard(tasks: $services->tasks, authorization: $services->authorization, userSession: $userSession);
+		$this->guard = new TaskLeafGuard(tasks: $services->tasks, authorization: $services->authorization, userSession: $services->userSession);
 
 	}//end __construct()
 
@@ -151,7 +152,6 @@ class TaskNotesController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(string $uuid): JSONResponse {
 		return $this->guard->withReadableTask(uuid: $uuid, action: $this->writeNote(...));
 	}//end create()
@@ -168,11 +168,10 @@ class TaskNotesController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(string $uuid, string $noteId): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,
-			action: fn (): JSONResponse => $this->rewriteNote(uuid: $uuid, noteId: (int)$noteId)
+			action: fn (TaskInterface $task): JSONResponse => $this->rewriteNote(task: $task, noteId: (int)$noteId)
 		);
 	}//end update()
 
@@ -188,11 +187,10 @@ class TaskNotesController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(string $uuid, string $noteId): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,
-			action: fn (): JSONResponse => $this->removeNote(uuid: $uuid, noteId: (int)$noteId)
+			action: fn (TaskInterface $task): JSONResponse => $this->removeNote(task: $task, noteId: (int)$noteId)
 		);
 	}//end destroy()
 
@@ -205,10 +203,9 @@ class TaskNotesController extends Controller {
 	 */
 	private function listNotes(TaskInterface $task): JSONResponse {
 		$params = $this->request->getParams();
-		$limit = (int)($params['limit'] ?? 50);
-		$offset = (int)($params['offset'] ?? 0);
+		$page = new ListQuery(limit: (int)($params['limit'] ?? 50), offset: (int)($params['offset'] ?? 0));
 
-		$notes = $this->notes->getNotesForObject((string)$task->getUuid(), $limit, $offset);
+		$notes = $this->notes->listNotes(query: new ObjectNotesQuery(objectUuid: (string)$task->getUuid(), page: $page));
 
 		return new JSONResponse(['results' => $notes, 'total' => count($notes)]);
 	}//end listNotes()
@@ -227,7 +224,7 @@ class TaskNotesController extends Controller {
 		}
 
 		return new JSONResponse(
-			$this->notes->createNote((string)$task->getUuid(), $message),
+			$this->notes->createNote(draft: new NoteDraft(objectUuid: (string)$task->getUuid(), message: $message)),
 			Http::STATUS_CREATED
 		);
 	}//end writeNote()
@@ -235,34 +232,34 @@ class TaskNotesController extends Controller {
 	/**
 	 * Rewrite a note: the message is checked before the note's ownership.
 	 *
-	 * @param string $uuid   The task uuid.
-	 * @param int    $noteId The note id.
+	 * @param TaskInterface $task   The readable task.
+	 * @param int           $noteId The note id.
 	 *
 	 * @return JSONResponse The updated note, 400 without a message, 404 for a foreign note.
 	 */
-	private function rewriteNote(string $uuid, int $noteId): JSONResponse {
+	private function rewriteNote(TaskInterface $task, int $noteId): JSONResponse {
 		$message = $this->message();
 		if ($message === null) {
 			return $this->messageRequired();
 		}
 
-		if ($this->isNoteOfTask(uuid: $uuid, noteId: $noteId) === false) {
+		if ($this->isNoteOfTask(uuid: (string)$task->getUuid(), noteId: $noteId) === false) {
 			return TaskLeafGuard::notFound();
 		}
 
-		return new JSONResponse($this->notes->updateNote($noteId, $message));
+		return new JSONResponse($this->notes->editNote(noteId: $noteId, edit: new NoteEdit(message: $message)));
 	}//end rewriteNote()
 
 	/**
 	 * Remove a note that hangs on this task.
 	 *
-	 * @param string $uuid   The task uuid.
-	 * @param int    $noteId The note id.
+	 * @param TaskInterface $task   The readable task.
+	 * @param int           $noteId The note id.
 	 *
 	 * @return JSONResponse Confirmation, or 404 for a foreign note.
 	 */
-	private function removeNote(string $uuid, int $noteId): JSONResponse {
-		if ($this->isNoteOfTask(uuid: $uuid, noteId: $noteId) === false) {
+	private function removeNote(TaskInterface $task, int $noteId): JSONResponse {
+		if ($this->isNoteOfTask(uuid: (string)$task->getUuid(), noteId: $noteId) === false) {
 			return TaskLeafGuard::notFound();
 		}
 

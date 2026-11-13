@@ -32,6 +32,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 final class ImportHandlerUnlinkableActionsWarnTest extends TestCase {
 

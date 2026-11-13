@@ -10,6 +10,9 @@ exports[`object answers of the list stores golden deleteRegister([{"id":5,"title
           "/index.php/apps/openregister/api/registers/5",
           {
             "body": "undefined",
+            "headers": {
+              "requesttoken": "test-request-token",
+            },
             "method": "DELETE",
           },
         ],
@@ -45,6 +48,9 @@ exports[`object answers of the list stores golden deleteRegister([{"id":5,"title
           "/index.php/apps/openregister/api/registers/5",
           {
             "body": "undefined",
+            "headers": {
+              "requesttoken": "test-request-token",
+            },
             "method": "DELETE",
           },
         ],
@@ -72,6 +78,9 @@ exports[`object answers of the list stores golden deleteRegister([{"id":5,"title
           "/index.php/apps/openregister/api/registers/5",
           {
             "body": "undefined",
+            "headers": {
+              "requesttoken": "test-request-token",
+            },
             "method": "DELETE",
           },
         ],
@@ -99,6 +108,9 @@ exports[`object answers of the list stores golden deleteRegister([{"id":5,"title
           "/index.php/apps/openregister/api/registers/5",
           {
             "body": "undefined",
+            "headers": {
+              "requesttoken": "test-request-token",
+            },
             "method": "DELETE",
           },
         ],
@@ -126,6 +138,9 @@ exports[`object answers of the list stores golden deleteRegister([{"id":5,"title
           "/index.php/apps/openregister/api/registers/5",
           {
             "body": "undefined",
+            "headers": {
+              "requesttoken": "test-request-token",
+            },
             "method": "DELETE",
           },
         ],
@@ -158,6 +173,9 @@ exports[`object answers of the list stores golden deleteSource([{"id":6,"title":
           "/index.php/apps/openregister/api/sources/6",
           {
             "body": "undefined",
+            "headers": {
+              "requesttoken": "test-request-token",
+            },
             "method": "DELETE",
           },
         ],
@@ -193,6 +211,9 @@ exports[`object answers of the list stores golden deleteSource([{"id":6,"title":
           "/index.php/apps/openregister/api/sources/6",
           {
             "body": "undefined",
+            "headers": {
+              "requesttoken": "test-request-token",
+            },
             "method": "DELETE",
           },
         ],
@@ -215,6 +236,9 @@ exports[`object answers of the list stores golden deleteSource([{"id":6,"title":
           "/index.php/apps/openregister/api/sources/6",
           {
             "body": "undefined",
+            "headers": {
+              "requesttoken": "test-request-token",
+            },
             "method": "DELETE",
           },
         ],
@@ -237,6 +261,9 @@ exports[`object answers of the list stores golden deleteSource([{"id":6,"title":
           "/index.php/apps/openregister/api/sources/6",
           {
             "body": "undefined",
+            "headers": {
+              "requesttoken": "test-request-token",
+            },
             "method": "DELETE",
           },
         ],
@@ -259,6 +286,9 @@ exports[`object answers of the list stores golden deleteSource([{"id":6,"title":
           "/index.php/apps/openregister/api/sources/6",
           {
             "body": "undefined",
+            "headers": {
+              "requesttoken": "test-request-token",
+            },
             "method": "DELETE",
           },
         ],
@@ -288,6 +318,7 @@ exports[`object answers of the list stores golden saveConfiguration([{"id":4,"ti
             "body": "{"title":"Four"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -363,6 +394,7 @@ exports[`object answers of the list stores golden saveConfiguration([{"id":4,"ti
             "body": "{"title":"Four"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -393,6 +425,7 @@ exports[`object answers of the list stores golden saveConfiguration([{"id":4,"ti
             "body": "{"title":"Four"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -423,6 +456,7 @@ exports[`object answers of the list stores golden saveConfiguration([{"id":4,"ti
             "body": "{"title":"Four"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -453,6 +487,7 @@ exports[`object answers of the list stores golden saveConfiguration([{"id":4,"ti
             "body": "{"title":"Four"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -488,6 +523,7 @@ exports[`object answers of the list stores golden saveConfiguration([{"title":"N
             "body": "{"title":"New"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -563,6 +599,7 @@ exports[`object answers of the list stores golden saveConfiguration([{"title":"N
             "body": "{"title":"New"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -593,6 +630,7 @@ exports[`object answers of the list stores golden saveConfiguration([{"title":"N
             "body": "{"title":"New"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -623,6 +661,7 @@ exports[`object answers of the list stores golden saveConfiguration([{"title":"N
             "body": "{"title":"New"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -653,6 +692,7 @@ exports[`object answers of the list stores golden saveConfiguration([{"title":"N
             "body": "{"title":"New"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -688,6 +728,7 @@ exports[`object answers of the list stores golden saveRegister([{"id":5,"title":
             "body": "{"title":"Five"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -773,6 +814,7 @@ exports[`object answers of the list stores golden saveRegister([{"id":5,"title":
             "body": "{"title":"Five"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -803,6 +845,7 @@ exports[`object answers of the list stores golden saveRegister([{"id":5,"title":
             "body": "{"title":"Five"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -833,6 +876,7 @@ exports[`object answers of the list stores golden saveRegister([{"id":5,"title":
             "body": "{"title":"Five"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -863,6 +907,7 @@ exports[`object answers of the list stores golden saveRegister([{"id":5,"title":
             "body": "{"title":"Five"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -898,6 +943,7 @@ exports[`object answers of the list stores golden saveRegister([{"title":"New"}]
             "body": "{"title":"New"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -983,6 +1029,7 @@ exports[`object answers of the list stores golden saveRegister([{"title":"New"}]
             "body": "{"title":"New"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -1013,6 +1060,7 @@ exports[`object answers of the list stores golden saveRegister([{"title":"New"}]
             "body": "{"title":"New"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -1043,6 +1091,7 @@ exports[`object answers of the list stores golden saveRegister([{"title":"New"}]
             "body": "{"title":"New"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -1073,6 +1122,7 @@ exports[`object answers of the list stores golden saveRegister([{"title":"New"}]
             "body": "{"title":"New"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -1108,6 +1158,7 @@ exports[`object answers of the list stores golden saveSource([{"id":6,"title":"S
             "body": "{"id":6,"title":"Six","updated":"2026-01-01T00:00:00.000Z"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1161,6 +1212,7 @@ exports[`object answers of the list stores golden saveSource([{"id":6,"title":"S
             "body": "{"id":6,"title":"Six","updated":"2026-01-01T00:00:00.000Z"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1186,6 +1238,7 @@ exports[`object answers of the list stores golden saveSource([{"id":6,"title":"S
             "body": "{"id":6,"title":"Six","updated":"2026-01-01T00:00:00.000Z"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1211,6 +1264,7 @@ exports[`object answers of the list stores golden saveSource([{"id":6,"title":"S
             "body": "{"id":6,"title":"Six","updated":"2026-01-01T00:00:00.000Z"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1236,6 +1290,7 @@ exports[`object answers of the list stores golden saveSource([{"id":6,"title":"S
             "body": "{"id":6,"title":"Six","updated":"2026-01-01T00:00:00.000Z"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1266,6 +1321,7 @@ exports[`object answers of the list stores golden saveSource([{"title":"New"}]) 
             "body": "{"title":"New","updated":"2026-01-01T00:00:00.000Z"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -1319,6 +1375,7 @@ exports[`object answers of the list stores golden saveSource([{"title":"New"}]) 
             "body": "{"title":"New","updated":"2026-01-01T00:00:00.000Z"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -1344,6 +1401,7 @@ exports[`object answers of the list stores golden saveSource([{"title":"New"}]) 
             "body": "{"title":"New","updated":"2026-01-01T00:00:00.000Z"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -1369,6 +1427,7 @@ exports[`object answers of the list stores golden saveSource([{"title":"New"}]) 
             "body": "{"title":"New","updated":"2026-01-01T00:00:00.000Z"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -1394,6 +1453,7 @@ exports[`object answers of the list stores golden saveSource([{"title":"New"}]) 
             "body": "{"title":"New","updated":"2026-01-01T00:00:00.000Z"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "POST",
           },
@@ -1424,6 +1484,7 @@ exports[`object answers of the list stores golden uploadConfiguration([{"title":
             "body": "{"title":"Up"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1499,6 +1560,7 @@ exports[`object answers of the list stores golden uploadConfiguration([{"title":
             "body": "{"title":"Up"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1529,6 +1591,7 @@ exports[`object answers of the list stores golden uploadConfiguration([{"title":
             "body": "{"title":"Up"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1559,6 +1622,7 @@ exports[`object answers of the list stores golden uploadConfiguration([{"title":
             "body": "{"title":"Up"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1589,6 +1653,7 @@ exports[`object answers of the list stores golden uploadConfiguration([{"title":
             "body": "{"title":"Up"}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1624,6 +1689,7 @@ exports[`object answers of the list stores golden uploadRegister([{"title":"Up",
             "body": "{"title":"Up","id":3}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1709,6 +1775,7 @@ exports[`object answers of the list stores golden uploadRegister([{"title":"Up",
             "body": "{"title":"Up","id":3}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1734,6 +1801,7 @@ exports[`object answers of the list stores golden uploadRegister([{"title":"Up",
             "body": "{"title":"Up","id":3}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1759,6 +1827,7 @@ exports[`object answers of the list stores golden uploadRegister([{"title":"Up",
             "body": "{"title":"Up","id":3}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1784,6 +1853,7 @@ exports[`object answers of the list stores golden uploadRegister([{"title":"Up",
             "body": "{"title":"Up","id":3}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1814,6 +1884,7 @@ exports[`object answers of the list stores golden uploadSchema([{"title":"Up","i
             "body": "{"title":"Up","id":2}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1907,6 +1978,7 @@ exports[`object answers of the list stores golden uploadSchema([{"title":"Up","i
             "body": "{"title":"Up","id":2}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1932,6 +2004,7 @@ exports[`object answers of the list stores golden uploadSchema([{"title":"Up","i
             "body": "{"title":"Up","id":2}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1957,6 +2030,7 @@ exports[`object answers of the list stores golden uploadSchema([{"title":"Up","i
             "body": "{"title":"Up","id":2}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },
@@ -1982,6 +2056,7 @@ exports[`object answers of the list stores golden uploadSchema([{"title":"Up","i
             "body": "{"title":"Up","id":2}",
             "headers": {
               "Content-Type": "application/json",
+              "requesttoken": "test-request-token",
             },
             "method": "PUT",
           },

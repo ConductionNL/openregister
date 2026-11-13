@@ -57,7 +57,7 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
-use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;

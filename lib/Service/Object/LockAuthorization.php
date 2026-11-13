@@ -25,7 +25,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -45,13 +47,13 @@ class LockAuthorization {
 	 * @param IUserSession                    $userSession       The caller.
 	 * @param IGroupManager                   $groupManager      Administrator and group membership checks.
 	 * @param SchemaMapperInterface           $schemaMapper      Resolves the manage rules of the owning schema.
-	 * @param PermissionHandlerInterface|null $permissionHandler RBAC, asked for update permission before a user takes a lock.
+	 * @param PermissionHandlerInterface      $permissionHandler RBAC, asked for update permission before a user takes a lock.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ?PermissionHandlerInterface $permissionHandler = null,
+		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
 	}//end __construct()
 
@@ -61,25 +63,28 @@ class LockAuthorization {
 	 * A lock refuses every other writer, and one taken without a duration holds
 	 * until it is unlocked, so taking it needs the right to update the object,
 	 * not only to find it. A flow run is asked the same: it runs as its acting
-	 * user, whom the session then names.
+	 * user, whom the session then names. Without a schema to ask there is no
+	 * answer, and the lock is refused.
 	 *
 	 * @param array $context The resolved object with its register and schema.
 	 *
 	 * @return void
 	 *
-	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException If the caller may not update the object.
+	 * @throws NotAuthorizedException If the caller may not update the object, or nothing can tell.
 	 *
 	 * @spec openspec/changes/lock-needs-update-permission/specs/lock-needs-update-permission/spec.md#requirement-a-user-lock-needs-update-permission-on-the-object
 	 */
 	public function assertMayLock(array $context): void {
 		$object = $context['object'];
-		$this->permissionHandler?->checkPermission(
+		if (($context['schema'] ?? null) instanceof Schema === false) {
+			throw new NotAuthorizedException(message: 'This object cannot be locked: its update rule cannot be checked.');
+		}
+
+		$this->permissionHandler->checkPermission(
 			schema: $context['schema'],
 			action: 'update',
-			userId: null,
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			options: new PermissionCheckOptions(objectOwner: $object->getOwner(), object: $object),
+			_rbac: true
 		);
 	}//end assertMayLock()
 

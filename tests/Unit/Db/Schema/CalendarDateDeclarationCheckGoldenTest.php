@@ -38,6 +38,11 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Calendar\CalendarDateDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Calendar\DateDeclarationRun
+ * @uses \OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration
+ * @uses \OCA\OpenRegister\Service\Calendar\ObjectDateLayout
+ * @uses \OCA\OpenRegister\Service\Calendar\ObjectDateTerm
  */
 final class CalendarDateDeclarationCheckGoldenTest extends TestCase {
 

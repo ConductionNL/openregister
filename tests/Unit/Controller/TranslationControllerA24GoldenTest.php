@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\TranslationControllerServices;
+use OCA\OpenRegister\Controller\Support\TranslationMappers;
 use OCA\OpenRegister\Controller\TranslationController;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -33,13 +34,16 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
+use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\ObjectTranslationRequest;
 
 /**
  * Pins search parameter handling and every response shape.
@@ -116,10 +120,12 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		$request->method('getParams')->willReturn($params);
 
 		return new TranslationController(
-			'openregister',
 			$request,
-			new TranslationControllerServices($this->status, $this->translations, $this->schemas, $this->bulk),
-			$this->objects
+			new TranslationControllerServices(
+				$this->status,
+				$this->bulk,
+				new TranslationMappers($this->translations, $this->schemas, $this->objects)
+			)
 		);
 	}//end controller()
 
@@ -132,30 +138,21 @@ class TranslationControllerA24GoldenTest extends TestCase {
 	 */
 	private function recordSearch(string $method): void {
 		$this->status->method($method)->willReturnCallback(
-			static fn (
-				?string $query,
-				?string $language,
-				?string $status,
-				?string $objectUuid,
-				int $limit,
-				?string $sourceLanguage,
-				bool $isOutOfDate
-			): array => [
-				[$method, $query, $language, $status, $objectUuid, $limit, $sourceLanguage, $isOutOfDate],
+			static fn (TranslationSearch $search): array => [
+				[$method, $search->query, $search->filter->language, $search->filter->status, $search->filter->objectUuid, $search->limit, $search->filter->sourceLanguage, $search->isOutOfDate],
 			]
 		);
 	}//end recordSearch()
 
 	/**
-	 * Search, as the router would call it: raw params in the request, cast arguments positionally.
+	 * Search, as the router would call it: raw params in the request.
 	 *
-	 * @param array<string, mixed> $raw  Raw request params.
-	 * @param array<int, mixed>    $args The dispatcher-cast arguments, positionally.
+	 * @param array<string, mixed> $raw Raw request params.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function search(array $raw, array $args): array {
-		$response = $this->controller($raw)->search(...$args);
+	private function search(array $raw): array {
+		$response = $this->controller($raw)->search();
 		$this->assertSame(200, $response->getStatus());
 		return $response->getData();
 	}//end search()
@@ -170,7 +167,7 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		$this->status->expects($this->never())->method('searchWithSourceValues');
 		$this->assertSame(
 			['results' => [['search', null, null, null, null, 100, null, false]], 'count' => 1],
-			$this->search([], [])
+			$this->search([])
 		);
 	}
 
@@ -192,15 +189,15 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		];
 		$this->assertSame(
 			[['search', 'q', 'nl', 'draft', 'u', 1000, 'en', true]],
-			$this->search($raw, ['q', 'nl', 'draft', 'u', 5000, 'en', ' Yes '])['results']
+			$this->search($raw)['results']
 		);
-		$this->assertSame(1, $this->search(['limit' => '0'], [null, null, null, null, 0])['results'][0][5]);
-		$this->assertSame(1, $this->search(['limit' => '-4'], [null, null, null, null, -4])['results'][0][5]);
-		$this->assertSame(1, $this->search(['limit' => ''], [null, null, null, null, 0])['results'][0][5]);
-		$this->assertSame(7, $this->search(['limit' => '7'], [null, null, null, null, 7])['results'][0][5]);
-		$this->assertFalse($this->search(['isOutOfDate' => 'nope'], [null, null, null, null, 100, null, 'nope'])['results'][0][7]);
-		$this->assertFalse($this->search(['isOutOfDate' => ''], [null, null, null, null, 100, null, ''])['results'][0][7]);
-		$this->assertTrue($this->search(['isOutOfDate' => 'ON'], [null, null, null, null, 100, null, 'ON'])['results'][0][7]);
+		$this->assertSame(1, $this->search(['limit' => '0'])['results'][0][5]);
+		$this->assertSame(1, $this->search(['limit' => '-4'])['results'][0][5]);
+		$this->assertSame(1, $this->search(['limit' => ''])['results'][0][5]);
+		$this->assertSame(7, $this->search(['limit' => '7'])['results'][0][5]);
+		$this->assertFalse($this->search(['isOutOfDate' => 'nope'])['results'][0][7]);
+		$this->assertFalse($this->search(['isOutOfDate' => ''])['results'][0][7]);
+		$this->assertTrue($this->search(['isOutOfDate' => 'ON'])['results'][0][7]);
 	}
 
 	/**
@@ -213,7 +210,7 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		$this->status->expects($this->never())->method('search');
 		$this->assertSame(
 			['results' => [['searchWithSourceValues', null, 'de', null, null, 100, null, true]], 'count' => 1],
-			$this->search(['language' => 'de', 'isOutOfDate' => '1', 'compareToSource' => 'true'], [null, 'de', null, null, 100, null, '1', 'true'])
+			$this->search(['language' => 'de', 'isOutOfDate' => '1', 'compareToSource' => 'true'])
 		);
 	}
 
@@ -259,7 +256,7 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		$row = $this->createMock(Translation::class);
 		$row->method('jsonSerialize')->willReturn(['status' => 'human_reviewed']);
 		$this->status->method('setStatus')->willReturnCallback(
-			function (string $uuid, string $property, string $language, string $status) use ($row): Translation {
+			function (TranslationSlot $slot, string $status) use ($row): Translation {
 				if ($status === 'bogus') {
 					throw new InvalidArgumentException('bad status');
 				}
@@ -296,7 +293,7 @@ class TranslationControllerA24GoldenTest extends TestCase {
 
 			return $object;
 		});
-		$this->bulk->method('translateObject')->with($object, 'nl', 'en', ['title'])->willReturn(['translated' => ['title' => 'T'], 'skipped' => []]);
+		$this->bulk->method('translate')->with(new ObjectTranslationRequest(object: $object, fromLong: 'nl', toLong: 'en'), ['title'])->willReturn(['translated' => ['title' => 'T'], 'skipped' => []]);
 		$c = $this->controller();
 		foreach ([[null, 'en'], ['', 'en'], ['nl', null], ['nl', '']] as [$from, $to]) {
 			$r = $c->bulkTranslate('u', $from, $to);

@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\DraftCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -47,6 +49,16 @@ use ReflectionNamedType;
  * the job is built by reflection from a map of the collaborators below.
  *
  * @covers \OCA\OpenRegister\BackgroundJob\DeferredObjectEventJob
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventActor
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventLookup
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\DeferredObjectEventPlatform
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Object\ObjectEventGate
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class DeferredObjectEventJobGoldenTest extends TestCase {
 
@@ -148,6 +160,7 @@ class DeferredObjectEventJobGoldenTest extends TestCase {
 			MagicMapperInterface::class    => $objects,
 			RegisterMapperInterface::class => $registers,
 			SchemaMapperInterface::class   => $schemas,
+			SchemaCatalogInterface::class  => new SchemaCatalog($registers, $schemas, $objects),
 			IEventDispatcher::class        => $events,
 			IUserSession::class            => $session,
 			IUserManager::class            => $users,

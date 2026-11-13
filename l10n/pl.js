@@ -1,6 +1,8 @@
 OC.L10N.register(
     "openregister",
     {
+        "Everyone": "Wszyscy",
+        "Only an administrator or the owner of this organisation can change its special rights.": "Tylko administrator lub właściciel tej organizacji może zmieniać jej prawa specjalne.",
         "3": "3",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "Aplikacja, która dostarcza tę tabelę lub jest jej właścicielem, na przykład `dossiq`. Puste dla tabeli utworzonej przez administratora.",

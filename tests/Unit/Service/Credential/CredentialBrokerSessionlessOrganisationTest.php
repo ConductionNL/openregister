@@ -42,6 +42,9 @@ namespace Unit\Service\Credential;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -56,6 +59,12 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialOutbound
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
+ * @uses \OCA\OpenRegister\Service\Credential\InjectableSecretRequest
  */
 class CredentialBrokerSessionlessOrganisationTest extends TestCase {
 	private const UUID = 'cred-org-inject-1';
@@ -261,13 +270,19 @@ class CredentialBrokerSessionlessOrganisationTest extends TestCase {
 		$catalogue->method('get')->willReturn($this->genericProvider());
 
 		return new CredentialBrokerService(
-			$objectService,
-			$store,
-			$catalogue,
-			$session,
-			$this->createMock(IClientService::class),
-			$this->createMock(LoggerInterface::class),
-			$orgService
+			sources: new CredentialSources(
+				objectService: $objectService,
+				credentialStore: $store,
+				catalogue: $catalogue
+			),
+			principals: new CredentialPrincipals(
+				userSession: $session,
+				organisationService: $orgService
+			),
+			outbound: new CredentialOutbound(
+				clientService: $this->createMock(IClientService::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}
 }//end class

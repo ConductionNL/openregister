@@ -27,6 +27,20 @@ use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
  * handling, search paging edges and tool-id resolution.
  *
  * @covers \OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ToolInvocation
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\AuditedInvocation
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\DerivedSearchPage
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\DerivedToolCall
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\DerivedToolDefinition
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolAuditTarget
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationAudit
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationDigest
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationOutcome
  */
 class SchemaDerivedToolProviderCharacterisationTest extends TestCase
 {

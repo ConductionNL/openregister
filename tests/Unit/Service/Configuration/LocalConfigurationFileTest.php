@@ -30,6 +30,14 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
  * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
  * @uses \OCA\OpenRegister\Service\Configuration\ShippedSeedContent
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationFileImport
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
+ * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
  */
 class LocalConfigurationFileTest extends TestCase {
 
@@ -107,12 +115,17 @@ class LocalConfigurationFileTest extends TestCase {
 	 */
 	public function testAFileIsRefusedWithItsReason(string $path, string $reason): void {
 		$handler = new ImportHandler(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: $this->base . '/a/b/c',
 			objectService: $this->createMock(ObjectService::class)

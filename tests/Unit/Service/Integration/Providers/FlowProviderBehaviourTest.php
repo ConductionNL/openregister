@@ -26,8 +26,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Db\FlowLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\Providers\FlowProvider;
+use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -66,7 +68,7 @@ class FlowProviderBehaviourTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->queryBuilder());
 
-		return new FlowProvider($mapper, $db, $apps, $l10n);
+		return new FlowProvider(new LeafProviderPlatform($db, $apps, $l10n), $mapper);
 	}//end provider()
 
 	private function queryBuilder(): IQueryBuilder {
@@ -124,7 +126,7 @@ class FlowProviderBehaviourTest extends TestCase {
 	}//end testItDescribesItselfAndItsHealthFollowsTheWorkflowEngine()
 
 	public function testWithoutTheWorkflowEngineNothingIsListed(): void {
-		$this->assertSame([], $this->provider(false, [$this->link(1, 7)])->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider(false, [$this->link(1, 7)])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 		$this->assertSame([], $this->queried);
 	}//end testWithoutTheWorkflowEngineNothingIsListed()
 
@@ -139,7 +141,7 @@ class FlowProviderBehaviourTest extends TestCase {
 			'checks' => [['class' => 'Check']],
 		];
 
-		$rows = $this->provider(true, [$this->link(3, 7)])->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, [$this->link(3, 7)])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame(
 			[
@@ -166,7 +168,7 @@ class FlowProviderBehaviourTest extends TestCase {
 		$this->operations[1] = ['name' => 'A', 'events' => 'not json', 'checks' => ''];
 		$this->operations[2] = ['name' => 'B', 'events' => '"a string"', 'checks' => 5];
 
-		$rows = $this->provider(true, [$this->link(1, 1), $this->link(2, 2)])->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, [$this->link(1, 1), $this->link(2, 2)])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame([[], []], array_column($rows, 'events'));
 		$this->assertSame([[], []], array_column($rows, 'checks'));
@@ -179,7 +181,7 @@ class FlowProviderBehaviourTest extends TestCase {
 		$bare->setId(5);
 		$bare->setOperationId(8);
 
-		$rows = $this->provider(true, [$this->link(4, 9), $bare])->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, [$this->link(4, 9), $bare])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame(['Link name 9', ''], array_column($rows, 'title'));
 		$this->assertSame(['Link\\Class', ''], array_column($rows, 'class'));

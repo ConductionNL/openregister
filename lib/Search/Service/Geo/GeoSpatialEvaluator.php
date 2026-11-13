@@ -105,20 +105,18 @@ class GeoSpatialEvaluator {
 	/**
 	 * Compute the great-circle distance in meters between two lon/lat pairs.
 	 *
-	 * @param float $lon1 Longitude of point A.
-	 * @param float $lat1 Latitude of point A.
-	 * @param float $lon2 Longitude of point B.
-	 * @param float $lat2 Latitude of point B.
+	 * @param GeoPoint $from Point A.
+	 * @param GeoPoint $to   Point B.
 	 *
 	 * @return float Distance in meters.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
 	 */
-	public function haversineMeters(float $lon1, float $lat1, float $lon2, float $lat2): float {
-		$phi1 = deg2rad($lat1);
-		$phi2 = deg2rad($lat2);
-		$dPhi = deg2rad(($lat2 - $lat1));
-		$dLam = deg2rad(($lon2 - $lon1));
+	public function haversineMeters(GeoPoint $from, GeoPoint $to): float {
+		$phi1 = deg2rad($from->lat);
+		$phi2 = deg2rad($to->lat);
+		$dPhi = deg2rad(($to->lat - $from->lat));
+		$dLam = deg2rad(($to->lon - $from->lon));
 
 		$a = (sin($dPhi / 2) ** 2) + cos($phi1) * cos($phi2) * (sin($dLam / 2) ** 2);
 		$c = 2 * atan2(sqrt($a), sqrt(1 - $a));
@@ -167,10 +165,8 @@ class GeoSpatialEvaluator {
 		}
 
 		$distance = $this->haversineMeters(
-			lon1: $payload['lon'],
-			lat1: $payload['lat'],
-			lon2: $point[0],
-			lat2: $point[1]
+			from: new GeoPoint(lon: $payload['lon'], lat: $payload['lat']),
+			to: new GeoPoint(lon: $point[0], lat: $point[1])
 		);
 		return $distance <= $payload['radius'];
 	}//end matchesNear()

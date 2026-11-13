@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -37,6 +38,9 @@ use Twig\Environment;
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Twig\MappingExtension
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedExpression
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldCycleWalk
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedPass
  */
 class ComputedFieldCycleTest extends TestCase {
 
@@ -106,7 +110,7 @@ class ComputedFieldCycleTest extends TestCase {
 			]
 		);
 
-		$data = $this->handler()->evaluateComputedFields(data: ['aantal' => 2, 'prijs' => 5], schema: $schema);
+		$data = $this->handler()->evaluateComputedFields(data: ['aantal' => 2, 'prijs' => 5], pass: new ComputedPass(schema: $schema));
 
 		$this->assertSame(['aantal' => 2, 'prijs' => 5, 'subtotaal' => 10, 'totaal' => 11], $data);
 	}//end testAValidChainIsEvaluated()
@@ -121,7 +125,10 @@ class ComputedFieldCycleTest extends TestCase {
 		$this->logger->expects($this->once())->method('warning')
 			->with($this->stringContains('Circular dependency detected'));
 
-		$data = $handler->evaluateComputedFields(data: ['a' => 4], schema: $this->schema(['a' => $this->computed(expression: '{{ a + 1 }}')]));
+		$data = $handler->evaluateComputedFields(
+			data: ['a' => 4],
+			pass: new ComputedPass(schema: $this->schema(['a' => $this->computed(expression: '{{ a + 1 }}')]))
+		);
 
 		$this->assertNull($data['a']);
 	}//end testADirectSelfReferenceIsNull()
@@ -143,7 +150,7 @@ class ComputedFieldCycleTest extends TestCase {
 				'c' => $this->computed(expression: '{{ n + 1 }}'),
 			]
 		);
-		$data = $handler->evaluateComputedFields(data: ['n' => 1], schema: $schema);
+		$data = $handler->evaluateComputedFields(data: ['n' => 1], pass: new ComputedPass(schema: $schema));
 
 		$this->assertNull($data['a']);
 		$this->assertNull($data['b']);
@@ -161,7 +168,7 @@ class ComputedFieldCycleTest extends TestCase {
 		$schema = $this->schema(['a' => $this->computed(expression: '{{ a }}', evaluateOn: 'read')]);
 
 		foreach ([1, 2, 3] as $n) {
-			$this->assertNull($handler->evaluateComputedFields(data: ['n' => $n], schema: $schema, evaluateOn: 'read')['a']);
+			$this->assertNull($handler->evaluateComputedFields(data: ['n' => $n], pass: new ComputedPass(schema: $schema, evaluateOn: 'read'))['a']);
 		}
 	}//end testTheCycleIsAnalysedOncePerSchema()
 

@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\SyncFailure
  * @uses   \OCA\OpenRegister\Db\SyncRecord
  * @uses   \OCA\OpenRegister\Service\Sync\SyncRecordStatus
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class SyncRecordMapperGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

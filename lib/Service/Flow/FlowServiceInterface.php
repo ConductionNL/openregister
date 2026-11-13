@@ -112,6 +112,7 @@ interface FlowServiceInterface {
 	 * @return void
 	 *
 	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+	 * @throws FlowLifecycleRefused When a run of the flow has not finished.
 	 */
 	public function delete(string $uuid): void;
 

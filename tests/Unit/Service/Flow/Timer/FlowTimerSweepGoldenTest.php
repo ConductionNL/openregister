@@ -39,6 +39,8 @@ use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTasks;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTimers;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -46,6 +48,13 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep
+ * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTally
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTasks
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTimers
+ * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
+ * @uses \OCA\OpenRegister\Service\Task\TimerOutcome
  */
 class FlowTimerSweepGoldenTest extends TestCase {
 
@@ -162,7 +171,10 @@ class FlowTimerSweepGoldenTest extends TestCase {
 		if (($scenario['taskService'] ?? array_key_exists('tasks', $scenario)) === true) {
 			$taskService = $this->createMock(TaskServiceInterface::class);
 			$taskService->method('applyTimerOutcome')->willReturnCallback(
-				static function (string $uuid, string $outcome, string $source, string $reason) use ($log, $scenario): Task {
+				static function (string $uuid, TimerOutcome $timer) use ($log, $scenario): Task {
+					$outcome = $timer->outcome;
+					$source  = $timer->trigger->source;
+					$reason  = $timer->trigger->reason;
 					$log('applyTimerOutcome', [$uuid, $outcome, $source, $reason]);
 					if (in_array($uuid, ($scenario['taskFails'] ?? []), true) === true) {
 						throw new RuntimeException('task broke for ' . $uuid);

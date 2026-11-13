@@ -33,6 +33,11 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Registry\RegistryUpdateTargetGuard
+ * @uses \OCA\OpenRegister\Db\RegistrySubscription
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Registry\RegistryOwnedPropertyGuard
  */
 class RegistryUpdateTargetGuardOwnedShapeTest extends TestCase {
 

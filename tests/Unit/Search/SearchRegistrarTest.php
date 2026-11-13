@@ -31,6 +31,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Search\SearchRegistrar
  * @uses   \OCA\OpenRegister\Search\Service\VectorizationService
+ * @uses \OCA\OpenRegister\Search\SearchWiring
  */
 final class SearchRegistrarTest extends TestCase {
 
@@ -78,7 +79,7 @@ final class SearchRegistrarTest extends TestCase {
 			$expected[] = ['alias' => $contract, 'target' => $service];
 		}
 
-		$this->assertCount(19, $expected);
+		$this->assertCount(20, $expected);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
 	}//end testEveryInterfaceIsBoundToItsImplementation()
 }//end class

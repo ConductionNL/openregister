@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db;
 use OCA\OpenRegister\Service\Integration\Providers;
 use OCP\App\IAppManager;
@@ -38,7 +39,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use OCP\IL10N;
-use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
@@ -49,6 +49,10 @@ use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
  * @covers \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\FlowProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\PollsProvider
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Service\FlowJsonColumn
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkRowsProvider
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkTableProvider
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\LinkTableAppDescriptor
@@ -56,6 +60,10 @@ use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
  * @uses   \OCA\OpenRegister\Db\BookmarkLink
  * @uses   \OCA\OpenRegister\Db\FlowLink
  * @uses   \OCA\OpenRegister\Db\PollLink
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\FlowJsonColumn
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform
  */
 class LinkRowsListGoldenTest extends TestCase {
 
@@ -220,12 +228,12 @@ class LinkRowsListGoldenTest extends TestCase {
 		$apps->method('isInstalled')->willReturn($installed);
 		$l10n = $this->createMock(IL10N::class);
 		if ($name === 'bookmarks') {
-			return new Providers\BookmarksProvider($this->mapper(Db\BookmarkLinkMapper::class, $links), $apps, $l10n);
+			return new Providers\BookmarksProvider(new Providers\AppProviderDescription($apps, $l10n), $this->mapper(Db\BookmarkLinkMapper::class, $links));
 		}
 		if ($name === 'flow') {
-			return new Providers\FlowProvider($this->mapper(Db\FlowLinkMapper::class, $links), $this->db(), $apps, $l10n);
+			return new Providers\FlowProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\FlowLinkMapper::class, $links));
 		}
-		return new Providers\PollsProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\PollLinkMapper::class, $links), $this->createMock(IUserSession::class));
+		return new Providers\PollsProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $this->mapper(Db\PollLinkMapper::class, $links));
 	}//end provider()
 
 	/**
@@ -287,7 +295,7 @@ class LinkRowsListGoldenTest extends TestCase {
 				$this->queries = [];
 				$this->dbMode = $mode;
 				try {
-					$rows = $this->provider($name, $installed, $links)->list('r', 's', 'obj-1', ['q' => 1]);
+					$rows = $this->provider($name, $installed, $links)->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), ['q' => 1]);
 				} catch (\Throwable $e) {
 					$rows = ['thrown' => get_class($e), 'message' => $e->getMessage()];
 				}

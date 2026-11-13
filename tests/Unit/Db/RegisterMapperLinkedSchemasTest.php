@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -38,9 +39,15 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\RegisterMapper
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterMapperServices
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
  */
 final class RegisterMapperLinkedSchemasTest extends TestCase {
 	/**
@@ -122,14 +129,14 @@ final class RegisterMapperLinkedSchemasTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$schemaMapper,
-					$this->createMock(IEventDispatcher::class),
-					$this->createMock(ContainerInterface::class),
-					$this->createMock(OrganisationMapper::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
+					new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
 					$this->createMock(IAppConfig::class),
-					$this->createMock(LoggerInterface::class),
+					new RegisterMapperServices(
+						$schemaMapper,
+						$this->createMock(ContainerInterface::class),
+						$this->createMock(IEventDispatcher::class),
+						$this->createMock(LoggerInterface::class)
+					),
 				]
 			)
 			->onlyMethods(['find'])

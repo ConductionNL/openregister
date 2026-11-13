@@ -40,7 +40,7 @@ use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
-use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -48,10 +48,18 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
+use OCA\OpenRegister\Service\Anonymisation\AnonymiserCall;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
  * @uses \OCA\OpenRegister\Exception\AnalyzeRequestRejectedException
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeRequest
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\OpenAnonymiserTransport
+ * @uses \OCA\OpenRegister\Service\Anonymisation\AnonymiserCall
+ * @uses \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends
  */
 class OpenAnonymiserEntityTypesTest extends TestCase {
 
@@ -125,8 +133,8 @@ class OpenAnonymiserEntityTypesTest extends TestCase {
 	public function testAFilterIsSentInAnonymiqsNames(): void {
 		$sent = null;
 		$this->backend->method('requestOpenAnonymiser')->willReturnCallback(
-			function (string $route, array $params) use (&$sent): array {
-				$sent = $params;
+			function (AnonymiserCall $call) use (&$sent): array {
+				$sent = $call->params;
 				return ['pii_entities' => []];
 			}
 		);
@@ -148,8 +156,8 @@ class OpenAnonymiserEntityTypesTest extends TestCase {
 	public function testATypeAnonymiqDoesNotKnowIsLeftOut(): void {
 		$sent = null;
 		$this->backend->method('requestOpenAnonymiser')->willReturnCallback(
-			function (string $route, array $params) use (&$sent): array {
-				$sent = $params;
+			function (AnonymiserCall $call) use (&$sent): array {
+				$sent = $call->params;
 				return ['pii_entities' => []];
 			}
 		);

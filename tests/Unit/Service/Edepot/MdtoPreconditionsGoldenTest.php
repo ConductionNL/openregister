@@ -37,6 +37,9 @@ use Psr\Log\LoggerInterface;
  * elements (one and several), and every missing generator input.
  *
  * @covers \OCA\OpenRegister\Service\Edepot\MdtoPreconditions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Configuration\AppSettingsAccess
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoInputReaders
  */
 class MdtoPreconditionsGoldenTest extends TestCase {
 
@@ -90,7 +93,7 @@ class MdtoPreconditionsGoldenTest extends TestCase {
 			);
 		}
 
-		return new MdtoPreconditions($config, $logger, new MdtoInputReaders($source, $bestand, $resolver));
+		return new MdtoPreconditions(new MdtoInputReaders($source, $bestand, $resolver), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($config, $this->createMock(\OCP\App\IAppManager::class), $logger));
 	}//end preconditions()
 
 	/**

@@ -39,6 +39,7 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableDdl
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
  */
 class MagicMapperCreateTableGoldenTest extends TestCase {
 

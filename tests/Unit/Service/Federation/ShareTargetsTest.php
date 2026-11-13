@@ -28,6 +28,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Federation\ShareTargets;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -41,6 +42,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  */
 class ShareTargetsTest extends TestCase {
 
@@ -112,7 +114,7 @@ class ShareTargetsTest extends TestCase {
 
 	public function testTheObjectIsReadWithTheCallersOwnAccessControl(): void {
 		$this->objects->expects($this->once())->method('find')
-			->with(
+			->with(...FindCallShape::findArgs(
 				$this->identicalTo('zaak-7'),
 				$this->anything(),
 				$this->anything(),
@@ -120,7 +122,7 @@ class ShareTargetsTest extends TestCase {
 				$this->identicalTo('zaak'),
 				$this->isTrue(),
 				$this->isTrue()
-			)
+			))
 			->willReturn(new ObjectEntity());
 
 		$this->assertTrue(

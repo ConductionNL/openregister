@@ -25,11 +25,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTime;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\TimeTracker\TimeEntry;
 use OCA\OpenRegister\Service\TimeTrackerLinkService;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
@@ -48,6 +49,12 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\TimeTrackerLinkService
  * @uses   \OCA\OpenRegister\Db\TimeTrackerLink
  * @uses   \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\TimeTracker\ClientSearch
+ * @uses \OCA\OpenRegister\Service\TimeTracker\EntryRowLookup
+ * @uses \OCA\OpenRegister\Service\TimeTracker\NewClient
+ * @uses \OCA\OpenRegister\Service\TimeTracker\TimeEntry
  */
 class TimeTrackerLinkServiceGoldenTest extends TestCase {
 
@@ -149,7 +156,7 @@ class TimeTrackerLinkServiceGoldenTest extends TestCase {
 		$service = $this->service();
 		try {
 			$result = match ($kind) {
-				'link' => $this->linkFields($service->linkEntry((new LinkTarget('obj-1', 3))->inSchema(4), $arg[0], $arg[1])),
+				'link' => $this->linkFields($service->linkEntry((new LinkTarget('obj-1', 3))->inSchema(4), new TimeEntry($arg[0], $arg[1]))),
 				'create' => $this->linkFields($service->createAndLinkClient((new LinkTarget('obj-1', 3))->inSchema(4), ' New client ')),
 				'clients' => $service->getAvailableClients($arg),
 				'linked' => $service->getLinkedEntries('obj-1'),

@@ -1,0 +1,20 @@
+# Build context for the evaluation image. The image installs vendor/ and
+# builds js/ itself, so local dependencies stay out.
+# Rendered from ConductionNL/.github templates/app-deploy.
+.git
+**/node_modules
+vendor
+coverage
+.phpunit.cache
+.phpunit.result.cache
+tests/e2e/results
+playwright-report
+test-results
+*.log
+.env
+# The deployment files themselves, so editing them does not rebuild the app.
+Dockerfile
+.dockerignore
+docker-compose*.yml
+charts
+.github

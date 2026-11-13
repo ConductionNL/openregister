@@ -12,6 +12,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -42,6 +44,10 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses   \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\Object\FacetLookups
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class FacetHandlerFacetableFieldsGoldenTest extends TestCase {
 
@@ -160,7 +166,7 @@ class FacetHandlerFacetableFieldsGoldenTest extends TestCase {
 
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturnCallback(
-			fn (Schema $schema, string $property, array $object): bool => $property === 'allowed'
+			fn (SchemaProperty $read, PropertyAccessRequest $request): bool => $read->name === 'allowed'
 		);
 
 		$handler = new FacetHandler(

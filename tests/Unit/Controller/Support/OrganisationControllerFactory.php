@@ -47,8 +47,8 @@ final class OrganisationControllerFactory {
 		?\OCA\OpenRegister\Service\Rbac\GrantChangeAuditor $grantAuditor = null,
 		?\OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor $lifecycleAuditor = null,
 	): array {
+		unset($appName);
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\OrganisationControllerServices(
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(

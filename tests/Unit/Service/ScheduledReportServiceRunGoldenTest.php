@@ -31,6 +31,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
+use OCA\OpenRegister\Service\ScheduledReportDelivery;
+use OCA\OpenRegister\Service\ScheduledReportExporters;
+use OCA\OpenRegister\Service\ScheduledReportOwnerServices;
+use OCA\OpenRegister\Service\ScheduledReportStores;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -56,6 +60,17 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Notifications\Db\ScheduledReport
  * @uses   \OCA\OpenRegister\Db\ExportRun
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunContent
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunFile
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunOrigin
+ * @uses \OCA\OpenRegister\Service\ScheduledReportDelivery
+ * @uses \OCA\OpenRegister\Service\ScheduledReportExportQuery
+ * @uses \OCA\OpenRegister\Service\ScheduledReportExporters
+ * @uses \OCA\OpenRegister\Service\ScheduledReportNotice
+ * @uses \OCA\OpenRegister\Service\ScheduledReportOwnerServices
+ * @uses \OCA\OpenRegister\Service\ScheduledReportStores
  */
 class ScheduledReportServiceRunGoldenTest extends TestCase {
 
@@ -175,19 +190,14 @@ class ScheduledReportServiceRunGoldenTest extends TestCase {
 		}
 
 		$service = new ScheduledReportService(
-			$mapper,
-			$registers,
-			$this->createMock(SchemaMapper::class),
-			$export,
-			$this->rootFolderFor($opt),
-			$users,
-			$this->createMock(IUserSession::class),
-			$notifications,
-			$this->createMock(LoggerInterface::class),
-			$mailer,
-			$config,
-			null,
-			$recorder
+			new ScheduledReportStores($mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			new ScheduledReportExporters($export, null, $recorder),
+			new ScheduledReportDelivery(
+				new ScheduledReportOwnerServices($users, $this->createMock(IUserSession::class), $this->rootFolderFor($opt), $notifications),
+				$mailer,
+				$config
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$report = $this->report($mode, $opt);

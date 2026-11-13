@@ -26,12 +26,15 @@ use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Db\TenantUsage;
 use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\TenantUsage\UsageRange;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\TenantUsageMapper
+ * @uses \OCA\OpenRegister\Db\TenantUsage
+ * @uses \OCA\OpenRegister\Db\TenantUsage\UsageRange
  */
 final class TenantUsageMapperRangeGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -67,7 +70,7 @@ final class TenantUsageMapperRangeGoldenTest extends TestCase {
 			$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->recordingBuilder());
 			$mapper = new TenantUsageMapper($db);
 
-			$found = $mapper->findByOrgAndDateRange(...$args);
+			$found = $mapper->findByOrgAndDateRange($args['organisationUuid'], new UsageRange($args['from'], $args['to']));
 			$actual[$name] = [
 				'result' => array_map(static fn (TenantUsage $usage): array => [$usage->getOrganisationUuid(), $usage->getRequestCount()], $found),
 				'queries' => $this->queryLog,

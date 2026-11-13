@@ -66,6 +66,18 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
  * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
  * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
+ * @uses \OCA\OpenRegister\Db\Register\ExactKeyHydration
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedImport
  */
 class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 
@@ -278,12 +290,17 @@ class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 		$objectService->method('saveObject')->willThrowException(new Exception('save refused'));
 
 		$handler = new ImportHandler(
-			schemaMapper: $schemaMapper,
-			registerMapper: $registerMapper,
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $mappingMapper,
-			appConfig: $appConfig,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $registerMapper,
+				schemas: $schemaMapper,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $mappingMapper,
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $logger,
 			appDataPath: '/tmp',
 			objectService: $objectService

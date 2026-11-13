@@ -1,29 +1,18 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, objectStore } from '../../store/store.js'
+import { objectName } from './objectName.js'
 </script>
 
 <template>
 	<NcDialog
 		v-if="navigationStore.modal === 'lockObject'"
-		:name="
-			'Lock '
-			+ (objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-				|| 'Object')
-		"
+		:name="'Lock ' + (objectName(objectStore.objectItem) || 'Object')"
 		size="normal"
 		noClose>
 		<p v-if="success === null">
 			Do you want to lock
-			<b>{{
-				objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-			}}</b
+			<b>{{ objectName(objectStore.objectItem) }}</b
 			>? Locking an object prevents other users from modifying it until it is
 			unlocked. You can specify an optional process name to indicate why it's
 			locked and a duration after which it will automatically unlock. Only the
@@ -120,11 +109,7 @@ export default {
 			this.loading = true
 
 			try {
-				await objectStore.lockObject(
-					objectStore.objectItem.id,
-					this.process || undefined,
-					this.duration || undefined,
-				)
+				await this.requestLock()
 				this.success = true
 				this.error = null
 				this.closeModalTimeout = setTimeout(this.closeModal, 2000)
@@ -134,6 +119,20 @@ export default {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * Lock the object, for the process and duration given, if any.
+		 *
+		 * @return {Promise<object>} The store's answer
+		 */
+		requestLock() {
+			return objectStore.lockObject(
+				objectStore.objectItem.id,
+				this.process || undefined,
+				this.duration || undefined,
+			)
+		},
+
 	},
 }
 </script>

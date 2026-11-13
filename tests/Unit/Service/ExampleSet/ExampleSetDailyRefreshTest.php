@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\ExampleSetDailyRefreshJob;
 use OCA\OpenRegister\Command\ExampleSetInstallCommand;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
@@ -22,6 +23,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Tester\CommandTester;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh
@@ -74,6 +76,58 @@ use Symfony\Component\Console\Tester\CommandTester;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\ExampleSet\CastOrganisationsRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastOrganisations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFields
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFollower
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeReadBack
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCheckRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRequest
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerSetup
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerWriters
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetKeptObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetMoment
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeopleRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverSettings
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolveScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolvedObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetVouchedAccounts
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWrittenValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentDeclarations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentOrdering
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\KeptObjectRewrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ObjectCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewriteRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewriteTally
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewrittenObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallRun
+ * @uses \OCA\OpenRegister\BackgroundJob\JobRuntime
  */
 class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 	/** @var array<string, string> OpenRegister's own app config for the marks. */
@@ -122,14 +176,14 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 		$id    = $this->store->ids(register: 'cases', schema: 'case')[0];
 
 		$this->assertSame([], $daily->run(today: $this->today()->modify('+1 day')), 'nothing is marked');
-		$this->assertSame('2026-10-13', $this->store->get(register: 'cases', schema: 'case', id: $id)['scheduledAt']);
+		$this->assertSame('2026-10-13', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['scheduledAt']);
 
 		$daily->mark(set: 'demo', daily: true);
 		$this->assertSame(['demo'], $daily->sets());
 		$report = $daily->run(today: $this->today()->modify('+1 day'));
 
 		$this->assertTrue($report['demo']['ok'], (string) json_encode($report));
-		$this->assertSame('2026-10-14', $this->store->get(register: 'cases', schema: 'case', id: $id)['scheduledAt']);
+		$this->assertSame('2026-10-14', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['scheduledAt']);
 
 		$daily->mark(set: 'demo', daily: false);
 		$this->assertSame([], $daily->sets());
@@ -183,7 +237,7 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('info');
 		$logger->expects($this->once())->method('warning');
-		$job = new ExampleSetDailyRefreshJob(time: $this->createMock(ITimeFactory::class), daily: $daily, logger: $logger);
+		$job = new ExampleSetDailyRefreshJob(runtime: new JobRuntime(time: $this->createMock(ITimeFactory::class), logger: $logger), daily: $daily);
 
 		$method = new \ReflectionMethod($job, 'run');
 		$method->invoke($job, null);

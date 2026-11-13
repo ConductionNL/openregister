@@ -31,6 +31,8 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\TransferObjectGatherer
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferStores
  */
 class TransferObjectGathererTest extends TestCase {
 
@@ -56,7 +58,7 @@ class TransferObjectGathererTest extends TestCase {
 			}
 		);
 
-		return new TransferObjectGatherer($mapper, new PackagedFileChecksum(), new NullLogger());
+		return new TransferObjectGatherer(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $this->createMock(\OCA\OpenRegister\Service\Edepot\TransferRecordService::class), settings: $this->createMock(\OCP\IAppConfig::class), logger: new NullLogger()), new PackagedFileChecksum());
 	}//end gatherer()
 
 	/**

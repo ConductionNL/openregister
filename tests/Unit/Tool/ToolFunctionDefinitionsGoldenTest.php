@@ -25,6 +25,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Mcp\Tool\ObjectsTool
  * @covers \OCA\OpenRegister\Mcp\Tool\RegisterTool
  * @covers \OCA\OpenRegister\Mcp\Tool\SchemaTool
+ * @uses \OCA\OpenRegister\Mcp\Tool\AbstractTool
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolFunctionTable
  */
 class ToolFunctionDefinitionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/tool-function-definitions-golden.json';

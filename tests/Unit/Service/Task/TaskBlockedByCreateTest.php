@@ -28,8 +28,12 @@ use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -47,6 +51,12 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @covers \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  * @uses \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskCommit
+ * @uses \OCA\OpenRegister\Service\Task\TaskImport
+ * @uses \OCA\OpenRegister\Service\Task\TaskIntake
+ * @uses \OCA\OpenRegister\Service\Task\TaskLifecycleServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskTables
  */
 class TaskBlockedByCreateTest extends TestCase {
 
@@ -108,15 +118,23 @@ class TaskBlockedByCreateTest extends TestCase {
 		);
 
 		return new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			relations: $this->createMock(TaskRelationMapper::class),
-			audits: $audits,
 			authorization: $authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger(),
-			builder: new TaskBuilder()
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->createMock(TaskCandidateMapper::class),
+					relations: $this->createMock(TaskRelationMapper::class),
+					audits: $audits
+				),
+				commit: new TaskCommit(
+					db: $this->createMock(IDBConnection::class),
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 	}//end service()
 

@@ -39,6 +39,10 @@ use ReflectionMethod;
 /**
  * @covers \OCA\OpenRegister\Service\Object\MergeHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\File\FileTarget
+ * @uses \OCA\OpenRegister\Service\File\FileUpload
+ * @uses \OCA\OpenRegister\Service\Object\FileActionRun
+ * @uses \OCA\OpenRegister\Service\Object\FileMove
  */
 class MergeHandlerFileTransferTest extends TestCase {
 

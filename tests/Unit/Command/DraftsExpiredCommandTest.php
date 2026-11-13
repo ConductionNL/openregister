@@ -39,6 +39,15 @@ use Symfony\Component\Console\Tester\CommandTester;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Service\Object\DraftExpiryBatch
+ * @uses \OCA\OpenRegister\Service\Object\DraftExpiryPair
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftListRun
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftTally
  */
 class DraftsExpiredCommandTest extends TestCase {
 

@@ -29,6 +29,7 @@ use OCP\ITempManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ZipArchive;
+use OCA\OpenRegister\Service\Edepot\TransferPackageRequest;
 
 /**
  * Pins every entry, its order and its bytes in the zip and BagIt packages,
@@ -37,6 +38,17 @@ use ZipArchive;
  * of packaging (PREMIS event time, Bagging-Date) is not pinned literally.
  *
  * @covers \OCA\OpenRegister\Service\Edepot\SipPackageBuilder
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\BagitPayload
+ * @uses \OCA\OpenRegister\Service\Edepot\PremisIdentifier
+ * @uses \OCA\OpenRegister\Service\Edepot\SipArchiveWriter
+ * @uses \OCA\OpenRegister\Service\Edepot\SipContents
+ * @uses \OCA\OpenRegister\Service\Edepot\SipLayout
+ * @uses \OCA\OpenRegister\Service\Edepot\SipMetsDocument
+ * @uses \OCA\OpenRegister\Service\Edepot\SipPackageRun
+ * @uses \OCA\OpenRegister\Service\Edepot\SipPart
+ * @uses \OCA\OpenRegister\Service\Edepot\SipPremisDocument
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferPackageRequest
  */
 class SipPackageBuilderGoldenTest extends TestCase {
 
@@ -289,7 +301,7 @@ class SipPackageBuilderGoldenTest extends TestCase {
 	 */
 	private function buildAndRecord(array $objects, int $max, string $format): void {
 		try {
-			$paths = $this->builder()->build('transfer-9', $objects, $max, $format);
+			$paths = $this->builder()->package(new TransferPackageRequest('transfer-9', $objects, $max, $format));
 		} catch (\Throwable $e) {
 			$this->calls[] = ['refused', get_class($e), $e->getMessage()];
 			return;

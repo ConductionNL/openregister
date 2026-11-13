@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\CaseItemMapper;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -29,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  * Pins the page and the total over the type-and-state predicate, with their parameters.
  *
  * @covers \OCA\OpenRegister\Db\CaseItemMapper
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class CaseItemMapperTypeAndStateGoldenTest extends TestCase {
 
@@ -45,7 +47,7 @@ final class CaseItemMapperTypeAndStateGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePageWithBothFilters(): void {
-		$page = $this->mapper(total: 0)->findByTypeAndState(type: 'humanTask', state: ' active ', limit: 0, offset: -3);
+		$page = $this->mapper(total: 0)->findByTypeAndState(query: new ListQuery(limit: 0, offset: -3, filters: ['type' => 'humanTask', 'state' => ' active ']));
 
 		$this->assertSame([], $page);
 		$this->assertSame(
@@ -73,7 +75,7 @@ final class CaseItemMapperTypeAndStateGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePageWithoutFilters(): void {
-		$this->mapper(total: 0)->findByTypeAndState(type: '  ', state: null, limit: 7, offset: 14);
+		$this->mapper(total: 0)->findByTypeAndState(query: new ListQuery(limit: 7, offset: 14, filters: ['type' => '  ', 'state' => null]));
 
 		$this->assertSame(
 			[

@@ -16,6 +16,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Mcp\McpRegistrar
+ * @uses \OCA\OpenRegister\Mcp\McpProviderDiscovery
+ * @uses \OCA\OpenRegister\Mcp\McpWiring
  */
 class McpRegistrarTest extends TestCase
 {

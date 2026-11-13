@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
+use OCA\OpenRegister\Service\Schema\CastTarget;
 use OCA\OpenRegister\Service\Schema\MigrationValueCaster;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -31,6 +32,7 @@ use RuntimeException;
  * Each supported type casts what it should and refuses what it should not.
  *
  * @covers \OCA\OpenRegister\Service\Schema\MigrationValueCaster
+ * @uses \OCA\OpenRegister\Service\Schema\CastTarget
  */
 class MigrationValueCasterTest extends TestCase {
 
@@ -58,7 +60,7 @@ class MigrationValueCasterTest extends TestCase {
 	 */
 	#[DataProvider('casts')]
 	public function testCasts(mixed $value, string $toType, ?string $format, mixed $expected): void {
-		$this->assertSame($expected, (new MigrationValueCaster())->cast($value, $toType, $format));
+		$this->assertSame($expected, (new MigrationValueCaster())->cast($value, new CastTarget($toType, $format)));
 	}//end testCasts()
 
 	/**
@@ -85,7 +87,7 @@ class MigrationValueCasterTest extends TestCase {
 	public function testRefusals(mixed $value, string $toType, string $message): void {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage($message);
-		(new MigrationValueCaster())->cast($value, $toType, null);
+		(new MigrationValueCaster())->cast($value, new CastTarget($toType, null));
 	}//end testRefusals()
 
 	/**

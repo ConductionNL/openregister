@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
@@ -38,6 +39,10 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
  */
 class SaveObjectDraftStatusTest extends TestCase {
 
@@ -49,7 +54,7 @@ class SaveObjectDraftStatusTest extends TestCase {
 	private function apply(ObjectEntity $entity, array $selfData): void {
 		$save = (new ReflectionClass(SaveObject::class))->newInstanceWithoutConstructor();
 		$method = new \ReflectionMethod(SaveObject::class, 'setSelfMetadata');
-		$method->invoke($save, $entity, $selfData, [], null);
+		$method->invoke($save, $entity, new SelfSubmission(selfData: $selfData));
 	}//end apply()
 
 	protected function setUp(): void {

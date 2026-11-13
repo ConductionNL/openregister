@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Calculation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\Calculation\ReferenceTenantGuard;
+use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -42,6 +43,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Calculation\ReferenceTenantGuard
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\DeclaredPair
  */
 final class ReferenceTenantGuardGoldenTest extends TestCase {
 
@@ -75,8 +77,8 @@ final class ReferenceTenantGuardGoldenTest extends TestCase {
 
 		$shared = $this->createMock(SharedMasterDataService::class);
 		$shared->method('holdersForResource')->willReturnCallback(
-			function (?int $registerId, ?int $schemaId, array $consumerOrgUuids) use ($holders): array {
-				$this->calls[] = ['holders', $registerId, $schemaId, $consumerOrgUuids];
+			function (DeclaredPair $pair, array $consumerOrgUuids) use ($holders): array {
+				$this->calls[] = ['holders', $pair->registerId, $pair->schemaId, $consumerOrgUuids];
 
 				return $holders;
 			}

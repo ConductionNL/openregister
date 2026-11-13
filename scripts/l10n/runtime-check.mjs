@@ -37,6 +37,7 @@ import { readFileSync } from 'fs'
 import { createRequire } from 'module'
 import path from 'path'
 import vm from 'vm'
+import { compilePluralExpression } from './pluralExpression.js'
 
 const require = createRequire(import.meta.url)
 const {
@@ -163,7 +164,7 @@ if (!headerExpr) {
 } else {
 	let headerIdx = null
 	try {
-		headerIdx = new Function('n', `return Number(${headerExpr[1]})`)
+		headerIdx = compilePluralExpression(headerExpr[1])
 	} catch {
 		ok(false, `the header plural= expression parses: ${headerExpr[1]}`)
 	}

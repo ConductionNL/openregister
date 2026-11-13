@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -92,6 +93,36 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeafScope
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionScore
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DraftListRequest
+ * @uses \OCA\OpenRegister\Db\MagicMapper\LifecycleColumns
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationScopeTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacAccessCall
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacMatchSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacSqlDialect
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ReadPosture
+ * @uses \OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
+ * @uses \OCA\OpenRegister\Service\Object\DraftListing
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationColumn
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantedRows
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacFallbacks
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\Register\MagicMappingConfig
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
  */
 class MagicMapperUnionBatchGoldenTest extends TestCase {
 
@@ -191,6 +222,60 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 
 		$this->assertSame(['u-1', 'u-1', 'u-2', 'u-2'], $this->converted);
 	}//end testTheMergeOfManyBatchesLeavesOutAPropertyUnderAnotherSpelling()
+
+	/**
+	 * @dataProvider encryptedOrders
+	 */
+	public function testASortEncryptedInOneSchemaIsRefusedOnTheUnionPath(mixed $order): void {
+		$this->assertRefused(order: $order, pairs: [$this->pair(name: 'a'), $this->encryptedPair()]);
+	}//end testASortEncryptedInOneSchemaIsRefusedOnTheUnionPath()
+
+	/**
+	 * @dataProvider encryptedOrders
+	 */
+	public function testASortEncryptedIsRefusedOnTheSequentialPath(mixed $order): void {
+		$this->assertRefused(order: $order, pairs: [$this->encryptedPair()]);
+	}//end testASortEncryptedIsRefusedOnTheSequentialPath()
+
+	public static function encryptedOrders(): array {
+		return [
+			'map' => [['title' => 'desc']],
+			'json map' => ['{"title":"desc"}'],
+			'graphql list' => ['[{"field":"title","direction":"DESC"}]'],
+			'name' => ['title:desc'],
+		];
+	}//end encryptedOrders()
+
+	private function encryptedPair(): array {
+		$pair = $this->pair(name: 'b');
+		$pair['schema']->setProperties(['title' => ['type' => 'string', 'x-openregister-encrypted' => true]]);
+
+		return $pair;
+	}//end encryptedPair()
+
+	private function assertRefused(mixed $order, array $pairs): void {
+		$mapper = $this->makeMapper(platform: 'postgres');
+		try {
+			$mapper->searchAcrossMultipleTables(query: ['_order' => $order], registerSchemaPairs: $pairs);
+			$this->fail('the search ran');
+		} catch (EncryptedFieldFilterException $refusal) {
+			$this->assertSame('title', $refusal->getProperty());
+			$this->assertStringContainsString('cannot be sorted on', $refusal->getMessage());
+		}
+
+		$this->assertSame([], array_filter($this->events, static fn (array $event): bool => isset($event['log']) === false));
+	}//end assertRefused()
+
+	public function testASortOnAFieldNoSchemaEncryptsRuns(): void {
+		$this->unionRows = [];
+
+		$results = $this->makeMapper(platform: 'postgres')->searchAcrossMultipleTables(
+			query: ['_order' => ['status' => 'desc']],
+			registerSchemaPairs: [$this->pair(name: 'a'), $this->encryptedPair()]
+		);
+
+		$this->assertSame([], $results);
+	}//end testASortOnAFieldNoSchemaEncryptsRuns()
 
 	private function runBatch(string $platform, array $pairNames, array $query): array {
 		$this->events = [];

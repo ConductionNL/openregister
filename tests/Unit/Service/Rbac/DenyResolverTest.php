@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\DenyRowTest;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use PHPUnit\Framework\TestCase;
@@ -40,6 +42,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyRowTest
  */
 class DenyResolverTest extends TestCase {
 
@@ -93,7 +97,7 @@ class DenyResolverTest extends TestCase {
 		$block = ['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]];
 		$principals = $this->resolver->principalsFor('ana', ['behandelaars', 'waarnemers']);
 
-		$denial = $this->resolver->unconditionalDenial($block, 'read', $principals);
+		$denial = $this->resolver->unconditionalDenial($block, new DenyQuestion('read', $principals));
 
 		$this->assertIsArray($denial);
 		$this->assertSame('waarnemers', $denial['principal']);
@@ -113,7 +117,7 @@ class DenyResolverTest extends TestCase {
 		$block = ['deny' => ['read' => ['waarnemers']]];
 		$principals = $this->resolver->principalsFor('ana', ['behandelaars']);
 
-		$this->assertNull($this->resolver->unconditionalDenial($block, 'read', $principals));
+		$this->assertNull($this->resolver->unconditionalDenial($block, new DenyQuestion('read', $principals)));
 	}//end testADenyForAnotherGroupDoesNotReachThisCaller()
 
 	/**
@@ -125,8 +129,8 @@ class DenyResolverTest extends TestCase {
 		$block = ['deny' => ['update' => ['behandelaars']]];
 		$principals = $this->resolver->principalsFor('ana', ['behandelaars']);
 
-		$this->assertNotNull($this->resolver->unconditionalDenial($block, 'update', $principals));
-		$this->assertNull($this->resolver->unconditionalDenial($block, 'read', $principals));
+		$this->assertNotNull($this->resolver->unconditionalDenial($block, new DenyQuestion('update', $principals)));
+		$this->assertNull($this->resolver->unconditionalDenial($block, new DenyQuestion('read', $principals)));
 	}//end testADenyIsScopedToOneVerb()
 
 	/**
@@ -138,10 +142,10 @@ class DenyResolverTest extends TestCase {
 		$block = ['deny' => ['delete' => ['user:bob']]];
 
 		$this->assertNotNull(
-			$this->resolver->unconditionalDenial($block, 'delete', $this->resolver->principalsFor('bob', []))
+			$this->resolver->unconditionalDenial($block, new DenyQuestion('delete', $this->resolver->principalsFor('bob', [])))
 		);
 		$this->assertNull(
-			$this->resolver->unconditionalDenial($block, 'delete', $this->resolver->principalsFor('ana', []))
+			$this->resolver->unconditionalDenial($block, new DenyQuestion('delete', $this->resolver->principalsFor('ana', [])))
 		);
 	}//end testAUserDenyReachesOnlyThatUser()
 
@@ -177,7 +181,7 @@ class DenyResolverTest extends TestCase {
 		$block = ['deny' => ['read' => ['mcp', ['group' => 'mcp']]]];
 		$principals = $this->resolver->principalsFor('ana', ['mcp']);
 
-		$this->assertNull($this->resolver->unconditionalDenial($block, 'read', $principals));
+		$this->assertNull($this->resolver->unconditionalDenial($block, new DenyQuestion('read', $principals)));
 	}//end testTheMcpTokenNeverDenies()
 
 	/**
@@ -189,8 +193,8 @@ class DenyResolverTest extends TestCase {
 		$block = ['deny' => ['update' => [['group' => 'behandelaars', 'match' => ['status' => 'gesloten']]]]];
 		$principals = $this->resolver->principalsFor('ana', ['behandelaars']);
 
-		$this->assertNull($this->resolver->unconditionalDenial($block, 'update', $principals));
-		$this->assertCount(1, $this->resolver->conditionalDenials($block, 'update', $principals));
+		$this->assertNull($this->resolver->unconditionalDenial($block, new DenyQuestion('update', $principals)));
+		$this->assertCount(1, $this->resolver->conditionalDenials($block, new DenyQuestion('update', $principals)));
 	}//end testAMatchClauseMakesTheDenialConditional()
 
 	/**
@@ -252,7 +256,7 @@ class DenyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRowPredicateNamesThePrincipalAndThePath(): void {
-		$sql = $this->resolver->notDeniedRowSql('t._authorization', 'read', false, ['waarnemers']);
+		$sql = $this->resolver->notDeniedRowSql(new DenyRowTest('t._authorization', 'read', false), ['waarnemers']);
 
 		$this->assertStringContainsString('$.deny.read', $sql);
 		$this->assertStringContainsString('waarnemers', $sql);
@@ -267,7 +271,7 @@ class DenyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePostgresRowPredicateUsesContainment(): void {
-		$sql = $this->resolver->notDeniedRowSql('t._authorization', 'read', true, ['waarnemers']);
+		$sql = $this->resolver->notDeniedRowSql(new DenyRowTest('t._authorization', 'read', true), ['waarnemers']);
 
 		$this->assertStringContainsString('::jsonb', $sql);
 		$this->assertStringContainsString('@>', $sql);
@@ -284,7 +288,7 @@ class DenyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testBothEntryShapesAreLookedForAndWrapped(): void {
-		$sql = $this->resolver->notDeniedRowSql('t._authorization', 'read', true, ['user:bob']);
+		$sql = $this->resolver->notDeniedRowSql(new DenyRowTest('t._authorization', 'read', true), ['user:bob']);
 
 		$this->assertStringContainsString('["user:bob"]', $sql);
 		$this->assertStringContainsString('[{"user":"bob"}]', $sql);
@@ -300,7 +304,7 @@ class DenyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnsafeVerbDeniesEverythingRatherThanEmittingItsName(): void {
-		$sql = $this->resolver->notDeniedRowSql('t._authorization', "read') OR 1=1 --", false, ['hr']);
+		$sql = $this->resolver->notDeniedRowSql(new DenyRowTest('t._authorization', "read') OR 1=1 --", false), ['hr']);
 
 		$this->assertSame('1 = 0', $sql);
 	}//end testAnUnsafeVerbDeniesEverythingRatherThanEmittingItsName()
@@ -311,7 +315,7 @@ class DenyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAQuoteInAPrincipalNameIsEscaped(): void {
-		$sql = $this->resolver->notDeniedRowSql('t._authorization', 'read', false, ["o'brien"]);
+		$sql = $this->resolver->notDeniedRowSql(new DenyRowTest('t._authorization', 'read', false), ["o'brien"]);
 
 		$this->assertStringContainsString("o''brien", $sql);
 		$this->assertStringNotContainsString("'o'brien'", $sql);
@@ -324,7 +328,7 @@ class DenyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheCheapGuardComesBeforeTheJsonWork(): void {
-		$sql = $this->resolver->notDeniedRowSql('t._authorization', 'read', false, ['hr']);
+		$sql = $this->resolver->notDeniedRowSql(new DenyRowTest('t._authorization', 'read', false), ['hr']);
 
 		$guardAt = strpos($sql, 'NOT LIKE');
 		$jsonAt = strpos($sql, 'JSON_CONTAINS');
@@ -358,7 +362,7 @@ class DenyResolverTest extends TestCase {
 	 */
 	#[\PHPUnit\Framework\Attributes\DataProvider('escapedPrincipals')]
 	public function testACandidateReadsBackAsItsJsonOnMysql(string $principal): void {
-		$sql = $this->resolver->notDeniedRowSql('t._authorization', 'read', false, [$principal]);
+		$sql = $this->resolver->notDeniedRowSql(new DenyRowTest('t._authorization', 'read', false), [$principal]);
 
 		preg_match_all("/JSON_ARRAY\\(\\)\\), '((?:[^'\\\\]|\\\\.|'')*)'\\)/", $sql, $literals);
 		$this->assertNotSame([], $literals[1]);
@@ -373,7 +377,7 @@ class DenyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testACandidateIsNotDoubledOnPostgres(): void {
-		$sql = $this->resolver->notDeniedRowSql('t._authorization', 'read', true, ['Gémeente']);
+		$sql = $this->resolver->notDeniedRowSql(new DenyRowTest('t._authorization', 'read', true), ['Gémeente']);
 
 		$this->assertStringContainsString('\u00e9', $sql);
 		$this->assertStringNotContainsString('\\\\u00e9', $sql);

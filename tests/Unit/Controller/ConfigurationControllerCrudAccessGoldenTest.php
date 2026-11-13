@@ -40,6 +40,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
 
 /**
  * Admin-only actions refuse anyone else before reading or writing; for an
@@ -195,9 +197,24 @@ class ConfigurationControllerCrudAccessGoldenTest extends TestCase {
 		$this->assertSame(['x' => 1], $this->call(true, 'export')->getData());
 	}
 
-	public function testExportIncludeObjectsMustBeStrictTrue(): void {
+	public function testExportIncludeObjectsAcceptsTheQueryStringTrue(): void {
 		$this->mapper->method('find')->willReturn($this->configuration());
 		$this->request->method('getParams')->willReturn(['includeObjects' => 'true']);
+		$this->service->expects($this->once())->method('exportConfig')->with($this->anything(), true)->willReturn([]);
+		$this->call(true, 'export');
+	}
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function notTrue(): array {
+		return ['string false' => ['false'], 'one' => ['1'], 'empty' => [''], 'boolean false' => [false]];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('notTrue')]
+	public function testExportLeavesObjectsOutForAnyOtherValue(mixed $value): void {
+		$this->mapper->method('find')->willReturn($this->configuration());
+		$this->request->method('getParams')->willReturn(['includeObjects' => $value]);
 		$this->service->expects($this->once())->method('exportConfig')->with($this->anything(), false)->willReturn([]);
 		$this->call(true, 'export');
 	}
@@ -270,7 +287,7 @@ class ConfigurationControllerCrudAccessGoldenTest extends TestCase {
 			['owner' => 'o', 'repo' => 'r', 'path' => 'p', 'branch' => 'dev']
 		);
 		$this->github->method('enrichConfigurationDetails')
-			->willReturnCallback(fn (string $o, string $r, string $p, string $b): ?array => $b === 'dev' ? null : ['b' => $b]);
+			->willReturnCallback(fn (GitHubFileLocation $file): ?array => $file->branch === 'dev' ? null : ['b' => $file->branch]);
 
 		$this->assertSame(['b' => 'main'], $this->call(true, 'enrichDetails')->getData());
 		$gitlab = $this->call(true, 'enrichDetails');
@@ -310,13 +327,13 @@ class ConfigurationControllerCrudAccessGoldenTest extends TestCase {
 		$this->service->method('exportConfig')->willReturn(['x-openregister' => ['sourceType' => 'local', 'sourceUrl' => 'u', 'keep' => 1]]);
 		$this->github->method('getFileSha')->willThrowException(new Exception('none'));
 		$this->github->expects($this->once())->method('publishConfiguration')
-			->with('o', 'r', 'my_config_one_openregister.json', 'main', $this->callback(
-				fn (string $json): bool => json_decode($json, true)['x-openregister'] === [
+			->with(new GitHubFileLocation(owner: 'o', repo: 'r', path: 'my_config_one_openregister.json', branch: 'main'), $this->callback(
+				fn (GitHubFileWrite $write): bool => json_decode($write->content, true)['x-openregister'] === [
 					'keep' => 1,
 					'openregister' => '',
 					'github' => ['repo' => 'o/r', 'branch' => 'main', 'path' => 'my_config_one_openregister.json'],
-				]
-			), 'Update configuration: My Config-One', null)
+				] && $write->commitMessage === 'Update configuration: My Config-One' && $write->fileSha === null
+			))
 			->willReturn(['commit_sha' => 's', 'commit_url' => 'cu', 'file_url' => 'fu']);
 		if ($default === null) {
 			$this->github->method('getRepositoryInfo')->willThrowException(new Exception('x'));

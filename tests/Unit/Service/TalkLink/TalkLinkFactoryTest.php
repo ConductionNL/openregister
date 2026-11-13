@@ -14,6 +14,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\TalkLink\TalkLinkFactory
+ * @uses   \OCA\OpenRegister\Db\TalkLink
+ * @uses \OCA\OpenRegister\Db\TalkLink
  */
 class TalkLinkFactoryTest extends TestCase {
 
@@ -28,7 +30,10 @@ class TalkLinkFactoryTest extends TestCase {
 			'lastActivity' => new DateTime('2026-01-01T00:00:00+00:00'),
 		];
 
-		$link = (new TalkLinkFactory())->newLink(['objectUuid' => 'o-1', 'registerId' => 1, 'schemaId' => 2], 'tok', $cache, 'alice');
+		$factory = new TalkLinkFactory();
+		$link = $factory->newLink(['objectUuid' => 'o-1', 'registerId' => 1, 'schemaId' => 2], 'tok');
+		$factory->applyCache($link, $cache);
+		$this->assertSame($link, $factory->linkedBy($link, 'alice'));
 
 		$this->assertSame(['o-1', 1, 2, 'tok'], [$link->getObjectUuid(), $link->getRegisterId(), $link->getSchemaId(), $link->getRoomToken()]);
 		$this->assertSame(['Zaak', 2, 3, '{"text":"hi"}'], [$link->getRoomName(), $link->getRoomType(), $link->getParticipantCount(), $link->getLastMessageData()]);

@@ -39,6 +39,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
+ * @uses \OCA\OpenRegister\Controller\Support\ApiSurfaceControllerServices
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle
  */
 class ApiSurfaceControllerTest extends TestCase {
 

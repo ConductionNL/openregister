@@ -32,6 +32,7 @@ use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IUser;
 use OCP\Share\IManager;
+use OCP\Share\IAttributes;
 use OCP\Share\IShare;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -43,6 +44,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectShareReader
  * @covers \OCA\OpenRegister\Service\Rbac\InheritedGrantLister
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Rbac\FolderShareScan
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class ObjectShareReaderTest extends TestCase {
 
@@ -158,9 +161,43 @@ class ObjectShareReaderTest extends TestCase {
 
 		$this->assertSame(['ocinternal:1'], array_keys($found));
 		$this->assertSame('group', $found['ocinternal:1']['type']);
-		$this->assertSame(['bea'], array_values(array_unique(array_column($this->asked, 0))));
-		$this->assertNotContains(true, array_column($this->asked, 2));
+		$this->assertSame(['bea', 'openregister'], array_values(array_unique(array_column($this->asked, 0))));
+		foreach ($this->asked as [$sharer, , $reshares]) {
+			$this->assertSame($sharer === 'openregister', $reshares, 'only the folder owner is asked with re-shares');
+		}
 	}//end testThePanelReadingAsksTheNamedSharersAndSkipsFailures()
+
+	/**
+	 * The panel reading lists a grant whoever made it, but never a sharer's view of the folder.
+	 *
+	 * @return void
+	 */
+	public function testThePanelReadingListsEveryGrantButNoSharerView(): void {
+		$attributes = $this->createMock(IAttributes::class);
+		$attributes->method('getAttribute')->willReturnCallback(
+			static fn (string $scope, string $key): mixed => ($scope === 'openregister' && $key === 'sharerAccess') ? true : null
+		);
+		$view = $this->share('ocinternal:8', 'bea');
+		$view->method('getAttributes')->willReturn($attributes);
+		$view->method('getShareType')->willReturn(IShare::TYPE_USER);
+		$view->method('getSharedBy')->willReturn('openregister');
+		$view->method('getShareOwner')->willReturn('openregister');
+
+		// The same mark on a share somebody else made is not a view, so it stays listed.
+		$forged = $this->share('ocinternal:9', 'dave');
+		$forged->method('getAttributes')->willReturn($attributes);
+		$forged->method('getShareType')->willReturn(IShare::TYPE_USER);
+		$forged->method('getSharedBy')->willReturn('bea');
+		$forged->method('getShareOwner')->willReturn('openregister');
+
+		$reader = $this->readerFor(
+			fn (string $sharer, int $type, bool $reshares): array => ($sharer === 'openregister' && $type === IShare::TYPE_USER)
+				? [$this->share('ocinternal:7', 'carla'), $view, $forged]
+				: []
+		);
+
+		$this->assertSame(['ocinternal:7', 'ocinternal:9'], array_keys($reader->sharesOn(object: $this->object(), sharers: ['bea'])));
+	}//end testThePanelReadingListsEveryGrantButNoSharerView()
 
 	/**
 	 * The complete reading also asks as the folder owner with re-shares, so a colleague's share is found.
@@ -174,7 +211,7 @@ class ObjectShareReaderTest extends TestCase {
 				: []
 		);
 
-		$found = $reader->sharesOn(object: $this->object(), sharers: ['bea'], complete: true);
+		$found = $reader->completeSharesOn(object: $this->object(), sharers: ['bea']);
 
 		$this->assertSame(['ocinternal:41'], array_keys($found));
 		$this->assertContains('openregister', array_column($this->asked, 0));
@@ -190,7 +227,7 @@ class ObjectShareReaderTest extends TestCase {
 		$reader = $this->readerFor(static fn (): array => throw new RuntimeException('share table gone'));
 
 		$this->expectException(RuntimeException::class);
-		$reader->sharesOn(object: $this->object(), sharers: ['bea'], complete: true);
+		$reader->completeSharesOn(object: $this->object(), sharers: ['bea']);
 	}//end testTheCompleteReadingThrowsOnAnUnreadableType()
 
 	/**
@@ -202,8 +239,8 @@ class ObjectShareReaderTest extends TestCase {
 		$object = $this->object();
 		$object->setFolder(null);
 
-		$this->assertSame([], $this->readerFor(static fn (): array => [])->sharesOn(object: $object, sharers: ['bea'], complete: true));
-		$this->assertSame([], $this->readerFor(static fn (): array => [], folder: 'gone')->sharesOn(object: $this->object(), sharers: ['bea'], complete: true));
+		$this->assertSame([], $this->readerFor(static fn (): array => [])->completeSharesOn(object: $object, sharers: ['bea']));
+		$this->assertSame([], $this->readerFor(static fn (): array => [], folder: 'gone')->completeSharesOn(object: $this->object(), sharers: ['bea']));
 		$this->assertFalse($this->created, 'a read must not create or recreate a folder');
 	}//end testAnObjectWithoutAFolderHasNoShares()
 
@@ -225,7 +262,7 @@ class ObjectShareReaderTest extends TestCase {
 	 */
 	public function testTheCompleteReadingThrowsWhenTheFolderCannotBeLookedUp(): void {
 		$this->expectException(RuntimeException::class);
-		$this->readerFor(static fn (): array => [], folder: 'throws')->sharesOn(object: $this->object(), sharers: ['bea'], complete: true);
+		$this->readerFor(static fn (): array => [], folder: 'throws')->completeSharesOn(object: $this->object(), sharers: ['bea']);
 	}//end testTheCompleteReadingThrowsWhenTheFolderCannotBeLookedUp()
 
 	/**
@@ -235,7 +272,7 @@ class ObjectShareReaderTest extends TestCase {
 	 */
 	public function testTheCompleteReadingThrowsWhenTheFolderHasNoOwner(): void {
 		$this->expectException(RuntimeException::class);
-		$this->readerFor(static fn (): array => [], folder: 'ownerless')->sharesOn(object: $this->object(), sharers: ['bea'], complete: true);
+		$this->readerFor(static fn (): array => [], folder: 'ownerless')->completeSharesOn(object: $this->object(), sharers: ['bea']);
 	}//end testTheCompleteReadingThrowsWhenTheFolderHasNoOwner()
 
 	/**

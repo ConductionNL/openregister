@@ -29,6 +29,8 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar
  * @uses   \OCA\OpenRegister\Listener\Registrar\WorkListenerRegistrar
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\ContextChat\ContextChatRegistrar
+ * @uses \OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerWiring
  */
 class ListenerOrderTest extends TestCase {
 

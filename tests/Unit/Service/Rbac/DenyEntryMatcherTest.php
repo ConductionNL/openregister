@@ -23,12 +23,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Which deny entries name the caller, and how the match is reported.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
  */
 class DenyEntryMatcherTest extends TestCase {
 
@@ -84,8 +86,7 @@ class DenyEntryMatcherTest extends TestCase {
 			],
 			(new DenyEntryMatcher())->matchingDenials(
 				entries: ['staff', 'hr', $conditional, ['group' => 'hr'], $emptyMatch, $scalarMatch],
-				action: 'delete',
-				principals: self::PRINCIPALS
+				question: new DenyQuestion(action: 'delete', principals: self::PRINCIPALS)
 			)
 		);
 	}//end testMatchingDenials()
@@ -96,6 +97,6 @@ class DenyEntryMatcherTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoEntriesNoDenials(): void {
-		$this->assertSame([], (new DenyEntryMatcher())->matchingDenials(entries: [], action: 'read', principals: self::PRINCIPALS));
+		$this->assertSame([], (new DenyEntryMatcher())->matchingDenials(entries: [], question: new DenyQuestion(action: 'read', principals: self::PRINCIPALS)));
 	}//end testNoEntriesNoDenials()
 }//end class

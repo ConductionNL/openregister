@@ -34,6 +34,11 @@ use stdClass;
  * @spec openspec/specs/object-validation/spec.md
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Formats\UserFormat
+ * @uses \OCA\OpenRegister\Formats\FormatFactory
+ * @uses \OCA\OpenRegister\Service\Object\ExtendedFieldCheck
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuardParser
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
  */
 class ValidateObjectPreparedSchemaTest extends TestCase {
 
@@ -93,7 +98,7 @@ class ValidateObjectPreparedSchemaTest extends TestCase {
 	public function testAPropertyNotSuppliedIsExcusedAndTheCallIsNotCached(): void {
 		$validator = $this->validator();
 
-		$result = $validator->validateObject(['note' => 'n'], $this->schema(), new stdClass(), 0, ['title' => 'not_known']);
+		$result = $validator->validateObject(['note' => 'n'], $this->schema(), new stdClass(), ['title' => 'not_known']);
 
 		$this->assertTrue($result->isValid(), 'a required property recorded as not supplied is excused');
 		$this->assertSame([], $this->cache($validator), 'an excused call must not leave its excusals in the cache');

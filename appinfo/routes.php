@@ -1,6 +1,7 @@
 <?php
 
-return [
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases([
     'resources' => [
         'Registers' => ['url' => 'api/registers'],
         'Schemas' => ['url' => 'api/schemas'],
@@ -31,6 +32,7 @@ return [
         ['name' => 'federation#shares',      'url' => '/api/federation/shares',      'verb' => 'GET'],
         ['name' => 'federation#createShare', 'url' => '/api/federation/shares',      'verb' => 'POST'],
         ['name' => 'federation#revokeShare', 'url' => '/api/federation/shares/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+        ['name' => 'federation#renewShare',  'url' => '/api/federation/shares/{id}/renew', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
         // Credential broker (credential-broker-service) — owner-scoped credential
         // metadata CRUD + per-app signing-secret registration + the guarded broker
@@ -45,6 +47,8 @@ return [
         // segment and is registered next to `providers`, before the `{id}` routes,
         // so a future `GET /api/credentials/{id}` cannot swallow it.
         ['name' => 'credential#sharedWithMe',  'url' => '/api/credentials/shared-with-me',        'verb' => 'GET'],
+        // Organisation picker of the organisation-credential form. A LITERAL, like shared-with-me.
+        ['name' => 'credentialOrganisation#index', 'url' => '/api/credentials/organisations',     'verb' => 'GET'],
         ['name' => 'credential#shares',        'url' => '/api/credentials/{id}/shares',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#updateShares',  'url' => '/api/credentials/{id}/shares',           'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
@@ -578,6 +582,22 @@ return [
             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'configurationDeployment#effective', 'url' => '/api/configuration/effective',
             'verb' => 'GET'],
+        // Configuration bundles. A bundle is a binding, not a model: its values
+        // live at the bundle layer of openregister_config_values and these
+        // routes address it by name. Administrator only, same as above.
+        ['name' => 'configurationBundle#index', 'url' => '/api/configuration/bundles',
+            'verb' => 'GET'],
+        ['name' => 'configurationBundle#show', 'url' => '/api/configuration/bundles/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationBundle#bind', 'url' => '/api/configuration/bundles/{id}/bindings',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationBundle#unbind', 'url' => '/api/configuration/bundles/{id}/bindings/{subject}',
+            'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'subject' => '[^/]+']],
+        ['name' => 'configurationBundle#copy', 'url' => '/api/configuration/draft-sets/{id}/copy',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Stage the working defaults as a draft set. Administrator only, same as above.
+        ['name' => 'configurationSeed#create', 'url' => '/api/configuration/seed',
+            'verb' => 'POST'],
         // DSAR case-management engine (dsar-case-engine): stateful case workflow.
         // All @NoAdminRequired (never @PublicPage); @NoCSRFRequired only on the
         // one-time download (browser navigation). Case-level access control
@@ -1513,7 +1533,9 @@ return [
 		['name' => 'files#index', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'files#show', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
         ['name' => 'objects#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/files-multipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		// Legacy camelCase address of the same upload, kept so existing clients keep working.
+		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+'], 'postfix' => 'legacy'],
 		['name' => 'files#update', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#delete', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		// File-actions (rename / copy / move / versions / lock / batch / preview / labels).
@@ -1752,6 +1774,8 @@ return [
         // a version it has not moved to yet.
         ['name' => 'apiSurface#capabilities', 'url' => '/api/capabilities', 'verb' => 'GET'],
         ['name' => 'apiSurface#versions', 'url' => '/api/versions', 'verb' => 'GET'],
+        // The root OpenAPI document, public (NL API Design Rules, /core/publish-openapi).
+        ['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
         [
             'name'         => 'apiSurface#contract',
             'url'          => '/api/versions/{version}/oas',
@@ -2017,6 +2041,7 @@ return [
 		// often the register served it. No catch-all sibling sits on
 		// /api/exports, so nothing here can be swallowed by a {id} route.
 		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
+		['name' => 'exportRuns#download', 'url' => '/api/exports/{uuid}/download', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],
 		['name' => 'exportProfiles#contract', 'url' => '/api/export-profiles/contract', 'verb' => 'GET'],
 		['name' => 'exportProfiles#create', 'url' => '/api/export-profiles', 'verb' => 'POST'],
@@ -2109,6 +2134,8 @@ return [
 		['name' => 'archival#decideEntry', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/decision', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
 		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
 		['name' => 'archival#recomputeNomination', 'url' => '/api/archival/objects/{id}/nomination/recompute', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archivalOverview#overview', 'url' => '/api/archival/overview', 'verb' => 'GET'],
+		['name' => 'archivalOverview#drawUp', 'url' => '/api/archival/destruction-lists/draw-up', 'verb' => 'POST'],
 
 		// The classification plan arrives as a file, versioned, and a new
 		// version is diffed against the one in use before it is switched to.
@@ -2321,4 +2348,4 @@ return [
 		['name' => 'dashboard#catchAll', 'url' => '/{path}', 'verb' => 'GET',
 			'requirements' => ['path' => '(?!api/).+'], 'defaults' => ['path' => '']],
     ],
-];
+]);

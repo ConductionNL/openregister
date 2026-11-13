@@ -10,6 +10,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
@@ -80,6 +81,11 @@ abstract class ScanClassGoldenFixture {
  * @uses   \OCA\OpenRegister\Mcp\Attribute\McpTool
  * @uses   \OCA\OpenRegister\Mcp\ToolScanSubject
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Mcp\MethodScanRun
+ * @uses \OCA\OpenRegister\Mcp\ReflectionJsonType
+ * @uses \OCA\OpenRegister\Mcp\ToolDeclarationCheck
+ * @uses \OCA\OpenRegister\Mcp\ToolDescriptorExtras
+ * @uses \OCA\OpenRegister\Mcp\ToolDocblock
  */
 class AttributeToolScannerScanClassGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/attribute-tool-scanner-scan-class-golden.json';
@@ -118,7 +124,7 @@ class AttributeToolScannerScanClassGoldenTest extends TestCase {
 			}
 		};
 
-		$descriptors = (new AttributeToolScanner())->scanClass(appId: 'demo', className: $className, logger: $logger);
+		$descriptors = (new AttributeToolScanner())->scanClass(subject: new ToolScanSubject(appId: 'demo', className: $className, logger: $logger));
 		$actual = json_decode(json_encode(['descriptors' => $descriptors, 'log' => $trace]), true);
 
 		$name = $this->dataName();

@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use Error;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -38,6 +39,10 @@ use Twig\Environment;
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedExpression
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldCycleWalk
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedPass
+ * @uses \OCA\OpenRegister\Twig\MappingExtension
  */
 class ComputedFieldReferencesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/computed-field-references-golden.json';
@@ -52,8 +57,8 @@ class ComputedFieldReferencesGoldenTest extends TestCase {
 			$schema->setProperties($properties);
 			$handler = $this->handler(calls: $calls, logs: $logs, scores: $scores);
 			$actual[$name] = [
-				'save' => $handler->evaluateComputedFields($data, $schema),
-				'read' => $handler->evaluateComputedFields($data, $schema, 'read'),
+				'save' => $handler->evaluateComputedFields($data, new ComputedPass(schema: $schema)),
+				'read' => $handler->evaluateComputedFields($data, new ComputedPass(schema: $schema, evaluateOn: 'read')),
 				'calls' => $calls,
 				'logs' => $logs,
 			];

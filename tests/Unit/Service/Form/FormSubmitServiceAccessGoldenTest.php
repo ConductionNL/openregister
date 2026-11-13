@@ -34,13 +34,16 @@ use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Service\Form\FormSubmitDestinations;
 use OCA\OpenRegister\Service\Form\FormSubmitKeeping;
 use OCA\OpenRegister\Service\Form\FormSubmitPlatform;
+use OCA\OpenRegister\Service\Form\FormSubmission;
 use OCA\OpenRegister\Service\Form\FormSubmitService;
+use OCA\OpenRegister\Service\Form\FormSubmitter;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryLockingProvider;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
@@ -51,6 +54,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * The submit path's allowed and refused outcomes, with the flags of every call.
@@ -127,14 +132,17 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('saveObject')->willReturnCallback($this->save(...));
 		$objects->method('find')->willReturnCallback(
-			function (int|string $id, ?array $_extend = [], bool $files = false, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_render = true, bool $_audit = true): ?ObjectEntity {
+			function (...$args): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy, $_render, $_audit] = FindCallShape::find(args: $args);
 				$this->calls[] = ['find', (string)$id, $_rbac, $_multitenancy, $_audit];
 
 				return ($this->stored[(string)$id] ?? null);
 			}
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false, ?IUser $currentUser = null, bool $permanent = false): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
+				$permanent = $deletion->permanent;
 				$this->calls[] = ['delete', $uuid, $_rbac, $_multitenancy, $permanent];
 				unset($this->stored[$uuid]);
 
@@ -175,21 +183,15 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 	 */
 	private function save(
 		array|ObjectEntity $object,
-		?array $extend = [],
-		Register|string|int|null $register = null,
-		Schema|string|int|null $schema = null,
-		?string $uuid = null,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
-		?array $uploadedFiles = null,
-		?IUser $currentUser = null,
-		bool $failIfExists = false,
-		bool $_unowned = false,
-		bool $_dedupOverride = false,
-		?string $_owner = null,
 	): ObjectEntity {
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+		$currentUser = $options->actor->currentUser;
+		$_unowned = $options->actor->unowned;
+		$_owner = $options->actor->owner;
 		$data = (array)$object;
 		$status = ($data['@self']['status'] ?? null);
 		$this->calls[] = ['save', $schema->getSlug(), $uuid, $_rbac, $_multitenancy, $currentUser?->getUID(), $_unowned, $_owner, $status];
@@ -250,7 +252,7 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 	}//end refusalStatus()
 
 	public function testAnAnonymousSubmitSavesUnderRbacUnowned(): void {
-		$this->service->submit(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: ['title' => 'a']);
+		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a'], submitter: new FormSubmitter()));
 
 		$this->assertSame([['save', 'case', null, true, true, null, true, null, null]], $this->callsOf('save'));
 		$this->assertSame([['find', 'uuid-case-1', false, false, false]], $this->callsOf('find'));
@@ -258,26 +260,26 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 	}//end testAnAnonymousSubmitSavesUnderRbacUnowned()
 
 	public function testASignedInSubmitSavesUnderRbacAsTheUser(): void {
-		$this->service->submit(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: ['title' => 'a'], subject: $this->user);
+		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a'], submitter: new FormSubmitter(subject: $this->user)));
 
 		$this->assertSame([['save', 'case', null, true, true, 'alice', false, null, null]], $this->callsOf('save'));
 	}//end testASignedInSubmitSavesUnderRbacAsTheUser()
 
 	public function testAUsersNewDraftSavesUnderRbac(): void {
-		$this->service->saveDraft(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: [], subject: $this->user);
+		$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: $this->user)));
 
 		$this->assertSame([['save', 'case', null, true, true, 'alice', false, null, 'draft']], $this->callsOf('save'));
 	}//end testAUsersNewDraftSavesUnderRbac()
 
 	public function testAScopedNewDraftSavesWithoutRbacStampingTheOwner(): void {
-		$this->service->saveDraft(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: [], subject: null, owner: DraftOwner::portalSubject(subjectRef: 'bsn-1'));
+		$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: null, owner: DraftOwner::portalSubject(subjectRef: 'bsn-1'))));
 
 		$this->assertSame([['save', 'case', null, false, true, null, false, 'portal:bsn-1', 'draft']], $this->callsOf('save'));
 	}//end testAScopedNewDraftSavesWithoutRbacStampingTheOwner()
 
 	public function testAScopedDraftUpdateIsCheckedThenSavedWithoutRbac(): void {
 		$this->storeDraft(uuid: 'd-1', owner: 'portal:bsn-1');
-		$this->service->saveDraft(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: ['title' => 'b'], subject: null, draftId: 'd-1', owner: DraftOwner::portalSubject(subjectRef: 'bsn-1'));
+		$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'b'], submitter: new FormSubmitter(subject: null, draftId: 'd-1', owner: DraftOwner::portalSubject(subjectRef: 'bsn-1'))));
 
 		$this->assertSame(['find', 'd-1', false, false, false], $this->calls[0]);
 		$this->assertSame([['save', 'case', 'd-1', false, true, null, false, null, 'draft']], $this->callsOf('save'));
@@ -285,7 +287,7 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 
 	public function testAScopedPromotionSavesWithoutRbacAsActive(): void {
 		$this->storeDraft(uuid: 'd-1', owner: 'portal:bsn-1');
-		$this->service->submit(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: [], draftId: 'd-1', owner: DraftOwner::portalSubject(subjectRef: 'bsn-1'));
+		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(draftId: 'd-1', owner: DraftOwner::portalSubject(subjectRef: 'bsn-1'))));
 
 		$this->assertSame(['find', 'd-1', false, false, false], $this->calls[0]);
 		$this->assertSame([['save', 'case', 'd-1', false, true, null, false, null, 'active']], $this->callsOf('save'));
@@ -293,13 +295,13 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 
 	public function testAUsersPromotionSavesUnderRbacAsTheUser(): void {
 		$this->storeDraft(uuid: 'd-1', owner: 'alice');
-		$this->service->submit(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: [], subject: $this->user, draftId: 'd-1');
+		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: $this->user, draftId: 'd-1')));
 
 		$this->assertSame([['save', 'case', 'd-1', true, true, 'alice', false, null, 'active']], $this->callsOf('save'));
 	}//end testAUsersPromotionSavesUnderRbacAsTheUser()
 
 	public function testAnAnonymousDraftIsRefusedBeforeAnyWrite(): void {
-		$status = $this->refusalStatus(fn () => $this->service->saveDraft(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: [], subject: null));
+		$status = $this->refusalStatus(fn () => $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: null))));
 
 		$this->assertSame(401, $status);
 		$this->assertSame([], $this->calls);
@@ -309,22 +311,19 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 		$this->storeDraft(uuid: 'd-1', owner: 'portal:bsn-2');
 		$owner = DraftOwner::portalSubject(subjectRef: 'bsn-1');
 
-		$this->assertSame(404, $this->refusalStatus(fn () => $this->service->saveDraft(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: [], subject: null, draftId: 'd-1', owner: $owner)));
-		$this->assertSame(404, $this->refusalStatus(fn () => $this->service->submit(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: [], draftId: 'd-1', owner: $owner)));
-		$this->assertSame(404, $this->refusalStatus(fn () => $this->service->submit(destination: ['register' => 'reg', 'schema' => 'case'], mapping: null, payload: [], subject: $this->user, draftId: 'd-1')));
-		$this->assertSame(404, $this->refusalStatus(fn () => $this->service->readDraft(destination: ['register' => 'reg', 'schema' => 'case'], draftId: 'd-1', subject: $this->user)));
-		$this->assertFalse($this->service->isOwnerOfDraft(destination: ['register' => 'reg', 'schema' => 'case'], draftId: 'd-1', subject: null, owner: $owner));
-		$this->assertTrue($this->service->isOwnerOfDraft(destination: ['register' => 'reg', 'schema' => 'case'], draftId: 'd-1', subject: null, owner: DraftOwner::portalSubject(subjectRef: 'bsn-2')));
+		$this->assertSame(404, $this->refusalStatus(fn () => $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: null, draftId: 'd-1', owner: $owner)))));
+		$this->assertSame(404, $this->refusalStatus(fn () => $this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(draftId: 'd-1', owner: $owner)))));
+		$this->assertSame(404, $this->refusalStatus(fn () => $this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: $this->user, draftId: 'd-1')))));
+		$this->assertSame(404, $this->refusalStatus(fn () => $this->service->readDraft(destination: ['register' => 'reg', 'schema' => 'case'], submitter: new FormSubmitter(subject: $this->user, draftId: 'd-1'))));
+		$this->assertFalse($this->service->isOwnerOfDraft(destination: ['register' => 'reg', 'schema' => 'case'], submitter: new FormSubmitter(subject: null, draftId: 'd-1', owner: $owner)));
+		$this->assertTrue($this->service->isOwnerOfDraft(destination: ['register' => 'reg', 'schema' => 'case'], submitter: new FormSubmitter(subject: null, draftId: 'd-1', owner: DraftOwner::portalSubject(subjectRef: 'bsn-2'))));
 		$this->assertSame([], $this->callsOf('save'));
 	}//end testSomebodyElsesDraftIsRefusedBeforeAnyWrite()
 
 	public function testARefusedPermissionIs403AndCompensatesWithoutRbacPermanently(): void {
 		$this->refuse['contact'] = new NotAuthorizedException(message: 'no');
 		$status = $this->refusalStatus(
-			fn () => $this->service->submitAll(
-				writes: [['register' => 'reg', 'schema' => 'case', 'as' => 'one'], ['register' => 'reg', 'schema' => 'contact', 'as' => 'two']],
-				payload: ['title' => 'a']
-			)
+			fn () => $this->service->submit(submission: new FormSubmission(writes: [['register' => 'reg', 'schema' => 'case', 'as' => 'one'], ['register' => 'reg', 'schema' => 'contact', 'as' => 'two']], payload: ['title' => 'a'], submitter: new FormSubmitter()))
 		);
 
 		$this->assertSame(403, $status);
@@ -333,14 +332,14 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 	}//end testARefusedPermissionIs403AndCompensatesWithoutRbacPermanently()
 
 	public function testAnUnknownDestinationIsRefusedBeforeAnyWrite(): void {
-		$this->assertSame(404, $this->refusalStatus(fn () => $this->service->submit(destination: ['register' => 'nowhere', 'schema' => 'case'], mapping: null, payload: [])));
+		$this->assertSame(404, $this->refusalStatus(fn () => $this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'nowhere', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter()))));
 		$this->assertSame([], $this->calls);
-		$this->assertNull($this->service->findDraft(destination: ['register' => 'nowhere', 'schema' => 'case'], subject: $this->user));
-		$this->assertNull($this->service->findDraft(destination: ['register' => 'reg', 'schema' => 'case'], subject: null));
+		$this->assertNull($this->service->findDraft(destination: ['register' => 'nowhere', 'schema' => 'case'], submitter: new FormSubmitter(subject: $this->user)));
+		$this->assertNull($this->service->findDraft(destination: ['register' => 'reg', 'schema' => 'case'], submitter: new FormSubmitter(subject: null)));
 	}//end testAnUnknownDestinationIsRefusedBeforeAnyWrite()
 
 	public function testAPayloadNeverNamesTheObjectItWrites(): void {
-		$this->service->submit(destination: ['register' => 'reg', 'schema' => 'case'], mapping: ['fixed' => ['id' => 'victim']], payload: ['id' => 'victim', 'uuid' => 'victim']);
+		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'reg', 'schema' => 'case'], ['mapping' => ['fixed' => ['id' => 'victim']]])], payload: ['id' => 'victim', 'uuid' => 'victim'], submitter: new FormSubmitter()));
 
 		$this->assertNull($this->callsOf('save')[0][2]);
 		$this->assertArrayNotHasKey('victim', $this->stored);

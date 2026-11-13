@@ -212,7 +212,7 @@ docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
   -d '{"naam": "Test Object", "beschrijving": "Test description"}'
 
 # Get objects
-docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+docker exec -u 33 master-nextcloud-1 curl -H 'OCS-APIRequest: true' -s -u 'admin:admin' \
   -H 'Content-Type: application/json' \
   'http://localhost/index.php/apps/openregister/api/objects?register=19&schema=105'
 
@@ -226,7 +226,7 @@ docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
 ### Bulk Import Testing
 ```bash
 # Get object count before import
-before_count=$(docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+before_count=$(docker exec -u 33 master-nextcloud-1 curl -H 'OCS-APIRequest: true' -s -u 'admin:admin' \
   -H 'Content-Type: application/json' \
   'http://localhost/index.php/apps/openregister/api/objects?register=19&schema=105' | jq -r '.total // 0')
 echo "Objects before: $before_count"
@@ -239,7 +239,7 @@ docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
   -F "file=@/var/www/html/apps-extra/openregister/lib/Settings/organisatie.csv"
 
 # Check object count after import
-after_count=$(docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+after_count=$(docker exec -u 33 master-nextcloud-1 curl -H 'OCS-APIRequest: true' -s -u 'admin:admin' \
   -H 'Content-Type: application/json' \
   'http://localhost/index.php/apps/openregister/api/objects?register=19&schema=105' | jq -r '.total // 0')
 echo "Objects after: $after_count"
@@ -385,7 +385,7 @@ docker exec -u 33 master-nextcloud-1 curl -s \
 
 # 5. Test retrieval
 echo "5. Testing object retrieval..."
-docker exec -u 33 master-nextcloud-1 curl -s -u 'admin:admin' \
+docker exec -u 33 master-nextcloud-1 curl -H 'OCS-APIRequest: true' -s -u 'admin:admin' \
   "http://localhost/index.php/apps/openregister/api/objects/19/105/$uuid" \
   | jq -r '{id: .id, name: .naam, created: ."@self".created}'
 

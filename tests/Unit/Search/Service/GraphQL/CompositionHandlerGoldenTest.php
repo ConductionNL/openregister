@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * Pins the fields applyComposition() produces and the callbacks it makes.
  *
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\CompositionHandler
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class CompositionHandlerGoldenTest extends TestCase {
 

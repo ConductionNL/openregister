@@ -88,6 +88,19 @@ final class NotificationAnnotationValidator implements NotificationAnnotationVal
 		],
 		'domain-malformed'     => ['notification-domain-malformed', 'Notification "%s" domain must be a non-empty string.'],
 		'critical-not-boolean' => ['notification-critical-not-boolean', 'Notification "%s" `critical` must be a boolean.'],
+		'organisation-empty'   => ['notification-bad-organisation', 'Notification "%s" organisation must be a non-empty string.'],
+		'organisation-no-entry' => [
+			'notification-bad-organisation',
+			'Notification "%s" organisation array must declare at least one entry.',
+		],
+		'organisation-bad-entry' => [
+			'notification-bad-organisation',
+			'Notification "%s" organisation array entries must be non-empty strings.',
+		],
+		'organisation-type'    => [
+			'notification-bad-organisation',
+			'Notification "%s" organisation must be a string or an array of strings.',
+		],
 	];
 
 	/**
@@ -623,18 +636,21 @@ final class NotificationAnnotationValidator implements NotificationAnnotationVal
 	}//end validateChannelTargets()
 
 	/**
-	 * Whether a `webhook` block lacks a valid `url`.
+	 * Whether a `webhook` block lacks a valid absolute http or https `url`.
 	 *
 	 * @param mixed $hook The declared webhook block.
 	 *
 	 * @return bool
 	 */
 	private function isWebhookUrlMissing(mixed $hook): bool {
-		if (is_array($hook) === false) {
+		if (is_array($hook) === false || empty($hook['url']) === true || is_string($hook['url']) === false
+			|| filter_var($hook['url'], FILTER_VALIDATE_URL) === false
+		) {
 			return true;
 		}
 
-		return empty($hook['url']) === true || filter_var($hook['url'], FILTER_VALIDATE_URL) === false;
+		$scheme = strtolower((string)parse_url($hook['url'], PHP_URL_SCHEME));
+		return in_array($scheme, ['http', 'https'], true) === false;
 	}//end isWebhookUrlMissing()
 
 	/**
@@ -742,55 +758,41 @@ final class NotificationAnnotationValidator implements NotificationAnnotationVal
 	 * @return array{code: string, message: string}|null
 	 */
 	private function validateOrganisationGate(mixed $org, string $name): ?array {
-		$code = 'notification-bad-organisation';
-
 		if (is_string($org) === true) {
 			if ($org === '') {
-				return [
-					'code' => $code,
-					'message' => sprintf(
-						'Notification "%s" organisation must be a non-empty string.',
-						$name
-					),
-				];
+				return $this->fault(fault: 'organisation-empty', args: [$name]);
 			}
 
 			return null;
 		}
 
 		if (is_array($org) === true) {
-			if (count($org) === 0) {
-				return [
-					'code' => $code,
-					'message' => sprintf(
-						'Notification "%s" organisation array must declare at least one entry.',
-						$name
-					),
-				];
-			}
+			return $this->validateOrganisationList(org: $org, name: $name);
+		}
 
-			foreach ($org as $candidate) {
-				if (is_string($candidate) === false || $candidate === '') {
-					return [
-						'code' => $code,
-						'message' => sprintf(
-							'Notification "%s" organisation array entries must be non-empty strings.',
-							$name
-						),
-					];
-				}
-			}//end foreach
-
-			return null;
-		}//end if
-
-		return [
-			'code' => $code,
-			'message' => sprintf(
-				'Notification "%s" organisation must be a string or an array of strings.',
-				$name
-			),
-		];
+		return $this->fault(fault: 'organisation-type', args: [$name]);
 	}//end validateOrganisationGate()
+
+	/**
+	 * Validate an `organisation` gate given as a list: at least one entry, each a non-empty string.
+	 *
+	 * @param array<mixed> $org  The organisation list.
+	 * @param string       $name Notification name (for diagnostics).
+	 *
+	 * @return array{code: string, message: string}|null
+	 */
+	private function validateOrganisationList(array $org, string $name): ?array {
+		if (count($org) === 0) {
+			return $this->fault(fault: 'organisation-no-entry', args: [$name]);
+		}
+
+		foreach ($org as $candidate) {
+			if (is_string($candidate) === false || $candidate === '') {
+				return $this->fault(fault: 'organisation-bad-entry', args: [$name]);
+			}
+		}
+
+		return null;
+	}//end validateOrganisationList()
 
 }//end class

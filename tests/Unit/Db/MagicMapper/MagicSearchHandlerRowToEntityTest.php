@@ -33,6 +33,8 @@ use Psr\Log\AbstractLogger;
 use ReflectionMethod;
 use ReflectionObject;
 use Stringable;
+use OCA\OpenRegister\Db\MagicMapper\TableSearch;
+use OCA\OpenRegister\Db\RegisterSchema;
 
 /**
  * Pins every entity field, the set of fields marked as updated, the object data
@@ -243,7 +245,7 @@ class MagicSearchHandlerRowToEntityTest extends TestCase {
 		$schema->setProperties(self::PROPERTIES);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'convertRowToObjectEntity');
-		$entity = $method->invoke($handler, $case['row'], $register, $schema, 'oc_table');
+		$entity = $method->invoke($handler, $case['row'], new TableSearch(table: new RegisterSchema(register: $register, schema: $schema), tableName: 'oc_table'));
 
 		return [
 			'entity' => $this->describe(entity: $entity),

@@ -55,6 +55,15 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor
  * @uses \OCA\OpenRegister\Files\Service\TextExtractionService
  * @uses \OCA\OpenRegister\Files\Service\TextSplitPass
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Files\Service\ChunkSizing
+ * @uses \OCA\OpenRegister\Files\Service\ChunkingPlan
+ * @uses \OCA\OpenRegister\Files\Service\SplitLevel
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage
  */
 final class TextExtractionReadBackTest extends TestCase {
 

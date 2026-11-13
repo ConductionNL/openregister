@@ -40,6 +40,8 @@ use stdClass;
  * Pins every call the listener makes on the container, the check and the logger.
  *
  * @covers \OCA\OpenRegister\Listener\FormDestinationSchemaListener
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
  */
 class FormDestinationSchemaListenerGoldenTest extends TestCase {
 

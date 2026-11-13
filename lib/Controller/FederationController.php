@@ -33,8 +33,12 @@ use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Federation\CreatorPropertyFilter;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
+use OCA\OpenRegister\Service\Federation\PlainQueryMatch;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -50,6 +54,9 @@ use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Token-scoped federation serving endpoints (read; write-through in a later phase).
@@ -63,6 +70,8 @@ use Throwable;
  * security boundary each handler crosses, and dropping the throttler would
  * restore an exposure. Suppressed with that trade stated rather than silently
  * baselined.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One public action per federation route.
  */
 class FederationController extends Controller {
 
@@ -74,7 +83,7 @@ class FederationController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfacesInterface::FEDERATION_SHARE_TOKEN;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::FEDERATION_SHARE_SURFACE;
 
 	/**
 	 * Confidentiality values treated as public (servable through a schema share).
@@ -144,6 +153,13 @@ class FederationController extends Controller {
 	private readonly IThrottler $throttler;
 
 	/**
+	 * Keeps an object-scope share to the properties its creator may read.
+	 *
+	 * @var CreatorPropertyFilter
+	 */
+	private readonly CreatorPropertyFilter $creatorProperties;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
@@ -162,6 +178,7 @@ class FederationController extends Controller {
 		$this->objectService = $services->objectService;
 		$this->shareService = $services->shareService;
 		$this->throttler = $services->throttler;
+		$this->creatorProperties = $services->creatorProperties;
 	}//end __construct()
 
 	/**
@@ -265,6 +282,37 @@ class FederationController extends Controller {
 	}//end revokeShare()
 
 	/**
+	 * Give one of the caller's shares a new lifetime from now.
+	 *
+	 * @param int $id The share id.
+	 *
+	 * @return JSONResponse The renewed share, or an error.
+	 *
+	 * @no-admin-idor-exempt The id IS caller-supplied, and it is checked one layer down:
+	 *       `FederationShareService::renewShare()` loads the row through
+	 *       `FederatedShareMapper::find()`, which applies the organisation filter, so
+	 *       another organisation's id is a 404, and then refuses anyone but the
+	 *       share's creator, and a creator who no longer holds what it grants.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
+	 */
+	#[NoAdminRequired]
+	public function renewShare(int $id): JSONResponse {
+		try {
+			$share = $this->shareService->renewShare(id: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
+		} catch (Throwable $e) {
+			$this->logger->error('[Federation] renew share failed: ' . $e->getMessage());
+			return new JSONResponse(data: ['error' => 'Could not renew share'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		return new JSONResponse(data: $share);
+	}//end renewShare()
+
+	/**
 	 * Serve the objects a share grants (paginated).
 	 *
 	 * @param string $shareToken The scoped bearer share token.
@@ -360,6 +408,10 @@ class FederationController extends Controller {
 		$data = (array)$this->request->getParams();
 		unset($data['shareToken'], $data['_route']);
 
+		if ($this->scopeAdmitsNewObject(share: $share, data: $data) === false) {
+			return new JSONResponse(data: ['error' => 'This share does not cover the object to create'], statusCode: Http::STATUS_FORBIDDEN);
+		}
+
 		// 🔴 STRIP THE CALLER'S IDENTITY. This endpoint CREATES.
 		//
 		// `saveObject()` resolves its target from the payload:
@@ -394,8 +446,9 @@ class FederationController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema())
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -404,7 +457,7 @@ class FederationController extends Controller {
 			return new JSONResponse(data: ['error' => 'Could not create object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		return new JSONResponse(data: $saved->jsonSerialize(), statusCode: Http::STATUS_CREATED);
+		return new JSONResponse(data: $this->rendered(share: $share, object: $saved), statusCode: Http::STATUS_CREATED);
 	}//end createObject()
 
 	/**
@@ -439,9 +492,10 @@ class FederationController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
-				uuid: $target['uuid'],
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema()),
+					uuid: $target['uuid']
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -450,7 +504,7 @@ class FederationController extends Controller {
 			return new JSONResponse(data: ['error' => 'Could not update object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		return new JSONResponse(data: $saved->jsonSerialize());
+		return new JSONResponse(data: $this->rendered(share: $share, object: $saved));
 	}//end updateObject()
 
 	/**
@@ -476,12 +530,16 @@ class FederationController extends Controller {
 		$share = $target['share'];
 		try {
 			$ok = $this->objectService->deleteObject(
-				uuid: $target['uuid'],
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				deletion: new ObjectDeletion(
+					uuid: $target['uuid'],
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema()),
+					reach: fn (string $uuid): bool => $uuid !== '' && $this->reachableEntity(share: $share, id: $uuid) !== null
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
+		} catch (ReferentialIntegrityException $e) {
+			return new JSONResponse(data: ['error' => self::blockedDeleteMessage(refusal: $e)], statusCode: Http::STATUS_CONFLICT);
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] delete object failed: ' . $e->getMessage());
 			return new JSONResponse(data: ['error' => 'Could not delete object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -489,6 +547,55 @@ class FederationController extends Controller {
 
 		return new JSONResponse(data: ['deleted' => $ok]);
 	}//end deleteObject()
+
+	/**
+	 * Whether a share's scope covers an object about to be created.
+	 *
+	 * A schema or register share covers any new object in its table. An object share
+	 * grants one existing object, so it covers none. A query share covers a new object
+	 * only when each of its conditions is a plain value (or list of values) on a property
+	 * the payload sets to that value; a condition this check cannot read, such as an
+	 * operator, `_ids` or a search, covers nothing.
+	 *
+	 * @param FederatedShare       $share The share being served.
+	 * @param array<string, mixed> $data  The payload to create.
+	 *
+	 * @return bool Whether the create falls inside the share.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
+	 */
+	private function scopeAdmitsNewObject(FederatedShare $share, array $data): bool {
+		if ($share->getScope() === 'object') {
+			return false;
+		}
+
+		if ($share->getScope() !== 'query') {
+			return true;
+		}
+
+		if (is_array($share->getQueryFilter()) === false) {
+			return false;
+		}
+
+		return (new PlainQueryMatch())->admits(filters: $this->buildScopeConfig(share: $share)['filters'], data: $data);
+	}//end scopeAdmitsNewObject()
+
+	/**
+	 * Why a federated delete was blocked by the objects it would change.
+	 *
+	 * @param ReferentialIntegrityException $refusal The refusal.
+	 *
+	 * @return string The message.
+	 */
+	private static function blockedDeleteMessage(ReferentialIntegrityException $refusal): string {
+		foreach ($refusal->getAnalysis()->blockers as $blocker) {
+			if (($blocker['reason'] ?? null) === 'out_of_reach') {
+				return 'The delete would change or remove objects outside this share, so it was not carried out.';
+			}
+		}
+
+		return 'Other objects refer to this object, so it was not deleted.';
+	}//end blockedDeleteMessage()
 
 	/**
 	 * Resolve a share that grants write access (accepted, read-write, bound to an organisation), or null.
@@ -588,8 +695,7 @@ class FederationController extends Controller {
 		try {
 			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				options: new ObjectFindOptions(register: $share->getRegister(), schema: $share->getSchema()),
 				_rbac: false,
 				_multitenancy: false
 			));
@@ -772,6 +878,16 @@ class FederationController extends Controller {
 			return null;
 		}
 
+		// A share hands out only what its creator still holds, judged on every use.
+		$refusal = $this->shareService->servingRefusal(share: $share);
+		if ($refusal !== null) {
+			$this->logger->warning(
+				'[Federation] share not served: '.$refusal,
+				['shareId' => $share->getId(), 'owner' => (string)$share->getOwner()]
+			);
+			return null;
+		}
+
 		return $share;
 	}//end resolveAcceptedShare()
 
@@ -883,7 +999,7 @@ class FederationController extends Controller {
 	 *
 	 * Confidentiality guard: register/schema/query shares never serve an object
 	 * marked confidential; object-scope shares serve exactly the one object the
-	 * sharer chose.
+	 * sharer chose, with only the properties the sharer may read.
 	 *
 	 * @param array<int, mixed> $objects The records found.
 	 * @param FederatedShare    $share   The share being served.
@@ -898,10 +1014,13 @@ class FederationController extends Controller {
 				continue;
 			}
 
-			$rendered = $object->jsonSerialize();
-			if ($share->getScope() !== 'object'
-				&& in_array($this->readConfidentiality(object: $rendered), self::PUBLIC_CONFIDENTIALITY, true) === false
-			) {
+			$rendered = $this->rendered(share: $share, object: $object);
+			if ($share->getScope() === 'object') {
+				$visible[] = $rendered;
+				continue;
+			}
+
+			if (in_array($this->readConfidentiality(object: $rendered), self::PUBLIC_CONFIDENTIALITY, true) === false) {
 				continue;
 			}
 
@@ -910,6 +1029,23 @@ class FederationController extends Controller {
 
 		return $visible;
 	}//end applyShareVisibility()
+
+	/**
+	 * An object as a share serves it: an object-scope share keeps to the properties its creator may read.
+	 *
+	 * @param FederatedShare $share  The share being served.
+	 * @param ObjectEntity   $object The object.
+	 *
+	 * @return array<string, mixed> The rendered object.
+	 */
+	private function rendered(FederatedShare $share, ObjectEntity $object): array {
+		$rendered = $object->jsonSerialize();
+		if ($share->getScope() !== 'object') {
+			return $rendered;
+		}
+
+		return $this->creatorProperties->readable(share: $share, object: $object, rendered: $rendered);
+	}//end rendered()
 
 	/**
 	 * Read an object's confidentiality under any of its known property names.

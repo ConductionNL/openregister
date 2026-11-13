@@ -26,6 +26,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
+use OCA\OpenRegister\Service\Rbac\TokenGrantIssue;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -35,6 +36,11 @@ use PHPUnit\Framework\TestCase;
  * The clock is fixed; nothing here reads the real time.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\TokenGrantValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrant
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantIssue
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantReach
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantTerms
  */
 class TokenGrantValidatorRefusalTest extends TestCase {
 
@@ -58,7 +64,7 @@ class TokenGrantValidatorRefusalTest extends TestCase {
 	 */
 	private function refusal(array $overrides): ?string {
 		$grant = array_merge(['verbs' => ['read'], 'expiresAt' => '2026-11-01T00:00:00+00:00'], $overrides);
-		return $this->validator()->refusalFor(grant: $grant, issuerVerbs: ['read'], now: new DateTimeImmutable(self::NOW));
+		return $this->validator()->refusalFor(issue: new TokenGrantIssue(grant: $grant, issuerVerbs: ['read'], now: new DateTimeImmutable(self::NOW)));
 	}//end refusal()
 
 	/**
@@ -105,6 +111,6 @@ class TokenGrantValidatorRefusalTest extends TestCase {
 		$this->assertFalse($this->validator()->lapsesSoon(grant: $lapsed, now: $now));
 		$today = new TokenGrant(verbs: ['read'], terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-09-18T18:00:00+00:00')));
 		$this->assertTrue($this->validator()->lapsesSoon(grant: $today, now: $now));
-		$this->assertFalse($this->validator()->lapsesSoon(grant: $today, now: $now, within: -1));
+		$this->assertFalse(TokenGrantValidator::lapsesWithin(daysLeft: $today->daysLeft(now: $now), within: -1));
 	}//end testLapseWarningEdges()
 }//end class

@@ -69,17 +69,15 @@ class ElevationService implements ElevationServiceInterface {
 	 * Constructor.
 	 *
 	 * @param ElevationIdentity $identity The session, the signed-in user and the password check.
-	 * @param ITimeFactory         $time        The clock, so a test can move it.
-	 * @param HardeningPolicy      $policy      Reads the administered period.
-	 * @param HardeningAuditWriter $audit       Records the grant and the refusal.
+	 * @param ITimeFactory      $time     The clock, so a test can move it.
+	 * @param HardeningPosture  $posture  Reads the administered period and records the grant and the refusal.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ElevationIdentity $identity,
 		private readonly ITimeFactory $time,
-		private readonly HardeningPolicy $policy,
-		private readonly HardeningAuditWriter $audit,
+		private readonly HardeningPosture $posture,
 	) {
 
 	}//end __construct()
@@ -92,7 +90,7 @@ class ElevationService implements ElevationServiceInterface {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-administration-requires-a-fresh-expiring-authentication-req-ihc-002
 	 */
 	public function periodSeconds(): int {
-		return $this->policy->administered(control: self::PERIOD_CONTROL);
+		return $this->posture->policy->administered(control: self::PERIOD_CONTROL);
 
 	}//end periodSeconds()
 
@@ -113,39 +111,55 @@ class ElevationService implements ElevationServiceInterface {
 	public function elevate(string $password): bool {
 		$user = $this->identity->userSession->getUser();
 		if ($user === null || $password === '') {
-			$this->audit->refused(
-				fact: 'elevation.refused',
-				before: '',
-				after: '',
-				refusal: 'No signed-in account, or no password given.',
-			);
-
-			return false;
+			return $this->refuseElevation(account: '', refusal: 'No signed-in account, or no password given.');
 		}
 
 		$uid = $user->getUID();
 		if ($this->identity->users->checkPassword($uid, $password) === false) {
-			$this->audit->refused(
-				fact: 'elevation.refused',
-				before: '',
-				after: $uid,
-				refusal: 'The password was not confirmed.',
-			);
-
-			return false;
+			return $this->refuseElevation(account: $uid, refusal: 'The password was not confirmed.');
 		}
 
-		$now = $this->time->getTime();
-		$this->identity->session->set(self::SESSION_KEY, $now);
-		$this->audit->accepted(
-			fact: 'elevation.granted',
-			before: '',
-			after: ['user' => $uid, 'periodSeconds' => $this->periodSeconds()]
-		);
+		$this->grantElevation(uid: $uid);
 
 		return true;
 
 	}//end elevate()
+
+	/**
+	 * Audit a refused elevation.
+	 *
+	 * @param string $account The account that asked, or the empty string when there is none.
+	 * @param string $refusal Why it was refused.
+	 *
+	 * @return boolean Always false: nothing was elevated.
+	 */
+	private function refuseElevation(string $account, string $refusal): bool {
+		$this->posture->audit->refused(
+			change: new HardeningFact(fact: 'elevation.refused', before: '', after: $account),
+			refusal: $refusal
+		);
+
+		return false;
+	}//end refuseElevation()
+
+	/**
+	 * Start the elevated period for this session and audit the grant.
+	 *
+	 * @param string $uid The account whose password was confirmed.
+	 *
+	 * @return void
+	 */
+	private function grantElevation(string $uid): void {
+		$now = $this->time->getTime();
+		$this->identity->session->set(self::SESSION_KEY, $now);
+		$this->posture->audit->accepted(
+			change: new HardeningFact(
+				fact: 'elevation.granted',
+				before: '',
+				after: ['user' => $uid, 'periodSeconds' => $this->periodSeconds()]
+			)
+		);
+	}//end grantElevation()
 
 	/**
 	 * End the elevated period without ending the session.
@@ -179,17 +193,7 @@ class ElevationService implements ElevationServiceInterface {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-administration-requires-a-fresh-expiring-authentication-req-ihc-002
 	 */
 	public function remainingSeconds(): int {
-		try {
-			$since = $this->identity->session->get(self::SESSION_KEY);
-		} catch (Throwable) {
-			return 0;
-		}
-
-		if (is_int($since) === false && is_string($since) === false) {
-			return 0;
-		}
-
-		$since = (int)$since;
+		$since = $this->elevatedSince();
 		if ($since <= 0) {
 			return 0;
 		}
@@ -211,6 +215,25 @@ class ElevationService implements ElevationServiceInterface {
 	}//end remainingSeconds()
 
 	/**
+	 * The moment this session was elevated, or 0 when it holds no readable moment.
+	 *
+	 * @return integer The unix time stored at elevation, or 0.
+	 */
+	private function elevatedSince(): int {
+		try {
+			$since = $this->identity->session->get(self::SESSION_KEY);
+		} catch (Throwable) {
+			return 0;
+		}
+
+		if (is_int($since) === false && is_string($since) === false) {
+			return 0;
+		}
+
+		return (int)$since;
+	}//end elevatedSince()
+
+	/**
 	 * Refuse an administration write unless the period is running.
 	 *
 	 * @return void
@@ -224,11 +247,13 @@ class ElevationService implements ElevationServiceInterface {
 			return;
 		}
 
-		$this->audit->refused(
-			fact: 'elevation.lapsed',
-			before: '',
-			after: ($this->identity->userSession->getUser()?->getUID() ?? ''),
-			refusal: 'The administration write was refused: the elevated period had lapsed.',
+		$this->posture->audit->refused(
+			change: new HardeningFact(
+				fact: 'elevation.lapsed',
+				before: '',
+				after: ($this->identity->userSession->getUser()?->getUID() ?? '')
+			),
+			refusal: 'The administration write was refused: the elevated period had lapsed.'
 		);
 
 		throw new ElevationRequiredException(periodSeconds: $this->periodSeconds());

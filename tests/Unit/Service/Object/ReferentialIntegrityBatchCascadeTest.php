@@ -33,8 +33,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HookStoppedException;
@@ -52,6 +54,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Unit tests for the batched referential-integrity CASCADE delete path.
@@ -118,7 +122,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, cacheFactory: $this->createNullCacheFactory()),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createNullCacheFactory()),
 			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
 			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: $this->makeArchivalGuard()),
 			logger: $this->logger
@@ -225,14 +229,14 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			);
 
 		$builtRows = [];
-		$this->auditTrailMapper->method('buildAuditTrail')
+		$this->auditTrailMapper->method('buildEntry')
 			->willReturnCallback(
-				function (?ObjectEntity $old, ?ObjectEntity $new, ?string $action, ?array $cascadeContext) use (&$builtRows) {
+				function (AuditedChange $change) use (&$builtRows) {
 					$builtRows[] = [
-						'uuid' => $old?->getUuid(),
-						'new' => $new,
-						'action' => $action,
-						'cascadeContext' => $cascadeContext,
+						'uuid' => $change->old?->getUuid(),
+						'new' => $change->new,
+						'action' => $change->action,
+						'cascadeContext' => $change->cascadeContext,
 					];
 					$trail = new AuditTrail();
 					$trail->setUuid('audit-' . count($builtRows));
@@ -262,7 +266,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			]
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid', 'org-1', 'root-slug');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: 'root-slug', organisationId: 'org-1')
+		);
 
 		// Deletion attribution metadata shape (deletedBy/deletedAt/objectId/organisation).
 		$this->assertCount(3, $capturedDeleted);
@@ -312,10 +319,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			->willReturnArgument(0);
 
 		$properties = [];
-		$this->auditTrailMapper->method('buildAuditTrail')
+		$this->auditTrailMapper->method('buildEntry')
 			->willReturnCallback(
-				function (?ObjectEntity $old, ?ObjectEntity $new, ?string $action, ?array $cascadeContext) use (&$properties) {
-					$properties[] = $cascadeContext['property'];
+				function (AuditedChange $change) use (&$properties) {
+					$properties[] = $change->cascadeContext['property'];
 					$trail = new AuditTrail();
 					$trail->setUuid('audit-' . count($properties));
 					return $trail;
@@ -336,7 +343,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			]
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 
 		// Reversed target order: refB first.
 		$this->assertSame(['refB', 'refA'], $properties);
@@ -365,7 +375,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		$trail = new AuditTrail();
 		$trail->setUuid('audit-1');
-		$this->auditTrailMapper->method('buildAuditTrail')->willReturn($trail);
+		$this->auditTrailMapper->method('buildEntry')->willReturn($trail);
 
 		$this->auditTrailMapper->expects($this->once())
 			->method('insertAuditTrails')
@@ -403,7 +413,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			]
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid', null, 'root-slug');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: 'root-slug', organisationId: null)
+		);
 	}//end testBatchMissFallsBackPerObjectForThatTargetOnly()
 
 	/**
@@ -435,7 +448,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			]
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}//end testResolveFailureFallsBackEntirely()
 
 	/**
@@ -462,10 +478,39 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		$this->service->applyDeletionActions(
 			$this->analysisWithCascade([$this->target('uuid-1'), $this->target('uuid-2')]),
-			'admin',
-			'root-uuid'
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
 		);
 	}//end testARefusedTargetStopsTheBatchedCascade()
+
+	/**
+	 * The refusal of a dependent target reaches the caller without naming who holds it.
+	 *
+	 * @return void
+	 */
+	public function testARefusedTargetDoesNotNameItsLockHolder(): void {
+		$holder = 'Cannot delete object: Object is locked by Alice Example.';
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')->willReturn([$this->createEntity(uuid: 'uuid-1')]);
+		$this->objectMapper->method('assertDeletable')->willThrowException(
+			new HookStoppedException(
+				message: $holder,
+				errors: ['code' => 'object-locked', 'message' => $holder, 'status' => 423, 'uuid' => 'uuid-1']
+			)
+		);
+
+		try {
+			$this->service->applyDeletionActions(
+				analysis: $this->analysisWithCascade(targets: [$this->target(uuid: 'uuid-1')]),
+				origin: new CascadeDeleteOrigin(userId: 'bob', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+			);
+			$this->fail(message: 'The cascade should be refused.');
+		} catch (HookStoppedException $refusal) {
+			$this->assertStringNotContainsString(needle: 'Alice', haystack: $refusal->getMessage());
+			$this->assertSame(
+				expected: ['message' => $refusal->getMessage(), 'code' => 'object-locked', 'status' => 423],
+				actual: $refusal->getErrors()
+			);
+		}
+	}//end testARefusedTargetDoesNotNameItsLockHolder()
 
 	/**
 	 * The per-object fallback passes a guard's refusal on: it does not log it as a failed
@@ -485,8 +530,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		$this->service->applyDeletionActions(
 			$this->analysisWithCascade([$this->target('uuid-1')]),
-			'admin',
-			'root-uuid'
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
 		);
 	}//end testARefusalInThePerObjectFallbackIsNotSwallowed()
 
@@ -535,7 +579,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			]
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid', null, 'root-slug');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: 'root-slug', organisationId: null)
+		);
 
 		$this->assertSame([[['uuid-d'], false], [['uuid-b'], false], [['uuid-c', 'uuid-a'], false]], $deletes);
 		$changed = static fn (string $property): array => [
@@ -593,7 +640,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			]
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}//end testBatchWriteFailureFallsBackEntirely()
 
 	/**
@@ -615,7 +665,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		$trail = new AuditTrail();
 		$trail->setUuid('audit-1');
-		$this->auditTrailMapper->method('buildAuditTrail')->willReturn($trail);
+		$this->auditTrailMapper->method('buildEntry')->willReturn($trail);
 
 		$this->auditTrailMapper->expects($this->once())
 			->method('insertAuditTrails')
@@ -633,7 +683,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			]
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}//end testHookSkippedTargetIsNotRetriedPerObject()
 
 	// =========================================================================
@@ -655,7 +708,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		$trail = new AuditTrail();
 		$trail->setUuid('audit-1');
-		$this->auditTrailMapper->method('buildAuditTrail')->willReturn($trail);
+		$this->auditTrailMapper->method('buildEntry')->willReturn($trail);
 
 		$this->auditTrailMapper->method('insertAuditTrails')
 			->willThrowException(new \RuntimeException('bulk insert failed'));
@@ -666,7 +719,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 		$analysis = $this->analysisWithCascade([$this->target('uuid-1')]);
 
 		// Should not throw.
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}//end testAuditInsertFailureIsFailSoft()
 
 	/**
@@ -682,7 +738,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			->willReturnArgument(0);
 
 		$calls = 0;
-		$this->auditTrailMapper->method('buildAuditTrail')
+		$this->auditTrailMapper->method('buildEntry')
 			->willReturnCallback(
 				function () use (&$calls) {
 					$calls++;
@@ -711,7 +767,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 		);
 
 		// Should not throw.
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}//end testRowBuildFailureSkipsOnlyThatRow()
 
 	// =========================================================================
@@ -757,7 +816,10 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}//end testSetNullDoesNotUseBatchedCascadeMachinery()
 	/**
 	 * A real ArchivalRetentionGuard over schemas that declare no archival annotation.
@@ -788,6 +850,6 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			}
 		);
 
-		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+		return new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)));
 	}//end makeArchivalGuard()
 }//end class

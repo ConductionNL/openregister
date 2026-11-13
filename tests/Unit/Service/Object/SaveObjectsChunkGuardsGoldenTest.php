@@ -43,6 +43,22 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Service\Object\BulkCreateCheck
+ * @uses   \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\BulkCreateCheck
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
  */
 class SaveObjectsChunkGuardsGoldenTest extends TestCase {
 
@@ -149,7 +165,7 @@ class SaveObjectsChunkGuardsGoldenTest extends TestCase {
 		}
 
 		$handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->createMock(SchemaMapperInterface::class), registerMapper: $this->createMock(RegisterMapperInterface::class), saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapperInterface::class), tables: $this->createMock(MagicMapper::class)), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $session, organisationService: $this->createMock(OrganisationServiceInterface::class)),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
 			checks: new BulkRowChecks(permissionHandler: $permissions, validateHandler: $validator)

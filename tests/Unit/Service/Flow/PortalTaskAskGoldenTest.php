@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -54,6 +55,14 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\FlowTaskBridge
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
  * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskServices
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigCommon
  */
 class PortalTaskAskGoldenTest extends TestCase {
 
@@ -132,7 +141,7 @@ class PortalTaskAskGoldenTest extends TestCase {
 			'runAs' => 'caseworker',
 		];
 		try {
-			$node->execute($items, self::CONFIG, $context);
+			$node->execute(new FlowNodeCall(items: $items, config: self::CONFIG, context: $context));
 			$this->fail('Expected the node to suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull($suspension->getResumeAt());

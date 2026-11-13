@@ -17,17 +17,22 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Middleware;
 
+use OCA\OpenRegister\Middleware\InboundCall;
 use OCA\OpenRegister\Middleware\PublicApiCorsMiddleware;
 use OCA\OpenRegister\Service\Hardening\AllowedOriginsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Utility\IControllerMethodReflector;
 use OCP\IRequest;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\PublicApiCorsMiddleware
+ * @uses \OCA\OpenRegister\Middleware\DispatchedMethod
+ * @uses \OCA\OpenRegister\Middleware\InboundCall
  */
 class PublicApiCorsMiddlewareBehaviourTest extends TestCase {
 
@@ -35,7 +40,7 @@ class PublicApiCorsMiddlewareBehaviourTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getHeader')->willReturn('https://a.example');
 
-		return new PublicApiCorsMiddleware($request, $reflector, $policy);
+		return new PublicApiCorsMiddleware(new InboundCall($request, $this->createMock(IUserSession::class), $reflector, $this->createMock(LoggerInterface::class)), $policy);
 	}
 
 	public function testAPolicyFailureReturnsTheSameResponseWithoutCorsHeaders(): void {

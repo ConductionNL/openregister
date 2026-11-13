@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DatabaseServerProfile;
 use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
@@ -181,16 +182,14 @@ class SettingsController extends Controller {
 	/**
 	 * SettingsController constructor.
 	 *
-	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param SettingsControllerServices $services The settings controller services.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		SettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->config = $services->store->config;
 		$this->db = $services->store->db;
 		$this->container = $services->store->container;
@@ -219,8 +218,6 @@ class SettingsController extends Controller {
 
 	/**
 	 * Handle the PUT request to update settings.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated settings
 	 *
@@ -259,8 +256,6 @@ class SettingsController extends Controller {
 	 *
 	 * This method recalculates deletion times for all objects and logs based on current retention settings.
 	 * It also assigns default owners and organizations to objects that don't have them assigned.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with rebase result
 	 *
@@ -475,8 +470,6 @@ class SettingsController extends Controller {
 	 *
 	 * Forces a refresh of the cached database information including
 	 * PostgreSQL extensions. This clears the cache and re-queries the database.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with refreshed database info
 	 *

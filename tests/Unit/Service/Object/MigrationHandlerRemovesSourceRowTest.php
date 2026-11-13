@@ -9,6 +9,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -25,6 +27,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Info\DataInfo;
@@ -47,8 +50,32 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Object\MoveAddress
  * @uses   \OCA\OpenRegister\Service\Object\MoveObject
  * @uses   \OCA\OpenRegister\Service\Object\ObjectMove
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectMigration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\Object\MigrationMapping
+ * @uses \OCA\OpenRegister\Service\Object\MigrationStorage
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectMigration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\Object\MigrationMapping
+ * @uses \OCA\OpenRegister\Service\Object\MigrationStorage
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
  */
 class MigrationHandlerRemovesSourceRowTest extends TestCase {
 
@@ -240,7 +267,14 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	 * @return array<string, mixed> The report.
 	 */
 	private function migrate(): array {
-		return $this->handler()->migrateObjects([1, 10], [2, 20], [self::UUID], ['headline' => 'title']);
+		return $this->handler()->migrateObjects(
+			migration: new ObjectMigration(
+				source: new RegisterSchemaRef(register: 1, schema: 10),
+				target: new RegisterSchemaRef(register: 2, schema: 20),
+				objectIds: [self::UUID],
+				mapping: ['headline' => 'title']
+			)
+		);
 	}//end migrate()
 
 	/**
@@ -262,7 +296,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 		);
 
 		return new MigrationHandler(
-			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(objects: $mapper, validator: $this->validator(), audit: $audit, logger: $logger, events: ($this->guards ?? $this->createStub(IEventDispatcher::class))), auditTrail: $audit),
+			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $audit, $logger, ($this->guards ?? $this->createStub(IEventDispatcher::class))), validator: $this->validator()), auditTrail: $audit),
 			mapping: new MigrationMapping(utilityHandler: $this->utility(), dataManipHandler: $manipulation, relationScanner: $scanner),
 			logger: $logger
 		);
@@ -320,12 +354,12 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	 */
 	private function audit(): AuditTrailMapper {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->auditEntries[] = [$action, $context];
 				return new AuditTrail();
 			}
-		);
+		));
 		$audit->method('createAuditTrail')->willReturnCallback(
 			function (ObjectEntity $old, ObjectEntity $new, string $action): AuditTrail {
 				if ($this->auditFails === true) {

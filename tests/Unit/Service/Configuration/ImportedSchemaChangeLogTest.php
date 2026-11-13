@@ -11,6 +11,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Configuration\ImportedSchemaChangeLog;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use PHPUnit\Framework\TestCase;
@@ -23,6 +25,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Configuration\ImportedSchemaChangeLog
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Schema\SchemaChangeSet
+ * @uses \OCA\OpenRegister\Service\Schema\IncomingDefinition
+ * @uses \OCA\OpenRegister\Service\Schema\SchemaChangeRecord
  */
 class ImportedSchemaChangeLogTest extends TestCase {
 
@@ -86,7 +90,7 @@ class ImportedSchemaChangeLogTest extends TestCase {
 		$changes = $this->changes();
 		$versioning = $this->createMock(SchemaVersioningService::class);
 		$versioning->expects($this->once())->method('classify')
-			->with($stored, ['properties' => ['new' => []], 'required' => ['stored']])
+			->with($stored, new IncomingDefinition(['properties' => ['new' => []], 'required' => ['stored']]))
 			->willReturn($changes);
 		$log = new ImportedSchemaChangeLog(versioning: $versioning, logger: $this->createMock(LoggerInterface::class), appId: null);
 
@@ -102,7 +106,7 @@ class ImportedSchemaChangeLogTest extends TestCase {
 		$stored = $this->stored();
 		$versioning = $this->createMock(SchemaVersioningService::class);
 		$versioning->expects($this->once())->method('classify')
-			->with($stored, ['properties' => ['stored' => ['type' => 'string']], 'required' => []])
+			->with($stored, new IncomingDefinition(['properties' => ['stored' => ['type' => 'string']], 'required' => []]))
 			->willReturn($this->changes());
 		$log = new ImportedSchemaChangeLog(versioning: $versioning, logger: $this->createMock(LoggerInterface::class), appId: null);
 
@@ -135,7 +139,7 @@ class ImportedSchemaChangeLogTest extends TestCase {
 	public function testAChangeIsWrittenNamingTheImportingApp(): void {
 		$changes = $this->changes();
 		$versioning = $this->createMock(SchemaVersioningService::class);
-		$versioning->expects($this->once())->method('recordChangelog')->with(12, '1.2.3', $changes, false, 'configuration import of dossiq');
+		$versioning->expects($this->once())->method('recordChange')->with(12, new SchemaChangeRecord($changes, false, '1.2.3', 'configuration import of dossiq'));
 		$log = new ImportedSchemaChangeLog(versioning: $versioning, logger: $this->createMock(LoggerInterface::class), appId: 'dossiq');
 
 		$log->record(schema: $this->stored(), changeSet: $changes);
@@ -149,7 +153,7 @@ class ImportedSchemaChangeLogTest extends TestCase {
 	public function testAChangeWithoutAnAppHasAPlainOrigin(): void {
 		$changes = $this->changes();
 		$versioning = $this->createMock(SchemaVersioningService::class);
-		$versioning->expects($this->once())->method('recordChangelog')->with(12, '1.2.3', $changes, false, 'configuration import');
+		$versioning->expects($this->once())->method('recordChange')->with(12, new SchemaChangeRecord($changes, false, '1.2.3', 'configuration import'));
 		$log = new ImportedSchemaChangeLog(versioning: $versioning, logger: $this->createMock(LoggerInterface::class), appId: null);
 
 		$log->record(schema: $this->stored(), changeSet: $changes);
@@ -162,7 +166,7 @@ class ImportedSchemaChangeLogTest extends TestCase {
 	 */
 	public function testNothingIsWrittenWithoutAChange(): void {
 		$versioning = $this->createMock(SchemaVersioningService::class);
-		$versioning->expects($this->never())->method('recordChangelog');
+		$versioning->expects($this->never())->method('recordChange');
 		$log = new ImportedSchemaChangeLog(versioning: $versioning, logger: $this->createMock(LoggerInterface::class), appId: 'dossiq');
 
 		$log->record(schema: $this->stored(), changeSet: null);

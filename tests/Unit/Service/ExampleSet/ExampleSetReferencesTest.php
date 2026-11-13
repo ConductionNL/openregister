@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
@@ -69,6 +71,56 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\ExampleSet\CastOrganisationsRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsRemoval
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastOrganisations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFields
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFollower
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeReadBack
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCheckRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRequest
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerSetup
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerWriters
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetKeptObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeopleRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordedObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemovalRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverSettings
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolveScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolvedObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRestorePart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetVouchedAccounts
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWrittenValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentDeclarations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentOrdering
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ObjectCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallRun
  */
 class ExampleSetReferencesTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -116,8 +168,8 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 		$newTheme = $this->store->ids(register: 'pub', schema: 'theme')[0];
 		$this->assertNotSame($oldTheme, $newTheme);
 		$this->assertSame($publications, $this->store->ids(register: 'pub', schema: 'publication'), 'the publications are kept, not written twice');
-		$this->assertSame([$newTheme], $this->store->get(register: 'pub', schema: 'publication', id: $publications[0])['themes']);
-		$this->assertSame($newTheme, $this->store->get(register: 'pub', schema: 'publication', id: $publications[1])['theme']);
+		$this->assertSame([$newTheme], $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $publications[0]))['themes']);
+		$this->assertSame($newTheme, $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $publications[1]))['theme']);
 		$this->assertSame('refreshed', $report['changes']['alpha/pub-1#references']);
 		$this->assertSame('refreshed', $report['changes']['alpha/pub-2#references']);
 		$this->assertSame(
@@ -176,7 +228,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 
 		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 
-		$this->assertSame(['an-unrelated-id'], $this->store->get(register: 'pub', schema: 'publication', id: $publications[0])['themes']);
+		$this->assertSame(['an-unrelated-id'], $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $publications[0]))['themes']);
 		$this->assertSame($updates, $this->store->updates, 'nothing is written over the edit');
 		$this->assertArrayNotHasKey('alpha/pub-1#references', $report['changes']);
 		$this->assertArrayNotHasKey('alpha/pub-1#references', $this->record->read(set: 'demo')['changes']);
@@ -235,7 +287,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 			$this->store->rows['pub publication'][$pubId][$field] = $stale;
 			$report = $this->installer->install(plan: $plan, today: $this->today());
 			$this->assertSame('refreshed', $report['changes']['beta/pub-3#references'], $field);
-			$this->assertSame($themeId, $this->store->get(register: 'pub', schema: 'publication', id: $pubId)[$field]);
+			$this->assertSame($themeId, $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $pubId))[$field]);
 		}
 
 		$paths = array_column($this->record->read(set: 'demo')['changes']['beta/pub-3#references']['set'], 'path');

@@ -37,23 +37,18 @@
 			</ListActionsBar>
 
 			<!-- Webhooks Table -->
-			<div class="tableContainer" :class="{ 'is-loading': loading }">
-				<div v-if="loading" class="loadingWrapper">
-					<NcLoadingIcon :size="64" />
-				</div>
+			<ListTableStates
+				:loading="loading"
+				:empty="!webhooksList.length"
+				:emptyName="t('openregister', 'No webhooks found')"
+				:emptyDescription="
+					t('openregister', 'No webhooks have been configured yet')
+				">
+				<template #emptyIcon>
+					<Webhook :size="64" />
+				</template>
 
-				<NcEmptyContent
-					v-else-if="!webhooksList.length"
-					:name="t('openregister', 'No webhooks found')"
-					:description="
-						t('openregister', 'No webhooks have been configured yet')
-					">
-					<template #icon>
-						<Webhook :size="64" />
-					</template>
-				</NcEmptyContent>
-
-				<CnDataTable v-else :columns="webhookColumns" :rows="webhooksList">
+				<CnDataTable :columns="webhookColumns" :rows="webhooksList">
 					<template #column-name="{ row }">
 						<div class="webhook-name-cell">
 							<Webhook :size="20" class="webhook-icon" />
@@ -91,14 +86,16 @@
 					</template>
 				</CnDataTable>
 
-				<!-- Pagination -->
-				<OffsetPager
-					:offset="offset"
-					:limit="limit"
-					:total="totalWebhooks"
-					@previous="previousPage"
-					@next="nextPage" />
-			</div>
+				<template #footer>
+					<!-- Pagination -->
+					<OffsetPager
+						:offset="offset"
+						:limit="limit"
+						:total="totalWebhooks"
+						@previous="previousPage"
+						@next="nextPage" />
+				</template>
+			</ListTableStates>
 		</div>
 
 		<!-- Search Sidebar -->
@@ -124,8 +121,6 @@ import { generateUrl } from '@nextcloud/router'
 import {
 	NcAppContent,
 	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
 } from '@nextcloud/vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
@@ -138,6 +133,8 @@ import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import OffsetPager from '../../components/shared/OffsetPager.vue'
 import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
+import ListTableStates from '../ListTableStates.vue'
+import { sidebarToggle } from '../../composables/sidebarToggle.js'
 import { displayDateTime } from '../../services/displayDateTime.js'
 import { editAction, refreshAction } from '../../services/menuActions.js'
 import { navigationStore, webhookStore } from '../../store/store.js'
@@ -156,8 +153,7 @@ export default {
 		FilterToggleHeader,
 		NcAppContent,
 		NcButton,
-		NcLoadingIcon,
-		NcEmptyContent,
+		ListTableStates,
 		Webhook,
 		Plus,
 		WebhooksSidebar,
@@ -323,15 +319,7 @@ export default {
 
 		t,
 
-		/**
-		 * Toggle sidebar visibility
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md
-		 * @return {void}
-		 */
-		toggleSidebar() {
-			this.sidebarOpen = !this.sidebarOpen
-		},
+		...sidebarToggle,
 
 		/**
 		 * Handle search query update

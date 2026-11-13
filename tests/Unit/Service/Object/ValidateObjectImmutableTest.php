@@ -30,10 +30,14 @@ use OCP\IURLGenerator;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
+ * @uses \OCA\OpenRegister\Service\Object\WriteConstraintCheck
  */
 final class ValidateObjectImmutableTest extends TestCase {
 
@@ -79,8 +83,7 @@ final class ValidateObjectImmutableTest extends TestCase {
 	 */
 	public function testChangingAnImmutablePropertyIsRefused(): void {
 		$violations = $this->validator()->validateImmutableConstraints(
-			incomingObject: ['vastgesteldOp' => '2026-09-15'],
-			existingObject: ['vastgesteldOp' => '2026-03-01'],
+			check: new WriteConstraintCheck(incoming: ['vastgesteldOp' => '2026-09-15'], stored: ['vastgesteldOp' => '2026-03-01']),
 			schema: $this->schema()
 		);
 
@@ -102,8 +105,7 @@ final class ValidateObjectImmutableTest extends TestCase {
 	 */
 	public function testAnUnsetImmutablePropertyCanStillBeSet(): void {
 		$violations = $this->validator()->validateImmutableConstraints(
-			incomingObject: ['vastgesteldOp' => '2026-09-15'],
-			existingObject: ['vastgesteldOp' => null, 'toelichting' => 'concept'],
+			check: new WriteConstraintCheck(incoming: ['vastgesteldOp' => '2026-09-15'], stored: ['vastgesteldOp' => null, 'toelichting' => 'concept']),
 			schema: $this->schema()
 		);
 
@@ -119,15 +121,13 @@ final class ValidateObjectImmutableTest extends TestCase {
 		$schema = $this->schema();
 
 		$first = $this->validator()->validateImmutableConstraints(
-			incomingObject: ['vastgesteldOp' => '2026-09-15'],
-			existingObject: ['vastgesteldOp' => ''],
+			check: new WriteConstraintCheck(incoming: ['vastgesteldOp' => '2026-09-15'], stored: ['vastgesteldOp' => '']),
 			schema: $schema
 		);
 		$this->assertSame([], $first);
 
 		$second = $this->validator()->validateImmutableConstraints(
-			incomingObject: ['vastgesteldOp' => '2026-10-01'],
-			existingObject: ['vastgesteldOp' => '2026-09-15'],
+			check: new WriteConstraintCheck(incoming: ['vastgesteldOp' => '2026-10-01'], stored: ['vastgesteldOp' => '2026-09-15']),
 			schema: $schema
 		);
 		$this->assertCount(1, $second);
@@ -143,8 +143,7 @@ final class ValidateObjectImmutableTest extends TestCase {
 	 */
 	public function testRewritingTheSameValueIsAccepted(): void {
 		$violations = $this->validator()->validateImmutableConstraints(
-			incomingObject: ['vastgesteldOp' => '2026-03-01', 'toelichting' => 'nieuw'],
-			existingObject: ['vastgesteldOp' => '2026-03-01', 'toelichting' => 'oud'],
+			check: new WriteConstraintCheck(incoming: ['vastgesteldOp' => '2026-03-01', 'toelichting' => 'nieuw'], stored: ['vastgesteldOp' => '2026-03-01', 'toelichting' => 'oud']),
 			schema: $this->schema()
 		);
 
@@ -162,8 +161,7 @@ final class ValidateObjectImmutableTest extends TestCase {
 	 */
 	public function testAnOrdinaryPropertyIsNotAffected(): void {
 		$violations = $this->validator()->validateImmutableConstraints(
-			incomingObject: ['toelichting' => 'nieuw'],
-			existingObject: ['toelichting' => 'oud'],
+			check: new WriteConstraintCheck(incoming: ['toelichting' => 'nieuw'], stored: ['toelichting' => 'oud']),
 			schema: $this->schema()
 		);
 
@@ -177,8 +175,7 @@ final class ValidateObjectImmutableTest extends TestCase {
 	 */
 	public function testCreateIsNotAffected(): void {
 		$violations = $this->validator()->validateImmutableConstraints(
-			incomingObject: ['vastgesteldOp' => '2026-09-15'],
-			existingObject: [],
+			check: new WriteConstraintCheck(incoming: ['vastgesteldOp' => '2026-09-15'], stored: []),
 			schema: $this->schema()
 		);
 

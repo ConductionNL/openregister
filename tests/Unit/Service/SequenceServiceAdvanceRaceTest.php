@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\SequenceMapper;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\DB\Exception as DbException;
 use OCP\IDBConnection;
@@ -24,6 +25,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\SequenceService
+ * @uses \OCA\OpenRegister\Db\Sequence
+ * @uses \OCA\OpenRegister\Service\SequenceScope
  */
 final class SequenceServiceAdvanceRaceTest extends TestCase {
 
@@ -40,7 +43,7 @@ final class SequenceServiceAdvanceRaceTest extends TestCase {
 		$raised = [];
 		$mapper = $this->createMock(SequenceMapper::class);
 		$mapper->method('raiseTo')->willReturnCallback(
-			function (int $registerId, int $schemaId, string $scopeKey, int $minNextValue) use (&$raised): int {
+			function (SequenceScope $scope, int $minNextValue) use (&$raised): int {
 				$raised[] = $minNextValue;
 				return 0;
 			}
@@ -50,7 +53,7 @@ final class SequenceServiceAdvanceRaceTest extends TestCase {
 		$mapper->expects($this->never())->method('incrementScope');
 
 		$service = new SequenceService($mapper, $this->createMock(IDBConnection::class));
-		$service->advanceTo(1, 2, 'scope', 41);
+		$service->advanceTo(new SequenceScope(1, 2, 'scope'), 41);
 
 		$this->assertSame([42, 42], $raised);
 	}//end testALostSeedRaceStillRaisesTheCounterPastTheImport()
@@ -73,6 +76,6 @@ final class SequenceServiceAdvanceRaceTest extends TestCase {
 		);
 
 		$service = new SequenceService($mapper, $this->createMock(IDBConnection::class));
-		$service->advanceTo(1, 2, 'scope', 41);
+		$service->advanceTo(new SequenceScope(1, 2, 'scope'), 41);
 	}//end testAWonSeedStoresTheImportPlusOne()
 }//end class

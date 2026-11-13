@@ -12,6 +12,22 @@ globalThis.OC = globalThis.OC || {
 
 globalThis.OCA = globalThis.OCA || {}
 
+// @nextcloud/auth reads the request token from the page head, as Nextcloud renders it.
+if (typeof document !== 'undefined') {
+	document.head.dataset.requesttoken = 'test-request-token'
+}
+
 if (!globalThis.fetch) {
 	globalThis.fetch = jest.fn()
+}
+
+// Date.now() follows the wall clock, which can step backwards when the host
+// resyncs it (WSL2 does, by hundreds of milliseconds). Vue skips a DOM event
+// whose timestamp is not later than the moment its listener was attached, so a
+// step between mount and trigger() silently drops the event. Keep it monotonic.
+const wallClockNow = Date.now.bind(Date)
+let lastNow = 0
+Date.now = () => {
+	lastNow = Math.max(lastNow, wallClockNow())
+	return lastNow
 }

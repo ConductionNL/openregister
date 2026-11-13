@@ -54,6 +54,19 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestEvaluator
  * @uses \OCA\OpenRegister\Service\Object\BulkRowRules
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Service\Dmn\DecisionTableColumns
+ * @uses \OCA\OpenRegister\Service\Dmn\TableValidationRun
+ * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestValue
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses \OCA\OpenRegister\Service\Object\SafeguardBatchRun
+ * @uses \OCA\OpenRegister\Service\Object\SafeguardRejection
  */
 class DecisionTableBulkGuardTest extends TestCase {
 
@@ -184,13 +197,13 @@ class DecisionTableBulkGuardTest extends TestCase {
 		$mapper = $this->createMock(MagicMapper::class);
 		$mapper->expects($this->never())->method('bulkUpsert');
 		$service = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $mapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $this->createMock(IUserSession::class), organisationService: $this->createMock(OrganisationService::class), groupManager: null),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: null, auditTrailMapper: null),
 			checks: new BulkRowChecks(permissionHandler: null, validateHandler: null, rowRules: new BulkRowRules(decisionTables: $this->guard([$other])))
 		);
 
-		$result = $service->saveObjects([3 => $this->table()]);
+		$result = $service->saveObjects(objects: [3 => $this->table()]);
 
 		$this->assertSame([], $result['saved']);
 		$this->assertCount(1, $result['invalid']);

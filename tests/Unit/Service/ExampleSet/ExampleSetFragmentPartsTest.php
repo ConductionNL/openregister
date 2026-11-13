@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
@@ -75,6 +76,66 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\ExampleSet\AttachedFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\CastOrganisationsRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsRemoval
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastOrganisations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFields
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFollower
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeReadBack
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCheckRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigKey
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRequest
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerSetup
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerWriters
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetKeptObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetMadeEntry
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPathValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeopleRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordedObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemovalRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverSettings
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolveScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolvedObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRestorePart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetVouchedAccounts
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWrittenValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FileAttachRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentDeclarations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentOrdering
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\LocalFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ObjectCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallRun
+ * @uses \OCA\OpenRegister\Service\File\FileTarget
+ * @uses \OCA\OpenRegister\Service\File\FileUpload
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetMoment
  */
 class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -375,7 +436,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	public function testTheInstanceAddressFillsAPlaceholderAndIsNeverEmpty(): void {
 		$this->alpha(['objects' => [['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['url' => '{{instance:baseUrl}}/apps/x']]]]);
 		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
-		$this->assertSame('https://cloud.example.test/apps/x', $this->store->find(register: 'pub', schema: 'publication', filters: [])[0]['url']);
+		$this->assertSame('https://cloud.example.test/apps/x', $this->store->find(table: new RegisterSchemaRef(register: 'pub', schema: 'publication'), filters: [])[0]['url']);
 
 		$this->remover->remove(set: 'demo');
 		$this->baseUrl = '';
@@ -397,8 +458,8 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 
 		$this->assertTrue($report['ok'], json_encode($report));
-		$case   = $this->store->find(register: 'cases', schema: 'case', filters: [])[0];
-		$result = $this->store->find(register: 'cases', schema: 'result', filters: [])[0];
+		$case   = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0];
+		$result = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'result'), filters: [])[0];
 		$this->assertSame($result['id'], $case['result']);
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -472,7 +533,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertCount(2, $this->organisations, 'created once');
-		$row = $this->store->find(register: 'pub', schema: 'publication', filters: [])[0];
+		$row = $this->store->find(table: new RegisterSchemaRef(register: 'pub', schema: 'publication'), filters: [])[0];
 		$this->assertSame('org-2', $row['organization']);
 		$this->assertSame('org-existing', $row['other']);
 

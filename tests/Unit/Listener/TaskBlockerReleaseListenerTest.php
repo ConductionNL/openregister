@@ -29,6 +29,7 @@ use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
 
 /**
  * The release is post-event work on the committed terminal event.
@@ -36,6 +37,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Listener\TaskBlockerReleaseListener
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Event\TaskTerminalEvent
+ * @uses \OCA\OpenRegister\Event\AbstractTaskEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry
  */
 class TaskBlockerReleaseListenerTest extends TestCase {
 
@@ -69,10 +72,10 @@ class TaskBlockerReleaseListenerTest extends TestCase {
 		$recorded = [];
 		$service = $this->createMock(TaskService::class);
 		$service->method('record')->willReturnCallback(
-			function (string $uuid, string $action, ?string $actor, string $reason) use (&$recorded): Task {
-				$recorded[] = [$uuid, $action, $actor, $reason];
+			function (TaskAuditEntry $entry) use (&$recorded): Task {
+				$recorded[] = [$entry->uuid, $entry->action, $entry->actor, $entry->reason];
 
-				return $this->task(uuid: $uuid, state: Task::STATE_ACTIVE);
+				return $this->task(uuid: $entry->uuid, state: Task::STATE_ACTIVE);
 			}
 		);
 
@@ -113,7 +116,8 @@ class TaskBlockerReleaseListenerTest extends TestCase {
 		$recorded = [];
 		$service = $this->createMock(TaskService::class);
 		$service->method('record')->willReturnCallback(
-			function (string $uuid) use (&$recorded): Task {
+			function (TaskAuditEntry $entry) use (&$recorded): Task {
+				$uuid = $entry->uuid;
 				if ($uuid === 'task-advice') {
 					throw new RuntimeException('database went away');
 				}

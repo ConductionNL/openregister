@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ProcessingLogMapper::findBySubject covers list reads and reduces them to the one subject.
+ * ProcessingLogMapper::findForSubject covers list reads and reduces them to the one subject.
  *
  * @category  Test
  * @package   OCA\OpenRegister\Tests\Unit\Db
@@ -20,13 +20,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\ProcessingLogMapper
  * @uses   \OCA\OpenRegister\Db\ProcessingLogEntry
+ * @uses \OCA\OpenRegister\Db\ProcessingLogReadScope
+ * @uses \OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class ProcessingLogMapperFindBySubjectTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -39,7 +45,7 @@ class ProcessingLogMapperFindBySubjectTest extends TestCase {
 	}
 
 	public function testTheQueryAlsoMatchesTheExactElementOfSubjectIds(): void {
-		$this->mapper()->findBySubject('BSN', '111');
+		$this->mapper()->findForSubject(new ProcessingLogSubject('BSN', '111'));
 
 		$log = implode("\n", $this->queryLog);
 		$this->assertStringContainsString('%{"type":"BSN","value":"111"}%', str_replace('\\"', '"', $log));
@@ -48,7 +54,7 @@ class ProcessingLogMapperFindBySubjectTest extends TestCase {
 	}
 
 	public function testTheFilterAlsoSearchesSubjectIds(): void {
-		$this->mapper()->findFiltered(['subject_id_type' => 'BSN', 'subject_id_value' => '111']);
+		$this->mapper()->findListed(new ListQuery(limit: 100, offset: 0, filters: ['subject_id_type' => 'BSN', 'subject_id_value' => '111']));
 
 		$log = str_replace('\\"', '"', implode("\n", $this->queryLog));
 		$this->assertStringContainsString('%{"type":"BSN","value":"111"}%', $log);
@@ -57,19 +63,19 @@ class ProcessingLogMapperFindBySubjectTest extends TestCase {
 	}
 
 	public function testAFilterOnTheValueAloneEndsAtTheElement(): void {
-		$this->mapper()->findFiltered(['subject_id_value' => '111']);
+		$this->mapper()->findListed(new ListQuery(limit: 100, offset: 0, filters: ['subject_id_value' => '111']));
 
 		$this->assertStringContainsString('%"value":"111"}%', str_replace('\\"', '"', implode("\n", $this->queryLog)));
 	}
 
 	public function testAFilterOnTheTypeAloneStartsAtTheElement(): void {
-		$this->mapper()->findFiltered(['subject_id_type' => 'BSN']);
+		$this->mapper()->findListed(new ListQuery(limit: 100, offset: 0, filters: ['subject_id_type' => 'BSN']));
 
 		$this->assertStringContainsString('%{"type":"BSN",%', str_replace('\\"', '"', implode("\n", $this->queryLog)));
 	}
 
 	public function testNoSubjectFilterLeavesSubjectIdsOutOfTheQuery(): void {
-		$this->mapper()->findFiltered(['actor' => 'admin', 'subject_id_type' => '', 'subject_id_value' => null]);
+		$this->mapper()->findListed(new ListQuery(limit: 100, offset: 0, filters: ['actor' => 'admin', 'subject_id_type' => '', 'subject_id_value' => null]));
 
 		$this->assertStringNotContainsString('subject_id', implode("\n", $this->queryLog));
 	}
@@ -82,7 +88,7 @@ class ProcessingLogMapperFindBySubjectTest extends TestCase {
 			'object_uuids' => '["uuid-a","uuid-b"]',
 		]]];
 
-		$entry = $this->mapper()->findFiltered(['subject_id_type' => 'BSN', 'subject_id_value' => '111'])[0];
+		$entry = $this->mapper()->findListed(new ListQuery(limit: 100, offset: 0, filters: ['subject_id_type' => 'BSN', 'subject_id_value' => '111']))[0];
 
 		$this->assertCount(2, $entry->getSubjectIds());
 		$this->assertSame(['uuid-a', 'uuid-b'], $entry->getObjectUuids());
@@ -97,7 +103,7 @@ class ProcessingLogMapperFindBySubjectTest extends TestCase {
 			'query_params' => '{"_search":"jansen"}',
 		]]];
 
-		$entry = $this->mapper()->findBySubject('BSN', '111')[0];
+		$entry = $this->mapper()->findForSubject(new ProcessingLogSubject('BSN', '111'))[0];
 
 		$this->assertSame([['type' => 'BSN', 'value' => '111']], $entry->getSubjectIds());
 		$this->assertSame('111', $entry->getSubjectIdValue());
@@ -117,7 +123,7 @@ class ProcessingLogMapperFindBySubjectTest extends TestCase {
 			'subject_id_value' => '111',
 		]]];
 
-		$entry = $this->mapper()->findBySubject('BSN', '111')[0];
+		$entry = $this->mapper()->findForSubject(new ProcessingLogSubject('BSN', '111'))[0];
 
 		$this->assertSame('uuid-a', $entry->getObjectUuid());
 		$this->assertNull($entry->getSubjectIds());

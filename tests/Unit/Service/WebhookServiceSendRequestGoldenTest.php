@@ -43,6 +43,10 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Db\Webhook
  * @uses   \OCA\OpenRegister\Service\Security\OutboundAddressGuard
  * @uses   \OCA\OpenRegister\Service\WebhookDeliveryRecorder
+ * @uses \OCA\OpenRegister\Service\WebhookDelivery
+ * @uses \OCA\OpenRegister\Service\WebhookDispatchServices
+ * @uses \OCA\OpenRegister\Service\WebhookEvent
+ * @uses \OCA\OpenRegister\Service\WebhookStores
  */
 class WebhookServiceSendRequestGoldenTest extends TestCase {
 
@@ -118,7 +122,7 @@ class WebhookServiceSendRequestGoldenTest extends TestCase {
 		}
 
 		try {
-			$result = (new ReflectionMethod(WebhookService::class, 'sendRequest'))->invoke($service, $webhook, ['kind' => 'thing', 'id' => 5], $case['cap'] ?? null);
+			$result = (new ReflectionMethod(WebhookService::class, 'sendRequest'))->invoke($service, new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'Golden\\Event', payload: []), timeoutCapSeconds: $case['cap'] ?? null), ['kind' => 'thing', 'id' => 5]);
 			$actual = ['result' => $result, 'sent' => $seen];
 		} catch (Throwable $e) {
 			$actual = ['error' => [get_class($e), $e->getMessage()], 'sent' => $seen];

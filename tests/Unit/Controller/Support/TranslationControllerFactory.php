@@ -38,15 +38,16 @@ final class TranslationControllerFactory {
 		\OCA\OpenRegister\Db\MagicMapperInterface $objectMapper,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\TranslationControllerServices(
 				statusService: $statusService,
-				translationMapper: $translationMapper,
-				schemaMapper: $schemaMapper,
 				bulkService: $bulkService,
+				mappers: new \OCA\OpenRegister\Controller\Support\TranslationMappers(
+					translationMapper: $translationMapper,
+					schemaMapper: $schemaMapper,
+					objectMapper: $objectMapper,
+				),
 			),
-			$objectMapper,
 		];
 	}
 

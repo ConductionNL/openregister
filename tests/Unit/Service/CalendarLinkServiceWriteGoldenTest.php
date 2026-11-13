@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\LinkSessionRuntime;
@@ -22,6 +23,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * Records, per scenario, the createEvent call, the CalDAV lookups and the whole inserted
@@ -31,6 +33,10 @@ use Throwable;
  *
  * @covers \OCA\OpenRegister\Service\CalendarLinkService
  * @uses   \OCA\OpenRegister\Db\CalendarLink
+ * @uses \OCA\OpenRegister\Service\CalendarEventKey
+ * @uses \OCA\OpenRegister\Service\CalendarObjectRef
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class CalendarLinkServiceWriteGoldenTest extends TestCase {
 
@@ -135,9 +141,12 @@ class CalendarLinkServiceWriteGoldenTest extends TestCase {
 		$service = $this->service($s);
 		try {
 			if ($kind === 'create') {
-				$service->createAndLinkEvent('obj-1', 3, 4, $args);
+				$service->createLinkedEvent((new LinkTarget('obj-1', 3))->inSchema(4), $args);
 			} else {
-				$service->linkEvent('obj-1', 3, 4, $args[0], $args[1]);
+				$service->linkLocatedEvent(
+					target: (new LinkTarget(objectUuid: 'obj-1', registerId: 3))->inSchema(schemaId: 4),
+					key: new CalendarEventKey(calendarUri: $args[0], eventUid: $args[1])
+				);
 			}
 		} catch (Throwable $e) {
 			$this->calls[] = ['thrown', get_class($e), $e->getMessage(), $e->getCode()];

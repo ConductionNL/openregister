@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\FreezeTerms;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -42,6 +43,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * The write guard for the archived and frozen states.
@@ -74,6 +77,88 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
  * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
+ * @uses   \OCA\OpenRegister\Db\FreezeTerms
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses   \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses   \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Db\LockTerms
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses   \OCA\OpenRegister\Db\SoftDeletion
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRun
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\PropertyDefaults
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanner
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation
+ * @uses   \OCA\OpenRegister\Service\Object\StoredObjectUpdate
+ * @uses   \OCA\OpenRegister\Service\ProtectedCarryForward
+ * @uses \OCA\OpenRegister\Db\FreezeTerms
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\PropertyDefaults
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanner
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation
+ * @uses \OCA\OpenRegister\Service\Object\StoredObjectUpdate
+ * @uses \OCA\OpenRegister\Service\ProtectedCarryForward
  */
 class SaveObjectArchiveGuardTest extends TestCase {
 
@@ -101,10 +186,8 @@ class SaveObjectArchiveGuardTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->mapper,
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->mapper),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -210,9 +293,7 @@ class SaveObjectArchiveGuardTest extends TestCase {
 		try {
 			$this->handler(existing: $object)->saveObject(
 				data: ['title' => 'gewijzigd'],
-				schema: $schema,
-				register: $register,
-				uuid: self::UUID
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 			);
 		} finally {
 			// The object is unchanged: the guard fires before anything is
@@ -251,10 +332,9 @@ class SaveObjectArchiveGuardTest extends TestCase {
 	 */
 	public function testWriteToAFrozenObjectIsRefusedAndNamesTheState(): void {
 		$object = $this->storedObject();
-		$object->freeze(
+		$object->freezeWith(
 			userSession: $this->sessionFor(uid: 'bert'),
-			reason: 'fase afgesloten',
-			state: 'in_bezwaar'
+			terms: new FreezeTerms(reason: 'fase afgesloten', state: 'in_bezwaar')
 		);
 
 		[$schema, $register] = $this->context();
@@ -264,9 +344,7 @@ class SaveObjectArchiveGuardTest extends TestCase {
 
 		$this->handler(existing: $object)->saveObject(
 			data: ['title' => 'gewijzigd'],
-			schema: $schema,
-			register: $register,
-			uuid: self::UUID
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 		);
 	}//end testWriteToAFrozenObjectIsRefusedAndNamesTheState()
 
@@ -286,9 +364,7 @@ class SaveObjectArchiveGuardTest extends TestCase {
 		try {
 			$this->handler(existing: $object)->saveObject(
 				data: ['title' => 'gewijzigd'],
-				schema: $schema,
-				register: $register,
-				uuid: self::UUID
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 			);
 		} catch (ObjectStateWriteException $e) {
 			$refused = true;

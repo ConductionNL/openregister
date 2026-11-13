@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use InvalidArgumentException;
 use LogicException;
 use OCA\OpenRegister\Db\CaseItem;
@@ -39,6 +40,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\CaseItem
  * @covers \OCA\OpenRegister\Db\CaseItemAudit
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class CaseItemMapperQueriesTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -153,7 +155,7 @@ class CaseItemMapperQueriesTest extends TestCase {
 	 */
 	public function testStuckWhereReadsCountsAndDelete(): void {
 		$mapper = new CaseItemMapper(db: $this->connectionWith(affectedRows: 3, rows: [$this->row()]));
-		$page = $mapper->findByTypeAndState(type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE, limit: 10, offset: 20);
+		$page = $mapper->findByTypeAndState(query: new ListQuery(limit: 10, offset: 20, filters: ['type' => CaseItem::TYPE_HUMAN_TASK, 'state' => CaseItem::STATE_ACTIVE]));
 		$this->assertCount(1, $page);
 		$this->assertTrue($this->saw('expr.eq', 'plan_item_type'));
 		$this->assertTrue($this->saw('expr.eq', 'state'));

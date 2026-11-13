@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden record of AuditTrailMapper::buildAuditTrail() over the actions and states it distinguishes.
+ * Golden record of AuditTrailMapper::buildEntry() over the actions and states it distinguishes.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -44,6 +45,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Audit\OrganisationContextAttribution
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedChange
+ * @uses \OCA\OpenRegister\Service\Audit\AuditRowAttribution
+ * @uses \OCA\OpenRegister\Service\Audit\AuditTrailCollaborators
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
@@ -131,17 +137,17 @@ class AuditTrailMapperBuildGoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new AuditTrailMapper($this->createMock(IDBConnection::class), $session, $request, new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class)));
+		return new AuditTrailMapper($this->createMock(IDBConnection::class), new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $session, $request));
 	}//end mapper()
 
 	#[DataProvider('cases')]
 	public function testBuildMatchesGolden(array $case): void {
-		$trail = $this->mapper(uid: ($case['user'] ?? null))->buildAuditTrail(
+		$trail = $this->mapper(uid: ($case['user'] ?? null))->buildEntry(change: new AuditedChange(
 			old: (array_key_exists('old', $case) === true && $case['old'] !== null) ? self::object($case['old']) : null,
 			new: (array_key_exists('new', $case) === true && $case['new'] !== null) ? self::object($case['new']) : null,
 			action: ($case['action'] ?? null),
 			cascadeContext: ($case['cascade'] ?? null)
-		);
+		));
 
 		$row = $trail->jsonSerialize();
 		foreach (['id', 'uuid', 'created', 'session', 'expires', 'hash', 'previousHash'] as $volatile) {

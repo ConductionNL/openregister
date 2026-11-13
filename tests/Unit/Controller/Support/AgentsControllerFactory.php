@@ -18,7 +18,6 @@ final class AgentsControllerFactory {
 	/**
 	 * The constructor arguments of AgentsController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param AgentMapper $agentMapper Constructor argument.
 	 * @param OrganisationService $organisationService Constructor argument.
@@ -29,7 +28,6 @@ final class AgentsControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Mcp\Db\AgentMapper $agentMapper,
 		\OCA\OpenRegister\Service\OrganisationService $organisationService,
@@ -38,7 +36,6 @@ final class AgentsControllerFactory {
 		?string $userId,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\AgentsControllerServices(
 				agentMapper: $agentMapper,

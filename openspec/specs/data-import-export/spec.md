@@ -439,7 +439,9 @@ Export header labels and import template documentation MUST support internationa
 - **WHEN** the export generates the spreadsheet
 - **THEN** the template documentation MUST use English labels: "Field name", "Type", "Required", "Description", "Allowed values"
 
-### Requirement: Configuration import/export MUST support full register portability @e2e exclude backend configuration import/export — covered by PHPUnit
+### Requirement: Configuration import/export MUST support full register portability
+
+@e2e exclude backend configuration import/export, covered by PHPUnit
 
 The `Configuration/ExportHandler` and `Configuration/ImportHandler` SHALL support exporting and importing complete register configurations (schemas, objects, mappings, workflows) as OpenAPI 3.0.0 + `x-openregister` extension files. This enables register portability between OpenRegister instances.
 
@@ -732,17 +734,25 @@ the remote document names them, a `title`, and an `action`. These three slugs
 are the `register:schema:slug` key the preview modal posts back as the
 selection, so a row without them cannot be selected. The object MUST be looked
 up the way the import looks it up: by slug in the local register and schema,
-without RBAC or multitenancy. A missing object MUST be `create`; an object whose
-remote version is strictly newer MUST be `update`; any other existing object,
-and an object whose slug, register or schema is missing or not present locally,
-MUST be `skip` with a `reason`. Every `update` row, for registers and schemas as
+without RBAC or multitenancy. A missing object MUST be `create`, and so MUST an
+object whose register and schema each exist locally or are listed as `create`
+in the same preview (the import creates them first). An object whose remote
+version is strictly newer MUST be `update` when at least one compared field
+differs, and `skip` with a `reason` when none does. An object for which the
+local register holds more than one row with its slug MUST be `skip` with a
+`reason` naming the slug, as the import skips it, and MUST NOT fail the rest of
+the preview. Any other existing object, and an object whose slug is missing or
+whose register or schema is neither present locally nor created by the same
+preview, MUST be `skip` with a `reason`. Every `update` row, for registers and schemas as
 well as objects, MUST list the fields it changes as `{field, current, proposed}`:
 only keys the remote side carries are compared, nested maps by dotted path,
 lists whole, and a row's own `id`, `uuid`, `created` and `updated` are ignored.
 An object row MUST compare what the import would write: its `@self.version`
 (which only gates the update) is not a change, and the seed format's top-level
 `uuid` and `slug` are not compared unless the schema declares a property of
-that name, because the import strips them from the data.
+that name, because the import strips them from the data. Other top-level
+properties the target schema does not declare are not compared either, because
+the import discards them; the row MUST list them under `discarded`.
 
 #### Scenario: A remote object can be selected from its row
 - **GIVEN** a remote object `omgevingsvergunning` in register `zaken` and schema `zaaktype`, both present locally, and no such object locally
@@ -764,6 +774,21 @@ that name, because the import strips them from the data.
 - **GIVEN** a local object `livepass-lane11-a1` stored at version `0.0.1` with colour `red`, imported from a seed that carries a top-level `slug` and `uuid`
 - **WHEN** the preview is built for the seed at version `1.0.1` with colour `blue`
 - **THEN** its row MUST be `update` and its changes MUST be exactly `colour` from `red` to `blue`
+
+#### Scenario: Two live rows share a seed slug
+- **GIVEN** the local register holds two `consent` objects with slug `standing-consent-verbal-bakker`
+- **WHEN** the preview is built
+- **THEN** that row MUST be `skip` with a reason naming the slug, and every other object MUST be previewed as usual
+
+#### Scenario: An undeclared property does not keep the preview busy
+- **GIVEN** an imported object whose remote data carries `notInSchema`, which the schema does not declare, and otherwise matches the stored object
+- **WHEN** the preview is built again with a newer remote version
+- **THEN** its row MUST be `skip` with no changes and MUST list `notInSchema` under `discarded`
+
+#### Scenario: The import creates the register and schema too
+- **GIVEN** a configuration whose register and schema do not exist locally yet
+- **WHEN** the preview is built for the first time
+- **THEN** the register and schema MUST be `create` and so MUST their objects
 
 ### Requirement: ConfigurationService MUST track and compare imported-configuration versions @e2e exclude backend version check/compare logic — covered by PHPUnit
 
@@ -1403,6 +1428,28 @@ recorded, with the reason.
 - **THEN** one entry names the refusal and its reason
 - @e2e exclude {audit assertion, covered by unit tests}
 
+### Requirement: A bundle uploaded by a register manager stays inside that register
+
+A configuration bundle uploaded to a register by a caller who is not an administrator MUST hold only the schemas of that register and, optionally, that register itself. Any other register, schema or component MUST be refused with 403 before anything is written, and so MUST a schema that adds a `crossOrganisation: true` rule its stored form did not hold. The app id and the owner of the import MUST come from the server: the register's application and the signed-in user, never from the request or the bundle.
+
+#### Scenario: A manager's bundle names another schema
+- **GIVEN** a register manager who is not an administrator
+- **WHEN** the manager uploads a bundle with a schema that is not in that register, or another register
+- **THEN** the import MUST be refused with 403 and the importer MUST NOT run
+- @e2e exclude {controller and binding unit tests}
+
+#### Scenario: A manager's bundle adds a crossing
+- **GIVEN** the same manager and a schema of that register
+- **WHEN** the bundle gives the schema a new `crossOrganisation: true` rule
+- **THEN** the import MUST be refused with 403
+- @e2e exclude {binding unit test}
+
+#### Scenario: A request names an app
+- **GIVEN** an upload with an `appId` parameter or an `appId` key in the bundle
+- **WHEN** the import runs
+- **THEN** the importer MUST get the register's application as the app id
+- @e2e exclude {controller unit test}
+
 ## Current Implementation Status
 - **Implemented:**
   - `ImportService` (`lib/Service/ImportService.php`) with `importFromCsv()` and `importFromExcel()` methods for batch import with ReactPHP optimization
@@ -1476,25 +1523,3 @@ recorded, with the reason.
 **Nextcloud Core Integration**: The import pipeline leverages `QueuedJob` (OCP\BackgroundJob\QueuedJob) for SOLR warmup scheduling after imports. Completion notifications should use `INotifier` (OCP\Notification\INotifier). File handling should integrate with Nextcloud Files (WebDAV) for import template storage, scheduled file imports, and export file delivery. The `IJobList` service is already injected into `ImportService` for background job management.
 
 **Recommendation**: The core import/export services are solid and production-ready for backend operations. Priority enhancements should be: (1) Add JSON and XML import/export formats to match competitor feature parity, (2) Implement progress tracking with a polling endpoint for imports over 100 rows, (3) Add downloadable error report generation, (4) Implement import template generation per schema, (5) Add UTF-8 BOM to CSV exports for Excel compatibility. For streaming large exports, consider using `StreamResponse` or chunked transfer encoding rather than buffering in `ob_start()`. The existing `PropertyRbacHandler` integration is excellent and should be extended to import operations (rejecting writes to RBAC-protected properties for non-authorized users).
-
-### Requirement: A bundle uploaded by a register manager stays inside that register
-
-A configuration bundle uploaded to a register by a caller who is not an administrator MUST hold only the schemas of that register and, optionally, that register itself. Any other register, schema or component MUST be refused with 403 before anything is written, and so MUST a schema that adds a `crossOrganisation: true` rule its stored form did not hold. The app id and the owner of the import MUST come from the server: the register's application and the signed-in user, never from the request or the bundle.
-
-#### Scenario: A manager's bundle names another schema
-- **GIVEN** a register manager who is not an administrator
-- **WHEN** the manager uploads a bundle with a schema that is not in that register, or another register
-- **THEN** the import MUST be refused with 403 and the importer MUST NOT run
-- @e2e exclude {controller and binding unit tests}
-
-#### Scenario: A manager's bundle adds a crossing
-- **GIVEN** the same manager and a schema of that register
-- **WHEN** the bundle gives the schema a new `crossOrganisation: true` rule
-- **THEN** the import MUST be refused with 403
-- @e2e exclude {binding unit test}
-
-#### Scenario: A request names an app
-- **GIVEN** an upload with an `appId` parameter or an `appId` key in the bundle
-- **WHEN** the import runs
-- **THEN** the importer MUST get the register's application as the app id
-- @e2e exclude {controller unit test}

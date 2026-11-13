@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ImportPreviewRunner;
+use OCA\OpenRegister\Service\Import\ImportCommit;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Service\Import\ImportPreviewService;
@@ -39,6 +40,9 @@ use Throwable;
  * Pins every call run() makes on the mapper, the service and the logger.
  *
  * @covers \OCA\OpenRegister\BackgroundJob\ImportPreviewRunner
+ * @uses \OCA\OpenRegister\Db\ImportPreview
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Import\ImportCommit
  */
 class ImportPreviewRunnerGoldenTest extends TestCase {
 
@@ -74,8 +78,8 @@ class ImportPreviewRunnerGoldenTest extends TestCase {
 
 		$service = $this->createMock(ImportPreviewService::class);
 		$service->method('commit')->willReturnCallback(
-			function (ImportPreview $given, ?string $hash, $user) use ($preview, $phaseFails): ImportPreview {
-				$this->trace[] = ['commit', $given === $preview, $hash, $user];
+			function (ImportPreview $given, ImportCommit $commit) use ($preview, $phaseFails): ImportPreview {
+				$this->trace[] = ['commit', $given === $preview, $commit->sourceHash, $commit->currentUser];
 				if ($phaseFails !== null) {
 					throw $phaseFails;
 				}

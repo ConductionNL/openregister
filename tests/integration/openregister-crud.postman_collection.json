@@ -26,6 +26,7 @@
       "script": {
         "type": "text/javascript",
         "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
           "// Clear variables ONCE at the start of each test run to ensure idempotency.",
           "// This is critical for CI/CD pipelines where tests must be reproducible.",
           "",

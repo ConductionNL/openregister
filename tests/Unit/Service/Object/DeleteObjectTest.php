@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -31,8 +33,14 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
+use OCA\OpenRegister\Service\Object\DeletionOptions;
+use OCA\OpenRegister\Service\Object\RemovalOptions;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -104,13 +112,10 @@ class DeleteObjectTest extends TestCase {
 		$this->handler = new DeleteObject(
 			$this->objectMapper,
 			$this->cacheHandler,
-			$this->userSession,
-			$this->auditTrailMapper,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			$this->logger,
-			$this->integrityService,
-			$this->createMock(\OCP\IDBConnection::class),
-			$this->organisationMapper
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(\OCP\IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->organisationMapper, $this->logger)
 		);
 	}
 
@@ -129,13 +134,10 @@ class DeleteObjectTest extends TestCase {
 		return new DeleteObject(
 			$this->objectMapper,
 			$this->cacheHandler,
-			$this->userSession,
-			$this->auditTrailMapper,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
 			$this->settingsService,
-			$this->logger,
-			$this->integrityService,
-			$this->createMock(\OCP\IDBConnection::class),
-			$this->organisationMapper,
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(\OCP\IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->organisationMapper, $this->logger),
 			$files
 		);
 	}
@@ -385,7 +387,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withNoUser();
 		$this->withAuditTrailsEnabled(false);
 
-		$this->assertTrue($this->handler->delete($object, null, false, $this->createRegister(2), $this->createSchema(5)));
+		$this->assertTrue($this->handler->delete($object, new RemovalOptions(table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5)))));
 		$this->assertSame(['guard', 'write'], $order);
 	}
 
@@ -402,7 +404,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(true);
 
 		try {
-			$this->handler->delete($object, null, false, $this->createRegister(2), $this->createSchema(5));
+			$this->handler->delete($object, new RemovalOptions(table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5))));
 			$this->fail('a refused soft delete must throw');
 		} catch (HookStoppedException $exception) {
 			$this->assertSame($refusal, $exception);
@@ -423,7 +425,64 @@ class DeleteObjectTest extends TestCase {
 			->willReturn($object);
 		$this->withAuditTrailsEnabled(false);
 
-		$this->assertTrue($this->handler->delete($object, null, true, $this->createRegister(2), $this->createSchema(5)));
+		$this->assertTrue($this->handler->delete($object, new RemovalOptions(permanent: true, table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5)))));
+	}
+
+	/**
+	 * A permanent delete announces the removed object, after the row is gone.
+	 */
+	public function testAPermanentDeleteAnnouncesTheDeletedObject(): void {
+		$object = $this->createObjectEntity('uuid-permanent-event', '2', '5');
+		$events = $this->createMock(IEventDispatcher::class);
+		$handler = new DeleteObject(
+			$this->objectMapper,
+			$this->cacheHandler,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
+			$this->settingsService,
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(\OCP\IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->organisationMapper, $this->logger),
+			eventDispatcher: $events
+		);
+
+		$order = [];
+		$this->objectMapper->method('deleteObjectEntity')->willReturnCallback(
+			function () use (&$order, $object) {
+				$order[] = 'row';
+				return $object;
+			}
+		);
+		$events->expects($this->once())->method('dispatchTyped')
+			->with($this->callback(fn ($event): bool => $event instanceof ObjectDeletedEvent && $event->getObject() === $object))
+			->willReturnCallback(function () use (&$order): void {
+				$order[] = 'event';
+			});
+		$this->withAuditTrailsEnabled(false);
+
+		$this->assertTrue($handler->delete($object, new RemovalOptions(permanent: true, table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5)))));
+		$this->assertSame(['row', 'event'], $order);
+	}
+
+	/**
+	 * A soft delete leaves the announcement to the mapper's update.
+	 */
+	public function testASoftDeleteDoesNotAnnounceADeletion(): void {
+		$object = $this->createObjectEntity('uuid-soft-event', '2', '5');
+		$events = $this->createMock(IEventDispatcher::class);
+		$events->expects($this->never())->method('dispatchTyped');
+		$handler = new DeleteObject(
+			$this->objectMapper,
+			$this->cacheHandler,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
+			$this->settingsService,
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(\OCP\IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->organisationMapper, $this->logger),
+			eventDispatcher: $events
+		);
+		$this->objectMapper->method('update')->willReturn($object);
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$this->assertTrue($handler->delete($object, new RemovalOptions(permanent: false, table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5)))));
 	}
 
 	/**
@@ -440,7 +499,7 @@ class DeleteObjectTest extends TestCase {
 		$this->objectMapper->expects($this->never())->method('deleteObjectEntity');
 
 		$this->expectException(HookStoppedException::class);
-		$handler->delete($object, null, true, $this->createRegister(2), $this->createSchema(5));
+		$handler->delete($object, new RemovalOptions(permanent: true, table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5))));
 	}
 
 	/**
@@ -468,7 +527,7 @@ class DeleteObjectTest extends TestCase {
 		$this->objectMapper->expects($this->never())->method('update');
 
 		$this->expectException(HookStoppedException::class);
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-locked');
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-locked'));
 	}
 
 	/**
@@ -483,7 +542,45 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 		$this->objectMapper->expects($this->once())->method('assertDeletable');
 
-		$this->assertTrue($this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-root'));
+		$this->assertTrue($this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-root')));
+	}
+
+	/**
+	 * A guard answer kept for a root whose delete failed does not carry over to the next root delete.
+	 */
+	public function testANewRootDeleteForgetsTheGuardsAnEarlierFailedRootAsked(): void {
+		$failed = $this->createObjectEntity('uuid-failed', '1', '10');
+		$other = $this->createObjectEntity('uuid-other', '1', '20');
+		$this->objectMapper->method('findAcrossAllSources')->willReturnCallback(
+			fn (string $identifier): array => $this->makeContext($identifier === 'uuid-failed' ? $failed : $other)
+		);
+		$this->objectMapper->method('update')->willReturnArgument(0);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')
+			->willReturnCallback(static fn (string $schemaId): bool => $schemaId === '10');
+		$this->integrityService->method('canDelete')->willReturn(new DeletionAnalysis(deletable: true));
+		$this->integrityService->method('applyDeletionActions')->willThrowException(new \RuntimeException('cascade failed'));
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$asked = [];
+		$this->objectMapper->method('assertDeletable')->willReturnCallback(
+			static function (ObjectEntity $entity) use (&$asked): void {
+				$asked[] = $entity->getUuid();
+			}
+		);
+
+		try {
+			$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-failed'));
+			$this->fail('The failing cascade was expected to throw.');
+		} catch (\RuntimeException $e) {
+			$this->assertSame('cascade failed', $e->getMessage());
+		}
+
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 20, uuid: 'uuid-other'));
+		$asked = [];
+		$this->handler->delete(object: $failed, options: new RemovalOptions(table: new RegisterSchema(register: $this->createRegister(1), schema: $this->createSchema(10, [], 'my-schema'))));
+
+		$this->assertSame(['uuid-failed'], $asked);
 	}
 
 	/**
@@ -739,7 +836,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withNoUser();
 		$this->withAuditTrailsEnabled(false);
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-do-1');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-1'));
 
 		$this->assertTrue($result);
 	}
@@ -766,14 +863,14 @@ class DeleteObjectTest extends TestCase {
 		$this->integrityService
 			->expects($this->once())
 			->method('logRestrictBlock')
-			->with('uuid-do-2', '10', $analysis, 'system');
+			->with(new RefusedDeletion(objectUuid: 'uuid-do-2', schemaId: '10', userId: 'system'), $analysis);
 
 		$this->withNoUser();
 
 		$this->expectException(ReferentialIntegrityException::class);
 		$this->expectExceptionMessage('Cannot delete object: 1 dependent object(s) block deletion');
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-do-2');
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-2'));
 	}
 
 	/**
@@ -805,15 +902,40 @@ class DeleteObjectTest extends TestCase {
 		$this->integrityService
 			->expects($this->once())
 			->method('applyDeletionActions')
-			->with($analysis, 'system', 'uuid-do-3', null, 'my-schema')
+			->with($analysis, new CascadeDeleteOrigin(userId: 'system', cascadeSource: 'uuid-do-3', triggerSchemaSlug: 'my-schema', organisationId: null))
 			->willReturn(['retained' => []]);
 
 		$this->withNoUser();
 		$this->withAuditTrailsEnabled(false);
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-do-3');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-3'));
 
 		$this->assertTrue($result);
+	}
+
+	/**
+	 * A permanent delete of an object with referrers destroys the root, after the integrity actions.
+	 */
+	public function testAPermanentDeleteWithReferrersDestroysTheRoot(): void {
+		$object = $this->createObjectEntity('uuid-do-4', '1', '10');
+		$this->objectMapper->method('findAcrossAllSources')
+			->willReturn($this->makeContext($object, $this->createRegister(1), $this->createSchema(10, [], 'my-schema')));
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(true);
+		$this->integrityService->method('canDelete')->willReturn(
+			new DeletionAnalysis(deletable: true, effects: new DeletionEffects(nullifyTargets: [['objectUuid' => 'ref-1', 'property' => 'owner']]))
+		);
+		$this->integrityService->expects($this->once())->method('applyDeletionActions')->willReturn(['retained' => []]);
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$this->objectMapper->expects($this->once())->method('deleteObjectEntity');
+		$this->objectMapper->expects($this->never())->method('update');
+
+		$this->assertTrue(
+			$this->handler->deleteObject(
+				new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-4', options: new DeletionOptions(permanent: true))
+			)
+		);
 	}
 
 	/**
@@ -841,10 +963,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$result = $this->handler->deleteObject(
-			register: 1,
-			schema: 10,
-			uuid: 'uuid-do-child',
-			originalObjectId: 'uuid-do-parent'
+			new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-child', options: new DeletionOptions(originalObjectId: 'uuid-do-parent'))
 		);
 
 		$this->assertTrue($result);
@@ -854,105 +973,7 @@ class DeleteObjectTest extends TestCase {
 	// deleteObject() — legacy cascade
 	// =========================================================================
 
-	/**
-	 * deleteObject() triggers cascading delete for scalar cascade property.
-	 */
-	public function testDeleteObjectCascadesScalarProperty(): void {
-		$childUuid = 'child-uuid-1';
-		$parentUuid = 'parent-uuid-1';
-
-		$properties = [
-			'childRef' => ['cascade' => true, 'type' => 'string'],
-		];
-
-		$parentObject = $this->createObjectEntity($parentUuid, '1', '10', ['childRef' => $childUuid]);
-		$childObject = $this->createObjectEntity($childUuid, '1', '10');
-
-		$register = $this->createRegister(1);
-		$schema = $this->createSchema(10, $properties);
-
-		$parentContext = $this->makeContext($parentObject, $register, $schema);
-		$childContext = $this->makeContext($childObject, $register, $schema);
-
-		// First call: parent lookup (deleteObject root call).
-		// Second call: child lookup (cascadeDeleteObjects -> deleteObject recursive).
-		// Further calls for the child's delete() -> findAcrossAllSources(uuid, true, false, false).
-		$this->objectMapper
-			->method('findAcrossAllSources')
-			->willReturnCallback(function (string $identifier) use (
-				$parentUuid,
-				$childUuid,
-				$parentContext,
-				$childContext
-			) {
-				if ($identifier === $parentUuid) {
-					return $parentContext;
-				}
-
-				return $childContext;
-			});
-
-		$this->objectMapper->method('update')->willReturn($parentObject);
-
-		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
-
-		$this->withNoUser();
-		$this->withAuditTrailsEnabled(false);
-
-		// Expect update() to be called at least twice (parent + child soft-deletes).
-		$this->objectMapper
-			->expects($this->atLeast(2))
-			->method('update');
-
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: $parentUuid);
-	}
-
-	/**
-	 * deleteObject() cascades over array of child UUIDs when cascade: true.
-	 */
-	public function testDeleteObjectCascadesArrayProperty(): void {
-		$childUuid1 = 'child-arr-uuid-1';
-		$childUuid2 = 'child-arr-uuid-2';
-		$parentUuid = 'parent-arr-uuid';
-		$properties = [
-			'children' => ['cascade' => true, 'type' => 'array'],
-		];
-
-		$parentObject = $this->createObjectEntity($parentUuid, '1', '10', ['children' => [$childUuid1, $childUuid2]]);
-		$childObject1 = $this->createObjectEntity($childUuid1, '1', '10');
-		$childObject2 = $this->createObjectEntity($childUuid2, '1', '10');
-
-		$register = $this->createRegister(1);
-		$schema = $this->createSchema(10, $properties);
-
-		$this->objectMapper
-			->method('findAcrossAllSources')
-			->willReturnCallback(function (string $identifier) use (
-				$parentUuid, $childUuid1, $childUuid2,
-				$parentObject, $childObject1, $childObject2,
-				$register, $schema
-			) {
-				return match ($identifier) {
-					$parentUuid => $this->makeContext($parentObject, $register, $schema),
-					$childUuid1 => $this->makeContext($childObject1, $register, $schema),
-					default => $this->makeContext($childObject2, $register, $schema),
-				};
-			});
-
-		$this->objectMapper->method('update')->willReturn($parentObject);
-
-		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
-
-		$this->withNoUser();
-		$this->withAuditTrailsEnabled(false);
-
-		// Parent + 2 children = at least 3 updates.
-		$this->objectMapper
-			->expects($this->atLeast(3))
-			->method('update');
-
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: $parentUuid);
-	}
+	// The checked `cascade: true` children are covered by DeleteObjectCascadeChildChecksTest.
 
 	/**
 	 * deleteObject() does not cascade when cascade property is absent.
@@ -983,7 +1004,7 @@ class DeleteObjectTest extends TestCase {
 			->expects($this->once())
 			->method('update');
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: $parentUuid);
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: $parentUuid));
 	}
 
 	/**
@@ -1014,7 +1035,7 @@ class DeleteObjectTest extends TestCase {
 			->expects($this->once())
 			->method('update');
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: $parentUuid);
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: $parentUuid));
 	}
 
 	// =========================================================================
@@ -1043,7 +1064,7 @@ class DeleteObjectTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('warning');
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-err-1');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-err-1'));
 
 		$this->assertFalse($result);
 	}
@@ -1063,7 +1084,7 @@ class DeleteObjectTest extends TestCase {
 
 		$this->expectExceptionObject($refusal);
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-locked');
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-locked'));
 	}
 
 	// =========================================================================
@@ -1098,11 +1119,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$this->handler->deleteObject(
-			register: 1,
-			schema: 10,
-			uuid: 'uuid-rbac-1',
-			_rbac: false,
-			_multitenancy: true
+			new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-rbac-1'), _rbac: false, _multitenancy: true
 		);
 	}
 
@@ -1133,11 +1150,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$this->handler->deleteObject(
-			register: 1,
-			schema: 10,
-			uuid: 'uuid-mt-1',
-			_rbac: true,
-			_multitenancy: false
+			new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-mt-1'), _rbac: true, _multitenancy: false
 		);
 	}
 
@@ -1167,7 +1180,7 @@ class DeleteObjectTest extends TestCase {
 		$this->withNoUser();
 		$this->withAuditTrailsEnabled(false);
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'uuid-noschema');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-noschema'));
 
 		$this->assertTrue($result);
 	}

@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
@@ -39,6 +40,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Tests\Unit\Service\Object\FilePropertyCalls;
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -50,6 +52,9 @@ use ReflectionClass;
 use stdClass;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 
 /**
  * Testable Schema subclass for SaveObjectRefactoredMethods tests.
@@ -105,7 +110,7 @@ class RefactoredTestableSchema extends Schema {
  * Unit tests for SaveObject refactored methods.
  *
  * Tests the extracted private methods using reflection:
- * 1. extractUuidAndSelfData()
+ * 1. splitSelfData()
  * 2. resolveSchemaAndRegister()
  * 3. findAndValidateExistingObject()
  * 4. clearImageMetadataIfFileProperty()
@@ -214,10 +219,8 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->auditTrailMapper,
@@ -260,6 +263,19 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	}
 
 	/**
+	 * The save call an existing-object lookup reads: the uuid, no register or schema.
+	 *
+	 * @param string $uuid The object uuid.
+	 *
+	 * @return ObjectSaveCall The call.
+	 */
+	private static function lookupCall(string $uuid): ObjectSaveCall {
+		$call = new ObjectSaveCall();
+		$call->uuid = $uuid;
+		return $call;
+	}
+
+	/**
 	 * Helper method to invoke private methods using reflection.
 	 *
 	 * @param string $methodName The name of the private method.
@@ -278,10 +294,10 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		return $method->invokeArgs($this->saveObject, $parameters);
 	}
 
-	// ==================== extractUuidAndSelfData() Tests ====================
+	// ==================== splitSelfData() Tests ====================
 
 	/**
-	 * Test extractUuidAndSelfData with data containing 'id' field.
+	 * Test splitSelfData with data containing 'id' field.
 	 *
 	 * @return void
 	 */
@@ -292,11 +308,11 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 			'name' => 'Test Object'
 		];
 
-		// Method signature: extractUuidAndSelfData(array $data, ?string $uuid, ?array $uploadedFiles)
+		// Method signature: splitSelfData(array $data, ?string $uuid)
 		// Returns: [$uuid, $selfData, $data]
 		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
-			'extractUuidAndSelfData',
-			[$data, null, null]
+			'splitSelfData',
+			[$data, null]
 		);
 
 		$this->assertEquals($uuid, $extractedUuid, 'UUID should be extracted from id field.');
@@ -305,7 +321,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	}
 
 	/**
-	 * Test extractUuidAndSelfData with explicit UUID parameter.
+	 * Test splitSelfData with explicit UUID parameter.
 	 *
 	 * @return void
 	 */
@@ -318,8 +334,8 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		];
 
 		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
-			'extractUuidAndSelfData',
-			[$data, $explicitUuid, null]
+			'splitSelfData',
+			[$data, $explicitUuid]
 		);
 
 		$this->assertEquals($explicitUuid, $extractedUuid, 'Explicit UUID parameter should take precedence.');
@@ -327,7 +343,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	}
 
 	/**
-	 * Test extractUuidAndSelfData without UUID returns null.
+	 * Test splitSelfData without UUID returns null.
 	 *
 	 * @return void
 	 */
@@ -335,8 +351,8 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		$data = ['name' => 'Test Object'];
 
 		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
-			'extractUuidAndSelfData',
-			[$data, null, null]
+			'splitSelfData',
+			[$data, null]
 		);
 
 		$this->assertNull($extractedUuid, 'UUID should be null when not provided in data or params.');
@@ -344,7 +360,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	}
 
 	/**
-	 * Test extractUuidAndSelfData with @self data.
+	 * Test splitSelfData with @self data.
 	 *
 	 * @return void
 	 */
@@ -359,8 +375,8 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		];
 
 		[$extractedUuid, $selfData, $extractedData] = $this->invokePrivateMethod(
-			'extractUuidAndSelfData',
-			[$data, null, null]
+			'splitSelfData',
+			[$data, null]
 		);
 
 		$this->assertEquals($uuid, $extractedUuid, 'UUID should be extracted from @self.id.');
@@ -450,7 +466,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		$result = $this->invokePrivateMethod(
 			'findAndValidateExistingObject',
-			['22222222-2222-2222-2222-222222222222', null, null, false, false]
+			[self::lookupCall('22222222-2222-2222-2222-222222222222')]
 		);
 
 		$this->assertNull($result);
@@ -468,7 +484,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		$result = $this->invokePrivateMethod(
 			'findAndValidateExistingObject',
-			['9F7A4C1E-2B3D-4E5F-8A9B-0C1D2E3F4A5B', null, null, false, false]
+			[self::lookupCall('9F7A4C1E-2B3D-4E5F-8A9B-0C1D2E3F4A5B')]
 		);
 
 		$this->assertSame($stored, $result);
@@ -493,7 +509,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		// Method signature: findAndValidateExistingObject(string $uuid, ?Register $register, ?Schema $schema, bool $_rbac, bool $_multitenancy)
 		$result = $this->invokePrivateMethod(
 			'findAndValidateExistingObject',
-			[$uuid, null, null, false, false]
+			[self::lookupCall($uuid)]
 		);
 
 		$this->assertSame($existingObject, $result, 'Should return existing object.');
@@ -514,10 +530,29 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		$result = $this->invokePrivateMethod(
 			'findAndValidateExistingObject',
-			[$uuid, null, null, false, false]
+			[self::lookupCall($uuid)]
 		);
 
 		$this->assertNull($result, 'Should return null when object does not exist.');
+	}
+
+	/**
+	 * A failed lookup is not "not found": the save stops instead of turning into a create.
+	 *
+	 * @return void
+	 */
+	public function testFindAndValidateExistingObjectRefusesWhenTheLookupFails(): void {
+		$this->objectEntityMapper
+			->expects($this->once())
+			->method('find')
+			->willThrowException(new ObjectLookupFailedException('database down'));
+
+		$this->expectException(ObjectLookupFailedException::class);
+
+		$this->invokePrivateMethod(
+			'findAndValidateExistingObject',
+			[self::lookupCall(Uuid::v4()->toRfc4122())]
+		);
 	}
 
 	// ==================== clearImageMetadataIfFileProperty() Tests ====================
@@ -656,15 +691,10 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		// Execute full saveObject method with positional params.
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			$data,
-			$uuid,
-			false,
-			false,
-			true,
-			true,
-			false
+			data: $data,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $uuid, policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assertions.

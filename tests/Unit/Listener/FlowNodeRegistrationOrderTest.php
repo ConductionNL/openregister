@@ -31,6 +31,34 @@ use ReflectionNamedType;
 
 /**
  * @covers \OCA\OpenRegister\Listener\FlowNodeRegistrationListener
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ActionFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\BoundaryFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\BranchFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\CaseFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\CoordinationFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\CoreFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\DataMappingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\DataShapingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\DestinationFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\EvaluationFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\FieldFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\HandOffFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\HumanTaskFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ItemHandlingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ItemListFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ItemLoopFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\LockFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\MessagingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ObjectChangeFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ObjectFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ObjectLookupFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\OutputFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\ReshapingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\RoutingFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\TriggerFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\WaitAndBranchFlowNodes
+ * @uses \OCA\OpenRegister\Listener\FlowNodes\WaitFlowNodes
+ * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
  */
 class FlowNodeRegistrationOrderTest extends TestCase {
 

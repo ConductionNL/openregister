@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
+use OCA\OpenRegister\Service\Lifecycle\LifecycleGraph;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionsValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -35,6 +36,8 @@ use PHPUnit\Framework\TestCase;
  * the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionsValidator
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleGraph
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleGraphCheck
  */
 class LifecycleTransitionsValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/lifecycle-transitions-golden.json';
@@ -113,9 +116,9 @@ class LifecycleTransitionsValidatorGoldenTest extends TestCase {
 		$name      = $this->dataName();
 		$validator = new LifecycleTransitionsValidator();
 		$actual    = [
-			'no catalogue' => $validator->validate($states, $initial, $transitions),
-			'catalogue' => $validator->validate($states, $initial, $transitions, ['isOwner', 'hasFile']),
-			'empty catalogue' => $validator->validate($states, $initial, $transitions, []),
+			'no catalogue' => $validator->validate(new LifecycleGraph($states, $initial, $transitions)),
+			'catalogue' => $validator->validate(new LifecycleGraph($states, $initial, $transitions, ['isOwner', 'hasFile'])),
+			'empty catalogue' => $validator->validate(new LifecycleGraph($states, $initial, $transitions, [])),
 		];
 
 		$golden = [];

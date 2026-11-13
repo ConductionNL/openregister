@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\ShippedRegister;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -66,18 +68,16 @@ class RegisterDescriptorController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName     The app id.
 	 * @param IRequest                  $request     The current request.
 	 * @param RegisterDescriptorControllerServices $services The services, bundled.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		RegisterDescriptorControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->descriptors = $services->descriptors;
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
@@ -170,9 +170,8 @@ class RegisterDescriptorController extends Controller {
 	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	private function reimport(string $appId, string $slug): JSONResponse {
-		$result = $this->descriptors->reimport(
-			appId: $appId,
-			slug: $slug,
+		$result = $this->descriptors->reimportShipped(
+			register: new ShippedRegister(appId: $appId, slug: $slug),
 			via: 'admin settings: Register descriptors'
 		);
 		if ($result['outcome'] === 'failed') {

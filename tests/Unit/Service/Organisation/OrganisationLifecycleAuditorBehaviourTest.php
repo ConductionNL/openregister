@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Organisation;
 
+use OCA\OpenRegister\Service\Organisation\OrganisationEdit;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
@@ -34,6 +35,10 @@ use Psr\Log\LoggerInterface;
  * No-op changes write nothing, and a change without a session is attributed to the system.
  *
  * @covers \OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\Organisation\OrganisationEdit
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Organisation\OrganisationChange
  */
 class OrganisationLifecycleAuditorBehaviourTest extends TestCase {
 
@@ -77,7 +82,7 @@ class OrganisationLifecycleAuditorBehaviourTest extends TestCase {
 
 		$auditor->recordStatus(organisation: $this->organisation(status: 'active'), before: 'active');
 		$auditor->recordStatus(organisation: $this->organisation(status: null), before: '');
-		$auditor->recordUpdate(organisation: $this->organisation(status: 'active'), before: ['name' => 'A', 'extra' => 1], after: ['name' => 'A']);
+		$auditor->recordUpdate(organisation: $this->organisation(status: 'active'), edit: new OrganisationEdit(before: ['name' => 'A', 'extra' => 1], after: ['name' => 'A']));
 	}//end testNoOpChangesWriteNothing()
 
 	/**
@@ -96,11 +101,7 @@ class OrganisationLifecycleAuditorBehaviourTest extends TestCase {
 		);
 		$auditor = $this->auditor(mapper: $mapper);
 
-		$auditor->recordUpdate(
-			organisation: $this->organisation(status: 'active'),
-			before: ['name' => 'A', 'quota' => 5],
-			after: ['name' => 'B', 'quota' => 5, 'slug' => 'b']
-		);
+		$auditor->recordUpdate(organisation: $this->organisation(status: 'active'), edit: new OrganisationEdit(before: ['name' => 'A', 'quota' => 5], after: ['name' => 'B', 'quota' => 5, 'slug' => 'b']));
 		$auditor->recordStatus(organisation: $this->organisation(status: 'suspended'), before: 'active');
 
 		$this->assertCount(2, $written);

@@ -42,6 +42,11 @@ final class MiddlewareWiring {
 	 * @return void
 	 */
 	public static function register(IRegistrationContext $context): void {
+		// Serves the API's JSON errors as RFC 9457 problem details. Registered
+		// FIRST because Nextcloud runs afterController in reverse order, so it
+		// sees the final response of every other middleware.
+		$context->registerMiddleware(ProblemDetailsMiddleware::class);
+
 		// Register the LanguageMiddleware for Accept-Language header parsing.
 		$context->registerMiddleware(LanguageMiddleware::class);
 
@@ -117,6 +122,11 @@ final class MiddlewareWiring {
 		// It decorates and refuses; it never changes which controller runs, so a
 		// deprecated version keeps exactly the behaviour it had before.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiVersionMiddleware::class);
+
+		// Marks the unversioned API paths deprecated in favour of their
+		// `/api/v1/` aliases. After ApiVersionMiddleware, so a deprecated
+		// contract version's own Deprecation and Link headers win.
+		$context->registerMiddleware(UnversionedPathDeprecationMiddleware::class);
 
 		// Register the ApiCallerMiddleware (api-as-a-versioned-surface): binds a
 		// caller to its administered source addresses, bounds it to its

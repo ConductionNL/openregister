@@ -116,8 +116,7 @@ website/docs/Features/img_5.png
 website/docs/features/img_4.png
 website/docs/features/img_5.png
 
-# SBOM is published as release asset (see SECURITY.md), not stored in repo
-sbom.cdx.json
+# Intermediate SBOM files. The merged sbom.cdx.json at the root is committed.
 bom-php.cdx.json
 bom-npm.cdx.json
 
@@ -151,3 +150,6 @@ __pycache__/
 /scratchpad/
 /task-audit.json
 bom-*.cdx.json
+
+# Local docker compose settings; .env.example is the committed template
+.env

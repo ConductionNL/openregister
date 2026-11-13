@@ -24,6 +24,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
@@ -38,6 +41,14 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\TaskInboxCriteria
  * @uses \OCA\OpenRegister\Service\Task\TaskPriority
  * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class TaskKindTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -99,12 +110,7 @@ class TaskKindTest extends TestCase {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
 		$mapper->findInbox(
-			criteria: new TaskInboxCriteria(
-				uid: 'root',
-				isAdmin: true,
-				scope: TaskInboxCriteria::SCOPE_ALL,
-				kind: 'reminder'
-			)
+			criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(filter: new TaskInboxFilter(kind: 'reminder')))
 		);
 
 		$this->assertTrue($this->saw('expr.eq', 'kind'));
@@ -123,11 +129,7 @@ class TaskKindTest extends TestCase {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
 		$mapper->findInbox(
-			criteria: new TaskInboxCriteria(
-				uid: 'root',
-				isAdmin: true,
-				scope: TaskInboxCriteria::SCOPE_ALL
-			)
+			criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL))
 		);
 
 		$this->assertFalse($this->saw('expr.eq', 'kind'));

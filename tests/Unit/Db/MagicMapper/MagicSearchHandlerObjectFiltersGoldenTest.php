@@ -33,6 +33,8 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Object field filters, recorded per filter and platform.
@@ -47,6 +49,13 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Support\NullFilter
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermParser
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermSqlCompiler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\BoundQueryColumn
+ * @uses \OCA\OpenRegister\Db\MagicMapper\FieldComparison
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ObjectFilterRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TableFilterRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TypedColumnRef
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicSearchHandlerObjectFiltersGoldenTest extends TestCase {
 
@@ -161,7 +170,7 @@ class MagicSearchHandlerObjectFiltersGoldenTest extends TestCase {
 		$schema->setProperties(self::PROPERTIES);
 
 		try {
-			(new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters'))->invoke($handler, $this->queryBuilder(), $filters, $schema);
+			(new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters'))->invoke($handler, new TableFilterRun(qb: $this->queryBuilder(), query: [], table: new MagicReadTable(schema: $schema)), $filters);
 		} catch (\Throwable $e) {
 			$this->captured[] = 'threw ' . get_class($e) . ': ' . $e->getMessage();
 		}

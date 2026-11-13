@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCP\IGroupManager;
+use OCA\OpenRegister\Service\File\FileSession;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\Lock\ILock;
@@ -44,6 +46,9 @@ use Psr\Log\AbstractLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\File\FileFormattingHandler
+ * @uses \OCA\OpenRegister\Service\File\FileListFilter
+ * @uses \OCA\OpenRegister\Service\File\FileLockEnvelope
+ * @uses \OCA\OpenRegister\Service\File\FileSession
  */
 class FileFormattingHandlerLockGateGoldenTest extends TestCase {
 
@@ -178,8 +183,7 @@ class FileFormattingHandlerLockGateGoldenTest extends TestCase {
 	private function handler(ILockManager $lockManager, IUserSession $session, AbstractLogger $logger): FileFormattingHandler {
 		return new FileFormattingHandler(
 			$lockManager,
-			$session,
-			$logger
+			new FileSession($session, $this->createMock(IGroupManager::class), $logger)
 		);
 	}//end handler()
 

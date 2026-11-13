@@ -10,7 +10,13 @@ or not bundles exist yet. Sections 4 and 5, and task 1.3, continue on
 
 - [x] 1.1 A draft value beside the live value, keyed the same way (D-1).
 - [x] 1.2 A draft set with an author, and an optional requirement that the approver differs.
-- [ ] 1.3 Every settings domain handler accepts a draft write. **Part two.** A new `lib/Service/ConfigurationDeployment/SettingsDraftGate.php` sits in front of the ten `update*` methods of `lib/Service/SettingsService.php` (and the six handlers under `lib/Service/Settings/` they delegate to). When the request names an open draft set (`draftSet` parameter on the settings routes), each key is written through `ConfigurationDraftService::draftValue()` instead of the handler, using the keys `ConfigurationKeyRegistry` knows. Without a draft set the gate calls the handler unchanged. Its regression test is 6.3.
+- [x] 1.3 Every settings domain handler accepts a draft write. All nine `update*`
+  methods on `SettingsService` ask `SettingsDraftGate` first. With drafting off
+  (`configuration_drafting`, the default), the gate answers null and the facade
+  writes straight through. With it on, the write lands in the open set the gate
+  remembers under `configuration_draft_set` (a reserved key), staged merged over
+  the live value so the handlers' defaults stay in one place; the control test
+  runs the real handler and pins that the two paths read back the same.
 
 ## 2. Deployment and rollback
 
@@ -30,20 +36,49 @@ or not bundles exist yet. Sections 4 and 5, and task 1.3, continue on
 chain all carry the bundle layer already, so a bundle is a binding to write
 rather than a model to add.
 
-- [ ] 4.1 A named bundle of permissions, notification rules and lifecycle settings, bound to many schemas (D-5): entity `lib/Db/ConfigurationBundle.php` with mapper and a migration (name, description, bound schema ids). Its values are written in `ConfigurationLayer::BUNDLE` with the bundle uuid as layer ref, only through a draft set. Routes `configurationBundle#index`, `#create`, `#update` and `#bind` under `/api/configuration/bundles` in `appinfo/routes.php`, admin only.
-- [ ] 4.2 A subject override recorded and listed as an exception: a draft value in `ConfigurationLayer::SUBJECT` for a schema bound to a bundle stores the bundle uuid it overrides. `ConfigurationExplainer::explain()` reports it as `exceptionTo`, and `GET /api/configuration/bundles/{id}/exceptions` lists the overrides of one bundle.
-- [ ] 4.3 Integration configuration inherited from instance or register, overridable, explained: keys under `integration.` in `ConfigurationKeyRegistry` resolve instance, then register, then subject in `ConfigurationExplainer::chainFor()`, and the explanation names the layer that won.
-- [ ] 4.4 A transition or permission matrix copied onto another role or schema as a draft (D-6): `POST /api/configuration/draft-sets/{id}/copy` with `{from, to[], kind: transition|permission}` reads the source's `authorization` or `x-openregister-lifecycle` block and writes one draft per target in the set, so the copy is previewed and deployed like any other change.
+- [x] 4.1 A named bundle of permissions, notification rules and lifecycle settings,
+  bound to many schemas (D-5). No bundle model: a bundle's values are rows at
+  `ConfigurationLayer::BUNDLE` with the bundle name as layer ref, written only
+  through a draft set. The one new table is `openregister_config_bindings`
+  (`ConfigurationBinding`, its mapper and interface, migration
+  `Version1Date20261112000000`), unique on the subject: each subject follows one
+  bundle. Routes `configurationBundle#index`, `#show`, `#bind` and `#unbind`,
+  admin only.
+- [x] 4.2 A subject override recorded and listed as an exception: a subject-layer
+  value wins by precedence, and `GET /api/configuration/bundles/{id}` lists each
+  bound subject with `overriding` and the keys it overrides. The explainer finds a
+  subject's bundle from its binding, so callers pass only the schema.
+- [x] 4.3 Integration configuration inherited from instance or register,
+  overridable, explained: the explainer's chain already resolves instance,
+  register, bundle, subject; `ConfigurationBundleServiceTest` pins a mail relay
+  at the instance applying to a schema that sets none, named as the instance.
+- [x] 4.4 A transition or permission matrix copied onto another role or schema as
+  a draft (D-6): `POST /api/configuration/draft-sets/{id}/copy` with `prefix`,
+  `from`, `to` and an optional `layer` copies every value under the prefix into
+  the set. A prefix that does not end in a dot, a copy onto itself and an empty
+  source are refused.
 
 ## 5. Seeding
 
-- [ ] 5.1 The repair-time seed available as an administered action on a running instance, writing drafts. **Part two**, with 1.3. A `lib/Service/ConfigurationDeployment/SeedActionProvider.php` interface lets a leaf app expose the payload its repair seeder writes (dossiq's `lib/Repair/Seed.php` first). `POST /api/configuration/seed/{provider}` (admin only) opens a draft set named after the provider and writes the payload through `draftValue()`, so the seed is previewed and deployed, never written live.
+- [~] 5.1 The repair-time seed available as an administered action on a running
+  instance, writing drafts. Done: `POST /api/configuration/seed` (admin only,
+  `ConfigurationSeedController`) opens a draft set and stages the defaults the
+  settings getters answer, so the defaults live in one place; keys the instance
+  already sets are skipped and named in the response. Open: a
+  `SeedActionProvider` interface so a leaf app can expose the payload its repair
+  seeder writes (dossiq's `lib/Repair/Seed.php` first), behind
+  `POST /api/configuration/seed/{provider}`.
 
 ## 6. Tests
 
 - [x] 6.1 `tests/e2e/ci/configuration-deployment.spec.ts`: draft, refusal, deploy, explain, roll back. Four scenarios carry an e2e anchor; two carry an `@e2e exclude` naming the unit test that asserts them and the reason the HTTP door does not exist.
 - [x] 6.2 Unit tests: the all-or-nothing apply, the append-only history, the four layers of the explainer, the stale-draft refusal and the reserved keys. 70 tests. Two mutation checks recorded in the PR body.
-- [ ] 6.3 A regression test that an instance never drafting writes straight through. **Part two**, with 1.3: `tests/Unit/Service/ConfigurationDeployment/SettingsDraftGateTest.php` calls each of the ten `SettingsService::update*` methods without a draft set and asserts the handler wrote the value to `IAppConfig`. A second case with a draft set asserts nothing was written live and one draft per key exists.
+- [x] 6.3 A regression test that an instance never drafting writes straight
+  through. `tests/Unit/Service/SettingsStraightThroughTest.php` runs all nine
+  update methods twice, with no gate wired and with a gate whose drafting is
+  off, and a third time with drafting on so a method that forgot to ask the gate
+  is visible. A reflection check fails when the facade gains an update method
+  without a case.
 - [x] 6.4 `openspec validate configuration-as-a-deployment --strict`.
 
 ## 7. Hand over and findings

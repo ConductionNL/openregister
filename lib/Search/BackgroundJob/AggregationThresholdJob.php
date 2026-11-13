@@ -38,13 +38,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\BackgroundJob\Support\AggregationThresholdServices;
-use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
-use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
+use Symfony\Component\Uid\Uuid;
+
 
 /**
  * Deferred threshold-notification evaluation under the forwarded actor.
@@ -52,27 +52,6 @@ use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
  * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class AggregationThresholdJob extends ActorForwardedJob {
-	/**
-	 * Stale-safe entry re-fetch.
-	 *
-	 * @var DeferredEntryObjectResolverInterface
-	 */
-	private readonly DeferredEntryObjectResolverInterface $resolver;
-
-	/**
-	 * Schema lookup mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Shared threshold evaluation logic.
-	 *
-	 * @var ThresholdEvaluationService
-	 */
-	private readonly ThresholdEvaluationService $evaluator;
-
 	/**
 	 * Wire the evaluation collaborators on top of the actor plumbing.
 	 *
@@ -87,7 +66,7 @@ class AggregationThresholdJob extends ActorForwardedJob {
 	public function __construct(
 		ITimeFactory $time,
 		ActorForwardingServices $actor,
-		AggregationThresholdServices $evaluation,
+		private readonly AggregationThresholdServices $evaluation,
 	) {
 		parent::__construct(
 			time: $time,
@@ -96,9 +75,6 @@ class AggregationThresholdJob extends ActorForwardedJob {
 			organisation: $actor->organisation,
 			logger: $actor->logger
 		);
-		$this->resolver = $evaluation->resolver;
-		$this->schemaMapper = $evaluation->schemaMapper;
-		$this->evaluator = $evaluation->evaluator;
 	}//end __construct()
 
 	/**
@@ -113,15 +89,29 @@ class AggregationThresholdJob extends ActorForwardedJob {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	protected function runDeferred(DeferredListenerContext $context): void {
-		foreach ($context->getEntries() as $entry) {
-			$object = $this->resolver->resolve(entry: $entry);
-			if ($object === null) {
-				continue;
-			}
+		$evaluate = fn () => $this->evaluateEntries(context: $context);
+		if ($this->evaluation->processAudit === null) {
+			$evaluate();
+			return;
+		}
 
+		$this->evaluation->processAudit->run(run: new RevealingProcess(process: 'aggregation', runId: Uuid::v4()->toRfc4122()), operation: $evaluate);
+	}//end runDeferred()
+
+	/**
+	 * Evaluate thresholds for every live entry's schema; per-entry failures are logged.
+	 *
+	 * @param DeferredListenerContext $context The captured dispatch-time context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function evaluateEntries(DeferredListenerContext $context): void {
+		foreach ($this->liveEntries(context: $context, resolver: $this->evaluation->resolver) as $entry => $object) {
 			try {
-				$schema = $this->schemaMapper->find((string)($entry['schema'] ?? ''));
-				$this->evaluator->evaluateSchema(schema: $schema, object: $object);
+				$schema = $this->evaluation->schemaMapper->find((string)($entry['schema'] ?? ''));
+				$this->evaluation->evaluator->evaluateSchema(schema: $schema, object: $object);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					message: '[AggregationThresholdJob] Threshold evaluation failed for entry',
@@ -135,5 +125,5 @@ class AggregationThresholdJob extends ActorForwardedJob {
 				);
 			}
 		}//end foreach
-	}//end runDeferred()
+	}//end evaluateEntries()
 }//end class

@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -32,6 +33,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The save handler as the cascade sees it: the interface plus the URL generator it reads by reflection.
@@ -57,6 +60,11 @@ abstract class CascadeSaveHandlerDouble implements SaveObjectInterface {
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
  */
 class CascadingHandlerCreateRelatedTest extends TestCase {
 
@@ -123,16 +131,16 @@ class CascadingHandlerCreateRelatedTest extends TestCase {
 		$created->setUuid('child-1');
 		$this->save->expects($this->once())->method('assertMayCascadeCreate')->with($this->identicalTo($this->address), '4');
 		$this->save->expects($this->once())->method('saveObject')
-			->with(4, $this->identicalTo($this->address), ['street' => 'Main', 'owner' => 'parent-1', '@self' => ['register' => 4]], null, true, true)
+			->with(
+				['street' => 'Main', 'owner' => 'parent-1', '@self' => ['register' => 4]],
+				$this->callback(fn (ObjectSaveOptions $options): bool => $options->target->register === 4 && $options->target->schema === $this->address && $options->uuid === null),
+				true,
+				true
+			)
 			->willReturn($created);
 		$this->save->expects($this->once())->method('trackCreatedSubObject')->with('child-1', $this->isType('array'));
 
-		$uuid = $this->handler()->createRelatedObject(
-			['id' => 'x', 'street' => 'Main', '@self' => ['id' => 'x', 'uuid' => 'y', 'register' => 4]],
-			['$ref' => '#/components/schemas/address', 'inversedBy' => 'owner'],
-			'parent-1',
-			4
-		);
+		$uuid = $this->handler()->createRelatedObject(objectData: ['id' => 'x', 'street' => 'Main', '@self' => ['id' => 'x', 'uuid' => 'y', 'register' => 4]], target: (new CascadeTarget(parentUuid: 'parent-1', register: 4))->with(definition: ['$ref' => '#/components/schemas/address', 'inversedBy' => 'owner']));
 
 		$this->assertSame('child-1', $uuid);
 	}//end testTheChildIsCreatedUnderItsParentAndTracked()
@@ -145,12 +153,12 @@ class CascadingHandlerCreateRelatedTest extends TestCase {
 	public function testWithoutRegisterOrInverseTheChildIsSavedAsGiven(): void {
 		$this->save->expects($this->once())->method('assertMayCascadeCreate')->with($this->identicalTo($this->address), null);
 		$this->save->expects($this->once())->method('saveObject')
-			->with(null, $this->identicalTo($this->address), ['street' => 'Main'])
+			->with(['street' => 'Main'], $this->callback(fn (ObjectSaveOptions $options): bool => $options->target->register === null && $options->target->schema === $this->address))
 			->willReturn(new ObjectEntity());
 		$this->save->expects($this->never())->method('trackCreatedSubObject');
 
 		$this->assertNull(
-			$this->handler()->createRelatedObject(['street' => 'Main'], ['$ref' => '#/components/schemas/address', 'inversedBy' => ''], 'parent-1', null)
+			$this->handler()->createRelatedObject(objectData: ['street' => 'Main'], target: (new CascadeTarget(parentUuid: 'parent-1', register: null))->with(definition: ['$ref' => '#/components/schemas/address', 'inversedBy' => '']))
 		);
 	}//end testWithoutRegisterOrInverseTheChildIsSavedAsGiven()
 
@@ -164,7 +172,7 @@ class CascadingHandlerCreateRelatedTest extends TestCase {
 		$handler = $this->handler();
 		$answers = [];
 		foreach ([[], ['$ref' => ''], ['$ref' => 'address'], ['$ref' => '#/components/schemas/'], ['$ref' => '#/components/schemas/unknown']] as $definition) {
-			$answers[] = $handler->createRelatedObject(['a' => 1], $definition, 'parent-1', 4);
+			$answers[] = $handler->createRelatedObject(objectData: ['a' => 1], target: (new CascadeTarget(parentUuid: 'parent-1', register: 4))->with(definition: $definition));
 		}
 
 		$this->assertSame([null, null, null, null, null], $answers);
@@ -181,14 +189,14 @@ class CascadingHandlerCreateRelatedTest extends TestCase {
 			->with('[CascadingHandler] Failed to create related object: constraint', $this->isType('array'));
 		$definition = ['$ref' => '#/components/schemas/address'];
 
-		$this->assertNull($this->handler()->createRelatedObject(['a' => 1], $definition, 'parent-1', 4));
+		$this->assertNull($this->handler()->createRelatedObject(objectData: ['a' => 1], target: (new CascadeTarget(parentUuid: 'parent-1', register: 4))->with(definition: $definition)));
 
 		$save = $this->createMock(SaveObjectInterface::class);
 		$save->method('assertMayCascadeCreate')->willThrowException(new NotAuthorizedException('no create right'));
 		$save->expects($this->never())->method('saveObject');
 		$this->save = $save;
 		$this->expectException(NotAuthorizedException::class);
-		$this->handler()->createRelatedObject(['a' => 1], $definition, 'parent-1', 4);
+		$this->handler()->createRelatedObject(objectData: ['a' => 1], target: (new CascadeTarget(parentUuid: 'parent-1', register: 4))->with(definition: $definition));
 	}//end testARefusalEscapesAndOtherFailuresAreLogged()
 
 	/**
@@ -238,12 +246,12 @@ class CascadingHandlerCreateRelatedTest extends TestCase {
 		$save = $this->renderingSave();
 		$saved = [];
 		$save->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data) use (&$saved): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data) use (&$saved): ObjectEntity {
 				$saved[] = $data;
 				$created = new ObjectEntity();
 				$created->setUuid('new-' . count($saved));
 				return $created;
-			}
+			})
 		);
 		$handler = new CascadingHandler($save, $this->schemas, $utility, $this->logger);
 

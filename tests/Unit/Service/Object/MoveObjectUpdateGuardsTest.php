@@ -71,8 +71,66 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Object\MoveAddress
  * @uses   \OCA\OpenRegister\Service\Object\ObjectEventGate
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicObjectChange
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
+ * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  *
  * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicObjectChange
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
+ * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  */
 class MoveObjectUpdateGuardsTest extends TestCase {
 
@@ -96,7 +154,7 @@ class MoveObjectUpdateGuardsTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMoveAsksTheUpdateGuardsOnceBeforeTheWrite(): void {
-		$answer = $this->mover(writes: 1)->move($this->object(), ...$this->addresses());
+		$answer = $this->mover(writes: 1)->perform(move: $this->moveOf(object: $this->object()));
 
 		$this->assertTrue($answer['moved']);
 		$this->assertSame(
@@ -115,7 +173,7 @@ class MoveObjectUpdateGuardsTest extends TestCase {
 		$this->refusal = 'This record is final.';
 
 		$object = $this->object();
-		$answer = $this->mover(writes: 0)->move($object, ...$this->addresses());
+		$answer = $this->mover(writes: 0)->perform(move: $this->moveOf(object: $object));
 
 		$this->assertFalse($answer['moved']);
 		$this->assertStringContainsString('This record is final.', $answer['errors'][0]);
@@ -178,7 +236,7 @@ class MoveObjectUpdateGuardsTest extends TestCase {
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willReturn($valid);
 
-		return new MoveObject(objects: $mapper, validator: $validator, audit: $this->createMock(AuditTrailMapper::class), logger: new NullLogger(), events: $events);
+		return new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $this->createMock(AuditTrailMapper::class), new NullLogger(), $events), validator: $validator);
 	}//end mover()
 
 	/**
@@ -247,4 +305,22 @@ class MoveObjectUpdateGuardsTest extends TestCase {
 
 		return [...$entities, 'anna'];
 	}//end addresses()
+
+	/**
+	 * The move of an object from register 1 / schema 10 to register 2 / schema 20, asked by anna.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return ObjectMove
+	 */
+	private function moveOf(ObjectEntity $object): ObjectMove {
+		[$sourceRegister, $sourceSchema, $targetRegister, $targetSchema, $actor] = $this->addresses();
+
+		return new ObjectMove(
+			object: $object,
+			source: new MoveAddress(register: $sourceRegister, schema: $sourceSchema),
+			target: new MoveAddress(register: $targetRegister, schema: $targetSchema),
+			actor: $actor
+		);
+	}//end moveOf()
 }//end class

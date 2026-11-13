@@ -27,6 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxAnchor;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
 use PHPUnit\Framework\TestCase;
@@ -37,6 +40,13 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\TaskMapper
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class TaskMapperRunAnchorTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -47,7 +57,7 @@ class TaskMapperRunAnchorTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRunAnchorPredicatesOnRunUuidInPageAndCount(): void {
-		$criteria = new TaskInboxCriteria(uid: 'alice', isAdmin: true, runUuid: 'run-7');
+		$criteria = new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', isAdmin: true), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(runUuid: 'run-7')));
 
 		$mapper = new TaskMapper(db: $this->connectionWith(rows: []));
 		$mapper->findInbox(criteria: $criteria);
@@ -78,7 +88,7 @@ class TaskMapperRunAnchorTest extends TestCase {
 			$this->calls = [];
 			$mapper = new TaskMapper(db: $this->connectionWith(rows: []));
 			$mapper->findInbox(
-				criteria: new TaskInboxCriteria(uid: 'alice', groupIds: ['g'], isAdmin: true, scope: $scope, runUuid: 'run-7')
+				criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['g'], isAdmin: true, scope: $scope), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(runUuid: 'run-7')))
 			);
 
 			$this->assertTrue($this->saw('expr.eq', 'run_uuid'), "$scope still anchors on the run");
@@ -99,7 +109,7 @@ class TaskMapperRunAnchorTest extends TestCase {
 	public function testTheRunAnchorDoesNotRelaxVisibility(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith(rows: []));
 		$mapper->findInbox(
-			criteria: new TaskInboxCriteria(uid: 'alice', groupIds: ['g'], isAdmin: false, scope: TaskInboxCriteria::SCOPE_ALL, runUuid: 'run-7')
+			criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['g'], isAdmin: false, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(runUuid: 'run-7')))
 		);
 
 		$this->assertTrue($this->saw('expr.eq', 'run_uuid'));
@@ -114,7 +124,7 @@ class TaskMapperRunAnchorTest extends TestCase {
 	public function testTheRunAnchorShowsAPortalAskTheRunRaised(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith(rows: []));
 		$mapper->findInbox(
-			criteria: new TaskInboxCriteria(uid: 'alice', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL, runUuid: 'run-7')
+			criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(runUuid: 'run-7')))
 		);
 
 		$this->assertFalse(
@@ -130,7 +140,7 @@ class TaskMapperRunAnchorTest extends TestCase {
 	 */
 	public function testWithoutAnAnchorNothingAboutTheInboxChanges(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith(rows: []));
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'alice'));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertFalse($this->saw('expr.eq', 'run_uuid'), 'no run predicate without a run');
 		$this->assertTrue($this->saw('expr.in', 'assignee'), 'the default scope still narrows to the caller');

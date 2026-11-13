@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\DeckLink
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class DeckLinkJsonSerializeGoldenTest extends TestCase {
 	/**

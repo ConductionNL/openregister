@@ -40,6 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -56,6 +58,11 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
  * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class AnEmptyRuleListMeansOneThingTest extends TestCase {
 
@@ -101,7 +108,7 @@ class AnEmptyRuleListMeansOneThingTest extends TestCase {
 	 */
 	public function testANamedActionStillRefusesSomebodyOutsideIt(): void {
 		$this->assertFalse(
-			$this->handler()->canReadProperty($this->schemaWith(['read' => ['hr']]), 'salaris', [])
+			$this->handler()->canReadProperty(new SchemaProperty($this->schemaWith(['read' => ['hr']]), 'salaris'), new PropertyAccessRequest([]))
 		);
 	}//end testANamedActionStillRefusesSomebodyOutsideIt()
 
@@ -116,7 +123,7 @@ class AnEmptyRuleListMeansOneThingTest extends TestCase {
 	 */
 	public function testAnUnnamedActionFallsThroughRatherThanRefusing(): void {
 		$this->assertTrue(
-			$this->handler()->canUpdateProperty($this->schemaWith(['read' => ['hr']]), 'salaris', []),
+			$this->handler()->canUpdateProperty(new SchemaProperty($this->schemaWith(['read' => ['hr']]), 'salaris'), new PropertyAccessRequest([])),
 			'Refusing here would make every action a partial block does not name unwritable, '
 			. 'and all eight property blocks in the fleet are partial.'
 		);
@@ -132,7 +139,7 @@ class AnEmptyRuleListMeansOneThingTest extends TestCase {
 	 */
 	public function testAnExplicitlyEmptyActionAlsoFallsThrough(): void {
 		$this->assertTrue(
-			$this->handler()->canUpdateProperty($this->schemaWith(['read' => ['hr'], 'update' => []]), 'salaris', [])
+			$this->handler()->canUpdateProperty(new SchemaProperty($this->schemaWith(['read' => ['hr'], 'update' => []]), 'salaris'), new PropertyAccessRequest([]))
 		);
 	}//end testAnExplicitlyEmptyActionAlsoFallsThrough()
 
@@ -145,6 +152,6 @@ class AnEmptyRuleListMeansOneThingTest extends TestCase {
 		$schema = new Schema();
 		$schema->setProperties(['naam' => ['type' => 'string']]);
 
-		$this->assertTrue($this->handler()->canReadProperty($schema, 'naam', []));
+		$this->assertTrue($this->handler()->canReadProperty(new SchemaProperty($schema, 'naam'), new PropertyAccessRequest([])));
 	}//end testAPropertyWithNoBlockIsUntouched()
 }//end class

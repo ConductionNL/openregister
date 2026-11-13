@@ -41,9 +41,11 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\InjectableSecretRequest;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2ClientResolver
+ * @uses \OCA\OpenRegister\Service\Credential\InjectableSecretRequest
  */
 class OAuth2ClientResolverTest extends TestCase {
 	/** @var array<int, array<string, mixed>> Every resolveInjectable() the resolver made. */
@@ -150,12 +152,12 @@ class OAuth2ClientResolverTest extends TestCase {
 		);
 
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->method('resolveInjectable')->willReturnCallback(
-			function (string $credentialId, string $appId, ?string $actingUserId = null) use ($secret): ?string {
+		$broker->method('resolveInjectableFor')->willReturnCallback(
+			function (InjectableSecretRequest $request) use ($secret): ?string {
 				$this->resolutions[] = [
-					'credentialId' => $credentialId,
-					'appId' => $appId,
-					'actingUserId' => $actingUserId,
+					'credentialId' => $request->credentialId,
+					'appId' => $request->appId,
+					'actingUserId' => $request->actingUserId,
 				];
 
 				return $secret;

@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Service\Object\SaveObject\UploadedContent;
+use OCA\OpenRegister\Service\Object\SaveObject\UploadCheck;
 use Exception;
 use OCA\OpenRegister\Service\File\ExecutableContentDetector;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyLog;
@@ -23,6 +25,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyLog
  * @uses   \OCA\OpenRegister\Service\File\ExecutableContentDetector
  * @uses   \OCA\OpenRegister\Service\File\FilePropertyRules
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UploadCheck
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UploadedContent
  */
 final class FileUploadGuardTest extends TestCase {
 
@@ -44,7 +48,9 @@ final class FileUploadGuardTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAcceptedFilePasses(): void {
-		$this->guard()->assertAccepted(self::TEXT, ['allowedTypes' => ['text/plain'], 'maxSize' => 3], 'P');
+		$this->guard()->assertAccepted(
+			new UploadCheck(fileData: self::TEXT, errorPrefix: 'P', fileConfig: ['allowedTypes' => ['text/plain'], 'maxSize' => 3])
+		);
 		$this->addToAssertionCount(1);
 	}//end testAnAcceptedFilePasses()
 
@@ -56,7 +62,9 @@ final class FileUploadGuardTest extends TestCase {
 	public function testTheTypeIsRefusedBeforeTheSize(): void {
 		$this->expectExceptionMessage("P has invalid type 'text/plain'. Allowed types: image/png");
 
-		$this->guard()->assertAccepted(self::TEXT, ['allowedTypes' => ['image/png'], 'maxSize' => 1], 'P');
+		$this->guard()->assertAccepted(
+			new UploadCheck(fileData: self::TEXT, errorPrefix: 'P', fileConfig: ['allowedTypes' => ['image/png'], 'maxSize' => 1])
+		);
 	}//end testTheTypeIsRefusedBeforeTheSize()
 
 	/**
@@ -67,7 +75,7 @@ final class FileUploadGuardTest extends TestCase {
 	public function testAnOversizedFileIsRefused(): void {
 		$this->expectExceptionMessage('P exceeds maximum size (2 bytes). File size: 3 bytes');
 
-		$this->guard()->assertAccepted(self::TEXT, ['maxSize' => 2], 'P');
+		$this->guard()->assertAccepted(new UploadCheck(fileData: self::TEXT, errorPrefix: 'P', fileConfig: ['maxSize' => 2]));
 	}//end testAnOversizedFileIsRefused()
 
 	/**
@@ -92,7 +100,7 @@ final class FileUploadGuardTest extends TestCase {
 	public function testExecutableContentIsRefused(): void {
 		$this->expectExceptionMessage('P contains executable code (Windows executable (PE/EXE)).');
 
-		$this->guard()->blockExecutableContent("MZ\x90\x00", 'P', '');
+		$this->guard()->blockExecutableContent(new UploadedContent(content: "MZ\x90\x00", errorPrefix: 'P', fileName: ''));
 	}//end testExecutableContentIsRefused()
 
 	/**
@@ -102,11 +110,11 @@ final class FileUploadGuardTest extends TestCase {
 	 */
 	public function testMimeTypeIn(): void {
 		$guard = $this->guard();
-		$guard->blockMimeTypeIn(['mimeType' => 'text/plain'], 'P', $guard->executableMimeTypes());
-		$guard->blockMimeTypeIn([], 'P', $guard->executableMimeTypes());
+		$guard->blockMimeTypeIn(new UploadCheck(fileData: ['mimeType' => 'text/plain'], errorPrefix: 'P'), $guard->executableMimeTypes());
+		$guard->blockMimeTypeIn(new UploadCheck(fileData: [], errorPrefix: 'P'), $guard->executableMimeTypes());
 
 		$this->expectExceptionMessage("P has executable MIME type 'application/x-sh'.");
-		$guard->blockMimeTypeIn(['mimeType' => 'application/x-sh'], 'P', $guard->executableMimeTypes());
+		$guard->blockMimeTypeIn(new UploadCheck(fileData: ['mimeType' => 'application/x-sh'], errorPrefix: 'P'), $guard->executableMimeTypes());
 	}//end testMimeTypeIn()
 
 	/**

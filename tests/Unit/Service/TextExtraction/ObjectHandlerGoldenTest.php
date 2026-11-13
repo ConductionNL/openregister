@@ -48,6 +48,12 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\ObjectTextPath
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
  */
 class ObjectHandlerGoldenTest extends TestCase {
 
@@ -180,11 +186,11 @@ class ObjectHandlerGoldenTest extends TestCase {
 			}
 		};
 
+		$objects = $this->objectMapper(scenario: $scenario);
+		$schemas = $this->schemaMapper(spec: ($scenario['schema'] ?? null));
 		$handler = new ObjectHandler(
 			new TextExtractionObjects(
-				$this->objectMapper(scenario: $scenario),
-				$this->schemaMapper(spec: ($scenario['schema'] ?? null)),
-				$this->registerMapper(spec: ($scenario['register'] ?? null))
+				new \OCA\OpenRegister\Db\SchemaCatalog($this->registerMapper(spec: ($scenario['register'] ?? null)), $schemas, $objects)
 			),
 			$this->chunkMapper(scenario: $scenario),
 			$logger
@@ -227,7 +233,7 @@ class ObjectHandlerGoldenTest extends TestCase {
 			return $handler->getSourceType();
 		}
 
-		return $handler->extractText(11, ['ignored' => true], false);
+		return $handler->extractText(11, ['ignored' => true]);
 	}//end invoke()
 
 	/**

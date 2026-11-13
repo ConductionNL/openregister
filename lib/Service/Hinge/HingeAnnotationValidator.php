@@ -82,7 +82,7 @@ class HingeAnnotationValidator implements HingeAnnotationValidatorInterface {
 		foreach ($lenses as $name => $spec) {
 			$errors = array_merge(
 				$errors,
-				$this->validateOneLens(name: (string)$name, spec: $spec, propertyNames: $propertyNames)
+				$this->validateOneLens(lens: new DeclaredLens(name: (string)$name, spec: $spec), propertyNames: $propertyNames)
 			);
 		}
 
@@ -92,26 +92,25 @@ class HingeAnnotationValidator implements HingeAnnotationValidatorInterface {
 	/**
 	 * Check one lens: its two halves, and that it does not shadow a stored property.
 	 *
-	 * @param string             $name          The property name the lens renders as.
-	 * @param mixed              $spec          The declared lens.
+	 * @param DeclaredLens       $lens          The lens name and its declaration.
 	 * @param array<int, string> $propertyNames The schema's own property names.
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings for this lens.
 	 */
-	private function validateOneLens(string $name, mixed $spec, array $propertyNames): array {
-		if (is_array($spec) === false) {
+	private function validateOneLens(DeclaredLens $lens, array $propertyNames): array {
+		if (is_array($lens->spec) === false) {
 			return [
 				[
 					'code' => 'lens-malformed',
-					'message' => sprintf('Lens "%s" must be an object declaring through and property.', $name),
+					'message' => sprintf('Lens "%s" must be an object declaring through and property.', $lens->name),
 				],
 			];
 		}
 
 		$findings = [
-			$this->lensThroughFinding(name: $name, through: ($spec['through'] ?? null), propertyNames: $propertyNames),
-			$this->lensPropertyFinding(name: $name, property: ($spec['property'] ?? null)),
-			$this->lensShadowFinding(name: $name, propertyNames: $propertyNames),
+			$this->lensThroughFinding(lens: $lens, propertyNames: $propertyNames),
+			$this->lensPropertyFinding(name: $lens->name, property: ($lens->spec['property'] ?? null)),
+			$this->lensShadowFinding(name: $lens->name, propertyNames: $propertyNames),
 		];
 
 		return array_values(array_filter($findings, static fn (?array $finding): bool => $finding !== null));
@@ -120,13 +119,14 @@ class HingeAnnotationValidator implements HingeAnnotationValidatorInterface {
 	/**
 	 * Check a lens names a reference property the schema declares.
 	 *
-	 * @param string             $name          The property name the lens renders as.
-	 * @param mixed              $through       The declared reference property.
+	 * @param DeclaredLens       $lens          The lens name and its declaration (an array here).
 	 * @param array<int, string> $propertyNames The schema's own property names.
 	 *
 	 * @return array{code: string, message: string}|null The finding, or null when well-formed.
 	 */
-	private function lensThroughFinding(string $name, mixed $through, array $propertyNames): ?array {
+	private function lensThroughFinding(DeclaredLens $lens, array $propertyNames): ?array {
+		$name = $lens->name;
+		$through = ($lens->spec['through'] ?? null);
 		if (is_string($through) === false || $through === '') {
 			return [
 				'code' => 'lens-missing-through',
@@ -326,6 +326,18 @@ class HingeAnnotationValidator implements HingeAnnotationValidatorInterface {
 			];
 		}
 
+		return $this->geoSourceFindings(sources: $sources, propertyNames: $propertyNames);
+	}//end validateGeoInheritance()
+
+	/**
+	 * The findings for each declared geo-inheritance source.
+	 *
+	 * @param array<int, mixed>  $sources       The declared `from` sources.
+	 * @param array<int, string> $propertyNames The schema's property names.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function geoSourceFindings(array $sources, array $propertyNames): array {
 		$errors = [];
 		foreach ($sources as $source) {
 			$finding = $this->geoSourceFinding(source: $source, propertyNames: $propertyNames);
@@ -335,7 +347,7 @@ class HingeAnnotationValidator implements HingeAnnotationValidatorInterface {
 		}
 
 		return $errors;
-	}//end validateGeoInheritance()
+	}//end geoSourceFindings()
 
 	/**
 	 * Check one inherited-geography source: a bare reference property or an object naming one.

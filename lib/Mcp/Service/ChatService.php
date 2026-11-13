@@ -34,14 +34,18 @@ use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
 use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -80,84 +84,21 @@ class ChatService implements ChatServiceInterface {
 	private const RECENT_MESSAGES_COUNT = 10;
 
 	/**
-	 * Conversation mapper
-	 *
-	 * @var ConversationMapper
-	 */
-	private ConversationMapper $conversationMapper;
-
-	/**
-	 * Message mapper
-	 *
-	 * @var MessageMapperInterface
-	 */
-	private MessageMapperInterface $messageMapper;
-
-	/**
-	 * Agent mapper
-	 *
-	 * @var AgentMapper
-	 */
-	private AgentMapper $agentMapper;
-
-	/**
-	 * Context retrieval handler
-	 *
-	 * @var ContextRetrievalHandler
-	 */
-	private ContextRetrievalHandler $contextHandler;
-
-	/**
-	 * Response generation handler
-	 *
-	 * @var ResponseGenerationHandler
-	 */
-	private ResponseGenerationHandler $responseHandler;
-
-	/**
-	 * Conversation management handler
-	 *
-	 * @var ConversationManagementHandler
-	 */
-	private ConversationManagementHandler $conversationHandler;
-
-	/**
-	 * Message history handler
-	 *
-	 * @var MessageHistoryHandler
-	 */
-	private MessageHistoryHandler $historyHandler;
-
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
 	 * @param ChatServiceStores   $stores   Conversation, message and agent rows.
 	 * @param ChatServiceHandlers $handlers The handlers a chat turn is delegated to.
 	 * @param LoggerInterface     $logger   Logger.
+	 * @param OrganisationSpecialRightsInterface $specialRights Reads agent_use and llm_use.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ChatServiceStores $stores,
-		ChatServiceHandlers $handlers,
-		LoggerInterface $logger,
+		private readonly ChatServiceStores $stores,
+		private readonly ChatServiceHandlers $handlers,
+		private readonly LoggerInterface $logger,
+		private readonly OrganisationSpecialRightsInterface $specialRights,
 	) {
-		$this->conversationMapper = $stores->conversationMapper;
-		$this->messageMapper = $stores->messageMapper;
-		$this->agentMapper = $stores->agentMapper;
-		$this->contextHandler = $handlers->contextHandler;
-		$this->responseHandler = $handlers->responseHandler;
-		$this->conversationHandler = $handlers->conversationHandler;
-		$this->historyHandler = $handlers->historyHandler;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -236,11 +177,13 @@ class ChatService implements ChatServiceInterface {
 		try {
 			$conversation = $this->findOwnConversation(request: $request);
 			$agent = $this->findConversationAgent(conversation: $conversation);
+			// Special rights, before anything is stored or sent to a model.
+			$this->refuseMissingRight(conversation: $conversation, agent: $agent, userId: $request->userId);
 			$this->recordUserMessage(request: $request, conversation: $conversation);
 			$result = $this->answerMessage(request: $request, agent: $agent);
 			$this->titleNewConversation(request: $request, conversation: $conversation);
 			// Per-run LLM token/latency usage for run-cost recording (run-analytics).
-			$result['usage'] = $this->responseHandler->lastUsage;
+			$result['usage'] = $this->handlers->responseHandler->lastUsage;
 			return $result;
 		} catch (Exception $e) {
 			$this->logger->error(
@@ -265,7 +208,7 @@ class ChatService implements ChatServiceInterface {
 	 * @throws Exception If the conversation belongs to another user.
 	 */
 	private function findOwnConversation(ChatMessageRequest $request): Conversation {
-		$conversation = $this->conversationMapper->find($request->conversationId);
+		$conversation = $this->stores->conversationMapper->find($request->conversationId);
 		if ($conversation->getUserId() !== $request->userId) {
 			throw new Exception('Access denied to conversation');
 		}
@@ -285,8 +228,86 @@ class ChatService implements ChatServiceInterface {
 			return null;
 		}
 
-		return $this->agentMapper->find($conversation->getAgentId());
+		return $this->stores->agentMapper->find($conversation->getAgentId());
 	}//end findConversationAgent()
+
+	/**
+	 * Refuse a message when the caller lacks a special right it needs.
+	 *
+	 * @param Conversation $conversation The conversation.
+	 * @param Agent|null   $agent        The agent it runs, or null.
+	 * @param string       $userId       The caller.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 403 when the caller lacks llm_use or agent_use.
+	 */
+	private function refuseMissingRight(Conversation $conversation, ?Agent $agent, string $userId): void {
+		$missing = $this->missingRight(conversation: $conversation, agent: $agent, userId: $userId);
+		if ($missing !== null) {
+			throw new Exception('You do not hold the special right ' . $missing . ' in this organisation', 403);
+		}
+	}//end refuseMissingRight()
+
+	/**
+	 * The special right a caller lacks to send a message in one of its conversations, or null.
+	 *
+	 * @param int    $conversationId The conversation.
+	 * @param string $userId         The caller.
+	 *
+	 * @return string|null The right's key, or null when the caller holds every right the conversation needs.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	public function missingRightIn(int $conversationId, string $userId): ?string {
+		$conversation = $this->stores->conversationMapper->find($conversationId);
+
+		return $this->missingRight(
+			conversation: $conversation,
+			agent: $this->findConversationAgent(conversation: $conversation),
+			userId: $userId
+		);
+	}//end missingRightIn()
+
+	/**
+	 * The special right a caller lacks to send a message in a conversation, or null.
+	 *
+	 * `llm_use` is read from the conversation's organisation: every message
+	 * calls a language model on the caller's behalf. `agent_use` is read from
+	 * the agent's organisation when the conversation runs an agent.
+	 * {@see OrganisationSpecialRightsInterface::mayUse()} for administrators, a missing
+	 * organisation and a missing key.
+	 *
+	 * @param Conversation $conversation The conversation.
+	 * @param Agent|null   $agent        The agent it runs, or null.
+	 * @param string       $userId       The caller.
+	 *
+	 * @return string|null The right's key, or null when the caller holds both.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	private function missingRight(Conversation $conversation, ?Agent $agent, string $userId): ?string {
+		if ($this->specialRights->mayUse(
+			right: OrganisationSpecialRightsInterface::LLM_USE,
+			userId: $userId,
+			organisationUuid: $conversation->getOrganisation()
+		) === false
+		) {
+			return OrganisationSpecialRightsInterface::LLM_USE;
+		}
+
+		if ($agent !== null
+			&& $this->specialRights->mayUse(
+				right: OrganisationSpecialRightsInterface::AGENT_USE,
+				userId: $userId,
+				organisationUuid: $agent->getOrganisation()
+			) === false
+		) {
+			return OrganisationSpecialRightsInterface::AGENT_USE;
+		}
+
+		return null;
+	}//end missingRight()
 
 	/**
 	 * Store the user's message with its CnAiContext snapshot and summarize the conversation when due.
@@ -297,9 +318,9 @@ class ChatService implements ChatServiceInterface {
 	 * @return void
 	 */
 	private function recordUserMessage(ChatMessageRequest $request, Conversation $conversation): void {
-		$this->historyHandler->storeUserMessage(request: $request);
+		$this->handlers->historyHandler->storeUserMessage(request: $request);
 
-		$this->conversationHandler->checkAndSummarize($conversation);
+		$this->handlers->conversationHandler->checkAndSummarize($conversation);
 	}//end recordUserMessage()
 
 	/**
@@ -315,24 +336,17 @@ class ChatService implements ChatServiceInterface {
 	 */
 	private function answerMessage(ChatMessageRequest $request, ?Agent $agent): array {
 		$started = microtime(true);
-		$context = $this->contextHandler->retrieveContext(
-			query: $request->userMessage,
-			agent: $agent,
-			selectedViews: $request->selectedViews,
-			ragSettings: $request->ragSettings
-		);
+		$context = $this->handlers->contextHandler->retrieveContext(request: $request, agent: $agent);
 		$contextTime = microtime(true) - $started;
 
 		$started = microtime(true);
-		$messageHistory = $this->historyHandler->buildMessageHistory($request->conversationId);
+		$messageHistory = $this->handlers->historyHandler->buildMessageHistory($request->conversationId);
 		$historyTime = microtime(true) - $started;
 
 		$started = microtime(true);
-		$aiResponse = $this->responseHandler->generateResponse(
+		$aiResponse = $this->handlers->responseHandler->generateResponse(
 			request: $request,
-			context: $context,
-			messageHistory: $messageHistory,
-			agent: $agent
+			grounding: new ReplyGrounding(context: $context, messageHistory: $messageHistory, agent: $agent)
 		);
 		$llmTime = microtime(true) - $started;
 
@@ -358,10 +372,9 @@ class ChatService implements ChatServiceInterface {
 	 * @return array The reply, its stored message id, sources and timings.
 	 */
 	private function storeAnswer(ChatMessageRequest $request, array $answer): array {
-		$assistantStored = $this->historyHandler->storeAssistantMessage(
+		$assistantStored = $this->handlers->historyHandler->storeAssistantMessage(
 			conversationId: $request->conversationId,
-			content: $answer['message'],
-			sources: $answer['sources']
+			reply: new ChatReply(content: $answer['message'], sources: $answer['sources'])
 		);
 
 		[$contextTime, $historyTime, $llmTime] = $answer['times'];
@@ -389,26 +402,24 @@ class ChatService implements ChatServiceInterface {
 	 * @return void
 	 */
 	private function titleNewConversation(ChatMessageRequest $request, Conversation $conversation): void {
-		$messageCount = $this->messageMapper->countByConversation($request->conversationId);
+		$messageCount = $this->stores->messageMapper->countByConversation($request->conversationId);
 		$currentTitle = $conversation->getTitle();
 		$isNewConversation = $currentTitle === null || strpos($currentTitle, 'New Conversation') === 0;
 		if ($messageCount > 2 || $isNewConversation === false) {
 			return;
 		}
 
-		$title = $this->conversationHandler->generateConversationTitle($request->userMessage);
+		$title = $this->handlers->conversationHandler->generateConversationTitle($request->userMessage);
 		$agentId = $conversation->getAgentId();
 		if ($agentId !== null) {
-			$title = $this->conversationHandler->ensureUniqueTitle(
-				baseTitle: $title,
-				userId: $conversation->getUserId(),
-				agentId: $agentId
+			$title = $this->handlers->conversationHandler->ensureUniqueTitle(
+				claim: new TitleClaim(baseTitle: $title, userId: $conversation->getUserId(), agentId: $agentId)
 			);
 		}
 
 		$conversation->setTitle($title);
 		$conversation->setUpdated(new DateTime());
-		$this->conversationMapper->update($conversation);
+		$this->stores->conversationMapper->update($conversation);
 	}//end titleNewConversation()
 
 	/**
@@ -423,7 +434,7 @@ class ChatService implements ChatServiceInterface {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function generateConversationTitle(string $firstMessage): string {
-		return $this->conversationHandler->generateConversationTitle($firstMessage);
+		return $this->handlers->conversationHandler->generateConversationTitle($firstMessage);
 	}//end generateConversationTitle()
 
 	/**
@@ -440,10 +451,8 @@ class ChatService implements ChatServiceInterface {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string {
-		return $this->conversationHandler->ensureUniqueTitle(
-			baseTitle: $baseTitle,
-			userId: $userId,
-			agentId: $agentId
+		return $this->handlers->conversationHandler->ensureUniqueTitle(
+			claim: new TitleClaim(baseTitle: $baseTitle, userId: $userId, agentId: $agentId)
 		);
 	}//end ensureUniqueTitle()
 
@@ -467,6 +476,18 @@ class ChatService implements ChatServiceInterface {
 		array $config,
 		string $_testMessage = 'Hello! Please respond with a brief greeting.',
 	): array {
+		return $this->simplifiedChatTest(provider: $provider, config: $config);
+	}//end testChat()
+
+	/**
+	 * The facade's simplified chat test: log the attempt and answer with the static result.
+	 *
+	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama').
+	 * @param array  $config   Provider-specific configuration.
+	 *
+	 * @return array Test result with success status, message, and optional error.
+	 */
+	private function simplifiedChatTest(string $provider, array $config): array {
 		$this->logger->info(
 			message: '[ChatService] Testing chat functionality',
 			context: [
@@ -500,5 +521,5 @@ class ChatService implements ChatServiceInterface {
 				'message' => 'Failed to test chat: ' . $e->getMessage(),
 			];
 		}//end try
-	}//end testChat()
+	}//end simplifiedChatTest()
 }//end class

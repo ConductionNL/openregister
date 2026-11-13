@@ -25,9 +25,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Mcp\Command;
 
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Mcp\Command\ContextChatReindexCommand;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -42,6 +44,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
  * @covers \OCA\OpenRegister\Mcp\Command\ContextChatReindexCommand
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Mcp\Command\ReindexScope
  */
 class ContextChatReindexCommandTest extends TestCase {
 
@@ -66,7 +70,10 @@ class ContextChatReindexCommandTest extends TestCase {
 		$this->registerMapper  = $this->createMock(RegisterMapperInterface::class);
 		$this->schemaMapper    = $this->createMock(SchemaMapperInterface::class);
 		$this->contentProvider = $this->createMock(ContentProviderInterface::class);
-		$this->command         = new ContextChatReindexCommand($this->container, $this->registerMapper, $this->schemaMapper);
+		$this->command         = new ContextChatReindexCommand(
+			$this->container,
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class))
+		);
 	}//end setUp()
 
 	/**

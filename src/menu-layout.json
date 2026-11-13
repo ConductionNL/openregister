@@ -20,6 +20,7 @@
 		"Configurations": "AdministrationGroup",
 		"Entities": "AdministrationGroup",
 		"Avg": "AdministrationGroup",
+		"Archival": "AdministrationGroup",
 
 		"Deleted": "AuditGroup",
 		"AuditTrails": "AuditGroup",

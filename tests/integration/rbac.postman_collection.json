@@ -1,4 +1,15 @@
 {
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+        ]
+      }
+    }
+  ],
   "info": {
     "name": "OpenRegister RBAC / IDOR Authorization Tests",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",

@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Lifecycle\Action;
 
 use OCA\OpenRegister\Lifecycle\Action\SetFieldsAction;
+use OCA\OpenRegister\Lifecycle\LifecycleActionContext;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -46,10 +47,12 @@ class SetFieldsActionTest extends TestCase {
 	 */
 	public function testSetFieldsShapeStampsStaticValue(): void {
 		$result = $this->action->execute(
-			objectData: ['status' => 'submitted'],
-			previousData: ['status' => 'draft'],
-			parameters: ['reviewedBy' => 'system'],
-			actionName: 'set-fields'
+			new LifecycleActionContext(
+				objectData: ['status' => 'submitted'],
+				previousData: ['status' => 'draft'],
+				parameters: ['reviewedBy' => 'system'],
+				actionName: 'set-fields'
+			)
 		);
 
 		$this->assertSame('submitted', $result['status']);
@@ -61,10 +64,12 @@ class SetFieldsActionTest extends TestCase {
 	 */
 	public function testSetFieldShapeReadsSetKey(): void {
 		$result = $this->action->execute(
-			objectData: ['status' => 'submitted'],
-			previousData: [],
-			parameters: ['set' => ['approved' => true]],
-			actionName: 'set-field'
+			new LifecycleActionContext(
+				objectData: ['status' => 'submitted'],
+				previousData: [],
+				parameters: ['set' => ['approved' => true]],
+				actionName: 'set-field'
+			)
 		);
 
 		$this->assertTrue($result['approved']);
@@ -75,10 +80,12 @@ class SetFieldsActionTest extends TestCase {
 	 */
 	public function testNowTokenResolvesToTimestamp(): void {
 		$result = $this->action->execute(
-			objectData: [],
-			previousData: [],
-			parameters: ['submittedAt' => '@now'],
-			actionName: 'set-fields'
+			new LifecycleActionContext(
+				objectData: [],
+				previousData: [],
+				parameters: ['submittedAt' => '@now'],
+				actionName: 'set-fields'
+			)
 		);
 
 		$this->assertMatchesRegularExpression(
@@ -96,10 +103,12 @@ class SetFieldsActionTest extends TestCase {
 		$this->expectExceptionMessage('declares no fields to set');
 
 		$this->action->execute(
-			objectData: ['status' => 'submitted'],
-			previousData: [],
-			parameters: [],
-			actionName: 'set-fields'
+			new LifecycleActionContext(
+				objectData: ['status' => 'submitted'],
+				previousData: [],
+				parameters: [],
+				actionName: 'set-fields'
+			)
 		);
 	}//end testEmptyFieldMapThrows()
 }//end class

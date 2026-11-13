@@ -120,23 +120,29 @@ class SubscriptionService {
 	}//end pushEvent()
 
 	/**
-	 * Get events since a given event ID, filtered by schema and RBAC.
+	 * The buffered events after the filter's last event, narrowed by it, that the user may see.
 	 *
-	 * @param string|null $lastEventId The last event ID the client received
-	 * @param int|null $schemaId Optional schema ID filter
-	 * @param int|null $registerId Optional register ID filter
+	 * @param EventStreamFilter $filter Where the client resumes, and the schema and register it narrows to.
 	 *
 	 * @return array<array<string, mixed>> The events the user is allowed to see
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) At threshold after extracting filterEventStream + verifyEventRBAC
-	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
 	 */
-	public function getEventsSince(
-		?string $lastEventId = null,
-		?int $schemaId = null,
-		?int $registerId = null,
-	): array {
+	public function eventsMatching(EventStreamFilter $filter): array {
+		$buffer = $this->bufferedEvents();
+		if ($buffer === []) {
+			return [];
+		}
+
+		return $this->visibleEvents(events: $this->filterEventStream(buffer: $buffer, filter: $filter));
+	}//end eventsMatching()
+
+	/**
+	 * The buffered event stream, empty when APCu is unavailable or holds nothing.
+	 *
+	 * @return array<array<string, mixed>> The buffered events.
+	 */
+	private function bufferedEvents(): array {
 		if (function_exists('apcu_enabled') === false || apcu_enabled() === false) {
 			return [];
 		}
@@ -146,66 +152,70 @@ class SubscriptionService {
 			return [];
 		}
 
-		$filtered = $this->filterEventStream(
-			buffer: $buffer,
-			lastEventId: $lastEventId,
-			schemaId: $schemaId,
-			registerId: $registerId
-		);
+		return $buffer;
+	}//end bufferedEvents()
 
-		$events = [];
-		foreach ($filtered as $event) {
+	/**
+	 * The events the user may see.
+	 *
+	 * @param array<array<string, mixed>> $events The events after the filter.
+	 *
+	 * @return array<array<string, mixed>> The visible events, in order.
+	 */
+	private function visibleEvents(array $events): array {
+		$visible = [];
+		foreach ($events as $event) {
 			if ($this->verifyEventRBAC(event: $event) === true) {
-				$events[] = $event;
+				$visible[] = $event;
 			}
 		}
 
-		return $events;
-	}//end getEventsSince()
+		return $visible;
+	}//end visibleEvents()
 
 	/**
 	 * Filter event buffer by last event ID and schema/register filters.
 	 *
-	 * @param array $buffer The full event buffer
-	 * @param string|null $lastEventId The last event ID the client received
-	 * @param int|null $schemaId Optional schema ID filter
-	 * @param int|null $registerId Optional register ID filter
+	 * @param array             $buffer The full event buffer
+	 * @param EventStreamFilter $filter The last event ID the client received, and the schema and register filters
 	 *
 	 * @return array The filtered events
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
 	 */
-	private function filterEventStream(
-		array $buffer,
-		?string $lastEventId,
-		?int $schemaId,
-		?int $registerId,
-	): array {
-		$foundLastId = ($lastEventId === null);
+	private function filterEventStream(array $buffer, EventStreamFilter $filter): array {
+		$foundLastId = ($filter->lastEventId === null);
 		$events = [];
 
 		foreach ($buffer as $event) {
 			if ($foundLastId === false) {
-				if ($event['id'] === $lastEventId) {
-					$foundLastId = true;
-				}
-
+				$foundLastId = ($event['id'] === $filter->lastEventId);
 				continue;
 			}
 
-			if ($schemaId !== null && ($event['object']['schema'] ?? null) !== $schemaId) {
-				continue;
+			if ($this->admits(filter: $filter, object: ($event['object'] ?? [])) === true) {
+				$events[] = $event;
 			}
-
-			if ($registerId !== null && ($event['object']['register'] ?? null) !== $registerId) {
-				continue;
-			}
-
-			$events[] = $event;
-		}//end foreach
+		}
 
 		return $events;
 	}//end filterEventStream()
+
+	/**
+	 * Whether an event's object falls inside the filter's schema and register.
+	 *
+	 * @param EventStreamFilter    $filter The filter.
+	 * @param array<string, mixed> $object The event's object summary.
+	 *
+	 * @return bool
+	 */
+	private function admits(EventStreamFilter $filter, array $object): bool {
+		if ($filter->schemaId !== null && ($object['schema'] ?? null) !== $filter->schemaId) {
+			return false;
+		}
+
+		return ($filter->registerId === null || ($object['register'] ?? null) === $filter->registerId);
+	}//end admits()
 
 	/**
 	 * Verify RBAC permissions for a single event.

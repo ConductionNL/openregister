@@ -26,6 +26,10 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\DeckPlacement;
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
+use OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDomainMap;
+use OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDraftGate;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
@@ -115,16 +119,12 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 */
 	private IConfig $config;
 
-
-
 	/**
 	 * Database connection (lazy-loaded when needed)
 	 *
 	 * @var IDBConnection|null
 	 */
 	private ?IDBConnection $db = null;
-
-
 
 	/**
 	 * Validation operations handler
@@ -176,6 +176,13 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	private ?ConfigurationSettingsHandler $configurationSettingsHandler = null;
 
 	/**
+	 * The draft gate every update method asks before it writes; null writes through.
+	 *
+	 * @var SettingsDraftGate|null
+	 */
+	private ?SettingsDraftGate $draftGate = null;
+
+	/**
 	 * Logger
 	 *
 	 * @var LoggerInterface
@@ -188,10 +195,6 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @var MagicMapperInterface|null
 	 */
 	// Private ?MagicMapper $objectMapper;.
-
-
-
-
 
 	/**
 	 * This property holds the name of the application, which is used for identification and configuration purposes.
@@ -282,6 +285,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @param ObjectRetentionHandler|null $objRetentionHandler Object retention handler
 	 * @param CacheSettingsHandler|null $cacheSettingsHandler Cache settings handler
 	 * @param ConfigurationSettingsHandler|null $cfgSettingsHandler Configuration settings handler
+	 * @param SettingsDraftGate|null $draftGate Draft gate staging writes when drafting is on
 	 *
 	 * @return void
 	 *
@@ -300,6 +304,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		?ObjectRetentionHandler $objRetentionHandler = null,
 		?CacheSettingsHandler $cacheSettingsHandler = null,
 		?ConfigurationSettingsHandler $cfgSettingsHandler = null,
+		?SettingsDraftGate $draftGate = null,
 	) {
 		$this->config = $config;
 		$this->logger = $logger;
@@ -316,7 +321,25 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		$this->objectRetentionHandler = $objRetentionHandler;
 		$this->cacheSettingsHandler = $cacheSettingsHandler;
 		$this->configurationSettingsHandler = $cfgSettingsHandler;
+		$this->draftGate = $draftGate;
 	}//end __construct()
+
+	/**
+	 * Ask the draft gate whether this write is staged instead of applied.
+	 *
+	 * Null means write through: what an instance with drafting off gets, and what
+	 * an instance with no gate wired gets as well.
+	 *
+	 * @param string $domain The settings domain being written.
+	 * @param array  $data   The data handed to the facade.
+	 *
+	 * @return array|null The pending write, or null to write through.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
+	 */
+	private function drafted(string $domain, array $data): ?array {
+		return $this->draftGate?->draftIfEnabled(domain: $domain, payload: $data);
+	}//end drafted()
 
 	// ============================================
 	// DELEGATION METHODS TO HANDLERS
@@ -356,8 +379,14 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @return array Updated LLM settings
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function updateLLMSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_LLM, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->llmSettingsHandler->updateLLMSettingsOnly($data);
 	}//end updateLLMSettingsOnly()
 
@@ -382,8 +411,14 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @return array Updated file settings
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function updateFileSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_FILE, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->fileSettingsHandler->updateFileSettingsOnly($data);
 	}//end updateFileSettingsOnly()
 
@@ -419,8 +454,14 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @return array Updated object settings
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function updateObjectSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_OBJECT, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->objectRetentionHandler->updateObjectSettingsOnly($data);
 	}//end updateObjectSettingsOnly()
 
@@ -443,8 +484,14 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @return array Updated retention settings
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function updateRetentionSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_RETENTION, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->objectRetentionHandler->updateRetentionSettingsOnly($data);
 	}//end updateRetentionSettingsOnly()
 
@@ -467,8 +514,14 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @return array Updated archival settings
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function updateArchivalSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_ARCHIVAL, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->objectRetentionHandler->updateArchivalSettingsOnly($data);
 	}//end updateArchivalSettingsOnly()
 
@@ -530,8 +583,14 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @return array Updated settings
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function updateSettings(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_SETTINGS, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->configurationSettingsHandler->updateSettings($data);
 	}//end updateSettings()
 
@@ -565,8 +624,14 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @return array Updated RBAC settings
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function updateRbacSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_RBAC, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->configurationSettingsHandler->updateRbacSettingsOnly($data);
 	}//end updateRbacSettingsOnly()
 
@@ -589,14 +654,18 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 *
 	 * @param array $data Organisation settings data
 	 *
-	 * @return (mixed|null|true)[][] Updated organisation settings
-	 *
-	 * @psalm-return array{organisation: array{default_organisation: mixed|null,
-	 *               auto_create_default_organisation: mixed|true}}
+	 * @return array Updated organisation settings, or the pending write when
+	 *               drafting is on.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function updateOrganisationSettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_ORGANISATION, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->configurationSettingsHandler->updateOrganisationSettingsOnly($data);
 	}//end updateOrganisationSettingsOnly()
 
@@ -669,8 +738,14 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @return array Updated multitenancy settings
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
 	 */
 	public function updateMultitenancySettingsOnly(array $data): array {
+		$pending = $this->drafted(domain: SettingsDomainMap::DOMAIN_MULTITENANCY, data: $data);
+		if ($pending !== null) {
+			return $pending;
+		}
+
 		return $this->configurationSettingsHandler->updateMultitenancySettingsOnly($data);
 	}//end updateMultitenancySettingsOnly()
 
@@ -754,7 +829,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * Validate all objects in the system
 	 *
 	 * Triggers validation logic for all objects without re-saving them.
-	 * This is a lighter-weight operation compared to massValidateObjects.
+	 * This is a lighter-weight operation compared to massValidate.
 	 *
 	 * @return array Validation results
 	 *
@@ -772,25 +847,17 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * Re-saves all objects in the system to ensure all business logic
 	 * is triggered and objects are properly processed according to current rules.
 	 *
-	 * @param int $maxObjects Maximum number of objects to process (0 = all).
-	 * @param int $batchSize Batch size for processing (default: 1000).
-	 * @param string $mode Processing mode: 'serial' or 'parallel'.
-	 * @param bool $collectErrors Whether to collect all errors or stop on first.
+	 * @param MassValidationRequest $request How many objects, the batch size, the mode and whether errors are collected.
 	 *
 	 * @return array Mass validation results
 	 *
 	 * @throws Exception If mass validation operation fails.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for error collection behavior
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
-	public function massValidateObjects(
-		int $maxObjects = 0,
-		int $batchSize = 1000,
-		string $mode = 'serial',
-		bool $collectErrors = false,
-	): array {
+	public function massValidate(MassValidationRequest $request): array {
+		$mode      = $request->mode;
+		$batchSize = $request->batchSize;
 		if (in_array($mode, ['serial', 'parallel'], true) === false) {
 			throw new InvalidArgumentException('Invalid mode parameter. Must be "serial" or "parallel"');
 		}
@@ -808,12 +875,12 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		return $run->run(
 			config: [
 				'mode' => $mode,
-				'max_objects' => $maxObjects,
+				'max_objects' => $request->maxObjects,
 				'batch_size' => $batchSize,
-				'collect_errors' => $collectErrors,
+				'collect_errors' => $request->collectErrors,
 			]
 		);
-	}//end massValidateObjects()
+	}//end massValidate()
 
 	/**
 	 * Format bytes into human readable format
@@ -1303,21 +1370,15 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	/**
 	 * Persist the Deck default board+stack for a schema. Overwrites any prior value.
 	 *
-	 * @param string $schemaSlug Schema slug or numeric id used to scope the default.
-	 * @param int $boardId NC Deck board id.
-	 * @param int $stackId NC Deck stack id on that board.
+	 * @param string        $schemaSlug Schema slug or numeric id used to scope the default.
+	 * @param DeckPlacement $placement  The NC Deck board id and the stack id on that board.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
-	public function setDeckDefault(string $schemaSlug, int $boardId, int $stackId): void {
-		$payload = json_encode(
-			[
-				'boardId' => $boardId,
-				'stackId' => $stackId,
-			]
-		);
+	public function setDeckDefault(string $schemaSlug, DeckPlacement $placement): void {
+		$payload = json_encode(['boardId' => $placement->boardId, 'stackId' => $placement->stackId]);
 		if ($payload === false) {
 			return;
 		}

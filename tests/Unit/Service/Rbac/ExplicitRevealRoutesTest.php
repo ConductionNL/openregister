@@ -36,6 +36,8 @@ use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
 use OCA\OpenRegister\Service\Rbac\RevealRecording;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -68,6 +70,21 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\FieldDecryptionScope
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Service\Object\WithheldProperties
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealMaskRun
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealRecording
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
+ * @uses \OCA\OpenRegister\Service\Object\EntityRead
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses \OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters
  */
 class ExplicitRevealRoutesTest extends TestCase {
 
@@ -172,7 +189,8 @@ class ExplicitRevealRoutesTest extends TestCase {
 		$rbac->method('filterReadableProperties')->willReturnArgument(1);
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn($this->schema());
-		$reader = $this->bare(AccessLinkReader::class, ['schemas' => $schemas, 'properties' => $rbac, 'logger' => $this->createMock(LoggerInterface::class)]);
+		$filters = new AccessLinkReaderFilters(schemas: $schemas, properties: $rbac, timeline: $this->createMock(PublicTimelineInterface::class));
+		$reader = $this->bare(AccessLinkReader::class, ['filters' => $filters, 'logger' => $this->createMock(LoggerInterface::class)]);
 		$object = new ObjectEntity();
 		$object->setSchema('7');
 		$object->setObject(['citizenServiceNumber' => self::BSN]);
@@ -234,7 +252,7 @@ class ExplicitRevealRoutesTest extends TestCase {
 		$rbac->method('canReadProperty')->willReturn(true);
 		$rbac->method('filterReadableProperties')->willReturnArgument(1);
 		$encryption = $this->createMock(FieldEncryptionHandler::class);
-		$encryption->method('decryptProperties')->willReturnCallback(
+		$encryption->method('decryptInScope')->willReturnCallback(
 			static fn (array $data): array => (['citizenServiceNumber' => self::BSN] + $data)
 		);
 		$render = $this->bare(RenderObject::class, ['runtime' => $this->maskingRuntime($encryption)]);

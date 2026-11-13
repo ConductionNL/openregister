@@ -22,11 +22,15 @@ use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ChatService;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
+use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 /**
  * Records every collaborator call processMessage() makes, in order, and its result,
@@ -37,6 +41,12 @@ use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
  * @uses   \OCA\OpenRegister\Mcp\Db\Conversation
  * @uses   \OCA\OpenRegister\Notifications\Db\Message
  * @uses   \OCA\OpenRegister\Mcp\Db\Agent
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatReply
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim
  */
 class ChatServiceProcessMessageGoldenTest extends TestCase {
 
@@ -90,8 +100,8 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 			}
 		);
 		$history->method('storeAssistantMessage')->willReturnCallback(
-			function (int $conversationId, string $content, ?array $sources) use ($s) {
-				$this->calls[] = ['history.store', $conversationId, Message::ROLE_ASSISTANT, $content, $sources, null];
+			function (int $conversationId, ChatReply $reply) use ($s) {
+				$this->calls[] = ['history.store', $conversationId, Message::ROLE_ASSISTANT, $reply->content, $reply->sources, null];
 				$message = new Message();
 				if ($s['storedId'] !== null) {
 					$message->setId($s['storedId']);
@@ -116,15 +126,15 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 			$response->lastUsage = ['tokens' => 99];
 			return 'Title for ' . $m;
 		});
-		$conversationHandler->method('ensureUniqueTitle')->willReturnCallback(function (string $t, string $u, int $a) {
-			$this->calls[] = ['title.unique', $t, $u, $a];
-			return $t . ' (2)';
+		$conversationHandler->method('ensureUniqueTitle')->willReturnCallback(function (TitleClaim $claim) {
+			$this->calls[] = ['title.unique', $claim->baseTitle, $claim->userId, $claim->agentId];
+			return $claim->baseTitle . ' (2)';
 		});
 
 		$contextHandler = $this->createMock(ContextRetrievalHandler::class);
 		$contextHandler->method('retrieveContext')->willReturnCallback(
-			function (string $query, ?Agent $agent, array $selectedViews = [], array $ragSettings = []) use ($s) {
-				$this->calls[] = ['context', $query, $agent?->getName(), $selectedViews, $ragSettings];
+			function (ChatMessageRequest $request, ?Agent $agent) use ($s) {
+				$this->calls[] = ['context', $request->userMessage, $agent?->getName(), $request->selectedViews, $request->ragSettings];
 				if ($s['fail'] === true) {
 					throw new Exception('context down');
 				}
@@ -132,8 +142,8 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 			}
 		);
 		$response->method('generateResponse')->willReturnCallback(
-			function (ChatMessageRequest $request, array $context, array $messageHistory, ?Agent $agent) {
-				$this->calls[] = ['llm', $request->userMessage, $context, $messageHistory, $agent?->getName(), $request->selectedTools, $request->channel !== null, $request->cnAiContext];
+			function (ChatMessageRequest $request, ReplyGrounding $grounding) {
+				$this->calls[] = ['llm', $request->userMessage, $grounding->context, $grounding->messageHistory, $grounding->agent?->getName(), $request->selectedTools, $request->channel !== null, $request->cnAiContext];
 				return 'answer to ' . $request->userMessage;
 			}
 		);
@@ -161,7 +171,20 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 				$history,
 			),
 			$logger,
+			$this->allRights(),
 		);
+	}
+
+	/**
+	 * A reader of special rights that lets everybody use everything; ChatSpecialRightsTest covers refusals.
+	 *
+	 * @return OrganisationSpecialRights
+	 */
+	private function allRights(): OrganisationSpecialRights {
+		$rights = $this->createMock(OrganisationSpecialRights::class);
+		$rights->method('mayUse')->willReturn(true);
+
+		return $rights;
 	}
 
 	/**

@@ -34,6 +34,7 @@ use Opis\JsonSchema\ValidationContext;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
+use OCA\OpenRegister\Tests\Unit\Support\EndsWithinSeconds;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -41,6 +42,11 @@ use Psr\Log\LoggerInterface;
  * Controls for reference loops, through the real validator.
  */
 class ValidateObjectRefLoopTest extends TestCase {
+	use EndsWithinSeconds;
+
+	/** A loop that ends answers in milliseconds; one that does not is failed after this. */
+	private const TIME_BOUND_SECONDS = 30;
+
 	/**
 	 * Every way a reference comes back to itself at one place in the data.
 	 *

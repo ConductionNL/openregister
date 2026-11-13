@@ -1,7 +1,7 @@
 {
     "addresses": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -93,7 +93,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -172,7 +172,7 @@
     ],
     "all-channels": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -233,7 +233,7 @@
             "http.request",
             [
                 "PUT",
-                "https://hook.example.test/in",
+                "https://93.184.215.14/in",
                 {
                     "json": {
                         "notification": "everything",
@@ -266,7 +266,11 @@
                         "Content-Type": "application/json",
                         "X-A": "1"
                     },
-                    "timeout": 5
+                    "timeout": 5,
+                    "allow_redirects": false,
+                    "nextcloud": {
+                        "allow_local_address": false
+                    }
                 }
             ]
         ],
@@ -514,7 +518,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -672,7 +676,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "nl-bob",
                 "meldingen",
@@ -1006,7 +1010,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "off-eve",
                 "meldingen",
@@ -1112,7 +1116,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "em-fay",
                 "meldingen",
@@ -1178,7 +1182,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "q-gus",
                 "meldingen",
@@ -1322,7 +1326,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "qx-hal",
                 "meldingen",
@@ -1454,7 +1458,7 @@
     ],
     "basic": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -1491,7 +1495,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -1544,7 +1548,7 @@
     ],
     "broadcast-blocked": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -1658,7 +1662,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -1672,7 +1676,7 @@
     ],
     "critical": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -1702,7 +1706,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "q-gus",
                 "meldingen",
@@ -1749,7 +1753,7 @@
     ],
     "default-subject": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -1779,7 +1783,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -1832,7 +1836,7 @@
     ],
     "digest": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -1896,7 +1900,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -1978,7 +1982,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "q-gus",
                 "meldingen",
@@ -2046,7 +2050,7 @@
     ],
     "em-only-no-queue": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2110,7 +2114,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "em-fay",
                 "meldingen",
@@ -2138,7 +2142,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "q-gus",
                 "meldingen",
@@ -2224,7 +2228,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2254,7 +2258,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -2327,7 +2331,7 @@
     ],
     "idempotent-empty": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2357,7 +2361,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -2421,7 +2425,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2451,7 +2455,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -2505,7 +2509,7 @@
     "no-annotation": [],
     "no-preferences": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2683,7 +2687,7 @@
     ],
     "nobody": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2757,7 +2761,7 @@
     "not-an-array-rule": [],
     "org-pinned-hit": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -2787,7 +2791,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -2842,7 +2846,7 @@
     "org-pinned-odd": [],
     "parties-no-mail": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -2869,7 +2873,7 @@
     ],
     "parties-no-uuid": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -2896,7 +2900,7 @@
     ],
     "parties-nobody": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -2933,7 +2937,7 @@
     ],
     "parties-only": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [
                     {
@@ -3050,7 +3054,7 @@
     ],
     "subscription": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3087,7 +3091,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3140,7 +3144,7 @@
     ],
     "subscription-off": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3170,7 +3174,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3223,7 +3227,7 @@
     ],
     "transition": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3256,7 +3260,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3313,7 +3317,7 @@
     "trigger-mismatch": [],
     "two-rules": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3343,7 +3347,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3394,7 +3398,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3424,7 +3428,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3470,7 +3474,7 @@
     ],
     "updated-trigger": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3504,7 +3508,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3561,7 +3565,7 @@
     ],
     "webhook-variants": [
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3625,7 +3629,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3637,7 +3641,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3735,7 +3739,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3747,7 +3751,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3780,7 +3784,7 @@
             "http.request",
             [
                 "POST",
-                "https://fail.example.test/in",
+                "https://93.184.215.14/fail.in",
                 {
                     "json": {
                         "notification": "failing",
@@ -3803,14 +3807,18 @@
                     "headers": {
                         "Content-Type": "application/json"
                     },
-                    "timeout": 5
+                    "timeout": 5,
+                    "allow_redirects": false,
+                    "nextcloud": {
+                        "allow_local_address": false
+                    }
                 }
             ]
         ],
         [
             "logger.warning",
             [
-                "[AnnotationNotificationDispatcher] webhook https://fail.example.test/in failed: connection refused",
+                "[AnnotationNotificationDispatcher] webhook https://93.184.215.14/fail.in failed: connection refused",
                 []
             ]
         ],
@@ -3849,7 +3857,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",
@@ -3861,7 +3869,7 @@
             ]
         ],
         [
-            "resolver.resolveWithDiagnostics",
+            "resolver.resolveFromSource",
             [
                 [],
                 {
@@ -3959,7 +3967,7 @@
             ]
         ],
         [
-            "preferences.resolveEffective",
+            "preferences.resolve",
             [
                 "alice",
                 "meldingen",

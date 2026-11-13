@@ -56,7 +56,7 @@
       per-source bound and its ceiling, a source that could not be read being
       NAMED rather than merged as nothing, and a summary that names changed
       fields and never their values.
-- [ ] 3.2 `tests/e2e/ci/activity-leaf.spec.ts`: waits on 2.1, because there (not run: e2e waits on 2.1 and needs a browser)
+- [ ] 3.2 `tests/e2e/ci/activity-leaf.spec.ts`: waits on 2.1, because there (not run: e2e waits on 2.1 and needs a browser) (live pass, decision 139)
       is no surface to open yet.
 
 ## Who enforces access to this feed

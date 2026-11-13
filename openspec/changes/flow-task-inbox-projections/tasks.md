@@ -185,6 +185,11 @@
       full count; the watcher who sees a task and no action buttons; and the
       aggregate listing engine tasks.
 
+## 7. The deadline warning
+
+- [ ] 7.1 Record the `due-soon` action when an open task's warning moment passes (deadline minus the flow's declared lead time, on its working calendar), once per deadline value, from the scheduled evaluation that already runs the overdue rule. Nothing records `due-soon` today, so the `taskDueSoon` rule in `TaskNotificationRules.php` never fires. Verify: clock-controlled unit tests for the warning, a terminal task and a repeated evaluation.
+- [ ] 7.2 A moved deadline moves the warning moment and allows a new warning. Verify: unit test that moves a deadline after a warning.
+
 ## Acceptance criteria
 
 - No code path in this change calls `INotificationManager` to send a task

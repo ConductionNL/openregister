@@ -48,6 +48,8 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Exception\EncryptedFieldFilterException
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
  */
 class MagicMapperMultiSchemaSearchGoldenTest extends TestCase {
 

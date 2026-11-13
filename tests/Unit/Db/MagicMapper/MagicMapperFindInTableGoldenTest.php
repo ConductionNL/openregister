@@ -23,12 +23,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -70,6 +72,20 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicIdentifierFind
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableTarget
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Register\MagicMappingConfig
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicMapperFindInTableGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -77,6 +93,8 @@ class MagicMapperFindInTableGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/find-in-table-golden.json';
 
 	private array $events = [];
+
+	private ?\Throwable $failure = null;
 
 	private static function rowSets(): array {
 		return [
@@ -130,6 +148,44 @@ class MagicMapperFindInTableGoldenTest extends TestCase {
 
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testFindInRegisterSchemaTableMatchesGolden()
+
+	/**
+	 * A found row is returned, an empty result and an absent table read as not found, and any other
+	 * query failure is refused as a failed lookup rather than reported as a missing object.
+	 *
+	 * @return void
+	 */
+	public function testOnlyAnAbsentObjectReadsAsNotFound(): void {
+		$call = [7, [false, false, false, false]];
+
+		$found = $this->find(setup: ['exists', self::rowSets()['one']], call: $call);
+		$this->assertSame([7, 'uuid-7', 'seven', 'Seven', '1', '2'], $found['found'] ?? null);
+
+		$none = $this->find(setup: ['exists', []], call: $call);
+		$this->assertSame('OCP\\AppFramework\\Db\\DoesNotExistException: Object not found in magic table', $none['thrown'] ?? null);
+
+		$absent = $this->createMock(\OCP\DB\Exception::class);
+		$absent->method('getReason')->willReturn(\OCP\DB\Exception::REASON_DATABASE_OBJECT_NOT_FOUND);
+		$this->failure = $absent;
+		$this->assertStringStartsWith(
+			'OCP\\AppFramework\\Db\\DoesNotExistException',
+			(string)($this->find(setup: ['exists', 'fail'], call: $call)['thrown'] ?? '')
+		);
+
+		$lost = $this->createMock(\OCP\DB\Exception::class);
+		$lost->method('getReason')->willReturn(\OCP\DB\Exception::REASON_CONNECTION_LOST);
+		$this->failure = $lost;
+		$this->assertStringStartsWith(
+			ObjectLookupFailedException::class,
+			(string)($this->find(setup: ['exists', 'fail'], call: $call)['thrown'] ?? '')
+		);
+
+		$this->failure = null;
+		$this->assertSame(
+			ObjectLookupFailedException::class.': database refused',
+			$this->find(setup: ['exists', 'fail'], call: $call)['thrown'] ?? null
+		);
+	}//end testOnlyAnAbsentObjectReadsAsNotFound()
 
 	private function find(array $setup, array $call): array {
 		[$table, $rows] = $setup;
@@ -221,9 +277,9 @@ class MagicMapperFindInTableGoldenTest extends TestCase {
 				return $table === 'exists';
 			}
 		);
-		$tables->method('ensureTableForRegisterSchema')->willReturnCallback(
-			function (Register $register, Schema $schema, bool $force = false): bool {
-				$this->events[] = ['ensureTable' => [$register->getId(), $schema->getId(), $force]];
+		$tables->method('ensureTargetTable')->willReturnCallback(
+			function (MagicTableTarget $target, bool $force = false): bool {
+				$this->events[] = ['ensureTable' => [$target->register->getId(), $target->schema->getId(), $force]];
 				return true;
 			}
 		);
@@ -259,7 +315,7 @@ class MagicMapperFindInTableGoldenTest extends TestCase {
 	}//end container()
 
 	private function failingBuilder(IQueryBuilder $qb): IQueryBuilder {
-		$qb->method('executeQuery')->willThrowException(new \RuntimeException('database refused'));
+		$qb->method('executeQuery')->willThrowException($this->failure ?? new \RuntimeException('database refused'));
 		return $qb;
 	}//end failingBuilder()
 }//end class

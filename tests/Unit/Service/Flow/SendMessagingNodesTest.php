@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\Listener\FlowNodeRegistrationListener;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
@@ -96,9 +98,9 @@ class SendMessagingNodesTest extends TestCase {
 	 */
 	private function nodes(): array {
 		return [
-			SendNotificationNode::TYPE => new SendNotificationNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls),
-			SendEmailNode::TYPE => new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls),
-			SendTalkMessageNode::TYPE => new SendTalkMessageNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls),
+			SendNotificationNode::TYPE => new SendNotificationNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls)),
+			SendEmailNode::TYPE => new SendEmailNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls)),
+			SendTalkMessageNode::TYPE => new SendTalkMessageNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls)),
 		];
 	}//end nodes()
 
@@ -116,7 +118,7 @@ class SendMessagingNodesTest extends TestCase {
 		];
 
 		foreach ($this->nodes() as $type => $node) {
-			$out = $node->execute(items: $items, config: $config[$type], context: ['runAs' => 'alice']);
+			$out = $node->execute(new FlowNodeCall(items: $items, config: $config[$type], context: ['runAs' => 'alice']));
 			// Sending is a side effect, not a transformation: the three items
 			// come back IDENTICAL for downstream steps.
 			$this->assertSame($items, $out, $type . ' must pass items through unchanged');
@@ -125,9 +127,9 @@ class SendMessagingNodesTest extends TestCase {
 
 	public function testValidateConfigRefusesAnEmptyMessage(): void {
 		$cases = [
-			[new SendNotificationNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls), ['recipients' => ['bob']]],
-			[new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls), ['recipients' => ['bob'], 'subject' => 's']],
-			[new SendTalkMessageNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls), ['conversation' => 'tok']],
+			[new SendNotificationNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls)), ['recipients' => ['bob']]],
+			[new SendEmailNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls)), ['recipients' => ['bob'], 'subject' => 's']],
+			[new SendTalkMessageNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls)), ['conversation' => 'tok']],
 		];
 
 		foreach ($cases as [$node, $config]) {
@@ -141,9 +143,9 @@ class SendMessagingNodesTest extends TestCase {
 	}//end testValidateConfigRefusesAnEmptyMessage()
 
 	public function testValidateConfigRefusesAnEmptyRecipientConfig(): void {
-		$notification = new SendNotificationNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
-		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
-		$talk = new SendTalkMessageNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
+		$notification = new SendNotificationNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls));
+		$email = new SendEmailNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls));
+		$talk = new SendTalkMessageNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls));
 
 		$refused = 0;
 		foreach ([
@@ -167,9 +169,9 @@ class SendMessagingNodesTest extends TestCase {
 
 	public function testValidateConfigAcceptsACompleteConfig(): void {
 		foreach ([
-			[new SendNotificationNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls), ['recipients' => ['bob'], 'title' => 't', 'message' => 'm']],
-			[new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls), ['recipients' => '{{ assignee }}', 'subject' => 's', 'body' => 'b']],
-			[new SendTalkMessageNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls), ['conversation' => '{{ token }}', 'message' => 'm']],
+			[new SendNotificationNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls)), ['recipients' => ['bob'], 'title' => 't', 'message' => 'm']],
+			[new SendEmailNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls)), ['recipients' => '{{ assignee }}', 'subject' => 's', 'body' => 'b']],
+			[new SendTalkMessageNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls)), ['conversation' => '{{ token }}', 'message' => 'm']],
 		] as [$node, $config]) {
 			$node->validateConfig(config: $config);
 		}
@@ -230,7 +232,7 @@ class SendMessagingNodesTest extends TestCase {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function testSendEmailDeclaresAndValidatesExternalRecipients(): void {
-		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
+		$email = new SendEmailNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls));
 
 		$this->assertContains('externalRecipients', $email->configKeys());
 		$formKeys = array_column($email->configForm(), 'key');
@@ -258,7 +260,7 @@ class SendMessagingNodesTest extends TestCase {
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	public function testSendEmailDeclaresAndValidatesTheMessageCategory(): void {
-		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
+		$email = new SendEmailNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls));
 
 		$this->assertContains('messageCategory', $email->configKeys());
 		$this->assertContains('messageCategory', array_column($email->configForm(), 'key'));
@@ -289,7 +291,7 @@ class SendMessagingNodesTest extends TestCase {
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	public function testTheMessageCategoryIsASelectOverTheFleetCategories(): void {
-		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
+		$email = new SendEmailNode(messaging: $this->messaging, presentation: new FlowNodePresentation(l10n: $this->l10n, urls: $this->urls));
 
 		$fields = array_column($email->configForm(), null, 'key');
 		$field  = $fields['messageCategory'];

@@ -49,6 +49,10 @@ use ReflectionNamedType;
  * the job is built by reflection from a map of the collaborators below.
  *
  * @covers \OCA\OpenRegister\BackgroundJob\TransferExecutionJob
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\TransferExecutionPlatform
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\TransferExecutionRecords
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\TransferExecutionTransports
+ * @uses \OCA\OpenRegister\BackgroundJob\TransferAttemptRun
  */
 class TransferExecutionJobGoldenTest extends TestCase {
 

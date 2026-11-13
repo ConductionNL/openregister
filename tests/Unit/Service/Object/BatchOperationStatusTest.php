@@ -20,12 +20,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
+use OCA\OpenRegister\Service\Object\RowFailure;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Counts, the duration guard and the array form. No test pins a clock value.
  *
  * @covers \OCA\OpenRegister\Service\Object\BatchOperationStatus
+ * @uses \OCA\OpenRegister\Service\Object\RowFailure
  */
 class BatchOperationStatusTest extends TestCase {
 
@@ -65,7 +67,7 @@ class BatchOperationStatusTest extends TestCase {
 		$status->recordCreated('c-2');
 		$status->recordUpdated('u-1');
 		$status->recordUnchanged('n-1');
-		$status->recordFailed(null, 'invalid', 'RuntimeException', 4);
+		$status->recordFailed(new RowFailure(uuid: null, message: 'invalid', exceptionClass: 'RuntimeException', index: 4));
 		$status->recordReferenceCacheHit();
 		$status->recordReferenceCacheHit();
 		$status->recordReferenceCacheMiss();

@@ -8,7 +8,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -30,6 +32,8 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @covers \OCA\OpenRegister\Controller\Support\ValidationWindow
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
  */
 class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-bulk-routes-golden.json';
@@ -89,7 +93,7 @@ class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 
 	public function testAFailedValidationLogsTheDetailAndAnswersWithoutIt(): void {
 		$service = $this->service();
-		$service->method('validateAndSaveObjectsBySchema')->willThrowException(new \RuntimeException('table oc_secret is gone'));
+		$service->method('validateAndSaveTable')->willThrowException(new \RuntimeException('table oc_secret is gone'));
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(fn (string $key) => ['register' => 1, 'schema' => 2][$key] ?? null);
 
@@ -103,8 +107,8 @@ class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 	#[DataProvider('validateCases')]
 	public function testValidateMatchesTheRecording(array $params, mixed $result): void {
 		$service = $this->service();
-		$service->method('validateAndSaveObjectsBySchema')->willReturnCallback(function (...$args) use ($result): array {
-			$this->calls[] = ['validateAndSaveObjectsBySchema' => $args];
+		$service->method('validateAndSaveTable')->willReturnCallback(function (RegisterSchemaRef $table, ListQuery $query) use ($result): array {
+			$this->calls[] = ['validateAndSaveObjectsBySchema' => [$table->register, $table->schema, $query->limitOrNull(), ($query->offset ?? 0)]];
 			if ($result === 'database') {
 				throw new DatabaseException('no way');
 			}
@@ -183,7 +187,7 @@ class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 
 	public function testValidateAnswersAnotherException(): void {
 		$service = $this->service();
-		$service->method('validateAndSaveObjectsBySchema')->willThrowException(new RuntimeException('validate'));
+		$service->method('validateAndSaveTable')->willThrowException(new RuntimeException('validate'));
 
 		$response = $this->controller(request: $this->validationRequest(), service: $service)->validate();
 
@@ -193,7 +197,7 @@ class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 
 	public function testValidateLeavesAnErrorToTheServer(): void {
 		$service = $this->service();
-		$service->method('validateAndSaveObjectsBySchema')->willThrowException(new \TypeError('internal'));
+		$service->method('validateAndSaveTable')->willThrowException(new \TypeError('internal'));
 
 		$this->expectException(\TypeError::class);
 		$this->controller(request: $this->validationRequest(), service: $service)->validate();
@@ -212,7 +216,7 @@ class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 	#[DataProvider('externalSourceFailures')]
 	public function testExternalSourceFailuresLeaveTheRoutes(\Exception $failure): void {
 		$service = $this->service();
-		$service->method('validateAndSaveObjectsBySchema')->willThrowException($failure);
+		$service->method('validateAndSaveTable')->willThrowException($failure);
 		$service->method('vectorizeBatchObjects')->willThrowException($failure);
 		$service->method('getVectorizationStatistics')->willThrowException($failure);
 		$request = $this->validationRequest();

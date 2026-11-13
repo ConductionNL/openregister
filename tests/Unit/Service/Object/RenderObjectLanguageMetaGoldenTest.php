@@ -27,11 +27,17 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\RenderContext;
+use OCA\OpenRegister\Service\Object\RenderPath;
+use OCA\OpenRegister\Service\Object\RenderPreloads;
+use OCA\OpenRegister\Service\Object\RenderRun;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -68,6 +74,42 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Translation
  * @uses   \OCA\OpenRegister\Service\Object\LanguageMetaSubject
+ * @uses   \OCA\OpenRegister\Db\Register\RegisterLanguages
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\TranslationSlot
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses   \OCA\OpenRegister\Service\Object\RenderContext
+ * @uses   \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses   \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses   \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses   \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses   \OCA\OpenRegister\Service\Object\RenderPath
+ * @uses   \OCA\OpenRegister\Service\Object\RenderPreloads
+ * @uses   \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses   \OCA\OpenRegister\Service\Object\RenderRun
+ * @uses   \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses   \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses   \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\Register\RegisterLanguages
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\TranslationSlot
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses \OCA\OpenRegister\Service\Object\RenderContext
+ * @uses \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses \OCA\OpenRegister\Service\Object\RenderPath
+ * @uses \OCA\OpenRegister\Service\Object\RenderPreloads
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRun
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
  */
 class RenderObjectLanguageMetaGoldenTest extends TestCase {
 
@@ -97,9 +139,7 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 		$this->render = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->createMock(MagicMapperInterface::class),
-					registerMapper: $this->registers,
-					schemaMapper: $this->createMock(SchemaMapperInterface::class),
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registers, schemas: $this->createMock(SchemaMapperInterface::class), tables: $this->createMock(MagicMapperInterface::class)),
 					objectCacheService: $this->createMock(CacheHandlerInterface::class)
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -143,7 +183,10 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 	 */
 	private function renderTranslations(ObjectEntity $entity, Schema $schema, array $objectData): array {
 		$method = new ReflectionMethod(RenderObject::class, 'resolveRenderTranslations');
-		return $method->invoke($this->render, $entity, $schema, $objectData);
+		$run = new RenderRun($entity, new RenderContext(new RenderSelection([], [], [], []), new RenderPreloads(null, null, null), new RenderPath(0, []), true));
+		$run->schema = $schema;
+		$run->data = $objectData;
+		return $method->invoke($this->render, $run);
 	}//end renderTranslations()
 
 	/**
@@ -189,7 +232,8 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 		$approved = new Translation();
 		$approved->setStatus('approved');
 		$this->mapper->method('findOne')->willReturnCallback(
-			static function (string $uuid, string $property, string $language) use ($approved): ?Translation {
+			static function (TranslationSlot $slot) use ($approved): ?Translation {
+				[$uuid, $property, $language] = [$slot->objectUuid, $slot->property, $slot->language];
 				TestCase::assertSame(['u-1', 'en'], [$uuid, $language]);
 				return match ($property) {
 					'body' => $approved,

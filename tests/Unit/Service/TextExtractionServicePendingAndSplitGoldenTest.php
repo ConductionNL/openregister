@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use OCA\OpenRegister\Files\Service\ChunkSizing;
+use OCA\OpenRegister\Files\Service\SplitLevel;
 
 /**
  * Records extractPendingFiles() (windows asked, files extracted, log lines, result) and the
@@ -40,6 +41,15 @@ use OCA\OpenRegister\Files\Service\ChunkSizing;
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Files\Service\ChunkSizing
+ * @uses \OCA\OpenRegister\Files\Service\FileExtractionOptions
+ * @uses \OCA\OpenRegister\Files\Service\SplitLevel
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage
  */
 class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 
@@ -94,8 +104,8 @@ class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 			->onlyMethods(['extractFile'])
 			->getMock();
 		$failing = $s['failing'] ?? [];
-		$service->method('extractFile')->willReturnCallback(function ($fileId, $force) use (&$pool, $failing) {
-			$this->calls[] = ['extract', $fileId, $force];
+		$service->method('extractFile')->willReturnCallback(function ($fileId, $options) use (&$pool, $failing) {
+			$this->calls[] = ['extract', $fileId, $options->forceReExtract];
 			if (in_array($fileId, $failing, true) === true) {
 				throw new Exception('unreadable ' . $fileId);
 			}
@@ -184,7 +194,7 @@ class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 	public function testRecursiveSplitGolden(string $text, array $separators, int $size, int $overlap): void {
 		$service = $this->service([]);
 		$method = new ReflectionMethod(TextExtractionService::class, 'recursiveSplit');
-		$this->calls[] = ['chunks', $method->invoke($service, $text, $separators, new ChunkSizing($size, $overlap))];
+		$this->calls[] = ['chunks', $method->invoke($service, $text, new SplitLevel(separators: $separators, sizing: new ChunkSizing($size, $overlap)))];
 		$this->assertGolden();
 	}
 

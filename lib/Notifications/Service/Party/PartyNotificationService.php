@@ -28,11 +28,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Party;
 
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\MailAddressee;
+use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartySendRefusalInterface;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
@@ -60,20 +64,6 @@ class PartyNotificationService {
 	public const OUTCOME_AUTHORITY_UNAVAILABLE = OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE;
 
 	/**
-	 * The declared effects, which decide who may be reached.
-	 *
-	 * @var PartySendRefusalInterface
-	 */
-	private readonly PartySendRefusalInterface $indicators;
-
-	/**
-	 * Asks integriq whether a party's address may be mailed.
-	 *
-	 * @var OptOutAuthority
-	 */
-	private readonly OptOutAuthority $optOut;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ContactLinkMapperInterface     $links   The link rows, for the parties on an object.
@@ -85,10 +75,8 @@ class PartyNotificationService {
 		private readonly ContactLinkMapperInterface $links,
 		private readonly PartyServiceInterface $parties,
 		private readonly EmailSender $email,
-		PartyReachGates $gates,
+		private readonly PartyReachGates $gates,
 	) {
-		$this->indicators = $gates->indicators;
-		$this->optOut = $gates->optOut;
 	}//end __construct()
 
 	/**
@@ -108,11 +96,7 @@ class PartyNotificationService {
 	 */
 	public function recipientsForObject(string $objectUuid, ?string $role = null): array {
 		$recipients = [];
-		foreach ($this->links->findPartiesForObject(objectUuid: $objectUuid) as $link) {
-			if ($role !== null && $link->getRole() !== $role) {
-				continue;
-			}
-
+		foreach ($this->linksInRole(objectUuid: $objectUuid, role: $role) as $link) {
 			$recipient = $this->recipientOf(link: $link);
 			if ($recipient !== null) {
 				$recipients[] = $recipient;
@@ -123,32 +107,44 @@ class PartyNotificationService {
 	}//end recipientsForObject()
 
 	/**
+	 * The object's party links, narrowed to one role when one is given.
+	 *
+	 * @param string      $objectUuid The object.
+	 * @param string|null $role       Only the parties in this role, or null for all of them.
+	 *
+	 * @return array<int, ContactLink> The links, in the order the mapper returned them.
+	 */
+	private function linksInRole(string $objectUuid, ?string $role): array {
+		$links = [];
+		foreach ($this->links->findPartiesForObject(objectUuid: $objectUuid) as $link) {
+			if ($role !== null && $link->getRole() !== $role) {
+				continue;
+			}
+
+			$links[] = $link;
+		}
+
+		return $links;
+	}//end linksInRole()
+
+	/**
 	 * Send one message to every party on an object that may receive it.
 	 *
 	 * A refuse-send indicator comes first, a missing address next. Every
 	 * remaining address is put to integriq in one question; a party it
 	 * refuses is reported, never dropped (opt-out-before-send).
 	 *
-	 * @param string $objectUuid The object.
-	 * @param string $subject The subject.
-	 * @param string $body The body.
-	 * @param string|null $role Only the parties in this role, or null for all of them.
-	 * @param string $category The message category; absent or unknown reads as `service`.
+	 * @param PartyMessage $message The object, subject, body and category.
+	 * @param string|null  $role    Only the parties in this role, or null for all of them.
 	 *
 	 * @return array<int, array{party: string, address: string|null, outcome: string}> What happened per party.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
 	 */
-	public function notifyParties(
-		string $objectUuid,
-		string $subject,
-		string $body,
-		?string $role = null,
-		string $category = OptOutAuthority::DEFAULT_CATEGORY,
-	): array {
+	public function notifyParties(PartyMessage $message, ?string $role=null): array {
 		return $this->notify(
-			message: ['objectUuid' => $objectUuid, 'subject' => $subject, 'body' => $body, 'category' => $category],
+			message: ['objectUuid' => $message->objectUuid, 'subject' => $message->subject, 'body' => $message->body, 'category' => $message->category],
 			role: $role
 		);
 	}//end notifyParties()
@@ -164,11 +160,13 @@ class PartyNotificationService {
 	private function notify(array $message, ?string $role): array {
 		$recipients = $this->recipientsForObject(objectUuid: $message['objectUuid'], role: $role);
 
-		$message['decisions'] = $this->optOut->ask(
-			channel: 'email',
-			category: $message['category'],
-			addresses: $this->askable(recipients: $recipients),
-			correlationId: 'openregister-parties:' . $message['objectUuid']
+		$message['decisions'] = $this->gates->optOut->askQuestion(
+			question: new OptOutQuestion(
+				channel: 'email',
+				category: $message['category'],
+				addresses: $this->askable(recipients: $recipients),
+				correlationId: 'openregister-parties:' . $message['objectUuid']
+			)
 		);
 
 		$sent = [];
@@ -216,7 +214,7 @@ class PartyNotificationService {
 			return ['party' => $recipient['party'], 'address' => null, 'outcome' => EmailSender::OUTCOME_NO_ADDRESS];
 		}
 
-		$decision = $this->optOut->decisionFor(decisions: $message['decisions'], address: (string)$recipient['address']);
+		$decision = $this->gates->optOut->decisionFor(decisions: $message['decisions'], address: (string)$recipient['address']);
 		if ($decision['send'] !== true) {
 			return ['party' => $recipient['party'], 'address' => null, 'outcome' => $this->refusalOutcome(decision: $decision)];
 		}
@@ -224,12 +222,13 @@ class PartyNotificationService {
 		return [
 			'party' => $recipient['party'],
 			'address' => $recipient['address'],
-			'outcome' => $this->email->sendToAddress(
-				address: $recipient['address'],
-				displayName: (string)($recipient['displayName'] ?? ''),
-				subject: $message['subject'],
-				body: $this->optOut->withLink(body: $message['body'], unsubscribe: $decision['unsubscribe']),
-				unsubscribe: $decision['unsubscribe']
+			'outcome' => $this->email->sendMailTo(
+				addressee: new MailAddressee(address: $recipient['address'], displayName: (string)($recipient['displayName'] ?? '')),
+				content: new MailContent(
+					subject: $message['subject'],
+					body: $this->gates->optOut->withLink(body: $message['body'], unsubscribe: $decision['unsubscribe']),
+					unsubscribe: $decision['unsubscribe']
+				)
 			),
 		];
 	}//end outcomeFor()
@@ -274,7 +273,7 @@ class PartyNotificationService {
 			'role' => $link->getRole(),
 			'displayName' => $link->getDisplayName(),
 			'address' => $this->outboundAddress(party: $party, definition: $definition),
-			'refusedBy' => $this->indicators->sendRefusalFor(partyUuid: $partyUuid),
+			'refusedBy' => $this->gates->indicators->sendRefusalFor(partyUuid: $partyUuid),
 		];
 	}//end recipientOf()
 
@@ -289,14 +288,24 @@ class PartyNotificationService {
 	private function outboundAddress(ObjectEntity $party, ?PartyDefinition $definition): ?string {
 		$addresses = $this->parties->addressesOfKind(
 			party: $party,
-			kind: self::OUTBOUND_KIND,
-			definition: $definition
+			selection: new PartyAddressSelection(kind: self::OUTBOUND_KIND, definition: $definition)
 		);
 
 		if ($addresses === []) {
 			$addresses = $this->parties->addresses(party: $party, definition: $definition);
 		}
 
+		return $this->firstEmailAddress(addresses: $addresses);
+	}//end outboundAddress()
+
+	/**
+	 * The value of the first e-mail address in a list.
+	 *
+	 * @param array<int, array<string, mixed>> $addresses The party's addresses, in preference order.
+	 *
+	 * @return string|null The address, or null when none is an e-mail address.
+	 */
+	private function firstEmailAddress(array $addresses): ?string {
 		foreach ($addresses as $address) {
 			if ($address['type'] === 'email') {
 				return $address['value'];
@@ -304,5 +313,5 @@ class PartyNotificationService {
 		}
 
 		return null;
-	}//end outboundAddress()
+	}//end firstEmailAddress()
 }//end class

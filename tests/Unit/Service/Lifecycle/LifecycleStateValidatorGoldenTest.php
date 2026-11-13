@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Lifecycle\StateConditionValidator
  * @covers \OCA\OpenRegister\Service\Lifecycle\StateConditionSite
  * @uses   \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleScope
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateDeclarationScope
  */
 class LifecycleStateValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/lifecycle-states-golden.json';
@@ -212,7 +213,7 @@ class LifecycleStateValidatorGoldenTest extends TestCase {
 				$schema = [];
 			}
 
-			$actual = $validator->validateStates($case['annotation'], $schema, $enumSet);
+			$actual = $validator->validateStates($case['annotation'], LifecycleStateValidator::scopeOf($schema, $enumSet));
 		}
 
 		$golden = [];

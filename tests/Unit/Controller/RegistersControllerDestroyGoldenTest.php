@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -62,6 +63,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Serializer\RegisterSerializer
  * @uses \OCA\OpenRegister\Service\Rbac\DefinitionWriteRights
  * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacRuleChecks
+ * @uses \OCA\OpenRegister\Exception\ValidationException
  */
 class RegistersControllerDestroyGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-destroy-golden.json';
@@ -157,7 +162,8 @@ class RegistersControllerDestroyGoldenTest extends TestCase {
 		});
 
 		$objects = $this->createMock(MagicMapper::class);
-		$objects->method('getStatistics')->willReturnCallback(function (...$args) use ($case): array {
+		$objects->method('getStatistics')->willReturnCallback(function (StatisticsScope $scope) use ($case): array {
+			$args = [$scope->registerId, $scope->schemaId, $scope->exclude];
 			$this->calls[] = ['getStatistics', array_slice($args, 0, 2)];
 			if (($case['countFails'] ?? false) === true) {
 				throw new RuntimeException('count failed');

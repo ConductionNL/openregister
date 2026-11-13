@@ -129,7 +129,18 @@ import {
 	publishedText,
 	publishTarget,
 } from '../../services/githubPublish.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import { navigationStore } from '../../store/store.js'
+
+/**
+ * The fetch options of the GitHub lookups: a JSON GET.
+ */
+const JSON_GET = {
+	method: 'GET',
+	headers: {
+		'Content-Type': 'application/json',
+	},
+}
 
 export default {
 	name: 'PublishToGithub',
@@ -332,12 +343,7 @@ export default {
 			try {
 				const response = await fetch(
 					'/index.php/apps/openregister/api/configurations/github/repositories',
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					},
+					JSON_GET,
 				)
 
 				const data = await jsonOrThrow(
@@ -420,12 +426,7 @@ export default {
 			try {
 				const response = await fetch(
 					`/index.php/apps/openregister/api/configurations/github/branches?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					},
+					JSON_GET,
 				)
 
 				const data = await jsonOrThrow(response, 'Failed to load branches')
@@ -476,43 +477,69 @@ export default {
 			this.success = false
 
 			try {
-				const target = publishTarget(this)
-				const response = await fetch(
-					`/index.php/apps/openregister/api/${this.entityPath}/${this.entity.id}/publish/github`,
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({
-							owner: target.owner,
-							repo: target.repo,
-							path: this.filePath.trim(),
-							branch: target.branch,
-							commitMessage:
-								this.commitMessage
-								|| `${this.copy.commitPrefix}${this.entity.title}`,
-						}),
-					},
-				)
-
+				const response = await this.postPublish()
 				const data = await jsonOrThrow(response, this.copy.failureMessage)
-
-				this.success = true
-				this.successMessage = publishedText(this.copy.publishedMessage, data)
-
-				await this.refresh()
-
-				// Close modal after 4 seconds (longer to read the indexing note)
-				setTimeout(() => {
-					this.closeModal()
-				}, 4000)
+				await this.showPublished(data)
 			} catch (e) {
 				this.error = e.message || this.copy.failureMessage
 				console.error(`${this.copy.failureMessage}:`, e)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Ask the server to publish the entity to the chosen repository file.
+		 *
+		 * @return {Promise<Response>} The response
+		 */
+		postPublish() {
+			return fetch(
+				`/index.php/apps/openregister/api/${this.entityPath}/${this.entity.id}/publish/github`,
+				withRequestToken({
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(this.publishBody()),
+				}),
+			)
+		},
+
+		/**
+		 * What to publish where: the repository, file, branch and commit message.
+		 *
+		 * @return {object} The publish request body
+		 */
+		publishBody() {
+			const target = publishTarget(this)
+			return {
+				owner: target.owner,
+				repo: target.repo,
+				path: this.filePath.trim(),
+				branch: target.branch,
+				commitMessage:
+					this.commitMessage
+					|| `${this.copy.commitPrefix}${this.entity.title}`,
+			}
+		},
+
+		/**
+		 * Say the entity was published, refresh, and close after a moment.
+		 *
+		 * @param {object} data The publish answer
+		 * @return {Promise<void>}
+		 */
+		async showPublished(data) {
+			this.success = true
+			this.successMessage = publishedText(this.copy.publishedMessage, data)
+
+			await this.refresh()
+
+			// Close modal after 4 seconds (longer to read the indexing note)
+			setTimeout(() => {
+				this.closeModal()
+			}, 4000)
 		},
 	},
 }

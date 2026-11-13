@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
@@ -91,8 +92,8 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$this->listCalled = compact('register', 'schema', 'objectId', 'filters');
+	public function list(ObjectRef $ref, array $filters = []): array {
+		$this->listCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'filters' => $filters];
 		if ($this->listThrowsNotImplemented === true) {
 			throw new NotImplementedException('list not supported');
 		}
@@ -102,13 +103,13 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 		return [['id' => 'a'], ['id' => 'b']];
 	}//end list()
 
-	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		$this->getCalled = compact('register', 'schema', 'objectId', 'entityId');
+	public function get(ObjectRef $ref, string $entityId): array {
+		$this->getCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'entityId' => $entityId];
 		return ['id' => $entityId, 'name' => 'thing'];
 	}//end get()
 
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$this->createCalled = compact('register', 'schema', 'objectId', 'payload');
+	public function create(ObjectRef $ref, array $payload): array {
+		$this->createCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'payload' => $payload];
 		if ($this->createThrowsUnavailable === true) {
 			throw new ProviderUnavailableException(
 				'upstream down',
@@ -118,12 +119,12 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 		return ['id' => 'new-id'];
 	}//end create()
 
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->deleteCalled = compact('register', 'schema', 'objectId', 'entityId');
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->deleteCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'entityId' => $entityId];
 	}//end delete()
 
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		$this->updateCalled = compact('register', 'schema', 'objectId', 'entityId', 'payload');
+	public function update(ObjectRef $ref, string $entityId, array $payload): array {
+		$this->updateCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'entityId' => $entityId, 'payload' => $payload];
 		return ['id' => $entityId];
 	}//end update()
 
@@ -146,7 +147,6 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	): ObjectIntegrationsController {
 		$request = $request ?? $this->createMock(IRequest::class);
 		return new ObjectIntegrationsController(
-			appName: 'openregister',
 			request: $request,
 			services: new ObjectIntegrationsControllerServices(
 				domain: new ObjectIntegrationsDomain(
@@ -411,9 +411,21 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$this->assertSame(['title' => 'X'], $stub->createCalled['payload']);
 	}//end testCreateReturns201()
 
+	/**
+	 * A create that fails keeps the failure's own status: only a success becomes 201.
+	 *
+	 * @return void
+	 */
+	public function testAFailedCreateKeepsItsStatus(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider('stub'));
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->buildController($registry)->create('r', 's', 'o', 'missing')->getStatus());
+	}//end testAFailedCreateKeepsItsStatus()
+
 	public function testAnItemOfAnotherObjectAnswers404(): void {
 		$provider = new class('stub') extends _ControllerStubProvider {
-			public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+			public function delete(ObjectRef $ref, string $entityId): void {
 				throw new \Exception('Note not found', 404);
 			}
 		};
@@ -494,9 +506,11 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$registry = new IntegrationRegistry(new NullLogger());
 		$registry->addProvider(
 			new \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider(
-				$contacts,
-				$this->createMock(\OCP\App\IAppManager::class),
-				$this->createMock(\OCP\IL10N::class)
+				new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription(
+					$this->createMock(\OCP\App\IAppManager::class),
+					$this->createMock(\OCP\IL10N::class)
+				),
+				$contacts
 			)
 		);
 		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));

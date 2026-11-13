@@ -16,6 +16,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
 
 /**
  * Golden test for VectorSearchHandler::semanticSearch() on the PHP fallback path.
@@ -27,6 +28,7 @@ use Psr\Log\LoggerInterface;
  * fixtures/vector-semantic-search-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery
  */
 class VectorSearchHandlerSemanticSearchGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/vector-semantic-search-golden.json';
@@ -91,7 +93,7 @@ class VectorSearchHandlerSemanticSearchGoldenTest extends TestCase {
 			return true;
 		});
 		try {
-			$actual = ['results' => $handler->semanticSearch([1.0, 0.0], $limit, ['entity_type' => 'object'])];
+			$actual = ['results' => $handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: $limit, filters: ['entity_type' => 'object']))];
 		} catch (\Throwable $e) {
 			$actual = ['threw' => get_class($e), 'message' => $e->getMessage()];
 		} finally {

@@ -18,7 +18,9 @@ use LogicException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\TableSearch;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -38,6 +40,11 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\DateTimeNormalizer
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TableSearch
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterLanguages
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicSearchHandlerOrderFormsTest extends TestCase {
 	/**
@@ -79,12 +86,7 @@ class MagicSearchHandlerOrderFormsTest extends TestCase {
 		$schema->setProperties(['title' => ['type' => 'string'], '7' => ['type' => 'string']]);
 
 		try {
-			$this->handler()->searchObjects(
-				query: ['_order' => $order],
-				register: new Register(),
-				schema: $schema,
-				tableName: 'magic'
-			);
+			$this->handler()->searchTable(query: ['_order' => $order], tableSearch: new TableSearch(table: new RegisterSchema(register: new Register(), schema: $schema), tableName: 'magic'));
 			$this->fail('The builder stops the search right after the order.');
 		} catch (LogicException $stopped) {
 			$this->assertSame('ordered', $stopped->getMessage());

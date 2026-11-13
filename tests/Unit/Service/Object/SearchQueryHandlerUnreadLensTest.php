@@ -26,7 +26,6 @@ use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -75,7 +74,6 @@ class SearchQueryHandlerUnreadLensTest extends TestCase {
 			$schemaMapper,
 			$this->createMock(originalClassName: SettingsService::class),
 			$this->createMock(originalClassName: LoggerInterface::class),
-			$this->createMock(originalClassName: IRequest::class),
 			$this->createMock(originalClassName: SearchTrailService::class),
 			$session
 		);
@@ -130,6 +128,18 @@ class SearchQueryHandlerUnreadLensTest extends TestCase {
 		$this->assertArrayNotHasKey(key: '_unreadFor', array: $query);
 
 	}//end testAnonymousCallerGetsAnImpossibleIdSet()
+
+	/**
+	 * A session whose user has an empty uid is no reader either.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyUidCountsAsNoReader(): void {
+		$query = $this->makeHandler(uid: '')->buildSearchQuery(['_unread' => 'true'], 1, 777);
+
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $query);
+		$this->assertStringContainsString(needle: 'no-unread-reader', haystack: ($query['_ids'][0] ?? ''));
+	}//end testAnEmptyUidCountsAsNoReader()
 
 	/**
 	 * The reader is always the session, whatever the request names.

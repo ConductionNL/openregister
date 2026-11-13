@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Controller\RevertController;
+use OCA\OpenRegister\Controller\Support\RevertControllerServices;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -60,6 +61,14 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Controller\Support\RevertControllerServices
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm
+ * @uses \OCA\OpenRegister\Service\Object\RevertPoint
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealMaskRun
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealRecording
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class ExplicitRevealReReviewTest extends TestCase {
 
@@ -114,7 +123,7 @@ class ExplicitRevealReReviewTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn(['version' => '1.0.0']);
 
-		$response = (new RevertController('openregister', $request, $revert, $objects))->revert('dossiq', 'brpPerson', self::UUID);
+		$response = (new RevertController($request, new RevertControllerServices($revert, $objects)))->revert('dossiq', 'brpPerson', self::UUID);
 
 		$this->assertSame(['citizenServiceNumber' => '*****7609'], $response->getData());
 	}//end testTheRevertAnswerIsRendered()

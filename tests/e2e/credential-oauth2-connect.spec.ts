@@ -177,5 +177,5 @@ function authHeader(): Record<string, string> {
 		'base64',
 	)
 
-	return { Authorization: `Basic ${encoded}` }
+	return { Authorization: `Basic ${encoded}`, 'OCS-APIRequest': 'true' }
 }

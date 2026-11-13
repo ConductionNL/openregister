@@ -7,7 +7,7 @@
  * (ADR-022 "audit-hash-chain" row).  Each row holds:
  *
  *  - tenant_id     — opaque tenant identifier (e.g. organisation UUID)
- *  - encrypted_key — AES-256-GCM ciphertext produced by OCP\Security\ICrypto
+ *  - encrypted_key — ciphertext produced by OCP\Security\ICrypto (AES-CBC with an HMAC-SHA512)
  *  - status        — 'active' | 'retired'  (one active row per tenant)
  *  - created_at    — ISO-8601 issuance / rotation timestamp (VARCHAR to
  *                    avoid timezone drift across DB engines)

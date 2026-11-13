@@ -9,6 +9,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -40,9 +42,33 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Service\Object\MoveAddress
  * @uses   \OCA\OpenRegister\Service\Object\MoveObject
  * @uses   \OCA\OpenRegister\Service\Object\ObjectMove
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectMigration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\Object\MigrationMapping
+ * @uses \OCA\OpenRegister\Service\Object\MigrationStorage
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectMigration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\Object\MigrationMapping
+ * @uses \OCA\OpenRegister\Service\Object\MigrationStorage
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
  */
 class MigrationHandlerMigrateObjectsGoldenTest extends TestCase {
 
@@ -121,10 +147,12 @@ class MigrationHandlerMigrateObjectsGoldenTest extends TestCase {
 
 		try {
 			$result = $this->handler()->migrateObjects(
-				source: [$sourceRegister, $sourceSchema],
-				target: [$targetRegister, $targetSchema],
-				objectIds: $scenario['ids'],
-				mapping: $scenario['mapping']
+				migration: new ObjectMigration(
+					source: new RegisterSchemaRef(register: $sourceRegister, schema: $sourceSchema),
+					target: new RegisterSchemaRef(register: $targetRegister, schema: $targetSchema),
+					objectIds: $scenario['ids'],
+					mapping: $scenario['mapping']
+				)
 			);
 		} catch (Throwable $e) {
 			$result = ['threw' => get_class($e), 'message' => $e->getMessage()];

@@ -25,7 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\SharedSchema;
 
+use OCA\OpenRegister\Service\SharedSchema\OwnerCandidates;
 use OCA\OpenRegister\Service\SharedSchema\SchemaAttribution;
+use OCA\OpenRegister\Service\SharedSchema\SchemaIdSwap;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -126,9 +128,7 @@ class SchemaAttributionTest extends TestCase {
 
 		$owner = $this->attribution->resolveOwner(
 			verdict: $verdict,
-			schemaId: 161,
-			registerIds: [16, 19],
-			keep: ['perSchema' => [], 'global' => null]
+			candidates: new OwnerCandidates(schemaId: 161, registerIds: [16, 19], keep: ['perSchema' => [], 'global' => null])
 		);
 
 		$this->assertSame(19, $owner['owner']);
@@ -176,7 +176,7 @@ class SchemaAttributionTest extends TestCase {
 
 		$after = [19 => [74, 159, 161], 16 => [74, 159, 161]];
 		foreach ([74 => 9463, 159 => 9464, 161 => 9465] as $oldId => $newId) {
-			$after[16] = $this->attribution->replaceSchemaId(schemas: $after[16], oldId: $oldId, newId: $newId);
+			$after[16] = $this->attribution->replaceSchemaId(schemas: $after[16], swap: new SchemaIdSwap(oldId: $oldId, newId: $newId));
 		}
 
 		$this->assertSame([9463, 9464, 9465], $after[16], 'the relink must preserve order');
@@ -204,9 +204,7 @@ class SchemaAttributionTest extends TestCase {
 
 		$owner = $this->attribution->resolveOwner(
 			verdict: $verdict,
-			schemaId: 161,
-			registerIds: [16, 19],
-			keep: ['perSchema' => [], 'global' => null]
+			candidates: new OwnerCandidates(schemaId: 161, registerIds: [16, 19], keep: ['perSchema' => [], 'global' => null])
 		);
 
 		$this->assertNull($owner['owner'], 'an unattributed schema must not acquire an owner by accident');
@@ -322,9 +320,7 @@ class SchemaAttributionTest extends TestCase {
 	public function testPerSchemaKeepOutranksTheGlobalOne(): void {
 		$owner = $this->attribution->resolveOwner(
 			verdict: ['status' => SchemaAttribution::STATUS_NO_MATCH, 'owner' => null, 'matches' => []],
-			schemaId: 161,
-			registerIds: [16, 19],
-			keep: ['perSchema' => [161 => 16], 'global' => 19]
+			candidates: new OwnerCandidates(schemaId: 161, registerIds: [16, 19], keep: ['perSchema' => [161 => 16], 'global' => 19])
 		);
 
 		$this->assertSame(16, $owner['owner']);
@@ -344,9 +340,7 @@ class SchemaAttributionTest extends TestCase {
 	public function testKeepIsIgnoredWhenItNamesAnUnrelatedRegister(): void {
 		$owner = $this->attribution->resolveOwner(
 			verdict: ['status' => SchemaAttribution::STATUS_MULTI_MATCH, 'owner' => null, 'matches' => [16, 19]],
-			schemaId: 161,
-			registerIds: [16, 19],
-			keep: ['perSchema' => [161 => 4242], 'global' => null]
+			candidates: new OwnerCandidates(schemaId: 161, registerIds: [16, 19], keep: ['perSchema' => [161 => 4242], 'global' => null])
 		);
 
 		$this->assertNull($owner['owner']);
@@ -363,9 +357,7 @@ class SchemaAttributionTest extends TestCase {
 	public function testGlobalKeepDoesNotOverrideASettledAttribution(): void {
 		$owner = $this->attribution->resolveOwner(
 			verdict: ['status' => SchemaAttribution::STATUS_ONE_MATCH, 'owner' => 19, 'matches' => [19]],
-			schemaId: 161,
-			registerIds: [16, 19],
-			keep: ['perSchema' => [], 'global' => 16]
+			candidates: new OwnerCandidates(schemaId: 161, registerIds: [16, 19], keep: ['perSchema' => [], 'global' => 16])
 		);
 
 		$this->assertSame(19, $owner['owner']);
@@ -397,8 +389,7 @@ class SchemaAttributionTest extends TestCase {
 			[74, 9465, 'legacy-slug', 159],
 			$this->attribution->replaceSchemaId(
 				schemas: [74, '161', 'legacy-slug', 159],
-				oldId: 161,
-				newId: 9465
+				swap: new SchemaIdSwap(oldId: 161, newId: 9465)
 			)
 		);
 

@@ -22,10 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -42,6 +44,15 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\ObjectListRequest
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Service\Object\ReadScope
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\StreamingSave
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  */
 class ObjectServiceScopeContextGoldenTest extends TestCase
 {
@@ -117,8 +128,19 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
 
         $this->assertSame(['rendered'], $service->findAll($config, false, false));
 
+        $request   = $captured['request'];
+        $forwarded = [
+            'limit'   => $request->query->limit,
+            'offset'  => $request->query->offset,
+            'filters' => $request->query->filters,
+            'sort'    => $request->query->sort,
+            'search'  => $request->query->search,
+            'files'   => $request->files,
+            'uses'    => $request->selection->uses,
+            'ids'     => $request->selection->ids,
+        ];
         foreach ($config as $key => $value) {
-            $this->assertSame($value, $captured[$key], $key);
+            $this->assertSame($value, $forwarded[$key], $key);
         }
 
         $this->assertFalse($captured['_rbac']);
@@ -215,7 +237,7 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
             ]
         );
 
-        $service->findSilent('id', register: 'named');
+        $service->findSilent('id', options: new ObjectFindOptions(register: 'named'));
     }
 
     public function testStreamingSaveClearsTheReferenceCacheBeforeItStreams(): void
@@ -239,7 +261,7 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
             ['saveHandler' => $save, 'currentRegister' => null, 'currentSchema' => null, 'currentSchemaRef' => null]
         );
 
-        $service->saveObjectsStreaming([['title' => 'row']]);
+        $service->saveObjectsStreaming(new StreamingSave(null, null, [['title' => 'row']]));
 
         $this->assertSame(['clear', 'stream'], $calls);
     }

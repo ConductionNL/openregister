@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\CospendProjectDraft;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\BookmarkLinkMapper;
@@ -83,6 +84,10 @@ if (class_exists('OCA\\Bookmarks\\Db\\Bookmark') === false) {
  * @uses   \OCA\OpenRegister\Db\PhotoLink
  * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
  * @uses \OCA\OpenRegister\Service\BookmarkDraft
+ * @uses \OCA\OpenRegister\Service\AlbumLinkRun
+ * @uses \OCA\OpenRegister\Service\CospendProjectDraft
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\PollIdentity
  */
 class LinkRowStampGoldenTest extends TestCase {
 
@@ -299,7 +304,7 @@ class LinkRowStampGoldenTest extends TestCase {
 				match ($flow) {
 					'project' => $service->linkProject((new LinkTarget('obj-1', 3))->inSchema($schemaId), 'p-1'),
 					'bill' => $service->linkBill((new LinkTarget('obj-1', 3))->inSchema($schemaId), 'p-1', 6),
-					default => $service->createAndLinkProject((new LinkTarget('obj-1', 3))->inSchema($schemaId), 'Trip', ''),
+					default => $service->createAndLinkProject((new LinkTarget('obj-1', 3))->inSchema($schemaId), new CospendProjectDraft('Trip', '')),
 				}
 			)
 		);

@@ -287,20 +287,20 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		// the control that proves the list still works at all.
 		const keep = await owner.post(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
-			{ data: { key: `deny-list-keep-${RUN}` } },
+			{ data: { key: `deny-list-${RUN}-keep` } },
 		)
 		expect(keep.ok(), `object create failed: ${await keep.text()}`).toBeTruthy()
 		const keepUuid = uuidOf(await keep.json())
 
 		const hide = await owner.post(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
-			{ data: { key: `deny-list-hide-${RUN}` } },
+			{ data: { key: `deny-list-${RUN}-hide` } },
 		)
 		expect(hide.ok(), `object create failed: ${await hide.text()}`).toBeTruthy()
 		const hideUuid = uuidOf(await hide.json())
 
 		const listBefore = await other.get(
-			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=deny-list-${RUN}&limit=50`,
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=deny-list-${RUN}&_limit=50`,
 		)
 		expect(
 			listBefore.ok(),
@@ -316,7 +316,7 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${hideUuid}`,
 			{
 				data: {
-					key: `deny-list-hide-${RUN}`,
+					key: `deny-list-${RUN}-hide`,
 					'@self': {
 						authorization: { deny: { read: ['authenticated'] } },
 					},
@@ -329,7 +329,7 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		).toBeTruthy()
 
 		const listAfter = await other.get(
-			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=deny-list-${RUN}&limit=50`,
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=deny-list-${RUN}&_limit=50`,
 		)
 		expect(listAfter.ok(), `list failed: ${await listAfter.text()}`).toBeTruthy()
 		const body = await listAfter.json()
@@ -370,7 +370,7 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 	test('the grant and the absence both say which rule decided them', async () => {
 		const readable = await owner.post(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
-			{ data: { key: `provenance-keep-${RUN}` } },
+			{ data: { key: `provenance-${RUN}-keep` } },
 		)
 		expect(
 			readable.ok(),
@@ -380,7 +380,7 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 
 		const hidden = await owner.post(
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}`,
-			{ data: { key: `provenance-hide-${RUN}` } },
+			{ data: { key: `provenance-${RUN}-hide` } },
 		)
 		expect(
 			hidden.ok(),
@@ -392,7 +392,7 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}/${hiddenUuid}`,
 			{
 				data: {
-					key: `provenance-hide-${RUN}`,
+					key: `provenance-${RUN}-hide`,
 					'@self': {
 						authorization: { deny: { read: ['authenticated'] } },
 					},
@@ -406,7 +406,7 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 
 		// THE LIST. One row of the two, and the total says the same.
 		const list = await other.get(
-			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=provenance-${RUN}&limit=50`,
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=provenance-${RUN}&_limit=50`,
 		)
 		expect(list.ok(), `list failed: ${await list.text()}`).toBeTruthy()
 		const listed = rowsOf(await list.json()).map((row) => {
@@ -538,7 +538,7 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		).toBeTruthy()
 
 		const res = await other.get(
-			`/index.php/apps/openregister/api/objects/${registerId}/${ungrantedSchemaId}?limit=50`,
+			`/index.php/apps/openregister/api/objects/${registerId}/${ungrantedSchemaId}?_limit=50`,
 		)
 
 		// Either the endpoint refuses outright, or it answers an EMPTY list
@@ -561,7 +561,7 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 		// THE CONTROL: the same caller, the same instant, on a schema that does
 		// grant them. Without this, a broken list would pass the probe above.
 		const control = await other.get(
-			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?limit=50`,
+			`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_limit=50`,
 		)
 		expect(
 			control.ok(),
@@ -685,7 +685,7 @@ test.describe('a deny takes a verb away, over HTTP', () => {
 			).toBeTruthy()
 
 			const list = await other.get(
-				`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=deny-staged-${RUN}&limit=50`,
+				`/index.php/apps/openregister/api/objects/${registerId}/${openSchemaId}?_search=deny-staged-${RUN}&_limit=50`,
 			)
 			expect(
 				list.ok(),

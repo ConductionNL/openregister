@@ -32,8 +32,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -47,6 +49,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode
  * @uses \OCA\OpenRegister\Service\Flow\FlowNextHint
  * @uses \OCA\OpenRegister\Service\Rules\RuleScope
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TriggerNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class TriggerNodesTest extends TestCase {
 
@@ -80,7 +85,7 @@ class TriggerNodesTest extends TestCase {
 		);
 
 		$this->object = new TriggerObjectNode($l10n, $urls);
-		$this->schedule = new TriggerScheduleNode($l10n, $urls, $userManager);
+		$this->schedule = new TriggerScheduleNode(new FlowNodePresentation($l10n, $urls), $userManager);
 		$this->manual = new TriggerManualNode($l10n, $urls);
 
 	}//end setUp()
@@ -371,9 +376,9 @@ class TriggerNodesTest extends TestCase {
 	public function testEveryTriggerPassesItemsThrough(): void {
 		$items = [['id' => 'a'], ['id' => 'b']];
 
-		$this->assertSame($items, $this->object->execute($items, [], []));
-		$this->assertSame($items, $this->schedule->execute($items, [], []));
-		$this->assertSame($items, $this->manual->execute($items, [], []));
+		$this->assertSame($items, $this->object->execute(new FlowNodeCall(items: $items, config: [], context: [])));
+		$this->assertSame($items, $this->schedule->execute(new FlowNodeCall(items: $items, config: [], context: [])));
+		$this->assertSame($items, $this->manual->execute(new FlowNodeCall(items: $items, config: [], context: [])));
 
 	}//end testEveryTriggerPassesItemsThrough()
 

@@ -22,12 +22,17 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
 
 /**
  * Pins the rendered text of templates with plain fields, filters, fallbacks and relations.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\TemplateSource
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FieldValue
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\MapFilterDefinition
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationPropertyShape
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UuidReference
  */
 class MetadataTemplateGoldenTest extends TestCase {
 
@@ -73,7 +78,7 @@ class MetadataTemplateGoldenTest extends TestCase {
 		$cache->method('getMultipleObjectNames')->willReturn([self::UUID => 'Grace']);
 		$handler = new MetadataHydrationHandler($this->createMock(LoggerInterface::class), $cache);
 
-		$this->assertSame($expected, $handler->processTwigLikeTemplate($this->data(), $template, $this->properties()));
+		$this->assertSame($expected, $handler->renderTemplate(template: $template, source: new TemplateSource(data: $this->data(), schemaProperties: $this->properties())));
 	}//end testTemplate()
 
 	public function testAnUnresolvableRelationFallsBackToItsUuid(): void {
@@ -83,7 +88,7 @@ class MetadataTemplateGoldenTest extends TestCase {
 		$logger->expects($this->once())->method('warning');
 		$handler = new MetadataHydrationHandler($logger, $cache);
 
-		$this->assertSame('by ' . self::UUID, $handler->processTwigLikeTemplate($this->data(), 'by {{ owner }}', $this->properties()));
+		$this->assertSame('by ' . self::UUID, $handler->renderTemplate(template: 'by {{ owner }}', source: new TemplateSource(data: $this->data(), schemaProperties: $this->properties())));
 	}//end testAnUnresolvableRelationFallsBackToItsUuid()
 
 	/**

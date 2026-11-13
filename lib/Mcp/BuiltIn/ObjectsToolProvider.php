@@ -30,6 +30,9 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * ObjectsToolProvider
@@ -207,9 +210,10 @@ class ObjectsToolProvider extends AbstractBuiltInToolProvider {
 		$existing = WriteCause::asLookup(fn () => $this->objectService->find($arguments['id']));
 		$object = $this->objectService->saveObject(
 			object: $arguments['data'],
-			register: $existing->getRegister(),
-			schema: $existing->getSchema(),
-			uuid: ($existing->getUuid() ?? (string)$arguments['id'])
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $existing->getRegister(), schema: $existing->getSchema()),
+				uuid: ($existing->getUuid() ?? (string)$arguments['id'])
+			)
 		);
 		return $object->jsonSerialize();
 	}//end updateObject()
@@ -223,7 +227,7 @@ class ObjectsToolProvider extends AbstractBuiltInToolProvider {
 	 */
 	private function deleteObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
-		$this->objectService->deleteObject(uuid: $arguments['id']);
+		$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $arguments['id']));
 		return ['deleted' => true, 'id' => $arguments['id']];
 	}//end deleteObject()
 }//end class

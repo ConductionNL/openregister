@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
+use OCA\OpenRegister\Service\Rules\ConditionEvaluation;
 use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
 use OCA\OpenRegister\Service\Rules\NamedConditionEvaluator;
 use OCA\OpenRegister\Service\Rules\NamedConditionLibrary;
@@ -40,6 +41,8 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\Rules\NamedConditionLibrary
  * @uses   \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses   \OCA\OpenRegister\Service\Rules\ConditionRefusedException
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionEvaluation
  */
 class NamedConditionEvaluatorGoldenTest extends TestCase {
 
@@ -132,7 +135,7 @@ class NamedConditionEvaluatorGoldenTest extends TestCase {
 
 	private static function verdict(NamedConditionEvaluator $evaluator, mixed $node, array $document, int $depth = 0): string {
 		try {
-			return var_export($evaluator->holds($node, $document, self::library(), $depth), true);
+			return var_export($evaluator->holds(node: $node, evaluation: new ConditionEvaluation(document: $document, library: self::library(), depth: $depth)), true);
 		} catch (ConditionRefusedException $refused) {
 			return '!' . $refused->getConditionName() . ': ' . $refused->getWhy();
 		}

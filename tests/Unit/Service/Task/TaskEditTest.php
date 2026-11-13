@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 use DateTime;
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
@@ -33,13 +34,18 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskService::edit
@@ -49,6 +55,14 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @uses \OCA\OpenRegister\Service\Task\TaskPriority
  * @uses \OCA\OpenRegister\Service\Task\TaskService
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\TaskVerbAttempt
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskCommit
+ * @uses \OCA\OpenRegister\Service\Task\TaskIntake
+ * @uses \OCA\OpenRegister\Service\Task\TaskLifecycleServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskTables
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef
  */
 class TaskEditTest extends TestCase {
 
@@ -96,15 +110,23 @@ class TaskEditTest extends TestCase {
 	 */
 	private function service(): TaskService {
 		return new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			relations: $this->createMock(TaskRelationMapper::class),
-			audits: $this->audits,
 			authorization: new TaskAuthorizationService(groupManager: $this->groupBackend()),
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder()
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->createMock(TaskCandidateMapper::class),
+					relations: $this->createMock(TaskRelationMapper::class),
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 	}//end service()
 
@@ -139,7 +161,7 @@ class TaskEditTest extends TestCase {
 	public function testTheAssigneeAPoolMemberAndAnAdministratorMayEdit(): void {
 		$service = new TaskAuthorizationService(groupManager: $this->groupBackend());
 		foreach (['alice', 'greta', 'root'] as $uid) {
-			$service->assertMay(verb: 'edit', task: $this->task(), uid: $uid);
+			$service->assertMay(act: new TaskAct(verb: 'edit', actor: $uid), task: $this->task());
 		}
 
 		$this->assertTrue(true);
@@ -156,7 +178,7 @@ class TaskEditTest extends TestCase {
 		$task->setWatchers(['wanda']);
 		foreach (['rita', 'wanda', 'mallory'] as $uid) {
 			try {
-				$service->assertMay(verb: 'edit', task: $task, uid: $uid);
+				$service->assertMay(act: new TaskAct(verb: 'edit', actor: $uid), task: $task);
 				$this->fail(sprintf("'%s' was allowed to edit.", $uid));
 			} catch (TaskAccessDeniedException $denied) {
 				$this->assertStringContainsString('edit', $denied->getMessage());
@@ -175,7 +197,7 @@ class TaskEditTest extends TestCase {
 		$task->setPerformerType(Task::PERFORMER_EXTERNAL);
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$service->assertMay(verb: 'edit', task: $task, uid: 'root');
+		$service->assertMay(act: new TaskAct(verb: 'edit', actor: 'root'), task: $task);
 	}//end testAnExternalTaskIsNotEdited()
 
 	/**
@@ -190,9 +212,8 @@ class TaskEditTest extends TestCase {
 		$this->db->expects($this->once())->method('commit');
 
 		$edited = $this->service()->edit(
-			uuid: 't-7',
+			ref: new TaskActorRef(uuid: 't-7', actor: 'alice'),
 			changes: ['title' => 'Hoorzitting plannen', 'priority' => 'high', 'dueAt' => '2026-10-28', 'description' => null],
-			actor: 'alice'
 		);
 
 		$this->assertSame('Hoorzitting plannen', $edited->getTitle());
@@ -221,7 +242,7 @@ class TaskEditTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 
 		try {
-			$this->service()->edit(uuid: 't-7', changes: ['title' => 'Mine now', 'priority' => 'urgent'], actor: 'mallory');
+			$this->service()->edit(ref: new TaskActorRef(uuid: 't-7', actor: 'mallory'), changes: ['title' => 'Mine now', 'priority' => 'urgent']);
 			$this->fail('A stranger edited the task.');
 		} catch (TaskAccessDeniedException) {
 			// Expected.
@@ -251,7 +272,7 @@ class TaskEditTest extends TestCase {
 		];
 		foreach ($invalid as $changes) {
 			try {
-				$this->service()->edit(uuid: 't-7', changes: $changes, actor: 'alice');
+				$this->service()->edit(ref: new TaskActorRef(uuid: 't-7', actor: 'alice'), changes: $changes);
 				$this->fail('Accepted: ' . json_encode($changes));
 			} catch (TaskValidationException) {
 				$this->assertTrue(true);
@@ -270,6 +291,6 @@ class TaskEditTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($task);
 
 		$this->expectException(TaskValidationException::class);
-		$this->service()->edit(uuid: 't-7', changes: ['dueAt' => '2026-10-30'], actor: 'alice');
+		$this->service()->edit(ref: new TaskActorRef(uuid: 't-7', actor: 'alice'), changes: ['dueAt' => '2026-10-30']);
 	}//end testADueDatePastTheExpiryIsRefused()
 }//end class

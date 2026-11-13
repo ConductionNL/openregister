@@ -80,4 +80,29 @@ interface FederationShareServiceInterface {
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
 	public function setStatus(int $id, string $status): FederatedShare;
+
+	/**
+	 * Why a share may not be served now, or null when its creator still holds what it hands out.
+	 *
+	 * @param FederatedShare $share The share about to be served.
+	 *
+	 * @return string|null The refusal.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	public function servingRefusal(FederatedShare $share): ?string;
+
+	/**
+	 * Give a share a new lifetime from now; only its creator may, while they hold what it grants.
+	 *
+	 * @param int $id The share id.
+	 *
+	 * @return FederatedShare The renewed share.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the share is not one of the active organisation's.
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller may not renew it.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
+	 */
+	public function renewShare(int $id): FederatedShare;
 }//end interface

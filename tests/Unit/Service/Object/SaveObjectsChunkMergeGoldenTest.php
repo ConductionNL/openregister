@@ -45,6 +45,24 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun
+ * @uses \OCA\OpenRegister\Db\EmptyJsonHydration
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkChunkRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk
  */
 class SaveObjectsChunkMergeGoldenTest extends TestCase {
 
@@ -81,7 +99,7 @@ class SaveObjectsChunkMergeGoldenTest extends TestCase {
 		$organisations = $this->createMock(OrganisationService::class);
 		$organisations->method('getOrganisationForNewEntity')->willReturn('org-1');
 		$handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $mapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $session, organisationService: $organisations),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
 			checks: new BulkRowChecks()

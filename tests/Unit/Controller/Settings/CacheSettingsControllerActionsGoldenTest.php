@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use Exception;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\CacheSettingsControllerFactory;
-use OC\Files\AppData\Factory;
+use OCP\Files\AppData\IAppDataFactory as Factory;
 use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\IAppConfig;
@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\CacheSettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\CacheSettingsControllerServices
  */
 class CacheSettingsControllerActionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/cache-settings-actions-golden.json';

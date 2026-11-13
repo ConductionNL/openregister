@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Deferral;
 
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Deferral\DeferralQueueServices;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Tests\Support\ShutdownFunctionSpy;
@@ -43,6 +44,13 @@ require_once __DIR__ . '/../../../Support/ShutdownFunctionSpy.php';
  * fixtures/listener-deferral-service-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Deferral\ListenerDeferralService
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferralOptions
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferralQueueServices
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferredChunkPacking
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferredEntry
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferredListenerContext
+ * @uses \OCA\OpenRegister\Service\Deferral\JobArgumentBudget
  */
 class ListenerDeferralServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/listener-deferral-service-golden.json';
@@ -170,9 +178,11 @@ class ListenerDeferralServiceGoldenTest extends TestCase {
 		$service = new ListenerDeferralService(
 			userSession: $userSession,
 			organisation: $organisations,
-			jobList: $jobList,
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $logger,
+			queue: new DeferralQueueServices(
+				jobList: $jobList,
+				appConfig: $this->createMock(IAppConfig::class),
+				logger: $logger
+			),
 			argumentLimit: ($scenario['limit'] ?? 4000),
 		);
 

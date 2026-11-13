@@ -38,6 +38,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
@@ -73,6 +75,20 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectPermissionsControllerFa
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver
  * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectPermissionsControllerServices
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectAccessReportSources
+ * @uses \OCA\OpenRegister\Service\Rbac\ReportedPlace
+ * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
+ * @uses \OCA\OpenRegister\Service\Rbac\RuleOrigin
+ * @uses \OCA\OpenRegister\Service\Rbac\WrittenRuleRun
  */
 class ObjectPermissionsControllerTest extends TestCase {
 
@@ -159,7 +175,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		$auditTrailMapper = $this->createMock(originalClassName: AuditTrailMapper::class);
-		$auditTrailMapper->method('findForObjectByAction')->willReturn($trail);
+		$auditTrailMapper->method('findObjectActions')->willReturn($trail);
 
 		$user = $this->createMock(originalClassName: IUser::class);
 		$user->method('getUID')->willReturn($userId);
@@ -174,7 +190,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_STAGING);
 
 		$report = new ObjectAccessReport(
-			sources: new ObjectAccessReportSources(registerMapper: $registerMapper, schemaMapper: $schemaMapper, auditTrailMapper: $auditTrailMapper),
+			sources: new ObjectAccessReportSources(catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), auditTrailMapper: $auditTrailMapper),
 			holders: new ObjectPermissionsResolver(),
 			history: new ObjectAccessHistory(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())

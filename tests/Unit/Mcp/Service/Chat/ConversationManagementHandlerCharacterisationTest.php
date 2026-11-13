@@ -22,12 +22,21 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ConversationStores;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 /**
  * Pins the observable outcomes of title generation, unique-title numbering
  * and the summarisation trigger without reaching a real LLM endpoint.
  *
  * @covers \OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim
+ * @uses \OCA\OpenRegister\Mcp\Db\Conversation
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ConversationStores
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\FireworksBaseUrl
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\PromptTarget
+ * @uses \OCA\OpenRegister\Notifications\Db\Message
  */
 class ConversationManagementHandlerCharacterisationTest extends TestCase
 {
@@ -156,20 +165,20 @@ class ConversationManagementHandlerCharacterisationTest extends TestCase
     public function testUniqueTitleReturnsBaseWhenNoMatches(): void
     {
         $this->conversationMapper->expects($this->once())->method('findTitlesByUserAgent')
-            ->with('u1', 3, 'Title%')->willReturn([]);
-        $this->assertSame('Title', $this->handler([])->ensureUniqueTitle('Title', 'u1', 3));
+            ->with(new TitleClaim('Title', 'u1', 3))->willReturn([]);
+        $this->assertSame('Title', $this->handler([])->ensureUniqueTitle(new TitleClaim('Title', 'u1', 3)));
     }
 
     public function testUniqueTitleReturnsBaseWhenOnlyVariantsExist(): void
     {
         $this->conversationMapper->method('findTitlesByUserAgent')->willReturn(['Title (2)', 'Titles']);
-        $this->assertSame('Title', $this->handler([])->ensureUniqueTitle('Title', 'u1', 3));
+        $this->assertSame('Title', $this->handler([])->ensureUniqueTitle(new TitleClaim('Title', 'u1', 3)));
     }
 
     public function testUniqueTitleStartsAtTwo(): void
     {
         $this->conversationMapper->method('findTitlesByUserAgent')->willReturn(['Title']);
-        $this->assertSame('Title (2)', $this->handler([])->ensureUniqueTitle('Title', 'u1', 3));
+        $this->assertSame('Title (2)', $this->handler([])->ensureUniqueTitle(new TitleClaim('Title', 'u1', 3)));
     }
 
     public function testUniqueTitleUsesHighestNumberedSuffix(): void
@@ -177,7 +186,7 @@ class ConversationManagementHandlerCharacterisationTest extends TestCase
         $this->conversationMapper->method('findTitlesByUserAgent')->willReturn(
             ['a.b (c)', 'a.b (c) (5)', 'a.b (c) (3)', 'axb (c) (9)', 'a.b (c) (x)', 'a.b (c) (7) more']
         );
-        $this->assertSame('a.b (c) (6)', $this->handler([])->ensureUniqueTitle('a.b (c)', 'u1', 3));
+        $this->assertSame('a.b (c) (6)', $this->handler([])->ensureUniqueTitle(new TitleClaim('a.b (c)', 'u1', 3)));
     }
 
     private function conversation(array $metadata): Conversation

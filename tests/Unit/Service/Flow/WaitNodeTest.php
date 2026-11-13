@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
@@ -43,6 +44,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
  * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
  * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  */
 final class WaitNodeTest extends TestCase {
 
@@ -78,7 +81,7 @@ final class WaitNodeTest extends TestCase {
 	public function testAWaitCarryingItemsStillSuspends(): void {
 		$this->expectException(exception: FlowSuspension::class);
 
-		$this->node->execute([['json' => ['a' => 1]]], ['for' => '60 seconds'], []);
+		$this->node->execute(new FlowNodeCall(items: [['json' => ['a' => 1]]], config: ['for' => '60 seconds'], context: []));
 
 	}//end testAWaitCarryingItemsStillSuspends()
 
@@ -93,7 +96,7 @@ final class WaitNodeTest extends TestCase {
 	public function testAnEmptyFiringDoesNotSuspendTheRun(): void {
 		$this->assertSame(
 			expected: [],
-			actual: $this->node->execute([], ['for' => '60 seconds'], []),
+			actual: $this->node->execute(new FlowNodeCall(items: [], config: ['for' => '60 seconds'], context: [])),
 			message: 'a branch with no work must not pause every other branch of the run'
 		);
 
@@ -109,10 +112,10 @@ final class WaitNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSameNodeStillSuspendsOnceItemsArrive(): void {
-		$this->assertSame(expected: [], actual: $this->node->execute([], ['for' => '60 seconds'], []));
+		$this->assertSame(expected: [], actual: $this->node->execute(new FlowNodeCall(items: [], config: ['for' => '60 seconds'], context: [])));
 
 		$this->expectException(exception: FlowSuspension::class);
-		$this->node->execute([['json' => []]], ['for' => '60 seconds'], []);
+		$this->node->execute(new FlowNodeCall(items: [['json' => []]], config: ['for' => '60 seconds'], context: []));
 
 	}//end testTheSameNodeStillSuspendsOnceItemsArrive()
 
@@ -131,7 +134,7 @@ final class WaitNodeTest extends TestCase {
 
 		$this->assertSame(
 			expected: $items,
-			actual: $this->node->execute($items, ['for' => '60 seconds'], ['resuming' => true])
+			actual: $this->node->execute(new FlowNodeCall(items: $items, config: ['for' => '60 seconds'], context: ['resuming' => true]))
 		);
 
 	}//end testResumingPassesItemsThrough()
@@ -154,7 +157,7 @@ final class WaitNodeTest extends TestCase {
 		];
 
 		try {
-			$this->node->execute([['json' => ['a' => 1]]], ['for' => '60 seconds'], $context);
+			$this->node->execute(new FlowNodeCall(items: [['json' => ['a' => 1]]], config: ['for' => '60 seconds'], context: $context));
 			$this->fail('a wait that never waited must suspend, resumed walk or not');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull(
@@ -191,7 +194,7 @@ final class WaitNodeTest extends TestCase {
 
 		$this->assertSame(
 			expected: $items,
-			actual: $this->node->execute($items, ['for' => '60 seconds'], $context),
+			actual: $this->node->execute(new FlowNodeCall(items: $items, config: ['for' => '60 seconds'], context: $context)),
 			message: 'the wait that suspended is over once the run is woken'
 		);
 

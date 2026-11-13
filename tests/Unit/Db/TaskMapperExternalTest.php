@@ -19,6 +19,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxAnchor;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
 use PHPUnit\Framework\TestCase;
@@ -29,6 +33,13 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\TaskMapper
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
  */
 class TaskMapperExternalTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -44,7 +55,7 @@ class TaskMapperExternalTest extends TestCase {
 			foreach ([false, true] as $admin) {
 				$this->calls = [];
 				$mapper = new TaskMapper(db: $this->connectionWith(rows: []));
-				$criteria = new TaskInboxCriteria(uid: 'alice', groupIds: ['g'], isAdmin: $admin, scope: $scope);
+				$criteria = new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['g'], isAdmin: $admin, scope: $scope));
 				$mapper->findInbox(criteria: $criteria);
 				$this->assertTrue($this->saw('expr.neq', 'performer_type'), "$scope admin=" . var_export($admin, true) . ' page excludes external');
 				$this->assertTrue($this->saw('expr.isNull', 'performer_type'), 'legacy rows with no type stay visible');
@@ -57,7 +68,7 @@ class TaskMapperExternalTest extends TestCase {
 
 		$this->calls = [];
 		$mapper = new TaskMapper(db: $this->connectionWith(rows: []));
-		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'alice', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL, objectUuid: 'case-7'));
+		$mapper->findInbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(anchor: new TaskInboxAnchor(objectUuid: 'case-7'))));
 		$this->assertTrue($this->saw('expr.eq', 'object_uuid'));
 		$this->assertFalse($this->saw('expr.neq', 'performer_type'), 'the case-anchored read shows the external task to the caseworker');
 	}//end testEveryInboxShapeButTheAnchoredReadExcludesExternalTasks()
@@ -70,7 +81,7 @@ class TaskMapperExternalTest extends TestCase {
 	 */
 	public function testThePartyFindersPredicateOnPartyTypeAndOpenness(): void {
 		$mapper = new TaskMapper(db: $this->connectionWith(rows: [['id' => 1, 'uuid' => 't-1', 'state' => 'active', 'is_terminal' => 0, 'performer_type' => 'external', 'assignee' => 'party:bsn-1']]));
-		$page = $mapper->findOpenExternalForParty(partyReference: 'party:bsn-1', limit: 10, offset: 20);
+		$page = $mapper->findOpenExternalForParty(partyReference: 'party:bsn-1', page: new ListQuery(limit: 10, offset: 20));
 		$this->assertCount(1, $page);
 		$this->assertSame('party:bsn-1', $page[0]->getAssignee());
 		$this->assertTrue($this->saw('expr.eq', 'assignee'));

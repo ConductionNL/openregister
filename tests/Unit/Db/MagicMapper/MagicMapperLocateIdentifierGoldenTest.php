@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicIdentifierFind;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
@@ -65,6 +66,16 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicIdentifierFind
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicMapperLocateIdentifierGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -158,7 +169,7 @@ class MagicMapperLocateIdentifierGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$mapper->findAcrossAllMagicTables($identifier, $deleted);
+			$mapper->findAcross(find: new MagicIdentifierFind(identifier: $identifier, includeDeleted: $deleted));
 			$outcome['returned'] = true;
 		} catch (\Throwable $e) {
 			$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage();

@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
@@ -44,10 +45,14 @@ use RuntimeException;
  * list() of the Talk provider.
  *
  * @covers \OCA\OpenRegister\Service\Integration\Providers\TalkProvider
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkTableProvider
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\LinkTableAppDescriptor
  * @uses   \OCA\OpenRegister\Db\TalkLink
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\TalkRoomScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription
  */
 class TalkListGoldenTest extends TestCase {
 
@@ -239,7 +244,7 @@ class TalkListGoldenTest extends TestCase {
 				$mapper->method('findByObjectUuid')->willReturn($links);
 			}
 		}
-		return new TalkProvider($this->container($mode), $apps, $session, $l10n, $mapper);
+		return new TalkProvider($this->container($mode), new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription($apps, $l10n), $session, $mapper);
 	}//end provider()
 
 	/**
@@ -261,7 +266,7 @@ class TalkListGoldenTest extends TestCase {
 		$seen = [];
 		foreach ($scenarios as $label => [$installed, $user, $links, $mode]) {
 			$this->calls = [];
-			$rows = $this->provider($installed, $user, $links, $mode)->list('r', 's', 'obj-1', []);
+			$rows = $this->provider($installed, $user, $links, $mode)->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), []);
 			$seen[$label] = ['rows' => $rows, 'container' => $this->calls];
 		}
 

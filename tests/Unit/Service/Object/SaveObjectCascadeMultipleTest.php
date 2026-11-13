@@ -23,10 +23,12 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Records every nested save of cascadeMultipleObjects as [register, schema, data].
@@ -45,6 +47,22 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeItem
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeItem
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget
  */
 class SaveObjectCascadeMultipleTest extends TestCase {
 
@@ -69,12 +87,12 @@ class SaveObjectCascadeMultipleTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data): ObjectEntity {
 				$this->saves[] = [$register, $schema, $data];
 				$created = new ObjectEntity();
 				$created->setUuid('created-' . count($this->saves));
 				return $created;
-			}
+			})
 		);
 
 		$note = new Schema();
@@ -91,7 +109,7 @@ class SaveObjectCascadeMultipleTest extends TestCase {
 		$parent->setUuid('p-1');
 		$parent->setRegister('10');
 
-		return $reflection->getMethod('cascadeMultipleObjects')->invoke($handler, $parent, $property, $propData);
+		return $reflection->getMethod('cascadeMultipleObjects')->invoke($handler, new NestedObjectTarget(parent: $parent, definition: $property), $propData);
 	}//end cascade()
 
 	public function testPropertyLevelRefInverseAndRegisterReachTheItems(): void {

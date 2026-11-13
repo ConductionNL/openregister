@@ -29,6 +29,9 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Golden outcomes of SelectionListSeeder.
@@ -46,11 +49,11 @@ class SelectionListSeederGoldenTest extends TestCase {
 	 * @return SelectionListSeeder The seeder.
 	 */
 	private function seeder(array $settings = ['selectielijstRegister' => 4, 'selectielijstSchema' => 6]): SelectionListSeeder {
-		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAll'])->getMock();
-		$objectMapper->method('findAll')->willReturnCallback(fn (): array => array_values($this->rows));
+		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAllListed'])->getMock();
+		$objectMapper->method('findAllListed')->willReturnCallback(fn (): array => array_values($this->rows));
 		$saveObject = $this->createMock(SaveObject::class);
 		$saveObject->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
 				if (($data['categorie'] ?? null) === 'boom') {
 					throw new RuntimeException('disk full');
 				}
@@ -61,7 +64,7 @@ class SelectionListSeederGoldenTest extends TestCase {
 				$row->setObject($data);
 				$this->rows[$uuid] = $row;
 				return $row;
-			}
+			})
 		);
 		$handler = $this->createMock(ObjectRetentionHandler::class);
 		$handler->method('getArchivalSettingsOnly')->willReturn($settings);
@@ -70,12 +73,7 @@ class SelectionListSeederGoldenTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		return new SelectionListSeeder(
-			settingsHandler: $handler,
-			mappers: new ArchivalRegisterMappers(registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper),
-			saveObject: $saveObject,
-			logger: new NullLogger()
-		);
+		return new SelectionListSeeder(storage: new SelectielijstStorage(settings: $handler, catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), writer: $saveObject), logger: new NullLogger());
 	}
 
 	/**

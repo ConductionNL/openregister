@@ -61,6 +61,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\EndpointLog
  * @uses   \OCA\OpenRegister\Db\WebhookLog
  * @uses   \OCA\OpenRegister\Db\QueryPage
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class SharedDbMethodsGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

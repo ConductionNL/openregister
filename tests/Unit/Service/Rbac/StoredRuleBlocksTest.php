@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\SchemaSave;
 use OCA\OpenRegister\Service\Rbac\StoredRuleBlocks;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -34,6 +35,8 @@ use PHPUnit\Framework\TestCase;
  * Reading the rule blocks as they are stored, before a save changes them.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\SchemaSave
  */
 class StoredRuleBlocksTest extends TestCase {
 
@@ -185,7 +188,7 @@ class StoredRuleBlocksTest extends TestCase {
 				['authorization' => ['read' => ['hr']], 'context' => 'property "bsn" of schema X', 'stored' => ['read' => ['admin']]],
 				['authorization' => ['read' => ['staff']], 'context' => 'property "notes" of schema X', 'stored' => null],
 			],
-			(new StoredRuleBlocks())->propertyBlocks(schema: $schema, stored: $stored, name: 'schema X')
+			(new StoredRuleBlocks())->propertyBlocks(save: new SchemaSave(schema: $schema, stored: $stored), name: 'schema X')
 		);
 	}//end testPropertyBlocksPairIncomingWithStored()
 
@@ -200,7 +203,7 @@ class StoredRuleBlocksTest extends TestCase {
 
 		$this->assertSame(
 			[['authorization' => ['read' => ['hr']], 'context' => 'property "bsn" of new', 'stored' => null]],
-			(new StoredRuleBlocks())->propertyBlocks(schema: $schema, stored: null, name: 'new')
+			(new StoredRuleBlocks())->propertyBlocks(save: new SchemaSave(schema: $schema, stored: null), name: 'new')
 		);
 	}//end testPropertyBlocksWithoutStoredSchema()
 }//end class

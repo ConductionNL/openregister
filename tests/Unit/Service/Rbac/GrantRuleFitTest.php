@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\GrantRuleFit;
+use OCA\OpenRegister\Service\Rbac\HeldRule;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -31,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * How a rule entry fits a record, and which principal type a rule names.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\GrantRuleFit
+ * @uses \OCA\OpenRegister\Service\Rbac\HeldRule
  */
 class GrantRuleFitTest extends TestCase {
 
@@ -64,7 +66,7 @@ class GrantRuleFitTest extends TestCase {
 
 		$this->assertSame(
 			['matchedOn' => [], 'relative' => false],
-			$this->fit->fitOf(entry: ['match' => ['status' => 'open']], role: 'editor', envelope: [])
+			$this->fit->fitOf(rule: new HeldRule(entry: ['match' => ['status' => 'open']], role: 'editor'), envelope: [])
 		);
 	}//end testRoleEntryIsUnconditional()
 
@@ -76,9 +78,9 @@ class GrantRuleFitTest extends TestCase {
 	public function testEntryWithoutMatchIsUnconditional(): void {
 		$this->matcher->expects($this->never())->method('objectMatchesConditions');
 
-		$this->assertSame(['matchedOn' => [], 'relative' => false], $this->fit->fitOf(entry: 'group-a', role: null, envelope: []));
-		$this->assertSame(['matchedOn' => [], 'relative' => false], $this->fit->fitOf(entry: ['match' => []], role: null, envelope: []));
-		$this->assertSame(['matchedOn' => [], 'relative' => false], $this->fit->fitOf(entry: ['match' => 'x'], role: null, envelope: []));
+		$this->assertSame(['matchedOn' => [], 'relative' => false], $this->fit->fitOf(rule: new HeldRule(entry: 'group-a', role: null), envelope: []));
+		$this->assertSame(['matchedOn' => [], 'relative' => false], $this->fit->fitOf(rule: new HeldRule(entry: ['match' => []], role: null), envelope: []));
+		$this->assertSame(['matchedOn' => [], 'relative' => false], $this->fit->fitOf(rule: new HeldRule(entry: ['match' => 'x'], role: null), envelope: []));
 	}//end testEntryWithoutMatchIsUnconditional()
 
 	/**
@@ -94,7 +96,7 @@ class GrantRuleFitTest extends TestCase {
 
 		$this->assertSame(
 			['matchedOn' => ['status', 'level'], 'relative' => false],
-			$this->fit->fitOf(entry: ['match' => ['status' => 'open', 'level' => 3]], role: null, envelope: $envelope)
+			$this->fit->fitOf(rule: new HeldRule(entry: ['match' => ['status' => 'open', 'level' => 3]], role: null), envelope: $envelope)
 		);
 	}//end testStaticClauseThatMatchesReportsMatchedProperties()
 
@@ -106,7 +108,7 @@ class GrantRuleFitTest extends TestCase {
 	public function testStaticClauseThatFailsDropsTheEntry(): void {
 		$this->matcher->method('objectMatchesConditions')->willReturn(false);
 
-		$this->assertNull($this->fit->fitOf(entry: ['match' => ['status' => 'open']], role: null, envelope: ['status' => 'closed']));
+		$this->assertNull($this->fit->fitOf(rule: new HeldRule(entry: ['match' => ['status' => 'open']], role: null), envelope: ['status' => 'closed']));
 	}//end testStaticClauseThatFailsDropsTheEntry()
 
 	/**
@@ -120,16 +122,18 @@ class GrantRuleFitTest extends TestCase {
 			->willReturn(true);
 
 		$result = $this->fit->fitOf(
-			entry: [
-				'match' => [
-					'owner' => '$userId',
-					'org'   => '$organisation.uuid',
-					'group' => ['$memberOf' => 'x'],
-					'any'   => ['$in' => ['literal', '$user']],
-					'kind'  => 'case',
+			rule: new HeldRule(
+				entry: [
+					'match' => [
+						'owner' => '$userId',
+						'org'   => '$organisation.uuid',
+						'group' => ['$memberOf' => 'x'],
+						'any'   => ['$in' => ['literal', '$user']],
+						'kind'  => 'case',
+					],
 				],
-			],
-			role: null,
+				role: null
+			),
 			envelope: ['k' => 1]
 		);
 
@@ -146,7 +150,7 @@ class GrantRuleFitTest extends TestCase {
 
 		$this->assertSame(
 			['matchedOn' => ['owner'], 'relative' => true],
-			$this->fit->fitOf(entry: ['match' => ['owner' => '$activeOrganisation']], role: null, envelope: [])
+			$this->fit->fitOf(rule: new HeldRule(entry: ['match' => ['owner' => '$activeOrganisation']], role: null), envelope: [])
 		);
 	}//end testOnlyRelativeClauseSkipsTheMatcher()
 
@@ -163,7 +167,7 @@ class GrantRuleFitTest extends TestCase {
 
 		$this->assertSame(
 			['matchedOn' => ['a', 'b', 'c', 'd'], 'relative' => false],
-			$this->fit->fitOf(entry: ['match' => $match], role: null, envelope: [])
+			$this->fit->fitOf(rule: new HeldRule(entry: ['match' => $match], role: null), envelope: [])
 		);
 	}//end testLookalikesAreStatic()
 

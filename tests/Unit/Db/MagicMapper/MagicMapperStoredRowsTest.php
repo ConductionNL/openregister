@@ -53,6 +53,8 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\UuidBatchLookup
  */
 class MagicMapperStoredRowsTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -125,7 +127,7 @@ class MagicMapperStoredRowsTest extends TestCase {
 		$schemas->method('find')->willReturn($schema);
 
 		$statistics = $this->createMock(MagicStatisticsHandler::class);
-		$statistics->method('convertRowToObjectEntity')->willReturnCallback(
+		$statistics->method('toObjectEntity')->willReturnCallback(
 			function (array $row) use ($converts): ?ObjectEntity {
 				$this->converted[] = $row;
 				if ($converts === false) {

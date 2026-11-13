@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\DeclaredRoutes;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\DsarCaseControllerFactory;
 use OCA\OpenRegister\Controller\DsarCaseController;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -34,6 +35,7 @@ use OCA\OpenRegister\Service\Gdpr\Export\SignedBundle;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
 use OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
+use OCA\OpenRegister\Service\Gdpr\Redaction\FieldRedaction;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
@@ -170,9 +172,8 @@ class DsarCaseControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testRouteMethodReachability(): void {
-		$routes = (include __DIR__ . '/../../../appinfo/routes.php')['routes'];
 		$mapped = [];
-		foreach ($routes as $route) {
+		foreach (DeclaredRoutes::unversioned() as $route) {
 			if (str_starts_with((string)$route['name'], 'dsarCase#') === true) {
 				$mapped[] = substr((string)$route['name'], strlen('dsarCase#'));
 			}
@@ -479,7 +480,7 @@ class DsarCaseControllerTest extends TestCase {
 		$redaction = $this->createMock(RedactionWriteService::class);
 		$redaction->expects($this->once())
 			->method('applyRedaction')
-			->with('case-1', 'evidence.0.bsn', '[REDACTED]', 'art-15-4')
+			->with('case-1', $this->equalTo(new FieldRedaction('evidence.0.bsn', '[REDACTED]', 'art-15-4')))
 			->willReturn(['field' => 'evidence.0.bsn', 'ground' => 'art-15-4', 'applied' => true]);
 
 		$controller = $this->buildForBundleSurface(

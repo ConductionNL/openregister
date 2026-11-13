@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStateHandle;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
 use OCP\IL10N;
@@ -35,6 +36,14 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStateHandle
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowStateSlots
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowStateStep
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  */
 class FlowStateNodeGoldenTest extends TestCase {
 
@@ -112,7 +121,7 @@ class FlowStateNodeGoldenTest extends TestCase {
 		}
 
 		try {
-			$out = $this->node->execute($case['items'], $case['config'], $context);
+			$out = $this->node->execute(new FlowNodeCall(items: $case['items'], config: $case['config'], context: $context));
 		} catch (Throwable $e) {
 			return ['error' => get_class($e) . ': ' . $e->getMessage()];
 		}

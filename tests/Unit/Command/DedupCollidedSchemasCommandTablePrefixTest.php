@@ -27,6 +27,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * @covers \OCA\OpenRegister\Command\DedupCollidedSchemasCommand
+ * @uses \OCA\OpenRegister\Command\SchemaDedupRun
  */
 class DedupCollidedSchemasCommandTablePrefixTest extends TestCase {
 

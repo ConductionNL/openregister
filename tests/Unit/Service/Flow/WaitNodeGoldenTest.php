@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
@@ -42,6 +43,11 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\WaitNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  */
 class WaitNodeGoldenTest extends TestCase {
 
@@ -189,7 +195,7 @@ class WaitNodeGoldenTest extends TestCase {
 		$slot = ($context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
 		$before = time();
 		try {
-			$out = $this->node->execute($items, $config, $context);
+			$out = $this->node->execute(new FlowNodeCall(items: $items, config: $config, context: $context));
 			$outcome = ['returned' => $out];
 		} catch (FlowSuspension $e) {
 			$after = time();

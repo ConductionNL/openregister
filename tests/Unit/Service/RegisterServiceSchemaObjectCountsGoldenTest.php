@@ -32,6 +32,10 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\RegisterService
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Serializer\RegisterSerializer
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\RegisterServiceHelpers
+ * @uses \OCA\OpenRegister\Service\RegisterServiceStorage
+ * @uses \OCA\OpenRegister\Service\SchemaObjectTally
  */
 class RegisterServiceSchemaObjectCountsGoldenTest extends TestCase {
 
@@ -111,7 +115,7 @@ class RegisterServiceSchemaObjectCountsGoldenTest extends TestCase {
 		}
 
 		return new RegisterService(
-			new RegisterServiceStorage($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class), $db),
+			new RegisterServiceStorage($db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new RegisterServiceHelpers(
 				$this->createMock(FileService::class),
 				new RegisterSerializer($this->createMock(SchemaMapper::class), $logger)

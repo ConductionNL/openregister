@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Mcp\McpDiscoveryRun;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -36,6 +37,23 @@ use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
  * fail-soft paths.
  *
  * @covers \OCA\OpenRegister\Mcp\McpProviderDiscovery
+ * @uses \OCA\OpenRegister\Mcp\AttributeToolScanner
+ * @uses \OCA\OpenRegister\Mcp\Attribute\McpTool
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider
+ * @uses \OCA\OpenRegister\Mcp\McpDiscoveryRun
+ * @uses \OCA\OpenRegister\Mcp\McpLeafApp
+ * @uses \OCA\OpenRegister\Mcp\MethodScanRun
+ * @uses \OCA\OpenRegister\Mcp\ReflectionJsonType
+ * @uses \OCA\OpenRegister\Mcp\ToolDeclarationCheck
+ * @uses \OCA\OpenRegister\Mcp\ToolDescriptorExtras
+ * @uses \OCA\OpenRegister\Mcp\ToolDocblock
+ * @uses \OCA\OpenRegister\Mcp\ToolScanSubject
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\DerivedToolDefinition
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices
  */
 class McpProviderDiscoveryAttributeCharacterisationTest extends TestCase
 {
@@ -121,8 +139,10 @@ class McpProviderDiscoveryAttributeCharacterisationTest extends TestCase
             }
         };
         $method = new ReflectionMethod(McpProviderDiscovery::class, 'collectAttributeMcpProviders');
-        $method->invokeArgs($discovery, [$container, $this->logger(), &$providers]);
-        return $providers;
+        $run = new McpDiscoveryRun($container, $this->logger());
+        $run->addAll($providers);
+        $method->invokeArgs($discovery, [$run]);
+        return $run->providers();
     }
 
     private function handWritten(string $appId, array $ids): IMcpToolProvider

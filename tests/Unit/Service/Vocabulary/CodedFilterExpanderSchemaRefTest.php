@@ -42,6 +42,17 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Vocabulary\BranchFilter
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedNarrowing
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedValueRules
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptBranch
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptRelations
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess
  */
 class CodedFilterExpanderSchemaRefTest extends TestCase {
 
@@ -57,11 +68,10 @@ class CodedFilterExpanderSchemaRefTest extends TestCase {
 			'urn:b' => ['uri' => 'urn:b', 'broader' => ['urn:root'], 'notation' => 'B'],
 		]);
 		$this->schemas = $this->createMock(SchemaMapperInterface::class);
+		$lifecycle = new ConceptLifecycle();
 		$this->expander = new CodedFilterExpander(
-			$concepts,
-			new ConceptHierarchy(new ConceptLifecycle()),
-			$this->schemas,
-			new CodedPropertyDeclarationFactory()
+			new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess($concepts, new ConceptHierarchy($lifecycle), $lifecycle),
+			new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables($this->schemas, new CodedPropertyDeclarationFactory(), $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))
 		);
 	}
 

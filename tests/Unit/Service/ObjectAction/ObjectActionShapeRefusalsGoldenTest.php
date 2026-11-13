@@ -24,7 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionEntry;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionShape;
+use OCA\OpenRegister\Service\ObjectAction\SchemaRules;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -32,6 +34,15 @@ use PHPUnit\Framework\TestCase;
  * Golden pins for the shape refusals of a declared action.
  *
  * @covers \OCA\OpenRegister\Service\ObjectAction\ObjectActionShape
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarationReader
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevation
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionEntry
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionInputSchema
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssignShape
+ * @uses \OCA\OpenRegister\Service\ObjectAction\SchemaRules
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
  */
 class ObjectActionShapeRefusalsGoldenTest extends TestCase {
 
@@ -103,6 +114,6 @@ class ObjectActionShapeRefusalsGoldenTest extends TestCase {
 	 */
 	#[DataProvider('actionProvider')]
 	public function testRefusals(array $definition, array $lifecycle, array $expected): void {
-		$this->assertSame($expected, ObjectActionShape::refusals(key: 'act', definition: $definition, lifecycle: $lifecycle, authorization: null));
+		$this->assertSame($expected, ObjectActionShape::refusals(action: new ObjectActionEntry(key: 'act', definition: $definition), rules: new SchemaRules(lifecycle: $lifecycle, authorization: null)));
 	}//end testRefusals()
 }//end class

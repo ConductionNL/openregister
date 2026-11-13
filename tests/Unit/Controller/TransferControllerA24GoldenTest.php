@@ -129,9 +129,9 @@ class TransferControllerA24GoldenTest extends TestCase {
 		$expected = [
 			'index' => true,
 			'show' => true,
-			'approve' => true,
-			'reject' => true,
-			'create' => true,
+			'approve' => false,
+			'reject' => false,
+			'create' => false,
 		];
 		$actual = [];
 		$class = new ReflectionClass(TransferController::class);
@@ -198,10 +198,11 @@ class TransferControllerA24GoldenTest extends TestCase {
 		$this->request->method('getParam')->with('reason', '')->willReturnOnConsecutiveCalls('  ', ' too early ', 'x');
 		$list = ['uuid' => 'tl-1'];
 		$this->records->method('loadTransferList')->willReturn($list);
-		$this->lists->expects($this->exactly(2))->method('rejectTransferList')
+		$this->lists->expects($this->exactly(2))->method('reject')
 			->willReturnCallback(
-				function (array $transferList, string $archivistId, string $reason) use ($list): array {
-					$this->assertSame([$list, 'archivist-9'], [$transferList, $archivistId]);
+				function (array $transferList, \OCA\OpenRegister\Service\Edepot\TransferRejection $rejection) use ($list): array {
+					$this->assertSame([$list, 'archivist-9'], [$transferList, $rejection->archivistId]);
+					$reason = $rejection->reason;
 					if ($reason === 'x') {
 						throw new InvalidArgumentException('done');
 					}

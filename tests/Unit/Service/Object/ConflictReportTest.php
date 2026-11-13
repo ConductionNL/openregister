@@ -38,10 +38,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use DateTime;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ConflictReport;
+use OCA\OpenRegister\Service\Object\RefusedWrite;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -51,8 +54,16 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\ConflictRun
+ * @uses \OCA\OpenRegister\Service\Object\RefusedWrite
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  *
  * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+ * @uses \OCA\OpenRegister\Service\Object\ConflictRun
+ * @uses \OCA\OpenRegister\Service\Object\RefusedWrite
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 final class ConflictReportTest extends TestCase {
 
@@ -122,9 +133,11 @@ final class ConflictReportTest extends TestCase {
 	 */
 	public function testTheSecondPersonIsToldWhatTheFirstOneWrote(): void {
 		$body = $this->report()->build(
-			stored: $this->stored(['status' => 'granted', 'summary' => 'as read']),
-			schema: new Schema(),
-			sent: ['status' => 'refused', 'summary' => 'my new summary'],
+			write: new RefusedWrite(
+				stored: $this->stored(['status' => 'granted', 'summary' => 'as read']),
+				schema: new Schema(),
+				sent: ['status' => 'refused', 'summary' => 'my new summary']
+			),
 			intervening: [$this->change(changed: ['status' => ['old' => 'in-behandeling', 'new' => 'granted']])],
 		);
 
@@ -151,10 +164,12 @@ final class ConflictReportTest extends TestCase {
 	 */
 	public function testAnUntouchedPropertyIsNotAConflict(): void {
 		$body = $this->report()->build(
-			stored: $this->stored(['status' => 'granted', 'summary' => 'as read']),
-			schema: new Schema(),
-			// The caller writes ONLY the summary.
-			sent: ['summary' => 'my new summary'],
+			write: new RefusedWrite(
+				stored: $this->stored(['status' => 'granted', 'summary' => 'as read']),
+				schema: new Schema(),
+				// The caller writes ONLY the summary.
+				sent: ['summary' => 'my new summary']
+			),
 			intervening: [$this->change(changed: ['status' => ['old' => 'in-behandeling', 'new' => 'granted']])],
 		);
 
@@ -177,9 +192,11 @@ final class ConflictReportTest extends TestCase {
 	 */
 	public function testAPropertyOnlyTheCallerChangedIsNotAConflict(): void {
 		$body = $this->report()->build(
-			stored: $this->stored(['status' => 'granted', 'summary' => 'as read']),
-			schema: new Schema(),
-			sent: ['status' => 'refused', 'summary' => 'my new summary'],
+			write: new RefusedWrite(
+				stored: $this->stored(['status' => 'granted', 'summary' => 'as read']),
+				schema: new Schema(),
+				sent: ['status' => 'refused', 'summary' => 'my new summary']
+			),
 			intervening: [$this->change(changed: ['status' => ['old' => 'in-behandeling', 'new' => 'granted']])],
 		);
 
@@ -195,10 +212,12 @@ final class ConflictReportTest extends TestCase {
 	 */
 	public function testSendingTheStoredValueBackIsNotAConflict(): void {
 		$body = $this->report()->build(
-			stored: $this->stored(['status' => 'granted']),
-			schema: new Schema(),
-			// The caller happens to be writing exactly what is already there.
-			sent: ['status' => 'granted'],
+			write: new RefusedWrite(
+				stored: $this->stored(['status' => 'granted']),
+				schema: new Schema(),
+				// The caller happens to be writing exactly what is already there.
+				sent: ['status' => 'granted']
+			),
 			intervening: [$this->change(changed: ['status' => ['old' => 'in-behandeling', 'new' => 'granted']])],
 		);
 
@@ -214,9 +233,11 @@ final class ConflictReportTest extends TestCase {
 	 */
 	public function testTheRefusalNamesTheActorAndTheMoment(): void {
 		$body = $this->report()->build(
-			stored: $this->stored(['status' => 'granted']),
-			schema: new Schema(),
-			sent: ['status' => 'refused'],
+			write: new RefusedWrite(
+				stored: $this->stored(['status' => 'granted']),
+				schema: new Schema(),
+				sent: ['status' => 'refused']
+			),
 			intervening: [
 				$this->change(
 					changed: ['status' => ['old' => 'in-behandeling', 'new' => 'granted']],
@@ -243,9 +264,11 @@ final class ConflictReportTest extends TestCase {
 	 */
 	public function testTheReadValueIsTheOldestAcrossSeveralWrites(): void {
 		$body = $this->report()->build(
-			stored: $this->stored(['status' => 'granted']),
-			schema: new Schema(),
-			sent: ['status' => 'refused'],
+			write: new RefusedWrite(
+				stored: $this->stored(['status' => 'granted']),
+				schema: new Schema(),
+				sent: ['status' => 'refused']
+			),
 			// NEWEST FIRST, which is how the mapper answers.
 			intervening: [
 				$this->change(changed: ['status' => ['old' => 'toetsing', 'new' => 'granted']], at: '2026-09-18T12:30:00+00:00'),
@@ -271,13 +294,15 @@ final class ConflictReportTest extends TestCase {
 	public function testARestrictedPropertyConflictsWithoutShowingItself(): void {
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturnCallback(
-			static fn (Schema $schema, string $property, array $object): bool => ($property !== 'bsn')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => ($read->name !== 'bsn')
 		);
 
 		$body = (new ConflictReport($rbac))->build(
-			stored: $this->stored(['bsn' => '999993653', 'status' => 'granted']),
-			schema: new Schema(),
-			sent: ['bsn' => '111222333', 'status' => 'refused'],
+			write: new RefusedWrite(
+				stored: $this->stored(['bsn' => '999993653', 'status' => 'granted']),
+				schema: new Schema(),
+				sent: ['bsn' => '111222333', 'status' => 'refused']
+			),
 			intervening: [
 				$this->change(
 					changed: [
@@ -316,9 +341,11 @@ final class ConflictReportTest extends TestCase {
 	 */
 	public function testAScalarRoundTripIsNotAConflict(): void {
 		$body = $this->report()->build(
-			stored: $this->stored(['count' => 3]),
-			schema: new Schema(),
-			sent: ['count' => '3'],
+			write: new RefusedWrite(
+				stored: $this->stored(['count' => 3]),
+				schema: new Schema(),
+				sent: ['count' => '3']
+			),
 			intervening: [$this->change(changed: ['count' => ['old' => 1, 'new' => 3]])],
 		);
 
@@ -338,9 +365,11 @@ final class ConflictReportTest extends TestCase {
 	 */
 	public function testNoOverlapStillRefusesAndSaysSoPlainly(): void {
 		$body = $this->report()->build(
-			stored: $this->stored(['status' => 'granted']),
-			schema: new Schema(),
-			sent: ['summary' => 'mine'],
+			write: new RefusedWrite(
+				stored: $this->stored(['status' => 'granted']),
+				schema: new Schema(),
+				sent: ['summary' => 'mine']
+			),
 			intervening: [$this->change(changed: ['status' => ['old' => 'x', 'new' => 'granted']])],
 		);
 
@@ -358,7 +387,8 @@ final class ConflictReportTest extends TestCase {
 		$seen = [];
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturnCallback(
-			static function (Schema $schema, string $property, array $object) use (&$seen): bool {
+			static function (SchemaProperty $read, PropertyAccessRequest $request) use (&$seen): bool {
+				[$schema, $property, $object] = [$read->schema, $read->name, $request->object];
 				$seen[] = $object;
 				return true;
 			}
@@ -367,9 +397,11 @@ final class ConflictReportTest extends TestCase {
 		$stored->setOrganisation('org-b');
 
 		(new ConflictReport($rbac))->build(
-			stored: $stored,
-			schema: new Schema(),
-			sent: ['status' => 'refused'],
+			write: new RefusedWrite(
+				stored: $stored,
+				schema: new Schema(),
+				sent: ['status' => 'refused']
+			),
 			intervening: [$this->change(changed: ['status' => ['old' => 'open', 'new' => 'granted']])],
 		);
 

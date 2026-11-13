@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
 
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
@@ -42,6 +43,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Exception\TaskAccessDeniedException
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\TaskVerbAttempt
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
  */
 final class TaskAuthorizationServiceGoldenTest extends TestCase {
 
@@ -284,7 +288,7 @@ final class TaskAuthorizationServiceGoldenTest extends TestCase {
 
 		$outcome = self::ALLOWED;
 		try {
-			$service->assertMay(verb: $verb, task: $this->task(fields: $task), uid: $uid);
+			$service->assertMay(act: new TaskAct(verb: $verb, actor: $uid), task: $this->task(fields: $task));
 		} catch (TaskAccessDeniedException $denied) {
 			$outcome = $denied->getMessage();
 		}

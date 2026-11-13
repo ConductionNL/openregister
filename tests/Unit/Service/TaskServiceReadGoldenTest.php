@@ -9,6 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -26,6 +27,10 @@ use RuntimeException;
  * PHP timezone setting.
  *
  * @covers \OCA\OpenRegister\Service\TaskService
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TaskLocation
+ * @uses \OCA\OpenRegister\Service\TaskVtodoDocument
+ * @uses \OCA\OpenRegister\Service\Task\VtodoCalendarLocator
+ * @uses \OCA\OpenRegister\Service\Task\VtodoReader
  */
 class TaskServiceReadGoldenTest extends TestCase {
 
@@ -194,7 +199,7 @@ class TaskServiceReadGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testVtodoToArray(string $ics): void {
-		$actual = (new ReflectionMethod(TaskService::class, 'vtodoToArray'))->invoke($this->service([]), $ics, '5', 'x.ics');
+		$actual = (new ReflectionMethod(TaskService::class, 'vtodoToArray'))->invoke($this->service([]), $ics, new TaskLocation(calendarId: '5', uri: 'x.ics'));
 		$this->assertGolden(['return' => $actual]);
 	}//end testVtodoToArray()
 

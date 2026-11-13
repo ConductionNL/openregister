@@ -11,7 +11,7 @@ profile and the export verb.
       - Read `SubjectExport` first and follow its shape where it fits. A
         second differently spelled export record is two answers to one
         question.
-- [ ] 1.2 Every export path writes a run: the API, the scheduled report
+- [x] 1.2 Every export path writes a run: the API, the scheduled report
       runner and the whole-dataset extract.
       > PARTLY DONE 2026-09-22. The scheduled report runner and
       > `exportProfiles#run` both write one, and the wiring is asserted from
@@ -23,6 +23,13 @@ profile and the export verb.
       > no file and no expiry, download count one (`testAnApiExportIsRecordedAsARun`).
       > Still open: the whole-dataset extract (`ExportWholeSetAction` appends per object, so
       > it needs one run per file with a growing row count, keyed on the file id).
+      > 2026-10-10 (B3): DONE. `ExportWholeSetAction::recordRow()` calls
+      > `ExportRunRecorder::recordAppended()` after each appended row: the first row opens a run
+      > keyed on the file id (`ExportRunMapper::findOpenForFile()`), later rows grow its count, a
+      > swept file opens a new run, and the run copies the profile's retention
+      > (`ExportRunRecorderTest::testAnAppendedFileIsOneRunWhoseCountGrows`,
+      > `ExportWholeSetActionTest::testACommittedRowGrowsTheRunOfItsFile`,
+      > `ExportRunsHaveAProducerTest::testTheWholeSetExtractWritesARun`).
       - Unit tests, mutation-checked: removing the write from the scheduled
         runner reddens an assertion about the row, not a setup line
 
@@ -46,13 +53,19 @@ profile and the export verb.
 
 ## 3. The count
 
-- [ ] 3.1 Count a download on the run when the file is served from the
+- [x] 3.1 Count a download on the run when the file is served from the
       register.
       > PARTLY DONE 2026-09-22. `ExportRunRecorder::countDownload()` exists
       > and the export profile run writes a count of one, because that path
       > does serve the bytes from the register. No endpoint serves a
       > scheduled report's FILE back from the register yet, so there is no
       > call site there and none was invented.
+      > 2026-10-10 (B3): DONE. `GET /api/exports/{uuid}/download` (`ExportRunsController::download()`)
+      > streams the run's file from its maker's files and counts once on the run; the maker or a
+      > caller `ExportRightService` lets see every run gets it, anybody else 404 (same answer as an
+      > unknown uuid), an expired run or a file deleted in Files 410
+      > (`ExportRunRecorder::openForDownload()`, `ExportRunRecorderTest::testAnotherPrincipalsRunReadsAsMissing`,
+      > `testAnExpiredRunIsGone`, `ExportRunsControllerTest::testADownloadStreamsTheFileAndCountsOnTheRun`).
       - Unit tests: the run's count and `openregister_files.downloadCount`
         move independently, and the test says why
 
@@ -79,7 +92,12 @@ profile and the export verb.
 
 ## 5. Tests
 
-- [ ] 5.1 Unit tests for the record, the sweep, the count and the scope.
+- [x] 5.1 Unit tests for the record, the sweep, the count and the scope.
+      (`ExportRunRecorderTest` covers record, sweep and count; `ExportRunsControllerTest` the scope.)
 - [ ] 5.2 `tests/e2e/ci/an-export-is-a-file-with-a-life.spec.ts`: run an
       export, see the row, download it, see the count move, expire it, see
       it named as expired.
+      (live pass, decision 139) 2026-10-10 (B3): the spec is written for the part an API
+      run can reach: a profile run lands in the area for its maker and not for a stranger,
+      and a run without a file answers 410 to its maker and 404 to a stranger. A run with a
+      file needs a cron tick and expiry needs the clock, so those stay with the unit tests.

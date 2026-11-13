@@ -34,6 +34,21 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\LinkableUrl
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DeclaredTrigger
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ForcedChannelPolicy
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidators
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationContentValidator
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientValidator
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleContext
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationSchemaFacts
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationTriggerValidator
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\RecipientEntry
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
  */
 final class NotificationActionHrefRefusalTest extends TestCase {
 

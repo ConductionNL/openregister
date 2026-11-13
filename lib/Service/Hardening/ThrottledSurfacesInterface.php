@@ -60,7 +60,16 @@ interface ThrottledSurfacesInterface {
 	 *
 	 * @var string
 	 */
-	public const CASE_TOKEN = 'openregister_case_token';
+	public const CASE_LINK_SURFACE = 'openregister_case_token';
+
+	/**
+	 * Former name of CASE_LINK_SURFACE, kept for existing callers.
+	 *
+	 * @deprecated Use CASE_LINK_SURFACE.
+	 *
+	 * @var string
+	 */
+	public const CASE_TOKEN = self::CASE_LINK_SURFACE;
 
 	/**
 	 * A share link on a single object.
@@ -74,7 +83,16 @@ interface ThrottledSurfacesInterface {
 	 *
 	 * @var string
 	 */
-	public const FEDERATION_SHARE_TOKEN = 'openregister_federation_share_token';
+	public const FEDERATION_SHARE_SURFACE = 'openregister_federation_share_token';
+
+	/**
+	 * Former name of FEDERATION_SHARE_SURFACE, kept for existing callers.
+	 *
+	 * @deprecated Use FEDERATION_SHARE_SURFACE.
+	 *
+	 * @var string
+	 */
+	public const FEDERATION_SHARE_TOKEN = self::FEDERATION_SHARE_SURFACE;
 
 	/**
 	 * The OAuth2 callback the credential broker completes a grant on.
@@ -111,9 +129,9 @@ interface ThrottledSurfacesInterface {
 	public const ALL = [
 		'accessLink' => self::ACCESS_LINK,
 		'calendarFeed' => self::CALENDAR_FEED,
-		'caseToken' => self::CASE_TOKEN,
+		'caseToken' => self::CASE_LINK_SURFACE,
 		'objectShareLink' => self::OBJECT_SHARE_LINK,
-		'federationShareToken' => self::FEDERATION_SHARE_TOKEN,
+		'federationShareToken' => self::FEDERATION_SHARE_SURFACE,
 		'oauth2Callback' => self::OAUTH2_CALLBACK,
 		'elevation' => self::ELEVATION,
 		'formSubmit' => self::FORM_SUBMIT,

@@ -44,6 +44,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
@@ -75,6 +77,88 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
  * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusalOptions
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses   \OCA\OpenRegister\Service\DeclaredRow
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SharedWriteAttempt
+ * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Db\LockTerms
+ * @uses   \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses   \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses   \OCA\OpenRegister\Db\SoftDeletion
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRun
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\PropertyDefaults
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanner
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
+ * @uses   \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal
+ * @uses \OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusalOptions
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\DeclaredRow
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SharedWriteAttempt
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\PropertyDefaults
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanner
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
  */
 class SaveObjectSharedMasterDataContextTest extends TestCase {
 
@@ -91,13 +175,13 @@ class SaveObjectSharedMasterDataContextTest extends TestCase {
 		$this->expectException(SharedMasterDataWriteException::class);
 		OrganisationContext::run(
 			'org-consumer',
-			fn () => $handler->saveObject(data: ['name' => 'x'], schema: $this->schema(), register: $this->register(), _multitenancy: false)
+			fn () => $handler->saveObject(data: ['name' => 'x'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register(), schema: $this->schema())), _multitenancy: false)
 		);
 	}//end testASaveInsideAContextIsGuardedWithMultitenancyOff()
 
 	public function testASaveOutsideAContextWithMultitenancyOffIsNotGuarded(): void {
 		try {
-			$this->handler()->saveObject(data: ['name' => 'x'], schema: $this->schema(), register: $this->register(), _multitenancy: false);
+			$this->handler()->saveObject(data: ['name' => 'x'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register(), schema: $this->schema())), _multitenancy: false);
 		} catch (SharedMasterDataWriteException $e) {
 			self::fail('the guard must not run when the caller turned multitenancy off outside a context');
 		} catch (Throwable $e) {
@@ -133,10 +217,8 @@ class SaveObjectSharedMasterDataContextTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->createMock(MagicMapper::class),
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),

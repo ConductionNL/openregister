@@ -30,12 +30,16 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
+use OCP\IUserSession;
 
 /**
  * Resolves one mixed candidate pool and pins the uids, their order, every
  * group and user lookup, and every warning.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\TaskPoolRecipientResolver
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Notifications\Service\PrincipalDirectory
  */
 final class TaskPoolRecipientResolverGoldenTest extends TestCase {
 
@@ -106,7 +110,7 @@ final class TaskPoolRecipientResolverGoldenTest extends TestCase {
 
 		$object = new ObjectEntity();
 		$object->setObject($payload);
-		return (new TaskPoolRecipientResolver($groupManager, $userManager, $logger))->resolve($object, []);
+		return (new TaskPoolRecipientResolver(new PrincipalDirectory($userManager, $groupManager, $this->createMock(IUserSession::class)), $logger))->resolve($object, []);
 	}//end resolve()
 
 	/**

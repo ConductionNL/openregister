@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -67,6 +68,17 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\SlugBackfillCursor
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicMapperSlugQueriesGoldenTest extends TestCase {
 
@@ -183,7 +195,12 @@ class MagicMapperSlugQueriesGoldenTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(2);
 
-		$answer = $this->mapper()->{$method}($register, $schema, ...$args);
+		$table  = [$register, $schema];
+		if (in_array($method, ['findSlugsByPrefix', 'findSlugHolders', 'findSlugState', 'updateSlugColumn'], true) === true) {
+			$table = [new RegisterSchema($register, $schema)];
+		}
+
+		$answer = $this->mapper()->{$method}(...$table, ...$args);
 
 		return ['calls' => $this->calls, 'answer' => $answer];
 	}//end outcome()

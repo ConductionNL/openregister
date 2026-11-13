@@ -37,6 +37,8 @@ use Throwable;
  *
  * @covers \OCA\OpenRegister\Service\CalendarLinkService
  * @uses   \OCA\OpenRegister\Db\CalendarLink
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
+ * @uses \OCA\OpenRegister\Service\LinkedEventMerge
  */
 class CalendarLinkServiceLinkedGoldenTest extends TestCase {
 

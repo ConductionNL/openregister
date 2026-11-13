@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\FileSession;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -56,6 +57,11 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\File\FileLockHandler
  * @covers \OCA\OpenRegister\Service\File\FilePublishingHandler
  * @covers \OCA\OpenRegister\Service\File\FileValidationHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\File\FileSession
+ * @uses \OCA\OpenRegister\Service\File\ObjectFileFinder
+ * @uses \OCA\OpenRegister\Service\File\ObjectFileLookup
+ * @uses \OCA\OpenRegister\Service\File\ExecutableContentDetector
  */
 class FileAccessGuardsGoldenTest extends TestCase {
 
@@ -135,7 +141,7 @@ class FileAccessGuardsGoldenTest extends TestCase {
 		});
 		$factory = $this->createMock(ICacheFactory::class);
 		$factory->method('createDistributed')->willReturn($cache);
-		$locks = new FileLockHandler($factory, $this->session(), $this->createMock(IGroupManager::class), $this->createMock(LoggerInterface::class));
+		$locks = new FileLockHandler($factory, new FileSession($this->session(), $this->createMock(IGroupManager::class), $this->createMock(LoggerInterface::class)));
 
 		$this->currentUser = 'bob';
 		$locks->assertCanModify(fileId: 1);
@@ -278,7 +284,7 @@ class FileAccessGuardsGoldenTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturnCallback(fn (string $uid): bool => in_array($uid, $admins, true));
 
-		return new FileLockHandler($factory, $this->session(), $groups, $this->createMock(LoggerInterface::class));
+		return new FileLockHandler($factory, new FileSession($this->session(), $groups, $this->createMock(LoggerInterface::class)));
 	}//end lockHandler()
 
 	private function object(): ObjectEntity {

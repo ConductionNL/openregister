@@ -22,6 +22,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -34,6 +36,14 @@ use RuntimeException;
  * cache, and the exact calls made.
  *
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\ThresholdRun
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\ThresholdTrigger
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationRef
  */
 final class ThresholdEvaluationGoldenTest extends TestCase {
 
@@ -57,8 +67,8 @@ final class ThresholdEvaluationGoldenTest extends TestCase {
 	private function evaluateOnce(array $trigger, mixed $value, ?string $oldState, string $cache = 'ok'): array {
 		$runner = $this->createMock(AggregationRunnerInterface::class);
 		$runner->method('run')->willReturnCallback(
-			function (...$args) use ($value): array {
-				$this->calls[] = ['run', $args];
+			function (NamedAggregationRef $ref, ?NamedAggregationOptions $options = null) use ($value): array {
+				$this->calls[] = ['run', [$ref->register, $ref->schema, $ref->name, $options?->bypassRbac ?? false, $options?->parentRow ?? [], $options?->extraFilter ?? []]];
 				return ['value' => $value];
 			}
 		);
@@ -205,7 +215,7 @@ final class ThresholdEvaluationGoldenTest extends TestCase {
 	 */
 	public function testFailingStateWriteIsSwallowed(): void {
 		$calls = $this->evaluateOnce(['aggregation' => 'a', 'op' => 'gt', 'value' => 1], 2, 'above', 'failset');
-		$this->assertSame(['run', 'get', 'set'], array_column($calls, 0));
+		$this->assertSame(['run', 'get', 'set', 'warning'], array_column($calls, 0));
 	}//end testFailingStateWriteIsSwallowed()
 
 	/**

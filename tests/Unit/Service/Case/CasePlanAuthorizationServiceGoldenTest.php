@@ -35,6 +35,7 @@ use OCP\IGroupManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Case\CasePlanAct;
 
 /**
  * Every branch of the public decisions, pinned.
@@ -43,6 +44,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\CaseItem
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTree
  * @uses \OCA\OpenRegister\Exception\CaseAccessDeniedException
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanAct
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups
  */
 final class CasePlanAuthorizationServiceGoldenTest extends TestCase {
 
@@ -204,7 +207,7 @@ final class CasePlanAuthorizationServiceGoldenTest extends TestCase {
 
 		$outcome = self::ALLOWED;
 		try {
-			$this->service(backend: $backend)->assertMayAct(verb: 'enable', item: $item, tree: $tree, uid: $uid);
+			$this->service(backend: $backend)->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: $uid), item: $item, tree: $tree);
 		} catch (CaseAccessDeniedException $denied) {
 			$outcome = $denied->getMessage();
 		}
@@ -255,7 +258,7 @@ final class CasePlanAuthorizationServiceGoldenTest extends TestCase {
 	public function testAssertMayAdministerOutcome(array $settings, array $backend, ?string $uid, string $expected): void {
 		$outcome = self::ALLOWED;
 		try {
-			$this->service(backend: $backend)->assertMayAdminister(verb: 'delete', settings: $settings, uid: $uid);
+			$this->service(backend: $backend)->assertMayAdminister(act: new CasePlanAct(verb: 'delete', actor: $uid), settings: $settings);
 		} catch (CaseAccessDeniedException $denied) {
 			$outcome = $denied->getMessage();
 		}

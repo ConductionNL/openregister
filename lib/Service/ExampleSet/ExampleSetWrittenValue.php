@@ -38,7 +38,7 @@ class ExampleSetWrittenValue {
 	/**
 	 * The prefix of a recorded fingerprint: the record keeps an access link's address only as its hash.
 	 */
-	private const SECRET = 'example-set-secret:sha256:';
+	private const FINGERPRINT_PREFIX = 'example-set-secret:sha256:';
 
 	/**
 	 * Constructor.
@@ -148,7 +148,7 @@ class ExampleSetWrittenValue {
 			return $value;
 		}
 
-		return self::SECRET.hash('sha256', $value);
+		return self::FINGERPRINT_PREFIX.hash('sha256', $value);
 	}//end recorded()
 
 	/**
@@ -180,7 +180,7 @@ class ExampleSetWrittenValue {
 	 * @return bool
 	 */
 	private function fingerprints(mixed $stored, string $fingerprint): bool {
-		return is_string($stored) === true && hash_equals($fingerprint, self::SECRET.hash('sha256', $stored));
+		return is_string($stored) === true && hash_equals($fingerprint, self::FINGERPRINT_PREFIX.hash('sha256', $stored));
 	}//end fingerprints()
 
 	/**
@@ -191,6 +191,6 @@ class ExampleSetWrittenValue {
 	 * @return bool
 	 */
 	private function isFingerprint(mixed $value): bool {
-		return is_string($value) === true && str_starts_with($value, self::SECRET) === true;
+		return is_string($value) === true && str_starts_with($value, self::FINGERPRINT_PREFIX) === true;
 	}//end isFingerprint()
 }//end class

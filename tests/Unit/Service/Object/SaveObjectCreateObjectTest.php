@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -40,6 +41,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
 use Stringable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * What a create through SaveObject::saveObject() does around the insert: the
@@ -75,6 +80,90 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
  * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses   \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses   \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRun
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\InverseRelations
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectFileProperties
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectImage
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\PropertyDefaults
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanner
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
+ * @uses   \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Db\LockTerms
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Db\SoftDeletion
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\InverseRelations
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectFileProperties
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectImage
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\PropertyDefaults
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanner
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
  */
 final class SaveObjectCreateObjectTest extends TestCase {
 
@@ -146,17 +235,11 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$args = $case['args'];
 		try {
 			$saved = $handler->saveObject(
-			register: $register,
-			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
-			uuid: self::UUID,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID, policy: new SavePolicy(silent: ($args['silent'] ?? false), failIfExists: ($args['failIfExists'] ?? false)), actor: new SaveActor(owner: ($args['_owner'] ?? null), unowned: ($args['_unowned'] ?? false))),
 			_rbac: false,
-			persist: ($args['persist'] ?? true),
-			silent: ($args['silent'] ?? false),
-			failIfExists: ($args['failIfExists'] ?? false),
-			_unowned: ($args['_unowned'] ?? false),
-			_owner: ($args['_owner'] ?? null)
-			);
+			persist: ($args['persist'] ?? true)
+		);
 		} catch (\RuntimeException $e) {
 			return ['trace' => $this->trace, 'thrown' => $e->getMessage()];
 		}
@@ -191,14 +274,14 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			return $entity;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturnCallback(static fn ($value, $schema = null, $propertyName = null): bool => $propertyName === 'doc');
-		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName) use ($case): void {
-			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
+		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
+		$files->method('handleFileProperty')->willReturnCallback(function (ObjectFileWrite $write, string $propertyName) use ($case): void {
+			$this->trace[] = ['file', $propertyName, $write->data[$propertyName]];
 			if (($case['fileFails'] ?? false) === true) {
 				throw new \RuntimeException('disk full');
 			}
 
-			$object[$propertyName] = 42;
+			$write->data[$propertyName] = 42;
 		});
 		$unified = $this->createMock(MagicMapper::class);
 		$unified->method('find')->willThrowException(new DoesNotExistException('none'));
@@ -250,10 +333,8 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $mapper,
-						unifiedObjectMapper: $unified,
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper),
+						unifiedObjectMapper: $unified
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $audit,

@@ -386,7 +386,7 @@ Fallback: when an entity in the substitution map has no matching row in `openreg
 
 To prevent double-write conflicts where two callers both invoke `EntityRelationMapper::markAsAnonymizedWithPlaceholders($fileId, ...)` on the same file (the second UPDATE overwrites the first's `anonymizedValue`), the call MUST be made by exactly ONE component in the redaction code path: `DocumentProcessingHandler::anonymizeDocument`. The HTTP controller (`FileTextController::anonymizeFile`) and any event listeners or DI orchestrators MUST NOT call `markAsAnonymizedWithPlaceholders` independently — they invoke `anonymizeDocument`, and `anonymizeDocument` handles the marking.
 
-The value written to `anonymizedValue` is a generic per-file marker (`'[REDACTED]'`), not the per-entity placeholder. Per-entity placeholders are recorded by the per-row substitution that happens inside the file content; the column's purpose is binary "this file's relations have been redacted at least once" plus a generic marker for audit log readability.
+The value written to `anonymizedValue` is the exact placeholder substituted into the file for that entity (for example `[PERSOON: 1]`), one update per redacted entity. Only entities present in the placeholder map are marked: an entity that was detected but not substituted keeps `anonymized` false, and a relation marked `skipAnonymization` is never updated.
 
 #### Scenario: HTTP anonymise call writes exactly one mark
 

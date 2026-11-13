@@ -8,6 +8,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -17,11 +18,15 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Records the CalDAV reads, log lines and result of getAllUserTasks(), per scenario, against
+ * Records the CalDAV reads, log lines and result of listUserTasks(), per scenario, against
  * fixtures/task-all-user-tasks-golden.json. Set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\TaskService
  * @uses   \OCA\OpenRegister\Service\Task\VtodoCalendarLocator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TaskLocation
+ * @uses \OCA\OpenRegister\Service\TaskVtodoDocument
+ * @uses \OCA\OpenRegister\Service\Task\VtodoReader
  */
 class TaskServiceAllUserTasksGoldenTest extends TestCase {
 
@@ -132,7 +137,7 @@ class TaskServiceAllUserTasksGoldenTest extends TestCase {
 	 */
 	public function testAllUserTasksGolden(array $s): void {
 		try {
-			$result = $this->service($s)->getAllUserTasks(...$s['args']);
+			$result = $this->service($s)->listUserTasks(status: $s['args']['status'] ?? null, query: new ListQuery(limit: $s['args']['limit'] ?? 50, offset: $s['args']['offset'] ?? 0));
 			$result['results'] = array_map(fn ($t) => [$t['uid'] ?? null, $t['status'] ?? null, $t['due'] ?? null, $t['calendarId'] ?? null, $t['id'] ?? null], $result['results']);
 			$this->calls[] = ['result', $result];
 		} catch (Throwable $e) {

@@ -21,6 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
@@ -68,6 +71,61 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\ExampleSet\CastOrganisationsRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsRemoval
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastOrganisations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFields
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFollower
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeReadBack
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCheckRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRequest
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerSetup
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerWriters
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetKeptObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetMoment
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeopleRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordedObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemovalRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverSettings
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolveScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolvedObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRestorePart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetVouchedAccounts
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWrittenValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentDeclarations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentOrdering
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\KeptObjectRewrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ObjectCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewriteRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewriteTally
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewrittenObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallRun
  */
 class ExampleSetInstallerTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -116,12 +174,12 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->assertSame(['esra.demir'], $this->accounts->groups['cases-handlers']);
 		$this->assertSame(3, $this->store->creates);
 
-		$person = $this->store->find(register: 'brp', schema: 'person', filters: [])[0];
+		$person = $this->store->find(table: new RegisterSchemaRef(register: 'brp', schema: 'person'), filters: [])[0];
 		$this->assertSame(14, $person['number'], 'a whole-value placeholder keeps its type');
-		$case = $this->store->find(register: 'cases', schema: 'case', filters: [])[0];
+		$case = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0];
 		$this->assertSame($person['id'], $case['applicant'], 'a lookup reaches an object an earlier fragment wrote');
 		$this->assertSame('2026-10-11', $case['start']);
-		$note = $this->store->find(register: 'cases', schema: 'case', filters: [])[1];
+		$note = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[1];
 		$this->assertSame($case['id'], $note['case']);
 
 		$stored = json_decode($this->config['example_set_demo'], true);
@@ -233,27 +291,27 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$plan = $this->catalogue->gather(set: 'demo');
 		$this->installer->install(plan: $plan, today: $this->today());
 
-		$case   = $this->store->find(register: 'cases', schema: 'case', filters: ['start' => '2026-10-11'])[0];
+		$case   = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: ['start' => '2026-10-11'])[0];
 		$extra  = ($case + ['remark' => 'added on the instance']);
-		$this->store->update(register: 'cases', schema: 'case', id: $case['id'], data: $extra);
-		$type    = $this->store->find(register: 'cases', schema: 'caseType', filters: [])[0];
+		$this->store->update(ref: new ObjectRef(register: 'cases', schema: 'case', id: $case['id']), data: $extra);
+		$type    = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'caseType'), filters: [])[0];
 		$updates = $this->store->updates;
 
 		$later  = $this->today()->modify('+5 days');
 		$plain  = $this->installer->install(plan: $plan, today: $later);
-		$this->assertSame('2026-10-11', $this->store->get(register: 'cases', schema: 'case', id: $case['id'])['start'], 'a plain install keeps the stored value');
+		$this->assertSame('2026-10-11', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $case['id']))['start'], 'a plain install keeps the stored value');
 
 		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $later);
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertTrue($plain['ok']);
-		$refreshed = $this->store->get(register: 'cases', schema: 'case', id: $case['id']);
+		$refreshed = $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $case['id']));
 		$this->assertSame('2026-10-16', $refreshed['start'], 'the date is resolved against the new day');
 		$this->assertSame('added on the instance', $refreshed['remark'], 'a field the declaration does not name stays');
 		// The case whose dates moved is written; the one whose declaration resolves as stored is not.
 		$this->assertSame(1, $report['types']['cases case']['refreshed']);
 		$this->assertSame(1, $report['types']['cases case']['unchanged']);
-		$this->assertSame($type, $this->store->find(register: 'cases', schema: 'caseType', filters: [])[0], 'an object the set did not write is untouched');
+		$this->assertSame($type, $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'caseType'), filters: [])[0], 'an object the set did not write is untouched');
 		$this->assertGreaterThan($updates, $this->store->updates);
 	}//end testARefreshRewritesTheDeclaredObjectsToTodaysValues()
 

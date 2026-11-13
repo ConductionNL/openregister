@@ -224,7 +224,12 @@ test.describe('object sharing over HTTP', () => {
 		expect(token, 'core issued no token').toBeTruthy()
 
 		// ANONYMOUS: a context with no credentials at all.
-		const anon = await pwRequest.newContext({ baseURL: BASE })
+		const anon = await pwRequest.newContext({
+			baseURL: BASE,
+			// Empty headers are what make it anonymous: a bare newContext()
+			// inherits the suite's Authorization header from playwright.config.ts.
+			extraHTTPHeaders: {},
+		})
 		try {
 			const resolved = await anon.get(
 				`/index.php/apps/openregister/api/shared/${token}`,

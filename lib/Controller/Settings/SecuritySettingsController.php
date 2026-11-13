@@ -20,6 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\SecuritySettingsControllerServices;
 use OCA\OpenRegister\Service\RateLimitResetInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -39,20 +41,32 @@ use Psr\Log\LoggerInterface;
  */
 class SecuritySettingsController extends Controller {
 	/**
+	 * Security service.
+	 *
+	 * @var RateLimitResetInterface
+	 */
+	private readonly RateLimitResetInterface $securityService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param RateLimitResetInterface $securityService Security service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param SecuritySettingsControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
-		private readonly RateLimitResetInterface $securityService,
-		private readonly LoggerInterface $logger,
+		SecuritySettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->securityService = $services->securityService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -60,8 +74,6 @@ class SecuritySettingsController extends Controller {
 	 *
 	 * This method allows administrators to unblock an IP that has been
 	 * temporarily blocked due to suspicious activity.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with result
 	 *
@@ -81,8 +93,6 @@ class SecuritySettingsController extends Controller {
 	 * This method allows administrators to unblock a user account that has been
 	 * temporarily locked due to too many failed login attempts.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with result
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -100,8 +110,6 @@ class SecuritySettingsController extends Controller {
 	 *
 	 * This method allows administrators to unblock both an IP and user
 	 * in a single request.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with result
 	 *

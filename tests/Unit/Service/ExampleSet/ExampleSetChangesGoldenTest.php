@@ -32,9 +32,26 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetStore;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFields
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFollower
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeReadBack
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetHeldChange
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPathValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWrittenValue
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class ExampleSetChangesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/example-set-changes-golden.json';
@@ -281,7 +298,7 @@ class ExampleSetChangesGoldenTest extends TestCase {
 		return [
 			'refresh mixed'     => function () {
 				$id  = $this->seed(['a' => 1, 'b' => 'old', 'c' => 'edited', 'd' => '{"x":1}']);
-				$row = (array) $this->store->get('site', 'portal', $id);
+				$row = (array) $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $id));
 				return $this->changes->refresh(
 					['register' => 'site', 'schema' => 'portal', 'jsonFields' => ['d']],
 					$row,
@@ -291,13 +308,13 @@ class ExampleSetChangesGoldenTest extends TestCase {
 			},
 			'refresh nothing'   => function () {
 				$id  = $this->seed(['a' => 1]);
-				$row = (array) $this->store->get('site', 'portal', $id);
+				$row = (array) $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $id));
 				return $this->changes->refresh(['register' => 'site', 'schema' => 'portal'], $row, ['a' => 1]);
 			},
 			'refresh structure' => function () {
 				$this->store->textFields['site portal'] = ['t'];
 				$id  = $this->seed(['t' => ['k' => 1]]);
-				$row = (array) $this->store->get('site', 'portal', $id);
+				$row = (array) $this->store->row(ref: new ObjectRef(register: 'site', schema: 'portal', id: $id));
 				return $this->changes->refresh(['register' => 'site', 'schema' => 'portal'], $row, ['t' => ['k' => 2]], ['t' => ['k' => 1]]);
 			},
 		];
@@ -377,10 +394,9 @@ class ExampleSetChangesGoldenTest extends TestCase {
 						'objects' => ['app/k' => ['refs' => ['a' => 1, 'b' => 2]]],
 						'changes' => ['app/k#references' => ['set' => [['path' => 'b', 'new' => 3], ['path' => 'c', 'new' => 4]]]],
 					],
-					'app/k#references',
 					'app/k'
 				),
-				$this->changes->writtenReferences([], 'x', 'y'),
+				$this->changes->writtenReferences([], 'y'),
 			],
 			'as sent'            => fn () => $this->changes->asSent(['a' => ['b' => 1], 'c' => 'd', 'e' => ['f']], ['a', 'c', 'zz']),
 		];

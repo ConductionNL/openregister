@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -65,6 +66,28 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses   \OCA\OpenRegister\Service\Object\VerbListing
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses   \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Object\VerbListing
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
  */
 class PermissionHandlerPermittedActionsTest extends TestCase {
 
@@ -182,14 +205,16 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'ana', groups: ['behandelaars']);
 
 		$actions = $handler->permittedActionsFor(
-			schema: $this->schemaGranting(
-				[
-					'read' => ['behandelaars'],
-					'update' => ['behandelaars'],
-				]
-			),
-			object: $this->row(),
-			userId: 'ana'
+			listing: new VerbListing(
+				schema: $this->schemaGranting(
+					[
+						'read' => ['behandelaars'],
+						'update' => ['behandelaars'],
+					]
+				),
+				object: $this->row(),
+				userId: 'ana'
+			)
 		);
 
 		$this->assertSame(['read', 'update'], $actions);
@@ -204,14 +229,16 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'ana', groups: ['behandelaars']);
 
 		$actions = $handler->permittedActionsFor(
-			schema: $this->schemaGranting(
-				[
-					'read' => ['behandelaars'],
-					'update' => ['behandelaars'],
-				]
-			),
-			object: $this->row(['deny' => ['update' => ['behandelaars']]]),
-			userId: 'ana'
+			listing: new VerbListing(
+				schema: $this->schemaGranting(
+					[
+						'read' => ['behandelaars'],
+						'update' => ['behandelaars'],
+					]
+				),
+				object: $this->row(['deny' => ['update' => ['behandelaars']]]),
+				userId: 'ana'
+			)
 		);
 
 		$this->assertSame(['read'], $actions);
@@ -229,16 +256,18 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'ana', groups: ['behandelaars']);
 
 		$actions = $handler->permittedActionsFor(
-			schema: $this->schemaGranting(
-				[
-					'read' => ['behandelaars'],
-					'create' => ['behandelaars'],
-					'list' => ['behandelaars'],
-					'manage' => ['behandelaars'],
-				]
-			),
-			object: $this->row(),
-			userId: 'ana'
+			listing: new VerbListing(
+				schema: $this->schemaGranting(
+					[
+						'read' => ['behandelaars'],
+						'create' => ['behandelaars'],
+						'list' => ['behandelaars'],
+						'manage' => ['behandelaars'],
+					]
+				),
+				object: $this->row(),
+				userId: 'ana'
+			)
 		);
 
 		$this->assertSame(['read'], $actions);
@@ -258,9 +287,11 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$this->assertSame(
 			[],
 			$handler->permittedActionsFor(
-				schema: $this->schemaGranting([]),
-				object: $this->row(),
-				userId: 'ana'
+				listing: new VerbListing(
+					schema: $this->schemaGranting([]),
+					object: $this->row(),
+					userId: 'ana'
+				)
 			)
 		);
 	}//end testACallerWithNoRightsGetsAnEmptyList()

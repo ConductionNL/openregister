@@ -80,6 +80,10 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\WaitNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\MessagingNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TriggerNodeBase
  */
 final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 

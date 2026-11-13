@@ -103,15 +103,39 @@ async function ownOrganisation(
 	return uuid
 }
 
-/** Create a schema whose read rule admits any signed-in caller. */
+/**
+ * The caller's active organisation uuid, or '' when they have none.
+ *
+ * Read before the spec switches a user to a fixture organisation, so the
+ * teardown can hand the session back. The active organisation is per user
+ * and outlives this spec: left on the fixture organisation, every later spec
+ * that has this user write into a schema made by the admin is refused with
+ * "Schema not found", because the schema sits in another organisation.
+ */
+async function activeOrganisation(ctx: APIRequestContext): Promise<string> {
+	const active = await ctx.get(`${API}/organisations/active`)
+	if (!active.ok()) {
+		return ''
+	}
+
+	return String((await active.json()).activeOrganisation?.uuid ?? '')
+}
+
+/** Create a schema in the register whose read rule admits any signed-in caller. */
 async function schemaAdmittingEveryone(
 	admin: APIRequestContext,
+	registerId: string,
 	title: string,
 ): Promise<string> {
 	const res = await admin.post(`${API}/schemas`, {
 		data: {
 			title,
 			description: 'e2e',
+			// Linked to the register, as every shipped configuration links its
+			// schemas. An unlinked schema is not in the register the request
+			// names, so the cross-table search has no register+schema pair to
+			// union, and a caller in another organisation cannot resolve it.
+			register: registerId,
 			properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
 			// Every action is listed: a non-empty block fails closed for any
 			// action it omits, so omitting `create` would stop the fixture
@@ -147,6 +171,8 @@ test.describe('a cross-register read stops at the tenant edge', () => {
 	let schemaTwo: string
 	let ownerOrg: string
 	let otherOrg: string
+	let ownerOrgBefore = ''
+	let otherOrgBefore = ''
 
 	test.beforeAll(async () => {
 		admin = await contextFor(ADMIN, ADMIN_PASS)
@@ -162,8 +188,19 @@ test.describe('a cross-register read stops at the tenant edge', () => {
 		// TWO schemas, because that is what routes the request to the UNION
 		// builder. One schema takes the sequential path, which always carried
 		// the organisation filter, and would prove nothing about this one.
-		schemaOne = await schemaAdmittingEveryone(admin, `e2e tenancy one ${RUN}`)
-		schemaTwo = await schemaAdmittingEveryone(admin, `e2e tenancy two ${RUN}`)
+		schemaOne = await schemaAdmittingEveryone(
+			admin,
+			registerId,
+			`e2e tenancy one ${RUN}`,
+		)
+		schemaTwo = await schemaAdmittingEveryone(
+			admin,
+			registerId,
+			`e2e tenancy two ${RUN}`,
+		)
+
+		ownerOrgBefore = await activeOrganisation(owner)
+		otherOrgBefore = await activeOrganisation(other)
 
 		ownerOrg = await ownOrganisation(owner, `e2e org a ${RUN}`)
 		otherOrg = await ownOrganisation(other, `e2e org b ${RUN}`)
@@ -171,6 +208,28 @@ test.describe('a cross-register read stops at the tenant edge', () => {
 			otherOrg,
 			'both fixture users landed in the same organisation, so there is no edge to cross',
 		).not.toBe(ownerOrg)
+	})
+
+	// Hand both sessions back to the organisation they had. This spec is the
+	// only one that moves a shared fixture user to another organisation, and
+	// without this every spec after it ran with e2e-owner and e2e-other inside
+	// the tenancy fixtures.
+	test.afterAll(async () => {
+		for (const [ctx, before] of [
+			[owner, ownerOrgBefore],
+			[other, otherOrgBefore],
+		] as Array<[APIRequestContext, string]>) {
+			if (!ctx || before === '') {
+				continue
+			}
+			const restored = await ctx.post(
+				`${API}/organisations/${encodeURIComponent(before)}/set-active`,
+			)
+			expect(
+				restored.ok(),
+				`could not hand the session back to ${before}: ${await restored.text()}`,
+			).toBeTruthy()
+		}
 	})
 
 	test('an object of another organisation is absent from a cross-register search', async () => {

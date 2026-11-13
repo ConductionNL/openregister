@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -32,8 +34,12 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\IGroupManager;
@@ -315,8 +321,9 @@ final class DestructionListRun {
 		$object->setRetention($retention);
 		$this->audit(object: $object, objRef: $objRef);
 
+		$request = new DeletionRequest(register: $object->getRegister(), schema: $object->getSchema(), uuid: (string)$uuid);
 		$this->retentionDestruction->run(
-			fn (): bool => $this->deleteObject->deleteObject($object->getRegister(), $object->getSchema(), (string)$uuid, null, false, false)
+			fn (): bool => $this->deleteObject->deleteObject($request, false, false)
 		);
 		$this->count['destroyed']++;
 	}//end destroyObject()
@@ -335,7 +342,7 @@ final class DestructionListRun {
 			'classification' => $objRef['classification'] ?? null,
 			'approvedBy' => array_column($this->listData['approvals'] ?? [], 'userId'),
 		];
-		$this->auditMapper->createAuditTrailEntry($object, 'archival.destroyed', $context);
+		$this->auditMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: 'archival.destroyed', context: $context));
 	}//end audit()
 
 	/**
@@ -371,7 +378,7 @@ final class DestructionListRun {
 	 */
 	private function saveCertificate(): void {
 		$data        = $this->listData;
-		$certificate = $this->retentionService->generateDestructionCertificate($data, $this->count['destroyed'], $data['executedAt']);
+		$certificate = $this->retentionService->certify(new ExecutedDestruction($data, $this->count['destroyed'], $data['executedAt']));
 		if (empty($this->settings['archivalRegister']) === true || empty($this->settings['destructionListSchema']) === true) {
 			return;
 		}
@@ -379,7 +386,8 @@ final class DestructionListRun {
 		try {
 			$register  = $this->settings['archivalRegister'];
 			$schema    = $this->settings['destructionListSchema'];
-			$savedCert = $this->saveObject->saveObject($register, $schema, $certificate, null, false, false, true, true);
+			$options   = new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), policy: new SavePolicy(silent: true));
+			$savedCert = $this->saveObject->saveObject(data: $certificate, options: $options, _rbac: false, _multitenancy: false);
 			$this->listData['certificateUuid'] = $savedCert->getUuid();
 		} catch (Exception $e) {
 			$this->logger->warning('[DestructionExecutionJob] Certificate save error: '.$e->getMessage());

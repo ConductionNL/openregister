@@ -21,7 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Geo;
 
+use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -31,6 +33,8 @@ use PHPUnit\Framework\TestCase;
  * set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder
+ * @uses \OCA\OpenRegister\Search\Service\Geo\FeatureShape
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest
  */
 class GeoFeatureCollectionBuilderGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/geo-feature-collection-golden.json';
@@ -102,9 +106,9 @@ class GeoFeatureCollectionBuilderGoldenTest extends TestCase {
 		});
 		try {
 			$result = match ($call) {
-				'collection' => $builder->buildFeatureCollection(...$args),
-				'feature' => $builder->buildFeature(...$args),
-				'wfs' => $builder->buildWfsResponse(...$args),
+				'collection' => $builder->buildFeatureCollection($args[0], new FeatureShape(...array_slice($args, 1))),
+				'feature' => $builder->feature($args[0], new FeatureShape(...array_slice($args, 1))),
+				'wfs' => $builder->buildWfsResponse($args[0], new GetFeatureRequest(...array_slice($args, 1))),
 				default => $builder->geodesicAreaM2(...$args),
 			};
 		} finally {

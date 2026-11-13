@@ -26,6 +26,7 @@
 			"script": {
 				"type": "text/javascript",
 				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
 					"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
 				]
 			}

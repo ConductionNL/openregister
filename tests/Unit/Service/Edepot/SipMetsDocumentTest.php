@@ -21,20 +21,32 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Edepot;
 
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Edepot\SipContents;
 use OCA\OpenRegister\Service\Edepot\SipMetsDocument;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\SipMetsDocument
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\SipContents
+ * @uses \OCA\OpenRegister\Service\Edepot\SipLayout
  */
 class SipMetsDocumentTest extends TestCase {
 
 	public function testContentAndMetadataFilesShareOneCounter(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('u');
+		$contents = new SipContents();
+		$contents->listAsMetadata(uuid: 'u', row: $contents->addDocument(path: 'objects/u/mdto.xml', content: '<m/>'));
+
 		$mets = new SipMetsDocument(transferId: 't1');
 		$mets->addObject(
-			uuid: 'u',
-			files: [['name' => 'a.pdf', 'size' => 3, 'format' => 'application/pdf', 'checksum' => 'c1', 'isRendition' => true]],
-			metadata: [['path' => 'objects/u/mdto.xml', 'size' => 4, 'checksum' => 'c2']]
+			item: [
+				'object' => $object,
+				'files' => [['name' => 'a.pdf', 'size' => 3, 'format' => 'application/pdf', 'checksum' => 'c1', 'isRendition' => true]],
+			],
+			contents: $contents
 		);
 
 		$xml = new \SimpleXMLElement($mets->xml());

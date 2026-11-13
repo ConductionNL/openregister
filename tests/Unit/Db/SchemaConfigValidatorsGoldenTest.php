@@ -38,6 +38,13 @@ use Throwable;
 /**
  * @covers \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\LinkedTypesRule
+ * @uses \OCA\OpenRegister\Db\Schema\VocabularyEntries
+ * @uses \OCA\OpenRegister\Service\Calendar\CalendarDateDeclarationCheck
  */
 class SchemaConfigValidatorsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/schema-config-validators-golden.json';

@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  * Counters serialise as integers and dates as ISO 8601, or null when unset.
  *
  * @covers \OCA\OpenRegister\Db\TenantUsage
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class TenantUsageSerialisationTest extends TestCase {
 

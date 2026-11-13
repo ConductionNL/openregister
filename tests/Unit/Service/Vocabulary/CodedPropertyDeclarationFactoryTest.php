@@ -44,6 +44,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
  * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedNarrowing
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedValueRules
  */
 class CodedPropertyDeclarationFactoryTest extends TestCase {
 

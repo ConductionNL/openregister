@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ShippedBaseline;
 
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
+use OCA\OpenRegister\Service\ShippedBaseline\DescriptorRevisions;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
 use PHPUnit\Framework\TestCase;
@@ -31,6 +32,13 @@ use PHPUnit\Framework\TestCase;
  * Pins the applied list for upstream paths, decided and undecided.
  *
  * @covers \OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\AuthorizationBlocks
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\DescriptorFold
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\DescriptorPath
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\DescriptorRevisions
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\PartRevisions
  */
 class GuardedDescriptorMergeAppliedGoldenTest extends TestCase {
 
@@ -47,7 +55,7 @@ class GuardedDescriptorMergeAppliedGoldenTest extends TestCase {
 		$parts = new DescriptorParts();
 		$merge = new GuardedDescriptorMerge(parts: $parts, comparator: new DivergenceComparator(parts: $parts));
 
-		return $merge->merge(baseline: $this->shipped(), live: $live, incoming: $incoming, decisions: $decisions);
+		return $merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $this->shipped(), live: $live, incoming: $incoming), decisions: $decisions);
 	}//end merge()
 
 	/**

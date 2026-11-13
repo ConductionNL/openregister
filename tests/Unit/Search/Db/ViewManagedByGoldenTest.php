@@ -24,6 +24,8 @@ use PHPUnit\Framework\TestCase;
  * Pins the configuration match (strict id), its serialised form and the presentation default.
  *
  * @covers \OCA\OpenRegister\Search\Db\View
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Search\Db\ViewFormatting
  */
 final class ViewManagedByGoldenTest extends TestCase {
 

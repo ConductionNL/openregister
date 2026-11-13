@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\ReconcileMagicTablesCommand;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -35,6 +36,11 @@ use Symfony\Component\Console\Tester\CommandTester;
  * The per-schema drift pass, end to end over mocks.
  *
  * @covers \OCA\OpenRegister\Command\ReconcileMagicTablesCommand
+ * @uses \OCA\OpenRegister\Command\MetadataReconcileRun
+ * @uses \OCA\OpenRegister\Command\Support\SchemaColumnDriftPass
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift
  */
 class ReconcileMagicTablesCommandGoldenTest extends TestCase {
 
@@ -112,7 +118,7 @@ class ReconcileMagicTablesCommandGoldenTest extends TestCase {
 	 */
 	public function testApplyRepairsTheDriftedTable(): void {
 		$this->magic->expects($this->once())->method('ensureTableForRegisterSchema')->willReturn(true);
-		$this->magic->expects($this->once())->method('widenDecimalColumns')->with('t11', ['t11' => true], [])->willReturn([]);
+		$this->magic->expects($this->once())->method('widenDecimalColumns')->with('t11', new MagicColumnDrift(['t11' => true], []))->willReturn([]);
 
 		$tester = $this->tester();
 		$exit = $tester->execute(['--apply' => true]);

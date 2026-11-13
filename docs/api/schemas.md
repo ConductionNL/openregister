@@ -362,13 +362,13 @@ Status: 200
 
 ```bash
 # 1. Start exploration
-curl -u 'admin:admin' \
+curl -H 'OCS-APIRequest: true' -u 'admin:admin' \
   -H 'Content-Type: application/json' \
   'GET /api/schemas/123/explore'
 
 # 2. Review results and configure properties
 # 3. Update schema with selected properties
-curl -u 'admin:admin' \
+curl -H 'OCS-APIRequest: true' -u 'admin:admin' \
   -H 'Content-Type: application/json' \
   -X POST '/api/schemas/123/update-from-exploration' \
   -d '{

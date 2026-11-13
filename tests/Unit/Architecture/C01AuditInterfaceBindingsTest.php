@@ -90,7 +90,7 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		ContentReportService::class => ['Listener/ContentReportRemovalListener.php'],
+		ContentReportService::class => [],
 		ContentReportMapper::class => [],
 	];
 

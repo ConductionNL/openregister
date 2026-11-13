@@ -40,7 +40,7 @@
     "stylelint:fix": "stylelint \"{src,css}/**/*.{vue,scss,css}\" --fix",
     "test": "jest --silent",
     "test:coverage-ratchet": "npm run test:coverage-summary && bash tests/coverage-ratchet.sh vitest coverage-frontend/coverage-summary.json",
-    "test:coverage-summary": "jest --config jest.coverage.config.js --silent --no-cache --coverage --coverageReporters=json-summary --coverageReporters=text-summary --coverageDirectory=coverage-frontend",
+    "test:coverage-summary": "jest --silent --no-cache --coverage --coverageReporters=json-summary --coverageReporters=text-summary --coverageReporters=lcov --coverageDirectory=coverage-frontend",
     "test:e2e": "playwright test",
     "test:e2e:docs": "playwright test --project docs-capture",
     "test:e2e:install": "playwright install chromium",
@@ -48,6 +48,7 @@
     "test:l10n": "node tests/l10n/check-l10n.js",
     "test:l10n:parity": "node tests/l10n/check-l10n-parity.js",
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
+    "test:newman-route-ratchet": "python3 -m unittest discover -s scripts/tests -p test_newman_route_coverage.py && python3 scripts/newman-route-coverage.py . --ci-only --ratchet tests/.newman-route-baseline.json",
     "test-coverage": "jest --silent --coverage",
     "validate-oas": "spectral lint oas-*.json --fail-severity error",
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch"
@@ -65,7 +66,9 @@
     "@babel/traverse": "$@babel/traverse",
     "@nextcloud/axios": "$@nextcloud/axios",
     "@nextcloud/vue": "$@nextcloud/vue",
+    "@types/estree": "^1.0.10",
     "@vue/test-utils": "$@vue/test-utils",
+    "asynckit": "^0.5.0",
     "axios": ">=1.20.0",
     "babel-jest": "$babel-jest",
     "cacache": {
@@ -93,7 +96,7 @@
   },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.1",
-    "@conduction/nextcloud-vue": "^2.175.0",
+    "@conduction/nextcloud-vue": "^2.180.0",
     "@nextcloud/auth": "^2.6.0",
     "@nextcloud/axios": "^2.6.0",
     "@nextcloud/capabilities": "^1.2.1",
@@ -103,16 +106,14 @@
     "@nextcloud/router": "^3.1.0",
     "@nextcloud/vue": "^9.13.1",
     "@vueuse/core": "^14.3.0",
-    "apexcharts": "^7.1.0",
+    "apexcharts": "4.7.0",
     "dexie": "^4.4.6",
     "dompurify": "^3.4.17",
     "gridstack": "^13.2.0",
     "marked": "^18.1.1",
-    "pinia": "^3.0.4",
-    "vue": "^3.5.43",
+    "pinia": "^4.1.0",
+    "vue": "^3.5.45",
     "vue-codemirror6": "^1.7.0",
-    "vue-draggable-plus": "^0.6.0",
-    "vue-loading-overlay": "^6.0.6",
     "vue-material-design-icons": "^5.4.0",
     "vue-router": "^5.3.1",
     "vue3-apexcharts": "~1.8.0",
@@ -129,7 +130,7 @@
     "@nextcloud/eslint-config": "^9.0.1",
     "@nextcloud/prettier-config": "^1.2.0",
     "@nextcloud/stylelint-config": "^3.2.2",
-    "@nextcloud/webpack-vue-config": "^7.0.1",
+    "@nextcloud/webpack-vue-config": "^7.1.0",
     "@pinia/testing": "^1.0.3",
     "@playwright/test": "^1.64.0",
     "@stoplight/spectral-cli": "^6.17.0",
@@ -165,7 +166,7 @@
     "vue-loader": "^17.4.2"
   },
   "peerDependencies": {
-    "vue": "^3.5.43"
+    "vue": "^3.5.45"
   },
   "engines": {
     "node": "^22.14 || ^24 || >=26",

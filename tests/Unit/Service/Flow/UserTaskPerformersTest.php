@@ -66,6 +66,13 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Task\TaskFormReader
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
+ * @uses \OCA\OpenRegister\Event\AgentRunDispatch
+ * @uses \OCA\OpenRegister\Event\AgentRunInstruction
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigCommon
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSources
  */
 final class UserTaskPerformersTest extends TestCase {
 
@@ -186,11 +193,7 @@ final class UserTaskPerformersTest extends TestCase {
 			);
 		}
 
-		return new UserTaskPerformers(
-			config: new UserTaskConfig(l10n: $l10n, forms: $this->formReader()),
-			principals: $registry,
-			events: $events
-		);
+		return new UserTaskPerformers(config: new UserTaskConfig(l10n: $l10n, forms: $this->formReader()), hooks: new \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks(principals: $registry, events: $events));
 	}//end performers()
 
 	/**

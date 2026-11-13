@@ -53,6 +53,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
  * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
  * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
  */
 class ImportHandlerSeedReferenceGoldenTest extends TestCase {
 
@@ -299,12 +304,17 @@ class ImportHandlerSeedReferenceGoldenTest extends TestCase {
 		);
 
 		$handler = new ImportHandler(
-			schemaMapper: $schemaMapper,
-			registerMapper: $registerMapper,
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $registerMapper,
+				schemas: $schemaMapper,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $logger,
 			appDataPath: '/tmp',
 			objectService: $objectService

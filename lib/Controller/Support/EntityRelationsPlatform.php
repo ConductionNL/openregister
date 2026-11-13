@@ -23,8 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCP\Files\IRootFolder;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * The platform services of the entity relations API.
@@ -35,16 +33,14 @@ final class EntityRelationsPlatform {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IUserSession    $userSession Session user accessor.
-	 * @param IRootFolder     $rootFolder  Nextcloud root folder (for file lookups).
-	 * @param LoggerInterface $logger      Structured log sink.
+	 * @param ControllerSession $session    Session user accessor and structured log sink.
+	 * @param IRootFolder       $rootFolder Nextcloud root folder (for file lookups).
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(
-		public readonly IUserSession $userSession,
+		public readonly ControllerSession $session,
 		public readonly IRootFolder $rootFolder,
-		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class

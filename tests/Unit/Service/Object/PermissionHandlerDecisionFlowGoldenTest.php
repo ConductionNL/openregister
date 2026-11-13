@@ -22,6 +22,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\ObjectAction\ActionElevation;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -64,6 +65,24 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Event\PermissionsDeclaringEvent
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ActionElevation
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ElevatedWrite
+ * @uses \OCA\OpenRegister\Service\Object\BulkCaller
+ * @uses \OCA\OpenRegister\Service\Object\DraftCaller
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\DraftSubject
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
  */
 class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 
@@ -353,23 +372,17 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 			'no rbac'      => $this->repeats($world, array_merge($ask, ['rbac' => false])),
 			'system'       => SystemOperationContext::run(fn (): array => $this->repeats($world, $ask)),
 			'no schema id' => $this->repeats($world, array_merge($ask, ['no schema id' => true])),
-			'elevated'     => ObjectActionElevationScope::run('a', 'alice', $entry, fn (): array => $this->repeats($world, $ask)),
+			'elevated'     => ObjectActionElevationScope::run(new ActionElevation('a', 'alice', $entry), fn (): array => $this->repeats($world, $ask)),
 			'elevated by register' => ObjectActionElevationScope::run(
-				'a',
-				'alice',
-				$entry,
+				new ActionElevation('a', 'alice', $entry),
 				fn (): array => $this->repeats($world, array_merge($ask, ['object' => 'none', 'register' => '3']))
 			),
 			'elevated deny' => ObjectActionElevationScope::run(
-				'a',
-				'alice',
-				$entry,
+				new ActionElevation('a', 'alice', $entry),
 				fn (): array => $this->repeats($world, array_merge($ask, ['block' => ['update' => ['editors'], 'deny' => ['update' => ['editors']]]]))
 			),
 			'elevated other register' => ObjectActionElevationScope::run(
-				'a',
-				'alice',
-				$entry,
+				new ActionElevation('a', 'alice', $entry),
 				fn (): array => $this->repeats($world, array_merge($ask, ['object' => 'none', 'register' => '4']))
 			),
 		];

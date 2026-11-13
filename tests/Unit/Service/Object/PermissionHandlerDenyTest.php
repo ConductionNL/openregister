@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\DenialQuestion;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -71,6 +72,28 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses   \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses   \OCA\OpenRegister\Service\Rbac\StagedDenial
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\StagedDenial
  */
 class PermissionHandlerDenyTest extends TestCase {
 
@@ -458,8 +481,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		$handler = $this->handlerFor('ana', ['waarnemers']);
 
 		$denial = $handler->denialFor(
-			['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]],
-			'read',
+			new DenialQuestion(authorization: ['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]], action: 'read'),
 			'ana'
 		);
 
@@ -557,8 +579,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		$handler = $this->handlerInMode('ana', ['waarnemers'], DenyEnforcementMode::MODE_STAGING);
 
 		$denial = $handler->denialFor(
-			['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]],
-			'read',
+			new DenialQuestion(authorization: ['read' => ['behandelaars'], 'deny' => ['read' => ['waarnemers']]], action: 'read'),
 			'ana'
 		);
 

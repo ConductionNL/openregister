@@ -44,7 +44,6 @@ class ConversationControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = ConversationControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->conversationMapper,
 			$this->messageMapper,

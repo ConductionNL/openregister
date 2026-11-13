@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\TaskAudit
  * @covers \OCA\OpenRegister\Db\TaskCandidate
  * @covers \OCA\OpenRegister\Db\TaskRelation
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class TaskEntitiesTest extends TestCase {
 

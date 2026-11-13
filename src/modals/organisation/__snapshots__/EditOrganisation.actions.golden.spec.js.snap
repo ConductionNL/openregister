@@ -263,6 +263,7 @@ exports[`EditOrganisation actions golden removes a member: networkDown 1`] = `
         "body": "{"userId":"a"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -339,6 +340,7 @@ exports[`EditOrganisation actions golden removes a member: refused 1`] = `
         "body": "{"userId":"a"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -377,6 +379,7 @@ exports[`EditOrganisation actions golden removes a member: refusedQuietly 1`] = 
         "body": "{"userId":"a"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -415,6 +418,7 @@ exports[`EditOrganisation actions golden removes a member: removed 1`] = `
         "body": "{"userId":"a"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -459,6 +463,7 @@ exports[`EditOrganisation actions golden removes a member: removedNoUsers 1`] = 
         "body": "{"userId":"a"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },

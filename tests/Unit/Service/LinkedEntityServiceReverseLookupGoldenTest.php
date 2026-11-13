@@ -40,6 +40,13 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\LinkedEntityLookup
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\LinkedTypesRule
+ * @uses \OCA\OpenRegister\Service\LinkedEntityIntegrations
+ * @uses \OCA\OpenRegister\Service\LinkedEntityMappers
  */
 class LinkedEntityServiceReverseLookupGoldenTest extends TestCase {
 
@@ -176,7 +183,7 @@ class LinkedEntityServiceReverseLookupGoldenTest extends TestCase {
 			}
 		);
 
-		$service = new LinkedEntityService(new LinkedEntityMappers($magic, $schemaMapper, $registerMapper, $organisationMapper), new LinkedEntityIntegrations($integrations, $this->createMock(PermissionHandler::class), $deepLinks), $logger);
+		$service = new LinkedEntityService(new LinkedEntityMappers(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magic), $organisationMapper), new LinkedEntityIntegrations($integrations, $this->createMock(PermissionHandler::class), $deepLinks), $logger);
 		$actual = ['results' => $service->reverseLookup(type: $case['type'], entityId: $case['id']), 'log' => $log];
 		$actual = json_decode((string)json_encode($actual, JSON_UNESCAPED_SLASHES), true);
 

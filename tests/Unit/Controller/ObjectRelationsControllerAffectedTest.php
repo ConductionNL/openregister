@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Service\Relation\GraphExportOptions;
 use OCA\OpenRegister\Controller\ObjectRelationsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -53,6 +54,12 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsPurposeScope
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Relation\AffectedSets
+ * @uses \OCA\OpenRegister\Service\Relation\GraphExportOptions
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsReachability
  */
 class ObjectRelationsControllerAffectedTest extends TestCase {
 
@@ -283,7 +290,7 @@ class ObjectRelationsControllerAffectedTest extends TestCase {
 		$graph['truncatedBy'] = 'depth';
 		$controller = $this->controller(params: ['depth' => '9']);
 		$this->access->method('readable')->willReturn($this->root());
-		$this->graphs->expects($this->once())->method('graph')->with('case', 9)->willReturn($graph);
+		$this->graphs->expects($this->once())->method('graph')->with('case', $this->callback(static fn (GraphExportOptions $options): bool => $options->depth === 9))->willReturn($graph);
 
 		$data = $controller->affected(register: 'r', schema: 's', id: 'case')->getData();
 

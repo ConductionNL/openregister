@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -38,6 +39,12 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\GrantChangeAuditor
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Service\Object\AuditRecording
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantAuditEntry
+ * @uses \OCA\OpenRegister\Service\Rbac\SpecialRightChange
  */
 class GrantChangeAuditorTest extends TestCase {
 
@@ -55,7 +62,7 @@ class GrantChangeAuditorTest extends TestCase {
 		$this->mapper = $this->createMock(AuditTrailMapper::class);
 		$this->settings = $this->createMock(SettingsChangeAuditor::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->auditor = new GrantChangeAuditor($this->mapper, $this->settings, $this->logger);
+		$this->auditor = new GrantChangeAuditor(new \OCA\OpenRegister\Service\Object\AuditRecording($this->mapper, $this->logger), $this->settings);
 	}//end setUp()
 
 	/**
@@ -72,7 +79,7 @@ class GrantChangeAuditorTest extends TestCase {
 
 	public function testAGrantIsOneTypedEntryNamingThePrincipalAndHowTheCallerWasAdmitted(): void {
 		$record = $this->record();
-		$this->mapper->expects($this->once())->method('createAuditTrailEntry')->with(
+		$this->mapper->expects($this->once())->method('recordObjectEvent')->with(AuditTrailEvents::matching([
 			$record,
 			GrantChangeAuditor::ACTION_GRANTED,
 			[
@@ -83,7 +90,7 @@ class GrantChangeAuditorTest extends TestCase {
 				'verbs' => ['use'],
 				'admittedAs' => GrantManageGuard::AS_HOLDER,
 			]
-		);
+		]));
 
 		$this->auditor->recordGrant(
 			object: $record,
@@ -93,11 +100,11 @@ class GrantChangeAuditorTest extends TestCase {
 	}//end testAGrantIsOneTypedEntryNamingThePrincipalAndHowTheCallerWasAdmitted()
 
 	public function testARevokeIsItsOwnAction(): void {
-		$this->mapper->expects($this->once())->method('createAuditTrailEntry')->with(
+		$this->mapper->expects($this->once())->method('recordObjectEvent')->with(AuditTrailEvents::matching([
 			$this->anything(),
 			GrantChangeAuditor::ACTION_REVOKED,
 			$this->callback(static fn (array $changed): bool => $changed['sharedWith'] === 'reviewer' && $changed['admittedAs'] === GrantManageGuard::AS_OWNER)
-		);
+		]));
 
 		$this->auditor->recordRevoke(
 			object: $this->record(),
@@ -107,17 +114,17 @@ class GrantChangeAuditorTest extends TestCase {
 	}//end testARevokeIsItsOwnAction()
 
 	public function testAChangeOfTheOwningGroupNamesBothSides(): void {
-		$this->mapper->expects($this->once())->method('createAuditTrailEntry')->with(
+		$this->mapper->expects($this->once())->method('recordObjectEvent')->with(AuditTrailEvents::matching([
 			$this->anything(),
 			GrantChangeAuditor::ACTION_OWNER_GROUP,
 			['ownerGroup' => ['old' => null, 'new' => 'supervisors']]
-		);
+		]));
 
 		$this->auditor->recordOwnerGroup(object: $this->record(), before: null, after: 'supervisors');
 	}//end testAChangeOfTheOwningGroupNamesBothSides()
 
 	public function testNamingTheSameOwningGroupAgainIsNoChange(): void {
-		$this->mapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->mapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->auditor->recordOwnerGroup(object: $this->record(), before: 'supervisors', after: 'supervisors');
 	}//end testNamingTheSameOwningGroupAgainIsNoChange()
@@ -130,14 +137,13 @@ class GrantChangeAuditorTest extends TestCase {
 		);
 
 		$this->auditor->recordSpecialRight(
-			organisationUuid: 'org-1',
-			before: ['records-service'],
-			after: ['records-service', 'second-service']
+			'org-1',
+			new \OCA\OpenRegister\Service\Rbac\SpecialRightChange(['records-service'], ['records-service', 'second-service'])
 		);
 	}//end testAChangeOfTheSpecialRightListIsASettingsChangeOnTheSameChain()
 
 	public function testAnEntryThatCannotBeWrittenIsLoggedAndDoesNotFailTheGrant(): void {
-		$this->mapper->method('createAuditTrailEntry')->willThrowException(new \RuntimeException('chain unavailable'));
+		$this->mapper->method('recordObjectEvent')->willThrowException(new \RuntimeException('chain unavailable'));
 		$this->logger->expects($this->once())->method('error')->with($this->stringContains('Could not record'), $this->anything());
 
 		$this->auditor->recordGrant(object: $this->record(), grant: ['id' => 'x'], admittedAs: null);

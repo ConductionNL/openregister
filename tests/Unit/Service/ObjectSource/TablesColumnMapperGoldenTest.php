@@ -22,12 +22,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
+use OCA\OpenRegister\Service\ObjectSource\TablesRowProjection;
 use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper
+ * @uses \OCA\OpenRegister\Service\ObjectSource\TablesCell
+ * @uses \OCA\OpenRegister\Service\ObjectSource\TablesRowProjection
+ * @uses \OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver
  */
 final class TablesColumnMapperGoldenTest extends TestCase {
 
@@ -82,9 +86,11 @@ final class TablesColumnMapperGoldenTest extends TestCase {
 		foreach ($cells as $index => [$columnId, $value]) {
 			$rows[$index . ':' . $columnId] = $mapper->projectRow(
 				row: ['id' => $index, 'cells' => [['columnId' => $columnId, 'value' => $value]]],
-				columns: $columns,
-				columnMap: $mapper->buildColumnMap(columns: $columns),
-				targetSchemaExists: static fn (int $tableId): bool => $tableId === 77
+				projection: new TablesRowProjection(
+					columns: $columns,
+					columnMap: $mapper->buildColumnMap(columns: $columns),
+					targetSchemaExists: static fn (int $tableId): bool => $tableId === 77
+				)
 			);
 		}
 
@@ -92,7 +98,7 @@ final class TablesColumnMapperGoldenTest extends TestCase {
 			'columnMap'  => $mapper->buildColumnMap(columns: $columns),
 			'schema'     => $mapper->buildSchemaProperties(columns: $columns),
 			'rows'       => $rows,
-			'noCells'    => $mapper->projectRow(row: ['id' => 'x'], columns: $columns, columnMap: [], targetSchemaExists: static fn (): bool => false),
+			'noCells'    => $mapper->projectRow(row: ['id' => 'x'], projection: new TablesRowProjection(columns: $columns, columnMap: [], targetSchemaExists: static fn (): bool => false)),
 			'logs'       => $logger->lines,
 		];
 

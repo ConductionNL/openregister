@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  * The factory hands out the component's own BSN check.
  *
  * @covers \OCA\OpenRegister\Formats\IdentifierFormats
+ * @uses \OCA\OpenRegister\Formats\BsnFormat
  */
 class IdentifierFormatsTest extends TestCase {
 

@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Files\Db\DetectionMethod;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Files\Db\EntityMention;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;
@@ -162,29 +164,12 @@ class EntityRelationMapperTest extends TestCase {
 			db: $this->db,
 			auditTrailMapper: $this->auditTrailMapper,
 			userSession: $this->userSession,
-			eventDispatcher: $this->eventDispatcher,
+			entityEvents: new EntityEventPublisher(dispatcher: $this->eventDispatcher),
 			logger: $this->logger
 		);
 
 	}//end makeMapper()
-
-	/**
-	 * Sanity wiring test.
-	 *
-	 * @return void
-	 */
-	public function testConstructsWithInjectedDependencies(): void {
-		$mapper = new EntityRelationMapper(
-			db: $this->db,
-			auditTrailMapper: $this->auditTrailMapper,
-			userSession: $this->userSession,
-			eventDispatcher: $this->eventDispatcher,
-			logger: $this->logger
-		);
-
-		$this->assertInstanceOf(expected: EntityRelationMapper::class, actual: $mapper);
-
-	}//end testConstructsWithInjectedDependencies()
+//end testConstructsWithInjectedDependencies()
 
 	// =====================================================================
 	// insertBatch
@@ -305,7 +290,7 @@ class EntityRelationMapperTest extends TestCase {
 			expected: DateTime::class,
 			actual: $mapper->insertedEntities[0]->getCreatedAt()
 		);
-
+		$this->assertEqualsWithDelta(time(), $mapper->insertedEntities[0]->getCreatedAt()->getTimestamp(), 5);
 	}//end testInsertBatchDefaultsCreatedAt()
 
 	/**
@@ -387,10 +372,7 @@ class EntityRelationMapperTest extends TestCase {
 		$this->assertTrue(
 			condition: $mapper->existsForFileAtPosition(
 				fileId: 42,
-				entityId: 7,
-				chunkId: 100,
-				positionStart: 13,
-				positionEnd: 23
+				mention: new EntityMention(entityId: 7, chunkId: 100, positionStart: 13, positionEnd: 23)
 			)
 		);
 
@@ -409,10 +391,7 @@ class EntityRelationMapperTest extends TestCase {
 		$this->assertFalse(
 			condition: $mapper->existsForFileAtPosition(
 				fileId: 42,
-				entityId: 7,
-				chunkId: 100,
-				positionStart: 13,
-				positionEnd: 23
+				mention: new EntityMention(entityId: 7, chunkId: 100, positionStart: 13, positionEnd: 23)
 			)
 		);
 

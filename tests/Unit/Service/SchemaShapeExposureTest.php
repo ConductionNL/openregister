@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -55,6 +57,10 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\OasSources
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class SchemaShapeExposureTest extends TestCase {
 
@@ -71,8 +77,8 @@ class SchemaShapeExposureTest extends TestCase {
 		if ($reads !== null) {
 			$rbac = $this->createMock(PropertyRbacHandler::class);
 			$rbac->method('canReadProperty')->willReturnCallback(
-				static function (Schema $schema, string $property) use ($reads): bool {
-					return ($reads[$property] ?? true);
+				static function (SchemaProperty $read, PropertyAccessRequest $request) use ($reads): bool {
+					return ($reads[$read->name] ?? true);
 				}
 			);
 		}

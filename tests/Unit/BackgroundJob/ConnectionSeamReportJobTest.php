@@ -55,6 +55,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider
  * @uses \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry
  * @uses \OCA\OpenRegister\Service\Translation\IdentityTranslationProvider
+ * @uses \OCA\OpenRegister\Service\Gdpr\Seam\ProviderSet
  */
 class ConnectionSeamReportJobTest extends TestCase {
 

@@ -42,6 +42,8 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicObjectChange
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
  */
 class MagicMapperPartialReadWriteTest extends TestCase {
 

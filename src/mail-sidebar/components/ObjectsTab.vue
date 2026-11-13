@@ -94,7 +94,7 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 /**
  * Objects tab — linked-objects list inside the three-tab sidebar; also acts
  * as the drop target for Mail attachments (drops upload the file to the
- * linked OR object via /api/objects/{r}/{s}/{id}/filesMultipart).
+ * linked OR object via /api/objects/{r}/{s}/{id}/files-multipart).
  *
  * @spec openspec/specs/mail-sidebar/spec.md
  * @spec openspec/specs/mail-sidebar/spec.md
@@ -109,6 +109,32 @@ import RemoveConnectionDialog from '../../dialogs/mail/RemoveConnectionDialog.vu
 import { mailMessageTab } from '../composables/mailMessageTab.js'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
 import { schemaIconComponent } from '../icons.js'
+
+/**
+ * The toast for an attachment added to an object.
+ *
+ * @param {string} name The object's display name
+ * @return {string} The message
+ */
+function addedToText(name) {
+	return t('openregister', 'Attachment added to {name}', { name })
+}
+
+/**
+ * Where an attachment dropped on an object is uploaded to.
+ *
+ * @param {object} obj The linked object
+ * @return {{register: *, schema: *, objectId: *}|null} The target, or null when the object lacks its register, schema or id
+ */
+function uploadTargetOf(obj) {
+	const register = obj.register
+	const schema = obj.schemaId || obj.schema
+	const objectId = obj.id || obj.uuid
+	if (!register || !schema || !objectId) {
+		return null
+	}
+	return { register, schema, objectId }
+}
 
 export default {
 	name: 'ObjectsTab',
@@ -279,28 +305,30 @@ export default {
 			if (!raw) {
 				return
 			}
-			const register = obj.register
-			const schema = obj.schemaId || obj.schema
-			const objectId = obj.id || obj.uuid
-			if (!register || !schema || !objectId) {
+			const target = uploadTargetOf(obj)
+			if (!target) {
 				showError(
 					t('openregister', 'Object metadata incomplete for file upload'),
 				)
 				return
 			}
+			await this.uploadDroppedAttachment(raw, obj)
+		},
+
+		/**
+		 * Upload a dropped attachment to an object, marking the object as
+		 * uploading meanwhile, and say how it went.
+		 *
+		 * @param {string} raw The dropped attachment, as JSON
+		 * @param {object} obj The object it was dropped on
+		 * @return {Promise<void>}
+		 */
+		async uploadDroppedAttachment(raw, obj) {
 			try {
 				const attachment = JSON.parse(raw)
 				this.uploadingObjectUuid = obj.uuid
-				await this.uploadAttachmentToObject(attachment, {
-					register,
-					schema,
-					objectId,
-				})
-				showSuccess(
-					t('openregister', 'Attachment added to {name}', {
-						name: this.displayName(obj),
-					}),
-				)
+				await this.uploadAttachmentToObject(attachment, uploadTargetOf(obj))
+				showSuccess(addedToText(this.displayName(obj)))
 			} catch (err) {
 				showError(t('openregister', 'Failed to add attachment'))
 				console.error('[ObjectsTab] Attachment drop upload failed:', err)
@@ -332,7 +360,7 @@ export default {
 			const formData = new FormData()
 			formData.append('files[]', file)
 			const uploadUrl = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/filesMultipart',
+				'/apps/openregister/api/objects/{register}/{schema}/{id}/files-multipart',
 				{
 					register: target.register,
 					schema: target.schema,

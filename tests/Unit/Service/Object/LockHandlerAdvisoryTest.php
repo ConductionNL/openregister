@@ -19,12 +19,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\LockStores;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -80,7 +84,7 @@ class LockHandlerAdvisoryTest extends TestCase {
 				advisory: new AdvisoryLockStore($this->appConfig, $this->userSession, $this->logger)
 			),
 			$this->logger,
-			new LockAuthorization($this->userSession, $this->groupManager, $this->schemaMapper)
+			new LockAuthorization($this->userSession, $this->groupManager, $this->schemaMapper, $this->createMock(PermissionHandlerInterface::class))
 		);
 	}//end setUp()
 
@@ -123,7 +127,9 @@ class LockHandlerAdvisoryTest extends TestCase {
 				)
 			);
 
-		$result = $this->handler->lock($identifier);
+		$result = $this->handler->lock(
+			request: new LockRequest(identifier: $identifier, process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null))
+		);
 
 		$this->assertSame($identifier, $result['uuid']);
 		$this->assertTrue($result['locked']['advisory']);
@@ -151,7 +157,9 @@ class LockHandlerAdvisoryTest extends TestCase {
 		$this->appConfig->expects($this->never())->method('setValueString');
 
 		$this->expectException(LockedException::class);
-		$this->handler->lock($identifier);
+		$this->handler->lock(
+			request: new LockRequest(identifier: $identifier, process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null))
+		);
 	}//end testLockOnUnresolvableIdRespectsStillValidAdvisoryLock()
 
 	public function testLockOnUnresolvableIdOverwritesExpiredAdvisoryLock(): void {
@@ -173,7 +181,9 @@ class LockHandlerAdvisoryTest extends TestCase {
 
 		$this->appConfig->expects($this->once())->method('setValueString');
 
-		$result = $this->handler->lock($identifier);
+		$result = $this->handler->lock(
+			request: new LockRequest(identifier: $identifier, process: null, duration: null, runStep: new LockRunStep(runUuid: null, nodeId: null))
+		);
 		$this->assertSame($identifier, $result['uuid']);
 		$this->assertTrue($result['locked']['advisory']);
 	}//end testLockOnUnresolvableIdOverwritesExpiredAdvisoryLock()
@@ -203,7 +213,7 @@ class LockHandlerAdvisoryTest extends TestCase {
 			->method('deleteKey')
 			->with('openregister', $this->advisoryKey($identifier));
 
-		$this->assertTrue($this->handler->unlock($identifier));
+		$this->assertTrue($this->handler->unlock(request: new UnlockRequest(identifier: $identifier, advisory: false, runUuid: null, break: false)));
 	}//end testUnlockOnUnresolvableIdReleasesAdvisoryLock()
 
 	public function testUnlockOnUnresolvableIdIsNoOpWhenNoAdvisoryLockHeld(): void {
@@ -220,6 +230,6 @@ class LockHandlerAdvisoryTest extends TestCase {
 
 		$this->appConfig->expects($this->never())->method('deleteKey');
 
-		$this->assertTrue($this->handler->unlock($identifier));
+		$this->assertTrue($this->handler->unlock(request: new UnlockRequest(identifier: $identifier, advisory: false, runUuid: null, break: false)));
 	}//end testUnlockOnUnresolvableIdIsNoOpWhenNoAdvisoryLockHeld()
 }//end class

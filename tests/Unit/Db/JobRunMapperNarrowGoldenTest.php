@@ -31,6 +31,8 @@ use PHPUnit\Framework\TestCase;
  * Pins the SQL calls and the bound parameters of the run-log reads.
  *
  * @covers \OCA\OpenRegister\Db\JobRunMapper
+ * @uses \OCA\OpenRegister\Db\JobRunFilter
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class JobRunMapperNarrowGoldenTest extends TestCase {
 

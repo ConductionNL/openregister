@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\SearchTrail\SearchTrailFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -336,39 +337,9 @@ class SearchTrail extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'searchTerm', type: 'string');
-		$this->addType(fieldName: 'queryParameters', type: 'json');
-		$this->addType(fieldName: 'resultCount', type: 'integer');
-		$this->addType(fieldName: 'totalResults', type: 'integer');
-		$this->addType(fieldName: 'register', type: 'integer');
-		$this->addType(fieldName: 'schema', type: 'integer');
-		$this->addType(fieldName: 'registerUuid', type: 'string');
-		$this->addType(fieldName: 'schemaUuid', type: 'string');
-		$this->addType(fieldName: 'user', type: 'string');
-		$this->addType(fieldName: 'userName', type: 'string');
-		$this->addType(fieldName: 'registerName', type: 'string');
-		$this->addType(fieldName: 'schemaName', type: 'string');
-		$this->addType(fieldName: 'session', type: 'string');
-		$this->addType(fieldName: 'ipAddress', type: 'string');
-		$this->addType(fieldName: 'userAgent', type: 'string');
-		$this->addType(fieldName: 'requestUri', type: 'string');
-		$this->addType(fieldName: 'httpMethod', type: 'string');
-		$this->addType(fieldName: 'responseTime', type: 'integer');
-		$this->addType(fieldName: 'page', type: 'integer');
-		$this->addType(fieldName: 'limit', type: 'integer');
-		$this->addType(fieldName: 'offset', type: 'integer');
-		$this->addType(fieldName: 'facetsRequested', type: 'boolean');
-		$this->addType(fieldName: 'facetableRequested', type: 'boolean');
-		$this->addType(fieldName: 'filters', type: 'json');
-		$this->addType(fieldName: 'sortParameters', type: 'json');
-		$this->addType(fieldName: 'publishedOnly', type: 'boolean');
-		$this->addType(fieldName: 'executionType', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'organisationId', type: 'string');
-		$this->addType(fieldName: 'organisationIdType', type: 'string');
-		$this->addType(fieldName: 'expires', type: 'datetime');
-		$this->addType(fieldName: 'size', type: 'integer');
+		foreach (SearchTrailFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -464,51 +435,10 @@ class SearchTrail extends Entity implements JsonSerializable {
 	 * }
 	 */
 	public function jsonSerialize(): array {
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
+		// Every stored field except publishedOnly, in registration order.
+		$names = array_diff(array_keys($this->getFieldTypes()), ['publishedOnly']);
 
-		$expires = null;
-		if ($this->expires !== null) {
-			$expires = $this->expires->format('c');
-		}
-
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'searchTerm' => $this->searchTerm,
-			'queryParameters' => $this->queryParameters,
-			'resultCount' => $this->resultCount,
-			'totalResults' => $this->totalResults,
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'registerUuid' => $this->registerUuid,
-			'schemaUuid' => $this->schemaUuid,
-			'user' => $this->user,
-			'userName' => $this->userName,
-			'registerName' => $this->registerName,
-			'schemaName' => $this->schemaName,
-			'session' => $this->session,
-			'ipAddress' => $this->ipAddress,
-			'userAgent' => $this->userAgent,
-			'requestUri' => $this->requestUri,
-			'httpMethod' => $this->httpMethod,
-			'responseTime' => $this->responseTime,
-			'page' => $this->page,
-			'limit' => $this->limit,
-			'offset' => $this->offset,
-			'facetsRequested' => $this->facetsRequested,
-			'facetableRequested' => $this->facetableRequested,
-			'filters' => $this->filters,
-			'sortParameters' => $this->sortParameters,
-			'executionType' => $this->executionType,
-			'created' => $created,
-			'organisationId' => $this->organisationId,
-			'organisationIdType' => $this->organisationIdType,
-			'expires' => $expires,
-			'size' => $this->size,
-		];
+		return (new TypedFieldsJson())->pick(values: get_object_vars($this), names: $names);
 	}//end jsonSerialize()
 
 	/**

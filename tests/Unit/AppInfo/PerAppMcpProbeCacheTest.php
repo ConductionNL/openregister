@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
+use OCA\OpenRegister\Mcp\McpProviderCandidate;
+use OCA\OpenRegister\Mcp\McpDiscoveryRun;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\PerAppMcpProviderProbe;
 use OCP\IAppConfig;
@@ -195,21 +197,14 @@ class CountingProbeApplication extends PerAppMcpProviderProbe {
 	}//end buildMcpProviderCandidates()
 
 	/**
-	 * @param ContainerInterface $container The DI container.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param string $appId The app id.
-	 * @param string $key The candidate key.
+	 * @param McpDiscoveryRun      $run       The discovery.
+	 * @param McpProviderCandidate $candidate The app id and the candidate key.
 	 *
 	 * @return IMcpToolProvider|null The resolved provider, or null.
 	 */
-	protected function tryResolveMcpProviderCandidate(
-		ContainerInterface $container,
-		\Psr\Log\LoggerInterface $logger,
-		string $appId,
-		string $key,
-	): ?IMcpToolProvider {
-		$this->resolveAttempts[] = [$appId, $key];
-		return parent::tryResolveMcpProviderCandidate($container, $logger, $appId, $key);
+	protected function tryResolveMcpProviderCandidate(McpDiscoveryRun $run, McpProviderCandidate $candidate): ?IMcpToolProvider {
+		$this->resolveAttempts[] = [$candidate->appId, $candidate->key];
+		return parent::tryResolveMcpProviderCandidate($run, $candidate);
 	}//end tryResolveMcpProviderCandidate()
 }//end class
 
@@ -358,7 +353,10 @@ class PerAppMcpProbeCacheTest extends TestCase {
 
 		$method = new ReflectionMethod(PerAppMcpProviderProbe::class, 'collectPerAppMcpProviders');
 		$method->setAccessible(true);
-		$method->invokeArgs($app, [$container, $logger, &$providers]);
+		$run = new McpDiscoveryRun($container, $logger);
+		$run->addAll($providers);
+		$method->invokeArgs($app, [$run]);
+		$providers = $run->providers();
 
 		return $app;
 	}//end invokeCollect()

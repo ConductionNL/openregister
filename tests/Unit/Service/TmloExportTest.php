@@ -57,6 +57,15 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Edepot\MdtoSourceReader
  * @uses \OCA\OpenRegister\Service\Edepot\MdtoValueReader
  * @uses \OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup
+ * @uses \OCA\OpenRegister\Service\Configuration\AppSettingsAccess
+ * @uses \OCA\OpenRegister\Service\Edepot\ArchivalFactKey
+ * @uses \OCA\OpenRegister\Service\Edepot\ArchivalSource
+ * @uses \OCA\OpenRegister\Service\Edepot\InformatieobjectRun
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoBegrip
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoInputReaders
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoValueSources
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoVerwijzing
  */
 class TmloExportTest extends TestCase {
 
@@ -92,7 +101,7 @@ class TmloExportTest extends TestCase {
 		$writer = new MdtoDocumentWriter();
 		$sourceReader = new MdtoSourceReader(values: new MdtoValueReader(), annotations: $this->objectAnnotations());
 		$bestandGenerator = new MdtoBestandGenerator($writer);
-		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)));
+		$preconditions = new MdtoPreconditions(new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($appConfig, $this->createMock(\OCP\App\IAppManager::class), $this->createMock(LoggerInterface::class)));
 		$generator = new MdtoXmlGenerator(
 			new MdtoValueSources($appConfig, $eventMapper, $sourceReader),
 			$writer,
@@ -303,11 +312,7 @@ class TmloExportTest extends TestCase {
 	 * @return ObjectArchivalAnnotation The resolver.
 	 */
 	private function objectAnnotations(): ObjectArchivalAnnotation {
-		return new ObjectArchivalAnnotation(
-			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
-			evaluator: new RetentionEvaluator(logger: new NullLogger()),
-			logger: new NullLogger()
-		);
+		return new ObjectArchivalAnnotation(lookup: new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup(schemaMapper: $this->createMock(originalClassName: SchemaMapper::class), logger: new NullLogger()), evaluator: new RetentionEvaluator(logger: new NullLogger()));
 	}
 
 }//end class

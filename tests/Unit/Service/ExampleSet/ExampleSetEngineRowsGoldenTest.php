@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\RecordLedger;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
@@ -32,9 +33,25 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentCheck;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FilledRow
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentDeclarations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallStep
  */
 class ExampleSetEngineRowsGoldenTest extends TestCase {
 	/**
@@ -162,9 +179,9 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 				'f.json: thing "refused": bad is refused for alice,bob',
 				'f.json: thing "gap": cannot resolve {{cast:nobody.uid}}',
 			],
-			$rows->checkFragment(fragment: $fragment, context: ['cast' => []], users: ['alice', 'bob'], values: new ExampleSetValues())
+			$rows->checkFragment(fragment: $fragment, check: new ExampleSetFragmentCheck(context: ['cast' => []], users: ['alice', 'bob'], values: new ExampleSetValues()))
 		);
-		$this->assertSame([], $rows->checkFragment(fragment: ['app' => 'demo', 'file' => 'f.json'], context: [], users: [], values: new ExampleSetValues()));
+		$this->assertSame([], $rows->checkFragment(fragment: ['app' => 'demo', 'file' => 'f.json'], check: new ExampleSetFragmentCheck(context: [], users: [], values: new ExampleSetValues())));
 		$this->assertSame([], $calls);
 	}//end testCheckFragment()
 
@@ -188,7 +205,7 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 		);
 		$report   = [];
 		$record   = ['users' => ['alice' => 'created'], 'notes' => ['demo/old' => ['uuid' => 'u-old'], 'other/x' => ['uuid' => 'u-x']]];
-		$changed  = $rows->installFragment(write: new ExampleSetFragmentWrite(fragment: $fragment, context: ['cast' => []], values: new ExampleSetValues()), report: $report, record: $record);
+		$changed  = $rows->installFragment(write: new ExampleSetFragmentWrite(fragment: $fragment, context: ['cast' => []], values: new ExampleSetValues()), ledger: new RecordLedger(report: $report, record: $record));
 		$this->assertTrue($changed);
 		$this->assertSame(
 			[
@@ -218,8 +235,7 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 		$record  = ['users' => [], 'notes' => ['demo/a' => ['uuid' => 'u-a']]];
 		$changed = $rows->installFragment(
 			write: new ExampleSetFragmentWrite(fragment: self::fragment(part: 'notes', rows: [['key' => 'a', 'data' => ['name' => 'fine']]]), context: ['refresh' => false], values: new ExampleSetValues()),
-			report: $report,
-			record: $record
+			ledger: new RecordLedger(report: $report, record: $record)
 		);
 		$this->assertFalse($changed);
 		$this->assertSame(['notes' => ['demo/a' => 'kept']], $report);
@@ -238,8 +254,7 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 		$record  = ['users' => [], 'notes' => ['demo/a' => ['uuid' => 'u-a'], 'demo/stuck' => ['uuid' => 'u-stuck']]];
 		$changed = $rows->installFragment(
 			write: new ExampleSetFragmentWrite(fragment: self::fragment(part: 'notes', rows: [['key' => 'a', 'data' => ['name' => 'fine']], ['key' => 'stuck', 'data' => ['name' => 'fine']]]), context: ['refresh' => true], values: new ExampleSetValues()),
-			report: $report,
-			record: $record
+			ledger: new RecordLedger(report: $report, record: $record)
 		);
 		$this->assertTrue($changed);
 		$this->assertSame(
@@ -264,8 +279,7 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 		$rows    = $this->rows(part: 'views', inPlace: true, calls: $calls);
 		$changed = $rows->installFragment(
 			write: new ExampleSetFragmentWrite(fragment: self::fragment(part: 'views', rows: [['key' => 'a', 'data' => ['name' => 'fine']]]), context: ['refresh' => true], values: new ExampleSetValues()),
-			report: $report,
-			record: $record
+			ledger: new RecordLedger(report: $report, record: $record)
 		);
 		$this->assertTrue($changed);
 		$this->assertSame(['uuid' => 'u-a', 'updated' => true], $record['views']['demo/a']);
@@ -274,8 +288,7 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 		$this->assertFalse(
 			$watchers->installFragment(
 				write: new ExampleSetFragmentWrite(fragment: self::fragment(part: 'watchers', rows: [['key' => 'a', 'data' => ['name' => 'fine']]]), context: ['refresh' => true], values: new ExampleSetValues()),
-				report: $report,
-				record: $record
+				ledger: new RecordLedger(report: $report, record: $record)
 			)
 		);
 		$this->assertSame(['views' => ['demo/a' => 'refreshed'], 'watchers' => ['demo/a' => 'kept']], $report);

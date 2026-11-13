@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -47,6 +49,15 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider
  * @covers \OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider
  * @covers \OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
+ * @uses \OCA\OpenRegister\Service\ObjectSource\DirectoryPage
+ * @uses \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedObjectBinding
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
  */
 class DirectoryProvidersProjectionGoldenTest extends TestCase {
 
@@ -144,12 +155,12 @@ class DirectoryProvidersProjectionGoldenTest extends TestCase {
 		$groups->method('get')->willReturnCallback(static fn (string $gid): ?IGroup => ($gid === 'staff' ? $staff : null));
 		$groups->method('search')->willReturn(['x' => $staff, 'y' => $board]);
 
-		$provider = new GroupObjectSourceProvider(groupManager: $groups, userSession: $session, logger: $this->createMock(LoggerInterface::class));
+		$provider = new GroupObjectSourceProvider(groupManager: $groups, session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $session, logger: $this->createMock(LoggerInterface::class)));
 		$found    = [
-			$provider->find(register: $this->register, schema: $this->schema, id: 'staff'),
-			$provider->find(register: $this->register, schema: $this->schema, id: 'none'),
+			$provider->find(source: new SourcedTable(new RegisterSchema($this->register, $this->schema)), id: 'staff'),
+			$provider->find(source: new SourcedTable(new RegisterSchema($this->register, $this->schema)), id: 'none'),
 		];
-		$all      = $provider->findAll(register: $this->register, schema: $this->schema, query: ['limit' => 5]);
+		$all      = $provider->findAll(source: new SourcedTable(new RegisterSchema($this->register, $this->schema)), query: ['limit' => 5]);
 
 		$this->assertSame('[["staff","7","42",{"id":"staff","displayName":"Staff"}],null]', $this->shape($found));
 		$this->assertSame(
@@ -178,10 +189,10 @@ class DirectoryProvidersProjectionGoldenTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class)
 		);
 		$found    = [
-			$provider->find(register: $this->register, schema: $this->schema, id: 'ann'),
-			$provider->find(register: $this->register, schema: $this->schema, id: 'none'),
+			$provider->find(source: new SourcedTable(new RegisterSchema($this->register, $this->schema)), id: 'ann'),
+			$provider->find(source: new SourcedTable(new RegisterSchema($this->register, $this->schema)), id: 'none'),
 		];
-		$all      = $provider->findAll(register: $this->register, schema: $this->schema);
+		$all      = $provider->findAll(source: new SourcedTable(new RegisterSchema($this->register, $this->schema)));
 
 		$this->assertSame('[["ann","7","42",{"id":"ann","displayName":"Ann","email":"ann@example.org"}],null]', $this->shape($found));
 		$this->assertSame(
@@ -208,13 +219,13 @@ class DirectoryProvidersProjectionGoldenTest extends TestCase {
 		$apps->method('isEnabledForUser')->willReturn(true);
 		$apps->method('isInstalled')->willReturn(true);
 
-		$provider = new ContactsObjectSourceProvider(contactsManager: $contacts, appManager: $apps, logger: $this->createMock(LoggerInterface::class));
+		$provider = new ContactsObjectSourceProvider(contactsManager: $contacts, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $apps, container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $this->createMock(LoggerInterface::class)));
 		$found    = [
-			$provider->find(register: $this->register, schema: $this->schema, id: 'c2'),
-			$provider->find(register: $this->register, schema: $this->schema, id: 'sys'),
+			$provider->find(source: new SourcedTable(new RegisterSchema($this->register, $this->schema)), id: 'c2'),
+			$provider->find(source: new SourcedTable(new RegisterSchema($this->register, $this->schema)), id: 'sys'),
 		];
-		$all      = $provider->findAll(register: $this->register, schema: $this->schema);
-		$page     = $provider->findAll(register: $this->register, schema: $this->schema, query: ['limit' => 1, 'offset' => 1]);
+		$all      = $provider->findAll(source: new SourcedTable(new RegisterSchema($this->register, $this->schema)));
+		$page     = $provider->findAll(source: new SourcedTable(new RegisterSchema($this->register, $this->schema)), query: ['limit' => 1, 'offset' => 1]);
 
 		$this->assertSame('[["c2","7","42",{"id":"c2","fullName":"Cee Two","email":"two@example.org","org":""}],null]', $this->shape($found));
 		$this->assertSame(

@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Task;
 
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
@@ -86,6 +87,9 @@ class PoolResolver implements IPrincipalResolver {
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry
  * @uses \OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\TaskVerbAttempt
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
  */
 final class TaskTypedCandidateTest extends TestCase {
 
@@ -151,7 +155,7 @@ final class TaskTypedCandidateTest extends TestCase {
 		try {
 			// `claim` is the verb whose rule is the candidate POOL; `complete`
 			// asks about the assignee, which is a different question.
-			$guard->assertMay(verb: 'claim', task: $task, uid: $uid);
+			$guard->assertMay(act: new TaskAct(verb: 'claim', actor: $uid), task: $task);
 
 			return true;
 		} catch (TaskAccessDeniedException) {

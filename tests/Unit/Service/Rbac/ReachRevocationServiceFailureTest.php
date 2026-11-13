@@ -44,6 +44,10 @@ use RuntimeException;
  * reports a partial act as a whole one.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ReachRevocationService
+ * @uses \OCA\OpenRegister\Db\DelegationGrant
+ * @uses \OCA\OpenRegister\Service\Rbac\ReachRevocationLog
+ * @uses \OCA\OpenRegister\Service\Rbac\ReachSources
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class ReachRevocationServiceFailureTest extends TestCase {
 
@@ -171,7 +175,7 @@ class ReachRevocationServiceFailureTest extends TestCase {
 		$failing->setAuthorization(['read' => ['alice', 'staff', 7], 'mode' => 'strict']);
 		$this->schemas->method('findAll')->willReturn([$empty, $untouched, $failing]);
 		$this->schemas->expects($this->once())->method('update')->with($failing)->willThrowException(new RuntimeException('locked'));
-		$this->audit->expects($this->never())->method('logSchemaAuthorizationChange');
+		$this->audit->expects($this->never())->method('recordSchemaChange');
 		$this->derived->method('grantsFor')->willReturn([]);
 		$this->derived->expects($this->never())->method('forget');
 		$this->delegations->method('findHeldBy')->willReturn([]);

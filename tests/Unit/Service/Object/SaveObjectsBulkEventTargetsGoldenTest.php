@@ -48,6 +48,29 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\BulkRowRules
  * @uses   \OCA\OpenRegister\Service\Object\BulkWriteEvents
+ * @uses   \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses   \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate
  */
 class SaveObjectsBulkEventTargetsGoldenTest extends TestCase {
 
@@ -146,7 +169,7 @@ class SaveObjectsBulkEventTargetsGoldenTest extends TestCase {
 		}
 
 		$handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $schemaMapper, registerMapper: $registerMapper, saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapper::class)), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $this->createMock(IUserSession::class), organisationService: $this->createMock(OrganisationService::class), groupManager: null),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: null, auditTrailMapper: null),
 			checks: new BulkRowChecks(permissionHandler: null, validateHandler: null, rowRules: $rules)

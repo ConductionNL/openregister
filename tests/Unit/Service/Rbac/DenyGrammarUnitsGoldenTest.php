@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -38,6 +39,13 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator
  * @covers \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @covers \OCA\OpenRegister\Service\Rbac\TokenGrantNarrower
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyCollision
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrant
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantTarget
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantTerms
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantUse
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenNarrowing
  */
 final class DenyGrammarUnitsGoldenTest extends TestCase {
 
@@ -85,19 +93,14 @@ final class DenyGrammarUnitsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testATokenClosesOnlyTheVerbsItDoesNotPermit(): void {
-		$narrowed = (new TokenGrantNarrower())->narrow(
-			authorization: [
+		$narrowed = (new TokenGrantNarrower())->narrow(authorization: [
 				'read' => ['g1'],
 				'update' => ['g1'],
 				'roles' => ['editor' => ['g1']],
 				'deny' => ['update' => ['g2']],
 				TokenGrantNarrower::MARKER => ['verbs' => ['update']],
 				7 => ['x'],
-			],
-			grant: new TokenGrant(verbs: ['read'], terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-06-01T00:00:00+00:00')), tokenId: 't1'),
-			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'r'),
-			now: new DateTimeImmutable('2026-01-01T00:00:00+00:00')
-		);
+			], use: new TokenGrantUse(grant: new TokenGrant(verbs: ['read'], terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2026-06-01T00:00:00+00:00')), tokenId: 't1'), target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'r'), now: new DateTimeImmutable('2026-01-01T00:00:00+00:00')));
 
 		$closed = [TokenGrantNarrower::IMPOSSIBLE];
 		$this->assertSame(

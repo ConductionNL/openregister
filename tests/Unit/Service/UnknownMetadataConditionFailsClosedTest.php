@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -53,6 +55,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Unknown metadata in a stored rule: deny denies, allow does not grant, logged once.
@@ -83,6 +88,30 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacAccessCall
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacMatchSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacOperatorTerm
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacSqlDialect
+ * @uses \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationColumn
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyRowTest
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantedRows
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacFallbacks
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacQueryMatch
  */
 class UnknownMetadataConditionFailsClosedTest extends TestCase {
 
@@ -220,15 +249,21 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	 */
 	private function rbacHandler(): MagicRbacHandler {
 		return new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->matcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher())),
-			new DenyEnforcementMode($this->enforcingConfig(), new NullLogger())
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class),
+				denyEnforcementMode: new DenyEnforcementMode($this->enforcingConfig(), new NullLogger())
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->matcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher()))
 		);
 	}//end rbacHandler()
 
@@ -356,15 +391,13 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 
 		$this->assertFalse(
 			$handler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $this->recordAuthorizedBy(['deny' => ['read' => [['group' => 'editors', 'match' => ['_published' => true]]]]])
 			)
 		);
 		$this->assertTrue(
 			$handler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $this->recordAuthorizedBy(['deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-z']]]]])
 			)
 		);
@@ -378,8 +411,7 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	public function testTheRelationPathDeniesOnAKnownKeyThatMatches(): void {
 		$this->assertFalse(
 			$this->rbacHandler()->hasRowPermission(
-				schema: $this->schemaWith(['read' => ['editors']]),
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $this->schemaWith(['read' => ['editors']]), action: 'read'),
 				row: $this->recordAuthorizedBy(['deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]]]])
 			)
 		);
@@ -455,10 +487,7 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	public function testTheListNamesTheColumnOfAKnownKey(): void {
 		$sql = fn (array $match): string => implode(
 			' OR ',
-			$this->rbacHandler()->buildRbacConditionsSql(
-				$this->schemaWith(['read' => [['group' => 'editors', 'match' => $match]]]),
-				'read'
-			)['conditions']
+			$this->rbacHandler()->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => [['group' => 'editors', 'match' => $match]]])))->forAction('read'))['conditions']
 		);
 
 		$this->assertStringContainsString("`_owner` = 'bob'", $sql(['@self.owner' => 'bob']));
@@ -474,14 +503,8 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	 */
 	public function testTheListDeniesEveryRow(): void {
 		$handler = $this->rbacHandler();
-		$denied = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['editors'], 'deny' => ['read' => [['group' => 'editors', 'match' => ['_published' => true]]]]]),
-			'read'
-		);
-		$control = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['editors'], 'deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-z']]]]]),
-			'read'
-		);
+		$denied = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['editors'], 'deny' => ['read' => [['group' => 'editors', 'match' => ['_published' => true]]]]])))->forAction('read'));
+		$control = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['editors'], 'deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-z']]]]])))->forAction('read'));
 
 		$this->assertFalse($denied['bypass']);
 		$this->assertSame([], $denied['conditions']);
@@ -494,10 +517,7 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheListAllowAdmitsNoRow(): void {
-		$result = $this->rbacHandler()->buildRbacConditionsSql(
-			$this->schemaWith(['read' => [['group' => 'editors', 'match' => ['_published' => ['$ne' => true]]]]]),
-			'read'
-		);
+		$result = $this->rbacHandler()->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => [['group' => 'editors', 'match' => ['_published' => ['$ne' => true]]]]])))->forAction('read'));
 
 		$sql = implode(' OR ', $result['conditions']);
 		$this->assertStringNotContainsString('_published', $sql);

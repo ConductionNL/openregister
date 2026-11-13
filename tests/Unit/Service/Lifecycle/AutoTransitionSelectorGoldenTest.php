@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionWrite;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
@@ -52,6 +53,14 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
  * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionWrite
+ * @uses \OCA\OpenRegister\Service\Lifecycle\ConditionUser
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleWrite
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionAttempt
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionMove
  */
 class AutoTransitionSelectorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/auto-transition-golden.json';
@@ -136,7 +145,7 @@ class AutoTransitionSelectorGoldenTest extends TestCase {
 		$actual = ['declaresAutoWhen' => $selector->declaresAutoWhen($annotation)];
 		foreach (['open', 'wacht', ''] as $current) {
 			$log->lines = [];
-			$candidate  = $selector->select($annotation, ['status' => $current, 'motivering' => 'Ja.'], ['status' => 'vorig'], 'bezwaar');
+			$candidate  = $selector->select($annotation, new AutoTransitionWrite(['status' => $current, 'motivering' => 'Ja.'], ['status' => 'vorig'], 'bezwaar'));
 			$result     = null;
 			if ($candidate !== null) {
 				$result = [$candidate->action, $candidate->from, $candidate->to, $candidate->mode, $candidate->isSync()];
@@ -177,6 +186,6 @@ class AutoTransitionSelectorGoldenTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 		$dialect = new ConditionDialect(new CalculationEvaluator(new PlaceholderResolver($userSession)));
 
-		return new LifecycleConditionEvaluator($userSession, $groupManager, new LifecycleConditionReporting($l10n, $log), $dialect);
+		return new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $log), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($dialect, new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($userSession, $groupManager)));
 	}//end evaluator()
 }//end class

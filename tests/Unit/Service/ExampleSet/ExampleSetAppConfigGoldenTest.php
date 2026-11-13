@@ -37,6 +37,9 @@ use RuntimeException;
  * fixtures/example-set-app-config-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigKey
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigValue
  */
 class ExampleSetAppConfigGoldenTest extends TestCase {
 
@@ -112,7 +115,7 @@ class ExampleSetAppConfigGoldenTest extends TestCase {
 			'refusal missing' => ['a', 'nope', false],
 			'refusal throws' => ['a', 'boom', false],
 		] as $name => [$app, $key, $generate]) {
-			$cases[$name] = static fn (ExampleSetAppConfig $s) => $s->refusal($app, $key, $generate);
+			$cases[$name] = static fn (ExampleSetAppConfig $s) => $s->refusal(new ExampleSetConfigKey($app, $key), $generate);
 		}
 
 		foreach ([

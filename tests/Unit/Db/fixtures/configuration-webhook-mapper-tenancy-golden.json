@@ -1,0 +1,125 @@
+{
+    "configuration / no user": {
+        "result": 1,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_configurations, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "webhook / no user": {
+        "result": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 andWhere(1 = 0)",
+            "#2 executeQuery()"
+        ]
+    },
+    "configuration / member with organisation": {
+        "result": 1,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_configurations, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-a, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "webhook / member with organisation": {
+        "result": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 param :p1 = org-a, 2",
+            "#2 expr.eq(organisation, :p1, NULL)",
+            "#2 expr.orX(eq(organisation, :p1, NULL))",
+            "#2 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#2 executeQuery()"
+        ]
+    },
+    "configuration / member without organisation": {
+        "result": 1,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_configurations, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "webhook / member without organisation": {
+        "result": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 andWhere(1 = 0)",
+            "#2 executeQuery()"
+        ]
+    },
+    "configuration / admin": {
+        "result": 1,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_configurations, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 param :p1 = org-a, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.orX(eq(organisation, :p1, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "webhook / admin": {
+        "result": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 param :p1 = org-a, 2",
+            "#2 expr.eq(organisation, :p1, NULL)",
+            "#2 expr.orX(eq(organisation, :p1, NULL))",
+            "#2 andWhere(orX(eq(organisation, :p1, NULL)))",
+            "#2 executeQuery()"
+        ]
+    },
+    "configuration / member with organisation, multitenancy off": {
+        "result": 1,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_configurations, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(0)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    }
+}

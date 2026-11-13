@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Audit;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
+use OCA\OpenRegister\Service\Audit\ReadableObject;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -33,6 +34,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableObject
  */
 class HistoryEntryRedactorRecordTest extends TestCase {
 
@@ -61,7 +63,7 @@ class HistoryEntryRedactorRecordTest extends TestCase {
 		$object->setObject(['title' => 't', 'secret' => 's', '@self' => ['organisation' => 'org-a', 'schema' => '1']]);
 
 		$method = new ReflectionMethod(HistoryEntryRedactor::class, 'hiddenProperties');
-		$hidden = $method->invoke(new HistoryEntryRedactor($properties), new Schema(), $object, []);
+		$hidden = $method->invoke(new HistoryEntryRedactor($properties), new ReadableObject($object, new Schema()), []);
 
 		$this->assertSame(['secret'], $hidden);
 		$this->assertSame('org-b', $seen['@self']['organisation']);

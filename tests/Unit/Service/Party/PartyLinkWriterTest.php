@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyLinkRequest;
 use OCA\OpenRegister\Service\Party\PartyLinkTarget;
 use OCA\OpenRegister\Service\Party\PartyLinkWriter;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -31,6 +32,12 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\ContactLink
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Party\PartyDefinition
+ * @uses \OCA\OpenRegister\Service\Party\PartyAddressSelection
+ * @uses \OCA\OpenRegister\Service\Party\PartyLinkRequest
+ * @uses \OCA\OpenRegister\Service\Party\PartyLinkTarget
+ * @uses \OCA\OpenRegister\Service\Party\PartyMergeRules
+ * @uses \OCA\OpenRegister\Service\Party\PartyPropertyNames
+ * @uses \OCA\OpenRegister\Service\PersonLinkRef
  */
 class PartyLinkWriterTest extends TestCase {
 
@@ -84,7 +91,7 @@ class PartyLinkWriterTest extends TestCase {
 	 */
 	public function testTheNamedLinkerIsRecordedWhenNobodyIsSignedIn(): void {
 		$writer = $this->writer(signedIn: null);
-		$link   = $writer->write(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: 9), partyUuid: 'party-a', role: 'gemachtigde', linkedBy: 'dossiq');
+		$link   = $writer->write(request: new PartyLinkRequest(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: 9), partyUuid: 'party-a', role: 'gemachtigde', linkedBy: 'dossiq'));
 
 		$this->assertSame(expected: 'dossiq', actual: $link->getLinkedBy());
 	}//end testTheNamedLinkerIsRecordedWhenNobodyIsSignedIn()
@@ -96,7 +103,7 @@ class PartyLinkWriterTest extends TestCase {
 	 */
 	public function testTheSignedInUserWins(): void {
 		$writer = $this->writer(signedIn: 'pieter');
-		$link   = $writer->write(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: 9), partyUuid: 'party-a', role: 'gemachtigde', linkedBy: 'dossiq');
+		$link   = $writer->write(request: new PartyLinkRequest(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: 9), partyUuid: 'party-a', role: 'gemachtigde', linkedBy: 'dossiq'));
 
 		$this->assertSame(expected: 'pieter', actual: $link->getLinkedBy());
 	}//end testTheSignedInUserWins()
@@ -110,7 +117,7 @@ class PartyLinkWriterTest extends TestCase {
 		$this->expectException(exception: Exception::class);
 		$this->expectExceptionCode(code: 401);
 
-		$this->writer(signedIn: null)->write(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: 9), partyUuid: 'party-a', role: 'gemachtigde');
+		$this->writer(signedIn: null)->write(request: new PartyLinkRequest(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: 9), partyUuid: 'party-a', role: 'gemachtigde'));
 	}//end testNoLinkerIsRefused()
 
 	/**
@@ -121,7 +128,7 @@ class PartyLinkWriterTest extends TestCase {
 	 */
 	public function testATrustedImportFindsThePartyWithoutRbac(): void {
 		$writer = $this->writer(signedIn: null, rbacSeesIt: false);
-		$link   = $writer->write(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: 9), partyUuid: 'party-a', role: 'gemachtigde', linkedBy: 'dossiq');
+		$link   = $writer->write(request: new PartyLinkRequest(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: 9), partyUuid: 'party-a', role: 'gemachtigde', linkedBy: 'dossiq'));
 
 		$this->assertSame(expected: 'dossiq', actual: $link->getLinkedBy());
 	}//end testATrustedImportFindsThePartyWithoutRbac()
@@ -137,6 +144,6 @@ class PartyLinkWriterTest extends TestCase {
 		$this->expectExceptionCode(code: 404);
 
 		$writer = $this->writer(signedIn: 'pieter', rbacSeesIt: false);
-		$writer->write(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: 9), partyUuid: 'party-a', role: 'gemachtigde', linkedBy: 'dossiq');
+		$writer->write(request: new PartyLinkRequest(target: new PartyLinkTarget(objectUuid: 'case-1', registerId: 3, schemaId: 9), partyUuid: 'party-a', role: 'gemachtigde', linkedBy: 'dossiq'));
 	}//end testASignedInCallerFindsThePartyWithTheirRights()
 }//end class

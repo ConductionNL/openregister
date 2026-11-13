@@ -34,6 +34,8 @@ use TypeError;
  * fixtures/geo-spatial-evaluator-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Geo\GeoSpatialEvaluator
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GeoFilter
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GeoPoint
  */
 class GeoSpatialEvaluatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/geo-spatial-evaluator-golden.json';
@@ -92,9 +94,9 @@ class GeoSpatialEvaluatorGoldenTest extends TestCase {
 			GeoFilter::fromBbox('0,0,10,10'),
 			GeoFilter::fromBbox('4,4,6,6'),
 			GeoFilter::fromBbox('-180,-90,180,90'),
-			GeoFilter::fromNearAndRadius(5, 5, 1000),
-			GeoFilter::fromNearAndRadius(5, 5, 600000),
-			GeoFilter::fromNearAndRadius('0', '5', '1'),
+			GeoFilter::fromNearAndRadius(['lon' => 5, 'lat' => 5, 'radius' => 1000]),
+			GeoFilter::fromNearAndRadius(['lon' => 5, 'lat' => 5, 'radius' => 600000]),
+			GeoFilter::fromNearAndRadius(['lon' => '0', 'lat' => '5', 'radius' => '1']),
 			GeoFilter::fromWithinGeometry($square),
 			GeoFilter::fromWithinGeometry($multi),
 			GeoFilter::fromWithinGeometry($withNull),
@@ -154,9 +156,9 @@ class GeoSpatialEvaluatorGoldenTest extends TestCase {
 	public function testHaversine(): void {
 		$evaluator = new GeoSpatialEvaluator();
 		$distances = [
-			round($evaluator->haversineMeters(4.9, 52.37, 4.48, 51.92), 6),
-			round($evaluator->haversineMeters(0.0, 0.0, 0.0, 0.0), 6),
-			round($evaluator->haversineMeters(-179.5, 10.0, 179.5, -10.0), 6),
+			round($evaluator->haversineMeters(new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(4.9, 52.37), new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(4.48, 51.92)), 6),
+			round($evaluator->haversineMeters(new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(0.0, 0.0), new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(0.0, 0.0)), 6),
+			round($evaluator->haversineMeters(new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(-179.5, 10.0), new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(179.5, -10.0)), 6),
 		];
 		$this->assertGolden('haversine', $distances);
 	}

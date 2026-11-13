@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
-use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
@@ -40,6 +39,14 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\SemanticTypeResolver
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\JsonLd\JsonLdContextService
+ * @uses \OCA\OpenRegister\Service\SemanticTypeQuery
  */
 class SemanticTypeResolverGoldenTest extends TestCase {
 
@@ -129,10 +136,7 @@ class SemanticTypeResolverGoldenTest extends TestCase {
 		$this->log = [];
 		$schemas = $this->schemas();
 		$resolver = new SemanticTypeResolver(
-			new RegisterSchemaMappers(
-				$this->registerMapper(in_array('registersThrow', $modes, true)),
-				$this->schemaMapper($schemas, in_array('schemasThrow', $modes, true))
-			),
+			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper(in_array('registersThrow', $modes, true)), schemas: $this->schemaMapper($schemas, in_array('schemasThrow', $modes, true)), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			new JsonLdContextService($this->createMock(IURLGenerator::class)),
 			$this->logger(),
 			in_array('noAppManager', $modes, true) ? null : $this->appManager()

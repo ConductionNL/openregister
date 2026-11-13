@@ -9,6 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -66,7 +67,7 @@ class UpdateFileHandlerGoldenTest extends TestCase {
 				'byReadHandler' => $doc, 'existingTags' => ['object:abc', 'object:def', 'objective', 'red'],
 			],
 			'id via read handler, same content' => ['path' => 7, 'object' => true, 'content' => 'old', 'byReadHandler' => $doc],
-			'id read handler misses, user folder by id' => ['path' => 7, 'object' => true, 'userById' => [7 => $doc]],
+			'id read handler misses, object given' => ['path' => 7, 'object' => true, 'userById' => [7 => $doc]],
 			'id without object, user folder by id' => ['path' => 7, 'userById' => [7 => $doc], 'content' => 'new'],
 			'id not found' => ['path' => 9, 'userById' => []],
 			'id user folder throws' => ['path' => 9, 'userFolderThrows' => 'exception'],
@@ -145,7 +146,7 @@ class UpdateFileHandlerGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$file = $handler->updateFile($case['path'], $content, $case['tags'] ?? [], $object);
+			$file = $handler->updateFile(new FileOverwrite(filePath: $case['path'], content: $content, tags: $case['tags'] ?? [], object: $object));
 			$outcome = ['returned' => $this->describe(value: $file)];
 		} catch (\Throwable $e) {
 			$outcome = ['threw' => get_class($e), 'message' => preg_replace('/MockObject_\w+/', 'MockObject', $e->getMessage())];

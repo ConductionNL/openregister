@@ -36,6 +36,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\WriteOnlyPathsDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  */
 class SchemaWriteOnlyPathsAnnotationTest extends TestCase {
 

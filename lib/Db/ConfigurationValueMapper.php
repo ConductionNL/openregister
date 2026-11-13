@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
@@ -69,21 +70,41 @@ class ConfigurationValueMapper extends QBMapper {
 			->where($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
 			->andWhere($qb->expr()->eq('config_key', $qb->createNamedParameter($configKey)))
 			->setMaxResults(1);
+		$qb->andWhere($this->layerRefMatch(qb: $qb, layerRef: $layerRef));
 
-		$layerRefClause = $qb->expr()->isNull('layer_ref');
-		if ($layerRef !== null) {
-			$layerRefClause = $qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef));
-		}
+		return $this->findOneOrNull(qb: $qb);
+	}//end findAtAddress()
 
-		$qb->andWhere($layerRefClause);
-
+	/**
+	 * The one value a query finds, or null when it finds none.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return ConfigurationValue|null The value.
+	 */
+	private function findOneOrNull(IQueryBuilder $qb): ?ConfigurationValue {
 		try {
 			return $this->findEntity(query: $qb);
 		} catch (DoesNotExistException $exception) {
 			return null;
 		}
+	}//end findOneOrNull()
 
-	}//end findAtAddress()
+	/**
+	 * The condition on the layer reference: equal to it, or none when there is none.
+	 *
+	 * @param IQueryBuilder $qb       The query.
+	 * @param string|null   $layerRef The layer reference.
+	 *
+	 * @return string The condition.
+	 */
+	private function layerRefMatch(IQueryBuilder $qb, ?string $layerRef): string {
+		if ($layerRef === null) {
+			return $qb->expr()->isNull('layer_ref');
+		}
+
+		return $qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef));
+	}//end layerRefMatch()
 
 	/**
 	 * Every recorded value for one key, across layers.
@@ -104,6 +125,65 @@ class ConfigurationValueMapper extends QBMapper {
 		return $this->findEntities(query: $qb);
 
 	}//end findByKey()
+
+	/**
+	 * Every row at one layer and reference, optionally under a key prefix.
+	 *
+	 * A null reference is the instance address, exactly as in findAtAddress();
+	 * it never means "any reference" (see findAllAtLayer() for that).
+	 *
+	 * @param string      $layer    The layer.
+	 * @param string|null $layerRef The reference, or null for the instance address.
+	 * @param string|null $prefix   Only keys starting with this, when given.
+	 *
+	 * @return ConfigurationValue[] The rows, by key.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function findAtLayer(string $layer, ?string $layerRef, ?string $prefix = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
+			->orderBy('config_key', 'ASC');
+
+		if ($layerRef === null) {
+			$qb->andWhere($qb->expr()->isNull('layer_ref'));
+		} else {
+			$qb->andWhere($qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef)));
+		}
+
+		if ($prefix !== null && $prefix !== '') {
+			$qb->andWhere(
+				$qb->expr()->like(
+					'config_key',
+					$qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%')
+				)
+			);
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findAtLayer()
+
+	/**
+	 * Every row at one layer, whatever its reference.
+	 *
+	 * @param string $layer The layer.
+	 *
+	 * @return ConfigurationValue[] The rows, by reference then key.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function findAllAtLayer(string $layer): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
+			->orderBy('layer_ref', 'ASC')
+			->addOrderBy('config_key', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findAllAtLayer()
 
 	/**
 	 * Create a value row, assigning a uuid and timestamps.

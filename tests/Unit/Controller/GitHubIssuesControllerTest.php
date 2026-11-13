@@ -45,6 +45,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -64,6 +65,11 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Configuration\GitHubGuards
  * @uses \OCA\OpenRegister\Service\Configuration\GitHubRequestValidator
  * @uses \OCA\OpenRegister\Service\Configuration\RateLimiterService
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\GitHubIssueDraft
+ * @uses \OCA\OpenRegister\Controller\Support\GitHubIssueListing
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSelection
+ * @uses \OCA\OpenRegister\Service\Configuration\DistinctKeyBudget
  *
  * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-11
  */
@@ -382,7 +388,8 @@ class GitHubIssuesControllerTest extends TestCase {
 			rateLimiter: $rateLimiter,
 			userSession: $userSession,
 			cacheFactory: $cacheFactory,
-			logger: $logger
+			logger: $logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}//end buildController()
 

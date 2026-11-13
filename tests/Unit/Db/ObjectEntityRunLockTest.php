@@ -43,6 +43,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\EmptyJsonHydration
+ * @uses \OCA\OpenRegister\Db\LockTerms
  */
 final class ObjectEntityRunLockTest extends TestCase {
 

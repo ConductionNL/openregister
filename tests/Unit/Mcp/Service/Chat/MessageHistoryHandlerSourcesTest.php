@@ -9,17 +9,19 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp\Service\Chat;
 
-use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 
 /**
  * An assistant message with RAG sources is stored, with the sources on the
  * entity's `sources` column.
  *
  * @covers \OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatReply
+ * @uses \OCA\OpenRegister\Notifications\Db\Message
  */
 class MessageHistoryHandlerSourcesTest extends TestCase
 {
@@ -29,9 +31,9 @@ class MessageHistoryHandlerSourcesTest extends TestCase
         $sources = [['type' => 'object', 'uuid' => 'u-1', 'name' => 'Doc']];
         $mapper  = $this->createMock(MessageMapperInterface::class);
         $mapper->expects($this->once())->method('insert')->willReturnArgument(0);
-        $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->createMock(LoggerInterface::class));
+        $handler = new MessageHistoryHandler($mapper, $this->createMock(LoggerInterface::class));
 
-        $message = $handler->storeAssistantMessage(5, 'answer', $sources);
+        $message = $handler->storeAssistantMessage(5, new ChatReply('answer', $sources));
 
         $this->assertSame($sources, $message->getSources());
         $this->assertSame($sources, $message->jsonSerialize()['sources']);
@@ -41,9 +43,9 @@ class MessageHistoryHandlerSourcesTest extends TestCase
     {
         $mapper = $this->createMock(MessageMapperInterface::class);
         $mapper->method('insert')->willReturnArgument(0);
-        $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->createMock(LoggerInterface::class));
+        $handler = new MessageHistoryHandler($mapper, $this->createMock(LoggerInterface::class));
 
-        $message = $handler->storeAssistantMessage(5, 'answer', []);
+        $message = $handler->storeAssistantMessage(5, new ChatReply('answer', []));
 
         $this->assertNull($message->getSources());
         $this->assertArrayNotHasKey('sources', $message->getUpdatedFields());
