@@ -3,6 +3,7 @@
 ## 1. Container
 
 - [ ] 1.1 Add `lib/Service/Exchange/EncryptedSetWriter.php` and `EncryptedSetReader.php` with the format in design D-1, the header as additional data, and `verify()` that reads to the final tag without writing (D-4); declare `ext-sodium` in `composer.json`. Verify: `tests/Unit/Service/Exchange/EncryptedSetRoundTripTest.php` round-trips 10 MiB, and refuses a flipped byte in a chunk, a changed header field, a missing final chunk and a wrong key, each with the same message.
+      **Built**: `EncryptedSetHeader`, `EncryptedSetWriter`, `EncryptedSetReader` (with `verify()`) and `EncryptedSetException`, tested by `EncryptedSetRoundTripTest` (14). **Open**: declaring `ext-sodium` in `composer.json`, which needs the lock file regenerated with it.
 
 ## 2. Keys
 

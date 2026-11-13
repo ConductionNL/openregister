@@ -1,0 +1,43 @@
+[
+  {
+    "id": 1,
+    "name": "Projectbeheer",
+    "order": 1,
+    "type": "database",
+    "tables": [
+      {
+        "id": 10,
+        "name": "Projecten",
+        "order": 1,
+        "fields": [
+          {"id": 100, "type": "text", "name": "Naam", "order": 0, "primary": true},
+          {"id": 101, "type": "number", "name": "Budget", "order": 1, "primary": false, "number_decimal_places": 0},
+          {"id": 102, "type": "formula", "name": "Telling", "order": 2, "primary": false, "formula": "count(1)"}
+        ],
+        "views": [],
+        "rows": [
+          {"id": 1, "order": "1.00000000000000000000", "field_100": "Riolering", "field_101": "12000"},
+          {"id": 2, "order": "2.00000000000000000000", "field_100": "Speeltuin", "field_101": "800"}
+        ]
+      },
+      {
+        "id": 11,
+        "name": "Taken",
+        "order": 2,
+        "fields": [
+          {"id": 200, "type": "text", "name": "Titel", "order": 0, "primary": true},
+          {"id": 201, "type": "link_row", "name": "Project", "order": 1, "primary": false, "link_row_table_id": 10, "link_row_multiple_relationships": false},
+          {"id": 202, "type": "single_select", "name": "Status", "order": 2, "primary": false, "select_options": [{"id": 7, "value": "nieuw", "color": "blue"}, {"id": 8, "value": "klaar", "color": "green"}]},
+          {"id": 203, "type": "date", "name": "Deadline", "order": 3, "primary": false, "date_include_time": false},
+          {"id": 204, "type": "boolean", "name": "Afgerond", "order": 4, "primary": false}
+        ],
+        "views": [],
+        "rows": [
+          {"id": 1, "order": "1.00000000000000000000", "field_200": "Graven", "field_201": [1], "field_202": 7, "field_203": "2026-12-01", "field_204": false},
+          {"id": 2, "order": "2.00000000000000000000", "field_200": "Schommel plaatsen", "field_201": [2], "field_202": 8, "field_203": null, "field_204": true},
+          {"id": 3, "order": "3.00000000000000000000", "field_200": "Opruimen", "field_201": [99], "field_202": null, "field_203": null, "field_204": false}
+        ]
+      }
+    ]
+  }
+]

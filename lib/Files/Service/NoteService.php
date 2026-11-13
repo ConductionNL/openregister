@@ -144,8 +144,9 @@ class NoteService implements NoteServiceInterface {
 		);
 
 		$notes = [];
+		$pageIds = $this->replies()->idsOf(comments: $comments);
 		foreach ($comments as $comment) {
-			$notes[] = $this->commentToArray(comment: $comment);
+			$notes[] = $this->commentToArray(comment: $comment, knownIds: $pageIds);
 		}
 
 		// One query for the whole page rather than one per note: the edit
@@ -292,13 +293,27 @@ class NoteService implements NoteServiceInterface {
 
 		$comment = $this->commentsManager->create(trim($author->type), trim($author->id), self::OBJECT_TYPE, $draft->objectUuid);
 
+		$visibility = $draft->visibility;
+		if ($draft->parentId !== null) {
+			$visibility = $this->replies()->attach(reply: $comment, draft: $draft);
+		}
+
 		$comment->setMessage($draft->message);
 		$comment->setVerb('comment');
-		$this->applyVisibility(comment: $comment, visibility: $draft->visibility);
+		$this->applyVisibility(comment: $comment, visibility: $visibility);
 		$this->commentsManager->save($comment);
 
 		return $this->commentToArray(comment: $comment);
 	}//end postNote()
+
+	/**
+	 * Where a note sits in a conversation, and the checks a reply passes.
+	 *
+	 * @return NoteReplies
+	 */
+	private function replies(): NoteReplies {
+		return new NoteReplies(commentsManager: $this->commentsManager, visibility: $this->visibility);
+	}//end replies()
 
 	/**
 	 * The session user as a note author.
@@ -542,11 +557,12 @@ class NoteService implements NoteServiceInterface {
 	/**
 	 * Map an IComment to a JSON-friendly array.
 	 *
-	 * @param IComment $comment The comment to convert
+	 * @param IComment          $comment  The comment to convert
+	 * @param array<int, mixed> $knownIds Ids of notes known to exist (the page being read), sparing a lookup per reply
 	 *
 	 * @return array The note in JSON-friendly format
 	 */
-	private function commentToArray(IComment $comment): array {
+	private function commentToArray(IComment $comment, array $knownIds=[]): array {
 		$actorId = $comment->getActorId();
 		$actorDisplayName = $actorId;
 
@@ -581,6 +597,7 @@ class NoteService implements NoteServiceInterface {
 			'editedBy' => null,
 			'editedByDisplayName' => null,
 			'versionCount' => 0,
-		];
+		] + $this->replies()->fields(comment: $comment, knownIds: $knownIds);
 	}//end commentToArray()
+
 }//end class

@@ -72,6 +72,9 @@ class FolderManagementHandlerFirstUploadTest extends TestCase {
 
 	private Register $register;
 
+	/** @var array<string, mixed> The handler's collaborators, to build a second handler with a document store. */
+	private array $collaborators = [];
+
 	protected function setUp(): void {
 		$userFolder = $this->fakeFolder(path: '', id: 1);
 
@@ -107,15 +110,27 @@ class FolderManagementHandlerFirstUploadTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('groupExists')->willReturn(true);
 
+		$this->collaborators = [
+			'rootFolder' => $rootFolder,
+			'objectEntityMapper' => $this->createMock(MagicMapper::class),
+			'registerMapper' => $this->registerMapper,
+			'userSession' => $userSession,
+			'groupManager' => $groupManager,
+			'logger' => $this->createMock(LoggerInterface::class),
+			'auditTrailMapper' => $this->createMock(AuditTrailMapper::class),
+			'mountCache' => $this->createMock(IUserMountCache::class),
+			'folderRecorder' => $this->recorder,
+			'fileService' => $fileService,
+		];
 		$this->handler = new FolderManagementHandler(
 			rootFolder: $rootFolder,
-			objectEntityMapper: $this->createMock(MagicMapper::class),
+			objectEntityMapper: $this->collaborators['objectEntityMapper'],
 			registerMapper: $this->registerMapper,
 			userSession: $userSession,
 			groupManager: $groupManager,
-			logger: $this->createMock(LoggerInterface::class),
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			mountCache: $this->createMock(IUserMountCache::class),
+			logger: $this->collaborators['logger'],
+			auditTrailMapper: $this->collaborators['auditTrailMapper'],
+			mountCache: $this->collaborators['mountCache'],
 			folderRecorder: $this->recorder
 		);
 		$this->handler->setFileService($fileService);
@@ -320,4 +335,24 @@ class FolderManagementHandlerFirstUploadTest extends TestCase {
 
 		$handler->createFolderPath(folderPath: self::REGISTER_PATH);
 	}//end testAFolderThatCannotBeCreatedAndDoesNotExistStillFails()
+
+	/**
+	 * With a configured document store root the register folder is created under it, not under the default.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	public function testRegisterFolderIsCreatedUnderTheConfiguredRoot(): void {
+		$appConfig = $this->createMock(\OCP\IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => $key === 'document_store_root' ? 'Documents' : $default
+		);
+		$handler = new FolderManagementHandler(...array_merge($this->collaborators, ['documentStore' => new \OCA\OpenRegister\Service\File\DocumentStore(appConfig: $appConfig, rootFolder: $this->collaborators['rootFolder'])]));
+		$this->recorder->method('record')->willReturn(true);
+
+		$handler->getObjectFolder(objectEntity: $this->object(uuid: 'object-1'));
+
+		$this->assertSame(['Documents', 'Documents/Portal Register', 'Documents/Portal Register/object-1'], $this->created);
+	}//end testRegisterFolderIsCreatedUnderTheConfiguredRoot()
 }//end class
