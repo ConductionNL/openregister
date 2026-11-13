@@ -1,199 +1,24 @@
 {
  "app": "hermiq",
- "commit": "98104acbbba3389ea5ae6c84c93a431d98d91070",
- "measured_at": "2026-11-12T22:17:25Z",
- "php": {
-  "tool": "pcov",
-  "pct": 82.56,
-  "statements": 34242,
-  "covered": 28271,
-  "dirs": {
-   "lib/AppInfo/": [
-    27,
-    26
-   ],
-   "lib/BackgroundJob/": [
-    108,
-    34
-   ],
-   "lib/Command/": [
-    183,
-    167
-   ],
-   "lib/Controller/": [
-    6123,
-    5061
-   ],
-   "lib/Controller/Settings/": [
-    335,
-    177
-   ],
-   "lib/Event/": [
-    8,
-    2
-   ],
-   "lib/Flow/": [
-    391,
-    280
-   ],
-   "lib/Lifecycle/": [
-    22,
-    22
-   ],
-   "lib/Listener/": [
-    466,
-    400
-   ],
-   "lib/Mcp/": [
-    315,
-    209
-   ],
-   "lib/Notification/": [
-    74,
-    28
-   ],
-   "lib/Repair/": [
-    3004,
-    2286
-   ],
-   "lib/Repair/Support/": [
-    37,
-    36
-   ],
-   "lib/Sections/": [
-    5,
-    0
-   ],
-   "lib/Service/": [
-    11953,
-    10102
-   ],
-   "lib/Service/Agent/": [
-    632,
-    562
-   ],
-   "lib/Service/AiFeature/": [
-    563,
-    521
-   ],
-   "lib/Service/Approval/": [
-    201,
-    188
-   ],
-   "lib/Service/Assistant/": [
-    515,
-    479
-   ],
-   "lib/Service/Chat/": [
-    390,
-    360
-   ],
-   "lib/Service/Config/": [
-    48,
-    19
-   ],
-   "lib/Service/Connection/": [
-    100,
-    92
-   ],
-   "lib/Service/Credential/": [
-    87,
-    83
-   ],
-   "lib/Service/Engine/": [
-    2397,
-    1971
-   ],
-   "lib/Service/Graph/": [
-    519,
-    483
-   ],
-   "lib/Service/Intake/": [
-    280,
-    162
-   ],
-   "lib/Service/Literacy/": [
-    190,
-    177
-   ],
-   "lib/Service/Llm/": [
-    1246,
-    1135
-   ],
-   "lib/Service/NcNative/": [
-    739,
-    659
-   ],
-   "lib/Service/OutsideAgent/": [
-    124,
-    109
-   ],
-   "lib/Service/ReportSimilarity/": [
-    314,
-    283
-   ],
-   "lib/Service/Schedule/": [
-    289,
-    260
-   ],
-   "lib/Service/Speech/": [
-    57,
-    48
-   ],
-   "lib/Service/Talk/": [
-    936,
-    493
-   ],
-   "lib/Service/ToolOversight/": [
-    209,
-    140
-   ],
-   "lib/Service/Translation/": [
-    19,
-    19
-   ],
-   "lib/Service/WebResearch/": [
-    336,
-    318
-   ],
-   "lib/Service/Workspace/": [
-    812,
-    709
-   ],
-   "lib/Settings/": [
-    18,
-    18
-   ],
-   "lib/Support/": [
-    19,
-    15
-   ],
-   "lib/TaskProcessing/": [
-    125,
-    112
-   ],
-   "lib/Tenant/": [
-    26,
-    26
-   ]
-  }
- },
+ "commit": "beeb8ec1cb99580ea9dcba2475cdf6f9e58c4bec",
+ "measured_at": "2026-11-13T04:12:29Z",
+ "php": null,
  "js": {
-  "pct": 82.0,
-  "statements": 6477,
-  "covered": 5311,
+  "pct": 86.98,
+  "statements": 6529,
+  "covered": 5679,
   "dirs": {
    "src/": [
-    7,
-    7
+    75,
+    73
    ],
    "src/api/": [
     554,
     554
    ],
    "src/components/": [
-    561,
-    401
+    555,
+    495
    ],
    "src/components/CnAgentChatTab/": [
     75,
@@ -205,15 +30,15 @@
    ],
    "src/components/settings/": [
     135,
-    105
+    135
    ],
    "src/dialogs/": [
-    175,
-    129
+    182,
+    161
    ],
    "src/dialogs/agents/": [
-    121,
-    98
+    117,
+    94
    ],
    "src/icons/": [
     1,
@@ -221,11 +46,11 @@
    ],
    "src/llm/": [
     2,
-    1
+    2
    ],
    "src/modals/": [
-    1689,
-    1179
+    1661,
+    1260
    ],
    "src/services/": [
     3,
@@ -240,16 +65,16 @@
     1
    ],
    "src/utils/": [
-    381,
-    381
+    399,
+    399
    ],
    "src/views/": [
-    1287,
-    1092
+    1311,
+    1148
    ],
    "src/widgets/": [
-    1350,
-    1191
+    1323,
+    1185
    ]
   }
  }
