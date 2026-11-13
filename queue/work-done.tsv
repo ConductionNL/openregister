@@ -5098,3 +5098,4 @@ review:openregister:10212:876c2868	BLOCK: PR's own new test testTheMissIsReporte
 build:openregister:rights-administration-hardening	partial: #10230 grant ceiling (2.1, 2.2 schema update+upload); left 2.2 other paths, 1.x export, 3.x group rights, 2.3 live (corrects the PR number in the previous row)	session-20261113T084521-fd8a31c7	2026-11-13T13:12:51Z
 review:openregister:10226:c9fb0bd7	APPROVE	session-20261113T111529-f2ee6930	2026-11-13T13:13:16Z
 review:openregister:10225:ba2a5542	APPROVE: diff is one tasks.md checkbox, no code change	session-20261113T064519-30004ad4	2026-11-13T13:13:33Z
+review:openregister:10185:c71af4e1	APPROVE (component-map.csv append conflict with main)	session-20261113T114524-3c44fc56	2026-11-13T13:13:44Z
