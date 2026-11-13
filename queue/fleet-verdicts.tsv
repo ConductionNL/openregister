@@ -6098,3 +6098,4 @@ portaliq	2450	1e7c63b353dfd2c9c625d0ef6568ee6fe477bd71	CONFLICT	worker-24	confli
 portaliq	2451	5377377c6d044526703808c2f899140524c8baa4	CONFLICT	worker-24	conflicts after 2449 in l10n/en.js, en.json, nl.js, nl.json (keys appended at the catalogue end)
 portaliq	2452	19d1bed8523d52602b104809403ed3ebbc543dd3	CONFLICT	worker-24	conflicts after 2449 in l10n/en.js, en.json, nl.js, nl.json, lib/AppInfo/Application.php, tests/Unit/Settings/PortaliqRegisterConfigTest.php
 portaliq	2427	ac2b3062b5eb7faafbae89f0fcde70f864e7c321	REVERIFY	worker-24	moved the 7 new l10n keys from the catalogue end into the middle of each .json and regenerated the .js (check:l10n-js ok); now merges clean after #2415, #2426 and both; its node spec passes; new head d256286fe99dd5624de69e220db457e2ecc1a78d, verify it
+buildiq	1554	4cd4aecc9cac014cfe14f816ca06c4bb80d7bd73	GREEN	worker-22	tests-only; unit 2921 run (with 1555), baseline 2917/1 failure ExportZipGoldenTest, no new failures
