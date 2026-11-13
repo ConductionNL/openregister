@@ -6746,3 +6746,15 @@ merge:buildiq:1559:da7aa15b	merge	buildiq	development	development	prs=1559@1179f
 merge:hermiq:1705:3a5448de	merge	hermiq	development	development	prs=1705@ff5eebe38947790d2a1958e4c50eaad7a07721a5,1706@0f12ea39eec58d63ec7641303b372f0152a30f10	2026-11-13T19:30:20Z
 merge:shillinq:3009:114d5dcb	merge	shillinq	development	development	prs=3009@7342e5558e4fae638320532ab6ee0e11699f3138,3010@d5daca5350e079d897a60e1490f94ef5f6c0b81d	2026-11-13T19:30:20Z
 gap:decidiq:16:614b0a03	gap	decidiq	development	16	criterion=opensourcehealth WARN;row=decidiq;fix=Held by Activity 2 stars and Freshness 3 stars plus 1 medium-risk licence. Recommended, no score effect. Only worth a dependency refresh sweep.	2026-11-13T19:30:20Z
+fix:shillinq:3011:f3df3b2e	fix	shillinq	development	3011	sha=f3df3b2e7509bbdc38ce96b8b25afb8ab83f4843;verdict=CONFLICT;branch=quality/build-purchasing-call-offs-and-reorder-proposals;reason=conflicts with #2976 in appinfo/info.xml, l10n/en.js, en.json, nl.js, nl.json, tests/fixtures/register-versions.lock.json	2026-11-13T19:35:22Z
+review:openregister:10310:82e01f16	review	openregister	main	10310	sha=82e01f160d07c9216a85eb3212a8b51b30f6aa0d;last_approved=;title=test(openregister): complete the coverage metadata of seven listener tests	2026-11-13T19:35:22Z
+review:openregister:10311:fff14172	review	openregister	main	10311	sha=fff14172227486329328a918b4471ea7fd32d7d3;last_approved=;title=test(openregister): cover untested repair steps	2026-11-13T19:35:22Z
+review:openregister:10312:1c914e4d	review	openregister	main	10312	sha=1c914e4da7a52fd189ded3d0ae29fa2ec332e7cc;last_approved=;title=feat(openregister): build records-change-held-for-approval	2026-11-13T19:35:22Z
+review:openregister:10313:0e88b49f	review	openregister	main	10313	sha=0e88b49f326eb4e4c72ac581c6af7553337c19f7;last_approved=;title=test(openregister): cover the share grant attribute reader	2026-11-13T19:35:22Z
+verify:stackiq:1891:c0606c73	verify	stackiq	development	merge	prs=1891@79a7aa80a61fd1bf93099452dcc43189828e364f	2026-11-13T19:35:22Z
+verify:shillinq:3013:fe552522	verify	shillinq	development	merge	prs=3013@d07a47a6659a61e089fff1ae7314c1c4950d0541	2026-11-13T19:35:22Z
+merge:buildiq:1560:88a91f8a	merge	buildiq	development	development	prs=1560@62e96c456e45c0a6a5e1d2be6a932fb7c0308746	2026-11-13T19:35:22Z
+merge:shillinq:2976:03075858	merge	shillinq	development	development	prs=2976@463e530e5ce4c62bf557a6726e76bb4791cc3644,3012@ce91534dff4e9707d2151b721d859a24e8c6541b	2026-11-13T19:35:22Z
+gap:keepiq:19:4c6ff92f	gap	keepiq	development	19	criterion=complexity FAIL (informative, weight 0);row=keepiq (49);fix=Split the function over CCN 30 (`lizard -C 30 -w`). portaliq clears with row 6. No score effect.	2026-11-13T19:35:22Z
+cover:stackiq:9ac19b3am9d24:8ed5443b	cover	stackiq	development	quality/test-coverage-8ed5443b	lang=php;dirs=lib/Kernel/Contracts/*.php;focus=thin;weight=3978;coverage=88.76;target=90.0	2026-07-16T17:31:21Z
+cover:stackiq:9ac19b3am9d24:216a9a0a	cover	stackiq	development	quality/test-coverage-216a9a0a	lang=php;dirs=lib/Kernel/*.php;focus=thin;weight=116;coverage=88.76;target=90.0	2026-07-16T18:19:25Z
