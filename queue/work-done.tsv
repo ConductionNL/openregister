@@ -2271,6 +2271,7 @@ cover:dossiq:f8a113c5mac88:33af3743	PR #6278: 10 tests; Bezwaar 99.16% -> 99.61%
 cover:hermiq:065f1631m312d:1191da39	already done: lib/Service/WebResearch 327/336 at development (merged -1 PR)	session-20261113T031700-46f75510	2026-11-13T04:47:38Z
 cover:dossiq:f8a113c5mac88:5706f9f2	PR #6279: 5 tests for MentionedNote/NoteMention; Notes dir now fully covered by its own tests	session-20261113T041644-3c9184ea	2026-11-13T04:47:38Z
 cover:hermiq:065f1631m312d:1b97f731	already done: lib/Listener 432/466 (92.7%) at development (merged -1 PR)	session-20261113T031700-46f75510	2026-11-13T04:48:11Z
+cover:hermiq:065f1631m312d:38e80a9f	PR #1659: lib/Command 91.3%->100%, +2 tests, suite 4185->4187 (172 inherited red)	session-20261113T041652-f9df3e85	2026-11-13T04:47:51Z
 cover:hermiq:065f1631m312d:17bbac84	already covered: lib/TaskProcessing 98.4% stmts (2 left), earlier -1 branch exists; no PR	session-20261113T031704-5a455d65	2026-11-13T04:47:58Z
 cover:stackiq:df113dffm2c76:efa2a923	already done: lib/EventListener/*.php 974/982 stmts (99.2%) on development	session-20261113T024656-d5bfb688	2026-11-13T04:48:02Z
 cover:shillinq:05639deb:8bdc03d4	PR #2865: 2 tests, BbvMigration 101/102 -> 102/102 stmts	session-20261113T024653-d22c13a3	2026-11-13T04:48:25Z
