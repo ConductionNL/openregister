@@ -4173,3 +4173,4 @@ cover:portaliq:b60f3b81:3230221b	PR #2391: 9 tests, lib/Service/Signin 94.0->100
 cover:portaliq:b60f3b81:b994f46a	already done: lib/Service/Reports 304/313 stmts (97.1%), above 95 target	session-20261113T091527-72c58830	2026-11-13T10:11:03Z
 verify:learniq:2462:39dad4c9	GREEN 2462 (tests only; 6383 -> 6388, 1 failure from development, none new)	session-20261113T083916-59f10a3b	2026-11-13T10:11:00Z
 verify:buildiq:1537:6806dd13	1/1 GREEN (1537): clean merge, vitest 3896 pass, phpunit unchanged; tests only	session-20261113T044737-f37de8e3	2026-11-13T10:11:16Z
+cover:portaliq:b60f3b81:38e80a9f	already done: lib/Command/*.php 333/335 stmts (99.4%)	session-20261113T091527-72c58830	2026-11-13T10:11:33Z
