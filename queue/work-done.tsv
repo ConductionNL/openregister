@@ -4345,4 +4345,5 @@ build:pipelinq:marketing-mail-transports	already building: every task's code is 
 measure:keepiq:20261113h10	php 89.12% (22427/25166), js 90.99% (11572/12718) at 8a5d84f3	session-20261113T051703-1b54bfba	2026-11-13T10:58:09Z
 cover:dossiq:069ee2d6m7275:e56141e7	PR (e56141e7-2): CorrespondentWriter::applyEdit + DocumentApprovalClearance::describe, 6 tests; inherited 19F unchanged	session-20261113T064518-860c039d	2026-11-13T10:58:34Z
 verify:pipelinq:3708:fe5ce0e8	GREEN 3708 + GREEN 3709 (vitest 4159->4187->4194, 0 fail; both additive, no PHP)	session-20261113T091527-72c58830	2026-11-13T10:58:38Z
+cover:opencatalogi:fc83bfb1:33c6ebfd	PR #2587: Catalogue/Portal/Woo 92.66% -> 98.6%, +15 tests, suite 5177 with 2 inherited failures	session-20261113T071633-17de823f	2026-11-13T10:58:49Z
 verify:hermiq:1683:a87b82a0	GREEN 1683, GREEN 1684 (no new failures; baseline 172 inherited)	session-20261113T104531-16da055e	2026-11-13T10:58:47Z
