@@ -80,6 +80,11 @@ final class JobHandles {
 	public const CONSISTENCY_CHECK = ConsistencyCheckJob::class;
 
 	/**
+	 * Context Chat submission job.
+	 */
+	public const CONTEXT_CHAT_SUBMISSION = ContextChatSubmissionJob::class;
+
+	/**
 	 * Deferred object event job.
 	 */
 	public const DEFERRED_OBJECT_EVENT = DeferredObjectEventJob::class;

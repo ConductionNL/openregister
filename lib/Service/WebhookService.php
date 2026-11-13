@@ -515,6 +515,23 @@ class WebhookService {
 	}//end dispatchEvent()
 
 	/**
+	 * Whether any webhook is subscribed to an event.
+	 *
+	 * Asked before the event's payload is built, so a write on an instance
+	 * with no webhook for that event pays no serialisation. A webhook table
+	 * that does not exist yet counts as no webhooks, as in dispatch().
+	 *
+	 * @param string $eventName Event class name.
+	 *
+	 * @return bool True when at least one webhook is subscribed.
+	 *
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md#requirement-trigger-flow-and-rule-resolution-must-filter-at-query-time
+	 */
+	public function hasWebhooksFor(string $eventName): bool {
+		return $this->webhooksForEvent(eventName: $eventName) !== [];
+	}//end hasWebhooksFor()
+
+	/**
 	 * Enqueue one delivery job per webhook subscribed to an event (value-object form of dispatchEvent()).
 	 *
 	 * @param WebhookEvent $event The event name and payload.

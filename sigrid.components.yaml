@@ -229,7 +229,7 @@ components:
       - ".*/lib/AppHost/Settings/[^/]*"
       - ".*/lib/AppHost/Store/[^/]*"
       - ".*/lib/AppHost/Store/Source/[^/]*"
-      - ".*/lib/BackgroundJob/(ActorForwardedJob|CalendarLinkBackfillRun|CalendarRecomputeJobInterface|HandoffQueueDrainJob|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php"
+      - ".*/lib/BackgroundJob/(ActorForwardedJob|CalendarLinkBackfillRun|CalendarRecomputeJobInterface|ContextChatSubmissionJob|HandoffQueueDrainJob|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php"
       - ".*/lib/Calendar/[^/]*"
       - ".*/lib/Command/(BackfillTranslationSourceLanguageCommand|FederationShareRightsCommand|TablesSyncCommand|TimeReconcileCommand)[.]php"
       - ".*/lib/Contacts/[^/]*"

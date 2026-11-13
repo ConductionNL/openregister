@@ -50,6 +50,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\Listener;
 
 use DateTime;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
 use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -59,6 +60,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
 use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\ContextChat\ContentItem;
@@ -115,6 +117,13 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * Moves the event work to a ContextChatSubmissionJob; null runs it inline.
+	 *
+	 * @var ListenerDeferralInterface|null
+	 */
+	private readonly ?ListenerDeferralInterface $deferral;
+
+	/**
 	 * Wire collaborators.
 	 *
 	 * ⚠️ `IContentManager` is resolved LAZILY, in {@see self::contentManager()}.
@@ -153,6 +162,7 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 		$this->schemaMapper = $services->schemaMapper;
 		$this->userManager = $services->userManager;
 		$this->logger = $services->logger;
+		$this->deferral = $services->deferral;
 	}//end __construct()
 
 	/**
@@ -196,6 +206,11 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 	 */
 	public function handle(Event $event): void {
 		try {
+			if ($this->deferral !== null && $this->deferral->isDeferralEnabled() === true) {
+				$this->deferEvent(event: $event);
+				return;
+			}
+
 			if ($event instanceof ObjectDeletedEvent) {
 				$this->remove(object: $event->getObject());
 				return;
@@ -223,6 +238,48 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 			);
 		}//end try
 	}//end handle()
+
+	/**
+	 * Defer an object lifecycle event to a ContextChatSubmissionJob.
+	 *
+	 * Only an object on an opted-in schema is enqueued, so a write that Context
+	 * Chat ignores adds no job. The entry carries the uuid and the schema id:
+	 * the job reads the object as it is then, submits it when it still exists
+	 * and removes its content when it is gone. Entries coalesce on the uuid, so
+	 * a create and an update in one request become one job entry.
+	 *
+	 * @param Event $event Inbound dispatcher event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md#requirement-post-event-object-listeners-must-defer-heavy-work-through-the-existing-deferral-contract
+	 */
+	private function deferEvent(Event $event): void {
+		$object = null;
+		if ($event instanceof ObjectCreatedEvent || $event instanceof ObjectDeletedEvent) {
+			$object = $event->getObject();
+		}
+
+		if ($event instanceof ObjectUpdatedEvent) {
+			$object = $event->getNewObject();
+		}
+
+		if ($object === null) {
+			return;
+		}
+
+		$uuid = (string)($object->getUuid() ?? '');
+		$schema = $this->resolveSchema(object: $object);
+		if ($uuid === '' || $schema === null || $schema->isContextChatIndexingEnabled() === false) {
+			return;
+		}
+
+		$this->deferral?->defer(
+			jobClass: JobHandles::CONTEXT_CHAT_SUBMISSION,
+			entry: ['uuid' => $uuid, 'schemaId' => (string)$object->getSchema()],
+			dedupeKey: $uuid
+		);
+	}//end deferEvent()
 
 	/**
 	 * Submit an object's content when its schema is opted in AND it

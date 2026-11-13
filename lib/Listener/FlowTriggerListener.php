@@ -93,6 +93,10 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return void
 	 *
+	 * @listener-placement inline realtime — FlowTriggerService runs `executionMode: sync` flows inside the
+	 *   triggering request, a published read-after-write contract; async flows already leave the request
+	 *   through FlowRunWorker, and the trigger lookup is an indexed query.
+	 *
 	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
 	 */
 	public function handle(Event $event): void {

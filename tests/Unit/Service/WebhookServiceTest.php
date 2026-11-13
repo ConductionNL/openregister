@@ -665,6 +665,23 @@ class WebhookServiceTest extends TestCase {
 		$this->service->dispatchEvent('SomeEvent', ['test' => 'data']);
 	}
 
+	public function testHasWebhooksForAsksTheMapperForThatEvent(): void {
+		$this->webhookMapper->expects($this->exactly(2))
+			->method('findForEvent')
+			->with('OCA\\OpenRegister\\Event\\ObjectCreatedEvent')
+			->willReturnOnConsecutiveCalls([$this->createTestWebhook(id: 1)], []);
+
+		$this->assertTrue($this->service->hasWebhooksFor('OCA\\OpenRegister\\Event\\ObjectCreatedEvent'));
+		$this->assertFalse($this->service->hasWebhooksFor('OCA\\OpenRegister\\Event\\ObjectCreatedEvent'));
+	}
+
+	public function testHasWebhooksForIsFalseWhenTheWebhookTableIsMissing(): void {
+		$this->webhookMapper->method('findForEvent')
+			->willThrowException(new \Exception('Table not found'));
+
+		$this->assertFalse($this->service->hasWebhooksFor('SomeEvent'));
+	}
+
 	public function testDispatchEventEnqueuesDeliveryJobPerWebhookAndDoesNotDeliverSynchronously(): void {
 		$event = $this->createMock(\OCP\EventDispatcher\Event::class);
 

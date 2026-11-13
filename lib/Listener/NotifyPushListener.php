@@ -139,6 +139,9 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 	 *
 	 * @return void
 	 *
+	 * @listener-placement inline realtime — it is the realtime push channel, and its per-request static
+	 *   state (`$seen`, `$batchMode`, `$batchedCollections`) assumes one request lifetime.
+	 *
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-4
 	 */
 	public function handle(Event $event): void {
