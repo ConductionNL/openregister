@@ -3117,3 +3117,4 @@ verify:dossiq:6315:fcd7fc7c	GREEN #6315, #6316 (tests only, no new failures)	ses
 cover:shillinq:05639debmd8ee:84e9293a	PR #2902: LogPurchaseOrderMailerTest (3 tests); mailer 1->9/9 lines; lib/Service/PurchaseOrder 89.68->96.0%; suite 9400->9403, 1 inherited failure unchanged	session-20261113T044737-f37de8e3	2026-11-13T07:17:32Z
 cover:shillinq:05639debmd8ee:dfaef732	already done: lib/Notification/*.php at 95.29% lines (81/85) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T07:17:46Z
 verify:shillinq:2900:9f5e4240	2900 CONFLICT (Sms test files already on development)	session-20261113T064518-860c039d	2026-11-13T07:17:59Z
+verify:dossiq:6309:74279df0	GREEN 6309-6314 (tests-only; 0 new phpunit failures; vitest 1 inherited failure)	session-20261113T053904-36dcee67	2026-11-13T07:18:53Z
