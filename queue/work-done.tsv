@@ -6415,3 +6415,4 @@ cover:portaliq:b60f3b81m4ccb:4d777c35	PR portaliq: 9 tests; Notifications 94.18%
 verify:keepiq:1766:c4b3977d	GREEN #1766	session-20261113T172328-c860ad55	2026-11-13T19:46:59Z
 measure:pipelinq:20261113h18	js 92.59% (641 files/4804 tests pass; one unhandled rejection in a CustomerLookupModal test); php skipped (no coverage driver)	session-20261113T190954-c894781f	2026-11-13T19:47:16Z
 cover:keepiq:c967a31fm10bf:0d67c1f3	already done: lib/Service/Siem/ at 100% on development; no PR	session-20261113T172328-c860ad55	2026-11-13T19:47:15Z
+cover:portaliq:b60f3b81m4ccb:e7fbb139	already done: lib/Service/Plans 693/693 statements covered on development	session-20261113T175332-5effc865	2026-11-13T19:47:22Z
