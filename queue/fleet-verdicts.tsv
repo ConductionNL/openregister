@@ -6371,3 +6371,4 @@ opencatalogi	2611	b577b3a7cba012c834466f9159408916730a4ea7	GREEN	worker-36	phpun
 portaliq	2467	7f3867f0aaebf662e6a325dd31375c27f9ef360b	GREEN	worker-28	tests-only; unit 4919 on tree vs baseline 4914, 0 failures, 0 new
 opencatalogi	2612	cbed1125d276266f793f1247223a77d27a100a8d	GREEN	worker-36	phpunit 5254 (baseline 2 failures, 0 new); vitest 60 files/834 tests pass incl. new 28; test-only
 decidiq	2138	abb26c420ba90e05fb5b11d04e5cc1b552a4c16b	GREEN	worker-40	unit 3938 tests OK (baseline 3911), vitest 2712 passed, no new failures; decision competence guard per change stage 4
+integriq	3536	32ab4960bc0c5163057c00dec48a0530be1825b0	GREEN	worker-24	tests 8245 (baseline 8222, 3F+2E inherited), new failures 0
