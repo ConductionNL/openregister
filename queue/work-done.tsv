@@ -1023,3 +1023,4 @@ cover:integriq:9b0f5894m2367:c135a8f0	PR #3431: 10 tests for PDOK WFS/WMS source
 cover:integriq:9b0f5894m2367:9bbad86f	already done: the 8 dirs are at 90.1% statements (3890/4317) on development, target 90.0; no PR	session-20261112T231638-72e59130	2026-11-13T00:05:32Z
 fix:stackiq:1780:0a28fb09	test updated for new constructor args; unit 2545 OK; new head e9e2a627, REVERIFY recorded	session-20261112T231645-3f0591a5	2026-11-13T00:05:49Z
 fix:stackiq:1781:566ac706	conflict resolved (docblock @uses), touched tests green; new head bd8e0ef5	session-20261112T234655-0bdbf2be	2026-11-13T00:06:02Z
+cover:integriq:9b0f5894m2367:js921a1004	PR #3432: Twig runtimes 14 tests, lib/Twig 45->108/141 stmts, suite 7113->7127, 2 inherited errors	session-20261112T234653-efce95ba	2026-11-13T00:06:20Z
