@@ -51,7 +51,7 @@ final class EmptyJsonHydration {
 		}
 
 		foreach ($this->emptyJsonAsNull(entity: $entity, object: $object) as $key => $value) {
-			if (HydrationKey::isFieldName(key: $key) === false) {
+			if (HydrationKey::admits(entity: $entity, key: $key) === false) {
 				continue;
 			}
 
