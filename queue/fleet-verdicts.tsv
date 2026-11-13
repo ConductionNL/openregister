@@ -6160,3 +6160,4 @@ shillinq	2959	94bd9e965e743acba69829d729bfd153ef85ea01	GREEN	worker-53	build of 
 shillinq	2960	3316ddbe1004a6156397312c106098649590cd7f	GREEN	worker-56	unit 10403 tests (baseline 10394, 1 inherited failure PaymentWebhookIntakeCharacterisationTest), new failures 0; vitest 2301 passed; builds inbound-payable-from-another-app 2.1 (frontend row actions)
 shillinq	2961	22d67e583d26fc473f0f5b5ff6dfabacbe515e69	GREEN	worker-56	unit 10403 tests (baseline 10394, 1 inherited failure PaymentWebhookIntakeCharacterisationTest), new failures 0; vitest 2301 passed; builds expenses-category-mapping 3.1 (ExpenseAccountResolver + tests)
 shillinq	2962	3c4746323d3c973546f6971be41ed955a845703e	CONFLICT	worker-56	conflicts with #2960 in tree (l10n/en.js en.json nl.js nl.json); clean on plain development
+shillinq	2963	ff530f4070c7e199518538756961f2e4829a668a	CONFLICT	worker-56	conflicts with #2960 in tree (l10n/*.js|json, src/manifestActions.js); clean on plain development
