@@ -4164,3 +4164,4 @@ build:pipelinq:contact-moments-phone-lookup	partial: PR #3706 tasks 1.1-1.5 and 
 cover:shillinq:05639debm0c05:2befd24e	PR #2923: 4 tests, lib/Service/Asset 558/564 -> 561/564 statements	session-20261113T091533-03405ea6	2026-11-13T10:08:43Z
 verify:dossiq:6359:daa852c4	GREEN 6359, 6382, 6383: no new failures	session-20261113T081048-4978ac57	2026-11-13T10:08:48Z
 cover:portaliq:b60f3b81:e7fbb139	PR #2390: 27 tests for 5 Plans classes, lib/Service/Plans 96.39->100%, suite 4527->4554 OK	session-20261113T094606-b7da8c7f	2026-11-13T10:09:57Z
+cover:dossiq:069ee2d6m7275:dfaef732	already covered: lib/Notification/*.php 100% (191/191) from its own tests; no PR	session-20261113T081048-4978ac57	2026-11-13T10:10:07Z
