@@ -1236,3 +1236,4 @@ fix:launchpad:1107:3f7f87e6	failed: cannot measure here (ADR ruleset host unreac
 cover:hermiq:755cdfe7m7444:js4829b6aa	PR #1633: 16 vitest tests (AiFeatureRegister, AiLiteracy rendered); src/views/* 85.1% -> 87.5%, suite 1072 -> 1088 green	session-20261113T002028-bc0aa910	2026-11-13T00:50:54Z
 cover:hermiq:755cdfe7m7444:js0023cfc7	already done: src/dialogs/* at 88.8% lines (167/188) on development, target 85; no PR	session-20261112T231638-72e59130	2026-11-13T00:51:01Z
 review:openregister:10065:f5aa9315	APPROVE: test-only, 20 new tests pass, Controller 9 errors inherited from main	session-20261112T234655-793f46ee	2026-11-13T00:51:53Z
+cover:openregister:7350e3efm0e99:js6e3c1a64	PR #10077: 9 jest tests for ImportConfiguration (lines 69->80%); jest 7485->7494 passing	session-20261112T231645-3f0591a5	2026-11-13T00:52:05Z
