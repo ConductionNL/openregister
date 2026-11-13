@@ -2826,5 +2826,6 @@ cover:filinq:7a9ef677m5ffe:81b1241f	already done: lib/Portal/*.php at 100% (181/
 cover:filinq:7a9ef677m5ffe:65e30692	already done: lib/Service/Intake/ at 100% (153/153, pcov on development); no PR	session-20261113T054519-189b2666	2026-11-13T06:32:03Z
 cover:stackiq:df113dffm5ac4:js0671a85c	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:32:05Z
 cover:stackiq:df113dffm5ac4:js5dec42d9	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:32:11Z
+cover:stackiq:df113dffm5ac4:59f569b2	already done: lib/Service/Settings 1265/1296 (97.6%) measured at development a05c3ddd, after #1797 and #1824	session-20261113T061516-58aa7364	2026-11-13T06:32:22Z
 cover:pipelinq:7f9dc8e6m1e6e:js8f1ea935	already done by open PR #3687 (GREEN, awaiting merge): views 81.52% on development -> 85.82% with it, target 85; no duplicate PR	session-20261113T054517-06ee2c47	2026-11-13T06:32:18Z
 cover:filinq:7a9ef677m5ffe:45998467	already done: lib/Service/Classification/ at 97.4% (187/192, pcov on development), above 90 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:32:30Z
