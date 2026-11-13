@@ -1,0 +1,102 @@
+{
+ "app": "humaniq",
+ "commit": "95550648a60a60d42dd0a851c53b72fa00924336",
+ "measured_at": "2026-11-13T19:04:40Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 96.12,
+  "statements": 25882,
+  "covered": 24879,
+  "dirs": {
+   "lib/BackgroundJob/": [
+    201,
+    200
+   ],
+   "lib/Command/": [
+    992,
+    976
+   ],
+   "lib/Controller/": [
+    2068,
+    1869
+   ],
+   "lib/Event/": [
+    58,
+    58
+   ],
+   "lib/Flow/": [
+    239,
+    228
+   ],
+   "lib/Lifecycle/": [
+    314,
+    314
+   ],
+   "lib/Listener/": [
+    1290,
+    1214
+   ],
+   "lib/Middleware/": [
+    59,
+    58
+   ],
+   "lib/Middleware/Support/": [
+    60,
+    53
+   ],
+   "lib/Notification/": [
+    34,
+    33
+   ],
+   "lib/Payroll/": [
+    769,
+    732
+   ],
+   "lib/Payroll/Dsl/": [
+    497,
+    497
+   ],
+   "lib/Payroll/Dsl/Ops/": [
+    173,
+    171
+   ],
+   "lib/Payroll/Loonaangifte/": [
+    419,
+    419
+   ],
+   "lib/Portal/": [
+    271,
+    271
+   ],
+   "lib/Repair/": [
+    589,
+    583
+   ],
+   "lib/Sections/": [
+    5,
+    0
+   ],
+   "lib/Service/": [
+    14949,
+    14317
+   ],
+   "lib/Settings/": [
+    22,
+    21
+   ],
+   "lib/Standards/": [
+    295,
+    291
+   ],
+   "lib/Standards/Checks/": [
+    2365,
+    2364
+   ],
+   "lib/Support/": [
+    213,
+    210
+   ]
+  }
+ },
+ "js": null
+}
