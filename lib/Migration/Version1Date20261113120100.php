@@ -40,7 +40,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/connections-daily-report-mail/specs/scheduled-report-jobs/spec.md#requirement-a-scheduled-report-can-be-a-daily-connection-health-report
  */
-class Version1Date20261113120000 extends SimpleMigrationStep {
+class Version1Date20261113120100 extends SimpleMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
