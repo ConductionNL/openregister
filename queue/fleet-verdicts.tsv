@@ -6070,3 +6070,4 @@ pipelinq	3767	9ef7f34c927c4c035a1c90f86ec3cd677cff09bc	GREEN	worker-54	7195 test
 portaliq	2433	7c0c09e1763e399975ee8d73f34401957522f6ae	GREEN	worker-24	phpunit 4933 run, baseline 4914 OK, 0 new failures; node specs 56/56; check:l10n-js ok
 pipelinq	3768	ae11b6f19f77e9c969f4a9d6c5e30765cf643369	GREEN	worker-52	unit 7197 tests on merge (baseline 7194, 5 failures inherited, 0 new); tests only
 portaliq	2434	bbc265edc9cd42e7be85d69cd9936441111e1c9b	GREEN	worker-24	phpunit 4933 run, baseline 4914 OK, 0 new failures; node specs 56/56; check:l10n-js ok; implements portal-identity-from-the-admin
+portaliq	2435	758e219413d1d6c577e5be1730b5ad40cd058d3e	CONFLICT	worker-24	conflicts after 2433,2434 in tests/Unit/Settings/PortaliqRegisterConfigTest.php, tests/example-site.spec.mjs (register version bump)
