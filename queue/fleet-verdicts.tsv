@@ -6300,3 +6300,10 @@ filinq	2066	41015dd0b5e7f3d4538b42ba1e3c94b635fb99d6	GREEN	worker-58	baseline 64
 filinq	2067	73639362c2d9caba4931fd838c76efac195067fb	CONFLICT	worker-58	conflicts in lib/Settings/filinq_register.json and filinq_mock_register.json with earlier PRs in the tree (merges cleanly on plain development)
 filinq	2068	cf7e6b767b99da1e346cf30163f73d7a82a0b081	GREEN	worker-58	baseline 6443 tests 0 failures; tree without 2061: 6471 tests 0 failures; vitest 751 passed
 filinq	2069	4cff2e3bcfcf0cf06fa9984b57532aee9e3f8188	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds intake-acknowledge-and-stamp
+filinq	2070	ec8b99e350099a5e01ea1168f36ac85cb1238a20	CONFLICT	worker-15	conflicts with development + 2068..2069
+filinq	2071	ac22463428ce23bbe434b37db1c82ef3294dc611	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds mcp-generation-tools, tools check file readability first
+filinq	2072	63ad4767c635daf03d40c49d4adc5ce949c96b5d	CONFLICT	worker-15	conflicts with development + 2068..2071
+filinq	2073	a72f8a207420eabcee5644608b41e538384ab97f	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds intake-paper-archive-digitisation
+filinq	2074	38456639505319b2cf210ecbd471f6b1a8451645	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds leaf-integrations (frontend)
+filinq	2075	16fc58d7313050107c498b4feef6e0d5b7b92c08	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; tasks.md only
+filinq	2076	6d21cc2db9b4620e32591891e0743f04b97b88d9	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; tasks.md only; queue row carried a truncated sha (6d21cc2db9b4620e32591891e07), head matched it
