@@ -6087,3 +6087,4 @@ portaliq	2430	bc693f182bde6e31d4cb1a40fcbb0ba4389d5352	GREEN	worker-48	phpunit 4
 portaliq	2431	71b8662101c91d2c665c5b430fa73837a40a8eea	GREEN	worker-48	phpunit 4961 run (baseline 4914, 0 fail), 0 new; check:specs per script: only site-look and page-help red, same on development
 portaliq	2432	a871a990a0971470770acfcad63626107a361f4c	GREEN	worker-48	phpunit 4961 run (baseline 4914, 0 fail), 0 new; check:specs per script: only site-look and page-help red, same on development
 portaliq	2433	7c0c09e1763e399975ee8d73f34401957522f6ae	GREEN	worker-48	phpunit 4961 run (baseline 4914, 0 fail), 0 new; check:specs per script: only site-look and page-help red, same on development
+shillinq	2948	5272ff628dde11ebceb7cb48874e15d5fbdd0498	GREEN	worker-41	unit 10486 run on tree 2948-2950 (baseline 10394, 1 inherited failure PaymentWebhookIntakeCharacterisationTest stripe timestamp), 0 new failures; vitest 2355/2355 pass; tests only
