@@ -2151,3 +2151,4 @@ cover:pipelinq:f67520ecmc4ba:a3bb9eeb	PR #3644: PortalObjectRepository, MainRegi
 verify:keepiq:1727:8880a6bb	GREEN 1727-1732 (tests only; phpunit and vitest green on the tree)	session-20261113T034634-857dbcc2	2026-11-13T04:32:25Z
 cover:keepiq:c967a31fm0090:11ebfefd	already done: lib/Backup/*.php 94.39% (454/481), every class tested; branches -1 and -2 already exist	session-20261113T034634-857dbcc2	2026-11-13T04:32:48Z
 verify:launchpad:1166:a12322b0	GREEN 1166	session-20261113T015005-030aa10a	2026-11-13T04:32:49Z
+cover:keepiq:c967a31fm0090:dfaef732	already done: lib/Notification/*.php 394/396 statements at 2f62be10; duplicate of cover:keepiq:c967a31fm88ca:dfaef732	session-20261113T034634-857dbcc2	2026-11-13T04:33:02Z
