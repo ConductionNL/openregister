@@ -164,7 +164,8 @@
                 "flowNode": "text-flowNode",
                 "flowStep": 7,
                 "purpose": "text-purpose",
-                "consumer": "text-consumer"
+                "consumer": "text-consumer",
+                "triggerObject": "text-triggerObject"
             },
             "updated": [
                 "id",
@@ -204,7 +205,8 @@
                 "flowNode",
                 "flowStep",
                 "purpose",
-                "consumer"
+                "consumer",
+                "triggerObject"
             ]
         },
         "filled json": {
@@ -253,7 +255,8 @@
                 "flowNode": "text-flowNode",
                 "flowStep": 7,
                 "purpose": "text-purpose",
-                "consumer": "text-consumer"
+                "consumer": "text-consumer",
+                "triggerObject": "text-triggerObject"
             },
             "updated": [
                 "id",
@@ -295,7 +298,8 @@
                 "flowNode",
                 "flowStep",
                 "purpose",
-                "consumer"
+                "consumer",
+                "triggerObject"
             ]
         }
     },
