@@ -1034,6 +1034,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: calculation without type
  "schemaLoading": false,
  "selectedRegister": null,
  "selectedSchema": null,
+ "titleRows": [],
  "isDateProperty": false
 }"
 `;
@@ -1267,6 +1268,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: calculation, facetable t
  "schemaLoading": false,
  "selectedRegister": null,
  "selectedSchema": null,
+ "titleRows": [],
  "isDateProperty": false
 }"
 `;
@@ -1531,6 +1533,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config with date o
  "schemaLoading": false,
  "selectedRegister": null,
  "selectedSchema": null,
+ "titleRows": [],
  "isDateProperty": false
 }"
 `;
@@ -1759,6 +1762,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config with option
  "schemaLoading": false,
  "selectedRegister": null,
  "selectedSchema": null,
+ "titleRows": [],
  "isDateProperty": false
 }"
 `;
@@ -1985,6 +1989,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config without opt
  "schemaLoading": false,
  "selectedRegister": null,
  "selectedSchema": null,
+ "titleRows": [],
  "isDateProperty": false
 }"
 `;
@@ -2209,6 +2214,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: no property key 1`] = `
  "schemaLoading": false,
  "selectedRegister": null,
  "selectedSchema": null,
+ "titleRows": [],
  "isDateProperty": false
 }"
 `;

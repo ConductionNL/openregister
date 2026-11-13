@@ -219,6 +219,7 @@ exports[`EditSchemaProperty initial state matches the golden state 1`] = `
  "registerLoading": false,
  "schemaLoading": false,
  "selectedRegister": null,
- "selectedSchema": null
+ "selectedSchema": null,
+ "titleRows": []
 }"
 `;

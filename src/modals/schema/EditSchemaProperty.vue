@@ -1011,12 +1011,6 @@ function propertyTypeState() {
 }
 
 /**
- * The save request's progress and outcome, and the register and schema
- * picked for a relation.
- *
- * @return {object} Fresh state
- */
-/**
  * The property's names per language, one editable row each.
  *
  * @return {object} The rows
@@ -1027,6 +1021,12 @@ function titlesState() {
 	}
 }
 
+/**
+ * The save request's progress and outcome, and the register and schema
+ * picked for a relation.
+ *
+ * @return {object} Fresh state
+ */
 function requestState() {
 	return {
 		loading: false,

@@ -514,7 +514,7 @@ describe('names per language (modelling-field-names-per-language, task 2.2)', ()
 		schemaStore.schemaItem = { id: 1, properties: {} }
 		try {
 			vm.addSchemaProperty()
-		} catch (e) {
+		} catch {
 			// What the save does after the titles is not under test here.
 		}
 		expect(vm.applyTitleRows).toHaveBeenCalledTimes(1)
