@@ -6266,3 +6266,4 @@ dossiq	6442	48990f5b890775c7616ed73b7f4298193fa23fb1	GREEN	worker-42	unit 16569 
 shillinq	3004	0b2be938955fce6d7ebc09529c883913faa5c24a	GREEN	worker-51	builds tax-icp-and-reverse-charge + ledger-foreign-legislation per specs; phpunit 10427 run, 1 failure = inherited clock-bound PaymentWebhookIntakeCharacterisationTest; vitest 2295 pass
 keepiq	1766	29392dd8d5e961a6523799c57be9ddc3bf6affcd	GREEN	worker-55	tests only; unit 4863 on the tree (baseline 4854, 0 failures), no new failures
 opencatalogi	2603	d513a3aa0c4a2b9cdf8e0c5d1e1030be36163c0b	GREEN	worker-58	unit 5255 tests (baseline 5254, 2 inherited failures), 0 new failures; tests only
+integriq	3532	42115361ad6bcea53be7c9485a2560d4d7d8b641	GREEN	worker-26	phpunit tree 8225 tests vs baseline 8222 (2 errors, 2-3 failures inherited: CallServiceTest, JobsControllerTest, flaky SynchronizationSynchronizeEntryGoldenTest); vitest 156 files/2104 pass; 0 new failures; test-only
