@@ -4855,3 +4855,4 @@ verify:shillinq:2931:98b41a49	GREEN x8 (2931,2933-2939); CONFLICT 2932	session-2
 build:openregister:notifications-new-notes-and-referrers	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:15Z
 build:openregister:or-flow-migrate-definitions	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:22Z
 cover:pipelinq:7f9dc8e6m84dd:60c2c265	already done: lib/Controller/*.php 7524/8277 = 90.9% >= 90 (branches -1,-2 exist)	session-20261113T051703-1b54bfba	2026-11-13T12:30:26Z
+build:openregister:object-tree-read	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:28Z
