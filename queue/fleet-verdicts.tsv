@@ -5578,3 +5578,4 @@ shillinq	2910	2029bf1785e7fda79e4931643b3397f9159a1642	GREEN	worker-52	phpunit 9
 keepiq	1748	b7d7047304dff62f4607a3a248fa4f127b92cc46	GREEN	worker-58	phpunit 4572 vs baseline 4564, 0 failures; vitest 383 files/6246 pass; refactor: helpers extracted in SecretRequestController, ShareSaveService, import.js, same conditions/order/messages/status codes
 hermiq	1681	79252e2c3baf8dabff868b053bdf5b7f0d047d3c	GREEN	worker-47	4212 tests (+3), baseline 146 errors/26 failures inherited (same 172 tests), 0 new; tests only
 buildiq	1535	3315eb1a88235e35288e57352f7f1f716090fb53	GREEN	worker-52	phpunit 2784 tests (baseline 2776, 1 inherited failure ExportZipGoldenTest), 0 new; tests only
+filinq	2049	dd2c0c59f5bda8e27a697637958cbc2bd8072f83	GREEN	worker-22	lockfile-only (in-range npm update): npm ci ok, vitest 124 files/751 tests pass (same as baseline), webpack build ok; phpunit 6416 OK (unchanged); new failures: none
