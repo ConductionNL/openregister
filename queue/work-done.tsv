@@ -3801,5 +3801,6 @@ merge:buildiq:1531:52b2c311	merge-local over 4 buildiq tasks: merged=8 red=0 fai
 build:dossiq:case-type-rights-by-role	already done: built on development (a27ae285c8); only open task 2.1 is an owner decision, not code	session-20261113T091531-dc489d35	2026-11-13T09:18:13Z
 build:dossiq:case-type-pins-are-views	already done in code; PR #6351 ticks 1.5 and 1.6 (released names in use, /api/menu-case-types retired in #5195)	session-20261113T091529-c3067ba9	2026-11-13T09:18:21Z
 verify:stackiq:1863:48caa4ef	1863 GREEN, 1864 GREEN: tests-only, vitest 2395 passed	session-20261113T080546-98207a87	2026-11-13T09:18:22Z
+cover:shillinq:05639debmd8ee:4751a52c	already done: lib/Validation/*.php at 100% (pcov)	session-20261113T072715-8f8a14e9	2026-11-13T09:18:30Z
 build:dossiq:case-search-declares-its-fields	already building: built on development 316176ada0 (2026-09-16), tasks 1.1-6.1 ticked, refusal reader since moved onto the library (a92b4a946c); only 7.1 left, gated on nextcloud-vue#1430 (not code); no PR	session-20261113T083916-59f10a3b	2026-11-13T09:18:33Z
 cover:shillinq:05639debmd8ee:aed80a0c	already done: lib/Lifecycle/Action 93.0% lines (573/616) on development c421f3c7d, target 90; no PR	session-20261113T084521-4cd185d2	2026-11-13T09:18:48Z
