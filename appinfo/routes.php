@@ -1442,6 +1442,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'auditQuery#query', 'url' => '/api/v2/audit', 'verb' => 'GET'],
         // Notification History — read-only audit trail of every dispatch.
         ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
+        // Automation run records (automation-run-records): notification and lifecycle-action outcomes, by key prefix.
+        ['name' => 'automationRecords#index', 'url' => '/api/automation-records', 'verb' => 'GET'],
         // The bell's own verbs (`object-read-state`). A snooze postpones a
         // notice, an archive takes it out without claiming it was read, and a
         // thread is marked read as a whole. Each is scoped to the caller's own

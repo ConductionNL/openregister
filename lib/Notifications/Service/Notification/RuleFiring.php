@@ -136,6 +136,13 @@ final class RuleFiring {
 	public array $actions = [];
 
 	/**
+	 * What this evaluation did, for its automation run record.
+	 *
+	 * @var NotificationRunTally
+	 */
+	public NotificationRunTally $tally;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string               $ruleId     The rule's annotation key.
@@ -155,6 +162,7 @@ final class RuleFiring {
 	) {
 		$this->data       = ($object->getObject() ?? []);
 		$this->schemaSlug = (string)($schema->getSlug() ?? $schema->getId());
+		$this->tally      = new NotificationRunTally();
 	}//end __construct()
 
 	/**

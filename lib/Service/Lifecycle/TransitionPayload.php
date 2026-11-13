@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCA\OpenRegister\Db\ObjectEntity;
+
 /**
  * One matched transition: its name, the new (@self) and the old (@previous) payload.
  *
@@ -40,11 +42,15 @@ final class TransitionPayload {
 	 * @param string               $transition   The matched transition name, for diagnostics.
 	 * @param array<string, mixed> $objectData   The new (@self) payload.
 	 * @param array<string, mixed> $previousData The old (@previous) payload.
+	 * @param ObjectEntity|null    $object       The object making the transition, for its run records.
+	 *
+	 * @spec openspec/changes/automation-run-records/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly string $transition,
 		public readonly array $objectData,
 		public readonly array $previousData,
+		public readonly ?ObjectEntity $object = null,
 	) {
 	}//end __construct()
 
@@ -58,7 +64,7 @@ final class TransitionPayload {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function withObjectData(array $objectData): self {
-		return new self(transition: $this->transition, objectData: $objectData, previousData: $this->previousData);
+		return new self(transition: $this->transition, objectData: $objectData, previousData: $this->previousData, object: $this->object);
 	}//end withObjectData()
 
 	/**

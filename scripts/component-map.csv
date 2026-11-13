@@ -3897,3 +3897,13 @@ Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Db/AutomationRecord.php,,Db,,,,,Processes
+Db/AutomationRecordFilter.php,,Db,,,,,Processes
+Db/AutomationRecordMapper.php,,Db,,,,,Processes
+Service/AutomationRecordWriter.php,,Service,,,,,Processes
+Service/AutomationRecordService.php,,Service,,,,,Processes
+Service/Lifecycle/LifecycleActionRecorder.php,,Service,,,,,Processes
+Listener/LifecycleActionRecordListener.php,,Listener,,,,,Processes
+Notifications/Service/Notification/NotificationRunTally.php,,Notifications,,,,,Notifications
+Controller/AutomationRecordsController.php,,Controller,,,,,Processes
+BackgroundJob/AutomationRecordRetentionJob.php,,BackgroundJob,,,,,Processes

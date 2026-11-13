@@ -152,7 +152,12 @@ class LifecycleActionListener implements IEventListener {
 		$newData = $attempt->edit->getNewData();
 		$result  = $this->executor->run(
 			actions: $actions,
-			payload: new TransitionPayload(transition: $attempt->action, objectData: $newData, previousData: $attempt->edit->getOldData())
+			payload: new TransitionPayload(
+				transition: $attempt->action,
+				objectData: $newData,
+				previousData: $attempt->edit->getOldData(),
+				object: $attempt->edit->object()
+			)
 		);
 
 		if ($result !== $newData) {
