@@ -5682,3 +5682,4 @@ review:openregister:10283:feda6d0d	BLOCK #10283: failing architecture test from 
 build:portaliq:change-proposals-reach-the-case-page	PR #2415: T01-T05 built (server allow-list, own-proposals and context routes, colleague withdraw, widget reader view); T06-T09 left (dossiq, e2e, validate); suite 4914->4927 green	session-20261113T172329-e224a4f0	2026-11-13T17:42:23Z
 fix:pipelinq:3736:d98a90ef	conflict resolved, pushed b7ce4bd444; REVERIFY recorded	session-20261113T172334-4b3b027b	2026-11-13T17:42:36Z
 build:portaliq:documents-grouped-per-record	failed: blocked: open tasks need a media audience field + authenticated media read, a provider bundle-endpoint contract, and learniq placement; buildable parts already on development	session-20261113T172328-c860ad55	2026-11-13T17:42:42Z
+build:portaliq:citizen-case-write-limit	already building (branch quality/build-citizen-case-write-limit exists)	session-20261113T172329-e224a4f0	2026-11-13T17:43:01Z
