@@ -41,7 +41,7 @@
 
 - [ ] 5.1 Removing the last administrator of a register, schema or organisation is refused.
 - [ ] 5.2 A grant over the administered share is held for a second administrator, both attempt and outcome recorded (D-5).
-- [ ] 5.3 An expression resolves only allowlisted environment variables; anything else is absent and logged (D-7).
+- [x] 5.3 An expression resolves only allowlisted environment variables; anything else is absent and logged (D-7).
 - [ ] 5.4 A reversible bar with a reason, keeping what the principal already wrote (D-6).
 - [ ] 5.5 A credential value resolvable from an external secret manager through the broker, with custody unchanged.
 

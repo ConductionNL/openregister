@@ -1083,6 +1083,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectCacheInvalidationInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\MoveObjectInterface::class => \OCA\OpenRegister\Service\Object\MoveObject::class,
+		\OCA\OpenRegister\Service\Object\MovedObjectLookupInterface::class => \OCA\OpenRegister\Service\Object\MovedObjectLookup::class,
 		\OCA\OpenRegister\Service\Object\UpsertOnKeyHandlerInterface::class => \OCA\OpenRegister\Service\Object\UpsertOnKeyHandler::class,
 		ObjectSlugTargetInterface::class => ObjectSlugHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,

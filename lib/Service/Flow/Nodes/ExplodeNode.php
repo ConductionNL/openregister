@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -53,7 +54,9 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
  */
-class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys,
+	IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowSideEffectFree
+{
 	/**
 	 * The step type.
 	 *
@@ -108,6 +111,37 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	public function configKeys(): array {
 		return ['path', 'as', 'keepRecord'];
 	}//end configKeys()
+
+	/**
+	 * The list to split into items, the field each element lands under, and whether the rest of the item comes along.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'path',
+				'label' => $this->l10n->t('List field'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The field on each item that holds a list, like "findings". Every element becomes an item of its own.'),
+				'required' => true,
+			],
+			[
+				'key' => 'as',
+				'label' => $this->l10n->t('Name each element'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The field each new item carries its element under. Defaults to "item".'),
+			],
+			[
+				'key' => 'keepRecord',
+				'label' => $this->l10n->t('Keep the rest of the item'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('On by default: each new item also carries the fields of the item it came from.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject an explode that names no path.

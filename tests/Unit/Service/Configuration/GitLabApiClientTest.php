@@ -93,4 +93,13 @@ class GitLabApiClientTest extends TestCase {
 
 		$this->assertNull($client->getJson('/projects'));
 	}//end testANonJsonBodyDecodesToNull()
+
+	public function testAWriteSendsTheJsonBodyWithTheTokenAndReturnsTheDecodedAnswer(): void {
+		$client = $this->client('glpat-1');
+		$this->http->expects($this->once())->method('request')
+			->with('PUT', 'https://git.example.nl/api/v4/projects/7/repository/files/a.json', ['json' => ['branch' => 'main'], 'headers' => ['PRIVATE-TOKEN' => 'glpat-1']])
+			->willReturn($this->response('{"file_path":"a.json","branch":"main"}'));
+
+		$this->assertSame(['file_path' => 'a.json', 'branch' => 'main'], $client->sendJson('PUT', '/projects/7/repository/files/a.json', ['branch' => 'main']));
+	}//end testAWriteSendsTheJsonBodyWithTheTokenAndReturnsTheDecodedAnswer()
 }//end class
