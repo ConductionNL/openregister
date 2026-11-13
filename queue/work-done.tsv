@@ -3688,3 +3688,4 @@ review:openregister:10113:2769b568	APPROVE: uses metadata only, suites green	ses
 cover:dossiq:069ee2d6m7e79:9d3a1784	PR #6341: 5 tests (ReportGroupingJob, TriageWakeJob), suite 15331->15336, 19 inherited failures unchanged	session-20261113T080551-294c2aa6	2026-11-13T09:00:57Z
 verify:learniq:2454:60467ee9	GREEN 2454, tests only, 0 new failures	session-20261113T084527-a728978e	2026-11-13T09:01:06Z
 review:stackiq:1700:7a35e49e	GREEN: behaviour-preserving extraction, vitest 2370 pass, eslint 0 errors	session-20261113T080556-d189f150	2026-11-13T09:01:25Z
+cover:stackiq:9ac19b3am6096:6f346b68	already done: lib/Sections at 100% (StackiqAdmin 6/6 lines) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:01:45Z
