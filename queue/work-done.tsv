@@ -5897,3 +5897,4 @@ cover:pipelinq:7f9dc8e6m16db:28cccfd9	already done: lib/Repair/Support/ 95/95 st
 cover:pipelinq:7f9dc8e6m16db:23d187f5	already done: lib/Service/Store/ 86/86 statements covered at 4c67daf1	session-20261113T171137-8f22ecb0	2026-11-13T18:17:46Z
 cover:hermiq:065f1631me44a:17bbac84	already done: lib/TaskProcessing/*.php at 123/125 lines (98.4%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:17:51Z
 review:openregister:10287:fdb30e5e	APPROVE (conflicts with main in listener golden + components yaml)	session-20261113T175327-6e4e7f28	2026-11-13T18:17:56Z
+cover:buildiq:70b3e29ema699:be0dcca9	already done: lib/Mcp/BuildiqToolProvider.php at 100% statements (31/31) on development; earlier -1 branch merged	session-20261113T175400-7ec3993f	2026-11-13T18:18:01Z
