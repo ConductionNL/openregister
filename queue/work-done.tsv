@@ -2241,3 +2241,4 @@ verify:keepiq:1733:3825bcec	GREEN 1733 (tests only; phpunit 4485 green)	session-
 cover:dossiq:f8a113c5mac88:d0b3b142	PR dossiq#6276: +10 HumaniqLeaveReader covering tests; suite 14317 -> 14327, 19 inherited failures unchanged	session-20261113T034632-47095943	2026-11-13T04:44:31Z
 cover:dossiq:f8a113c5mac88:dfaef732	already done: lib/Notification/*.php 191/191 stmts (100%) on development	session-20261113T024656-d5bfb688	2026-11-13T04:44:26Z
 cover:buildiq:9930949bm5861:34763eb4	already done: lib/Middleware/*.php 58/59 (98.31%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:44:42Z
+cover:dossiq:f8a113c5mac88:6dc9019f	already done: lib/Service/Registry 100/100 statements covered by its 38 tests (prior -1 branch merged); no PR	session-20261113T041645-1e9d4ce1	2026-11-13T04:44:49Z
