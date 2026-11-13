@@ -1917,3 +1917,4 @@ cover:stackiq:df113dffm8db8:6f346b68	already done: lib/Sections/StackiqAdmin.php
 verify:keepiq:1690:a192fae6	6 GREEN (1690,1721-1725): phpunit 4428 vs 4361 baseline, 0 failures; vitest 5891 passed	session-20261113T031700-7e4db3e6	2026-11-13T03:50:32Z
 verify:dossiq:6262:15042b0b	4 GREEN (6262,6263,6264,6265); 0 new failures vs baseline 19	session-20261113T034625-a62d2029	2026-11-13T03:50:57Z
 verify:launchpad:1158:9b8cecd8	failed: permission	session-20261113T034628-9602b641	2026-11-13T03:51:09Z
+cover:buildiq:9930949bmefda:js10b588fb	already above target: src/components/applicationDetail measured 93.7% lines this session (duplicate of js10b588fb); no PR	session-20261113T024654-6600dc41	2026-11-13T03:51:24Z
