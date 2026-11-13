@@ -5305,3 +5305,4 @@ dossiq	6305	ef9a86d76d04e9cb3469f39be4ddbee978d48186	GREEN	worker-58	phpunit 149
 buildiq	1519	a879da9e9d570308513db7ecc9e41817e61b9ab0	GREEN	worker-24	vitest tree 395 files/3845 tests, baseline 392/3821, 0 new failures; tests-only (one new spec file), no PHP touched
 buildiq	1520	a5e03686716f69ec9b7b02dd1c91fd5837d7a892	GREEN	worker-24	vitest tree 395 files/3845 tests, baseline 392/3821, 0 new failures; tests-only (one new spec file), no PHP touched
 buildiq	1521	de8cfa380f09f5bb2e47709770ffad2b91dd735c	GREEN	worker-24	vitest tree 395 files/3845 tests, baseline 392/3821, 0 new failures; tests-only (one new spec file), no PHP touched
+hermiq	1666	d9af90f2783f7e20a8012513d0056258febf7927	GREEN	worker-13	phpunit 4231 tests on tree, baseline 4185 with 172 inherited errors/failures, 0 new; tests only
