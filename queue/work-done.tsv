@@ -3562,3 +3562,4 @@ measure:integriq:20261113h08	php 92.98% (pcov), js 90.18% @82e99ee3	session-2026
 cover:launchpad:fb10c50fm911d:js01efb861	PR #1179: +90 vitest tests, Widgets 94.09->99.07% lines	session-20261113T081040-5e814df2	2026-11-13T08:43:47Z
 verify:learniq:2441:c104aca5	GREEN x3 (2441,2442,2443): failures inherited only	session-20261113T051703-1b54bfba	2026-11-13T08:43:54Z
 review:openregister:10115:69b99177	APPROVE: 1 jest spec, 8 pass, eslint clean	session-20261113T080556-d189f150	2026-11-13T08:44:15Z
+cover:integriq:92114ab0m658d:a4a15698	no PR: lib/Adapters/Pdok/ already 337/342 (98.5%, target 90); the 5 misses are in the fixture mock clients	session-20261113T071640-3ba6da34	2026-11-13T08:44:18Z
