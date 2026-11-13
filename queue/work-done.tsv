@@ -5678,3 +5678,4 @@ review:openregister:10257:7218a49d	APPROVE: per change specs, phpstan clean, sui
 build:portaliq:capability-rows-without-a-requirement	partial: PR #2414 (T05 DNT node test); T03 spec review and T04 PDF receipt left	session-20261113T172328-c860ad55	2026-11-13T17:41:47Z
 cover:learniq:e6498dddm0533:aed80a0c	PR #2468: 3 tests, lib/Lifecycle/Action 138/146 -> 146/146 lines; suite 6402->6405, same 1 inherited failure	session-20261113T172349-00278d9d	2026-11-13T17:41:42Z
 verify:hermiq:1688:c9237d02	6 GREEN (1688-1692,1694), 1693 CONFLICT with 1690; no new failures	session-20261113T171154-27186e77	2026-11-13T17:42:05Z
+review:openregister:10283:feda6d0d	BLOCK #10283: failing architecture test from maintenance-reachable addition	session-20261113T171141-a3907367	2026-11-13T17:42:19Z
