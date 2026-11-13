@@ -5880,4 +5880,5 @@ verify:stackiq:1886:c7bcddc2	1886 GREEN (JS test only)	session-20261113T171149-8
 build:portaliq:submission-row-actions	partial: PR #2452 backend 1.1-1.4 + Register again/no copy-delete in manifest, 25 PHP + 5 JS tests, suite 4914->4939 0 failures; left 2.1 nc-vue openResponse, Talk + Link a form, 3.1 live	session-20261113T175336-e3687686	2026-11-13T18:15:56Z
 cover:hermiq:065f1631me44a:38e80a9f	already done: lib/Command at 183/183 lines (100%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:15:41Z
 verify:shillinq:2948:4e717601	shillinq #2948-#2950 GREEN: 10486 PHP tests 0 new failures, vitest 2355 pass	session-20261113T172325-6eb25015	2026-11-13T18:15:56Z
+cover:hermiq:065f1631me44a:3a63cc27	already done: lib/Service/ReportSimilarity at 322/323 lines (99.7%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:16:13Z
 verify:keepiq:1759:8cb123ef	GREEN 1759; vitest 6350 ok, phpunit 4854 ok	session-20261113T171153-e1c17962	2026-11-13T18:16:15Z
