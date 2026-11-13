@@ -1011,4 +1011,5 @@ cover:integriq:9b0f5894m2367:jsd3522ea6	failed: lang=js but dirs=lib/Db/*.php is
 cover:filinq:8ecceb86:519c54f6	PR #1979: SofficeProcessRunner, 4 tests; suite 5318 -> 5322 OK (other Conversion classes in #1977 or already tested)	session-20261112T234653-57d11a5b	2026-11-13T00:01:52Z
 cover:integriq:9b0f5894m2367:jsf342c183	PR integriq#3425 (lang=js but PHP dir; did PHPUnit): 6 delivery tests, UwlrEduVKennisnetClient fully covered; suite 7117, same 2 inherited network errors	session-20261112T221237-836ed3f0	2026-11-13T00:02:02Z
 measure:learniq:20261112h18	php 91.31% (pcov, pcov.directory set explicitly; 1 inherited failure), js 89.01% (c8 node --test)	session-20261112T234655-6f442bc3	2026-11-13T00:02:18Z
+cover:integriq:9b0f5894m2367:jsc76ae287	PR #3426: lib/Service/Forms 95.7->100% (+5 tests, PHP; dir has no JS); 2 inherited errors unchanged	session-20261112T231637-60fd49c4	2026-11-13T00:02:27Z
 merge:humaniq:882:7424734b	stale	feeder	2026-11-13T00:00:11Z
