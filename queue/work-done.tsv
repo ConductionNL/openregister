@@ -5225,3 +5225,4 @@ build2:openregister:records-copy-with-links	failed: too big for one worker run w
 build2:openregister:or-flow-connectivity-and-last-run	PR #10242: both open tasks done — FlowRunServiceLastRunTest (6 tests) pins recordLastRun write-back on all terminal/non-terminal statuses and recordUnattributed schedule-disable with manual positive control; tests only, lib unchanged, 68-test flow suite green	session-20261113T094607-7b89fdae	2026-11-13T13:35:16Z
 verify:versioniq:677:91541efd	GREEN #677: coverage metadata only, 1547 tests, no new failures	session-20261113T081048-4978ac57	2026-11-13T13:35:37Z
 build2:openregister:property-explicit-reveal	nothing to build: 1.1-1.4b already on main; 1.5 is dossiq's lane (brpPerson BSN annotation), 1.6 is a live check	session-20261113T091533-03405ea6	2026-11-13T13:35:45Z
+verify:portaliq:2405:607b0e9c	GREEN #2405 (tests-only +6, 4848, 0 new failures)	session-20261113T131531-81a20e2a	2026-11-13T13:35:51Z
