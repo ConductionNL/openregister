@@ -6223,3 +6223,4 @@ cover:opencatalogi:fc83bfb1:93ebc4b9	already covered as far as reachable: lib/Ht
 verify:dossiq:6437:fa435424	6437 GREEN, 6438 GREEN (tests only; 20 inherited failures, none new)	session-20261113T175336-e3687686	2026-11-13T19:09:15Z
 cover:dossiq:069ee2d6m2deb:774c5470	already done: lib/Service/Timeline/ measured 221/221 (100%) on dcd16f5978; earlier -1/-2 branches exist	session-20261113T185328-a5a717bc	2026-11-13T19:09:29Z
 verify:opencatalogi:2599:6fde261c	2599 GREEN (tests only, no new failures)	session-20261113T185326-a3ee0aab	2026-11-13T19:09:30Z
+fix:shillinq:2975:66d3ac29	no change: clean against development; conflict is only with unmerged #2972 (version bump + lock entry), REVERIFY recorded	session-20261113T182349-7e3632fd	2026-11-13T19:09:53Z
