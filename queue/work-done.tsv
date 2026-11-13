@@ -3142,3 +3142,4 @@ cover:shillinq:05639debmd8ee:b12f5203	already done: lib/Service/Import/ at 92.2%
 cover:shillinq:05639debmd8ee:c4ea4174	already done: lib/Service/External/DepositPayment/ at 98.88% lines (88/89) on development 6e03e5f7f (LogDepositPaymentAdapterTest landed 2026-11-13); no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:24:25Z
 cover:shillinq:05639debmd8ee:4387d378	PR #2903: lib/Budget 233/234 -> 234/234 lines, +1 test, suite 9461 with inherited 1 failure	session-20261113T071633-17de823f	2026-11-13T07:24:48Z
 cover:dossiq:f8a113c5m7e79:0f859653	PR dossiq#6321: metadata fix (UsesClass ActionResult), Flow 346->355/371 lines; AskPersonTaskStore in open PR -2	session-20261113T051703-1b54bfba	2026-11-13T07:24:47Z
+cover:integriq:92114ab0m658d:0f859653	already done: lib/Flow/*.php at 98.9% lines (2485/2514) under the full unit suite on development; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:25:20Z
