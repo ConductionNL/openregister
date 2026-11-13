@@ -2578,3 +2578,4 @@ cover:pipelinq:7f9dc8e6mc4ba:js4c63a0a9	PR #3681: 12 vitest tests mounting Keywo
 cover:pipelinq:f67520ecmc4ba:09cc8f24	already done: lib/Service/Cti/ at 99.18% statements (365/368) on development bb7a7d06c, target 85, no PR	session-20261113T054517-06ee2c47	2026-11-13T05:56:38Z
 cover:pipelinq:f67520ecmc4ba:a13d1ab7	PR #3682: 5 tests for HeldObjectDrain paging/lookup; suite 6425->6430, 1 inherited failure	session-20261113T054519-189b2666	2026-11-13T05:56:44Z
 cover:pipelinq:f67520ecmc4ba:89d1fbd3	PR #3683: 6 cases for KeywordProposals; 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:57:02Z
+cover:buildiq:9930949bm5861:b65a63c3	already done: lib/Service/GitHub/ at 98.7% (74/75); the one uncovered line is FileCommit's empty constructor (value object). Note: buildiq unit suite needs an openregister sibling checkout, else 1355 errors	session-20261113T051708-7d5f6071	2026-11-13T05:57:17Z
