@@ -1021,3 +1021,4 @@ cover:integriq:9b0f5894m2367:js63512d7f	PR #3430: AtomicCache + IdpAdapterRegist
 cover:integriq:9b0f5894m2367:js05236f09	PR #3427: dir is PHP (no JS), 9 tests for AbstractZgwResourceTranslator guards, ZgwVersion 100% lines; baseline 2 errors + order-dependent golden failure unchanged	session-20261112T233856-8f2d924b	2026-11-13T00:04:49Z
 cover:integriq:9b0f5894m2367:c135a8f0	PR #3431: 10 tests for PDOK WFS/WMS source adapters, no new failures	session-20261112T224529-41d77a96	2026-11-13T00:04:44Z
 cover:integriq:9b0f5894m2367:9bbad86f	already done: the 8 dirs are at 90.1% statements (3890/4317) on development, target 90.0; no PR	session-20261112T231638-72e59130	2026-11-13T00:05:32Z
+fix:stackiq:1780:0a28fb09	test updated for new constructor args; unit 2545 OK; new head e9e2a627, REVERIFY recorded	session-20261112T231645-3f0591a5	2026-11-13T00:05:49Z
