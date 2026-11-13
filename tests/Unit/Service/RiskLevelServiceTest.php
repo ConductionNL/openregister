@@ -53,6 +53,18 @@ class RiskLevelServiceTest extends TestCase {
 		$this->assertSame(RiskLevelService::RISK_MEDIUM, $this->service->computeRiskLevel(1));
 	}
 
+	/**
+	 * A file whose only personal data is a licence plate reads medium, not the unrecognised-type default.
+	 *
+	 * @spec openspec/changes/detection-dutch-licence-plates/specs/file-risk-classification/spec.md
+	 */
+	public function testComputeRiskLevelReturnsMediumForALicencePlateAlone(): void {
+		$this->entityRelationMapper->method('findEntitiesForFile')->willReturn([
+			['entity_type' => EntityRecognitionHandler::ENTITY_TYPE_LICENSE_PLATE],
+		]);
+		$this->assertSame(RiskLevelService::RISK_MEDIUM, $this->service->computeRiskLevel(1));
+	}
+
 	public function testComputeRiskLevelReturnsHighForEmailEntity(): void {
 		$this->entityRelationMapper->method('findEntitiesForFile')->willReturn([
 			['entity_type' => EntityRecognitionHandler::ENTITY_TYPE_EMAIL],

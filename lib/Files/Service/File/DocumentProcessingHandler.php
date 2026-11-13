@@ -86,6 +86,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		EntityRecognitionHandler::ENTITY_TYPE_IBAN,
 		EntityRecognitionHandler::ENTITY_TYPE_SSN,
 		EntityRecognitionHandler::ENTITY_TYPE_IP_ADDRESS,
+		EntityRecognitionHandler::ENTITY_TYPE_LICENSE_PLATE,
 	];
 
 	/**

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Settings;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
@@ -120,12 +121,14 @@ class FileSettingsHandler {
 	 *
 	 * @param IAppConfig $appConfig Configuration service.
 	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail (openregister#4100).
+	 * @param EntityPatternSetSetting|null $patternSets The enabled jurisdiction pattern sets; without one the default is none.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
+		private readonly ?EntityPatternSetSetting $patternSets = null,
 	) {
 	}//end __construct()
 
@@ -144,6 +147,7 @@ class FileSettingsHandler {
 			if (empty($fileConfig) === true) {
 				$defaults = self::FILE_DEFAULTS;
 				$defaults['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
+				$defaults[EntityPatternSetSetting::SETTINGS_KEY] = $this->patternSetSetting()->defaultCodes();
 				return $defaults;
 			}
 
@@ -183,6 +187,9 @@ class FileSettingsHandler {
 		unset($fileSettings[self::OPENANONYMISER_CREDENTIAL_FIELD]);
 		$fileSettings['openAnonymiserUsername'] = (string) ($fileSettings['openAnonymiserUsername'] ?? '');
 		$fileSettings['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
+
+		// Never saved, the enabled pattern sets follow the phone region.
+		$fileSettings[EntityPatternSetSetting::SETTINGS_KEY] = $this->patternSetSetting()->read(stored: $fileSettings);
 
 		return $fileSettings;
 	}//end readableFileSettings()
@@ -231,6 +238,9 @@ class FileSettingsHandler {
 			$fileConfig['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
 
 			return $fileConfig;
+		} catch (UnknownPatternSetException $e) {
+			// A refused value, answered as 400 naming the code: not a failure to store.
+			throw $e;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
 		}//end try
@@ -278,8 +288,47 @@ class FileSettingsHandler {
 		$fileConfig['openAnonymiserUsername'] = trim((string) $fileConfig['openAnonymiserUsername']);
 		$fileConfig[ReviewPolicy::SETTINGS_KEY] = $this->reviewDefault(fileData: $fileData);
 
+		$patternSets = $this->submittedPatternSets(fileData: $fileData);
+		if ($patternSets !== null) {
+			$fileConfig[EntityPatternSetSetting::SETTINGS_KEY] = $patternSets;
+		}
+
 		return $fileConfig;
 	}//end submittedFileSettings()
+
+	/**
+	 * The enabled pattern sets to store: the submitted list validated, else the
+	 * list already saved, else null so the setting keeps following the phone region.
+	 *
+	 * @param array<string, mixed> $fileData The settings being saved.
+	 *
+	 * @return array<int, string>|null
+	 *
+	 * @throws UnknownPatternSetException When the submitted list names an unknown code.
+	 *
+	 * @spec openspec/changes/detection-dutch-licence-plates/specs/pii-entity-detection/spec.md
+	 */
+	private function submittedPatternSets(array $fileData): ?array {
+		if (array_key_exists(EntityPatternSetSetting::SETTINGS_KEY, $fileData) === true) {
+			return $this->patternSetSetting()->submitted(codes: $fileData[EntityPatternSetSetting::SETTINGS_KEY]);
+		}
+
+		$stored = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		if (is_array($stored) === true && is_array($stored[EntityPatternSetSetting::SETTINGS_KEY] ?? null) === true) {
+			return $stored[EntityPatternSetSetting::SETTINGS_KEY];
+		}
+
+		return null;
+	}//end submittedPatternSets()
+
+	/**
+	 * The pattern set setting, or one without a phone region when none was injected.
+	 *
+	 * @return EntityPatternSetSetting
+	 */
+	private function patternSetSetting(): EntityPatternSetSetting {
+		return ($this->patternSets ?? new EntityPatternSetSetting());
+	}//end patternSetSetting()
 
 	/**
 	 * The instance review default from a settings save, refused when unsound.

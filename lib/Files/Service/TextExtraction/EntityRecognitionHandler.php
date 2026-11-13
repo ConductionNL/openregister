@@ -35,7 +35,7 @@ use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
-use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet;
+use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\JurisdictionPatternSets;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
@@ -76,6 +76,7 @@ class EntityRecognitionHandler {
 	public const ENTITY_TYPE_IBAN = 'IBAN';
 	public const ENTITY_TYPE_SSN = 'SSN';
 	public const ENTITY_TYPE_IP_ADDRESS = 'IP_ADDRESS';
+	public const ENTITY_TYPE_LICENSE_PLATE = 'LICENSE_PLATE';
 
 	/**
 	 * Our entity types in anonymiq's (OpenAnonymiser's) own vocabulary.
@@ -118,6 +119,13 @@ class EntityRecognitionHandler {
 	public const CATEGORY_TEMPORAL_DATA = 'temporal_data';
 
 	/**
+	 * The enabled jurisdiction pattern set codes, once read.
+	 *
+	 * @var array<int, string>|null
+	 */
+	private ?array $patternSetCodes = null;
+
+	/**
 	 * The result of a chunk without text or without detected entities.
 	 *
 	 * @var array{entities_found: int, relations_created: int, entities: array}
@@ -134,11 +142,13 @@ class EntityRecognitionHandler {
 	 * @param EntityRecognitionStores   $stores   Chunk, entity and relation stores plus the DB connection.
 	 * @param EntityRecognitionBackends $backends Settings, anonymisation backend and the lazy app container.
 	 * @param LoggerInterface           $logger   Logger.
+	 * @param JurisdictionPatternSets   $patternSets The jurisdiction pattern sets and their merge.
 	 */
 	public function __construct(
 		private readonly EntityRecognitionStores $stores,
 		private readonly EntityRecognitionBackends $backends,
 		private readonly LoggerInterface $logger,
+		private readonly JurisdictionPatternSets $patternSets=new JurisdictionPatternSets(),
 	) {
 	}//end __construct()
 
@@ -501,7 +511,7 @@ class EntityRecognitionHandler {
 	private function detectEntities(EntityDetectionQuery $query, string $method): array {
 		$method = $this->resolveMethod(method: $method);
 
-		return match ($method) {
+		$entities = match ($method) {
 			self::METHOD_REGEX => $this->detectWithRegex(query: $query),
 			self::METHOD_PRESIDIO => $this->detectWithPresidio(query: $query),
 			self::METHOD_OPENANONYMISER => $this->detectWithOpenAnonymiser(query: $query),
@@ -509,7 +519,48 @@ class EntityRecognitionHandler {
 			self::METHOD_HYBRID => $this->detectWithHybrid(query: $query),
 			default => throw new Exception("Unknown detection method: {$method}")
 		};//end match
+
+		// Country-specific identifiers come from the enabled jurisdiction
+		// pattern sets, under every method: a backend that does not know a
+		// Dutch plate does not hide one. The backend's entity wins an overlap.
+		return $this->patternSets->merge(
+			entities: $entities,
+			query: $query,
+			codes: $this->enabledPatternSetCodes(),
+			isRegex: $method === self::METHOD_REGEX
+		);
 	}//end detectEntities()
+
+	/**
+	 * The jurisdiction pattern set codes enabled in the file settings, read once per handler.
+	 *
+	 * A settings read that fails runs every known set: a needless redaction
+	 * is the safe side, a missed BSN or plate leaks.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) JurisdictionPatternSets::codes() reads the registry constant.
+	 *
+	 * @spec openspec/changes/detection-dutch-licence-plates/specs/pii-entity-detection/spec.md
+	 */
+	private function enabledPatternSetCodes(): array {
+		if ($this->patternSetCodes !== null) {
+			return $this->patternSetCodes;
+		}
+
+		try {
+			$codes = ($this->backends->settingsService->getFileSettingsOnly()['entityPatternSets'] ?? []);
+			$this->patternSetCodes = array_values(array_filter((array) $codes, 'is_string'));
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[EntityRecognitionHandler] Could not read the enabled pattern sets, running all: '.$e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			$this->patternSetCodes = JurisdictionPatternSets::codes();
+		}
+
+		return $this->patternSetCodes;
+	}//end enabledPatternSetCodes()
 
 	/**
 	 * Resolve the requested method to a concrete, runnable method.
@@ -547,17 +598,10 @@ class EntityRecognitionHandler {
 	 * @return array Detected entities with type, value, category, position, and confidence.
 	 */
 	private function detectWithRegex(EntityDetectionQuery $query): array {
+		// Country-specific identifiers (a BSN, a Dutch plate) are not here:
+		// the enabled jurisdiction pattern sets run after every method
+		// (or#4104), see detectEntities().
 		$entities = $this->matchRegexPatterns(query: $query);
-
-		// Country-specific identifiers come from a jurisdiction pattern set,
-		// not from the generic patterns above (or#4104). The Dutch set finds
-		// a BSN only when it passes the elfproef, and reports it as SSN, the
-		// type the risk service rates very high.
-		if ($query->wants(type: self::ENTITY_TYPE_SSN) === true) {
-			$entities = $this->withoutPhoneOverlapping(
-				entities: array_merge($entities, (new NlPatternSet())->detect(text: $query->text))
-			);
-		}
 
 		// Filter by confidence threshold.
 		$confidenceThreshold = $query->confidenceThreshold;
@@ -613,70 +657,6 @@ class EntityRecognitionHandler {
 
 		return $entities;
 	}//end matchRegexPattern()
-
-	/**
-	 * Drop PHONE matches that overlap a BSN.
-	 *
-	 * The phone pattern matches any run of digits, so a BSN was also, or
-	 * instead, labelled PHONE, which rates the file medium where a BSN rates
-	 * it very high. A span proved to be a BSN by the elfproef is not a phone
-	 * number.
-	 *
-	 * @param array $entities The detected entities.
-	 *
-	 * @return array The entities without a PHONE that overlaps an SSN span.
-	 */
-	private function withoutPhoneOverlapping(array $entities): array {
-		$bsnSpans = self::bsnSpans(entities: $entities);
-
-		if ($bsnSpans === []) {
-			return $entities;
-		}
-
-		return array_values(
-			array_filter(
-				$entities,
-				static fn (array $entity): bool => $entity['type'] !== self::ENTITY_TYPE_PHONE
-					|| self::overlapsAnySpan(entity: $entity, spans: $bsnSpans) === false
-			)
-		);
-	}//end withoutPhoneOverlapping()
-
-	/**
-	 * The [start, end] spans of the SSN entities.
-	 *
-	 * @param array $entities The detected entities.
-	 *
-	 * @return array<int, array{0: mixed, 1: mixed}> The SSN spans.
-	 */
-	private static function bsnSpans(array $entities): array {
-		$bsnSpans = [];
-		foreach ($entities as $entity) {
-			if ($entity['type'] === self::ENTITY_TYPE_SSN) {
-				$bsnSpans[] = [$entity['position_start'], $entity['position_end']];
-			}
-		}
-
-		return $bsnSpans;
-	}//end bsnSpans()
-
-	/**
-	 * Whether an entity overlaps any of the given spans.
-	 *
-	 * @param array $entity The entity.
-	 * @param array $spans  The [start, end] spans.
-	 *
-	 * @return bool True when the entity overlaps a span.
-	 */
-	private static function overlapsAnySpan(array $entity, array $spans): bool {
-		foreach ($spans as [$start, $end]) {
-			if ($entity['position_start'] < $end && $entity['position_end'] > $start) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end overlapsAnySpan()
 
 	/**
 	 * Get regex pattern definitions for entity detection.
@@ -1492,7 +1472,8 @@ class EntityRecognitionHandler {
 			self::ENTITY_TYPE_PERSON,
 			self::ENTITY_TYPE_EMAIL,
 			self::ENTITY_TYPE_PHONE,
-			self::ENTITY_TYPE_ADDRESS => self::CATEGORY_PERSONAL_DATA,
+			self::ENTITY_TYPE_ADDRESS,
+			self::ENTITY_TYPE_LICENSE_PLATE => self::CATEGORY_PERSONAL_DATA,
 			self::ENTITY_TYPE_IBAN, self::ENTITY_TYPE_SSN => self::CATEGORY_SENSITIVE_PII,
 			self::ENTITY_TYPE_ORGANIZATION => self::CATEGORY_BUSINESS_DATA,
 			self::ENTITY_TYPE_LOCATION => self::CATEGORY_CONTEXTUAL_DATA,

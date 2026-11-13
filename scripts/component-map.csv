@@ -3915,3 +3915,8 @@ Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Exception/UnknownPatternSetException.php,6,Exception,Exception,Exception/UnknownPatternSetException.php,0,,Kernel
+Files/Service/TextExtraction/PatternSet/JurisdictionPatternSets.php,75,Files,Files,Files/Service/TextExtraction/PatternSet/JurisdictionPatternSets.php,0,,Files
+Files/Service/TextExtraction/PatternSet/NlLicensePlates.php,61,Files,Files,Files/Service/TextExtraction/PatternSet/NlLicensePlates.php,0,,Files
+Formats/LicensePlateNlFormat.php,47,Formats,Formats,Formats/LicensePlateNlFormat.php,0,,Kernel
+Service/Settings/EntityPatternSetSetting.php,46,Service,Configuration,Configuration/Service/Settings/EntityPatternSetSetting.php,0,,Configuration

@@ -4,13 +4,13 @@
     },
     "array format": {
         "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
-        "message": "Invalid string format '[\"email\"]' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user",
+        "message": "Invalid string format '[\"email\"]' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, license-plate-nl, user",
         "errors": [
             {
                 "code": "property-vocabulary-unknown-format",
                 "key": "[\"email\"]",
                 "path": "/field",
-                "message": "Invalid string format '[\"email\"]' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user"
+                "message": "Invalid string format '[\"email\"]' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, license-plate-nl, user"
             }
         ]
     },
@@ -265,13 +265,13 @@
     },
     "object nested invalid": {
         "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
-        "message": "Invalid string format 'bad' at '/field/properties/a'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user",
+        "message": "Invalid string format 'bad' at '/field/properties/a'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, license-plate-nl, user",
         "errors": [
             {
                 "code": "property-vocabulary-unknown-format",
                 "key": "bad",
                 "path": "/field/properties/a",
-                "message": "Invalid string format 'bad' at '/field/properties/a'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user"
+                "message": "Invalid string format 'bad' at '/field/properties/a'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, license-plate-nl, user"
             }
         ]
     },
@@ -409,13 +409,13 @@
     },
     "unknown format": {
         "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
-        "message": "Invalid string format 'colour' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user",
+        "message": "Invalid string format 'colour' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, license-plate-nl, user",
         "errors": [
             {
                 "code": "property-vocabulary-unknown-format",
                 "key": "colour",
                 "path": "/field",
-                "message": "Invalid string format 'colour' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, user"
+                "message": "Invalid string format 'colour' at '/field'. Must be one of: , text, markdown, html, date-time, date, time, duration, email, idn-email, hostname, idn-hostname, ipv4, ipv6, uri, uri-reference, iri, iri-reference, uuid, uri-template, json-pointer, relative-json-pointer, regex, url, color, color-hex, color-hex-alpha, color-rgb, color-rgba, color-hsl, color-hsla, semver, bsn, license-plate-nl, user"
             }
         ]
     },

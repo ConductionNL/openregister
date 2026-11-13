@@ -2001,6 +2001,7 @@
         "SOLR setup failed: {error}": "SOLR-instelling mislukt: {error}",
         "SOLR warmup failed: {error}": "SOLR-opwarming mislukt: {error}",
         "SSN": "BSN",
+        "LICENSE_PLATE": "KENTEKEN",
         "Sample Values:": "Voorbeeldwaarden:",
         "Save": "Opslaan",
         "Save Configuration": "Configuratie opslaan",

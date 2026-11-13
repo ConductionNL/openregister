@@ -40,7 +40,8 @@
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
-            }
+            },
+            "entityPatternSets": []
         },
         "writes": []
     },
@@ -672,7 +673,8 @@
                 "maxDepth": 2
             },
             "openAnonymiserUsername": "",
-            "openAnonymiserPasswordSet": false
+            "openAnonymiserPasswordSet": false,
+            "entityPatternSets": []
         },
         "writes": []
     },
@@ -930,7 +932,8 @@
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
-            }
+            },
+            "entityPatternSets": []
         },
         "writes": []
     },
@@ -976,7 +979,8 @@
                 "maxDepth": 2
             },
             "openAnonymiserUsername": "",
-            "openAnonymiserPasswordSet": true
+            "openAnonymiserPasswordSet": true,
+            "entityPatternSets": []
         },
         "writes": []
     },
@@ -1392,7 +1396,8 @@
                 "maxRatio": 100,
                 "maxDepth": 2
             },
-            "openAnonymiserPasswordSet": false
+            "openAnonymiserPasswordSet": false,
+            "entityPatternSets": []
         },
         "writes": []
     },

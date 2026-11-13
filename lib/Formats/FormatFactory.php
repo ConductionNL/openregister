@@ -49,6 +49,7 @@ final class FormatFactory {
 	public static function customStringFormats(IUserManager $userManager, Closure $planned): array {
 		return [
 			'bsn'       => new BsnFormat(),
+			'license-plate-nl' => new LicensePlateNlFormat(),
 			'semver'    => new SemVerFormat(),
 			'cron'      => new CronFormat(),
 			'user'      => new UserFormat(userManager: $userManager, planned: $planned),

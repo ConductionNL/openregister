@@ -240,6 +240,8 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		// ZGW API mapping configurations" repair step. A built and wired feature
 		// was unreachable because two lists disagreed.
 		'bsn',
+		// Dutch licence plate in one of the fourteen sidecodes. See LicensePlateNlFormat.
+		'license-plate-nl',
 		// Nextcloud user id, checked against the user backend. The referenced
 		// user must exist. See UserFormat.
 		'user',
