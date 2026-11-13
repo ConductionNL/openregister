@@ -4651,3 +4651,4 @@ pipelinq	3605	618006ce0076dbed0b45d6be0b041e1b386ac6b9	GREEN	worker-15	tree of 3
 stackiq	1773	27fc542f6b1fdccffaab7d1ba5f89b537feb4397	GREEN	worker-21	vitest 1886 passed on tree (baseline 1880), 0 new failures; phpunit 2539 run, same 109 errors/33 failures as development (inherited); adds one vitest spec only
 launchpad	1142	20d93893f225f36b22b1efc07fc78d44204398f4	GREEN	worker-04	phpunit 3579 = baseline 3579, 0 new failures; vitest 1249 vs baseline 1188, 0 failures; tests-only diff
 stackiq	1776	84125e628f1f73a22a188e3e827947c1cecb55bd	CONFLICT	worker-21	does not merge onto development: conflicts in appinfo/routes.php, openapi.json, tests/Unit/Middleware/ApiContractMiddlewareTest.php
+pipelinq	3606	3841a295da60a8584cb65d9a27da85ea26ae843a	GREEN	worker-15	tree of 3, tests-only vitest specs: vitest 475 files / 3203 tests all pass; PHP unit 5774 tests unchanged (1 inherited CrmPrivilegeRefusalGoldenTest failure), 0 new
