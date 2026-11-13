@@ -5271,3 +5271,4 @@ stackiq	1843	e9e423266426d2c969ae321d04397761513213b3	GREEN	worker-06	PHP 3133 t
 stackiq	1844	b061bd454111dff4e43c79b65c8664271e73d2fc	GREEN	worker-06	PHP 3133 tests on tree, baseline 3126 with 0 failures, none new; vitest 2286/2286 pass; tests only
 stackiq	1845	471c170412ea06af60e33d5df509b9d3616f0684	GREEN	worker-06	PHP 3133 tests on tree, baseline 3126 with 0 failures, none new; vitest 2286/2286 pass; tests only
 filinq	2041	d10884838916ffa026aac3822615c466acc60eb4	GREEN	worker-12	unit 6260 run (baseline 6251, 6 skipped), 0 new failures; tests only
+stackiq	1846	dbf3d1411ebd16faf0a9a522791a3f096534c3ed	GREEN	worker-06	PHP 3147 tests on tree, baseline 3126 clean, no failures; vitest 2311/2311 pass; tests only
