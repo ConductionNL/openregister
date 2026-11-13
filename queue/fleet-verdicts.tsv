@@ -6351,3 +6351,4 @@ filinq	2058	a3af2f8726dd3c0a8b4dcd4ca86d4f55fea43155	GREEN	worker-19	unit 6481 r
 filinq	2061	cbadad25da4ec78389f05a6766757855f8ef4554	GREEN	worker-19	unit 6481 run (baseline 6443 green), vitest 751 green, 0 new failures; builds filinq-adopt-buildmanifest-pipeline, check:manifest passes
 filinq	2084	06007f380a5648d80ba61c605aee2d2cf3ff5320	GREEN	worker-19	unit 6481 run (baseline 6443 green), vitest 751 green, 0 new failures; builds signing-cancellation (creator-only cancel per change decision)
 filinq	2085	25d925f4d837270d1f83cbba89a0a47258cfbdc3	GREEN	worker-19	unit 6481 run (baseline 6443 green), vitest 751 green, 0 new failures; builds signing-accept-only-recipient
+filinq	2086	8d29d9b117bfea9473654b4a4cb042faf4c3793c	CONFLICT	worker-19	lib/Settings/filinq_register.json conflicts with #2085 in the tree (clean on development alone); merge development in after #2085 lands
