@@ -1839,3 +1839,4 @@ merge:buildiq:1490:9eed6d5f	stale	feeder	2026-11-13T03:30:25Z
 merge:decidiq:2108:9cdaf28f	stale	feeder	2026-11-13T03:30:25Z
 verify:portaliq:2371:9f273ef9	stale	feeder	2026-11-13T03:30:25Z
 merge:humaniq:1101:a2d625e7	stale	feeder	2026-11-13T03:30:25Z
+cover:stackiq:8cfacb29m8db8:3d4b295b	PR #1824: 8 tests, CatalogueLocator 347->373/384, EolSyncSettings 40/40; suite 2854->2862, 57 inherited errors	session-20261113T031700-46f75510	2026-11-13T03:32:13Z
