@@ -2721,6 +2721,7 @@ Service/Object/SaveObject/StreamRun.php,12,Service,Service,Service/Object/SaveOb
 Service/Object/SaveObject/TemplateSource.php,10,Service,Service,Service/Object/SaveObject/TemplateSource.php,0,,Core
 Service/Object/SaveObject/WriteBackSettings.php,8,Service,Service,Service/Object/SaveObject/WriteBackSettings.php,0,,Core
 Service/Object/SaveObjectInterface.php,43,Service,Service,Service/Object/SaveObjectInterface.php,0,,Core
+Service/Object/SaveObjectUpdaterInterface.php,10,Service,Service,Service/Object/SaveObjectUpdaterInterface.php,0,,Core
 Service/Object/SaveObjects.php,1901,Service,Service,Service/Object/SaveObjects.php,0,,Core
 Service/Object/SaveObjects/BulkObjectDefaults.php,13,Service,Service,Service/Object/SaveObjects/BulkObjectDefaults.php,0,,Core
 Service/Object/SaveObjects/BulkObjectOwnership.php,10,Service,Service,Service/Object/SaveObjects/BulkObjectOwnership.php,0,,Core
