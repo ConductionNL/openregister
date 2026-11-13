@@ -25,6 +25,7 @@ use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidatorInterface;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
+use OCA\OpenRegister\Service\Retention\ExpiryDeclaration;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use Psr\Log\LoggerInterface;
 
@@ -200,4 +201,25 @@ final class RecordAnnotationRefusals {
 			$annotation->faults()->refuseWith(messages: SchemaDeclarationValidators::externalLinks()->validate($annotation->shape()));
 		}
 	}//end checkExternalLinks()
+
+	/**
+	 * Refuse a save whose `x-openregister.expiry` names an unknown action or a property the schema lacks.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the expiry block is invalid; the message names the allowed actions.
+	 *
+	 * @spec openspec/changes/expired-object-sweep/specs/expired-object-sweep/spec.md
+	 */
+	public function checkExpiry(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: ExpiryDeclaration::ANNOTATION);
+		$annotation->faults()->refuseWith(
+			messages: ExpiryDeclaration::faults(
+				block: ExpiryDeclaration::rawBlock(configuration: ($schema->getConfiguration() ?? [])),
+				properties: ($schema->getProperties() ?? [])
+			)
+		);
+	}//end checkExpiry()
 }//end class

@@ -58,6 +58,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Object Read State | [object-read-state.md](object-read-state.md) | Collaboration | Implemented | Per-user unread, tab badges, bell cleared by the work |
 | Favourites & Recently Opened | [favourites-and-recent.md](favourites-and-recent.md) | Collaboration | Implemented | Per-user star, view history, two index lenses |
 | Access Links | [access-links.md](access-links.md) | Collaboration | Implemented | Scoped, expiring link that opens one record without an account |
+| Expired Object Sweep | [expired-object-sweep.md](expired-object-sweep.md) | Data Modelling | Implemented | A schema opts in to `x-openregister.expiry`; a daily job deletes or anonymises expired objects, `occ openregister:expiry:sweep --dry-run` |
 | Generated Identifiers | [generated-identifier.md](generated-identifier.md) | Data Modelling | Implemented | Case numbers from a named sequence and a format, frozen after issue |
 | Object Slugs | [object-slugs.md](object-slugs.md) | Data Modelling | Implemented | Slug per object from a configured field, unique per register and schema, frozen once set, `occ openregister:backfill-slugs` |
 | Forms into their destination | [form-destination.md](form-destination.md) | Data Modelling | Implemented | A form is checked against its destination schema and submits into that object in one request |
@@ -104,6 +105,7 @@ Connecting OpenRegister to external systems and workflows.
 - [Object Read State](object-read-state.md) — Per-user unread state, the unread filter, tab badges, snooze and archive
 - [Favourites & Recently Opened](favourites-and-recent.md) — Per-user star, view history, the `_favourite` and `_recent` lenses
 - [Access Links](access-links.md): share one record with somebody who has no account, revocably and on the audit trail
+- [Expired Object Sweep](expired-object-sweep.md): delete or anonymise objects whose expiry has passed, skipping legal holds, with a dry run
 - [Generated Identifiers](generated-identifier.md) — `x-openregister-generated`, a named counter, a format, and a value that cannot be edited
 - [Workflow Automation](workflow-automation.md) — Schema hooks, n8n/Windmill integration, import-time workflow triggers
 - [OpenAPI & GraphQL APIs](api-generation.md) — Auto-generated specs and GraphQL schema per register

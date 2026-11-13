@@ -176,9 +176,9 @@ components:
       - ".*/lib/Service/Translation/[^/]*"
   - name: Compliance
     include:
-      - ".*/lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConfiguredJobRuntime|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob)[.]php"
+      - ".*/lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ConfiguredJobRuntime|ConnectionSeamReportJob|DestructionCheckJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExpiredObjectSweepJob|ExternalGrantLapseJob|ProcessingLogPrune|ProcessingLogRetentionJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob)[.]php"
       - ".*/lib/BackgroundJob/Support/[^/]*"
-      - ".*/lib/Command/(DedupeRegistersRun|RechainAuditTrailCommand)[.]php"
+      - ".*/lib/Command/(DedupeRegistersRun|ExpirySweepCommand|RechainAuditTrailCommand)[.]php"
       - ".*/lib/Controller/(AnonymisationBackendController|ArchivalController|ArchivalOverviewController|AuditQueryController|AuditSinkController|AuditTrailController|ContentReportController|CorrectionsController|DataSubjectRequestController|DsarCaseController|DsarController|ErasurePreviewController|HardeningController|HardeningStatementController|MergeController|ProcessingLogController|ProcessingPurposeController|QualityController|RetentionController|SearchTrailController|SelectielijstController|SelectielijstReferenceController|SubjectExportController|TmloController|VerwerkingsactiviteitenController)[.]php"
       - ".*/lib/Db/(AuditFlowAttributionInterface|AuditTrail|AuditTrailFilterTerm|AuditTrailMapper|AuditTrailPageQuery|AuditTrailPageQueryInterface|AuditTrailPayloadHelper|ContentReport|ContentReportMapper|ErasurePreview|ErasurePreviewMapper|GdprEntity|GdprEntityMapper|GdprEntityMapperInterface|ProcessingLogEntry|ProcessingLogMapper|ProcessingPurpose|ProcessingPurposeMapper|SearchTrail|SearchTrailMapper|SearchTrailOutcome|StatusVocabularyTrait|SubjectExport|SubjectExportMapper|SubjectExportMapperInterface|TaskAudit|TaskAuditMapper|TrailRetentionTrait|Verwerkingsactiviteit|VerwerkingsactiviteitMapper)[.]php"
       - ".*/lib/Db/AuditTrail/[^/]*"
@@ -210,6 +210,7 @@ components:
       - ".*/lib/Service/Gdpr/Seam/[^/]*"
       - ".*/lib/Service/Gdpr/Subject/[^/]*"
       - ".*/lib/Service/Hardening/[^/]*"
+      - ".*/lib/Service/Retention/[^/]*"
   - name: Integrations
     include:
       - ".*/lib/AppHost/[^/]*"

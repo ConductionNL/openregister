@@ -3897,3 +3897,10 @@ Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Service/Retention/ExpiryDeclaration.php,,Service,,,,,Compliance
+Service/Retention/ExpiredObjectSources.php,,Service,,,,,Compliance
+Service/Retention/ExpiredObjectStore.php,,Service,,,,,Compliance
+Service/Retention/ExpiredObjectStoreInterface.php,,Service,,,,,Compliance
+Service/Retention/ExpiredObjectSweeper.php,,Service,,,,,Compliance
+BackgroundJob/ExpiredObjectSweepJob.php,,BackgroundJob,,,,,Compliance
+Command/ExpirySweepCommand.php,,Command,,,,,Compliance

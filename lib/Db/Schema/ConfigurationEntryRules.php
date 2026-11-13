@@ -289,7 +289,7 @@ final class ConfigurationEntryRules {
 	}//end validateVocabularyValue()
 
 	/**
-	 * Keep a declared `x-openregister-*` annotation; record an unknown one.
+	 * Keep a declared `x-openregister` or `x-openregister-*` annotation; record an unknown one.
 	 *
 	 * Declarative annotation extensions round-trip through the configuration
 	 * column; their shape is validated by the dedicated validators (e.g.
@@ -303,7 +303,8 @@ final class ConfigurationEntryRules {
 	 * @return array<int, mixed> The value to store as a one-element list; empty when the key is not stored.
 	 */
 	private function annotationConfigurationValue(string $key, mixed $value): array {
-		if (str_starts_with($key, 'x-openregister-') === false) {
+		// The bare `x-openregister` block (expired-object-sweep's `expiry`) is kept like any declared annotation.
+		if ($key !== 'x-openregister' && str_starts_with($key, 'x-openregister-') === false) {
 			return [];
 		}
 

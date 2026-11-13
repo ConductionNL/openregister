@@ -170,6 +170,13 @@ final class AnnotationVocabulary {
 		// Absent from this list the key is dropped on save and the quota never
 		// fires, the same or#460/#462-class trap as the entries above.
 		'x-openregister-quota',
+		// The schema-level `x-openregister` block. Today it carries `expiry`
+		// (expired-object-sweep): what an object's passed `expires` means,
+		// delete or anonymise. Absent from this list setConfiguration() would
+		// drop the block, the schema would read as not opted in, and the daily
+		// sweep would never touch its objects. SchemaMapper refuses an invalid
+		// expiry block on save (RecordAnnotationRefusals::checkExpiry()).
+		'x-openregister',
 		// Nested write-only dot-paths. Unlike every other entry in this list
 		// this key is NOT a plain pass-through: validateConfigurationEntry has
 		// a dedicated branch above that validates its shape, and

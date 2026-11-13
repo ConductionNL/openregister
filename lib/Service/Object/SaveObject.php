@@ -60,6 +60,7 @@ use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Retention\ExpiryDeclaration;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\DeclaredRow;
@@ -3631,6 +3632,8 @@ class SaveObject implements SaveObjectInterface {
 
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $objectEntity, submission: new SelfSubmission(selfData: $selfData, actingUser: $flags->currentUser));
+		// An opted-in schema stores `@self.expires` (expired-object-sweep); this save already runs behind the update check.
+		ExpiryDeclaration::stampRequestedExpiry(schema: $schema, object: $objectEntity, selfData: $selfData);
 
 		// Start the object's version sequence. Nothing wrote this before, so on
 		// the magic tables (which carry no column default) every object read
@@ -3837,6 +3840,7 @@ class SaveObject implements SaveObjectInterface {
 
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $existingObject, submission: new SelfSubmission(selfData: $selfData, actingUser: $currentUser));
+		ExpiryDeclaration::stampRequestedExpiry(schema: $schema, object: $existingObject, selfData: $selfData);
 
 		// A save is a patch. Bumped here rather than after the write so the
 		// value the audit trail copies onto its own `version` column is the

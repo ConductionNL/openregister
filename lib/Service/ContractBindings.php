@@ -417,6 +417,8 @@ use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
 use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
+use OCA\OpenRegister\Service\Retention\ExpiredObjectStore;
+use OCA\OpenRegister\Service\Retention\ExpiredObjectStoreInterface;
 use OCA\OpenRegister\Service\Object\FacetCacheVersion;
 use OCA\OpenRegister\Service\Object\FacetCacheVersionInterface;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
@@ -830,6 +832,7 @@ final class ContractBindings {
 		DependentValueTableInterface::class => DependentValueTable::class,
 		DraftActivationInterface::class => DraftActivation::class,
 		DraftExpiryInterface::class => DraftExpiry::class,
+		ExpiredObjectStoreInterface::class => ExpiredObjectStore::class,
 		EmailLinkServiceInterface::class => EmailLinkService::class,
 		EndNodeInterface::class => EndNode::class,
 		EndpointServiceInterface::class => EndpointService::class,
