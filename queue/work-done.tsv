@@ -6481,3 +6481,4 @@ cover:pipelinq:7f9dc8e6m8ce9:0a24f15f	already done: lib/Service/Letter/ at 100% 
 cover:pipelinq:7f9dc8e6m8ce9:e19add4c	already done: lib/Service/Consent at 67/67 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:56:47Z
 cover:pipelinq:7f9dc8e6m8ce9:bc26df70	already done: lib/Service/Labels at 96/96 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:07Z
 build:filinq:propose-grondslag-per-entity-type	no PR: all in-scope tasks already done; only 7.1-7.3 open, marked deferred and needing an OpenAnonymiser endpoint that does not exist yet	session-20261113T192700-f21ebd18	2026-11-13T19:57:10Z
+cover:pipelinq:7f9dc8e6m8ce9:ab7f3595	already done: lib/Service/Provider at 103/104 lines (99%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:23Z
