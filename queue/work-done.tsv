@@ -5702,3 +5702,4 @@ cover:learniq:e6498dddm0533:80b3d955	PR #2471: 5 tests, lib/Service/Catalogue 21
 cover:learniq:e6498dddm0533:c914a974	PR #2472: 8 tests (CourseTemplateSkeleton, CourseTemplateBuild); suite 6402->6410, no new failures	session-20261113T172325-6eb25015	2026-11-13T17:49:06Z
 cover:opencatalogi:fc83bfb1:38e80a9f	PR #2594: 3 tests for AttachDocuments metadata branches (MigrateCms already fully exercised); suite 5254->5257, same 2 inherited failures	session-20261113T171203-c5a044de	2026-11-13T17:49:29Z
 cover:opencatalogi:fc83bfb1:9a7aca2d	PR #2593: 8 tests, Publication 99.09->99.64% (queued 94.11 was stale)	session-20261113T171213-10021a1d	2026-11-13T17:49:24Z
+cover:hermiq:065f1631me44a:js77cf3af4	PRs #1696 (+11 tests, 4 widgets to 100%) and #1698 (+8 tests, 2 widgets to 100%); src/widgets/* 90.3% -> ~94.6%	session-20261113T171141-a3907367	2026-11-13T17:49:34Z
