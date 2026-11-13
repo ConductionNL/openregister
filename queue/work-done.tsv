@@ -6063,4 +6063,5 @@ cover:shillinq:05639debm7b6b:a215617b	already done: lib/Integration/*.php 256/25
 cover:shillinq:05639debm7b6b:e587f75a	already done: lib/PaymentRun/*.php 499/505 statements covered (98.8%), no PR	session-20261113T172329-0b6220f9	2026-11-13T18:44:23Z
 verify:dossiq:6434:8dbc13ef	6434 GREEN, 6435 GREEN (tests only; phpunit 20 inherited failures, vitest 1 inherited failure, none new)	session-20261113T175336-e3687686	2026-11-13T18:44:20Z
 build:shillinq:contacts-kvk-lookup	PR shillinq#2969: tasks 1.1, 2.1, 4.1 built; 1.2, 3.1, 3.2 live-only left	session-20261113T175332-5effc865	2026-11-13T18:44:41Z
+build:shillinq:bookings-messages-and-embedding	partial: PR #2968 task 1.1 send through IMailer with ICS; recording the send and 1.2-1.6 left	session-20261113T172324-00680177	2026-11-13T18:44:32Z
 build:shillinq:hours-to-humaniq	partial: PR #2967 design.md (1.1,1.2) + occ shillinq:hours:subject-audit (2.1, 6 tests); rest gated on live counts (2.2) or in humaniq	session-20261113T181000-9baff50f	2026-11-13T18:44:29Z
