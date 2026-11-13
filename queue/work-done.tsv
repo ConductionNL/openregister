@@ -6485,6 +6485,7 @@ cover:pipelinq:7f9dc8e6m8ce9:50cc8442	already done: lib/Util/*.php 100% (106/106
 build:filinq:propose-grondslag-per-entity-type	no PR: all in-scope tasks already done; only 7.1-7.3 open, marked deferred and needing an OpenAnonymiser endpoint that does not exist yet	session-20261113T192700-f21ebd18	2026-11-13T19:57:10Z
 cover:pipelinq:7f9dc8e6m8ce9:ab7f3595	already done: lib/Service/Provider at 103/104 lines (99%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:23Z
 cover:pipelinq:7f9dc8e6m8ce9:db675bd6	already done: lib/Activity/Setting/ at 27/27 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:29Z
+cover:pipelinq:7f9dc8e6m8ce9:dfaef732	already done: lib/Notification/Notifier.php 100% (162/162) on development c2351f221; no new PR	session-20261113T195345-400acccd	2026-11-13T19:57:41Z
 cover:pipelinq:7f9dc8e6m8ce9:2ea9e4f7	already done: lib/Service/CallReview/ at 103/103 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:39Z
 cover:pipelinq:7f9dc8e6m8ce9:0798b7cf	already done: lib/Service/PosCart/ at 67/67 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:45Z
 build3:openregister:records-tree-view	partial: PR #10320 (tasks 1.1 tree presentation validation, 3.1 docs; 1.2/1.3 list child counts and hidden parents, 2.x UI/e2e left)	session-20261113T185328-da819141	2026-11-13T19:57:56Z
