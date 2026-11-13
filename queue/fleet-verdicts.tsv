@@ -6242,3 +6242,4 @@ shillinq	3005	7df04548317c3840c8d73ca62d249ae5c8b9a33b	CONFLICT	worker-16	confli
 shillinq	3006	917592f5d91cfead0f35eefa9f64665fca17fb97	CONFLICT	worker-16	conflicts in the tree in appinfo/info.xml, l10n catalogues and tests/fixtures/register-versions.lock.json (earlier tree PR); clean vs development
 shillinq	3007	d6ce6195433039c39dfaa1081c50d0ba9de04029	CONFLICT	worker-16	conflicts in the tree in appinfo/info.xml, l10n catalogues and tests/fixtures/register-versions.lock.json (earlier tree PR); clean vs development
 shillinq	3008	67bfab3c589314a313679e734fe76f4aa7d961b7	CONFLICT	worker-16	conflicts in the tree in l10n/en.js, en.json, nl.js, nl.json (strings of an earlier tree PR); clean vs development
+opencatalogi	2600	7874d6b1e0c0bbd61fdf605846cb0bab4a393c94	GREEN	worker-54	tree of 3: 5265 tests vs baseline 5254 (2 inherited failures), same failure set; test-only
