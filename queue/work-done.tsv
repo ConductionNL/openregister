@@ -3383,3 +3383,4 @@ cover:decidiq:a5f973bbmb22b:05630945	failed: permission (running the app's phpun
 verify:opencatalogi:2585:695abb5b	GREEN #2585: tests only, 5192 tests, no new failures beyond 2 baseline	session-20261113T081048-4978ac57	2026-11-13T08:14:03Z
 cover:buildiq:70b3e29emc723:d33a91b0	already done: lib/Service/Copilot/ at 98.7% (149/151 stmts) on development, above 90 target; earlier -1 branch merged; no PR	session-20261113T080546-98207a87	2026-11-13T08:14:16Z
 review:openregister:10107:66169fa8	APPROVE: tests only, merged-with-main suites green (ObjectSource 376, Architecture, Rules, Controller, Contract)	session-20261113T074532-3dc49c57	2026-11-13T08:14:27Z
+cover:buildiq:70b3e29emc723:f91e7417	already done: lib/Service/Connection/ at 99.4% (170/171) on development, above 90 target; no PR	session-20261113T080546-98207a87	2026-11-13T08:14:30Z
