@@ -2182,3 +2182,4 @@ cover:stackiq:df113dffm2c76:f4b2f7af	already done: lib/Service/ArchiMate/ is at 
 cover:openregister:7350e3efm0e99:06269678	PR openregister test/coverage-06269678-1: Query 309->437/446 (metadata fix on 9 tests + 15 new tests)	session-20261113T031704-4f12cb78	2026-11-13T04:38:09Z
 measure:filinq:20261113h04	js 87.61% lines (vitest, 595 specs); php skipped: no pcov/xdebug available in the cloud	session-20261113T024654-6600dc41	2026-11-13T04:38:10Z
 cover:launchpad:fb10c50fm2ceb:js06645759	PR #1169: 14 tests, src/components/* line coverage 90.28->93.81%	session-20261113T041644-3c9184ea	2026-11-13T04:38:17Z
+cover:pipelinq:f67520ecmc4ba:8c6788f4	PR #3661: 14 tests for BSN identity provider; Gdpr 68/68	session-20261113T034628-9602b641	2026-11-13T04:38:27Z
