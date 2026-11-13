@@ -6082,3 +6082,4 @@ build:shillinq:ledger-period-end	partial: PR (1.1 close checklist instantiated o
 cover:dossiq:069ee2d6m2deb:c17c6e8e	already above target: lib/Service/Kcc/*.php 791/800 (98.88%); no PR	session-20261113T175336-e3687686	2026-11-13T18:48:18Z
 cover:dossiq:069ee2d6m2deb:eb8f684c	already above target: lib/Service/Reporting/ 533/543 (98.16%); no PR	session-20261113T175336-e3687686	2026-11-13T18:48:32Z
 build:shillinq:sales-cancellation	partial: PR #2976 builds 1.2 (customerMasterId, resolver, repair step, generator copy); 1.1 guard+reason UI, 1.3, 2.x, 3.x, 4.x left; suite 10394->10402, no new failures	session-20261113T172325-6eb25015	2026-11-13T18:48:45Z
+build:shillinq:ledger-multi-administration	partial: PR #2977 (1.1, 3.1, 3.4 + backend of 3.2/3.3; 2.x, UI, e2e left); suite 10394->10411, same 1 inherited failure	session-20261113T182353-86897235	2026-11-13T18:49:00Z
