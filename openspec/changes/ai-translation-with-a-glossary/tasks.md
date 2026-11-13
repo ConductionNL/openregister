@@ -2,7 +2,7 @@
 
 ## 1. Glossary register
 
-- [ ] 1.1 Add `lib/Settings/translation_glossary_register.json` with register `translation-glossary`, schemas `translation-term` and `translation-style-guide` (design D-3, D-4, with the refuse uniqueness constraint), the example seed rows (Seed data), and `lib/Repair/ImportTranslationGlossaryRegister.php` registered in `appinfo/info.xml`. Verify: `tests/Unit/Repair/ImportTranslationGlossaryRegisterTest.php` imports twice and finds no duplicates; `node tests/validate-register.js lib/Settings/translation_glossary_register.json` passes; the seed-data linter passes.
+- [x] 1.1 Add `lib/Settings/translation_glossary_register.json` with register `translation-glossary`, schemas `translation-term` and `translation-style-guide` (design D-3, D-4, with the refuse uniqueness constraint), the example seed rows (Seed data), and `lib/Repair/ImportTranslationGlossaryRegister.php` registered in `appinfo/info.xml`. Verify: `tests/Unit/Repair/ImportTranslationGlossaryRegisterTest.php` imports twice and finds no duplicates; `node tests/validate-register.js lib/Settings/translation_glossary_register.json` passes; the seed-data linter passes.
 - [x] 1.2 Add `GlossaryService::entriesFor()` and `styleGuideFor()`: one load per language pair per call, word-boundary matching with Unicode case folding, register-scoped plus global terms, longest term first, at most 50. Verify: `tests/Unit/Service/Translation/GlossaryServiceTest.php` covers case folding, a case-sensitive term, a register-scoped term not applied to another register, and the overlapping-term order.
 
 ## 2. Provider

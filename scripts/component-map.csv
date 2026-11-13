@@ -4116,3 +4116,4 @@ Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Noti
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
 Service/Translation/DetailedTranslationProviderInterface.php,,Service,,,,,Configuration
 Service/Translation/TranslationProviderResolver.php,,Service,,,,,Configuration
+Repair/ImportTranslationGlossaryRegister.php,,Repair,,,,,Platform
