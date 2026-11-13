@@ -6558,3 +6558,4 @@ cover:dossiq:069ee2d6mbd37:0c7c4f5d	already done: lib/Service/Term/*.php at 100.
 cover:integriq:92114ab0m0593:38e80a9f	already done: lib/Command/*.php at 901/901 lines (100%) at 81441e2b	session-20261113T172349-00278d9d	2026-11-13T20:09:33Z
 build:filinq:zgw-document-bridge	partial: PR #2094 (1.1, 1.2, 2.1, 2.3 done; pick-up, controller, screens left); suite 6443->6450 green	session-20261113T182404-f2c28226	2026-11-13T20:09:16Z
 verify:filinq:2068:b584ad87	7 GREEN (2068,2069,2071,2073-2076), 2 CONFLICT (2070,2072); queue row was truncated after 2076	session-20261113T175400-7ec3993f	2026-11-13T20:09:41Z
+cover:integriq:92114ab0m0593:aae6d66c	already done: lib/Exception/*.php at 54/55 98.2 lines at 81441e2b	session-20261113T172349-00278d9d	2026-11-13T20:09:52Z
