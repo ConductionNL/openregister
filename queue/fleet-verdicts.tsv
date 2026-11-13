@@ -6399,3 +6399,4 @@ integriq	3542	b9854909519b723cee6f95a140740e64b442152c	CONFLICT	worker-41	confli
 decidiq	2137	4ad4b50cd5728564d19497327cc79acb48dd2536	GREEN	worker-47	unit 3920 run, baseline 3911 OK, no new failures; implements capability-rows-get-requirements tasks 2 and 3
 integriq	3543	aaeb1f5d9dc1b0e4de7476e6901b446174c9e14d	GREEN	worker-57	build PR (tests, docs, l10n, postman); unit 8248 on tree, same 5 inherited failures as development, no new
 integriq	3544	3466bf37dcc48e5511a27b17c735500d89f5765e	GREEN	worker-57	build PR, live clients behind existing flags as the change asks; unit 8248 on tree, same 5 inherited failures, no new
+integriq	3545	37cc73075934825d726c4a3dde7fd2de141fdae9	CONFLICT	worker-57	conflicts with #3543 in l10n/nl.js and l10n/nl.json
