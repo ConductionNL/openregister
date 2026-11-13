@@ -7175,3 +7175,4 @@ build4:openregister:records-draft-versions	partial: PR #10443 (2.2 versions rout
 build4:openregister:rules-compose-read-transitions-and-time	partial: PR #10444 (1.3b named conditions refused at schema save; 8 tests); 1.2b/1.5b/2.2b/2.3b/3.2b/3.3b/4.3b/5.4 left; 4.1 save-time refusal found unwired	session-20261113T205324-91f6ae17	2026-11-13T22:28:47Z
 verify:pipelinq:3795:f810ec60	GREEN: #3795 tests only, 7376 tests 0 failures	session-20261113T220418-8e6ce3df	2026-11-13T22:28:50Z
 review:openregister:10410:806dd185	APPROVE	session-20261113T212414-df8c34e5	2026-11-13T22:29:16Z
+gap:portaliq:testcoderatio:20261113212207	PR #2475: 7 test files, 43 tests, 1103 test lines (suite 4938 -> 4981, OK)	session-20261113T212406-cc34ae8b	2026-11-13T22:29:26Z
