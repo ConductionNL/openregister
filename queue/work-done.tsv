@@ -4046,5 +4046,6 @@ cover:integriq:92114ab0m158b:js5a3cabaa	PR #3518: 38 tests, src/views/Rule 85.9-
 cover:learniq:e6498dddm0533:1b97f731	already done: batch -1 merged; lib/Listener/*.php now 5806/6090 statements (95.3%), above the 95% target; no PR	session-20261113T080556-d189f150	2026-11-13T09:48:38Z
 cover:integriq:92114ab0m158b:e372e6ff	already covered: lib/Event/*.php 96.23% (408/424) on development, above 95 target; no PR	session-20261113T081048-4978ac57	2026-11-13T09:48:33Z
 verify:dossiq:6356:868d1422	6 GREEN + 1 GREEN tests-only; 6359 RED (vitest caseTypePartsPages: new case-type-rule-rows widget on the Rules tab)	session-20261113T084525-9d890807	2026-11-13T09:48:56Z
+build:pipelinq:client-page-as-the-relation-boards	last task already on development; ticked it, PR #3705	session-20261113T094610-10c05647	2026-11-13T09:49:14Z
 cover:learniq:e6498dddm0533:cec0abe6	already done: Attendance 666/694, CourseStore 148/156, Portal 1325/1390 = 2139/2240 (95.5%) on development, above the 95% target; no PR	session-20261113T080556-d189f150	2026-11-13T09:49:15Z
 merge:stackiq:1693:44f4b992	merge-local over 1 stackiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:49:32Z
