@@ -39,7 +39,7 @@ section is one mergeable build (design D-11).
 
 ## 5. Docs and consumers (recorded here, built elsewhere)
 
-- [ ] 5.1 `docs/features/` page for object actions; remove the stale schema-hooks / n8n section of `docs/features/workflow-automation.md`.
+- [x] 5.1 `docs/features/` page for object actions; remove the stale schema-hooks / n8n section of `docs/features/workflow-automation.md`.
 - [ ] 5.2 nextcloud-vue change: `useObjectActions`, manifest `type: object-action`, `actionsFrom: "openregister"`, input-schema dialog, disabled-with-reason, `CnMacrosWidget` over the same list.
 - [ ] 5.3 dossiq change: `publish`, `withdraw-publication`, case acts, claim/release, task effects to steps (design D-9).
 - [ ] 5.4 pipelinq change: `hand-over`, `assign-to-me`, article `publish`, remove `contracts/{id}/transition`.
