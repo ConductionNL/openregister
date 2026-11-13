@@ -2754,3 +2754,4 @@ merge:keepiq:1724:afdbbef0	merge	keepiq	development	development	prs=1724@b8b40fd
 cover:buildiq:9930949bm5861:60c2c265	cover	buildiq	development	quality/test-coverage-60c2c265	lang=php;dirs=lib/Controller/*.php;focus=uncovered;weight=2397;coverage=80.56;target=85.0	2026-09-14T00:08:27Z
 cover:buildiq:9930949bm5861:f545d745	cover	buildiq	development	quality/test-coverage-f545d745	lang=php;dirs=lib/Repair/*.php;focus=uncovered;weight=696;coverage=80.56;target=85.0	2026-09-14T00:36:48Z
 cover:pipelinq:f67520ecmc4ba:js4c63a0a9	cover	pipelinq	development	quality/test-coverage-js-4c63a0a9	lang=js;dirs=src/views/marketing/;focus=uncovered;weight=366;coverage=80.72;target=85.0	2026-11-13T00:51:59Z
+cover:stackiq:df113dffm2c76:05630945	cover	stackiq	development	quality/test-coverage-05630945	lang=php;dirs=lib/Middleware/Support/;focus=thin;weight=384;coverage=64.97;target=85.0	2026-07-15T09:07:23Z
