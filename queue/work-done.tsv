@@ -5977,3 +5977,4 @@ cover:learniq:e6498dddm0533:6925f818	already done: lib/SetupCheck/*.php 100% (13
 cover:larpinq:c4471360mc469:js3f3bfe56	PR #1030: src/main.js 0->100% (11 tests), src/*.js 100%; suite 495->506 green	session-20261113T182359-67ad413b	2026-11-13T18:29:48Z
 verify:dossiq:6431:3ab8f4db	GREEN 6431, 6432, 6433: 16571 tests, 20 inherited failures, none new	session-20261113T175336-b2d7fc7c	2026-11-13T18:30:33Z
 build:shillinq:case-payment-requests	already done in code: test:l10n and nl parity pass; left are docs with screenshots (5.3) and the hand-off to dossiq (5.4), neither code	session-20261113T172325-6eb25015	2026-11-13T18:30:37Z
+cover:integriq:92114ab0mb37a:js971eca14	PR #3528: 2 vitest specs (18 tests), src/modals/v2 83.14%->91.44% statements (JobFormFields 5->62/68, EndpointFormFields 63->129/136); suite 2093->2111 all passing; SourceFormFields/RuleEditorModal left	session-20261113T175336-e3687686	2026-11-13T18:30:45Z
