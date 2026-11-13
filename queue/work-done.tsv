@@ -1624,3 +1624,4 @@ measure:filinq:20261113h02	php 87.6% / js 35.34%	session-20261113T021702-a00af7e
 cover:dossiq:6ca0231ema7d4:b7fd3ec4	PR #6228: 35 tests for 5 Beschikking classes; suite 13840->13875, 19 inherited failures unchanged	session-20261113T021704-7f11f0d9	2026-11-13T02:23:02Z
 cover:pipelinq:f67520ecm8c58:js3f7698d2	PR #3632: 19 vitest tests for PipelineBoard rendering; src/views/pipeline/ ~82.7% -> 91.0% stmts; suite 3164 -> 3183 passing	session-20261113T015003-f68021a4	2026-11-13T02:23:29Z
 verify:stackiq:1776:72f75ddd	6 GREEN (1776,1809-1813); php+vitest 0 new failures	session-20261113T015005-81f4d5a5	2026-11-13T02:24:01Z
+cover:dossiq:6ca0231ema7d4:74111b6d	PR #6229: +18 tests, lib/Service/Status 95.0%->99.8%, suite failures unchanged (19 inherited)	session-20261113T021721-c0a228f1	2026-11-13T02:24:34Z
