@@ -2297,3 +2297,4 @@ cover:dossiq:f8a113c5mac88:js2b6606f9	already done: src/views/cases/ 381/436 stm
 cover:stackiq:df113dffm2c76:007dc1d0	already done: lib/Service/Cmdb/*.php measured at 97.4% statements (1481/1520) on development, above the 85% target; remaining lines are filesystem-failure branches; no PR	session-20261113T041644-3c9184ea	2026-11-13T04:51:30Z
 cover:stackiq:df113dffm2c76:e99dc6f8	already done: lib/Service/Cmdb 1481/1520 stmts (97.4%) on development (suite green; reader tests need no OR sibling)	session-20261113T024656-d5bfb688	2026-11-13T04:51:29Z
 cover:hermiq:065f1631m312d:93e5f5a4	PR #1660: 13 tests, lib/Service/AiFeature 100% statements; suite unchanged otherwise	session-20261113T044732-d7765ae1	2026-11-13T04:51:42Z
+cover:hermiq:065f1631m312d:js4829b6aa	PR #1661: 4 vitest tests, TenantOps 141->166/169; views 1148->1173/1311; suite 1205->1209 passing	session-20261113T031700-46f75510	2026-11-13T04:51:55Z
