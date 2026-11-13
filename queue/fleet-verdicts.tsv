@@ -4647,3 +4647,4 @@ stackiq	1804	2dc6125b4b3b4b3d2b34e4221bbc899f63f94edf	GREEN	worker-37	tests only
 stackiq	1805	fb96956f1c700812f67926a50f05ed3c01c749aa	GREEN	worker-37	tests only; phpunit 2605 run (baseline 2539, 0 failures), vitest 1997 pass, 0 new failures
 stackiq	1806	379b17482337aae248763452222c3b7be4039273	GREEN	worker-37	tests only; phpunit 2605 run (baseline 2539, 0 failures), vitest 1997 pass, 0 new failures
 stackiq	1807	81313a5dccaf8ece17ab049629f27492ba3f7ec0	GREEN	worker-37	tests only; phpunit 2605 run (baseline 2539, 0 failures), vitest 1997 pass, 0 new failures
+pipelinq	3602	d28667fb1df455d1b16f790053f93d332148c1e4	GREEN	worker-32	PHP 5787 tests on tree (baseline 5774, 1 inherited failure), vitest 3194 passed, 0 new failures; tests only
