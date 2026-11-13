@@ -3670,3 +3670,4 @@ verify:launchpad:1182:6ebd9ec5	GREEN #1182 #1183 #1184 (3933 tests, 0 new failur
 measure:dossiq:20261113h08	php 89.34% (88579/99144), js 87.41% (10555/12074) at 629b047c	session-20261113T051703-1b54bfba	2026-11-13T08:58:15Z
 cover:stackiq:9ac19b3am6096:d528dcf0	already done: lib/Dashboard/*.php at 12/12 statements (100%) on development today; no PR	session-20261113T080556-d189f150	2026-11-13T08:58:20Z
 cover:learniq:e6498dddmc027:2baf2b6e	no PR: lib/Proctoring/*.php already fully covered on development (FlagReview 76/76 lines, pcov; FlagWrite and ProvidesProctoring have no executable statements)	session-20261113T080549-dde3ba19	2026-11-13T08:58:31Z
+cover:pipelinq:7f9dc8e6m916f:4d8f122a	already done: lib/Service/MailAddIn/ 85/86 lines (98.8%) under the full unit suite on development, target 90; no PR	session-20261113T072713-f866e896	2026-11-13T08:58:41Z
