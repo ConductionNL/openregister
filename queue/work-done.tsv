@@ -2987,6 +2987,7 @@ cover:hermiq:065f1631mfaac:1b97f731	already done: lib/Listener/*.php at 93% line
 cover:hermiq:065f1631mfaac:js0b44ffaf	already done: src/icons/openGemeentenIcons.js 100% lines on development (merged -1 branch)	session-20261113T053904-36dcee67	2026-11-13T06:48:01Z
 verify:buildiq:1515:bfb3cb57	4 GREEN (1515-1518), tests only; php 2659 no new failures, vitest 3841 passed	session-20261113T061516-58aa7364	2026-11-13T06:48:13Z
 cover:hermiq:065f1631mfaac:17d367ab	already done: lib/Controller/Settings/ 100% lines (334/334) on development, no PR	session-20261113T063948-afebd30c	2026-11-13T06:48:17Z
+cover:filinq:7a9ef677m5ffe:5833c33f	already done: lib/Service/Office/ 127/127 lines (100.0%) on development 90be525f5; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:48:29Z
 cover:filinq:7a9ef677m5ffe:34763eb4	already done: lib/Middleware/*.php at 99.1% lines (115/116) under the full unit suite on development, target 90; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T06:48:26Z
 cover:buildiq:9930949bmc723:js3f3bfe56	PR buildiq#1519: 6 tests, App.vue 13->25/26, src/* 154->166/197; main.js needs a production change (require.context)	session-20261113T051703-1b54bfba	2026-11-13T06:48:26Z
 cover:buildiq:9930949bmc723:js847d1562	PR #1520: 11 vitest tests, schema-editor 94.4->95.5%	session-20261113T051709-e616bf69	2026-11-13T06:48:32Z
