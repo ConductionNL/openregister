@@ -2697,3 +2697,4 @@ cover:keepiq:c967a31fm0090:js4829b6aa	already done: covered by open PR #1728 (sr
 verify:dossiq:6293:2d658335	6293,6294,6295,6296 GREEN: 14820 tests, 19 inherited, 0 new	session-20261113T054519-189b2666	2026-11-13T06:14:58Z
 verify:integriq:3488:fd671dbb	GREEN 3488, GREEN 3489 (tests only, no new failures)	session-20261113T051714-4ad50f31	2026-11-13T06:15:08Z
 cover:integriq:92114ab0m1534:d98de5aa	PR #3490: 3 phpunit tests, IwmoIjw 221->228/228	session-20261113T051709-e616bf69	2026-11-13T06:15:11Z
+cover:dossiq:f8a113c5mac88:e56141e7	PR #6299: 19 tests (DossierUploadHandler, DossierZipExporter, DocumentCaseIds); Zaakdossier 84.82->91.69%; same 19 inherited failures	session-20261113T054517-06ee2c47	2026-11-13T06:15:11Z
