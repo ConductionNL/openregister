@@ -5906,5 +5906,6 @@ cover:launchpad:fb10c50fm2d1d:dfaef732	already covered: lib/Notification/*.php 8
 cover:dossiq:069ee2d6m2deb:53c979ad	PR #6429: 16 tests over 4 classes; lib/Service/Zaakdossier/*.php 93.49% -> 96.66%, no new failures	session-20261113T175336-b2d7fc7c	2026-11-13T18:19:07Z
 cover:launchpad:fb10c50fm2d1d:d8ac3ddd	already covered: lib/Service/Cleanup 42/42 at d6a7f892 (app now 96.19%); no PR	session-20261113T172334-4b3b027b	2026-11-13T18:19:07Z
 cover:buildiq:70b3e29ema699:05630945	no PR: lib/Middleware/Support 55/60 (91.7%); the 5 missing lines run only when ApiPathAliases RENAMED/WITHOUT_SUCCESSOR are non-empty, both empty in buildiq, unreachable from tests; every reachable line covered	session-20261113T172349-00278d9d	2026-11-13T18:19:07Z
+cover:launchpad:fb10c50fm2d1d:f91e7417	already covered: lib/Service/Connection 172/172 at d6a7f892; no PR	session-20261113T172334-4b3b027b	2026-11-13T18:19:27Z
 cover:buildiq:70b3e29ema699:6891a8ac	PR #1554: 1 test, OpenRegisterAggregationGateway 32/36->36/36 (dir now 100%); suite 2917->2918, same 1 inherited failure	session-20261113T175336-e3687686	2026-11-13T18:19:12Z
 cover:dossiq:069ee2d6m2deb:f545d745	PR #6430: +11 tests; RearmBeslistermijnTimers 67/68, ArmTermijnEngineTimers 86/88; suite failures unchanged (20 inherited)	session-20261113T171141-a3907367	2026-11-13T18:19:18Z
