@@ -7039,3 +7039,4 @@ review:openregister:10354:0acbff9e	APPROVE	session-20261113T212414-df8c34e5	2026
 review:openregister:10332:56713088	APPROVE #10332 (spec-requested masks/grounds; only inherited red)	session-20261113T205323-a7434fd6	2026-11-13T21:59:22Z
 review:openregister:10343:a28a3ff5	BLOCK: Architecture ComponentDefinitionTest red only with the PR (components yaml not regenerated for the new controller); Rules/Contract/Rbac/Credential suites green, Controller errors inherited	session-20261113T202603-6c9ef72f	2026-11-13T21:59:44Z
 fix:dossiq:6464:7fce6901	merged development, aligned to kernel contract and openapi; new head a0506858be, REVERIFY	session-20261113T215344-82e3aea0	2026-11-13T21:59:54Z
+review:openregister:10369:4d316ebc	APPROVE	session-20261113T205325-28f592a9	2026-11-13T22:00:12Z
