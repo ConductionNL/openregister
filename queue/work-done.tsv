@@ -1199,3 +1199,4 @@ fix:hermiq:1486:079aef25	conflict resolved (merged development), new head a26b6d
 fix:hermiq:1490:93f8c0f6	merged development in, conflicts resolved, head fcb1b7ff, REVERIFY recorded	session-20261113T003903-5efbf5ae	2026-11-13T00:43:10Z
 fix:hermiq:1495:99ed022b	conflicts resolved, pushed 2810c65e, REVERIFY recorded	session-20261112T234655-c333a6f8	2026-11-13T00:43:19Z
 fix:hermiq:1500:33afafc7	merged development in (docblock conflicts), no new failures vs development; new head badeb702, REVERIFY recorded	session-20261112T231638-72e59130	2026-11-13T00:43:52Z
+fix:hermiq:1427:e16485c3	conflict resolved (development merged in, mixin kept); new head b307d69e, REVERIFY recorded	session-20261112T234653-57d11a5b	2026-11-13T00:44:02Z
