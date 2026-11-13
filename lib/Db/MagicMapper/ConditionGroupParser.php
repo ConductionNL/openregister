@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\LikeOperatorInterface;
+use OCA\OpenRegister\Support\NullFilter;
 use OCA\OpenRegister\Exception\ConditionGroupException;
 
 /**
@@ -75,6 +76,7 @@ final class ConditionGroupParser {
 		'ne',
 		'isnull',
 		LikeOperatorInterface::KEY,
+		NullFilter::IN_OR_EMPTY,
 	];
 
 	/**

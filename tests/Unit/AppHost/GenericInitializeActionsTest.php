@@ -243,4 +243,35 @@ class GenericInitializeActionsTest extends TestCase {
 
 	}//end testTheShippedSeedGrantsFlowReadToAnInstanceThatPredatesIt()
 
+	/**
+	 * An instance whose administrator customised the matrix gains
+	 * `webhook.own`, granted to administrators only, and keeps every entry it
+	 * had (webhooks-for-owners, task 1.2).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	public function testAnExistingCustomisedMatrixGainsWebhookOwnForAdministratorsOnly(): void {
+		$customised = [
+			'flow.create'    => ['planners'],
+			'flow.update'    => ['planners'],
+			'flow.delete'    => ['admin'],
+			'flow.run'       => ['@authenticated'],
+			'flow.read'      => ['@authenticated'],
+			'object.correct' => ['admin', 'beheer'],
+		];
+		$actionAuth = $this->actionAuth();
+		$actionAuth->setMatrix($customised);
+
+		$this->repair($actionAuth, dirname(__DIR__, 3))->run($this->createMock(IOutput::class));
+
+		$this->assertSame($customised + ['webhook.own' => ['admin']], $actionAuth->getMatrix());
+		$this->assertFalse(
+			$actionAuth->can(user: $this->user(), action: 'webhook.own'),
+			'nobody but an administrator may own a webhook until an administrator grants it'
+		);
+
+	}//end testAnExistingCustomisedMatrixGainsWebhookOwnForAdministratorsOnly()
+
 }//end class

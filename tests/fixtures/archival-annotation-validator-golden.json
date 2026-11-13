@@ -223,7 +223,7 @@
             {
                 "code": "archival-unknown-key",
                 "severity": "warning",
-                "message": "x-openregister-archival contains unknown key \"_note\". Allowed: retention, aggregationLevel, useRestriction, temporalCoverage, category, categoryProperty, action."
+                "message": "x-openregister-archival contains unknown key \"_note\". Allowed: retention, aggregationLevel, useRestriction, temporalCoverage, category, categoryProperty, action, parties."
             }
         ],
         "refused": false

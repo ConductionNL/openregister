@@ -24,8 +24,8 @@
 
 - [ ] C41.1 A random sequence kind with a declared length and alphabet, under the existing allocation lock (D-C41-1).
 - [ ] C41.2 Foreign identifiers on an object, each naming its issuer, indexed and exactly resolvable (D-C41-2).
-- [ ] C41.3 A second generated identifier beside the first, with its own sequence and format.
-- [ ] C41.4 Reserved values and patterns that no sequence issues.
+- [x] C41.3 A second generated identifier beside the first, with its own sequence and format.
+- [x] C41.4 Reserved values and patterns that no sequence issues.
 - [ ] C41.5 A scheme change as a background job with progress, keeping each previous value as a foreign identifier of this instance (D-C41-3).
 - [ ] C41.6 A second migration of the same sequence is refused, naming the running one (D-C41-4).
 - [ ] C41.7 Tests: random uniqueness under concurrency, the two-issuer lookup, the reserved skip, the old number still resolving, the refused second migration.

@@ -35,7 +35,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deferral;
 
+use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 
 /**
@@ -249,6 +251,10 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 			}
 
 			$this->buffers[$jobClass]['entries'][] = $deferred->entry;
+			// The cause is read NOW, while the frame that caused the write is on
+			// the stack: the buffer is flushed at shutdown, after every frame of
+			// the request has been popped (REQ-RCN-002).
+			$this->buffers[$jobClass]['causes'][] = self::causeNow();
 
 			$this->hookShutdown();
 			$this->flushWhenFull(jobClass: $jobClass);
@@ -289,6 +295,7 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 		if (isset($this->buffers[$jobClass]) === false) {
 			$this->buffers[$jobClass] = [
 				'entries' => [],
+				'causes' => [],
 				'dedupe' => [],
 				'chunkSize' => max(1, $chunkSize),
 			];
@@ -373,13 +380,80 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 			return;
 		}
 
+		$causes = ($this->buffers[$jobClass]['causes'] ?? []);
 		$this->buffers[$jobClass]['entries'] = [];
+		$this->buffers[$jobClass]['causes'] = [];
 		$this->buffers[$jobClass]['dedupe'] = [];
 
-		foreach ($this->chunksUnderLimit(jobClass: $jobClass, entries: $entries) as $chunk) {
-			$this->enqueue(jobClass: $jobClass, entries: $chunk);
+		foreach (self::causeSegments(entries: $entries, causes: $causes) as $segment) {
+			foreach ($this->chunksUnderLimit(jobClass: $jobClass, entries: $segment['entries'], cause: $segment['cause']) as $chunk) {
+				$this->enqueue(jobClass: $jobClass, entries: $chunk, cause: $segment['cause']);
+			}
 		}
 	}//end flushBuffer()
+
+	/**
+	 * The cause of the write being made now, or null when it is a person's.
+	 *
+	 * @return CauseFrame|null The cause and its run.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md
+	 */
+	private static function causeNow(): ?CauseFrame {
+		$current = WriteCause::current();
+		if ($current['cause'] === WriteCause::PERSON) {
+			return null;
+		}
+
+		return new CauseFrame(cause: $current['cause'], run: $current['run']);
+	}//end causeNow()
+
+	/**
+	 * The entries split into consecutive runs that share one cause, in order.
+	 *
+	 * A job carries one cause, so entries deferred under different causes go
+	 * out in different jobs. Only consecutive entries are joined, which keeps
+	 * the order the entries were deferred in.
+	 *
+	 * @param array<int, array<string, mixed>> $entries The buffered entries.
+	 * @param array<int, CauseFrame|null>      $causes  The cause of each entry, by position.
+	 *
+	 * @return array<int, array{cause: CauseFrame|null, entries: array<int, array<string, mixed>>}> The segments.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md
+	 */
+	private static function causeSegments(array $entries, array $causes): array {
+		$segments = [];
+		$last = -1;
+		foreach (array_values($entries) as $position => $entry) {
+			$cause = ($causes[$position] ?? null);
+			if ($last >= 0 && self::sameCause(first: $segments[$last]['cause'], second: $cause) === true) {
+				$segments[$last]['entries'][] = $entry;
+				continue;
+			}
+
+			$segments[] = ['cause' => $cause, 'entries' => [$entry]];
+			$last++;
+		}
+
+		return $segments;
+	}//end causeSegments()
+
+	/**
+	 * Whether two captured causes are the same cause of the same run.
+	 *
+	 * @param CauseFrame|null $first  One cause.
+	 * @param CauseFrame|null $second The other.
+	 *
+	 * @return bool
+	 */
+	private static function sameCause(?CauseFrame $first, ?CauseFrame $second): bool {
+		if ($first === null || $second === null) {
+			return $first === $second;
+		}
+
+		return $first->cause === $second->cause && $first->run === $second->run;
+	}//end sameCause()
 
 	/**
 	 * The entries in consecutive chunks whose job argument stays within the
@@ -387,11 +461,12 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 	 *
 	 * @param string                           $jobClass FQCN of the job, for the log.
 	 * @param array<int, array<string, mixed>> $entries  The buffered entries.
+	 * @param CauseFrame|null                  $cause    The cause the jobs carry, measured in the envelope.
 	 *
 	 * @return array<int, array<int, array<string, mixed>>> The chunks.
 	 */
-	private function chunksUnderLimit(string $jobClass, array $entries): array {
-		$envelope = new DeferredListenerContext(userId: $this->capturedUserId, orgUuid: $this->capturedOrgUuid, entries: []);
+	private function chunksUnderLimit(string $jobClass, array $entries, ?CauseFrame $cause = null): array {
+		$envelope = new DeferredListenerContext(userId: $this->capturedUserId, orgUuid: $this->capturedOrgUuid, entries: [], cause: $cause);
 		// Measured the way the job list measures: plain json_encode. Each entry
 		// adds its own length plus the comma that joins it to the next.
 		$budget = new JobArgumentBudget(
@@ -524,14 +599,16 @@ class ListenerDeferralService implements ListenerDeferralInterface {
 	 *
 	 * @param string                           $jobClass FQCN of the job to enqueue.
 	 * @param array<int, array<string, mixed>> $entries  The chunk's entries.
+	 * @param CauseFrame|null                  $cause    The cause the job carries, null for a person's.
 	 *
 	 * @return void
 	 */
-	private function enqueue(string $jobClass, array $entries): void {
+	private function enqueue(string $jobClass, array $entries, ?CauseFrame $cause = null): void {
 		$context = new DeferredListenerContext(
 			userId: $this->capturedUserId,
 			orgUuid: $this->capturedOrgUuid,
-			entries: $entries
+			entries: $entries,
+			cause: $cause
 		);
 
 		try {
