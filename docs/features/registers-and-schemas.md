@@ -53,6 +53,8 @@ A refused value fails the save with HTTP 422 and a message that names the proper
 
 In the generated OpenAPI document, every `calendar-range` property refers to one `CalendarRange` component and every `image-url` property to one `ImageUrl` component.
 
+The members of a `calendar-range` take the usual range operators, so `GET /api/objects/{register}/booking?period.start.gte=2026-05-01&period.end.lte=2026-05-31` finds the bookings that lie within May. The members are compared as text, which orders ISO dates and UTC date-times correctly; a bare date bound such as `2026-05-31` sorts before any time on that day, so use `period.end.lt=2026-06-01` to include the whole last day.
+
 A `calendar-range` cannot be converted from another type on a schema that already holds objects: migrate the records first.
 
 ### Schema Sources
