@@ -2824,3 +2824,4 @@ merge:launchpad:1173:2c5aa39c	merge-local over 3 launchpad tasks: merged=3 red=0
 cover:pipelinq:7f9dc8e6m1e6e:e372e6ff	PR #3688: lib/Event 77/87 -> 83/87 (95.4%); listener test now covers TimeEntryApprovedEvent, +1 assertion; suite unchanged	session-20261113T061516-58aa7364	2026-11-13T06:31:43Z
 cover:filinq:7a9ef677m5ffe:81b1241f	already done: lib/Portal/*.php at 100% (181/181, pcov on development); no PR	session-20261113T054519-189b2666	2026-11-13T06:31:51Z
 cover:filinq:7a9ef677m5ffe:65e30692	already done: lib/Service/Intake/ at 100% (153/153, pcov on development); no PR	session-20261113T054519-189b2666	2026-11-13T06:32:03Z
+cover:stackiq:df113dffm5ac4:js0671a85c	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:32:05Z
