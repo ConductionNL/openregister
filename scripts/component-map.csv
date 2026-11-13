@@ -3915,3 +3915,14 @@ Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Service/File/AnonymiqRegionDetector.php,,Service,,,,,Core
+Service/File/ExAppJsonRequester.php,,Service,,,,,Core
+Service/File/IImageRegionDetector.php,,Service,,,,,Core
+Service/File/ImageBurner.php,,Service,,,,,Core
+Service/File/ImageDetection.php,,Service,,,,,Core
+Service/File/ImageRedactionService.php,,Service,,,,,Core
+Service/File/ImageRegion.php,,Service,,,,,Core
+Service/File/ImageRegionDetectorRegistry.php,,Service,,,,,Core
+Service/File/ImageRegionNotBurnableException.php,,Service,,,,,Core
+Service/File/OcrWordLocator.php,,Service,,,,,Core
+Service/File/OcrWords.php,,Service,,,,,Core
