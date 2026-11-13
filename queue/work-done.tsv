@@ -3622,5 +3622,6 @@ cover:stackiq:9ac19b3am6096:05630945	already done: lib/Middleware/Support/ at 57
 cover:stackiq:9ac19b3am6096:68d2b5ba	already done: lib/Service/Cmdb/ 98.1%, lib/Service/Settings/ 97.6% on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:51:39Z
 cover:stackiq:9ac19b3am6096:38e80a9f	already done: lib/Command/*.php at 100% (pcov)	session-20261113T072715-8f8a14e9	2026-11-13T08:51:45Z
 cover:learniq:e6498dddmf689:9d3a1784	PR #2454: 11 tests, 4 jobs to 100% lines; suite 6105->6116, only inherited failure	session-20261113T081055-3901e400	2026-11-13T08:51:32Z
+cover:stackiq:9ac19b3am5ac4:js5794e9fc	PR #1862: 16 CmdbImport specs; src/views/settings/ 88.0->90.3%	session-20261113T080546-98207a87	2026-11-13T08:52:00Z
 cover:integriq:92114ab0m658d:8addca3f	PR #3515: Rule/Source/Mapping/Job handlers to 100% lines, 6 tests; DigitalPost part already in #3506; suite 8054->8060, baseline unchanged	session-20261113T071640-3ba6da34	2026-11-13T08:51:49Z
 cover:dossiq:f8a113c5m7e79:38e8c328	already done: 8 dirs leave 8 uncovered statements (Hearing value objects, a class_exists guard); no PR	session-20261113T080551-294c2aa6	2026-11-13T08:52:17Z
