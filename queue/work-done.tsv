@@ -5059,3 +5059,4 @@ review:openregister:10196:cb4b951d	APPROVE: spec-conform connection-health kind,
 review:openregister:10181:ea811079	APPROVE: run records added without changing outcomes; access fails closed; phpstan clean; Listener 1037, Lifecycle 548, Notifications 563, Rbac 1180, Controller 9964, Architecture 2358 etc pass on PR+main	session-20261113T081046-f0858dc4	2026-11-13T13:02:03Z
 review:openregister:10217:99472195	APPROVE (tests only, 14 jest tests pass, eslint clean)	session-20261113T104531-16da055e	2026-11-13T13:02:18Z
 build:openregister:property-code-list-from-concept-scheme	partial: PR #10221 task 4.4 (scheme by uri, slug, uuid in ConceptRepository::scheme) + 4.3 recorded; 3.2 not assessed, 4.2 handoff	session-20261113T084525-9d890807	2026-11-13T13:03:14Z
+cover:openregister:7350e3efma401:js30a52488	PR #10222: 23 jest tests, SearchSideBar.vue lines 92.0%->99.5%	session-20261113T124807-b8fee1f0	2026-11-13T13:03:28Z
