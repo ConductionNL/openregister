@@ -4332,3 +4332,4 @@ verify:stackiq:1868:8b188e93	GREEN 1868: tests-only, 3279 tests 0 failures	sessi
 verify:shillinq:2928:96c2fd36	2928 GREEN	session-20261113T071633-17de823f	2026-11-13T10:55:19Z
 merge:decidiq:2121:a1dcfec2	merge-local over 1 decidiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:55:31Z
 cover:openregister:7350e3efmea52:053b65e7	PR #10125: 54 tests for RbacQueryMatch, RbacMatchSql, FacetColumnFilter, MagicUnionPage, BulkUpsertCommand; no new failures	session-20261113T101609-bc51215d	2026-11-13T10:55:51Z
+verify:pipelinq:3710:aeefa032	CONFLICT 3710: add/add on 5 BackgroundJob test files already on development	session-20261113T074533-3e2a2da6	2026-11-13T10:56:06Z
