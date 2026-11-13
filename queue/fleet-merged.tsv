@@ -721,3 +721,14 @@ keepiq	1717	454e53aa682cb779d5a4d0c34247157d751a1e9f	MERGED	merge-local	GATE OK 
 keepiq	1718	11fc06862578d3b9c5ca0e7f071f83eae938449d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1719	bf494193e15b7a6f011fa36af5ce37d6009d9872	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1720	9a73d13f84164cdcd1dd2f82f573fd29f039c80a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+versioniq	663	5a4357f669f62ab19479cb41ac748ff511864d8e	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+humaniq	1101	c5f2e70af78f6b9bea371536f027726e1f04d400	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+learniq	2432	81c6da9787cdd47faa09c975e06944991c8a1e39	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+stackiq	1814	5214f672318ac5f9285d1056a86e3068ac871b5f	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+buildiq	1490	36532ca48ab2f8745d617b9c1dd11e53730132b0	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+filinq	2011	5f36d7909beb68c2230f826a214d9ffbd2e13bd9	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+portaliq	2371	67d7a7bb687b6d68dbadbfc6cc2ba30783bbdb5a	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+decidiq	2108	e277564129019f094b685288c1014b003b983f4c	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+thematiq	1667	55262944b3e398c7ef274e0c1a671dab593fba8e	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+integriq	3460	c804b12f04929d4c929679de68620b74d8d3e0b6	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+shillinq	2851	6f4fbab6c70ab84e7761be2c364b143fd1705d46	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
