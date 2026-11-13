@@ -3289,3 +3289,26 @@ cover:keepiq:c967a31fmb40c:11ebfefd	cover	keepiq	development	quality/test-covera
 cover:keepiq:c967a31fmb40c:aae6d66c	cover	keepiq	development	quality/test-coverage-aae6d66c	lang=php;dirs=lib/Exception/*.php;focus=thin;weight=1135;coverage=89.12;target=90.0	2026-11-13T05:29:25Z
 measure:filinq:20261113h06	measure	filinq	development	queue/coverage/filinq.json	why=slices need per-directory coverage	2026-11-13T06:40:21Z
 measure:openregister:20261113h06	measure	openregister	main	queue/coverage/openregister.json	why=slices need per-directory coverage	2026-11-13T06:40:21Z
+verify:dossiq:6303:3c18c704	verify	dossiq	development	merge	prs=6303@eb9fbf87cf28c0bbc23b3e5b3b0c2db3d515acb1,6304@51303319ea04d57b1eaeb7c6754cdedcbdf62093	2026-11-13T06:45:19Z
+verify:pipelinq:3690:db79dece	verify	pipelinq	development	merge	prs=3690@3de2a747f96dfaa4e3c7867bd24c1c06543f351c	2026-11-13T06:45:19Z
+verify:shillinq:2896:8ecfee5f	verify	shillinq	development	merge	prs=2896@6b8a339ee367d6bffc5be14f4b9ead64ba0c190f	2026-11-13T06:45:19Z
+merge:stackiq:1693:ef01c1a9	merge	stackiq	development	development	prs=1693@44193bc9eecf070881f3df33c1002d339868025b,1813@8e311d81de144657f97c1cd6ce4b36e739a2a7ed,1842@ae9dd41fa1b4f1d3ea64633887e4810ec4fd961d,1843@e9e423266426d2c969ae321d04397761513213b3,1844@b061bd454111dff4e43c79b65c8664271e73d2fc,1845@471c170412ea06af60e33d5df509b9d3616f0684,1846@dbf3d1411ebd16faf0a9a522791a3f096534c3ed,1847@56d29059a29b0a45e09ecdc325015327db79d865,1848@e8d0211be4192d922f5e7cb3e93;stacks=1603>1679>1689>1700>1704>1706	2026-11-13T06:45:19Z
+merge:filinq:2041:ba5bdc82	merge	filinq	development	development	prs=2041@d10884838916ffa026aac3822615c466acc60eb4	2026-11-13T06:45:19Z
+cover:dossiq:f8a113c5m7e79:3b1fd60e	cover	dossiq	development	quality/test-coverage-3b1fd60e	lang=php;dirs=lib/Review/*.php;focus=uncovered;weight=213;coverage=87.99;target=90.0	2026-08-15T04:41:51Z
+cover:dossiq:f8a113c5m7e79:9d3a1784	cover	dossiq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=uncovered;weight=129;coverage=87.99;target=90.0	2026-08-15T04:43:15Z
+cover:dossiq:f8a113c5m7e79:ea81adeb	cover	dossiq	development	quality/test-coverage-ea81adeb	lang=php;dirs=lib/Service/Zgw/*.php;focus=thin;weight=9036;coverage=87.99;target=90.0	2026-08-15T03:55:24Z
+cover:dossiq:f8a113c5m7e79:d2a82d9f	cover	dossiq	development	quality/test-coverage-d2a82d9f	lang=php;dirs=lib/Service/Termijn/*.php;focus=thin;weight=5980;coverage=87.99;target=90.0	2026-08-15T03:55:24Z
+cover:dossiq:f8a113c5m7e79:b6fccd13	cover	dossiq	development	quality/test-coverage-b6fccd13	lang=php;dirs=lib/Service/Access/*.php;focus=thin;weight=5009;coverage=87.99;target=90.0	2026-08-15T03:55:24Z
+cover:dossiq:f8a113c5m7e79:4e459503	cover	dossiq	development	quality/test-coverage-4e459503	lang=php;dirs=lib/Service/CaseDefinition/*.php;focus=thin;weight=4960;coverage=87.99;target=90.0	2026-08-15T03:55:24Z
+cover:dossiq:f8a113c5m7e79:67583626	cover	dossiq	development	quality/test-coverage-67583626	lang=php;dirs=lib/Service/Lifecycle/*.php;focus=thin;weight=4369;coverage=87.99;target=90.0	2026-08-15T03:55:24Z
+cover:dossiq:f8a113c5m7e79:js5794e9fc	cover	dossiq	development	quality/test-coverage-js-5794e9fc	lang=js;dirs=src/views/settings/;focus=uncovered;weight=2001;coverage=85.31;target=90.0	2026-08-15T01:31:16Z
+cover:dossiq:f8a113c5m7e79:js0be8c659	cover	dossiq	development	quality/test-coverage-js-0be8c659	lang=js;dirs=src/modals/*;focus=uncovered;weight=543;coverage=85.31;target=90.0	2026-08-15T01:55:34Z
+cover:dossiq:f8a113c5m7e79:js3f3bfe56	cover	dossiq	development	quality/test-coverage-js-3f3bfe56	lang=js;dirs=src/*;focus=uncovered;weight=267;coverage=85.31;target=90.0	2026-08-15T02:00:10Z
+cover:dossiq:f8a113c5m7e79:js2b6606f9	cover	dossiq	development	quality/test-coverage-js-2b6606f9	lang=js;dirs=src/views/cases/;focus=uncovered;weight=165;coverage=85.31;target=90.0	2026-08-15T02:01:52Z
+cover:dossiq:f8a113c5m7e79:js00fe026a	cover	dossiq	development	quality/test-coverage-js-00fe026a	lang=js;dirs=src/services/*;focus=uncovered;weight=117;coverage=85.31;target=90.0	2026-08-15T02:02:40Z
+cover:dossiq:f8a113c5m7e79:js7de78384	cover	dossiq	development	quality/test-coverage-js-7de78384	lang=js;dirs=src/manifest.d/*;focus=uncovered;weight=87;coverage=85.31;target=90.0	2026-08-15T02:03:10Z
+cover:dossiq:f8a113c5m7e79:jsd48eb217	cover	dossiq	development	quality/test-coverage-js-d48eb217	lang=js;dirs=src/store/modules/;focus=uncovered;weight=81;coverage=85.31;target=90.0	2026-08-15T02:03:16Z
+cover:shillinq:05639debmd8ee:d76b2f72	cover	shillinq	development	quality/test-coverage-d76b2f72	lang=php;dirs=lib/Guard/*.php;focus=uncovered;weight=138;coverage=85.47;target=90.0	2026-11-13T02:11:55Z
+cover:shillinq:05639debmd8ee:6a548709	cover	shillinq	development	quality/test-coverage-6a548709	lang=php;dirs=lib/Service/Migration/;focus=thin;weight=1489;coverage=85.47;target=90.0	2026-11-13T01:49:24Z
+cover:shillinq:05639debmd8ee:e6f8d431	cover	shillinq	development	quality/test-coverage-e6f8d431	lang=php;dirs=lib/Service/Relation/;focus=thin;weight=1066;coverage=85.47;target=90.0	2026-11-13T01:56:27Z
+cover:shillinq:05639debmd8ee:e372e6ff	cover	shillinq	development	quality/test-coverage-e372e6ff	lang=php;dirs=lib/Event/*.php;focus=thin;weight=1026;coverage=85.47;target=90.0	2026-11-13T01:57:07Z
