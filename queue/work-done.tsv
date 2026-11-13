@@ -7086,3 +7086,4 @@ build4:openregister:record-tasks-tab	PR #10407 — 2.1 Tasks tab (CnTasksTab flo
 build4:openregister:records-bulk-transition	partial: PR #10408 adds Newman collection (2.1, excluded until a live run with a BulkJobRunner worker) and docs (2.3); 2.2 Playwright left	session-20261113T213325-5a151438	2026-11-13T22:08:52Z
 build4:openregister:schema-breaking-change-notice	partial: PR #10409 documents 3.2; screenshot and 3.1 e2e need a live stack	session-20261113T213311-eb1a0842	2026-11-13T22:09:24Z
 review:openregister:10375:be3e69d7	APPROVE	session-20261113T212414-df8c34e5	2026-11-13T22:09:23Z
+review:openregister:10377:cc91b7d5	APPROVE #10377 (tests only, suites green)	session-20261113T213335-001b7417	2026-11-13T22:09:41Z
