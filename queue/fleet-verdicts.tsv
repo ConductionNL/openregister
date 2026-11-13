@@ -4968,3 +4968,4 @@ dossiq	6264	0784f754a03bdaaa95a7da082a492ac5cba56e28	GREEN	worker-23	tree 14245 
 filinq	2022	1c1121f338facdf3330bede9ef3878e9e6bef980	GREEN	worker-04	phpunit 5899/0 (baseline 5899/0); vitest 471/0 (baseline 450/0); test-only addition
 dossiq	6265	0adad54d91a864635f09ed79687cf000918e44ec	GREEN	worker-23	tree 14245 tests, baseline 14205 with 19 failures, 0 new failures
 shillinq	2852	9bcda10b4b9eb41eec0849c5d5d03c644790a2db	GREEN	worker-58	9023 tests (baseline 9004, 1 inherited failure PaymentWebhookIntakeCharacterisationTest), 0 new failures; tests only
+stackiq	1823	36a80c6fc937fe1dd8fd9eb08067c1d91bcacbdf	GREEN	worker-10	phpunit 2871 tests on tree (baseline 2854, 57 inherited errors); vitest 2151 passed; 0 new failures; tests only
