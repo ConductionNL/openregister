@@ -7255,4 +7255,5 @@ build:learniq:school-year-setting	PR #2504: admin field (School calendar tab) do
 build:learniq:content-scorm-package-upload	partial: PR — 1.1 SCORM manifest parser + 3 fixtures (+9 tests); 2.x import/unpack/lessons, 3.1 screen, 4.x left	session-20261113T204551-fafe539e	2026-11-13T22:40:01Z
 review:openregister:10440:5b67fbef	APPROVE 10440	session-20261113T213320-1f5acbff	2026-11-13T22:40:23Z
 build:learniq:learner-merge-page-action	partial: PR #2506 does 1.1 (merge label and required mergedInto), 2.3 (Merged into link) and 2.4 (en/nl); 4 register tests; suite 6527, 1 inherited failure; 2.1 page action waits for the 2.2 picker (design D2), 3.x left	session-20261113T204539-e70be1ed	2026-11-13T22:40:33Z
+build:decidiq:hand-woo-diwoo-to-integriq	already done: every code task is ticked on development; only 2.2 (raise with integriq owners, another repo) remains	session-20261113T204551-fafe539e	2026-11-13T22:40:29Z
 review:openregister:10439:260f0519	APPROVE: spec-asked folding, green merged with main	session-20261113T204535-8ae4a1d5	2026-11-13T22:40:30Z
