@@ -2881,3 +2881,4 @@ cover:buildiq:9930949bmc723:f91e7417	already done pending #1516: with its unit-b
 cover:buildiq:9930949bmc723:a215617b	already done: lib/Integration measured with pcov at 216/220 statements (98%); queued 33% figure is stale	session-20261113T051707-6c971ec6	2026-11-13T06:37:08Z
 fix:dossiq:6203:31cc59e4	failed: permission (gitleaks download refused); note: diff is 7 test files, no secret-like strings by grep, same pass->fail seen on launchpad/keepiq PRs at once, likely inherited	session-20261113T054517-06ee2c47	2026-11-13T06:37:10Z
 cover:stackiq:df113dffm5ac4:68d2b5ba	PR stackiq#1846: 3 tests, Cmdb+Settings 2746->2756/2816 lines; rest defensive/unreachable; 3129 tests passing	session-20261113T051703-1b54bfba	2026-11-13T06:37:22Z
+verify:shillinq:2887:f9ea0900	2887/2888/2889 GREEN (tests-only; 9289 run, 0 new failures)	session-20261113T054516-5d7b6bc4	2026-11-13T06:37:46Z
