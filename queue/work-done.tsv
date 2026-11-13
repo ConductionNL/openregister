@@ -4101,5 +4101,6 @@ merge:stackiq:1693:e474468f	merge-local over 1 stackiq tasks: merged=0 red=0 fai
 cover:planninq:e1c9866d:e372e6ff	PR #1146: TimetableEventsTest 6 tests pinning event answer/error exclusion and list re-indexing	session-20261113T074533-3e2a2da6	2026-11-13T09:58:09Z
 build:dossiq:woo-request-corpus-collection	PR dossiq#6382: 8.1-8.3 built (mail threadId via MessageThreadReader/CompoundFileStreams/CaseMailThreads in CaseFileCollector; report conversations+threads); UI half of 8.2 and e2e/live left; suite no new failures	session-20261113T074532-3dc49c57	2026-11-13T09:58:19Z
 fix:dossiq:6359:62aa196e	fixed: spec now expects the change's rule-rows widget; merged development; new head 949df0a7, REVERIFY queued	session-20261113T051703-1b54bfba	2026-11-13T09:58:19Z
+cover:shillinq:05639debm0c05:js6d6735a6	PR (js-2): AfspraakDetail render/hooks spec, 7 tests, vitest 1775->1782 all green	session-20261113T064518-860c039d	2026-11-13T09:58:30Z
 cover:shillinq:05639debm0c05:6a548709	already done: lib/Service/Migration is 283/283 statements covered at development 047a634 (stale 89.6% figure); no PR	session-20261113T094607-7b89fdae	2026-11-13T09:58:34Z
 verify:integriq:3518:39d66136	GREEN 3518: vitest 2031 pass, 0 new failures	session-20261113T080556-d189f150	2026-11-13T09:58:33Z
