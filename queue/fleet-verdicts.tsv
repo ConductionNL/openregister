@@ -5959,4 +5959,5 @@ humaniq	1112	c7acf4435ca5fafef99f1ac9d30447d3fd974f3e	GREEN	worker-13	tests only
 humaniq	1113	299a7cece9d116e66d8a97ff5b411ae33423a106	GREEN	worker-13	tests only; tree 4055 tests, baseline 3928 OK, no new failures
 humaniq	1115	2a6078888b9f207c1a25210ecefa541e568f239f	GREEN	worker-13	tests only; tree 4055 tests, baseline 3928 OK, no new failures
 humaniq	1117	de9f4e04ba1248d3ce52313e904bebb0c4b7651f	GREEN	worker-13	tests only; tree 3957 tests, baseline 3928 OK, no new failures
+dossiq	6371	cea13ccf507e61c09e3a6a0bb136b2f942cc1eb8	GREEN	worker-33	tree 16332 tests; baseline 16325 with 20 failures; new failures 0 (build of woo-review-recall-and-stopping task 1: stoppingRule private + reconcile, as the change asks)
 portaliq	2409	5e94bd91bb4c22cc7cec5cada6b93d18c925a4ef	GREEN	worker-02	tests only; tree 4897 tests OK, baseline 4892 OK, 0 new failures
