@@ -3186,6 +3186,7 @@ cover:dossiq:f8a113c5m7e79:6dc9019f	already done: lib/Service/Registry 100/100 l
 cover:dossiq:f8a113c5m7e79:aae6d66c	already done: lib/Exception and its tests unchanged since 0888b592d1, where they measured 45/45 lines (100%); -1 batch merged; no PR	session-20261113T072711-3523cf52	2026-11-13T07:35:58Z
 cover:dossiq:f8a113c5m7e79:e372e6ff	already done: lib/Event 7/7 lines	session-20261113T051703-1b54bfba	2026-11-13T07:36:01Z
 cover:integriq:92114ab0m658d:34f5c300	PRs integriq#3501 (SOAP engine, endpoint cache, service bindings, StUF-ZKN; 26 tests) and #3502 (approval listing, job scheduling; 12 tests); lib/Service 89.02%->90.0% lines with both; same inherited failures. Found: SOAPService::callSoapSource cannot load WSDL (entity-loader callback rejects null public id); StUF crossRefnummer never echoed	session-20261113T053904-36dcee67	2026-11-13T07:36:09Z
+cover:dossiq:f8a113c5m7e79:93ebc4b9	already done: RangeStreamResponse edge cases merged via -1 branch; every branch pinned	session-20261113T072715-8f8a14e9	2026-11-13T07:36:19Z
 cover:dossiq:f8a113c5m7e79:0eb04fa4	already done: lib/Service/Product 147/147 lines (PR -1 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:36:16Z
 cover:integriq:92114ab0m658d:f0d34e00	already done: lib/Connectors/*.php at 98.6% lines (272/276) on development (branch -1 merged as #3474); no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:36:34Z
 cover:dossiq:f8a113c5m7e79:3e42da73	already done: lib/Service/Tenant 97/99 lines (98%, target 95), PR -1 merged	session-20261113T051703-1b54bfba	2026-11-13T07:36:33Z
