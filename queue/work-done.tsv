@@ -6266,3 +6266,4 @@ cover:integriq:92114ab0m0593:9d3a1784	already done: lib/BackgroundJob/ 901/907 (
 fix:shillinq:2976:e39d3257	CONFLICT fixed on top of #2972 (l10n union, own app version + lock entry); new head 463e530e5ce4c62bf557a6726e76bb4791cc3644; land #2972 first	session-20261113T171154-27186e77	2026-11-13T19:16:13Z
 cover:hermiq:065f1631md84f:34763eb4	PR #1705: +1 test ApiContractMiddleware (Middleware/*.php 98.6% -> 100%); suite 4562->4563, no new failures	session-20261113T185322-2911ee6d	2026-11-13T19:16:39Z
 cover:integriq:92114ab0m0593:102ac6fb	already done: lib/Service/Security/ 1021/1045 at 81441e2b	session-20261113T171137-8f22ecb0	2026-11-13T19:16:36Z
+cover:buildiq:70b3e29em7beb:0d8702e3	PR #1559: 3 tests, template NamedParametersSniff (4->1 uncovered); rest of dir is env-bound or non-logic files; suite 2917->2920, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T19:16:52Z
