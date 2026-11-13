@@ -1985,3 +1985,15 @@ decidiq	2141	7e14a47d6670df27df7592acd9ba758449b3ad71	MERGED	merge3	GATE OK sbom
 decidiq	2142	dce024ea88a1ec70941a61d110e741c8cd20bfdb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2147	4289b990f244e854ede31c218c033d6c2877f6c6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2150	e9a296dcaebf68413f59d4eee70a9c0f2a99767d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2127	310fc962bd7bd4d967a5b488b985ff5e56e40ecc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2128	0a32a828d86a61d2ae6026a8b6581c47e58e7f28	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2129	47e0f5f3d0eb2e1c37de1b7a2e80829ec6af5cf2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2130	8f7a28fa222c1beba24bf1c9cf60a7479f2bc780	SKIP	merge3	GATE UNMEASURED floor_check.py or checker_floor.py not available
+decidiq	2131	66d02dbcd4bbd73b4f865564b7313073f93a5096	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2138	abb26c420ba90e05fb5b11d04e5cc1b552a4c16b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2139	9b920569d595bb765d265611a196e8223712be4d	RED	merge3	GATE RED floor: duplication: 3.82 -> 3.80
+decidiq	2140	d64a9d8a65a463da789169a4c4d41df345bb6ac2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2141	7e14a47d6670df27df7592acd9ba758449b3ad71	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2142	dce024ea88a1ec70941a61d110e741c8cd20bfdb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2147	4289b990f244e854ede31c218c033d6c2877f6c6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2150	e9a296dcaebf68413f59d4eee70a9c0f2a99767d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
