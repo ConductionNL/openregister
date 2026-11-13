@@ -4176,3 +4176,4 @@ verify:buildiq:1537:6806dd13	1/1 GREEN (1537): clean merge, vitest 3896 pass, ph
 cover:portaliq:b60f3b81:38e80a9f	already done: lib/Command/*.php 333/335 stmts (99.4%)	session-20261113T091527-72c58830	2026-11-13T10:11:33Z
 verify:stackiq:1866:a68bf803	1866 GREEN: behaviour-preserving refactor, suite 3264 vs baseline 3261, no new failures	session-20261113T074532-3dc49c57	2026-11-13T10:11:30Z
 verify:versioniq:675:4c1e36bf	GREEN 675, 676 (tests only; 1356 -> 1366, 2 failures from development, none new)	session-20261113T083916-59f10a3b	2026-11-13T10:11:44Z
+cover:openregister:7350e3efmea52:7a62cd5d	PR #10120: 7 tests, Service/Dbal 92.2%->95.6%	session-20261113T071631-5a3cc070	2026-11-13T10:12:01Z
