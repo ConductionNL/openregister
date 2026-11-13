@@ -4786,3 +4786,4 @@ build:openregister:dbal-source-resolution-system-context	PR #10168: both open ta
 build:openregister:anonymisation-discloses-itself	partial: PR #10169 section 6 (confidenceThreshold setting, 400 on out-of-range, literals replaced, contract test); sections 1-3 left	session-20261113T104531-274f72f7	2026-11-13T12:18:46Z
 review:openregister:10155:aafcf411	APPROVE: additive GitLab publish, mirrors GitHub pattern, admin-gated no fail-open, phpstan clean, 20 tests + route architecture green	session-20261113T091527-72c58830	2026-11-13T12:18:55Z
 cover:portaliq:b60f3b81:0e96d102	already done: lib/Service/Identity/EmailLink/ 237/245 = 96.7% >= 95	session-20261113T051703-1b54bfba	2026-11-13T12:19:01Z
+build:openregister:flow-engine-unification	partial: PR #10170 (1.1, 1.2, 1.4, 1.8, 2.4; 3.1/3.5 need a product decision, rest is other repos or live)	session-20261113T113930-fe243f84	2026-11-13T12:19:10Z
