@@ -6424,3 +6424,4 @@ opencatalogi	2636	bdb2b3b93b1a7f22028dffa83c229e37cd44a8b9	GREEN	worker-44	build
 integriq	3549	806edd126dd666e6d9baffc837fd243ffbb6ed02	CONFLICT	worker-20	conflicts in the tree in l10n/en.json, nl.json with earlier tree PR #3546; clean vs development
 integriq	3550	b299513010b1702e08431366b20aa2c7a7f12486	CONFLICT	worker-20	conflicts in the tree in l10n/en.json, nl.json with earlier tree PR #3546; clean vs development
 dossiq	6449	e9583875d248e9026d0d0bd3682c5467ffc86cec	GREEN	worker-04	unit 16534 tests (+4; the 2 new files run 16 tests, all pass); baseline 16530 with the same 20 failures (inherited); no new failures; tests only
+integriq	3546	95fa7eb644975cdf5d614d79337033061f191477	GREEN	worker-20	tree 3546+3547+3548: unit 8243 run (baseline 8222, 2 errors + 2 failures inherited), 0 new failures; no JS touched; build judged against connectors-endpoint-workspace-adapters, new route admin-checked in method
