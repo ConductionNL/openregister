@@ -6104,6 +6104,7 @@ buildiq	1555	d8d971d3e1ce939b78f1b8adc203bfd14dbf8e45	GREEN	worker-22	tests-only
 shillinq	2952	8830cecbf3404a246f21977ac39a42035f6f427d	GREEN	worker-28	phpunit 10394 tests, 1 failure = baseline (clock-bound PaymentWebhookIntakeCharacterisationTest), no new; vitest 226 files/2317 tests passed; tests only
 keepiq	1760	135564d217a7edf4eb8a524db38051632f2dc62e	GREEN	worker-21	php unit 4854 (0 failures, unchanged); vitest 401 files / 6369 tests all passed on the merged tree; tests-only
 keepiq	1762	4a71aa2b8bc08eceb987a0c75de102a271f0b64c	GREEN	worker-46	phpunit 4855 on tree (baseline 4854, 0 failures); tests only
+dossiq	6428	da2d86e18c441d34fdcb871a01237976e71580a7	GREEN	worker-33	16570 tests on the 3-PR tree, baseline 16530 with 20 failures, 0 new failures; tests only
 portaliq	2442	39991bbb5496c7ad9db5db692fcc87e5101dbfbe	GREEN	worker-01	phpunit baseline 4914 OK; node baseline 2477/2 inherited fails; tree (2442+2447) phpunit 4921 OK, node 2482 with the same 2 inherited fails; matches shared-plans-with-a-caseworker T07
 portaliq	2443	927479faf7380e0409af3df5690b6d6c556b68ee	RED	worker-01	phpunit baseline 4914 OK; node baseline 2477/2 inherited fails; new failure tests/example-site.spec.mjs 'the Zuiddrecht site lays out its own area as the MijnMenu and MijnZaken boards draw it' (expects register 0.108.0, PR bumps to 0.109.0); reproduced alone on development
 portaliq	2444	a4ff1af61bf55707d3ce143a8116dcecf3ec2bb5	CONFLICT	worker-01	conflicts with 2442 in l10n/en,nl .json/.js (also with 2443 in PortaliqRegisterConfigTest)
