@@ -6246,3 +6246,4 @@ opencatalogi	2600	7874d6b1e0c0bbd61fdf605846cb0bab4a393c94	GREEN	worker-54	tree 
 opencatalogi	2601	6ee1c99a2e9e365c470249360be68b988f4b2114	GREEN	worker-54	tree of 3: 5265 tests vs baseline 5254 (2 inherited failures), same failure set; test-only
 opencatalogi	2602	31ebaa9bf0a9edb09143ff15da05be9df036d32d	GREEN	worker-54	tree of 3: 5265 tests vs baseline 5254 (2 inherited failures), same failure set; test-only
 decidiq	2130	8f7a28fa222c1beba24bf1c9cf60a7479f2bc780	GREEN	worker-19	tests only (+stubs); unit tree 3934 OK, baseline 3911 OK; no new failures
+decidiq	2131	66d02dbcd4bbd73b4f865564b7313073f93a5096	GREEN	worker-19	tests only (+stubs); unit tree 3934 OK, baseline 3911 OK; no new failures
