@@ -3199,3 +3199,4 @@ measure:larpinq:20261113h06	php 92.61% (3845/4152), js 65.35% (775/1186) @1137ab
 gap:decidiq:maint2:burn1	PR #2124: 3 units split (RegulatorExportService::generate, projectActionItems, buildProfiledManifest), tests first, suites green	session-20261113T072715-cf04db4e	2026-11-13T07:37:29Z
 cover:dossiq:f8a113c5m7e79:a797d42e	already done: CasePlanDrain/ and its tests unchanged since 0888b592d1, measured 184/186 lines (98.9%) there; no PR	session-20261113T072711-3523cf52	2026-11-13T07:37:35Z
 gap:shillinq:maint1:burn1	PR #2907: split reconcile/auditReport/generateExport, +9 tests first on old code, suite green bar inherited 1	session-20261113T071633-17de823f	2026-11-13T07:37:43Z
+cover:integriq:92114ab0m658d:ee14dc38	PR #3503: LogiusSchemaTest, 5 tests (dir already 387/393); suite 7715->7720, baseline 2 errors + 2 failures unchanged	session-20261113T071640-3ba6da34	2026-11-13T07:37:54Z
