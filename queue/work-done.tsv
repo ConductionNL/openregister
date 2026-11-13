@@ -7245,4 +7245,5 @@ review:openregister:10435:a7d8dbc5	BLOCK: MagicSearchHandlerRowToEntityTest red 
 build4:openregister:send-at-on-the-messaging-leaf	partial: PR #10455, 2.2 schedule (sendAt/object on send, 202), list and cancel routes, audited; sweep send/fail audits, 1.1, 3.x left; failing names identical	session-20261113T204533-6fe960ff	2026-11-13T22:38:48Z
 build:learniq:credentials-migrate-with-validity	partial: PR opened with 1.1 schema and 2.1 CredentialMigrationService (7 tests); route, screen, verify page left	session-20261113T202603-6c9ef72f	2026-11-13T22:38:47Z
 build:learniq:simple-today-dashboard	already done: every task is ticked; the 3 open lines sit under 'Not in this change'	session-20261113T202603-6c9ef72f	2026-11-13T22:39:01Z
+build:learniq:governance-four-eyes-on-approved-data	failed: nothing buildable; open items are 2.1b (Playwright on a deployed instance) and 3.2 close-out which waits on it	session-20261113T202603-6c9ef72f	2026-11-13T22:39:15Z
 verify:pipelinq:3798:4ef2080f	GREEN 3798: 7418 tests, 0 failures (baseline 7396/0)	session-20261113T215342-fabaa836	2026-11-13T22:39:14Z
