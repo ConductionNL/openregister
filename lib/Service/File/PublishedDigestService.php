@@ -77,6 +77,27 @@ class PublishedDigestService {
 	public const METADATA_KEY = 'openregister-published-sha256';
 
 	/**
+	 * The audit action of a published file whose bytes no longer match its digest.
+	 *
+	 * @var string
+	 */
+	public const MISMATCH_ACTION = 'file.digest-mismatch';
+
+	/**
+	 * The verdict when the file still has the published bytes.
+	 *
+	 * @var string
+	 */
+	public const IDENTICAL = 'identical';
+
+	/**
+	 * The verdict when the file's bytes changed since publication.
+	 *
+	 * @var string
+	 */
+	public const CHANGED = 'changed';
+
+	/**
 	 * How many bytes one read of the file hashes.
 	 *
 	 * @var int
@@ -203,6 +224,65 @@ class PublishedDigestService {
 			fclose($handle);
 		}
 	}//end digestOf()
+
+	/**
+	 * Check a published file against its record.
+	 *
+	 * An unchanged etag and size mean unchanged bytes, so the digest is not
+	 * recomputed; otherwise the file is read again and the digests compared.
+	 *
+	 * @param FileDigest $record The open record.
+	 * @param File       $file   The file now.
+	 *
+	 * @return array{verdict: string, recorded: string, current: string} The verdict and both digests.
+	 *
+	 * @throws Exception When the file cannot be read.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	public function verify(FileDigest $record, File $file): array {
+		$recorded = (string)$record->getSha256();
+		if ((string)$record->getEtag() !== '' && $file->getEtag() === $record->getEtag() && $file->getSize() === $record->getSize()) {
+			return ['verdict' => self::IDENTICAL, 'recorded' => $recorded, 'current' => $recorded];
+		}
+
+		$current = $this->digestOf(file: $file)['sha256'];
+		$verdict = self::CHANGED;
+		if (hash_equals($recorded, $current) === true) {
+			$verdict = self::IDENTICAL;
+		}
+
+		return ['verdict' => $verdict, 'recorded' => $recorded, 'current' => $current];
+	}//end verify()
+
+	/**
+	 * Write the audit row of a published file whose bytes changed.
+	 *
+	 * @param ObjectEntity $object  The object the file belongs to.
+	 * @param FileDigest   $record  The open record.
+	 * @param string       $current The digest the file has now, '' when it is gone.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	public function recordMismatch(ObjectEntity $object, FileDigest $record, string $current): void {
+		$row = $this->auditTrails->buildEntry(change: new AuditedChange(old: $object, new: $object, action: self::MISMATCH_ACTION));
+		$row->setChanged(
+			array_merge(
+				($row->getChanged() ?? []),
+				[
+					'fileId' => $record->getFileId(),
+					'objectUuid' => $record->getObjectUuid(),
+					'recorded' => $record->getSha256(),
+					'current' => $current,
+					'publishedAuditRow' => $record->getAuditTrailUuid(),
+				]
+			)
+		);
+
+		$this->auditTrails->insertAuditTrails(entries: [$row]);
+	}//end recordMismatch()
 
 	/**
 	 * A new, unsaved record of a publication happening now.

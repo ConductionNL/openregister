@@ -87,4 +87,27 @@ class FileDigestMapper extends QBMapper {
 		return $qb->executeStatement();
 
 	}//end closeOpenForFile()
+
+	/**
+	 * One page of the open records (files published now), in id order.
+	 *
+	 * @param int $afterId The last id of the previous page, 0 for the first.
+	 * @param int $limit   The page size.
+	 *
+	 * @return FileDigest[] The records.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	public function findOpenAfter(int $afterId, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNull('unpublished_at'))
+			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+
+	}//end findOpenAfter()
 }//end class
