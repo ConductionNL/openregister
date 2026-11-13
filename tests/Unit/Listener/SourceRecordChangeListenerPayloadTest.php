@@ -62,8 +62,18 @@ class SourceRecordChangeListenerPayloadTest extends TestCase {
 	 */
 	private array $enqueued = [];
 
+	/**
+	 * The real deferral buffer.
+	 *
+	 * @var ListenerDeferralService
+	 */
 	private ListenerDeferralService $deferral;
 
+	/**
+	 * The listener under test.
+	 *
+	 * @var SourceRecordChangeListener
+	 */
 	private SourceRecordChangeListener $listener;
 
 	protected function setUp(): void {
