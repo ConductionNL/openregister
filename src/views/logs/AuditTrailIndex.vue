@@ -458,6 +458,7 @@ export default {
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
 		 */
 		async loadAuditTrails() {
 			try {
@@ -475,6 +476,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
 		 */
 		handleFiltersChanged(filters) {
 			auditTrailStore.setAuditTrailFilters(filters)
@@ -489,6 +491,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
 		 */
 		handleExport(options) {
 			this.exportFilteredAuditTrails(options)
@@ -636,6 +639,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
 		 */
 		exportAuditTrails() {
 			this.exportFilteredAuditTrails({ format: 'csv', includeChanges: true })
@@ -648,6 +652,7 @@ export default {
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
 		 */
 		async exportFilteredAuditTrails(options) {
 			try {
