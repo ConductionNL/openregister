@@ -3635,3 +3635,5 @@ cover:openregister:7350e3efmea52:e98782c5	cover	openregister	main	test/coverage-
 cover:openregister:7350e3efmea52:3421d638	cover	openregister	main	test/coverage-3421d638	lang=php;dirs=lib/Service/Flow/Nodes/;focus=uncovered;weight=1227;coverage=91.41;target=95.0	2026-11-13T03:29:32Z
 measure:larpinq:20261113h06	measure	larpinq	development	queue/coverage/larpinq.json	why=slices need per-directory coverage	2026-11-13T07:23:51Z
 measure:versioniq:20261113h06	measure	versioniq	development	queue/coverage/versioniq.json	why=slices need per-directory coverage	2026-11-13T07:23:51Z
+verify:dossiq:6321:6a3f9251	verify	dossiq	development	merge	prs=6321@bc6077730537d26c28332055dc3048b293be62a8	2026-11-13T07:25:31Z
+verify:shillinq:2903:c7240894	verify	shillinq	development	merge	prs=2903@45ca07e74ef10092b8f399bbebaf2ff90fe62e9b	2026-11-13T07:25:31Z
