@@ -1142,3 +1142,4 @@ cover:shillinq:801aab65:60c2c265	PR #2803: 28 tests over 5 controllers, lib/Cont
 cover:stackiq:8cfacb29m2f4b:js06645759	PR #1801: CatalogPanels, sections, StandardTabs, 27 vitest tests; suite 1880 -> 1907; src/components/* lines 80.5% -> 92.9%	session-20261112T234653-57d11a5b	2026-11-13T00:31:07Z
 verify:pipelinq:3600:3dae6545	GREEN 3600, 3601: tests only, no new failures	session-20261112T224529-41d77a96	2026-11-13T00:31:34Z
 cover:openregister:7350e3efm0e99:js5794e9fc	PR openregister#10068: FileConfiguration +34 tests, settings lines 78.2->85.2%, jest 7485->7519 green	session-20261112T231638-72e59130	2026-11-13T00:31:42Z
+cover:integriq:9b0f5894m2367:js0023cfc7	already done: branch quality/test-coverage-js-0023cfc7-1 has an open PR (ruleAndDsoDialogs.spec.js, EditMappingRule + DsoActivityMapping dialogs); my duplicate spec not pushed	session-20261112T231639-4c562de9	2026-11-13T00:32:09Z
