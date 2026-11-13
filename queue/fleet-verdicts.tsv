@@ -6270,3 +6270,4 @@ integriq	3532	42115361ad6bcea53be7c9485a2560d4d7d8b641	GREEN	worker-26	phpunit t
 integriq	3533	34eb717e4b900085d726c1f1f7d60bc57deb5e7b	GREEN	worker-26	phpunit tree 8225 tests vs baseline 8222 (2 errors, 2-3 failures inherited: CallServiceTest, JobsControllerTest, flaky SynchronizationSynchronizeEntryGoldenTest); vitest 156 files/2104 pass; 0 new failures; test-only vitest spec
 dossiq	6443	e9b9ace10d1240952e472e56cb6e54a68cddea02	GREEN	worker-29	tree 16545 tests; baseline 16530 with 20 inherited failures; 0 new failures; test-only
 dossiq	6444	d2390741beba8173e8d59c01e11d3c0cd703bf58	GREEN	worker-29	tree 16545 tests; baseline 16530 with 20 inherited failures; 0 new failures; test-only
+shillinq	3014	d48233634c2056466edb729f998612588eee6f7b	GREEN	worker-51	tests only; phpunit 10397 run (baseline 10394), 1 failure = inherited clock-bound PaymentWebhookIntakeCharacterisationTest
