@@ -7231,3 +7231,4 @@ build:learniq:parity-rows-written-as-requirements	already done: spec-only change
 review:openregister:10432:f03476b5	APPROVE	session-20261113T205325-28f592a9	2026-11-13T22:36:52Z
 measure:pipelinq:20261113h20	php 88.35% (pcov), js 93.17% at fcd583ff4a	session-20261113T215344-82e3aea0	2026-11-13T22:37:16Z
 fix:pipelinq:3794:08d129aa	CONFLICT resolved: lock regenerated on merged development, sbom regenerated, 7374 tests green; new head f9a20787f751cb737595c0282606c64b07809bb8	session-20261113T215342-fabaa836	2026-11-13T22:37:14Z
+build4:openregister:working-calendar-admin	partial: PR #10454 adds C67.5 blackouts and C67.6 firstWeekOfYear capability (24 tests, descriptor 1.4.0); C67.1-4, C67.6 facet wiring, C67.7/8 left	session-20261113T212414-55623216	2026-11-13T22:37:41Z
