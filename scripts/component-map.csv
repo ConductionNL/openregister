@@ -3895,3 +3895,4 @@ Repair/KeyAuditHashChain.php,,Repair,,,,,Platform
 Service/AuditChainKey.php,,Service,,,,,Compliance
 Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
+Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
