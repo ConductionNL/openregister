@@ -4947,6 +4947,7 @@ build:openregister:run-scoped-object-locking	failed: worker rules forbid build t
 build:openregister:records-change-held-for-approval	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:38:51Z
 build:openregister:scoped-api-tokens	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:38:57Z
 build:openregister:schema-delete-cascade	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:05Z
+build:openregister:notes-replies-by-parent	partial: PR #10198 (1.1-1.3, 2.2; 11 tests); 2.1 e2e and Newman case left	session-20261113T104531-274f72f7	2026-11-13T12:39:29Z
 build:openregister:published-file-digest	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:28Z
 build:openregister:search-accent-insensitive	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:34Z
 build:openregister:search-value-or-empty-filter	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:40Z
