@@ -6430,3 +6430,4 @@ build:filinq:document-intake-inbox	nothing to build: 2.2 replaced by another cha
 verify:opencatalogi:2603:7a157e0f	GREEN 2603	session-20261113T175327-6e4e7f28	2026-11-13T19:48:27Z
 build:filinq:competitor-parity-2026-09	nothing to build: umbrella index (kind: umbrella); open boxes 1 and 10 tick when scan-intake-with-separator-sheets and documents-in-and-out-of-the-building are archived, 11-12 are not code	session-20261113T182349-6568f680	2026-11-13T19:48:37Z
 cover:keepiq:c967a31fm10bf:f91e7417	already done: lib/Service/Connection 150/150 statements covered on development	session-20261113T182348-cc1b5fea	2026-11-13T19:48:56Z
+build:filinq:diwoo-documentsoort-to-opencatalogi	failed: blocked on opencatalogi diwoo-metadata-on-the-publication (not merged; publication schema has no documentsoort at 6229950). Adding documentsoort to FIELDS turns the schema pin test red, and the task forbids hand-editing the fixture	session-20261113T175327-6e4e7f28	2026-11-13T19:49:04Z
