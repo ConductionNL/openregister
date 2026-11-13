@@ -38,6 +38,9 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\TenantLifecycleService
+ * @uses \OCA\OpenRegister\Db\Application
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\TenantDirectory
  */
 final class TenantLifecycleServiceGoldenTest extends TestCase {
 

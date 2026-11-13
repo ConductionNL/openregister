@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * Lookups ask the mapper for exactly the id or slug given; a built-in create clears only a slug that was recorded as deleted.
  *
  * @covers \OCA\OpenRegister\Service\MigrationPackService
+ * @uses \OCA\OpenRegister\Db\MigrationPack
  */
 class MigrationPackServiceLookupsTest extends TestCase {
 

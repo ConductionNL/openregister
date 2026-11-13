@@ -211,7 +211,7 @@ class ScheduleFlowSync {
 			$this->recordIdentity(compiled: $compiled, previous: $flow?->scheduledRunAs());
 			$this->store->write(compiled: $compiled, stored: $flow);
 		} catch (Throwable $e) {
-			$this->refusals->refuse(release: $compiled->release, reason: $e->getMessage());
+			$this->refusals->refuseFailure(release: $compiled->release, failure: $e);
 		}
 	}//end applySchedule()
 

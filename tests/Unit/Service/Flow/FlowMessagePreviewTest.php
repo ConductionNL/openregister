@@ -29,6 +29,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowMessagePreview
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues
+ * @uses \OCA\OpenRegister\Service\Flow\MessageSend
+ * @uses \OCA\OpenRegister\Service\Flow\RecipientLookup
  */
 class FlowMessagePreviewTest extends TestCase {
 

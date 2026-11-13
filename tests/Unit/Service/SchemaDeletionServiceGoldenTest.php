@@ -53,6 +53,30 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\SchemaDeletionService
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Exception\LockedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\SchemaCascade
+ * @uses \OCA\OpenRegister\Service\SchemaDeletionStores
+ * @uses \OCA\OpenRegister\Service\SchemaTeardownGuard
+ * @uses \OCA\OpenRegister\Service\SchemaTeardownOverride
+ * @uses \OCA\OpenRegister\Service\TableDeletionOptions
+ * @uses \OCA\OpenRegister\Service\TableDeletionRun
+ * @uses \OCA\OpenRegister\Service\WholeTableRows
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Exception\ArchivalImmutableException
  */
 final class SchemaDeletionServiceGoldenTest extends TestCase {
 

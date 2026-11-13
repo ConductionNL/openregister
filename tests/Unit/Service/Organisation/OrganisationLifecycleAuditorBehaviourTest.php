@@ -35,6 +35,10 @@ use Psr\Log\LoggerInterface;
  * No-op changes write nothing, and a change without a session is attributed to the system.
  *
  * @covers \OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\Organisation\OrganisationEdit
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Organisation\OrganisationChange
  */
 class OrganisationLifecycleAuditorBehaviourTest extends TestCase {
 

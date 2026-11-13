@@ -39,6 +39,9 @@ use Psr\Log\LoggerInterface;
  * Golden outcomes of ObjectSearchResultFormatter::format().
  *
  * @covers \OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewSources
+ * @uses \OCA\OpenRegister\Service\Search\ObjectSearchHit
  */
 class ObjectSearchResultFormatterGoldenTest extends TestCase {
 

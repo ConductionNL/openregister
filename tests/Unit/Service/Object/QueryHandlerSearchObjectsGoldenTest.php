@@ -59,6 +59,11 @@ use OCA\OpenRegister\Service\Object\QueryRefinements;
  * @uses   \OCA\OpenRegister\Service\Object\SearchOptions
  * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Service\Object\QueryHandlers
+ * @uses \OCA\OpenRegister\Service\Object\QueryPlatform
+ * @uses \OCA\OpenRegister\Service\Object\QueryRefinements
+ * @uses \OCA\OpenRegister\Service\Object\SearchOptions
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

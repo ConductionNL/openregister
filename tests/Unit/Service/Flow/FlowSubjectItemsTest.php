@@ -26,6 +26,8 @@ use stdClass;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowSubjectItems
  * @uses   \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\LiveSubject
  */
 class FlowSubjectItemsTest extends TestCase {
 	/**

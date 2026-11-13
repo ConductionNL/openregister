@@ -47,6 +47,10 @@ use stdClass;
  * @uses   \OCA\OpenRegister\Search\Db\View
  * @uses   \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Search\Service\CalendarRange
+ * @uses \OCA\OpenRegister\Search\Service\KanbanBoardRun
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacRuleChecks
  */
 class ViewPresentationServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/view-presentation-golden.json';

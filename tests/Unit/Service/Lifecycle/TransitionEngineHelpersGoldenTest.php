@@ -49,6 +49,12 @@ use Stringable;
  * TransitionEngine private helpers, golden.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects
  */
 final class TransitionEngineHelpersGoldenTest extends TestCase {
 

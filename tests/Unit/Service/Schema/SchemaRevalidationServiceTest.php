@@ -52,6 +52,10 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\SchemaRunEntry
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold
+ * @uses \OCA\OpenRegister\Service\Schema\RevalidationRequest
+ * @uses \OCA\OpenRegister\Service\Schema\SchemaPopulationRuns
+ * @uses \OCA\OpenRegister\Service\Schema\SchemaRunBatch
  */
 class SchemaRevalidationServiceTest extends TestCase {
 

@@ -37,6 +37,11 @@ use Throwable;
  *
  * @covers \OCA\OpenRegister\Service\ContactService
  * @uses   \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Db\ContactLink\ContactLinkJson
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\ContactCardRef
+ * @uses \OCA\OpenRegister\Service\ContactPlacement
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
  */
 class ContactServiceListingGoldenTest extends TestCase {
 

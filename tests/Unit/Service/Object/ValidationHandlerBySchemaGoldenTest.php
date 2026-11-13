@@ -45,6 +45,11 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class ValidationHandlerBySchemaGoldenTest extends TestCase {
 

@@ -60,6 +60,10 @@ use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
  * @uses   \OCA\OpenRegister\Db\BookmarkLink
  * @uses   \OCA\OpenRegister\Db\FlowLink
  * @uses   \OCA\OpenRegister\Db\PollLink
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\FlowJsonColumn
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform
  */
 class LinkRowsListGoldenTest extends TestCase {
 

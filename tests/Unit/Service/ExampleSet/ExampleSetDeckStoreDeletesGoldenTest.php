@@ -37,6 +37,7 @@ use PHPUnit\Framework\TestCase;
  * Golden pins for the Deck rows an example set removes.
  *
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\DeckColumn
  */
 class ExampleSetDeckStoreDeletesGoldenTest extends TestCase {
 

@@ -1,6 +1,8 @@
 OC.L10N.register(
     "openregister",
     {
+        "Everyone": "Сви",
+        "Only an administrator or the owner of this organisation can change its special rights.": "Само администратор или власник ове организације може да мења њена посебна права.",
         "3": "3",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "Апликација која испоручује или поседује ову табелу, на пример `dossiq`. Празно за табелу коју је направио администратор.",

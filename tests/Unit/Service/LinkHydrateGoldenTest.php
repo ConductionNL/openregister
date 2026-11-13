@@ -49,6 +49,7 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\OpenProjectLink
  * @uses   \OCA\OpenRegister\Db\TimeTrackerLink
  * @uses   \OCA\OpenRegister\Db\XwikiLink
+ * @uses \OCA\OpenRegister\Service\TimeTracker\TimeEntry
  */
 class LinkHydrateGoldenTest extends TestCase {
 

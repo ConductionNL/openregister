@@ -34,6 +34,11 @@ use Psr\Container\ContainerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
  * @uses \OCA\OpenRegister\Db\ExportRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunContent
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunFile
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunOrigin
  */
 class ExampleSetExportRunsTest extends TestCase {
 	/** @var array<string, string> The files in pieter's folder, by path. */

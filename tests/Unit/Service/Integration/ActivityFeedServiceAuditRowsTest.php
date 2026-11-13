@@ -33,6 +33,10 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Integration\ActivityFeedMerge
  * @uses   \OCA\OpenRegister\Service\Integration\ActivityFeedObject
  * @uses   \OCA\OpenRegister\Service\Integration\ActivityFeedOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Integration\ActivityFeedMerge
+ * @uses \OCA\OpenRegister\Service\Integration\ActivityFeedObject
+ * @uses \OCA\OpenRegister\Service\Integration\ActivityFeedOptions
  */
 class ActivityFeedServiceAuditRowsTest extends TestCase {
 

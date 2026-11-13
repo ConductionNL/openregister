@@ -86,6 +86,19 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
  * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
  * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClash
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWrite
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\TemplateSource
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	use BuildsObjectSlugHandler;

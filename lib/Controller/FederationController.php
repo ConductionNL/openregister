@@ -70,6 +70,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
  * security boundary each handler crosses, and dropping the throttler would
  * restore an exposure. Suppressed with that trade stated rather than silently
  * baselined.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One public action per federation route.
  */
 class FederationController extends Controller {
 
@@ -278,6 +280,37 @@ class FederationController extends Controller {
 
 		return new JSONResponse(data: $share);
 	}//end revokeShare()
+
+	/**
+	 * Give one of the caller's shares a new lifetime from now.
+	 *
+	 * @param int $id The share id.
+	 *
+	 * @return JSONResponse The renewed share, or an error.
+	 *
+	 * @no-admin-idor-exempt The id IS caller-supplied, and it is checked one layer down:
+	 *       `FederationShareService::renewShare()` loads the row through
+	 *       `FederatedShareMapper::find()`, which applies the organisation filter, so
+	 *       another organisation's id is a 404, and then refuses anyone but the
+	 *       share's creator, and a creator who no longer holds what it grants.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
+	 */
+	#[NoAdminRequired]
+	public function renewShare(int $id): JSONResponse {
+		try {
+			$share = $this->shareService->renewShare(id: $id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
+		} catch (Throwable $e) {
+			$this->logger->error('[Federation] renew share failed: ' . $e->getMessage());
+			return new JSONResponse(data: ['error' => 'Could not renew share'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		return new JSONResponse(data: $share);
+	}//end renewShare()
 
 	/**
 	 * Serve the objects a share grants (paginated).
