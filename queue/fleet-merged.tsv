@@ -2127,3 +2127,36 @@ humaniq	1120	cbe5197149c886bbdb3730e924a865238e89ff86	MERGED	merge3	GATE OK sbom
 humaniq	1121	ee633bd15f5522ac3fd86f5c56c89dcf37920338	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 planninq	1152	3e1252f69acd76e050b3027306829a2c57f0a8f7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 planninq	1153	b762635033e211c2174c7e0be85e9522207e7df0	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	6423	bab41679c53a2bda048fdc09a09b1ccac2da4872	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6424	0edd0cb288d8aad25a4a21a32cc9eb02bd64acd4	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: /usr/bin/python3: can't open file '/home/rubenlinde/.cache/hydra-gates/dotgithub/hydra-gates/scripts/lib/checker_floor.py': [Errno 2] No such file or directory
+dossiq	6425	0d1725309dc7849fcceb70c1811069aef3f1a6cb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6426	73ee51ce59f5f228e249e4f79a0aadb7fa53e528	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6427	128c7f2dfb4a31fc1a0956704cb887ddf633605e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6428	da2d86e18c441d34fdcb871a01237976e71580a7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6429	60e9abe22889d075c315a2b8a973626de58b8f36	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6430	1d48c8175a580d0688fc01dc10ddb1c8aba55647	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6431	9b1475ac5754de43d361792f626d012fdea1a045	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6432	daec3186b606c25251244ed40367f505e0b5ba24	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6433	857fa215a2cc1800ccdceff4c789dc163db885db	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6435	923d1f41bda6a133a21f33d8f9066e83ea2c2a14	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6436	ee766c9af7db5de1562e35a6d6ed51a804a49999	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6437	cd04bfd97b20addafada54909cf1c29073486fd8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6438	d1a49871e4a1298671ac40e6373fa2d2b0cfbeb5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6439	9f29fc401ab3a5fcdc1835dceed3bbdab42e0928	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6440	2b9db35b48798ef9e7fb58ce57f96ced6c0e3899	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6441	96d50119fa0b3074a9ab86f6cd40d66a15c9c7cf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6442	48990f5b890775c7616ed73b7f4298193fa23fb1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6443	e9b9ace10d1240952e472e56cb6e54a68cddea02	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6444	d2390741beba8173e8d59c01e11d3c0cd703bf58	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6445	6354b6115e0ac76cb88f25e43d7b73ca7a6d61fa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6446	182daeacfb29e994bd50cca1a128357da3508076	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6447	ede87a1a384cd36346fe6debd7b2824b5f455838	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6448	dbf72d5127c1b7ac9d48f3ae027501a5c35239a3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6449	e9583875d248e9026d0d0bd3682c5467ffc86cec	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6452	27c0eaffbdabca4713c85028291b9cad9516d25c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6454	2d83bd7af2bbe56233a7df79ce977d926a4f0700	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6455	b821b67169f97c8f4239a547a74a12432953aed9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6456	a4dc1f443b8ed6f343437ae18dad659caa583e7d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6457	07275e65a867f44c4138c47a45bd674a617c2716	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6458	5afcd6e7a65cd552c3874a1ef751b82e74e4dbd1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6460	ea97aff25836f548ea14acec75a70b7e7ad168f8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
