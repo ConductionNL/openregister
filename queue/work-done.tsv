@@ -4188,3 +4188,4 @@ cover:decidiq:a5f973bbm1507:e372e6ff	already done: lib/Event/*.php at 100% (145/
 cover:shillinq:05639debm0c05:aed80a0c	PR (aed80a0c-2): EvaluateAllocationRulesAction edge cases, 7 tests; inherited 1F only	session-20261113T064518-860c039d	2026-11-13T10:13:08Z
 cover:shillinq:05639debm0c05:d76b2f72	PR #2925: +3 phpunit test files (17 tests) for lib/Guard CreditLimitRun (untested), AssetEligibilityCheck, OssLedgerGuard short-code branch; suite 10087->10104, only the pre-existing clock-bound failure remains	session-20261113T094602-d25cda2a	2026-11-13T10:13:31Z
 verify:planninq:1139:1c3d28ff	RED 1139 (test class name collisions with 1140/1145); GREEN 1140-1147	session-20261113T081040-5e814df2	2026-11-13T10:14:07Z
+verify:dossiq:6373:bb9d5df3	2 GREEN (6373, 6384), no new PHP or JS failures	session-20261113T084521-fd8a31c7	2026-11-13T10:14:17Z
