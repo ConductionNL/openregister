@@ -5673,3 +5673,4 @@ review:openregister:10284:1c482caf	APPROVE (conflict: component-map.csv append-o
 verify:shillinq:2944:f4782e38	2944 BLOCK (deletes existing tests)	session-20261113T171150-996cf694	2026-11-13T17:39:32Z
 cover:learniq:e6498dddm0533:3449807e	PR #2467: 15 tests (RollCallAccess, LateMinutes, RollCallRows); suite 6402->6417, no new failures	session-20261113T172325-6eb25015	2026-11-13T17:40:28Z
 verify:pipelinq:3763:9eff904d	2 GREEN (3763,3764); no new failures	session-20261113T172334-4b3b027b	2026-11-13T17:40:46Z
+verify:shillinq:2940:2e35a4ab	GREEN 2940 (tests-only; 10412 tests, 1 inherited failure)	session-20261113T172329-0b6220f9	2026-11-13T17:41:02Z
