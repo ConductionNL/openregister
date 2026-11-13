@@ -2694,6 +2694,8 @@ merge:humaniq:1025:b865de88	merge-local over 1 humaniq tasks: merged=0 red=0 fai
 verify:buildiq:1514:88371e89	GREEN 1514 (spec-only; vitest 3774/3774 pass)	session-20261113T051704-8c56f5b7	2026-11-13T06:13:51Z
 cover:keepiq:c967a31fm0090:882bd950	already done: lib/Search/SecretSearchProvider 100% lines (31/31) with a dedicated test class	session-20261113T034634-f20a8d77	2026-11-13T06:13:59Z
 cover:keepiq:c967a31fm0090:js4829b6aa	already done: covered by open PR #1728 (src/views/* 5 views to 81-98% lines, same target branch), awaiting merge	session-20261113T034634-f20a8d77	2026-11-13T06:14:19Z
+cover:shillinq:05639debmd8ee:js255f2b0f	PR shillinq#2882: 26 tests; src/components/three-way-match 32.48%->93.67%	session-20261113T031701-b518f7f8	2026-11-13T06:14:58Z
+cover:pipelinq:7f9dc8e6mc4ba:36ac5d07	already done: lib/Service/LineTotals at 100% lines (59/59) under the full unit suite on development; queued 83.33% is stale; no PR	session-20261113T051705-4f5ad12a	2026-11-13T06:14:53Z
 verify:filinq:2037:dab70521	1/1 GREEN (2037): clean merge, lint ok, phpunit 6112->6113 all pass; tests only	session-20261113T044737-f37de8e3	2026-11-13T06:14:47Z
 verify:dossiq:6293:2d658335	6293,6294,6295,6296 GREEN: 14820 tests, 19 inherited, 0 new	session-20261113T054519-189b2666	2026-11-13T06:14:58Z
 cover:keepiq:c967a31fm0090:ecbab48a	PR #1744: +8 tests (ShareSaveRefusal, ShareSavePath, ambiguous copy in ShareSaveScope); suite 4564->4572 OK	session-20261113T054520-0c8540f8	2026-11-13T06:15:04Z
@@ -2702,9 +2704,38 @@ verify:integriq:3488:fd671dbb	GREEN 3488, GREEN 3489 (tests only, no new failure
 cover:integriq:92114ab0m1534:d98de5aa	PR #3490: 3 phpunit tests, IwmoIjw 221->228/228	session-20261113T051709-e616bf69	2026-11-13T06:15:11Z
 cover:dossiq:f8a113c5mac88:e56141e7	PR #6299: 19 tests (DossierUploadHandler, DossierZipExporter, DocumentCaseIds); Zaakdossier 84.82->91.69%; same 19 inherited failures	session-20261113T054517-06ee2c47	2026-11-13T06:15:11Z
 cover:pipelinq:7f9dc8e6mc4ba:be0dcca9	already done: lib/Mcp/*.php at 100% statements (29/29) on development bb7a7d06c, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:29Z
+cover:shillinq:05639debmd8ee:123a624c	PR shillinq#2883: 14-test generator/catalogue contract, dir 1387->1404/1528 lines; rest is in open PRs -1/-2; same 1 inherited failure	session-20261113T051703-1b54bfba	2026-11-13T06:15:46Z
 cover:pipelinq:7f9dc8e6mc4ba:ab7f3595	already done: lib/Service/Provider/ at 99.04% statements (103/104) on development bb7a7d06c, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:44Z
+cover:shillinq:05639debmd8ee:89bf3ba4	PR #2884: 7 tests for AbstractStatementReportGenerator; 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T06:15:53Z
 cover:pipelinq:7f9dc8e6mc4ba:23d187f5	already done: lib/Service/Store/ at 95.35% statements (82/86) on development bb7a7d06c, target 85, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:57Z
 cover:pipelinq:7f9dc8e6mc4ba:d39f9857	already done: lib/Support/*.php 32/32 lines (100.0%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:15:57Z
 cover:pipelinq:7f9dc8e6mc4ba:fdb25f89	already done: lib/Service/Access/ at 100% statements (86/86) on development bb7a7d06c, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:16:18Z
 cover:pipelinq:7f9dc8e6mc4ba:09cc8f24	already done: lib/Service/Cti/ 365/368 lines (99.2%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:16:03Z
 review:openregister:9943:6aa9d5c8	APPROVE: fail-closed expiry, guarded renew; suites green	session-20261113T051710-d9c31c61	2026-11-13T06:16:22Z
+cover:keepiq:c967a31fm0090:ca1d90c4	no PR: lib/Attribute is 1 getter-only attribute class (VaultKeyProofRequired), already exercised via middleware tests; only getter-only tests possible	session-20261113T054520-0c8540f8	2026-11-13T06:16:26Z
+cover:filinq:7a9ef677m5ffe:e01e982e	already done: lib/Service/SignerAuth/*.php at 96.69% lines (467/483) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:16:45Z
+verify:filinq:2038:c03a7392	2038 GREEN (6132 tests, 0 failures)	session-20261113T054516-469bb7f6	2026-11-13T06:16:51Z
+cover:pipelinq:7f9dc8e6mc4ba:6925f818	already done: lib/SetupCheck 27/27 statements (100%) on development 50e93fcda; measurement b363909 predates 4042706a9 which added the tests	session-20261113T061516-58aa7364	2026-11-13T06:17:07Z
+verify:pipelinq:3686:39a25ba7	GREEN pipelinq#3686 (phpunit 6454, 0 new failures; vitest 3910 pass)	session-20261113T053904-36dcee67	2026-11-13T06:17:04Z
+cover:filinq:7a9ef677m5ffe:22152588	already done: lib/Service/SubjectErasure/*.php at 96.83% lines (794/820) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:17:07Z
+cover:filinq:7a9ef677m5ffe:9ece5c6f	already done: lib/Controller/Support/ at 99% lines (87/88) on development 265db8360, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:17:20Z
+cover:filinq:7a9ef677m5ffe:00f8416c	already done: lib/Service/VeraPdf/ at 97.09% lines (300/309) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:17:26Z
+cover:filinq:7a9ef677m5ffe:1174c39d	already done: lib/Service/Support/ at 100% lines (23/23) on development 265db8360, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:17:32Z
+cover:shillinq:05639debmd8ee:8cf3c826	already above target: lib/PaymentRun/Generator/ measures 99.5% (208/209) with strict metadata on development d33c9cc; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:17:55Z
+cover:pipelinq:7f9dc8e6mc4ba:7505aeb4	already done: pcov on development (today) shows lib/Activity Filter, Provider, ProviderSubjectHandler all 100% lines and methods	session-20261113T053904-36dcee67	2026-11-13T06:17:51Z
+cover:filinq:7a9ef677m5ffe:aba6f390	already done: lib/Service/EntitySearch/ at 97% lines (298/307) on development 265db8360, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:17:48Z
+cover:shillinq:05639debmd8ee:34763eb4	PR #2885: 33 middleware edge-case tests; suite 9069, same 1 inherited failure	session-20261113T054516-5d7b6bc4	2026-11-13T06:17:48Z
+cover:pipelinq:7f9dc8e6mc4ba:28cccfd9	already done: lib/Repair/Support at 100% lines (95/95) under the full unit suite on development; branch -1 already exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T06:18:06Z
+verify:integriq:3484:f25052a5	GREEN 3484, CONFLICT 3485 (same test files as 3484), GREEN 3486, GREEN 3487	session-20261113T041646-2c1d764f	2026-11-13T06:18:08Z
+cover:pipelinq:7f9dc8e6mc4ba:168f7791	already done: lib/Dossiq 26/26 statements (100%) on development 50e93fcda after 40b587068	session-20261113T061516-58aa7364	2026-11-13T06:18:23Z
+cover:filinq:7a9ef677m5ffe:0906d460	already done: lib/Service/BulkSigning/ at 99% lines (284/286) on development 265db8360, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:18:21Z
+merge:learniq:2435:764e4beb	merge-local over 1 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:18:21Z
+cover:keepiq:c967a31fm0090:05630945	already done: StandardProtocolPaths 100%, ApiPathAliases 89.8%; the 5 uncovered lines are loop bodies over the empty WITHOUT_SUCCESSOR/RENAMED constants, unreachable without production changes; 4 test classes cover the rest	session-20261113T034634-f20a8d77	2026-11-13T06:18:33Z
+verify:shillinq:2871:c4070450	2871 GREEN, 2872 GREEN (tests only; vitest 1383 pass)	session-20261113T054521-2b588c68	2026-11-13T06:18:37Z
+verify:buildiq:1515:2e932f04	failed: permission (npm ci refused; PHP unit tree 1388->1 failures, no new)	session-20261113T061518-90540a48	2026-11-13T06:18:57Z
+verify:keepiq:1741:2505e581	failed: permission (running PR test code refused)	session-20261113T061518-d60bd575	2026-11-13T06:18:44Z
+verify:filinq:2039:7f191b05	2/2 GREEN (2039, 2040): clean merge, lint ok, phpunit 6112->6122 all pass; tests only	session-20261113T044737-f37de8e3	2026-11-13T06:19:08Z
+cover:dossiq:f8a113c5mac88:154acb60	PR #6300: 42 tests, lib/Service/Cases 92.1->99.2%, suite 14731->14778, same 19 inherited failures	session-20261113T054517-26499007	2026-11-13T06:19:19Z
+measure:pipelinq:20261113h06	php 84.95% (pcov, 50e93fcd); js not re-measured (npm ci refused here), previous js 80.72% kept with js_commit	session-20261113T054519-189b2666	2026-11-13T06:19:24Z
+verify:decidiq:2098:08d9a2aa	2 GREEN (2098, 2116); 3684 tests, 0 new failures	session-20261113T061521-423d1e83	2026-11-13T06:19:33Z
+cover:pipelinq:7f9dc8e6mc4ba:dfaef732	already done: lib/Notification 120/120 statements (100%) on development 50e93fcda; latest measurement agrees	session-20261113T061516-58aa7364	2026-11-13T06:19:38Z

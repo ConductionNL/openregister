@@ -5214,3 +5214,15 @@ dossiq	6294	8b0e4c07ccc4d5871f40a53e780b55bbe7966730	GREEN	worker-33	tree of 4 o
 dossiq	6295	b7529b6eba7a36583a30a983d9c9d77520d1a926	GREEN	worker-33	tree of 4 on development 460d401b: 14820 tests run, baseline 14794 with 19 failures (inherited), 0 new failures; tests only
 dossiq	6296	a097f841e1c254229756bbdd81837f2f5f68e42e	GREEN	worker-33	tree of 4 on development 460d401b: 14820 tests run, baseline 14794 with 19 failures (inherited), 0 new failures; tests only
 integriq	3489	81bddb71c9ad89f62072e4a7fc9552462dd9d650	GREEN	worker-06	7292 tests on tree, baseline 7280 with 3 failures/errors, no new failures; tests only
+shillinq	2871	67da66ac229e1cea5033910350641622b5eadb64	GREEN	worker-39	php unit 9031 (no PHP touched), baseline 1 failure inherited; vitest 1383 passed on tree, 0 new failures; tests only
+pipelinq	3686	2c02f45e673168e07228673a7808496842f7db08	GREEN	worker-36	phpunit 6454 run, baseline 1 failure (CrmPrivilegeRefusalGoldenTest::testGolden), 0 new; vitest 546 files/3910 tests pass; tests-only diff
+filinq	2038	e9088147e5ac3fff9ac597e269eaf775e5d330b2	GREEN	worker-52	tests only; unit 6132 run (baseline 6112 pass), 0 new failures
+integriq	3484	4dfa6fd32b58570aec221be579f2122bc9de6055	GREEN	worker-02	tree 3484+3486+3487 on development 46d1bb08: PHP 7327 tests, baseline 7280 (2 errors inherited), new failures 0; vitest 135 files / 1812 tests pass; tests-only diff
+integriq	3485	5d621940d0a8ab32978dd299c2ed80f9e5694b1a	CONFLICT	worker-02	conflicts with 3484 in tree order: both add tests/Unit/Auth/Idp/EnvelopeReplayGuardTest.php and IdpConsumerSecretResolverTest.php
+integriq	3486	9bdf316f4c97e52b56d02f7c6f55865e021c61a9	GREEN	worker-02	tree 3484+3486+3487 on development 46d1bb08: PHP 7327 tests, baseline 7280 (2 errors inherited), new failures 0; vitest 135 files / 1812 tests pass; tests-only diff
+integriq	3487	6a6f29daee8d5a719b83d022d9ca341aeef538cb	GREEN	worker-02	tree 3484+3486+3487 on development 46d1bb08: PHP 7327 tests, baseline 7280 (2 errors inherited), new failures 0; vitest 135 files / 1812 tests pass; tests-only diff
+filinq	2039	fced2a3985448f72008a89b0167f5dd85f0a2b48	GREEN	worker-58	phpunit 6122 on 2-PR tree vs baseline 6112, 0 failures; tests only (+112 lines)
+shillinq	2872	5070c962272b7d52401533fa5aa95c0c132df5ae	GREEN	worker-39	php unit 9031 (no PHP touched), baseline 1 failure inherited; vitest 1383 passed on tree, 0 new failures; tests only
+decidiq	2098	a2a5fd1b727c733952af0290dec7a68881de0dda	GREEN	worker-13	phpunit 3684 tests on tree, baseline 3538/0 fail, 0 new; vitest 2682 pass; axe-core to devDeps, only test usage
+filinq	2040	5d6287c159854b619cc2f065d99bb3c8d2e3166e	GREEN	worker-58	phpunit 6122 on 2-PR tree vs baseline 6112, 0 failures; 2 new test files, tests only
+decidiq	2116	20f29e9d3adf765f45e2465d96ae9dded49cb334	GREEN	worker-13	phpunit 3684 tests on tree (+146 from PR), baseline 3538/0 fail, 0 new; tests only
