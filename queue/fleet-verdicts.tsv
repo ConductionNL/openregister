@@ -5685,3 +5685,45 @@ learniq	2461	944129b4a3528682c327dd913d2e070d88793ec7	GREEN	worker-57	unit 6383-
 shillinq	2918	b4703019474a34b7da30b579c39fe618008e0b33	GREEN	worker-18	tests-only (vitest specs, no PHP changed); tree vitest 1920/1920; phpunit baseline 10087 with 1 inherited clock-bound PaymentWebhookIntakeCharacterisationTest failure; 0 new failures
 shillinq	2919	ab3071a4349e9348cd36f57f453d09d19d1f5bc2	GREEN	worker-18	tests-only (vitest specs, no PHP changed); tree vitest 1920/1920; phpunit baseline 10087 with 1 inherited clock-bound PaymentWebhookIntakeCharacterisationTest failure; 0 new failures
 pipelinq	3705	48f2bf421066d18c87d4171368838178271b2334	GREEN	worker-46	tasks.md tick only; the ticked activity widget (timeline, typeLabels chips, note composer) is on development in the client Overview tab; PHP unit 6546, 1 failure CrmPrivilegeRefusalGoldenTest[TicketWooRequestController] inherited from development; no new failures
+dossiq	6366	92d7b0dcc819040c6f1c61dd6c30a30a24ad4741	GREEN	worker-33	tree 15657 PHP tests (baseline 15627, 19 inherited failures), 6582 vitest (1 inherited capabilityComparison failure), no new failures; reverify of the fixed head: notificationLabels and all l10n gates now green, implements expired-pause-resumes-the-term
+dossiq	6385	cf5945ae69aa923c3bb13bacf515473aa105e1e6	GREEN	worker-33	tree 15657 PHP tests (baseline 15627, 19 inherited failures), 6582 vitest (1 inherited capabilityComparison failure), no new failures; build of vth-cases-run-end-to-end, package admin tab via IInitialState (admin-only), no router exposure
+dossiq	6386	e72f1caaaa68cc280a27d2486572cf9d352c57ef	GREEN	worker-44	one-PR tree: PHPUnit same 19 inherited failures, none new (failing names diffed); Notes suite 43 tests pass; tests only, no JS
+dossiq	6387	e852853cdd0c2f943837e95439e5668c4b56afd9	GREEN	worker-44	one-PR tree: PHPUnit 15692 tests, same 19 inherited failures, none new (failing names diffed); Pdok suite 26 tests pass; tests only, no JS
+shillinq	2913	85f5a314f9915b0aa5593d5d4dd7b531ad8ea8fe	GREEN	worker-17	tests-only; tree of 8: phpunit 10202 (baseline 10087, 1F inherited), vitest 186 files/1896 pass; no new failures
+shillinq	2914	becd1ecd8400a9bcbcdb7defea2cea2e76ff4a71	GREEN	worker-17	tests-only; tree of 8: phpunit 10202 (baseline 10087, 1F inherited), vitest 186 files/1896 pass; no new failures
+shillinq	2915	00ee74eb377c112a498939a639aabbe38ab951d4	GREEN	worker-17	tests-only; tree of 8: phpunit 10202 (baseline 10087, 1F inherited), vitest 186 files/1896 pass; no new failures
+shillinq	2916	55ed61cc91ba82f440880645c1fd434a573244dc	GREEN	worker-17	tests-only; tree of 8: phpunit 10202 (baseline 10087, 1F inherited), vitest 186 files/1896 pass; no new failures
+shillinq	2920	ce42cb01eb497225cbeb47995bff709fdba258b5	GREEN	worker-17	tests-only; tree of 8: phpunit 10202 (baseline 10087, 1F inherited), vitest 186 files/1896 pass; no new failures
+shillinq	2921	1acdffa04fbf1c21a58ea52a6e2a58de57d4b772	GREEN	worker-17	tests-only; tree of 8: phpunit 10202 (baseline 10087, 1F inherited), vitest 186 files/1896 pass; no new failures
+shillinq	2922	45cecdf2dce614d7b6ed717be2c444d191253f76	GREEN	worker-17	tests-only; tree of 8: phpunit 10202 (baseline 10087, 1F inherited), vitest 186 files/1896 pass; no new failures
+shillinq	2923	e49526e00051805e30abe73eb3b4a47efd9d9b67	GREEN	worker-17	tests-only; tree of 8: phpunit 10202 (baseline 10087, 1F inherited), vitest 186 files/1896 pass; no new failures
+hermiq	1644	507f0a4255b6fedfd1173ae992c11807cfa4237b	RED	merge-local:merge-gate	GATE RED checker floor: secretscanning: pass -> fail
+shillinq	2926	3473ce95a4d9084e7abf40a5373217bc92cb7870	GREEN	worker-17	tests-only; tree 2926+2927: phpunit 10151 vs baseline 10087, same 1F inherited, no new failures
+shillinq	2927	e4e9014e842d6e3ca8a94bb2495f9a5a8a02c8df	GREEN	worker-17	tests-only; tree 2926+2927: phpunit 10151 vs baseline 10087, same 1F inherited, no new failures
+decidiq	2125	61fb144e6708487cd653f17c1dbea700472a8d91	GREEN	worker-34	tree 3911 tests ok, baseline 3816 ok, 0 new failures; tests only
+decidiq	2126	8232ebea247d80f90f11f8c96eb75e217ab2b540	GREEN	worker-34	tree 3911 tests ok, baseline 3816 ok, 0 new failures; tests only
+humaniq	1108	7419b066a58991e41ad827505b8f9828ef0c5387	GREEN	worker-44	tree of 2: PHPUnit 3885 tests 0 fail (baseline 3877, 0 fail); tests only, no JS
+humaniq	1109	109a0a03f8a00a56a3528beb4cdc6adb760cdc70	GREEN	worker-44	tree of 2: PHPUnit 3885 tests 0 fail (baseline 3877, 0 fail); tests only, no JS
+portaliq	2397	8db42abf4b56459f756e239802fa334b076a0589	GREEN	worker-34	tree 4529 tests ok (89 skipped), baseline 4527 ok, 0 new failures; tests only (note: new test inserted between headersOf docblock and method)
+filinq	2049	dd2c0c59f5bda8e27a697637958cbc2bd8072f83	RED	merge-local:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	1110	60073c1fc3430b6a711937fa3210d59c7fc123fc	GREEN	worker-44	one-PR tree: PHPUnit 3884 tests 0 fail (baseline 3877, 0 fail); tests only, no JS
+portaliq	2388	6952d338c43380d1a03403d4e61b9ee61c927484	GREEN	worker-34	tree 4610 tests ok (89 skipped), baseline 4527 ok, 0 new failures; behaviour-preserving extract-method refactor (claim fail-closed, scope re-stamp, challenge kept); phpstan no new errors
+hermiq	1644	507f0a4255b6fedfd1173ae992c11807cfa4237b	REVERIFY	worker-09	split secret-shaped fixture literals in 3 redaction tests (runtime strings unchanged, 33 tests pass); no scanner findings beyond development's; merged development; new head 5f5443ddef61241bde3570c956879466d61f14e7, verify it
+portaliq	2391	e2ffa3e164ef4ce03b6012c311e0015cbbd99a16	GREEN	worker-34	tree 4610 tests ok (89 skipped), baseline 4527 ok, 0 new failures; tests only
+portaliq	2392	9f714938d98f436a7d7d56e62b0d358b1c73adbd	GREEN	worker-34	tree 4610 tests ok (89 skipped), baseline 4527 ok, 0 new failures; tests only
+portaliq	2393	624f0fe2d2a188af2943bf2df2039b9daf454d8b	GREEN	worker-34	tree 4610 tests ok (89 skipped), baseline 4527 ok, 0 new failures; tests only (commit subject says dossiq)
+portaliq	2394	e9d2afafedb7ecece5f00957c33cfc4cde367d8e	GREEN	worker-34	tree 4610 tests ok (89 skipped), baseline 4527 ok, 0 new failures; tests only
+portaliq	2395	d2fce6d4d67f89ee5472d53516e1a2f1ccd70517	GREEN	worker-34	tree 4610 tests ok (89 skipped), baseline 4527 ok, 0 new failures; tests only (@uses metadata)
+portaliq	2396	fc1d055c4fedebed6671672acff4657b4257347b	GREEN	worker-34	tree 4610 tests ok (89 skipped), baseline 4527 ok, 0 new failures; tests only
+pipelinq	3707	52402cf243bd1496262608ab2e76e81cc89c08c5	GREEN	worker-50	build clients-history-summary-and-risk (risk half 1.1-1.3): churnRisk read-only fragment, ClientRiskService 5 signals/weights/caps/levels writes-on-change, daily job + 2 triggers, +18 unit tests; additive, no deletions, matches REQ-CIN-001. PHP 6650->6668 1 inherited fail (CrmPrivilegeRefusalGoldenTest) both sides; vitest 4108 green
+dossiq	6388	d1bb38257e4525eef64d6f5fbb05eb08722ad30a	GREEN	worker-17	tests-only; tree 6388+6389: 15763 tests vs baseline 15757, same 19 inherited failures, no new failures
+dossiq	6389	0107e969878956c3a69eb86cb4e4f2359be10f55	GREEN	worker-17	tests-only; tree 6388+6389: 15763 tests vs baseline 15757, same 19 inherited failures, no new failures
+hermiq	1644	5f5443ddef61241bde3570c956879466d61f14e7	GREEN	worker-29	tests-only (6 Redaction test files, +618, no deletions); 33 new tests pass; suite 4498 vs baseline 4465, same 146 errors/26 failures inherited from development
+filinq	2049	dd2c0c59f5bda8e27a697637958cbc2bd8072f83	REVERIFY	worker-47	regenerated sbom.cdx.json from the refreshed package-lock.json (regen-sbom --check now current); new head e2f33998d2584880c845531a586368d2033d8933, verify it
+dossiq	6390	ecf88c5df5a15801fa63c7f1afa0531843ba143c	GREEN	worker-17	tests-only; tree 6390+6391: 15847 tests vs baseline 15811, same 19 inherited failures
+dossiq	6391	5ec146bddc6753b49868b1e595a973c7202408ad	GREEN	worker-17	tests-only; tree 6390+6391: 15847 tests vs baseline 15811, same 19 inherited failures
+buildiq	1539	19adbe957e9b64b5947ac6d256575d8c8be0d66c	GREEN	worker-27	tests-only (4 vitest specs); PHP unit 2784 tests baseline 1 failure (ExportZipGoldenTest) unchanged, no PHP touched; vitest 413 files/3963 tests all pass; no new failures
+dossiq	6392	812f4ba7a5e00b079eb0c7b266cf57f57a9384b5	GREEN	worker-44	tree of 2: PHPUnit 15847 tests, same 19 inherited failures, none new (failing names diffed); tests only, no JS
+stackiq	1868	5df8ddbe7f814f86d73fc99527b1d647509d1ec8	GREEN	worker-27	tests-only; unit 3279 tests (baseline 3273, 0 failures), +6 new pass; no new failures
+dossiq	6393	909919c89f340fb79371cf70018af37cca00a337	GREEN	worker-44	tree of 2: PHPUnit 15847 tests, same 19 inherited failures, none new (failing names diffed); Service/Flow 153 tests pass; tests only, no JS
+shillinq	2928	b662a237727504a20d4824748d1cfd1989b7ae9b	GREEN	worker-29	tests-only (7 Listener test files, +766/-1, the one removed line is a test ctor arg); suite 10103 vs baseline 10087, same 1 inherited failure

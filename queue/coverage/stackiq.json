@@ -1,12 +1,12 @@
 {
  "app": "stackiq",
- "commit": "2a8336ceb0a5f018f9352bf2dc4859e53465966e",
- "measured_at": "2026-11-13T08:42:16Z",
+ "commit": "4cad10cf12c569ccb596db0389419777be26f1aa",
+ "measured_at": "2026-11-13T10:54:30Z",
  "php": {
   "tool": "pcov",
-  "pct": 85.28,
-  "statements": 31801,
-  "covered": 27119,
+  "pct": 86.45,
+  "statements": 31757,
+  "covered": 27455,
   "dirs": {
    "lib/AppInfo/": [
     564,
@@ -14,7 +14,7 @@
    ],
    "lib/BackgroundJob/": [
     198,
-    196
+    198
    ],
    "lib/Command/": [
     282,
@@ -22,7 +22,7 @@
    ],
    "lib/Controller/": [
     3839,
-    3453
+    3537
    ],
    "lib/Controller/Settings/": [
     74,
@@ -65,8 +65,8 @@
     6
    ],
    "lib/Service/": [
-    18363,
-    15032
+    18342,
+    15210
    ],
    "lib/Service/AangebodenGebruik/": [
     61,
@@ -93,12 +93,12 @@
     49
    ],
    "lib/Service/Settings/": [
-    1296,
-    1265
+    1273,
+    1241
    ],
    "lib/Service/Stackiq/": [
     2274,
-    1959
+    2055
    ],
    "lib/Settings/": [
     11,
@@ -107,9 +107,9 @@
   }
  },
  "js": {
-  "pct": 88.5,
-  "statements": 8854,
-  "covered": 7836,
+  "pct": 91.96,
+  "statements": 8835,
+  "covered": 8125,
   "dirs": {
    "src/": [
     91,
@@ -184,8 +184,8 @@
     362
    ],
    "src/modals/object/": [
-    2093,
-    1401
+    2074,
+    1634
    ],
    "src/services/": [
     32,
@@ -213,7 +213,7 @@
    ],
    "src/views/": [
     456,
-    425
+    443
    ],
    "src/views/cmdb/": [
     52,
@@ -229,7 +229,7 @@
    ],
    "src/views/settings/sections/": [
     1486,
-    1310
+    1348
    ],
    "src/views/widgets/": [
     26,
