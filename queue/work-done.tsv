@@ -2559,4 +2559,5 @@ cover:filinq:7a9ef677m5ffe:34f5c300	PR #2033: 48 tests for 7 lib/Service classes
 cover:pipelinq:7f9dc8e6mc4ba:js00fe026a	already done: src/services/* at 98.49% statements on development bb7a7d06c (target 90), no PR	session-20261113T054517-06ee2c47	2026-11-13T05:53:41Z
 cover:integriq:92114ab0m1534:921a1004	PR #3483: listener 0->100% (3 tests + OR event stub); Twig 113->130/141	session-20261113T051709-e616bf69	2026-11-13T05:53:50Z
 cover:pipelinq:7f9dc8e6mc4ba:f0c02922	PR #3677: 7 tests for LogBerichtenboxAdapter edges; suite 6425->6432, 1 inherited failure	session-20261113T054519-189b2666	2026-11-13T05:54:13Z
+cover:pipelinq:7f9dc8e6mc4ba:js7de78384	already done: src/manifest.d/* holds only JSON manifests and a README, no JS to cover	session-20261113T054517-06ee2c47	2026-11-13T05:54:21Z
 cover:decidiq:a5f973bbma14b:568ec52a	PR #2113: +2 tests, ProcessTemplatePolicyResolver and QesGuard to 100%; suite 3398->3400 OK	session-20261113T054520-0c8540f8	2026-11-13T05:54:21Z
