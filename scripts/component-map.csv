@@ -2006,6 +2006,7 @@ Service/DateTimeNormalizer.php,76,Service,Service,Service/DateTimeNormalizer.php
 Service/Dbal/DatabaseIntrospectionService.php,393,Service,Service,Service/Dbal/DatabaseIntrospectionService.php,0,,Core
 Service/Dbal/DbalConnectionException.php,6,Service,Service,Service/Dbal/DbalConnectionException.php,0,,Core
 Service/Dbal/DbalConnectionFactory.php,116,Service,Service,Service/Dbal/DbalConnectionFactory.php,0,,Core
+Service/Dbal/ReadOnlyQueryGuard.php,124,Service,Service,Service/Dbal/ReadOnlyQueryGuard.php,0,,Core
 Service/Dbal/SqlTypeMapper.php,85,Service,Service,Service/Dbal/SqlTypeMapper.php,0,,Core
 Service/Decision/DecisionOwnedException.php,12,Service,Flows,Flows/Service/Decision/DecisionOwnedException.php,0,,Processes
 Service/Decision/DecisionOwnership.php,72,Service,Flows,Flows/Service/Decision/DecisionOwnership.php,0,,Processes
