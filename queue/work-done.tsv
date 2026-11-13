@@ -2007,3 +2007,4 @@ cover:keepiq:c967a31fm88ca:34763eb4	already done: lib/Middleware/*.php 211/212 s
 cover:hermiq:065f1631m7444:06285390	PR hermiq#1651: 6 tests for TaskReader; other NcNative classes have dedicated tests; 146/26 inherited unchanged	session-20261113T024654-6600dc41	2026-11-13T04:06:27Z
 cover:keepiq:c967a31fm88ca:e372e6ff	already done: lib/Event/*.php 43/43 statements covered on development (earlier -1 branch merged)	session-20261113T034634-857dbcc2	2026-11-13T04:06:56Z
 cover:launchpad:fb10c50fm31b6:38e80a9f	already done: launchpad php now 90.54% (target 90.0); lib/Command 1354/1357	session-20261113T034628-9602b641	2026-11-13T04:06:55Z
+cover:launchpad:fb10c50fm31b6:aae6d66c	already done: lib/Exception/*.php measured 100% statements (pcov clover) on development; no PR	session-20261113T034631-5fd77fa7	2026-11-13T04:07:03Z
