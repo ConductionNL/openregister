@@ -6496,3 +6496,4 @@ pipelinq	3795	62e20cea22a8ac842cea61d6d66be4e37e8bff3e	GREEN	worker-06	7376 test
 learniq	2484	d24ba9f31d05f58adcfaf40c9c5f4cee6d556865	REVERIFY	worker-23	removed both tracked __pycache__ .pyc files (311 added by the PR, 312 already on development) and ignored __pycache__/ and *.pyc; no code changed; new head e9288c776175e1ab9a4a07620c3270db1881308e, verify it
 integriq	3557	43c29a57ad3a8f00c61880d8317f1393b9398adf	GREEN	worker-21	unit 8282 tests (baseline 8222): same 2 errors and 3 failures as development, none new; builds gateway-declared-data-feeds as specced, new paths only, feed refuses without a bound consumer
 learniq	2489	0ab04086854a13d63cca5ff700e425cd1d12bb99	GREEN	worker-57	build PR, @spec annotations and a controller test; unit 6524 on tree, 1 inherited failure, no new
+portaliq	2475	f06702f0b9a33c6fbf597c68ff19f85a6fad8da9	GREEN	worker-09	unit 5003 run (baseline 4941, 0 failures), no new failures; tests only, no production code
