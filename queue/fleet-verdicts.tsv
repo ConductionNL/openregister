@@ -5438,3 +5438,4 @@ buildiq	1525	0e1271f47ca77e13f53dac648a451e7a2bc701c3	GREEN	worker-06	2665 tests
 hermiq	1674	33bac9078173a4df8c5ec78947c693b6b9914b13	GREEN	worker-23	phpunit 4209 on 1-PR tree vs baseline 4209 (146E/26F inherited), 0 new failures; docblock @uses only, tests only
 opencatalogi	2585	919d82c42e4e108b2f47175553efb281ca6ca418	GREEN	worker-48	5192 tests run, baseline 5162 with 2 failures (AppIdentityTest, WooControllerTest), no new failures; tests only
 stackiq	1854	bd7c45c931b16eb29c3fa5d79e1727629030491c	GREEN	worker-23	phpunit 3167 on 2-PR tree vs baseline 3154 (0 failures), 0 new failures; 2 new test files, tests only
+stackiq	1855	0d7d47c483ba9ccb36807ca678cad1a4071bde3a	GREEN	worker-23	phpunit 3167 on 2-PR tree vs baseline 3154, 0 new failures; README coverage line and coverage-summary.json only
