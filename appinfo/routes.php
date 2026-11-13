@@ -2031,6 +2031,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// User - Profile management and authentication.
 		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
+		// Scoped API tokens: the calling principal and the grant its token carries.
+		['name' => 'whoami#show', 'url' => '/api/whoami', 'verb' => 'GET'],
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
 		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],

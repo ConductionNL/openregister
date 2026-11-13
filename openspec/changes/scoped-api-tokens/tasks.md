@@ -68,6 +68,8 @@
 - [ ] 2.2 `actorVia` and `whoami`. `TokenGrant::toArray()` and `tokenId` are
       the data both need; the audit writer and the whoami endpoint are the
       two callers, and neither is written yet.
+      - Done, the `whoami` half: `GET /api/whoami` (`WhoamiController::show()`) answers the calling user, `actorVia` (the bound grant's token or Consumer id) and the effective grant from `TokenGrantSource`. `expired` follows `TokenGrant::isExpired()`, so a missing end date reads as expired. It answers 401 without a user and takes no id, so only the caller is ever answered. Tests: `tests/Unit/Controller/WhoamiControllerTest.php` (7).
+      - Open, the audit half: `TokenAttribution` already seals the calling token and Consumer into `resultSummary.token` and the `consumer` column. Naming that `actorVia` on every write through a granted token is not done here.
 
 ## 3. Surfaces
 

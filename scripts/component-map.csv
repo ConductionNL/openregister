@@ -593,6 +593,7 @@ Controller/VerwerkingsactiviteitenController.php,333,Controller,Compliance,Compl
 Controller/VocabularyController.php,240,Controller,Service,Service/Controller/VocabularyController.php,0,,Core
 Controller/WebhooksController.php,909,Controller,Integrations,Integrations/Controller/WebhooksController.php,0,,Integrations
 Controller/WellKnownController.php,55,Controller,Integrations,Integrations/Controller/WellKnownController.php,0,,Integrations
+Controller/WhoamiController.php,95,Controller,Access,Access/Controller/WhoamiController.php,0,,Core
 Controller/WorkingCalendarController.php,79,Controller,Flows,Flows/Controller/WorkingCalendarController.php,0,,Processes
 Controller/XwikiLinksController.php,140,Controller,Integrations,Integrations/Controller/XwikiLinksController.php,0,,Integrations
 Dashboard/IntegrationDashboardWidget.php,40,Dashboard,Flows,Flows/Dashboard/IntegrationDashboardWidget.php,0,,Platform
