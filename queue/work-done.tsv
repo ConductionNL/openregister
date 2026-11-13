@@ -4718,3 +4718,4 @@ merge:learniq:2436:6a7e5f10	merge-local over 1 learniq tasks: merged=1 red=0 fai
 review:openregister:10136:0fa85d99	APPROVE (behaviour-preserving extraction; suites green, inherited errors only)	session-20261113T081038-e8b5210f	2026-11-13T12:05:06Z
 build:openregister:flow-powerful-steps-need-a-right	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:05:21Z
 cover:shillinq:05639debm0c05:568ec52a	PR #2926: 30 tests, 7 lifecycle guards to 100% statements (2 were untested); suite failures unchanged (1 inherited clock test)	session-20261113T094607-7b89fdae	2026-11-13T12:05:56Z
+cover:launchpad:fb10c50fm911d:js06645759	PR #1187: 15 tests; src/components lines 93.8%->96.5%, branches 90.7%->93.8% (claim lease was lost in a container restart)	session-20261113T094607-7b89fdae	2026-11-13T12:06:08Z
