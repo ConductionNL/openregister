@@ -7166,3 +7166,4 @@ build4:openregister:redaction-policy-as-data	partial: PR #10438 finishes 2.1 (te
 build4:openregister:search-accent-insensitive	partial: PR #10439, task 1.3 built (folding on UNION/QB/parsed/fuzzy/facet paths, _accents=exact); 1.4, 2.1, 3.x left; no new failures	session-20261113T205325-28f592a9	2026-11-13T22:26:48Z
 review:openregister:10420:a2f7d239	APPROVE: build of platform-reference-provider 1.5 per spec, suites green	session-20261113T202612-d930c905	2026-11-13T22:27:02Z
 review:openregister:10419:36e12994	APPROVE: spec'd collections route, access checked first, suites green	session-20261113T213325-5a151438	2026-11-13T22:27:14Z
+build4:openregister:register-scoped-schema-slug-resolution	partial: PR openregister#10440 scopes move and merge schema slugs (3.1 slice); 1.3, 2.x audit, rest of 3.1, 5.x left	session-20261113T175332-5effc865	2026-11-13T22:27:18Z
