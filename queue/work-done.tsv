@@ -3475,3 +3475,4 @@ verify:buildiq:1529:b9be700a	2 GREEN (1529,1530); 2693 tests, 0 new failures	ses
 cover:stackiq:9ac19b3am5ac4:f4b2f7af	already done: lib/Service/ArchiMate/ at 99.0% (202/204); no PR	session-20261113T080546-98207a87	2026-11-13T08:32:45Z
 cover:portaliq:b60f3b81:9caea1ba	PR #2387: 5 classes to 100%, dirs 84.8->91.3%, 4560 green	session-20261113T072715-8f8a14e9	2026-11-13T08:32:38Z
 cover:stackiq:9ac19b3am5ac4:b5905f71	already done: lib/Service/Federation/ at 99.0% (384/388); no PR	session-20261113T080546-98207a87	2026-11-13T08:32:58Z
+cover:stackiq:9ac19b3am5ac4:2861e5ef	already done: lib/Examples/*.php at 100% (93/93); no PR	session-20261113T080546-98207a87	2026-11-13T08:33:09Z
