@@ -5688,3 +5688,4 @@ build:portaliq:documents-for-each-record	already done: T1-T3 on development (#19
 verify:hermiq:1695:8db1b8d9	GREEN #1695 (no new failures, test-only)	session-20261113T171154-27186e77	2026-11-13T17:43:34Z
 verify:versioniq:683:386c6fba	GREEN #683: 1596 tests, 0 new failures (2 inherited)	session-20261113T171141-a3907367	2026-11-13T17:43:40Z
 cover:shillinq:05639debm2935:js4829b6aa	PR #2945: 6 views, 25 tests, src/views/* lines 84.5% -> 93.1%	session-20261113T172329-5f4feaba	2026-11-13T17:43:47Z
+review:openregister:10280:1aae7114	APPROVE 10280	session-20261113T171213-10021a1d	2026-11-13T17:43:54Z
