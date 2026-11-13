@@ -6965,5 +6965,6 @@ verify:pipelinq:3789:2322258a	GREEN #3789 (gitleaks allowlist only; 5 inherited 
 review:openregister:10337:b1b19aed	APPROVE 10337	session-20261113T213336-fe5ca7a4	2026-11-13T21:35:55Z
 verify:hermiq:1720:0063bbdc	GREEN 1720: 0 new failures (baseline 172 inherited), vitest green	session-20261113T213320-1f5acbff	2026-11-13T21:36:02Z
 build4:openregister:classification-clearance-on-an-object	partial: PR #10346 task 3.4 (floor refused at save, ClassificationFloorGuard + 6 tests); 3.1-3.3 enforcement on find/list/ceilings, 4.1, 5.2-5.3, 6.x left; Object suite 4745->4751, 0 failures	session-20261113T204536-22cfbae0	2026-11-13T21:36:15Z
+build4:openregister:leaf-reference-provider-convergence	no code left: remaining unchecked tasks are human review, an ADR amendment in hydra (governance) and a conditional out-of-scope bridge	session-20261113T202612-d930c905	2026-11-13T21:36:22Z
 verify:dossiq:6465:1b023b9a	GREEN 6465 (0 new failures over 20 baseline)	session-20261113T213311-eb1a0842	2026-11-13T21:36:20Z
 review:openregister:10333:27616380	APPROVE: optional objectUuid on file rows, no access change; touched tests and Contract green, phpstan clean	session-20261113T195351-a32c6d55	2026-11-13T21:36:26Z
