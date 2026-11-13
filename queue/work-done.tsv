@@ -4178,6 +4178,7 @@ verify:stackiq:1866:a68bf803	1866 GREEN: behaviour-preserving refactor, suite 32
 verify:versioniq:675:4c1e36bf	GREEN 675, 676 (tests only; 1356 -> 1366, 2 failures from development, none new)	session-20261113T083916-59f10a3b	2026-11-13T10:11:44Z
 cover:portaliq:b60f3b81:81b1241f	already done: lib/Portal/*.php 129/132 stmts (97.7%)	session-20261113T091527-72c58830	2026-11-13T10:12:02Z
 cover:openregister:7350e3efmea52:7a62cd5d	PR #10120: 7 tests, Service/Dbal 92.2%->95.6%	session-20261113T071631-5a3cc070	2026-11-13T10:12:01Z
+cover:openregister:7350e3efmea52:516a028c	PR #10121: 23 tests over 5 SchemaMapper classes; dir 71.8->79.8% (standalone pcov), no new failures	session-20261113T081038-e8b5210f	2026-11-13T10:12:17Z
 verify:stackiq:1867:6770aa5b	1867 GREEN: tests only, suite 3270 no failures	session-20261113T074532-3dc49c57	2026-11-13T10:12:20Z
 cover:portaliq:b60f3b81:11ce03ab	PR #2392: 18 tests for Theme (3 new files + 2 extended), lib/Service/Theme 97.7->100%, suite 4527->4545 OK	session-20261113T094606-b7da8c7f	2026-11-13T10:12:23Z
 cover:decidiq:a5f973bbm1507:f545d745	already done: lib/Repair/*.php at 100% (803/803) on development a2b22454; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:12:33Z
