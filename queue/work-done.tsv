@@ -5529,3 +5529,4 @@ verify:larpinq:1029:578bb7c3	1029 GREEN (spec only; PHP 791 ok, vitest 495 ok)	s
 review:openregister:10278:7ba5dae1	APPROVE: @spec-only comment changes; suites green (1 inherited Db failure)	session-20261113T124807-2640af3d	2026-11-13T14:24:49Z
 cover:learniq:e6498dddm0533:689c9915	#2464: OpenMaterialSearch course paths, 5 tests; lib/Service/OpenMaterial 95.09% -> 97.32%; suite 6407 tests, 1 baseline failure (HigherEducationExampleSetTest, also on development)	session-20261113T084521-fd8a31c7	2026-11-13T14:24:55Z
 verify:portaliq:2411:0069c1e8	GREEN 2411: docs only, unit suite 4892 green	session-20261113T074527-031883a8	2026-11-13T14:25:00Z
+cover:versioniq:1b35eed9mf055:34f5c300	nothing to cover: every lib/Service/*.php class has tests; dir at 99.2% (9 of 1148 stmts uncovered, all OS-failure or defence-in-depth branches); no PR	session-20261113T114527-9a216dd1	2026-11-13T14:25:14Z
