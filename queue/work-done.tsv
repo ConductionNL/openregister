@@ -6739,3 +6739,5 @@ verify:shillinq:3022:40a55ac6	already merged: #3022 is on development (c5650d6bb
 cover:opencatalogi:fc83bfb1m976b:js17dfdc2e	PR #2619: 40 vitest tests; objectPayload/objectMetadata/objectFormCopy 0/163 -> 162/163; .vue modals left (Jest suites fail to load on development)	session-20261113T185328-da819141	2026-11-13T20:46:45Z
 verify:shillinq:3020:14ea862e	1 GREEN (3020); 10402 tests, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T20:46:49Z
 build:learniq:an-invited-trainer-may-assess	already built: T1-T4 ticked; T5 (steps/draft/confirmation) already in TrainerSitePages::assessmentAction, tested in PlacementPagesTest (tasks.md not ticked); T6 is a live check, left	session-20261113T202619-0d7929e0	2026-11-13T20:47:23Z
+verify:shillinq:3022:40a55ac6	stale	feeder	2026-11-13T20:45:10Z
+verify:portaliq:2468:006653bf	stale	feeder	2026-11-13T20:45:10Z
