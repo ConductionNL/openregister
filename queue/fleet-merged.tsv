@@ -1925,3 +1925,6 @@ pipelinq	3756	378892d9943053e06e5b6da185b98139950778a2	MERGED	merge-local	GATE O
 pipelinq	3757	dfbe53e9af73a4ed7ad6c8820cf5cac12c0d85b0	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1686	07c5f2514349fb3fd330f8536f784204297f4901	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1687	a15737f34553027c0fa9c4c021537f0c628eac28	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2410	172fe59cf7dc1eea967ab3b2f17c3a45b73d69d7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2409	5e94bd91bb4c22cc7cec5cada6b93d18c925a4ef	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2411	cc88f7b445c7c19b43bd5e8a1b30c9d0f5f43b60	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
