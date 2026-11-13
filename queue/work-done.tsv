@@ -6390,3 +6390,4 @@ review:openregister:10306:f567fb82	APPROVE: matrix preview admin-only, auth path
 verify:planninq:1152:27e8c71c	GREEN 1152 (vitest 3198 passed)	session-20261113T175327-6e4e7f28	2026-11-13T19:40:57Z
 verify:shillinq:3013:fe552522	GREEN 3013 (tests only; only inherited failure)	session-20261113T185327-0dc82b88	2026-11-13T19:41:36Z
 cover:dossiq:069ee2d6mbd37:3b1fd60e	PR #6443: 9 tests in 5 files (ReviewBatches, TriageRules, RecallSamples, DisclosureAssessmentValidator, ReviewConfiguration); suite 20 failures before/after	session-20261113T192653-93fd55cc	2026-11-13T19:41:47Z
+cover:dossiq:069ee2d6mbd37:b6fccd13	PR dossiq#6444: FieldRoleLedger direct tests (5) + ObjectUpdateRight fallbacks (1); suite 16530->16536, 20 inherited failures unchanged	session-20261113T190954-c894781f	2026-11-13T19:42:09Z
