@@ -2534,3 +2534,4 @@ cover:pipelinq:f67520ecmc4ba:ab7f3595	PR #3674: 14 tests for 9 provider classes;
 cover:buildiq:9930949bm5861:f91e7417	already done: lib/Service/Connection/ at 99.42% lines (170/171) on development 7625ef1a, above target; no PR	session-20261113T051704-8c56f5b7	2026-11-13T05:50:04Z
 cover:decidiq:a5f973bbma14b:be0dcca9	PR #2111: +27 tests (McpMeetingGate, McpSourceFormatter to 100%); suite 3396->3423 OK	session-20261113T054520-0c8540f8	2026-11-13T05:50:47Z
 cover:pipelinq:7f9dc8e6mc4ba:a215617b	already done: pcov shows lib/Integration 100% lines (302/302) and methods from tests/Unit/Integration alone	session-20261113T053904-36dcee67	2026-11-13T05:51:00Z
+merge:learniq:2423:a4cc69c4	stale	feeder	2026-11-13T05:50:31Z
