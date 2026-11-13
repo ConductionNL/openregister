@@ -2231,5 +2231,6 @@ cover:pipelinq:f67520ecmc4ba:js0023cfc7	PR #3667: 16 vitest tests, PipelineForm 
 cover:openregister:7350e3efm0e99:e6f8d431	PR #10098: +@uses on 8 relation test files; 44 risky->0, Service/Relation 815->1030/1058 under its tests	session-20261113T041645-1e9d4ce1	2026-11-13T04:43:27Z
 merge:launchpad:1158:5af09ee0	merge-local over 1 launchpad tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:43:29Z
 cover:integriq:92114ab0m1534:9dc6d594	PR #3476: 10 tests, lib/Service/Mail 638->677/692; 2 inherited errors unchanged	session-20261113T031700-46f75510	2026-11-13T04:43:35Z
+cover:stackiq:df113dffm2c76:34f5c300	PR stackiq#1839: 21 tests + 5 metadata fixes; lib/Service/*.php 67.04%->73.18% (target 85 not reached: SettingsService 2169 uncovered remains)	session-20261113T031701-b518f7f8	2026-11-13T04:43:45Z
 cover:decidiq:a5f973bbma14b:81b1241f	already done: PortalContributionProvider (23 + 13 public records + golden) and PortalLabelTranslator (7) already exercise every method and branch; -1 merged; no PR	session-20261113T033859-c661da78	2026-11-13T04:43:44Z
 verify:shillinq:2862:e0266ac4	3 GREEN (2862-2864), tests-only	session-20261113T024653-d22c13a3	2026-11-13T04:43:59Z
