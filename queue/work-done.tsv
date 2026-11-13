@@ -2520,3 +2520,4 @@ cover:openregister:7350e3efmaea4:js0b5eefce	PR #10106: 12 DOM tests for Migratio
 cover:decidiq:a5f973bbma14b:dfaef732	already done: lib/Notification/*.php at 100% (53/53 statements) on development, 23 non-risky tests	session-20261113T051708-7d5f6071	2026-11-13T05:47:21Z
 cover:pipelinq:7f9dc8e6mc4ba:2cc09f74	already done: lib/Service/Marketing/Transport/ at 98.51% lines (330/335) on development bb7a7d06c; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:47:25Z
 cover:decidiq:a5f973bbma14b:882bd950	already done: lib/Search/DecidiqSearchProvider.php 58/58 statements covered by 15 behaviour tests (with pcov.directory=lib); no PR	session-20261113T051710-d9c31c61	2026-11-13T05:47:52Z
+cover:decidiq:a5f973bbma14b:e372e6ff	already done: lib/Event/*.php at 100% (145/145) on development; app total 83.6%	session-20261113T051708-7d5f6071	2026-11-13T05:48:11Z
