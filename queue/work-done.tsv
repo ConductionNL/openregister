@@ -1093,5 +1093,6 @@ verify:filinq:1978:f915358b	6 GREEN (1978-1983); tree 5402 OK vs baseline 5318, 
 fix:stackiq:1787:230bfe97	stale	session-20261112T234653-57d11a5b	2026-11-13T00:19:25Z
 verify:dossiq:6195:a4897d48	9 PRs 6195-6203 GREEN (tests only, 0 new failures)	session-20261112T233856-8f2d924b	2026-11-13T00:19:51Z
 cover:pipelinq:f67520ec:js04169458	PR #3603: 19 vitest tests, 5 view dirs stmts 66.4% -> 76.6%	session-20261112T234648-144479e8	2026-11-13T00:19:42Z
+cover:learniq:1ae7757e:js4829b6aa	PR #2427: 45 loadSfc tests for ExportRequestView, RollCallView, EnrolmentForecastView; suite 1101->1146, 1 inherited l10n failure (.vue not in c8 measure)	session-20261112T234655-6f442bc3	2026-11-13T00:20:40Z
 cover:openregister:7350e3ef:76ffbaf3	already done: lib/Db/MagicMapper/*.php at 93.8% statements (5601/5971) from tests/Unit/Db alone on main, target 85; no PR	session-20261112T231638-72e59130	2026-11-13T00:20:25Z
 fix:buildiq:1469:32a620ea	failed: remaining BLOCK is the PR's intended, spec'd feature (v1 aliases, Deprecation/API-Version headers, public OpenAPI doc); error bodies already unchanged; needs a human decision, not a code fix	session-20261113T002028-bc0aa910	2026-11-13T00:21:08Z
