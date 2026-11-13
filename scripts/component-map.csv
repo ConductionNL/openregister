@@ -2201,6 +2201,7 @@ Service/File/FileValidationHandler.php,183,Service,Service,Service/File/FileVali
 Service/File/FileVersioningHandler.php,139,Service,Service,Service/File/FileVersioningHandler.php,0,201,Core
 Service/File/FolderManagementHandler.php,636,Service,Service,Service/File/FolderManagementHandler.php,0,31,Core
 Service/File/MalwareScanGate.php,226,Service,Service,Service/File/MalwareScanGate.php,0,,Core
+Service/File/MalwareScanState.php,121,Service,Service,Service/File/MalwareScanState.php,0,,Core
 Service/File/MalwareScanRefusal.php,47,Service,Service,Service/File/MalwareScanRefusal.php,0,,Core
 Service/File/ManagedFileOwnerLookup.php,33,Service,Service,Service/File/ManagedFileOwnerLookup.php,0,434,Core
 Service/File/ObjectFileFinder.php,135,Service,Service,Service/File/ObjectFileFinder.php,0,,Core

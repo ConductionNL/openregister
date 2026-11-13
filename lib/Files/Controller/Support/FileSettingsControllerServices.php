@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Files\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\File\MalwareScanState;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -38,11 +39,13 @@ final class FileSettingsControllerServices {
 	 * @param ContainerInterface   $container       DI container, for the optional extraction backends.
 	 * @param AppSettingsInterface $settingsService Settings service.
 	 * @param LoggerInterface      $logger          Logger.
+	 * @param MalwareScanState|null $malwareScanState Whether uploads can be scanned for malware (upload-malware-scan).
 	 */
 	public function __construct(
 		public readonly ContainerInterface $container,
 		public readonly AppSettingsInterface $settingsService,
 		public readonly LoggerInterface $logger,
+		public readonly ?MalwareScanState $malwareScanState = null,
 	) {
 	}//end __construct()
 }//end class

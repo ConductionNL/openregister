@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
+use OCA\OpenRegister\Service\File\MalwareScanGate;
+use OCA\OpenRegister\Service\File\MalwareScanState;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\AppInfo\Application;
@@ -96,6 +98,13 @@ class FileSettingsController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * Whether uploads can be scanned for malware; null leaves the state out.
+	 *
+	 * @var MalwareScanState|null
+	 */
+	private readonly ?MalwareScanState $malwareScanState;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                       $request  The request.
@@ -109,6 +118,7 @@ class FileSettingsController extends Controller {
 		$this->container = $services->container;
 		$this->settingsService = $services->settingsService;
 		$this->logger = $services->logger;
+		$this->malwareScanState = $services->malwareScanState;
 	}//end __construct()
 
 	/**
@@ -125,6 +135,11 @@ class FileSettingsController extends Controller {
 	public function getFileSettings(): JSONResponse {
 		try {
 			$data = $this->settingsService->getFileSettingsOnly();
+			if ($this->malwareScanState !== null) {
+				// Whether uploads can be scanned for malware (upload-malware-scan REQ-UMS-001).
+				$data[MalwareScanGate::METADATA_KEY] = $this->malwareScanState->state();
+			}
+
 			return new JSONResponse(data: $data);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
