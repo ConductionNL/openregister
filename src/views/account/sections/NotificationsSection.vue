@@ -39,6 +39,48 @@ import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import { sectionStatus } from '../../../composables/sectionStatus.js'
 
+/**
+ * The preferences shown before the stored ones are read.
+ *
+ * @return {object} Every notification on, with a daily digest
+ */
+function defaultPreferences() {
+	return {
+		objectChanges: true,
+		assignments: true,
+		organisationChanges: true,
+		systemAnnouncements: true,
+		emailDigest: 'daily',
+	}
+}
+
+/**
+ * The label of each notification toggle.
+ *
+ * @return {Object<string, string>} Label by preference key
+ */
+function toggleLabels() {
+	return {
+		objectChanges: t('openregister', 'Object changes in owned objects'),
+		assignments: t('openregister', 'Assignment notifications'),
+		organisationChanges: t('openregister', 'Organisation membership changes'),
+		systemAnnouncements: t('openregister', 'System announcements'),
+	}
+}
+
+/**
+ * Store the notification preferences.
+ *
+ * @param {object} prefs The preferences
+ * @return {Promise<object>} The response; its data holds the stored preferences
+ */
+function sendPreferences(prefs) {
+	return axios.put(
+		generateUrl('/apps/openregister/api/user/me/notifications'),
+		prefs,
+	)
+}
+
 export default {
 	name: 'NotificationsSection',
 	components: { NcCheckboxRadioSwitch, NcSelect, SectionStatus },
@@ -48,25 +90,9 @@ export default {
 	data() {
 		return {
 			loading: true,
-			prefs: {
-				objectChanges: true,
-				assignments: true,
-				organisationChanges: true,
-				systemAnnouncements: true,
-				emailDigest: 'daily',
-			},
-
+			prefs: defaultPreferences(),
 			digestOptions: ['none', 'daily', 'weekly'],
-			toggleLabels: {
-				objectChanges: t('openregister', 'Object changes in owned objects'),
-				assignments: t('openregister', 'Assignment notifications'),
-				organisationChanges: t(
-					'openregister',
-					'Organisation membership changes',
-				),
-
-				systemAnnouncements: t('openregister', 'System announcements'),
-			},
+			toggleLabels: toggleLabels(),
 		}
 	},
 
@@ -94,10 +120,7 @@ export default {
 		async save() {
 			this.message = ''
 			try {
-				const { data } = await axios.put(
-					generateUrl('/apps/openregister/api/user/me/notifications'),
-					this.prefs,
-				)
+				const { data } = await sendPreferences(this.prefs)
 				this.prefs = { ...this.prefs, ...data }
 				this.setStatus(t('openregister', 'Preferences saved'))
 			} catch (e) {

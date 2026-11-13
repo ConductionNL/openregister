@@ -92,11 +92,9 @@ export default {
 		async fetchActivity() {
 			this.loading = true
 			try {
-				const params = { _limit: this.limit, _offset: this.offset }
-				if (this.typeFilter) params.type = this.typeFilter
 				const { data } = await axios.get(
 					generateUrl('/apps/openregister/api/user/me/activity'),
-					{ params },
+					{ params: this.activityParams() },
 				)
 				this.activities = [...this.activities, ...(data.results || [])]
 				this.total = data.total || 0
@@ -105,6 +103,18 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The page and type of activity to ask for.
+		 *
+		 * @spec exclude list-view store fetch plumbing for the user activity feed (activity contract owned by activity-provider)
+		 * @return {object} The query parameters
+		 */
+		activityParams() {
+			const params = { _limit: this.limit, _offset: this.offset }
+			if (this.typeFilter) params.type = this.typeFilter
+			return params
 		},
 
 		/**
