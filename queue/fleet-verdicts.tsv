@@ -5391,5 +5391,6 @@ dossiq	6329	76495667a8932858846e5a257266013df5ef5d77	GREEN	worker-02	tree 6328+6
 versioniq	667	5b7d444eb310e821209807cea48bff3258586f16	GREEN	worker-40	tree 1451 tests, baseline 1356 (2 inherited golden failures), 0 new failures; tests only
 filinq	2047	5dd9f2adb61225a56760ba8280abb468d04e6b4a	GREEN	worker-42	6301 tests run, baseline 6268 with 0 failures, new failures 0; tests only
 versioniq	670	efd9fb2f1defe7b9c111f2111170af2834684e14	GREEN	worker-43	unit-only suite 1373 tests, baseline 1356 with 2 failures (Installer golden tests), new failures 0; tests and test stubs only
+dossiq	6324	9b502e2f1e143ddb7202df735a79bb50e1a07ced	GREEN	worker-02	tree 6324 on development fcb4570e0: 15200 tests, baseline 15190 (1 error, 41 failures inherited), new failures 0; refactor of 5 services read: same order, messages, writes and returns
 filinq	2045	0fae435a2e9302323b2672e07fa937f0baebd786	GREEN	worker-14	phpunit 6294 (baseline 6268, 0 failures), tests only
 filinq	2046	a2ca42df7c1363fd83d0930acb460cc54924a8db	GREEN	worker-14	phpunit 6294 + vitest 751 pass (baseline 6268, 0 failures), tests only
