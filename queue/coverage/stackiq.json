@@ -1,12 +1,12 @@
 {
  "app": "stackiq",
- "commit": "4cad10cf12c569ccb596db0389419777be26f1aa",
- "measured_at": "2026-11-13T10:54:30Z",
+ "commit": "e4a96a07ffe1c8e5cc63eab8da0113b68eb972f8",
+ "measured_at": "2026-11-13T13:19:23Z",
  "php": {
   "tool": "pcov",
-  "pct": 86.45,
+  "pct": 87.39,
   "statements": 31757,
-  "covered": 27455,
+  "covered": 27752,
   "dirs": {
    "lib/AppInfo/": [
     564,
@@ -22,7 +22,7 @@
    ],
    "lib/Controller/": [
     3839,
-    3537
+    3579
    ],
    "lib/Controller/Settings/": [
     74,
@@ -66,7 +66,7 @@
    ],
    "lib/Service/": [
     18342,
-    15210
+    15244
    ],
    "lib/Service/AangebodenGebruik/": [
     61,
@@ -94,11 +94,11 @@
    ],
    "lib/Service/Settings/": [
     1273,
-    1241
+    1270
    ],
    "lib/Service/Stackiq/": [
     2274,
-    2055
+    2247
    ],
    "lib/Settings/": [
     11,
