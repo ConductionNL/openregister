@@ -3084,3 +3084,4 @@ cover:hermiq:065f1631mfaac:28cccfd9	PR #1671: 4 tests for RunsUnderSystemIdentit
 cover:keepiq:c967a31fmb40c:0d67c1f3	already done: lib/Service/Siem/ 7 classes at 100% lines, 6 dedicated test files	session-20261113T034634-f20a8d77	2026-11-13T07:06:06Z
 cover:keepiq:c967a31fmb40c:be0dcca9	already done: lib/Mcp/*.php at 100% lines (139/139) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:06:40Z
 cover:keepiq:c967a31fmb40c:f91e7417	already done: lib/Service/Connection/ at 100% lines (150/150) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:06:51Z
+cover:keepiq:c967a31fmb40c:e372e6ff	already done: lib/Event/*.php at 100% lines (43/43) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:07:03Z
