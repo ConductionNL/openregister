@@ -4994,3 +4994,4 @@ review:openregister:10174:ad3e5654	APPROVE (scoped discovery per change; suites 
 build:openregister:special-right-to-manage-grants	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:44:33Z
 build:openregister:tables-bulk-jobs-and-file-search	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:44:40Z
 build:openregister:tasks-progress-report	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:44:46Z
+build:openregister:unified-search-magic-table-storage	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:44:52Z
