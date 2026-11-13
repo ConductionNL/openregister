@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Kernel\Contracts\TemplateRendering
  * @covers \OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry
+ * @uses \OCA\OpenRegister\Service\Notification\TemplateCatalogue
  */
 class TemplateRenderingTest extends TestCase {
 

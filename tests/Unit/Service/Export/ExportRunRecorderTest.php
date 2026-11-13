@@ -55,6 +55,12 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Service\Export\ExportRunRecorder
  * @covers \OCA\OpenRegister\Db\ExportRun
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunContent
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunFile
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunOrigin
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunViewer
  */
 class ExportRunRecorderTest extends TestCase {
 
