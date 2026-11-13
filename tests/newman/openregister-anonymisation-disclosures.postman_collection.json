@@ -1,0 +1,396 @@
+{
+	"info": {
+		"name": "OpenRegister: anonymisation disclosures and pipeline report",
+		"description": "REQ-ADI-005 and REQ-ADI-006 (openspec/changes/anonymisation-discloses-itself-pipeline). A file's text disclosures are listed for a caller who may read the file (200) and refused to a signed-in user who may not (403) and to an anonymous caller; the admin pipeline report lists every content-altering step with its state and is refused to a non-admin. `00 setup` creates a non-admin user and uploads one text file as the admin; `99 teardown` deletes both.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{username}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{password}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "readerId",
+			"value": ""
+		},
+		{
+			"key": "readerPassword",
+			"value": ""
+		},
+		{
+			"key": "fileId",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 setup",
+			"item": [
+				{
+					"name": "Create non-admin user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+									"pm.test('OCS accepted the user', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.be.oneOf([100, 200]));"
+								]
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }",
+									"pm.collectionVariables.set('readerId', 'adi' + pm.collectionVariables.get('run'));",
+									"pm.collectionVariables.set('readerPassword', 'Adi-pw-' + pm.collectionVariables.get('run') + '-Xq9!vL');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"userid\": \"{{readerId}}\",\n \"password\": \"{{readerPassword}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Upload a file as the admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the file is created', () => pm.expect(pm.response.code).to.be.oneOf([201, 204]));",
+									"const id = parseInt(pm.response.headers.get('OC-FileId') || '', 10);",
+									"pm.test('the file has an id', () => pm.expect(id).to.be.above(0));",
+									"pm.collectionVariables.set('fileId', String(id));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/plain"
+							}
+						],
+						"url": "{{base_url}}/remote.php/dav/files/{{username}}/adi-{{run}}.txt",
+						"body": {
+							"mode": "raw",
+							"raw": "Jan Jansen woont in Utrecht."
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 disclosures (REQ-ADI-005)",
+			"item": [
+				{
+					"name": "A reader gets the file's disclosures",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+									"const b = pm.response.json();",
+									"pm.test('the answer names the file', () => pm.expect(b.fileId).to.equal(Number(pm.collectionVariables.get('fileId'))));",
+									"pm.test('disclosures is a list', () => pm.expect(b.disclosures).to.be.an('array'));",
+									"b.disclosures.forEach((d) => pm.test('a disclosure names service, host, moment and bytes', () => { pm.expect(d).to.have.all.keys('service', 'host', 'at', 'bytes'); pm.expect(d.bytes).to.be.a('number'); }));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/files/{{fileId}}/anonymisation/disclosures"
+					}
+				},
+				{
+					"name": "A user who may not read the file is refused",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.expect(pm.response.code).to.equal(403));",
+									"pm.test('no disclosures are returned', () => pm.expect(pm.response.json()).to.not.have.property('disclosures'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/files/{{fileId}}/anonymisation/disclosures",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{readerId}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{readerPassword}}",
+									"type": "string"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "An anonymous caller is refused",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 401', () => pm.expect(pm.response.code).to.equal(401));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/files/{{fileId}}/anonymisation/disclosures",
+						"auth": {
+							"type": "noauth"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "02 pipeline report (REQ-ADI-006)",
+			"item": [
+				{
+					"name": "The admin reads every step and its state",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+									"const steps = pm.response.json().steps;",
+									"pm.test('steps is a list', () => pm.expect(steps).to.be.an('array'));",
+									"const ids = steps.map((s) => s.step);",
+									"['anonymiser', 'pdf-text-replacer', 'pdf-metadata-sanitiser', 'docx-sanitiser', 'odt-sanitiser'].forEach((id) => pm.test('the report lists ' + id, () => pm.expect(ids).to.include(id)));",
+									"steps.forEach((s) => pm.test(s.step + ' has a known state', () => pm.expect(s.state).to.be.oneOf(['on', 'off', 'always-on'])));",
+									"steps.filter((s) => s.state === 'off').forEach((s) => pm.test(s.step + ' names the setting that turned it off', () => pm.expect(s.setting).to.be.a('string').and.not.empty));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/admin/anonymisation/pipeline"
+					}
+				},
+				{
+					"name": "A non-admin is refused",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.expect(pm.response.code).to.equal(403));",
+									"pm.test('no steps are returned', () => pm.expect(pm.response.json()).to.not.have.property('steps'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/admin/anonymisation/pipeline",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{readerId}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{readerPassword}}",
+									"type": "string"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "99 teardown",
+			"item": [
+				{
+					"name": "Delete the file",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the file is deleted', () => pm.expect(pm.response.code).to.be.oneOf([204, 404]));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{base_url}}/remote.php/dav/files/{{username}}/adi-{{run}}.txt"
+					}
+				},
+				{
+					"name": "Delete the non-admin user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/ocs/v2.php/cloud/users/{{readerId}}?format=json"
+					}
+				}
+			]
+		}
+	]
+}
