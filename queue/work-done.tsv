@@ -4843,3 +4843,4 @@ build:openregister:object-files-follow-object-access	failed: worker rules forbid
 build:openregister:modelling-validation-messages	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:25Z
 build:openregister:modelling-property-index-switch	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:30Z
 build:openregister:object-presence	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:36Z
+build:openregister:operate-admin-query-console	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:42Z
