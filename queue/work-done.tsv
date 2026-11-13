@@ -1169,3 +1169,4 @@ cover:stackiq:8cfacb29m2f4b:js0be8c659	PR stackiq#1805: GrantOrganisationAccessM
 cover:buildiq:8ca317f6m6d54:be0dcca9	already done: BuildiqToolProvider has 3 test files; reads 0% here only because it implements an OpenRegister interface absent in a bare container	session-20261112T231640-f6dda86c	2026-11-13T00:37:01Z
 cover:buildiq:8ca317f6m6d54:f91e7417	PR #1487: 3 ConnectionReporter edge tests, class lines 111->118/119; suite 2310->2313, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:37:24Z
 cover:keepiq:d76c2121m70b5:js3287a408	PR #1707: 7 settings specs, 48 tests; settings line coverage 74.5% -> 85.5%	session-20261113T002028-6d7c79b9	2026-11-13T00:37:27Z
+merge:hermiq:1595:7693f8c3	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:37:45Z
