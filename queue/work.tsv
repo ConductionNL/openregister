@@ -4152,3 +4152,24 @@ cover:keepiq:c967a31fm1147:1b97f731	cover	keepiq	development	quality/test-covera
 cover:keepiq:c967a31fm1147:11ebfefd	cover	keepiq	development	quality/test-coverage-11ebfefd	lang=php;dirs=lib/Backup/*.php;focus=thin;weight=2018;coverage=89.12;target=90.0	2026-11-13T07:19:38Z
 cover:keepiq:c967a31fm1147:aae6d66c	cover	keepiq	development	quality/test-coverage-aae6d66c	lang=php;dirs=lib/Exception/*.php;focus=thin;weight=1135;coverage=89.12;target=90.0	2026-11-13T07:34:21Z
 measure:dossiq:20261113h08	measure	dossiq	development	queue/coverage/dossiq.json	why=slices need per-directory coverage	2026-11-13T05:46:07Z
+verify:learniq:2419:2ec923b7	verify	learniq	development	merge	prs=2419@62ccde47ab42aaaec24f574c645a690c691c9f31	2026-11-13T08:50:07Z
+verify:integriq:3514:373599c5	verify	integriq	development	merge	prs=3514@8ff3bb4311ccd271cba5d885157a990fd72910cb	2026-11-13T08:50:07Z
+verify:launchpad:1180:f77364f4	verify	launchpad	development	merge	prs=1180@fe5ee0920319690346b214c1a65514b1873592ef,1181@de61f590f020f1e546c503bedfc2b580826eca00	2026-11-13T08:50:07Z
+merge:stackiq:1858:aa7c59bb	merge	stackiq	development	development	prs=1858@774cfb8081a0356d34bb4e4b54a965a9085c82a3,1859@4987f1682be68a6adebb64fbb71351eb507a87e9,1860@ebcb1cc06a220df03f1f5b843c52f0acec9e9502	2026-11-13T08:50:07Z
+merge:learniq:2448:2609eebf	merge	learniq	development	development	prs=2448@50d50efa6acf21977fd4e421fb3aee577a2f4f6e,2449@a3b78678d7177a1073f1ad1f341138ee053e62cd	2026-11-13T08:50:07Z
+merge:dossiq:6333:736e4585	merge	dossiq	development	development	prs=6333@cdcaf86e275f32dba5785c6c5cd78ad5104c8482,6334@dde03203e2ab2ff2f05a781f764e8e2c3e9ec1b0	2026-11-13T08:50:07Z
+merge:buildiq:1531:52b2c311	merge	buildiq	development	development	prs=1531@80fd600d3f5485b779d89d7d5008863be12b7cae,1532@c4123addebd16184c524812d14b99017d77e0887,1533@3fa5c2538d89565075d742096633cd7dd37b38d9	2026-11-13T08:50:07Z
+merge:integriq:3513:6811747d	merge	integriq	development	development	prs=3513@1e28a3b1a465e644f0b3ec341341287216c46f0b	2026-11-13T08:50:07Z
+merge:launchpad:1177:001cdcf7	merge	launchpad	development	development	prs=1177@5a975205ea03eedcb3cba62deaf918c747ae88d7,1178@363f9903b19e1d7eecdd8e75cace7df2622fd739	2026-11-13T08:50:07Z
+cover:stackiq:9ac19b3am6096:2f30e3d6	cover	stackiq	development	quality/test-coverage-2f30e3d6	lang=php;dirs=lib/Service/AangebodenGebruik/,lib/Service/Itsm/;focus=thin;weight=448;coverage=85.28;target=90.0	2026-07-16T03:59:51Z
+cover:stackiq:9ac19b3am6096:34763eb4	cover	stackiq	development	quality/test-coverage-34763eb4	lang=php;dirs=lib/Middleware/*.php;focus=thin;weight=353;coverage=85.28;target=90.0	2026-07-16T04:01:26Z
+cover:stackiq:9ac19b3am6096:17d367ab	cover	stackiq	development	quality/test-coverage-17d367ab	lang=php;dirs=lib/Controller/Settings/;focus=thin;weight=327;coverage=85.28;target=90.0	2026-07-16T04:01:52Z
+cover:stackiq:9ac19b3am6096:2861e5ef	cover	stackiq	development	quality/test-coverage-2861e5ef	lang=php;dirs=lib/Examples/*.php;focus=thin;weight=261;coverage=85.28;target=90.0	2026-07-16T04:02:58Z
+cover:stackiq:9ac19b3am6096:aae6d66c	cover	stackiq	development	quality/test-coverage-aae6d66c	lang=php;dirs=lib/Exception/*.php;focus=thin;weight=164;coverage=85.28;target=90.0	2026-07-16T04:04:35Z
+cover:stackiq:9ac19b3am6096:59826f43	cover	stackiq	development	quality/test-coverage-59826f43	lang=php;dirs=lib/Settings/*.php;focus=thin;weight=137;coverage=85.28;target=90.0	2026-07-16T04:05:02Z
+cover:stackiq:9ac19b3am6096:js4829b6aa	cover	stackiq	development	quality/test-coverage-js-4829b6aa	lang=js;dirs=src/views/*;focus=uncovered;weight=93;coverage=88.5;target=90.0	2026-07-16T07:18:57Z
+cover:buildiq:70b3e29embf07:b65a63c3	cover	buildiq	development	quality/test-coverage-b65a63c3	lang=php;dirs=lib/Service/GitHub/;focus=thin;weight=695;coverage=88.48;target=90.0	2026-09-14T07:07:50Z
+cover:buildiq:70b3e29embf07:d528dcf0	cover	buildiq	development	quality/test-coverage-d528dcf0	lang=php;dirs=lib/Dashboard/*.php;focus=thin;weight=691;coverage=88.48;target=90.0	2026-09-14T07:07:54Z
+cover:buildiq:70b3e29embf07:6891a8ac	cover	buildiq	development	quality/test-coverage-6891a8ac	lang=php;dirs=lib/Service/Dashboard/;focus=thin;weight=564;coverage=88.48;target=90.0	2026-09-14T07:10:01Z
+cover:buildiq:70b3e29embf07:be0dcca9	cover	buildiq	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=402;coverage=88.48;target=90.0	2026-09-14T07:12:43Z
+cover:buildiq:70b3e29embf07:bede5e5d	cover	buildiq	development	quality/test-coverage-bede5e5d	lang=php;dirs=lib/Service/Automation/,lib/Service/Credential/;focus=thin;weight=380;coverage=88.48;target=90.0	2026-09-14T07:13:05Z
