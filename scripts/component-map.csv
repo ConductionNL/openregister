@@ -2584,6 +2584,12 @@ Service/MdiIconRenderer.php,53,Service,Configuration,Configuration/Service/MdiIc
 Service/Merge/MasterRecomputeService.php,36,Service,Flows,Flows/Service/Merge/MasterRecomputeService.php,0,,Core
 Service/Merge/MergeAnnotationValidator.php,81,Service,Service,Service/Merge/MergeAnnotationValidator.php,0,,Core
 Service/Merge/MergeService.php,758,Service,Service,Service/Merge/MergeService.php,1,29,Core
+Service/Merge/ReferenceFinderInterface.php,42,Service,Flows,Flows/Service/Merge/ReferenceFinderInterface.php,0,,Core
+Service/Merge/ReferenceMove.php,65,Service,Flows,Flows/Service/Merge/ReferenceMove.php,0,,Core
+Service/Merge/ReferenceRelinkPlan.php,71,Service,Flows,Flows/Service/Merge/ReferenceRelinkPlan.php,0,,Core
+Service/Merge/ReferenceRelinker.php,228,Service,Flows,Flows/Service/Merge/ReferenceRelinker.php,0,,Core
+Service/Merge/ReferenceWriterInterface.php,43,Service,Flows,Flows/Service/Merge/ReferenceWriterInterface.php,0,,Core
+Service/Merge/ReferencingObject.php,45,Service,Flows,Flows/Service/Merge/ReferencingObject.php,0,,Core
 Service/MigrationPack/MappingEngine.php,173,Service,Configuration,Configuration/Service/MigrationPack/MappingEngine.php,1,,Configuration
 Service/MigrationPack/MigrationPackErrorResponder.php,101,Service,Configuration,Configuration/Service/MigrationPack/MigrationPackErrorResponder.php,0,,Configuration
 Service/MigrationPack/MigrationPackImportResult.php,11,Service,Configuration,Configuration/Service/MigrationPack/MigrationPackImportResult.php,0,,Configuration
