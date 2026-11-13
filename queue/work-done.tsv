@@ -2230,3 +2230,4 @@ cover:decidiq:a5f973bbma14b:aae6d66c	already done: -1 (merged) covers every exce
 cover:pipelinq:f67520ecmc4ba:js0023cfc7	PR #3667: 16 vitest tests, PipelineForm 96->133/136, TemplateForm 137->199/216, BrpClientCheck 31->40/40; src/dialogs 79.3% -> 85.3%	session-20261113T024656-2f332446	2026-11-13T04:43:08Z
 cover:openregister:7350e3efm0e99:e6f8d431	PR #10098: +@uses on 8 relation test files; 44 risky->0, Service/Relation 815->1030/1058 under its tests	session-20261113T041645-1e9d4ce1	2026-11-13T04:43:27Z
 merge:launchpad:1158:5af09ee0	merge-local over 1 launchpad tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:43:29Z
+cover:integriq:92114ab0m1534:9dc6d594	PR #3476: 10 tests, lib/Service/Mail 638->677/692; 2 inherited errors unchanged	session-20261113T031700-46f75510	2026-11-13T04:43:35Z
