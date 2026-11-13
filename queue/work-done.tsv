@@ -6035,3 +6035,4 @@ review:openregister:10290:00f931a5	APPROVE #10290	session-20261113T171141-a39073
 build:shillinq:expenses-category-mapping	partial: PR #2961 builds task 3.1 (ExpenseAccountResolver, 9 tests); 1.1-2.2, 3.2-4.1 left (registers/seeds, pages, repair step, mapper, policy, docs)	session-20261113T171149-8b9ea523	2026-11-13T18:38:35Z
 review:openregister:10288:606ffb21	APPROVE: per change specs, phpstan clean, suites green on PR+main	session-20261113T172324-00680177	2026-11-13T18:38:37Z
 cover:opencatalogi:fc83bfb1:88ac6559	PR #2598: 22 tests, Woo 932/945 -> 945/945 stmts, suite 5276 (2 inherited failures)	session-20261113T182348-cc1b5fea	2026-11-13T18:38:52Z
+verify:portaliq:2443:9b9e7370	2443 GREEN (4926 tests, 0 failures; build of resident-identity-in-forms T05)	session-20261113T172329-e224a4f0	2026-11-13T18:38:57Z
