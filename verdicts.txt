@@ -2676,3 +2676,4 @@
 10079 60d7fbb25e9e0516831e61383171d462d72c88ed APPROVE Tests only: one jest spec for mail sidebar entity extraction; 13 tests pass on the PR merged with main, eslint clean, no production code changed.
 10082 a518e4f350de364f31f7d5bbfe5bb97689c339d0 APPROVE Test coverage metadata only (133 added lines, no removals); tests/Unit/Service/Flow/Timer merged with main: 374 pass, risky 85 to 0.
 9902 ef7a596372b4a3c24db754a622183ba2155465af APPROVE delta is a main merge onto DeletionIntegrity::atomically/applyIntegrityAndDeleteRoot: the permanent flag is threaded into RemovalOptions on the referrer path; head contains main 1574bc5db5: guards, Rbac + DeleteObject tests green; merges cleanly with #5497, conflicts with #9929/#9936 (4208 tests)
+10083 26aad61253bdd49b8da1e37b34b4fef3796d6afb APPROVE Test coverage metadata only (36 added lines in 4 files, no removals); tests/Unit/Service/Sync merged with main: 97 pass, risky 38 to 0.
