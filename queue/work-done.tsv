@@ -6577,3 +6577,4 @@ build:filinq:woo-request-workflow	partial: PR #2099, 2.1+2.2 (woo-decision contr
 cover:pipelinq:7f9dc8e6m8ce9:7505aeb4	already done: lib/Activity/*.php at 66/66 100.0 lines (measured this session)	session-20261113T172349-00278d9d	2026-11-13T20:11:18Z
 cover:keepiq:c967a31fm10bf:882bd950	already done: quality/test-coverage-882bd950-1 (SecretSearchProviderTest) is merged into development; every branch of SecretSearchProvider has a test	session-20261113T192659-0ddb618f	2026-11-13T20:11:37Z
 measure:versioniq:20261113h20	php 97.8% (unit-only config, 1575 tests, 2 failing; phpunit borrowed: versioniq lock has none), js 93.61% (2895 tests)	session-20261113T192653-93fd55cc	2026-11-13T20:11:40Z
+gap:humaniq:complexity:3a451050	already done: lizard on development 95550648 max CCN 28 (tests/verify-manifest-parity.js main), lib max 27; nothing over 30	session-20261113T195345-400acccd	2026-11-13T20:11:47Z
