@@ -6350,6 +6350,7 @@ cover:hermiq:065f1631md84f:59826f43	no PR: lib/Settings already 18/18 covered (b
 cover:hermiq:065f1631md84f:6f346b68	no PR: lib/Sections already 5/5 covered; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:31:13Z
 cover:openregister:7350e3efma401:f545d745	PR #10311: 5 repair classes 0->100% + rename-step failure paths, +141 stmts in lib/Repair/*.php (~94.9% est.), 18 tests; Repair+Architecture green	session-20261113T182359-67ad413b	2026-11-13T19:31:19Z
 verify:shillinq:2976:e674df87	GREEN 2976, 3012; CONFLICT 3011 (with 2976); only inherited clock-bound failure	session-20261113T185327-0dc82b88	2026-11-13T19:31:19Z
+cover:dossiq:069ee2d6mbd37:33af3743	no PR: thinnest-looking classes (DecisionValidator, BeroepService) already exercise every branch (39-case golden, data-driven guards); -1 merged; no coverage driver in this worker to find the remaining lines	session-20261113T190954-c894781f	2026-11-13T19:31:43Z
 cover:stackiq:9ac19b3am9d24:407c4b68	PR #1891: ServiceFactoriesTest, 13 tests; suite 3397->3410, 0 failures	session-20261113T192700-55dce75a	2026-11-13T19:31:25Z
 cover:hermiq:065f1631md84f:dfaef732	no PR: lib/Notification already 74/74 covered; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:31:40Z
 fix:shillinq:3003:594db733	failed: conflict is only with an earlier open tree PR (version bumps / l10n), not development; branch already contains development; merge development again after that PR lands	session-20261113T185327-0dc82b88	2026-11-13T19:31:56Z
