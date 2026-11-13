@@ -2,7 +2,7 @@
 
 ## 1. Declaration
 
-- [ ] 1.1 `gate.change` (properties, on, exempt) in the approval-chain dialect, with the refusal for an entry that gates both a transition and a change. Verify: annotation validator tests.
+- [x] 1.1 `gate.change` (properties, on, exempt) in the approval-chain dialect, with the refusal for an entry that gates both a transition and a change. Verify: annotation validator tests.
 
 ## 2. Holding
 
