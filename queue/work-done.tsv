@@ -5727,3 +5727,4 @@ cover:stackiq:9ac19b3am9d24:efa2a923	PR #1883: 3 tests for the ObjectEventPayloa
 verify:keepiq:1748:429c524e	4 GREEN (1748,1754,1755,1758); phpunit 4897 ok, vitest 6354 ok	session-20261113T171153-e1c17962	2026-11-13T17:53:03Z
 verify:learniq:2465:f8cd08f8	learniq #2465 GREEN: 6429 tests, 0 new failures	session-20261113T172325-6eb25015	2026-11-13T17:53:19Z
 verify:portaliq:2416:64e46dac	2416 GREEN, 2417 CONFLICT (l10n with 2416)	session-20261113T172324-00680177	2026-11-13T17:54:04Z
+cover:stackiq:9ac19b3am9d24:f545d745	PR (stackiq) quality/test-coverage-f545d745-2: 9 tests for SlugRenamePlanner, MigrateRegisterSlugDecisions; suite 3397->3406 OK	session-20261113T171203-c5a044de	2026-11-13T17:54:23Z
