@@ -5339,3 +5339,4 @@ cover:buildiq:70b3e29ema699:f91e7417	already done: lib/Service/Connection/ at 99
 cover:humaniq:a18a13fb:437bbdf7	lib/Standards 287/295 -> 291/295 lines; PR #1116 (Violation, TableCheckEvaluator, RuleEngine fail-closed paths); suite 3928 -> 3933	session-20261113T131537-72e2896e	2026-11-13T13:54:25Z
 build2:openregister:sensitive-field-reveal-audit	partial: built read-event half of task 2.1 (reveals gated/surfaced as read events in ReadEventVisibility); PR #10265 to main; frontend reveal kind filter + e2e 3.1 left	session-20261113T124802-c7d6f662	2026-11-13T13:54:17Z
 cover:stackiq:9ac19b3amc14f:b5905f71	already done: lib/Service/Federation/ at 99.0% lines (384/388); no PR	session-20261113T134531-53f143d2	2026-11-13T13:54:35Z
+merge:buildiq:1548:d0593b06	merge-local over 1 buildiq tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:54:57Z
