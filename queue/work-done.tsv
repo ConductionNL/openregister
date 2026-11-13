@@ -6526,3 +6526,4 @@ review:openregister:10316:b950c04d	10316 APPROVE (spec-asked index switch; suite
 build:filinq:tmlo-mdto-metadata	partial: PR #2080 MdtoMappingService prefill + completeness gate (2.1/2.2 partial), 8 tests; suite 6451/0 fail	session-20261113T175327-6e4e7f28	2026-11-13T20:03:04Z
 review:openregister:10317:531b7b6f	APPROVE 10317	session-20261113T192701-f224cbcf	2026-11-13T20:03:28Z
 build:filinq:redaction-guarantees-from-the-engine	failed: precondition unmet - openregister changes redaction-release-safeguards (0/20 tasks) and redaction-policy-as-data (0/15) are not built on openregister development 70e5570; the change says stop until both are merged and released	session-20261113T182404-f2c28226	2026-11-13T20:03:38Z
+verify:dossiq:6448:8ad53eaa	GREEN 6448 (vitest-only; 1 inherited JS failure, red on development)	session-20261113T172349-00278d9d	2026-11-13T20:03:51Z
