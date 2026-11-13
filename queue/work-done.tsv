@@ -7113,3 +7113,4 @@ build4:openregister:store-over-federated-config	partial: PR #10417 backend tasks
 build4:openregister:platform-collaboration-resources	partial: PR #10419 task 1.5 (collections route, read-path guarded); 1.4 stays blocked by the core provider interface, 2.1/2.2-audit/3.1 left	session-20261113T202607-6c22f6b2	2026-11-13T22:14:29Z
 review:openregister:10399:350560f4	APPROVE 10399: frontend-only Rights tab, save keeps other authorization keys; jest/eslint green; l10n reds inherited	session-20261113T205337-4c32e19e	2026-11-13T22:14:38Z
 build4:openregister:platform-reference-provider	partial: PR #10420 (task 1.5 picker reads the reference card, +5 tests); 2.1 e2e, 2.3 openspec validate, 3.1 dossiq handover left	session-20261113T213326-97cbe4c8	2026-11-13T22:14:43Z
+review:openregister:10386:7daec37d	APPROVE: spec-driven, guards before delete, tests green	session-20261113T213324-d7ae5543	2026-11-13T22:14:55Z
