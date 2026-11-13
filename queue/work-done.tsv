@@ -2976,3 +2976,4 @@ cover:pipelinq:7f9dc8e6m1e6e:js0023cfc7	PR #3691: 33 vitest tests in 5 specs; sr
 cover:hermiq:065f1631mfaac:3a63cc27	already done: lib/Service/ReportSimilarity/ 298/323 lines (92.3%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:46:51Z
 cover:filinq:7a9ef677m5ffe:519c54f6	no PR: lib/Service/Conversion at 1074/1105 with tests for every class; remaining lines unreachable (getContent typed string in OCP, null-manager branch guarded by callers, preg_replace/proc_open OS failures)	session-20261113T054520-0c8540f8	2026-11-13T06:47:10Z
 cover:keepiq:c967a31fmb40c:9d3a1784	already done: lib/BackgroundJob/*.php 406/407 (99.75%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:47:27Z
+cover:filinq:7a9ef677m5ffe:d528dcf0	already done: lib/Dashboard/*.php 12/12 lines (100.0%) on development 90be525f5; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:47:33Z
