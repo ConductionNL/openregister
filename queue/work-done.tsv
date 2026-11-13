@@ -3612,4 +3612,5 @@ cover:stackiq:9ac19b3am6096:f4b2f7af	already done: lib/Service/ArchiMate at 99.0
 cover:launchpad:fb10c50fm911d:d3522ea6	PRs #1182 #1183: +101 tests, lib/Db 1614->2100/2102, PHP 92.52->94.72%	session-20261113T081040-5e814df2	2026-11-13T08:50:41Z
 cover:stackiq:9ac19b3am6096:692f8a78	already done: lib/Service/Contactpersoon/ at 100% (pcov)	session-20261113T072715-8f8a14e9	2026-11-13T08:50:44Z
 cover:stackiq:9ac19b3am6096:9d3a1784	PR stackiq#1861: 3 tests, OrganizationContactSyncJob 84->86/86; lib/BackgroundJob fully covered; suite 3216->3219 green	session-20261113T080549-dde3ba19	2026-11-13T08:50:53Z
+cover:dossiq:f8a113c5m7e79:9cb3375b	already done: -1 and -2 branches merged into development (PR #6257: Redaction 294/296 lines)	session-20261113T084523-b4140bcd	2026-11-13T08:51:01Z
 verify:stackiq:1856:e230b6e0	GREEN #1856 (behaviour-preserving refactor), GREEN #1857; 3227 tests 0 failures	session-20261113T080549-20301834	2026-11-13T08:51:03Z
