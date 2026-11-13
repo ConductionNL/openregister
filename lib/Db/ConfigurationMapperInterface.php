@@ -62,6 +62,34 @@ interface ConfigurationMapperInterface {
 	public function findByApp(string $app, int $limit = 50, int $offset = 0, bool $systemLookup = false): array;
 
 	/**
+	 * A page of an app's configurations within the active organisation.
+	 *
+	 * @param string    $app   App identifier.
+	 * @param ListQuery $query The page: limit and offset.
+	 *
+	 * @return Configuration[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findByApp(), no capability of its own
+	 */
+	public function findByAppInOrganisation(string $app, ListQuery $query): array;
+
+	/**
+	 * A page of an app's configurations in every organisation (global platform lookup).
+	 *
+	 * @param string    $app   App identifier.
+	 * @param ListQuery $query The page: limit and offset.
+	 *
+	 * @return Configuration[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findByApp(), no capability of its own
+	 */
+	public function findByAppAcrossOrganisations(string $app, ListQuery $query): array;
+
+	/**
 	 * Find a configuration by source URL.
 	 *
 	 * @param string  $sourceUrl    Source URL to search for.
@@ -159,4 +187,18 @@ interface ConfigurationMapperInterface {
 		?int $limit = null, ?int $offset = null, ?array $filters = [],
 		?array $searchConditions = [], ?array $searchParams = [], bool $_multitenancy = true,
 	): array;
+
+	/**
+	 * The configurations of one listing, newest first.
+	 *
+	 * @param ListQuery $query         The page and the column filters; unbounded for all rows.
+	 * @param boolean   $_multitenancy Whether to apply multitenancy filtering.
+	 *
+	 * @return Configuration[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findAll(), no capability of its own
+	 */
+	public function findListing(ListQuery $query, bool $_multitenancy = true): array;
 }//end interface

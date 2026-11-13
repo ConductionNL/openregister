@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Config\Types;
 
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Config\BundleCrossingGuard;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Service\Config\ConfigurationRecords;
@@ -172,7 +173,7 @@ class ConfigSetShareableConfigType implements IShareableConfigType, ConfigSetSha
 
 		$app = trim((string)($selection['app'] ?? ''));
 		if ($app !== '') {
-			$found = $this->configurationMapper->findByApp(app: $app);
+			$found = $this->configurationMapper->findByAppInOrganisation(app: $app, query: new ListQuery(limit: 50, offset: 0));
 			if ($found !== []) {
 				return $found[0];
 			}

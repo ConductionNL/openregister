@@ -170,28 +170,85 @@ class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterfa
 	 * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
 	 */
 	public function findByApp(string $app, int $limit = 50, int $offset = 0, bool $systemLookup = false): array {
-		// Verify RBAC permission to read.
-		// TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-		// Disabled: $this->verifyRbacPermission(action: 'read', entityType: 'configuration').
-		$qb = $this->db->getQueryBuilder();
+		$query = new ListQuery(limit: $limit, offset: $offset);
+		if ($systemLookup === true) {
+			return $this->findByAppAcrossOrganisations(app: $app, query: $query);
+		}
 
-		$qb->select('*')
-			->from($this->tableName)
-			->where($qb->expr()->eq('app', $qb->createNamedParameter($app, IQueryBuilder::PARAM_STR)))
-			->setMaxResults($limit)
-			->setFirstResult($offset)
-			->orderBy('created', 'DESC');
+		return $this->findByAppInOrganisation(app: $app, query: $query);
+	}//end findByApp()
 
-		// Apply organisation filter unless this is a system lookup. The
-		// configuration row for an app is a global platform record, not tenant
-		// data. Org-filtering the import find-or-create meant that importing
-		// under a different active organisation than the row's owning org could
-		// not see the existing row and inserted a NEW one on every such import —
-		// the fleet accrued thousands of duplicate configuration rows (#2072).
-		$this->applyOrganisationFilter(qb: $qb, multiTenancyEnabled: ($systemLookup === false));
+	/**
+	 * A page of an app's configurations within the active organisation.
+	 *
+	 * @param string    $app   App identifier
+	 * @param ListQuery $query The page: limit and offset
+	 *
+	 * @return Configuration[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findByApp(), no capability of its own
+	 */
+	public function findByAppInOrganisation(string $app, ListQuery $query): array {
+		$qb = $this->appQuery(app: $app, query: $query);
+		$this->applyOrganisationFilter(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findByApp()
+	}//end findByAppInOrganisation()
+
+	/**
+	 * A page of an app's configurations in every organisation (global platform lookup).
+	 *
+	 * The configuration row for an app is a global platform record, not tenant
+	 * data. Org-filtering the import find-or-create meant that importing under
+	 * a different active organisation than the row's owning org could not see
+	 * the existing row and inserted a NEW one on every such import (#2072).
+	 *
+	 * @param string    $app   App identifier
+	 * @param ListQuery $query The page: limit and offset
+	 *
+	 * @return Configuration[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findByApp(), no capability of its own
+	 */
+	public function findByAppAcrossOrganisations(string $app, ListQuery $query): array {
+		return $this->findEntities(query: $this->appQuery(app: $app, query: $query));
+	}//end findByAppAcrossOrganisations()
+
+	/**
+	 * The paged select of one app's configurations, newest first.
+	 *
+	 * @param string    $app   App identifier
+	 * @param ListQuery $query The page: limit and offset
+	 *
+	 * @return IQueryBuilder The query
+	 */
+	private function appQuery(string $app, ListQuery $query): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->tableName)
+			->where($qb->expr()->eq('app', $qb->createNamedParameter($app, IQueryBuilder::PARAM_STR)));
+		$this->applyPage(qb: $qb, query: $query);
+
+		return $qb;
+	}//end appQuery()
+
+	/**
+	 * Page a configuration select and order it newest first.
+	 *
+	 * @param IQueryBuilder $qb    The query
+	 * @param ListQuery     $query The page: limit (unbounded for all rows) and offset
+	 *
+	 * @return void
+	 */
+	private function applyPage(IQueryBuilder $qb, ListQuery $query): void {
+		$qb->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset ?? 0)
+			->orderBy('created', 'DESC');
+	}//end applyPage()
 
 	/**
 	 * Find configuration by source URL
@@ -495,22 +552,7 @@ class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterfa
 		?array $searchParams = [],
 		bool $_multitenancy = true,
 	): array {
-		// Verify RBAC permission to read.
-		// TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-		// Disabled: $this->verifyRbacPermission(action: 'read', entityType: 'configuration').
-		$qb = $this->db->getQueryBuilder();
-
-		// Build the base query.
-		$qb->select('*')
-			->from($this->tableName)
-			->setMaxResults($limit)
-			->setFirstResult($offset ?? 0)
-			->orderBy('created', 'DESC');
-
-		// Apply filters.
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
-
-		// Apply search conditions.
+		$qb = $this->listingQuery(query: new ListQuery(limit: $limit ?? ListQuery::UNBOUNDED, offset: $offset, filters: $filters ?? []), _multitenancy: $_multitenancy);
 		if (empty($searchConditions) === false) {
 			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
 			foreach ($searchParams ?? [] as $param => $value) {
@@ -518,14 +560,48 @@ class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterfa
 			}
 		}
 
-		// Apply organisation filter unless explicitly disabled.
+		return $this->findEntities(query: $qb);
+	}//end findAll()
+
+	/**
+	 * The configurations of one listing, newest first.
+	 *
+	 * @param ListQuery $query         The page and the column filters; unbounded for all rows
+	 * @param bool      $_multitenancy Whether to apply multitenancy filtering
+	 *
+	 * @return Configuration[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Multitenancy toggle is intentional
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findAll(), no capability of its own
+	 */
+	public function findListing(ListQuery $query, bool $_multitenancy = true): array {
+		return $this->findEntities(query: $this->listingQuery(query: $query, _multitenancy: $_multitenancy));
+	}//end findListing()
+
+	/**
+	 * The select of one listing: paged, column-filtered and, unless disabled, organisation-filtered.
+	 *
+	 * @param ListQuery $query         The page and the column filters
+	 * @param bool      $_multitenancy Whether to apply multitenancy filtering
+	 *
+	 * @return IQueryBuilder The query
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Multitenancy toggle is intentional
+	 */
+	private function listingQuery(ListQuery $query, bool $_multitenancy): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($this->tableName);
+		$this->applyPage(qb: $qb, query: $query);
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
 		if ($_multitenancy === true) {
 			$this->applyOrganisationFilter(qb: $qb);
 		}
 
-		// Execute the query and return the results.
-		return $this->findEntities(query: $qb);
-	}//end findAll()
+		return $qb;
+	}//end listingQuery()
 
 	/**
 	 * Invalidate the configuration cache for the active organisation
