@@ -47,6 +47,7 @@ describe('AuditTrailSideBar initial state', () => {
 				{ label: '[Read]', value: 'read' },
 				{ label: '[Update]', value: 'update' },
 				{ label: '[Delete]', value: 'delete' },
+				{ label: '[Reveal]', value: 'property.revealed' },
 			],
 			activeTab: 'filters-tab',
 			selectedActions: [],

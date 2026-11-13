@@ -29,6 +29,9 @@ export function auditActionOptions() {
 		selectOption(t('openregister', 'Read'), 'read'),
 		selectOption(t('openregister', 'Update'), 'update'),
 		selectOption(t('openregister', 'Delete'), 'delete'),
+		// A sensitive property's value shown to someone (sensitive-field-reveal-audit):
+		// the action RevealCollector writes, so an officer can list who saw it.
+		selectOption(t('openregister', 'Reveal'), 'property.revealed'),
 	]
 }
 
