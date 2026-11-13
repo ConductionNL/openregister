@@ -6340,3 +6340,4 @@ filinq	2095	65dcfd74325e2765b6f22349cf64b739b18711d2	CONFLICT	worker-08	register
 filinq	2096	69a1c8228c4ae8db67fa987ac4a6409bb8dc83ac	CONFLICT	worker-08	lib/Settings/filinq_register.json conflicts with #2054/#2092 in the tree (clean on plain development); merge development in after those land
 filinq	2097	f22bb9e2e6382b5c6899a345361d79dd31a9b1b4	GREEN	worker-23	unit 6491 tests (baseline 6443, 0 failures), vitest 751 pass; new failures: none; additive stamp event/listener/service per change
 filinq	2098	fc7ce3c42df6b89414df284016be402d36eb0b2f	GREEN	worker-23	unit 6491 tests (baseline 6443, 0 failures), vitest 751 pass; new failures: none; four-eyes rule only tightens the review gate, as the change asks
+filinq	2099	697ea860f396fab0bca86de18aa7254eea16fc1f	GREEN	worker-23	unit 6491 tests (baseline 6443, 0 failures), vitest 751 pass; new failures: none; woo-decision contract check applies only to templates declaring it
