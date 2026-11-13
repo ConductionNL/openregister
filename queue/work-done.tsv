@@ -7254,3 +7254,4 @@ build:learniq:week-timetable-grid	failed: blocked on T1, a nextcloud-vue week gr
 build:learniq:school-year-setting	PR #2504: admin field (School calendar tab) done; moving hour plans and attendance onto it left to their lanes	session-20261113T202607-6c22f6b2	2026-11-13T22:39:50Z
 build:learniq:content-scorm-package-upload	partial: PR — 1.1 SCORM manifest parser + 3 fixtures (+9 tests); 2.x import/unpack/lessons, 3.1 screen, 4.x left	session-20261113T204551-fafe539e	2026-11-13T22:40:01Z
 review:openregister:10440:5b67fbef	APPROVE 10440	session-20261113T213320-1f5acbff	2026-11-13T22:40:23Z
+build:decidiq:hand-woo-diwoo-to-integriq	already done: every code task is ticked on development; only 2.2 (raise with integriq owners, another repo) remains	session-20261113T204551-fafe539e	2026-11-13T22:40:29Z
