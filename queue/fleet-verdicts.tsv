@@ -4828,3 +4828,4 @@ shillinq	2835	4bdda4803248b9de2b755daed044a64e7c85e3e8	GREEN	worker-29	tree of 8
 shillinq	2836	f365ab446ad801507e66a4f14e362f2fde5c141c	GREEN	worker-29	tree of 8: 9080 tests run, baseline 9004 with 1 clock-bound failure, 0 new failures; tests only
 shillinq	2837	cb14f7ad482fff1efc861b600b1a9010e747f683	GREEN	worker-29	tree of 8: 9080 tests run, baseline 9004 with 1 clock-bound failure, 0 new failures; tests only
 shillinq	2838	39b38f749d61a5492697846091e3f4281e87f48f	GREEN	worker-29	tree of 8: 9080 tests run, baseline 9004 with 1 clock-bound failure, 0 new failures; tests only
+decidiq	2108	e277564129019f094b685288c1014b003b983f4c	GREEN	worker-28	3116 tests run, baseline 0 failures, 0 new failures; docs/coverage-summary only
