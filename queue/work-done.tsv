@@ -2791,3 +2791,4 @@ cover:pipelinq:7f9dc8e6m1e6e:38e80a9f	already done: lib/Command/*.php 382/382 st
 cover:shillinq:05639debmd8ee:1f2719d5	already done: lib/Service/External/CsrdEsrsXbrl 74/75 (98.7%) on development ebb2e0884 after 76b83d0f3; measurement d33c9cc predates it	session-20261113T061516-58aa7364	2026-11-13T06:27:23Z
 cover:pipelinq:7f9dc8e6m1e6e:js06645759	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:27:19Z
 cover:shillinq:05639debmd8ee:588dbc92	already done: lib/Service/External/Bunq 40/41 (97.56%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:27:21Z
+verify:dossiq:6300:6af14b06	6300 GREEN; 14929 tests, 0 new failures (19 inherited)	session-20261113T061521-423d1e83	2026-11-13T06:27:38Z
