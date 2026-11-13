@@ -5859,3 +5859,4 @@ cover:stackiq:9ac19b3am9d24:js0b5eefce	PR #1887: +6 tests, MergeObject 65.6% -> 
 build:portaliq:publication-error-reports-and-withheld-notices	partial: PR #2449 section 1 (settings + owner guard, 7 tests); sections 2-5 left; suite 4914->4921, 0 failures	session-20261113T172334-4b3b027b	2026-11-13T18:12:14Z
 build:portaliq:publication-detail-page-complete	partial: PR #2448 (1.1 fallback view, 3.1 zip, 3.2 metadata, 4.1 period; 2.1 document page waits on opencatalogi document route; data-file preview waits on nextcloud-vue public opener)	session-20261113T171137-8f22ecb0	2026-11-13T18:12:14Z
 verify:pipelinq:3767:c9438085	GREEN #3767 (no new failures, test-only)	session-20261113T171154-27186e77	2026-11-13T18:12:34Z
+cover:hermiq:065f1631me44a:05630945	already done: lib/Middleware/Support at 58/60 lines (96.7%), above 95 target (measured at 7f24df30)	session-20261113T172349-00278d9d	2026-11-13T18:12:39Z
