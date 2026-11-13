@@ -4283,3 +4283,4 @@ cover:dossiq:069ee2d6m7275:1b97f731	PR (1b97f731-3): DependentTermListener + Dea
 verify:portaliq:2388:81a70471	7 GREEN (2388,2391-2396), 4610 tests, 0 new failures	session-20261113T103904-e108be02	2026-11-13T10:43:45Z
 fix:hermiq:1644:507f0a42	fixed: redaction fixtures built by concatenation so the scanner floor holds; new head 5f5443dd, REVERIFY queued	session-20261113T051703-1b54bfba	2026-11-13T10:43:53Z
 cover:openregister:7350e3efmea52:933e2844	already done: 9 dirs 9765/10151 = 96.2% >= 95 (measure at 9ca4b67f)	session-20261113T051703-1b54bfba	2026-11-13T10:44:11Z
+cover:filinq:7a9ef677mb01f:59d1e403	already done: lib/Service/Signing/ 866/867 (99.9%) >= 95 (measure at 7b9588e4)	session-20261113T051703-1b54bfba	2026-11-13T10:44:23Z
