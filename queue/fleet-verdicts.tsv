@@ -6138,4 +6138,5 @@ learniq	2473	5526131b50a1b9b988301e1b2362e32ceb0fddb7	GREEN	worker-53	unit suite
 learniq	2474	b111dcec9b633cfd4bcedb913e6cde0b71d1692b	GREEN	worker-53	unit suite on 5-PR tree: 6452 tests, 1 failure = baseline (HigherEducationExampleSetTest he.json drift, inherited); tests only, no new failures
 learniq	2475	65ecf2ebe8555e558ca01c3631c5571123f2a8f8	GREEN	worker-53	unit suite on 5-PR tree: 6452 tests, 1 failure = baseline (HigherEducationExampleSetTest he.json drift, inherited); tests only, no new failures
 learniq	2476	85ad0fe1e366d50ca4682e82924fb3ff30e9926c	GREEN	worker-53	unit suite on 5-PR tree: 6452 tests, 1 failure = baseline (HigherEducationExampleSetTest he.json drift, inherited); tests only, no new failures
+opencatalogi	2595	21d2431c12bf08539e01c946dd91232d3b1d2499	GREEN	worker-30	tree 2595+2596+2597: phpunit 5284 tests, 2 failures = baseline (AppIdentityTest, WooControllerTest inventarislijst); 0 new failures; tests only
 learniq	2477	353cf067921d82016b61af7a6ca620bf9e3e6d82	GREEN	worker-53	unit suite on 5-PR tree: 6452 tests, 1 failure = baseline (HigherEducationExampleSetTest he.json drift, inherited); tests only, no new failures
