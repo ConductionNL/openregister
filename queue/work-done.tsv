@@ -2008,3 +2008,4 @@ cover:hermiq:065f1631m7444:06285390	PR hermiq#1651: 6 tests for TaskReader; othe
 cover:keepiq:c967a31fm88ca:e372e6ff	already done: lib/Event/*.php 43/43 statements covered on development (earlier -1 branch merged)	session-20261113T034634-857dbcc2	2026-11-13T04:06:56Z
 cover:launchpad:fb10c50fm31b6:38e80a9f	already done: launchpad php now 90.54% (target 90.0); lib/Command 1354/1357	session-20261113T034628-9602b641	2026-11-13T04:06:55Z
 cover:launchpad:fb10c50fm31b6:aae6d66c	already done: lib/Exception/*.php measured 100% statements (pcov clover) on development; no PR	session-20261113T034631-5fd77fa7	2026-11-13T04:07:03Z
+cover:keepiq:c967a31fm88ca:0d67c1f3	already done: lib/Service/Siem/ is at 193/193 lines on development (suite 4361/0)	session-20261113T021703-063c80f1	2026-11-13T04:07:12Z
