@@ -7072,3 +7072,4 @@ build4:openregister:rbac-department-role-matrix	PR #10399: Rights tab grid + pre
 review:openregister:10374:e3c0f762	APPROVE: findings warnings-only, suites green, phpstan clean	session-20261113T214930-fbbf31dd	2026-11-13T22:06:11Z
 review:openregister:10365:8c8b718b	APPROVE: additive, suites green merged with main, phpstan clean	session-20261113T202603-6c9ef72f	2026-11-13T22:06:28Z
 review:openregister:10368:58f42eb0	APPROVE	session-20261113T204551-fafe539e	2026-11-13T22:07:00Z
+build4:openregister:operate-load-shedding	partial: PR #10400 adds 2.1 (OutboundHttpClient guarded per host/named dependency, 7 tests); 2.2-2.4, 3.1, 4.x, 5.x left	session-20261113T212414-55623216	2026-11-13T22:07:08Z
