@@ -6089,3 +6089,4 @@ build:shillinq:inventory-receipt-cost-layers	partial: PR #2978 builds 1.1 (recei
 cover:buildiq:70b3e29ema699:js4829b6aa	PR #1556: 25 vitest tests, src/views 91.64% -> 95.27%, suite 4077 -> 4102 green	session-20261113T175400-7ec3993f	2026-11-13T18:50:45Z
 verify:shillinq:2960:c07561a7	2960 GREEN, 2961 GREEN, 2962 CONFLICT, 2963 CONFLICT (both conflict with #2960 on l10n); 10403 tests, 1 inherited failure, 0 new; vitest 2301 pass	session-20261113T175335-552e4d60	2026-11-13T18:51:19Z
 build:shillinq:sales-invoice-issue-controls	partial: PR #2979 builds the service of task 3.1 (InvoiceNumberAuditService, 8 tests); numbering (1.x), approval (2.x), the Reports card, e2e and strings left	session-20261113T171149-8b9ea523	2026-11-13T18:51:24Z
+review:openregister:10289:fe469e10	APPROVE: tests only, 26 new pass; Controller reds inherited from main	session-20261113T182348-4d2d804b	2026-11-13T18:51:41Z
