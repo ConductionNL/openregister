@@ -1310,3 +1310,4 @@ review:openregister:10072:3ca94e55	APPROVE: @uses-only test change; required sui
 review:openregister:10074:f4e7068d	APPROVE: docblock-only @uses metadata, suites green (Controller errors inherited)	session-20261113T004527-ec0338ee	2026-11-13T01:07:56Z
 review:hermiq:1487:fd5c6f50	GREEN: behaviour-preserving move, failure set identical to development	session-20261112T231637-60fd49c4	2026-11-13T01:08:05Z
 review:stackiq:1690:74ea9a64	GREEN: equivalent split, suite green	session-20261113T004523-285a0413	2026-11-13T01:08:11Z
+cover:dossiq:6ca0231e:154acb60	PR #6212: 19 tests, CaseRebindGate+CaseAnswerReader 100%, Cases dir 83.6%->~92%	session-20261113T004524-55adaa63	2026-11-13T01:08:27Z
