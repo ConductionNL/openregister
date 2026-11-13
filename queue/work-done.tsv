@@ -5406,6 +5406,7 @@ cover:shillinq:05639debm4eb8:89bf3ba4	no PR: lib/Reporting/Generator/ measured 1
 merge:pipelinq:3721:4b92cd6f	merge-local over 2 pipelinq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:03:58Z
 merge:pipelinq:3602:8969c50d	merge-local over 2 pipelinq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:03:58Z
 merge:versioniq:678:99e9570c	merge-local over 1 versioniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:04:48Z
+fix:dossiq:6371:3184045e	fixed floor: module_coupling restored 5.03->5.05 by routing the stopping-rule reconcile through ReviewWrites; floor_check PASS; pushed cea13ccf507e61c09e3a6a0bb136b2f942cc1eb8, REVERIFY recorded	session-20261113T074532-3dc49c57	2026-11-13T14:07:11Z
 cover:stackiq:9ac19b3amc14f:17d367ab	cover: lib/Controller/Settings already 100% covered (74/74 stmts, ModuleRegistrationHandler 8/8 + SyncHandler 6/6 methods); fully tested, no net-new test adds value	session-20261113T131538-bf8ccc8e	2026-11-13T14:07:55Z
 review:openregister:10251:9d0fcb0d	APPROVE: change-specified tightening, no leak via update ordering, suites green apart from known env failures, phpstan clean	session-20261113T094602-d25cda2a	2026-11-13T14:06:25Z
 review:openregister:10265:1caf04d7	APPROVE #10265 (reveal audit visibility; tightens gating, green, no defect)	session-20261113T131531-81a20e2a	2026-11-13T14:05:09Z
@@ -5413,6 +5414,7 @@ review:openregister:10240:fd961afd	APPROVE 10240	session-20261113T114527-9a216dd
 cover:buildiq:70b3e29ema699:js0be8c659	PR #1552: 4 modals (AutomationTestPanel, LinkRepo, PermissionHistory, Permissions) to 100%; src/modals 92.4%->97.9%; +15 vitest tests, suite 4010 pass	session-20261113T131537-142f7747	2026-11-13T14:08:20Z
 review:openregister:10263:84fb9f40	APPROVE: note lock per spec, no new failures	session-20261113T124805-1586d4f8	2026-11-13T14:08:40Z
 review:openregister:10270:1462b41e	APPROVE #10270 (frontend green; l10n parity +1 missing key per locale noted, already red on main)	session-20261113T084525-9d890807	2026-11-13T14:09:03Z
+fix:dossiq:6371:3184045e	fixed floor: module_coupling restored 5.03->5.05 by routing the stopping-rule reconcile through ReviewWrites; floor_check PASS on every property; pushed cea13ccf, REVERIFY recorded	session-20261113T074532-3dc49c57	2026-11-13T14:09:16Z
 review:openregister:10264:ca9f350f	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T14:09:15Z
 build2:openregister:records-draft-versions	partial: PR #10276 (draft store + DraftService, task 1.2 done, 1.1 code done but DB-engine verify left; 21 tests); routes, promotion, preview, UI left	session-20261113T104650-72c03e13	2026-11-13T14:09:44Z
 build2:openregister:spec-anchor-repair	PR openregister#10278: 1490 @spec anchors repointed in 472 files (comment-only proven), broken 4092->2602; task-11 merge/archive left to lane	session-20261113T104531-16da055e	2026-11-13T14:10:16Z
