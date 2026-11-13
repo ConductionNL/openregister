@@ -2659,6 +2659,7 @@ cover:shillinq:05639debmd8ee:js4dad1dd8	PR #2878: 12 vitest tests for StandardsP
 cover:shillinq:05639debmd8ee:2e7efbf6	already done: lib/Request/*.php 47/47 (100%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:09:06Z
 cover:shillinq:05639debmd8ee:2befd24e	already done: lib/Service/Asset 551/564 (97.7%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:09:18Z
 cover:filinq:7a9ef677m5ffe:6079ce8f	PR #2038: 20 tests (WizardRepository 100%, WizardService, SubjectErasure edges); suite 6112->6132	session-20261113T054516-469bb7f6	2026-11-13T06:09:27Z
+cover:keepiq:c967a31fm0090:d3522ea6	PRs #1741 (62 tests: Secret/SecretVersion/SecretDelegation/RecoveryRequest mappers -> 100%) and #1742 (38 tests: 8 mappers 8-11% -> 100%); unit suite 4564 -> 4664, 0 failures	session-20261113T034634-f20a8d77	2026-11-13T06:09:46Z
 cover:shillinq:05639debmd8ee:js6cca7802	PRs #2875 (69 tests) and #2879 (46 tests); task dirs stmts 50.1% -> 65.6% / 61.2% each	session-20261113T054516-5d7b6bc4	2026-11-13T06:09:45Z
 cover:filinq:7a9ef677m5ffe:bb678c92	already done: lib/Service/Charts/*.php at 99% lines on development 265db8360 (8 lines left), no PR	session-20261113T054516-469bb7f6	2026-11-13T06:09:47Z
 cover:dossiq:f8a113c5mac88:913a213e	PR #6296: 6 tests for PlannedSeriesLedger::occurrencesOf; Service/Flow 87.99->91.38%; suite 14750->14756, same 19 inherited failures	session-20261113T054517-06ee2c47	2026-11-13T06:09:55Z
