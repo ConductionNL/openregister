@@ -136,8 +136,36 @@ class HierarchyGrantExpander {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function declarationFor(Schema $schema): ?array {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$block = ($configuration[self::ANNOTATION] ?? null);
+		$parent = self::parentPropertyOf(schema: $schema);
+		if ($parent === null) {
+			return null;
+		}
+
+		$block = ($schema->getConfiguration() ?? [])[self::ANNOTATION];
+
+		return [
+			'parent' => $parent,
+			'maxDepth' => $this->maxDepthOf(block: $block),
+			'verbs' => $this->inheritedVerbsOf(block: $block),
+		];
+	}//end declarationFor()
+
+	/**
+	 * The parent property a schema's hierarchy names, or null when it declares none.
+	 *
+	 * The one reader of the annotation's parent key, shared by access
+	 * inheritance (declarationFor()) and the tree presentation of a saved
+	 * view, so a hierarchy is declared once for both. `parent` wins over the
+	 * older `parentField` spelling; see declarationFor() for why both exist.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return string|null The parent property, or null without a hierarchy.
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+	 */
+	public static function parentPropertyOf(Schema $schema): ?string {
+		$block = (($schema->getConfiguration() ?? [])[self::ANNOTATION] ?? null);
 		if (is_array($block) === false) {
 			return null;
 		}
@@ -147,12 +175,8 @@ class HierarchyGrantExpander {
 			return null;
 		}
 
-		return [
-			'parent' => $parent,
-			'maxDepth' => $this->maxDepthOf(block: $block),
-			'verbs' => $this->inheritedVerbsOf(block: $block),
-		];
-	}//end declarationFor()
+		return $parent;
+	}//end parentPropertyOf()
 
 	/**
 	 * The authored depth bound: the default below one, never above the ceiling.
