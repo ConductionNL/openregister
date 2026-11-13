@@ -5246,3 +5246,4 @@ build2:openregister:modelling-rename-without-loss	partial: PR #10247 (tasks 1.1,
 build2:openregister:dbal-virtual-registers	partial: PR #10248 ticks 1.2/5.1/5.2 (already on main, evidence), read-through test for 7.2; 4.3, 6.1, 7.2 rest, 7.3 left	session-20261113T121536-3cb7eb71	2026-11-13T13:38:27Z
 merge:pipelinq:3602:a927cd9b	merge-local over 1 pipelinq tasks: merged=0 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:38:46Z
 cover:humaniq:a18a13fb:5bf9ac8a	11 Ops classes covered; PRs #1113 (7 files, 57 tests) and #1114 (4 files, 32 tests); suite 3928 -> 3985/3961, no new failures	session-20261113T131537-72e2896e	2026-11-13T13:39:00Z
+verify:planninq:1151:c44021e6	1151 GREEN (tests only, +1 middleware test, suite 1022->1023 OK)	session-20261113T094617-36f80607	2026-11-13T13:38:56Z
