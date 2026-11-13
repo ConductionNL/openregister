@@ -6187,3 +6187,4 @@ buildiq	1556	f53788ab6e779f7522ecf5eda040bb3f3d529bf2	GREEN	worker-15	phpunit 29
 hermiq	1699	2ae2caf440e7bfbec653b58f1d65bf6b6974bcf5	GREEN	worker-55	tests only; unit 4590 on the tree (baseline 4564, 0 failures), no new failures
 portaliq	2423	53e7632237b8537d1e74566831a9d303cdc87870	GREEN	worker-52	php unit 4914 (baseline 4914, 0 new); help/page-tabs specs 11 pass; check:specs only records-list (inherited); manifest error count unchanged (1, inherited)
 hermiq	1700	8969148dada668b6fb003ec90a55da96e542ccfa	GREEN	worker-55	tests only; unit 4590 on the tree (baseline 4564, 0 failures), no new failures
+shillinq	2979	73734071f6ef63e433a5c650de3d5b88436f5545	GREEN	worker-54	tree of 7: phpunit 10474 tests vs baseline 10394, same 1 inherited failure (clock-bound webhook data set); vitest 2295/2295 as on base; build PRs judged against their changes, access changes are added refusals
