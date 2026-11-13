@@ -3619,6 +3619,7 @@ cover:stackiq:9ac19b3am6096:81b1241f	already done: lib/Portal/*.php at 100% (23/
 cover:launchpad:fb10c50fm911d:1b97f731	already done: lib/Listener/*.php at 100% line coverage (267/267) on development; no PR	session-20261113T073916-e9f11dfa	2026-11-13T08:51:08Z
 cover:stackiq:9ac19b3am5ac4:6f346b68	no PR: lib/Sections/*.php already fully covered (6/6 lines, pcov on development today)	session-20261113T080549-dde3ba19	2026-11-13T08:51:28Z
 cover:stackiq:9ac19b3am6096:05630945	already done: lib/Middleware/Support/ at 57/62; the 5 uncovered lines are unreachable while WITHOUT_SUCCESSOR and RENAMED are empty; no PR	session-20261113T080549-20301834	2026-11-13T08:51:27Z
+cover:stackiq:9ac19b3am6096:68d2b5ba	already done: lib/Service/Cmdb/ 98.1%, lib/Service/Settings/ 97.6% on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:51:39Z
 cover:stackiq:9ac19b3am6096:38e80a9f	already done: lib/Command/*.php at 100% (pcov)	session-20261113T072715-8f8a14e9	2026-11-13T08:51:45Z
 cover:learniq:e6498dddmf689:9d3a1784	PR #2454: 11 tests, 4 jobs to 100% lines; suite 6105->6116, only inherited failure	session-20261113T081055-3901e400	2026-11-13T08:51:32Z
 cover:integriq:92114ab0m658d:8addca3f	PR #3515: Rule/Source/Mapping/Job handlers to 100% lines, 6 tests; DigitalPost part already in #3506; suite 8054->8060, baseline unchanged	session-20261113T071640-3ba6da34	2026-11-13T08:51:49Z
