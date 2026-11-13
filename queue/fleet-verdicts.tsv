@@ -5445,3 +5445,4 @@ keepiq	1750	3fa421f5ad57587fe2cbe03e780b2308c956485c	GREEN	worker-44	PHP unit 45
 learniq	2419	6339bf2933eda835ac5522e585535cd86fcf1bc7	REVERIFY	worker-19	merged development in: kept branch ApiPathAliases routes + openapi.json, took development OpenApiController + test, peer-review route test uses v1 postfix; unit 6129 tests, 1 failure inherited from development (HigherEducationExampleSetTest); new head f709e6508b25423d3eff9f5fc94d6e27ef0ddb8c, verify it
 portaliq	2373	bb97388c39c057f93227cd42c789d323d300541c	GREEN	worker-47	4620 tests on tree (2373+2374+2377), baseline 4527 0 failures, 0 new; tests only
 portaliq	2374	1bea661319a4811a4dd73c579b9f512352aec6b1	GREEN	worker-47	4620 tests on tree (2373+2374+2377), baseline 4527 0 failures, 0 new; tests only
+portaliq	2375	f787d59a2564b83a94031ab55177f69495853b34	CONFLICT	worker-47	conflicts with 2374 in ActionDraftTest/PortalDraftDrainTest (same @uses lines added)
