@@ -1476,3 +1476,4 @@ verify:pipelinq:3615:db80a8a6	GREEN 3615,3616; vitest 3199 pass; PHP baseline 1 
 cover:shillinq:801aab65:e6f8d431	PR #2826: 9 guard tests; Relation dir 246->256/258; suite 9004->9013, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T01:45:23Z
 cover:openregister:7350e3efm0e99:3fc78ba5	PR openregister#10087: 17 tests; NotificationBroadcastController 4->70/70, TimelineEntriesProvider 0->54/55; dirs ~86.8% -> ~91%	session-20261112T221237-836ed3f0	2026-11-13T01:45:42Z
 cover:shillinq:801aab65:81b1241f	already done: lib/Portal/*.php at 157/157 statements, each class has its own test file; no PR	session-20261112T234655-0bdbf2be	2026-11-13T01:45:52Z
+cover:integriq:9b0f5894m2367:1c482fa1	PR #3451: Integration 130/136 -> 135/136 statements, +5 tests	session-20261113T011743-bdeb8a13	2026-11-13T01:46:41Z
