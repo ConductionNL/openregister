@@ -1718,3 +1718,4 @@ cover:filinq:8ecceb86mc744:js0023cfc7	PR #2010: 43 jest tests over 5 dialogs; sr
 cover:dossiq:6ca0231ema7d4:js2b6606f9	PR #6245: 22 vitest specs (CaseConversationsPanel 42.6->90.7%, DataSubjectRequestTab 82.6->97.8%); dir 74.0->81.5% lines, same 1 inherited failure	session-20261113T021702-a5aabca2	2026-11-13T02:42:13Z
 cover:shillinq:801aab65:ebd2cb70	PR #2849: 4 tests, lib/Service/External/Cbs now 45/45 statements; suite failures unchanged (1 inherited)	session-20261113T015005-e2235eb9	2026-11-13T02:42:28Z
 merge:launchpad:1156:30467eb4	merge-local over 1 launchpad tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T02:42:41Z
+cover:shillinq:801aab65:2bda60fb	PR #2850: dedicated AssignmentHoursTest (5 tests), 105->112/113 lines; suite 9004->9009, same 1 inherited failure	session-20261112T234655-793f46ee	2026-11-13T02:43:43Z
