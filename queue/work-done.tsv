@@ -2945,5 +2945,6 @@ cover:shillinq:05639debmd8ee:568ec52a	PRs #2893 (7 guards, 73 tests) and #2896 (
 cover:pipelinq:7f9dc8e6m1e6e:fdb25f89	already done: pcov on development (today) shows lib/Service/Access/RegisterAccessSync 100% lines (86/86)	session-20261113T053904-36dcee67	2026-11-13T06:43:33Z
 cover:pipelinq:7f9dc8e6m1e6e:6f346b68	already done (second time this queue sent it): lib/Sections/SettingsSection 100% lines per pcov on development; the generating measure appears not to see this dir's coverage	session-20261113T053904-36dcee67	2026-11-13T06:43:47Z
 cover:pipelinq:7f9dc8e6m1e6e:d528dcf0	already done: lib/Dashboard/*.php at 100% lines (36/36) on development, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:43:46Z
+cover:pipelinq:7f9dc8e6m1e6e:168f7791	already done: pcov on development (today) shows lib/Dossiq/CaseTypeContributionProvider 100% lines (26/26)	session-20261113T053904-36dcee67	2026-11-13T06:44:08Z
 verify:filinq:2041:ba5bdc82	GREEN #2041: tests only, unit 6260 OK vs baseline 6251	session-20261113T051705-4f5ad12a	2026-11-13T06:44:07Z
 cover:pipelinq:7f9dc8e6m1e6e:23d187f5	PR pipelinq#3690: Store assembler + ledger, 3 tests, lib/Service/Store/ 82->86/86, suite 6454->6457 (1 inherited failure)	session-20261113T061518-90540a48	2026-11-13T06:44:13Z
