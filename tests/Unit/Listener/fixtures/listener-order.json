@@ -86,6 +86,7 @@
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
+		"OCA\\OpenRegister\\Listener\\SurveyWriteListener",
 		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
 		"OCA\\OpenRegister\\Listener\\ObjectQuotaListener"
 	],
@@ -187,6 +188,7 @@
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
+		"OCA\\OpenRegister\\Listener\\SurveyWriteListener",
 		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
 		"OCA\\OpenRegister\\Listener\\IdentityGuardListener"
 	],
