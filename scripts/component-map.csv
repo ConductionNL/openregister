@@ -1730,6 +1730,7 @@ Service/Anonymisation/AnonymisationBackendService.php,388,Service,Compliance,Com
 Service/Anonymisation/BackendInfo.php,23,Service,Compliance,Compliance/Service/Anonymisation/BackendInfo.php,2,,Compliance
 Service/Anonymisation/BackendState.php,38,Service,Compliance,Compliance/Service/Anonymisation/BackendState.php,13,415,Compliance
 Service/Anonymisation/ProbeResult.php,41,Service,Compliance,Compliance/Service/Anonymisation/ProbeResult.php,0,,Compliance
+Service/Anonymisation/ProbeResultCache.php,64,Service,Compliance,Compliance/Service/Anonymisation/ProbeResultCache.php,0,,Compliance
 Service/AnonymousEvaluationContext.php,19,Service,Service,Service/AnonymousEvaluationContext.php,0,,Core
 Service/ApiCaller/ApiCallRecorder.php,85,Service,Platform,Platform/Service/ApiCaller/ApiCallRecorder.php,0,,Platform
 Service/ApiCaller/CallerPolicy.php,92,Service,Platform,Platform/Service/ApiCaller/CallerPolicy.php,0,,Platform
