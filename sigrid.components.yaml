@@ -290,6 +290,7 @@ components:
       - ".*/lib/Service/Integration/[^/]*"
       - ".*/lib/Service/Integration/BuiltinProviders/[^/]*"
       - ".*/lib/Service/Integration/Providers/[^/]*"
+      - ".*/lib/Service/Observability/[^/]*"
       - ".*/lib/Service/Outbound/[^/]*"
       - ".*/lib/Service/Security/[^/]*"
       - ".*/lib/Service/Sync/[^/]*"

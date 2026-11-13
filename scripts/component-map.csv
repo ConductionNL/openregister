@@ -2840,6 +2840,8 @@ Service/ObjectSource/ViewObjectSourceProvider.php,130,Service,Service,Service/Ob
 Service/ObjectSource/WritableObjectSourceProvider.php,11,Service,Service,Service/ObjectSource/WritableObjectSourceProvider.php,0,,Core
 Service/ObjectSourceRead.php,14,Service,Service,Service/ObjectSourceRead.php,0,,Core
 Service/ObjectTranslationRequest.php,14,Service,Flows,Flows/Service/ObjectTranslationRequest.php,0,,Processes
+Service/Observability/OpenRegisterMetricsProvider.php,12,Service,Platform,Platform/Service/Observability/OpenRegisterMetricsProvider.php,0,,Integrations
+Service/Observability/WebhookRetryMetricsProvider.php,20,Service,Platform,Platform/Service/Observability/WebhookRetryMetricsProvider.php,0,,Integrations
 Service/OpenProjectLinkService.php,287,Service,Integrations,Integrations/Service/OpenProjectLinkService.php,0,,Integrations
 Service/OpenRegisterActionAuthService.php,15,Service,Platform,Platform/Service/OpenRegisterActionAuthService.php,0,476,Platform
 Service/Operations/ConsistencyCheckService.php,150,Service,Configuration,Configuration/Service/Operations/ConsistencyCheckService.php,0,,Configuration
