@@ -2523,3 +2523,4 @@ cover:decidiq:a5f973bbma14b:882bd950	already done: lib/Search/DecidiqSearchProvi
 cover:decidiq:a5f973bbma14b:e372e6ff	already done: lib/Event/*.php at 100% (145/145) on development; app total 83.6%	session-20261113T051708-7d5f6071	2026-11-13T05:48:11Z
 verify:pipelinq:3671:f34751ac	GREEN 3671 (tests only; vitest 3908 pass; PHP no new failures)	session-20261113T051714-4ad50f31	2026-11-13T05:48:09Z
 cover:integriq:92114ab0m1534:fd3f82d2	PR #3482: 18 phpunit tests (ZgwRegistryBinding 100%, GatewayBindings 100%, GatewayDelivery)	session-20261113T051709-e616bf69	2026-11-13T05:48:29Z
+cover:buildiq:9930949bm5861:60c2c265	PR #1512: 51 tests for 4 controllers; lib/Controller/*.php 76.25%->86.49%; suite 2444->2495, same 1 inherited failure	session-20261113T051704-8c56f5b7	2026-11-13T05:48:24Z
