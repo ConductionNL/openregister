@@ -5888,3 +5888,14 @@ merge:portaliq:2410:731a2164	merge	portaliq	development	development	prs=2410@172
 merge:versioniq:679:49cae245	merge	versioniq	development	development	prs=679@8cf4fd9f9fd62ae84945bde847e8edd8f9868bd8	2026-11-13T14:15:46Z
 cover:pipelinq:7f9dc8e6mcebb:8f2b650b	cover	pipelinq	development	quality/test-coverage-8f2b650b	lang=php;dirs=lib/Service/Competitor/*.php;focus=thin;weight=2588;coverage=87.48;target=90.0	2026-11-13T11:01:52Z
 measure:versioniq:20261113h14	measure	versioniq	development	queue/coverage/versioniq.json	why=slices need per-directory coverage	2026-11-13T14:15:46Z
+review:openregister:10282:aa6b4999	review	openregister	main	10282	sha=aa6b4999ee5980682a60f247f975b18d030a66cf;last_approved=;title=feat(openregister): build published-file-digest	2026-11-13T14:20:10Z
+review:openregister:10283:feda6d0d	review	openregister	main	10283	sha=feda6d0d7ba0214dee4dc39842bb273039ac2d45;last_approved=;title=feat(openregister): build operate-admin-query-console	2026-11-13T14:20:10Z
+review:openregister:10284:1c482caf	review	openregister	main	10284	sha=1c482caf722013f49e0e5d3ee1ce2764d4698f0e;last_approved=;title=feat(openregister): build records-validate-without-saving	2026-11-13T14:20:10Z
+verify:dossiq:6425:a7797654	verify	dossiq	development	merge	prs=6425@0d1725309dc7849fcceb70c1811069aef3f1a6cb,6426@73ee51ce59f5f228e249e4f79a0aadb7fa53e528	2026-11-13T14:20:10Z
+verify:hermiq:1686:a29df055	verify	hermiq	development	merge	prs=1686@07c5f2514349fb3fd330f8536f784204297f4901,1687@a15737f34553027c0fa9c4c021537f0c628eac28	2026-11-13T14:20:10Z
+verify:shillinq:2941:34814ebc	verify	shillinq	development	merge	prs=2941@f2317c513bde70b1a338cdc20fd8f348123b9eb0	2026-11-13T14:20:10Z
+verify:portaliq:2411:0069c1e8	verify	portaliq	development	merge	prs=2411@cc88f7b445c7c19b43bd5e8a1b30c9d0f5f43b60	2026-11-13T14:20:10Z
+verify:larpinq:1029:578bb7c3	verify	larpinq	development	merge	prs=1029@099fd5eba624ca68f5c80ee102adad99bc4d152c	2026-11-13T14:20:10Z
+merge:dossiq:6371:f0c632b0	merge	dossiq	development	development	prs=6371@cea13ccf507e61c09e3a6a0bb136b2f942cc1eb8,6414@419b7232bf80bace2e2af578a88a0e2959a10361,6415@473ff8b87e83d683f587d8c686a97cad9bc98aec,6422@c60a1ed91dbe4e7f437f26280de1443d10c640ed	2026-11-13T14:20:10Z
+merge:humaniq:1114:9038a245	merge	humaniq	development	development	prs=1114@ac940b114987b43ca30ffedfcc49c54fe66b5b90,1116@d0a2bc5ea6eb93a0ebe7aec083ccb63c5153f80d,1117@de9f4e04ba1248d3ce52313e904bebb0c4b7651f	2026-11-13T14:20:10Z
+merge:portaliq:2284:7a5da6f8	merge	portaliq	development	development	prs=2284@b2a0155204176795c00218d83ecbed38e0434b82,2312@e056c2f77fc4c58f02ab1b00a452b62ff26f8662,2380@153b35f2a95519d399aed2c542a3ffad00254b99,2393@624f0fe2d2a188af2943bf2df2039b9daf454d8b,2395@d2fce6d4d67f89ee5472d53516e1a2f1ccd70517,2409@5e94bd91bb4c22cc7cec5cada6b93d18c925a4ef	2026-11-13T14:20:10Z
