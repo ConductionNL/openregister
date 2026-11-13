@@ -103,7 +103,7 @@ class MagicSearchHandler {
 	 *
 	 * @var string[]
 	 */
-	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
+	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY, NullFilter::IN_OR_EMPTY];
 
 	/**
 	 * The SQL comparison of each archiefactiedatum range bound among the `tmlo.` filters.
@@ -1975,6 +1975,7 @@ class MagicSearchHandler {
 		return NullFilter::conditionsFor(
 			criterion: $value,
 			column: $target->expression,
+			postgres: fn (): bool => $this->isPostgresPlatform(),
 			build: fn (mixed $criterion): array => $this->nestedPaths->conditions(target: $target, value: $criterion)
 		);
 	}//end nestedPathCriterionConditions()
@@ -2064,6 +2065,7 @@ class MagicSearchHandler {
 		return NullFilter::conditionsFor(
 			criterion: $value,
 			column: $field->quotedCol,
+			postgres: fn (): bool => $this->isPostgresPlatform(),
 			build: fn (mixed $criterion): array => $this->objectFieldConditionsSql(value: $criterion, field: $field)
 		);
 	}//end rawFieldFilterConditionsSql()
@@ -2449,6 +2451,7 @@ class MagicSearchHandler {
 		return NullFilter::conditionsFor(
 			criterion: $value,
 			column: $column->name,
+			postgres: fn (): bool => $this->isPostgresPlatform(),
 			build: fn (array $bag): array => $this->metadataBagConditionsSql(column: $column, value: $bag)
 		);
 	}//end buildMetadataOperatorConditionsSql()
@@ -3134,6 +3137,7 @@ class MagicSearchHandler {
 		$conditions = NullFilter::conditionsFor(
 			criterion: $value,
 			column: $column->ref,
+			postgres: fn (): bool => $this->isPostgresPlatform(),
 			build: fn (array $bag): array => $this->metadataOperatorPredicates(column: $column, value: $bag)
 		);
 		foreach ($conditions as $condition) {
@@ -3455,6 +3459,7 @@ class MagicSearchHandler {
 		return NullFilter::conditionsFor(
 			criterion: $value,
 			column: $filter->columnRef(),
+			postgres: fn (): bool => $this->isPostgresPlatform(),
 			build: fn (mixed $criterion): array => $this->objectFieldPredicates(field: $filter, value: $criterion)
 		);
 	}//end objectFieldFilterConditions()
