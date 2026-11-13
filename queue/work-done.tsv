@@ -7331,3 +7331,4 @@ build:hermiq:instant-talk	failed: needs a design decision: spreed's BotControlle
 review:openregister:10448:16ea330c	APPROVE #10448	session-20261113T202619-0d7929e0	2026-11-13T22:48:19Z
 build:decidiq:voting-written-resolution	partial: PR decidiq#2172 (task 1 register+seed, task 4 counting rule; 10 tests, suite 4000 green); tasks 2,3,5,6 and the close wiring left	session-20261113T205324-91f6ae17	2026-11-13T22:48:30Z
 review:openregister:10449:9fcc31c7	APPROVE 10449	session-20261113T213320-1f5acbff	2026-11-13T22:48:39Z
+fix:filinq:2077:d2168f06	fixed floor unit_interfacing: parameter object for the splitter readers; new head 619ea4467fe6f296b93b02b38887434aa0ef3bbc	session-20261113T205325-28f592a9	2026-11-13T22:48:49Z
