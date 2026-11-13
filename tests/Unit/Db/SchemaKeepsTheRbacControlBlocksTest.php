@@ -328,6 +328,27 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	}//end testADepartmentMatrixIsAcceptedByTheAuthorizationValidator()
 
 	/**
+	 * The block a schema designer writes for own records and a condition is
+	 * accepted by the save, and the mcp strip carries the condition map through
+	 * as a map rather than reindexing it into a list
+	 * (access-owner-and-condition-scopes).
+	 *
+	 * @return void
+	 */
+	public function testAnOwnerAndConditionBlockIsAcceptedAndKeptWhole(): void {
+		$authorization = [
+			'read' => ['@creator'],
+			'update' => ['@creator', 'redactie'],
+			'conditions' => ['read' => ['field' => 'behandelaar', 'operator' => 'equals', 'value' => '@user.uid']],
+		];
+		$schema = new Schema();
+		$schema->setAuthorization($authorization);
+
+		$this->assertTrue($schema->validateAuthorization(), 'a block with @creator and conditions could not be saved');
+		$this->assertSame($authorization, \OCA\OpenRegister\Service\Rbac\McpScope::strip(authorization: $authorization));
+	}//end testAnOwnerAndConditionBlockIsAcceptedAndKeptWhole()
+
+	/**
 	 * A property that audits its reveals can be saved.
 	 *
 	 * `audit: true` on a property's block is the sensitive-field-reveal-audit

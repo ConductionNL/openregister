@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 
 /**
@@ -135,6 +136,11 @@ interface PermissionCatalogueInterface {
 		// a read asks for it (ExplicitReveal). A flag, like `audit` above;
 		// Schema::validateRevealValue() checks its value.
 		ExplicitReveal::KEY,
+		// `conditions.<action>` holds condition scopes, read into conditional
+		// rules by AuthorizationBlock::normalise() (access-owner-and-condition-scopes).
+		// A map of actions, not a verb: read as a verb it refused every schema
+		// that declared one, and the mcp strip would reindex it into a list.
+		AuthorizationBlock::CONDITIONS_KEY,
 	];
 
 	/**

@@ -68,5 +68,8 @@ final class CapabilityRegistrar {
 		// PlatformCapability — versions, limits, deep link patterns and the
 		// platform integrations, with a block per claiming app (platform-capability).
 		$context->registerCapability(PlatformCapability::class);
+		// AuthorizationCapability — the access scope kinds the engine enforces
+		// (access-owner-and-condition-scopes).
+		$context->registerCapability(AuthorizationCapability::class);
 	}//end register()
 }//end class
