@@ -5184,3 +5184,4 @@ build2:openregister:organisations-are-objects	failed: worker rules forbid build 
 build2:openregister:platform-search-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:30:57Z
 build2:openregister:platform-caldav-backend	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:31:03Z
 build2:openregister:organisation-capability-halt	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:31:09Z
+build2:openregister:or-flow-object-write-node	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:31:16Z
