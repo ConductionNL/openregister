@@ -6274,5 +6274,6 @@ cover:hermiq:065f1631md84f:05630945	already done: hermiq lib/Middleware/Support/
 cover:hermiq:065f1631md84f:9cb3375b	no PR: lib/Service/Redaction/ at 97.7% (168/172) after -1 merged; 4 missed lines are unreachable private guards (FORM_RE, PREFIX_PATTERNS invariants)	session-20261113T185322-2911ee6d	2026-11-13T19:17:12Z
 verify:portaliq:2453:84a2fd65	2453,2454,2455,2456 GREEN (tests only; 4914->4980, 0 failures)	session-20261113T185326-a3ee0aab	2026-11-13T19:17:26Z
 cover:hermiq:065f1631md84f:b97b9aec	no PR: lib/Service/Approval/ at 97.5% (198/203) after -1 merged; only miss is the class_exists(TaskService)=false branch, unreachable with the test stubs loaded	session-20261113T185322-2911ee6d	2026-11-13T19:17:52Z
+cover:hermiq:065f1631md84f:716923f8	already done: lib/Service/Credential/ at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T19:17:51Z
 cover:hermiq:065f1631md84f:28cccfd9	already done: hermiq lib/Repair/Support/ 53/53 statements covered, no PR	session-20261113T172329-0b6220f9	2026-11-13T19:17:43Z
 verify:buildiq:1557:8c5543ce	2 GREEN (1557,1558); 2933 tests, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T19:17:51Z
