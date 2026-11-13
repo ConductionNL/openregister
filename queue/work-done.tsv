@@ -1590,4 +1590,5 @@ cover:pipelinq:f67520ecm8c58:95a79563	already done: lib/Service/Lifecycle at 121
 cover:pipelinq:f67520ecm8c58:ab7f3595	PR #3620: MessageDispatchTrait 23/35 -> 34/35, 8 tests; rest of dir fully covered	session-20261113T015005-030aa10a	2026-11-13T02:16:08Z
 cover:pipelinq:f67520ecm8c58:89d1fbd3	PR #3619: 10 tests (KeywordTargetService, KeywordAnalysisService, HtmlTextExtractor); KeywordTargetService 27->34/34; suite 5774->5784, no new failures	session-20261113T013903-97d30fda	2026-11-13T02:16:06Z
 cover:openregister:7350e3efm0e99:9d3a1784	PR #10090: FlowRunWorker 197/219 -> 219/219 (+12 tests); TenantUsageSyncJob needs APCu	session-20261113T015002-115b579d	2026-11-13T02:16:18Z
+cover:pipelinq:f67520ecm8c58:09cc8f24	PR #3621: 9 tests (CTI webhook gates, adapter registry); Cti dir 340->350/353; suite 5774->5783, same 1 inherited failure	session-20261112T234655-0bdbf2be	2026-11-13T02:16:22Z
 cover:pipelinq:f67520ecm8c58:6f346b68	already done: quality/test-coverage-6f346b68-1 (58d4a62b) already extends SettingsSectionTest for the only class in lib/Sections; no duplicate	session-20261112T234655-793f46ee	2026-11-13T02:16:13Z
