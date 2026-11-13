@@ -90,6 +90,13 @@ class OrganisationService implements OrganisationServiceInterface {
 	private const CACHE_TIMEOUT = 900;
 
 	/**
+	 * The names the default organisation is created under, in order; their slugs are reserved.
+	 *
+	 * @var list<string>
+	 */
+	private const DEFAULT_ORGANISATION_NAMES = ['Default Organisation', 'Default Organisation (system)'];
+
+	/**
 	 * The organisation setter for each plain cached field, in the order they are restored.
 	 *
 	 * @var array<string, string>
@@ -466,22 +473,51 @@ class OrganisationService implements OrganisationServiceInterface {
 	/**
 	 * Create the default organisation, or use the one already holding its slug
 	 *
-	 * The organisation holding the slug is returned as it is; it is not rewritten.
+	 * The organisation holding the slug is returned as it is, and only when no
+	 * user other than an administrator owns it. An organisation a user created
+	 * under that slug is passed over for the next reserved name.
 	 *
 	 * @return Organisation The default organisation
+	 *
+	 * @throws Exception When every reserved slug is held by an organisation a user owns.
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisationservice-must-resolve-per-user-organisation-membership-and-active-context
 	 */
 	private function createDefaultOrganisation(): Organisation {
-		try {
-			return $this->createOrganisation(
-				details: new NewOrganisation(name: 'Default Organisation', description: 'Auto-generated default organisation'),
-				addCurrentUser: false
-			);
-		} catch (OrganisationSlugConflictException $e) {
-			return $this->organisationMapper->findBySlug($e->getSlug());
+		foreach (self::DEFAULT_ORGANISATION_NAMES as $name) {
+			try {
+				return $this->createOrganisation(
+					details: new NewOrganisation(name: $name, description: 'Auto-generated default organisation'),
+					addCurrentUser: false
+				);
+			} catch (OrganisationSlugConflictException $e) {
+				$holder = $this->organisationMapper->findBySlug($e->getSlug());
+				if ($this->isSystemHeld(organisation: $holder) === true) {
+					return $holder;
+				}
+
+				$this->logger->warning(
+					message: '[OrganisationService] Did not adopt a user-owned organisation as the default',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $e->getSlug(), 'organisationUuid' => $holder->getUuid()]
+				);
+			}
 		}
+
+		throw new Exception('The default organisation could not be created: its reserved names are held by user organisations.');
 	}//end createDefaultOrganisation()
+
+	/**
+	 * Whether an organisation has no owner, or an administrator owns it.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 *
+	 * @return bool
+	 */
+	private function isSystemHeld(Organisation $organisation): bool {
+		$owner = (string)($organisation->getOwner() ?? '');
+
+		return $owner === '' || $this->groupManager->isAdmin($owner) === true;
+	}//end isSystemHeld()
 
 	/**
 	 * Cache default organisation in static memory for performance
@@ -898,6 +934,32 @@ class OrganisationService implements OrganisationServiceInterface {
 	}//end resetActiveOrganisationIfLeft()
 
 	/**
+	 * Refuse a caller other than an administrator a slug kept for the default organisation.
+	 *
+	 * Answered as the slug conflict it would become once the default exists.
+	 *
+	 * @param string|null $slug      The slug of the organisation being created.
+	 * @param bool        $forCaller Whether the signed-in caller creates it, rather than the system.
+	 *
+	 * @return void
+	 *
+	 * @throws OrganisationSlugConflictException When the slug is reserved.
+	 */
+	private function refuseReservedSlug(?string $slug, bool $forCaller): void {
+		$reserved = array_map(fn (string $name): string => $this->generateSlug(name: $name), self::DEFAULT_ORGANISATION_NAMES);
+		if ($forCaller === false || in_array($slug, $reserved, true) === false) {
+			return;
+		}
+
+		$user = $this->getCurrentUser();
+		if ($user !== null && $this->groupManager->isAdmin($user->getUID()) === true) {
+			return;
+		}
+
+		throw new OrganisationSlugConflictException(slug: (string)$slug);
+	}//end refuseReservedSlug()
+
+	/**
 	 * Generate a URL-friendly slug from a name
 	 *
 	 * @param string $name The name to slugify
@@ -954,6 +1016,7 @@ class OrganisationService implements OrganisationServiceInterface {
 
 		// Auto-generate slug from name if not provided.
 		$organisation->setSlug($this->generateSlug(name: $name));
+		$this->refuseReservedSlug(slug: $organisation->getSlug(), forCaller: $addCurrentUser);
 
 		// Set UUID if provided.
 		if ($uuid !== '') {
