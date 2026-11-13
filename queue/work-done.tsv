@@ -4639,3 +4639,4 @@ cover:shillinq:05639debm4eb8:js0be8c659	PR budget used (#2877 merged, #2913 open
 review:openregister:10119:f27e753b	APPROVE (tests only; touched tests pass; failures inherited)	session-20261113T081038-e8b5210f	2026-11-13T11:49:12Z
 cover:keepiq:c967a31fm1bed:be0dcca9	already done: lib/Mcp/ 139/139 = 100%	session-20261113T051703-1b54bfba	2026-11-13T11:49:28Z
 build:openregister:capability-rows-closing-round	partial: PR #10142 to main, task 1.1 (TextExtractionFixturesTest pins PDF/DOCX/EML extraction, 3 tests, suite 435 green); 2.1 (register round-trip, needs Newman/integration) and 3.1 (Playwright lock-holder) left	session-20261113T091527-72c58830	2026-11-13T11:49:24Z
+review:openregister:10135:21a794c6	APPROVE: tasks.md only, claims confirmed	session-20261113T081048-4978ac57	2026-11-13T11:49:34Z
