@@ -2539,3 +2539,4 @@ merge:decidiq:2098:1d24becc	merge-local over 4 decidiq tasks: merged=10 red=1 fa
 merge:decidiq:2099:54c1c538	merge-local over 4 decidiq tasks: merged=10 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:51:23Z
 merge:decidiq:2103:fbdac0d5	merge-local over 4 decidiq tasks: merged=10 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:51:23Z
 merge:decidiq:2109:5135b26c	merge-local over 4 decidiq tasks: merged=10 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:51:23Z
+cover:pipelinq:7f9dc8e6mc4ba:js3f7698d2	already done: src/views/pipeline/ 484/569 lines (85.06%) on development, target 85; branch -2 still open adds more; no new PR	session-20261113T051714-4ad50f31	2026-11-13T05:51:38Z
