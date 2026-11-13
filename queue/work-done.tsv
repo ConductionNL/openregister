@@ -6145,6 +6145,7 @@ cover:hermiq:065f1631md84f:17d367ab	already done: lib/Controller/Settings/ at 10
 verify:learniq:2478:807d796d	GREEN #2478 (tests only, no new failures; 1 inherited baseline failure)	session-20261113T185328-da819141	2026-11-13T18:59:47Z
 build:shillinq:tax-vat-rates-and-deductibility	partial: PR #3000 (1.1 statutory seed, 1.2 one VatTariff declaration; 1.3, 2.x, 3.x left; info.xml/lock overlap with #2982)	session-20261113T171137-8f22ecb0	2026-11-13T18:59:51Z
 fix:shillinq:2962:3c474632	fixed: l10n block moved mid-catalogue, merges with #2960; new head 5e1ba47ad11e4978201bc69604a3facfc4078de5, REVERIFY recorded	session-20261113T172329-0b6220f9	2026-11-13T19:00:10Z
+cover:dossiq:069ee2d6m2deb:8b886c00	PR #6438: 12 tests, lib/Service/People/*.php 92.80%->95.84% (CaseSeats 102->122/122, CaseRoleHolder 67->77/77); suite 16530->16542, same 20 inherited failures	session-20261113T175336-e3687686	2026-11-13T19:00:35Z
 cover:learniq:e6498dddm0533:6bb33e5f	no PR: lib/Bpv/*.php is one interface (no executable lines) already covered by tests/Unit/Bpv/ProvidesLeerbedrijfVerificationTest.php	session-20261113T185328-da819141	2026-11-13T19:00:39Z
 cover:hermiq:065f1631md84f:a42697be	already done: lib/Service/Agent/*.php 99.68% (630/632, target 95) @7f24df30 with OpenRegister beside the app (HERMIQ_OPENREGISTER_PATH); without it 146 errors and GrantWaiverAudit reads 4/34; no PR	session-20261113T185326-316f096d	2026-11-13T19:00:20Z
 verify:shillinq:2971:8e8c7912	GREEN 2971,2972,2973,2974,2978; CONFLICT 2975,2976,2977 (lock/info.xml/l10n vs 2972); 0 new failures	session-20261113T172334-4b3b027b	2026-11-13T19:00:53Z
@@ -6157,3 +6158,11 @@ cover:decidiq:a5f973bbm5a4d:60c2c265	already done: lib/Controller/*.php measured
 cover:decidiq:a5f973bbm5a4d:be0dcca9	already done: lib/Mcp/*.php at 534/534 lines (100%) at 40e4458b	session-20261113T172349-00278d9d	2026-11-13T19:01:43Z
 cover:keepiq:c967a31fm00c6:59826f43	already done: lib/Settings/*.php 100% (28/28 lines); branch -1 exists	session-20261113T171153-e1c17962	2026-11-13T19:02:00Z
 cover:decidiq:a5f973bbm5a4d:e372e6ff	already done: lib/Event/*.php at 145/145 lines (100%) at 40e4458b	session-20261113T172349-00278d9d	2026-11-13T19:02:03Z
+cover:decidiq:a5f973bbm5a4d:58192586	already done: lib/Service/Records at 371/379 lines (97.9%) at 40e4458b	session-20261113T172349-00278d9d	2026-11-13T19:02:14Z
+cover:decidiq:a5f973bbm5a4d:f545d745	already done: lib/Repair/*.php at 803/803 lines (100%) at 40e4458b	session-20261113T172349-00278d9d	2026-11-13T19:02:30Z
+verify:dossiq:6436:da39032e	GREEN #6436 (tests only; 16535 tests, same 20 inherited failures)	session-20261113T181000-9baff50f	2026-11-13T19:02:27Z
+verify:opencatalogi:2598:168a9315	GREEN 2598	session-20261113T172334-4b3b027b	2026-11-13T19:02:34Z
+measure:keepiq:20261113h18	php 92.04% js 91.82% at ba7cc67	session-20261113T182349-7e3632fd	2026-11-13T19:02:53Z
+build:shillinq:tax-icp-and-reverse-charge	partial: PR shillinq#3004 builds 1.1, 1.2 (reverse-charge notice in UBL/PDF, issue guard); 2.1-2.4 ICP statement and 3.x left	session-20261113T175332-5effc865	2026-11-13T19:02:48Z
+verify:keepiq:1764:29903ce6	GREEN 1764, 1765 (tests only; phpunit 4913 ok, vitest 6361 ok)	session-20261113T185327-0dc82b88	2026-11-13T19:02:58Z
+cover:hermiq:065f1631md84f:js4829b6aa	PR #1701: 6 render tests for RunCompare/FlowRunCompare; src/views 1195->1205/1311; vitest 1312 pass	session-20261113T172325-6eb25015	2026-11-13T19:03:02Z
