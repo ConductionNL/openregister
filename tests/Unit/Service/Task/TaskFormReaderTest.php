@@ -34,6 +34,8 @@ use UnexpectedValueException;
  * @covers \OCA\OpenRegister\Service\Task\TaskForm
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormFields
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSources
  */
 class TaskFormReaderTest extends TestCase {
 

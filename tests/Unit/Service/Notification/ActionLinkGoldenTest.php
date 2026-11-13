@@ -60,6 +60,25 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\ObjectDetailLinks
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\TaskActionLinks
  * @uses   \OCA\OpenRegister\Notifications\Service\Notification\LinkableUrl
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ChannelSet
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DispatchGates
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\EmailSender
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MessageRendering
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\RuleAudience
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TalkSender
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\TaskStateRules
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 final class ActionLinkGoldenTest extends TestCase {
 

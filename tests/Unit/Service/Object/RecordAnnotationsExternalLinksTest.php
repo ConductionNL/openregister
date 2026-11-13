@@ -30,6 +30,11 @@ use Psr\Log\NullLogger;
  * Links land under @self.externalLinks, replacing a @self that is no block; no declaration, no change.
  *
  * @covers \OCA\OpenRegister\Service\Object\RecordAnnotations
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver
  */
 class RecordAnnotationsExternalLinksTest extends TestCase {
 

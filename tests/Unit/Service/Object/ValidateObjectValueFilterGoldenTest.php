@@ -32,6 +32,11 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/object-validation/spec.md
  * @uses \OCA\OpenRegister\Formats\UserFormat
+ * @uses \OCA\OpenRegister\Formats\FormatFactory
+ * @uses \OCA\OpenRegister\Service\Object\ExtendedFieldCheck
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuardParser
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
  */
 class ValidateObjectValueFilterGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/validate-object-value-filter-golden.json';

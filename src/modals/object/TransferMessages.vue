@@ -1,6 +1,6 @@
 <template>
 	<div v-if="result.warnings?.length" class="report-section">
-		<h4>Warnings</h4>
+		<h4>{{ t('openregister', 'Warnings') }}</h4>
 		<ul>
 			<li
 				v-for="warning in result.warnings"
@@ -12,7 +12,7 @@
 	</div>
 
 	<div v-if="result.errors?.length" class="report-section">
-		<h4>Errors</h4>
+		<h4>{{ t('openregister', 'Errors') }}</h4>
 		<ul>
 			<li v-for="error in result.errors" :key="error" class="error-text">
 				{{ error }}
@@ -22,6 +22,8 @@
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
+
 /**
  * The warnings and errors sections of a merge or migration report.
  *
@@ -40,6 +42,10 @@ export default {
 			type: Object,
 			required: true,
 		},
+	},
+
+	methods: {
+		t,
 	},
 }
 </script>
