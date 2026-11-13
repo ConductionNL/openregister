@@ -2721,3 +2721,4 @@ cover:filinq:7a9ef677m5ffe:9ece5c6f	already done: lib/Controller/Support/ at 99%
 cover:filinq:7a9ef677m5ffe:00f8416c	already done: lib/Service/VeraPdf/ at 97.09% lines (300/309) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:17:26Z
 cover:filinq:7a9ef677m5ffe:1174c39d	already done: lib/Service/Support/ at 100% lines (23/23) on development 265db8360, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:17:32Z
 cover:shillinq:05639debmd8ee:34763eb4	PR #2885: 33 middleware edge-case tests; suite 9069, same 1 inherited failure	session-20261113T054516-5d7b6bc4	2026-11-13T06:17:48Z
+verify:integriq:3484:f25052a5	GREEN 3484, CONFLICT 3485 (same test files as 3484), GREEN 3486, GREEN 3487	session-20261113T041646-2c1d764f	2026-11-13T06:18:08Z
