@@ -5480,3 +5480,4 @@ opencatalogi	2586	5b1a8e31515740bdb54ddd615fde427acbfa861b	GREEN	worker-54	5162 
 portaliq	2387	a483ba0e28cd4ec39c1f5121fabc0dc90e4daef5	GREEN	worker-27	4560 tests, 0 failures; baseline 4527, 0 failures; no new failures; 5 new test files only
 learniq	2441	02e9748fb47d0f07e8f752ea1732c83164cdb04b	GREEN	worker-09	tree 2441>2442>2443 merges clean; php 6131 tests, 1 inherited F (HigherEducationExampleSet); js 1338/1339, 1 inherited (stale l10n catalogue)
 larpinq	1011	c34753f471932a0a2a97ee03252497931604e6ae	REVERIFY	worker-27	renamed the 4 test classes to match their *BehaviourTest.php files; their 12 tests run and pass; suite 709 tests 0 failures (was 697); new head 27666447f590e135c63694e39a522e20a546462c, verify it
+learniq	2442	56a21904622ef8d2924d6e346ceae85aea70c9c9	GREEN	worker-09	tree 2441>2442>2443 merges clean; php 6131 tests, 1 inherited F (HigherEducationExampleSet); js 1338/1339, 1 inherited (stale l10n catalogue)
