@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Controller\Support\SessionPrincipal
  * @uses \OCA\OpenRegister\Db\SearchTrail
  * @uses \OCA\OpenRegister\Service\SearchPeriod
+ * @uses \OCA\OpenRegister\Service\Export\SpreadsheetCell
  */
 class SearchTrailControllerA24GoldenTest extends TestCase {
 	/** @var SearchTrailService&MockObject */

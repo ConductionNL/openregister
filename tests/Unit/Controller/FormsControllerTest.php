@@ -58,6 +58,8 @@ use OCA\OpenRegister\Tests\Unit\Architecture\ControllerSources;
  * @uses \OCA\OpenRegister\Service\Form\FormSubmission
  * @uses \OCA\OpenRegister\Service\Form\FormSubmitter
  * @uses \OCA\OpenRegister\Service\Form\FormDestination
+ * @uses \OCA\OpenRegister\Middleware\Support\ApiPathAliases
+ * @uses \OCA\OpenRegister\Middleware\Support\StandardProtocolPaths
  */
 class FormsControllerTest extends TestCase {
 
