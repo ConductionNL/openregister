@@ -4658,3 +4658,19 @@ merge:versioniq:675:4c1e36bf	merge	versioniq	development	development	prs=675@f64
 cover:dossiq:069ee2d6m7275:60c2c265	cover	dossiq	development	quality/test-coverage-60c2c265	lang=php;dirs=lib/Controller/*.php;focus=uncovered;weight=7461;coverage=89.34;target=90.0	2026-08-15T08:46:10Z
 cover:pipelinq:7f9dc8e6m916f:e0a30dd2	cover	pipelinq	development	quality/test-coverage-e0a30dd2	lang=php;dirs=lib/Service/Payment/*.php;focus=thin;weight=2881;coverage=84.95;target=90.0	2026-11-13T04:24:50Z
 cover:hermiq:065f1631m249e:34f5c300	cover	hermiq	development	quality/test-coverage-34f5c300	lang=php;dirs=lib/Service/*.php;focus=uncovered;weight=4569;coverage=88.68;target=90.0	2026-11-13T08:06:41Z
+review:openregister:10122:e0498191	review	openregister	main	10122	sha=e0498191bcd014a0a3b817ec77c6fd4d1de339d8;last_approved=;title=test(openregister): cover search sidebar facet controls and favourite toggle	2026-11-13T10:20:28Z
+verify:dossiq:6387:6da890fa	verify	dossiq	development	merge	prs=6387@e852853cdd0c2f943837e95439e5668c4b56afd9	2026-11-13T10:20:28Z
+verify:buildiq:1540:8274c737	verify	buildiq	development	merge	prs=1540@73210916ebfaf905f7e6b2c4193b3465af270e53	2026-11-13T10:20:28Z
+verify:pipelinq:3707:2d909a29	verify	pipelinq	development	merge	prs=3707@52402cf243bd1496262608ab2e76e81cc89c08c5	2026-11-13T10:20:28Z
+verify:shillinq:2926:446cfff9	verify	shillinq	development	merge	prs=2926@3473ce95a4d9084e7abf40a5373217bc92cb7870,2927@e4e9014e842d6e3ca8a94bb2495f9a5a8a02c8df	2026-11-13T10:20:28Z
+verify:decidiq:2125:37fff8c8	verify	decidiq	development	merge	prs=2125@61fb144e6708487cd653f17c1dbea700472a8d91,2126@8232ebea247d80f90f11f8c96eb75e217ab2b540	2026-11-13T10:20:28Z
+verify:portaliq:2397:312fe517	verify	portaliq	development	merge	prs=2397@8db42abf4b56459f756e239802fa334b076a0589	2026-11-13T10:20:28Z
+merge:learniq:2461:7ec74609	merge	learniq	development	development	prs=2461@944129b4a3528682c327dd913d2e070d88793ec7	2026-11-13T10:20:28Z
+merge:buildiq:1538:0c048454	merge	buildiq	development	development	prs=1538@59d9088a273d7862e520adc456d2dde5c2811c2b	2026-11-13T10:20:28Z
+merge:pipelinq:3705:fed391b7	merge	pipelinq	development	development	prs=3705@48f2bf421066d18c87d4171368838178271b2334,3706@83837c6f7691993d2c9e5b872435cb42196e0406	2026-11-13T10:20:28Z
+merge:shillinq:2819:b7012a32	merge	shillinq	development	development	prs=2819@c6c0b8c1134a82fd85b5eb3acaf0418ad0d0df55,2917@eebaa833fa9f589e7addba5c6718975b5f2285a7,2918@b4703019474a34b7da30b579c39fe618008e0b33,2919@ab3071a4349e9348cd36f57f453d09d19d1f5bc2	2026-11-13T10:20:28Z
+merge:portaliq:2389:1cfdf9fe	merge	portaliq	development	development	prs=2389@f4daf84e23a1b73fbdc2a9bb8f75630880252e9c,2390@01ebd908619019035c01713c4dfc3fd8447ff1ec	2026-11-13T10:20:28Z
+merge:larpinq:1025:ef810bdb	merge	larpinq	development	development	prs=1025@a987596259282a76d264bb22c2d3e4b7793b6f04,1026@27d4d7263c184de6d21fed5af9bd86a2f7b06aa4,1027@ef1fccbc07cfc82f2efbe7d49307d415228773ee	2026-11-13T10:20:28Z
+cover:dossiq:069ee2d6m7275:34763eb4	cover	dossiq	development	quality/test-coverage-34763eb4	lang=php;dirs=lib/Middleware/*.php;focus=thin;weight=936;coverage=89.34;target=90.0	2026-08-15T09:25:43Z
+cover:dossiq:069ee2d6m7275:63eef43f	cover	dossiq	development	quality/test-coverage-63eef43f	lang=php;dirs=lib/Service/Mandaat/;focus=thin;weight=699;coverage=89.34;target=90.0	2026-08-15T09:29:40Z
+cover:pipelinq:7f9dc8e6m916f:9d3a1784	cover	pipelinq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=uncovered;weight=1311;coverage=84.95;target=90.0	2026-11-13T04:56:09Z
