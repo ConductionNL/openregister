@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 
@@ -38,6 +39,7 @@ final class FlowDefinitions {
 	 * @param FlowServiceInterface                 $flows              Reads, writes and runs flow definitions.
 	 * @param FlowAccessInterface         $access             Who may do what with a flow.
 	 * @param FlowVersionServiceInterface $flowVersionService Reads, publishes, drafts and deprecates versions.
+	 * @param FlowNodeRightsGuardInterface $nodeRights        Which steps need a right, and whether the caller holds it.
 	 *
 	 * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
 	 */
@@ -45,6 +47,7 @@ final class FlowDefinitions {
 		public readonly FlowServiceInterface $flows,
 		public readonly FlowAccessInterface $access,
 		public readonly FlowVersionServiceInterface $flowVersionService,
+		public readonly FlowNodeRightsGuardInterface $nodeRights,
 	) {
 	}//end __construct()
 }//end class

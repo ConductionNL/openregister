@@ -299,6 +299,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // it carries a calendar definition and an SLA, not because it writes:
         // it arms nothing, and nothing on its path holds a mapper.
         ['name' => 'flowTimerDiagnostic#explain', 'url' => '/api/flow-timers/diagnostic', 'verb' => 'POST'],
+        // Action rights, including the rights flow steps need (flow-powerful-steps-need-a-right). Administrators only.
+        ['name' => 'actionRights#index', 'url' => '/api/settings/action-rights', 'verb' => 'GET'],
+        ['name' => 'actionRights#update', 'url' => '/api/settings/action-rights', 'verb' => 'PUT'],
         ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
         ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
         ['name' => 'settings#rebase', 'url' => '/api/settings/rebase', 'verb' => 'POST'],

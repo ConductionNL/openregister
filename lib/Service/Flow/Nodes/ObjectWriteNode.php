@@ -137,6 +137,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
+use OCA\OpenRegister\Service\Flow\IFlowNodeRequiresRight;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IAppConfig;
@@ -164,7 +165,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
  * @SuppressWarnings(PHPMD.TooManyMethods)           One small, named method per guard and per operation; merging them would bury the delete guards.
  */
 class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNodeInterface,
-	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview
+	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview, IFlowNodeRequiresRight
 {
 
 	/**
@@ -173,6 +174,11 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 * @var string
 	 */
 	public const OP_CREATE = 'create';
+
+	/**
+	 * The right an author needs to put a deleting object-write step in a flow.
+	 */
+	public const RIGHT_DELETE = 'flow.node.object-delete';
 
 	/**
 	 * Patch an existing object resolved through the configured match.
@@ -1273,4 +1279,32 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	private function validator(): ObjectWriteConfigValidator {
 		return new ObjectWriteConfigValidator(l10n: $this->l10n);
 	}//end validator()
+
+	/**
+	 * The right an author needs to put this step in a flow.
+	 *
+	 * @param array<string, mixed> $config The step's configuration.
+	 *
+	 * @return string|null The right, or null.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	public function requiredRight(array $config): ?string {
+		if (trim((string) ($config['operation'] ?? self::OP_CREATE)) === self::OP_DELETE) {
+			return self::RIGHT_DELETE;
+		}
+
+		return null;
+	}//end requiredRight()
+
+	/**
+	 * Every right this step can require, with its description.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	public function declaredRights(): array {
+		return [self::RIGHT_DELETE => 'Put a step that deletes objects in a flow.'];
+	}//end declaredRights()
 }//end class

@@ -51,6 +51,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PermissionsControllerServices;
+use OCA\OpenRegister\Service\ActionRightsCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCP\AppFramework\Controller;
@@ -81,6 +82,13 @@ class PermissionsController extends Controller {
 	private readonly DenyEnforcementModeInterface $enforcement;
 
 	/**
+	 * The action rights, described.
+	 *
+	 * @var ActionRightsCatalogueInterface
+	 */
+	private readonly ActionRightsCatalogueInterface $actions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                      $request  Active HTTP request.
@@ -93,6 +101,7 @@ class PermissionsController extends Controller {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->catalogue = $services->catalogue;
 		$this->enforcement = $services->enforcement;
+		$this->actions = $services->actions;
 	}//end __construct()
 	/**
 	 * Every permission that may be granted on this instance.
@@ -106,6 +115,12 @@ class PermissionsController extends Controller {
 	 *        "description": "Open one object and read its contents."},
 	 *       ...
 	 *     ],
+	 *     "actions": [
+	 *       {"action": "flow.node.send-email", "app": "openregister",
+	 *        "description": "Put a step that sends e-mail in a flow.",
+	 *        "nodeTypes": ["openregister.send-email"]},
+	 *       ...
+	 *     ],
 	 *     "denyEnforcement": "staging",
 	 *     "rejectedDeclarations": {}
 	 *   }
@@ -116,7 +131,12 @@ class PermissionsController extends Controller {
 	 *
 	 * @return JSONResponse The catalogue.
 	 *
+	 * `actions` lists the action rights apart from the object verbs: an action is
+	 * a grant to a person, not a verb on an object, and mixed into `permissions`
+	 * an action name could reach an authorization block.
+	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-the-action-rights-are-administered-and-published
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -124,6 +144,7 @@ class PermissionsController extends Controller {
 		return new JSONResponse(
 			[
 				'permissions' => array_values($this->catalogue->all()),
+				'actions' => $this->actions->actions(),
 				'denyEnforcement' => $this->enforcement->current(),
 				'rejectedDeclarations' => $this->catalogue->rejectedDeclarations(),
 			]

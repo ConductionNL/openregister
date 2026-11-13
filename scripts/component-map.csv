@@ -3915,3 +3915,11 @@ Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Controller/ActionRightsController.php,163,Controller,Access,Access/Controller/ActionRightsController.php,0,,Core
+Service/ActionRightsCatalogue.php,144,Service,Platform,Platform/Service/ActionRightsCatalogue.php,0,,Platform
+Service/ActionRightsCatalogueInterface.php,62,Service,Platform,Platform/Service/ActionRightsCatalogueInterface.php,0,,Platform
+Service/Flow/FlowNodeRightsGuard.php,302,Service,Flows,Flows/Service/Flow/FlowNodeRightsGuard.php,0,,Processes
+Service/Flow/FlowNodeRightsGuardInterface.php,101,Service,Flows,Flows/Service/Flow/FlowNodeRightsGuardInterface.php,0,,Processes
+Service/Flow/FlowNodeRightRefused.php,66,Service,Flows,Flows/Service/Flow/FlowNodeRightRefused.php,0,,Processes
+Service/Flow/IFlowNodeRequiresRight.php,69,Service,Flows,Flows/Service/Flow/IFlowNodeRequiresRight.php,0,,Processes
+Repair/InitializeFlowNodeRights.php,88,Repair,Platform,Platform/Repair/InitializeFlowNodeRights.php,0,,Platform

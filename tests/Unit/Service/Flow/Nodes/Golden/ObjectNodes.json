@@ -267,6 +267,7 @@
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodePreview",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeRequiresRight",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ObjectWriteNodeInterface"
         ],

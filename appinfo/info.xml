@@ -281,6 +281,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedFlowRunTriggerSubject</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
+			<step>OCA\OpenRegister\Repair\InitializeFlowNodeRights</step>
 			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
@@ -484,6 +485,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedFlowRunTriggerSubject</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
+			<step>OCA\OpenRegister\Repair\InitializeFlowNodeRights</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Service\ActionRightsCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 
@@ -36,10 +37,12 @@ final class PermissionsControllerServices {
 	 *
 	 * @param PermissionCatalogueInterface $catalogue   The grantable set.
 	 * @param DenyEnforcementModeInterface $enforcement The staging switch.
+	 * @param ActionRightsCatalogueInterface $actions   The action rights, described.
 	 */
 	public function __construct(
 		public readonly PermissionCatalogueInterface $catalogue,
 		public readonly DenyEnforcementModeInterface $enforcement,
+		public readonly ActionRightsCatalogueInterface $actions,
 	) {
 	}//end __construct()
 }//end class

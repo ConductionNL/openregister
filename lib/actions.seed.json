@@ -3,12 +3,17 @@
   "$why-correcting-is-admin-only": "Correcting a recorded value is a new act, so nobody could do it yesterday and seeding it narrow locks nobody out. It is listed rather than left out because an action with no entry is invisible in Admin Settings, and an administrator has to be able to see the right before granting it to the two or three people who should hold it.",
   "$why-flows-are-open-by-default": "Creating, editing and running a flow was open to every member of an organisation, gated only by organisation scoping — there was no per-action right at all, and no way to add one: the matrix could express admin-only or nothing, so naming these actions would have locked out every non-admin flow author on every instance. They are seeded '@authenticated' to preserve exactly the behaviour that exists today. Nothing changes on upgrade; what changes is that an admin can now SEE these rights and tighten them.",
   "$why-flow-read-is-seeded": "Reading a flow's version history, a past version, its preview and its BPMN export is guarded by flow.read. Anyone who may edit a flow could always read it, so it is seeded '@authenticated' like its siblings; left out, it was admin-only and every non-admin author saw an empty history (or#4098). The repair step adds a seeded action an existing matrix lacks, so an instance seeded before this entry gains it on upgrade.",
+  "$why-node-rights-are-admin-only": "A flow step that sends e-mail, notifications or Talk messages, or deletes objects, needs its own right to be put in a flow. These are seeded to administrators: after upgrade a non-administrator can no longer save a flow holding such a step until an administrator grants the right to a group under Admin Settings. Stored flows keep running; only saving them is gated. Rights other apps' steps declare are added the same way by the node-rights repair step.",
   "actions": {
     "flow.create": ["@authenticated"],
     "flow.update": ["@authenticated"],
     "flow.delete": ["@authenticated"],
     "flow.run": ["@authenticated"],
     "flow.read": ["@authenticated"],
-    "object.correct": ["admin"]
+    "object.correct": ["admin"],
+    "flow.node.send-email": ["admin"],
+    "flow.node.send-notification": ["admin"],
+    "flow.node.send-talk-message": ["admin"],
+    "flow.node.object-delete": ["admin"]
   }
 }

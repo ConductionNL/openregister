@@ -236,7 +236,9 @@ class FlowControllerTest extends TestCase {
 		$response = $this->controller->nodeCatalog();
 		$data = $response->getData();
 
-		$this->assertSame($palette, $data['results']);
+		// Each entry gains `requiresRight` (null: neither step needs a right) and no `locked`.
+		$expected = array_map(static fn (array $entry): array => $entry + ['requiresRight' => null], $palette);
+		$this->assertSame($expected, $data['results']);
 		$this->assertSame(2, $data['total'], 'the envelope matches eventCatalog()');
 
 	}//end testNodeCatalogReturnsThePaletteWithATotal()
