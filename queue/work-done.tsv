@@ -6943,3 +6943,4 @@ build4:openregister:access-by-link-not-by-account	PR #10333: task 7.6 done (file
 build4:openregister:brp-family-members-lookup	PR #10334 to main: task 2.1, lookupFamily on the mock BRP register via BrpMockRegister; 6 tests, Integration/Architecture/Contract suites green; all code tasks of the change now done	session-20261113T202603-6c9ef72f	2026-11-13T21:27:53Z
 gap:openregister:mainred:20261113212207	PR #10335: test stubbed fetch() only, NC35 reads fetchAssociative(); shared-cursor stub, test green	session-20261113T205324-91f6ae17	2026-11-13T21:28:01Z
 build4:openregister:automation-run-records	partial: PR #10336 (Newman collection for automation-records, CI-excluded until first live pass; openspec validate --strict green); left: live Newman run, tell buildiq	session-20261113T212414-df8c34e5	2026-11-13T21:28:13Z
+verify:dossiq:6457:dc2fae28	4 GREEN (6457-6460); 16599 tests, 20 inherited failures, none new	session-20261113T182404-f2c28226	2026-11-13T21:28:18Z
