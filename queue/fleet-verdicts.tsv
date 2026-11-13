@@ -6052,3 +6052,4 @@ stackiq	1884	d3b423439b45ae895ecae3b375edb36423201cfc	GREEN	worker-32	tree 1883+
 opencatalogi	2592	3da08e95e74637bf489bdc1dcf6f2c8d673ccff8	GREEN	worker-41	unit 5287 run on tree 2591-2594 (baseline 5254, 2 inherited failures AppIdentityTest, WooControllerTest), 0 new failures; tests only
 opencatalogi	2593	dbc43a153f4f0fa5a85ea47da394ffde90194b62	GREEN	worker-41	unit 5287 run on tree 2591-2594 (baseline 5254, 2 inherited failures AppIdentityTest, WooControllerTest), 0 new failures; tests only
 opencatalogi	2594	eb176729c56e0dce8bbea5eee015e5d98541744e	GREEN	worker-41	unit 5287 run on tree 2591-2594 (baseline 5254, 2 inherited failures AppIdentityTest, WooControllerTest), 0 new failures; tests only
+shillinq	2944	1db10effc136833766464b8612092ec8dd177a72	GREEN	worker-24	phpunit 10413 run, baseline 1 failure (clock-bound PaymentWebhookIntakeCharacterisationTest), 0 new; vitest 224 files/2310 passed; tests only, adds one spec file
