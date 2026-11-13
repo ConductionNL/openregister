@@ -7717,3 +7717,12 @@ merge:portaliq:2463:1b099626	merge	portaliq	development	development	prs=2463@81d
 merge:filinq:2058:ead9c077	merge	filinq	development	development	prs=2058@a3af2f8726dd3c0a8b4dcd4ca86d4f55fea43155,2061@cbadad25da4ec78389f05a6766757855f8ef4554,2085@25d925f4d837270d1f83cbba89a0a47258cfbdc3	2026-11-13T20:35:24Z
 merge:planninq:1153:9788f1bc	merge	planninq	development	development	prs=1153@b762635033e211c2174c7e0be85e9522207e7df0	2026-11-13T20:35:24Z
 merge:opencatalogi:2607:044b9f4e	merge	opencatalogi	development	development	prs=2607@4f3717b4db1e1cc907b5f42af91d60ecd47b3795	2026-11-13T20:35:24Z
+fix:filinq:2107:143981a1	fix	filinq	development	2107	sha=143981a1d378bb034509382c2a50d250e0b9f6c0;verdict=CONFLICT;branch=quality/build-share-document-links;reason=lib/Settings/filinq_register.json conflicts with #2106 in the tree (clean on development alone), merge development in after #2106 lands	2026-11-13T20:40:22Z
+review:openregister:10324:42f33eba	review	openregister	main	10324	sha=42f33ebab6107710c52a7a04194fe52a6dbfb783;last_approved=;title=test(openregister): cover task verb list, inbox page and position advance	2026-11-13T20:40:22Z
+review:openregister:10325:8ab17ee1	review	openregister	main	10325	sha=8ab17ee1ed65aedcda6a313b9a0e0232d97523cf;last_approved=;title=test(openregister): cover db tenancy traits	2026-11-13T20:40:22Z
+verify:integriq:3536:5edc40ac	verify	integriq	development	merge	prs=3536@32ab4960bc0c5163057c00dec48a0530be1825b0,3537@12b9636f13aad454e6c60f56a226c64cacd1f340	2026-11-13T20:40:22Z
+verify:shillinq:3022:40a55ac6	verify	shillinq	development	merge	prs=3022@d39a525614139924dfffb31bb2e816f71f535d94	2026-11-13T20:40:22Z
+verify:portaliq:2468:006653bf	verify	portaliq	development	merge	prs=2468@0d9361344c1236d84e5282fb1beeaf315ac6e955	2026-11-13T20:40:22Z
+verify:opencatalogi:2611:12199f3a	verify	opencatalogi	development	merge	prs=2611@b577b3a7cba012c834466f9159408916730a4ea7,2612@cbed1125d276266f793f1247223a77d27a100a8d	2026-11-13T20:40:22Z
+merge:shillinq:3018:35fa2b98	merge	shillinq	development	development	prs=3018@303c9eca0942d37f9b163feb8dd85c90e352cf36	2026-11-13T20:40:22Z
+merge:filinq:2106:f3917ef2	merge	filinq	development	development	prs=2106@666af67d1d38a988f17704649274dfb76141ee3e	2026-11-13T20:40:22Z
