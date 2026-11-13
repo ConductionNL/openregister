@@ -4946,3 +4946,4 @@ build:openregister:run-scoped-object-locking	failed: worker rules forbid build t
 build:openregister:records-change-held-for-approval	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:38:51Z
 build:openregister:scoped-api-tokens	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:38:57Z
 build:openregister:schema-delete-cascade	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:05Z
+build:openregister:published-file-digest	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:28Z
