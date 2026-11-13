@@ -2314,3 +2314,4 @@ cover:keepiq:c967a31fm0090:9d3a1784	already covered: batches quality/test-covera
 cover:pipelinq:f67520ecmc4ba:36ac5d07	already done: LineTotals/ 59/59 stmts (100%) from own tests on d0c5ea266	session-20261113T044732-d7765ae1	2026-11-13T04:53:42Z
 verify:integriq:3474:40bf5ffa	3/3 GREEN (tests only); phpunit 7132, 2 inherited errors; vitest 1773/0	session-20261113T031700-211f0599	2026-11-13T04:53:52Z
 verify:stackiq:1836:7d187e10	5 GREEN (1836-1840): test-only; phpunit 3111 ok, vitest 2198 ok; 1839 surfaces a PHP warning in ArchiMateExportService:1380 (duplicate XML attribute)	session-20261113T021703-063c80f1	2026-11-13T04:54:17Z
+cover:dossiq:f8a113c5mac88:js3f3bfe56	PR dossiq quality/test-coverage-js-3f3bfe56-2: main.js boot, 12 tests, JS 84.55->85.81%	session-20261113T031704-4f12cb78	2026-11-13T04:54:29Z
