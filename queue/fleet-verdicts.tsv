@@ -6502,3 +6502,4 @@ pipelinq	3797	cb66ca7dcbaaa8df28a3a26534031c92cad08e50	GREEN	worker-06	7560 test
 pipelinq	3794	08d129aa6de7572843d94a3c537badb2ecf81fce	REVERIFY	worker-07	merged development in, took development's package-lock.json and regenerated it (only dev flags for the two moved packages differ), regenerated sbom.cdx.json; unit suite 7374 tests 0 failures; new head f9a20787f751cb737595c0282606c64b07809bb8, verify it
 filinq	2077	d2168f06bb0a10e8f2462ca00c1cb0cda456dfa9	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.89 -> 2.87
 filinq	2092	b63f6794deb56f40aa623e97833a692f49d2ac82	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.89 -> 2.87
+pipelinq	3798	8cdcb3b90788efea72b90354901e70e9f14b0659	GREEN	worker-07	unit 7418 tests 0 failures on tree; baseline 7396 tests 0 failures; no new failures (tests only)
