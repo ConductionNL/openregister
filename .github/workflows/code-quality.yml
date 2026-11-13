@@ -176,7 +176,7 @@ jobs:
       actions: write
       issues: write
       pull-requests: write
-    uses: ConductionNL/.github/.github/workflows/quality.yml@main
+    uses: ConductionNL/.github/.github/workflows/quality.yml@feature/937-mariadb-matrix-leg
     with:
       app-name: openregister
       php-version: "8.3"
