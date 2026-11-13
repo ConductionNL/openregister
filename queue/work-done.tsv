@@ -5314,3 +5314,4 @@ merge:buildiq:1526:dd62cd2e	merge-local over 1 buildiq tasks: merged=2 red=0 fai
 review:openregister:10248:0a0fc1a6	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T13:51:05Z
 review:openregister:10234:45fac921	APPROVE (importer-only change as specced; suites green or identical to main)	session-20261113T091530-f20014fb	2026-11-13T13:51:16Z
 build2:openregister:platform-reference-provider	partial: PR #10262 declared card (x-openregister-card) + 14 tests; 1.5 picker shape, e2e and validate left	session-20261113T104530-961e9992	2026-11-13T13:51:40Z
+review:openregister:10247:693e4f70	APPROVE: change-specified behaviour, access posture unchanged, suites green/identical to main, phpstan clean	session-20261113T094602-d25cda2a	2026-11-13T13:51:35Z
