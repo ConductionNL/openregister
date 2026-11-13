@@ -3349,5 +3349,6 @@ cover:learniq:e6498dddmc027:2262037e	already done: lib/Service/CheckIn 149/157 (
 cover:learniq:e6498dddmc027:c914a974	already done: lib/Service/Course 229/237 (97%, target 90)	session-20261113T051703-1b54bfba	2026-11-13T08:05:19Z
 cover:learniq:e6498dddmc027:3449807e	already done: lib/Service/Attendance/*.php 666/694 (96%, target 90)	session-20261113T051703-1b54bfba	2026-11-13T08:05:33Z
 cover:learniq:e6498dddmc027:c1ca350a	already done: Enrolment 44/44, Grading 73/73, Programme 59/59	session-20261113T051703-1b54bfba	2026-11-13T08:05:48Z
+fix:hermiq:1598:d97fe2d5	already done: #1598 at d97fe2d merged into development (66af8e45) by the local lane; no action	session-20261113T080549-20301834	2026-11-13T08:06:21Z
 cover:learniq:e6498dddmc027:59477eff	already done: lib/Service/Signing 133/136 (98%)	session-20261113T051703-1b54bfba	2026-11-13T08:06:20Z
 cover:learniq:e6498dddmc027:d39f9857	already done: lib/Support/*.php 71/75 (95%)	session-20261113T051703-1b54bfba	2026-11-13T08:06:32Z
