@@ -5002,3 +5002,4 @@ build:openregister:modelling-schema-diagram	partial: PR model endpoint + Registe
 build:openregister:shared-credentials-and-flows	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:15Z
 build:openregister:service-hours-and-repeating-reminders	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:21Z
 build:openregister:search-dutch-language-quality	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:30Z
+build:openregister:visual-flow-builder	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:36Z
