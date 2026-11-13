@@ -2919,3 +2919,4 @@ measure:dossiq:20261113h06	php 87.99% (87234/99144), js 85.31% at 31f9e20d	sessi
 cover:hermiq:065f1631mfaac:js3f3bfe56	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:16Z
 cover:hermiq:065f1631mfaac:js77cf3af4	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:22Z
 cover:hermiq:065f1631mfaac:js0246d36e	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:28Z
+cover:buildiq:9930949bmc723:js4829b6aa	already done: src/views/*.vue 1323/1546 (85.6%) under vitest on development fc2670dab, above the 85 target; suite 3821 passed	session-20261113T061516-58aa7364	2026-11-13T06:41:33Z
