@@ -2484,3 +2484,4 @@ cover:dossiq:f8a113c5mac88:6925f818	already done: lib/SetupCheck/*.php 42/44 lin
 cover:dossiq:f8a113c5mac88:d2a82d9f	already done: lib/Service/Termijn/*.php 1378/1400 lines (98.4%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:40:24Z
 cover:dossiq:f8a113c5mac88:93ebc4b9	already done: lib/Http (RangeStreamResponse) fully exercised by merged quality/test-coverage-93ebc4b9-1 (21 tests, all branches); measure predates it	session-20261113T053904-36dcee67	2026-11-13T05:40:33Z
 cover:dossiq:f8a113c5mac88:e372e6ff	already done: lib/Event/*.php 7/7 lines (100.0%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:40:32Z
+verify:launchpad:1173:2c5aa39c	GREEN 1173 (JS spec only; vitest all pass)	session-20261113T031701-b518f7f8	2026-11-13T05:40:42Z
