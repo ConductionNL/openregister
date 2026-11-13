@@ -2844,6 +2844,10 @@ Service/Rbac/AdminGate.php,31,Service,Access,Access/Service/Rbac/AdminGate.php,0
 Service/Rbac/AggregateVisibility.php,76,Service,Access,Access/Service/Rbac/AggregateVisibility.php,0,322,Core
 Service/Rbac/AnonymousEnvelope.php,39,Service,Platform,Platform/Service/Rbac/AnonymousEnvelope.php,0,,Core
 Service/Rbac/AuthorizationDenyValidator.php,123,Service,Service,Service/Rbac/AuthorizationDenyValidator.php,0,,Core
+Service/Rbac/ClassificationDeclarationValidator.php,230,Service,Access,Access/Service/Rbac/ClassificationDeclarationValidator.php,0,,Core
+Service/Rbac/ClassificationLimits.php,126,Service,Access,Access/Service/Rbac/ClassificationLimits.php,0,,Core
+Service/Rbac/ClassificationScale.php,219,Service,Access,Access/Service/Rbac/ClassificationScale.php,0,,Core
+Service/Rbac/ClearanceResolver.php,97,Service,Access,Access/Service/Rbac/ClearanceResolver.php,0,,Core
 Service/Rbac/CrossOrganisationMarkerChange.php,46,Service,Access,Access/Service/Rbac/CrossOrganisationMarkerChange.php,0,393,Core
 Service/Rbac/DefinitionWriteRights.php,34,Service,Access,Access/Service/Rbac/DefinitionWriteRights.php,0,433,Core
 Service/Rbac/DenyEnforcementMode.php,59,Service,Access,Access/Service/Rbac/DenyEnforcementMode.php,0,356,Core
@@ -2876,6 +2880,7 @@ Service/Rbac/MetadataConditionFindings.php,115,Service,Service,Service/Rbac/Meta
 Service/Rbac/ObjectAccessHistory.php,89,Service,Access,Access/Service/Rbac/ObjectAccessHistory.php,0,,Core
 Service/Rbac/ObjectAccessReport.php,82,Service,Access,Access/Service/Rbac/ObjectAccessReport.php,0,,Core
 Service/Rbac/ObjectAuthorizationWriter.php,38,Service,Access,Access/Service/Rbac/ObjectAuthorizationWriter.php,0,,Core
+Service/Rbac/ObjectClassification.php,89,Service,Access,Access/Service/Rbac/ObjectClassification.php,0,,Core
 Service/Rbac/ObjectGrantResolver.php,191,Service,Access,Access/Service/Rbac/ObjectGrantResolver.php,4,128,Core
 Service/Rbac/ObjectGrantsReport.php,198,Service,Access,Access/Service/Rbac/ObjectGrantsReport.php,0,,Core
 Service/Rbac/ObjectOwnerWriter.php,38,Service,Access,Access/Service/Rbac/ObjectOwnerWriter.php,0,,Core
