@@ -4853,3 +4853,4 @@ fix:pipelinq:3739:21e54109	fixed: posRefund version bumped so the rule imports; 
 cover:openregister:7350e3efmea52:c25ca075	PR #10184: FilePropertyOptionsValidator direct test (5 tests, every refusal branch); other untested classes in the dirs are logic-free data carriers or covered via their services; noted svg+xml MIME refusal (not pinned)	session-20261113T094602-d25cda2a	2026-11-13T12:29:37Z
 verify:shillinq:2931:98b41a49	GREEN x8 (2931,2933-2939); CONFLICT 2932	session-20261113T051703-1b54bfba	2026-11-13T12:29:57Z
 build:openregister:notifications-new-notes-and-referrers	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:15Z
+build:openregister:or-flow-migrate-definitions	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:22Z
