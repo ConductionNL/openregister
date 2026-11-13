@@ -6476,3 +6476,4 @@ cover:pipelinq:7f9dc8e6m8ce9:bec85fb4	already done: lib/Service/Zgw/ at 99.73% s
 cover:pipelinq:7f9dc8e6m8ce9:38e80a9f	already done: lib/Command/*.php at 100% statements (382/382) on development c2351f22	session-20261113T175400-7ec3993f	2026-11-13T19:56:32Z
 build:filinq:document-chart-embedding	PR #2064: code already on development; added the no-workbook limit to the tool description + test; task 4 (live suite) left; suite 6443->6444 OK	session-20261113T192700-f21ebd18	2026-11-13T19:56:27Z
 build:filinq:office-suite-portability	partial: PR #2065 ticks 9 implemented tasks (sections 1-3); 1.4 runtime capability needs a design decision; measurement/E2E tasks need live suites	session-20261113T185327-0dc82b88	2026-11-13T19:56:35Z
+cover:pipelinq:7f9dc8e6m8ce9:0a24f15f	already done: lib/Service/Letter/ at 100% lines (160/160) on development c2351f221 after b45e90cde/6b2c80436; no PR	session-20261113T195349-c4c36e69	2026-11-13T19:57:00Z
