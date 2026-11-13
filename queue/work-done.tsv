@@ -3195,8 +3195,10 @@ cover:dossiq:f8a113c5m7e79:018cb40a	already done: lib/Contribution 65/65 lines (
 cover:dossiq:f8a113c5m7e79:bedd4a8d	already done: lib/Service/Drafts 175/177 lines (99%, target 95), PR -1 merged	session-20261113T051703-1b54bfba	2026-11-13T07:37:02Z
 gap:integriq:pj:burn1	already done: openapi.json defines components/schemas/Problem (type,title,status,detail) and every 4xx/5xx response (425) refs a ProblemNNN response of application/problem+json; no application/json error responses left; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:37:07Z
 cover:dossiq:f8a113c5m7e79:aede7575	already done: lib/Command/Backfill at 163/164 lines (99%) on development; no PR	session-20261113T064519-30004ad4	2026-11-13T07:37:06Z
+cover:integriq:92114ab0m658d:65e30692	already done: lib/Service/Intake ~98.5% lines on current development (IntakeGroups 46/46 via tests/Unit/Service/Intake/IntakeGroupsTest; WebhookGate 33/35, WebhookTrustMigrator 66/69), target 95	session-20261113T053904-36dcee67	2026-11-13T07:37:20Z
 measure:larpinq:20261113h06	php 92.61% (3845/4152), js 65.35% (775/1186) @1137ab67; first put recorded php 0% (pcov dir), overwritten	session-20261113T072706-2eaa6a81	2026-11-13T07:37:22Z
 gap:decidiq:maint2:burn1	PR #2124: 3 units split (RegulatorExportService::generate, projectActionItems, buildProfiledManifest), tests first, suites green	session-20261113T072715-cf04db4e	2026-11-13T07:37:29Z
 cover:dossiq:f8a113c5m7e79:83885cb7	already done: lib/Service/Routing/Strategy at 130/138 lines (94%) on development; no PR	session-20261113T064519-30004ad4	2026-11-13T07:37:39Z
 cover:dossiq:f8a113c5m7e79:a797d42e	already done: CasePlanDrain/ and its tests unchanged since 0888b592d1, measured 184/186 lines (98.9%) there; no PR	session-20261113T072711-3523cf52	2026-11-13T07:37:35Z
 gap:shillinq:maint1:burn1	PR #2907: split reconcile/auditReport/generateExport, +9 tests first on old code, suite green bar inherited 1	session-20261113T071633-17de823f	2026-11-13T07:37:43Z
+review:openregister:9943:2314f92f	APPROVE: expiry+renew, checks green; Controller env errors inherited from main	session-20261113T054517-26499007	2026-11-13T07:38:06Z
