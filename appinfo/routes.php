@@ -480,6 +480,10 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // schema, action) scopes for the authenticated user without probing
         // every endpoint individually.
         ['name' => 'scopes#index', 'url' => '/api/scopes', 'verb' => 'GET'],
+        // The scopes a schema's department matrix compiles to for one user,
+        // for the Rights tab's preview; administrators only
+        // (rbac-department-role-matrix 3.2).
+        ['name' => 'scopes#matrixPreview', 'url' => '/api/schemas/{id}/authorization/matrix/preview', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // The grantable permission set, and what the staged deny would refuse.
         // A role editor cannot offer a set nobody publishes, which is why every
         // consumer in the fleet invented its own vocabulary. The preview reads
