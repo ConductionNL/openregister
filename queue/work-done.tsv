@@ -3002,3 +3002,4 @@ cover:decidiq:a5f973bbmb22b:9d3a1784	PR #2118: 15 tests for FullExportJob/Conver
 cover:dossiq:f8a113c5m7e79:ea81adeb	already done: lib/Service/Zgw/*.php at 95.76% (2215/2313, pcov on development), above 90 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:49:54Z
 cover:buildiq:9930949bmc723:js0023cfc7	already done: open PR #1515 (same branch, another worker) covers the AutomationEditDialog pickers; my equivalent spec reached 85.45% for src/dialogs/* locally, not pushed to avoid a duplicate	session-20261113T054517-06ee2c47	2026-11-13T06:49:56Z
 cover:shillinq:05639debmd8ee:d76b2f72	already done: lib/Guard/*.php at 97.62% lines (1887/1933) on development ebb2e0884; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T06:49:50Z
+cover:dossiq:f8a113c5m7e79:3b1fd60e	already done: lib/Review/*.php at 94.53% statements (1227/1298) on development 6883b0c484, target 90, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:50:25Z
