@@ -6091,3 +6091,4 @@ verify:shillinq:2960:c07561a7	2960 GREEN, 2961 GREEN, 2962 CONFLICT, 2963 CONFLI
 build:shillinq:sales-invoice-issue-controls	partial: PR #2979 builds the service of task 3.1 (InvoiceNumberAuditService, 8 tests); numbering (1.x), approval (2.x), the Reports card, e2e and strings left	session-20261113T171149-8b9ea523	2026-11-13T18:51:24Z
 review:openregister:10289:fe469e10	APPROVE: tests only, 26 new pass; Controller reds inherited from main	session-20261113T182348-4d2d804b	2026-11-13T18:51:41Z
 build:shillinq:sales-invoice-document	partial: PR #2980, task 3.1 (invoice currency from customer/administration) with 3 tests; docudesk rendering, layout, QR, pages left	session-20261113T172329-0b6220f9	2026-11-13T18:52:04Z
+build:shillinq:mcp-action-tool-surface	partial: PR #2981 provider skeleton + gate + validator + audit + purchase_order.decide with REST parity tests; ~30 tools left	session-20261113T172329-5f4feaba	2026-11-13T18:52:22Z
