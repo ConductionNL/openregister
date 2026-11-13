@@ -60,6 +60,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Lifecycle\TransitionMove
  * @uses   \OCA\OpenRegister\Service\Lifecycle\TransitionActor
  * @uses   \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  */
 class StateEntryFreezeListenerTest extends TestCase {
 
