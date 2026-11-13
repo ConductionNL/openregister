@@ -5345,3 +5345,4 @@ cover:stackiq:9ac19b3amc14f:b5905f71	already done: lib/Service/Federation/ at 99
 build2:openregister:rules-compose-read-transitions-and-time	partial: #10266 (1.4b inventory lists condition users); rest waits on the three open questions in design.md, 4.3b no warnings channel, 5.4 e2e	session-20261113T084521-fd8a31c7	2026-11-13T13:55:01Z
 cover:launchpad:fb10c50fm2d1d:aae6d66c	already done: lib/Exception 100% (55/55) on development	session-20261113T091533-b7a00bc3	2026-11-13T13:55:00Z
 merge:buildiq:1548:d0593b06	merge-local over 1 buildiq tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:54:57Z
+cover:stackiq:9ac19b3amc14f:f545d745	cover: lib/Repair already ~99.6% covered; added getName() + runElevated tests (6), suite 3320->3326 green; PR #1879	session-20261113T131538-bf8ccc8e	2026-11-13T13:55:22Z
