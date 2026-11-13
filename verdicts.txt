@@ -2739,3 +2739,4 @@
 9939 3ecfeeac2a3eef94187ce97639b055f7cbe57baa APPROVE integrator IL4: main merge on top of 52523945; conflicts only in info.xml: main's AdoptOrganisationlessRows step and this branch's WithholdRevealValuesFromRelations step both kept.
 9943 ddcf1408037dc114feb70de560d1b1255b45c27c APPROVE integrator IL4: main merge on top of approved 2314f92f; conflicts only in info.xml repair-step lines (both kept) and the regenerated sigrid.components.yaml
 10107 66169fa8c3c9a7e6efc8901648876bef670c2b56 APPROVE Tests only; 4 test files, no lib change. Merged with main: ObjectSource 376 OK, Architecture 2355, Rules 296, Controller 9934, Contract 21 all pass.
+10110 f669aeef0e5c5358aee301a2aca992a42e4ea47d APPROVE Tests only (9 ExampleSet test files, @uses metadata + 33 new tests); on main merge ExampleSet 1286 OK, Architecture/Rules/Contract OK; Controller 9 env-bound DB errors unrelated
