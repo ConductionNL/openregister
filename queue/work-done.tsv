@@ -2783,4 +2783,6 @@ verify:pipelinq:3687:9aa599c7	GREEN 3687: vitest 3893->3962, all pass	session-20
 cover:dossiq:f8a113c5mac88:1174c39d	PR #6301: 22 tests (ConfiguredRegistryService, CaseObjectReference, CaseAssigneeWriter to 100%); suite 14846->14868, 19 inherited failures unchanged	session-20261113T054516-469bb7f6	2026-11-13T06:26:02Z
 fix:integriq:3485:5d621940	renamed 3 colliding test files; merges after 3484, no new failures; new head a7dd5e51	session-20261113T041646-2c1d764f	2026-11-13T06:26:14Z
 cover:dossiq:f8a113c5mac88:e2e021bd	already done: lib/Service/Transitions/ at 93.11% lines (1716/1843) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:26:17Z
+cover:shillinq:05639debmd8ee:7d6e64db	PR #2887: 7 tests (TreasuryRateResult, LogTreasuryRateAdapter); suite 9194, same 1 inherited failure	session-20261113T054516-5d7b6bc4	2026-11-13T06:26:33Z
+cover:shillinq:05639debmd8ee:4a1652a7	already done: lib/Service/External/Uwv 42/43 (97.67%) on development (covered by 76b83d0f); no PR	session-20261113T031701-b518f7f8	2026-11-13T06:26:30Z
 cover:dossiq:f8a113c5mac88:6a58479a	already done: lib/Service/Support/*.php at 94.3% lines (678/719) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:26:29Z
