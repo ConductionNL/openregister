@@ -1230,6 +1230,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'objects#geocode', 'url' => '/api/geo/geocode', 'verb' => 'GET'],
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
+        // BEFORE objects#postPatch (POST /{register}/{schema}/{id}), which would read `validate` as an id.
+        ['name' => 'objects#validateSample', 'url' => '/api/objects/{register}/{schema}/validate', 'verb' => 'POST'],
         // Decision 179 (ADR-117): a form submits into its destination object.
         ['name' => 'forms#validate', 'url' => '/api/forms/validate', 'verb' => 'POST'],
         ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],

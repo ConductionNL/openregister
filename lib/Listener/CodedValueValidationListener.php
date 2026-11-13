@@ -42,10 +42,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\CodedValueException;
+use OCA\OpenRegister\Service\Object\ObjectSaveCheck;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueWrite;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
@@ -61,7 +63,7 @@ use Throwable;
  *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  */
-class CodedValueValidationListener implements IEventListener {
+class CodedValueValidationListener implements IEventListener, ObjectSaveCheck {
 	use ValidatesPreWriteObject;
 
 	/**
@@ -112,46 +114,113 @@ class CodedValueValidationListener implements IEventListener {
 	 */
 	protected function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
 		try {
-			$this->check(event: $event, object: $object);
-		} catch (CodedValueException $refused) {
-			$this->refuse(event: $event, refusal: self::refusal(code: self::ERROR_CODE, errors: $refused->getErrors()));
+			$refusal = $this->refusalOf(object: $object);
+			if ($refusal !== null) {
+				$this->refuse(event: $event, refusal: self::refusal(code: $refusal['code'], errors: $refusal['errors']));
+			}
 		} catch (Throwable $failure) {
-			$this->logger->warning(
-				message: '[CodedValueValidationListener] The guard itself failed, allowing the save: ' . $failure->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
-			);
-		}//end try
+			$this->logFailure(failure: $failure);
+		}
 
 	}//end validate()
 
 	/**
-	 * Refuse a concept failing its scheme's shape, then let the guard enforce the coded values.
+	 * The coded-value and concept-shape refusals of an object as it would be saved.
 	 *
-	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
+	 * The same decision the listener takes on a write, so a validate-only call
+	 * and a save agree. When the guard itself fails, nothing is refused, as
+	 * the save goes ahead in that case.
+	 *
+	 * @param array<string, mixed> $object   The object data.
+	 * @param Schema               $schema   Its schema.
+	 * @param ObjectEntity|null    $existing The stored object on an update (not used by this rule).
+	 *
+	 * @return array<int, array{property: string, message: string, rule: string}>
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $existing is part of the ObjectSaveCheck signature.
+	 *
+	 * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+	 */
+	public function check(array $object, Schema $schema, ?ObjectEntity $existing): array {
+		try {
+			$refusal = $this->refusalFor(data: $object, schema: $schema);
+		} catch (Throwable $failure) {
+			$this->logFailure(failure: $failure);
+			return [];
+		}
+
+		if ($refusal === null) {
+			return [];
+		}
+
+		$rule = 'coded-value';
+		if ($refusal['code'] === self::ERROR_CODE_SHAPE) {
+			$rule = 'concept-shape';
+		}
+
+		$violations = [];
+		foreach ($refusal['errors'] as $property => $message) {
+			$violations[] = ['property' => (string)$property, 'message' => (string)$message, 'rule' => $rule];
+		}
+
+		return $violations;
+	}//end check()
+
+	/**
+	 * The refusal of a written object, or null when it may be saved.
+	 *
 	 * @param ObjectEntity $object The object the write carries.
 	 *
-	 * @return void
-	 *
-	 * @throws CodedValueException When a coded value is refused.
-	 *
-	 * @spec openspec/specs/skos-concept-registers/spec.md
+	 * @return array{code: string, errors: array<string, string>}|null
 	 */
-	private function check(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
+	private function refusalOf(ObjectEntity $object): ?array {
 		$reference = $object->getSchema();
 		if ((string)$reference === '') {
-			return;
+			return null;
 		}
 
 		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
-		$data = $this->writtenData(object: $object);
+		return $this->refusalFor(data: $this->writtenData(object: $object), schema: $schema);
+	}//end refusalOf()
+
+	/**
+	 * Refuse a concept failing its scheme's shape, then a coded value the guard refuses.
+	 *
+	 * @param array<string, mixed> $data   The object data.
+	 * @param Schema               $schema Its schema.
+	 *
+	 * @return array{code: string, errors: array<string, string>}|null The refusal, or null.
+	 *
+	 * @spec openspec/specs/skos-concept-registers/spec.md
+	 */
+	private function refusalFor(array $data, Schema $schema): ?array {
 		$shapeErrors = $this->shapeGuard->violations(object: $data, schema: $schema);
 		if ($shapeErrors !== []) {
-			$this->refuse(event: $event, refusal: self::refusal(code: self::ERROR_CODE_SHAPE, errors: $shapeErrors));
-			return;
+			return ['code' => self::ERROR_CODE_SHAPE, 'errors' => $shapeErrors];
 		}
 
-		$this->guard->enforce(new CodedValueWrite(object: $data, schema: $schema));
-	}//end check()
+		try {
+			$this->guard->enforce(new CodedValueWrite(object: $data, schema: $schema));
+		} catch (CodedValueException $refused) {
+			return ['code' => self::ERROR_CODE, 'errors' => $refused->getErrors()];
+		}
+
+		return null;
+	}//end refusalFor()
+
+	/**
+	 * Name a failure of the guard itself; the save goes ahead.
+	 *
+	 * @param Throwable $failure The failure.
+	 *
+	 * @return void
+	 */
+	private function logFailure(Throwable $failure): void {
+		$this->logger->warning(
+			message: '[CodedValueValidationListener] The guard itself failed, allowing the save: ' . $failure->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
+		);
+	}//end logFailure()
 
 	/**
 	 * Stop the write, carrying the refusal.

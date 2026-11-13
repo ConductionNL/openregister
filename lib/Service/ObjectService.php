@@ -87,6 +87,10 @@ use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectValidationVerdict;
+use OCA\OpenRegister\Service\Object\ObjectSaveCheck;
+use OCA\OpenRegister\Service\Object\ObjectSaveChecks;
+use OCA\OpenRegister\Service\Object\SampleValidationErrors;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderRequest;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
@@ -1470,6 +1474,105 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->currentObject = $object;
         return $this;
     }//end setObject()
+
+    /**
+     * Whether a sample record would be accepted, without saving it.
+     *
+     * Runs what a save runs before it writes: the save defaults, the declared
+     * bounds, the schema validation (when the schema validates hard, or the
+     * sample is a draft), the read-only and lens rules, and then every
+     * {@see ObjectSaveCheck} (coded values, concept shapes, dependent
+     * values). Writes nothing and dispatches no object event. With an id the
+     * sample is merged onto that stored object and checked as an update.
+     *
+     * The service's current register, schema and object are restored after,
+     * so a validate call leaves no state behind.
+     *
+     * @param array                  $object   The sample record.
+     * @param Register|string|int    $register The register (id, uuid or slug).
+     * @param Schema|string|int      $schema   The schema (id, uuid or slug).
+     * @param string|null            $id       The object the sample updates, or null for a create.
+     *
+     * @return ObjectValidationVerdict The verdict, one error per refused property.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the object to update does not exist.
+     *
+     * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+     */
+    public function validateObject(
+        array $object,
+        Register | string | int $register,
+        Schema | string | int $schema,
+        ?string $id=null
+    ): ObjectValidationVerdict {
+        $previous = [$this->currentRegister, $this->currentSchema, $this->currentSchemaRef, $this->currentObject];
+        try {
+            $this->setRegister(register: $register);
+            $this->setSchema(schema: $schema);
+            return $this->sampleVerdict(object: $object, existing: $this->sampleTarget(id: $id));
+        } finally {
+            [$this->currentRegister, $this->currentSchema, $this->currentSchemaRef, $this->currentObject] = $previous;
+        }
+    }//end validateObject()
+
+    /**
+     * The stored object a sample updates, or null for a create.
+     *
+     * @param string|null $id The object's id, uuid or slug.
+     *
+     * @return ObjectEntity|null
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When it does not exist.
+     */
+    private function sampleTarget(?string $id): ?ObjectEntity
+    {
+        if ($id === null || $id === '') {
+            return null;
+        }
+
+        return $this->objectMapper->find(
+            $id,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            _rbac: false,
+            _multitenancy: false
+        );
+    }//end sampleTarget()
+
+    /**
+     * The verdict on a sample against the current register and schema.
+     *
+     * @param array             $object   The sample.
+     * @param ObjectEntity|null $existing The stored object on an update.
+     *
+     * @return ObjectValidationVerdict
+     */
+    private function sampleVerdict(array $object, ?ObjectEntity $existing): ObjectValidationVerdict
+    {
+        $data = $object;
+        if ($existing !== null) {
+            $data = array_merge(($existing->getObject() ?? []), $object);
+        }
+
+        $errors = [];
+        try {
+            $data = $this->prepareObjectForSave(
+                object: $data,
+                write: ['uuid' => $existing?->getUuid(), 'isCreate' => $existing === null]
+            );
+        } catch (ValidationException $refused) {
+            $errors = SampleValidationErrors::fromValidation(exception: $refused);
+        } catch (CustomValidationException $refused) {
+            $errors = SampleValidationErrors::fromCustom(exception: $refused);
+        }
+
+        if ($this->currentSchema !== null) {
+            $checks = $this->container->get(ObjectSaveChecks::class);
+            $errors = array_merge($errors, $checks->violations(object: $data, schema: $this->currentSchema, existing: $existing));
+        }
+
+        return new ObjectValidationVerdict(errors: $errors);
+    }//end sampleVerdict()
 
     /**
      * Get the current object context.

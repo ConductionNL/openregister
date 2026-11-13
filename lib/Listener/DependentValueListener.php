@@ -28,10 +28,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Rules\DependentValueTableInterface;
 use OCA\OpenRegister\Service\Rules\DependentValueWrite;
+use OCA\OpenRegister\Service\Object\ObjectSaveCheck;
 use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -57,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-class DependentValueListener implements IEventListener {
+class DependentValueListener implements IEventListener, ObjectSaveCheck {
 
 	/**
 	 * The error code a refused dependent value carries, so a client can branch on it.
@@ -96,6 +98,42 @@ class DependentValueListener implements IEventListener {
 	}//end handle()
 
 	/**
+	 * The dependent-value refusals of an object as it would be saved.
+	 *
+	 * The same tables and the same comparison the listener applies on a write,
+	 * so a validate-only call and a save agree. When the guard itself fails,
+	 * nothing is refused, as the save goes ahead in that case.
+	 *
+	 * @param array<string, mixed> $object   The object data.
+	 * @param Schema               $schema   Its schema.
+	 * @param ObjectEntity|null    $existing The stored object on an update.
+	 *
+	 * @return array<int, array{property: string, message: string, rule: string}>
+	 *
+	 * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+	 */
+	public function check(array $object, Schema $schema, ?ObjectEntity $existing): array {
+		try {
+			$violations = $this->violationsAgainst(
+				properties: $this->declaringProperties(schema: $schema),
+				write: new DependentValueWrite(data: $object, stored: $this->storedData(stored: $existing))
+			);
+		} catch (Throwable $failure) {
+			$this->logFailure(failure: $failure);
+			return [];
+		}
+
+		return array_map(
+			static fn (array $violation): array => [
+				'property' => (string)$violation['property'],
+				'message' => (string)$violation['message'],
+				'rule' => 'dependent-value',
+			],
+			$violations
+		);
+	}//end check()
+
+	/**
 	 * Validate one write against every table its schema declares.
 	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
@@ -111,12 +149,55 @@ class DependentValueListener implements IEventListener {
 				$this->refuse(event: $event, violations: $violations);
 			}
 		} catch (Throwable $failure) {
-			$this->lookup->logger->warning(
-				message: '[DependentValueListener] The guard itself failed, allowing the save: ' . $failure->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
-			);
-		}//end try
+			$this->logFailure(failure: $failure);
+		}
 	}//end validate()
+
+	/**
+	 * Name a failure of the guard itself; the save goes ahead.
+	 *
+	 * @param Throwable $failure The failure.
+	 *
+	 * @return void
+	 */
+	private function logFailure(Throwable $failure): void {
+		$this->lookup->logger->warning(
+			message: '[DependentValueListener] The guard itself failed, allowing the save: ' . $failure->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
+		);
+	}//end logFailure()
+
+	/**
+	 * What the tables refuse, or nothing when the schema declares none.
+	 *
+	 * @param array<string, mixed>|null $properties The schema's properties, null when it declares no table.
+	 * @param DependentValueWrite       $write      The object as it would be saved, and as stored.
+	 *
+	 * @return array<int, array<string, string>>
+	 */
+	private function violationsAgainst(?array $properties, DependentValueWrite $write): array {
+		if ($properties === null) {
+			return [];
+		}
+
+		return $this->tables->violations(properties: $properties, write: $write);
+	}//end violationsAgainst()
+
+	/**
+	 * A schema's properties, when it declares at least one table.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<string, mixed>|null The properties, or null.
+	 */
+	private function declaringProperties(Schema $schema): ?array {
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($properties) === false || $this->tables->declaresAny(properties: $properties) === false) {
+			return null;
+		}
+
+		return $properties;
+	}//end declaringProperties()
 
 	/**
 	 * What the schema's tables refuse in a write: the new object, and on an update the stored one.
@@ -178,12 +259,7 @@ class DependentValueListener implements IEventListener {
 		}
 
 		$schema = $this->lookup->catalog->schemas()->find(id: $reference, _rbac: false, _multitenancy: false);
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($properties) === false || $this->tables->declaresAny(properties: $properties) === false) {
-			return null;
-		}
-
-		return $properties;
+		return $this->declaringProperties(schema: $schema);
 	}//end tablesFor()
 
 	/**
