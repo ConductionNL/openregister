@@ -3701,3 +3701,4 @@ cover:learniq:e6498dddmf689:34f5c300	PR #2460: @uses metadata in 44 tests (80 ri
 cover:buildiq:70b3e29embf07:6891a8ac	already done: quality/test-coverage-6891a8ac-1 exists; lib/Service/Dashboard 97.2% (137/141) on development	session-20261113T081043-b24589a6	2026-11-13T09:03:02Z
 cover:dossiq:069ee2d6m7e79:b8cc4419	PR #6343: 10 tests, lib/Service/Sharing/ 92.5->99.7% (CaseAccessPolicy 29->52/52, CaseAccessLinkService 106->128/129); no new failures	session-20261113T080549-20301834	2026-11-13T09:03:13Z
 cover:pipelinq:7f9dc8e6m916f:0798b7cf	already done: lib/Service/PosCart/ at 67/67 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:03:08Z
+cover:pipelinq:7f9dc8e6m916f:0a8f160f	already done: lib/Service/Sla/ at 212/212 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:03:28Z
