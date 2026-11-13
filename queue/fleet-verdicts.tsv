@@ -5138,3 +5138,4 @@ pipelinq	3668	c9b3e76315867f925b017d728ddac17f222b9408	GREEN	worker-58	phpunit 6
 launchpad	1171	e8495801bc97fc80e582c90c3673c38c52167539	GREEN	worker-34	phpunit 3741 ok (baseline 3741 ok, 13 skipped), vitest 1927/1927 incl 14 new; tests only, no new failures
 keepiq	1738	7e3bd9bf62aef63ce80ae66dd1e82444bf53a27e	GREEN	worker-38	phpunit 4616 on tree (baseline 4467), 0 failures (baseline 0); tests only, no deletions
 keepiq	1739	9d36545d11d475bee8455d48047e8e8e2b3ec78f	GREEN	worker-38	phpunit 4616 on tree, 0 failures (baseline 0); 10 new controller test files, tests only, no deletions
+pipelinq	3669	3898d4d66d56c21a667f2044a16fc5913f2415c5	GREEN	worker-58	phpunit 6372 on 2-PR tree vs baseline 6359, 1 inherited failure, 0 new; vitest 547 files/3871 tests pass; tests only
