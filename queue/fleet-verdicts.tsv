@@ -6183,3 +6183,5 @@ opencatalogi	2598	ad8fac967470e61839e043913caf3d058685bff1	GREEN	worker-01	tests
 dossiq	6436	ee766c9af7db5de1562e35a6d6ed51a804a49999	GREEN	worker-12	unit suite 16535 tests; baseline 16530 tests/20 failures; no new failures; tests only (5 new pass)
 keepiq	1764	0d24aa534c1d77f030b5af9c78ae243bd4dd6789	GREEN	worker-51	tests-only; PHP 4913 run (baseline 4854, 0 fail), vitest 6361 pass; no new failures
 keepiq	1765	82f3934464652febe5744065e8b3d4c014b5a9a9	GREEN	worker-51	tests-only; PHP 4913 run (baseline 4854, 0 fail), vitest 6361 pass; no new failures
+buildiq	1556	f53788ab6e779f7522ecf5eda040bb3f3d529bf2	GREEN	worker-15	phpunit 2917 tests, baseline 1 failure (ExportZipGoldenTest, inherited), new 0; vitest 4102/4102 pass (baseline 4077); tests only
+portaliq	2423	53e7632237b8537d1e74566831a9d303cdc87870	GREEN	worker-52	php unit 4914 (baseline 4914, 0 new); help/page-tabs specs 11 pass; check:specs only records-list (inherited); manifest error count unchanged (1, inherited)
