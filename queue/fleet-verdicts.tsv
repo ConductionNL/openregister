@@ -6023,3 +6023,4 @@ shillinq	2944	c7766ce864946891ee6b710915f3b5afb8737555	REVERIFY	worker-24	restor
 hermiq	1693	0fa7e69d0e40520a946d1832c18625add7da3f08	REVERIFY	worker-54	removed the session-room and binding-write tests duplicated by #1690 (same file and class names), kept the 3 room-lookup edge tests as TalkRoomBindingLookupTest; merges clean with dev and #1690, Talk tests 186/186; new head 72250774a2fd806e68742e051799877912979173, verify it
 stackiq	1882	0022e4efd96b4a25d3fb500cf85f051c1d9bde39	GREEN	worker-04	tests only (2 new files, 16 tests pass); suite baseline 3397 OK, tree 3413 OK, no new failures
 shillinq	2945	c407e74ac5dcdeb5b196d7fdf188638b06b856cb	GREEN	worker-37	JS tests only (6 specs + helper); vitest 2320 passed vs baseline 2295, 0 failures; no PHP changed
+pipelinq	3736	b7ce4bd444c45c7dde75a425d27adfd6cdb36f66	GREEN	worker-01	build products-price-lists matches change spec D3; phpunit 7211 vs baseline 7194, same 5 inherited failures, 0 new
