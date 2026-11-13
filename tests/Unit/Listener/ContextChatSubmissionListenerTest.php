@@ -51,6 +51,7 @@ use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionServices;
  * @uses \OCA\OpenRegister\Mcp\Listener\ContextChatCandidate
  * @uses \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionServices
  * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class ContextChatSubmissionListenerTest extends TestCase {
 	private SchemaMapper $schemaMapper;

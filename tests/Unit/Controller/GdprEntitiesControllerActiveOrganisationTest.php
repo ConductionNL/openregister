@@ -45,6 +45,12 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Controller\GdprEntitiesController
  * @uses \OCA\OpenRegister\Db\GdprEntity
  * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesDomain
+ * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesMappers
+ * @uses \OCA\OpenRegister\Controller\Support\GdprEntitiesPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\OrganisationScopeFilter
  */
 class GdprEntitiesControllerActiveOrganisationTest extends TestCase {
 	/** @var list<array{id: int, organisation: string, type: string, category: string, value: string}> */

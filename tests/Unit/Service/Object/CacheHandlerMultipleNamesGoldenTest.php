@@ -54,6 +54,16 @@ use ReflectionProperty;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\Register\MagicMappingConfig
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerRuntime
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerStores
+ * @uses \OCA\OpenRegister\Service\Object\CacheNameScopeSources
+ * @uses \OCA\OpenRegister\Service\Object\CachedName
+ * @uses \OCA\OpenRegister\Service\Object\MagicNameLoadRun
+ * @uses \OCA\OpenRegister\Service\Object\NameTableQuery
+ * @uses \OCA\OpenRegister\Service\Object\NameVisibilityRun
  */
 class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 

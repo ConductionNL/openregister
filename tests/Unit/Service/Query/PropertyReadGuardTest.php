@@ -34,6 +34,9 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
  */
 class PropertyReadGuardTest extends TestCase {
 

@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ConfigurationBindingMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapperInterface;
@@ -35,6 +36,7 @@ use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHan
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationBundleService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
@@ -578,6 +580,7 @@ final class ConfigurationServiceRegistrar {
 		$context->registerService(DeploymentPreviewService::class, self::buildDeploymentPreviewService(...));
 		$context->registerService(DeploymentService::class, self::buildDeploymentService(...));
 		$context->registerService(ConfigurationExplainer::class, self::buildConfigurationExplainer(...));
+		$context->registerService(ConfigurationBundleService::class, self::buildConfigurationBundleService(...));
 	}//end registerConfigurationDeploymentServices()
 
 	/**
@@ -716,7 +719,26 @@ final class ConfigurationServiceRegistrar {
 	private static function buildConfigurationExplainer(ContainerInterface $container): ConfigurationExplainer {
 		return new ConfigurationExplainer(
 			store: $container->get(ConfigurationValueStore::class),
-			deployments: $container->get(ConfigurationDeploymentMapperInterface::class)
+			deployments: $container->get(ConfigurationDeploymentMapperInterface::class),
+			bindings: $container->get(ConfigurationBindingMapperInterface::class)
 		);
 	}//end buildConfigurationExplainer()
+
+	/**
+	 * Build the bundle service over the bindings, the layered values and the drafts.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationBundleService The service.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function buildConfigurationBundleService(ContainerInterface $container): ConfigurationBundleService {
+		return new ConfigurationBundleService(
+			bindings: $container->get(ConfigurationBindingMapperInterface::class),
+			values: $container->get(ConfigurationValueMapper::class),
+			drafts: $container->get(ConfigurationDraftService::class),
+			session: $container->get('OCP\IUserSession')
+		);
+	}//end buildConfigurationBundleService()
 }//end class

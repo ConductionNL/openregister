@@ -36,12 +36,14 @@ final class ObjectShareSurface {
 	 *
 	 * @param FolderManagementHandler $folders      Resolves an object's NC folder.
 	 * @param IManager                $shareManager Core share manager.
+	 * @param SharerFolderAccess      $sharerAccess Gives the sharer a view of the folder.
 	 * @param ObjectShareReader|null  $shareReader  Reads the shares on the object folder. Null only in legacy fixtures.
 	 * @param ShareTimeWriter|null    $shareTimes   Dates a new share in the past. Null only in legacy fixtures.
 	 */
 	public function __construct(
 		public readonly FolderManagementHandler $folders,
 		public readonly IManager $shareManager,
+		public readonly SharerFolderAccess $sharerAccess,
 		public readonly ?ObjectShareReader $shareReader = null,
 		public readonly ?ShareTimeWriter $shareTimes = null,
 	) {

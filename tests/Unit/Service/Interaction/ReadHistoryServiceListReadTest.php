@@ -36,6 +36,9 @@ use RuntimeException;
  * Grouping per register and schema, unattributable rows, an empty page and a failing log.
  *
  * @covers \OCA\OpenRegister\Service\Interaction\ReadHistoryService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Interaction\ProcessingListRead
+ * @uses \OCA\OpenRegister\Service\ProcessingRead
  */
 class ReadHistoryServiceListReadTest extends TestCase {
 
