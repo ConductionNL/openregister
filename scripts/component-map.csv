@@ -3971,3 +3971,5 @@ Service/Connection/ConnectionRegistryMissingException.php,,Service,,,,,Integrati
 Service/Connection/ConnectionRegistryReader.php,,Service,,,,,Integrations
 Service/Connection/ConnectionReportForbiddenException.php,,Service,,,,,Integrations
 Service/Connection/ConnectionReportKind.php,,Service,,,,,Integrations
+Service/Object/SaveObjects/BulkObjectQuota.php,,Service,,,,,Core
+Service/Object/SaveObjects/BulkQuotaTally.php,,Service,,,,,Core
