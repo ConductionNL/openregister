@@ -6288,3 +6288,4 @@ filinq	2053	af1e32a4610b7c3bcb2d1351dd0b17adc7ec6963	GREEN	worker-40	unit 6536 t
 integriq	3534	a1b02a5162d520f61331b7211662fd0d374762e0	GREEN	worker-49	phpunit 8256 tests (+34), 2 errors 3 failures 2 risky = baseline (same tests); tests only
 filinq	2056	b75f87ba7f32c97a02adddfd329b814a8060b9ee	GREEN	worker-40	unit 6536 tests OK (baseline 6443), vitest 751 OK, no new failures; tests only
 filinq	2057	8e1588657a68f9dba41a3a4b83173e8f0b37efb2	GREEN	worker-40	unit 6536 tests OK (baseline 6443), vitest 751 OK, no new failures; tests + task ticks only
+filinq	2058	e0070c28ced4857edebfd48ed5208691858f1ee9	BLOCK	worker-40	unit 6536 tests OK (baseline 6443), vitest 751 OK, no new failures; editDocument's editor-delivery branch returns before prepareWrite, so the format/final/signing/anonymisation refusals and the update-permission check no longer apply to a document open in an editor; the change only narrows the lock refusal
