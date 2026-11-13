@@ -3347,3 +3347,4 @@ merge:humaniq:1025:c45408ca	merge-local over 2 humaniq tasks: merged=3 red=0 fai
 merge:humaniq:1103:3024df1f	merge-local over 2 humaniq tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:04:50Z
 cover:learniq:e6498dddmc027:2262037e	already done: lib/Service/CheckIn 149/157 (95%, target 90) under strict metadata	session-20261113T051703-1b54bfba	2026-11-13T08:05:07Z
 cover:learniq:e6498dddmc027:c914a974	already done: lib/Service/Course 229/237 (97%, target 90)	session-20261113T051703-1b54bfba	2026-11-13T08:05:19Z
+cover:learniq:e6498dddmc027:3449807e	already done: lib/Service/Attendance/*.php 666/694 (96%, target 90)	session-20261113T051703-1b54bfba	2026-11-13T08:05:33Z
