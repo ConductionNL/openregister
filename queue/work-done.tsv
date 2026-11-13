@@ -4414,3 +4414,4 @@ cover:pipelinq:7f9dc8e6m84dd:50cc8442	PR #3730: ContrastRatioCalculator 0/25 -> 
 build:pipelinq:ticket-leaf-closed-reference-assignee	already built: 329cbbdfc on development; only 3.1 left (backfill of existing tickets' references, a data note)	session-20261113T104529-f43c7561	2026-11-13T11:09:10Z
 cover:keepiq:c967a31fm1bed:9d3a1784	already done: lib/BackgroundJob/ 406/407 = 99.8% (measure at 8a5d84f3)	session-20261113T051703-1b54bfba	2026-11-13T11:09:05Z
 cover:pipelinq:7f9dc8e6m84dd:a215617b	no PR: lib/Integration/*.php already 100% line-covered on development (302/302 statements, 34 tests); figure 86.73 is stale	session-20261113T104531-274f72f7	2026-11-13T11:09:22Z
+build:pipelinq:platform-accessibility-statement	failed: permission (4.1 and the 1.2 list check need vitest/eslint, npm ci refused here); every other task is e2e, a manual WCAG-EM audit, or docs that follow that audit	session-20261113T104529-f43c7561	2026-11-13T11:09:51Z
