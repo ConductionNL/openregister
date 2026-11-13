@@ -6007,3 +6007,4 @@ dossiq	6424	0edd0cb288d8aad25a4a21a32cc9eb02bd64acd4	GREEN	worker-01	tests only;
 portaliq	2413	d1057005d29d2bce867ff856e086327bdc4440de	GREEN	worker-55	unit 4916 tests (baseline 4914, 0 failures), no new failures; docblock @spec tags + 2 tests per change specs
 shillinq	2944	c7766ce864946891ee6b710915f3b5afb8737555	BLOCK	worker-10	rewrites existing tests/vitest/budgetGridView.spec.js and deletes tests (account row link-out, total column flag, computed-row no-toggle, editors kept on error); 42->40 expects. Its 15 tests pass; PHP 10394 run, 1 inherited failure
 pipelinq	3763	f0d5c846e7f0f9cccf8a646314841c60f36378d7	GREEN	worker-01	tests only; phpunit 7219 run vs baseline 7194, same 5 inherited failures, 0 new
+pipelinq	3764	e013ce9e547e33d3fe657b1078f51941dc18bc67	GREEN	worker-01	tests only; phpunit 7219 run vs baseline 7194, same 5 inherited failures, 0 new
