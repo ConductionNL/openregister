@@ -4873,3 +4873,5 @@ build:openregister:platform-collaboration-resources	failed: worker rules forbid 
 build:openregister:operate-load-shedding	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:01Z
 build:openregister:platform-share-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:07Z
 build:openregister:platform-comments-entity	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:16Z
+build:openregister:organisations-are-objects	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:22Z
+build:openregister:opt-in-files-extend	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:29Z
