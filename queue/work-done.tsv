@@ -2582,3 +2582,4 @@ cover:buildiq:9930949bm5861:b65a63c3	already done: lib/Service/GitHub/ at 98.7% 
 cover:buildiq:9930949bm5861:d39f9857	already done: lib/Support/*.php at 99.23% lines (386/389) on development f1c5b556; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:57:36Z
 cover:buildiq:9930949bm5861:bede5e5d	already done: lib/Service/Automation/ 100% (9/9), lib/Service/Credential/ 94.74% (54/57) on development f1c5b556; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:57:47Z
 cover:filinq:7a9ef677m5ffe:jsd48eb217	PR #2035: 42 vitest tests for folderAnonymization/myDocuments/navigation stores (626->668, all pass)	session-20261113T054516-469bb7f6	2026-11-13T05:58:06Z
+cover:pipelinq:7f9dc8e6mc4ba:e372e6ff	PR pipelinq#3684: TimeEntryApprovedEvent counted via listener test; lib/Event/*.php 77/87 -> 82/87 (94.3%); suite unchanged (6425, 1 inherited failure)	session-20261113T051714-4ad50f31	2026-11-13T05:58:20Z
