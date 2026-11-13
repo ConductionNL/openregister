@@ -1,0 +1,328 @@
+{
+ "app": "opencatalogi",
+ "commit": "6229950200450f55dabc2001bd8b1ad01eb9e9dc",
+ "measured_at": "2026-11-13T20:26:17Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 95.91,
+  "statements": 17240,
+  "covered": 16535,
+  "dirs": {
+   "lib/BackgroundJob/": [
+    90,
+    68
+   ],
+   "lib/Command/": [
+    278,
+    273
+   ],
+   "lib/Contract/": [
+    10,
+    10
+   ],
+   "lib/Controller/": [
+    3278,
+    3129
+   ],
+   "lib/Controller/Setup/": [
+    297,
+    297
+   ],
+   "lib/Dashboard/": [
+    55,
+    35
+   ],
+   "lib/Event/": [
+    4,
+    4
+   ],
+   "lib/Exception/": [
+    3,
+    3
+   ],
+   "lib/Http/": [
+    93,
+    91
+   ],
+   "lib/Listener/": [
+    433,
+    424
+   ],
+   "lib/Mcp/": [
+    199,
+    196
+   ],
+   "lib/Middleware/": [
+    57,
+    56
+   ],
+   "lib/Middleware/Support/": [
+    59,
+    53
+   ],
+   "lib/Observability/": [
+    186,
+    183
+   ],
+   "lib/Portal/": [
+    294,
+    284
+   ],
+   "lib/Repair/": [
+    387,
+    378
+   ],
+   "lib/Sections/": [
+    6,
+    6
+   ],
+   "lib/Service/": [
+    7835,
+    7447
+   ],
+   "lib/Service/Broadcast/": [
+    2,
+    2
+   ],
+   "lib/Service/Catalogue/": [
+    53,
+    53
+   ],
+   "lib/Service/Community/": [
+    265,
+    254
+   ],
+   "lib/Service/Connection/": [
+    171,
+    163
+   ],
+   "lib/Service/Federation/": [
+    100,
+    94
+   ],
+   "lib/Service/Portal/": [
+    569,
+    560
+   ],
+   "lib/Service/Publication/": [
+    1104,
+    1094
+   ],
+   "lib/Service/Term/": [
+    4,
+    4
+   ],
+   "lib/Service/Withheld/": [
+    152,
+    150
+   ],
+   "lib/Service/Woo/": [
+    945,
+    932
+   ],
+   "lib/Settings/": [
+    24,
+    13
+   ],
+   "lib/Tool/": [
+    287,
+    279
+   ]
+  }
+ },
+ "js": {
+  "pct": 17.98,
+  "statements": 7658,
+  "covered": 1377,
+  "dirs": {
+   "src/": [
+    115,
+    9
+   ],
+   "src/components/": [
+    73,
+    0
+   ],
+   "src/components/__snapshots__/": [
+    7,
+    0
+   ],
+   "src/components/tabs/": [
+    1,
+    0
+   ],
+   "src/components/widgets/": [
+    145,
+    0
+   ],
+   "src/components/widgets/__snapshots__/": [
+    15,
+    0
+   ],
+   "src/composables/": [
+    89,
+    70
+   ],
+   "src/css/": [
+    0,
+    0
+   ],
+   "src/dialogs/": [
+    128,
+    0
+   ],
+   "src/dialogs/__snapshots__/": [
+    35,
+    0
+   ],
+   "src/dialogs/attachment/": [
+    53,
+    0
+   ],
+   "src/dialogs/attachment/__snapshots__/": [
+    12,
+    0
+   ],
+   "src/dialogs/caseType/": [
+    51,
+    0
+   ],
+   "src/dialogs/generic/": [
+    146,
+    0
+   ],
+   "src/dialogs/generic/__snapshots__/": [
+    28,
+    0
+   ],
+   "src/dialogs/retention/": [
+    60,
+    0
+   ],
+   "src/entities/": [
+    13,
+    12
+   ],
+   "src/entities/attachment/": [
+    44,
+    26
+   ],
+   "src/entities/catalogi/": [
+    39,
+    24
+   ],
+   "src/entities/configuration/": [
+    22,
+    4
+   ],
+   "src/entities/glossary/": [
+    29,
+    0
+   ],
+   "src/entities/listing/": [
+    25,
+    4
+   ],
+   "src/entities/organization/": [
+    48,
+    13
+   ],
+   "src/entities/publication/": [
+    41,
+    22
+   ],
+   "src/entities/publicationType/": [
+    40,
+    22
+   ],
+   "src/entities/theme/": [
+    28,
+    6
+   ],
+   "src/manifest.d/": [
+    18,
+    0
+   ],
+   "src/modals/catalog/": [
+    122,
+    0
+   ],
+   "src/modals/catalog/__snapshots__/": [
+    9,
+    0
+   ],
+   "src/modals/directory/": [
+    163,
+    0
+   ],
+   "src/modals/generic/": [
+    648,
+    0
+   ],
+   "src/modals/object/": [
+    1308,
+    0
+   ],
+   "src/modals/theme/": [
+    50,
+    0
+   ],
+   "src/navigation/": [
+    48,
+    19
+   ],
+   "src/services/": [
+    744,
+    495
+   ],
+   "src/sidebars/dashboard/": [
+    138,
+    0
+   ],
+   "src/sidebars/directory/": [
+    39,
+    0
+   ],
+   "src/sidebars/search/": [
+    63,
+    0
+   ],
+   "src/store/": [
+    4,
+    0
+   ],
+   "src/store/modules/": [
+    1572,
+    651
+   ],
+   "src/views/catalogi/": [
+    85,
+    0
+   ],
+   "src/views/dashboard/": [
+    93,
+    0
+   ],
+   "src/views/directory/": [
+    135,
+    0
+   ],
+   "src/views/publications/": [
+    513,
+    0
+   ],
+   "src/views/search/": [
+    15,
+    0
+   ],
+   "src/views/settings/": [
+    508,
+    0
+   ],
+   "src/views/widgets/": [
+    96,
+    0
+   ]
+  }
+ }
+}
