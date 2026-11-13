@@ -3056,3 +3056,4 @@ cover:dossiq:f8a113c5m7e79:js2b6606f9	PR #6309: 25 tests, src/views/cases/ lines
 cover:integriq:92114ab0m658d:a0b17cde	already above target: lib/Service/Synchronization/ measures 95.38% (165/173) on development 8511b16; no PR	session-20261113T054519-3d0ac77f	2026-11-13T07:00:37Z
 cover:decidiq:a5f973bbmb22b:3d4b295b	already done: lib/Service/Settings measured with pcov at 32/34 (94%, above 90% target); the two misses are glob/file_get_contents failure branches	session-20261113T051707-6c971ec6	2026-11-13T07:00:46Z
 verify:keepiq:1745:61ad9085	GREEN 1745 (tests only; vitest 6270 pass; PHP clean)	session-20261113T051714-4ad50f31	2026-11-13T07:00:56Z
+verify:pipelinq:3691:b238ba02	GREEN 3691 (JS specs only; vitest all pass)	session-20261113T031701-b518f7f8	2026-11-13T07:01:09Z
