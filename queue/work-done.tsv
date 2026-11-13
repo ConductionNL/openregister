@@ -4888,6 +4888,7 @@ cover:pipelinq:7f9dc8e6m84dd:f545d745	already at target: lib/Repair/*.php 90.04%
 build:openregister:platform-team-resource-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:21Z
 build:openregister:or-flow-scheduled-trigger	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:28Z
 build:openregister:object-folder-in-files-browser	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:33Z
+build:openregister:flow-tag-object-step	partial: PR #10190 — tasks 1.1, 2.1, 2.2 with tests; left 3.1 (e2e) and 3.2 (docs with screenshot)	session-20261113T114524-3c44fc56	2026-11-13T12:33:42Z
 build:openregister:read-audit-entries-name-the-rule	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:43Z
 build:openregister:or-flow-engine	partial: PR #10191 (4.1, 4.3 verified already built; 4.2 openconnector, 4.4 no driver)	session-20261113T113930-fe243f84	2026-11-13T12:33:52Z
 build:openregister:rbac-disable-public-inheritance	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:49Z
