@@ -7163,3 +7163,4 @@ verify:dossiq:6464:d2b312d1	GREEN #6464, no new failures, vitest green	session-2
 build:learniq:an-invited-trainer-may-activate-a-placement	failed: T1 is an open owner decision (may an invitation carry a POK signature); building T2-T6 lowers a signature trust floor before that decision, so nothing was built	session-20261113T213336-fe5ca7a4	2026-11-13T22:25:43Z
 review:openregister:10417:cc118c1d	APPROVE	session-20261113T205323-cbfd0ec4	2026-11-13T22:26:27Z
 build4:openregister:redaction-policy-as-data	partial: PR #10438 finishes 2.1 (termRule source via ObjectService, cache invalidation listener); 2.2-5.2 left	session-20261113T212407-b2d64ec5	2026-11-13T22:26:43Z
+build4:openregister:search-accent-insensitive	partial: PR #10439, task 1.3 built (folding on UNION/QB/parsed/fuzzy/facet paths, _accents=exact); 1.4, 2.1, 3.x left; no new failures	session-20261113T205325-28f592a9	2026-11-13T22:26:48Z
