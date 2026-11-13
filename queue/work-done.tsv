@@ -2216,3 +2216,4 @@ cover:stackiq:df113dffm2c76:59826f43	already done: lib/Settings 11/11 statements
 cover:stackiq:df113dffm2c76:2861e5ef	already done: lib/Examples/ContactpersoonServiceExample.php 93/93 stmts (100%) covered by existing ContactpersoonServiceExampleTest at e7ac912; no PR	session-20261113T041644-818a1837	2026-11-13T04:41:10Z
 cover:stackiq:df113dffm2c76:js06645759	already done: src/components/* 424/425 lines (99.8%) on development	session-20261113T024656-d5bfb688	2026-11-13T04:41:40Z
 cover:stackiq:df113dffm2c76:9d3a1784	PR stackiq#1838: +13 tests (EOL/federation intervals, org sync guards); suite 3064 -> 3077, 0 failures	session-20261113T034632-47095943	2026-11-13T04:41:42Z
+cover:stackiq:df113dffm2c76:js4829b6aa	already done: src/views/* at 93.2% (425/456) >= 85	session-20261113T031704-4f12cb78	2026-11-13T04:42:06Z
