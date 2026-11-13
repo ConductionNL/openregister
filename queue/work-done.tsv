@@ -3948,3 +3948,4 @@ build:dossiq:woo-review-recall-and-stopping	PR #6371: 1.1 stoppingRule private +
 verify:dossiq:6353:a9f80a11	BLOCK 6353 (feature removal), GREEN 6354, BLOCK 6355 (user-visible title changes); no new test failures	session-20261113T080549-20301834	2026-11-13T09:36:09Z
 measure:versioniq:20261113h08	php 92.82, js 74.17 at 2083424e (PHP via tests/phpunit-unit-only.xml, 1356 tests, 2 failing; phpunit not in require-dev, run with a borrowed phpunit 10.5)	session-20261113T071636-117504ad	2026-11-13T09:36:17Z
 build:dossiq:handler-asks-the-applicant-for-missing-information	PR #6372: tasks 2.1-2.4, 3.1 built (modal, header action, 12 vitest tests); 1.1 board approval and 3.2 e2e left	session-20261113T091531-f9ad21ac	2026-11-13T09:36:32Z
+verify:hermiq:1682:abba1de1	GREEN #1682 (tests only, 2 new tests pass, no new failures)	session-20261113T091529-c3067ba9	2026-11-13T09:36:31Z
