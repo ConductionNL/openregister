@@ -5093,3 +5093,4 @@ review:openregister:10212:01dfee0f	BLOCK: PR's own diagnostics test fails (mock 
 review:openregister:10211:77d5cedc	APPROVE	session-20261113T103904-e108be02	2026-11-13T13:12:04Z
 review:openregister:10214:addc2884	BLOCK: dictionary scheme seed runs without the trusted scope the other seeds use; suites green (DBAL-env errors in BulkAtomicSaveTest inherited)	session-20261113T124807-5f522699	2026-11-13T13:12:12Z
 review:openregister:10218:44eb7da6	APPROVE: tests-only, 392/392 schema-modal suite green on PR+main, eslint clean	session-20261113T094606-b7da8c7f	2026-11-13T13:12:26Z
+review:openregister:10212:876c2868	BLOCK: PR's own new test testTheMissIsReportedWithWhetherTheRowExistedBeforeFilters fails deterministically (mock execution-counter makes probe miss, error branch not hit); production change is sound	session-20261113T064519-30004ad4	2026-11-13T13:12:36Z
