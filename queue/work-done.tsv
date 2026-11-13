@@ -5538,3 +5538,4 @@ verify:humaniq:1118:b941adaf	GREEN: #1118 tests only, 3928 -> 3946 OK, no new fa
 merge:humaniq:1025:a58277d9	merge-local over 2 humaniq tasks: merged=6 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:29:06Z
 merge:humaniq:1114:9038a245	merge-local over 2 humaniq tasks: merged=6 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:29:06Z
 merge:buildiq:1526:8f78f823	merge-local over 1 buildiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:30:14Z
+merge:pipelinq:3602:64b0d5e2	merge-local over 1 pipelinq tasks: merged=0 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:30:51Z
