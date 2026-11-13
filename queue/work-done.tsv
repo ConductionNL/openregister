@@ -4061,3 +4061,4 @@ gap:planninq:tcr2:burn1	PR #1143: 6 vitest specs for flow/phaseFiles/caseHandove
 cover:larpinq:c4471360m4538:59826f43	PR #1020: LarpinqAdmin 4 tests, suite 697->701 OK	session-20261113T094617-36f80607	2026-11-13T09:51:44Z
 cover:integriq:92114ab0m158b:0f859653	already done: lib/Flow/*.php 2485/2514 stmts (98.8%)	session-20261113T091527-72c58830	2026-11-13T09:51:55Z
 cover:buildiq:70b3e29embf07:js391c0641	PR budget used (#1506, #1516 merged): src/components/page-editor/ 2557/2986 = 85.6% < 95; biggest gaps FormLayoutBuilder, SettingsSectionBuilder, FormPageEditor, WidgetPlacementPanel	session-20261113T051703-1b54bfba	2026-11-13T09:52:29Z
+cover:larpinq:c4471360m4538:38e80a9f	PR #1021: UniqueHoldersCheck +3 tests, suite 697->700 OK	session-20261113T094617-36f80607	2026-11-13T09:52:59Z
