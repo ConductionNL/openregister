@@ -1336,3 +1336,16 @@ learniq	2457	5156e6ca0678da1c443ef5a7c46c545a20db1811	MERGED	merge-local	GATE OK
 learniq	2458	8f859bf5455ad8979920c84c3929cb48e1a7f600	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2459	25d374627d40e24ee79338ef4b69e503faf38270	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1534	d7b0899512ac2d1d5ba2f184f8fb5ff730fb5070	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1704	f55ed033a0d75c518f0476302f49b8bf3218d361	SKIP	merge-local	GATE UNMEASURED f55ed033a0 does not merge cleanly onto development
+stackiq	1852	a906e1f4a4c62b924885e15a55e94f5fb41715c7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1858	774cfb8081a0356d34bb4e4b54a965a9085c82a3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1859	4987f1682be68a6adebb64fbb71351eb507a87e9	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1860	ebcb1cc06a220df03f1f5b843c52f0acec9e9502	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1856	e9f7c0a4e23a572cc2584ce8dff518b788f089e7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1857	a85a71294d7c62989f749974960d4d09a5b7016f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1861	aea61954679e34639b032a15172092ad225c7dd4	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1862	0bd168bc40d4440cb728e374f05d7178ef169348	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1700	7a35e49eb1b32d5be3010c6b8d503c6225924fe9	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1863	222faabc2fd5cc98e2bfad56b8c300d28b23183e	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1864	a9af792e188eed982e281451b47304d06f9042b5	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
+stackiq	1865	1d9713d787b7ad125dcbbde90e77bf2224c508e8	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
