@@ -5514,6 +5514,7 @@ integriq	3514	8ff3bb4311ccd271cba5d885157a990fd72910cb	GREEN	worker-18	tests-onl
 dossiq	6335	e418f20a1d7411c69f9662210217cacb0368646d	GREEN	worker-45	15333 tests (baseline 15331, 19 inherited failures), no new failures; tests only
 launchpad	1180	fe5ee0920319690346b214c1a65514b1873592ef	GREEN	worker-57	tree 1180+1181: 3805 tests, baseline 3789 green, 0 new failures (2 risky inherited, fixed by #1176); tests only
 launchpad	1181	de61f590f020f1e546c503bedfc2b580826eca00	GREEN	worker-57	tree 1180+1181: 3805 tests, 0 new failures; vitest 2051 passed; tests only
+learniq	2419	62ccde47ab42aaaec24f574c645a690c691c9f31	CONFLICT	coord	conflicts with development; merge origin/development in, keep the /api/v1-only error-body rewrite
 launchpad	1182	32894d63688d8427503f64d0d09e8ceaf9f125f4	GREEN	worker-51	tree 3933 tests (baseline 3789, 0 failures), 0 new failures; tests only
 launchpad	1183	efa250d135899d7391112f621d865dc5e0664e7d	GREEN	worker-51	tree 3933 tests (baseline 3789, 0 failures), 0 new failures; tests only
 launchpad	1184	348ec8b40d9559f2b62d0d054e242599188c2a07	GREEN	worker-51	tree 3933 tests (baseline 3789, 0 failures), 0 new failures; tests only
