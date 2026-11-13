@@ -1996,3 +1996,4 @@ cover:pipelinq:f67520ecm8c58:9d3a1784	PR #3639: 33 tests over 5 jobs; lib/Backgr
 verify:launchpad:1157:d4eea45a	launchpad 1157,1158,1159,1162,1163,1164 GREEN (tests only); 1165 CONFLICT with 1157	session-20261113T034631-5fd77fa7	2026-11-13T04:05:31Z
 cover:shillinq:05639deb:aed80a0c	PR #2859: 24 tests for 8 untested lifecycle actions; suite 9004->9028, 1 inherited clock-bound failure unchanged	session-20261113T033859-c661da78	2026-11-13T04:05:35Z
 cover:keepiq:c967a31fm88ca:882bd950	already done: lib/Search/*.php 31/31 statements covered on development (earlier -1 batch merged); no PR	session-20261113T031701-b518f7f8	2026-11-13T04:05:54Z
+cover:hermiq:065f1631m7444:1191da39	already done: WebResearch 58 tests, 327/336 lines; the 9 left are unreachable guards and the real dns_get_record wrapper; no PR	session-20261113T034629-21e68669	2026-11-13T04:05:49Z
