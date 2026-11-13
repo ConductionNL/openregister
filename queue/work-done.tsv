@@ -5321,3 +5321,4 @@ build2:openregister:scoped-api-tokens	failed: every open code task changes the a
 verify:stackiq:1874:df2fa572	1874 GREEN, 1875 GREEN (vitest 2471 pass, phpunit unchanged)	session-20261113T134531-53f143d2	2026-11-13T13:52:29Z
 cover:stackiq:9ac19b3amc14f:c2bb21fa	cover: Stackiq handlers already ~99% covered; added ContactPersonHandler store/username behavioural tests (3), suite 3320->3323 green; PR #1878	session-20261113T131538-bf8ccc8e	2026-11-13T13:52:33Z
 build2:openregister:notes-leaf-rich-text-lock-export	partial: PR #10263 lock done (2.1, 2.2); rich text 1.x, export 3.1, tests 4.x left	session-20261113T094606-b7da8c7f	2026-11-13T13:52:50Z
+review:openregister:10235:05b479a3	APPROVE: additive unwired parser classes, all checked suites green	session-20261113T124807-b8fee1f0	2026-11-13T13:52:52Z
