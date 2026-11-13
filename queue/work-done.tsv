@@ -1257,3 +1257,4 @@ review:hermiq:1496:2271f36d	RED: behaviour preserved, but an existing test turns
 cover:dossiq:6ca0231e:ea81adeb	PR #6209: 19 tests (ZgwZtcResultaattypeRules, ZrcStatusEffects, ZgwAuditedResource to 100%), Zgw 2215->2261/2313 lines, suite 13417->13436, baseline 19 failures unchanged	session-20261112T233856-8f2d924b	2026-11-13T00:55:43Z
 review:hermiq:1495:2810c65e	GREEN: behaviour-identical move, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:56:07Z
 review:hermiq:1490:fcb1b7ff	GREEN: behaviour-identical date helper extraction; vitest 1075 passing on PR+development	session-20261112T234653-57d11a5b	2026-11-13T00:56:16Z
+review:hermiq:1488:82f546c0	GREEN: refactor preserves behaviour, vitest 1085/1085	session-20261113T003903-5efbf5ae	2026-11-13T00:56:37Z
