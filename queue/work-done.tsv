@@ -3466,3 +3466,4 @@ cover:stackiq:9ac19b3am5ac4:c2bb21fa	PR #1858: 15 ContactPersonHandler tests; li
 cover:stackiq:9ac19b3am5ac4:692f8a78	already done: lib/Service/Contactpersoon/ at 100% (205/205); no PR	session-20261113T080546-98207a87	2026-11-13T08:31:24Z
 cover:stackiq:9ac19b3am5ac4:efa2a923	already done: lib/EventListener/*.php at 99.2% (974/982); no PR	session-20261113T080546-98207a87	2026-11-13T08:31:34Z
 cover:stackiq:9ac19b3am5ac4:007dc1d0	already done: lib/Service/Cmdb/*.php at 98.1% (1491/1520); no PR	session-20261113T080546-98207a87	2026-11-13T08:31:45Z
+cover:stackiq:9ac19b3am5ac4:05630945	already done: lib/Middleware/Support/ at 91.9% (57/62); no PR	session-20261113T080546-98207a87	2026-11-13T08:31:58Z
