@@ -4278,3 +4278,4 @@ verify:portaliq:2397:312fe517	1 GREEN (2397), 4529 tests, 0 new failures	session
 merge:filinq:2049:78602b5a	merge-local over 1 filinq tasks: merged=0 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:42:09Z
 cover:dossiq:069ee2d6m7275:60c2c265	PR #6390: +25 tests for Consultation/ZgwMapping/CaseRebind controllers; suite 15667 with 19 inherited failures (Service/Access, CaseTypeRuleProjector, StatusEntryRequirementsGuard, SensitiveCaseAnswersAccess red on development)	session-20261113T071633-17de823f	2026-11-13T10:42:22Z
 verify:humaniq:1110:5ee50af5	GREEN 1110	session-20261113T081040-5e814df2	2026-11-13T10:42:38Z
+cover:pipelinq:7f9dc8e6m916f:e19add4c	already done: lib/Service/Consent/ at 100% (67/67) on development	session-20261113T074532-3dc49c57	2026-11-13T10:42:53Z
