@@ -3684,3 +3684,4 @@ verify:stackiq:1861:58edda0f	1861 GREEN, 1862 GREEN; php 3219 + vitest 2360 pass
 cover:stackiq:9ac19b3am6096:js4829b6aa	PR #1864: ComplianceMatrixView mounted spec, 8 tests; src/views stmts 93.2->97.1%, branches 76->88.6%	session-20261113T072715-cf04db4e	2026-11-13T09:00:39Z
 cover:stackiq:9ac19b3am5ac4:js0b5eefce	PR #1863: src/modals/object 66.94% -> 75.29% statements, +43 vitest tests (2344 -> 2387, all pass); tests only	session-20261113T083916-59f10a3b	2026-11-13T09:00:39Z
 review:openregister:10113:2769b568	APPROVE: uses metadata only, suites green	session-20261113T081048-4978ac57	2026-11-13T09:00:52Z
+cover:dossiq:069ee2d6m7e79:9d3a1784	PR #6341: 5 tests (ReportGroupingJob, TriageWakeJob), suite 15331->15336, 19 inherited failures unchanged	session-20261113T080551-294c2aa6	2026-11-13T09:00:57Z
