@@ -50,7 +50,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use DateTimeImmutable;
+use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Notifications\Controller\Support\ReadableObject;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageScheduler;
 use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCP\AppFramework\Controller;
@@ -70,10 +76,14 @@ class MessageDispatchController extends Controller {
 	 *
 	 * @param IRequest $request HTTP request.
 	 * @param MessageDispatcherInterface $provider Outbound-messaging dispatch leaf.
+	 * @param ScheduledMessageScheduler|null $scheduler Stores a send with `sendAt` for the sweep.
+	 * @param ObjectOperationsInterface|null $objects   Resolves the `object` a scheduled send is bound to, under the caller's read access.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly MessageDispatcherInterface $provider,
+		private readonly ?ScheduledMessageScheduler $scheduler = null,
+		private readonly ?ObjectOperationsInterface $objects = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -99,7 +109,7 @@ class MessageDispatchController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function smsSend(): JSONResponse {
-		return $this->relaySend(allowedKinds: ['cmcom-sms', 'messagebird-sms', 'twilio-sms']);
+		return $this->relaySend(allowedKinds: ['cmcom-sms', 'messagebird-sms', 'twilio-sms'], channel: 'sms');
 	}//end smsSend()
 
 	/**
@@ -123,7 +133,7 @@ class MessageDispatchController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function whatsappSend(): JSONResponse {
-		return $this->relaySend(allowedKinds: ['whatsapp-cloud-api', 'whatsapp-bsp']);
+		return $this->relaySend(allowedKinds: ['whatsapp-cloud-api', 'whatsapp-bsp'], channel: 'whatsapp');
 	}//end whatsappSend()
 
 	/**
@@ -135,6 +145,7 @@ class MessageDispatchController extends Controller {
 	 *                                        channel (SMS vs WhatsApp), so an
 	 *                                        SMS endpoint can't be used to send
 	 *                                        a WhatsApp message and vice versa.
+	 * @param string            $channel      The channel the endpoint serves, stored on a scheduled send.
 	 *
 	 * @return JSONResponse
 	 *
@@ -142,7 +153,7 @@ class MessageDispatchController extends Controller {
 	 *   the REST contract is owned by
 	 *   messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md.
 	 */
-	private function relaySend(array $allowedKinds): JSONResponse {
+	private function relaySend(array $allowedKinds, string $channel): JSONResponse {
 		$source = trim((string)$this->request->getParam('source', ''));
 		$path = trim((string)$this->request->getParam('path', ''));
 
@@ -152,10 +163,94 @@ class MessageDispatchController extends Controller {
 			return $refusal;
 		}
 
+		if (trim((string)$this->request->getParam('sendAt', '')) !== '') {
+			return $this->scheduleSend(channel: $channel, source: $source, path: $path);
+		}
+
 		$result = $this->sendThroughProvider(source: $source, path: $path);
 
 		return $this->relayResult(source: $source, result: $result);
 	}//end relaySend()
+
+	/**
+	 * Store a send with `sendAt` for the sweep and answer 202 with its id.
+	 *
+	 * A past or unreadable `sendAt` is a 400, an `object` the caller may not read
+	 * is a 404, and without the scheduler the send is refused with 503 rather
+	 * than sent now.
+	 *
+	 * @param string $channel The channel.
+	 * @param string $source  The messaging source.
+	 * @param string $path    The provider path.
+	 *
+	 * @return JSONResponse The scheduled message, or the refusal.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
+	 */
+	private function scheduleSend(string $channel, string $source, string $path): JSONResponse {
+		if ($this->scheduler === null) {
+			return new JSONResponse(['error' => 'scheduled sending is not available'], 503);
+		}
+
+		$object = $this->boundObject();
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		try {
+			$scheduled = $this->scheduler->schedule(
+				message: [
+					'channel' => $channel,
+					'source' => $source,
+					'path' => $path,
+					'body' => $this->arrayParam(name: 'body'),
+					'headers' => $this->stringifyHeaders(headers: $this->arrayParam(name: 'headers')),
+					'sendAt' => (string)$this->request->getParam('sendAt', ''),
+				],
+				object: $object,
+				now: new DateTimeImmutable()
+			);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 400);
+		}
+
+		return new JSONResponse($scheduled, 202);
+	}//end scheduleSend()
+
+	/**
+	 * The object named by `object: {register, schema, id}`, null when none is
+	 * named, or a 400/404 refusal.
+	 *
+	 * @return ObjectEntity|JSONResponse|null
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
+	 */
+	private function boundObject(): ObjectEntity|JSONResponse|null {
+		$named = $this->request->getParam('object', null);
+		if ($named === null || $named === '' || $named === []) {
+			return null;
+		}
+
+		$path = [];
+		foreach (['register', 'schema', 'id'] as $key) {
+			$value = null;
+			if (is_array($named) === true) {
+				$value = ($named[$key] ?? null);
+			}
+
+			if (is_scalar($value) === false || trim((string)$value) === '') {
+				return new JSONResponse(['error' => 'object must name register, schema and id'], 400);
+			}
+
+			$path[$key] = (string)$value;
+		}
+
+		if ($this->objects === null) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		}
+
+		return (new ReadableObject(objects: $this->objects))->resolve(path: $path);
+	}//end boundObject()
 
 	/**
 	 * Refuse a send without a source or a path.

@@ -67,9 +67,15 @@ class ScheduledMessageStoreTest extends TestCase {
 		$qb = $this->createMock(IQueryBuilder::class);
 		$qb->method('expr')->willReturn($expr);
 		$qb->method('createNamedParameter')->willReturnCallback(static fn ($value): string => is_array($value) ? implode('|', $value) : (string)$value);
-		foreach (['select', 'from', 'update', 'orderBy', 'setMaxResults'] as $chain) {
+		foreach (['select', 'from', 'update', 'orderBy', 'setMaxResults', 'insert'] as $chain) {
 			$qb->method($chain)->willReturnSelf();
 		}
+
+		$qb->method('setValue')->willReturnCallback(function (string $column, $value) use ($qb): IQueryBuilder {
+			$this->set[$column] = $value;
+			return $qb;
+		});
+		$qb->method('getLastInsertId')->willReturn(41);
 
 		$qb->method('where')->willReturnCallback(function (string $condition) use ($qb): IQueryBuilder {
 			$this->where[] = $condition;
@@ -134,5 +140,39 @@ class ScheduledMessageStoreTest extends TestCase {
 			'source' => 'twilio-sms', 'path' => 'Messages.json', 'body' => ['Body' => 'Hi'], 'headers' => [], 'messageId' => '',
 		]], $rows);
 		$this->assertSame(['state in pending|claimed'], $this->where);
+	}
+	public function testAScheduledMessageIsInsertedPendingWithItsBinding(): void {
+		$id = $this->store()->insert([
+			'channel' => 'sms', 'source' => 'twilio-sms', 'path' => 'Messages.json', 'body' => ['Body' => 'Hi'], 'headers' => [],
+			'objectUuid' => 'case-1', 'author' => 'handler', 'sendAt' => '2026-11-16T07:00:00+00:00',
+		]);
+
+		$this->assertSame('41', $id);
+		$this->assertSame(
+			['sms', 'twilio-sms', 'Messages.json', '{"Body":"Hi"}', '[]', 'case-1', 'handler', '2026-11-16T07:00:00+00:00', 'pending', '0'],
+			[
+				$this->set['channel'], $this->set['source'], $this->set['path'], $this->set['body'], $this->set['headers'],
+				$this->set['object_uuid'], $this->set['author'], $this->set['send_at'], $this->set['state'], $this->set['attempts'],
+			]
+		);
+		$this->assertArrayHasKey('created', $this->set);
+	}
+
+	public function testAnObjectsMessagesComeBackWithTheirBindingAndOutcome(): void {
+		$rows = $this->store(1, [[
+			'id' => 9, 'channel' => 'whatsapp', 'state' => 'parked', 'attempts' => 5, 'send_at' => '2026-11-16T07:00:00+00:00',
+			'object_uuid' => 'case-1', 'author' => 'handler', 'last_error' => 'refused', 'body' => '{}', 'headers' => '{}',
+		]])->forObject('case-1', 20);
+
+		$this->assertSame(['object_uuid=case-1'], $this->where);
+		$this->assertSame(['9', 'whatsapp', 'parked', 'case-1', 'handler', 'refused'], [
+			$rows[0]['id'], $rows[0]['channel'], $rows[0]['state'], $rows[0]['objectUuid'], $rows[0]['author'], $rows[0]['lastError'],
+		]);
+	}
+
+	public function testFindAnswersTheRowOrNull(): void {
+		$this->assertSame('3', $this->store(1, [['id' => 3, 'state' => 'pending']])->find('3')['id']);
+		$this->assertSame(['id=3'], $this->where);
+		$this->assertNull($this->store(1, [])->find('4'));
 	}
 }
