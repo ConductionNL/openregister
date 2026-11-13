@@ -32,6 +32,13 @@ use PHPUnit\Framework\TestCase;
  * Pins the applied list for upstream paths, decided and undecided.
  *
  * @covers \OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\AuthorizationBlocks
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\DescriptorFold
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\DescriptorPath
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\DescriptorRevisions
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\PartRevisions
  */
 class GuardedDescriptorMergeAppliedGoldenTest extends TestCase {
 
