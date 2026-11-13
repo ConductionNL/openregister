@@ -6270,3 +6270,4 @@ cover:buildiq:70b3e29em7beb:0d8702e3	PR #1559: 3 tests, template NamedParameters
 cover:keepiq:c967a31fm10bf:1b97f731	PR #1766: 9 tests, lib/Listener/*.php 411/418 -> 418/418 statements; suite 4854->4863 OK	session-20261113T182353-86897235	2026-11-13T19:16:59Z
 cover:hermiq:065f1631md84f:17bbac84	already done: hermiq lib/TaskProcessing/*.php 123/125 statements covered (98.4%), no PR	session-20261113T172329-0b6220f9	2026-11-13T19:16:58Z
 cover:hermiq:065f1631md84f:9cb3375b	no PR: lib/Service/Redaction/ at 97.7% (168/172) after -1 merged; 4 missed lines are unreachable private guards (FORM_RE, PREFIX_PATTERNS invariants)	session-20261113T185322-2911ee6d	2026-11-13T19:17:12Z
+verify:portaliq:2453:84a2fd65	2453,2454,2455,2456 GREEN (tests only; 4914->4980, 0 failures)	session-20261113T185326-a3ee0aab	2026-11-13T19:17:26Z
