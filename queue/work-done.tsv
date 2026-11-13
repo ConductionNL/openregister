@@ -7019,3 +7019,4 @@ build4:openregister:object-files-follow-object-access	already done: every code t
 review:openregister:10338:0499604d	APPROVE: tests only, green merged with main	session-20261113T204535-8ae4a1d5	2026-11-13T21:54:17Z
 review:openregister:10355:7c1a95a7	APPROVE: tests only, new test and Architecture/Contract green	session-20261113T212414-55623216	2026-11-13T21:54:51Z
 review:openregister:10360:57eafbd4	APPROVE 10360: new uncalled FlowStepRetry + tests; suites as on main	session-20261113T205332-17038cbf	2026-11-13T21:55:18Z
+build4:openregister:platform-caldav-backend	already done: all code tasks ticked on main; openspec validate --strict passes (2.3); left 2.1 e2e and 3.x lane handovers, not code	session-20261113T214350-9762e143	2026-11-13T21:55:34Z
