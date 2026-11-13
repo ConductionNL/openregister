@@ -6934,3 +6934,4 @@ build4:openregister:consolidate-permission-handling	partial: PR #10331 task 1 pi
 verify:hermiq:1719:d34eeb6f	GREEN 1719: 4596 tests, 0 new failures, vitest 1313 passed	session-20261113T205332-17038cbf	2026-11-13T21:24:45Z
 build4:openregister:anonymisation-placeholder-id-scope	partial: PR #10332 (9.1-9.4 mask forms + grounds, 23 tests); 9.5 Vue/e2e left	session-20261113T205324-91f6ae17	2026-11-13T21:25:07Z
 review:openregister:10328:3b20924d	APPROVE 10328: docs only, matches MdtoXmlGenerator	session-20261113T205332-17038cbf	2026-11-13T21:25:40Z
+verify:decidiq:2150:11062045	decidiq #2150 GREEN (3923 tests, 0 new failures)	session-20261113T212406-cc34ae8b	2026-11-13T21:26:00Z
