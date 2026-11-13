@@ -3604,3 +3604,5 @@ verify:dossiq:6333:736e4585	2 GREEN (6333,6334); no new failures	session-2026111
 review:openregister:10117:b94f2fdd	APPROVE: tests only, jest 7837/7837, eslint clean	session-20261113T084523-b4140bcd	2026-11-13T08:49:36Z
 gap:launchpad:tcr2:burn1	PR #1181: 8 test files (6 PHPUnit, 2 vitest), 32 tests, suites green	session-20261113T073916-e9f11dfa	2026-11-13T08:49:47Z
 fix:learniq:2419:f709e650	kept V1 route postfix (no renamed routes, assertion restored), removed .pyc; middleware change is the PR's purpose; unit 6129, 1 inherited failure; head 62ccde47	session-20261113T081043-b24589a6	2026-11-13T08:50:01Z
+merge:learniq:2436:de34a279	merge-local over 2 learniq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:50:08Z
+merge:learniq:2439:8774cedc	merge-local over 2 learniq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:50:08Z
