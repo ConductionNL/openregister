@@ -4357,3 +4357,4 @@ cover:stackiq:9ac19b3am10f3:f4b2f7af	already done: lib/Service/ArchiMate/ at 99.
 build:pipelinq:brp-monitor-moves-to-integriq	partial: PR #3717, task 1.1 (repair step + handover event, 19 tests); 2.1/3.1 wait on integriq handover listener and keepiq mTLS refs	session-20261113T104523-578f6e7a	2026-11-13T10:59:49Z
 merge:stackiq:1693:7130effa	merge-local over 1 stackiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:00:15Z
 cover:stackiq:9ac19b3am10f3:692f8a78	already done: lib/Service/Contactpersoon 205/205 statements, each class has behaviour tests; -1/-2 merged	session-20261113T064518-860c039d	2026-11-13T11:00:43Z
+cover:stackiq:9ac19b3am10f3:68d2b5ba	already done: lib/Service/Cmdb/ + Settings/ at 97.82% (2732/2793) on development, above the 90% target; no PR	session-20261113T071633-17de823f	2026-11-13T11:00:46Z
