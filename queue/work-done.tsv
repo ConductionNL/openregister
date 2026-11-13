@@ -5697,3 +5697,4 @@ cover:opencatalogi:fc83bfb1:d528dcf0	PR #2591: 7 tests for DashboardRegistrar, R
 build:portaliq:event-sign-up-by-a-pupil-with-seats	partial: PR #2416 (task 4: staff event list endpoint + news event picker); tasks 3 (shell child refs) and 5 (learniq) left	session-20261113T172328-c860ad55	2026-11-13T17:47:17Z
 cover:opencatalogi:fc83bfb1:a2faa39f	PR #2592: 15 tests for CommentPeriodRequest and OoapiScope (rest of lib/Contract is interfaces); suite 5254->5269, same 2 inherited failures	session-20261113T171203-c5a044de	2026-11-13T17:47:42Z
 measure:shillinq:20261113h16	php 92.34% js 84.31%	session-20261113T172329-0b6220f9	2026-11-13T17:47:41Z
+cover:hermiq:065f1631me44a:js0be8c659	PR #1697: 17 vitest tests over 6 modals, src/modals 90.3%->92.4%, vitest 1306->1323 all passing	session-20261113T171154-27186e77	2026-11-13T17:48:50Z
