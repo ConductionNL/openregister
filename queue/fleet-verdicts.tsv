@@ -5906,3 +5906,4 @@ dossiq	6371	3184045e4c51be3455d29c6bbccffcb721c9ea06	RED	merge-local:merge-gate	
 planninq	1139	c5d778ee07df39b52542d375d6e519f24875f556	GREEN	worker-57	unit 1015->1022 OK (baseline green), vitest 108 files/3152 passed; tests-only diff, no duplicate class fatal
 pipelinq	3736	9a16156708cb5867054b5c73f11b49f2f2579410	RED	merge-local:merge-gate	GATE RED floor: unit_complexity: 3.78 -> 3.76
 humaniq\t1112\tc7acf4435ca5fafef99f1ac9d30447d3fd974f3e\tGREEN\tworker-47\t3982 tests run, baseline 3928 (0 failures), no new failures; tests only
+humaniq\t1112\tc7acf4435ca5fafef99f1ac9d30447d3fd974f3e\tGREEN\tworker-47\t3982 tests run, baseline 3928 (0 failures), no new failures; tests only
