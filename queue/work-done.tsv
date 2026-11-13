@@ -6913,3 +6913,4 @@ build:opencatalogi:diwoo-metadata-on-the-publication	partial: PR #2655 does 1.1,
 verify:buildiq:1571:5d54ffc0	GREEN #1571: phpunit 2917 (1 inherited), vitest 4084 pass	session-20261113T202619-0d7929e0	2026-11-13T21:16:35Z
 verify:buildiq:1575:4454957e	GREEN 1575: phpunit 2937 (baseline 2917, no new failures), vitest 4095	session-20261113T192651-cb1e4daf	2026-11-13T21:17:09Z
 build4:dossiq:task-forms-keep-a-draft	partial: PR #6461 (task 7, capabilities row 3.14 built with evidence; tasks 4 e2e and 6 live left); vitest unchanged, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T21:17:33Z
+build4:dossiq:case-goals	PR #6463: 2.1b Close on a goal row (row-action bridge to CnActionDialog, case-scoped close); no tasks left	session-20261113T185328-da819141	2026-11-13T21:18:02Z
