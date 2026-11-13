@@ -7054,3 +7054,4 @@ review:openregister:10362:aae0a66e	APPROVE	session-20261113T205330-0e50ee62	2026
 build4:openregister:history-schema-and-settings-edits-audited	partial: PR #10391 (EntityEditAuditor + listener for six schema/register events, tests; endpoints, pages, organisations, category column left)	session-20261113T210940-b751519f	2026-11-13T22:02:30Z
 build4:openregister:modelling-composite-identity	partial: PR #10392 builds 3.1 (@self.key) and 2.3 (identity index); 1.2 and 4.1 left	session-20261113T213311-eb1a0842	2026-11-13T22:02:39Z
 review:openregister:10363:a2336fd6	BLOCK #10363 (architecture test: concrete SchemaMapper)	session-20261113T212920-cf6d8399	2026-11-13T22:02:39Z
+build4:openregister:list-query-condition-groups	partial: PR #10393 task 1.2 (_where tree on QB + raw path) + 1.5 part (400 with path); 1.3,1.4,1.5 search backends,1.6,2.x left	session-20261113T202619-0d7929e0	2026-11-13T22:02:59Z
