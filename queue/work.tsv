@@ -5298,3 +5298,31 @@ verify:pipelinq:3739:bc850dd6	verify	pipelinq	development	merge	prs=3739@6c64c80
 merge:buildiq:1526:82037892	merge	buildiq	development	development	prs=1526@2ab00cf5eec7706a83146c6418b6e3aa926ac0bd,1540@73210916ebfaf905f7e6b2c4193b3465af270e53,1541@681ca7547f32dc717f7deeec1a9cf0bcecf9d2ed	2026-11-13T12:30:22Z
 merge:shillinq:2819:4b0f7ec1	merge	shillinq	development	development	prs=2819@c6c0b8c1134a82fd85b5eb3acaf0418ad0d0df55,2930@a50e12ea6aff1f48bee9eb77b7b2c2e6038f5431,2931@5a030029775adc6ddde229466f8d637973e4ef72,2933@d4e16dcb312b34f6ee5ccd927ea9db54dbba0e41,2934@f31bd60394b9ec04d5efc3abf037f240e9ec8231,2935@674e6017f6f61b001a5b1a0b6413cc9fcf0c7f30,2936@dd179fd9ed1f8eca177bafcd1e8a0f7fe97d4ca6,2937@8ffdfccbd50cc73c84ff77b2d07939e5647c242d,2938@8c5acb82023515d7d84259914fe	2026-11-13T12:30:22Z
 merge:larpinq:1028:e44dc468	merge	larpinq	development	development	prs=1028@5779a2c934a72393a04396be59ec6c200e079559	2026-11-13T12:30:22Z
+review:openregister:10185:c71af4e1	review	openregister	main	10185	sha=c71af4e154d879af4495da2a159174c509a5a1c6;last_approved=;title=feat(openregister): build flow-error-branch-and-step-retry	2026-11-13T12:42:28Z
+review:openregister:10186:7bd57cef	review	openregister	main	10186	sha=7bd57cef7a3883a7b97c1886c5e710d3b19dd8be;last_approved=;title=test(openregister): cover the GraphQL request guard	2026-11-13T12:42:28Z
+review:openregister:10187:52bd77cf	review	openregister	main	10187	sha=52bd77cff10385d44444ba379bada363d104900e;last_approved=;title=feat(openregister): build github-provider-shop-rules	2026-11-13T12:42:28Z
+review:openregister:10188:295efa62	review	openregister	main	10188	sha=295efa62d62fe5322d3a9b6c72f6eaefff611cb6;last_approved=;title=feat(openregister): build object-actions-declared-and-run	2026-11-13T12:42:28Z
+review:openregister:10189:dadb71dd	review	openregister	main	10189	sha=dadb71dd07a7fed8870fa19c6dfc8811b36aee65;last_approved=;title=feat(openregister): build lifecycle-over-reference-field	2026-11-13T12:42:28Z
+review:openregister:10190:ed15406a	review	openregister	main	10190	sha=ed15406acb56dc01dd6e92a50df5a86a40f4dcc6;last_approved=;title=feat(openregister): build flow-tag-object-step	2026-11-13T12:42:28Z
+review:openregister:10191:670ec824	review	openregister	main	10191	sha=670ec824c575baae6abf62abcad384a22c27cf62;last_approved=;title=feat(openregister): build or-flow-engine	2026-11-13T12:42:28Z
+review:openregister:10192:d6b98a8e	review	openregister	main	10192	sha=d6b98a8e737722097136d29fbc94b27a7d4a9d0a;last_approved=;title=feat(openregister): build or-flow-action-nodes	2026-11-13T12:42:28Z
+review:openregister:10193:6d5d9117	review	openregister	main	10193	sha=6d5d9117334463d50f900db32079fa9821871187;last_approved=;title=feat(openregister): build platform-provided-capabilities (tags and platform check)	2026-11-13T12:42:28Z
+review:openregister:10194:3325393c	review	openregister	main	10194	sha=3325393c4d41fbfe747763eebad144ed638ecd65;last_approved=;title=feat(openregister): build flow-node-config-forms	2026-11-13T12:42:28Z
+review:openregister:10195:8333042e	review	openregister	main	10195	sha=8333042ede9120df89aafaa7abcdcb71bd44bcfa;last_approved=;title=feat(openregister): build import-preview-and-conflict-policy	2026-11-13T12:42:28Z
+review:openregister:10196:cb4b951d	review	openregister	main	10196	sha=cb4b951d9428a975367e3d92df04781b45f6986e;last_approved=;title=feat(openregister): build connections-daily-report-mail	2026-11-13T12:42:28Z
+review:openregister:10197:1ca18135	review	openregister	main	10197	sha=1ca18135441ebd24871fd2d9f1432a23c3654ad4;last_approved=;title=feat(openregister): build records-saved-templates	2026-11-13T12:42:28Z
+review:openregister:10198:ad9bef78	review	openregister	main	10198	sha=ad9bef782bdac1c7e219ddcff8ba21e839cb585c;last_approved=;title=feat(openregister): build notes-replies-by-parent	2026-11-13T12:42:28Z
+review:openregister:10199:95de0f89	review	openregister	main	10199	sha=95de0f89958f76c459e596c4065b1f92ee7899e1;last_approved=;title=feat(openregister): build object-quota-per-organisation	2026-11-13T12:42:28Z
+review:openregister:10200:ae330e53	review	openregister	main	10200	sha=ae330e53a680635644d773c7a4709b674e778768;last_approved=;title=feat(openregister): build local-changes-to-app-shipped-configuration	2026-11-13T12:42:28Z
+verify:pipelinq:3754:2d53b5e5	verify	pipelinq	development	merge	prs=3754@9eeea22badc492ed37aafbd84c5ba3ff0ac256a3,3755@6b2c8043680c332640b7da29c3ac0cc18c7aa654	2026-11-13T12:42:28Z
+verify:humaniq:1112:30696823	verify	humaniq	development	merge	prs=1112@c7acf4435ca5fafef99f1ac9d30447d3fd974f3e	2026-11-13T12:42:28Z
+verify:shillinq:2932:513a09af	verify	shillinq	development	merge	prs=2932@a3fc2581893aaee0437d925709fed9b84e7a2265	2026-11-13T12:42:28Z
+verify:planninq:1139:e6274a1a	verify	planninq	development	merge	prs=1139@c5d778ee07df39b52542d375d6e519f24875f556	2026-11-13T12:42:28Z
+verify:versioniq:677:91541efd	verify	versioniq	development	merge	prs=677@4040041e4aa48804e6e535b690495842b3dedeb5	2026-11-13T12:42:28Z
+merge:dossiq:6406:2b3983b3	merge	dossiq	development	development	prs=6406@3af271438c29fdf6aadab63ac170a194ef3cc5c5	2026-11-13T12:42:28Z
+merge:shillinq:2938:96c3cb02	merge	shillinq	development	development	prs=2938@8c5acb82023515d7d84259914fe7d9519564f370,2939@ba97f1f0047083eebd35763b9561c21a8dc3ace9	2026-11-13T12:42:28Z
+merge:portaliq:2388:856b3bfe	merge	portaliq	development	development	prs=2388@45d8f99f97efb6f6d11f60c29058dd2aa28fcf50	2026-11-13T12:42:28Z
+cover:pipelinq:7f9dc8e6m84dd:9d3a1784	cover	pipelinq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=uncovered;weight=522;coverage=86.73;target=90.0	2026-11-13T09:18:04Z
+cover:versioniq:1b35eed9mf055:js3f3bfe56	cover	versioniq	development	quality/test-coverage-js-3f3bfe56	lang=js;dirs=src/*;focus=uncovered;weight=834;coverage=74.17;target=90.0	2026-11-12T20:39:19Z
+cover:versioniq:1b35eed9mf055:js06645759	cover	versioniq	development	quality/test-coverage-js-06645759	lang=js;dirs=src/components/*;focus=uncovered;weight=435;coverage=74.17;target=90.0	2026-11-12T20:45:58Z
+cover:versioniq:1b35eed9mf055:js0023cfc7	cover	versioniq	development	quality/test-coverage-js-0023cfc7	lang=js;dirs=src/dialogs/*;focus=uncovered;weight=129;coverage=74.17;target=90.0	2026-11-12T20:51:04Z
