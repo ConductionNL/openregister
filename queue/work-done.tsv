@@ -3158,3 +3158,4 @@ review:openregister:10015:fb43e991	APPROVE: tests-only metadata, suites match ma
 cover:dossiq:f8a113c5m7e79:390adfb9	already done: lib/*.php 49/51 (96%, target 95); the 2 lines are a catch unreachable because FleetAppId::resolve swallows throws, behaviour already pinned by testAnAppManagerThatThrowsReadsTheAppAsMissing	session-20261113T051709-e616bf69	2026-11-13T07:29:49Z
 verify:decidiq:2120:56e91b9d	GREEN decidiq#2120 (phpunit 3684 OK, vitest 2682 pass, no new failures)	session-20261113T072713-bdbc6044	2026-11-13T07:29:55Z
 cover:integriq:92114ab0m658d:59f49d26	PR #3499: PropertySourceBindings test (2); lib/PropertySource/*.php 93.8% -> 96.9%	session-20261113T051705-4f5ad12a	2026-11-13T07:30:20Z
+cover:shillinq:05639debmd8ee:28cccfd9	already done: lib/Repair/Support 113/113 statements covered by its own 17 tests (every branch asserted); no PR	session-20261113T064518-860c039d	2026-11-13T07:30:17Z
