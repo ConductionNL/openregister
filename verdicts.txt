@@ -2813,4 +2813,5 @@
 10152 edf1dc082ba5a3f1f234799506f8adada0e6738a APPROVE Adds packageFormat to e-Depot settings as the change asks; unknown format refused with 400 before any write; access unchanged; phpstan clean; touched, Settings, Architecture, Rules, Contract green; Controller errors inherited.
 10173 75c440fdd3378e5e5d8121eb4bebf97576c81577 APPROVE Docs only: ticks openspec tasks for mcp-output-schema-payload; the cited method signature and budget test exist on main as described. No code change.
 10158 fec51a1d0cde85931e26d9fd672c7a61f240370f APPROVE Adds an unwired URL fetcher (guard first, no redirects, size ceiling, typed refusals); no existing code changed. phpstan clean; new test, Architecture, Rules, Controller and Contract pass merged with main.
+10178 1eca7811d762cd32623e72d60a22aad6ab10606a APPROVE tests and tasks.md only; new PHPUnit (4) and jest (18 in the two specs) pass merged with main, eslint clean
 10175 b50560d87648b61be13e5752c284172987f6f0b2 APPROVE openspec docs only (tasks.md tick, design note); claims checked: archived change and MagicMapperRefusedCreateComposedTest exist on main; Contract, Rules, ObjectEventRule and that test green on PR+main
