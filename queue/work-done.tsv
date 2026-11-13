@@ -3313,3 +3313,4 @@ cover:openregister:7350e3efmea52:c8e24f36	PR #10108: 13 tests, Service/Object 94
 cover:versioniq:1b35eed9:72b7d712	PR #672: 4 classes, 23 tests (SignedRelease, AppsRoot, SignedInstall, ExternalInstallRun); suite 1356->1379, 0 new failures	session-20261113T074527-031883a8	2026-11-13T07:55:16Z
 verify:dossiq:6324:10beb863	GREEN 6324 (behaviour-preserving refactor of 5 units, 15190->15200, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T07:55:13Z
 gap:planninq:tcr1:burn1	PR #1139: 7 test files (32 tests), PHP lib 94.1->95.2%	session-20261113T051709-e616bf69	2026-11-13T07:55:24Z
+verify:opencatalogi:2578:9edc50c1	2578 RED (WooControllerTest::testInventarislijstRouteIsAGet sees a duplicate aliased route); 2584 GREEN	session-20261113T071636-117504ad	2026-11-13T07:55:36Z
