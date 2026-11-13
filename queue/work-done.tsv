@@ -5878,3 +5878,4 @@ verify:portaliq:2433:52c4b74c	GREEN 2433,2434,2436,2438,2439,2441; CONFLICT 2435
 verify:portaliq:2415:0653b651	8 GREEN (2415,2426,2428-2433), 2427 CONFLICT (l10n)	session-20261113T175332-5effc865	2026-11-13T18:15:22Z
 verify:stackiq:1886:c7bcddc2	1886 GREEN (JS test only)	session-20261113T171149-8b9ea523	2026-11-13T18:15:31Z
 build:portaliq:submission-row-actions	partial: PR #2452 backend 1.1-1.4 + Register again/no copy-delete in manifest, 25 PHP + 5 JS tests, suite 4914->4939 0 failures; left 2.1 nc-vue openResponse, Talk + Link a form, 3.1 live	session-20261113T175336-e3687686	2026-11-13T18:15:56Z
+verify:shillinq:2948:4e717601	shillinq #2948-#2950 GREEN: 10486 PHP tests 0 new failures, vitest 2355 pass	session-20261113T172325-6eb25015	2026-11-13T18:15:56Z
