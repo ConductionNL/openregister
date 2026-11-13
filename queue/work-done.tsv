@@ -6407,3 +6407,4 @@ review:openregister:10308:e91bf9ca	APPROVE #10308	session-20261113T171141-a39073
 build3:openregister:platform-comments-entity	PR #10317: tasks 1.1-1.5, 2.2 done (2.1 e2e, 2.3 CLI absent, 3.1 hand-over left); no new unit failures	session-20261113T182349-6568f680	2026-11-13T19:45:11Z
 cover:integriq:92114ab0m0593:2fbf11bd	PR #3534: 34 tests, Objecten 97.0%->99.86%, no new failures	session-20261113T192654-ac81692f	2026-11-13T19:45:22Z
 review:openregister:10304:23e91967	10304 APPROVE (tags only; Architecture/Contract/Rules/Controller green)	session-20261113T182359-67ad413b	2026-11-13T19:45:46Z
+cover:opencatalogi:fc83bfb1:05630945	PR opened: StandardProtocolPaths 32 tests, 5254->5286, same 2 inherited failures	session-20261113T192659-0ddb618f	2026-11-13T19:46:12Z
