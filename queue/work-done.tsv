@@ -2816,6 +2816,7 @@ cover:pipelinq:7f9dc8e6m1e6e:f0c02922	already done: open PR on quality/test-cove
 cover:pipelinq:7f9dc8e6m1e6e:js7de78384	already covered by open branch quality/test-coverage-js-7de78384-1: src/manifest.d/* 15/53 on development -> 53/53 with it; no new PR	session-20261113T051714-4ad50f31	2026-11-13T06:31:13Z
 cover:stackiq:df113dffm5ac4:js0be8c659	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:31:18Z
 cover:filinq:7a9ef677m5ffe:0f859653	already done: lib/Flow/*.php at 100% (99/99, pcov on development); no PR	session-20261113T054519-189b2666	2026-11-13T06:31:18Z
+cover:filinq:7a9ef677m5ffe:771ffa4f	already done: lib/Service/Comparison/ at 98.1% (253/258, pcov on development), above 90 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:31:31Z
 cover:shillinq:05639debmd8ee:46ce5a44	PR #2891: 10 tests over 4 classes, six Service dirs 90.4%->92.4%, suite 9031->9041 (1 inherited failure)	session-20261113T054519-3d0ac77f	2026-11-13T06:31:23Z
 merge:launchpad:1171:3ec55cfe	merge-local over 3 launchpad tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:31:28Z
 merge:launchpad:1172:ba1d4b65	merge-local over 3 launchpad tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:31:28Z
