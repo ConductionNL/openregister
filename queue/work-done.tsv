@@ -7504,3 +7504,33 @@ merge:integriq:3556:27d9578d	merge3 tree of 30 integriq PRs: merged=20 red=2 fai
 merge:humaniq:1025:cd959953	merge3 tree of 7 humaniq PRs: merged=3 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-13T23:28:12Z
 merge:planninq:1152:27e8c71c	merge3 tree of 2 planninq PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-13T23:29:10Z
 merge:planninq:1153:9788f1bc	merge3 tree of 2 planninq PRs: merged=1 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-13T23:29:12Z
+merge:dossiq:6423:3dd93d5b	stale	feeder	2026-11-13T23:40:20Z
+merge:pipelinq:3759:0cbf8a01	stale	feeder	2026-11-13T23:40:20Z
+merge:pipelinq:3761:a546d183	stale	feeder	2026-11-13T23:40:20Z
+merge:pipelinq:3763:9eff904d	stale	feeder	2026-11-13T23:40:20Z
+merge:shillinq:2940:2e35a4ab	stale	feeder	2026-11-13T23:40:20Z
+merge:shillinq:2945:ac4c3529	stale	feeder	2026-11-13T23:40:20Z
+merge:pipelinq:3766:c15d54dd	stale	feeder	2026-11-13T23:40:20Z
+merge:pipelinq:3767:6e524a02	stale	feeder	2026-11-13T23:40:20Z
+merge:shillinq:2947:310dae8b	stale	feeder	2026-11-13T23:40:20Z
+merge:shillinq:2948:d72faf38	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6428:b56f847f	stale	feeder	2026-11-13T23:40:20Z
+merge:shillinq:2952:c8c8084e	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6431:3ab8f4db	stale	feeder	2026-11-13T23:40:20Z
+merge:pipelinq:3769:998edfba	stale	feeder	2026-11-13T23:40:20Z
+merge:shillinq:2954:e40b4935	stale	feeder	2026-11-13T23:40:20Z
+merge:pipelinq:3772:ba375543	stale	feeder	2026-11-13T23:40:20Z
+merge:shillinq:2955:693754aa	stale	feeder	2026-11-13T23:40:20Z
+merge:shillinq:2960:ca89f61a	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6436:da39032e	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6437:fa435424	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6439:73fe2fd7	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6441:da6adcc7	stale	feeder	2026-11-13T23:40:20Z
+merge:shillinq:3013:fe552522	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6443:2382f907	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6445:cd0245b7	stale	feeder	2026-11-13T23:40:20Z
+merge:pipelinq:3775:57c35979	stale	feeder	2026-11-13T23:40:20Z
+merge:pipelinq:3782:44f27144	stale	feeder	2026-11-13T23:40:20Z
+merge:pipelinq:3785:e3e10274	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6449:d4d7ba4a	stale	feeder	2026-11-13T23:40:20Z
+merge:dossiq:6452:896d8065	stale	feeder	2026-11-13T23:40:20Z
