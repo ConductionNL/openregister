@@ -5340,6 +5340,7 @@ cover:buildiq:70b3e29ema699:f91e7417	already done: lib/Service/Connection/ at 99
 cover:buildiq:70b3e29ema699:d33a91b0	already done: lib/Service/Copilot/ at 98.68% lines (149/151) on development, target 95; no PR	session-20261113T074535-8a2067c2	2026-11-13T13:54:25Z
 cover:humaniq:a18a13fb:437bbdf7	lib/Standards 287/295 -> 291/295 lines; PR #1116 (Violation, TableCheckEvaluator, RuleEngine fail-closed paths); suite 3928 -> 3933	session-20261113T131537-72e2896e	2026-11-13T13:54:25Z
 build2:openregister:sensitive-field-reveal-audit	partial: built read-event half of task 2.1 (reveals gated/surfaced as read events in ReadEventVisibility); PR #10265 to main; frontend reveal kind filter + e2e 3.1 left	session-20261113T124802-c7d6f662	2026-11-13T13:54:17Z
+verify:buildiq:1545:8c0a76d4	GREEN 1545, GREEN 1546; tree verify, both tests-only with 0 deletions; php 2784->2790 (1 inherited ExportZipGoldenTest failure throughout), vitest 3995->4020 green	session-20261113T094607-ad655fd0	2026-11-13T13:54:51Z
 cover:stackiq:9ac19b3amc14f:b5905f71	already done: lib/Service/Federation/ at 99.0% lines (384/388); no PR	session-20261113T134531-53f143d2	2026-11-13T13:54:35Z
 cover:dossiq:069ee2d6m2deb:js0be8c659	PR #6413: 3 coverage specs (19 tests) for DocumentMetadataDialog/FileRequestDialog/AanvullingVragenModal, src/modals lines 90.48%->95.06%	session-20261113T131536-da6c59fa	2026-11-13T13:54:56Z
 cover:launchpad:fb10c50fm2d1d:aae6d66c	already done: lib/Exception 100% (55/55) on development	session-20261113T091533-b7a00bc3	2026-11-13T13:55:00Z
