@@ -3325,3 +3325,4 @@ cover:planninq:e1c9866d:60c2c265	PR #1140: 27 tests, 6 classes, lib/Controller/*
 gap:stackiq:spdx:burn1	PR #1852: SPDX headers added to the 24 files under lib/ and tests/ that lacked them; none left	session-20261113T071636-117504ad	2026-11-13T07:56:51Z
 cover:launchpad:fb10c50fm911d:js750ffd0f	PR #1175: 5 specs, 49 tests; admin lines 89.27%->95.23%; suite 1983->2032 green	session-20261113T073916-e9f11dfa	2026-11-13T07:57:08Z
 verify:shillinq:2909:b0f788e4	GREEN #2909: 9540 tests, 1 baseline, 0 new	session-20261113T072715-8f8a14e9	2026-11-13T07:57:07Z
+cover:openregister:7350e3efmea52:0c3677df	PRs #10109 (115 tests) + #10110 (33 tests + @uses fixes): lib/Service/ExampleSet 77.9->93.1%, ExampleSet suite OK	session-20261113T054517-26499007	2026-11-13T07:57:19Z
