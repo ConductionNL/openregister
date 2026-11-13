@@ -331,10 +331,65 @@ class NotesController extends Controller {
 			path: $path,
 			step: new NoteStep(
 				action: fn (ObjectEntity $object): JSONResponse => $this->destroyOn(object: $object, noteId: (int)$noteId),
-				failure: fn (Exception $e): JSONResponse => $this->failureWith(status: $this->statusFor(e: $e))($e)
+				failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
 			)
 		);
 	}//end destroyAt()
+
+	/**
+	 * Lock a note, so that nobody can edit or delete it any more.
+	 *
+	 * @param string $register The register slug or identifier
+	 * @param string $schema The schema slug or identifier
+	 * @param string $id The ID of the object
+	 * @param string $noteId The ID of the note to lock
+	 *
+	 * @return JSONResponse The locked note, or the refusal
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
+	 */
+	public function lock(
+		string $register,
+		string $schema,
+		string $id,
+		string $noteId,
+	): JSONResponse {
+		return $this->onObject(
+			path: new NotePath(register: $register, schema: $schema, id: $id),
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->lockOn(object: $object, noteId: (int)$noteId),
+				failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
+			)
+		);
+	}//end lock()
+
+	/**
+	 * Lock one of the object's notes and record it on the object's audit trail.
+	 *
+	 * The author of the note, or someone who manages the object, may lock it.
+	 * Locking a locked note answers it unchanged and writes no second entry.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param int          $noteId The note.
+	 *
+	 * @return JSONResponse The locked note.
+	 */
+	private function lockOn(ObjectEntity $object, int $noteId): JSONResponse {
+		$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: $noteId);
+		$wasLocked = ($this->noteService->getNote(noteId: $noteId)['locked'] ?? false) === true;
+
+		$note = $this->noteService->lockNote(
+			noteId: $noteId,
+			mayManage: $this->services->visibility->mayManageObject(object: $object)
+		);
+		if ($wasLocked === false) {
+			$this->noteService->auditLock(object: $object, note: $note);
+		}
+
+		return new JSONResponse(data: $note);
+	}//end lockOn()
 
 	/**
 	 * Run an action on the object the path names, translating the shared outcomes.
