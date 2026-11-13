@@ -4541,4 +4541,5 @@ cover:pipelinq:7f9dc8e6m84dd:fdb25f89	already done: lib/Service/Access 86/86 sta
 cover:pipelinq:7f9dc8e6m84dd:50d794fc	already done: lib/Service/Matomo/ at 100% (72/72) on development; no PR	session-20261113T071633-17de823f	2026-11-13T11:30:40Z
 cover:dossiq:069ee2d6m7275:e7fd1c43	PR #6405: +111 tests, lib/Service/Intake 1923->1995/2001	session-20261113T081040-5e814df2	2026-11-13T11:30:53Z
 build:openregister:audit-log-page	failed: nothing buildable here; only 3.1 (audit leaf surface, owned by nextcloud-vue) and 4.2 (browser e2e, live pass) are open; 1.x, 2.x, 4.1 already done	session-20261113T104520-9cf91a1e	2026-11-13T11:31:11Z
+build:openregister:anonymisation-discloses-itself-pipeline	failed: build tasks are for fleet apps only; WORKER.md says never build openregister	session-20261113T081040-5e814df2	2026-11-13T11:31:22Z
 build:openregister:ai-translation-with-a-glossary	partial: PR #10133 (1.2 GlossaryService, 2.1 TaskProcessingTranslationProvider, 23 tests); left 1.1 register+repair, 2.2 binding/draft-on-miss, 3.x frontend, 4.x docs/e2e	session-20261113T104529-f43c7561	2026-11-13T11:31:22Z
