@@ -3241,3 +3241,4 @@ verify:integriq:3498:a06072e9	3498 GREEN, 3499 GREEN; unit 7738, only the 4 inhe
 cover:integriq:92114ab0m658d:2fbf11bd	already done: lib/Service/Objecten/*.php at 97.0% lines (679/700) under the full unit suite on development, target 95; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:43:48Z
 cover:integriq:92114ab0m658d:9dc6d594	already above target: lib/Service/Mail/*.php 677/692 lines (97.8%) measured with pcov on development after PR #3476 merged (target 95); no PR	session-20261113T072711-3523cf52	2026-11-13T07:43:57Z
 gap:larpinq:tcr2:burn1	PR #1012: 8 test files, 32 tests, suite 694->726 green	session-20261113T072715-8f8a14e9	2026-11-13T07:44:16Z
+gap:launchpad:tcr1:burn1	PR #1174: 8 test files, 48 tests (suite 3741->3789, 0 failures)	session-20261113T073916-e9f11dfa	2026-11-13T07:44:25Z
