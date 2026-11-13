@@ -13,7 +13,8 @@
       > 2026-11-13: `contextFor()` adds `changedFields` for `ObjectUpdatedEvent`: changed, added and removed top-level keys, `@self` left out, empty without the old object (`FlowTriggerListenerChangedFieldsTest`, real event over two `ObjectEntity` instances).
 - [x] 2.2 `FlowTriggerFilter::accepts()` and its call in `FlowTriggerService::fire()` before `queue()`; a legacy column flow is accepted unchanged. Verify: `tests/Unit/Service/Flow/FlowTriggerServiceTest.php` asserts no run is queued for a transition outside the filter, and one run for a matching one.
       > 2026-11-13: `FlowTriggerFilter::accepts()` runs in `FlowTriggerService` before `queueRun()`, over the flow's PUBLISHED graph (the index follows the published version, not a draft). Only `object.transitioned` and `object.updated` read the graph; a legacy column flow or a flow with no published graph is accepted as before (`FlowTriggerFilterTest`, `FlowTriggerServiceFilterTest`).
-- [ ] 2.3 Schema rename warns when a published flow's `changedFields` names the old property. Verify: unit test on the rename path.
+- [x] 2.3 Schema rename warns when a published flow's `changedFields` names the old property. Verify: unit test on the rename path.
+      > 2026-11-13: `FlowTriggerRenameCheck::warningsFor()` reads the declared renames of the classified update and every flow's PUBLISHED graph; each object trigger on that schema (slug, id or uuid) whose `changedFields` names a renamed property is logged and returned. `SchemasController` adds them to the update response as `flowWarnings`; the save is never refused and a failing check is logged (`FlowTriggerRenameCheckTest`, `SchemasControllerTest`).
 
 ## 3. Proof and docs
 

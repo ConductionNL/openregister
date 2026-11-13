@@ -60,6 +60,7 @@ use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
+use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolverInterface;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
@@ -71,6 +72,7 @@ use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeNoticeService;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
+use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaImport\GgmUpload;
@@ -1875,12 +1877,14 @@ class SchemasController extends Controller {
 	private function writeSchemaUpdate(array $update): JSONResponse {
 		$updatedSchema = $this->schemaMapper->updateFromArray(id: $update['id'], object: $update['data']);
 
+		$flowWarnings = [];
 		if ($update['changeSet'] !== null) {
 			$entry = $this->schemaVersioningService->recordChange(
 				schemaId: $updatedSchema->getId(),
 				record: new SchemaChangeRecord(changeSet: $update['changeSet'], acknowledged: $update['acknowledged'], version: $updatedSchema->getVersion())
 			);
 			$this->queueChangeNotice(entry: $entry, update: $update);
+			$flowWarnings = $this->flowRenameWarnings(schema: $updatedSchema, changeSet: $update['changeSet']);
 		}
 
 		if (isset($update['data']['authorization']) === true) {
@@ -1892,17 +1896,57 @@ class SchemasController extends Controller {
 		$this->schemaCacheService->invalidate(schemaId: $updatedSchema->getId());
 		$this->facetResults->clearAll();
 
+		// A rename that leaves a published trigger watching the old name is a
+		// warning beside the saved schema, never a refusal.
+		$extra = [];
+		if ($flowWarnings !== []) {
+			$extra['flowWarnings'] = $flowWarnings;
+		}
+
 		if ($update['forms'] !== null && $update['forms']['affected'] !== []) {
 			return new JSONResponse(
 				data: array_merge(
 					$updatedSchema->jsonSerialize(),
-					['affectedForms' => $this->formDependentsCheck()?->apply(assessment: $update['forms']) ?? []]
+					['affectedForms' => $this->formDependentsCheck()?->apply(assessment: $update['forms']) ?? []],
+					$extra
 				)
 			);
 		}
 
+		if ($extra !== []) {
+			return new JSONResponse(data: array_merge($updatedSchema->jsonSerialize(), $extra));
+		}
+
 		return new JSONResponse(data: $updatedSchema);
 	}//end writeSchemaUpdate()
+
+	/**
+	 * The published flow triggers a declared rename leaves watching the old name; a failure never fails the save.
+	 *
+	 * @param Schema          $schema    The updated schema
+	 * @param SchemaChangeSet $changeSet The classified update
+	 *
+	 * @return list<array{flow: string, step: string, field: string, renamedTo: string, message: string}>
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	private function flowRenameWarnings(Schema $schema, SchemaChangeSet $changeSet): array {
+		try {
+			$check = $this->container->get(FlowTriggerRenameCheck::class);
+			if ($check instanceof FlowTriggerRenameCheck === false) {
+				return [];
+			}
+
+			return $check->warningsFor(schema: $schema, changeSet: $changeSet);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemasController] The rename could not be checked against the flow triggers',
+				context: ['schema_id' => $schema->getId(), 'error' => $e->getMessage()]
+			);
+
+			return [];
+		}
+	}//end flowRenameWarnings()
 
 	/**
 	 * Audit-log a change to a schema's authorization block; a failing audit never breaks the update.
