@@ -6146,3 +6146,4 @@ verify:learniq:2478:807d796d	GREEN #2478 (tests only, no new failures; 1 inherit
 build:shillinq:tax-vat-rates-and-deductibility	partial: PR #3000 (1.1 statutory seed, 1.2 one VatTariff declaration; 1.3, 2.x, 3.x left; info.xml/lock overlap with #2982)	session-20261113T171137-8f22ecb0	2026-11-13T18:59:51Z
 fix:shillinq:2962:3c474632	fixed: l10n block moved mid-catalogue, merges with #2960; new head 5e1ba47ad11e4978201bc69604a3facfc4078de5, REVERIFY recorded	session-20261113T172329-0b6220f9	2026-11-13T19:00:10Z
 verify:shillinq:2971:8e8c7912	GREEN 2971,2972,2973,2974,2978; CONFLICT 2975,2976,2977 (lock/info.xml/l10n vs 2972); 0 new failures	session-20261113T172334-4b3b027b	2026-11-13T19:00:53Z
+cover:decidiq:a5f973bbm5a4d:9d3a1784	already done: lib/BackgroundJob/*.php measured 478/479 lines (99.8%, target 95); no PR	session-20261113T172329-5f4feaba	2026-11-13T19:01:00Z
