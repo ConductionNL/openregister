@@ -53,6 +53,12 @@ use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
  * @covers \OCA\OpenRegister\Service\Integration\Providers\CospendProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\FormsProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\TimeProvider
+ * @uses   \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Service\FormsAppRows
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\MarkerScan
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\MarkerLookupTrait
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkTableProvider
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\LinkTableAppDescriptor
