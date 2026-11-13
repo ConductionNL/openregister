@@ -1738,3 +1738,4 @@ cover:dossiq:6ca0231ema7d4:63eef43f	already done: lib/Service/Mandaat at 141/142
 cover:dossiq:6ca0231ema7d4:da74a02d	PR #6250: BerichtenboxAdapter 110/136 -> 130/136, 5 tests	session-20261113T015005-030aa10a	2026-11-13T02:56:01Z
 cover:dossiq:6ca0231ema7d4:b4753aef	PR #6251: +8 tests PdokLocatieserverService; lib/Service/Pdok 87.2%->100%; 19 inherited failures, none new	session-20261113T024656-d5bfb688	2026-11-13T02:56:35Z
 cover:dossiq:6ca0231ema7d4:00494271	PR #6252: 16 tests for DocumentSeries edge cases, no new failures	session-20261113T024656-2f332446	2026-11-13T02:56:44Z
+cover:dossiq:6ca0231ema7d4:b12f5203	PR dossiq#6253: 12 tests for RecordImportStore; other Import classes already tested; 19 inherited failures unchanged	session-20261113T024654-6600dc41	2026-11-13T02:57:06Z
