@@ -5513,5 +5513,6 @@ merge:stackiq:1693:d5ecefc9	merge-local over 1 stackiq tasks: merged=4 red=0 fai
 cover:hermiq:065f1631me44a:js4829b6aa	PR #1692: +16 vitest tests, src/views 91.0%->94.3% lines, overall 91.83->92.5	session-20261113T134531-53f143d2	2026-11-13T14:22:52Z
 cover:learniq:e6498dddm0533:00d628c6	already covered: lib/Service/CoursePackage 818/824 (pcov); remaining 6 stmts unreachable (typed ObjectService return, scandir false); no PR	session-20261113T134541-c5b113fc	2026-11-13T14:22:55Z
 verify:shillinq:2941:34814ebc	GREEN #2941: vitest tests only, 2262 pass	session-20261113T081048-4978ac57	2026-11-13T14:23:03Z
+cover:hermiq:065f1631me44a:05cc1463	PR #1693: +24 tests TalkSessionRoom/TalkRoomBinding; Talk dir 80.2%->98.3% (PR body says 82.9, actual 80.2); suite 4554->4578, no new failures	session-20261113T141607-18750fc2	2026-11-13T14:23:16Z
 cover:versioniq:1b35eed9mf055:js0023cfc7	cover: src/dialogs re-open branch in 3 dialogs; 100% stmts/branch/func/lines; suite 2825->2828 green; PR #681	session-20261113T131538-bf8ccc8e	2026-11-13T14:23:27Z
 cover:dossiq:069ee2d6m2deb:js4f2a605a	PR #6427: edge-path tests for 4 caseType widgets (blueprint, portal, translations, party-kinds); dir 87.59%->96.35%, above target 95	session-20261113T091531-f9ad21ac	2026-11-13T14:23:41Z
