@@ -4187,3 +4187,4 @@ cover:dossiq:069ee2d6m7275:5706f9f2	PR #6386: 4 Notes classes, 15 tests (dir 13 
 cover:decidiq:a5f973bbm1507:e372e6ff	already done: lib/Event/*.php at 100% (145/145) on development a2b22454; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:12:55Z
 cover:shillinq:05639debm0c05:aed80a0c	PR (aed80a0c-2): EvaluateAllocationRulesAction edge cases, 7 tests; inherited 1F only	session-20261113T064518-860c039d	2026-11-13T10:13:08Z
 cover:shillinq:05639debm0c05:d76b2f72	PR #2925: +3 phpunit test files (17 tests) for lib/Guard CreditLimitRun (untested), AssetEligibilityCheck, OssLedgerGuard short-code branch; suite 10087->10104, only the pre-existing clock-bound failure remains	session-20261113T094602-d25cda2a	2026-11-13T10:13:31Z
+cover:portaliq:b60f3b81:f91e7417	PR #2394: 5 tests, lib/Service/Connection 89.5->100% stmts	session-20261113T091527-72c58830	2026-11-13T10:13:54Z
