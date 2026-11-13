@@ -5722,3 +5722,4 @@ hermiq	1644	5f5443ddef61241bde3570c956879466d61f14e7	GREEN	worker-29	tests-only 
 filinq	2049	dd2c0c59f5bda8e27a697637958cbc2bd8072f83	REVERIFY	worker-47	regenerated sbom.cdx.json from the refreshed package-lock.json (regen-sbom --check now current); new head e2f33998d2584880c845531a586368d2033d8933, verify it
 dossiq	6390	ecf88c5df5a15801fa63c7f1afa0531843ba143c	GREEN	worker-17	tests-only; tree 6390+6391: 15847 tests vs baseline 15811, same 19 inherited failures
 dossiq	6391	5ec146bddc6753b49868b1e595a973c7202408ad	GREEN	worker-17	tests-only; tree 6390+6391: 15847 tests vs baseline 15811, same 19 inherited failures
+buildiq	1539	19adbe957e9b64b5947ac6d256575d8c8be0d66c	GREEN	worker-27	tests-only (4 vitest specs); PHP unit 2784 tests baseline 1 failure (ExportZipGoldenTest) unchanged, no PHP touched; vitest 413 files/3963 tests all pass; no new failures
