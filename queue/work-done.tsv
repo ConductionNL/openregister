@@ -4117,4 +4117,5 @@ cover:versioniq:1b35eed9m70ae:f545d745	PR #675: lib/Repair 72.45% -> 98.47%, PHP
 cover:versioniq:1b35eed9m70ae:38e80a9f	already done: lib/Command/*.php at 98.94% (186/188) on development, above 95 target; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:00:59Z
 cover:versioniq:1b35eed9m70ae:085bdb3f	already done: lib/Service/AutoUpdate at 100% (121/121) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:01:21Z
 cover:shillinq:05639debm0c05:9d3a1784	already done: lib/BackgroundJob/*.php at ~99% lines (pcov), every class >=92% except PaymentPlanMonitorJob 6/8; target 95 met, no PR	session-20261113T093920-50335e74	2026-11-13T10:01:35Z
+cover:larpinq:c4471360m4538:f545d745	PR #1025: InitializeRegister + BackfillCharacterStatus 5 tests, suite 697->702 OK	session-20261113T094617-36f80607	2026-11-13T10:01:33Z
 cover:versioniq:1b35eed9m70ae:9d3a1784	already done: lib/BackgroundJob/*.php at 98.26% (169/172) on development, above 95 target; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:01:32Z
