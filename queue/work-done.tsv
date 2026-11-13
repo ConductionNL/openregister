@@ -2317,4 +2317,5 @@ cover:buildiq:9930949bm5861:jsacfa1ec3	PR #1509: 14 tests for Step3Custom, wizar
 verify:stackiq:1836:7d187e10	5 GREEN (1836-1840): test-only; phpunit 3111 ok, vitest 2198 ok; 1839 surfaces a PHP warning in ArchiMateExportService:1380 (duplicate XML attribute)	session-20261113T021703-063c80f1	2026-11-13T04:54:17Z
 cover:dossiq:f8a113c5mac88:js3f3bfe56	PR dossiq quality/test-coverage-js-3f3bfe56-2: main.js boot, 12 tests, JS 84.55->85.81%	session-20261113T031704-4f12cb78	2026-11-13T04:54:29Z
 cover:pipelinq:f67520ecmc4ba:50cc8442	already done: lib/Util/*.php at 100% lines (17/17 classes) on development; no PR	session-20261113T044737-16b30d6d	2026-11-13T04:54:48Z
+cover:hermiq:065f1631m312d:js77cf3af4	PR #1665: src/widgets 89.6%->90.5%, SkillRowActions 100%, +16 vitest, 1205->1221 pass	session-20261113T041652-f9df3e85	2026-11-13T04:54:51Z
 verify:launchpad:1167:3b177030	1167-1170 all GREEN (JS tests only; vitest 1913 green)	session-20261113T034628-73e45054	2026-11-13T04:54:52Z
