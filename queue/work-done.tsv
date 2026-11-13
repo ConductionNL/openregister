@@ -5051,3 +5051,4 @@ review:openregister:10193:6d5d9117	APPROVE: tags + PlatformPropertiesTest, no be
 review:openregister:10203:9340e813	APPROVE: docblock tags + new refusal test; touched suites green	session-20261113T124807-2640af3d	2026-11-13T12:58:55Z
 review:openregister:10192:d6b98a8e	APPROVE: comment-only @spec retarget, suites match main baseline	session-20261113T124808-08869abe	2026-11-13T12:59:58Z
 review:openregister:10199:95de0f89	APPROVE: bulk quota per change 4.1; no new failures vs main	session-20261113T124805-1586d4f8	2026-11-13T12:59:15Z
+review:openregister:10186:7bd57cef	APPROVE: GraphQLRequestGuardTest, 6 tests pass, behaviour-faithful, mutation-checked	session-20261113T091533-03405ea6	2026-11-13T13:00:10Z
