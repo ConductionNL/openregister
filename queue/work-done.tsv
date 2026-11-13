@@ -2025,3 +2025,4 @@ cover:shillinq:05639deb:8cf3c826	PR opened: 4 SepaPain001Generator fallback test
 cover:hermiq:065f1631m7444:0f20d6d0	PR hermiq#1652: 5 tests for TalkTurnDispatcher provider detection + failure paths (TalkBridgeStatus rooms in hermiq#1646); 146/26 inherited unchanged	session-20261113T024654-6600dc41	2026-11-13T04:09:27Z
 cover:hermiq:065f1631m7444:0f859653	already done: lib/Flow/*.php measures 356/391 (91%) with openregister sibling after merged -1 PR, above target 90	session-20261113T024656-2f332446	2026-11-13T04:09:50Z
 verify:hermiq:1644:42717a9c	GREEN 1644 (tests-only, no new failures)	session-20261113T024653-d22c13a3	2026-11-13T04:10:03Z
+cover:keepiq:c967a31fm88ca:ecbab48a	PR #1732: 7 direct tests for ShareSaveRestore (32/32 standalone), suite 4361->4368 all green	session-20261113T031700-0e23c373	2026-11-13T04:10:07Z
