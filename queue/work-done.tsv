@@ -7021,3 +7021,4 @@ review:openregister:10355:7c1a95a7	APPROVE: tests only, new test and Architectur
 review:openregister:10360:57eafbd4	APPROVE 10360: new uncalled FlowStepRetry + tests; suites as on main	session-20261113T205332-17038cbf	2026-11-13T21:55:18Z
 build4:openregister:leaf-mount-render-escape-hatch	PR #10378: renderMode cross-layer parity + tests; remaining tasks are other repos	session-20261113T213324-d7ae5543	2026-11-13T21:55:36Z
 build4:openregister:platform-caldav-backend	already done: all code tasks ticked on main; openspec validate --strict passes (2.3); left 2.1 e2e and 3.x lane handovers, not code	session-20261113T214350-9762e143	2026-11-13T21:55:34Z
+review:openregister:10348:5f7cad9d	APPROVE: suites green on merge with main, phpstan clean	session-20261113T204536-22cfbae0	2026-11-13T21:55:52Z
