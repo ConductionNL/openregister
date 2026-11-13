@@ -26,6 +26,9 @@ namespace Unit\Service\Timeline;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryRecords;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
@@ -38,6 +41,7 @@ use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelinePermissionException;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -377,5 +381,110 @@ class TimelineEntryServiceTest extends TestCase {
 
 		$this->assertSame('The applicant is going to send the papers that are missing', $entry?->getMessage());
 		$this->assertSame('en', $entry?->getLanguage());
+	}
+	// ---------------------------------------------------------------------
+	// Withdrawn entries (object-archive-state, REQ-OAS-006, D-C29-4)
+	// ---------------------------------------------------------------------
+
+	/**
+	 * The service with an audit trail that keeps every event it is given.
+	 *
+	 * @param array<int, ObjectAuditEvent> $events Filled with the audited events.
+	 */
+	private function auditedService(array &$events): TimelineEntryService {
+		$audit = $this->createMock(AuditTrailMapperInterface::class);
+		$audit->method('recordObjectEvent')->willReturnCallback(
+			static function (ObjectAuditEvent $event) use (&$events): AuditTrail {
+				$events[] = $event;
+				return new AuditTrail();
+			}
+		);
+
+		return new TimelineEntryService(
+			new TimelineEntryRecords(entryMapper: $this->entryMapper, kinds: $this->kinds, languages: new LanguageDetector()),
+			$this->visibility,
+			$this->userSession,
+			$this->createMock(LoggerInterface::class),
+			$audit
+		);
+	}
+
+	public function testAWithdrawnEntryNamesWhoWhenAndWhyAndIsAudited(): void {
+		$this->signIn('archivist');
+		$this->echoUpdate();
+		$this->visibility->method('mayManage')->willReturn(true);
+		$events = [];
+		$entry = new TimelineEntry();
+		$entry->setUuid('entry-1');
+
+		$written = $this->auditedService($events)->withdraw($this->object(), $entry, '  wrongly filed  ');
+
+		$this->assertSame('archivist', $written->getWithdrawnBy());
+		$this->assertNotNull($written->getWithdrawnAt());
+		$this->assertSame('wrongly filed', $written->getWithdrawnReason());
+		$this->assertSame(['by' => 'archivist', 'at' => $written->getWithdrawnAt()->format(\DateTime::ATOM), 'reason' => 'wrongly filed'], $written->jsonSerialize()['withdrawn']);
+		$this->assertCount(1, $events);
+		$this->assertSame(TimelineEntryService::WITHDRAW_AUDIT_ACTION, $events[0]->action);
+		$this->assertSame('entry-1', $events[0]->context['entry']);
+		$this->assertSame('wrongly filed', $events[0]->context['reason']);
+	}
+
+	public function testASecondWithdrawalLeavesTheFirstStanding(): void {
+		$this->signIn('archivist');
+		$this->visibility->method('mayManage')->willReturn(true);
+		$this->entryMapper->expects($this->never())->method('update');
+		$events = [];
+		$entry = new TimelineEntry();
+		$entry->setWithdrawnBy('first');
+		$entry->setWithdrawnAt(new \DateTime('2026-11-01T10:00:00+00:00'));
+		$entry->setWithdrawnReason('original');
+
+		$same = $this->auditedService($events)->withdraw($this->object(), $entry, 'again');
+
+		$this->assertSame(['first', 'original'], [$same->getWithdrawnBy(), $same->getWithdrawnReason()]);
+		$this->assertSame([], $events);
+	}
+
+	public function testAReaderCannotWithdraw(): void {
+		$this->signIn('reader');
+		$this->visibility->method('mayManage')->willReturn(false);
+		$this->entryMapper->expects($this->never())->method('update');
+
+		$this->expectException(TimelinePermissionException::class);
+		$this->expectExceptionMessage('You do not have permission to withdraw entries on this object');
+
+		$this->service->withdraw($this->object(), new TimelineEntry(), 'reason');
+	}
+
+	public function testAWithdrawalNeedsAReason(): void {
+		$this->visibility->method('mayManage')->willReturn(true);
+		$this->entryMapper->expects($this->never())->method('update');
+
+		try {
+			$this->service->withdraw($this->object(), new TimelineEntry(), '   ');
+			$this->fail('A withdrawal without a reason must be refused.');
+		} catch (TimelineValidationException $e) {
+			$this->assertSame(['withdrawn.reason' => 'A withdrawal needs a reason'], $e->getErrors());
+		}
+	}
+
+	public function testTheWorkingTimelineLeavesWithdrawnEntriesOutUnlessAsked(): void {
+		$asked = [];
+		$this->entryMapper->method('findForObject')->willReturnCallback(
+			static function (string $objectUuid, ?string $visibility, int $limit, int $offset, bool $includeWithdrawn) use (&$asked): array {
+				$asked[] = [$objectUuid, $visibility, $includeWithdrawn];
+				return [];
+			}
+		);
+
+		$this->service->listForObject($this->object('case-9'));
+		$this->service->listForObject($this->object('case-9'), new ListQuery(limit: 10, filters: ['visibility' => 'public', 'withdrawn' => true]));
+
+		$this->assertSame([['case-9', null, false], ['case-9', 'public', true]], $asked);
+	}
+
+	public function testAnEntryInTheWorkingTimelineSerialisesNoWithdrawal(): void {
+		$this->assertNull((new TimelineEntry())->jsonSerialize()['withdrawn']);
+		$this->assertNull((new TimelineEntry())->withdrawal());
 	}
 }
