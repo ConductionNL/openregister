@@ -1,12 +1,12 @@
 {
  "app": "learniq",
- "commit": "f6dde4cf0bad4c472faca017cff5e599719c9039",
- "measured_at": "2026-11-13T00:02:10Z",
+ "commit": "ca0282cfb1220bd3df23abe179bfd658fb902e43",
+ "measured_at": "2026-11-13T02:35:33Z",
  "php": {
   "tool": "pcov",
-  "pct": 91.31,
-  "statements": 37591,
-  "covered": 34323,
+  "pct": 90.94,
+  "statements": 37601,
+  "covered": 34193,
   "dirs": {
    "lib/AppInfo/": [
     26,
@@ -30,7 +30,7 @@
    ],
    "lib/Controller/": [
     3658,
-    3258
+    3249
    ],
    "lib/Event/": [
     10,
@@ -45,8 +45,8 @@
     227
    ],
    "lib/Lifecycle/": [
-    2741,
-    2586
+    2751,
+    2596
    ],
    "lib/Lifecycle/Action/": [
     146,
@@ -54,7 +54,7 @@
    ],
    "lib/Listener/": [
     6069,
-    5579
+    5557
    ],
    "lib/Mcp/": [
     1,
@@ -90,7 +90,7 @@
    ],
    "lib/Service/": [
     12540,
-    11300
+    11182
    ],
    "lib/Service/Accessibility/": [
     141,
@@ -118,11 +118,11 @@
    ],
    "lib/Service/CoursePackage/": [
     842,
-    709
+    720
    ],
    "lib/Service/CourseStore/": [
     156,
-    90
+    89
    ],
    "lib/Service/Enrolment/": [
     44,
@@ -142,7 +142,7 @@
    ],
    "lib/Service/Portal/": [
     1390,
-    1318
+    1317
    ],
    "lib/Service/Programme/": [
     59,
