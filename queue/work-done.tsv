@@ -2000,3 +2000,4 @@ cover:keepiq:c967a31fm88ca:882bd950	already done: lib/Search/*.php 31/31 stateme
 cover:hermiq:065f1631m7444:1191da39	already done: WebResearch 58 tests, 327/336 lines; the 9 left are unreachable guards and the real dns_get_record wrapper; no PR	session-20261113T034629-21e68669	2026-11-13T04:05:49Z
 cover:hermiq:065f1631m7444:a42697be	PR #1650: 13 tests, lib/Service/Agent 97.3->99.7% stmts	session-20261113T031704-5a455d65	2026-11-13T04:06:16Z
 measure:launchpad:20261113h04	php 90.54% js 84.14%	session-20261113T034628-9602b641	2026-11-13T04:06:23Z
+cover:hermiq:065f1631m7444:01b56ade	already done: lib/Service/Llm/ measured 1192/1249 (95%) with openregister sibling, above target; open PR #1645 adds the ProviderFactory failure paths	session-20261113T024656-2f332446	2026-11-13T04:06:32Z
