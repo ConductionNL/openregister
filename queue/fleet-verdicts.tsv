@@ -4996,3 +4996,4 @@ launchpad	1164	38654e80a1d0c19961d912cd8ed7b33228cdb13d	GREEN	worker-58	phpunit 
 launchpad	1165	3c688fceff49cc3436d7432f934b70f28fa4636c	CONFLICT	worker-58	add/add conflict in src/dialogs/__tests__/RoleLayoutDefaultEditorDialog.spec.js with #1157
 hermiq	1644	507f0a4255b6fedfd1173ae992c11807cfa4237b	GREEN	worker-37	tests only; phpunit-unit 4218 run, baseline 4185 with 146 errors + 26 failures, no new failures
 dossiq	6266	8c3bfdc12e93b156c9a3d2f53706bc786abcb99a	GREEN	worker-10	phpunit 14292 tests on tree (baseline 14246, 19 inherited failures); 0 new failures; tests only
+dossiq	6267	4539939601990735792ff1e7d87af933dd26a31c	GREEN	worker-10	phpunit 14292 tests on tree (baseline 14246, 19 inherited failures); 0 new failures; tests only
