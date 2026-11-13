@@ -3809,3 +3809,4 @@ build:dossiq:case-search-declares-its-fields	already building: built on developm
 build:dossiq:case-type-fields-columns	already done: 1.1-1.3 ticked on development; 2.1 (Origin / In the list columns) shipped in 5641ce1e7 via case-type-fields-origin-and-list; nothing left to build	session-20261113T081046-f0858dc4	2026-11-13T09:18:54Z
 verify:learniq:2419:0c851504	2419 BLOCK: removes 14 /api/v1 routes development serves; tests green	session-20261113T081055-3901e400	2026-11-13T09:18:55Z
 verify:pipelinq:3697:d0d19b96	3697 GREEN, 3698 GREEN (tests only; vitest 3979 pass, php unchanged)	session-20261113T071640-3ba6da34	2026-11-13T09:19:11Z
+gap:planninq:risky:burn2	already done: 0 risky tests on development (894 tests, beStrictAboutCoverageMetadata on); PHP coverage 94.14% (6894/7323), unchanged	session-20261113T051709-e616bf69	2026-11-13T09:19:36Z
