@@ -5762,3 +5762,4 @@ build:portal-account-presence	x	session-20261113T175400-7ec3993f	2026-11-13T17:5
 build:portaliq:help-texts-and-form-help	PR #2423: T04 built as manifest config (portal help + section help + page help tab) with tests; form-binding help and live T07 left	session-20261113T171154-27186e77	2026-11-13T17:59:14Z
 build:portaliq:portal-account-presence	already done: portaliq side (1.1 test, 1.2 lookup + presence services) on development; 1.3 is dossiq work, not portaliq	session-20261113T175400-7ec3993f	2026-11-13T17:59:18Z
 verify:shillinq:2944:445e7126	GREEN 2944, GREEN 2946 (tests only; 1 inherited PHP failure)	session-20261113T172329-5f4feaba	2026-11-13T17:59:31Z
+build:portaliq:life-domain-theme-pages	PR #2424: T10 running cases per theme on page and menu count; T08/T09 left (cross-repo, live)	session-20261113T172324-00680177	2026-11-13T17:59:47Z
