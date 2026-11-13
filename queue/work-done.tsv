@@ -1858,3 +1858,4 @@ cover:buildiq:8ca317f6mefda:js10b588fb	already above target: src/components/appl
 cover:buildiq:9930949bmefda:be0dcca9	already covered: BuildiqToolProvider has 26 tests (catalogue, dispatch, every tool's access refusals); no PR	session-20261113T024654-6600dc41	2026-11-13T03:35:13Z
 verify:learniq:2431:8116f8a7	2431 GREEN; 2432 already on development; 0 new failures	session-20261113T031704-4f12cb78	2026-11-13T03:35:34Z
 cover:integriq:92114ab0md8cd:js0023cfc7	already done: open branches -1 and -2 bring src/dialogs/* to 506/522 (96.9%), target 85; no third PR	session-20261113T015005-030aa10a	2026-11-13T03:36:03Z
+cover:filinq:7a9ef677mc744:js00fe026a	PR #2021: 18 vitest tests, src/services lines 70.2% -> 73.7% (rest is jest-run code and spec files in the dir), suite 468/0	session-20261113T021703-063c80f1	2026-11-13T03:36:43Z
