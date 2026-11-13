@@ -5889,4 +5889,5 @@ shillinq	2936	dd179fd9ed1f8eca177bafcd1e8a0f7fe97d4ca6	GREEN	worker-09	tree 2931
 shillinq	2937	8ffdfccbd50cc73c84ff77b2d07939e5647c242d	GREEN	worker-09	tree 2931,2933-2939 tests only, merged clean (2932 conflict); php 10295 -> 10370, no new failures (1 inherited); vitest 2041 -> 2200 all pass
 shillinq	2938	8c5acb82023515d7d84259914fe7d9519564f370	GREEN	worker-09	tree 2931,2933-2939 tests only, merged clean (2932 conflict); php 10295 -> 10370, no new failures (1 inherited); vitest 2041 -> 2200 all pass
 shillinq	2939	ba97f1f0047083eebd35763b9561c21a8dc3ace9	GREEN	worker-09	tree 2931,2933-2939 tests only, merged clean (2932 conflict); php 10295 -> 10370, no new failures (1 inherited); vitest 2041 -> 2200 all pass
+pipelinq	3754	2d2541abe5ee571f262f04181167faa53457e2f8	REVERIFY	worker-09	merged development; l10n en/nl = development + branch's 5 keys, .js regenerated; test:l10n and check:l10n-js pass; new head 9eeea22badc492ed37aafbd84c5ba3ff0ac256a3, verify it
 dossiq	6406	3af271438c29fdf6aadab63ac170a194ef3cc5c5	GREEN	worker-37	phpunit 16110 (baseline 16095, 19 inherited failures, 0 new); tests only
