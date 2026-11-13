@@ -3026,3 +3026,4 @@ cover:decidiq:a5f973bbmb22b:568ec52a	already done: lib/Lifecycle 256/256 stateme
 verify:decidiq:2117:18ed3948	2117 GREEN, 2118 GREEN: tests only, suite 3684->3700 all passing	session-20261113T054519-3d0ac77f	2026-11-13T06:54:11Z
 cover:decidiq:a5f973bbmb22b:aae6d66c	already above target: lib/Exception/*.php measures 100% (16/16) on development c0b7958; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:54:23Z
 cover:shillinq:05639debmd8ee:6a548709	already done: lib/Service/Migration at 100% lines (283/283) under the full unit suite on development, target 90; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T06:54:34Z
+cover:dossiq:f8a113c5m7e79:67583626	PR dossiq#6305: CaseActsOverview archiveReadiness + CaseHoldActs unreadable date, 4 tests, lib/Service/Lifecycle/*.php 867->883/893, suite 14921->14925 (19 inherited failures)	session-20261113T061518-90540a48	2026-11-13T06:55:01Z
