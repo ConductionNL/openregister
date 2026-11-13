@@ -2888,3 +2888,4 @@ verify:shillinq:2887:f9ea0900	2887/2888/2889 GREEN (tests-only; 9289 run, 0 new 
 cover:buildiq:9930949bmc723:d33a91b0	already done: Service/Copilot at 98.68% (149/151) under phpunit.xml on development f1c5b5564; low figure is the unit-bootstrap gap fixed by PR #1513; no PR	session-20261113T054517-06ee2c47	2026-11-13T06:37:59Z
 cover:buildiq:9930949bmc723:js00fe026a	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:38:16Z
 cover:stackiq:df113dffm5ac4:34f5c300	PR #1847: 2 test files, 18 tests; lib/Service/*.php 73.25->74.99%	session-20261113T061521-423d1e83	2026-11-13T06:38:12Z
+cover:buildiq:9930949bmc723:be0dcca9	already done: lib/Mcp/*.php at 100% (31/31, pcov on development); no PR	session-20261113T054519-189b2666	2026-11-13T06:38:31Z
