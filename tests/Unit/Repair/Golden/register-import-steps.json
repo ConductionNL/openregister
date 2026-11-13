@@ -174,6 +174,31 @@
             "out.warning Merge-operation register import skipped: importer down"
         ]
     },
+    "ImportRedactionPolicyRegister": {
+        "missing": [
+            "name Import OpenRegister redaction-policy register (term rules, detection patterns, redaction profiles)",
+            "appPath openregister",
+            "out.warning Redaction-policy register descriptor not found: <app>/lib/Settings/redaction_policy_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister redaction-policy register (term rules, detection patterns, redaction profiles)",
+            "appPath openregister",
+            "out.warning Redaction-policy register descriptor is not valid JSON: <app>/lib/Settings/redaction_policy_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister redaction-policy register (term rules, detection patterns, redaction profiles)",
+            "appPath openregister",
+            "import openregister.redaction-policy {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info Redaction-policy register imported (redaction-policy + termRule, detectionPattern, redactionProfile)"
+        ],
+        "failing": [
+            "name Import OpenRegister redaction-policy register (term rules, detection patterns, redaction profiles)",
+            "appPath openregister",
+            "import openregister.redaction-policy {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportRedactionPolicyRegister] import failed: importer down",
+            "out.warning Redaction-policy register import skipped: importer down"
+        ]
+    },
     "ImportSurveyRegister": {
         "missing": [
             "name Import OpenRegister survey register (surveys register + its four schemas)",

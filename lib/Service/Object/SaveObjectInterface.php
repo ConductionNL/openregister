@@ -34,7 +34,12 @@ use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 /**
  * Every public method of SaveObject. Callers depend on this interface, not on the class.
  */
-interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveObjectWriterInterface, SaveObjectRelatedUpdateGuardInterface {
+interface SaveObjectInterface extends
+	SaveObjectRelationScannerInterface,
+	SaveObjectWriterInterface,
+	SaveObjectRelatedUpdateGuardInterface,
+	SaveObjectUpdaterInterface
+{
 
 	/**
 	 * Get sub-objects created during cascade operations.
@@ -331,21 +336,4 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus;
-
-	/**
-	 * Updates an existing object.
-	 *
-	 * @param StoredObjectUpdate  $update  The register, schema, new data and the stored object to update.
-	 * @param ObjectUpdateOptions $options Silent mode and the original object before changes.
-	 *
-	 * @return ObjectEntity The updated object entity.
-	 *
-	 * @throws Exception If there is an error during update.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	public function updateObject(
-		StoredObjectUpdate $update,
-		ObjectUpdateOptions $options = new ObjectUpdateOptions(),
-	): ObjectEntity;
 }//end interface

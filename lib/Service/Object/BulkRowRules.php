@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectQuota;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
 /**
@@ -47,12 +48,14 @@ final class BulkRowRules {
 	 * @param PropertyRbacHandlerInterface|null    $propertyRbac    Applies property authorization per row, as SaveObject does.
 	 * @param BulkWriteEvents|null        $bulkWriteEvents Runs the save events per row where they are switched on.
 	 * @param FlowRunContext|null         $runContext      The ambient flow-run stack, so a lock a run took admits that run.
+	 * @param BulkObjectQuota|null        $quota           Holds the bulk creates to a schema's per-organisation cap.
 	 */
 	public function __construct(
 		public readonly ?DecisionTableBulkGuard $decisionTables = null,
 		public readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
 		public readonly ?BulkWriteEvents $bulkWriteEvents = null,
 		public readonly ?FlowRunContext $runContext = null,
+		public readonly ?BulkObjectQuota $quota = null,
 	) {
 	}//end __construct()
 }//end class

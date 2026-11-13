@@ -37,6 +37,7 @@ use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
 use OCA\OpenRegister\Notifications\Controller\Support\NoteUpdate;
 use OCA\OpenRegister\Notifications\Controller\Support\ObjectNote;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\InvalidNoteParentException;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -477,12 +478,53 @@ class NotesController extends Controller {
 			return $refusal;
 		}
 
-		$note = $this->noteService->createNote(
-			draft: new NoteDraft(objectUuid: (string)$object->getUuid(), message: $data['message'], visibility: $this->visibilityOf(data: $data))
-		);
+		$parentId = $this->parentIdOf(data: $data);
+		$readable = null;
+		if ($parentId !== null) {
+			$readable = $this->services->visibility->effectiveFilter(object: $object, requested: null);
+		}
+
+		try {
+			$note = $this->noteService->createNote(
+				draft: new NoteDraft(
+					objectUuid: (string)$object->getUuid(),
+					message: $data['message'],
+					visibility: $this->visibilityOf(data: $data),
+					parentId: $parentId,
+					readable: $readable
+				)
+			);
+		} catch (InvalidNoteParentException $e) {
+			return new JSONResponse(data: ['error' => InvalidNoteParentException::MESSAGE], statusCode: 422);
+		}
 
 		return $this->projected(target: $target, note: $note);
 	}//end createOn()
+
+	/**
+	 * The note a new note replies to, from the request; null for a top-level note.
+	 *
+	 * Anything that is not a positive whole number names no note, and is refused
+	 * as an unknown parent rather than read as a top-level note.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 *
+	 * @return int|null The parent id; 0 for an unusable id, which no note has.
+	 *
+	 * @spec openspec/changes/notes-replies-by-parent/specs/object-interactions/spec.md#requirement-a-note-can-reply-to-another-note-on-the-same-record
+	 */
+	private function parentIdOf(array $data): ?int {
+		$raw = ($data['parentId'] ?? null);
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+
+		if (is_int($raw) === true || (is_string($raw) === true && ctype_digit($raw) === true)) {
+			return (int) $raw;
+		}
+
+		return 0;
+	}//end parentIdOf()
 
 	/**
 	 * Refuse the payload's visibility when it carries one the caller may not set.

@@ -70,12 +70,14 @@ final class LifecycleGraphValidator {
 	 * shape check with no collaborators; the parameter exists so a test can
 	 * substitute one.
 	 *
-	 * @param LifecycleDeclarationForms $forms Owns the shape rules for `initial` and `final`.
+	 * @param LifecycleDeclarationForms    $forms Owns the shape rules for `initial` and `final`.
+	 * @param LifecycleGraphMovesValidator $moves Owns the shape rules for `form`, `sideMoves` and `reopen`.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly LifecycleDeclarationForms $forms = new LifecycleDeclarationForms(),
+		private readonly LifecycleGraphMovesValidator $moves = new LifecycleGraphMovesValidator(),
 	) {
 	}//end __construct()
 
@@ -102,9 +104,28 @@ final class LifecycleGraphValidator {
 			$this->declaredFieldErrors(annotation: $annotation, schema: $schema),
 			$this->forms->validateEndpoints(annotation: $annotation),
 			$this->validateBlock(graph: $annotation['graph']),
-			$this->unsupported(graph: $annotation['graph'])
+			$this->unsupported(graph: $annotation['graph']),
+			$this->moves->validate(graph: $annotation['graph'], schema: $schema, field: self::fieldName(annotation: $annotation))
 		);
 	}//end validate()
+
+	/**
+	 * The declared lifecycle field, '' when it is not a string.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation block.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md
+	 */
+	private static function fieldName(array $annotation): string {
+		$field = ($annotation['field'] ?? '');
+		if (is_string($field) === false) {
+			return '';
+		}
+
+		return $field;
+	}//end fieldName()
 
 	/**
 	 * Check the `graph` block's own keys.

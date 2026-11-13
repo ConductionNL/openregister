@@ -104,6 +104,21 @@ class FileVersioningHandler {
 	}//end __construct()
 
 	/**
+	 * The document store root, the default when the store cannot be resolved.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function documentRoot(): string {
+		try {
+			return $this->container->get(DocumentStore::class)->root();
+		} catch (\Throwable $e) {
+			return DocumentStore::DEFAULT_ROOT;
+		}
+	}//end documentRoot()
+
+	/**
 	 * Check if the files_versions app is enabled.
 	 *
 	 * @return bool True if files_versions is enabled.
@@ -395,7 +410,7 @@ class FileVersioningHandler {
 		// An object's file is owned by the openregister account and sits in
 		// its home, where the caller has no mount. The caller has already
 		// passed the object rule, so the versions are read as that account.
-		if (preg_match('#^/openregister/files/Open Registers/#', $path) === 1) {
+		if (preg_match('#^/' . DocumentStore::ACCOUNT . '/files/' . preg_quote($this->documentRoot(), '#') . '/#', $path) === 1) {
 			try {
 				return $this->container->get(FileOwnershipHandlerInterface::class)->getUser();
 			} catch (\Throwable $e) {
