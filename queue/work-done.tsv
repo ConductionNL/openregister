@@ -4125,4 +4125,11 @@ cover:planninq:e1c9866d:f545d745	PR #1147: ApplyProjectPolicyTest + failure/getN
 fix:dossiq:6373:021a3334	fixed: simpleCasePage pins updated for the new card, development merged in; new head f7523c1b10178663f03b7fe3a2e7bde69729a924	session-20261113T081048-4978ac57	2026-11-13T10:02:17Z
 verify:dossiq:6355:4de42ad3	3 GREEN (6355, 6380, 6381), no new PHP or JS failures	session-20261113T084521-fd8a31c7	2026-11-13T10:02:30Z
 gap:keepiq:risky:burn2	already done: keepiq development unit suite with pcov has 0 risky tests (4564 tests, 241 skipped); PHP line coverage 89.12%	session-20261113T074532-3dc49c57	2026-11-13T10:02:34Z
+merge:integriq:3507:b1b08a46	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
+merge:integriq:3510:8a228b3f	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
+merge:integriq:3343:5583adea	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
+merge:integriq:3513:6811747d	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
+merge:integriq:3512:f501d0fc	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
+merge:integriq:3514:373599c5	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
+merge:integriq:3515:3cef6121	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
 cover:larpinq:c4471360m4538:81b1241f	no PR: lib/Portal 155/155 covered, PortalContributionProviderTest has 15 tests incl. full golden manifest; nothing real left to add	session-20261113T094617-36f80607	2026-11-13T10:02:43Z
