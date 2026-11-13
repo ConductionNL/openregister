@@ -6426,3 +6426,4 @@ cover:portaliq:b60f3b81m4ccb:5bae1f47	PR #2458: 8 tests over 3 Cms classes; suit
 cover:keepiq:c967a31fm10bf:59826f43	already done: lib/Settings/*.php 28/28 statements covered on ba7cc67b8 with dedicated AdminAreaSettings/AdminSettings tests; no PR	session-20261113T192653-93fd55cc	2026-11-13T19:47:54Z
 build:filinq:document-intake-inbox	nothing to build: 2.2 replaced by another change and waits on integriq's WatchedFileArrivedEvent; 4.3 only screenshots on a live instance left	session-20261113T172328-c860ad55	2026-11-13T19:48:13Z
 verify:opencatalogi:2603:7a157e0f	GREEN 2603	session-20261113T175327-6e4e7f28	2026-11-13T19:48:27Z
+build:filinq:competitor-parity-2026-09	nothing to build: umbrella index (kind: umbrella); open boxes 1 and 10 tick when scan-intake-with-separator-sheets and documents-in-and-out-of-the-building are archived, 11-12 are not code	session-20261113T182349-6568f680	2026-11-13T19:48:37Z
