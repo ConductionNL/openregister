@@ -2632,4 +2632,5 @@ verify:decidiq:2114:592205f0	GREEN 2114, 2115: 3398->3473 tests, all pass	sessio
 cover:integriq:92114ab0m1534:a64a0bdb	already done: lib/Service/Tables/ 265/283 lines (93.6%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:04:45Z
 cover:shillinq:05639debmd8ee:js6d6735a6	PR shillinq#2871: 31 tests; src/views/bookings 25.64%->89.28%	session-20261113T031701-b518f7f8	2026-11-13T06:04:52Z
 verify:buildiq:1513:e5136f22	GREEN 1513 (no new failures; fixes 1382 errors when no openregister sibling)	session-20261113T041646-2c1d764f	2026-11-13T06:05:05Z
+cover:shillinq:05639debmd8ee:4734f62e	already done: lib/Service/Import/ImportProfile 105/116 (90.52%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:05:22Z
 verify:filinq:2035:d309fa65	2035 GREEN, 2036 GREEN (php 6112, vitest 718, 0 failures)	session-20261113T054516-469bb7f6	2026-11-13T06:05:20Z
