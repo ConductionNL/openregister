@@ -4321,3 +4321,4 @@ verify:buildiq:1539:5570d0e5	GREEN 1539: tests-only, vitest 3963 pass, PHP basel
 cover:shillinq:05639debm0c05:b2e6293a	PR #2930: 13 behaviour tests, InvoicingExtraChecks 74.6%->96.5%; suite 10087->10100, only the inherited clock-bound webhook failure	session-20261113T081046-f0858dc4	2026-11-13T10:53:33Z
 cover:pipelinq:7f9dc8e6m916f:d4326ecd	already done: Messaging, PersonLookup, Settings, Worklist measure 97/97 statements (100%) at fe9981c; no PR	session-20261113T104529-f43c7561	2026-11-13T10:53:41Z
 cover:pipelinq:7f9dc8e6m916f:f545d745	PR #3712: 11 tests over 4 repair steps, lib/Repair/*.php 90.0%->91.9%; inherited red CrmPrivilegeRefusalGoldenTest (TicketWooRequestController)	session-20261113T074533-3e2a2da6	2026-11-13T10:53:39Z
+cover:hermiq:065f1631m249e:34f5c300	PR #1684: 36 tests, lib/Service/*.php 87.04->90.14%, no new failures	session-20261113T104520-9cf91a1e	2026-11-13T10:54:04Z
