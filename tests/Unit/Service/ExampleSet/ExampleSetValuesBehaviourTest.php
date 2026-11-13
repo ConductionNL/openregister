@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetMoment
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
  */
 class ExampleSetValuesBehaviourTest extends TestCase {
 

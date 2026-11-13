@@ -40,6 +40,10 @@ use OCA\OpenRegister\Service\HoldOrder;
  * @covers \OCA\OpenRegister\Service\Archival\LegalHoldService
  * @covers \OCA\OpenRegister\Service\Archival\LegalHoldLedger
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Archival\HoldAction
+ * @uses \OCA\OpenRegister\Service\Archival\HoldStamp
+ * @uses \OCA\OpenRegister\Service\Archival\LegalHoldRecords
+ * @uses \OCA\OpenRegister\Service\HoldOrder
  */
 class LegalHoldPerMatterTest extends TestCase {
 

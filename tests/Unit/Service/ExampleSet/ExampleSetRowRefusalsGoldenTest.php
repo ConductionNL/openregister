@@ -42,6 +42,8 @@ use Psr\Container\ContainerInterface;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFieldRules
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowShape
  */
 class ExampleSetRowRefusalsGoldenTest extends TestCase {
 	/**

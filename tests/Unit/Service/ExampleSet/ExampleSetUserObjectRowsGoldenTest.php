@@ -45,6 +45,10 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Db\ObjectReadState
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
+ * @uses \OCA\OpenRegister\Notifications\Db\Watcher
  */
 class ExampleSetUserObjectRowsGoldenTest extends TestCase {
 	private const USERS = ['alice', 'bob'];

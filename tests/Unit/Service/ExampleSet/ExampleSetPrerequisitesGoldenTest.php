@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRequiredRegister
  */
 class ExampleSetPrerequisitesGoldenTest extends TestCase {
 	/**

@@ -39,6 +39,10 @@ use Twig\Environment;
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedExpression
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldCycleWalk
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedPass
+ * @uses \OCA\OpenRegister\Twig\MappingExtension
  */
 class ComputedFieldReferencesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/computed-field-references-golden.json';

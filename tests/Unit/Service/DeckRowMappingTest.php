@@ -31,6 +31,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\DeckCardService
  * @covers \OCA\OpenRegister\Service\DeckLinkService
  * @uses   \OCA\OpenRegister\Service\DeckRowMapper
+ * @uses \OCA\OpenRegister\Service\DeckPlatform
  */
 class DeckRowMappingTest extends TestCase {
 

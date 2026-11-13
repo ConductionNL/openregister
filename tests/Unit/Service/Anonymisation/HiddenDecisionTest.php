@@ -45,6 +45,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @uses \OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent
  * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicy
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionQuestion
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform
  */
 class HiddenDecisionTest extends TestCase {
 

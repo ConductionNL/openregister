@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * every bucket and of the merged map, for every row of the merge table.
  *
  * @covers \OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge
+ * @uses \OCA\OpenRegister\Service\SchemaImport\MergeInstruction
  */
 class ThreeWayMergeGoldenTest extends TestCase {
 	private const A = ['type' => 'string'];

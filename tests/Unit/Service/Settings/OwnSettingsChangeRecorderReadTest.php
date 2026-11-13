@@ -42,6 +42,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Settings\OwnSettingsChangeRecorder
+ * @uses \OCA\OpenRegister\Service\Settings\SettingsAuditTrail
  */
 class OwnSettingsChangeRecorderReadTest extends TestCase {
 

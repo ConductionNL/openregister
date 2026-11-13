@@ -31,6 +31,10 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Audit\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableObject
  */
 final class ObjectHistoryAfterAMoveTest extends TestCase {
 

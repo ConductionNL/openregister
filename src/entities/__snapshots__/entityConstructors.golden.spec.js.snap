@@ -4751,7 +4751,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -4764,15 +4766,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -4950,7 +4952,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -4963,15 +4967,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -5079,7 +5083,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -5092,15 +5098,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -5208,7 +5214,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -5221,15 +5229,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -5337,7 +5345,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -5350,15 +5360,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -5466,7 +5476,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -5479,15 +5491,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -5595,7 +5607,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -5608,15 +5622,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -5724,7 +5738,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -5737,15 +5753,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -5853,7 +5869,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -5866,15 +5884,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -5982,7 +6000,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -5995,15 +6015,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -6111,7 +6131,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -6124,15 +6146,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -6241,7 +6263,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -6254,15 +6278,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -6370,7 +6394,9 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -6383,15 +6409,15 @@ exports[`entity constructors (golden) Organisation matches the recorded behaviou
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],

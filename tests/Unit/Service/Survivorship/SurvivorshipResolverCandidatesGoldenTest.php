@@ -27,6 +27,19 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver
+ * @uses \OCA\OpenRegister\Service\Survivorship\AttributeClaim
+ * @uses \OCA\OpenRegister\Service\Survivorship\CandidateStanding
+ * @uses \OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest
+ * @uses \OCA\OpenRegister\Service\Survivorship\SourceFreshness
+ * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipDate
+ * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipRun
+ * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipSource
+ * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipTierPolicy
+ * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup
+ * @uses \OCA\OpenRegister\Service\Survivorship\TierPosition
+ * @uses \OCA\OpenRegister\Service\Survivorship\TierResolutionRun
+ * @uses \OCA\OpenRegister\Service\Survivorship\TrustTierResolver
+ * @uses \OCA\OpenRegister\Service\Survivorship\TrustTuple
  */
 final class SurvivorshipResolverCandidatesGoldenTest extends TestCase {
 

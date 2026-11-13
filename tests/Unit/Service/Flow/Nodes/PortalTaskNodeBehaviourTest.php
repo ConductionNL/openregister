@@ -69,9 +69,9 @@ use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\EveryItemField
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FormFieldsTrait
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\NodeFormField
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode
- * @uses \OCA\OpenRegister\Service\Flow\Nodes\FormFieldsTrait
  */
 class PortalTaskNodeBehaviourTest extends TestCase {
 

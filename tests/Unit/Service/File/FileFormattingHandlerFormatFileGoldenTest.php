@@ -54,6 +54,8 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\File\FileFormattingHandler
  * @uses   \OCA\OpenRegister\Files\Db\File
+ * @uses \OCA\OpenRegister\Service\File\FileLockEnvelope
+ * @uses \OCA\OpenRegister\Service\File\FileSession
  */
 class FileFormattingHandlerFormatFileGoldenTest extends TestCase {
 

@@ -77,11 +77,11 @@ use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\EveryItemField
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FormFieldsTrait
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\NodeFormField
- * @uses \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskServices
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigCommon
- * @uses \OCA\OpenRegister\Service\Flow\Nodes\FormFieldsTrait
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode
  */
 class PortalTaskNodeTest extends TestCase {
 
