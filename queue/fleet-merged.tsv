@@ -1238,3 +1238,6 @@ decidiq	2121	d094c2d61d91cedc67c0b6a907ae41dcc0fb2d20	SKIP	merge-local	GATE UNME
 decidiq	2122	fa8d0eb66b8b8d5df1d5b065238cec0090d9520b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2123	8f07c6bc32eabaf49caa35ea3e8c3f0294d94316	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2124	d285adf422519dd3da870189427649cc4d444537	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1102	2ffcf11c307e962ead808de1edc9d544f8cc2769	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1103	747c3d4c7f190221092d836a5691d4f9f28b2799	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1104	fedf08539f2302c48351310cbede67be3e22d3ca	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
