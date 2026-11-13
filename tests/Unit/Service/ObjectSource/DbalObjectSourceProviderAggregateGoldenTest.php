@@ -41,6 +41,11 @@ use Psr\Log\AbstractLogger;
  * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalAggregation
  * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalAggregationQuery
  * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalAggregationShape
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalAggregator
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalColumnCriterion
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalFromClause
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalMetricRequest
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalObjectRef
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
