@@ -4396,4 +4396,5 @@ buildiq	1469	6c3098257bc902ef136f2e2bbacba4e74568142b	REVERIFY	worker-28	merged 
 keepiq	1701	07ac0360e304d9f1edfadd986b203e257287d8ef	GREEN	worker-04	tree 3734 tests, baseline 3722 (0 failures), 0 new failures; tests-only diff
 keepiq	1702	218c929c92b4766eb79c8f06eca6a323b9119d1e	GREEN	worker-04	tree 3734 tests, baseline 3722 (0 failures), 0 new failures; tests-only diff
 stackiq	1780	0a28fb0969cc5ecb65c8171e9a6453ecf54e764b	REVERIFY	worker-28	merged development in; link-refresh test now passes RoleGroupSettings/EmailSettings to SettingsService and a switched-on CronjobSettings to the job; 6 tests OK under strict coverage, unit 2545 OK; new head e9e2a627eb64d574503da5238d5533f3cf2f41c6, verify it
+filinq	1976	b005352fd4bd23748b3f92a79f3dd53ee789e8e6	GREEN	worker-46	tree of 2 tests-only PRs: 5405 tests run, baseline 5318 OK (6 skipped), 0 new failures
 stackiq	1781	566ac7065b53ac03970daece958be1bcea8f2039	REVERIFY	worker-23	merged development in, kept both @uses lines in OrganisationUserWorkflowTest; 3 touched tests green (54 tests); new head bd8e0ef5f023a4b8339a4104e8b9b00e456b6989, verify it
