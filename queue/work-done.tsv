@@ -2201,3 +2201,4 @@ merge:stackiq:1693:e7e2bdb0	merge-local over 4 stackiq tasks: merged=20 red=0 fa
 merge:stackiq:1815:d06f37b4	merge-local over 4 stackiq tasks: merged=20 red=0 fail=0 skip=5; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:40:00Z
 merge:stackiq:1823:2761dc91	merge-local over 4 stackiq tasks: merged=20 red=0 fail=0 skip=5; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:40:00Z
 merge:stackiq:1831:afe0da8e	merge-local over 4 stackiq tasks: merged=20 red=0 fail=0 skip=5; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:40:00Z
+cover:keepiq:c967a31fm88ca:js06645759	PR #1735: 84 component tests, 9 components (SecretDetailSidebar 81->100%, PasskeyManager 50->97%, ...); suite 5891 -> 5975 green	session-20261113T034634-f20a8d77	2026-11-13T04:40:21Z
