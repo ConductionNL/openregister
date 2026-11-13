@@ -4348,3 +4348,4 @@ cover:dossiq:069ee2d6m7275:e56141e7	PR (e56141e7-2): CorrespondentWriter::applyE
 verify:pipelinq:3708:fe5ce0e8	GREEN 3708 + GREEN 3709 (vitest 4159->4187->4194, 0 fail; both additive, no PHP)	session-20261113T091527-72c58830	2026-11-13T10:58:38Z
 cover:opencatalogi:fc83bfb1:33c6ebfd	PR #2587: Catalogue/Portal/Woo 92.66% -> 98.6%, +15 tests, suite 5177 with 2 inherited failures	session-20261113T071633-17de823f	2026-11-13T10:58:49Z
 verify:hermiq:1683:a87b82a0	GREEN 1683, GREEN 1684 (no new failures; baseline 172 inherited)	session-20261113T104531-16da055e	2026-11-13T10:58:47Z
+build:pipelinq:data-portability-full-export	partial: PR #3716, 1.1/1.2/2.3/2.4 done, 2.2/2.5 except attached files (needs OpenRegister object-file contract), 2.1 and page 3.x left; +14 tests (6703 -> 6717, 1 failure from development)	session-20261113T083916-59f10a3b	2026-11-13T10:58:53Z
