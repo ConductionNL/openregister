@@ -7060,3 +7060,4 @@ build4:openregister:platform-search-provider	failed: needs a design decision - N
 build4:openregister:modelling-schema-diagram	PR #10394 — 2.1-2.4 diagram view, saved layout, table, SVG + 3.1 docs; 9 strings x36 locales; e2e left as 2.5 (live); jest 8335/0 fails	session-20261113T212429-ea8f431f	2026-11-13T22:03:18Z
 review:openregister:10383:f9c4d696	APPROVE 10383: comments and tasks.md only, anchor exists, eslint 0 errors	session-20261113T182404-f2c28226	2026-11-13T22:03:46Z
 build4:openregister:files-leaf-save-to-object	partial: PR #10395 (task 2.1 Files action + attach-targets route; 2.2, 2.3, 3.2 left)	session-20261113T212406-cc34ae8b	2026-11-13T22:03:51Z
+review:openregister:10370:f4ef0cfc	APPROVE: scope capability + app: narrowing per change spec; 7 suites green on PR merged with main	session-20261113T214350-9762e143	2026-11-13T22:03:54Z
