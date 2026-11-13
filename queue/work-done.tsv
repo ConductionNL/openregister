@@ -5061,3 +5061,4 @@ review:openregister:10217:99472195	APPROVE (tests only, 14 jest tests pass, esli
 build:openregister:property-code-list-from-concept-scheme	partial: PR #10221 task 4.4 (scheme by uri, slug, uuid in ConceptRepository::scheme) + 4.3 recorded; 3.2 not assessed, 4.2 handoff	session-20261113T084525-9d890807	2026-11-13T13:03:14Z
 cover:openregister:7350e3efma401:js30a52488	PR #10222: 23 jest tests, SearchSideBar.vue lines 92.0%->99.5%	session-20261113T124807-b8fee1f0	2026-11-13T13:03:28Z
 build:openregister:flow-task-search-provider	partial: PR #10223 task 1.1 (inbox term) plus the search provider without the D-3 app-route override (no task-route contract in the deep link registry); 2.2, 3.x left	session-20261113T091530-f20014fb	2026-11-13T13:03:55Z
+review:openregister:10190:ed15406a	BLOCK: new node missing from FlowNodeDeclaredTaxonomyTest list (test red on PR, green on main)	session-20261113T114525-2ca68289	2026-11-13T13:04:16Z
