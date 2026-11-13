@@ -6162,5 +6162,7 @@ cover:decidiq:a5f973bbm5a4d:f545d745	already done: lib/Repair/*.php at 803/803 l
 verify:dossiq:6436:da39032e	GREEN #6436 (tests only; 16535 tests, same 20 inherited failures)	session-20261113T181000-9baff50f	2026-11-13T19:02:27Z
 verify:opencatalogi:2598:168a9315	GREEN 2598	session-20261113T172334-4b3b027b	2026-11-13T19:02:34Z
 cover:keepiq:c967a31fm00c6:2c3e981f	already done: lib/Service/ShareSync/ at 100% (174/174) @ba7cc67b	session-20261113T171149-8b9ea523	2026-11-13T19:02:53Z
+measure:keepiq:20261113h18	php 92.04% js 91.82% at ba7cc67	session-20261113T182349-7e3632fd	2026-11-13T19:02:53Z
+build:shillinq:tax-icp-and-reverse-charge	partial: PR shillinq#3004 builds 1.1, 1.2 (reverse-charge notice in UBL/PDF, issue guard); 2.1-2.4 ICP statement and 3.x left	session-20261113T175332-5effc865	2026-11-13T19:02:48Z
 verify:keepiq:1764:29903ce6	GREEN 1764, 1765 (tests only; phpunit 4913 ok, vitest 6361 ok)	session-20261113T185327-0dc82b88	2026-11-13T19:02:58Z
 cover:hermiq:065f1631md84f:js4829b6aa	PR #1701: 6 render tests for RunCompare/FlowRunCompare; src/views 1195->1205/1311; vitest 1312 pass	session-20261113T172325-6eb25015	2026-11-13T19:03:02Z
