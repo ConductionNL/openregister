@@ -3761,3 +3761,4 @@ cover:dossiq:069ee2d6m7275:b6fccd13	already done: lib/Service/Access/*.php at 97
 gap:keepiq:16:614b0a03	no action: advisory only (no score effect); a dependency refresh sweep is a broad behaviour-risking change, left for a planned upgrade; no PR	session-20261113T072715-cf04db4e	2026-11-13T09:12:57Z
 cover:shillinq:05639debmd8ee:f2147508	already done: lib/BackgroundJob/Support 100% lines on development c421f3c7d; no PR	session-20261113T084521-4cd185d2	2026-11-13T09:12:46Z
 cover:dossiq:069ee2d6m7275:8b886c00	already done: lib/Service/People/*.php at 92.8% (915/986) on development 31eb27fb, above 90 target	session-20261113T073916-e9f11dfa	2026-11-13T09:13:02Z
+cover:shillinq:05639debmd8ee:8bdc03d4	already done: lib/Service/BbvMigration 100% lines (102/102) on development c421f3c7d; no PR	session-20261113T084521-4cd185d2	2026-11-13T09:13:11Z
