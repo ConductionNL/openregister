@@ -2548,3 +2548,4 @@ cover:pipelinq:7f9dc8e6mc4ba:81b1241f	PR #3675: 13 tests for PortalAssertionVeri
 cover:decidiq:a5f973bbma14b:59826f43	no PR: lib/Settings is 1 class at 34/36 lines with 9 tests; remaining 2 lines need the shipped audit JSON missing/corrupt (not testable without changing lib/)	session-20261113T054520-0c8540f8	2026-11-13T05:52:31Z
 cover:pipelinq:7f9dc8e6mc4ba:8f2b650b	PR #3676: 11 tests for WatchEventStore, QuietXmlParser; suite 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:52:40Z
 cover:pipelinq:7f9dc8e6mc4ba:jsccb0cd24	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T05:52:35Z
+cover:pipelinq:7f9dc8e6mc4ba:bc26df70	already done: pcov on development shows lib/Service/Labels 100% lines (96/96) and methods	session-20261113T053904-36dcee67	2026-11-13T05:52:52Z
