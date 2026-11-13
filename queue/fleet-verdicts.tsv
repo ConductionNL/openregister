@@ -5457,6 +5457,7 @@ integriq	3509	7566b41da4b39fe951c6385dc597f3dd14dafc8f	GREEN	worker-38	unit 7888
 launchpad	1175	b36da8bea115f254ee4bb314c4813f9d51087e9f	GREEN	worker-44	PHP unit 3741 (baseline 3741, 0 fail; no PHP touched); vitest 2032 pass on tree; tests only
 portaliq	2378	2e83ccc2821ad1d8c485cb80ea628fd46a818072	GREEN	worker-27	tree 2378-2381: 4579 tests, 0 failures; baseline 4527, 0 failures; no new failures; tests only, additive
 portaliq	2379	a901ed8aabb68e912dc24764d58b1b022c70d7fa	GREEN	worker-27	tree 2378-2381: 4579 tests, 0 failures; baseline 4527, 0 failures; no new failures; tests only, additive
+larpinq	1011	c34753f471932a0a2a97ee03252497931604e6ae	BLOCK	worker-23	phpunit 697 vs baseline 697 (4 new PHPUnit warnings), vitest 284/284 green; the 4 new PHP test files never run: class names do not match file names (e.g. InitializeRegisterTest in InitializeRegisterBehaviourTest.php). Renamed to match, their 12 tests pass; rename the classes
 portaliq	2380	153b35f2a95519d399aed2c542a3ffad00254b99	GREEN	worker-27	tree 2378-2381: 4579 tests, 0 failures; baseline 4527, 0 failures; no new failures; tests only, additive
 buildiq	1529	03dee35f9017ecc99dbe332a9682c03441c6007f	GREEN	worker-21	2693 tests run (both merged), baseline 2659 with 1 inherited failure (ExportZipGoldenTest), 0 new failures; tests only
 portaliq	2381	240e70a34c6a7d690df03dbd24818075f94f0a28	GREEN	worker-27	tree 2378-2381: 4579 tests, 0 failures; baseline 4527, 0 failures; no new failures; tests only, additive
