@@ -1117,6 +1117,8 @@ Files/Db/EntityRelationMapperInterface.php,28,Files,Files,Files/Db/EntityRelatio
 Files/Db/File.php,66,Files,Files,Files/Db/File.php,0,336,Files
 Files/Db/FileMapper.php,562,Files,Files,Files/Db/FileMapper.php,21,15,Files
 Files/Db/FileMapperInterface.php,34,Files,Files,Files/Db/FileMapperInterface.php,0,,Files
+Files/Db/MailHeader.php,60,Files,Files,Files/Db/MailHeader.php,0,,Files
+Files/Db/MailHeaderMapper.php,42,Files,Files,Files/Db/MailHeaderMapper.php,0,,Files
 Files/Db/NoteVersion.php,42,Files,Files,Files/Db/NoteVersion.php,0,,Files
 Files/Db/NoteVersionMapper.php,74,Files,Files,Files/Db/NoteVersionMapper.php,0,,Files
 Files/Db/RegisterFolderRecorder.php,37,Files,Files,Files/Db/RegisterFolderRecorder.php,0,,Files
@@ -4028,6 +4030,7 @@ Db/MagicMapper/SearchFolding.php,234,Db,Service,Service/Db/MagicMapper/SearchFol
 Db/MagicMapper/MagicUnaccentProbe.php,160,Db,Service,Service/Db/MagicMapper/MagicUnaccentProbe.php,0,,Core
 Migration/Version1Date20261113140000.php,122,Migration,,,,,Platform
 Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
+Migration/Version1Date20261113200000.php,30,Migration,,,,,Platform
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core

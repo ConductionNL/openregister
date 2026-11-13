@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\TextExtraction\SourceText;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
+use OCA\OpenRegister\Files\Db\MailHeader;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis;
@@ -1548,8 +1549,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private function extractEml(\OCP\Files\File $file): ?string {
 		try {
 			$structure = $this->readers->emlParser->parse(file: $file);
+			$this->storeMailHeaders(fileId: (int)$file->getId(), headers: $structure->headers);
 			return $this->readers->emlParser->flatten(structure: $structure);
 		} catch (\OCA\OpenRegister\Exception\EmlParseException $e) {
+			// A file that no longer parses keeps no thread headers from an earlier extraction.
+			$this->storeMailHeaders(fileId: (int)$file->getId(), headers: null);
 			$sanitised = \OCA\OpenRegister\Files\Service\TextExtraction\EmlParser::sanitisePiiForLogging(message: $e->getMessage());
 			$this->analysis->logger->error(
 				message: '[TextExtractionService] EML parse failed: ' . $sanitised,
@@ -1560,6 +1564,42 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			return null;
 		}//end try
 	}//end extractEml()
+
+	/**
+	 * Store the thread headers of an `.eml` file, replacing the row an earlier extraction wrote.
+	 *
+	 * Null headers delete the file's row. A failure is logged, not thrown: the
+	 * text index must not be lost because the header row could not be written.
+	 *
+	 * @param int                       $fileId  The Nextcloud file id.
+	 * @param array<string, mixed>|null $headers The parsed headers, or null to forget the file's row.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MailHeader::fromHeaders is a named constructor.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-collected-mail-files-carry-their-thread-headers-req-rth-010
+	 */
+	private function storeMailHeaders(int $fileId, ?array $headers): void {
+		$mailHeaders = $this->sources->storage->mailHeaders;
+		if ($mailHeaders === null) {
+			return;
+		}
+
+		try {
+			if ($headers === null) {
+				$mailHeaders->deleteByFileId(fileId: $fileId);
+				return;
+			}
+
+			$mailHeaders->replaceForFile(row: MailHeader::fromHeaders(fileId: $fileId, headers: $headers));
+		} catch (Throwable $e) {
+			$this->analysis->logger->warning(
+				message: '[TextExtractionService] Could not store the mail thread headers',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'exception' => get_class($e)]
+			);
+		}
+	}//end storeMailHeaders()
 
 	/**
 	 * Public structured-parse entry point for EML files.
