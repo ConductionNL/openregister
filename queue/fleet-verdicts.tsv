@@ -6249,3 +6249,4 @@ decidiq	2130	8f7a28fa222c1beba24bf1c9cf60a7479f2bc780	GREEN	worker-19	tests only
 decidiq	2131	66d02dbcd4bbd73b4f865564b7313073f93a5096	GREEN	worker-19	tests only (+stubs); unit tree 3934 OK, baseline 3911 OK; no new failures
 shillinq	3009	7342e5558e4fae638320532ab6ee0e11699f3138	GREEN	worker-44	build sales-quote-and-order-to-invoice judged against its specs, access checks per administration; tree 10439 tests, 1 inherited clock-bound failure (PaymentWebhookIntakeCharacterisationTest), vitest 2295 passed
 shillinq	3010	d5daca5350e079d897a60e1490f94ef5f6c0b81d	GREEN	worker-44	build tax-vat-position-and-suppletie judged against its specs, access checks per administration; tree 10439 tests, 1 inherited clock-bound failure, vitest 2295 passed
+buildiq	1559	1179f9307d906faaa24f1864ae2eef5384a6f526	GREEN	worker-20	2920 tests run (3 new, all pass); baseline 2917 with 1 inherited failure (ExportZipGoldenTest); no new failures; tests only
