@@ -5177,3 +5177,4 @@ decidiq	2098	4c96686d6809aaa436ce2b7738d8c7811d2d1263	RED	merge-local:merge-gate
 buildiq	1511	8b127c0953d48c92356148a9295e08da68acfd21	GREEN	worker-01	phpunit.xml 2518 run (baseline 2469 on development 6b445ce3), 1 inherited failure ExportZipGoldenTest, 0 new; tests only, php -l clean
 decidiq	2110	cfed87e94fe407d9a21f84ef7b15c9a87fb2db01	GREEN	worker-28	3414 tests run, baseline 3396 OK, 0 new failures; tests-only (2 new test files)
 shillinq	2868	251d388321bd32b66dd1f09d5ab24e19c53d3332	GREEN	worker-38	phpunit 9045 on tree (baseline 9031), 1 failing = baseline 1 (PaymentWebhookIntakeCharacterisationTest timestamp case), 0 new; tests only
+pipelinq	3672	ba210f5711ce9cd32257d1c7ae234f3479f136ef	GREEN	worker-06	6454 tests on tree, baseline 6425 with 1 failure, no new failures; tests only
