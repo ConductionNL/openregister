@@ -1675,6 +1675,7 @@ Search/Service/Aggregation/AggregationJoinAnnotationValidator.php,140,Search,Sea
 Search/Service/Aggregation/AggregationMetricsAnnotationValidator.php,103,Search,Search,Search/Service/Aggregation/AggregationMetricsAnnotationValidator.php,0,,Search
 Search/Service/Aggregation/AggregationQuery.php,267,Search,Search,Search/Service/Aggregation/AggregationQuery.php,22,81,Search
 Search/Service/Aggregation/AggregationSpecEntry.php,10,Search,Search,Search/Service/Aggregation/AggregationSpecEntry.php,0,,Search
+Search/Service/Aggregation/CrossSchemaTarget.php,25,Search,Search,Search/Service/Aggregation/CrossSchemaTarget.php,0,,Search
 Search/Service/Aggregation/MetricEntrySite.php,17,Search,Search,Search/Service/Aggregation/MetricEntrySite.php,0,,Search
 Search/Service/Aggregation/MetricsDeclaration.php,14,Search,Search,Search/Service/Aggregation/MetricsDeclaration.php,0,,Search
 Search/Service/Aggregation/ThresholdEvaluationService.php,131,Search,Search,Search/Service/Aggregation/ThresholdEvaluationService.php,0,,Search

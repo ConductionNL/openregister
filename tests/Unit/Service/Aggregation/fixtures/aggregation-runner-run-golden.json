@@ -1840,6 +1840,91 @@
             }
         ]
     },
+    "schema-key-other": {
+        "error": "RuntimeException",
+        "message": "No register found that contains schema \"participants\".",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "schema-key-self": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 3
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 3
+                    }
+                ]
+            }
+        ]
+    },
     "sum-field": {
         "result": {
             "name": "agg",

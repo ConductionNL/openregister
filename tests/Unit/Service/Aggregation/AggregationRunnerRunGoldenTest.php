@@ -105,6 +105,10 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		$cases['native-grouped-bypass'] = [['spec' => $native, 'platform' => 'sqlite', 'nativeRows' => $nativeRows, 'bypass' => true] + $base];
 		$cases['native-grouped-user'] = [['spec' => $native, 'platform' => 'sqlite', 'nativeRows' => $nativeRows, 'user' => 'alice', 'org' => 'org-2'] + $base];
 		$cases['from-empty'] = [['spec' => ['agg' => ['metric' => 'count', 'from' => '']]] + $base];
+		// aggregation-dialect-repair Fix 1: a `schema` key naming this schema
+		// counts this schema; one naming another schema counts that one.
+		$cases['schema-key-self'] = [['spec' => ['agg' => ['metric' => 'count', 'schema' => 'Things']]] + $base];
+		$cases['schema-key-other'] = [['spec' => ['agg' => ['metric' => 'count', 'schema' => 'participants', 'where' => ['meeting' => '@self.id']]]] + $base];
 		$cases['row-cap'] = [['spec' => $sum, 'rows' => array_fill(0, 10000, ['amount' => 1])] + $base];
 		$cases['current-user-placeholder'] = [['spec' => ['agg' => ['metric' => 'count', 'where' => ['owner' => '$currentUser']]], 'user' => 'alice'] + $base];
 
@@ -129,6 +133,40 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		$this->assertArrayHasKey($name, $golden, 'no golden recorded for ' . $name);
 		$this->assertSame(json_encode($golden[$name]), json_encode($actual));
 	}//end testRunMatchesTheGolden()
+
+	/**
+	 * A `schema` key that names the declaring schema (in any case) runs
+	 * exactly as the same spec without it: same reads, same answer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/aggregation-api/spec.md#requirement-the-named-annotation-aggregation-surface-must-validate-filtergroupby-fields-against-the-schema-that-owns-them
+	 */
+	public function testASchemaKeyNamingThisSchemaCountsThisSchema(): void {
+		$cases = self::cases();
+
+		$this->assertSame(json_encode($this->observe(case: $cases['count-metric'][0])), json_encode($this->observe(case: $cases['schema-key-self'][0])));
+	}//end testASchemaKeyNamingThisSchemaCountsThisSchema()
+
+	/**
+	 * A `schema` key that names another schema is run as a cross-schema
+	 * count of that schema, as `from` is: it never counts the declaring
+	 * schema's own rows.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/aggregation-api/spec.md#requirement-the-named-annotation-aggregation-surface-must-validate-filtergroupby-fields-against-the-schema-that-owns-them
+	 */
+	public function testASchemaKeyNamingAnotherSchemaCountsThatSchema(): void {
+		$cases = self::cases();
+		$asSchema = $this->observe(case: $cases['schema-key-other'][0]);
+
+		$asFrom = $cases['schema-key-other'][0];
+		$asFrom['spec'] = ['agg' => ['metric' => 'count', 'from' => 'participants', 'where' => ['meeting' => '@self.id']]];
+
+		$this->assertSame(json_encode($this->observe(case: $asFrom)), json_encode($asSchema), 'a `schema` key must run as `from` does');
+		$this->assertNotContains(['table' => ['reg', 'things', null]], $asSchema['calls'], 'the declaring schema was counted');
+	}//end testASchemaKeyNamingAnotherSchemaCountsThatSchema()
 
 	/**
 	 * @param array<string, mixed> $case
