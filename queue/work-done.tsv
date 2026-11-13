@@ -2630,6 +2630,12 @@ cover:integriq:92114ab0m1534:a4a15698	PR #3487: 12 tests for PDOK geocoding/WFS 
 cover:buildiq:9930949bm5861:js4829b6aa	already done: src/views/* at 85.64% lines (1288/1504) on development f1c5b556, above 85 target (app 88.29%); no PR needed	session-20261113T041646-2c1d764f	2026-11-13T06:03:56Z
 verify:decidiq:2114:592205f0	GREEN 2114, 2115: 3398->3473 tests, all pass	session-20261113T054517-06ee2c47	2026-11-13T06:04:12Z
 cover:integriq:92114ab0m1534:a64a0bdb	already done: lib/Service/Tables/ 265/283 lines (93.6%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:04:45Z
+merge:learniq:2416:582daf3f	merge-local over 6 learniq tasks: merged=8 red=1 fail=0 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:04:54Z
+merge:learniq:2426:0c8c9410	merge-local over 6 learniq tasks: merged=8 red=1 fail=0 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:04:54Z
+merge:learniq:2431:f48ce12c	merge-local over 6 learniq tasks: merged=8 red=1 fail=0 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:04:54Z
+merge:learniq:2434:a42c4889	merge-local over 6 learniq tasks: merged=8 red=1 fail=0 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:04:54Z
+merge:learniq:2433:e68ae7e8	merge-local over 6 learniq tasks: merged=8 red=1 fail=0 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:04:54Z
+merge:learniq:2436:3be84c67	merge-local over 6 learniq tasks: merged=8 red=1 fail=0 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:04:54Z
 cover:shillinq:05639debmd8ee:js6d6735a6	PR shillinq#2871: 31 tests; src/views/bookings 25.64%->89.28%	session-20261113T031701-b518f7f8	2026-11-13T06:04:52Z
 verify:buildiq:1513:e5136f22	GREEN 1513 (no new failures; fixes 1382 errors when no openregister sibling)	session-20261113T041646-2c1d764f	2026-11-13T06:05:05Z
 cover:shillinq:05639debmd8ee:4734f62e	already done: lib/Service/Import/ImportProfile 105/116 (90.52%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:05:22Z
