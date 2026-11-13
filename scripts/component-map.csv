@@ -2606,6 +2606,8 @@ Service/Merge/ReferenceRelinkPlan.php,71,Service,Flows,Flows/Service/Merge/Refer
 Service/Merge/ReferenceRelinker.php,228,Service,Flows,Flows/Service/Merge/ReferenceRelinker.php,0,,Core
 Service/Merge/ReferenceWriterInterface.php,43,Service,Flows,Flows/Service/Merge/ReferenceWriterInterface.php,0,,Core
 Service/Merge/ReferencingObject.php,45,Service,Flows,Flows/Service/Merge/ReferencingObject.php,0,,Core
+Service/Merge/RelationIndexReferenceFinder.php,92,Service,Flows,Flows/Service/Merge/RelationIndexReferenceFinder.php,0,,Core
+Service/Merge/SavePathReferenceWriter.php,95,Service,Flows,Flows/Service/Merge/SavePathReferenceWriter.php,0,,Core
 Service/MigrationPack/MappingEngine.php,173,Service,Configuration,Configuration/Service/MigrationPack/MappingEngine.php,1,,Configuration
 Service/MigrationPack/MigrationPackErrorResponder.php,101,Service,Configuration,Configuration/Service/MigrationPack/MigrationPackErrorResponder.php,0,,Configuration
 Service/MigrationPack/MigrationPackImportResult.php,11,Service,Configuration,Configuration/Service/MigrationPack/MigrationPackImportResult.php,0,,Configuration

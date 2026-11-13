@@ -190,17 +190,28 @@ class ReferenceRelinker {
 	 * @return array<int, mixed>
 	 */
 	private function rewriteList(array $list, string $loserUuid, string $survivorUuid): array {
-		$rewritten = [];
+		$rewritten  = [];
+		$introduced = [];
 		foreach ($list as $member) {
-			$next = $this->rewrite(value: $member, loserUuid: $loserUuid, survivorUuid: $survivorUuid);
-			if (in_array($next, $rewritten, true) === true && $next !== $member) {
-				// The rewrite turned this element into one the list already
-				// holds; dropping it is what keeps the survivor listed once.
+			$next    = $this->rewrite(value: $member, loserUuid: $loserUuid, survivorUuid: $survivorUuid);
+			$changed = ($next !== $member);
+			// Drop an element that duplicates one already kept when the rewrite
+			// caused the duplicate: this element was rewritten, or an earlier
+			// one was rewritten into it. Either order of loser and survivor then
+			// leaves the survivor listed once, and a duplicate the list already
+			// held before the merge is not the merge's to remove.
+			if (in_array($next, $rewritten, true) === true
+				&& ($changed === true || in_array($next, $introduced, true) === true)
+			) {
 				continue;
 			}
 
+			if ($changed === true) {
+				$introduced[] = $next;
+			}
+
 			$rewritten[] = $next;
-		}
+		}//end foreach
 
 		return $rewritten;
 	}//end rewriteList()
