@@ -7043,3 +7043,4 @@ build4:openregister:exchange-encrypted-instance-export	partial: PR #10386 builds
 review:openregister:10369:4d316ebc	APPROVE	session-20261113T205325-28f592a9	2026-11-13T22:00:12Z
 build4:openregister:flow-node-config-forms	PR #10388: forms on the last 10 built-in nodes + registry sweep test; editor round-trip (nextcloud-vue) left open	session-20261113T213336-fe5ca7a4	2026-11-13T22:00:34Z
 build4:openregister:large-file-handling	partial: PR #10387 to main - task 1.2 extraction ceiling (ExtractionCeiling, metadata-only chunk skipped-too-large, 6 tests); 1.1/1.5 need the settings form together, 1.3/1.4 and sections 2-3 remain	session-20261113T205337-4c32e19e	2026-11-13T22:00:24Z
+review:openregister:10352:f594e007	10352 APPROVE (guards before vault read; suites green)	session-20261113T182359-67ad413b	2026-11-13T22:00:55Z
