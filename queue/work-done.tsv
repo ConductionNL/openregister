@@ -4230,3 +4230,4 @@ cover:launchpad:fb10c50fm911d:f91e7417	already covered: lib/Service/Connection 1
 cover:launchpad:fb10c50fm911d:9d3a1784	already done: lib/BackgroundJob 136/136 lines, every job has a dedicated test file; earlier PR -1 merged	session-20261113T081040-5e814df2	2026-11-13T10:19:45Z
 build:pipelinq:example-set-zuiddrecht	already done: fragment + validation (tasks 1, 2.1, 2.4) built/merged in #2465, cast refs only, no BSN/KVK literals; open 2.2/2.3/2.5 are live install/sync	session-20261113T091527-72c58830	2026-11-13T10:19:40Z
 cover:pipelinq:7f9dc8e6m916f:9cd6879c	already done: all 7 dirs >=92.7% (Berichtenbox/BsnAudit/Event/Forecast/Merge 100%, Lead 92.7%, Loyalty 93.3%), above 90 target	session-20261113T091527-72c58830	2026-11-13T10:20:03Z
+cover:launchpad:fb10c50fm911d:d8ac3ddd	already covered: lib/Service/Cleanup 49/49 statements (100%) at 5c4cf0d8; app now 96.19% (>95 target); no PR	session-20261113T101559-cb8bf864	2026-11-13T10:20:11Z
