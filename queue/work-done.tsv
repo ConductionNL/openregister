@@ -1742,3 +1742,4 @@ cover:dossiq:6ca0231ema7d4:b12f5203	PR dossiq#6253: 12 tests for RecordImportSto
 cover:dossiq:6ca0231ema7d4:aae6d66c	already covered: every lib/Exception class has behavioural tests (tests/Unit/Exception); no PR	session-20261113T024654-6600dc41	2026-11-13T02:57:52Z
 cover:dossiq:6ca0231ema7d4:2aa8dc21	PR #6254: 3 tests, lib/Service/Actions 198/202 -> 201/202 stmts	session-20261113T024653-d22c13a3	2026-11-13T02:58:18Z
 cover:dossiq:6ca0231ema7d4:4c817077	already done: lib/Service/Notification 368/372 stmts (98.9%) on development after quality/test-coverage-4c817077-1	session-20261113T024656-d5bfb688	2026-11-13T02:58:49Z
+cover:dossiq:6ca0231ema7d4:38e8c328	PR dossiq# PlainTextPdf 6 tests; other classes in dirs already tested	session-20261113T024654-6600dc41	2026-11-13T03:00:18Z
