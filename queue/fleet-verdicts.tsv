@@ -5259,3 +5259,4 @@ learniq	2418	66bff88472562e9dfab3fad30d3d6eaf470e1ebd	REVERIFY	worker-01	merged 
 learniq	2437	3fbcfb37643f1cf35925da07b278b7b36d89ee8e	GREEN	worker-01	JS tests only (7 node --test files); test:js-unit 1339 run vs 1301 baseline, same 1 inherited l10n-sidecar failure, 0 new; phpunit baseline 6101 (1 inherited), no PHP touched
 shillinq	2886	28c69d0b747a3d907a42ef07cedeba8818b086cf	GREEN	worker-20	tree 9264 tests (baseline 9256), 1 failure inherited from development (clock-bound PaymentWebhookIntakeCharacterisationTest), no new failures; tests only
 dossiq	6301	3cca74b18a7206cc73b3fa375b12c46da52f20d4	GREEN	worker-47	tests-only (+3 Support test files); tree 14899->14934 tests, baseline 19 failures, 0 new
+dossiq	6302	52de79f98c19f8313ac32ad201a9f5176f9593e1	GREEN	worker-47	tests-only (+2 Intake test files); tree 14899->14934 tests, baseline 19 failures, 0 new
