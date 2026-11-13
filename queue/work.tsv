@@ -5877,3 +5877,14 @@ review:openregister:10278:7ba5dae1	review	openregister	main	10278	sha=7ba5dae13b
 review:openregister:10279:4ae53493	review	openregister	main	10279	sha=4ae5349318a1d0e274b6ab00401826ea3cc156e7;last_approved=;title=feat(openregister): build schema-breaking-change-notice	2026-11-13T14:10:23Z
 verify:dossiq:6371:6a7bd31b	verify	dossiq	development	merge	prs=6371@cea13ccf507e61c09e3a6a0bb136b2f942cc1eb8,6422@c60a1ed91dbe4e7f437f26280de1443d10c640ed	2026-11-13T14:10:23Z
 verify:buildiq:1552:395c1fa5	verify	buildiq	development	merge	prs=1552@ba17cdd60c5b52ce1f96eab9c189327084a5b995	2026-11-13T14:10:23Z
+review:openregister:10280:1aae7114	review	openregister	main	10280	sha=1aae7114667caf3228a1f0187ae8c5160d2e50c0;last_approved=;title=feat(openregister): build recompute-and-reindex-on-demand	2026-11-13T14:15:46Z
+review:openregister:10281:458d4aca	review	openregister	main	10281	sha=458d4aca640d1dab4d7510b6bb5df00b9ff20af5;last_approved=;title=feat(openregister): build object-organisation-from-a-property	2026-11-13T14:15:46Z
+verify:dossiq:6423:57524b09	verify	dossiq	development	merge	prs=6423@bab41679c53a2bda048fdc09a09b1ccac2da4872,6424@7e3709bd0924ab1938f7eee7e2f13c641dcf3b24	2026-11-13T14:15:46Z
+verify:pipelinq:3758:a7b5bef3	verify	pipelinq	development	merge	prs=3758@76b2c373a8961156411c61aa457574470f39a0c6	2026-11-13T14:15:46Z
+verify:humaniq:1118:b941adaf	verify	humaniq	development	merge	prs=1118@0a5a0d250345afac4b7b3ded42c708f1c5f671a2	2026-11-13T14:15:46Z
+verify:shillinq:2940:2e35a4ab	verify	shillinq	development	merge	prs=2940@c07ee284504a1be0eb68b25dfa44e00c59a83ff1	2026-11-13T14:15:46Z
+merge:humaniq:1025:a58277d9	merge	humaniq	development	development	prs=1025@a9ec65cd2303c28414b2a2ce4734b889c83dcd5d,1029@a8575e17355a3083c95cc32a036a2f82e7010e19,1030@4e04b394e56c758e0a154a2734470d412302efa7,1031@f88eeb1ed1d23d855c5decb3b750537502cfd0ca,1112@c7acf4435ca5fafef99f1ac9d30447d3fd974f3e,1113@299a7cece9d116e66d8a97ff5b411ae33423a106,1115@2a6078888b9f207c1a25210ecefa541e568f239f	2026-11-13T14:15:46Z
+merge:portaliq:2410:731a2164	merge	portaliq	development	development	prs=2410@172fe59cf7dc1eea967ab3b2f17c3a45b73d69d7	2026-11-13T14:15:46Z
+merge:versioniq:679:49cae245	merge	versioniq	development	development	prs=679@8cf4fd9f9fd62ae84945bde847e8edd8f9868bd8	2026-11-13T14:15:46Z
+cover:pipelinq:7f9dc8e6mcebb:8f2b650b	cover	pipelinq	development	quality/test-coverage-8f2b650b	lang=php;dirs=lib/Service/Competitor/*.php;focus=thin;weight=2588;coverage=87.48;target=90.0	2026-11-13T11:01:52Z
+measure:versioniq:20261113h14	measure	versioniq	development	queue/coverage/versioniq.json	why=slices need per-directory coverage	2026-11-13T14:15:46Z
