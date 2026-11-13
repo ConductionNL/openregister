@@ -125,6 +125,7 @@ BackgroundJob/RecordsItsRuns.php,5,BackgroundJob,Configuration,Configuration/Bac
 BackgroundJob/RelatedRetentionRecalculationJob.php,103,BackgroundJob,Compliance,Compliance/BackgroundJob/RelatedRetentionRecalculationJob.php,0,,Compliance
 BackgroundJob/ReviewReminderJob.php,105,BackgroundJob,Compliance,Compliance/BackgroundJob/ReviewReminderJob.php,0,,Compliance
 BackgroundJob/RuleRunRetentionJob.php,40,BackgroundJob,Flows,Flows/BackgroundJob/RuleRunRetentionJob.php,0,,Processes
+BackgroundJob/ScheduledMessageSweepJob.php,15,BackgroundJob,Work,Work/BackgroundJob/ScheduledMessageSweepJob.php,0,,Processes
 BackgroundJob/SchemaRunJob.php,63,BackgroundJob,Service,Service/BackgroundJob/SchemaRunJob.php,0,,Core
 BackgroundJob/SourceRecordRecomputeJob.php,37,BackgroundJob,Flows,Flows/BackgroundJob/SourceRecordRecomputeJob.php,0,,Processes
 BackgroundJob/StateHistoryRebuildJob.php,94,BackgroundJob,Service,Service/BackgroundJob/StateHistoryRebuildJob.php,0,,Core
@@ -1547,6 +1548,9 @@ Notifications/Service/Notification/ScheduledFilterGrammar.php,34,Notifications,N
 Notifications/Service/Notification/ScheduledFilterParser.php,368,Notifications,Notifications,Notifications/Service/Notification/ScheduledFilterParser.php,2,,Notifications
 Notifications/Service/Notification/ScheduledFilterPosition.php,41,Notifications,Notifications,Notifications/Service/Notification/ScheduledFilterPosition.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessagePolicy.php,74,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessagePolicy.php,0,,Notifications
+Notifications/Service/Notification/ScheduledMessageStore.php,60,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageStore.php,0,,Notifications
+Notifications/Service/Notification/ScheduledMessageStoreInterface.php,0,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageStoreInterface.php,0,,Notifications
+Notifications/Service/Notification/ScheduledMessageSweep.php,40,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageSweep.php,0,,Notifications
 Notifications/Service/Notification/SystemEntityChange.php,70,Notifications,Notifications,Notifications/Service/Notification/SystemEntityChange.php,0,,Notifications
 Notifications/Service/Notification/SystemEntityObjectAdapter.php,39,Notifications,Notifications,Notifications/Service/Notification/SystemEntityObjectAdapter.php,0,,Notifications
 Notifications/Service/Notification/SystemSchemaRules.php,129,Notifications,Notifications,Notifications/Service/Notification/SystemSchemaRules.php,0,,Notifications
@@ -4015,6 +4019,7 @@ Service/Schema/SchemaChangeNoticeService.php,,Service,,,,,Core
 Db/MagicMapper/SearchFolding.php,234,Db,Service,Service/Db/MagicMapper/SearchFolding.php,0,,Core
 Db/MagicMapper/MagicUnaccentProbe.php,160,Db,Service,Service/Db/MagicMapper/MagicUnaccentProbe.php,0,,Core
 Migration/Version1Date20261113140000.php,122,Migration,,,,,Platform
+Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core
