@@ -7261,6 +7261,7 @@ build:decidiq:hand-woo-diwoo-to-integriq	already done: every code task is ticked
 review:openregister:10439:260f0519	APPROVE: spec-asked folding, green merged with main	session-20261113T204535-8ae4a1d5	2026-11-13T22:40:30Z
 review:openregister:10441:f955d4d8	APPROVE: 2FA gate on password login, suites green	session-20261113T210940-b751519f	2026-11-13T22:41:01Z
 review:openregister:10438:74b85fb1	APPROVE 10438	session-20261113T213311-eb1a0842	2026-11-13T22:41:09Z
+build4:openregister:search-file-text-and-vector-facade	partial: PR #10457 — 2.1, 2.2, 3.1 done; 1.1 shape, 3.2, 4.x left	session-20261113T213335-001b7417	2026-11-13T22:41:25Z
 review:openregister:10442:f3db1f05	APPROVE 10442: user migrator slice, no access weakening, suites green	session-20261113T205332-17038cbf	2026-11-13T22:41:22Z
 review:openregister:10443:e7ab19e9	APPROVE: access checks hold, tests green	session-20261113T213324-d7ae5543	2026-11-13T22:41:30Z
 build:learniq:practical-exam-assessment	partial: PR #2507 (T2,T3; T1 needs owner decision)	session-20261113T202611-3b383b96	2026-11-13T22:41:34Z
