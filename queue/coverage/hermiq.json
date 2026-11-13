@@ -1,12 +1,12 @@
 {
  "app": "hermiq",
- "commit": "2a32188262e3ee563b5c7af3798a22ebed01647e",
- "measured_at": "2026-11-13T10:49:26Z",
+ "commit": "7f24df30060ab233a6c2f3e566992f713c6c3494",
+ "measured_at": "2026-11-13T18:11:23Z",
  "php": {
   "tool": "pcov",
-  "pct": 90.09,
-  "statements": 34399,
-  "covered": 30991,
+  "pct": 91.32,
+  "statements": 34393,
+  "covered": 31407,
   "dirs": {
    "lib/AppInfo/": [
     27,
@@ -41,8 +41,8 @@
     22
    ],
    "lib/Listener/": [
-    466,
-    432
+    460,
+    426
    ],
    "lib/Mcp/": [
     333,
@@ -74,7 +74,7 @@
    ],
    "lib/Service/": [
     11715,
-    10197
+    10560
    ],
    "lib/Service/Agent/": [
     632,
@@ -126,11 +126,11 @@
    ],
    "lib/Service/Llm/": [
     1249,
-    1202
+    1237
    ],
    "lib/Service/NcNative/": [
     739,
-    681
+    704
    ],
    "lib/Service/OutsideAgent/": [
     124,
@@ -166,7 +166,7 @@
    ],
    "lib/Service/WebResearch/": [
     336,
-    327
+    328
    ],
    "lib/Service/Workspace/": [
     812,
