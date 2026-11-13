@@ -38,6 +38,9 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\MatrixRowRun
  * @uses \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
  * @uses \OCA\OpenRegister\Service\Rbac\MatrixShape
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixShape
  */
 final class DepartmentMatrixValidatorGoldenTest extends TestCase {
 

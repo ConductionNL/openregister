@@ -56,6 +56,15 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Rbac\ChildrenRead
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyLevel
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Service\Rbac\ChildrenRead
+ * @uses   \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
+ * @uses   \OCA\OpenRegister\Service\Rbac\HierarchyLevel
  */
 final class HierarchyDescenderGoldenTest extends TestCase {
 

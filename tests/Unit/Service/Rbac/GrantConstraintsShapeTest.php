@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses \OCA\OpenRegister\Service\Rbac\ConstraintPoint
+ * @uses   \OCA\OpenRegister\Service\Rbac\ConstraintPoint
  */
 class GrantConstraintsShapeTest extends TestCase {
 

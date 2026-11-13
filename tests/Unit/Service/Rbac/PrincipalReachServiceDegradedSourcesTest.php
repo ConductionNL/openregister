@@ -50,6 +50,12 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Object\ProvenanceRequest
  * @uses \OCA\OpenRegister\Service\Object\VerbListing
+ * @uses   \OCA\OpenRegister\Service\Rbac\PrincipalDirectory
+ * @uses   \OCA\OpenRegister\Service\Rbac\PrincipalReach
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReachSources
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Object\ProvenanceRequest
+ * @uses   \OCA\OpenRegister\Service\Object\VerbListing
  */
 class PrincipalReachServiceDegradedSourcesTest extends TestCase {
 

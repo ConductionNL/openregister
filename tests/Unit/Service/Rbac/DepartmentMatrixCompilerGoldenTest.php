@@ -43,6 +43,12 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\MatrixCompileRun
  * @uses \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
  * @uses \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
+ * @uses   \OCA\OpenRegister\Service\Rbac\ConstraintPoint
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixCaller
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixCompileRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  */
 final class DepartmentMatrixCompilerGoldenTest extends TestCase {
 

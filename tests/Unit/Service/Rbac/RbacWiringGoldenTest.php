@@ -51,6 +51,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyDescender
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectGrantResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\HierarchyDescender
+ * @uses   \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectGrantResolver
  */
 class RbacWiringGoldenTest extends TestCase {
 

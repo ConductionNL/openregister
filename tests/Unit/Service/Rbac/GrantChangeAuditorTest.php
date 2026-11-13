@@ -45,6 +45,12 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\AuditRecording
  * @uses \OCA\OpenRegister\Service\Rbac\GrantAuditEntry
  * @uses \OCA\OpenRegister\Service\Rbac\SpecialRightChange
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses   \OCA\OpenRegister\Service\Object\AuditRecording
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantAuditEntry
+ * @uses   \OCA\OpenRegister\Service\Rbac\SpecialRightChange
  */
 class GrantChangeAuditorTest extends TestCase {
 

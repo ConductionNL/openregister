@@ -42,6 +42,10 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\RegisterSchema
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationAssignment
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Rbac\AuthorizationAssignment
  */
 class ObjectAuthorizationWriterTest extends TestCase {
 

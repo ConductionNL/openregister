@@ -69,6 +69,14 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\RevealMaskRun
  * @uses \OCA\OpenRegister\Service\Rbac\RevealRecording
  * @uses \OCA\OpenRegister\Service\SchemaProperty
+ * @uses   \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses   \OCA\OpenRegister\Controller\Support\RevertControllerServices
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm
+ * @uses   \OCA\OpenRegister\Service\Object\RevertPoint
+ * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses   \OCA\OpenRegister\Service\Rbac\RevealMaskRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\RevealRecording
+ * @uses   \OCA\OpenRegister\Service\SchemaProperty
  */
 class ExplicitRevealReReviewTest extends TestCase {
 

@@ -50,6 +50,11 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
  * @uses \OCA\OpenRegister\Service\Rbac\GrantCaller
  * @uses \OCA\OpenRegister\Service\Rbac\WrittenRuleRun
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantCaller
+ * @uses   \OCA\OpenRegister\Service\Rbac\WrittenRuleRun
  */
 class AccessReviewGateTest extends TestCase {
 

@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Rbac\GrantRuleFit
  * @uses \OCA\OpenRegister\Service\Rbac\HeldRule
+ * @uses   \OCA\OpenRegister\Service\Rbac\HeldRule
  */
 class GrantRuleFitTest extends TestCase {
 

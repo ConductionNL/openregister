@@ -44,6 +44,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
  * @uses \OCA\OpenRegister\Service\Rbac\DenyRowTest
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyRowTest
  */
 class DenyResolverTest extends TestCase {
 

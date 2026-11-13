@@ -39,6 +39,10 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ProvenanceOptions
  * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\ProvenanceOptions
+ * @uses   \OCA\OpenRegister\Service\Rbac\RoleActionMap
  */
 final class ProvenanceResolverGoldenTest extends TestCase {
 

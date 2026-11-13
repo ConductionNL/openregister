@@ -39,6 +39,8 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationEdit
  * @uses \OCA\OpenRegister\Service\Rbac\SchemaSave
+ * @uses   \OCA\OpenRegister\Service\Rbac\AuthorizationEdit
+ * @uses   \OCA\OpenRegister\Service\Rbac\SchemaSave
  */
 class RecordMetadataConditionsTest extends TestCase {
 

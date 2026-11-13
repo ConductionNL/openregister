@@ -36,6 +36,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationColumn
  * @uses \OCA\OpenRegister\Service\Rbac\GrantedRows
+ * @uses   \OCA\OpenRegister\Service\Rbac\AuthorizationColumn
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantedRows
  */
 class ObjectScopeReachableRowGoldenTest extends TestCase {
 

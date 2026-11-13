@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ExternalGrantGuard
  * @uses \OCA\OpenRegister\Service\Rbac\LapseWindow
+ * @uses   \OCA\OpenRegister\Service\Rbac\LapseWindow
  */
 class ExternalGrantGuardShapeTest extends TestCase {
 

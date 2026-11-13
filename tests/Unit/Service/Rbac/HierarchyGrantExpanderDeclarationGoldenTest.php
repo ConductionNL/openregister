@@ -45,6 +45,13 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyDescent
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyInheritanceRun
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyLevel
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses   \OCA\OpenRegister\Service\Rbac\HierarchyDescent
+ * @uses   \OCA\OpenRegister\Service\Rbac\HierarchyInheritanceRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\HierarchyLevel
  */
 final class HierarchyGrantExpanderDeclarationGoldenTest extends TestCase {
 

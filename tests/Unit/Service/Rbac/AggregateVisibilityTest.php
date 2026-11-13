@@ -42,6 +42,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
  * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
  * @uses \OCA\OpenRegister\Service\SchemaProperty
+ * @uses   \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses   \OCA\OpenRegister\Service\SchemaProperty
  */
 class AggregateVisibilityTest extends TestCase {
 

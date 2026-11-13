@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class ExplicitRevealChangeMaskTest extends TestCase {
 

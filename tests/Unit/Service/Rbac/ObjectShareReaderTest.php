@@ -46,6 +46,9 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Rbac\FolderShareScan
  * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Service\Rbac\FolderShareScan
+ * @uses   \OCA\OpenRegister\Service\Rbac\ShareGrantAttributes
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class ObjectShareReaderTest extends TestCase {
 

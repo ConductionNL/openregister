@@ -43,6 +43,12 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\MatrixRowRun
  * @uses \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
  * @uses \OCA\OpenRegister\Service\Rbac\MatrixShape
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\Schema\DeclaredActions
+ * @uses   \OCA\OpenRegister\Service\Rbac\AppRowsRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
+ * @uses   \OCA\OpenRegister\Service\Rbac\MatrixShape
  */
 class MatrixRowsFromAppsProviderTest extends TestCase {
 

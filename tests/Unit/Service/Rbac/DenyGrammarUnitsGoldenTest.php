@@ -46,6 +46,13 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantTerms
  * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantUse
  * @uses \OCA\OpenRegister\Service\Rbac\TokenNarrowing
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyCollision
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrant
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantTarget
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantTerms
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantUse
+ * @uses   \OCA\OpenRegister\Service\Rbac\TokenNarrowing
  */
 final class DenyGrammarUnitsGoldenTest extends TestCase {
 

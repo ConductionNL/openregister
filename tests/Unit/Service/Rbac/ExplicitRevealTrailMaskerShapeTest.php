@@ -36,6 +36,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\Schema
  */
 class ExplicitRevealTrailMaskerShapeTest extends TestCase {
 

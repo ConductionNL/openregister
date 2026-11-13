@@ -39,6 +39,9 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\HoldersRun
  * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
  * @uses \OCA\OpenRegister\Service\Rbac\RuleOrigin
+ * @uses   \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\RoleActionMap
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleOrigin
  */
 class ObjectPermissionsResolverTest extends TestCase {
 

@@ -37,6 +37,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\SchemaSave
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Rbac\SchemaSave
  */
 class StoredRuleBlocksTest extends TestCase {
 

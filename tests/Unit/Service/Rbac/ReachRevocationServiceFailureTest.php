@@ -48,6 +48,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Rbac\ReachRevocationLog
  * @uses \OCA\OpenRegister\Service\Rbac\ReachSources
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\DelegationGrant
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReachRevocationLog
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReachSources
+ * @uses   \OCA\OpenRegister\Db\Schema
  */
 class ReachRevocationServiceFailureTest extends TestCase {
 

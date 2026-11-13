@@ -41,6 +41,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses \OCA\OpenRegister\Service\Rbac\HoldersRun
  * @uses \OCA\OpenRegister\Service\Rbac\RuleOrigin
+ * @uses   \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleOrigin
  */
 class ObjectAccessHistoryTest extends TestCase {
 

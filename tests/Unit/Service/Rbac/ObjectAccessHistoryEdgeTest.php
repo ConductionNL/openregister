@@ -39,6 +39,11 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\HoldersRun
  * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses \OCA\OpenRegister\Service\Rbac\RuleOrigin
+ * @uses   \OCA\OpenRegister\Db\AuditTrail
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleOrigin
  */
 class ObjectAccessHistoryEdgeTest extends TestCase {
 

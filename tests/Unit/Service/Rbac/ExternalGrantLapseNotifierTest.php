@@ -47,6 +47,9 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Rbac\LapseWindow
  * @uses \OCA\OpenRegister\Service\Rbac\PrincipalDirectory
  * @uses \OCA\OpenRegister\Service\Rbac\RbacChecks
+ * @uses   \OCA\OpenRegister\Service\Rbac\LapseWindow
+ * @uses   \OCA\OpenRegister\Service\Rbac\PrincipalDirectory
+ * @uses   \OCA\OpenRegister\Service\Rbac\RbacChecks
  */
 class ExternalGrantLapseNotifierTest extends TestCase {
 
