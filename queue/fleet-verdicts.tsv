@@ -5278,3 +5278,4 @@ stackiq	1849	537bc73a9ed95721e8430c0f960428247173bdca	GREEN	worker-06	PHP 3147 t
 pipelinq	3688	bd3652ddbd1430135c2905c0977dd7aedaf15812	GREEN	worker-27	phpunit 6454 tests, baseline 1 failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), new failures 0; tests-only
 pipelinq	3689	30a99633fbd1c07424e01c48202a20a4c117b08d	GREEN	worker-27	phpunit 6454 tests, baseline 1 failure, new 0; vitest 3900 passed; tests-only
 buildiq	1515	f64cdc78ecb9b030eff057ff587c30d684510998	GREEN	worker-49	php 2659 tests vs baseline 2632 (1 inherited failure ExportZipGoldenTest), no new failures; vitest 3841 passed; tests only
+buildiq	1516	07f773068d0a7062086cacc160312a4a5942ade3	GREEN	worker-49	php 2659 tests vs baseline 2632 (1 inherited failure ExportZipGoldenTest), no new failures; vitest 3841 passed; tests only
