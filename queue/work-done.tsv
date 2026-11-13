@@ -3105,3 +3105,4 @@ cover:shillinq:05639debmd8ee:87821f2f	PR #2901: VatLineBackfill edge cases, 8 te
 cover:dossiq:f8a113c5m7e79:c97e6ec3	PR #6318: 3 phpunit tests, Queue/Source 335->350/351	session-20261113T051709-e616bf69	2026-11-13T07:14:00Z
 cover:dossiq:f8a113c5m7e79:f0c02922	already done: lib/Service/External 401/401 lines under strict metadata (PRs -1/-2 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:14:06Z
 cover:hermiq:065f1631mfaac:59826f43	already done: lib/Settings/*.php at 100% lines (18/18) on development beeb8ec1; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:14:29Z
+cover:hermiq:065f1631mfaac:34763eb4	already done: lib/Middleware/*.php at 100% lines (10/10) on development beeb8ec1; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:14:46Z
