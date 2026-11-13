@@ -3773,3 +3773,4 @@ cover:dossiq:069ee2d6m7275:ea81adeb	PR #6350: 5 Zgw classes, 18 tests, lib/Servi
 cover:hermiq:065f1631m249e:17d367ab	already done: lib/Controller/Settings/ 335/335 lines (100%) under the full unit suite on development, target 90; no PR	session-20261113T072713-f866e896	2026-11-13T09:15:04Z
 cover:hermiq:065f1631m249e:js4829b6aa	PR #1677: 13 vitest tests (Runs.vue, ApprovalInbox.vue templates), suite 1205->1218 all green	session-20261113T080551-294c2aa6	2026-11-13T09:15:09Z
 cover:dossiq:069ee2d6m7e79:js3f3bfe56	PR #6349: registry.js 0->100%, App.vue 0->96%; src/* 24.6->49.6% lines; main.js bootstrap (require.context) not unit-testable, 90 target not reached	session-20261113T080549-9b0da587	2026-11-13T09:15:05Z
+cover:hermiq:065f1631m249e:js77cf3af4	PR hermiq#1678: 5 vitest specs, SkillRowActions 39->50/51, src/widgets 89.57->90.40%; suite 1205->1210 green	session-20261113T080549-dde3ba19	2026-11-13T09:15:17Z
