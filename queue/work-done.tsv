@@ -2362,3 +2362,4 @@ cover:keepiq:c967a31fm0090:e372e6ff	already done: lib/Event/*.php 43/43 (100%) o
 cover:keepiq:c967a31fm0090:a4b15ae4	already done: lib/Event/Audit 19/19 (100%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T05:11:46Z
 cover:pipelinq:f67520ecmc4ba:be0dcca9	already done: lib/Mcp/*.php at 100% lines (McpAnswer 25/25, PipelinqScannableServices 4/4) after merged #3595	session-20261113T044737-f37de8e3	2026-11-13T05:13:04Z
 cover:pipelinq:f67520ecmc4ba:168f7791	already done: lib/Dossiq/CaseTypeContributionProvider.php at 100% lines (26/26)	session-20261113T044737-f37de8e3	2026-11-13T05:13:23Z
+cover:pipelinq:f67520ecmc4ba:bec85fb4	already done: lib/Service/Zgw/ has no subdirs; its only gaps are covered by open PR #3670 (97.25->99.73% lines)	session-20261113T044737-f37de8e3	2026-11-13T05:13:37Z
