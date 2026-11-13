@@ -2642,3 +2642,4 @@ cover:shillinq:05639debmd8ee:4734f62e	already done: lib/Service/Import/ImportPro
 verify:filinq:2035:d309fa65	2035 GREEN, 2036 GREEN (php 6112, vitest 718, 0 failures)	session-20261113T054516-469bb7f6	2026-11-13T06:05:20Z
 cover:integriq:92114ab0m1534:102ac6fb	PR #3488: 6 tests for SubscriptionSecretMasker; inherited 2E/1F unchanged	session-20261113T051707-6c971ec6	2026-11-13T06:05:49Z
 cover:shillinq:05639debmd8ee:js37c784b6	PR #2874: 58 vitest tests, src/composables 39.1%->97.8%, suite 1331->1389 green	session-20261113T054519-3d0ac77f	2026-11-13T06:05:58Z
+cover:shillinq:05639debmd8ee:js4829b6aa	PR shillinq#2873: 34 tests on 4 untested views, src/views/* lines 30.5->47.9%; vitest 1331->1365 all passing	session-20261113T051703-1b54bfba	2026-11-13T06:06:06Z
