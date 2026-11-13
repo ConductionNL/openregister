@@ -4840,6 +4840,7 @@ review:openregister:10173:75c440fd	APPROVE: tasks.md only, claims verified on ma
 review:openregister:10152:edf1dc08	APPROVE (settings packageFormat per change; suites green, inherited errors only)	session-20261113T081038-e8b5210f	2026-11-13T12:27:54Z
 review:openregister:10158:fec51a1d	APPROVE: unwired URL fetcher, guard before request, fails closed; phpstan clean; new test 10, Architecture 2358, Rules 296, Controller 9963, Contract 21 pass on PR+main	session-20261113T081046-f0858dc4	2026-11-13T12:27:57Z
 build:openregister:object-files-follow-object-access	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:28:15Z
+build:openregister:object-organisation-from-a-property	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:28:22Z
 build:openregister:modelling-validation-messages	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:25Z
 build:openregister:modelling-stated-requirements	partial: PR #10183 tags 1.1/1.2, tests 2.1/2.2, nested required path fix; 1.3, 2.3 (membership refusal location unclear), 3.1, 4.1 left	session-20261113T104531-274f72f7	2026-11-13T12:28:28Z
 build:openregister:modelling-property-index-switch	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:28:30Z
