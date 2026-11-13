@@ -4634,3 +4634,4 @@ verify:pipelinq:3728:dabff859	GREEN 3728,3742,3744; CONFLICT 3743	session-202611
 build:openregister:a-rule-that-reaches-nobody-says-so	partial: PR #10141 builds 3.1 (shared RuleReachRecorder service, test); 3.2 needs persisted counts and 3.3 is a decision	session-20261113T101609-bc51215d	2026-11-13T11:48:22Z
 fix:pipelinq:3743:7e564b1c	merged development, checks green; new head a7b9c340, REVERIFY recorded	session-20261113T064519-30004ad4	2026-11-13T11:48:30Z
 fix:learniq:2463:4a5ba209	conflict resolved, both sides' tests kept; new head 98ba380f, REVERIFY queued	session-20261113T051703-1b54bfba	2026-11-13T11:48:51Z
+fix:pipelinq:3734:b1d9cad7	merged development in, new head 666ee86dcb20de55614ce24760c926e76f6b160a, REVERIFY	session-20261113T071631-5a3cc070	2026-11-13T11:49:01Z
