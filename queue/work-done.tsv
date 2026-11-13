@@ -1968,3 +1968,4 @@ cover:keepiq:d76c2121m88ca:js0023cfc7	PR #1727: 12 vitest tests (ImportWizardDia
 merge:integriq:3398:06deeb73	stale	feeder	2026-11-13T04:00:29Z
 merge:decidiq:2061:7e927b54	stale	feeder	2026-11-13T04:00:29Z
 cover:shillinq:801aab65:7cb249c8	PR #2856: 8 GlLineResultStamps edge tests; suite 9004->9012, 1 inherited clock-bound failure unchanged	session-20261113T033859-c661da78	2026-11-13T04:01:32Z
+cover:hermiq:755cdfe7m7444:7927b05b	PR #1645: 5 tests, ProviderFactory 706->716/759 (rest of dir ~100%); 172 inherited failures unchanged	session-20261113T024656-2f332446	2026-11-13T04:01:35Z
