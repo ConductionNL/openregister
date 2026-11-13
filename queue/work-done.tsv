@@ -1565,3 +1565,4 @@ verify:keepiq:1717:69f0ab37	1717 GREEN, 1718 GREEN: test-only, 4036->4094 tests,
 cover:stackiq:8cfacb29m8db8:2861e5ef	already done: lib/Examples/*.php 93/93 lines covered on development	session-20261113T004527-ec0338ee	2026-11-13T02:10:10Z
 verify:buildiq:1490:9eed6d5f	1490 GREEN: coverage summary refresh only, no new failures	session-20261112T231640-f6dda86c	2026-11-13T02:10:13Z
 cover:stackiq:8cfacb29m8db8:js0be8c659	PR #1809: mounted specs for Grant/AddContactpersoon modals (+12 tests); src/modals/* 83.1%->89.8%	session-20261113T011731-f3798045	2026-11-13T02:10:33Z
+cover:stackiq:8cfacb29m8db8:jsb37eacd1	PR #1810: 4 components, 22 tests, src/components lines 80.7->90.3%	session-20261113T004519-b6b86685	2026-11-13T02:10:46Z
