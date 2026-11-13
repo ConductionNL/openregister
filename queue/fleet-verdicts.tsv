@@ -4557,3 +4557,4 @@ learniq	2423	1c65f0d85e15946bd918fff258b97c7d9c8d5ffd	GREEN	worker-31	tests-only
 stackiq	1780	e9e2a627eb64d574503da5238d5533f3cf2f41c6	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; tests only; previous constructor error fixed
 stackiq	1781	bd8e0ef5f023a4b8339a4104e8b9b00e456b6989	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; tests only; conflict resolved
 stackiq	1790	aa818309297f212826e5300ee043a76890161487	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; behaviour-preserving extraction in ArchiMateImportService (section items, import statistics), pinned by new golden tests
+stackiq	1791	95f6cd8fa0b7909a0f7807900af1bb816283b971	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; behaviour-preserving extraction in ArchiMateService org export; same queries, order and error results; golden test added
