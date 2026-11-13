@@ -6659,5 +6659,6 @@ verify:filinq:2054:44f372af	3 GREEN (2054,2092,2097), 6 CONFLICT (2090,2091,2093
 cover:dossiq:069ee2d6mbd37:74111b6d	already done: lib/Service/Status 503/504 statements (99.8%) on development	session-20261113T175332-5effc865	2026-11-13T20:29:08Z
 measure:decidiq:20261113h20	php 91.97% (25854 stmts), js 98.26% (2932 stmts) at 75a7a65b	session-20261113T185324-28e07ab2	2026-11-13T20:29:13Z
 cover:dossiq:069ee2d6mbd37:5ebe3eb6	already done: lib/Service/Mcp 246/246 statements on development	session-20261113T175332-5effc865	2026-11-13T20:29:26Z
+verify:filinq:2097:f81a8ce9	3 GREEN (2097-2099), 6 CONFLICT (2100-2105, l10n/register json vs earlier tree PRs); unit 6491/0 fail, vitest 751 pass	session-20261113T202626-976dcdac	2026-11-13T20:30:04Z
 cover:dossiq:069ee2d6mbd37:f0c02922	already done: lib/Service/External 401/401 statements on development	session-20261113T175332-5effc865	2026-11-13T20:29:39Z
 cover:dossiq:069ee2d6mbd37:3641032a	already done: lib/Service/Pipelinq 521/521 statements on development	session-20261113T175332-5effc865	2026-11-13T20:30:12Z
