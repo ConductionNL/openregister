@@ -4377,3 +4377,4 @@ merge:hermiq:1644:bd61e03a	merge-local over 2 hermiq tasks: merged=2 red=0 fail=
 cover:stackiq:9ac19b3am10f3:34f5c300	PR #1870: EolSyncService +4 tests (35 stmts); lib/Service/*.php at 82.9% overall, the big gaps (SettingsService, OrganizationSyncService, ArchiMateExportService) remain	session-20261113T071633-17de823f	2026-11-13T11:03:03Z
 verify:opencatalogi:2587:314238c7	GREEN 2587: tests-only, 5177 tests, 2 inherited failures	session-20261113T104650-72c03e13	2026-11-13T11:03:10Z
 cover:stackiq:9ac19b3am10f3:007dc1d0	already done: lib/Service/Cmdb/*.php well above the 90% target on development (measured with the full unit suite); no PR	session-20261113T071633-17de823f	2026-11-13T11:03:22Z
+cover:pipelinq:7f9dc8e6m84dd:b96c059a	already done: lib/Service/SearchConsole/ at 96.31% line coverage on development (target 90), every class tested; no PR	session-20261113T104520-9cf91a1e	2026-11-13T11:03:39Z
