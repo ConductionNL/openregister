@@ -5284,3 +5284,4 @@ buildiq	1517	0966a686e08f860938b20c5bf6dd9df80534e978	GREEN	worker-49	php 2659 t
 buildiq	1518	9e0c9ff1294a15ef3224d626be2f614002898f99	GREEN	worker-49	php 2659 tests vs baseline 2632 (1 inherited failure ExportZipGoldenTest), no new failures; vitest 3841 passed; tests only
 keepiq	1742	1784bcc01593f7ac09f501da68dfa44bc2b3273d	GREEN	worker-33	tree on development 8a5d84f3: phpunit 4672 run, baseline 4564 green (241 skipped), 0 new failures; tests only
 keepiq	1743	1b5711bf1bae2f7f6796ccc8c92e35044932c6d9	GREEN	worker-33	tree on development 8a5d84f3: phpunit 4672 run, baseline 4564 green (241 skipped), 0 new failures; tests only
+pipelinq	3690	3de2a747f96dfaa4e3c7867bd24c1c06543f351c	GREEN	worker-42	unit 6457 run (+3), baseline 6454 with 1 inherited failure, no new failures; tests only
