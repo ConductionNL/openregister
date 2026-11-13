@@ -96,9 +96,49 @@ class GraphQLService {
 	}//end executeRequest()
 
 	/**
+	 * Execute a query under a row cap and a deadline, reporting the rows
+	 * returned, whether a cap truncated a list, and how long it took.
+	 *
+	 * The caps ride in the resolver context on a {@see BoundedRun}, which
+	 * {@see \OCA\OpenRegister\Service\GraphQL\GraphQLResolver::resolveList()}
+	 * reads: it clamps each list's page size to what is left and refuses the
+	 * rest once the deadline has passed.
+	 *
+	 * @param string                    $query         The GraphQL document.
+	 * @param array<string, mixed>|null $variables     Its variables.
+	 * @param string|null               $operationName The operation to run.
+	 * @param int                       $rowCap        The rows allowed across the run.
+	 * @param float                     $deadline      The microtime the run must stop after.
+	 *
+	 * @return array<string, mixed> The result, with `extensions.rows`, `extensions.truncated` and `extensions.durationMs`.
+	 *
+	 * @spec openspec/changes/operate-admin-query-console/specs/admin-query-console/spec.md
+	 */
+	public function executeBounded(string $query, ?array $variables, ?string $operationName, int $rowCap, float $deadline): array {
+		$bounded = new BoundedRun(rowCap: $rowCap, deadline: $deadline);
+		$startedAt = microtime(true);
+
+		try {
+			$output = $this->run(request: new GraphQLRequest(query: $query, variables: $variables, operationName: $operationName), bounded: $bounded);
+		} catch (Error $e) {
+			$output = ['errors' => [$this->schema->errorFormatter->format($e)]];
+		} catch (\Exception $e) {
+			$output = $this->internalError(exception: $e);
+		}//end try
+
+		$output['extensions'] = ($output['extensions'] ?? []);
+		$output['extensions']['rows'] = $bounded->rowsReturned();
+		$output['extensions']['truncated'] = $bounded->truncated();
+		$output['extensions']['durationMs'] = (int) round((microtime(true) - $startedAt) * 1000);
+
+		return $output;
+	}//end executeBounded()
+
+	/**
 	 * Guard, price and execute a query.
 	 *
 	 * @param GraphQLRequest $request The query, its variables and the operation name
+	 * @param BoundedRun|null $bounded The row and time budget to run under, or null for an unbounded request
 	 *
 	 * @return array<string, mixed> The execution result with its complexity extension
 	 *
@@ -106,17 +146,22 @@ class GraphQLService {
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
 	 */
-	private function run(GraphQLRequest $request): array {
+	private function run(GraphQLRequest $request, ?BoundedRun $bounded = null): array {
 		$this->guard->checkRateLimit();
 		$document = Parser::parse($request->query);
 		$this->guard->checkIntrospection(document: $document);
 		$complexity = $this->schema->complexityAnalyzer->analyze($document, $request->variables);
 
+		$context = $this->contextFactory->create(schemaGenerator: $this->schema->schemaGenerator, operationName: $request->operationName);
+		if ($bounded !== null) {
+			$context[BoundedRun::CONTEXT_KEY] = $bounded;
+		}
+
 		$result = GraphQL::executeQuery(
 			$this->getSchema(),
 			$request->query,
 			null,
-			$this->contextFactory->create(schemaGenerator: $this->schema->schemaGenerator, operationName: $request->operationName),
+			$context,
 			$request->variables,
 			$request->operationName,
 		);
