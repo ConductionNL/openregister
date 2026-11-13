@@ -6510,3 +6510,4 @@ build:filinq:multi-tenant-hardening	partial: PR #2072 (organisationSettings sche
 verify:portaliq:2457:8fdf6d79	2457 GREEN, 2458 GREEN (tests only, 4931 tests, 0 new failures)	session-20261113T195345-400acccd	2026-11-13T19:59:59Z
 build:filinq:leaf-integrations	PR #2074: task 2.1 done (record pages host registry leaves), +7 tests; 2.2/3.1/3.4 need a live instance	session-20261113T171141-a3907367	2026-11-13T20:00:25Z
 build:filinq:intake-paper-archive-digitisation	partial: PR #2073 sampling draw service (3.1), 7 tests; suite 6450/0 fail; 1.1, 2.x, 3.2, 4.x, 5.x open	session-20261113T175327-6e4e7f28	2026-11-13T20:00:23Z
+build:filinq:filinq-route-auth-explicit-attributes	already implemented on development; PR #2076 ticks tasks.md (A-2.2 admin-only attribute + tests present; route re-check clean except deliberate ScanIntake declareProfiles)	session-20261113T195349-c4c36e69	2026-11-13T20:00:37Z
