@@ -5397,3 +5397,4 @@ filinq	2046	a2ca42df7c1363fd83d0930acb460cc54924a8db	GREEN	worker-14	phpunit 629
 humaniq	1103	747c3d4c7f190221092d836a5691d4f9f28b2799	GREEN	worker-09	tree of 2: 3824 tests run, baseline 3796 with 0 failures, new failures 0; tests only
 opencatalogi	2578	b2cba0b6256cf411c3194f7cb59108956628cab2	RED	worker-11	new failure Unit\Controller\WooControllerTest::testInventarislijstRouteIsAGet: the /api/v1 aliases add a second woo#inventarislijst GET route, the test expects exactly one; 5185 tests on the tree, baseline 5144 with 1 inherited failure (AppIdentityTest)
 opencatalogi	2584	d1330364940ead45fba3f7cc3deb79aa133bdac3	GREEN	worker-11	5167 tests on development + 2584 (2578 left out as RED), baseline 5144 with 1 inherited failure (AppIdentityTest), 0 new failures; tests only
+humaniq	1104	fedf08539f2302c48351310cbede67be3e22d3ca	GREEN	worker-09	tree of 2: 3824 tests run, baseline 3796 with 0 failures, new failures 0; tests only
