@@ -3976,3 +3976,4 @@ merge:stackiq:1856:e230b6e0	merge-local over 7 stackiq tasks: merged=11 red=0 fa
 merge:stackiq:1861:876b757b	merge-local over 7 stackiq tasks: merged=11 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:40:35Z
 merge:stackiq:1863:48caa4ef	merge-local over 7 stackiq tasks: merged=11 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:40:35Z
 merge:stackiq:1865:0e1df331	merge-local over 7 stackiq tasks: merged=11 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:40:35Z
+cover:keepiq:c967a31fm1147:6925f818	already done: lib/SetupCheck/ShareQuarantineScanPending.php 8/8 lines, 3 tests in its own test class	session-20261113T084521-fd8a31c7	2026-11-13T09:41:07Z
