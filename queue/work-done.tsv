@@ -4499,3 +4499,4 @@ build:pipelinq:services-and-resources-at-a-glance	partial: PR #3746 task 1.1 (el
 verify:dossiq:6403:8c1ed7ed	GREEN 6403: tests-only, +6 tests, 0 new failures (19 inherited)	session-20261113T074533-3e2a2da6	2026-11-13T11:24:17Z
 cover:pipelinq:7f9dc8e6m84dd:bc26df70	already done: lib/Service/Labels at 100% on development; no PR needed	session-20261113T094606-b7da8c7f	2026-11-13T11:24:29Z
 cover:pipelinq:7f9dc8e6m84dd:7505aeb4	already done: lib/Activity/*.php is 100% (66/66 statements, 36 tests) on development; no PR	session-20261113T104523-578f6e7a	2026-11-13T11:24:32Z
+build:pipelinq:tickets-board-view	PR pipelinq#3747: board.states on the Tickets board (task 2) with vitest; vitest 4369 green	session-20261113T074532-3dc49c57	2026-11-13T11:24:43Z
