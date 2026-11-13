@@ -43,6 +43,9 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
  */
 class SearchQueryHandlerBuildSearchQueryGoldenTest extends TestCase {
 
