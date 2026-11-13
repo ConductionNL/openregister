@@ -4896,3 +4896,4 @@ buildiq	1492	8a4549d3d4a1d852866bd5a2628a1a0b98e4714e	GREEN	worker-40	2402 run (
 buildiq	1493	5b7f7d600d9fe5b1250f6cd3da7330192bb2f176	GREEN	worker-40	2402 run (baseline 2391, 1333 inherited errors/failures), 0 new; tests-only
 keepiq	1714	aa5475c94c4cd4d5bfe204af5f6f993250922c42	RED	merge-local:merge-gate	GATE RED checker floor: secretscanning: pass -> fail
 keepiq	1716	bc20dfe9fc6a29742115ad170447866cb99e9d38	RED	merge-local:merge-gate	GATE RED checker floor: secretscanning: pass -> fail
+pipelinq	3635	bb5a2fef28238794f4aefe29a7697b55035a8747	GREEN	worker-07	php 5774 tests, baseline 1 failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3168 passed; tests only
