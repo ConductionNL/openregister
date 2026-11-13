@@ -1251,3 +1251,4 @@ cover:hermiq:755cdfe7m7444:js3287a408	opened hermiq#1638 (TalkBridgeSettings sta
 cover:shillinq:801aab65:568ec52a	PR #2807: 29 tests over 4 classes, lib/Lifecycle/*.php 80.48%->85.10%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T00:53:54Z
 review:hermiq:1500:badeb702	GREEN: pure extract-method refactor, 0 new failures	session-20261112T234655-6f442bc3	2026-11-13T00:54:04Z
 verify:keepiq:1680:d2986367	1680 GREEN (unit 3752 OK, no new failures)	session-20261113T002028-6d7c79b9	2026-11-13T00:54:17Z
+cover:hermiq:755cdfe7m7444:65e30692	PR #1639: Intake dir 268/288 -> 288/288 lines; 4 new tests + @uses fix on risky FlowTest; suite 3842 -> 3846 OK	session-20261113T004521-223ef947	2026-11-13T00:54:46Z
