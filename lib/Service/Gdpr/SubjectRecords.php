@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr;
 
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectDeclaredFieldIndex;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectEntityIndex;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectLoader;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectWriter;
@@ -38,11 +39,14 @@ final class SubjectRecords {
 	 * @param SubjectEntityIndex  $index  GdprEntity ⋈ entity_relations discovery.
 	 * @param SubjectObjectLoader $loader RBAC/tenant scoped object loads.
 	 * @param SubjectObjectWriter $writer DSAR-attributed, audited, scoped writes.
+	 * @param SubjectDeclaredFieldIndex|null $declaredFields Discovery through schema-declared subject id fields;
+	 *                                                       null searches the entity index only.
 	 */
 	public function __construct(
 		public readonly SubjectEntityIndex $index,
 		public readonly SubjectObjectLoader $loader,
 		public readonly SubjectObjectWriter $writer,
+		public readonly ?SubjectDeclaredFieldIndex $declaredFields = null,
 	) {
 	}//end __construct()
 }//end class

@@ -16,13 +16,17 @@ adds a fourth cross-cutting loud-discard fix, folds in two adjacent silent-failu
 
 ## 3. Fix 2 — operator aliases
 
-- [ ] 3.1 Add `mul`/`add`/`sub`/`div` to `CalculationAnnotationValidator::VALID_OPS` as aliases of `*`/`+`/`-`/`/`.
-- [ ] 3.2 Add matching dispatch in `CalculationEvaluator` so the aliases evaluate identically to their symbol forms — validation and evaluation MUST agree on the vocabulary.
+- [x] 3.1 Add `mul`/`add`/`sub`/`div` to `CalculationAnnotationValidator::VALID_OPS` as aliases of `*`/`+`/`-`/`/`.
+      > 2026-11-13: `add`/`sub`/`mul`/`div` are in `CalculationEvaluator::OPERATORS` (which `VALID_OPS` is), so the validator and the operator catalogue know them; `CalculationEvaluator::ARITHMETIC_ALIASES` names the pairs.
+- [x] 3.2 Add matching dispatch in `CalculationEvaluator` so the aliases evaluate identically to their symbol forms — validation and evaluation MUST agree on the vocabulary.
+      > 2026-11-13: each word shares its symbol's match arm in `evaluateArithmeticOperator()` (`'*', 'mul' => ...`), so they cannot compute differently (`ArithmeticAliasesTest`).
 
 ## 4. Fix 3 — calculation-output materialisability
 
-- [ ] 4.1 Add a `calculation-output-not-in-properties` check to `CalculationAnnotationValidator`: every calculation name in the annotation MUST also be a key in the schema's `properties`.
-- [ ] 4.2 Confirm `MagicMapper::reportDroppedProperties()` no longer needs to warn about a calculation output once the property is required — the property now exists, so the payload key is recognised.
+- [x] 4.1 Add a `calculation-output-not-in-properties` check to `CalculationAnnotationValidator`: every calculation name in the annotation MUST also be a key in the schema's `properties`.
+      > 2026-11-13: `checkMaterialisedOutput()`: only for a calculation with `materialise: true`; a virtual one (the default) is computed on read and needs no property. No shipped `lib/Settings/*.json` schema trips it (`MaterialisedOutputPropertyTest`; `DateAddTest`'s fixture gained the property it now needs).
+- [x] 4.2 Confirm `MagicMapper::reportDroppedProperties()` no longer needs to warn about a calculation output once the property is required — the property now exists, so the payload key is recognised.
+      > 2026-11-13: confirmed, no change: `MagicDroppedProperties::report()` warns only for payload keys absent from `properties`, which a materialised output can no longer be.
 
 ## 5. Fix 4 — loud discard (cross-cutting)
 
@@ -42,12 +46,15 @@ adds a fourth cross-cutting loud-discard fix, folds in two adjacent silent-failu
 
 ## 8. Housekeeping — orphaned ORI mock register
 
-- [ ] 8.1 Add a tracking note (code comment in `lib/Settings/ori_register.json`'s `x-openregister` block, and/or a line in `mock-registers`' spec Purpose) flagging that the ORI mock register becomes retirement-eligible once decidesk's ORI adoption (via the openconnector leaf-app path) completes — do not remove it now (procest still depends on the same six slugs).
+- [x] 8.1 Add a tracking note (code comment in `lib/Settings/ori_register.json`'s `x-openregister` block, and/or a line in `mock-registers`' spec Purpose) flagging that the ORI mock register becomes retirement-eligible once decidesk's ORI adoption (via the openconnector leaf-app path) completes — do not remove it now (procest still depends on the same six slugs).
+      > 2026-11-13: a line in the Purpose of `openspec/specs/mock-registers/spec.md` (a JSON register file takes no comments).
 
 ## 9. Tests
 
 - [ ] 9.1 Add PHPUnit tests for Fixes 1-2 covering: a related-schema filter field is accepted, a genuinely unknown field is still rejected, an explicit `from` spec is unaffected, and `mul`/`add`/`sub`/`div` evaluate identically to `*`/`+`/`-`/`/` at both validation and evaluation.
+      > 2026-11-13 (partial): the Fix 2 half is in `ArithmeticAliasesTest`; the Fix 1 half waits for Fix 1.
 - [ ] 9.2 Add PHPUnit tests for Fixes 3-4 covering: a calculation name absent from `properties` is rejected and present-and-matching validates/persists; a discarded annotation appears in the save response `warnings` (and a clean schema's list is empty, multiple families each report separately, the log warning still fires).
+      > 2026-11-13 (partial): the Fix 3 half is in `MaterialisedOutputPropertyTest`; the Fix 4 half waits for Fix 4.
 - [ ] 9.3 Add PHPUnit tests for Adjacent A-B covering: an in-run seed `$ref` slug resolves to a UUID and an unresolvable one is left as-authored with a warning; a valid nested array-of-objects `$ref` UUID validates and existing single-level `$ref` support is unaffected (regression guard).
 
 ## 10. Verification

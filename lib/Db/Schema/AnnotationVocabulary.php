@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
+use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 
 /**
  * The `x-openregister-*` keys a schema configuration keeps.
@@ -87,6 +88,13 @@ final class AnnotationVocabulary {
 		// register-level worked, so the capability looked healthy.
 		'x-openregister-processing',
 		'x-openregister-archival',
+		// Which reference properties a record inherits a permanent appraisal
+		// through: `{"inheritAppraisalFrom": ["subjects"]}`. Read by
+		// InheritedAppraisal before an object is judged eligible for
+		// destruction. Absent from this list setConfiguration() would DROP it,
+		// and a publication under a hotspot subject would be destroyed while
+		// its schema editor reported the declaration saved.
+		'x-openregister-retention',
 		// The links out of a record, each a title plus a URL template whose
 		// placeholders fill from the object's own values
 		// (api-as-a-versioned-surface, ADR-031). Read by
@@ -267,6 +275,13 @@ final class AnnotationVocabulary {
 		// every subsequent invite would answer 403 "does not allow", the
 		// same silent no-op class every entry above records.
 		'x-openregister-talk-participants',
+		// An ordered classification vocabulary, the property carrying the
+		// label, group clearances, scope ceilings and a floor. Read by
+		// ClassificationScale, refused at save by
+		// ClassificationDeclarationValidator. Absent from this list
+		// setConfiguration() would drop it and every classified object would
+		// read as unclassified, the same silent no-op every entry above records.
+		ClassificationScale::ANNOTATION,
 	];
 
 
