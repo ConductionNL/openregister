@@ -1232,3 +1232,4 @@ stackiq	1848	e8d0211be4192d922f5e7cb3e93e83692355888a	MERGED	merge-local	GATE OK
 stackiq	1849	537bc73a9ed95721e8430c0f960428247173bdca	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 stackiq	1700	a3ab8662e6a95b482f6e64aa3ae9440ea336cbcf	RED	merge-local	GATE RED floor: unit_interfacing: 4.76 -> 4.74
 stackiq	1704	f55ed033a0d75c518f0476302f49b8bf3218d361	SKIP	merge-local	stack: #1700 was not merged
+hermiq	1598	d97fe2d546e6338887a279b898ab88b4a73f2a51	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
