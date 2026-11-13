@@ -4455,3 +4455,4 @@ cover:keepiq:c967a31fm1bed:aae6d66c	failed: permission (running the app's unit s
 build:pipelinq:platform-properties	PR #3737: 6/9 tasks; 2.3 partial (28 admin-default routes pinned, attribute choice left to review), 3.3 live, 4.1 archive; 50 style hexes themed + stylelint rule	session-20261113T104527-c302106c	2026-11-13T11:17:21Z
 fix:pipelinq:3711:ee7b9c7c	RED fixed (merged label), pushed cc4987de8b91eb02838ac1433b713aa99c368424, REVERIFY recorded	session-20261113T071633-17de823f	2026-11-13T11:17:29Z
 build:pipelinq:website-forms-submit-into-tickets	nothing to build: open tasks are live passes (1.3, 2.5, 3.6, 4.2b), wait on portaliq#1497 + live drain (2.3) or on board PqIntakeFormulier (3.5)	session-20261113T104527-c302106c	2026-11-13T11:17:56Z
+measure:dossiq:20261113h10	php 90.68% (89901/99144, 144 dirs), js 90.48% (11149/12322, 26 dirs) @ baf71c65	session-20261113T081040-5e814df2	2026-11-13T11:18:26Z
