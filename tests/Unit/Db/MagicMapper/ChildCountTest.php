@@ -43,6 +43,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\RegisterSchema
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TableSearch
+ * @uses   \OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators
  * @uses   \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses   \OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase
  */

@@ -44,7 +44,7 @@ use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
+use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
@@ -538,7 +538,7 @@ class MagicSearchHandler {
 			return;
 		}
 
-		$parent = HierarchyGrantExpander::parentPropertyOf(schema: $schema);
+		$parent = AccessDeclarationValidators::hierarchyParentOf(schema: $schema);
 		if ($parent === null) {
 			return;
 		}
