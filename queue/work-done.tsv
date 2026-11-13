@@ -7027,3 +7027,4 @@ review:openregister:10339:124dc1cd	APPROVE 10339	session-20261113T192701-f224cbc
 build4:openregister:generated-identifier	partial: PR #10380 — C41.1 random sequence kind (keyed permutation of the counter, +25 tests); C41.2/5/6/7/8 left	session-20261113T204551-fafe539e	2026-11-13T21:56:23Z
 build4:openregister:access-owner-and-condition-scopes	PR #10381: tasks 1.1, 1.2, 2.1, 3.2 (normaliser, both-paths enforcement test, capability, docs); 3.1 e2e and Newman left; 10898 access-relevant unit tests green	session-20261113T202607-6c22f6b2	2026-11-13T21:56:45Z
 build4:openregister:an-app-declares-object-access-rather-than-guarding-it	partial: PR #10382 builds section 2 (onUndecidable posture on both layers, save check, tests); section 3 issuer, 5.2/5.3 and other-app tasks left	session-20261113T205329-39b9195a	2026-11-13T21:57:10Z
+review:openregister:10344:6faf54f5	APPROVE	session-20261113T213326-97cbe4c8	2026-11-13T21:57:18Z
