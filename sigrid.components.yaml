@@ -378,6 +378,7 @@ components:
     include:
       - ".*/lib/AppInfo/[^/]*"
       - ".*/lib/Capabilities/[^/]*"
+      - ".*/lib/Collaboration/[^/]*"
       - ".*/lib/Controller/(AgentsController|ChatController|ChatHealthController|ChatStreamController|ConversationController)[.]php"
       - ".*/lib/Dashboard/[^/]*"
       - ".*/lib/Db/(Feedback|FeedbackMapper|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface)[.]php"

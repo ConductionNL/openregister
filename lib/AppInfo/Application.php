@@ -249,6 +249,10 @@ class Application extends App implements IBootstrap {
 		IntegrationRegistrar::boot(server: $server);
 		IntegrationRegistrar::bootLeafRegistry(server: $server);
 		ObjectSourceRegistrar::boot(server: $server);
+		// Any object whose schema opts in may join a collaboration collection
+		// (platform-collaboration-resources, REQ-PCR-001).
+		$server->get(\OCP\Collaboration\Resources\IProviderManager::class)
+			->registerResourceProvider(\OCA\OpenRegister\Collaboration\ObjectResourceProvider::class);
 		$this->bootFederation(server: $server);
 
 		// Allow GitHub-hosted avatars in img-src so the CnRoadmapItem
