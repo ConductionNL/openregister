@@ -112,14 +112,36 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	/**
 	 * Every problem with a mapping into a destination schema.
 	 *
-	 * @param array<string, mixed> $mapping     The mapping: `fields` and `fixed`.
-	 * @param FormDestination      $destination The destination schema, and the audience when the form is not internal.
+	 * Takes a FormDestination (as `$destination`, or positionally in place of `$schema`) or the
+	 * schema and options of the published contract; a FormDestination wins.
+	 *
+	 * @param array<string, mixed>        $mapping     The mapping: `fields` and `fixed`.
+	 * @param Schema|FormDestination|null $schema      The destination schema, or the destination.
+	 * @param array<string, mixed>        $options     `audience`: the form's audience when it is not internal.
+	 * @param FormDestination|null        $destination The destination schema, and the audience when the form is not internal.
 	 *
 	 * @return array<int, array{field?: string, property: string, code: string, message: string}> The findings; empty when valid.
 	 *
+	 * @throws \InvalidArgumentException When neither a schema nor a destination is given.
+	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-openregister-must-judge-a-forms-mapping-against-its-destination-schema
 	 */
-	public function validate(array $mapping, FormDestination $destination): array {
+	public function validate(
+		array $mapping,
+		Schema|FormDestination|null $schema = null,
+		array $options = [],
+		?FormDestination $destination = null,
+	): array {
+		if ($schema instanceof FormDestination) {
+			$destination ??= $schema;
+			$schema = null;
+		}
+
+		if ($destination === null && $schema === null) {
+			throw new \InvalidArgumentException('validate() needs a schema or a FormDestination.');
+		}
+
+		$destination ??= new FormDestination(schema: $schema, audience: $this->audienceOption(options: $options));
 		$schema = $destination->schema;
 		$fields = $this->fieldsOf(mapping: $mapping);
 		$fixed = $this->fixedOf(mapping: $mapping);
@@ -751,4 +773,19 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 
 		return (string)json_encode($value);
 	}//end scalarLabel()
+
+	/**
+	 * The audience a legacy `options` array names, or null when it names none.
+	 *
+	 * @param array<string, mixed> $options The options.
+	 *
+	 * @return string|null The audience.
+	 */
+	private function audienceOption(array $options): ?string {
+		if (isset($options['audience']) === false) {
+			return null;
+		}
+
+		return (string) $options['audience'];
+	}//end audienceOption()
 }//end class
