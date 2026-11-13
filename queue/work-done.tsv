@@ -1483,3 +1483,4 @@ cover:dossiq:6ca0231e:7593a315	PR #6222: CaseRelationStore + OutcomeCascade refu
 cover:shillinq:801aab65:59477eff	PR #2828: 3 separate-process tests for the fail-closed filinq/decidiq guards (the dir's only 8 uncovered lines); suite 9004->9007, same 1 inherited failure. Note: previous event-cover task's PR is #2824	session-20261112T234655-793f46ee	2026-11-13T01:48:19Z
 cover:integriq:9b0f5894m2367:fb7c8b79	already done: lib/Service/Recipients/ 116/116 statements covered by RecipientResolverTest + golden test; no PR	session-20261113T011743-bdeb8a13	2026-11-13T01:48:49Z
 cover:keepiq:d76c2121m70b5:60c2c265	PR #1717: 4 controllers, 27 tests, lib/Controller 92.1->94.1%	session-20261113T004519-b6b86685	2026-11-13T01:49:05Z
+cover:shillinq:801aab65:f2f5cba0	PR #2829: 1 test (configured return URL); Payment dir 261->262/263; suite 9004->9005, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T01:50:30Z
