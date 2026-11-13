@@ -2,7 +2,7 @@
 
 ## 1. Guard and read-only reads
 
-- [ ] 1.1 `ReadOnlyQueryGuard::assert()` with the rules of design D-1, run on schema save for `config.query`. Verify: `tests/Unit/Service/Dbal/ReadOnlyQueryGuardTest.php` accepts a join and a `WITH`, refuses two statements, an `UPDATE` inside a CTE, `SELECT ... INTO`, `FOR UPDATE` and a placeholder, and accepts the keyword inside a string literal.
+- [x] 1.1 `ReadOnlyQueryGuard::assert()` with the rules of design D-1. Verify: `tests/Unit/Service/Dbal/ReadOnlyQueryGuardTest.php` accepts a join and a `WITH`, refuses two statements, an `UPDATE` inside a CTE, `SELECT ... INTO`, `FOR UPDATE` and a placeholder, and accepts the keyword inside a string literal. (built: the guard class; strips comments and string/identifier literals first, then applies the one-statement / SELECT-or-WITH-head / no-forbidden-keyword / no-placeholder rules. NOT YET run on schema save for `config.query` — that call site lands with the preview/read tasks.)
 - [ ] 1.2 Read-only transaction and statement timeout around every query-backed read, PostgreSQL and MariaDB. Verify: an integration test on both databases where a slow query is stopped by the timeout and a data-changing function call is refused by the database.
 
 ## 2. Preview
