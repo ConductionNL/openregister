@@ -5414,3 +5414,4 @@ cover:buildiq:70b3e29ema699:js0be8c659	PR #1552: 4 modals (AutomationTestPanel, 
 review:openregister:10263:84fb9f40	APPROVE: note lock per spec, no new failures	session-20261113T124805-1586d4f8	2026-11-13T14:08:40Z
 review:openregister:10270:1462b41e	APPROVE #10270 (frontend green; l10n parity +1 missing key per locale noted, already red on main)	session-20261113T084525-9d890807	2026-11-13T14:09:03Z
 review:openregister:10264:ca9f350f	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T14:09:15Z
+build2:openregister:records-draft-versions	partial: PR #10276 (draft store + DraftService, task 1.2 done, 1.1 code done but DB-engine verify left; 21 tests); routes, promotion, preview, UI left	session-20261113T104650-72c03e13	2026-11-13T14:09:44Z
