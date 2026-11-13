@@ -4064,3 +4064,4 @@ cover:buildiq:70b3e29embf07:js391c0641	PR budget used (#1506, #1516 merged): src
 cover:larpinq:c4471360m4538:38e80a9f	PR #1021: UniqueHoldersCheck +3 tests, suite 697->700 OK	session-20261113T094617-36f80607	2026-11-13T09:52:59Z
 verify:pipelinq:3704:c9e52e73	3704 GREEN (lockfile refresh; vitest 3893 pass before/after, npm ci ok)	session-20261113T091530-f20014fb	2026-11-13T09:53:25Z
 cover:learniq:e6498dddmf689:7dbbf814	already done: lib/Service/CoursePackage/ at 836/842 statements (99.3%) on development 338877ce; no PR	session-20261113T080556-d189f150	2026-11-13T09:53:39Z
+cover:shillinq:05639debm0c05:js450fec42	PR #2914: 28 vitest tests (leafMount, leaf registrations, contract and payment requests panels); integrations lines 65.9->80.6%; suite 1803 pass	session-20261113T093920-50335e74	2026-11-13T09:53:59Z
