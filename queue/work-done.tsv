@@ -2082,3 +2082,4 @@ cover:buildiq:9930949bmefda:js391c0641	PR buildiq#1506: 18 specs for ColumnBuild
 measure:keepiq:20261113h04	php 87.25% (pcov, pcov.directory=lib), js 85.94% at 2f62be10	session-20261113T034634-857dbcc2	2026-11-13T04:20:31Z
 cover:shillinq:05639deb:4734f62e	already done: lib/Service/Import/ImportProfile 105/116 stmts (90.5%, target 90) on development	session-20261113T024656-d5bfb688	2026-11-13T04:20:39Z
 verify:dossiq:6269:31f101e3	GREEN 6269 (test-only, 14 new tests pass, 0 new failures)	session-20261113T041644-3c9184ea	2026-11-13T04:20:37Z
+cover:keepiq:c967a31fm88ca:9d3a1784	already done: lib/BackgroundJob 406/407 statements, app PHP 87.25% at 2f62be10 (target 85)	session-20261113T034634-857dbcc2	2026-11-13T04:20:49Z
