@@ -40,6 +40,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Outbound;
 
+use GuzzleHttp\Exception\RequestException;
+use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
+use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IPromise;
 use OCP\Http\Client\IResponse;
@@ -68,12 +71,14 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @param IClient $inner The client this one decorates.
 	 * @param ProxySettingsInterface $proxy The one administered proxy setting.
+	 * @param BreakerRegistry|null $breakers The dependency breakers; null leaves calls unguarded.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IClient $inner,
 		private readonly ProxySettingsInterface $proxy,
+		private readonly ?BreakerRegistry $breakers = null,
 	) {
 
 	}//end __construct()
@@ -116,7 +121,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function get(string $uri, array $options = []): IResponse {
-		return $this->inner->get($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->get($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end get()
 
@@ -131,7 +140,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function head(string $uri, array $options = []): IResponse {
-		return $this->inner->head($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->head($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end head()
 
@@ -146,7 +159,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function post(string $uri, array $options = []): IResponse {
-		return $this->inner->post($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->post($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end post()
 
@@ -161,7 +178,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function put(string $uri, array $options = []): IResponse {
-		return $this->inner->put($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->put($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end put()
 
@@ -176,7 +197,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function patch(string $uri, array $options = []): IResponse {
-		return $this->inner->patch($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->patch($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end patch()
 
@@ -191,7 +216,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function delete(string $uri, array $options = []): IResponse {
-		return $this->inner->delete($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->delete($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end delete()
 
@@ -206,7 +235,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function options(string $uri, array $options = []): IResponse {
-		return $this->inner->options($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->options($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end options()
 
@@ -222,7 +255,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function request(string $method, string $uri, array $options = []): IResponse {
-		return $this->inner->request($method, $uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->request($method, $uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end request()
 
@@ -237,7 +274,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function getAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->getAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->getAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end getAsync()
 
@@ -252,7 +289,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function headAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->headAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->headAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end headAsync()
 
@@ -267,7 +304,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function postAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->postAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->postAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end postAsync()
 
@@ -282,7 +319,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function putAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->putAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->putAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end putAsync()
 
@@ -297,7 +334,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function deleteAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->deleteAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->deleteAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end deleteAsync()
 
@@ -312,7 +349,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function optionsAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->optionsAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->optionsAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end optionsAsync()
 
@@ -349,4 +386,161 @@ class OutboundHttpClient implements IClient {
 		return $this->inner->getResponseFromThrowable($e);
 
 	}//end getResponseFromThrowable()
+
+	/**
+	 * The request option a call site names its dependency with.
+	 *
+	 * Stripped before the request is sent: the transport would reject an
+	 * option it does not know.
+	 *
+	 * @var string
+	 */
+	public const DEPENDENCY_OPTION = 'openregister_dependency';
+
+	/**
+	 * Send one request through the dependency's breaker.
+	 *
+	 * While the breaker is open the request is NOT sent: the caller gets a
+	 * DependencyUnavailableException at once. Otherwise the outcome is counted:
+	 * a connect error, a timeout, a 5xx or a 429 is a failure (a 429's
+	 * Retry-After becomes the cool-down when longer); any other response,
+	 * a 404 included, is the caller's problem and counts as a success.
+	 *
+	 * @param string   $uri     The request URI.
+	 * @param array    $options The caller's request options.
+	 * @param callable $send    Sends the request with the given options.
+	 *
+	 * @return IResponse The response.
+	 *
+	 * @throws DependencyUnavailableException While the dependency's breaker is open.
+	 * @throws Throwable What the transport threw.
+	 *
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	private function guarded(string $uri, array $options, callable $send): IResponse {
+		$key     = $this->breakerKey(uri: $uri, options: $options);
+		$options = self::withoutDependency(options: $options);
+		if ($key === null || $this->breakers === null) {
+			return $send($options);
+		}
+
+		$breaker = $this->breakers->breaker();
+		$breaker->allow(key: $key);
+
+		try {
+			$response = $send($options);
+		} catch (DependencyUnavailableException $refused) {
+			throw $refused;
+		} catch (Throwable $failure) {
+			$this->record(key: $key, response: self::responseOf(failure: $failure));
+			throw $failure;
+		}
+
+		$this->record(key: $key, response: $response);
+		return $response;
+	}//end guarded()
+
+	/**
+	 * Count one outcome on the breaker.
+	 *
+	 * @param string                           $key      The breaker key.
+	 * @param IResponse|ResponseInterface|null $response The response, or null when none arrived (connect error, timeout).
+	 *
+	 * @return void
+	 */
+	private function record(string $key, IResponse|ResponseInterface|null $response): void {
+		$breaker = $this->breakers?->breaker();
+		if ($breaker === null) {
+			return;
+		}
+
+		if ($response === null) {
+			$breaker->recordFailure(key: $key);
+			return;
+		}
+
+		$status = $response->getStatusCode();
+		if ($status === 429) {
+			$breaker->recordFailure(key: $key, retryAfter: self::retryAfter(response: $response));
+			return;
+		}
+
+		if ($status >= 500) {
+			$breaker->recordFailure(key: $key);
+			return;
+		}
+
+		$breaker->recordSuccess(key: $key);
+	}//end record()
+
+	/**
+	 * The response a transport failure carried, if any.
+	 *
+	 * @param Throwable $failure What the transport threw.
+	 *
+	 * @return ResponseInterface|null The response, or null for a connect error or timeout.
+	 */
+	private static function responseOf(Throwable $failure): ?ResponseInterface {
+		if ($failure instanceof RequestException) {
+			return $failure->getResponse();
+		}
+
+		return null;
+	}//end responseOf()
+
+	/**
+	 * A 429's Retry-After in seconds, when it gives a number of seconds.
+	 *
+	 * @param IResponse|ResponseInterface $response The response.
+	 *
+	 * @return int|null The seconds, or null.
+	 */
+	private static function retryAfter(IResponse|ResponseInterface $response): ?int {
+		if ($response instanceof ResponseInterface) {
+			$value = $response->getHeaderLine('Retry-After');
+		} else {
+			$value = $response->getHeader('Retry-After');
+		}
+
+		$value = trim($value);
+		if ($value === '' || ctype_digit($value) === false) {
+			return null;
+		}
+
+		return (int) $value;
+	}//end retryAfter()
+
+	/**
+	 * The breaker key of one request: the named dependency, else the host.
+	 *
+	 * @param string $uri     The request URI.
+	 * @param array  $options The caller's request options.
+	 *
+	 * @return string|null The key, or null when the URI names no host.
+	 */
+	private function breakerKey(string $uri, array $options): ?string {
+		$named = $options[self::DEPENDENCY_OPTION] ?? null;
+		if (is_string($named) === true && trim($named) !== '') {
+			return BreakerRegistry::outboundKey(hostOrName: $named);
+		}
+
+		$host = parse_url($uri, PHP_URL_HOST);
+		if (is_string($host) === false || $host === '') {
+			return null;
+		}
+
+		return BreakerRegistry::outboundKey(hostOrName: $host);
+	}//end breakerKey()
+
+	/**
+	 * The options without the dependency name, which the transport must not see.
+	 *
+	 * @param array $options The caller's request options.
+	 *
+	 * @return array The options to send.
+	 */
+	private static function withoutDependency(array $options): array {
+		unset($options[self::DEPENDENCY_OPTION]);
+		return $options;
+	}//end withoutDependency()
 }//end class
