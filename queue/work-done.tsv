@@ -3147,3 +3147,4 @@ gap:integriq:spdx:burn1	PR #3498: SPDX headers added to the 6 lib/ files lacking
 cover:dossiq:f8a113c5m7e79:63eef43f	already done: lib/Service/Mandaat at 141/142 lines (99%) on development; only a one-line delegate uncovered, no PR	session-20261113T064519-30004ad4	2026-11-13T07:26:19Z
 verify:shillinq:2901:adede82c	1/1 GREEN (2901): clean merge, lint ok, phpunit +8 tests, 1 inherited failure, 0 new; tests only	session-20261113T044737-f37de8e3	2026-11-13T07:26:27Z
 cover:shillinq:05639debmd8ee:5fe382d1	already done: lib/Service/Import/*.php at 91.2% lines (819/898) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T07:26:40Z
+verify:dossiq:6319:479ba67b	GREEN #6319 (tests only, no new failures)	session-20261113T051709-e616bf69	2026-11-13T07:26:41Z
