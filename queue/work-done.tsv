@@ -3341,3 +3341,4 @@ merge:stackiq:1693:ef01c1a9	merge-local over 2 stackiq tasks: merged=8 red=1 fai
 merge:stackiq:1848:4693d2c0	merge-local over 2 stackiq tasks: merged=8 red=1 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:00:30Z
 merge:decidiq:2121:8c25ecc0	merge-local over 2 decidiq tasks: merged=3 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:02:24Z
 merge:decidiq:2124:0ca284e2	merge-local over 2 decidiq tasks: merged=3 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:02:24Z
+gap:shillinq:risky:burn2	already done: 0 risky tests under pcov (9527 tests, 1 inherited failure); PHP lines 89.62%	session-20261113T072715-8f8a14e9	2026-11-13T08:04:22Z
