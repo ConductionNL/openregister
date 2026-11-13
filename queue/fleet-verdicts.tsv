@@ -5559,3 +5559,5 @@ dossiq	6347	ea0cb4572e9653e9a8525816df2fb561f0650993	GREEN	worker-16	build of ad
 dossiq	6348	7c80d468c93540cfd3a1b631e564bd806b61ff7c	GREEN	worker-16	tests only; unit 15412 run, baseline 15383 with 19 failures, no new failures; vitest 6532, 1 inherited failure (capabilityComparison)
 stackiq	1865	1d9713d787b7ad125dcbbde90e77bf2224c508e8	GREEN	worker-06	lockfile refresh within ranges (+ vue-material-design-icons ^5.3.1, sbom); npm ci ok, vitest 2344 passed (baseline 2344), php 3216 unchanged; 0 new failures
 hermiq	1676	559a5e77f560af1001e6a5924f0d2bdf9f84a9bc	GREEN	worker-22	vitest 76 files/1232 tests all pass on tree; phpunit 4209 (baseline same, 146 errors + 26 failures inherited), new failures: none; tests-only
+hermiq	1677	1cb6b050d35694b54e9391ac73a1e801cf433ce2	GREEN	worker-22	vitest 76 files/1232 tests all pass on tree; phpunit 4209 (baseline same, 146 errors + 26 failures inherited), new failures: none; tests-only
+hermiq	1678	3705435c24e0855b026f44fdd1b91388de059c49	GREEN	worker-22	vitest 76 files/1232 tests all pass on tree; phpunit 4209 (baseline same, 146 errors + 26 failures inherited), new failures: none; tests-only
