@@ -1747,3 +1747,4 @@ cover:dossiq:6ca0231ema7d4:38e8c328	PR dossiq#6255: PlainTextPdf 6 tests; other 
 merge:dossiq:6006:a219a957	stale	feeder	2026-11-13T03:00:26Z
 merge:buildiq:1437:dc7394ec	stale	feeder	2026-11-13T03:00:26Z
 fix:hermiq:1528:f04a3678	stale	feeder	2026-11-13T03:00:26Z
+cover:dossiq:6ca0231ema7d4:64395ad8	PR #6256: 5 tests, lib/Service/Archival 143/153 -> 153/153 stmts	session-20261113T024653-d22c13a3	2026-11-13T03:01:48Z
