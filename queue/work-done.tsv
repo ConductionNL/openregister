@@ -3498,3 +3498,4 @@ cover:stackiq:9ac19b3am5ac4:68d2b5ba	already done: Service/Cmdb 98.1%, Service/S
 cover:stackiq:9ac19b3am5ac4:81b1241f	already done: lib/Portal/*.php at 100% (23/23); no PR	session-20261113T080546-98207a87	2026-11-13T08:36:14Z
 verify:learniq:2419:dbd55db7	BLOCK #2419: tests green (6129, inherited failure only) but intended behaviour change (error bodies/headers, route postfix V1->v1, edited assertion) and a committed .pyc	session-20261113T051705-4f5ad12a	2026-11-13T08:36:13Z
 cover:stackiq:9ac19b3am5ac4:208b4d5f	covered by open PR #1858 (same files): lib/Service/Stackiq/ 86.1->90.4% once merged; no new PR	session-20261113T080546-98207a87	2026-11-13T08:36:31Z
+cover:buildiq:70b3e29embf07:1b97f731	PR buildiq#1531: 19 tests over 3 listeners; suite 2659->2678, 1 inherited failure	session-20261113T080549-dde3ba19	2026-11-13T08:36:35Z
