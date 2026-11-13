@@ -3712,7 +3712,11 @@
         "_%n category_::_%n categories_": [
             "%n categorie",
             "%n categorieën"
-        ]
+        ],
+        "Schema \"%1$s\" changed in a way that can break your use of it (version %2$s)": "Schema \"%1$s\" is gewijzigd op een manier die jouw gebruik ervan kan breken (versie %2$s)",
+        "A breaking change to schema \"%1$s\" was applied as version %2$s. Check the changelog before your next call.": "Een brekende wijziging van schema \"%1$s\" is doorgevoerd als versie %2$s. Bekijk het wijzigingslogboek voor je volgende aanroep.",
+        "Note from the administrator: %s": "Toelichting van de beheerder: %s",
+        "Open changelog": "Wijzigingslogboek openen"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
