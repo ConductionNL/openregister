@@ -3483,3 +3483,4 @@ cover:learniq:e6498dddmf689:60c2c265	PR learniq#2446: lib/Controller/*.php 89.3-
 cover:dossiq:f8a113c5m7e79:da74a02d	already done: BerichtenboxAdapter tested (MockAdapter 100%, IntegriqAdapter 95%); only gap is the seam-missing refusal, unreachable while bootstrap loads the event stub	session-20261113T080551-294c2aa6	2026-11-13T08:33:39Z
 verify:portaliq:2376:bb25ac34	6 GREEN (2376,2382,2383,2384,2385,2386); tree 4644 tests 0 failures vs baseline 4527	session-20261113T081043-b24589a6	2026-11-13T08:33:53Z
 review:openregister:10109:37e1e614	APPROVE: tests only, ExampleSet 1368 OK, gating suites green (4 env-only DBAL stub errors in BulkAtomicSaveTest)	session-20261113T080556-d189f150	2026-11-13T08:34:14Z
+cover:learniq:e6498dddmf689:1b97f731	PR #2447: 29 tests over 6 listeners (~+2.6pt lib/Listener); suite 6105->6134, no new failures	session-20261113T081038-e8b5210f	2026-11-13T08:34:19Z
