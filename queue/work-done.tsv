@@ -3678,3 +3678,4 @@ cover:stackiq:9ac19b3am6096:js5794e9fc	already done: quality/test-coverage-js-57
 cover:dossiq:069ee2d6m7e79:js7de78384	no PR: src/manifest.d/ holds only JSON manifest fragments and a README on development, no JS to unit-test	session-20261113T080549-dde3ba19	2026-11-13T08:59:23Z
 merge:learniq:2441:c104aca5	merge-local over 2 learniq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:59:40Z
 merge:learniq:2448:2609eebf	merge-local over 2 learniq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:59:40Z
+cover:stackiq:9ac19b3am6096:aae6d66c	already done: quality/test-coverage-aae6d66c-1 is on development; lib/Exception 4/4 statements covered (UnsupportedSbomFormatException has none)	session-20261113T081043-b24589a6	2026-11-13T09:00:23Z
