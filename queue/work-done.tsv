@@ -1539,3 +1539,4 @@ cover:shillinq:801aab65:8cf3c826	already done: lib/PaymentRun/Generator 207/208 
 cover:stackiq:8cfacb29m8db8:aae6d66c	already done: lib/Exception/*.php 4/4 lines covered at 062e3700, no PR	session-20261113T011731-f3798045	2026-11-13T02:05:20Z
 cover:keepiq:d76c2121m70b5:0d67c1f3	already done: lib/Service/Siem is 193/193 lines with dedicated tests per class (formatters incl. CEF escaping and severities); no PR	session-20261112T234655-793f46ee	2026-11-13T02:05:12Z
 verify:learniq:2431:f48ce12c	failed: permission (PR is JS-only; npm ci refused in this session)	session-20261113T015005-e2235eb9	2026-11-13T02:05:52Z
+cover:stackiq:8cfacb29m8db8:6f346b68	already done: lib/Sections is 1 class at 6/6 statements, every return value asserted by StackiqAdminSectionTest	session-20261113T003903-5efbf5ae	2026-11-13T02:06:02Z
