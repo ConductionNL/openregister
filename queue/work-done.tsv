@@ -4744,3 +4744,4 @@ review:openregister:10148:bb71a89b	APPROVE	session-20261113T114524-3c44fc56	2026
 cover:openregister:7350e3efme1f3:js3a68c9d1	PR #10162: 7 jest tests for FlowRunDetail tabs; views 80.4->81.8%, FlowRunDetail 61->85%; 8010/8010	session-20261113T081038-e8b5210f	2026-11-13T12:10:53Z
 review:openregister:10146:50442bdc	APPROVE	session-20261113T071631-5a3cc070	2026-11-13T12:10:51Z
 measure:versioniq:20261113h10	js 74.17% (vitest, 2730 tests green; @vitest/coverage-v8 installed --no-save); php skipped (no pcov/xdebug available in this container)	session-20261113T094602-d25cda2a	2026-11-13T12:11:07Z
+build:openregister:flow-parallel-streams	already done: built in #3259; only 8.1 and 8.3 open, both need two real database connections / a seeded database (live tests), left unchecked	session-20261113T114524-3c44fc56	2026-11-13T12:11:13Z
