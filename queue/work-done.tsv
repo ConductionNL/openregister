@@ -4401,3 +4401,4 @@ cover:openregister:7350e3efmea52:a01f8b82	PR #10127: 9 tests + 2 risky fixed via
 fix:pipelinq:3716:66d021c1	fixed: l10n conflict with #3713 resolved by placing this build's strings at the catalogue start; new head 3480451; REVERIFY recorded	session-20261113T104529-f43c7561	2026-11-13T11:07:46Z
 cover:pipelinq:7f9dc8e6m84dd:197c84b8	already done: lib/Adapter/*.php at 100% on development; no PR needed	session-20261113T094606-b7da8c7f	2026-11-13T11:07:52Z
 cover:stackiq:9ac19b3am10f3:9d3a1784	already done: lib/BackgroundJob/*.php 198/198 = 100%	session-20261113T051703-1b54bfba	2026-11-13T11:07:59Z
+cover:stackiq:9ac19b3am10f3:2f30e3d6	already done: AangebodenGebruik/ + Itsm/ 110/110 = 100%	session-20261113T051703-1b54bfba	2026-11-13T11:08:11Z
