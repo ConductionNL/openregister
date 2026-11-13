@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
@@ -491,9 +492,109 @@ class MagicSearchHandler {
 		$objects = $this->executeSearchQuery(qb: $queryBuilder, search: $tableSearch);
 		// `@self.viewedAt` on a `_recent` page (read-history-on-audit-trail).
 		$this->applyViewedAt(objects: $objects, recentViews: ($query['_recentViews'] ?? null));
+		// `@self.childCount` on a `_childCount=true` page of a hierarchy (records-tree-view).
+		$this->applyChildCounts(objects: $objects, query: $query, tableSearch: $tableSearch);
 
 		return $objects;
 	}//end searchTable()
+
+	/**
+	 * The access and lifecycle parameters a child count takes over from the page's query.
+	 *
+	 * Property filters are left out: a node counts all its readable children,
+	 * not the ones that also match the page's filter.
+	 *
+	 * @var array<int, string>
+	 */
+	private const CHILD_COUNT_CONTEXT = [
+		'_rbac',
+		'_multitenancy',
+		'_multitenancy_explicit',
+		'_includeDeleted',
+		'_deleted',
+		'_archived',
+	];
+
+	/**
+	 * Set `@self.childCount` on each object of a page, in one grouped count.
+	 *
+	 * Only on a `_childCount=true` read of a schema that declares
+	 * `x-openregister-hierarchy`. The count is built on buildFilteredQuery(),
+	 * the same access path the list takes, so a node counts exactly the
+	 * children the caller could list under it. A failed count is logged and
+	 * leaves the counts out rather than failing the page.
+	 *
+	 * @param array<int, ObjectEntity> $objects     The page.
+	 * @param array<string, mixed>     $query       The page's query.
+	 * @param TableSearch              $tableSearch The table read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-the-tree-loads-one-level-at-a-time-with-child-counts
+	 */
+	private function applyChildCounts(array $objects, array $query, TableSearch $tableSearch): void {
+		$schema = $tableSearch->table->schema;
+		if ($objects === [] || $this->isExplicitlyTrue(value: ($query['_childCount'] ?? null)) === false) {
+			return;
+		}
+
+		$parent = HierarchyGrantExpander::parentPropertyOf(schema: $schema);
+		if ($parent === null) {
+			return;
+		}
+
+		$uuids = array_values(array_filter(array_map(static fn (ObjectEntity $object): string => (string)$object->getUuid(), $objects)));
+		try {
+			$counts = $this->childCountsOf(
+				uuids: $uuids,
+				parentColumn: $this->sanitizeColumnName(name: $parent),
+				query: array_intersect_key($query, array_flip(self::CHILD_COUNT_CONTEXT)),
+				table: new MagicReadTable(schema: $schema, registerId: $tableSearch->table->register->getId(), tableName: $tableSearch->tableName)
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[MagicSearchHandler] Child counts could not be read; the page is returned without them',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableSearch->tableName, 'exception' => $e->getMessage()]
+			);
+			return;
+		}
+
+		foreach ($objects as $object) {
+			$object->setChildCount((int)($counts[(string)$object->getUuid()] ?? 0));
+		}
+	}//end applyChildCounts()
+
+	/**
+	 * The number of readable children per parent uuid, in one grouped query.
+	 *
+	 * @param array<int, string>   $uuids        The parents.
+	 * @param string               $parentColumn The parent column.
+	 * @param array<string, mixed> $query        The access and lifecycle parameters.
+	 * @param MagicReadTable       $table        The table.
+	 *
+	 * @return array<string, int> Parent uuid => child count, parents without children absent.
+	 */
+	private function childCountsOf(array $uuids, string $parentColumn, array $query, MagicReadTable $table): array {
+		if ($uuids === []) {
+			return [];
+		}
+
+		$qb     = $this->buildFilteredQuery(query: $query, table: $table);
+		$column = 't.' . $this->quoteIdentifier(name: $parentColumn, isPostgres: $this->isPostgresPlatform());
+		$qb->select($qb->createFunction($column . ' AS parent_uuid'), $qb->createFunction('COUNT(*) AS child_count'))
+			->andWhere($qb->expr()->in($qb->createFunction($column), $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)))
+			->groupBy($qb->createFunction($column));
+
+		$result = $qb->executeQuery();
+		$counts = [];
+		foreach ($result->fetchAll() as $row) {
+			$counts[(string)$row['parent_uuid']] = (int)$row['child_count'];
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end childCountsOf()
 
 	/**
 	 * Count the rows with no organisation that match a query, ignoring RBAC and any active organisation context.
@@ -2720,6 +2821,7 @@ class MagicSearchHandler {
 			'_recentViews',
 			'_recentLens',
 			'_count',
+			'_childCount',
 			'_includeDeleted',
 			'_deleted',
 			'_archived',

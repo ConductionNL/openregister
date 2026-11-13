@@ -775,6 +775,17 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?string $viewedAt = null;
 
 	/**
+	 * How many children the reader may list under this object.
+	 *
+	 * Transient, set only on a `_childCount=true` page of a schema that
+	 * declares `x-openregister-hierarchy` (records-tree-view). Exposed in @self
+	 * as `childCount`, and absent on every other read.
+	 *
+	 * @var int|null
+	 */
+	protected ?int $childCount = null;
+
+	/**
 	 * What the reader may do with this object, as `{"update": bool, "<declared action>": bool}`.
 	 *
 	 * Transient, populated by the render layer only when the request asks for
@@ -1105,6 +1116,22 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setViewedAt(?string $viewedAt): void {
 		$this->viewedAt = $viewedAt;
 	}//end setViewedAt()
+
+	/**
+	 * Write how many children the reader may list under this object.
+	 *
+	 * Write-only, like setViewedAt(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `childCount`.
+	 *
+	 * @param int|null $childCount The number of readable children.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-the-tree-loads-one-level-at-a-time-with-child-counts
+	 */
+	public function setChildCount(?int $childCount): void {
+		$this->childCount = $childCount;
+	}//end setChildCount()
 
 	/**
 	 * Write what the reader may do with this object.
@@ -1672,6 +1699,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'watchNotify'             => $this->watchNotify,
 			'favourite'               => $this->watching,
 			'viewedAt'                => $this->viewedAt,
+			'childCount'              => $this->childCount,
 			'can'                     => $this->can,
 		];
 	}//end readerFields()
