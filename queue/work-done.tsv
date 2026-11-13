@@ -4257,3 +4257,4 @@ merge:hermiq:1676:5e2ca218	merge-local over 16 hermiq tasks: merged=34 red=1 fai
 merge:hermiq:1679:11e43d64	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
 merge:hermiq:1681:2d2cae27	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
 merge:hermiq:1682:abba1de1	merge-local over 16 hermiq tasks: merged=34 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:33:25Z
+cover:humaniq:a18a13fb:568ec52a	PR #1109: +4 test methods, lib/Lifecycle 308->314/314 (guard refusal and fail-closed paths)	session-20261113T081040-5e814df2	2026-11-13T10:34:30Z
