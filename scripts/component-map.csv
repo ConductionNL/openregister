@@ -3972,6 +3972,7 @@ Controller/FileDisclosuresController.php,,Controller,,,,,Compliance
 Exception/TextDisclosureNotRecordedException.php,,Exception,,,,,Compliance
 Files/Db/TextDisclosure.php,,Files,,,,,Files
 Files/Db/TextDisclosureMapper.php,,Files,,,,,Files
+Service/Mail/MailThreadAssembler.php,,Service,,,,,Notifications
 Db/AutomationRecord.php,,Db,,,,,Processes
 Db/AutomationRecordFilter.php,,Db,,,,,Processes
 Db/AutomationRecordMapper.php,,Db,,,,,Processes
