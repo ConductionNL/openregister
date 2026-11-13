@@ -2158,7 +2158,13 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function generateErrorMessage(ValidationResult $result): string {
-		return (new ValidationErrorMessages())->forResult(result: $result);
+		// Building a message needs nothing else from this handler; the language is read only when it can be.
+		$language = null;
+		if (isset($this->lookups) === true) {
+			$language = $this->lookups->preferredLanguage();
+		}
+
+		return (new ValidationErrorMessages(language: $language))->forResult(result: $result);
 	}//end generateErrorMessage()
 
 	/**

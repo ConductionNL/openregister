@@ -46,6 +46,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Feature | Doc | Category | Status | Key Standards |
 |---------|-----|----------|--------|---------------|
 | Registers & Schemas | [registers-and-schemas.md](registers-and-schemas.md) | Core | Implemented | JSON Schema, Schema.org, GGM |
+| Custom Validation Messages | [validation-messages.md](validation-messages.md) | Core | Implemented (backend) | `x-error-messages` per property and rule, per language |
 | External Databases as Virtual Registers | [dbal-virtual-registers.md](dbal-virtual-registers.md) | Core | Implemented | Doctrine DBAL, JSON Schema, Common Ground (data at the source) |
 | Nextcloud Tables as Virtual Registers | [tables-virtual-register.md](tables-virtual-register.md) | Core | Implemented | Nextcloud Tables, JSON Schema, Common Ground (data at the source) |
 | Object Storage & Lifecycle | [object-storage.md](object-storage.md) | Core | Implemented | UUID, soft delete, versioning |
@@ -80,6 +81,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 The foundational layer for defining, storing, and querying structured data.
 
 - [Registers & Schemas](registers-and-schemas.md) — JSON Schema-based data model definition, import from Schema.org and GGM
+- [Custom Validation Messages](validation-messages.md) — A property's own message per failed rule, in the request language, with plain-text placeholders
 - [Object Storage & Lifecycle](object-storage.md) — CRUD, soft delete, relations, file attachments, locking
 - [Search, Filtering & Faceting](search-and-faceting.md) — Full-text search, field filtering, faceted drill-down, multi-backend
 - [Computed Fields](computed-fields.md) — Server-side Twig expressions for derived properties
