@@ -76,23 +76,43 @@ use Throwable;
  */
 class GenericInitializeSettings implements IRepairStep {
 	/**
+	 * Locates the leaf's bundled manifest (lazily resolved when null).
+	 *
+	 * @var IAppManager|null
+	 */
+	protected readonly ?IAppManager $appManager;
+
+	/**
+	 * Credential-broker app registry (lazily resolved when null).
+	 *
+	 * @var CredentialAppTokenServiceInterface|null
+	 */
+	protected readonly ?CredentialAppTokenServiceInterface $tokenService;
+
+	/**
+	 * Per-app Doriath application registrar (lazily resolved when null).
+	 *
+	 * @var DoriathApplicationRegistrarInterface|null
+	 */
+	protected readonly ?DoriathApplicationRegistrarInterface $applicationRegistrar;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appId The leaf app id (display only).
-	 * @param AppHostSettingsService $settingsService App-scoped settings service.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param IAppManager|null $appManager Locates the leaf's bundled manifest (lazily resolved when null).
-	 * @param CredentialAppTokenServiceInterface|null $tokenService Credential-broker app registry (lazily resolved when null).
-	 * @param DoriathApplicationRegistrarInterface|null $applicationRegistrar Per-app Doriath application registrar (lazily resolved when null).
+	 * @param string                    $appId           The leaf app id (display only).
+	 * @param AppHostSettingsService    $settingsService App-scoped settings service.
+	 * @param LoggerInterface           $logger          PSR logger.
+	 * @param CredentialOnboarding|null $onboarding      Credential-onboarding collaborators; each null one is lazily resolved.
 	 */
 	public function __construct(
 		protected readonly string $appId,
 		protected readonly AppHostSettingsService $settingsService,
 		protected readonly LoggerInterface $logger,
-		protected readonly ?IAppManager $appManager = null,
-		protected readonly ?CredentialAppTokenServiceInterface $tokenService = null,
-		protected readonly ?DoriathApplicationRegistrarInterface $applicationRegistrar = null,
+		?CredentialOnboarding $onboarding = null,
 	) {
+		$this->appManager           = $onboarding?->appManager;
+		$this->tokenService         = $onboarding?->tokenService;
+		$this->applicationRegistrar = $onboarding?->applicationRegistrar;
 	}//end __construct()
 
 	/**

@@ -47,28 +47,62 @@ use OCP\Settings\IDelegatedSettings;
  */
 class GenericAdminSettings implements IDelegatedSettings {
 	/**
+	 * The leaf app id (template + version).
+	 *
+	 * @var string
+	 */
+	protected readonly string $appId;
+
+	/**
+	 * The settings section id this form sits in.
+	 *
+	 * @var string
+	 */
+	protected readonly string $sectionId;
+
+	/**
+	 * Ordering priority within the section.
+	 *
+	 * @var integer
+	 */
+	protected readonly int $priority;
+
+	/**
+	 * App manager (version lookup).
+	 *
+	 * @var IAppManager
+	 */
+	protected readonly IAppManager $appManager;
+
+	/**
+	 * Initial-state service.
+	 *
+	 * @var IInitialState
+	 */
+	protected readonly IInitialState $initialState;
+
+	/**
+	 * App config — when set, enables a real up-to-date check by comparing the
+	 * running app version against the version stored when the configuration
+	 * was last (re-)imported.
+	 *
+	 * @var IAppConfig|null
+	 */
+	protected readonly ?IAppConfig $appConfig;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appId The leaf app id (template + version).
-	 * @param string $sectionId The settings section id this form sits in.
-	 * @param int $priority Ordering priority within the section.
-	 * @param IAppManager $appManager App manager (version lookup).
-	 * @param IInitialState $initialState Initial-state service.
-	 * @param IAppConfig|null $appConfig App config — when provided, enables a
-	 *                                   real up-to-date check by comparing the
-	 *                                   running app version against the version
-	 *                                   stored when the configuration was last
-	 *                                   (re-)imported. Nullable so the older
-	 *                                   registration factories keep working.
+	 * @param SettingsPlacement $placement Leaf app id, section id and the form's priority in it.
+	 * @param AdminFormServices $services  App manager, initial state and (optional) app config.
 	 */
-	public function __construct(
-		protected readonly string $appId,
-		protected readonly string $sectionId,
-		protected readonly int $priority,
-		protected readonly IAppManager $appManager,
-		protected readonly IInitialState $initialState,
-		protected readonly ?IAppConfig $appConfig = null,
-	) {
+	public function __construct(SettingsPlacement $placement, AdminFormServices $services) {
+		$this->appId        = $placement->appId;
+		$this->sectionId    = $placement->sectionId;
+		$this->priority     = $placement->priority;
+		$this->appManager   = $services->appManager;
+		$this->initialState = $services->initialState;
+		$this->appConfig    = $services->appConfig;
 	}//end __construct()
 
 	/**
