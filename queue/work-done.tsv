@@ -6356,3 +6356,4 @@ cover:hermiq:065f1631md84f:dfaef732	no PR: lib/Notification already 74/74 covere
 fix:shillinq:3003:594db733	failed: conflict is only with an earlier open tree PR (version bumps / l10n), not development; branch already contains development; merge development again after that PR lands	session-20261113T185327-0dc82b88	2026-11-13T19:31:56Z
 cover:hermiq:065f1631md84f:d39f9857	no PR: lib/Support fully covered at measured commit; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:31:54Z
 cover:hermiq:065f1631md84f:d81d2d49	no PR: lib/Service/Speech already 57/57 covered; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:32:10Z
+cover:dossiq:069ee2d6mbd37:39189253	no PR: lib/Service/Transitions at 1836/1843 (99.6%) after branches -1..-3; nothing thin left worth a PR	session-20261113T192700-f21ebd18	2026-11-13T19:32:28Z
