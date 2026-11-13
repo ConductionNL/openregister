@@ -3141,6 +3141,7 @@ Service/ShippedBaseline/DescriptorParts.php,72,Service,Configuration,Configurati
 Service/ShippedBaseline/DivergenceComparator.php,88,Service,Configuration,Configuration/Service/ShippedBaseline/DivergenceComparator.php,1,,Configuration
 Service/ShippedBaseline/GuardedAnnotations.php,180,Service,Configuration,Configuration/Service/ShippedBaseline/GuardedAnnotations.php,0,,Configuration
 Service/ShippedBaseline/GuardedDescriptorMerge.php,175,Service,Configuration,Configuration/Service/ShippedBaseline/GuardedDescriptorMerge.php,1,,Configuration
+Service/ShippedBaseline/LiveDescriptor.php,14,Service,Service,Service/ShippedBaseline/LiveDescriptor.php,0,,Configuration
 Service/ShippedBaseline/ShippedAuthorizationDecision.php,28,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedAuthorizationDecision.php,0,,Configuration
 Service/ShippedBaseline/ShippedBaselineResetService.php,145,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedBaselineResetService.php,0,,Configuration
 Service/ShippedBaseline/ShippedBaselineStore.php,76,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedBaselineStore.php,2,,Configuration
@@ -3324,6 +3325,7 @@ Service/Chat/,,Service,,,,,Platform
 Service/Config/,,Service,,,,,Configuration
 Service/Configuration/,,Service,,,,,Configuration
 Service/ConfigurationDeployment/,,Service,,,,,Configuration
+Service/ConfigurationDeployment/ShippedDivergenceSourceInterface.php,,Service,,,,,Configuration
 Service/Connection/,,Service,,,,,Integrations
 Service/Consent/,,Service,,,,,Core
 Service/Consumer/,,Service,,,,,Integrations
@@ -3397,6 +3399,7 @@ Service/Settings/,,Service,,,,,Configuration
 Service/SharedSchema/,,Service,,,,,Configuration
 Service/Sharing/,,Service,,,,,Core
 Service/ShippedBaseline/,,Service,,,,,Configuration
+Service/ShippedBaseline/ShippedDivergenceReport.php,60,Service,Service,Service/ShippedBaseline/ShippedDivergenceReport.php,0,,Configuration
 Service/Survey/,,Service,,,,,Processes
 Service/Survivorship/,,Service,,,,,Core
 Service/Sync/,,Service,,,,,Integrations

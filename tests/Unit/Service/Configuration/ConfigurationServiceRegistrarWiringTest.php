@@ -250,6 +250,8 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationValueStore',
 				'OCA\\OpenRegister\\Db\\ConfigurationDeploymentMapperInterface',
 				'OCA\\OpenRegister\\Db\\ConfigurationBindingMapperInterface',
+				'OCA\\OpenRegister\\Db\\SchemaMapperInterface',
+				'OCA\\OpenRegister\\Service\\ShippedBaseline\\ShippedBaselineStore',
 			],
 			'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationBundleService' => [
 				'OCA\\OpenRegister\\Db\\ConfigurationBindingMapperInterface',
