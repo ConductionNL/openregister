@@ -5780,3 +5780,4 @@ cover:keepiq:c967a31fm1bed:js4829b6aa	PR #1760: 29 tests, 4 view specs; views li
 cover:pipelinq:7f9dc8e6m16db:e372e6ff	already done: lib/Event/*.php at 100% line coverage on development (130/130 stmts); no PR	session-20261113T175328-b5db3663	2026-11-13T18:01:35Z
 build:portaliq:public-detail-page-for-a-provider-item	failed: blocked: task 4 rest needs a public route to an app action and learniq's audience check; task 5 needs learniq	session-20261113T172328-c860ad55	2026-11-13T18:01:47Z
 cover:stackiq:9ac19b3am9d24:f4b2f7af	PR #1885: +1 test; GemmaStandardLinker 73/73; rest of lib/Service/ArchiMate already covered	session-20261113T171141-a3907367	2026-11-13T18:01:46Z
+cover:shillinq:05639debm7b6b:js4829b6aa	PR #2951: 7 vitest tests, BudgetGrid.vue 63.6% -> 98.7%	session-20261113T172329-0b6220f9	2026-11-13T18:02:02Z
