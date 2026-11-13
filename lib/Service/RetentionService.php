@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use DateInterval;
 use DateTime;
 use Exception;
@@ -117,6 +118,7 @@ class RetentionService implements RetentionServiceInterface {
 	 * @param RetentionRules $rules Archival settings, row scanner, action date calculator and selectielijst resolver.
 	 * @param IUserSession $userSession Current user session
 	 * @param LoggerInterface $logger Logger
+	 * @param InheritedAppraisal|null $inherited Holds an object back while a declared ancestor is kept permanently.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor for an aggregate service.
 	 *              Every parameter is a distinct collaborator this class genuinely uses, and the tenth
@@ -128,6 +130,7 @@ class RetentionService implements RetentionServiceInterface {
 		private readonly RetentionRules $rules,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ?InheritedAppraisal $inherited=null,
 	) {
 	}//end __construct()
 
@@ -796,15 +799,33 @@ class RetentionService implements RetentionServiceInterface {
 	 * @param ObjectEntity  $object The object to judge.
 	 * @param DisposalSweep $sweep  Today, and the UUIDs already on a pending destruction list.
 	 *
-	 * @return string|null One of the REFUSAL_* reasons, or null when the object may be destroyed.
+	 * @return string|null One of the REFUSAL_* reasons or an InheritedAppraisal reason, or null when the object may be destroyed.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/changes/appraisal-inherited-from-a-parent/specs/archivering-vernietiging/spec.md
 	 */
 	public function destructionRefusalIn(ObjectEntity $object, DisposalSweep $sweep): ?string {
-		// The retention rules first, then the rules about this object, in that order.
+		// The retention rules first, then the rules about this object, then the
+		// ancestors it inherits a permanent appraisal from, in that order: the
+		// walk reads other objects, so it runs only for an object that would
+		// otherwise go.
 		return ($this->retentionDestructionRefusal(retention: ($object->getRetention() ?? []), today: $sweep->today)
-			?? $this->objectDestructionRefusal(object: $object, excludeUuids: $sweep->excludeUuids));
+			?? $this->objectDestructionRefusal(object: $object, excludeUuids: $sweep->excludeUuids)
+			?? $this->heldBackByAncestor(object: $object));
 	}//end destructionRefusalIn()
+
+	/**
+	 * Why a declared ancestor holds an object back, or null when none does.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return string|null An InheritedAppraisal reason naming the ancestor or the unresolved reference.
+	 *
+	 * @spec openspec/changes/appraisal-inherited-from-a-parent/specs/archivering-vernietiging/spec.md
+	 */
+	public function heldBackByAncestor(ObjectEntity $object): ?string {
+		return $this->inherited?->holdBack(object: $object);
+	}//end heldBackByAncestor()
 
 	/**
 	 * The first rule on the retention decision itself that refuses destruction.

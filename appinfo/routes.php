@@ -1830,6 +1830,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Configuration publish endpoints.
         ['name' => 'configuration#publishToGitHub', 'url' => '/api/configurations/{id}/publish/github', 'verb' => 'POST'],
+        ['name' => 'configuration#publishToGitLab', 'url' => '/api/configurations/{id}/publish/gitlab', 'verb' => 'POST'],
 
         // User Settings - GitHub Integration.
         ['name' => 'userSettings#getGitHubTokenStatus', 'url' => '/api/user-settings/github/status', 'verb' => 'GET'],

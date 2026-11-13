@@ -55,6 +55,15 @@
 							</template>
 							{{ t('openregister', 'Delete') }}
 						</NcButton>
+						<NcButton
+							v-if="ownsActiveView"
+							variant="secondary"
+							@click="showViewLinksDialog = true">
+							<template #icon>
+								<LinkVariant :size="20" />
+							</template>
+							{{ t('openregister', 'Share by link') }}
+						</NcButton>
 					</div>
 				</div>
 
@@ -465,10 +474,17 @@
 		v-if="showDeleteDialog"
 		:view="viewToDelete"
 		@close="handleDeleteClose" />
+
+	<!-- Share the active view by link -->
+	<ViewAccessLinksModal
+		v-if="showViewLinksDialog && viewsStore.activeView"
+		:view="viewsStore.activeView"
+		@close="showViewLinksDialog = false" />
 </template>
 
 <script>
 import { CnIndexSidebar } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -479,10 +495,12 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import { defineAsyncComponent } from 'vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import FilterIcon from 'vue-material-design-icons/Filter.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Star from 'vue-material-design-icons/Star.vue'
@@ -537,6 +555,8 @@ const INITIAL_STATE = {
 	// Delete view dialog
 	showDeleteDialog: false,
 	viewToDelete: null,
+	// Share-by-link dialog of the active view
+	showViewLinksDialog: false,
 	// Column visibility collapsible state
 	expandedSchemas: {}, // Track which schema groups are expanded
 	metadataExpanded: true, // Metadata section expanded by default
@@ -602,6 +622,13 @@ export default {
 		CogOutline,
 		EditView,
 		DeleteView,
+		// Loaded when the dialog first opens: the access-link panel and its
+		// dialogs are only needed by the view's owner, on demand.
+		ViewAccessLinksModal: defineAsyncComponent(
+			() => import('../../modals/view/ViewAccessLinksModal.vue'),
+		),
+
+		LinkVariant,
 		SelectOption,
 	},
 
@@ -619,6 +646,19 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the signed-in user owns the active view; only the owner may
+		 * share it by link.
+		 *
+		 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+		 * @return {boolean}
+		 */
+		ownsActiveView() {
+			const owner = viewsStore.activeView?.owner
+			const uid = getCurrentUser()?.uid
+			return Boolean(owner) && owner === uid
+		},
+
 		/**
 		 * The register and schema pickers: the same multi-select twice, the
 		 * schema one disabled until a register is picked.

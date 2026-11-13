@@ -99,9 +99,26 @@ final class ListenerRegistrar {
 		self::registerSaveRuleListeners(context: $context);
 		self::registerSideEffectListeners(context: $context);
 		self::registerDeliveryListeners(context: $context);
+		self::registerAuditListeners(context: $context);
 		self::registerAutomationRecordListeners(context: $context);
 		self::registerDraftListeners(context: $context);
 	}//end register()
+
+	/**
+	 * The listeners that put administrator changes on the audit trail.
+	 *
+	 * Registered after every other listener on the schema events, so the entry
+	 * is written once their work is done; only the draft listeners follow.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/capability-rows-verified-c/specs/enhanced-audit-trail/spec.md#requirement-changes-to-authorisation-rules-api-tokens-and-record-types-are-on-the-audit-trail
+	 */
+	private static function registerAuditListeners(IRegistrationContext $context): void {
+		$context->registerEventListener(SchemaUpdatedEvent::class, SchemaAuthorizationAuditListener::class);
+	}//end registerAuditListeners()
 
 	/**
 	 * Let each component registrar subscribe its own listeners, in component order.

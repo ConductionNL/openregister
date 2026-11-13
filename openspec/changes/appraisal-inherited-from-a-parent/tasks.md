@@ -2,9 +2,9 @@
 
 ## 1. The rule (REQ-AIP-001, REQ-AIP-002)
 
-- [ ] 1.1 Accept `x-openregister-retention.inheritAppraisalFrom` in the schema annotation validator; refuse unknown or non-reference properties. Verify: `tests/Unit/Service/Schemas/RetentionAnnotationValidatorTest.php::testAnInheritFromANonReferenceIsRefused` (fails today: the key is unknown).
-- [ ] 1.2 Follow the declared references in `RetentionService::isEligibleForDestruction()`, five levels, cycle-guarded, reading as the system context. Verify: `tests/Unit/Service/RetentionInheritedAppraisalTest.php::testAPublicationUnderAHotspotIsNotEligible`, `testWithoutTheDeclarationOnlyTheOwnAppraisalCounts`, `testACycleIsVisitedOnce`, `testAnUnresolvableAncestorHoldsTheObjectBack`, with real `ObjectEntity` instances.
-- [ ] 1.3 Apply the same check in `DestructionCheckJob::sendPreDestructionNotifications()`. Verify: `tests/Unit/BackgroundJob/DestructionCheckJobInheritedTest.php` runs the real job's `run()` with a hotspot fixture and asserts no notification and no list entry, which proves the caller reaches the rule.
+- [x] 1.1 Accept `x-openregister-retention.inheritAppraisalFrom` in the schema annotation validator; refuse unknown or non-reference properties. Verify: `tests/Unit/Service/Schemas/RetentionAnnotationValidatorTest.php::testAnInheritFromANonReferenceIsRefused` (fails today: the key is unknown).
+- [x] 1.2 Follow the declared references in `RetentionService::isEligibleForDestruction()`, five levels, cycle-guarded, reading as the system context. Verify: `tests/Unit/Service/RetentionInheritedAppraisalTest.php::testAPublicationUnderAHotspotIsNotEligible`, `testWithoutTheDeclarationOnlyTheOwnAppraisalCounts`, `testACycleIsVisitedOnce`, `testAnUnresolvableAncestorHoldsTheObjectBack`, with real `ObjectEntity` instances.
+- [x] 1.3 Apply the same check in `DestructionCheckJob::sendPreDestructionNotifications()`. Verify: `tests/Unit/BackgroundJob/DestructionCheckJobInheritedTest.php` runs the real job's `run()` with a hotspot fixture and asserts no notification and no list entry, which proves the caller reaches the rule.
 
 ## 2. Visible hold-back (REQ-AIP-003)
 
