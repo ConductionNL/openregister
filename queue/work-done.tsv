@@ -2070,3 +2070,4 @@ measure:stackiq:20261113h04	php 64.97% js 80.46% (dev unit suite has 166 errors/
 cover:dossiq:6ca0231ema7d4:2021c6de	PR dossiq#6272: +7 OutboundUrlGuard edge tests; suite 14246 -> 14253, 19 inherited failures unchanged	session-20261113T034632-47095943	2026-11-13T04:18:38Z
 cover:dossiq:6ca0231ema7d4:737135d1	PR #6271: 1 test for OutstandingDocuments earlierDocument branch (22/23); other 3 gaps are unobservable guards	session-20261113T031700-0e23c373	2026-11-13T04:18:34Z
 cover:integriq:92114ab0md8cd:36cf9f12	PR #3470: lib/Service/Exchange/*.php 939/968 -> 956/968, 7 tests	session-20261113T015005-030aa10a	2026-11-13T04:18:39Z
+verify:learniq:2433:e68ae7e8	2433 GREEN, 2435 GREEN (tests only; inherited: 1 phpunit, 1 node l10n failure)	session-20261113T034628-73e45054	2026-11-13T04:18:59Z
