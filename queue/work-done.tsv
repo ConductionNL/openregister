@@ -7170,3 +7170,4 @@ build4:openregister:register-scoped-schema-slug-resolution	partial: PR openregis
 verify:pipelinq:3794:89770a80	CONFLICT: #3794 package-lock.json conflicts with development	session-20261113T220418-8e6ce3df	2026-11-13T22:27:24Z
 build4:openregister:platform-user-migrator	partial: PR #10442 built 1.1, 1.5, 1.6, 2.2 and views+watches of 1.2 (14 tests); left recents/notification prefs, tokens (1.3), notes (1.4); no new failures	session-20261113T205323-a7434fd6	2026-11-13T22:27:47Z
 build4:openregister:platform-provided-capabilities	partial: PR #10441 task 2.3 (login refuses password-only for users with a second factor, +3 tests, no new failures vs main); 2.1,2.4,2.5,3.1,4.1 left	session-20261113T202619-0d7929e0	2026-11-13T22:27:41Z
+review:openregister:10416:984be222	APPROVE: digest verify job per change 2.4; suites green, only inherited FileVersioningHandlerGolden errors	session-20261113T214350-9762e143	2026-11-13T22:28:00Z
