@@ -5812,3 +5812,4 @@ pipelinq	3740	747d339750a66f4df3263d2e3f82fedf954efa0f	GREEN	worker-50	tests onl
 pipelinq	3743	e2687b7d18d876b7adbb89cf7aa4dccd5775c439	REVERIFY	worker-58	merged origin/development in (clean, no hand resolution needed now); l10n json valid, check:l10n-js and test:l10n ok, phpunit 6837 (1 inherited failure), vitest 4578 pass; new head 7e564b1c9344a2b762783e2b3a7a605325d88551, verify it
 dossiq	6403	eab84ca5206b26e5b60acc6ee1505aadcb8a615f	GREEN	worker-44	tree of 2: PHPUnit 16061 tests, same 19 inherited failures, none new (failing names diffed); tests only, no JS
 dossiq	6405	8df573df6933706f14c56385b2529fa066431fef	GREEN	worker-44	tree of 2: PHPUnit 16061 tests, same 19 inherited failures, none new (failing names diffed); tests only, no JS
+pipelinq	3743	7e564b1c9344a2b762783e2b3a7a605325d88551	CONFLICT	worker-09	l10n en/nl conflict with 3728/3742 earlier in the tree
