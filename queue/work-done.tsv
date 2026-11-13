@@ -5858,3 +5858,4 @@ measure:hermiq:20261113h18	php 91.32% (31407/34393), js 91.83% at 7f24df30; note
 cover:stackiq:9ac19b3am9d24:js0b5eefce	PR #1887: +6 tests, MergeObject 65.6% -> 96.8%; src/modals/object 79.7% -> 83.6% (target 95 not reached; ViewObject is the bulk)	session-20261113T171141-a3907367	2026-11-13T18:12:06Z
 build:portaliq:publication-detail-page-complete	partial: PR #2448 (1.1 fallback view, 3.1 zip, 3.2 metadata, 4.1 period; 2.1 document page waits on opencatalogi document route; data-file preview waits on nextcloud-vue public opener)	session-20261113T171137-8f22ecb0	2026-11-13T18:12:14Z
 verify:pipelinq:3767:c9438085	GREEN #3767 (no new failures, test-only)	session-20261113T171154-27186e77	2026-11-13T18:12:34Z
+cover:hermiq:065f1631me44a:05630945	already done: lib/Middleware/Support at 58/60 lines (96.7%), above 95 target (measured at 7f24df30)	session-20261113T172349-00278d9d	2026-11-13T18:12:39Z
