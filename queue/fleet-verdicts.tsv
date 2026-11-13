@@ -5766,3 +5766,4 @@ pipelinq	3711	ee7b9c7c38e41db2511caebea22b0391d4dff3c5	REVERIFY	worker-29	merged
 dossiq	6404	8ad512b1b5530fab45c91f711dfcb9e8b0c7c15b	GREEN	worker-09	tests only, merges clean; 15972 -> 16012 tests, 19 F inherited, no new failures
 opencatalogi	2588	50984c0ba774a07f0b3a6ddcbeeb4347e6c7f3b8	GREEN	worker-24	phpunit 5186 tests (baseline 5162, 2 inherited failures AppIdentityTest/WooControllerTest), 0 new failures; tests only
 pipelinq	3714	121a468183f9efa70a679b2ce40a1e0cf1f52eef	GREEN	worker-56	build berichtenbox stats paging as specified; tree 7 PRs (3728 left out, JS unverifiable here): 6917 tests, baseline 6814 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest), 0 new failures
+pipelinq	3716	3480451773a13de2f4fc235259819e6d0a9fe96b	GREEN	worker-56	build data-portability; l10n now merges with 3713; tree 7 PRs (3728 left out, JS unverifiable here): 6917 tests, baseline 6814 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest), 0 new failures
