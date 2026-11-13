@@ -5077,4 +5077,5 @@ cover:openregister:7350e3efma401:js0b5eefce	PR #10226: object-modal DOM render g
 merge:shillinq:2819:4b0f7ec1	merge-local over 3 shillinq tasks: merged=10 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:07:45Z
 merge:shillinq:2938:96c3cb02	merge-local over 3 shillinq tasks: merged=10 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:07:45Z
 merge:shillinq:2924:99c0bfff	merge-local over 3 shillinq tasks: merged=10 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:07:45Z
+cover:openregister:7350e3efma401:34f5c300	PR #10227: 7 untested lib/Service helpers, 28 tests	session-20261113T114527-9a216dd1	2026-11-13T13:08:10Z
 cover:buildiq:70b3e29ema699:60c2c265	2 PRs: #1543 (4 controllers, 36 tests), #1544 (3 controllers, 15 tests); lib/Controller/*.php 91.38%->94.21%, suite 2784->2835, only the inherited ExportZipGoldenTest failure	session-20261113T094607-ad655fd0	2026-11-13T13:08:04Z
