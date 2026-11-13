@@ -13,7 +13,7 @@
 - [x] 2.1 The report shape with `success`, `partial` and `failed`, counting failed entities from the import result (not from what arrived). Verify: `tests/Unit/Service/Configuration/SeedReportTest.php::testASchemaWithoutASlugMakesTheRunPartial`, `testFailuresAreNamed`.
   - `lib/Service/Configuration/SeedReport.php`; `SeedReportTest`.
 - [ ] 2.2 `GET /api/settings/seed` (administrator only) and a section on the operations console. Verify: `tests/Unit/Controller/SeedReportControllerTest.php::testANonAdministratorGets403`; `tests/e2e/ci/seed-report.spec.ts` reads the last report on the console after the CI seed in 1.3.
-  - Done: `GET /api/settings/seed` (`SeedReportController`, administrator only) and `SeedReportControllerTest`. Left: the operations console section and the e2e spec.
+  - Done: `GET /api/settings/seed` (`SeedReportController`, administrator only) and `SeedReportControllerTest`; the operations console section (`src/views/operations/SeedReportSection.vue`: outcome, last run, directory, totals, problems and named failures, with its strings in all 37 locales and `SeedReportSection.spec.js`). Left: the e2e spec, which reads the report after the CI seed of 1.3 on a live instance.
 - [x] 2.3 Document the setting, the file order and the report in `docs/features/configuration.md`. Verify: `npm run build` in `docs/` succeeds.
   - Documented in `docs/features/data-import-export.md` (the capability this change extends; `docs/features/configuration.md` does not exist). `npm run build` in `docs/` was not run.
 
