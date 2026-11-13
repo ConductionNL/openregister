@@ -4573,3 +4573,4 @@ fix:pipelinq:3744:5b7b3df4	CONFLICT resolved: both specs kept, PR's renamed; vit
 review:openregister:10130:7326e65b	APPROVE (docs/tasks only; stray generated lock file noted)	session-20261113T071633-17de823f	2026-11-13T11:38:22Z
 review:openregister:10126:ecfb7096	APPROVE: tests only, all required groups green	session-20261113T103904-e108be02	2026-11-13T11:38:32Z
 cover:pipelinq:7f9dc8e6m84dd:6f346b68	no PR: lib/Sections/SettingsSection.php already 5/5 statements covered (SettingsSectionTest)	session-20261113T104531-274f72f7	2026-11-13T11:39:12Z
+cover:stackiq:9ac19b3am10f3:c2bb21fa	PR #1873: +22 tests, lib/Service/Stackiq 2096->2247/2274; GroupHandler::validateGroups char check is dead (preg_match === true), reported to owner	session-20261113T081040-5e814df2	2026-11-13T11:39:39Z
