@@ -324,6 +324,74 @@ Notes:
 - Sending `"partial": true` relaxes the status to `200` for callers that
   deliberately want best-effort behaviour. `success` stays `false`.
 
+## Bulk Jobs
+
+The `/api/bulk/...` endpoints above write in one request. A **bulk job** runs a
+registered bulk action over a selection in the background instead: it is
+created as a preview that writes nothing, then committed, and every selected
+object gets its own outcome (`applied`, `skipped`, `refused` or `failed`, with a
+reason). Bulk jobs are open to any signed-in user; each object is still checked
+against the caller's own rights.
+
+```
+GET  /api/bulk-actions               The registered actions
+POST /api/bulk-jobs                  Create a job (a preview; writes nothing)
+GET  /api/bulk-jobs/{id}             The job, its state and its counts
+GET  /api/bulk-jobs/{id}/members     Per-object outcomes (?outcome=, limit, offset)
+GET  /api/bulk-jobs/{id}/download    The outcomes as CSV
+POST /api/bulk-jobs/{id}/commit      Run a previewed job
+```
+
+A job body names the action, its `parameters`, the `selection` (`ids` or a
+`query`) and the `register` and `schema` it applies to:
+
+```json
+{
+  "action": "openregister:set-properties",
+  "parameters": { "properties": { "status": "closed" } },
+  "selection": { "ids": ["<uuid>", "<uuid>"] },
+  "register": 1,
+  "schema": 2
+}
+```
+
+### Change status: `openregister:transition`
+
+Moves every selected object through one lifecycle action of its schema's
+`x-openregister-lifecycle` (see
+[Declarative Lifecycle Transitions](../features/workflow-automation.md#declarative-lifecycle-transitions-x-openregister-lifecycle)).
+
+| Parameter | Description |
+|-----------|-------------|
+| `action` | The lifecycle action, e.g. `start`. Required. |
+| `data` | The action's declared inputs as an object, the same for every object. Optional. |
+
+Each object goes through the same engine call as
+`POST /api/objects/{id}/transition`, as the user who started the job, so its
+guards, required inputs, lifecycle actions and audit entry are exactly those
+of a single move.
+
+| Outcome | When |
+|---------|------|
+| `applied` | The object moved (in the preview: the move is available to the job's user). |
+| `skipped` | The object is already in the action's target state. |
+| `failed` | The lifecycle refused the move: not available from the object's state, a required input missing from `data`, no rights, or a listener stopped it. The reason is the message a single move would answer, and the object stays where it was. |
+
+The preview uses the same check as `GET /api/objects/{id}/available-actions`;
+required inputs are checked when the job runs. The selection must hold one
+schema version (homogeneity guard). A bulk transition cannot be undone: a
+lifecycle move is not reversed by writing old values back.
+
+```json
+{
+  "action": "openregister:transition",
+  "parameters": { "action": "sluiten", "data": { "reden": "Afgehandeld" } },
+  "selection": { "ids": ["<uuid>", "<uuid>", "<uuid>"] },
+  "register": 1,
+  "schema": 2
+}
+```
+
 ## Error Handling
 
 ### Common Error Responses

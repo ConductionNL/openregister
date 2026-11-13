@@ -1,0 +1,1322 @@
+{
+    "info": {
+        "_postman_id": "openregister-bulk-transition",
+        "name": "OpenRegister - Bulk transition (openregister:transition)",
+        "description": "@newman exclude not yet passed live: the commit is run by BulkJobRunner, and tests/integration/ci/seed.sh starts no worker for that class (adding it there would also run the jobs the bulk-jobs section of the api collection pauses while running). Drop this marker after a first green run on a stack with that worker.\n\nrecords-bulk-transition task 2.1: `POST /api/bulk-jobs` with `openregister:transition`. Seeds its own register and a schema whose lifecycle declares `start` (ontvangen to in_behandeling) and `sluiten` (in_behandeling to afgesloten, required input `reden`). One job moves three objects through `start`: one in `ontvangen` is applied, one already `in_behandeling` is skipped, one in `afgesloten` fails with the engine's refusal, and the preview moves nothing. A second job runs `sluiten` without `reden`: the object fails with the missing-input message and stays where it was. An anonymous caller gets 401, and bad parameters 400.\n\nEverything it creates is removed in `99 teardown`.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "basic",
+        "basic": [
+            {
+                "key": "username",
+                "value": "{{username}}",
+                "type": "string"
+            },
+            {
+                "key": "password",
+                "value": "{{password}}",
+                "type": "string"
+            }
+        ]
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
+                    "// The quality workflow passes base_url, admin_user and admin_password; take",
+                    "// them for this collection's own names when those are not given.",
+                    "[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password'], ['adminUser', 'admin_user'], ['adminPassword', 'admin_password']].forEach(function (pair) {",
+                    "    var given = pm.environment.get(pair[1]);",
+                    "    if (given !== undefined && pm.environment.get(pair[0]) === undefined) {",
+                    "        pm.collectionVariables.set(pair[0], given);",
+                    "    }",
+                    "});"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8080"
+        },
+        {
+            "key": "username",
+            "value": "admin"
+        },
+        {
+            "key": "password",
+            "value": "admin"
+        },
+        {
+            "key": "stamp",
+            "value": ""
+        },
+        {
+            "key": "registerId",
+            "value": ""
+        },
+        {
+            "key": "schemaId",
+            "value": ""
+        },
+        {
+            "key": "objA",
+            "value": ""
+        },
+        {
+            "key": "objB",
+            "value": ""
+        },
+        {
+            "key": "objC",
+            "value": ""
+        },
+        {
+            "key": "objD",
+            "value": ""
+        },
+        {
+            "key": "jobId",
+            "value": ""
+        },
+        {
+            "key": "jobTries",
+            "value": "0"
+        },
+        {
+            "key": "inputJobId",
+            "value": ""
+        },
+        {
+            "key": "inputJobTries",
+            "value": "0"
+        }
+    ],
+    "item": [
+        {
+            "name": "00 setup",
+            "item": [
+                {
+                    "name": "create the register",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"slug\": \"bt-register-{{stamp}}\",\n  \"title\": \"Bulk transition {{stamp}}\"\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.collectionVariables.set('stamp', String(Date.now()));",
+                                    "pm.collectionVariables.set('jobTries', '0');",
+                                    "pm.collectionVariables.set('inputJobTries', '0');"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('register created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+                                    "pm.collectionVariables.set('registerId', pm.response.json().id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "create the lifecycle schema",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"slug\": \"bt-item-{{stamp}}\",\n  \"title\": \"Bulk transition item {{stamp}}\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"status\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"ontvangen\",\n        \"in_behandeling\",\n        \"afgesloten\"\n      ]\n    },\n    \"reden\": {\n      \"type\": \"string\"\n    }\n  },\n  \"x-openregister-lifecycle\": {\n    \"field\": \"status\",\n    \"initial\": \"ontvangen\",\n    \"states\": [\n      \"ontvangen\",\n      \"in_behandeling\",\n      \"afgesloten\"\n    ],\n    \"terminal\": [\n      \"afgesloten\"\n    ],\n    \"transitions\": {\n      \"start\": {\n        \"from\": [\n          \"ontvangen\"\n        ],\n        \"to\": \"in_behandeling\"\n      },\n      \"sluiten\": {\n        \"from\": [\n          \"in_behandeling\"\n        ],\n        \"to\": \"afgesloten\",\n        \"inputs\": [\n          {\n            \"field\": \"reden\",\n            \"required\": true\n          }\n        ]\n      }\n    }\n  }\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('schema created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+                                    "pm.collectionVariables.set('schemaId', pm.response.json().id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "attach the schema",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"schemas\": [{{schemaId}}]}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('schema attached', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "create A (stays ontvangen)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"A {{stamp}}\"\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+                                    "const b = pm.response.json();",
+                                    "pm.collectionVariables.set('objA', b.id);",
+                                    "pm.test('the lifecycle sets the initial state', () => pm.expect(b.status).to.eql('ontvangen'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "create B",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"B {{stamp}}\"\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+                                    "const b = pm.response.json();",
+                                    "pm.collectionVariables.set('objB', b.id);",
+                                    "pm.test('the lifecycle sets the initial state', () => pm.expect(b.status).to.eql('ontvangen'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "create C",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"C {{stamp}}\"\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+                                    "const b = pm.response.json();",
+                                    "pm.collectionVariables.set('objC', b.id);",
+                                    "pm.test('the lifecycle sets the initial state', () => pm.expect(b.status).to.eql('ontvangen'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "create D",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"D {{stamp}}\"\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+                                    "const b = pm.response.json();",
+                                    "pm.collectionVariables.set('objD', b.id);",
+                                    "pm.test('the lifecycle sets the initial state', () => pm.expect(b.status).to.eql('ontvangen'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "start B (already in the target state for the job)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objB}}/transition"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"start\"\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('start moves it to in_behandeling', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([200, 201]));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "start C",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objC}}/transition"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"start\"\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('start moves it to in_behandeling', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([200, 201]));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "close C (start is not available from afgesloten)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objC}}/transition"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"sluiten\",\n  \"data\": {\n    \"reden\": \"setup\"\n  }\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('sluiten moves it to afgesloten', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([200, 201]));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "start D (sluiten needs reden)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objD}}/transition"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"start\"\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('start moves it to in_behandeling', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([200, 201]));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Refusals",
+            "item": [
+                {
+                    "name": "anonymous caller is refused",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"openregister:transition\",\n  \"parameters\": {\"action\": \"start\"},\n  \"selection\": {\"ids\": [\"{{objA}}\"]},\n  \"register\": {{registerId}},\n  \"schema\": {{schemaId}}\n}"
+                        },
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('anonymous is 401', () => pm.expect(pm.response.code, pm.response.text()).to.eql(401));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "transition without an action is 400",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"openregister:transition\",\n  \"parameters\": {\"data\": {}},\n  \"selection\": {\"ids\": [\"{{objA}}\"]},\n  \"register\": {{registerId}},\n  \"schema\": {{schemaId}}\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('missing lifecycle action is 400', () => { pm.expect(pm.response.code, pm.response.text()).to.eql(400); pm.expect(pm.response.json().error).to.include('\"action\"'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "transition with data as a list is 400",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"openregister:transition\",\n  \"parameters\": {\"action\": \"start\", \"data\": [\"x\"]},\n  \"selection\": {\"ids\": [\"{{objA}}\"]},\n  \"register\": {{registerId}},\n  \"schema\": {{schemaId}}\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('data as a list is 400', () => { pm.expect(pm.response.code, pm.response.text()).to.eql(400); pm.expect(pm.response.json().error).to.include('\"data\"'); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Three objects through start",
+            "item": [
+                {
+                    "name": "preview start over A, B and C",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"openregister:transition\",\n  \"parameters\": {\"action\": \"start\"},\n  \"selection\": {\"ids\": [\"{{objA}}\", \"{{objB}}\", \"{{objC}}\"]},\n  \"register\": {{registerId}},\n  \"schema\": {{schemaId}}\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('previewed with one applied, one skipped, one failed', () => {",
+                                    "    pm.expect(pm.response.code, pm.response.text()).to.eql(201);",
+                                    "    const b = pm.response.json();",
+                                    "    pm.expect(b.state).to.eql('previewed');",
+                                    "    pm.expect(b.action).to.eql('openregister:transition');",
+                                    "    pm.expect(b.total).to.eql(3);",
+                                    "    pm.expect(b.counts.applied).to.eql(1);",
+                                    "    pm.expect(b.counts.skipped).to.eql(1);",
+                                    "    pm.expect(b.counts.failed).to.eql(1);",
+                                    "});",
+                                    "pm.collectionVariables.set('jobId', String(pm.response.json().id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "the preview moved nothing",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objA}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('A is still ontvangen', () => pm.expect(pm.response.json().status).to.eql('ontvangen'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "preview members",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}/members"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('each member carries its rehearsed outcome', () => {",
+                                    "    pm.expect(pm.response.code, pm.response.text()).to.eql(200);",
+                                    "    const by = {};",
+                                    "    pm.response.json().results.forEach((m) => { by[m.objectUuid] = m; });",
+                                    "    pm.expect(by[pm.collectionVariables.get('objA')].outcome).to.eql('applied');",
+                                    "    pm.expect(by[pm.collectionVariables.get('objB')].outcome).to.eql('skipped');",
+                                    "    pm.expect(by[pm.collectionVariables.get('objB')].reason).to.include('in_behandeling');",
+                                    "    pm.expect(by[pm.collectionVariables.get('objC')].outcome).to.eql('failed');",
+                                    "    pm.expect(by[pm.collectionVariables.get('objC')].reason).to.include('afgesloten');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "commit",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}/commit"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('previewed job commits to running', () => { pm.expect(pm.response.code, pm.response.text()).to.eql(202); pm.expect(pm.response.json().state).to.eql('running'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "wait for the job",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (Number(pm.collectionVariables.get('jobTries') || 0) > 0) {",
+                                    "    setTimeout(() => {}, 2000);",
+                                    "}"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "// The commit queues the job for BulkJobRunner, a background job, so this polls for a while.",
+                                    "const tries = Number(pm.collectionVariables.get('jobTries') || 0) + 1;",
+                                    "pm.collectionVariables.set('jobTries', tries);",
+                                    "const state = pm.response.code === 200 ? pm.response.json().state : null;",
+                                    "if (['running', 'paused', 'cancelling'].includes(state) && tries < 30) {",
+                                    "    pm.execution.setNextRequest(pm.info.requestName);",
+                                    "    return;",
+                                    "}",
+                                    "pm.test('the job finished', () => pm.expect(state, 'state ' + state + ' after ' + tries + ' tries').to.be.oneOf(['completed', 'failed']));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "committed members",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}/members"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('A applied, B skipped, C failed with the engine message', () => {",
+                                    "    pm.expect(pm.response.code, pm.response.text()).to.eql(200);",
+                                    "    const by = {};",
+                                    "    pm.response.json().results.forEach((m) => { by[m.objectUuid] = m; });",
+                                    "    pm.expect(by[pm.collectionVariables.get('objA')].outcome).to.eql('applied');",
+                                    "    pm.expect(by[pm.collectionVariables.get('objB')].outcome).to.eql('skipped');",
+                                    "    pm.expect(by[pm.collectionVariables.get('objC')].outcome).to.eql('failed');",
+                                    "    pm.expect(by[pm.collectionVariables.get('objC')].reason).to.be.a('string').and.not.empty;",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "A moved",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objA}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is in_behandeling', () => { pm.expect(pm.response.code, pm.response.text()).to.eql(200); pm.expect(pm.response.json().status).to.eql('in_behandeling'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "B stayed",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objB}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is in_behandeling', () => { pm.expect(pm.response.code, pm.response.text()).to.eql(200); pm.expect(pm.response.json().status).to.eql('in_behandeling'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "C stayed",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objC}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is afgesloten', () => { pm.expect(pm.response.code, pm.response.text()).to.eql(200); pm.expect(pm.response.json().status).to.eql('afgesloten'); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "A missing input fails the member",
+            "item": [
+                {
+                    "name": "preview sluiten over D without reden",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"action\": \"openregister:transition\",\n  \"parameters\": {\"action\": \"sluiten\", \"data\": {}},\n  \"selection\": {\"ids\": [\"{{objD}}\"]},\n  \"register\": {{registerId}},\n  \"schema\": {{schemaId}}\n}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('previewed: the move is available, inputs are checked when it runs', () => {",
+                                    "    pm.expect(pm.response.code, pm.response.text()).to.eql(201);",
+                                    "    pm.expect(pm.response.json().total).to.eql(1);",
+                                    "});",
+                                    "pm.collectionVariables.set('inputJobId', String(pm.response.json().id));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "commit the input job",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{inputJobId}}/commit"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('commits to running', () => pm.expect(pm.response.code, pm.response.text()).to.eql(202));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "wait for the input job",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{inputJobId}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (Number(pm.collectionVariables.get('inputJobTries') || 0) > 0) {",
+                                    "    setTimeout(() => {}, 2000);",
+                                    "}"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "// The commit queues the job for BulkJobRunner, a background job, so this polls for a while.",
+                                    "const tries = Number(pm.collectionVariables.get('inputJobTries') || 0) + 1;",
+                                    "pm.collectionVariables.set('inputJobTries', tries);",
+                                    "const state = pm.response.code === 200 ? pm.response.json().state : null;",
+                                    "if (['running', 'paused', 'cancelling'].includes(state) && tries < 30) {",
+                                    "    pm.execution.setNextRequest(pm.info.requestName);",
+                                    "    return;",
+                                    "}",
+                                    "pm.test('the job finished', () => pm.expect(state, 'state ' + state + ' after ' + tries + ' tries').to.be.oneOf(['completed', 'failed']));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "the missing input is reported, not forced",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{inputJobId}}/members"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('D failed with the missing-input message', () => {",
+                                    "    pm.expect(pm.response.code, pm.response.text()).to.eql(200);",
+                                    "    const m = pm.response.json().results.find((r) => r.objectUuid === pm.collectionVariables.get('objD'));",
+                                    "    pm.expect(m.outcome).to.eql('failed');",
+                                    "    pm.expect(m.reason).to.include('missing required input');",
+                                    "    pm.expect(m.reason).to.include('reden');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "D stayed",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objD}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is in_behandeling', () => { pm.expect(pm.response.code, pm.response.text()).to.eql(200); pm.expect(pm.response.json().status).to.eql('in_behandeling'); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "99 teardown",
+            "item": [
+                {
+                    "name": "remove objA",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objA}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "remove objB",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objB}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "remove objC",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objC}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "remove objD",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objD}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "remove the schema",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "remove the register",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "OCS-APIREQUEST",
+                                "value": "true"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
