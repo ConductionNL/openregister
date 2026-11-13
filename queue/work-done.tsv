@@ -4068,3 +4068,4 @@ cover:shillinq:05639debm0c05:js450fec42	PR #2914: 28 vitest tests (leafMount, le
 cover:planninq:e1c9866d:05630945	PR #1144: StandardProtocolPathsTest 16 cases, SPP 90%->100%; ApiPathAliases remainder is loops over empty constants	session-20261113T074533-3e2a2da6	2026-11-13T09:53:57Z
 cover:larpinq:c4471360m4538:34763eb4	PR #1022: ApiContractMiddleware +4 tests, suite 697->701 OK	session-20261113T094617-36f80607	2026-11-13T09:54:01Z
 cover:integriq:92114ab0m158b:0d678885	already done: lib/Outbound/Identity/*.php at 1194/1250 lines (95.5%), above the 95% target; largest gap SystemDnsResolver is live DNS; branch -1 merged	session-20261113T081046-f0858dc4	2026-11-13T09:54:14Z
+verify:dossiq:6371:f4afe815	6 GREEN (6371,6372,6374-6377), 6373 RED (2 simpleCasePage vitest pins); tree w/o 6373: phpunit 0 new, vitest 0 new	session-20261113T083916-59f10a3b	2026-11-13T09:54:38Z
