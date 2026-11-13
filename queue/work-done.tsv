@@ -6166,6 +6166,7 @@ measure:keepiq:20261113h18	php 92.04% js 91.82% at ba7cc67	session-20261113T1823
 build:shillinq:tax-icp-and-reverse-charge	partial: PR shillinq#3004 builds 1.1, 1.2 (reverse-charge notice in UBL/PDF, issue guard); 2.1-2.4 ICP statement and 3.x left	session-20261113T175332-5effc865	2026-11-13T19:02:48Z
 verify:keepiq:1764:29903ce6	GREEN 1764, 1765 (tests only; phpunit 4913 ok, vitest 6361 ok)	session-20261113T185327-0dc82b88	2026-11-13T19:02:58Z
 cover:hermiq:065f1631md84f:js4829b6aa	PR #1701: 6 render tests for RunCompare/FlowRunCompare; src/views 1195->1205/1311; vitest 1312 pass	session-20261113T172325-6eb25015	2026-11-13T19:03:02Z
+build:shillinq:platform-custom-record-types	PR #3005: tasks 1.1,1.2,2.1,2.2,3.2 built (+26 PHPUnit, +11 vitest); 3.1 e2e left; suites no new failures	session-20261113T182351-b6448081	2026-11-13T19:03:23Z
 cover:integriq:92114ab0mb37a:f191f1e9	PR #3531: 13 tests across 7 Lti classes; suite 8222->8235, same 4 inherited failures	session-20261113T185326-a3ee0aab	2026-11-13T19:03:13Z
 cover:hermiq:065f1631md84f:js06645759	PR #1702: +8 vitest (PromptPlaceholderTools, TalkDeliverySettings rendering); src/components 93.87->95.68%	session-20261113T172328-c860ad55	2026-11-13T19:03:32Z
 cover:keepiq:c967a31fm00c6:f91e7417	already done: lib/Service/Connection/ 100% (150/150) at ba7cc67	session-20261113T182349-7e3632fd	2026-11-13T19:03:34Z
