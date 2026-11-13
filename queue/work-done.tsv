@@ -1348,3 +1348,4 @@ cover:pipelinq:f67520ec:d641aea9	PR #3614: 10 tests, ListObjectStore 6->116/116,
 review:hermiq:1534:a68a0c8c	GREEN: refactor preserves behaviour; no new unit failures vs development	session-20261113T004519-b6b86685	2026-11-13T01:14:40Z
 cover:launchpad:755175ffm7412:js0023cfc7	PR #1148: 3 dialogs, 11 tests, vitest 1188->1199, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T01:15:03Z
 merge:launchpad:1141:5595b3eb	merge-local over 1 launchpad tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:14:54Z
+cover:launchpad:755175ffm7412:a1252b57	no PR: lib/Service/Confluence already at 280/289 statements; the 9 left are defensive failure returns of libxml/preg/XPath not reachable with real input	session-20261112T231633-96ffe7b8	2026-11-13T01:15:18Z
