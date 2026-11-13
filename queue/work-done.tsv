@@ -2265,3 +2265,5 @@ cover:filinq:7a9ef677mc744:efa2a923	already covered: earlier batches quality/tes
 cover:hermiq:065f1631m312d:9d3a1784	already covered: lib/BackgroundJob 99.1% stmts (1 left), earlier -1 branch exists; no PR	session-20261113T031704-5a455d65	2026-11-13T04:46:57Z
 cover:dossiq:f8a113c5mac88:52aafbe5	already done: lib/Service/Vth 329/355 stmts (92.7%, target 90) on development	session-20261113T024656-d5bfb688	2026-11-13T04:47:08Z
 merge:keepiq:1607:0a4b120a	merge-local over 1 keepiq tasks: merged=2 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:47:10Z
+verify:filinq:2032:d98b2430	2032 GREEN: one new test file, php 6038->6042 no failures	session-20261113T024654-6600dc41	2026-11-13T04:47:26Z
+cover:dossiq:f8a113c5mac88:33af3743	PR #6278: 10 tests; Bezwaar 99.16% -> 99.61%; 19 inherited failures	session-20261113T031700-211f0599	2026-11-13T04:47:29Z
