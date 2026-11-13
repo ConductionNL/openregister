@@ -993,6 +993,7 @@ Exception/CaseValidationException.php,6,Exception,Exception,Exception/CaseValida
 Exception/ChunkMatcherException.php,17,Exception,Exception,Exception/ChunkMatcherException.php,0,,Kernel
 Exception/CircularReferenceException.php,45,Exception,Exception,Exception/CircularReferenceException.php,0,,Kernel
 Exception/CodedValueException.php,15,Exception,Exception,Exception/CodedValueException.php,0,,Kernel
+Exception/ConfidenceThresholdOutOfRangeException.php,6,Exception,Exception,Exception/ConfidenceThresholdOutOfRangeException.php,0,,Kernel
 Exception/ConsistencyCheckWouldWriteException.php,14,Exception,Exception,Exception/ConsistencyCheckWouldWriteException.php,0,,Kernel
 Exception/CorrectionRefusedException.php,10,Exception,Exception,Exception/CorrectionRefusedException.php,0,,Kernel
 Exception/CustomValidationException.php,13,Exception,Exception,Exception/CustomValidationException.php,59,,Kernel
