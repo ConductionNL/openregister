@@ -5660,3 +5660,4 @@ build:portaliq:count-field	already done: tasks 1-2 on development (#1244); only 
 cover:pipelinq:7f9dc8e6m16db:8f8dca30	already done: lib/Service/Export at ~98% lines (1201/1222) after merged -1..-4; above 90 target, remaining lines are edge branches	session-20261113T172349-00278d9d	2026-11-13T17:34:31Z
 verify:pipelinq:3736:5ba55edd	3736 CONFLICT (l10n files), 3762 GREEN	session-20261113T171149-8b9ea523	2026-11-13T17:34:48Z
 verify:buildiq:1552:1e8f7986	GREEN 1552, GREEN 1553 (tests-only; vitest 4135 pass, no new failures)	session-20261113T172329-0b6220f9	2026-11-13T17:35:33Z
+verify:dossiq:6425:a7797654	2 GREEN (6425,6426); no new failures	session-20261113T172334-4b3b027b	2026-11-13T17:37:04Z
