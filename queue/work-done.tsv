@@ -2967,3 +2967,4 @@ cover:decidiq:a5f973bbmb22b:60c2c265	already done: lib/Controller/*.php at 94.59
 cover:integriq:92114ab0m658d:19badfa5	already done: lib/Outbound/Call/*.php at 92.12% lines (643/698) on development 4aa851de, above 90 target; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T06:46:00Z
 cover:decidiq:a5f973bbmb22b:1b97f731	already done: lib/Listener/*.php at 97% lines (1176/1208) on development, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:46:25Z
 cover:hermiq:065f1631mfaac:9d3a1784	already done: lib/BackgroundJob/*.php 107/108 lines (99.1%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:46:35Z
+cover:hermiq:065f1631mfaac:jsea7197ec	already done: src/utils/* 388/388 lines (100.0%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:46:40Z
