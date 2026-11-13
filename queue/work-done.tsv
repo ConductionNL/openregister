@@ -4823,3 +4823,4 @@ merge:shillinq:2819:c4032723	merge-local over 1 shillinq tasks: merged=0 red=0 f
 build:openregister:extended-field-types-range-and-image	partial: PR #10179 (7/8 tasks; 1.4 range filter needs a live API test)	session-20261113T114527-9a216dd1	2026-11-13T12:25:00Z
 review:openregister:10168:27f234c2	APPROVE: tests only, 4 tests pass merged with main	session-20261113T101609-bc51215d	2026-11-13T12:25:08Z
 merge:launchpad:1188:02d6964f	merge-local over 1 launchpad tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:25:17Z
+fix:pipelinq:3749:ebdb318c	fixed: public read rules removed pending owner decision (recorded in task 2.2); new head a9ac3f12fd84606854a384d302bad66b133da585	session-20261113T081048-4978ac57	2026-11-13T12:25:40Z
