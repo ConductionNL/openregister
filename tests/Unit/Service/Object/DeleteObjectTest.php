@@ -546,6 +546,44 @@ class DeleteObjectTest extends TestCase {
 	}
 
 	/**
+	 * A guard answer kept for a root whose delete failed does not carry over to the next root delete.
+	 */
+	public function testANewRootDeleteForgetsTheGuardsAnEarlierFailedRootAsked(): void {
+		$failed = $this->createObjectEntity('uuid-failed', '1', '10');
+		$other = $this->createObjectEntity('uuid-other', '1', '20');
+		$this->objectMapper->method('findAcrossAllSources')->willReturnCallback(
+			fn (string $identifier): array => $this->makeContext($identifier === 'uuid-failed' ? $failed : $other)
+		);
+		$this->objectMapper->method('update')->willReturnArgument(0);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')
+			->willReturnCallback(static fn (string $schemaId): bool => $schemaId === '10');
+		$this->integrityService->method('canDelete')->willReturn(new DeletionAnalysis(deletable: true));
+		$this->integrityService->method('applyDeletionActions')->willThrowException(new \RuntimeException('cascade failed'));
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$asked = [];
+		$this->objectMapper->method('assertDeletable')->willReturnCallback(
+			static function (ObjectEntity $entity) use (&$asked): void {
+				$asked[] = $entity->getUuid();
+			}
+		);
+
+		try {
+			$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-failed'));
+			$this->fail('The failing cascade was expected to throw.');
+		} catch (\RuntimeException $e) {
+			$this->assertSame('cascade failed', $e->getMessage());
+		}
+
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 20, uuid: 'uuid-other'));
+		$asked = [];
+		$this->handler->delete(object: $failed, options: new RemovalOptions(table: new RegisterSchema(register: $this->createRegister(1), schema: $this->createSchema(10, [], 'my-schema'))));
+
+		$this->assertSame(['uuid-failed'], $asked);
+	}
+
+	/**
 	 * delete() sets deleted metadata with the current user UID when a user is logged in.
 	 */
 	public function testDeleteSetsDeletedByCurrentUser(): void {
@@ -873,6 +911,31 @@ class DeleteObjectTest extends TestCase {
 		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-3'));
 
 		$this->assertTrue($result);
+	}
+
+	/**
+	 * A permanent delete of an object with referrers destroys the root, after the integrity actions.
+	 */
+	public function testAPermanentDeleteWithReferrersDestroysTheRoot(): void {
+		$object = $this->createObjectEntity('uuid-do-4', '1', '10');
+		$this->objectMapper->method('findAcrossAllSources')
+			->willReturn($this->makeContext($object, $this->createRegister(1), $this->createSchema(10, [], 'my-schema')));
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(true);
+		$this->integrityService->method('canDelete')->willReturn(
+			new DeletionAnalysis(deletable: true, effects: new DeletionEffects(nullifyTargets: [['objectUuid' => 'ref-1', 'property' => 'owner']]))
+		);
+		$this->integrityService->expects($this->once())->method('applyDeletionActions')->willReturn(['retained' => []]);
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$this->objectMapper->expects($this->once())->method('deleteObjectEntity');
+		$this->objectMapper->expects($this->never())->method('update');
+
+		$this->assertTrue(
+			$this->handler->deleteObject(
+				new DeletionRequest(register: 1, schema: 10, uuid: 'uuid-do-4', options: new DeletionOptions(permanent: true))
+			)
+		);
 	}
 
 	/**
