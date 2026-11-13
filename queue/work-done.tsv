@@ -1618,3 +1618,4 @@ cover:pipelinq:f67520ecm8c58:js0be8c659	PR #3631: 27 mounted vitest tests for 5 
 cover:launchpad:755175ffm31b6:js01efb861	already done: src/components/Widgets/ 1326/1536 (86.3%) statements on development, above the 85% target; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:21:53Z
 cover:pipelinq:f67520ecm8c58:js4f7d1071	already done: open PR #3615 (social accounts + new-post route) on this branch and #3603 (SocialPerformanceView) cover these dirs; no duplicate PR opened	session-20261113T004527-ec0338ee	2026-11-13T02:22:02Z
 cover:launchpad:755175ffm31b6:34f5c300	already done: lib/Service/*.php 10652/11530 (92.4%) on development, above the 90% target; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:22:15Z
+cover:dossiq:6ca0231ema7d4:67b69054	PR #6226: 8 tests over CaseConversationService and CaseCaptureService remaining branches; suite 13867->13875, same 19 inherited failures	session-20261112T234655-793f46ee	2026-11-13T02:22:39Z
