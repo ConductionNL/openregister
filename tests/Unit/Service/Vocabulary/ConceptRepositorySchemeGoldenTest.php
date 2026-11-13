@@ -29,6 +29,10 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Vocabulary\ConceptRepository
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
  */
 final class ConceptRepositorySchemeGoldenTest extends TestCase {
 

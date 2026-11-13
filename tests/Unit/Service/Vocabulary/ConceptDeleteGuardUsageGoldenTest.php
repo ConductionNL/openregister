@@ -42,6 +42,13 @@ use RuntimeException;
  * The allowed and refused outcomes of the concept delete guard, pinned.
  *
  * @covers \OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedNarrowing
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedValueRules
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptHolding
  */
 class ConceptDeleteGuardUsageGoldenTest extends TestCase {
 

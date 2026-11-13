@@ -37,6 +37,13 @@ use RuntimeException;
  * What the guard counts when it cannot look, how many holders it names, and the refusal texts.
  *
  * @covers \OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedNarrowing
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedValueRules
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptHolding
  */
 class ConceptDeleteGuardRefusalTest extends TestCase {
 
