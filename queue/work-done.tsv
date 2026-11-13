@@ -2829,8 +2829,14 @@ cover:stackiq:df113dffm5ac4:js5dec42d9	failed: permission (npm ci refused in thi
 cover:pipelinq:7f9dc8e6m1e6e:jsd48eb217	already done: src/store/modules 383/385 (99.48%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:32:20Z
 cover:stackiq:df113dffm5ac4:59f569b2	already done: lib/Service/Settings 1265/1296 (97.6%) measured at development a05c3ddd, after #1797 and #1824	session-20261113T061516-58aa7364	2026-11-13T06:32:22Z
 cover:pipelinq:7f9dc8e6m1e6e:js8f1ea935	already done by open PR #3687 (GREEN, awaiting merge): views 81.52% on development -> 85.82% with it, target 85; no duplicate PR	session-20261113T054517-06ee2c47	2026-11-13T06:32:18Z
+cover:stackiq:df113dffm5ac4:jsea7197ec	PR #1842: +7 vitest tests on util guard branches; suite 2253->2260 pass; src/utils lines 99.34%->99.71%	session-20261113T054520-0c8540f8	2026-11-13T06:32:34Z
 cover:filinq:7a9ef677m5ffe:45998467	already done: lib/Service/Classification/ at 97.4% (187/192, pcov on development), above 90 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:32:30Z
 cover:pipelinq:7f9dc8e6m1e6e:js0be8c659	already done: open branches -1,-3,-4 together bring src/modals/* to 89.4% lines (1032/1154, target 85); 4001 vitest pass merged; no new PR	session-20261113T051705-4f5ad12a	2026-11-13T06:32:50Z
+cover:stackiq:df113dffm5ac4:007dc1d0	already done: lib/Service/Cmdb 1481/1520 (97.4%) measured at development a05c3ddd	session-20261113T061516-58aa7364	2026-11-13T06:32:45Z
 verify:learniq:2437:d4f62977	GREEN 2437 (JS tests only; 1338/1339, 1 inherited)	session-20261113T051704-8c56f5b7	2026-11-13T06:32:48Z
 cover:filinq:7a9ef677m5ffe:ec6c2450	already done: lib/Service/Extraction/ at 96.25% (154/160, pcov on development), above 90 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:32:52Z
+cover:stackiq:df113dffm5ac4:jsda51ac59	already done: src/store/plugins/stackiqPlugin.js 99.5% lines, 93.9% branches on development; no PR	session-20261113T051710-d9c31c61	2026-11-13T06:32:59Z
+cover:stackiq:df113dffm5ac4:js089660b5	already done: src/dialogs/ (incl. SuiteWizard) at 99.23% statements (257/259) on current development	session-20261113T044737-f37de8e3	2026-11-13T06:32:58Z
 cover:shillinq:05639debmd8ee:dc834159	PR #2892: 28 tests over 10 classes (5 adapters, 5 results); suite 9235, same 1 inherited failure	session-20261113T054516-5d7b6bc4	2026-11-13T06:33:01Z
+cover:stackiq:df113dffm5ac4:jsb1f0efae	already done: src/views/organisaties/ 197/202 lines (97.5%) on development a05c3ddd; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:33:06Z
+verify:shillinq:2886:75da7c98	2886 GREEN (tests only, no new failures)	session-20261113T051707-6c971ec6	2026-11-13T06:33:07Z
