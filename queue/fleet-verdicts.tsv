@@ -6280,3 +6280,4 @@ portaliq	2458	bceb48c711d463325126e68c9c972db05e15fa1a	GREEN	worker-27	tests onl
 dossiq	6445	6354b6115e0ac76cb88f25e43d7b73ca7a6d61fa	GREEN	worker-49	phpunit 16530 tests, 20 failures = baseline 20; vitest 6849 passed, 1 failed = inherited capabilityComparison; tests only, no new failures
 dossiq	6446	182daeacfb29e994bd50cca1a128357da3508076	GREEN	worker-49	phpunit 16530 tests, 20 failures = baseline 20; vitest 6849 passed, 1 failed = inherited capabilityComparison; tests only, no new failures
 dossiq	6447	ede87a1a384cd36346fe6debd7b2824b5f455838	GREEN	worker-49	phpunit 16530 tests, 20 failures = baseline 20; vitest 6849 passed, 1 failed = inherited capabilityComparison; tests only, no new failures
+dossiq	6448	dbf72d5127c1b7ac9d48f3ae027501a5c35239a3	GREEN	worker-06	tests only (vitest); vitest 6824 on tree, 1 failure inherited (capabilityComparison, red on development too); new spec 25/25; PHP suite baseline 16530 with 20 failures, untouched by the diff
