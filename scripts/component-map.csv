@@ -1767,6 +1767,7 @@ Service/Archival/ArchivalDecisionResolver.php,249,Service,Service,Service/Archiv
 Service/Archival/ArchivalDeclarationReader.php,91,Service,Compliance,Compliance/Service/Archival/ArchivalDeclarationReader.php,0,,Compliance
 Service/Archival/ArchivalFactsValidator.php,125,Service,Service,Service/Archival/ArchivalFactsValidator.php,0,,Compliance
 Service/Archival/ArchivalNominationService.php,218,Service,Compliance,Compliance/Service/Archival/ArchivalNominationService.php,0,,Compliance
+Service/Archival/ArchivalParties.php,80,Service,Compliance,Compliance/Service/Archival/ArchivalParties.php,0,,Compliance
 Service/Archival/ArchivalRetentionGuard.php,162,Service,Compliance,Compliance/Service/Archival/ArchivalRetentionGuard.php,0,160,Compliance
 Service/Archival/ArchiveActionDateCalculator.php,258,Service,Compliance,Compliance/Service/Archival/ArchiveActionDateCalculator.php,0,,Compliance
 Service/Archival/AuditDiffRedactionTarget.php,55,Service,Compliance,Compliance/Service/Archival/AuditDiffRedactionTarget.php,0,,Compliance
