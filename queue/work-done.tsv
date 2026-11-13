@@ -6520,4 +6520,5 @@ cover:pipelinq:7f9dc8e6m8ce9:95d5249b	PR #3777: lib/Service/Portal 99.31->99.93%
 cover:pipelinq:7f9dc8e6m8ce9:568ec52a	PR #3778: 23 tests for CrmPrivilegeCheck + POS access/refund/confirm guards; suite 7194->7217, same 5 inherited failures	session-20261113T195351-a32c6d55	2026-11-13T20:02:13Z
 cover:pipelinq:7f9dc8e6m8ce9:6925f818	already done: lib/SetupCheck/*.php at 100% statements (27/27) with exact-description tests for every reason; no PR	session-20261113T195408-5e929f14	2026-11-13T20:02:29Z
 build:filinq:redaction-at-scale	partial: PR #2079 (1.1, 1.2 done; QA sampler and report aggregation; coordinator, endpoints, UI left); suite 6443->6450 green	session-20261113T182404-f2c28226	2026-11-13T20:02:56Z
+build:filinq:generate-draft-and-attended-edit	partial: PR #2078, backend tasks 1.1 and 2.1-2.5 built with 42 new tests (6443->6485, all passing); frontend 3.1-3.4, 4.1 and the docs half of 4.2 left	session-20261113T192659-0ddb618f	2026-11-13T20:02:57Z
 review:openregister:10316:b950c04d	10316 APPROVE (spec-asked index switch; suites green, RegisterMapperDiagnosticsTest red on main too)	session-20261113T182359-67ad413b	2026-11-13T20:02:58Z
