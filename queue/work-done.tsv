@@ -4078,4 +4078,5 @@ cover:integriq:92114ab0m158b:60c2c265	PR #3522: 41 tests over 7 controllers, lib
 cover:learniq:e6498dddm0533:9d3a1784	PR #2462: LtiAgsScorePollJob+EngagementSignalJob skip/failure paths, 5 tests; inherited 1F unchanged	session-20261113T064518-860c039d	2026-11-13T09:55:31Z
 verify:dossiq:6364:dcc73590	6 GREEN (6364, 6365, 6367-6370), 1 RED (6366: new notificationLabels vitest failure for termResumedAfterPause)	session-20261113T084521-fd8a31c7	2026-11-13T09:55:45Z
 cover:shillinq:05639debm0c05:js6cca7802	PR #2917: +6 vitest specs (58 tests) covering 7 budget/inventory/dashboard/budget-charts components; suite 1775->1833 green, total cov 59.8->61.0%	session-20261113T094602-d25cda2a	2026-11-13T09:55:53Z
+cover:planninq:e1c9866d:7505aeb4	PR #1145: FilterTest + ProviderRefusalTest, lib/Activity 90%->100%	session-20261113T074533-3e2a2da6	2026-11-13T09:56:14Z
 verify:learniq:2419:6e77ebc6	stale	session-20261113T064518-860c039d	2026-11-13T09:56:05Z
