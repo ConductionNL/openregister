@@ -3945,3 +3945,6 @@ BackgroundJob/SchemaChangeNoticeJob.php,,BackgroundJob,,,,,Core
 Controller/SchemaChangeFollowersController.php,,Controller,,,,,Core
 Db/SchemaFollower.php,,Db,,,,,Core
 Db/SchemaFollowerMapper.php,,Db,,,,,Core
+Middleware/SchemaChangeHeaderMiddleware.php,,Middleware,,,,,Platform
+Notification/SchemaChangeSubjectRenderer.php,,Notification,,,,,Notifications
+Service/Schema/SchemaChangeNoticeService.php,,Service,,,,,Core
