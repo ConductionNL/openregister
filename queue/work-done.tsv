@@ -1315,3 +1315,4 @@ cover:dossiq:6ca0231e:154acb60	PR #6212: 19 tests, CaseRebindGate+CaseAnswerRead
 review:dossiq:5862:5b407093	GREEN: behaviour-preserving extraction, 0 new failures	session-20261112T231639-4c562de9	2026-11-13T01:08:26Z
 verify:pipelinq:3602:25d7ba3a	GREEN 3602, 3603, 3604: tests only, no new failures	session-20261112T224529-41d77a96	2026-11-13T01:08:40Z
 cover:launchpad:755175ffm7412:js979145b9	PR #1144: 4 stores, 18 vitest tests; suite 1188 -> 1206; src/stores/* lines 64.1% -> 83.0%	session-20261112T234653-57d11a5b	2026-11-13T01:08:39Z
+review:hermiq:1515:7f728ffa	GREEN: behaviour-preserving extraction, 0 new failures	session-20261113T002031-7b3e41b2	2026-11-13T01:09:13Z
