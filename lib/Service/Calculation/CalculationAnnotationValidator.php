@@ -205,6 +205,7 @@ final class CalculationAnnotationValidator implements CalculationAnnotationValid
 		}
 
 		$this->checkType(spec: $spec, walk: $walk);
+		$this->checkMaterialisedOutput(spec: $spec, walk: $walk);
 		if (isset($spec['expression']) === false) {
 			$walk->fail(code: 'calculation-no-expression', message: sprintf('Calculation "%s" requires an expression.', $walk->name));
 			return;
@@ -214,6 +215,37 @@ final class CalculationAnnotationValidator implements CalculationAnnotationValid
 		$walk->deps[$walk->name] = [];
 		$this->walk(expr: $spec['expression'], walk: $walk);
 	}//end validateCalculation()
+
+	/**
+	 * Refuse a materialised calculation whose name is not a property.
+	 *
+	 * A materialised result is written into the object, and only keys in
+	 * `properties` are written: without a property of the same name the value
+	 * evaluates and is then dropped at save time without a word. A virtual
+	 * calculation (`materialise` absent or false) is computed on read and
+	 * needs no property.
+	 *
+	 * @param array<string, mixed> $spec The calculation spec.
+	 * @param CalculationWalk      $walk The validation state.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/computed-fields/spec.md#requirement-a-materialised-calculations-declared-name-must-also-be-a-declared-schema-property
+	 */
+	private function checkMaterialisedOutput(array $spec, CalculationWalk $walk): void {
+		if (($spec['materialise'] ?? false) !== true || in_array($walk->name, $walk->propKeys, true) === true) {
+			return;
+		}
+
+		$walk->fail(
+			code: 'calculation-output-not-in-properties',
+			message: sprintf(
+				'Calculation "%s" is materialised but the schema has no property "%s"; add that property, or its result is never stored.',
+				$walk->name,
+				$walk->name
+			)
+		);
+	}//end checkMaterialisedOutput()
 
 	/**
 	 * Refuse a calculation type outside VALID_TYPES.
