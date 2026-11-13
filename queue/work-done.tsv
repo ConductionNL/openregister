@@ -1523,4 +1523,5 @@ cover:keepiq:d76c2121m70b5:dfaef732	no PR: lib/Notification already 393/395 line
 cover:filinq:8ecceb86:59826f43	already done: lib/Settings/FilinqAdmin.php 14/14 lines covered by FilinqAdminSettingsTest at 1684dc33b, no PR	session-20261113T011731-f3798045	2026-11-13T02:02:12Z
 cover:filinq:8ecceb86:d057649b	already done: lib/Event/Support/ (2 readonly value objects) 100% covered at 1684dc33; further tests would be getter-only; no PR	session-20261113T015003-f68021a4	2026-11-13T02:02:17Z
 verify:decidiq:2103:fbdac0d5	5 GREEN (2103-2107), tests-only vitest specs; php 3116 OK, vitest 2682 passed	session-20261113T015003-d56b074c	2026-11-13T02:03:11Z
+cover:stackiq:8cfacb29m8db8:f4b2f7af	already done: lib/Service/ArchiMate 202/204 lines (99.0%) at 062e3700, remaining 2 are a promoted constructor and one branch; no PR	session-20261113T011731-f3798045	2026-11-13T02:03:37Z
 verify:filinq:1993:0bbff91d	GREEN x9 (1993-2001): tests-only, unit suite 5725 OK on the tree	session-20261113T004519-b6b86685	2026-11-13T02:03:40Z
