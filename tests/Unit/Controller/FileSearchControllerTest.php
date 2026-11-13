@@ -159,6 +159,7 @@ class FileSearchControllerTest extends TestCase {
 		$result = $this->controller->semanticSearch();
 
 		$this->assertEquals(500, $result->getStatus());
+		$this->assertSame(['success' => false, 'message' => 'Semantic search failed: Vector error'], $result->getData());
 	}
 
 	public function testHybridSearchEmptyQuery(): void {
@@ -285,6 +286,7 @@ class FileSearchControllerTest extends TestCase {
 		$result = $this->controller->hybridSearch();
 
 		$this->assertEquals(500, $result->getStatus());
+		$this->assertSame(['success' => false, 'message' => 'Hybrid search failed: Hybrid error'], $result->getData());
 	}
 
 	public function testSemanticSearchReturnsEmptyResults(): void {
