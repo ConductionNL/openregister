@@ -357,6 +357,20 @@ export default {
 				console.error('Failed to fetch register details:', error)
 			}
 		}
+		// PROMOTE THE SEED TO THE REAL REGISTER once one resolves. The seed above
+		// holds whatever the route said, and a cross-app link says the SLUG,
+		// because the numeric id differs per instance. Everything below this line
+		// reads `getRegisterItem.id` and hands it on: `getRegisterStats()` to the
+		// stats endpoint, `viewObjects()` into `/tables?register=`. Leaving the
+		// slug in the store makes each of those a separate question about whether
+		// that particular consumer resolves one, and `/tables` does not.
+		if (
+			this.register?.id
+			&& String(registerStore.getRegisterItem?.id) !== String(this.register.id)
+		) {
+			registerStore.setRegisterItem(this.register)
+		}
+
 		this.hydrating = false
 
 		// Load register stats if register is available
