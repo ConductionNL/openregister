@@ -3962,3 +3962,10 @@ Service/Import/BaserowBaseReader.php,160,Service,Configuration,Configuration/Ser
 Service/Import/BaserowCells.php,41,Service,Configuration,Configuration/Service/Import/BaserowCells.php,0,,Configuration
 Service/Import/BaseSetReader.php,29,Service,Configuration,Configuration/Service/Import/BaseSetReader.php,0,,Configuration
 Service/Import/BaseSchemaProposer.php,134,Service,Configuration,Configuration/Service/Import/BaseSchemaProposer.php,0,,Configuration
+Service/AdminRecipientExpander.php,,Service,,,,,Notifications
+Service/Connection/ConnectionHealthReport.php,,Service,,,,,Integrations
+Service/Connection/ConnectionHealthReportBuilder.php,,Service,,,,,Integrations
+Service/Connection/ConnectionRegistryMissingException.php,,Service,,,,,Integrations
+Service/Connection/ConnectionRegistryReader.php,,Service,,,,,Integrations
+Service/Connection/ConnectionReportForbiddenException.php,,Service,,,,,Integrations
+Service/Connection/ConnectionReportKind.php,,Service,,,,,Integrations
