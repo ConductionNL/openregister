@@ -6551,7 +6551,15 @@ cover:dossiq:069ee2d6mbd37:6a58479a	already done: lib/Service/Support/*.php at 7
 verify:filinq:2053:15844216	GREEN 2053,2056,2057; BLOCK 2058 (editor path skips write guards); CONFLICT 2054,2055,2059	session-20261113T185324-28e07ab2	2026-11-13T20:07:53Z
 review:openregister:10318:87733f80	APPROVE: tests green on merge with main, phpstan clean	session-20261113T195351-5d22eaae	2026-11-13T20:08:07Z
 cover:dossiq:069ee2d6mbd37:3ee9dda7	already done: lib/Service/Custody/*.php at 99.84% (628/629) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:08:11Z
+build:filinq:llm-entity-detection-provider	partial: PR #2092, 7 of 11 tasks (seam, resolver, LLM provider, mapper, fallback, settings API, 104 unit tests); 3.2 report half, 4.2 UI, 5.2 e2e, 5.3 i18n/docs left; suite 6443->6493 OK	session-20261113T192700-f21ebd18	2026-11-13T20:08:48Z
 cover:dossiq:069ee2d6mbd37:38e80a9f	already done: lib/Command/*.php at 99.59% (734/737) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:08:24Z
 cover:pipelinq:7f9dc8e6m8ce9:36ac5d07	no PR: lib/Service/LineTotals already 100% lines (LineRollUp 41/41, LineTotalMath 17/17, LineParent 1/1) under 30 tests incl. edge-case suites	session-20261113T195351-a32c6d55	2026-11-13T20:08:49Z
 verify:filinq:2060:d629df5c	GREEN 2060,2062-2066,2068; RED 2061 (deep-link route test); CONFLICT 2067 (register files)	session-20261113T175327-6e4e7f28	2026-11-13T20:08:48Z
 build:filinq:extraction-model-filled-fields	partial: PR #2093 (register, shared model call, service, routes, 26 tests; UI 4.1/4.2, docs, hermiq issue left)	session-20261113T192654-ac81692f	2026-11-13T20:09:07Z
+cover:dossiq:069ee2d6mbd37:0c7c4f5d	already done: lib/Service/Term/*.php at 100.0% (483/483) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:09:20Z
+cover:integriq:92114ab0m0593:38e80a9f	already done: lib/Command/*.php at 901/901 lines (100%) at 81441e2b	session-20261113T172349-00278d9d	2026-11-13T20:09:33Z
+build:filinq:zgw-document-bridge	partial: PR #2094 (1.1, 1.2, 2.1, 2.3 done; pick-up, controller, screens left); suite 6443->6450 green	session-20261113T182404-f2c28226	2026-11-13T20:09:16Z
+verify:filinq:2068:b584ad87	7 GREEN (2068,2069,2071,2073-2076), 2 CONFLICT (2070,2072); queue row was truncated after 2076	session-20261113T175400-7ec3993f	2026-11-13T20:09:41Z
+cover:integriq:92114ab0m0593:aae6d66c	already done: lib/Exception/*.php at 54/55 98.2 lines at 81441e2b	session-20261113T172349-00278d9d	2026-11-13T20:09:52Z
+cover:integriq:92114ab0m0593:19badfa5	already done: lib/Outbound/Call/*.php at 670/698 96.0 lines at 81441e2b	session-20261113T172349-00278d9d	2026-11-13T20:09:58Z
+cover:pipelinq:7f9dc8e6m8ce9:fdb25f89	already done: lib/Service/Access at 86/86 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T20:10:15Z
