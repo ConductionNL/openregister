@@ -6763,3 +6763,14 @@ review:openregister:10315:269e7b06	review	openregister	main	10315	sha=269e7b06c1
 verify:dossiq:6441:da6adcc7	verify	dossiq	development	merge	prs=6441@96d50119fa0b3074a9ab86f6cd40d66a15c9c7cf,6442@48990f5b890775c7616ed73b7f4298193fa23fb1	2026-11-13T19:40:22Z
 verify:shillinq:3004:8e0b7472	verify	shillinq	development	merge	prs=3004@0b2be938955fce6d7ebc09529c883913faa5c24a	2026-11-13T19:40:22Z
 merge:buildiq:1561:8ae65843	merge	buildiq	development	development	prs=1561@0c39b37fba2382aa4a500037e87b9baa2e8952d8	2026-11-13T19:40:22Z
+review:openregister:10316:b950c04d	review	openregister	main	10316	sha=b950c04d9c2c9a2daa143ad5bcc146c377ed7084;last_approved=;title=feat(openregister): build modelling-property-index-switch	2026-11-13T19:45:04Z
+review:openregister:10317:531b7b6f	review	openregister	main	10317	sha=531b7b6fa4be6959994c6ac2952598af92aebce2;last_approved=;title=feat(openregister): build platform-comments-entity	2026-11-13T19:45:04Z
+verify:stackiq:1895:78a4ba9c	verify	stackiq	development	merge	prs=1895@c3663e04a77c8e8941c73d169bda79a222e90379	2026-11-13T19:45:04Z
+verify:dossiq:6443:2382f907	verify	dossiq	development	merge	prs=6443@e9b9ace10d1240952e472e56cb6e54a68cddea02,6444@d2390741beba8173e8d59c01e11d3c0cd703bf58	2026-11-13T19:45:04Z
+verify:shillinq:3014:05638130	verify	shillinq	development	merge	prs=3014@d48233634c2056466edb729f998612588eee6f7b	2026-11-13T19:45:04Z
+verify:opencatalogi:2603:7a157e0f	verify	opencatalogi	development	merge	prs=2603@d513a3aa0c4a2b9cdf8e0c5d1e1030be36163c0b	2026-11-13T19:45:04Z
+merge:stackiq:1891:c0606c73	merge	stackiq	development	development	prs=1891@79a7aa80a61fd1bf93099452dcc43189828e364f	2026-11-13T19:45:04Z
+merge:dossiq:6441:da6adcc7	merge	dossiq	development	development	prs=6441@96d50119fa0b3074a9ab86f6cd40d66a15c9c7cf,6442@48990f5b890775c7616ed73b7f4298193fa23fb1	2026-11-13T19:45:04Z
+merge:shillinq:3013:fe552522	merge	shillinq	development	development	prs=3013@d07a47a6659a61e089fff1ae7314c1c4950d0541	2026-11-13T19:45:04Z
+merge:planninq:1152:27e8c71c	merge	planninq	development	development	prs=1152@3e1252f69acd76e050b3027306829a2c57f0a8f7	2026-11-13T19:45:04Z
+gap:opencatalogi:19:4c6ff92f	gap	opencatalogi	development	19	criterion=complexity FAIL (informative, weight 0);row=opencatalogi (31);fix=Split the function over CCN 30 (`lizard -C 30 -w`). portaliq clears with row 6. No score effect.	2026-11-13T19:45:04Z
