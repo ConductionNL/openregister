@@ -2446,3 +2446,22 @@ cover:launchpad:fb10c50fm2ceb:js4829b6aa	cover	launchpad	development	quality/tes
 cover:launchpad:fb10c50fm2ceb:js750ffd0f	cover	launchpad	development	quality/test-coverage-js-750ffd0f	lang=js;dirs=src/components/admin/;focus=uncovered;weight=546;coverage=84.14;target=85.0	2026-11-13T03:14:17Z
 measure:decidiq:20261113h04	measure	decidiq	development	queue/coverage/decidiq.json	why=slices need per-directory coverage	2026-11-13T04:14:03Z
 measure:dossiq:20261113h04	measure	dossiq	development	queue/coverage/dossiq.json	why=slices need per-directory coverage	2026-11-13T01:14:59Z
+verify:dossiq:6269:31f101e3	verify	dossiq	development	merge	prs=6269@6e876f525954526c042f29a72ced4b6e14733081	2026-11-13T04:15:14Z
+verify:hermiq:1653:0af57e33	verify	hermiq	development	merge	prs=1653@10c6db1787307a53bd1a3bac6c8d88eea5316133,1654@34866bac1e94f54d9459f49a8710331f85b818d6,1655@85de2649867977d7a34578031a5c911e402a2640	2026-11-13T04:15:14Z
+verify:shillinq:2861:dcaaee0a	verify	shillinq	development	merge	prs=2861@6e1a326151481f5bc7aab0bf95eb6e93339ab22d	2026-11-13T04:15:14Z
+merge:stackiq:1831:afe0da8e	merge	stackiq	development	development	prs=1831@aee66dfb34c759e7bc015e4533d1b44807318ee8,1706@5ba0e54b3550a536789ec349d1e6b746e42ab4ee,1667@a3f611b561a45d019cb61c62eb97bb6a557d9d71,1694@80a57d10ea21f501a8e13eeebc698c495ba1d4b4;stacks=1706 1667>1694	2026-11-13T04:15:14Z
+merge:shillinq:2853:ca75c46c	merge	shillinq	development	development	prs=2853@02b851f4f60ae2bcb079097c7ec7f739442e51b2,2854@6ec73c80d30d6101dc8a6b402f35d8891a4bd92e,2855@3cf676fea18e23c4e182cf3c6d6ef7fe637cec34	2026-11-13T04:15:14Z
+cover:buildiq:9930949bm5861:0d8702e3	cover	buildiq	development	quality/test-coverage-0d8702e3	lang=php;dirs=lib/Resources/template/;focus=uncovered;weight=1248;coverage=80.56;target=85.0	2026-09-13T23:28:32Z
+cover:buildiq:9930949bm5861:38e80a9f	cover	buildiq	development	quality/test-coverage-38e80a9f	lang=php;dirs=lib/Command/*.php;focus=thin;weight=1096;coverage=80.56;target=85.0	2026-09-13T23:31:04Z
+cover:buildiq:9930949bm5861:aae6d66c	cover	buildiq	development	quality/test-coverage-aae6d66c	lang=php;dirs=lib/Exception/*.php;focus=thin;weight=1031;coverage=80.56;target=85.0	2026-09-13T23:32:09Z
+cover:buildiq:9930949bm5861:9d3a1784	cover	buildiq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=thin;weight=856;coverage=80.56;target=85.0	2026-09-13T23:35:04Z
+cover:buildiq:9930949bm5861:d33a91b0	cover	buildiq	development	quality/test-coverage-d33a91b0	lang=php;dirs=lib/Service/Copilot/;focus=thin;weight=751;coverage=80.56;target=85.0	2026-09-13T23:36:49Z
+cover:buildiq:9930949bm5861:d528dcf0	cover	buildiq	development	quality/test-coverage-d528dcf0	lang=php;dirs=lib/Dashboard/*.php;focus=thin;weight=691;coverage=80.56;target=85.0	2026-09-13T23:37:49Z
+cover:buildiq:9930949bm5861:6891a8ac	cover	buildiq	development	quality/test-coverage-6891a8ac	lang=php;dirs=lib/Service/Dashboard/;focus=thin;weight=564;coverage=80.56;target=85.0	2026-09-13T23:39:56Z
+cover:buildiq:9930949bm5861:be0dcca9	cover	buildiq	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=402;coverage=80.56;target=85.0	2026-09-13T23:42:38Z
+cover:buildiq:9930949bm5861:568ec52a	cover	buildiq	development	quality/test-coverage-568ec52a	lang=php;dirs=lib/Lifecycle/*.php;focus=thin;weight=270;coverage=80.56;target=85.0	2026-09-13T23:44:50Z
+cover:buildiq:9930949bm5861:390adfb9	cover	buildiq	development	quality/test-coverage-390adfb9	lang=php;dirs=lib/*.php;focus=thin;weight=101;coverage=80.56;target=85.0	2026-09-13T23:47:39Z
+cover:buildiq:9930949bm5861:js0be8c659	cover	buildiq	development	quality/test-coverage-js-0be8c659	lang=js;dirs=src/modals/*;focus=uncovered;weight=333;coverage=84.68;target=85.0	2026-09-14T03:50:59Z
+cover:buildiq:9930949bm5861:js10b588fb	cover	buildiq	development	quality/test-coverage-js-10b588fb	lang=js;dirs=src/components/applicationDetail/;focus=uncovered;weight=120;coverage=84.68;target=85.0	2026-09-14T03:54:32Z
+cover:pipelinq:f67520ecmc4ba:81b1241f	cover	pipelinq	development	quality/test-coverage-81b1241f	lang=php;dirs=lib/Portal/*.php;focus=thin;weight=1576;coverage=83.33;target=85.0	2026-11-13T02:09:21Z
+measure:keepiq:20261113h04	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-13T04:15:14Z
