@@ -1650,3 +1650,4 @@ verify:shillinq:2822:223401dd	8/8 GREEN (tests-only; 9080 tests, 0 new failures)
 cover:integriq:9b0f5894md8cd:acd8f15d	already done: open PR #3433 (branch -1) lifts lib/Outbound/Identity/ 87.5% -> 95.5% on development 8420a0dd (target 90); rest is native DNS wrapper + edge lines; no new PR	session-20261113T015003-f68021a4	2026-11-13T02:28:00Z
 verify:hermiq:1643:c2225292	GREEN #1643 (coverage figures only, no new failures)	session-20261113T015002-81190344	2026-11-13T02:28:05Z
 cover:keepiq:d76c2121m88ca:aae6d66c	already done: every executable line in lib/Exception has direct tests (11 classes, via merged -1 branch); the other 14 are empty marker classes with no lines to cover; no PR	session-20261113T021704-7f11f0d9	2026-11-13T02:28:13Z
+cover:keepiq:d76c2121m88ca:34763eb4	already done: lib/Middleware at 161/162 statements (99.4%) on development; branch -1 merged	session-20261112T231640-f6dda86c	2026-11-13T02:28:19Z
