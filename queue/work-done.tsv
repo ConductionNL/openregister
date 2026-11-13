@@ -2257,3 +2257,4 @@ merge:planninq:1132:47f631ad	stale	feeder	2026-11-13T04:45:10Z
 merge:buildiq:1477:04fd79b7	stale	feeder	2026-11-13T04:44:02Z
 merge:planninq:1132:47f631ad	stale	feeder	2026-11-13T04:44:02Z
 cover:dossiq:f8a113c5mac88:67b69054	already done: lib/Service/Conversation/ at 97.6% lines (366/375) on development f7e4ebf08; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T04:46:09Z
+cover:filinq:7a9ef677mc744:efa2a923	already covered: earlier batches quality/test-coverage-efa2a923-1/-2 exist; every lib/EventListener class is exercised by dedicated or wiring tests; no PR	session-20261113T024654-6600dc41	2026-11-13T04:46:18Z
