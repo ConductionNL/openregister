@@ -3907,3 +3907,7 @@ Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
+Service/Authorization/AddedGrants.php,,Service,,,,,Core
+Service/Authorization/GrantCeiling.php,,Service,,,,,Core
+Service/Authorization/GrantedRight.php,,Service,,,,,Core

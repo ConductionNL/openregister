@@ -35,6 +35,10 @@ use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\GrantExceedsGranterException;
+use OCA\OpenRegister\Service\Authorization\AddedGrants;
+use OCA\OpenRegister\Service\Authorization\GrantCeiling;
+use OCA\OpenRegister\Service\Authorization\GrantedRight;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -1599,7 +1603,8 @@ class SchemasController extends Controller {
 	private function updateBodyRefusal(Schema $existing, array $data): ?JSONResponse {
 		return ($this->orphanCleanupRefusal(schema: $existing, document: $data)
 			?? $this->validateSchemaBody(data: $data)
-			?? $this->crossOrganisationRefusal(old: $existing->getAuthorization(), document: $data));
+			?? $this->crossOrganisationRefusal(old: $existing->getAuthorization(), document: $data)
+			?? $this->grantCeilingRefusal(existing: $existing, document: $data));
 	}//end updateBodyRefusal()
 
 	/**
@@ -2370,7 +2375,8 @@ class SchemasController extends Controller {
 	}//end uploadedDocument()
 
 	/**
-	 * Why an uploaded document is refused: a cross-organisation grant, an unbounded external grant, or orphan cleanup.
+	 * Why an uploaded document is refused: a cross-organisation grant, an unbounded external grant, orphan cleanup,
+	 * or, over an existing schema, a grant beyond the uploader's own rights.
 	 *
 	 * @param Schema               $schema   The schema the upload writes.
 	 * @param array<string, mixed> $document The uploaded document, authorization as stored.
@@ -2379,9 +2385,15 @@ class SchemasController extends Controller {
 	 */
 	private function uploadRefusal(Schema $schema, array $document): ?JSONResponse {
 		$old = $schema->getAuthorization();
-		return ($this->crossOrganisationRefusal(old: $old, document: $document)
+		$refusal = ($this->crossOrganisationRefusal(old: $old, document: $document)
 			?? $this->externalGrantRefusal(data: $document)
 			?? $this->orphanCleanupRefusal(schema: $schema, document: $document));
+		if ($refusal !== null || $schema->getId() === null) {
+			// A new schema has no stored rights to hold a grant against; schema create is not judged here yet.
+			return $refusal;
+		}
+
+		return $this->grantCeilingRefusal(existing: $schema, document: $document);
 	}//end uploadRefusal()
 
 	/**
@@ -2462,6 +2474,49 @@ class SchemasController extends Controller {
 			statusCode: Http::STATUS_FORBIDDEN
 		);
 	}//end crossOrganisationRefusal()
+
+	/**
+	 * Refuse an authorization edit that gives an action the editor does not hold.
+	 *
+	 * Only what the edit adds is judged, against the schema as stored, so a
+	 * manager can still save a schema whose block already names rights they
+	 * lack. Nothing is stored on refusal.
+	 *
+	 * @param Schema               $existing The schema as stored.
+	 * @param array<string, mixed> $document The incoming schema, authorization as stored.
+	 *
+	 * @return JSONResponse|null A 403 naming every excess right, or null when the write may go on.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	private function grantCeilingRefusal(Schema $existing, array $document): ?JSONResponse {
+		if (array_key_exists('authorization', $document) === false) {
+			return null;
+		}
+
+		$grants = array_map(
+			static fn (string $action): GrantedRight => new GrantedRight(schema: $existing, action: $action),
+			(new AddedGrants())->between(old: $existing->getAuthorization(), new: $document['authorization'])
+		);
+		if ($grants === [] || $this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		$granter = $this->container->get(\OCP\IUserSession::class)->getUser();
+		$ceiling = $this->container->get(GrantCeiling::class);
+		try {
+			if ($granter === null || $ceiling instanceof GrantCeiling === false) {
+				// Nobody to hold the rights, or no check to ask: refused, never stored on a guess.
+				throw new GrantExceedsGranterException(excess: array_map(static fn (GrantedRight $grant): array => $grant->named(), $grants));
+			}
+
+			$ceiling->assertWithin(granter: $granter, grants: $grants);
+		} catch (GrantExceedsGranterException $refusal) {
+			return new JSONResponse(data: $refusal->body(), statusCode: Http::STATUS_FORBIDDEN);
+		}
+
+		return null;
+	}//end grantCeilingRefusal()
 
 	/**
 	 * Refuse a schema write by a non-administrator that sets or changes `orphanCleanup`.
