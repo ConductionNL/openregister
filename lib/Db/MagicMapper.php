@@ -3997,6 +3997,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$quotedTable = $connection->getDatabasePlatform()->quoteIdentifier($fullTableName);
 			$connection->executeStatement('DROP TABLE IF EXISTS ' . $quotedTable);
 
+			// The request-scoped memos remember only that a table EXISTS, so a
+			// drop must take this one out of them: a later probe in the same
+			// request must ask the database again, not answer "exists" for a
+			// table that is gone (object-write-at-instance-floor task 5).
+			unset($this->tableExistsMemo[$tableName]);
+			$this->liveMagicTablesMemo = null;
+
 			// A table recreated under this name must be inspected afresh.
 			$this->getMetadataColumnHealer()->forget(tableName: $tableName);
 
