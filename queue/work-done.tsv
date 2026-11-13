@@ -4549,3 +4549,4 @@ verify:pipelinq:3721:555d1541	9 PRs: 3741/3746/3747 GREEN, 3721 BLOCK (copy/dele
 cover:pipelinq:7f9dc8e6m84dd:jsde685378	PR #3753: portalRequestsFlow spec (5 tests); src/portal/views stmt 89.89->93.26%; suite 4416->4421 green	session-20261113T044737-f37de8e3	2026-11-13T11:33:55Z
 cover:pipelinq:7f9dc8e6m84dd:168f7791	already done: lib/Dossiq/*.php at 100% lines (26/26) on development 7bcef73d	session-20261113T044737-f37de8e3	2026-11-13T11:34:06Z
 review:openregister:10127:a255da03	APPROVE: tests only, suites green; Controller errors inherited from main	session-20261113T051703-1b54bfba	2026-11-13T11:34:05Z
+cover:learniq:e6498dddmf689:7dbbf814	PR #2463: 6 tests + missing @uses; lib/Service/CoursePackage 91.1->97.9%, suite 6107 (1 inherited fail)	session-20261113T064519-30004ad4	2026-11-13T11:34:09Z
