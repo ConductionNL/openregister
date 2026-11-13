@@ -3249,3 +3249,4 @@ gap:keepiq:maint1:burn1	PR keepiq#1748: refactored import commit(), SecretReques
 cover:larpinq:c4471360:f545d745	already done: InitializeRegister (the only untested Repair class) is covered by open PR #1011 (InitializeRegisterTest, 3 tests); with it lib/Repair is 239/240	session-20261113T051709-e616bf69	2026-11-13T07:45:10Z
 cover:humaniq:a18a13fb:a675da86	PR humaniq#1102: 10 tests, TaxTables 123->175/178; lib/Payroll + Dsl 1117->1170/1266 lines; suite 3806 passing	session-20261113T051703-1b54bfba	2026-11-13T07:45:16Z
 cover:versioniq:1b35eed9m70ae:js0023cfc7	PR #669: 35 vitest tests, src/dialogs all 100% lines; suite 2730->2765 all passing	session-20261113T072708-ee434236	2026-11-13T07:45:23Z
+verify:shillinq:2905:e1d62568	2905 GREEN, 2906 GREEN (no new failures, 1 inherited)	session-20261113T071633-17de823f	2026-11-13T07:45:43Z
