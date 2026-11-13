@@ -4400,3 +4400,5 @@ filinq	1976	b005352fd4bd23748b3f92a79f3dd53ee789e8e6	GREEN	worker-46	tree of 2 t
 stackiq	1781	566ac7065b53ac03970daece958be1bcea8f2039	REVERIFY	worker-23	merged development in, kept both @uses lines in OrganisationUserWorkflowTest; 3 touched tests green (54 tests); new head bd8e0ef5f023a4b8339a4104e8b9b00e456b6989, verify it
 filinq	1977	ec66f1799c235d1b05de6cb285622b24f50d7327	GREEN	worker-46	tree of 2 tests-only PRs: 5405 tests run, baseline 5318 OK (6 skipped), 0 new failures
 integriq	3420	fe1612e83245a39e340bee46b88b107862880aea	GREEN	worker-34	tree of 5 test-only PRs: 7147 tests vs baseline 7113; same 2 network errors + 1 timing golden failure as development; no new failures
+integriq	3421	1a0b15750809cc5eb44559127b3dc86a5cb81e4c	GREEN	worker-34	tree of 5 test-only PRs: 7147 tests vs baseline 7113; same 2 network errors + 1 timing golden failure as development; no new failures
+integriq	3422	3e9b45e9cef2c3e9a31f5db536dfebcebeb7605d	GREEN	worker-34	tree of 5 test-only PRs: 7147 tests vs baseline 7113; same 2 network errors + 1 timing golden failure as development; no new failures
