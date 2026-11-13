@@ -6655,3 +6655,4 @@ cover:openregister:7350e3efma401:4c23b60d	PR #10323: ContextChatSubmissionListen
 verify:portaliq:2461:17f22e3e	2 GREEN (#2461, #2462), tests only, suite 4925 OK	session-20261113T202603-6c9ef72f	2026-11-13T20:28:20Z
 cover:dossiq:069ee2d6mbd37:b8cc4419	already done: lib/Service/Sharing 627/629 statements (99.7%) on development	session-20261113T175332-5effc865	2026-11-13T20:28:41Z
 verify:filinq:2054:44f372af	3 GREEN (2054,2092,2097), 6 CONFLICT (2090,2091,2093-2096) in tree; unit 6520 ok	session-20261113T202611-3b383b96	2026-11-13T20:28:54Z
+cover:dossiq:069ee2d6mbd37:74111b6d	already done: lib/Service/Status 503/504 statements (99.8%) on development	session-20261113T175332-5effc865	2026-11-13T20:29:08Z
