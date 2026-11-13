@@ -6320,3 +6320,95 @@ verify:portaliq:2443:9b9e7370	verify	portaliq	development	merge	prs=2443@4322f3a
 verify:opencatalogi:2595:996caeef	verify	opencatalogi	development	merge	prs=2595@21d2431c12bf08539e01c946dd91232d3b1d2499,2596@4e73b518b32ea98fa4265bfaf87846400c5d2d6e,2597@0bad17de449dbb981d2b98719de1e80cabe10d75	2026-11-13T18:35:22Z
 merge:dossiq:6431:3ab8f4db	merge	dossiq	development	development	prs=6431@9b1475ac5754de43d361792f626d012fdea1a045,6432@daec3186b606c25251244ed40367f505e0b5ba24,6433@857fa215a2cc1800ccdceff4c789dc163db885db	2026-11-13T18:35:22Z
 merge:portaliq:2427:bb1ed905	merge	portaliq	development	development	prs=2427@d256286fe99dd5624de69e220db457e2ecc1a78d	2026-11-13T18:35:22Z
+review:openregister:10291:453c9de0	review	openregister	main	10291	sha=453c9de06366dbe95fb8cd54fa8ae0affd02fd11;last_approved=;title=test(openregister): declare used classes so report and GraphQL coverage counts	2026-11-13T18:40:22Z
+review:openregister:10292:0fdfdd20	review	openregister	main	10292	sha=0fdfdd20872a9c8688e1c0b7126a261d42ec45fb;last_approved=;title=test(openregister): cover flow run, organisation settings and objects list views	2026-11-13T18:40:22Z
+verify:learniq:2478:807d796d	verify	learniq	development	merge	prs=2478@7c0f33c34157d1e7b8c0a49d0c12debe8b4e6b06	2026-11-13T18:40:22Z
+verify:shillinq:2960:c07561a7	verify	shillinq	development	merge	prs=2960@3316ddbe1004a6156397312c106098649590cd7f,2961@22d67e583d26fc473f0f5b5ff6dfabacbe515e69,2962@3c4746323d3c973546f6971be41ed955a845703e,2963@ff530f4070c7e199518538756961f2e4829a668a	2026-11-13T18:40:22Z
+verify:portaliq:2423:58679479	verify	portaliq	development	merge	prs=2423@53e7632237b8537d1e74566831a9d303cdc87870	2026-11-13T18:40:22Z
+verify:keepiq:1764:29903ce6	verify	keepiq	development	merge	prs=1764@0d24aa534c1d77f030b5af9c78ae243bd4dd6789,1765@82f3934464652febe5744065e8b3d4c014b5a9a9	2026-11-13T18:40:22Z
+verify:opencatalogi:2598:168a9315	verify	opencatalogi	development	merge	prs=2598@ad8fac967470e61839e043913caf3d058685bff1	2026-11-13T18:40:22Z
+merge:learniq:2473:79c4696c	merge	learniq	development	development	prs=2473@5526131b50a1b9b988301e1b2362e32ceb0fddb7,2474@b111dcec9b633cfd4bcedb913e6cde0b71d1692b,2475@65ecf2ebe8555e558ca01c3631c5571123f2a8f8,2476@85ad0fe1e366d50ca4682e82924fb3ff30e9926c,2477@353cf067921d82016b61af7a6ca620bf9e3e6d82	2026-11-13T18:40:22Z
+merge:pipelinq:3769:998edfba	merge	pipelinq	development	development	prs=3769@a01a92d97b5dde806e65818d90d0e9b21de05363,3770@a16a86140e199739ea7b2b82f170b67950fd29f4,3771@dc8a207a97e2a6468d64acef75f988ac9ed8c4ee	2026-11-13T18:40:22Z
+merge:integriq:3343:19816601	merge	integriq	development	development	prs=3343@ebd21951a0b504432e6a4687571acdd083d6ed36,3435@5be5ccc63a8f82c6ae58408f3cd0cd63796fe005,3466@5930a910f81986d6cb981e3d9591a9e4551431d8,3472@17ed9285e12378bb2e64fc2f7698c98eebf66780,3524@650f8d30b9ec8230fdf5b2228b9fd4f2101c68c5,3526@b3a0637f0165892c648864ead5966c03069eb472	2026-11-13T18:40:22Z
+merge:shillinq:2954:e40b4935	merge	shillinq	development	development	prs=2954@16c88f4e568036c1aeb96e097f8ff189e7321190	2026-11-13T18:40:22Z
+merge:portaliq:2443:9b9e7370	merge	portaliq	development	development	prs=2443@4322f3ac1ef3423b13baca3b34799b91c46b8460	2026-11-13T18:40:22Z
+merge:keepiq:1763:3a29f138	merge	keepiq	development	development	prs=1763@3e29d6cdf33f4d84e4e3c2c63eeab75a51a624ad	2026-11-13T18:40:22Z
+merge:larpinq:1012:df5d9396	merge	larpinq	development	development	prs=1012@ef4abe687e638b6310d495b0a7ec7304d4e22d7a,1024@b09265c2d7813f7eb698b72638c136147f71c7e5,1030@5bab73d02ae1857746bf66732941e60cc8405379	2026-11-13T18:40:22Z
+cover:learniq:e6498dddm0533:6bb33e5f	cover	learniq	development	quality/test-coverage-6bb33e5f	lang=php;dirs=lib/Bpv/*.php;focus=thin;weight=81;coverage=91.2;target=95.0	2026-11-13T14:51:30Z
+cover:dossiq:069ee2d6m2deb:6fbba20d	cover	dossiq	development	quality/test-coverage-6fbba20d	lang=php;dirs=lib/Service/Starter/*.php;focus=thin;weight=3792;coverage=90.68;target=95.0	2026-08-15T13:31:42Z
+cover:dossiq:069ee2d6m2deb:8b886c00	cover	dossiq	development	quality/test-coverage-8b886c00	lang=php;dirs=lib/Service/People/*.php;focus=thin;weight=3671;coverage=90.68;target=95.0	2026-08-15T13:31:42Z
+cover:dossiq:069ee2d6m2deb:c17c6e8e	cover	dossiq	development	quality/test-coverage-c17c6e8e	lang=php;dirs=lib/Service/Kcc/*.php;focus=thin;weight=3339;coverage=90.68;target=95.0	2026-08-15T13:31:42Z
+cover:dossiq:069ee2d6m2deb:59f569b2	cover	dossiq	development	quality/test-coverage-59f569b2	lang=php;dirs=lib/Service/Settings/*.php;focus=thin;weight=3131;coverage=90.68;target=95.0	2026-08-15T13:31:42Z
+cover:dossiq:069ee2d6m2deb:7593a315	cover	dossiq	development	quality/test-coverage-7593a315	lang=php;dirs=lib/Service/Relation/*.php;focus=thin;weight=3036;coverage=90.68;target=95.0	2026-08-15T13:31:42Z
+cover:dossiq:069ee2d6m2deb:3ee9dda7	cover	dossiq	development	quality/test-coverage-3ee9dda7	lang=php;dirs=lib/Service/Custody/*.php;focus=thin;weight=2592;coverage=90.68;target=95.0	2026-08-15T13:38:30Z
+cover:dossiq:069ee2d6m2deb:6ecc72bb	cover	dossiq	development	quality/test-coverage-6ecc72bb	lang=php;dirs=lib/Service/Workflow/*.php;focus=thin;weight=2585;coverage=90.68;target=95.0	2026-08-15T13:38:37Z
+cover:dossiq:069ee2d6m2deb:0c7c4f5d	cover	dossiq	development	quality/test-coverage-0c7c4f5d	lang=php;dirs=lib/Service/Term/*.php;focus=thin;weight=2519;coverage=90.68;target=95.0	2026-08-15T13:39:43Z
+cover:dossiq:069ee2d6m2deb:28cccfd9	cover	dossiq	development	quality/test-coverage-28cccfd9	lang=php;dirs=lib/Repair/Support/;focus=thin;weight=2408;coverage=90.68;target=95.0	2026-08-15T13:41:34Z
+cover:dossiq:069ee2d6m2deb:74111b6d	cover	dossiq	development	quality/test-coverage-74111b6d	lang=php;dirs=lib/Service/Status/;focus=thin;weight=2350;coverage=90.68;target=95.0	2026-08-15T13:42:32Z
+cover:dossiq:069ee2d6m2deb:eb8f684c	cover	dossiq	development	quality/test-coverage-eb8f684c	lang=php;dirs=lib/Service/Reporting/;focus=thin;weight=2151;coverage=90.68;target=95.0	2026-08-15T13:45:51Z
+cover:dossiq:069ee2d6m2deb:f0c02922	cover	dossiq	development	quality/test-coverage-f0c02922	lang=php;dirs=lib/Service/External/;focus=thin;weight=2148;coverage=90.68;target=95.0	2026-08-15T13:45:54Z
+cover:dossiq:069ee2d6m2deb:c97e6ec3	cover	dossiq	development	quality/test-coverage-c97e6ec3	lang=php;dirs=lib/Service/Queue/Source/;focus=thin;weight=1948;coverage=90.68;target=95.0	2026-08-15T13:49:14Z
+cover:hermiq:065f1631md84f:e76da670	cover	hermiq	development	quality/test-coverage-e76da670	lang=php;dirs=lib/Service/Agent/,lib/Service/Assistant/,lib/Service/Chat/,lib/Service/Graph/,lib/Service/Intake/,lib/Service/NcNative/,lib/Service/Schedule/,lib/Service/ToolOversight/,lib/Service/Workspace/;focus=uncovered;weight=1020;coverage=91.32;target=95.0	2026-11-13T14:43:07Z
+cover:hermiq:065f1631md84f:7927b05b	cover	hermiq	development	quality/test-coverage-7927b05b	lang=php;dirs=lib/Service/Llm/*.php;focus=thin;weight=6339;coverage=91.32;target=95.0	2026-11-13T14:10:07Z
+cover:hermiq:065f1631md84f:34a55f48	cover	hermiq	development	quality/test-coverage-34a55f48	lang=php;dirs=lib/Service/Workspace/*.php;focus=thin;weight=4134;coverage=91.32;target=95.0	2026-11-13T14:10:07Z
+cover:hermiq:065f1631md84f:06285390	cover	hermiq	development	quality/test-coverage-06285390	lang=php;dirs=lib/Service/NcNative/*.php;focus=thin;weight=3533;coverage=91.32;target=95.0	2026-11-13T14:10:07Z
+cover:hermiq:065f1631md84f:a42697be	cover	hermiq	development	quality/test-coverage-a42697be	lang=php;dirs=lib/Service/Agent/*.php;focus=thin;weight=3032;coverage=91.32;target=95.0	2026-11-13T14:10:07Z
+cover:hermiq:065f1631md84f:be0dcca9	cover	hermiq	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=2806;coverage=91.32;target=95.0	2026-11-13T14:13:21Z
+cover:hermiq:065f1631md84f:93e5f5a4	cover	hermiq	development	quality/test-coverage-93e5f5a4	lang=php;dirs=lib/Service/AiFeature/*.php;focus=thin;weight=2771;coverage=91.32;target=95.0	2026-11-13T14:13:56Z
+cover:hermiq:065f1631md84f:0f859653	cover	hermiq	development	quality/test-coverage-0f859653	lang=php;dirs=lib/Flow/*.php;focus=thin;weight=2417;coverage=91.32;target=95.0	2026-11-13T14:19:50Z
+cover:hermiq:065f1631md84f:1191da39	cover	hermiq	development	quality/test-coverage-1191da39	lang=php;dirs=lib/Service/WebResearch/;focus=thin;weight=1606;coverage=91.32;target=95.0	2026-11-13T14:33:21Z
+cover:hermiq:065f1631md84f:17d367ab	cover	hermiq	development	quality/test-coverage-17d367ab	lang=php;dirs=lib/Controller/Settings/;focus=thin;weight=1395;coverage=91.32;target=95.0	2026-11-13T14:36:52Z
+cover:hermiq:065f1631md84f:3a63cc27	cover	hermiq	development	quality/test-coverage-3a63cc27	lang=php;dirs=lib/Service/ReportSimilarity/;focus=thin;weight=1287;coverage=91.32;target=95.0	2026-11-13T14:38:40Z
+cover:hermiq:065f1631md84f:9d3a1784	cover	hermiq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=thin;weight=1104;coverage=91.32;target=95.0	2026-11-13T14:41:43Z
+cover:hermiq:065f1631md84f:js0be8c659	cover	hermiq	development	quality/test-coverage-js-0be8c659	lang=js;dirs=src/modals/*;focus=uncovered;weight=492;coverage=91.91;target=95.0	2026-11-13T15:27:19Z
+cover:hermiq:065f1631md84f:js77cf3af4	cover	hermiq	development	quality/test-coverage-js-77cf3af4	lang=js;dirs=src/widgets/*;focus=uncovered;weight=378;coverage=91.91;target=95.0	2026-11-13T15:29:13Z
+cover:hermiq:065f1631md84f:js4829b6aa	cover	hermiq	development	quality/test-coverage-js-4829b6aa	lang=js;dirs=src/views/*;focus=uncovered;weight=348;coverage=91.91;target=95.0	2026-11-13T15:29:43Z
+cover:hermiq:065f1631md84f:js06645759	cover	hermiq	development	quality/test-coverage-js-06645759	lang=js;dirs=src/components/*;focus=uncovered;weight=102;coverage=91.91;target=95.0	2026-11-13T15:33:49Z
+cover:integriq:92114ab0mb37a:f191f1e9	cover	integriq	development	quality/test-coverage-f191f1e9	lang=php;dirs=lib/Service/Lti/*.php;focus=thin;weight=5886;coverage=93.54;target=95.0	2026-10-14T16:23:21Z
+cover:integriq:92114ab0mb37a:102ac6fb	cover	integriq	development	quality/test-coverage-102ac6fb	lang=php;dirs=lib/Service/Security/*.php;focus=thin;weight=5463;coverage=93.54;target=95.0	2026-10-14T16:23:21Z
+cover:integriq:92114ab0mb37a:9d3a1784	cover	integriq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=thin;weight=5361;coverage=93.54;target=95.0	2026-10-14T16:23:21Z
+cover:integriq:92114ab0mb37a:36cf9f12	cover	integriq	development	quality/test-coverage-36cf9f12	lang=php;dirs=lib/Service/Exchange/*.php;focus=thin;weight=4355;coverage=93.54;target=95.0	2026-10-14T16:23:21Z
+cover:integriq:92114ab0mb37a:2461af45	cover	integriq	development	quality/test-coverage-2461af45	lang=php;dirs=lib/Auth/Idp/*.php;focus=thin;weight=3748;coverage=93.54;target=95.0	2026-10-14T16:23:21Z
+cover:shillinq:05639debm7b6b:e587f75a	cover	shillinq	development	quality/test-coverage-e587f75a	lang=php;dirs=lib/PaymentRun/*.php;focus=thin;weight=2025;coverage=92.34;target=95.0	2026-11-13T15:27:37Z
+cover:shillinq:05639debm7b6b:d47bb994	cover	shillinq	development	quality/test-coverage-d47bb994	lang=php;dirs=lib/Reporting/*.php;focus=thin;weight=1667;coverage=92.34;target=95.0	2026-11-13T15:33:35Z
+cover:shillinq:05639debm7b6b:e763166c	cover	shillinq	development	quality/test-coverage-e763166c	lang=php;dirs=lib/Service/PublicSector/;focus=thin;weight=1573;coverage=92.34;target=95.0	2026-11-13T15:35:09Z
+cover:shillinq:05639debm7b6b:6a548709	cover	shillinq	development	quality/test-coverage-6a548709	lang=php;dirs=lib/Service/Migration/;focus=thin;weight=1489;coverage=92.34;target=95.0	2026-11-13T15:36:33Z
+cover:shillinq:05639debm7b6b:81b1241f	cover	shillinq	development	quality/test-coverage-81b1241f	lang=php;dirs=lib/Portal/*.php;focus=thin;weight=1425;coverage=92.34;target=95.0	2026-11-13T15:37:37Z
+cover:shillinq:05639debm7b6b:dc834159	cover	shillinq	development	quality/test-coverage-dc834159	lang=php;dirs=lib/Service/External/Digipoort/,lib/Service/External/Ib47/,lib/Service/External/Kvk/,lib/Service/External/Mollie/,lib/Service/External/RvO/;focus=thin;weight=1366;coverage=92.34;target=95.0	2026-11-13T15:38:36Z
+cover:shillinq:05639debm7b6b:a215617b	cover	shillinq	development	quality/test-coverage-a215617b	lang=php;dirs=lib/Integration/*.php;focus=thin;weight=1327;coverage=92.34;target=95.0	2026-11-13T15:39:15Z
+cover:shillinq:05639debm7b6b:f2f5cba0	cover	shillinq	development	quality/test-coverage-f2f5cba0	lang=php;dirs=lib/Service/Payment/;focus=thin;weight=1310;coverage=92.34;target=95.0	2026-11-13T15:39:32Z
+cover:decidiq:a5f973bbm5a4d:34f5c300	cover	decidiq	development	quality/test-coverage-34f5c300	lang=php;dirs=lib/Service/*.php;focus=uncovered;weight=5097;coverage=92.41;target=95.0	2026-11-13T15:15:34Z
+cover:decidiq:a5f973bbm5a4d:60c2c265	cover	decidiq	development	quality/test-coverage-60c2c265	lang=php;dirs=lib/Controller/*.php;focus=uncovered;weight=429;coverage=92.41;target=95.0	2026-11-13T15:58:25Z
+cover:decidiq:a5f973bbm5a4d:1b97f731	cover	decidiq	development	quality/test-coverage-1b97f731	lang=php;dirs=lib/Listener/*.php;focus=uncovered;weight=96;coverage=92.41;target=95.0	2026-11-13T16:03:58Z
+cover:decidiq:a5f973bbm5a4d:f545d745	cover	decidiq	development	quality/test-coverage-f545d745	lang=php;dirs=lib/Repair/*.php;focus=thin;weight=3892;coverage=92.41;target=95.0	2026-11-13T15:15:34Z
+cover:decidiq:a5f973bbm5a4d:9d3a1784	cover	decidiq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=thin;weight=2398;coverage=92.41;target=95.0	2026-11-13T15:25:36Z
+cover:decidiq:a5f973bbm5a4d:e372e6ff	cover	decidiq	development	quality/test-coverage-e372e6ff	lang=php;dirs=lib/Event/*.php;focus=thin;weight=2355;coverage=92.41;target=95.0	2026-11-13T15:26:19Z
+cover:decidiq:a5f973bbm5a4d:be0dcca9	cover	decidiq	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=2011;coverage=92.41;target=95.0	2026-11-13T15:32:03Z
+cover:decidiq:a5f973bbm5a4d:58192586	cover	decidiq	development	quality/test-coverage-58192586	lang=php;dirs=lib/Service/Records/;focus=thin;weight=1562;coverage=92.41;target=95.0	2026-11-13T15:39:32Z
+cover:portaliq:b60f3b81m4ccb:34f5c300	cover	portaliq	development	quality/test-coverage-34f5c300	lang=php;dirs=lib/Service/*.php;focus=uncovered;weight=1440;coverage=94.91;target=95.0	2026-11-13T18:11:35Z
+cover:portaliq:b60f3b81m4ccb:1b97f731	cover	portaliq	development	quality/test-coverage-1b97f731	lang=php;dirs=lib/Listener/*.php;focus=uncovered;weight=1035;coverage=94.91;target=95.0	2026-11-13T18:18:20Z
+cover:portaliq:b60f3b81m4ccb:f545d745	cover	portaliq	development	quality/test-coverage-f545d745	lang=php;dirs=lib/Repair/*.php;focus=uncovered;weight=267;coverage=94.91;target=95.0	2026-11-13T18:31:08Z
+cover:portaliq:b60f3b81m4ccb:018cb40a	cover	portaliq	development	quality/test-coverage-018cb40a	lang=php;dirs=lib/Contribution/*.php;focus=uncovered;weight=168;coverage=94.91;target=95.0	2026-11-13T18:32:47Z
+cover:keepiq:c967a31fm00c6:2c3e981f	cover	keepiq	development	quality/test-coverage-2c3e981f	lang=php;dirs=lib/Service/ShareSync/;focus=thin;weight=931;coverage=92.04;target=95.0	2026-11-13T15:27:54Z
+cover:keepiq:c967a31fm00c6:a4b15ae4	cover	keepiq	development	quality/test-coverage-a4b15ae4	lang=php;dirs=lib/Event/Audit/;focus=thin;weight=879;coverage=92.04;target=95.0	2026-11-13T15:28:46Z
+cover:keepiq:c967a31fm00c6:0d67c1f3	cover	keepiq	development	quality/test-coverage-0d67c1f3	lang=php;dirs=lib/Service/Siem/;focus=thin;weight=858;coverage=92.04;target=95.0	2026-11-13T15:29:07Z
+cover:keepiq:c967a31fm00c6:38e80a9f	cover	keepiq	development	quality/test-coverage-38e80a9f	lang=php;dirs=lib/Command/*.php;focus=thin;weight=729;coverage=92.04;target=95.0	2026-11-13T15:31:16Z
+cover:keepiq:c967a31fm00c6:be0dcca9	cover	keepiq	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=714;coverage=92.04;target=95.0	2026-11-13T15:31:31Z
+cover:keepiq:c967a31fm00c6:f91e7417	cover	keepiq	development	quality/test-coverage-f91e7417	lang=php;dirs=lib/Service/Connection/;focus=thin;weight=685;coverage=92.04;target=95.0	2026-11-13T15:32:00Z
+cover:keepiq:c967a31fm00c6:e372e6ff	cover	keepiq	development	quality/test-coverage-e372e6ff	lang=php;dirs=lib/Event/*.php;focus=thin;weight=599;coverage=92.04;target=95.0	2026-11-13T15:33:26Z
+cover:keepiq:c967a31fm00c6:59826f43	cover	keepiq	development	quality/test-coverage-59826f43	lang=php;dirs=lib/Settings/*.php;focus=thin;weight=492;coverage=92.04;target=95.0	2026-11-13T15:35:13Z
+cover:keepiq:c967a31fm00c6:05630945	cover	keepiq	development	quality/test-coverage-05630945	lang=php;dirs=lib/Middleware/Support/;focus=thin;weight=364;coverage=92.04;target=95.0	2026-11-13T15:37:21Z
+cover:opencatalogi:fc83bfb1:be0dcca9	cover	opencatalogi	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=888;coverage=94.11;target=95.0	2026-11-13T17:32:50Z
+cover:opencatalogi:fc83bfb1:f91e7417	cover	opencatalogi	development	quality/test-coverage-f91e7417	lang=php;dirs=lib/Service/Connection/;focus=thin;weight=842;coverage=94.11;target=95.0	2026-11-13T17:33:36Z
+cover:opencatalogi:fc83bfb1:9d3a1784	cover	opencatalogi	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=thin;weight=776;coverage=94.11;target=95.0	2026-11-13T17:34:42Z
+cover:opencatalogi:fc83bfb1:c6b640c3	cover	opencatalogi	development	quality/test-coverage-c6b640c3	lang=php;dirs=lib/Observability/*.php;focus=thin;weight=681;coverage=94.11;target=95.0	2026-11-13T17:36:17Z
+cover:openregister:7350e3efma401:7a62cd5d	cover	openregister	main	test/coverage-7a62cd5d	lang=php;dirs=lib/Service/Dbal/;focus=uncovered;weight=924;coverage=94.96;target=95.0	2026-11-13T18:23:17Z
+cover:openregister:7350e3efma401:32df05fd	cover	openregister	main	test/coverage-32df05fd	lang=php;dirs=lib/Files/Service/;focus=uncovered;weight=900;coverage=94.96;target=95.0	2026-11-13T18:23:41Z
+measure:buildiq:20261113h18	measure	buildiq	development	queue/coverage/buildiq.json	why=slices need per-directory coverage	2026-11-13T16:41:05Z
+measure:dossiq:20261113h18	measure	dossiq	development	queue/coverage/dossiq.json	why=slices need per-directory coverage	2026-11-13T15:41:05Z
+measure:humaniq:20261113h18	measure	humaniq	development	queue/coverage/humaniq.json	why=slices need per-directory coverage	2026-11-13T18:40:22Z
+measure:integriq:20261113h18	measure	integriq	development	queue/coverage/integriq.json	why=slices need per-directory coverage	2026-11-13T17:41:05Z
+measure:keepiq:20261113h18	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-13T18:40:22Z
+measure:larpinq:20261113h18	measure	larpinq	development	queue/coverage/larpinq.json	why=slices need per-directory coverage	2026-11-13T18:40:22Z
+measure:openregister:20261113h18	measure	openregister	main	queue/coverage/openregister.json	why=slices need per-directory coverage	2026-11-13T18:40:22Z
+measure:planninq:20261113h18	measure	planninq	development	queue/coverage/planninq.json	why=slices need per-directory coverage	2026-11-13T18:40:22Z
