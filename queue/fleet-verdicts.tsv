@@ -5370,3 +5370,4 @@ hermiq	1598	2c5c2315988da5467f6200e75927373fe2803ef7	REVERIFY	apifix	problem+jso
 opencatalogi	2578	4923845964608f793f7f1638614d16b61c4a891a	REVERIFY	apifix	restored API-Version + problem details on all /api paths incl. sitemaps/robots/dcat/feeds/federation (as on development); only Deprecation/Link added; tests+spec adjusted; merged development; tests green; new head b2cba0b6256cf411c3194f7cb59108956628cab2
 integriq	3410	e77ddc2346cb8dbab0cd5a2863924fda52398987	REVERIFY	apifix	merged development (clean); middleware change additive only; diff check green (routes.php phpcs inherited); new head a750da709042bbe0c428a7fb6fe1f3fcadaa6535
 keepiq	1690	0027fec09b1fc7da8109b589da210f23f117adb0	REVERIFY	apifix	already MERGED; nothing to do; new head 0027fec09b1fc7da8109b589da210f23f117adb0
+filinq	2044	dd9720ca1532795164e854db45bee4b338b36d92	GREEN	worker-31	6304 tests (6 skipped) OK, baseline 6251 OK, new failures 0; tests only

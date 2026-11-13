@@ -3244,6 +3244,7 @@ gap:larpinq:tcr2:burn1	PR #1012: 8 test files, 32 tests, suite 694->726 green	se
 gap:launchpad:tcr1:burn1	PR #1174: 8 test files, 48 tests (suite 3741->3789, 0 failures)	session-20261113T073916-e9f11dfa	2026-11-13T07:44:25Z
 cover:larpinq:c4471360:60c2c265	PR #1014: 7 phpunit tests, Controller 92.3->99.1%	session-20261113T051709-e616bf69	2026-11-13T07:44:30Z
 cover:larpinq:c4471360:1b97f731	PR #1013: listener fail-soft/ignore paths, 8 tests in 4 files, uncovered 19->4 stmts; suite 697->705 green; tests only	session-20261113T072706-2eaa6a81	2026-11-13T07:44:29Z
+cover:filinq:7a9ef677mb01f:jsd48eb217	PR #2046: 33 vitest tests for anonymization store; src/store/modules 86.5->98.6% statements; vitest 718->751, all pass	session-20261113T072713-f866e896	2026-11-13T07:44:56Z
 gap:hermiq:maint2:burn1	PR #1672: 3 units refactored (ContextAssembler::assembleSkillsForRun CCN15, FlowAgentRunService::dispatch CCN13, EvalRunController::run CCN12), tests first, suite unchanged	session-20261113T041646-2c1d764f	2026-11-13T07:44:56Z
 gap:keepiq:maint1:burn1	PR keepiq#1748: refactored import commit(), SecretRequestController::create, ShareSaveService::open (+10 tests, all green)	session-20261113T072713-bdbc6044	2026-11-13T07:45:02Z
 cover:larpinq:c4471360:f545d745	already done: InitializeRegister (the only untested Repair class) is covered by open PR #1011 (InitializeRegisterTest, 3 tests); with it lib/Repair is 239/240	session-20261113T051709-e616bf69	2026-11-13T07:45:10Z
@@ -3254,4 +3255,9 @@ measure:learniq:20261113h06	php 91.2% (pcov, 34292/37601), js 99.79% (c8) at 8c8
 cover:filinq:7a9ef677mb01f:60c2c265	PR #2047: 4 test files, 33 tests (6251->6284 OK), tests only	session-20261113T072715-cf04db4e	2026-11-13T07:45:58Z
 verify:larpinq:1008:6a950db4	GREEN #1008, #1009 (tests only, all pass)	session-20261113T051709-e616bf69	2026-11-13T07:46:06Z
 cover:larpinq:c4471360:6f346b68	already done: Sections/LarpinqAdmin (the only class in lib/Sections) is covered 6/6 by open PR #1011 (LarpinqAdminTest @covers it)	session-20261113T051709-e616bf69	2026-11-13T07:46:27Z
+gap:humaniq:cplx:burn1	already done: lizard -C 30 on lib src finds no function over 30 (max CCN 27, HrDocumentService::generateBacklog) at 791176d5	session-20261113T074532-3dc49c57	2026-11-13T07:47:07Z
+cover:larpinq:c4471360m4538:js3f3bfe56	PR #1015: App.vue 67->97%, pinia 0->100%; vitest 264->280 green	session-20261113T072715-8f8a14e9	2026-11-13T07:46:57Z
 verify:integriq:3502:f297e7b4	GREEN #3502, #3503: tests only, unit 7753 vs 7736, no new failures	session-20261113T051705-4f5ad12a	2026-11-13T07:47:07Z
+cover:humaniq:a18a13fb:1b97f731	PR humaniq#1103: 17 tests on 4 untested listeners (0->86/87 lines); lib/Listener 1128->1214/1290; suite 3813 passing	session-20261113T051703-1b54bfba	2026-11-13T07:47:42Z
+verify:filinq:2044:28826748	GREEN 2044; 6304 tests OK vs baseline 6251	session-20261113T072715-cf04db4e	2026-11-13T07:47:40Z
+gap:planninq:oas:burn1	already done	session-20261113T074533-3e2a2da6	2026-11-13T07:47:55Z
