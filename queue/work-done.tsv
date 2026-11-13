@@ -6758,3 +6758,4 @@ build:opencatalogi:capability-rows-close-gaps	partial: PR #2622; 1.1 done (REQ-C
 build:integriq:connectors-inavigator-case-types	failed: nothing buildable; tasks 3-5 already on development, task 2 blocked (no i-Navigator interface, REQ-INAV-001 forbids shipping), e2e left	session-20261113T204535-8ae4a1d5	2026-11-13T20:50:22Z
 review:openregister:10323:1983a461	10323 APPROVE (tests only; green)	session-20261113T182359-67ad413b	2026-11-13T20:50:32Z
 build:decidiq:example-set-zuiddrecht	no PR: open items 2.2/2.3 are live-instance checks (occ example-set install, profile view)	session-20261113T185324-28e07ab2	2026-11-13T20:50:52Z
+verify:opencatalogi:2609:a164a346	2 GREEN (2609,2610); PHP 2 inherited failures; jest new suite passes, 33 inherited suite failures; npm ci lock out of sync on development	session-20261113T182404-f2c28226	2026-11-13T20:50:54Z
