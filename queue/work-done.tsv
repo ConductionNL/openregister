@@ -6375,3 +6375,4 @@ review:openregister:10300:03e8599e	BLOCK: schema-only search without register re
 review:openregister:10305:322d15db	APPROVE 10305	session-20261113T192704-f298034f	2026-11-13T19:36:45Z
 build3:openregister:api-client-libraries	partial: PR #10314 builds 1.1 and 1.2 (client column, anchored User-Agent parse, /api/callers) + docs draft; 1.3/4.x wait on library release, 2.x/3.x are new repos	session-20261113T175400-7ec3993f	2026-11-13T19:37:30Z
 cover:shillinq:05639debm7b6b:50cc8442	already done: lib/Util/*.php at 100% lines (155/155) on development; no PR	session-20261113T185327-0dc82b88	2026-11-13T19:37:34Z
+verify:buildiq:1561:8ae65843	GREEN #1561 (test-only vitest spec; 4111 js tests pass)	session-20261113T192654-ac81692f	2026-11-13T19:37:41Z
