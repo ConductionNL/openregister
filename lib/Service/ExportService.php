@@ -510,6 +510,86 @@ class ExportService implements ObjectExporterInterface {
 	}//end guardPdfRowCap()
 
 	/**
+	 * The properties a PDF report breaks the objects down by, in order of preference.
+	 */
+	private const PDF_BREAKDOWN_PROPERTIES = ['status', 'state', 'lifecycle', 'statusCode'];
+
+	/**
+	 * The summary block of a PDF report: the applied filters, and the objects
+	 * broken down by their status with counts and percentages
+	 * (rapportage-bi-export, "Export to PDF as a formatted report").
+	 *
+	 * The breakdown uses the first of PDF_BREAKDOWN_PROPERTIES that is an
+	 * exported column, so a property the caller may not read, or a masked one,
+	 * is never summarised.
+	 *
+	 * @param ExportRequest $request What is exported.
+	 * @param ExportTable   $table   The exported columns and objects.
+	 *
+	 * @return string The HTML fragment, empty when there is nothing to summarise.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-export-in-csv-excel-pdf-and-ods-formats
+	 */
+	private function pdfSummary(ExportRequest $request, ExportTable $table): string {
+		$html = '';
+		$filters = [];
+		foreach ($request->filters as $key => $value) {
+			if (is_scalar($value) === true && str_starts_with((string)$key, '_') === false) {
+				$filters[] = $key . ' = ' . (string)$value;
+			}
+		}
+
+		if ($filters !== []) {
+			$html .= '<p class="meta">Filters: ' . htmlspecialchars(implode('; ', $filters), ENT_QUOTES, 'UTF-8') . '</p>';
+		}
+
+		$property = $this->pdfBreakdownProperty(headers: $table->headers);
+		if ($property === null || $table->objects === []) {
+			return $html;
+		}
+
+		$counts = [];
+		foreach ($table->objects as $object) {
+			$value = ($object->getObject()[$property] ?? null);
+			$label = '(none)';
+			if (is_scalar($value) === true && (string)$value !== '') {
+				$label = (string)$value;
+			}
+
+			$counts[$label] = (($counts[$label] ?? 0) + 1);
+		}
+
+		arsort($counts);
+		$total = count($table->objects);
+		$html .= '<table class="summary"><thead><tr><th>' . htmlspecialchars($property, ENT_QUOTES, 'UTF-8')
+			. '</th><th>Count</th><th>%</th></tr></thead><tbody>';
+		foreach ($counts as $label => $count) {
+			$html .= '<tr><td>' . htmlspecialchars((string)$label, ENT_QUOTES, 'UTF-8') . '</td><td>' . $count . '</td><td>'
+				. number_format((($count * 100) / $total), 1, '.', '') . '%</td></tr>';
+		}
+
+		return $html . '<tr><td>Total</td><td>' . $total . '</td><td>100.0%</td></tr></tbody></table>';
+	}//end pdfSummary()
+
+	/**
+	 * The property a PDF report breaks the objects down by: the first breakdown
+	 * property that is an exported, unmasked column.
+	 *
+	 * @param array<int|string, int|string> $headers The exported columns.
+	 *
+	 * @return string|null The property, or null when none is exported.
+	 */
+	private function pdfBreakdownProperty(array $headers): ?string {
+		foreach (self::PDF_BREAKDOWN_PROPERTIES as $property) {
+			if (in_array($property, $headers, true) === true && isset($this->maskedColumns[$property]) === false) {
+				return $property;
+			}
+		}
+
+		return null;
+	}//end pdfBreakdownProperty()
+
+	/**
 	 * Build the escaped HTML for a single schema's export section.
 	 *
 	 * @param ExportRequest  $request The export; its register and schema title the section, its user drives header visibility.
@@ -531,6 +611,7 @@ class ExportService implements ObjectExporterInterface {
 			. 'Exported: ' . htmlspecialchars($timestamp, ENT_QUOTES, 'UTF-8')
 			. ' &middot; Objects: ' . count($objects)
 			. '</p>';
+		$html .= $this->pdfSummary(request: $request, table: $table);
 		$html .= '<table><thead><tr>';
 
 		foreach ($table->headers as $header) {

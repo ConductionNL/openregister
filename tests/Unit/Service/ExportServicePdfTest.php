@@ -532,4 +532,53 @@ class ExportServicePdfTest extends TestCase {
 		$this->assertStringContainsString('<td>true</td><td></td>', $html);
 		$this->assertStringNotContainsString('not a column', $html);
 	}//end testRowsSectionFollowsTheColumnsAndEscapesEveryCell()
+
+	/**
+	 * The PDF report summarises the objects by status with counts and
+	 * percentages, and names the applied filters (rapportage-bi-export).
+	 */
+	public function testBuildPdfSectionSummarisesTheStatusAndTheFilters(): void {
+		$schema = new Schema();
+		$schema->setSlug('vergunningen');
+		$schema->setProperties(['title' => ['type' => 'string'], 'status' => ['type' => 'string', 'enum' => ['open', 'verleend']]]);
+		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
+		$objects = [];
+		foreach (['open', 'verleend', 'verleend', 'verleend', null] as $i => $status) {
+			$objects[] = $this->createObjectEntity('uuid-' . $i, 'V' . $i, ['title' => 'V' . $i, 'status' => $status]);
+		}
+
+		$method = (new ReflectionClass(ExportService::class))->getMethod('buildPdfSection');
+		$method->setAccessible(true);
+		$html = $method->invoke(
+			$this->service,
+			new ExportRequest(schema: $schema, filters: ['status!' => 'afgehandeld', '_limit' => 50, 'zone' => ['a']]),
+			$objects
+		);
+
+		$this->assertStringContainsString('<p class="meta">Filters: status! = afgehandeld</p>', $html);
+		$this->assertStringContainsString('<tr><td>verleend</td><td>3</td><td>60.0%</td></tr>', $html);
+		$this->assertStringContainsString('<tr><td>open</td><td>1</td><td>20.0%</td></tr>', $html);
+		$this->assertStringContainsString('<tr><td>(none)</td><td>1</td><td>20.0%</td></tr>', $html);
+		$this->assertStringContainsString('<tr><td>Total</td><td>5</td><td>100.0%</td></tr>', $html);
+		$this->assertLessThan(strpos($html, '<table><thead>'), strpos($html, '<table class="summary">'));
+	}
+
+	/**
+	 * A status the caller may not read is not summarised, and without a status
+	 * column or filters there is no summary block at all.
+	 */
+	public function testBuildPdfSectionDoesNotSummariseAnUnreadableStatus(): void {
+		$schema = new Schema();
+		$schema->setSlug('vergunningen');
+		$schema->setProperties(['title' => ['type' => 'string'], 'status' => ['type' => 'string']]);
+		$this->propertyRbacHandler
+			->method('canReadProperty')
+			->willReturnCallback(static fn (SchemaProperty $read, PropertyAccessRequest $request) => $read->name !== 'status');
+
+		$html = $this->invokeBuildPdfSection(null, $schema, [$this->createObjectEntity('uuid-1', 'V', ['title' => 'V', 'status' => 'geheim'])]);
+
+		$this->assertStringNotContainsString('class="summary"', $html);
+		$this->assertStringNotContainsString('geheim', $html);
+		$this->assertStringNotContainsString('Filters:', $html);
+	}
 }//end class
