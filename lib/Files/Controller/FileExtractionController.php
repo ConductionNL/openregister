@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Files\Controller;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Service\FileExtractionOptions;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionListing;
 use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
@@ -121,6 +123,20 @@ class FileExtractionController extends Controller {
 	private readonly CallerFileAccess $fileAccess;
 
 	/**
+	 * Names the object that carries a file, or null when the finder is not wired.
+	 *
+	 * @var ManagedFileOwnerLookup|null
+	 */
+	private readonly ?ManagedFileOwnerLookup $ownerLookup;
+
+	/**
+	 * The root folder, to reach a listed file by id.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
 	 * Constructor
 	 *
 	 * @param IRequest $request HTTP request
@@ -140,6 +156,9 @@ class FileExtractionController extends Controller {
 		$this->riskLevelService = $services->domain->riskLevelService;
 		$this->userSession = $services->platform->userSession;
 		$this->groupManager = $services->platform->groupManager;
+		$this->rootFolder  = $services->platform->rootFolder;
+		$this->ownerLookup = self::ownerLookupFor(finder: $services->mappers->objectFinder);
+
 		$this->fileAccess = new CallerFileAccess(
 			fileReadScope: $services->domain->fileReadScope,
 			userSession: $services->platform->userSession,
@@ -310,7 +329,7 @@ class FileExtractionController extends Controller {
 			$entityCount = count($this->entityRelationMapper->findByFileId($summary['sourceId']));
 			$fileRisk    = $this->riskLevelService->getRiskLevel($summary['sourceId']);
 
-			$data[] = [
+			$row = [
 				'id'               => $summary['sourceId'],
 				'fileName'         => $summary['fileName'],
 				'mimeType'         => $summary['mimeType'],
@@ -322,10 +341,65 @@ class FileExtractionController extends Controller {
 				'entityCount'      => $entityCount,
 				'riskLevel'        => $fileRisk,
 			];
-		}
+
+			// A file an object carries is named by that object, so the row can be shared by link.
+			$objectUuid = $this->objectUuidOf(fileId: (int)$summary['sourceId']);
+			if ($objectUuid !== null) {
+				$row['objectUuid'] = $objectUuid;
+			}
+
+			$data[] = $row;
+		}//end foreach
 
 		return $data;
 	}//end extractionRows()
+
+	/**
+	 * The owner lookup over a finder, or null without one.
+	 *
+	 * @param MagicObjectFinderInterface|null $finder The object finder.
+	 *
+	 * @return ManagedFileOwnerLookup|null
+	 */
+	private static function ownerLookupFor(?MagicObjectFinderInterface $finder): ?ManagedFileOwnerLookup {
+		if ($finder === null) {
+			return null;
+		}
+
+		return new ManagedFileOwnerLookup(objects: $finder);
+	}//end ownerLookupFor()
+
+	/**
+	 * The uuid of the object that carries a file, or null when no object does.
+	 *
+	 * @param int $fileId The Nextcloud file id.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
+	 */
+	private function objectUuidOf(int $fileId): ?string {
+		if ($this->ownerLookup === null) {
+			return null;
+		}
+
+		try {
+			$node = $this->rootFolder->getFirstNodeById($fileId);
+			if ($node === null) {
+				return null;
+			}
+
+			$uuid = $this->ownerLookup->find(file: $node)?->getUuid();
+		} catch (\Throwable) {
+			return null;
+		}
+
+		if ($uuid === null || $uuid === '') {
+			return null;
+		}
+
+		return $uuid;
+	}//end objectUuidOf()
 
 	/**
 	 * Get a single file's extraction information by ID.
