@@ -3981,3 +3981,11 @@ Service/Object/SaveObjects/BulkObjectQuota.php,,Service,,,,,Core
 Service/Object/SaveObjects/BulkQuotaTally.php,,Service,,,,,Core
 Service/Query/ReferenceFilterParser.php,,Service,,,,,Core
 Service/File/DocumentStore.php,219,Service,Service,Service/File/DocumentStore.php,0,,Core
+Repair/ImportRedactionPolicyRegister.php,14,Repair,Platform,Platform/Repair/ImportRedactionPolicyRegister.php,0,,Platform
+Service/RedactionPolicy/PolicyIndex.php,47,Service,Configuration,Configuration/Service/RedactionPolicy/PolicyIndex.php,0,,Configuration
+Service/RedactionPolicy/PolicyIndexCache.php,25,Service,Configuration,Configuration/Service/RedactionPolicy/PolicyIndexCache.php,0,,Configuration
+Service/RedactionPolicy/PolicyMatch.php,21,Service,Configuration,Configuration/Service/RedactionPolicy/PolicyMatch.php,0,,Configuration
+Service/RedactionPolicy/TermRule.php,101,Service,Configuration,Configuration/Service/RedactionPolicy/TermRule.php,0,,Configuration
+Service/RedactionPolicy/TermRuleMatcher.php,73,Service,Configuration,Configuration/Service/RedactionPolicy/TermRuleMatcher.php,0,,Configuration
+Service/RedactionPolicy/TermRuleSourceInterface.php,6,Service,Configuration,Configuration/Service/RedactionPolicy/TermRuleSourceInterface.php,0,,Configuration
+Service/RedactionPolicy/TextFolder.php,62,Service,Configuration,Configuration/Service/RedactionPolicy/TextFolder.php,0,,Configuration
