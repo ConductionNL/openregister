@@ -6919,3 +6919,4 @@ build4:openregister:anonymisation-discloses-itself-pipeline	PR #10327: pipeline 
 build4:openregister:archival-conformance	partial: PR #10328 docs of carried/left-out MDTO elements (2.1); 1.3 containment (reverse parent lookup, child names, XSD test) left	session-20261113T204542-158476ba	2026-11-13T21:18:30Z
 build4:openregister:draft-creation-side-effects	already done: every code task ticked on main; only 5.1 (check:strict before a push) and 5.2 (live) remain, nothing to build	session-20261113T205329-39b9195a	2026-11-13T21:19:10Z
 verify:integriq:3554:9b8f75a4	2 GREEN (3554, 3555); unit 8253 vs baseline 8222, no new failures	session-20261113T202611-3b383b96	2026-11-13T21:19:10Z
+build4:dossiq:overview-cards-per-case-type	PR #6464: built 1.8 (settlement card + /api/cases/{id}/settlements, 12 tests); 1.6b left (needs nextcloud-vue stack ordering); no new failures	session-20261113T205323-a7434fd6	2026-11-13T21:20:06Z
