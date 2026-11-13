@@ -3450,3 +3450,4 @@ cover:portaliq:b60f3b81:1b97f731	partial: PR #2382 Listener 38.3%->44.0% (Change
 verify:buildiq:1527:00579cff	1527 GREEN, 1528 GREEN: tests-only, 2707 tests, 0 new failures	session-20261113T080546-98207a87	2026-11-13T08:26:06Z
 cover:portaliq:b60f3b81:f545d745	PR #2383: 7 tests, lib/Repair/*.php 454->467/556 (SeedStaffGroup 100%, InitializeActions 29->34/47); suite 4527->4534, 0 failures; MovePortalAuditEntries needs OpenRegister lib	session-20261113T080549-20301834	2026-11-13T08:26:22Z
 cover:launchpad:fb10c50fm911d:34f5c300	PR #1178: +54 tests, 4 Service classes to 100%, PHP 92.52->93.33%	session-20261113T081040-5e814df2	2026-11-13T08:26:39Z
+cover:learniq:e6498dddmc027:80b3d955	already done: lib/Service/Catalogue/ at 94.6% (210/222 lines) on development, above the 90% target	session-20261113T080552-2a8a5ff1	2026-11-13T08:26:57Z
