@@ -58,10 +58,53 @@ final class CodedValueRefusals {
 	 * @return string|null The refusal message, or null when the value is allowed.
 	 */
 	public function violationFor(CodedValueSubject $subject, CodedValueMatch $match): ?string {
-		return ($this->windowViolation(subject: $subject, match: $match)
+		return ($this->deprecatedViolation(subject: $subject, match: $match)
+			?? $this->windowViolation(subject: $subject, match: $match)
 			?? $this->leafViolation(subject: $subject, match: $match)
 			?? $this->exclusiveGroupViolation(subject: $subject, match: $match));
 	}//end violationFor()
+
+	/**
+	 * The refusal a value the scheme does not hold earns: it names the property and the scheme.
+	 *
+	 * @param CodedValueSubject $subject The property being judged.
+	 * @param string            $value   The submitted value.
+	 *
+	 * @return string The refusal message.
+	 *
+	 * @spec openspec/changes/property-code-list-from-concept-scheme/specs/skos-concept-registers/spec.md#requirement-a-property-can-take-its-values-from-a-concept-scheme
+	 */
+	public function notInScheme(CodedValueSubject $subject, string $value): string {
+		return sprintf(
+			'The value "%s" on "%s" is not a concept of the scheme %s.',
+			$value,
+			$subject->property,
+			$subject->declaration->scheme
+		);
+	}//end notInScheme()
+
+	/**
+	 * The refusal a deprecated concept earns on a property that does not allow it, or null.
+	 *
+	 * @param CodedValueSubject $subject The property being judged.
+	 * @param CodedValueMatch   $match   The submitted value and its concept.
+	 *
+	 * @return string|null The refusal message, or null when the concept is current or deprecated values are allowed.
+	 *
+	 * @spec openspec/changes/property-code-list-from-concept-scheme/specs/skos-concept-registers/spec.md#requirement-a-property-can-take-its-values-from-a-concept-scheme
+	 */
+	private function deprecatedViolation(CodedValueSubject $subject, CodedValueMatch $match): ?string {
+		if ($subject->declaration->allowDeprecated === true || ($match->concept['deprecated'] ?? false) !== true) {
+			return null;
+		}
+
+		return sprintf(
+			'The value "%s" on "%s" is deprecated in the scheme %s and can no longer be chosen.',
+			$this->labelOf(match: $match),
+			$subject->property,
+			$subject->declaration->scheme
+		);
+	}//end deprecatedViolation()
 
 	/**
 	 * The refusal a value outside its validity window earns, or null.
