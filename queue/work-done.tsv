@@ -2580,3 +2580,4 @@ cover:pipelinq:f67520ecmc4ba:a13d1ab7	PR #3682: 5 tests for HeldObjectDrain pagi
 cover:pipelinq:f67520ecmc4ba:89d1fbd3	PR #3683: 6 cases for KeywordProposals; 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:57:02Z
 cover:buildiq:9930949bm5861:b65a63c3	already done: lib/Service/GitHub/ at 98.7% (74/75); the one uncovered line is FileCommit's empty constructor (value object). Note: buildiq unit suite needs an openregister sibling checkout, else 1355 errors	session-20261113T051708-7d5f6071	2026-11-13T05:57:17Z
 cover:buildiq:9930949bm5861:d39f9857	already done: lib/Support/*.php at 99.23% lines (386/389) on development f1c5b556; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:57:36Z
+cover:buildiq:9930949bm5861:bede5e5d	already done: lib/Service/Automation/ 100% (9/9), lib/Service/Credential/ 94.74% (54/57) on development f1c5b556; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:57:47Z
