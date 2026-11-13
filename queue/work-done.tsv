@@ -5343,3 +5343,4 @@ build2:openregister:sensitive-field-reveal-audit	partial: built read-event half 
 cover:stackiq:9ac19b3amc14f:b5905f71	already done: lib/Service/Federation/ at 99.0% lines (384/388); no PR	session-20261113T134531-53f143d2	2026-11-13T13:54:35Z
 cover:launchpad:fb10c50fm2d1d:aae6d66c	already done: lib/Exception 100% (55/55) on development	session-20261113T091533-b7a00bc3	2026-11-13T13:55:00Z
 merge:buildiq:1548:d0593b06	merge-local over 1 buildiq tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:54:57Z
+cover:buildiq:70b3e29ema699:aae6d66c	already done: lib/Exception/*.php at 100% lines (64/64) on development, target 95; no PR	session-20261113T074535-8a2067c2	2026-11-13T13:55:20Z
