@@ -4555,3 +4555,4 @@ cover:keepiq:c967a31fm1bed:f545d745	already done: lib/Repair/*.php at 98.48% (10
 cover:pipelinq:7f9dc8e6m84dd:23d187f5	already done: lib/Service/Store 86/86 statements covered on development	session-20261113T104531-16da055e	2026-11-13T11:34:39Z
 fix:pipelinq:3731:17fbeb57	fixed: blocked behaviour is spec-asked; depth refusal now names the sixth group's path; development merged; new head c9e6834e328ab35833671fdee07b177269d009cc	session-20261113T081048-4978ac57	2026-11-13T11:34:52Z
 fix:pipelinq:3745:0ce8e9d6	keys moved off the catalogue tail, development merged; pushed 838094f7b789508213ee06c727ac28d45753a8a3, REVERIFY	session-20261113T104531-274f72f7	2026-11-13T11:34:59Z
+cover:pipelinq:7f9dc8e6m84dd:d39f9857	already covered: lib/Support/*.php 100% (32/32) on development; no PR	session-20261113T081048-4978ac57	2026-11-13T11:35:13Z
