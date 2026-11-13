@@ -1291,6 +1291,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$access->checkHierarchy(schema: $schema);
 		$access->checkDepartmentMatrix(schema: $schema);
 		$access->checkRevealAudit(schema: $schema);
+		$access->checkClassification(schema: $schema);
 		(new PropertyDeclarationRefusals())->checkReversibility(schema: $schema);
 		(new SubjectDeclarationRefusals())->checkReview(schema: $schema);
 	}//end checkAccessDeclarations()

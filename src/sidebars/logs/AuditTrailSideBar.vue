@@ -278,6 +278,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
 		 */
 		handleObjectFilterChange(value) {
 			this.objectFilter = value
@@ -290,6 +291,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
 		 */
 		applyFilters() {
 			this.updateRouteQueryFromState()
@@ -303,6 +305,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
 		 */
 		updateChangesFilter(value) {
 			this.showOnlyWithChanges = value
@@ -441,6 +444,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
 		 */
 		applyFiltersToStore() {
 			const filters = {}
@@ -472,6 +476,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
 		 */
 		clearAllFilters() {
 			// Clear component state

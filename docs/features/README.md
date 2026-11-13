@@ -62,7 +62,8 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Object Slugs | [object-slugs.md](object-slugs.md) | Data Modelling | Implemented | Slug per object from a configured field, unique per register and schema, frozen once set, `occ openregister:backfill-slugs` |
 | Forms into their destination | [form-destination.md](form-destination.md) | Data Modelling | Implemented | A form is checked against its destination schema and submits into that object in one request |
 | Record Templates | [record-templates.md](record-templates.md) | Data Modelling | Implemented (API) | Named, shareable starting values for new records |
-| Workflow Automation | [workflow-automation.md](workflow-automation.md) | Automation | Implemented | n8n, Windmill, BPMN |
+| Flows (Workflow Automation) | [flows.md](flows.md) | Automation | Implemented | The built-in flow engine: triggers, steps, approvals, run history. External tools: see [workflow-automation.md](workflow-automation.md) |
+| Workflow Automation (external tools) | [workflow-automation.md](workflow-automation.md) | Integration | Implemented | Integration with external automation tools (n8n, Windmill), schema hooks. Built-in automation: see [flows.md](flows.md) |
 | Archiving & Records Management | [archiving.md](archiving.md) | Compliance | Implemented | Archiefwet, MDTO, NEN 15489, e-Depot |
 | OpenAPI & GraphQL APIs | [api-generation.md](api-generation.md) | Integration | Implemented | OpenAPI 3.1.0, GraphQL, NL API Design Rules |
 | AI & MCP Integration | [ai-and-mcp.md](ai-and-mcp.md) | AI | Implemented | MCP, JSON-RPC 2.0, SSE |
@@ -107,7 +108,8 @@ Connecting OpenRegister to external systems and workflows.
 - [Access Links](access-links.md): share one record with somebody who has no account, revocably and on the audit trail
 - [Generated Identifiers](generated-identifier.md) — `x-openregister-generated`, a named counter, a format, and a value that cannot be edited
 - [Record Templates](record-templates.md) — Named starting values per schema, shared like saved views, offered only to users who may create there
-- [Workflow Automation](workflow-automation.md) — Schema hooks, n8n/Windmill integration, import-time workflow triggers
+- [Flows (Workflow Automation)](flows.md) — The built-in flow engine: canvas, triggers, steps, approvals, runs, kill switch, shipping flows
+- [Workflow Automation (external tools)](workflow-automation.md) — Schema hooks and integration with external tools (n8n, Windmill); for built-in automation see [Flows](flows.md)
 - [OpenAPI & GraphQL APIs](api-generation.md) — Auto-generated specs and GraphQL schema per register
 - [Real-Time Updates](realtime-updates.md) — SSE subscriptions, RBAC-filtered events, reconnection with replay
 - [Semantic Object Handoff](semantic-object-handoff.md) — Cross-app object conversion via canonical kinds (ns#Case, ns#Quote, …), declarative dialect, queue-mode deferral, provenance both ways (ADR-051)
