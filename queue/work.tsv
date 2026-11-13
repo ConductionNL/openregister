@@ -4307,3 +4307,18 @@ cover:hermiq:065f1631m249e:dfaef732	cover	hermiq	development	quality/test-covera
 cover:hermiq:065f1631m249e:d39f9857	cover	hermiq	development	quality/test-coverage-d39f9857	lang=php;dirs=lib/Support/*.php;focus=thin;weight=205;coverage=88.68;target=90.0	2026-11-13T08:03:11Z
 cover:keepiq:c967a31fm1147:0d67c1f3	cover	keepiq	development	quality/test-coverage-0d67c1f3	lang=php;dirs=lib/Service/Siem/;focus=thin;weight=858;coverage=89.12;target=90.0	2026-11-13T08:18:45Z
 cover:keepiq:c967a31fm1147:38e80a9f	cover	keepiq	development	quality/test-coverage-38e80a9f	lang=php;dirs=lib/Command/*.php;focus=thin;weight=729;coverage=89.12;target=90.0	2026-11-13T08:20:54Z
+verify:learniq:2419:fdeb6c00	verify	learniq	development	merge	prs=2419@938831f69b9efdc791913f8212e8f935865a7f0b	2026-11-13T09:30:13Z
+verify:dossiq:6356:868d1422	verify	dossiq	development	merge	prs=6356@e2f49c945f942acd79a38e680927792b87049796,6357@83bcf00e1edd67a5fb2f15a7e44dd6b7792bb218,6358@2df92573a576ce778f9a23da389f0e763bc6ca9f,6359@62aa196ec615d61665fada180e1a6af5036371e3,6360@2816b7b6c183e95975c8fe2704b40bc62d83afc4,6361@8e650aa94285a76f2fd4ef43ca1466faf3b20974,6362@b062689874901ed1932fef0fe6e6d1087867d4c0,6363@68c48ce1b584b394c08b6069c6016f60cb85b77a	2026-11-13T09:30:13Z
+verify:hermiq:1682:abba1de1	verify	hermiq	development	merge	prs=1682@be9d722e75d1269d1a3e70fca3ac88def4f5f4bd	2026-11-13T09:30:13Z
+merge:dossiq:6351:910198bf	merge	dossiq	development	development	prs=6351@7c9acf60d523692e77c09d5e680f48f91e0f791f,6352@74e2a50ae99bd366cc7222a985757258a1f0b25f	2026-11-13T09:30:13Z
+merge:buildiq:1526:5b109492	merge	buildiq	development	development	prs=1526@2ab00cf5eec7706a83146c6418b6e3aa926ac0bd	2026-11-13T09:30:13Z
+merge:hermiq:1679:11e43d64	merge	hermiq	development	development	prs=1679@11f132b6c2e5073acb20e6a367fdde0b889d96db,1680@492d66bed286992fb3c8ccf72ac603e3c69ae447	2026-11-13T09:30:13Z
+merge:shillinq:2910:3191e515	merge	shillinq	development	development	prs=2910@2029bf1785e7fda79e4931643b3397f9159a1642	2026-11-13T09:30:13Z
+merge:keepiq:1748:6313cf30	merge	keepiq	development	development	prs=1748@b7d7047304dff62f4607a3a248fa4f127b92cc46	2026-11-13T09:30:13Z
+cover:dossiq:069ee2d6m7275:3641032a	cover	dossiq	development	quality/test-coverage-3641032a	lang=php;dirs=lib/Service/Pipelinq/;focus=thin;weight=1942;coverage=89.34;target=90.0	2026-08-15T08:18:45Z
+cover:dossiq:069ee2d6m7275:b12f5203	cover	dossiq	development	quality/test-coverage-b12f5203	lang=php;dirs=lib/Service/Import/;focus=thin;weight=1844;coverage=89.34;target=90.0	2026-08-15T08:20:23Z
+cover:hermiq:065f1631m249e:568ec52a	cover	hermiq	development	quality/test-coverage-568ec52a	lang=php;dirs=lib/Lifecycle/*.php;focus=thin;weight=163;coverage=88.68;target=90.0	2026-11-13T08:08:57Z
+cover:hermiq:065f1631m249e:59826f43	cover	hermiq	development	quality/test-coverage-59826f43	lang=php;dirs=lib/Settings/*.php;focus=thin;weight=146;coverage=88.68;target=90.0	2026-11-13T08:09:14Z
+cover:keepiq:c967a31fm1147:be0dcca9	cover	keepiq	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=714;coverage=89.12;target=90.0	2026-11-13T08:26:13Z
+cover:keepiq:c967a31fm1147:f91e7417	cover	keepiq	development	quality/test-coverage-f91e7417	lang=php;dirs=lib/Service/Connection/;focus=thin;weight=685;coverage=89.12;target=90.0	2026-11-13T08:26:42Z
+measure:versioniq:20261113h08	measure	versioniq	development	queue/coverage/versioniq.json	why=slices need per-directory coverage	2026-11-13T09:30:13Z
