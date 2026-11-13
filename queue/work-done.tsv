@@ -5864,3 +5864,4 @@ cover:hermiq:065f1631me44a:9d3a1784	already done: lib/BackgroundJob at 108/108 l
 cover:pipelinq:7f9dc8e6m16db:dfaef732	already done: lib/Notification/*.php at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T18:12:59Z
 build:portaliq:woo-dossier-in-my-cases	partial: PR #2450 (termNote and resultLink with trusted-domain filter, groups 2-3; suite 4914->4928); group 1 questions and e2e left	session-20261113T172329-e224a4f0	2026-11-13T18:13:08Z
 cover:hermiq:065f1631me44a:716923f8	already done: lib/Service/Credential at 87/87 lines (100%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:13:06Z
+cover:pipelinq:7f9dc8e6m16db:db675bd6	already done: lib/Activity/Setting/ at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T18:13:15Z
