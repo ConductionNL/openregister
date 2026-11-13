@@ -9,7 +9,7 @@
  * @copyright 2026 Conduction B.V.
  */
 import axios from '@nextcloud/axios'
-import ObjectAccessLinks from './ObjectAccessLinks.vue'
+import SubjectAccessLinks from './SubjectAccessLinks.vue'
 import { mintPayload } from '../../services/accessLinks.js'
 
 jest.mock('@nextcloud/vue', () => ({ __esModule: true }))
@@ -27,8 +27,8 @@ jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
  * @return {object} The context
  */
 function context(state) {
-	const ctx = { ...ObjectAccessLinks.data.call({}), objectId: 'uuid-1', ...state }
-	for (const [name, method] of Object.entries(ObjectAccessLinks.methods)) {
+	const ctx = { ...SubjectAccessLinks.data.call({}), subjectType: 'object', subjectId: 'uuid-1', ...state }
+	for (const [name, method] of Object.entries(SubjectAccessLinks.methods)) {
 		ctx[name] = method.bind(ctx)
 	}
 	ctx.load = jest.fn()
@@ -53,7 +53,7 @@ beforeEach(() => jest.clearAllMocks())
 
 describe('ObjectAccessLinks.create (golden)', () => {
 	it('starts with a read link form', () => {
-		expect(ObjectAccessLinks.data.call({})).toMatchSnapshot()
+		expect(SubjectAccessLinks.data.call({})).toMatchSnapshot()
 	})
 
 	it.each([
