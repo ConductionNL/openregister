@@ -6481,3 +6481,4 @@ cover:pipelinq:7f9dc8e6m8ce9:0a24f15f	already done: lib/Service/Letter/ at 100% 
 cover:pipelinq:7f9dc8e6m8ce9:e19add4c	already done: lib/Service/Consent at 67/67 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:56:47Z
 cover:pipelinq:7f9dc8e6m8ce9:bc26df70	already done: lib/Service/Labels at 96/96 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:07Z
 build:filinq:propose-grondslag-per-entity-type	no PR: all in-scope tasks already done; only 7.1-7.3 open, marked deferred and needing an OpenAnonymiser endpoint that does not exist yet	session-20261113T192700-f21ebd18	2026-11-13T19:57:10Z
+cover:pipelinq:7f9dc8e6m8ce9:e372e6ff	PR #3775: 5 tests for PosStockMovedEvent envelope; suite 7194->7199, same 5 inherited failures; other Event classes tested or getter-only	session-20261113T195351-5d22eaae	2026-11-13T19:57:22Z
