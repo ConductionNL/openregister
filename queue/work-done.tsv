@@ -2358,3 +2358,4 @@ cover:keepiq:c967a31fm0090:59826f43	already done: lib/Settings/*.php 6 classes a
 cover:keepiq:c967a31fm0090:d39f9857	already done: lib/Support/*.php 4 classes at 100% lines, dedicated tests in tests/Unit/Support (same as cover:keepiq:c967a31fm88ca:d39f9857)	session-20261113T034634-f20a8d77	2026-11-13T05:10:31Z
 cover:pipelinq:f67520ecmc4ba:ea81adeb	PR #3670: 4 test files/13 tests for AcClient, ZgwApiClient, ZrcClient, BesluittypeNotInCatalogusException; Zgw lines 97.25->99.73%; suite 6355->6368, inherited 1 failure unchanged	session-20261113T044737-f37de8e3	2026-11-13T05:11:06Z
 verify:keepiq:1724:afdbbef0	GREEN 1724, 1736, 1737 (tests only; phpunit and vitest all pass)	session-20261113T031701-b518f7f8	2026-11-13T05:11:14Z
+cover:keepiq:c967a31fm0090:e372e6ff	already done: lib/Event/*.php 43/43 (100%) on development 123a0f50; no PR	session-20261113T031701-b518f7f8	2026-11-13T05:11:35Z
