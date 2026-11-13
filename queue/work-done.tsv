@@ -1479,3 +1479,4 @@ cover:shillinq:801aab65:81b1241f	already done: lib/Portal/*.php at 157/157 state
 cover:integriq:9b0f5894m2367:1c482fa1	PR #3451: Integration 130/136 -> 135/136 statements, +5 tests	session-20261113T011743-bdeb8a13	2026-11-13T01:46:41Z
 cover:integriq:9b0f5894m2367:e648f6fd	already done: lib/Service/Datasource/ 107/107 statements covered (100%) on development 8420a0dd; no PR	session-20261113T013903-97d30fda	2026-11-13T01:47:36Z
 cover:shillinq:801aab65:60b3923a	PR #2827: 6 tests for EInvoiceService failure paths + UBL mapper malformed entries; 9004->9010, 1 inherited failure	session-20261113T004527-ec0338ee	2026-11-13T01:48:12Z
+cover:dossiq:6ca0231e:7593a315	PR #6222: CaseRelationStore + OutcomeCascade refusals (+19 tests); Relation 89.8%->97.3%, no new failures	session-20261113T011731-f3798045	2026-11-13T01:48:24Z
