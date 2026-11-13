@@ -3047,3 +3047,4 @@ cover:keepiq:c967a31fmb40c:a4b15ae4	already above target: lib/Event/Audit/ measu
 cover:keepiq:c967a31fmb40c:dfaef732	already done: lib/Notification/*.php at 99.49% (target 90)	session-20261113T061521-423d1e83	2026-11-13T06:59:24Z
 cover:dossiq:f8a113c5m7e79:jsd48eb217	PR dossiq#6308: 12 tests, src/store/modules 705->731/731 lines; same 1 inherited vitest failure	session-20261113T051703-1b54bfba	2026-11-13T06:59:31Z
 cover:keepiq:c967a31fmb40c:2c3e981f	already done: lib/Service/ShareSync 174/174 (100%) measured at development 8a5d84f3	session-20261113T061516-58aa7364	2026-11-13T06:59:39Z
+cover:decidiq:a5f973bbmb22b:59826f43	already above target: lib/Settings/*.php measures 94.44% (34/36) on development c0b7958; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:59:55Z
