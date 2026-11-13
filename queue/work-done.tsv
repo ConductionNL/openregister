@@ -3009,3 +3009,4 @@ verify:pipelinq:3690:db79dece	3690 GREEN: tests only, +3 tests, 1 inherited fail
 cover:shillinq:05639debmd8ee:1b97f731	already done: lib/Listener/*.php 2578/2842 statements (90.7%) with pcov on development, at 90 target; no PR (unit suite has 1 inherited failure)	session-20261113T051710-d9c31c61	2026-11-13T06:51:05Z
 cover:dossiq:f8a113c5m7e79:b6fccd13	already done: lib/Service/Access/*.php above 90 (91.3% on earlier clover; CaseFieldRoleProjector now 95.8% after 0798d743); no PR	session-20261113T054519-189b2666	2026-11-13T06:51:03Z
 cover:dossiq:f8a113c5m7e79:9d3a1784	already done: pcov on development shows lib/BackgroundJob 93.5% lines (616/659), target 90; -1 branch merged	session-20261113T053904-36dcee67	2026-11-13T06:51:36Z
+verify:dossiq:6303:3c18c704	6303 GREEN, 6304 GREEN: tests-only, 0 new failures (19 inherited)	session-20261113T054519-3d0ac77f	2026-11-13T06:51:40Z
