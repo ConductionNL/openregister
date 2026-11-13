@@ -5822,5 +5822,6 @@ build:portaliq:operate-portals-per-organisation	partial: PR #2440 T10, T11 (them
 build:portaliq:site-multi-step-forms	nothing buildable: T8b blocked on openregister or-form-and-journey-registry (intake drafts T06 still open); T9 openspec validate --strict fails on 7 warnings (requirement text >500 chars in 3 spec files), a spec rewrite for the change owner; no PR	session-20261113T171154-27186e77	2026-11-13T18:07:26Z
 review:openregister:10286:791ce348	APPROVE 10286	session-20261113T171213-10021a1d	2026-11-13T18:07:26Z
 verify:pipelinq:3766:c15d54dd	GREEN #3766 (tests only; 7203 tests, 5 inherited failures, 0 new)	session-20261113T175335-552e4d60	2026-11-13T18:07:32Z
+cover:stackiq:9ac19b3am9d24:d528dcf0	already done: lib/Dashboard/*.php 12/12 statements covered	session-20261113T171141-a3907367	2026-11-13T18:07:42Z
 build:portaliq:site-nlds-widget-palette	failed: too big for one task; split it: T9 (nine signed-in widgets over the shell's data) and T11 (form widget field inspector) each need their own build; T8b needs a live check; T8c code is merged (e2e/live left); T8d is delivery	session-20261113T171149-8b9ea523	2026-11-13T18:07:40Z
 cover:shillinq:05639debm7b6b:jsb80bc6aa	PR #2952: 22 tests, dirs lines 89.33->93.53% (target 90)	session-20261113T171152-380dbc11	2026-11-13T18:07:53Z
