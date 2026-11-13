@@ -4990,3 +4990,4 @@ merge:versioniq:674:e19b46e3	merge-local over 6 versioniq tasks: merged=12 red=0
 merge:versioniq:675:4c1e36bf	merge-local over 6 versioniq tasks: merged=12 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:43:49Z
 build:openregister:exchange-encrypted-instance-export	partial: PR #10201 builds the encrypted set container (task 1.1 minus the ext-sodium composer declaration), 14 tests; 2.x/4.1/5.1 left, 3.x wait on import-preview-and-conflict-policy, 5.2 e2e	session-20261113T094606-b7da8c7f	2026-11-13T12:43:49Z
 verify:shillinq:2924:99c0bfff	2924 GREEN, 2925 GREEN	session-20261113T071633-17de823f	2026-11-13T12:44:13Z
+review:openregister:10174:ad3e5654	APPROVE (scoped discovery per change; suites green, inherited errors only)	session-20261113T081038-e8b5210f	2026-11-13T12:44:20Z
