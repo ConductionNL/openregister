@@ -4916,3 +4916,4 @@ build:openregister:platform-cloud-federation-provider	failed: worker rules forbi
 build:openregister:relations-that-travel-and-what-they-expose	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:24Z
 build:openregister:import-preview-and-conflict-policy	partial: PR #10195 (8.2 proposer, 8.1 Baserow reader + set/interface; Airtable/NocoDB readers, 8.3-8.5, sections 4/5 left)	session-20261113T114545-cd8d833c	2026-11-13T12:36:28Z
 build:openregister:records-tree-view	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:30Z
+build:openregister:reimport-real-register-configuration	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:36Z
