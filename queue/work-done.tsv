@@ -2586,3 +2586,4 @@ cover:pipelinq:7f9dc8e6mc4ba:js3f3bfe56	PR #3685: 46 tests (App.vue, registry.js
 cover:pipelinq:7f9dc8e6mc4ba:e372e6ff	PR pipelinq#3684: TimeEntryApprovedEvent counted via listener test; lib/Event/*.php 77/87 -> 82/87 (94.3%); suite unchanged (6425, 1 inherited failure)	session-20261113T051714-4ad50f31	2026-11-13T05:58:20Z
 cover:dossiq:f8a113c5mac88:95a79563	already done: lib/Service/Lifecycle/ at 97.09% lines (867/893) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T05:59:01Z
 cover:dossiq:f8a113c5mac88:67583626	already done: lib/Service/Lifecycle/*.php at 97.09% lines (867/893; no subdirs), above 90 target	session-20261113T044737-f37de8e3	2026-11-13T05:59:13Z
+cover:shillinq:05639debmd8ee:jsdefec9cf	PR shillinq#2870: 25 tests; src/views/bookkeeping 27.2%->77.2% (85 needs a DOM env for inline handlers)	session-20261113T031701-b518f7f8	2026-11-13T05:59:08Z
