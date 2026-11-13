@@ -1597,4 +1597,5 @@ cover:pipelinq:f67520ecm8c58:js5794e9fc	already done: branches quality/test-cove
 cover:pipelinq:f67520ecm8c58:28cccfd9	PR #3623: Repair/Support 94/95 -> 95/95 statements, +2 tests	session-20261113T011743-bdeb8a13	2026-11-13T02:16:50Z
 cover:pipelinq:f67520ecm8c58:f0c02922	already done: lib/Service/External is 47/48 lines with exact-assertion tests of every redaction and deferral; only isDormant() (constant true) is unexecuted, a getter-only test would add nothing; no PR	session-20261112T234655-793f46ee	2026-11-13T02:17:11Z
 cover:pipelinq:f67520ecm8c58:e19add4c	already done: lib/Service/Consent 66/67 statements covered on development (classes are value objects driven by existing service tests), no PR	session-20261113T004519-b6b86685	2026-11-13T02:17:08Z
+cover:pipelinq:f67520ecm8c58:dfaef732	already done: lib/Notification/Notifier.php 120/120 stmts covered by NotifierSubjectGoldenTest (exact setter-call golden); no PR	session-20261113T015005-81f4d5a5	2026-11-13T02:17:39Z
 cover:pipelinq:f67520ecm8c58:db675bd6	already done: lib/Activity/Setting/ 27/27 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:17:37Z
