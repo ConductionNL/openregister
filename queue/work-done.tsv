@@ -1296,3 +1296,4 @@ cover:dossiq:6ca0231e:f7dbdab3	PR #6210: 23 tests, 5 untested CaseType classes t
 cover:keepiq:d76c2121m70b5:js06645759	PR #1712: 8 component specs, 124 tests; src/components direct-file line coverage 70.7% -> 86.5%	session-20261113T002028-6d7c79b9	2026-11-13T01:04:42Z
 verify:stackiq:1751:18d7d14d	9 GREEN (tests only, phpunit 2605 / vitest 1997 green)	session-20261113T004523-285a0413	2026-11-13T01:04:44Z
 verify:launchpad:1143:f227af38	GREEN: phpunit 3579 OK, vitest 1241 passed	session-20261113T002025-940c220f	2026-11-13T01:05:18Z
+review:openregister:10078:b7635346	APPROVE: @uses only, Task tests 745 pass, risky 234->76	session-20261112T231640-f6dda86c	2026-11-13T01:05:31Z
