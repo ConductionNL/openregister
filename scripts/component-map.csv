@@ -1643,6 +1643,7 @@ Search/Controller/ViewsController.php,472,Search,Search,Search/Controller/ViewsC
 Search/Db/View.php,159,Search,Search,Search/Db/View.php,0,170,Search
 Search/Db/ViewMapper.php,156,Search,Search,Search/Db/ViewMapper.php,0,183,Search
 Search/Db/ViewMapperInterface.php,18,Search,Search,Search/Db/ViewMapperInterface.php,0,,Search
+Search/FlowTasksProvider.php,150,Search,Platform,Platform/Search/FlowTasksProvider.php,0,,Search
 Search/Listener/AggregationThresholdListener.php,83,Search,Search,Search/Listener/AggregationThresholdListener.php,0,302,Search
 Search/Listener/ObjectMetricsListener.php,78,Search,Search,Search/Listener/ObjectMetricsListener.php,0,311,Search
 Search/ObjectsProvider.php,340,Search,Platform,Platform/Search/ObjectsProvider.php,0,,Search
