@@ -4939,3 +4939,4 @@ merge:opencatalogi:2585:695abb5b	merge-local over 6 opencatalogi tasks: merged=5
 merge:opencatalogi:2586:06ee83ce	merge-local over 6 opencatalogi tasks: merged=5 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:38:21Z
 merge:opencatalogi:2587:314238c7	merge-local over 6 opencatalogi tasks: merged=5 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:38:21Z
 merge:opencatalogi:2588:e3994280	merge-local over 6 opencatalogi tasks: merged=5 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:38:21Z
+build:openregister:retire-external-workflow-engines	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:38:27Z
