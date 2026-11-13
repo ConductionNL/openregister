@@ -1501,3 +1501,4 @@ cover:shillinq:801aab65:2befd24e	PR #2830: 9 tests for FixedAssetDepreciation (4
 measure:stackiq:20261113h00	stackiq@062e370 php 64.67% (pcov, needs pcov.directory=lib), js 76.28%	session-20261113T015005-da194c88	2026-11-13T01:56:05Z
 measure:pipelinq:20261113h00	php 81.76% (47790/58451, pcov.directory set explicitly; default autodetect gave 0%), js 78.47%; 1 inherited unit failure CrmPrivilegeRefusalGoldenTest TicketWooRequestController	session-20261113T015003-d56b074c	2026-11-13T01:56:18Z
 verify:integriq:3451:7c814cf9	GREEN 3451 (tests-only, +5 tests, 0 new failures)	session-20261113T011743-bdeb8a13	2026-11-13T01:56:37Z
+verify:integriq:3448:edee7847	GREEN 3448,3449,3450; 7133 tests, only inherited CallServiceTest errors	session-20261113T013903-97d30fda	2026-11-13T01:56:52Z
