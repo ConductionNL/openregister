@@ -5179,3 +5179,4 @@ decidiq	2110	cfed87e94fe407d9a21f84ef7b15c9a87fb2db01	GREEN	worker-28	3414 tests
 shillinq	2868	251d388321bd32b66dd1f09d5ab24e19c53d3332	GREEN	worker-38	phpunit 9045 on tree (baseline 9031), 1 failing = baseline 1 (PaymentWebhookIntakeCharacterisationTest timestamp case), 0 new; tests only
 pipelinq	3672	ba210f5711ce9cd32257d1c7ae234f3479f136ef	GREEN	worker-06	6454 tests on tree, baseline 6425 with 1 failure, no new failures; tests only
 pipelinq	3673	d39bc73fb6a27fc07068468ece01822432f4fdf6	GREEN	worker-06	6454 tests on tree, baseline 6425 with 1 failure, no new failures; tests only
+pipelinq	3674	f32f90dab9517c1408db762715fd3421ff3b0694	GREEN	worker-06	6454 tests on tree, baseline 6425 with 1 failure, no new failures; tests only
