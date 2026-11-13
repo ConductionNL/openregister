@@ -4205,3 +4205,16 @@ cover:pipelinq:7f9dc8e6m916f:d39f9857	cover	pipelinq	development	quality/test-co
 cover:pipelinq:7f9dc8e6m916f:6925f818	cover	pipelinq	development	quality/test-coverage-6925f818	lang=php;dirs=lib/SetupCheck/*.php;focus=thin;weight=269;coverage=84.95;target=90.0	2026-11-13T03:48:28Z
 cover:pipelinq:7f9dc8e6m916f:be0dcca9	cover	pipelinq	development	quality/test-coverage-be0dcca9	lang=php;dirs=lib/Mcp/*.php;focus=thin;weight=192;coverage=84.95;target=90.0	2026-11-13T03:49:45Z
 cover:pipelinq:7f9dc8e6m916f:168f7791	cover	pipelinq	development	quality/test-coverage-168f7791	lang=php;dirs=lib/Dossiq/*.php;focus=thin;weight=95;coverage=84.95;target=90.0	2026-11-13T03:51:22Z
+fix:learniq:2419:62ccde47	fix	learniq	development	2419	sha=62ccde47ab42aaaec24f574c645a690c691c9f31;verdict=CONFLICT;branch=quality/api-v1-learniq;reason=conflicts with development, merge origin/development in, keep the /api/v1-only error-body rewrite	2026-11-13T09:00:23Z
+fix:planninq:1131:4b8eae2e	fix	planninq	development	1131	sha=4b8eae2ef3bcd27cd735d0240b9064b88824a5c7;verdict=RED;branch=quality/gap-19-openapi;reason=merge gate adrvalidator: Spectral reports mandatory-rule errors in the openapi.json this PR adds, fix the spec until the API-design rules pass, and merge origin/development in if it conflicts	2026-11-13T09:00:23Z
+verify:learniq:2455:e8432c53	verify	learniq	development	merge	prs=2455@8059065c32d525d76564a2ff249ab2faa39f703c,2456@a8da7e5d85e321c5cde7a952d1e9a58364313e84,2457@5156e6ca0678da1c443ef5a7c46c545a20db1811	2026-11-13T09:00:23Z
+verify:dossiq:6340:198db1f3	verify	dossiq	development	merge	prs=6340@dfb4fba3fc5ebeaea9cf331c3e670ee8d0105184	2026-11-13T09:00:23Z
+verify:pipelinq:3695:7013f4a9	verify	pipelinq	development	merge	prs=3695@f67f3fa20c9a72865c1a3390cb938ee2c985e74d	2026-11-13T09:00:23Z
+verify:launchpad:1185:7ded26d1	verify	launchpad	development	merge	prs=1185@762f505c36c8c3a22024c2350e31fd09424ff95a	2026-11-13T09:00:23Z
+merge:learniq:2453:aee4f3b9	merge	learniq	development	development	prs=2453@1e2e4747c68bbc4e84f2fae472e79f8910a69719	2026-11-13T09:00:23Z
+merge:dossiq:6335:de354ce7	merge	dossiq	development	development	prs=6335@e418f20a1d7411c69f9662210217cacb0368646d	2026-11-13T09:00:23Z
+merge:integriq:3514:373599c5	merge	integriq	development	development	prs=3514@8ff3bb4311ccd271cba5d885157a990fd72910cb	2026-11-13T09:00:23Z
+merge:launchpad:1180:d60b6809	merge	launchpad	development	development	prs=1180@fe5ee0920319690346b214c1a65514b1873592ef,1181@de61f590f020f1e546c503bedfc2b580826eca00,1182@32894d63688d8427503f64d0d09e8ceaf9f125f4,1183@efa250d135899d7391112f621d865dc5e0664e7d,1184@348ec8b40d9559f2b62d0d054e242599188c2a07	2026-11-13T09:00:23Z
+gap:stackiq:16:614b0a03	gap	stackiq	development	16	criterion=opensourcehealth WARN;row=stackiq;fix=Held by Activity 2 stars and Freshness 3 stars plus 1 medium-risk licence. Recommended, no score effect. Only worth a dependency refresh sweep.	2026-11-13T09:00:23Z
+cover:pipelinq:7f9dc8e6m916f:6f346b68	cover	pipelinq	development	quality/test-coverage-6f346b68	lang=php;dirs=lib/Sections/*.php;focus=thin;weight=85;coverage=84.95;target=90.0	2026-11-13T03:56:32Z
+cover:shillinq:05639debmd8ee:d47bb994	cover	shillinq	development	quality/test-coverage-d47bb994	lang=php;dirs=lib/Reporting/*.php;focus=uncovered;weight=300;coverage=85.47;target=90.0	2026-11-13T04:24:12Z
