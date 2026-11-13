@@ -1,12 +1,12 @@
 {
  "app": "integriq",
- "commit": "22489fd5bb10dc6b822291a00bc6b974d47b540a",
- "measured_at": "2026-11-12T22:27:33Z",
+ "commit": "8420a0dd260957e2068ed284bc2e7c633c8e5806",
+ "measured_at": "2026-11-13T01:54:54Z",
  "php": {
   "tool": "pcov",
   "pct": 88.01,
-  "statements": 64241,
-  "covered": 56538,
+  "statements": 64244,
+  "covered": 56543,
   "dirs": {
    "lib/Adapters/": [
     151,
@@ -218,7 +218,7 @@
    ],
    "lib/Service/": [
     22701,
-    19853
+    19855
    ],
    "lib/Service/Adapter/": [
     48,
@@ -249,8 +249,8 @@
     12
    ],
    "lib/Service/Call/": [
-    1,
-    1
+    4,
+    4
    ],
    "lib/Service/Cardfeed/": [
     70,

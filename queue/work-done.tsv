@@ -1204,4 +1204,459 @@ cover:pipelinq:f67520ecm9d2c:js5cb5a0d3	PR #3607 (-2): ServiceStepsEditor cells 
 fix:hermiq:1496:5ec772b2	conflict resolved (spec-tag-only change on dev side), pushed 2271f36d, REVERIFY recorded	session-20261112T234655-6f442bc3	2026-11-13T00:44:23Z
 fix:hermiq:1527:20970732	conflict resolved, pushed 102d5f61, REVERIFY recorded	session-20261112T234655-c333a6f8	2026-11-13T00:44:35Z
 fix:hermiq:1529:f5305e07	conflict resolved, pushed c0cafc44, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:44:49Z
+cover:shillinq:801aab65:f0c02922	PR #2805: 27 tests over 8 deferred adapters, lib/Service/External 8.7%->68.8%, suite inherited 1 failure unchanged	session-20261112T234655-599f9c9a	2026-11-13T00:45:01Z
 fix:hermiq:1518:71a3fd8f	merged development, resolved ScheduleService/ScheduleServiceTest conflicts keeping both extractions; new head 202e8aaa; REVERIFY recorded	session-20261112T231633-96ffe7b8	2026-11-13T00:45:07Z
+cover:keepiq:d76c2121m70b5:js0be8c659	PR #1708: 3 modal specs, 26 tests; src/modals line coverage 59.5% -> 93.0%	session-20261113T002028-6d7c79b9	2026-11-13T00:45:18Z
+cover:pipelinq:f67520ecm9d2c:js00fe026a	already done: src/services/* at 96.1% statements (1912/1989, vitest v8) vs target 85; no PR	session-20261112T224529-41d77a96	2026-11-13T00:45:38Z
+fix:launchpad:1109:c9075734	failed: permission (installing the secret scanner to reproduce the gate was refused; gate here reports UNMEASURED)	session-20261113T002025-940c220f	2026-11-13T00:45:49Z
+fix:hermiq:1534:a9242b37	merged development in, head a68a0c8c, REVERIFY recorded	session-20261113T003903-5efbf5ae	2026-11-13T00:45:48Z
+fix:dossiq:5899:035ffd99	conflict resolved (kept PR's CaseReadAndPatch refactor + dev @spec tags); suite same 19 inherited failures; REVERIFY new head 05064fadad1bf15bf5341fb8b73ae4dc333dea18	session-20261112T221237-836ed3f0	2026-11-13T00:45:51Z
+cover:buildiq:8ca317f6m6d54:js5794e9fc	PR buildiq#1488: settings views spec (+8), src/views/settings 0->36/46, vitest 2962->2970	session-20261112T231640-f6dda86c	2026-11-13T00:46:13Z
+cover:pipelinq:f67520ecm9d2c:js3a5df78e	PR #3608: 18 vitest tests (ArticleContentSection 64->98/101 stmts); -1 branch PR already open for five other sections	session-20261112T234648-144479e8	2026-11-13T00:46:00Z
+cover:keepiq:d76c2121m70b5:js4829b6aa	PR #1709: 4 views, 57 tests, vitest 5475->5532 pass, src/views/* lines 57.4%->66.5%	session-20261113T002031-7b3e41b2	2026-11-13T00:46:09Z
+fix:hermiq:1605:b04693e3	add/add conflict resolved by renaming the PR's test file, pushed 600aae13, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:46:11Z
+cover:openregister:7350e3efm0e99:jscebea196	PR #10076: 9 jest tests for logs views; jest 7485->7494 passing	session-20261112T231645-3f0591a5	2026-11-13T00:46:53Z
+merge:launchpad:1126:704a9ea9	merge-local over 2 launchpad tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:46:52Z
+merge:launchpad:1139:f3c5a6e1	merge-local over 2 launchpad tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:46:52Z
+fix:hermiq:1487:4d0053da	conflict resolved (spec-tag-only change on dev side), pushed fd5c6f50, REVERIFY recorded	session-20261112T234655-6f442bc3	2026-11-13T00:47:09Z
+cover:shillinq:801aab65:46ce5a44	PR #2806: Dunning log adapters 0->46/46; six dirs 90.40->91.78%; 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:47:23Z
+cover:hermiq:755cdfe7m7444:js0be8c659	PR #1630: AgentFormModal pickers, 7 vitest tests; suite 1072 -> 1079; AgentFormModal lines 52.7% -> 64.1%	session-20261112T234653-57d11a5b	2026-11-13T00:47:43Z
+cover:hermiq:755cdfe7m7444:34f5c300	PR #1631: 7 tests for SkillService (123 -> 194/198 lines); suite 3840->3847, same 171 inherited reds	session-20261112T231633-96ffe7b8	2026-11-13T00:48:02Z
+fix:dossiq:5862:978fbecd	merged development in (import-only conflict), checks green, pushed 5b407093921c1b6369b3206334b190985020c138; REVERIFY recorded	session-20261112T233856-8f2d924b	2026-11-13T00:48:14Z
+verify:filinq:1984:796fcdba	failed: permission (running unit suite on merged PR tree refused)	session-20261113T004522-63c0f62b	2026-11-13T00:48:27Z
+verify:keepiq:1679:aea93eae	stale: #1679 head is 73ccc268 not cc2cc877	session-20261113T004519-b6b86685	2026-11-13T00:48:39Z
+fix:hermiq:1584:d8e968c6	fixed: spec declares the CORS header on /openapi.json (only ADR error); lints warn-only; new head 9cc7549e	session-20261113T004521-223ef947	2026-11-13T00:49:12Z
+review:openregister:10063:8dedc6f8	APPROVE: test-only, 4/4 pass, eslint clean	session-20261113T004527-ec0338ee	2026-11-13T00:49:22Z
+verify:learniq:2426:431b192d	failed: permission (running PR code for verify is refused in this session)	session-20261113T004522-63c0f62b	2026-11-13T00:49:59Z
+verify:decidiq:2087:98dda831	stale	feeder	2026-11-13T00:45:07Z
+merge:stackiq:1595:02c74dd2	stale	feeder	2026-11-13T00:45:07Z
+cover:pipelinq:f67520ecm9d2c:js4570fd16	already done: existing branch quality/test-coverage-js-4570fd16-1 takes src/views/pos 72.3%->87.6% (target 85); no new PR	session-20261112T234653-efce95ba	2026-11-13T00:50:00Z
+verify:decidiq:2099:54c1c538	4 GREEN (2099-2102), 3218 tests, 0 new failures	session-20261113T004524-55adaa63	2026-11-13T00:50:01Z
+cover:hermiq:755cdfe7:b2c9296a	PR #1632: 4 engine classes, 23 tests, suite 3840->3863, no new failures	session-20261112T234655-c333a6f8	2026-11-13T00:50:21Z
+fix:launchpad:1107:3f7f87e6	failed: cannot measure here (ADR ruleset host unreachable; secret scanner install refused). Vendored ADR ruleset: only 2 use-problem-schema warnings on openapi.json; secretscanning drop likely inherited (#1117 merged 00:09Z after the gate)	session-20261113T002025-940c220f	2026-11-13T00:50:19Z
+cover:hermiq:755cdfe7m7444:js4829b6aa	PR #1633: 16 vitest tests (AiFeatureRegister, AiLiteracy rendered); src/views/* 85.1% -> 87.5%, suite 1072 -> 1088 green	session-20261113T002028-bc0aa910	2026-11-13T00:50:54Z
+cover:hermiq:755cdfe7m7444:js0023cfc7	already done: src/dialogs/* at 88.8% lines (167/188) on development, target 85; no PR	session-20261112T231638-72e59130	2026-11-13T00:51:01Z
+cover:hermiq:755cdfe7m7444:01b56ade	PR #1634: 6 tests for ProviderFactory Anthropic model choice and HTTP generateText (753 -> 781/839 lines); suite 3840->3846, same inherited reds	session-20261112T231633-96ffe7b8	2026-11-13T00:51:47Z
+review:openregister:10065:f5aa9315	APPROVE: test-only, 20 new tests pass, Controller 9 errors inherited from main	session-20261112T234655-793f46ee	2026-11-13T00:51:53Z
+cover:openregister:7350e3efm0e99:js6e3c1a64	PR #10077: 9 jest tests for ImportConfiguration (lines 69->80%); jest 7485->7494 passing	session-20261112T231645-3f0591a5	2026-11-13T00:52:05Z
+cover:hermiq:755cdfe7m7444:17d367ab	PR #1635: 3 settings controllers, 4 tests; Controller/Settings lines 94.0% -> 100%; suite 3840 -> 3844, no new failures (145E/26F inherited)	session-20261112T234653-57d11a5b	2026-11-13T00:52:10Z
+verify:filinq:1986:53e375fb	GREEN: 1986 (5328 tests, 0 new failures)	session-20261113T004527-ec0338ee	2026-11-13T00:52:19Z
+cover:hermiq:755cdfe7m7444:f545d745	PR #1636: 5 Repair classes, 23 tests; lib/Repair 82.9% -> 93.5%; suite failures unchanged	session-20261113T003903-5efbf5ae	2026-11-13T00:52:46Z
+cover:dossiq:6ca0231e:b7fd3ec4	failed: permission (running the app unit suite is refused in this session)	session-20261113T004522-63c0f62b	2026-11-13T00:52:51Z
+review:hermiq:1485:6291bb82	GREEN: behaviour-identical move, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:52:49Z
+cover:hermiq:755cdfe7m7444:60c2c265	PR #1637: 36 tests for 4 controllers; lib/Controller/*.php 83.68->85.42%; suite 3840->3876, 171 inherited, 0 new, no risky	session-20261112T234655-6f442bc3	2026-11-13T00:52:55Z
+cover:openregister:7350e3efm0e99:js518b3200	PR #10078: missing @uses in 23 Task tests un-risked 223 tests; lib/Service/Task 69.4->98.6%; suite failures unchanged (11E/11F)	session-20261112T231637-60fd49c4	2026-11-13T00:52:59Z
+verify:dossiq:6207:85a3453d	2/2 GREEN (6207, 6208 tests-only; 13409 run, no new failures)	session-20261112T221237-836ed3f0	2026-11-13T00:53:22Z
+review:hermiq:1427:b307d69e	GREEN: picker extraction faithful, vitest green	session-20261112T231638-72e59130	2026-11-13T00:53:32Z
+cover:hermiq:755cdfe7m7444:js3287a408	opened hermiq#1638 (TalkBridgeSettings states, 6 tests; vitest 1072->1078 OK)	session-20261112T231639-4c562de9	2026-11-13T00:53:50Z
+cover:shillinq:801aab65:568ec52a	PR #2807: 29 tests over 4 classes, lib/Lifecycle/*.php 80.48%->85.10%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T00:53:54Z
+review:hermiq:1500:badeb702	GREEN: pure extract-method refactor, 0 new failures	session-20261112T234655-6f442bc3	2026-11-13T00:54:04Z
+verify:keepiq:1680:d2986367	1680 GREEN (unit 3752 OK, no new failures)	session-20261113T002028-6d7c79b9	2026-11-13T00:54:17Z
+cover:hermiq:755cdfe7m7444:65e30692	PR #1639: Intake dir 268/288 -> 288/288 lines; 4 new tests + @uses fix on risky FlowTest; suite 3842 -> 3846 OK	session-20261113T004521-223ef947	2026-11-13T00:54:46Z
+review:hermiq:1527:102d5f61	GREEN: delivery refactor behaviour-preserving, no new failures	session-20261112T231638-72e59130	2026-11-13T00:55:13Z
+review:hermiq:1496:2271f36d	RED: behaviour preserved, but an existing test turns risky under coverage (missing @uses ChatDriverGates) and fails the run	session-20261112T231633-96ffe7b8	2026-11-13T00:55:31Z
+cover:dossiq:6ca0231e:ea81adeb	PR #6209: 19 tests (ZgwZtcResultaattypeRules, ZrcStatusEffects, ZgwAuditedResource to 100%), Zgw 2215->2261/2313 lines, suite 13417->13436, baseline 19 failures unchanged	session-20261112T233856-8f2d924b	2026-11-13T00:55:43Z
+review:hermiq:1495:2810c65e	GREEN: behaviour-identical move, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:56:07Z
+review:hermiq:1490:fcb1b7ff	GREEN: behaviour-identical date helper extraction; vitest 1075 passing on PR+development	session-20261112T234653-57d11a5b	2026-11-13T00:56:16Z
+review:hermiq:1488:82f546c0	GREEN: refactor preserves behaviour, vitest 1085/1085	session-20261113T003903-5efbf5ae	2026-11-13T00:56:37Z
+cover:keepiq:d76c2121m70b5:js0023cfc7	PR #1710: 8 dialogs, 51 tests, src/dialogs lines 77.7->87.0%	session-20261113T004519-b6b86685	2026-11-13T00:56:42Z
+cover:dossiq:6ca0231e:33af3743	already done: lib/Service/Bezwaar/*.php measured at 99.2% (1543/1556) on development; queued 70.74% is stale; no PR	session-20261112T221237-836ed3f0	2026-11-13T00:56:43Z
+review:hermiq:1529:c0cafc44	GREEN: faithful move of reviewer inbox/check, access behaviour unchanged, 0 new failures	session-20261112T234655-6f442bc3	2026-11-13T00:57:10Z
+verify:buildiq:1486:78803af7	1486,1487 GREEN (tests only); no new failures	session-20261112T231640-f6dda86c	2026-11-13T00:57:26Z
+review:hermiq:1483:fea5911b	GREEN: identical-behaviour refactor, vitest 1076 pass	session-20261113T004527-ec0338ee	2026-11-13T00:57:40Z
+cover:hermiq:755cdfe7m7444:js77cf3af4	PR #1640: 3 widget modules, 22 tests, vitest 1072->1094, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:57:51Z
+review:openregister:10068:385b8604	APPROVE: tests only, settings specs 355 green on merge with main	session-20261113T002028-bc0aa910	2026-11-13T00:57:49Z
+review:hermiq:1486:a26b6d01	GREEN: behaviour-preserving refactor, vitest 1093 OK on merge with development	session-20261112T231639-4c562de9	2026-11-13T00:58:02Z
+cover:pipelinq:f67520ecm9d2c:js6d6735a6	PR #3609: 5 mount tests, ResourceForm 54->64/71; other bookings views are in the open -1 branch	session-20261112T224529-41d77a96	2026-11-13T00:58:11Z
+cover:shillinq:801aab65:9d3a1784	PR #2808: BackgroundJob 80.31->88.77% (LotExpiryAlertJob 12->132/132, 3 pass-through jobs 0->100%), 16 tests; 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:58:21Z
+cover:hermiq:755cdfe7m7444:js06645759	PR #1641: src/components/* lines 75.7% -> 89.0% (ToolGrantMatrix 58/134 -> 130/134); 13 tests; vitest 1072 -> 1085 passing	session-20261113T004521-223ef947	2026-11-13T00:58:25Z
+cover:keepiq:d76c2121m70b5:jsfb924eab	PR #1711: 5 components, 50 tests, vitest 5475->5525 pass, dirs lines 59.1%->80.6%	session-20261113T002031-7b3e41b2	2026-11-13T00:58:33Z
+review:openregister:10069:33d5247d	APPROVE: tests-only jest spec; modals/object 504 pass on merge with main	session-20261112T231637-60fd49c4	2026-11-13T00:58:33Z
+cover:launchpad:755175ffm7412:js01efb861	PR #1143: 53 tests, src/components/Widgets 73.2%->86.3% lines	session-20261113T002025-940c220f	2026-11-13T00:59:01Z
+review:dossiq:5899:05064fad	GREEN: behaviour-preserving extraction, 0 new failures	session-20261113T004524-55adaa63	2026-11-13T00:58:55Z
+fix:launchpad:1106:379ed362	inherited: secretscanning fails on plain development too (same gitleaks 8.28 findings in openspec/docs files, e.g. embedded-analytics spec added 2026-11-12, after the floor was measured); PR only touches package-lock.json and sbom.cdx.json, no fix on the branch	session-20261112T234653-57d11a5b	2026-11-13T00:59:07Z
+review:openregister:10075:c2ae354f	BLOCK: timezone-dependent test in RuleRunSummaryMapperTest	session-20261113T003903-5efbf5ae	2026-11-13T00:59:08Z
+review:hermiq:1518:202e8aaa	GREEN: behaviour-equivalent extraction, no new failures or risky tests	session-20261112T231633-96ffe7b8	2026-11-13T00:59:21Z
+cover:pipelinq:f67520ec:js4c63a0a9	PR #3610: 12 vitest tests, views/marketing stmts 68.6% -> 77.5%	session-20261112T234648-144479e8	2026-11-13T00:59:26Z
+review:stackiq:1595:e53f9c42	GREEN: equivalent extraction, vitest 1887 pass	session-20261113T004523-285a0413	2026-11-13T00:59:48Z
+review:openregister:10070:4529295e	APPROVE: tests only, 22 jest tests pass merged with main	session-20261112T231640-f6dda86c	2026-11-13T01:00:13Z
+review:openregister:10071:a6abbd42	APPROVE: test-only jest spec, suites green on merge with main	session-20261112T234655-6f442bc3	2026-11-13T01:00:40Z
+cover:openregister:7350e3efm0e99:jsd29a5f26	already done: src/components/cards at 350/366 statements (95.6%) on main, above target 85	session-20261112T231640-f6dda86c	2026-11-13T01:01:32Z
+merge:pipelinq:3539:195f6466	stale	feeder	2026-11-13T01:00:17Z
+merge:larpinq:1000:d76b1030	stale	feeder	2026-11-13T01:00:17Z
+verify:stackiq:1774:e41fcd93	stale	feeder	2026-11-13T01:00:17Z
+merge:filinq:1975:73c62e36	stale	feeder	2026-11-13T01:00:17Z
+cover:launchpad:755175ffm7412:34f5c300	already done: lib/Service/*.php measured 92.4% lines on development (target 85; #1118 merged), no PR	session-20261113T002025-940c220f	2026-11-13T01:01:50Z
+cover:openregister:7350e3efm0e99:jsa8ac8042	PR #10079: 13 jest tests for EntitiesTab, lines 90.2% -> 100%, suite 7485 -> 7498 green	session-20261113T002028-bc0aa910	2026-11-13T01:02:14Z
+review:stackiq:1704:f55ed033	GREEN: behaviour-preserving refactor; eslint clean; vitest 1910/1910	session-20261113T004521-223ef947	2026-11-13T01:02:12Z
+cover:shillinq:801aab65:f545d745	PR #2809: 30 tests over 5 repair classes, lib/Repair/*.php 52.79%->62.30%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:02:37Z
+verify:integriq:3440:5992af93	4 GREEN (3440-3443, vitest-only), vitest 1494 OK, phpunit = baseline	session-20261112T231639-4c562de9	2026-11-13T01:03:45Z
+cover:openregister:7350e3efm0e99:jsb7158e4e	PR #10080: src/dialogs/avg 55/56->56/56 (+2 jest tests); jest 7485->7487 passing	session-20261112T231637-60fd49c4	2026-11-13T01:04:05Z
+review:openregister:10076:2e819f39	APPROVE: tests only, 149 log-view tests green on merge with main	session-20261113T002028-bc0aa910	2026-11-13T01:04:02Z
+cover:dossiq:6ca0231e:f7dbdab3	PR #6210: 23 tests, 5 untested CaseType classes to 100% (VersionChain, VersionDiff, AlwaysAvailableActs, DerivedCaseTypeReferences, WorkflowTemplateBinding), CaseType 1135->1350/1497, suite 13455->13478, baseline 19 failures unchanged	session-20261112T233856-8f2d924b	2026-11-13T01:04:13Z
+cover:keepiq:d76c2121m70b5:js06645759	PR #1712: 8 component specs, 124 tests; src/components direct-file line coverage 70.7% -> 86.5%	session-20261113T002028-6d7c79b9	2026-11-13T01:04:42Z
+verify:stackiq:1751:18d7d14d	9 GREEN (tests only, phpunit 2605 / vitest 1997 green)	session-20261113T004523-285a0413	2026-11-13T01:04:44Z
+verify:launchpad:1143:f227af38	GREEN: phpunit 3579 OK, vitest 1241 passed	session-20261113T002025-940c220f	2026-11-13T01:05:18Z
+review:openregister:10078:b7635346	APPROVE: @uses only, Task tests 745 pass, risky 234->76	session-20261112T231640-f6dda86c	2026-11-13T01:05:31Z
+cover:keepiq:d76c2121m70b5:js3f3bfe56	PR #1713: App.vue shell + settings.js, 25 tests, src/* lines 35.9->53.3%	session-20261113T004519-b6b86685	2026-11-13T01:05:36Z
+cover:dossiq:6ca0231e:59f569b2	PR dossiq#6211: 9 tests; ConfigurationImport 19->86/99, SchemaKeyReconciler import path covered (dir 68.6% before); suite 13464, same 19 inherited	session-20261112T221237-836ed3f0	2026-11-13T01:05:47Z
+verify:launchpad:1142:96e946d1	1142 GREEN: tests-only, vitest 1188->1249, phpunit unchanged, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T01:05:56Z
+review:openregister:10077:91d41469	APPROVE: tests only, 242 tests green on merge with main	session-20261113T002028-bc0aa910	2026-11-13T01:06:03Z
+verify:stackiq:1773:1c728148	1773 GREEN (vitest 1886 vs 1880, phpunit inherited only); 1776 CONFLICT (routes.php, openapi.json, ApiContractMiddlewareTest)	session-20261113T004521-223ef947	2026-11-13T01:06:19Z
+verify:pipelinq:3605:1d11f6a0	3 GREEN (3605-3607): vitest-only, 3203 tests pass, PHP unchanged	session-20261112T234655-6f442bc3	2026-11-13T01:06:34Z
+cover:keepiq:d76c2121m70b5:js8b07cd88	PR #1714: keyProof + verificationPhrase, 15 tests, vitest 5475->5490 pass, src/crypto/* lines 95.6%->97.5%	session-20261113T002031-7b3e41b2	2026-11-13T01:06:58Z
+verify:keepiq:1707:2be1dd61	GREEN: test-only, vitest 5475->5523 all passing	session-20261112T231633-96ffe7b8	2026-11-13T01:06:57Z
+cover:pipelinq:f67520ecm9d2c:js5794e9fc	PR #3611 (-2): 24 tests TagManager/ProductCategoryManager/PaymentSettingsForm; settings 72.3->78.8% alone, 78.1->84.5% with existing -1	session-20261112T234653-efce95ba	2026-11-13T01:07:18Z
+review:openregister:10072:3ca94e55	APPROVE: @uses-only test change; required suites green on PR+main	session-20261112T231645-3f0591a5	2026-11-13T01:07:24Z
+review:openregister:10074:f4e7068d	APPROVE: docblock-only @uses metadata, suites green (Controller errors inherited)	session-20261113T004527-ec0338ee	2026-11-13T01:07:56Z
+review:hermiq:1487:fd5c6f50	GREEN: behaviour-preserving move, failure set identical to development	session-20261112T231637-60fd49c4	2026-11-13T01:08:05Z
+review:stackiq:1690:74ea9a64	GREEN: equivalent split, suite green	session-20261113T004523-285a0413	2026-11-13T01:08:11Z
+cover:pipelinq:f67520ecm9d2c:js3f7698d2	PR #3612: 13 vitest tests, views/pipeline stmts 82.7% -> 85.8%	session-20261112T234648-144479e8	2026-11-13T01:08:16Z
+cover:dossiq:6ca0231e:154acb60	PR #6212: 19 tests, CaseRebindGate+CaseAnswerReader 100%, Cases dir 83.6%->~92%	session-20261113T004524-55adaa63	2026-11-13T01:08:27Z
+review:dossiq:5862:5b407093	GREEN: behaviour-preserving extraction, 0 new failures	session-20261112T231639-4c562de9	2026-11-13T01:08:26Z
+verify:pipelinq:3602:25d7ba3a	GREEN 3602, 3603, 3604: tests only, no new failures	session-20261112T224529-41d77a96	2026-11-13T01:08:40Z
+cover:launchpad:755175ffm7412:js979145b9	PR #1144: 4 stores, 18 vitest tests; suite 1188 -> 1206; src/stores/* lines 64.1% -> 83.0%	session-20261112T234653-57d11a5b	2026-11-13T01:08:39Z
+review:hermiq:1515:7f728ffa	GREEN: behaviour-preserving extraction, 0 new failures	session-20261113T002031-7b3e41b2	2026-11-13T01:09:13Z
+cover:shillinq:801aab65:5ba81b14	PR #2810: Service/Booking 33.42->95.23% (ConfirmationTokenService 0->233/235), 15 tests; 0 new failures	session-20261112T224530-d70ae278	2026-11-13T01:09:26Z
+cover:openregister:7350e3efm0e99:js46ade46b	PR #10081: 4 modal specs, 59 tests; dirs 82.1% -> 90.1% lines; jest 7544/7544	session-20261113T003903-5efbf5ae	2026-11-13T01:09:35Z
+verify:stackiq:1807:63ab05ce	1807 GREEN, 1808 GREEN (tests only, 0 new failures)	session-20261113T002028-bc0aa910	2026-11-13T01:10:00Z
+cover:launchpad:755175ffm7412:js06645759	PR #1145: TileWidget, 9 tests, vitest 1188->1197, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T01:10:07Z
+fix:hermiq:1496:2271f36d	not reproducible: named test green with pcov (3/3, full suite failure set = development); no push, REVERIFY recorded	session-20261112T231637-60fd49c4	2026-11-13T01:10:14Z
+review:hermiq:1528:07639752	GREEN: behaviour-preserving extraction, 0 new failures	session-20261113T002031-7b3e41b2	2026-11-13T01:10:19Z
+verify:buildiq:1488:d11fabeb	1488 GREEN: vitest 2970 pass, spec only	session-20261112T231640-f6dda86c	2026-11-13T01:10:40Z
+verify:dossiq:6209:ad58d1d5	GREEN 6209	session-20261113T004523-285a0413	2026-11-13T01:10:51Z
+verify:portaliq:2367:bb257705	GREEN: 2367 (4527 tests, 0 new failures)	session-20261113T004527-ec0338ee	2026-11-13T01:11:02Z
+cover:buildiq:8ca317f6m6d54:aae6d66c	already done: every lib/Exception class at 100% statements from tests/Unit/Exception (18 tests); lower full-suite figure is from env errors	session-20261112T231640-f6dda86c	2026-11-13T01:11:21Z
+merge:filinq:1975:d4d1b305	merge-local over 3 filinq tasks: merged=9 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:11:21Z
+merge:filinq:1976:1806e527	merge-local over 3 filinq tasks: merged=9 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:11:21Z
+merge:filinq:1978:f915358b	merge-local over 3 filinq tasks: merged=9 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:11:21Z
+cover:dossiq:6ca0231e:3ee9dda7	PR #6213: 10 tests, CaseCustodyChain 102->114/115, CaseTakeoverRequest 172->185/185, Custody 596->621/629, suite 13462->13472, baseline 19 failures unchanged	session-20261112T233856-8f2d924b	2026-11-13T01:11:34Z
+verify:shillinq:2806:56379199	GREEN 2806,2807,2808: tree 9054 tests, 0 new failures (1 inherited), tests-only diffs	session-20261112T234655-599f9c9a	2026-11-13T01:11:34Z
+cover:launchpad:755175ffm7412:60c2c265	PR #1146: 3 classes, 15 tests, suite 3579->3594, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T01:11:41Z
+cover:buildiq:8ca317f6m6d54:1b97f731	already done: every lib/Listener class has a test file; the gap is 43 tests erroring in a bare container on missing OCA\OpenRegister\Contract\ObjectServiceInterface, not missing tests	session-20261112T231640-f6dda86c	2026-11-13T01:12:19Z
+verify:pipelinq:3608:994d4a1a	3608,3609,3610 GREEN (tests only, unit 0 new failures, vitest 3199 green)	session-20261112T234653-efce95ba	2026-11-13T01:12:23Z
+cover:dossiq:6ca0231e:53c979ad	PR dossiq#6214: 19 tests, 4 Zaakdossier classes 0->100% (76 stmts); dir was 80.4%; suite 13481, same 19 inherited	session-20261112T221237-836ed3f0	2026-11-13T01:12:46Z
+cover:dossiq:6ca0231e:8b886c00	PR dossiq#6215: 3 LeaverHandover tests + @uses fixes in 5 People test files (19 risky tests); suite 13462->13465, 19 inherited failures	session-20261112T231645-3f0591a5	2026-11-13T01:12:49Z
+cover:buildiq:8ca317f6m6d54:d528dcf0	already done: lib/Dashboard at 80/81 statements from tests/Unit/Dashboard	session-20261112T231640-f6dda86c	2026-11-13T01:12:57Z
+cover:keepiq:d76c2121m70b5:js769fa52c	PR #1715: offline cache + service worker, 29 tests, src/offline lines 30.3->99.5%	session-20261113T004519-b6b86685	2026-11-13T01:12:54Z
+verify:hermiq:1584:ebd71ac7	9 GREEN (1584 additive OpenAPI/versioning, 8 tests-only); 0 new failures	session-20261113T002031-7b3e41b2	2026-11-13T01:13:41Z
+cover:pipelinq:f67520ec:js98ea82b2	PR #3613: 29 vitest tests; src/portal lines 50.96->85.67%; vitest 3164->3193 green	session-20261112T234655-6f442bc3	2026-11-13T01:13:48Z
+review:openregister:10066:eea5b1bb	APPROVE: tests only, all green; Controller errors inherited from main	session-20261112T234655-0bdbf2be	2026-11-13T01:13:47Z
+review:openregister:10067:53034571	APPROVE: test-only, 8 new tests pass, Architecture green, Notifications failures inherited	session-20261112T234655-793f46ee	2026-11-13T01:14:03Z
+cover:hermiq:755cdfe7m7444:d0c160ad	PR #1642: AgentAvailabilityService + skill config type to 100% (+10 tests), dirs 91.2->92.4%; ToolCatalogView/GrantWaiverAudit need OpenRegister classes (stubs throw); 145E/26F inherited	session-20261112T231637-60fd49c4	2026-11-13T01:14:29Z
+verify:keepiq:1708:ee4c8f65	4 GREEN (1708-1711, test-only); vitest 5475->5659 all passing	session-20261112T231633-96ffe7b8	2026-11-13T01:14:26Z
+cover:pipelinq:f67520ec:d641aea9	PR #3614: 10 tests, ListObjectStore 6->116/116, lib/Service/Marketing 84.97%->~90% (pcov); no new failures	session-20261112T224529-41d77a96	2026-11-13T01:14:43Z
+review:hermiq:1534:a68a0c8c	GREEN: refactor preserves behaviour; no new unit failures vs development	session-20261113T004519-b6b86685	2026-11-13T01:14:40Z
+cover:keepiq:d76c2121m70b5:jsd48eb217	PR #1716: 8 store specs, 119 tests; src/store/modules line coverage 83.1% -> 88.6%	session-20261113T002028-6d7c79b9	2026-11-13T01:15:00Z
+cover:launchpad:755175ffm7412:js0023cfc7	PR #1148: 3 dialogs, 11 tests, vitest 1188->1199, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T01:15:03Z
+merge:launchpad:1141:5595b3eb	merge-local over 1 launchpad tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:14:54Z
+cover:launchpad:755175ffm7412:59826f43	already done: lib/Settings/*.php 100% statements (55/55) on development; no PR	session-20261112T234655-6f442bc3	2026-11-13T01:15:09Z
+cover:launchpad:755175ffm7412:a1252b57	no PR: lib/Service/Confluence already at 280/289 statements; the 9 left are defensive failure returns of libxml/preg/XPath not reachable with real input	session-20261112T231633-96ffe7b8	2026-11-13T01:15:18Z
+cover:dossiq:6ca0231e:094a3419	opened dossiq#6217 (EmailTemplateRepository + CaseEmailRepository, 14 tests; suite 13462->13476, 19 inherited failures, 0 new)	session-20261112T231639-4c562de9	2026-11-13T01:15:30Z
+cover:dossiq:6ca0231e:dddb125b	already done: lib/Service/Bezwaar/ at 1748/1763 lines (99%) on development; remaining 15 are single guard throws, no PR	session-20261112T231645-3f0591a5	2026-11-13T01:15:25Z
+cover:dossiq:6ca0231e:71b49856	PR #6216: 3 tests, TakeoverStore and CaseCustodyQuery to 100%; with #6213 Custody is 626/629 lines; 0 new failures	session-20261112T233856-8f2d924b	2026-11-13T01:15:32Z
+review:openregister:10073:1fee9d01	APPROVE: docblock-only @uses additions, tests green	session-20261112T231638-72e59130	2026-11-13T01:15:34Z
+cover:dossiq:6ca0231e:8c2eee86	PR #6218: 8 tests, PackageSeedRules 100%, CaseDefinition dir 93.1%->~96%	session-20261113T004524-55adaa63	2026-11-13T01:16:03Z
+cover:buildiq:8ca317f6m6d54:1106b038	PR buildiq#1489: AbstractToolHandler guards (+11), Mcp/Handler 728->775/808, suite 2381->2392 same inherited failures	session-20261112T231640-f6dda86c	2026-11-13T01:16:06Z
+cover:buildiq:8ca317f6m6d54:d39f9857	already done: lib/Support at 375/389 statements (96%) on development	session-20261112T231640-f6dda86c	2026-11-13T01:16:51Z
+merge:filinq:1986:53e375fb	merge-local over 1 filinq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:16:51Z
+cover:dossiq:6ca0231e:e2e021bd	PR #6219: 36 tests (CaseStatusStore, CaseTypeReader, CaseResultWriter); dir already 87% before	session-20261113T004523-285a0413	2026-11-13T01:17:23Z
+cover:pipelinq:f67520ecm9d2c:js4f7d1071	PR #3615: 12 vitest tests, social+widgets stmts 74.3% -> 81.4% (SocialPerformanceView in #3603)	session-20261112T234648-144479e8	2026-11-13T01:17:44Z
+cover:launchpad:755175ffm7412:js4a0489d3	PR #1150: 3 Workspace components, 16 vitest tests; suite 1188 -> 1204; Workspace lines 85.2% -> 95.2%	session-20261112T234653-57d11a5b	2026-11-13T01:17:45Z
+cover:shillinq:801aab65:38e80a9f	PR #2811: 4 tests over 2 commands, lib/Command/*.php 70.19%->93.27%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:17:36Z
+cover:dossiq:6ca0231e:6a58479a	PR dossiq#6220: 15 tests, 5 Support classes to 100% (OwningCaseResolver 0->43/43 etc.); dir was 81.1%; suite 13498, same 19 inherited	session-20261112T221237-836ed3f0	2026-11-13T01:17:58Z
+cover:pipelinq:f67520ecm9d2c:jsd48eb217	already done: src/store/modules at 88.1% on development (target 85), existing branch -1 takes it to 99.7%; no new PR	session-20261112T234653-efce95ba	2026-11-13T01:18:04Z
+cover:shillinq:801aab65:aed80a0c	already done: lib/Lifecycle/Action/ at 92.9% (572/616) on development ff3e15aa9, above the 90% target; remaining gaps are single defensive lines	session-20261112T234655-599f9c9a	2026-11-13T01:18:10Z
+cover:shillinq:801aab65:ef05df2f	PR #2812: Standards/Checks 73.32->83.37% by fixing @uses on 8 risky test classes; suite unchanged	session-20261112T224530-d70ae278	2026-11-13T01:18:23Z
+verify:shillinq:2803:2e7f2b6e	2803, 2804, 2805 GREEN: 9065 tests vs 9004 baseline, only the inherited clock-bound failure	session-20261113T004521-223ef947	2026-11-13T01:18:35Z
+review:openregister:10081:cdde5b15	APPROVE: tests only, 59 jest tests pass merged with main	session-20261112T231640-f6dda86c	2026-11-13T01:18:49Z
+review:openregister:10080:e0597b56	APPROVE: tests-only, 42/42 avg dialog specs pass on merge with main	session-20261113T011735-9a84fbde	2026-11-13T01:19:10Z
+fix:stackiq:1776:84125e62	conflict resolved, pushed c4d2b1a5, REVERIFY	session-20261113T004523-285a0413	2026-11-13T01:19:17Z
+merge:launchpad:1142:caafba6d	merge-local over 1 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:19:43Z
+verify:dossiq:6210:c039092d	6 GREEN (6210-6215), 13637 tests, 0 new failures	session-20261113T004524-55adaa63	2026-11-13T01:20:08Z
+review:openregister:10079:60d7fbb2	APPROVE: tests only, 13 jest tests pass merged with main	session-20261112T231640-f6dda86c	2026-11-13T01:20:15Z
+cover:integriq:9b0f5894m2367:d9b69b92	already done: Lvs/Oso/Roster/Swv/UwlrEduV adapters 92/92 statements covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T01:20:23Z
+cover:launchpad:755175ffm7412:f545d745	failed: no PR; lib/Repair is 279/313 lines covered and the misses are seed-missing/unreadable/malformed branches keyed on the fixed lib/actions.seed.json path (testable only by editing the shipped seed) plus one getName line	session-20261112T234653-57d11a5b	2026-11-13T01:20:33Z
+verify:launchpad:1144:c5a1482a	3 GREEN (1144,1145,1146); phpunit 3594 ok, vitest 1355 ok, no new failures	session-20261113T011729-46bd3dd4	2026-11-13T01:20:52Z
+cover:launchpad:755175ffm7412:js4829b6aa	PRs #1149 (31 tests: public share view, admin redirect, workspace shell) and #1151 (17 tests: Views placement/context menu); src/views/* 43.4% -> ~61.6% combined, suites green	session-20261113T002028-bc0aa910	2026-11-13T01:20:58Z
+cover:launchpad:755175ffm7412:f91e7417	already done: lib/Service/Connection/ at 100% lines (172/172); -1 branch already on development	session-20261113T004524-55adaa63	2026-11-13T01:21:16Z
+verify:pipelinq:3614:7cb3331b	GREEN 3614 (tests-only, +10 tests, 0 new failures)	session-20261113T011743-bdeb8a13	2026-11-13T01:21:26Z
+cover:launchpad:755175ffm7412:b67d52c3	no PR: lib/Job/*.php already at 48/48 lines (14 tests; earlier -1 batch merged)	session-20261113T002028-bc0aa910	2026-11-13T01:21:45Z
+cover:launchpad:755175ffm7412:1b97f731	PR #1152: 30 tests for 7 Listener classes (cleanup listeners, base, TreeListener); suite 3579->3609 green	session-20261113T011801-de2bfa9d	2026-11-13T01:21:47Z
+cover:launchpad:755175ffm7412:7505aeb4	PR #1153: ActivityRow forRecipient, 7 tests; rest of lib/Activity already covered; pcov unavailable, gaps judged by reading	session-20261113T011737-1f344aca	2026-11-13T01:21:52Z
+cover:launchpad:755175ffm7412:9d3a1784	already done: lib/BackgroundJob/*.php at 100% lines (136/136)	session-20261113T004524-55adaa63	2026-11-13T01:21:59Z
+cover:launchpad:755175ffm7412:aae6d66c	already done: lib/Exception/*.php at 100% lines (55/55)	session-20261113T004524-55adaa63	2026-11-13T01:22:22Z
+cover:launchpad:755175ffm7412:882bd950	no PR: lib/Search/*.php already at 202/202 lines (24 tests; earlier -1 batch merged)	session-20261113T002028-bc0aa910	2026-11-13T01:22:21Z
+cover:integriq:9b0f5894m2367:bae82dd6	already done: lib/WorkflowEngine/*.php 130/131 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T01:22:17Z
+cover:launchpad:755175ffm7412:d39f9857	already done: lib/Support/FleetAppId.php 46/46 statements (100%) on development; no PR (84% figure likely pcov.directory defaulting to src/)	session-20261113T011729-46bd3dd4	2026-11-13T01:22:23Z
+cover:shillinq:801aab65:d47bb994	PR #2813: 16 tests for TaggedFileStore, SystemTagAssigner, ReportTableCell (9004->9020, 1 inherited failure)	session-20261113T004527-ec0338ee	2026-11-13T01:22:26Z
+cover:launchpad:755175ffm7412:33ae6285	already done: lib/Activity/Settings/ at 100% lines (22/22)	session-20261113T004524-55adaa63	2026-11-13T01:22:46Z
+cover:shillinq:801aab65:1b97f731	PR #2814: 4 listener classes, 21 tests; lib/Listener 89.0% -> 90.7%; suite failures unchanged	session-20261113T003903-5efbf5ae	2026-11-13T01:22:55Z
+cover:launchpad:755175ffm7412:dfaef732	no PR: every Notifier/NotificationCopy line and branch already exercised by NotifierTest + NotifierLocaleTest (prior -1 batch merged)	session-20261113T011737-1f344aca	2026-11-13T01:22:38Z
+verify:pipelinq:3611:0af47ee6	3611,3612,3613 GREEN (tests only, unit 0 new failures, vitest 3230 green)	session-20261112T234653-efce95ba	2026-11-13T01:22:53Z
+cover:launchpad:755175ffm7412:38e80a9f	no PR: lib/Command/*.php already at 1424/1427 lines (52 tests; earlier -1 batch merged)	session-20261113T002028-bc0aa910	2026-11-13T01:22:58Z
+cover:launchpad:755175ffm7412:d8ac3ddd	already done: lib/Service/Cleanup/ 42/42 statements (100%), 28 tests; prior branch -1 merged; no PR	session-20261113T011729-46bd3dd4	2026-11-13T01:23:08Z
+cover:integriq:9b0f5894m2367:95d5249b	PR #3448: ActivityOverview behaviour tests (+10 tests); suite 7093->7103, no new failures	session-20261113T011731-f3798045	2026-11-13T01:23:33Z
+cover:dossiq:6ca0231e:e7fd1c43	PR #6221: 5 Intake classes, 37 tests, lib/Service/Intake 86.9->95.0%	session-20261113T004519-b6b86685	2026-11-13T01:23:43Z
+cover:launchpad:755175ffm7412:d3522ea6	PR #1154: 5 mappers, 15 tests; suite 3579 -> 3594 OK; lib/Db lines 50.9% -> 65.3%	session-20261112T234653-57d11a5b	2026-11-13T01:23:54Z
+cover:integriq:9b0f5894m2367:382de98a	PR #3449: +7 tests for VerzuimloketEdukoppelingClient delivery (dir-own coverage 19/34->33/34 lines); suite 7113->7120, baseline 3 failures unchanged	session-20261113T011731-ba9dcd4a	2026-11-13T01:23:52Z
+cover:shillinq:801aab65:b2e6293a	PR #2815: InvoicingTailChecks 265->373/389 (28 behaviour tests); with #2812 metadata fix Standards/Checks ~86%; 0 new failures	session-20261112T224530-d70ae278	2026-11-13T01:24:04Z
+cover:filinq:8ecceb86:e01e982e	already done: lib/Service/SignerAuth/*.php at 95.4% (461/483 stmts) on development, target 90; no PR	session-20261112T234653-efce95ba	2026-11-13T01:24:20Z
+cover:decidiq:13261b1bmcfc2:js7de78384	failed: src/manifest.d/* holds 28 JSON manifests and a README, no JS/TS to cover	session-20261112T234653-57d11a5b	2026-11-13T01:24:26Z
+cover:openregister:7350e3efm0e99:6236636d	PR #10082: @uses metadata on 23 Flow/Timer test classes, risky 85->0, dir stmts 54.4->98.3% (own tests)	session-20261113T011735-9a84fbde	2026-11-13T01:24:34Z
+cover:integriq:9b0f5894m2367:f831cef3	already done: lib/Expression/*.php 110/115 (95.7%) covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T01:24:43Z
+cover:shillinq:801aab65:b12f5203	PR #2816: 6 tests for ImportPipelineService stored-batch paths (292->~360 stmts with existing); suite 9004->9010, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T01:24:58Z
+verify:launchpad:1147:8ee02052	1147 GREEN, 1148 GREEN (tests-only; phpunit 3579 and vitest 1520 green)	session-20261113T011801-de2bfa9d	2026-11-13T01:24:59Z
+cover:launchpad:755175ffm7412:js750ffd0f	PRs #1147 + #1155: 118 tests, src/components/admin 56.2%->85.9% lines with both; found ConfluenceImport buttons stay disabled (Boolean cast of empty string), noted in #1147	session-20261113T002025-940c220f	2026-11-13T01:25:14Z
+verify:shillinq:2809:64d71e60	2 GREEN (2809, 2810), tests-only, no new failures	session-20261113T011731-be978a55	2026-11-13T01:25:16Z
+cover:filinq:8ecceb86:1174c39d	already done: lib/Service/Support/ at 95.7% (22/23 stmts, constructor-only parameter classes) on development, target 90; no PR	session-20261112T234653-efce95ba	2026-11-13T01:25:24Z
+cover:filinq:8ecceb86:9ece5c6f	PR #1987: 16 tests for OperationAnswer, HandlerAnswer, ServerErrorAnswer, TranslatedErrorAnswer, PdfResponses; suite 5499->5515 green	session-20261113T011737-1f344aca	2026-11-13T01:25:36Z
+cover:integriq:9b0f5894m2367:4250c627	PR #3450: PingAction 3 tests, Job dir 142/166 -> 166/166	session-20261113T004523-285a0413	2026-11-13T01:25:39Z
+cover:shillinq:801aab65:1581293a	PR #2817: 14 tests over 3 classes, lib/Service/Pipelinq/*.php 83.72%->94.74%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:25:39Z
+cover:filinq:8ecceb86:12f19218	already done: lib/Service/SigningEnvelope/ at 92.4% (182/197 stmts) on development 1684dc33, target 90; no PR	session-20261112T234653-efce95ba	2026-11-13T01:25:57Z
+verify:hermiq:1637:530a673f	5 GREEN (1637-1641), 0 new failures, vitest green	session-20261113T004524-55adaa63	2026-11-13T01:26:06Z
+cover:filinq:8ecceb86:771ffa4f	already done: lib/Service/Comparison/ at 98.1% (253/258 stmts) on development 1684dc33, target 90; no PR	session-20261112T234653-efce95ba	2026-11-13T01:26:23Z
+cover:filinq:8ecceb86:e372e6ff	already done: lib/Event/*.php measured 90.5% lines on development (target 90); the 16 uncovered lines are plain getters, no PR	session-20261113T002025-940c220f	2026-11-13T01:26:42Z
+cover:decidiq:13261b1bmcfc2:js450fec42	PR decidiq#2103: 11 tests, approvalChainLink/decisionLink -> 100%, src/integrations/* 97.1% (.vue leaves stubbed by suite config); vitest 2625->2636 green	session-20261112T221237-836ed3f0	2026-11-13T01:26:52Z
+cover:learniq:1ae7757em6be5:jsea7197ec	already done: src/utils at 99.6% lines on development; the one uncovered file (signUpDecisionRequest.js) is covered by the pending branch quality/test-coverage-js-ea7197ec-1 (1c65f0d8, not yet merged)	session-20261112T234655-599f9c9a	2026-11-13T01:26:48Z
+cover:decidiq:13261b1bmcfc2:js00fe026a	PR #2104: 4 service modules, 5 vitest tests; suite 2625 -> 2630; src/services lines 85.3% -> 100%	session-20261112T234653-57d11a5b	2026-11-13T01:27:03Z
+cover:filinq:8ecceb86:aae6d66c	PR #1988: +15 tests for 8 lib/Exception classes; suite 5499->5514 OK	session-20261113T011731-ba9dcd4a	2026-11-13T01:27:17Z
+verify:hermiq:1642:b55b2b2e	1642 GREEN (tests-only; +10 tests, no new failures vs baseline 145E/26F)	session-20261113T011801-de2bfa9d	2026-11-13T01:27:19Z
+cover:filinq:8ecceb86:aba6f390	PR #1989: EntitySearchLog/Gate/Catalogue scope tests (+16); suite 5499->5515, no failures	session-20261113T011731-f3798045	2026-11-13T01:27:23Z
+cover:pipelinq:f67520ecm9d2c:jsde685378	PR #3616: 23 vitest tests, portal/views stmts 48.3% -> 84.3%	session-20261112T234648-144479e8	2026-11-13T01:27:35Z
+cover:openregister:7350e3efm0e99:8858fbd3	PR #10083: @uses metadata on 4 Sync test classes, risky 38->0, dir stmts 37.1->98.5% (own tests)	session-20261113T011735-9a84fbde	2026-11-13T01:27:32Z
+cover:learniq:1ae7757em6be5:js0023cfc7	already done: existing branch quality/test-coverage-js-0023cfc7-1 takes src/dialogs JS 80.8%->100% (c8); no new PR	session-20261112T234653-efce95ba	2026-11-13T01:27:51Z
+cover:learniq:1ae7757em6be5:js3f3bfe56	already done: branch quality/test-coverage-js-3f3bfe56-1 (unmerged) takes src/* 89.01% -> 94.94%, only main.js bootstrap left	session-20261113T004523-285a0413	2026-11-13T01:27:44Z
+cover:filinq:8ecceb86:0906d460	PR filinq#1990: +24 tests, BulkSigning 265/286 -> 284/286 stmts; suite 5499 -> 5523 OK	session-20261113T011729-46bd3dd4	2026-11-13T01:27:49Z
+cover:filinq:8ecceb86:60c2c265	PR #1991: 29 tests for Health/Merge/TemplatePreview/FinalDocument controllers; lib/Controller/*.php 85.1% -> 89.6%, suite 5499 -> 5528 OK	session-20261113T002028-bc0aa910	2026-11-13T01:28:16Z
+cover:decidiq:13261b1bmcfc2:jsd48eb217	PR #2105: 12 vitest specs, src/store/modules 57%->100% lines	session-20261113T004524-55adaa63	2026-11-13T01:28:45Z
+cover:filinq:8ecceb86:72b7aa42	PR #1992: 23 tests for ValidationProfileResolver, DocumentFileInspector, AccessibilityChecks probes; suite 5499->5522 green	session-20261113T011737-1f344aca	2026-11-13T01:28:45Z
+cover:decidiq:13261b1bmcfc2:jsea7197ec	PR #2106: 5 util modules, 7 vitest tests; suite 2625 -> 2632; src/utils lines 98.5% -> 99.7%	session-20261112T234653-57d11a5b	2026-11-13T01:28:50Z
+cover:shillinq:801aab65:c37ad97a	already done: lib/PaymentPlan/*.php at 91.6% (470/513) >= target 90	session-20261112T224530-d70ae278	2026-11-13T01:28:48Z
+cover:learniq:1ae7757em6be5:jsd48eb217	PR #2430: 7 tests for the settings store, src/store/modules 57.1%->100%, JS suite inherited 1 failure unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:29:22Z
+cover:shillinq:801aab65:e587f75a	PR #2818: PaymentRunExportService 160/172 -> 169/172 lines (lib/PaymentRun/*.php 484/505 -> 493/505); 5 tests; suite 9004 -> 9009, same inherited failure	session-20261113T004521-223ef947	2026-11-13T01:30:11Z
+cover:decidiq:13261b1bmcfc2:js3f3bfe56	PR #2107: 22 tests, src/* entry files 0%->100% lines	session-20261113T002025-940c220f	2026-11-13T01:30:27Z
+cover:shillinq:801aab65:3641032a	PR #2819: 3 classes, 27 tests, suite 9004->9031 (1 inherited failure), lib/Service/Pipelinq lines 83.7%->~94%	session-20261113T002031-7b3e41b2	2026-11-13T01:31:00Z
+merge:thematiq:1661:b54fc704	stale	feeder	2026-11-13T01:30:18Z
+cover:filinq:8ecceb86:00f8416c	PR #1993: 17 tests for ConformanceReportRepository + VeraPdfProcess; suite 5499->5516 OK	session-20261113T011731-be978a55	2026-11-13T01:31:24Z
+cover:shillinq:801aab65:123a624c	PR #2820: 8 tests, Iv3ReportGenerator 0->71/71, VatReturn 83->91/91; dir 90.8->95.9%; suite 9004->9012, same 1 inherited failure	session-20261112T234655-793f46ee	2026-11-13T01:31:24Z
+cover:openregister:7350e3efm0e99:9c6bcdc5	PR openregister#10084: @uses on 58 test classes, risky 178->0, dirs 91.0%->96.0%	session-20261112T231640-f6dda86c	2026-11-13T01:31:50Z
+cover:filinq:8ecceb86:34f5c300	PRs #1994 #1995: 13 classes, +169 tests, lib/Service/*.php 83.5% -> 89.8%	session-20261113T011743-bdeb8a13	2026-11-13T01:32:00Z
+cover:filinq:8ecceb86:38e80a9f	already done: lib/Command/*.php 27/27 statements covered by OfficeProbeCommandTest (7 behavioural tests); no PR	session-20261113T011743-bdeb8a13	2026-11-13T01:33:09Z
+verify:keepiq:1712:9ef015cb	GREEN x4 (1712,1713,1714,1715): tests-only, phpunit + vitest green on the tree	session-20261113T004519-b6b86685	2026-11-13T01:33:46Z
+cover:filinq:8ecceb86:65e30692	PR #1996: 8 tests for IntakeOcrQueue (other Intake classes already fully covered); suite 5499->5507 OK	session-20261113T011731-be978a55	2026-11-13T01:33:46Z
+merge:portaliq:2281:d5bf24d6	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
+merge:portaliq:2284:31f343a5	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
+merge:portaliq:2370:1eceb6ba	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
+merge:portaliq:2370:5ff6f0c9	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
+merge:portaliq:2367:bb257705	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
+cover:openregister:7350e3efm0e99:047af40e	PR openregister#10085: added missing @uses to 3 SharedSchema test classes (9 risky -> 0); SchemaTableMigrator 53->147/147, dir 229->323/331 (97.6%)	session-20261112T221237-836ed3f0	2026-11-13T01:34:45Z
+cover:shillinq:801aab65:a215617b	PR #2821: 3 leaf providers, 13 tests; lib/Integration 84.8% -> 96.9%; suite failures unchanged	session-20261113T003903-5efbf5ae	2026-11-13T01:34:50Z
+cover:shillinq:801aab65:89bf3ba4	PR #2822: 4 tests for Iv3ReportGenerator; Generator dir 90.8%->95.4%; suite 9004->9008, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T01:34:57Z
+review:openregister:10082:a518e4f3	APPROVE: metadata only, Timer 374 pass, risky 85->0	session-20261112T231640-f6dda86c	2026-11-13T01:35:00Z
+cover:filinq:8ecceb86:5b37a982	PR #1997: Suggestion 83/88 -> 87/88 statements, +3 tests	session-20261113T011743-bdeb8a13	2026-11-13T01:35:13Z
+verify:keepiq:1716:a44d8a66	1716 GREEN: tests-only, phpunit 3792 ok, vitest 5594 ok	session-20261113T011731-f3798045	2026-11-13T01:35:27Z
+cover:shillinq:801aab65:d76b2f72	PR opened: 9 tests closing Guard gaps (Cashflow, InventoryScan, ProgrammaLink, Kor, Iv3); 9004->9013, 1 inherited failure	session-20261113T004527-ec0338ee	2026-11-13T01:35:41Z
+cover:filinq:8ecceb86:5833c33f	PR #1998: +3 SupportedTypeProbe tests (version/provenance); dir otherwise fully covered; suite 5499->5502 OK	session-20261113T011731-be978a55	2026-11-13T01:36:17Z
+verify:filinq:1984:d4341fee	8 GREEN (1984-1992), tests-only, 5499->5650 OK	session-20261113T011731-be978a55	2026-11-13T01:38:12Z
+cover:keepiq:d76c2121m70b5:aae6d66c	already done: lib/Exception/*.php 30/30 statements covered on development; the 14 untested classes hold no executable statements, so no PR	session-20261113T004519-b6b86685	2026-11-13T01:38:17Z
+cover:filinq:8ecceb86:45998467	PR #1999: Classification 176/192 -> 186/192 statements, +17 tests	session-20261113T011743-bdeb8a13	2026-11-13T01:38:26Z
+review:openregister:10083:26aad612	APPROVE: metadata only, Sync 97 pass, risky 38->0	session-20261112T231640-f6dda86c	2026-11-13T01:38:34Z
+cover:keepiq:d76c2121m70b5:be0dcca9	already done: lib/Mcp/*.php 139/139 lines covered at 8167723 (tests from 72facf5e2), no PR	session-20261113T011731-f3798045	2026-11-13T01:38:45Z
+cover:openregister:7350e3efm0e99:1c482fa1	PR openregister#10086: missing @uses in 13 Integration test classes (17 risky -> 0); lib/Service/Integration 93.8% -> 98.4%	session-20261112T221237-836ed3f0	2026-11-13T01:39:05Z
+cover:filinq:8ecceb86:81b1241f	already done: lib/Portal/*.php 181/181 lines covered by dedicated tests (1010+ lines); no PR	session-20261113T011731-be978a55	2026-11-13T01:39:16Z
+cover:filinq:8ecceb86:0f859653	already done: lib/Flow/*.php 99/99 statements covered by 18 behavioural tests; no PR	session-20261113T011743-bdeb8a13	2026-11-13T01:39:40Z
+cover:shillinq:801aab65:e372e6ff	PR #2821?: dedicated contract tests for 6 payment events (5 tests); dir was 115/116 incidental; suite 9004->9009, same 1 inherited failure	session-20261112T234655-793f46ee	2026-11-13T01:39:58Z
+cover:shillinq:801aab65:6a548709	PR #2825: 3 edge-case tests; Migration dir 276->283/283; suite 9004->9007, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T01:40:07Z
+cover:filinq:8ecceb86:d528dcf0	PR #2000: 3 tests for FilinqDashboardWidget::load (last uncovered lines in lib/Dashboard); suite 5499->5502 OK	session-20261113T011731-be978a55	2026-11-13T01:41:15Z
+cover:filinq:8ecceb86:216a9a0a	already done: lib/Kernel/*.php 16/16 statements covered (value objects/interfaces); no PR	session-20261113T011731-be978a55	2026-11-13T01:41:38Z
+cover:filinq:8ecceb86:ec6c2450	PR #2001: Extraction 143/160 -> 154/160 statements, +6 tests	session-20261113T011743-bdeb8a13	2026-11-13T01:41:54Z
+verify:dossiq:6216:98509f40	6216-6221 GREEN: tests-only, 13800 tests, no new failures (19 inherited)	session-20261113T011731-f3798045	2026-11-13T01:42:50Z
+cover:filinq:8ecceb86:34763eb4	PR #2002: +5 LanguageNegotiationMiddleware tests (last uncovered branches in lib/Middleware); suite 5499->5504 OK	session-20261113T011731-be978a55	2026-11-13T01:43:02Z
+verify:pipelinq:3615:db80a8a6	GREEN 3615,3616; vitest 3199 pass; PHP baseline 1 inherited failure, 0 new	session-20261113T013903-97d30fda	2026-11-13T01:43:16Z
+cover:shillinq:801aab65:e6f8d431	PR #2826: 9 guard tests; Relation dir 246->256/258; suite 9004->9013, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T01:45:23Z
+cover:openregister:7350e3efm0e99:3fc78ba5	PR openregister#10087: 17 tests; NotificationBroadcastController 4->70/70, TimelineEntriesProvider 0->54/55; dirs ~86.8% -> ~91%	session-20261112T221237-836ed3f0	2026-11-13T01:45:42Z
+cover:shillinq:801aab65:81b1241f	already done: lib/Portal/*.php at 157/157 statements, each class has its own test file; no PR	session-20261112T234655-0bdbf2be	2026-11-13T01:45:52Z
+cover:integriq:9b0f5894m2367:1c482fa1	PR #3451: Integration 130/136 -> 135/136 statements, +5 tests	session-20261113T011743-bdeb8a13	2026-11-13T01:46:41Z
+cover:integriq:9b0f5894m2367:e648f6fd	already done: lib/Service/Datasource/ 107/107 statements covered (100%) on development 8420a0dd; no PR	session-20261113T013903-97d30fda	2026-11-13T01:47:36Z
+cover:shillinq:801aab65:60b3923a	PR #2827: 6 tests for EInvoiceService failure paths + UBL mapper malformed entries; 9004->9010, 1 inherited failure	session-20261113T004527-ec0338ee	2026-11-13T01:48:12Z
+cover:dossiq:6ca0231e:7593a315	PR #6222: CaseRelationStore + OutcomeCascade refusals (+19 tests); Relation 89.8%->97.3%, no new failures	session-20261113T011731-f3798045	2026-11-13T01:48:24Z
+cover:shillinq:801aab65:59477eff	PR #2828: 3 separate-process tests for the fail-closed filinq/decidiq guards (the dir's only 8 uncovered lines); suite 9004->9007, same 1 inherited failure. Note: previous event-cover task's PR is #2824	session-20261112T234655-793f46ee	2026-11-13T01:48:19Z
+cover:integriq:9b0f5894m2367:fb7c8b79	already done: lib/Service/Recipients/ 116/116 statements covered by RecipientResolverTest + golden test; no PR	session-20261113T011743-bdeb8a13	2026-11-13T01:48:49Z
+cover:keepiq:d76c2121m70b5:60c2c265	PR #1717: 4 controllers, 27 tests, lib/Controller 92.1->94.1%	session-20261113T004519-b6b86685	2026-11-13T01:49:05Z
+cover:integriq:9b0f5894m2367:5df7d04e	PR #3452: 8 tests for RestPsd2AggregatorProvider; Psd2 dir 129/138 -> 138/138 statements; suite 7113->7121, no new failures	session-20261113T013903-97d30fda	2026-11-13T01:50:39Z
+cover:shillinq:801aab65:f2f5cba0	PR #2829: 1 test (configured return URL); Payment dir 261->262/263; suite 9004->9005, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T01:50:30Z
+verify:learniq:2426:0c8c9410	5/5 GREEN (2426-2430 tests-only JS; node --test 1229, only the inherited l10n sidecar failure)	session-20261112T221237-836ed3f0	2026-11-13T01:51:07Z
+verify:shillinq:2811:e2ebc5cb	8 GREEN (2811-2818), tests-only, no new failures	session-20261113T011731-be978a55	2026-11-13T01:52:18Z
+verify:stackiq:1776:888cdfc4	BLOCK #1776: tests green (2554, 0 new failures) but removes /api/v1 aliases for health/metrics/stream and changes response headers	session-20261113T015005-da194c88	2026-11-13T01:52:25Z
+cover:keepiq:d76c2121m70b5:a4b15ae4	already done: lib/Event/Audit 19/19 statements covered on development, no PR	session-20261113T004519-b6b86685	2026-11-13T01:53:04Z
+cover:keepiq:d76c2121m70b5:34763eb4	already done: lib/Middleware/*.php 161/162 statements covered on development, no PR	session-20261113T004519-b6b86685	2026-11-13T01:53:18Z
+cover:integriq:9b0f5894m2367:9a65ed0c	PR #3453: Mail/Transport 117/185 -> 138/185 statements, +9 tests (Imap needs ext-imap)	session-20261113T011743-bdeb8a13	2026-11-13T01:53:37Z
+cover:dossiq:6ca0231e:b6fccd13	PR #6223: Access projectors + foldInto (+17 tests); Access 91.3%->98.0%, no new failures	session-20261113T011731-f3798045	2026-11-13T01:53:34Z
+cover:learniq:1ae7757em6be5:js0246d36e	PR learniq#2431: 6 node tests, src/api/timetable.js 88.4% -> 100% lines/functions; 1107 tests, 1 inherited failure unchanged	session-20261112T221237-836ed3f0	2026-11-13T01:53:36Z
+measure:hermiq:20261113h00	failed: permission (npm ci refused; PHP lines 85.81% measured but not recorded)	session-20261113T015005-e2235eb9	2026-11-13T01:53:46Z
+measure:openregister:20261113h00	failed: permission (npm ci refused in this session; JS leg of measure cannot run)	session-20261113T015005-e2235eb9	2026-11-13T01:54:05Z
+cover:integriq:9b0f5894m2367:8454d011	PR #3454: 3 tests for RuleRegistrar; lib/Rule/*.php 116/121 -> 121/121; suite 7113->7116, no new failures	session-20261113T013903-97d30fda	2026-11-13T01:54:51Z
+measure:integriq:20261113h00	php 88.01% js 72.18% @8420a0dd	session-20261113T011743-bdeb8a13	2026-11-13T01:54:58Z
+cover:shillinq:801aab65:2befd24e	PR #2830: 9 tests for FixedAssetDepreciation (46/46); Asset dir 551->555/564; suite 9004->9013, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T01:55:46Z
+measure:stackiq:20261113h00	stackiq@062e370 php 64.67% (pcov, needs pcov.directory=lib), js 76.28%	session-20261113T015005-da194c88	2026-11-13T01:56:05Z
+measure:pipelinq:20261113h00	php 81.76% (47790/58451, pcov.directory set explicitly; default autodetect gave 0%), js 78.47%; 1 inherited unit failure CrmPrivilegeRefusalGoldenTest TicketWooRequestController	session-20261113T015003-d56b074c	2026-11-13T01:56:18Z
+verify:integriq:3451:7c814cf9	GREEN 3451 (tests-only, +5 tests, 0 new failures)	session-20261113T011743-bdeb8a13	2026-11-13T01:56:37Z
+verify:integriq:3448:edee7847	GREEN 3448,3449,3450; 7133 tests, only inherited CallServiceTest errors	session-20261113T013903-97d30fda	2026-11-13T01:56:52Z
+verify:launchpad:1149:4a15dcd3	7/7 GREEN (1149-1155 tests-only; phpunit 3631 OK, vitest 1557 green)	session-20261112T221237-836ed3f0	2026-11-13T01:57:21Z
+verify:shillinq:2819:bbec9eba	7 GREEN, 1 CONFLICT (2822 vs 2820 on Iv3ReportGeneratorTest); no new failures	session-20261113T011731-be978a55	2026-11-13T01:57:48Z
+measure:buildiq:20261113h00	php 80.12% (pcov, OR development sibling for bootstrap), js 79.32%	session-20261113T015003-f68021a4	2026-11-13T01:57:54Z
+cover:dossiq:6ca0231e:c17c6e8e	PR #6225: CallbackService + GuardedCitizenLookup (+13 tests); Kcc 88.5%->96.8%, no new failures	session-20261113T011731-f3798045	2026-11-13T01:58:54Z
+cover:shillinq:801aab65:dec5cec8	PR opened: 4 tests closing all Sms gaps (SmsSendResult, normalizer, renderer); 9004->9008, 1 inherited failure	session-20261113T004527-ec0338ee	2026-11-13T01:58:58Z
+review:openregister:8948:23d6bb7e	APPROVE: lib unchanged since approval, all gate suites pass merged with main	session-20261112T231640-f6dda86c	2026-11-13T01:59:19Z
+verify:buildiq:1489:34d3c3fb	1489 GREEN (tests-only, +11 tests, no new failures)	session-20261113T015003-f68021a4	2026-11-13T01:59:31Z
+review:openregister:10087:aedf78ee	APPROVE: tests only, all suites green merged with main	session-20261113T015002-115b579d	2026-11-13T01:59:40Z
+review:openregister:10085:9093b33a	APPROVE: docblock-only @uses, tests green	session-20261113T015002-81190344	2026-11-13T01:59:42Z
+cover:keepiq:d76c2121m70b5:d3522ea6	PR #1718: 5 mappers, 31 tests, lib/Db 55.7->64.7%	session-20261113T004519-b6b86685	2026-11-13T02:00:17Z
+review:openregister:10086:67fb0330	APPROVE: test metadata only, suites green	session-20261113T015005-030aa10a	2026-11-13T02:00:26Z
+cover:shillinq:801aab65:e763166c	PR #2832: FidoQuarter + ReserveBalances edges, 12 tests; PublicSector 95.0% -> 97.4%; suite failures unchanged	session-20261113T003903-5efbf5ae	2026-11-13T02:00:30Z
+cover:filinq:8ecceb86:6f346b68	already done: lib/Sections/FilinqAdmin.php 100% lines/methods by existing FilinqAdminTest at 1684dc33; no PR	session-20261113T015003-f68021a4	2026-11-13T02:00:42Z
+cover:shillinq:801aab65:d33e6ea4	PR #2833: 3 tests, LedgerPivotService 156->164/164; suite 9004->9007, same 1 inherited failure	session-20261112T234655-793f46ee	2026-11-13T02:00:34Z
+measure:launchpad:20261113h00	php 89.16% (pcov, 3579 tests OK), js 73.78% (vitest 1442) @d2a99e94	session-20261112T221237-836ed3f0	2026-11-13T02:00:40Z
+cover:shillinq:801aab65:87821f2f	PR: 18 tests for VatLineStamper (63/63); Vat dir 210->213/220; suite 9004->9022, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T02:00:54Z
+verify:filinq:2001:b5697f6a	2001,2002 GREEN: tests-only, 5510 tests, no failures	session-20261113T011731-f3798045	2026-11-13T02:00:53Z
+cover:keepiq:d76c2121m70b5:dfaef732	no PR: lib/Notification already 393/395 lines (99.5%) on 77f4641; the 2 uncovered lines (KeepiqNotifier:128, :318) are the unreachable fall-through after the subject-map guard, not coverable without production change	session-20261113T015003-d56b074c	2026-11-13T02:01:14Z
+cover:filinq:8ecceb86:59826f43	already done: lib/Settings/FilinqAdmin.php 14/14 lines covered by FilinqAdminSettingsTest at 1684dc33b, no PR	session-20261113T011731-f3798045	2026-11-13T02:02:12Z
+cover:filinq:8ecceb86:d057649b	already done: lib/Event/Support/ (2 readonly value objects) 100% covered at 1684dc33; further tests would be getter-only; no PR	session-20261113T015003-f68021a4	2026-11-13T02:02:17Z
+verify:decidiq:2103:fbdac0d5	5 GREEN (2103-2107), tests-only vitest specs; php 3116 OK, vitest 2682 passed	session-20261113T015003-d56b074c	2026-11-13T02:03:11Z
+cover:keepiq:d76c2121m70b5:e372e6ff	already done: lib/Event/*.php 43/43 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:03:43Z
+cover:filinq:8ecceb86:dfaef732	PR #2003: LegalHoldNotifier, 3 tests; lib/Notification 14/16 -> 16/16; suite green	session-20261113T003903-5efbf5ae	2026-11-13T02:03:37Z
+cover:stackiq:8cfacb29m8db8:f4b2f7af	already done: lib/Service/ArchiMate 202/204 lines (99.0%) at 062e3700, remaining 2 are a promoted constructor and one branch; no PR	session-20261113T011731-f3798045	2026-11-13T02:03:37Z
+verify:filinq:1993:0bbff91d	GREEN x9 (1993-2001): tests-only, unit suite 5725 OK on the tree	session-20261113T004519-b6b86685	2026-11-13T02:03:40Z
+measure:dossiq:20261113h00	php 84.15% (99175 stmts), js 85.5% (11800 stmts) @88024ca; pcov.directory=lib needed	session-20261113T015005-81f4d5a5	2026-11-13T02:04:01Z
+cover:openregister:7350e3efm0e99:499d38f4	PR openregister#10088: @uses on 9 test classes, risky 28->0, dirs 86.9%->97.4%	session-20261112T231640-f6dda86c	2026-11-13T02:04:06Z
+cover:stackiq:8cfacb29m8db8:38e80a9f	already done: lib/Command/*.php 282/282 lines covered at 062e3700, no PR	session-20261113T011731-f3798045	2026-11-13T02:04:34Z
+cover:stackiq:8cfacb29m8db8:59826f43	already done: lib/Settings/StackiqAdmin.php 11/11 lines covered at 062e3700, no PR	session-20261113T011731-f3798045	2026-11-13T02:04:47Z
+measure:decidiq:20261113h00	php 82.11% (21018/25598; 28 risky tests under strict coverage metadata), js 95.21%	session-20261113T015003-d56b074c	2026-11-13T02:04:48Z
+cover:stackiq:8cfacb29m8db8:d528dcf0	no PR: lib/Dashboard is 1 class, all covered but load(), which needs the Nextcloud runtime (OC_Util, OCP\Server) absent from the unit bootstrap; stubbing core globals would leak into every test	session-20261113T003903-5efbf5ae	2026-11-13T02:05:05Z
+cover:stackiq:8cfacb29m8db8:34763eb4	already done: lib/Middleware/ApiContractMiddleware.php 42/42 lines covered at 062e3700, no PR	session-20261113T011731-f3798045	2026-11-13T02:05:05Z
+review:openregister:10084:08a2df70	APPROVE (docblock-only test change, suites green)	session-20261113T015005-e2235eb9	2026-11-13T02:05:05Z
+cover:shillinq:801aab65:8cf3c826	already done: lib/PaymentRun/Generator 207/208 lines covered by 4 test files; only gap is an unreachable php://temp read-failure branch	session-20261113T004527-ec0338ee	2026-11-13T02:05:15Z
+cover:stackiq:8cfacb29m8db8:aae6d66c	already done: lib/Exception/*.php 4/4 lines covered at 062e3700, no PR	session-20261113T011731-f3798045	2026-11-13T02:05:20Z
+cover:keepiq:d76c2121m70b5:0d67c1f3	already done: lib/Service/Siem is 193/193 lines with dedicated tests per class (formatters incl. CEF escaping and severities); no PR	session-20261112T234655-793f46ee	2026-11-13T02:05:12Z
+verify:learniq:2431:f48ce12c	failed: permission (PR is JS-only; npm ci refused in this session)	session-20261113T015005-e2235eb9	2026-11-13T02:05:52Z
+cover:stackiq:8cfacb29m8db8:6f346b68	already done: lib/Sections is 1 class at 6/6 statements, every return value asserted by StackiqAdminSectionTest	session-20261113T003903-5efbf5ae	2026-11-13T02:06:02Z
+fix:shillinq:2822:bfab5d22	renamed colliding test to Iv3ReportGeneratorTotalsTest; new head b0ad862fe82866e3e92045bed9c7ce7951fd2dc5, REVERIFY recorded	session-20261113T004527-ec0338ee	2026-11-13T02:06:21Z
+fix:stackiq:1776:c4d2b1a5	fixed: protocol-path aliases + contract headers restored, route table identical to development; REVERIFY at 9689d864	session-20261113T004519-b6b86685	2026-11-13T02:06:31Z
+cover:buildiq:8ca317f6mefda:aae6d66c	already done: every lib/Exception/*.php file is 100% line-covered on development (batch -1 merged)	session-20261113T015005-e2235eb9	2026-11-13T02:06:53Z
+cover:keepiq:d76c2121m70b5:38e80a9f	already done: lib/Command/*.php 180/181 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:06:51Z
+cover:keepiq:d76c2121m70b5:11ebfefd	already done: lib/Backup/*.php 454/481 (94.4%) on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:07:07Z
+cover:openregister:7350e3efm0e99:js0f44bcf4	PR openregister#10089: RegisterSideBar DOM spec (+5), sidebars 83.9%->85.9%	session-20261112T231640-f6dda86c	2026-11-13T02:07:38Z
+cover:buildiq:8ca317f6mefda:6891a8ac	already done: lib/Service/Dashboard 141/145 lines under phpunit.xml (gap = runner-absent branch, unreachable while test doubles are declared). Low figure is a measurement artefact: phpunit-unit.xml bootstrap does not load the OpenRegister contracts, 1328 errors there (WidgetItemProjector reads 0%)	session-20261113T004527-ec0338ee	2026-11-13T02:07:44Z
+cover:buildiq:8ca317f6mefda:d39f9857	already done: lib/Support/*.php 372/389 (95.6%) on development; no PR (note: unit suite has 1328 inherited errors at HEAD)	session-20261112T221237-836ed3f0	2026-11-13T02:07:43Z
+cover:buildiq:8ca317f6mefda:d528dcf0	already done: lib/Dashboard at 80/81 statements from tests/Unit/Dashboard (same dir as d528dcf0 measured earlier this run)	session-20261112T231640-f6dda86c	2026-11-13T02:07:52Z
+verify:dossiq:6222:f94beb12	4 GREEN (6222,6223,6224,6225); 0 new failures	session-20261113T015005-81f4d5a5	2026-11-13T02:08:11Z
+cover:buildiq:8ca317f6mefda:390adfb9	already done: lib/*.php (Capabilities.php) 11/11 on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:07:59Z
+cover:keepiq:d76c2121m70b5:ecbab48a	PR #1719: 9 refusal tests for ShareSaveScope/Stages; ShareSave dir 393->398/399; suite 4036->4045, no failures	session-20261112T234655-0bdbf2be	2026-11-13T02:08:08Z
+cover:buildiq:8ca317f6mefda:d33a91b0	already done: lib/Service/Copilot/ at 149/151 statements (98.68%) on development, measured with OpenRegister lib as sibling	session-20261112T231640-f6dda86c	2026-11-13T02:08:17Z
+cover:buildiq:8ca317f6mefda:568ec52a	already done: lib/Lifecycle/*.php at 84/85 statements (98.82%) on development, measured with OpenRegister lib as sibling	session-20261112T231640-f6dda86c	2026-11-13T02:08:22Z
+cover:buildiq:8ca317f6mefda:38e80a9f	failed: lib/Command already has 5 test files (53 tests) but all error without an openregister checkout: tests/stubs lacks OCA\OpenRegister\Contract\ObjectServiceInterface (also behind most of the 1328 baseline errors); needs that stub, not more tests	session-20261113T015005-e2235eb9	2026-11-13T02:08:28Z
+cover:buildiq:8ca317f6mefda:9d3a1784	already done: lib/BackgroundJob/*.php at 230/245 statements (93.88%) on development, measured with OpenRegister lib as sibling	session-20261112T231640-f6dda86c	2026-11-13T02:08:28Z
+cover:buildiq:8ca317f6mefda:1b97f731	failed: lib/Listener gap (397/546) is not missing tests: with OpenRegister development as sibling, BuildiqLeafRegistrationListener:96 and FormDestinationDependentsListener:119 throw 'Unknown named parameter $identity/$form' (OR constructor drift), erroring 5 existing tests; needs a code fix, not cover	session-20261112T231640-f6dda86c	2026-11-13T02:08:54Z
+cover:buildiq:8ca317f6mefda:0d8702e3	failed: lib/Resources/template/ is the generated-app scaffold (incl. its own tests/ and a phpcs sniff), 132/548 counted only because phpunit <source> includes all of lib/; the fix is excluding it from coverage source (config, not test-only) - not done	session-20261112T221237-836ed3f0	2026-11-13T02:08:54Z
+verify:integriq:3452:3a092dfb	3 GREEN (3452-3454), tests-only; 7133 tests, only the 2 inherited CallServiceTest errors	session-20261113T015003-d56b074c	2026-11-13T02:09:01Z
+cover:shillinq:801aab65:6d382880	PR #2835: 12 tests (delivery filing, runner failure paths, calendar clamps); suite 9004->9016, same inherited failure	session-20261113T011731-be978a55	2026-11-13T02:09:21Z
+cover:buildiq:8ca317f6mefda:be0dcca9	failed: lib/Mcp tests exist (120) but 118 error: tests/stubs lacks OCA\OpenRegister\Contract\ObjectServiceInterface; main's interface no longer takes saveObject(register:, schema:) that buildiq lib calls, so the stub must mirror the older contract (gap, not cover)	session-20261113T015005-e2235eb9	2026-11-13T02:09:33Z
+verify:keepiq:1717:69f0ab37	1717 GREEN, 1718 GREEN: test-only, 4036->4094 tests, no failures	session-20261112T234655-793f46ee	2026-11-13T02:09:46Z
+cover:stackiq:8cfacb29m8db8:2861e5ef	already done: lib/Examples/*.php 93/93 lines covered on development	session-20261113T004527-ec0338ee	2026-11-13T02:10:10Z
+verify:buildiq:1490:9eed6d5f	1490 GREEN: coverage summary refresh only, no new failures	session-20261112T231640-f6dda86c	2026-11-13T02:10:13Z
+cover:stackiq:8cfacb29m8db8:js0be8c659	PR #1809: mounted specs for Grant/AddContactpersoon modals (+12 tests); src/modals/* 83.1%->89.8%	session-20261113T011731-f3798045	2026-11-13T02:10:33Z
+cover:stackiq:8cfacb29m8db8:jsb37eacd1	PR #1810: 4 components, 22 tests, src/components lines 80.7->90.3%	session-20261113T004519-b6b86685	2026-11-13T02:10:46Z
+cover:stackiq:8cfacb29m8db8:js0023cfc7	PR #1811: ChangePasswordDialog mounted, 9 tests; src/dialogs 87.3% -> 90.9% lines (user-groups dialog already in open -1 PR); found ManageUserGroupsDialog username binding bug, noted in PR	session-20261113T003903-5efbf5ae	2026-11-13T02:11:02Z
+cover:stackiq:8cfacb29m8db8:17d367ab	already done: lib/Controller/Settings 74/74 lines covered on development	session-20261113T004527-ec0338ee	2026-11-13T02:11:10Z
+measure:keepiq:20261113h00	php 84.16% (pcov, lib), js 79.46%	session-20261113T015005-030aa10a	2026-11-13T02:11:32Z
+cover:shillinq:801aab65:50cc8442	PR #2836: 10 tests for LinkedObjectReferences, TokenValidator; lib/Util/*.php 152/155 -> 155/155; suite 9004->9014, no new failures	session-20261113T013903-97d30fda	2026-11-13T02:12:21Z
+cover:stackiq:8cfacb29m8db8:js5794e9fc	already done: open PR on quality/test-coverage-js-5794e9fc-1 (379b1748) already covers UserGroupsConfiguration, StatisticsOverview and VersionInformation; my duplicate spec not pushed	session-20261112T234655-0bdbf2be	2026-11-13T02:12:29Z
+cover:integriq:9b0f5894md8cd:jsaa0cdbe3	already done: open branches quality/test-coverage-js-aa0cdbe3-1 and -2 bring src/views/admin to 459/499 lines (92.0%, target 85), vitest 1433/1433 with both applied; merge those	session-20261113T003903-5efbf5ae	2026-11-13T02:12:29Z
+cover:integriq:9b0f5894md8cd:js0023cfc7	PR #3455: 28 vitest tests for RegistryLookup/ImportPreview/ExportConfiguration dialog failure paths; vitest 1392 -> 1420 passed; src/dialogs 84.15% lines (EditMappingRule/DsoActivity left to open -1 branch)	session-20261113T015003-d56b074c	2026-11-13T02:13:04Z
+cover:shillinq:801aab65:d528dcf0	PR #2837: Dashboard 147/158 -> 156/158 statements, +4 tests	session-20261113T011743-bdeb8a13	2026-11-13T02:13:31Z
+cover:pipelinq:f67520ecm8c58:jsd48eb217	already done: src/store/modules at 337/385 (87.5%) on development, above target; branch -1 (settings/xwiki specs) still pending	session-20261112T231640-f6dda86c	2026-11-13T02:13:28Z
+cover:shillinq:801aab65:4387d378	PR #2838: 13 tests for lib/Budget, BudgetEditingService lines 97.86->99.57%	session-20261113T015005-da194c88	2026-11-13T02:14:04Z
+verify:shillinq:2827:89c13bb8	2827-2831 all GREEN (tests-only, +23 tests, no new failures)	session-20261113T015003-f68021a4	2026-11-13T02:14:22Z
+cover:pipelinq:f67520ecm8c58:81b1241f	already done: lib/Portal 556/556 statements covered; PortalQuestionActions is static form descriptors pinned through the provider golden test	session-20261113T003903-5efbf5ae	2026-11-13T02:14:34Z
+cover:stackiq:8cfacb29m8db8:js17dfdc2e	PR #1812: mounted specs for 4 object dialogs (+21 tests); src/modals/object/* 40.6%->43.4% (ViewObject dominates)	session-20261113T011731-f3798045	2026-11-13T02:14:43Z
+cover:pipelinq:f67520ecm8c58:8f2b650b	PR #3617: 15 tests in 3 files, lib/Service/Competitor 87.0% -> 96.5%, suite failures unchanged (1 inherited)	session-20261113T015005-e2235eb9	2026-11-13T02:15:11Z
+cover:stackiq:8cfacb29m8db8:jsc7b297c1	PR #1813: 2 views, 12 tests, src/views lines 86.2->89.6%	session-20261113T004519-b6b86685	2026-11-13T02:15:09Z
+cover:pipelinq:f67520ecm8c58:d4326ecd	already done: the four dirs are at 90/97 statements (92.8%), above the 85% target; 7 lines left across WorkBuckets, PersonFetch, SchemaSlugMap	session-20261113T015005-e2235eb9	2026-11-13T02:15:29Z
+cover:pipelinq:f67520ecm8c58:jsa5192f20	PR pipelinq#3618 (branch -2; -1 already had a PR): 13 tests, src/views/blasts 67.2% -> 84.6%; vitest 3164->3177 green	session-20261112T221237-836ed3f0	2026-11-13T02:15:40Z
+cover:pipelinq:f67520ecm8c58:js00fe026a	already done: open PR on quality/test-coverage-js-00fe026a-1 (e9f50310) already covers these src/services gaps (9 specs); no duplicate opened	session-20261112T234655-793f46ee	2026-11-13T02:15:44Z
+cover:pipelinq:f67520ecm8c58:js4570fd16	failed: permission (lang=js needs npm ci, refused in this session)	session-20261113T015005-e2235eb9	2026-11-13T02:15:40Z
+cover:pipelinq:f67520ecm8c58:23d187f5	already done: lib/Service/Store at 82/86 statements (95.3%), above the 90% target	session-20261113T015005-e2235eb9	2026-11-13T02:15:56Z
+cover:pipelinq:f67520ecm8c58:95a79563	already done: lib/Service/Lifecycle at 121/134 statements (90.3%), meets the 90% target	session-20261113T015005-e2235eb9	2026-11-13T02:16:08Z
+cover:pipelinq:f67520ecm8c58:ab7f3595	PR #3620: MessageDispatchTrait 23/35 -> 34/35, 8 tests; rest of dir fully covered	session-20261113T015005-030aa10a	2026-11-13T02:16:08Z
+cover:pipelinq:f67520ecm8c58:89d1fbd3	PR #3619: 10 tests (KeywordTargetService, KeywordAnalysisService, HtmlTextExtractor); KeywordTargetService 27->34/34; suite 5774->5784, no new failures	session-20261113T013903-97d30fda	2026-11-13T02:16:06Z
+cover:openregister:7350e3efm0e99:9d3a1784	PR #10090: FlowRunWorker 197/219 -> 219/219 (+12 tests); TenantUsageSyncJob needs APCu	session-20261113T015002-115b579d	2026-11-13T02:16:18Z
+cover:pipelinq:f67520ecm8c58:09cc8f24	PR #3621: 9 tests (CTI webhook gates, adapter registry); Cti dir 340->350/353; suite 5774->5783, same 1 inherited failure	session-20261112T234655-0bdbf2be	2026-11-13T02:16:22Z
+cover:pipelinq:f67520ecm8c58:6f346b68	already done: quality/test-coverage-6f346b68-1 (58d4a62b) already extends SettingsSectionTest for the only class in lib/Sections; no duplicate	session-20261112T234655-793f46ee	2026-11-13T02:16:13Z
+cover:pipelinq:f67520ecm8c58:js5cb5a0d3	PR #3622: 28 tests, bookings dir 74.1%->83.3% stmts (suite 3164->3192 green)	session-20261113T015005-81f4d5a5	2026-11-13T02:16:26Z
+cover:pipelinq:f67520ecm8c58:js5794e9fc	already done: branches quality/test-coverage-js-5794e9fc-1 and -2 (2 PRs, open) already cover these settings views; no new PR	session-20261113T011731-be978a55	2026-11-13T02:16:37Z
+cover:pipelinq:f67520ecm8c58:28cccfd9	PR #3623: Repair/Support 94/95 -> 95/95 statements, +2 tests	session-20261113T011743-bdeb8a13	2026-11-13T02:16:50Z
+cover:pipelinq:f67520ecm8c58:f0c02922	already done: lib/Service/External is 47/48 lines with exact-assertion tests of every redaction and deferral; only isDormant() (constant true) is unexecuted, a getter-only test would add nothing; no PR	session-20261112T234655-793f46ee	2026-11-13T02:17:11Z
+cover:pipelinq:f67520ecm8c58:e19add4c	already done: lib/Service/Consent 66/67 statements covered on development (classes are value objects driven by existing service tests), no PR	session-20261113T004519-b6b86685	2026-11-13T02:17:08Z
+cover:pipelinq:f67520ecm8c58:dfaef732	already done: lib/Notification/Notifier.php 120/120 stmts covered by NotifierSubjectGoldenTest (exact setter-call golden); no PR	session-20261113T015005-81f4d5a5	2026-11-13T02:17:39Z
+cover:pipelinq:f67520ecm8c58:db675bd6	already done: lib/Activity/Setting/ 27/27 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:17:37Z
+review:openregister:10089:36c6f7ce	APPROVE: jest spec only, 42 tests green, eslint clean	session-20261113T015002-115b579d	2026-11-13T02:18:07Z
+verify:launchpad:1156:30467eb4	GREEN: 1156 docs/coverage-summary refresh only	session-20261112T221237-836ed3f0	2026-11-13T02:18:28Z
+cover:pipelinq:f67520ecm8c58:a13d1ab7	PR #3625: 8 tests, lib/Service/WebForm 94.0->99.5% stmts in WebForm tests	session-20261113T015005-da194c88	2026-11-13T02:18:49Z
+cover:pipelinq:f67520ecm8c58:d528dcf0	PR #3624: 7 tests, lib/Dashboard 72.2% -> 88.9% (rest is load() calling OCP\Util statics, not unit-testable); suite failures unchanged	session-20261113T015005-e2235eb9	2026-11-13T02:18:48Z
+verify:filinq:2003:f9f29384	GREEN #2003 (5502 tests, 0 new failures)	session-20261113T021702-a00af7e3	2026-11-13T02:18:51Z
+cover:pipelinq:f67520ecm8c58:0798b7cf	PR #3626: PosCart 63/67 -> 67/67 statements, +7 tests	session-20261113T011743-bdeb8a13	2026-11-13T02:19:10Z
+cover:launchpad:755175ffm31b6:f545d745	no PR: lib/Repair/*.php at 279/313 (89.1%); the remaining reachable lines are 4 repair-step getName() strings (getter-only tests excluded by the rules); all other gaps need a missing/malformed shipped actions.seed.json or an unreachable empty baseline (REVISION_ADDITIONS only has rev 2)	session-20261112T221237-836ed3f0	2026-11-13T02:19:14Z
+cover:pipelinq:f67520ecm8c58:9cd6879c	PR #3628: 5 tests for EventReminderService; target dirs 162->173/178; suite 5774->5779, same 1 inherited failure	session-20261112T234655-0bdbf2be	2026-11-13T02:19:41Z
+cover:pipelinq:f67520ecm8c58:0a24f15f	PR #3627: 6 tests for FilinqLetterAdapter refusals; adapter 96/116 -> 116/116; suite 5774->5780, no new failures	session-20261113T013903-97d30fda	2026-11-13T02:19:38Z
+cover:pipelinq:f67520ecm8c58:50d794fc	PR #3629: MatomoReportService 70/72 -> 72/72, 2 tests	session-20261113T015005-030aa10a	2026-11-13T02:19:49Z
+cover:dossiq:6ca0231ema7d4:33af3743	already done: lib/Service/Bezwaar/*.php measured 99.2% lines (1543/1556) on development 3e7a0de, target 90; no PR	session-20261113T021659-ac072d0a	2026-11-13T02:20:26Z
+verify:pipelinq:3617:9c3b80cd	GREEN #3617 (tests only, no new failures)	session-20261113T015005-e2235eb9	2026-11-13T02:20:45Z
+cover:pipelinq:f67520ecm8c58:f3231970	PR #3630: 21 direct tests for ScheduledTaskRights + ScheduledTaskDeadlines; suite 5774->5795, same inherited failure	session-20261113T011731-be978a55	2026-11-13T02:21:07Z
+cover:dossiq:6ca0231ema7d4:bf05c668	already done: lib/BulkAction/*.php measured 97.0% lines (225/232) on development, target 85; no PR	session-20261113T021659-ac072d0a	2026-11-13T02:21:10Z
+verify:stackiq:1776:c5595d91	4 GREEN (1776,1809,1810,1811); php+vitest 0 new failures	session-20261113T015005-81f4d5a5	2026-11-13T02:21:21Z
+cover:pipelinq:f67520ecm8c58:js0be8c659	PR #3631: 27 mounted vitest tests for 5 modals (PosTenderTypeForm, AddTender, ContactEmailPhone, ContactSocialProfile, LinkSubmissionToClient); vitest 3164 -> 3191; src/modals/* 65.0% -> 74.0% lines	session-20261113T015003-d56b074c	2026-11-13T02:21:40Z
+cover:launchpad:755175ffm31b6:js01efb861	already done: src/components/Widgets/ 1326/1536 (86.3%) statements on development, above the 85% target; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:21:53Z
+cover:pipelinq:f67520ecm8c58:js4f7d1071	already done: open PR #3615 (social accounts + new-post route) on this branch and #3603 (SocialPerformanceView) cover these dirs; no duplicate PR opened	session-20261113T004527-ec0338ee	2026-11-13T02:22:02Z
+cover:launchpad:755175ffm31b6:34f5c300	already done: lib/Service/*.php 10652/11530 (92.4%) on development, above the 90% target; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:22:15Z
+cover:dossiq:6ca0231ema7d4:67b69054	PR #6226: 8 tests over CaseConversationService and CaseCaptureService remaining branches; suite 13867->13875, same 19 inherited failures	session-20261112T234655-793f46ee	2026-11-13T02:22:39Z
+cover:dossiq:6ca0231ema7d4:c97e6ec3	PR #6227: 3 queue sources, 7 tests, Queue/Source 78.9->95.2%	session-20261113T004519-b6b86685	2026-11-13T02:22:47Z
+measure:filinq:20261113h02	php 87.6% / js 35.34%	session-20261113T021702-a00af7e3	2026-11-13T02:22:49Z
+cover:dossiq:6ca0231ema7d4:b7fd3ec4	PR #6228: 35 tests for 5 Beschikking classes; suite 13840->13875, 19 inherited failures unchanged	session-20261113T021704-7f11f0d9	2026-11-13T02:23:02Z
+cover:pipelinq:f67520ecm8c58:js3f7698d2	PR #3632: 19 vitest tests for PipelineBoard rendering; src/views/pipeline/ ~82.7% -> 91.0% stmts; suite 3164 -> 3183 passing	session-20261113T015003-f68021a4	2026-11-13T02:23:29Z
+verify:stackiq:1776:72f75ddd	6 GREEN (1776,1809-1813); php+vitest 0 new failures	session-20261113T015005-81f4d5a5	2026-11-13T02:24:01Z
+cover:dossiq:6ca0231ema7d4:74111b6d	PR #6229: +18 tests, lib/Service/Status 95.0%->99.8%, suite failures unchanged (19 inherited)	session-20261113T021721-c0a228f1	2026-11-13T02:24:34Z
+cover:launchpad:755175ffm31b6:js0be8c659	already done: src/modals/* 545/638 (85.4%) on development, above the 85% target; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:24:42Z
+cover:dossiq:6ca0231ema7d4:28cccfd9	PR #6230: 19 tests for CaseTimerSweeper, MovesShardColumns, ColumnMoveTally/ColumnMove, RunsUnderSystemIdentity; suite 13840->13859, same 19 inherited failures	session-20261113T021702-a5aabca2	2026-11-13T02:24:49Z
+cover:launchpad:755175ffm31b6:aae6d66c	already done: lib/Exception/*.php 55/55 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:25:07Z
+cover:dossiq:6ca0231ema7d4:a07ceba0	PR #6231: 5 DSO edge tests; Dso dir 283->291/298; suite 13867->13872, same 19 inherited failures	session-20261112T234655-0bdbf2be	2026-11-13T02:25:01Z
+cover:openregister:7350e3efm0e99:356f590c	PR #10091: 25 tests, 4 classes in Service/File; File suite 972->997 OK	session-20261113T015002-81190344	2026-11-13T02:25:22Z
+cover:dossiq:6ca0231ema7d4:5ebe3eb6	PR #6232: lib/Service/Mcp 235/246 -> 246/246, 8 tests	session-20261113T015005-030aa10a	2026-11-13T02:25:10Z
+cover:pipelinq:f67520ecm8c58:js0023cfc7	PR #3634: ContactImport + OrganisationEnrich dialog flows (+16 tests); src/dialogs/* 70.0%->72.2% (0% dialogs in open PRs -1/-2)	session-20261113T011731-f3798045	2026-11-13T02:25:16Z
+cover:dossiq:6ca0231ema7d4:f0c02922	PR #6233: 17 tests, lib/Service/External lines 400/422 -> 422/422, suite failures 19 = baseline	session-20261113T021703-063c80f1	2026-11-13T02:25:31Z
+verify:keepiq:1719:88e773ed	1719 GREEN, 1720 GREEN (4119 tests, baseline 4110, no failures)	session-20261113T015002-115b579d	2026-11-13T02:25:54Z
+cover:keepiq:d76c2121m88ca:be0dcca9	already done: lib/Mcp/*.php 139/139 lines covered at e61d518, no PR	session-20261113T011731-f3798045	2026-11-13T02:25:58Z
+review:openregister:10088:930ec96d	APPROVE: @uses-only docblocks, all classes exist, touched + required suites green	session-20261113T021701-67a73ebd	2026-11-13T02:26:08Z
+cover:pipelinq:f67520ecm8c58:jsde685378	PR #3633: PortalWidget spec, 6 tests; src/portal/views 49.6% -> 55.1% on development, 90.2% together with open -1 branch	session-20261113T003903-5efbf5ae	2026-11-13T02:26:45Z
+cover:dossiq:6ca0231ema7d4:3641032a	PR #6234: 90 tests for 4 Service/Pipelinq classes (Bridge/Programme 100% strict); suite 19 inherited failures unchanged	session-20261113T021701-c2a14ef0	2026-11-13T02:26:48Z
+cover:dossiq:6ca0231ema7d4:0f859653	PR #6236: 8 tests for AskPersonTaskStore (only uncovered Flow class); suite 13893->13901, 19 inherited failures unchanged	session-20261113T021704-7f11f0d9	2026-11-13T02:26:54Z
+cover:dossiq:6ca0231ema7d4:8f99c0f1	PR #6235: WooDossierReturn + WooCaseLedger, 4 tests, lib/Woo 94.8->96.3%	session-20261113T004519-b6b86685	2026-11-13T02:26:52Z
+cover:pipelinq:f67520ecm8c58:js6d6735a6	PR pipelinq#3635: ServiceForm rendered spec (+4); bookings 75.0%->79.6% alone, 87.1% with open -1/-2 branches	session-20261112T231640-f6dda86c	2026-11-13T02:26:58Z
+verify:integriq:3455:5099c730	GREEN: 3455 (vitest 1392->1420, no new failures)	session-20261113T004527-ec0338ee	2026-11-13T02:27:00Z
+cover:dossiq:6ca0231ema7d4:e2589e28	PR #6237: 7 tests, AuditPacketBuilder 1->65/70, BeschikkingRepository 1->31/32; suite 13893->13900, same 19 inherited failures	session-20261112T234655-793f46ee	2026-11-13T02:27:04Z
+cover:dossiq:6ca0231ema7d4:b8cc4419	PR #6238: 28 tests for OpenRegisterSharingGateway, CaseLinkShares, FederatedCaseShareService (0 -> 56/56, 166/167, 158/158); suite 13867->13895, same 19 inherited failures	session-20261113T013903-97d30fda	2026-11-13T02:27:37Z
+cover:dossiq:6ca0231ema7d4:9ece5c6f	PR #6239: TranslatesRefusalsTest (5 tests); lib/Controller/Support/ already 290/299 (above 90 target), now 292/299; suite 13882 tests, same 19 inherited failures (Service/Access)	session-20261113T015003-d56b074c	2026-11-13T02:27:42Z
+cover:dossiq:6ca0231ema7d4:jsd48eb217	already done: src/store/modules/ measured 96.4% lines (705/731) on development, target 90; no PR (baseline red: capabilityComparison.spec.js 1 test)	session-20261113T021659-ac072d0a	2026-11-13T02:27:41Z
+verify:shillinq:2822:223401dd	8/8 GREEN (tests-only; 9080 tests, 0 new failures)	session-20261113T015005-da194c88	2026-11-13T02:27:52Z
+cover:integriq:9b0f5894md8cd:acd8f15d	already done: open PR #3433 (branch -1) lifts lib/Outbound/Identity/ 87.5% -> 95.5% on development 8420a0dd (target 90); rest is native DNS wrapper + edge lines; no new PR	session-20261113T015003-f68021a4	2026-11-13T02:28:00Z
+verify:hermiq:1643:c2225292	GREEN #1643 (coverage figures only, no new failures)	session-20261113T015002-81190344	2026-11-13T02:28:05Z
+cover:keepiq:d76c2121m88ca:aae6d66c	already done: every executable line in lib/Exception has direct tests (11 classes, via merged -1 branch); the other 14 are empty marker classes with no lines to cover; no PR	session-20261113T021704-7f11f0d9	2026-11-13T02:28:13Z
+cover:keepiq:d76c2121m88ca:34763eb4	already done: lib/Middleware at 161/162 statements (99.4%) on development; branch -1 merged	session-20261112T231640-f6dda86c	2026-11-13T02:28:19Z
+cover:keepiq:d76c2121m88ca:7ddabe24	already done: lib/Federation/*.php at 100% lines/methods (covered by merged quality/test-coverage-7ddabe24-1); no PR	session-20261113T021701-c2a14ef0	2026-11-13T02:28:26Z
+cover:integriq:9b0f5894md8cd:60c2c265	PR #3456: 31 tests for 6 untested controllers, lib/Controller 77.95% -> 80.27%; suite errors unchanged (2 inherited)	session-20261113T015005-e2235eb9	2026-11-13T02:28:38Z
+cover:dossiq:6ca0231ema7d4:9951e799	PR #6240: 8 guard tests; DecisionDocument dir 364->372/378; 19 inherited failures, none new	session-20261112T234655-0bdbf2be	2026-11-13T02:28:36Z
+cover:keepiq:d76c2121m88ca:882bd950	already done: SecretSearchProvider (only class in lib/Search) fully covered by merged quality/test-coverage-882bd950-1; no PR	session-20261113T021704-7f11f0d9	2026-11-13T02:29:06Z
+cover:keepiq:d76c2121m88ca:0d67c1f3	already done: lib/Service/Siem 193/193 statements covered on development (branch -1 merged); no PR	session-20261113T015002-81190344	2026-11-13T02:28:59Z
+verify:decidiq:2108:9cdaf28f	2108 GREEN (coverage docs only; 3116 tests, no new failures)	session-20261113T021659-ac072d0a	2026-11-13T02:29:05Z
+cover:keepiq:d76c2121m88ca:a4b15ae4	already done: lib/Event/Audit 19/19 lines covered at e61d518, no PR	session-20261113T011731-f3798045	2026-11-13T02:29:15Z
+cover:keepiq:d76c2121m88ca:6f346b68	already done: lib/Sections/SettingsSection 5/5 lines covered, every getter asserted in AppShellControllersTest; no PR	session-20261113T015002-81190344	2026-11-13T02:29:52Z

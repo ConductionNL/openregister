@@ -1,12 +1,12 @@
 {
  "app": "buildiq",
- "commit": "5495c2c4fe9bce65b30a34c21488498dfbd47dbc",
- "measured_at": "2026-11-12T22:23:28Z",
+ "commit": "8c85aaa07ce6cd452eb253135bdc6a576fbdad94",
+ "measured_at": "2026-11-13T01:57:46Z",
  "php": {
   "tool": "pcov",
-  "pct": 79.08,
+  "pct": 80.12,
   "statements": 19516,
-  "covered": 15433,
+  "covered": 15636,
   "dirs": {
    "lib/": [
     11,
@@ -18,11 +18,11 @@
    ],
    "lib/BackgroundJob/": [
     245,
-    210
+    230
    ],
    "lib/Command/": [
     349,
-    343
+    348
    ],
    "lib/Controller/": [
     3334,
@@ -30,7 +30,7 @@
    ],
    "lib/Dashboard/": [
     81,
-    79
+    80
    ],
    "lib/Exception/": [
     64,
@@ -42,23 +42,23 @@
    ],
    "lib/Lifecycle/": [
     85,
-    78
+    84
    ],
    "lib/Listener/": [
     538,
-    386
+    396
    ],
    "lib/Mcp/": [
     31,
-    30
+    31
    ],
    "lib/Mcp/Handler/": [
     808,
-    697
+    748
    ],
    "lib/Repair/": [
     915,
-    649
+    683
    ],
    "lib/Resources/template/": [
     3,
@@ -90,7 +90,7 @@
    ],
    "lib/Resources/template/lib/Service/": [
     150,
-    68
+    132
    ],
    "lib/Resources/template/lib/Settings/": [
     9,
@@ -138,7 +138,7 @@
    ],
    "lib/Service/Connection/": [
     171,
-    157
+    163
    ],
    "lib/Service/Copilot/": [
     151,
@@ -150,7 +150,7 @@
    ],
    "lib/Service/Dashboard/": [
     141,
-    132
+    137
    ],
    "lib/Service/GitHub/": [
     75,
@@ -167,17 +167,13 @@
   }
  },
  "js": {
-  "pct": 78.41,
-  "statements": 13660,
+  "pct": 79.32,
+  "statements": 13504,
   "covered": 10711,
   "dirs": {
    "src/": [
-    215,
+    179,
     159
-   ],
-   "src/assets/": [
-    0,
-    0
    ],
    "src/components/": [
     690,
@@ -264,7 +260,7 @@
     1
    ],
    "src/services/": [
-    1224,
+    1210,
     1174
    ],
    "src/services/manifestValidation/": [
@@ -272,24 +268,16 @@
     477
    ],
    "src/store/": [
-    50,
+    45,
     45
-   ],
-   "src/store/modules/": [
-    52,
-    0
    ],
    "src/utils/": [
     99,
     83
    ],
    "src/views/": [
-    1546,
+    1543,
     1200
-   ],
-   "src/views/settings/": [
-    46,
-    0
    ]
   }
  }

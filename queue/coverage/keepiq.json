@@ -1,16 +1,16 @@
 {
  "app": "keepiq",
- "commit": "4034d61899f87957c2986d53a8a7df7a3e45f12f",
- "measured_at": "2026-11-12T22:46:47Z",
+ "commit": "f48bdc30fc670ff120fb7f3bb86c2eb479137d26",
+ "measured_at": "2026-11-13T02:11:25Z",
  "php": {
   "tool": "pcov",
-  "pct": 80.2,
-  "statements": 25032,
-  "covered": 20076,
+  "pct": 84.16,
+  "statements": 25057,
+  "covered": 21089,
   "dirs": {
    "lib/AppInfo/": [
-    145,
-    143
+    146,
+    144
    ],
    "lib/Attribute/": [
     5,
@@ -18,27 +18,27 @@
    ],
    "lib/BackgroundJob/": [
     407,
-    201
+    330
    ],
    "lib/Backup/": [
     481,
-    387
+    454
    ],
    "lib/Command/": [
     181,
-    72
+    180
    ],
    "lib/Controller/": [
-    4097,
-    3654
+    4115,
+    3788
    ],
    "lib/Db/": [
     3212,
-    1253
+    1788
    ],
    "lib/Event/": [
     43,
-    41
+    43
    ],
    "lib/Event/Audit/": [
     19,
@@ -58,15 +58,15 @@
    ],
    "lib/Mcp/": [
     139,
-    134
+    139
    ],
    "lib/Middleware/": [
-    156,
-    143
+    162,
+    161
    ],
    "lib/Notification/": [
     396,
-    389
+    394
    ],
    "lib/Repair/": [
     1051,
@@ -90,7 +90,7 @@
    ],
    "lib/Service/ShareSave/": [
     399,
-    391
+    393
    ],
    "lib/Service/ShareSync/": [
     174,
@@ -98,7 +98,7 @@
    ],
    "lib/Service/Siem/": [
     193,
-    186
+    193
    ],
    "lib/Settings/": [
     28,

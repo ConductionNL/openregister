@@ -1,11 +1,11 @@
 {
  "app": "pipelinq",
- "commit": "69a4d43ce79228a1d26d708f5cc49571c69f82ad",
- "measured_at": "2026-11-12T22:20:22Z",
+ "commit": "0249d40f81bafc75bc8f50a39e23e2abe923c5f6",
+ "measured_at": "2026-11-13T01:56:10Z",
  "php": {
   "tool": "pcov",
-  "pct": 81.8,
-  "statements": 58420,
+  "pct": 81.76,
+  "statements": 58451,
   "covered": 47790,
   "dirs": {
    "lib/Activity/": [
@@ -77,12 +77,12 @@
     556
    ],
    "lib/Repair/": [
-    2391,
-    1840
+    2421,
+    1838
    ],
    "lib/Repair/Support/": [
-    94,
-    93
+    95,
+    94
    ],
    "lib/Sections/": [
     5,
@@ -90,7 +90,7 @@
    ],
    "lib/Service/": [
     30815,
-    24755
+    24756
    ],
    "lib/Service/Access/": [
     86,
