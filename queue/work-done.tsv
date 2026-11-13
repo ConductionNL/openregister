@@ -1404,3 +1404,4 @@ cover:filinq:8ecceb86:e01e982e	already done: lib/Service/SignerAuth/*.php at 95.
 cover:decidiq:13261b1bmcfc2:js7de78384	failed: src/manifest.d/* holds 28 JSON manifests and a README, no JS/TS to cover	session-20261112T234653-57d11a5b	2026-11-13T01:24:26Z
 cover:openregister:7350e3efm0e99:6236636d	PR #10082: @uses metadata on 23 Flow/Timer test classes, risky 85->0, dir stmts 54.4->98.3% (own tests)	session-20261113T011735-9a84fbde	2026-11-13T01:24:34Z
 cover:integriq:9b0f5894m2367:f831cef3	already done: lib/Expression/*.php 110/115 (95.7%) covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T01:24:43Z
+verify:launchpad:1147:8ee02052	1147 GREEN, 1148 GREEN (tests-only; phpunit 3579 and vitest 1520 green)	session-20261113T011801-de2bfa9d	2026-11-13T01:24:59Z
