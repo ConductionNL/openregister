@@ -2,13 +2,13 @@
 
 ## 1. Runner
 
-- [ ] 1.1 Add `lib/Service/GraphQL/AdminQueryRunner.php` and `GraphQLService::executeBounded()`: refuse a document with any mutation or subscription before execution, pass `deadline` and `rowCap` in the context, and return `rows`, `truncated` and `durationMs` in `extensions` (design D-2). Verify: `tests/Unit/Service/GraphQL/AdminQueryRunnerTest.php` covers a refused mutation that never reaches the schema, a query truncated at 1,000 rows, and a deadline that has passed.
-- [ ] 1.2 Make `GraphQLResolver::resolveList()` clamp `first` to the remaining `rowCap` and throw `QUERY_TIMEOUT` once `deadline` has passed, only when those keys are in the context. Verify: `tests/Unit/Service/GraphQL/GraphQLResolverBoundedTest.php`; the existing GraphQL tests pass unchanged.
+- [x] 1.1 Add `lib/Service/GraphQL/AdminQueryRunner.php` and `GraphQLService::executeBounded()`: refuse a document with any mutation or subscription before execution, pass `deadline` and `rowCap` in the context, and return `rows`, `truncated` and `durationMs` in `extensions` (design D-2). Verify: `tests/Unit/Service/GraphQL/AdminQueryRunnerTest.php` covers a refused mutation that never reaches the schema, a query truncated at 1,000 rows, and a deadline that has passed.
+- [x] 1.2 Make `GraphQLResolver::resolveList()` clamp `first` to the remaining `rowCap` and throw `QUERY_TIMEOUT` once `deadline` has passed, only when those keys are in the context. Verify: `tests/Unit/Service/GraphQL/GraphQLResolverBoundedTest.php`; the existing GraphQL tests pass unchanged.
 
 ## 2. Endpoints and audit
 
-- [ ] 2.1 Add `OperationsQueryController::run()` and `export()` with routes `POST /api/operations/query` and `POST /api/operations/query/export`, administrator-only, the export flattening the first list to CSV (formula-safe, UTF-8 with BOM) or JSON (design D-3). Verify: `tests/Unit/Controller/OperationsQueryControllerTest.php` covers 403 for a non-administrator, 400 `READ_ONLY`, 422 for a result with no list, and a cell `=SUM(A1)` written as `'=SUM(A1)`; hydra route-auth and admin-router gates pass.
-- [ ] 2.2 Write `query.run` and `query.export` audit rows with the fields in design D-4 and no variable values. Verify: `tests/Unit/Service/GraphQL/AdminQueryAuditTest.php` asserts a variable `bsn` appears by name only and the row lands through `insertAuditTrails()`.
+- [x] 2.1 Add `OperationsQueryController::run()` and `export()` with routes `POST /api/operations/query` and `POST /api/operations/query/export`, administrator-only, the export flattening the first list to CSV (formula-safe, UTF-8 with BOM) or JSON (design D-3). Verify: `tests/Unit/Controller/OperationsQueryControllerTest.php` covers 403 for a non-administrator, 400 `READ_ONLY`, 422 for a result with no list, and a cell `=SUM(A1)` written as `'=SUM(A1)`; hydra route-auth and admin-router gates pass.
+- [x] 2.2 Write `query.run` and `query.export` audit rows with the fields in design D-4 and no variable values. Verify: `tests/Unit/Service/GraphQL/AdminQueryAuditTest.php` asserts a variable `bsn` appears by name only and the row lands through `insertAuditTrails()`.
 
 ## 3. Page
 
