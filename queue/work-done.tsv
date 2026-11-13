@@ -3580,3 +3580,4 @@ verify:buildiq:1531:26e25221	GREEN 1531, 1532: 2682 tests, 0 new failures (1 inh
 cover:learniq:e6498dddmf689:568ec52a	already done: lib/Lifecycle/*.php at 95.9% lines (2628/2740) under the full unit suite on development, target 95; no PR	session-20261113T051705-4f5ad12a	2026-11-13T08:46:38Z
 merge:launchpad:1174:1d410467	merge-local over 2 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:46:56Z
 merge:launchpad:1175:13899a12	merge-local over 2 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:46:56Z
+cover:stackiq:9ac19b3am5ac4:js0be8c659	already done: src/modals/* (direct files) 357/361 = 98.9% >= 90 (branches -1..-3 merged)	session-20261113T051703-1b54bfba	2026-11-13T08:47:10Z
