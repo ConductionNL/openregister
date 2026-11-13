@@ -2391,3 +2391,4 @@ cover:dossiq:f8a113c5mac88:bedd4a8d	already done: Drafts/ 175/177 lines (98.9%) 
 cover:integriq:92114ab0m1534:075ad59c	already done: lib/Service/CaseSystem/ at 96.34% lines (421/437) on development; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:26:21Z
 review:openregister:10100:a45ac656	APPROVE: docblock-only coverage metadata, suites green	session-20261113T051705-4f5ad12a	2026-11-13T05:26:22Z
 cover:dossiq:f8a113c5mac88:ab2de1d0	PR #6285: 15 edge tests for ObligationDeclaration, ObligationService; suite 19 inherited failures unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:26:25Z
+verify:pipelinq:3669:2570871f	2/2 GREEN (3669, 3670): clean merge, phpunit +13 no new failures, vitest 3871 pass, tests only	session-20261113T044737-f37de8e3	2026-11-13T05:26:47Z
