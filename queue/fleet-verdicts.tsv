@@ -6508,3 +6508,4 @@ learniq	2491	3fc7e9ce355ab96b3cf086ca165fbfd613a7675a	GREEN	worker-11	phpunit 65
 learniq	2492	4884fbd39dce1f80287efaab5acf817bc5deb684	GREEN	worker-11	phpunit 6563 tests on the 4-PR tree, baseline 6548 with 1 inherited failure (HigherEducationExampleSetTest generator), 0 new; js-unit 9 failures identical to development
 learniq	2494	4a5ebbac106b506e613a5702d0882e74a01513fe	GREEN	worker-11	phpunit 6563 tests on the 4-PR tree, baseline 6548 with 1 inherited failure (HigherEducationExampleSetTest generator), 0 new; js-unit 9 failures identical to development
 learniq	2484	e9288c776175e1ab9a4a07620c3270db1881308e	CONFLICT	worker-11	conflicts with development in l10n/nl.json (and the tracked example-set .pyc)
+learniq	2493	a30a88709bf3d951b17553cb1fda563e3d5b086b	CONFLICT	worker-11	conflicts with #2490 in l10n/nl.js and l10n/nl.json
