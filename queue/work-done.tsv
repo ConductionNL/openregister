@@ -4948,3 +4948,5 @@ build:openregister:scoped-api-tokens	failed: worker rules forbid build tasks on 
 build:openregister:schema-delete-cascade	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:05Z
 build:openregister:published-file-digest	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:28Z
 build:openregister:search-accent-insensitive	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:34Z
+build:openregister:search-value-or-empty-filter	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:40Z
+build:openregister:record-tasks-tab	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:39:47Z
