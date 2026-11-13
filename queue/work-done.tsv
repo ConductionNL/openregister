@@ -6527,3 +6527,4 @@ build:filinq:tmlo-mdto-metadata	partial: PR #2080 MdtoMappingService prefill + c
 review:openregister:10317:531b7b6f	APPROVE 10317	session-20261113T192701-f224cbcf	2026-11-13T20:03:28Z
 build:filinq:redaction-guarantees-from-the-engine	failed: precondition unmet - openregister changes redaction-release-safeguards (0/20 tasks) and redaction-policy-as-data (0/15) are not built on openregister development 70e5570; the change says stop until both are merged and released	session-20261113T182404-f2c28226	2026-11-13T20:03:38Z
 verify:dossiq:6448:8ad53eaa	GREEN 6448 (vitest-only; 1 inherited JS failure, red on development)	session-20261113T172349-00278d9d	2026-11-13T20:03:51Z
+build:filinq:specify-capability-rows	partial: PR #2082 builds 4.1 (profiles per document type in WooProfileService, 4 tests); ten other feature tasks left	session-20261113T175336-b2d7fc7c	2026-11-13T20:03:55Z
