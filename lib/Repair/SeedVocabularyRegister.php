@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
+use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
@@ -88,6 +89,24 @@ class SeedVocabularyRegister implements IRepairStep {
 	];
 
 	/**
+	 * The search dictionary's concept schemes, seeded empty (see SearchDictionaryProvider).
+	 *
+	 * @var array<int, array{uri: string, title: string, description: string}>
+	 */
+	private const DICTIONARY_SCHEMES = [
+		[
+			'uri'         => SearchDictionaryProvider::SYNONYM_SCHEME,
+			'title'       => 'Search synonyms',
+			'description' => 'Synonym groups for search: a concept\'s prefLabel and its altLabel entries find each other.',
+		],
+		[
+			'uri'         => SearchDictionaryProvider::STOPWORD_SCHEME,
+			'title'       => 'Search stopwords',
+			'description' => 'Words search drops: a concept\'s prefLabel is the word to drop.',
+		],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RegisterDescriptorImport $descriptors Importer, app path and log for the descriptor.
@@ -126,7 +145,39 @@ class SeedVocabularyRegister implements IRepairStep {
 	public function run(IOutput $output): void {
 		$this->importRegisterDescriptor(output: $output);
 		$this->seedTooiFixtures(output: $output);
+		$this->seedDictionarySchemes(output: $output);
 	}//end run()
+
+	/**
+	 * Make sure the search dictionary's two concept schemes exist, empty, so an
+	 * administrator has somewhere to write synonym groups and stopwords.
+	 *
+	 * Created only when missing and never through the importer: an import of an
+	 * empty scheme deprecates every concept it does not list, which on every
+	 * upgrade would undo the administrator's dictionary. No synonym or stopword
+	 * is seeded; which words mean the same is each organisation's own decision.
+	 *
+	 * @param IOutput $output Output interface for status messages.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/tasks.md#3-the-dictionary
+	 */
+	private function seedDictionarySchemes(IOutput $output): void {
+		foreach (self::DICTIONARY_SCHEMES as $scheme) {
+			try {
+				$result = $this->importService->ensureScheme(schemeMeta: $scheme);
+			} catch (Throwable $e) {
+				$this->descriptors->logger->warning('[SeedVocabularyRegister] dictionary scheme not seeded (' . $scheme['uri'] . '): ' . $e->getMessage());
+				$output->warning('Search dictionary scheme skipped (' . $scheme['uri'] . '): ' . $e->getMessage());
+				continue;
+			}
+
+			if (($result['status'] ?? '') === 'created') {
+				$output->info('Created empty search dictionary scheme ' . $result['scheme']);
+			}
+		}
+	}//end seedDictionarySchemes()
 
 	/**
 	 * Import the `vocabulary_register.json` descriptor (conceptScheme + concept schemas).
