@@ -1,7 +1,7 @@
 # Tasks: platform-cloud-federation-provider
 
 - [ ] 1.1 Outbound send on the federation provider, beside the existing `shareReceived()` (D-4).
-- [ ] 1.2 Accept, decline and revoke on both sides, with far-side changes reflected here (D-3).
+- [ ] 1.2 Accept, decline and revoke on both sides, with far-side changes reflected here (D-3). — partial: a far-side accept or decline of a share sent from here, and a withdrawal of a share received here, are now reflected (`RemoteShareNotification`, called from `notificationReceived()`, authenticated by the share secret and the share id). Sending these notifications from this side waits on 1.1.
 - [ ] 1.3 A federated recipient evaluated by the permission layer as a principal (D-1).
 - [ ] 1.4 A per-share declaration of what crosses, defaulting to the narrowest (D-2).
 - [ ] 1.5 A schema declaration of whether its objects may be federated, defaulting to not.
