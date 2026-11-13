@@ -4146,3 +4146,4 @@ verify:planninq:1139:6818ac28	6 PRs verified: #1139,1141,1142,1143,1144 GREEN (t
 cover:shillinq:05639debm0c05:81b1241f	already done: lib/Portal/ 157/157 = 100% (measure at e678c8ef)	session-20261113T051703-1b54bfba	2026-11-13T10:04:42Z
 verify:buildiq:1536:29e55383	GREEN #1536 (vitest 3880->3917, 0 fail)	session-20261113T091527-72c58830	2026-11-13T10:04:59Z
 verify:larpinq:1024:4f2c7f3f	1024 GREEN: tests-only vitest specs; vitest 295 pass, PHP 697 = baseline	session-20261113T074532-3dc49c57	2026-11-13T10:05:05Z
+cover:dossiq:069ee2d6m7275:ceb285b8	PR #6384: 3 Publication classes, 14 tests (dir 28 -> 42), lines already 100%, 19 inherited failures unchanged	session-20261113T084525-9d890807	2026-11-13T10:05:20Z
