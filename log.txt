@@ -3333,3 +3333,5 @@
 2026-11-13T13:19:36Z integrator-20261111T115842-a749432d CONFLICT-DEV #10197 1ca18135
 2026-11-13T13:35:14Z integrator-20261111T115842-a749432d GREEN tree 84692dcc1a on dev 36a932ab11 prs 20 front=ok: Tests: 59356, Assertions: 204055, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
 2026-11-13T13:37:29Z integrator-20261111T115842-a749432d MERGED-TREE 84692dcc1a: 20 PRs in one push, main now 84692dcc1a = tested tree
+2026-11-13T14:02:56Z integrator-20261111T115842-a749432d GREEN tree a9f40c1a66 on dev 84692dcc1a prs 19 front=ok: Tests: 59535, Assertions: 204679, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
+2026-11-13T14:03:06Z integrator-20261111T115842-a749432d DEV-MOVED before push; rebuild
