@@ -1527,3 +1527,4 @@ cover:keepiq:d76c2121m70b5:e372e6ff	already done: lib/Event/*.php 43/43 covered 
 cover:filinq:8ecceb86:dfaef732	PR #2003: LegalHoldNotifier, 3 tests; lib/Notification 14/16 -> 16/16; suite green	session-20261113T003903-5efbf5ae	2026-11-13T02:03:37Z
 cover:stackiq:8cfacb29m8db8:f4b2f7af	already done: lib/Service/ArchiMate 202/204 lines (99.0%) at 062e3700, remaining 2 are a promoted constructor and one branch; no PR	session-20261113T011731-f3798045	2026-11-13T02:03:37Z
 verify:filinq:1993:0bbff91d	GREEN x9 (1993-2001): tests-only, unit suite 5725 OK on the tree	session-20261113T004519-b6b86685	2026-11-13T02:03:40Z
+measure:dossiq:20261113h00	php 84.15% (99175 stmts), js 85.5% (11800 stmts) @88024ca; pcov.directory=lib needed	session-20261113T015005-81f4d5a5	2026-11-13T02:04:01Z
