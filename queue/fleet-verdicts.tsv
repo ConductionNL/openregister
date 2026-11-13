@@ -4610,3 +4610,4 @@ hermiq	1584	d8e968c6a84e0c414a147894b5f87b3c8e3be1b6	REVERIFY	worker-21	openapi.
 decidiq	2100	a22b19b074c0f5b9399e2b74b782b29880e56d36	GREEN	worker-41	tree 3218 tests ok, baseline 3116 ok, 0 new failures; tests-only
 decidiq	2101	6a2f61976798fcf33508406089a5374bb1aac581	GREEN	worker-41	tree 3218 tests ok, baseline 3116 ok, 0 new failures; tests-only
 decidiq	2102	0f39dcdccadc227bed3babce5bff6997a008ac72	GREEN	worker-41	tree 3218 tests ok, baseline 3116 ok, 0 new failures; tests-only
+dossiq	6207	0eee3b00378eaa3e779d4052c0eccb09b72ed4c9	GREEN	worker-18	tree of 2: phpunit 13409 run vs baseline 13396 (19 failures inherited), 0 new failures; tests-only additions
