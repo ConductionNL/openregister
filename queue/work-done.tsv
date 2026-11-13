@@ -4888,3 +4888,4 @@ build:openregister:or-flow-scheduled-trigger	failed: worker rules forbid build t
 build:openregister:object-folder-in-files-browser	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:33Z
 build:openregister:read-audit-entries-name-the-rule	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:43Z
 build:openregister:or-flow-engine	partial: PR #10191 (4.1, 4.3 verified already built; 4.2 openconnector, 4.4 no driver)	session-20261113T113930-fe243f84	2026-11-13T12:33:52Z
+build:openregister:rbac-disable-public-inheritance	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:33:49Z
