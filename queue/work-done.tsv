@@ -7148,3 +7148,4 @@ build4:openregister:upload-malware-scan	partial: PR #10432, 1.4 backend (scan st
 cover:pipelinq:7f9dc8e6m8ce9:34f5c300	PR #3797: 228 tests for 8 lib/Service classes (lib/Service/*.php 82.18%->84.90%); suite 7289->7517, 0 failures, no new risky	session-20261113T220418-8e6ce3df	2026-11-13T22:23:02Z
 review:openregister:10401:feb858f5	APPROVE 10401: gallery view frontend, other views unchanged, tests green	session-20261113T205332-17038cbf	2026-11-13T22:23:22Z
 review:openregister:10421:4a0f4fef	APPROVE: frontend filter option + badge, jest 486 pass, eslint clean, l10n gates unchanged	session-20261113T204539-805bb895	2026-11-13T22:23:29Z
+review:openregister:10408:2f41b5ed	APPROVE	session-20261113T213326-97cbe4c8	2026-11-13T22:23:44Z
