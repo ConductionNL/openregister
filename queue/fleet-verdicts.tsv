@@ -5245,3 +5245,4 @@ shillinq	2882	1543994b40a27e33174f9df3ddd6c067c43e85ab	GREEN	worker-18	tests-onl
 dossiq	6297	02d23732634b8938c2fd3c745e331cbc11d04522	GREEN	worker-58	phpunit 14880 on 3-PR tree vs baseline 14846, 19 inherited failures, 0 new; new test files only
 dossiq	6298	ce19e20e4a25a5727f25bf1f4638ca1602a0431d	GREEN	worker-58	phpunit 14880 on 3-PR tree vs baseline 14846, 19 inherited failures, 0 new; new test files only
 dossiq	6299	398fab3260cfdb65c7af81cb1108ec695b902690	GREEN	worker-58	phpunit 14880 on 3-PR tree vs baseline 14846, 19 inherited failures, 0 new; new test files only
+integriq	3491	2d982134b726b1454be0650e47abc72c3bce4368	GREEN	worker-02	tree 3491 on development 46d1bb08: 7287 tests, baseline 7280 (2 errors inherited), new failures 0; tests-only diff
