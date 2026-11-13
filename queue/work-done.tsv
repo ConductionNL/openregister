@@ -3876,3 +3876,4 @@ build:dossiq:screens-round12-domain-lists	already done: tasks 1.1-1.4 built on d
 cover:dossiq:069ee2d6m7275:a97b9ee7	already done: lib/Service/Money/*.php at 92.93% (789/849) on development 31eb27fb	session-20261113T073916-e9f11dfa	2026-11-13T09:27:27Z
 merge:learniq:2436:4916a3f5	merge-local over 2 learniq tasks: merged=6 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:27:37Z
 merge:learniq:2458:08b391ff	merge-local over 2 learniq tasks: merged=6 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:27:37Z
+build:dossiq:resident-start-points-have-a-page	already done: code tasks 1.1 and 2.1 ticked on development; only 3.1 (live check on an upgraded instance) open, not doable in code	session-20261113T091530-f20014fb	2026-11-13T09:27:54Z
