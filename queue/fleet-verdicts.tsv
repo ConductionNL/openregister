@@ -6213,3 +6213,5 @@ shillinq	2994	2c7bd3aef3c5cec37461b7ad29a	GREEN	worker-22	build public-sector-co
 hermiq	1702	695dd3dc15c6bfc831c739430f92dac72098efc5	GREEN	worker-19	tests only (vitest); tree vitest 1347/1347 pass; phpunit baseline 4562 (172 inherited err/fail), no PHP touched; no new failures
 hermiq	1703	31e5fd3c839ae4044a4180229d7f7ee7fbaa9d04	GREEN	worker-19	tests only (vitest); tree vitest 1347/1347 pass; phpunit baseline 4562 (172 inherited err/fail), no PHP touched; no new failures
 shillinq	2994	2c7bd3aef3c5cec37461b7ad29a811bf17da6910	GREEN	worker-16	tree 2994+2995+2996+2999+3001: unit 10433 tests (baseline 10394, 1 inherited clock-bound failure), 0 new failures; build PR judged against its change specs
+shillinq	2995	9ace9c6de72b2398231a11e3cbd8515a75575c57	GREEN	worker-16	tree 2994+2995+2996+2999+3001: unit 10433 tests (baseline 10394, 1 inherited clock-bound failure), 0 new failures; build PR judged against its change specs
+shillinq	2996	c8bf209f8503b2d563208844cd9f45e764e0681c	GREEN	worker-16	tree 2994+2995+2996+2999+3001: unit 10433 tests (baseline 10394, 1 inherited clock-bound failure), 0 new failures; build PR judged against its change specs
