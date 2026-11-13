@@ -34,6 +34,8 @@ use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\AuthorizationService;
 use OCA\OpenRegister\Service\Consumer\JwtValidator;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
+use OCA\OpenRegister\Service\Consumer\ConsumerAuthorization;
+use OCA\OpenRegister\Service\Consumer\ConsumerIdentity;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -408,12 +410,12 @@ class AuthorizationServiceHardeningTest extends TestCase {
 
 			public function findByIssuer(string $issuer): ?ResolvedConsumer {
 				return new ResolvedConsumer(
-					source: 'integriq',
-					uuid: 'app-consumer-1',
-					name: $issuer,
-					userId: 'api-user',
-					authorizationType: 'jwt',
-					configuration: ['algorithm' => 'HS256', 'publicKey' => $this->secret],
+					identity: new ConsumerIdentity(source: 'integriq', uuid: 'app-consumer-1', name: $issuer),
+					authorization: new ConsumerAuthorization(
+						userId: 'api-user',
+						authorizationType: 'jwt',
+						configuration: ['algorithm' => 'HS256', 'publicKey' => $this->secret]
+					),
 					record: ['from' => 'an app schema']
 				);
 			}
