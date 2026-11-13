@@ -1232,3 +1232,4 @@ cover:pipelinq:f67520ecm9d2c:js4570fd16	already done: existing branch quality/te
 verify:decidiq:2099:54c1c538	4 GREEN (2099-2102), 3218 tests, 0 new failures	session-20261113T004524-55adaa63	2026-11-13T00:50:01Z
 fix:launchpad:1107:3f7f87e6	failed: cannot measure here (ADR ruleset host unreachable; secret scanner install refused). Vendored ADR ruleset: only 2 use-problem-schema warnings on openapi.json; secretscanning drop likely inherited (#1117 merged 00:09Z after the gate)	session-20261113T002025-940c220f	2026-11-13T00:50:19Z
 cover:hermiq:755cdfe7m7444:js4829b6aa	PR #1633: 16 vitest tests (AiFeatureRegister, AiLiteracy rendered); src/views/* 85.1% -> 87.5%, suite 1072 -> 1088 green	session-20261113T002028-bc0aa910	2026-11-13T00:50:54Z
+cover:hermiq:755cdfe7m7444:js0023cfc7	already done: src/dialogs/* at 88.8% lines (167/188) on development, target 85; no PR	session-20261112T231638-72e59130	2026-11-13T00:51:01Z
