@@ -6352,3 +6352,4 @@ cover:openregister:7350e3efma401:f545d745	PR #10311: 5 repair classes 0->100% + 
 verify:shillinq:2976:e674df87	GREEN 2976, 3012; CONFLICT 3011 (with 2976); only inherited clock-bound failure	session-20261113T185327-0dc82b88	2026-11-13T19:31:19Z
 cover:stackiq:9ac19b3am9d24:407c4b68	PR #1891: ServiceFactoriesTest, 13 tests; suite 3397->3410, 0 failures	session-20261113T192700-55dce75a	2026-11-13T19:31:25Z
 cover:hermiq:065f1631md84f:dfaef732	no PR: lib/Notification already 74/74 covered; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:31:40Z
+cover:hermiq:065f1631md84f:d39f9857	no PR: lib/Support fully covered at measured commit; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:31:54Z
