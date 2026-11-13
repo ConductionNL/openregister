@@ -6297,3 +6297,4 @@ verify:shillinq:2986:51102f19	GREEN 2986,3002; CONFLICT 3003-3008 (l10n/version/
 cover:decidiq:a5f973bbm5a4d:568ec52a	already done: lib/Lifecycle/*.php at 100% (256/256) on development	session-20261113T185322-2911ee6d	2026-11-13T19:20:43Z
 verify:opencatalogi:2600:f07aa357	3 GREEN (2600-2602), no new failures, test-only	session-20261113T171154-27186e77	2026-11-13T19:20:41Z
 cover:integriq:92114ab0m0593:0f859653	already done: lib/Flow/*.php 98.85% (2485/2514, target 95) @81441e2ba; no PR	session-20261113T185326-316f096d	2026-11-13T19:20:54Z
+cover:decidiq:a5f973bbm5a4d:7505aeb4	already done: lib/Activity/*.php 100% (79/79) at 40e4458 (current head)	session-20261113T182349-7e3632fd	2026-11-13T19:21:02Z
