@@ -2087,5 +2087,6 @@ cover:integriq:92114ab0md8cd:e372e6ff	PR #3471: 9 tests, lib/Event 385->408/424;
 cover:dossiq:6ca0231ema7d4:dfaef732	already done: lib/Notification/*.php is at 191/191 lines on development	session-20261113T021703-063c80f1	2026-11-13T04:21:11Z
 cover:keepiq:c967a31fm88ca:2c3e981f	already done: lib/Service/ShareSync 174/174 statements, app PHP 87.25% at 2f62be10 (target 85)	session-20261113T034634-857dbcc2	2026-11-13T04:21:09Z
 verify:stackiq:1832:72315b69	4 GREEN (1832-1835), tests only, 0 new failures	session-20261113T041649-bbede304	2026-11-13T04:21:14Z
+cover:buildiq:9930949bm5861:568ec52a	already done: lib/Lifecycle/*.php at 98.8% lines (84/85) on development 5f5f87c6 (suite run with openregister@development sibling); no PR needed	session-20261113T041646-2c1d764f	2026-11-13T04:21:28Z
 cover:hermiq:065f1631m7444:js0be8c659	PR #1657: 32 vitest tests over 11 modals, src/modals/* 75.9% -> 85.4% stmts; suite green	session-20261113T024656-2f332446	2026-11-13T04:21:21Z
 cover:buildiq:9930949bm5861:0d8702e3	PR buildiq#1507: +27 tests for template NamedParametersSniff; suite 2391 -> 2418, inherited 1328 errors/5 failures unchanged	session-20261113T034632-47095943	2026-11-13T04:21:32Z
