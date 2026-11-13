@@ -4734,3 +4734,4 @@ build:openregister:flow-parity-mapping-and-webhooks	failed: 31 tasks spanning op
 cover:keepiq:c967a31fm1bed:6f346b68	already done: lib/Sections/*.php at 100% lines (5/5)	session-20261113T044737-f37de8e3	2026-11-13T12:09:22Z
 cover:keepiq:c967a31fm1bed:7ddabe24	already done: lib/Federation/*.php at 100% lines (13/13)	session-20261113T044737-f37de8e3	2026-11-13T12:09:36Z
 cover:keepiq:c967a31fm1bed:6925f818	already done: lib/SetupCheck/*.php at 100% lines (8/8)	session-20261113T044737-f37de8e3	2026-11-13T12:09:48Z
+verify:shillinq:2932:4e72b6f5	2932 CONFLICT (add/add receiptCaptureView.spec.js); 2933,2934,2937,2938,2939 GREEN, suites green	session-20261113T094602-d25cda2a	2026-11-13T12:09:59Z
