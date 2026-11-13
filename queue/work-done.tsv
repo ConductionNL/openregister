@@ -7172,4 +7172,5 @@ build4:openregister:platform-user-migrator	partial: PR #10442 built 1.1, 1.5, 1.
 build4:openregister:platform-provided-capabilities	partial: PR #10441 task 2.3 (login refuses password-only for users with a second factor, +3 tests, no new failures vs main); 2.1,2.4,2.5,3.1,4.1 left	session-20261113T202619-0d7929e0	2026-11-13T22:27:41Z
 review:openregister:10416:984be222	APPROVE: digest verify job per change 2.4; suites green, only inherited FileVersioningHandlerGolden errors	session-20261113T214350-9762e143	2026-11-13T22:28:00Z
 build4:openregister:records-draft-versions	partial: PR #10443 (2.2 versions routes + DraftService find/mayCreate); open 1.1,2.1,2.3,3-6	session-20261113T182404-f2c28226	2026-11-13T22:28:43Z
+build4:openregister:rules-compose-read-transitions-and-time	partial: PR #10444 (1.3b named conditions refused at schema save; 8 tests); 1.2b/1.5b/2.2b/2.3b/3.2b/3.3b/4.3b/5.4 left; 4.1 save-time refusal found unwired	session-20261113T205324-91f6ae17	2026-11-13T22:28:47Z
 verify:pipelinq:3795:f810ec60	GREEN: #3795 tests only, 7376 tests 0 failures	session-20261113T220418-8e6ce3df	2026-11-13T22:28:50Z
