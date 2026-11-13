@@ -1274,4 +1274,5 @@ review:openregister:10069:33d5247d	APPROVE: tests-only jest spec; modals/object 
 fix:launchpad:1106:379ed362	inherited: secretscanning fails on plain development too (same gitleaks 8.28 findings in openspec/docs files, e.g. embedded-analytics spec added 2026-11-12, after the floor was measured); PR only touches package-lock.json and sbom.cdx.json, no fix on the branch	session-20261112T234653-57d11a5b	2026-11-13T00:59:07Z
 review:openregister:10075:c2ae354f	BLOCK: timezone-dependent test in RuleRunSummaryMapperTest	session-20261113T003903-5efbf5ae	2026-11-13T00:59:08Z
 review:hermiq:1518:202e8aaa	GREEN: behaviour-equivalent extraction, no new failures or risky tests	session-20261112T231633-96ffe7b8	2026-11-13T00:59:21Z
+cover:pipelinq:f67520ec:js4c63a0a9	PR #3610: 12 vitest tests, views/marketing stmts 68.6% -> 77.5%	session-20261112T234648-144479e8	2026-11-13T00:59:26Z
 review:stackiq:1595:e53f9c42	GREEN: equivalent extraction, vitest 1887 pass	session-20261113T004523-285a0413	2026-11-13T00:59:48Z
