@@ -1563,3 +1563,4 @@ cover:shillinq:801aab65:6d382880	PR #2835: 12 tests (delivery filing, runner fai
 cover:buildiq:8ca317f6mefda:be0dcca9	failed: lib/Mcp tests exist (120) but 118 error: tests/stubs lacks OCA\OpenRegister\Contract\ObjectServiceInterface; main's interface no longer takes saveObject(register:, schema:) that buildiq lib calls, so the stub must mirror the older contract (gap, not cover)	session-20261113T015005-e2235eb9	2026-11-13T02:09:33Z
 verify:keepiq:1717:69f0ab37	1717 GREEN, 1718 GREEN: test-only, 4036->4094 tests, no failures	session-20261112T234655-793f46ee	2026-11-13T02:09:46Z
 cover:stackiq:8cfacb29m8db8:2861e5ef	already done: lib/Examples/*.php 93/93 lines covered on development	session-20261113T004527-ec0338ee	2026-11-13T02:10:10Z
+verify:buildiq:1490:9eed6d5f	1490 GREEN: coverage summary refresh only, no new failures	session-20261112T231640-f6dda86c	2026-11-13T02:10:13Z
