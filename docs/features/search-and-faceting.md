@@ -53,6 +53,39 @@ Any schema property can be used as a filter parameter with comparison operators:
 
 System metadata fields (`_name`, `_uuid`, `_owner`, `_created`, `_updated`, `_deleted`, `_schema`, `_register`) are always available as filter targets regardless of schema.
 
+### Filtering through a reference (`_ref`)
+
+A filter can reach one step through a reference property of the queried schema
+and test a field of the object it points to:
+
+```
+GET /api/objects/{register}/aanvragen?_ref[aanvrager][woonplaats]=Zuiddrecht
+GET /api/objects/{register}/inschrijvingen?_ref[cursus][startdatum][gte]=2026-09-01
+GET /api/objects/{register}/aanvragen?_ref[aanvrager][woonplaats][in][]=Zuiddrecht&_ref[aanvrager][woonplaats][in][]=Oosterhout
+```
+
+- `<property>` is one of the queried schema's own reference properties; the
+  referenced schema is the one that property declares (`$ref` or
+  `objectConfiguration.schema`), so the caller never names it.
+- The operators are `eq` (the default), `ne`, `gt`, `gte`, `lt`, `lte` and `in`.
+- Several fields in one block must hold on the same referenced object. A second
+  block with a suffix, `_ref[aanvrager:2][...]`, asks for an independent one.
+- Only referenced objects the caller may read count: the referenced schema's
+  own access rules and organisation boundary apply inside the filter, so a
+  hidden object never makes a row match.
+- The filter runs inside the query, so totals and paging count only matching
+  objects.
+- Refused with HTTP 400, naming the part: an unknown property, a property that
+  is not a reference, a field the referenced schema lacks, an unknown operator,
+  a chain through a second reference, a property holding a list of references
+  (not supported yet), and `_ref` on a search across several schemas.
+
+**Direction.** `_ref` follows a reference *out* of the queried object (where
+this object points). `_related[<schema>][<property>]` runs the other way: it
+keeps objects that rows of another schema point *to*. `_referenced[<schema>][<property>]`
+is the same direction as `_ref` but names the referenced schema itself; `_ref`
+reads it from the property.
+
 ## Faceting
 
 Facets provide aggregated counts per distinct value — enabling "drill-down" navigation in UIs.

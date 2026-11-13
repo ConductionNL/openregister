@@ -1939,13 +1939,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return false;
 		}
 
-		// 🔴 `_related`, `_referenced` and `_element` are EXISTS subqueries that only the
+		// 🔴 `_related`, `_referenced`, `_ref` and `_element` are EXISTS subqueries that only the
 		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
 		// refuses them, which on this route would end in an uncaught exception
 		// (HTTP 500), so a query carrying either takes the sequential path.
 		// `_relations_contains` has no raw-SQL twin either: a union would answer
 		// without the filter.
-		$builderOnly = ['_related', '_referenced', '_element', '_relations_contains'];
+		$builderOnly = ['_related', '_referenced', '_ref', '_element', '_relations_contains'];
 		if (array_intersect($builderOnly, array_keys($query)) !== []) {
 			return false;
 		}

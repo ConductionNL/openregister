@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
+use OCA\OpenRegister\Service\Query\ReferenceFilterParser;
 use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
@@ -749,7 +750,7 @@ class MagicSearchHandler {
 	}//end arrayElementCondition()
 
 	/**
-	 * Narrow the query by `_related` and `_referenced` blocks, or refuse it.
+	 * Narrow the query by `_related`, `_referenced` and `_ref` blocks, or refuse it.
 	 *
 	 * 🔴 A REFUSAL HERE IS DELIBERATE AND MUST NOT BECOME A LOG LINE. Every
 	 * other filter on this path that cannot be honoured is recorded in
@@ -767,11 +768,15 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
 	private function applyRelatedRowFilters(TableFilterRun $run): void {
 		$query      = $run->query;
 		$registerId = $run->table->registerId;
-		if (array_key_exists('_related', $query) === false && array_key_exists('_referenced', $query) === false) {
+		if (array_key_exists('_related', $query) === false
+			&& array_key_exists('_referenced', $query) === false
+			&& array_key_exists(ReferenceFilterParser::KEY, $query) === false
+		) {
 			return;
 		}
 
@@ -794,12 +799,13 @@ class MagicSearchHandler {
 					related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
 				)
 			),
-			query: $query
+			query: $query,
+			schema: $run->table->schema
 		);
 	}//end applyRelatedRowFilters()
 
 	/**
-	 * Refuse a query carrying `_related`, `_referenced` or `_element` where it cannot be honoured.
+	 * Refuse a query carrying `_related`, `_referenced`, `_ref` or `_element` where it cannot be honoured.
 	 *
 	 * 🔴 REFUSE, DO NOT DROP. The related-row filters are written for the
 	 * QueryBuilder path (applyRelatedRowFilters). Underscore keys are skipped by
@@ -816,7 +822,7 @@ class MagicSearchHandler {
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function refuseRelatedRowFilters(array $query): void {
-		foreach (['_related', '_referenced', ArrayElementFilter::KEY] as $key) {
+		foreach (['_related', '_referenced', ReferenceFilterParser::KEY, ArrayElementFilter::KEY] as $key) {
 			if (array_key_exists($key, $query) === true) {
 				throw new RelatedRowFilterNotSupportedException(
 					message: sprintf(

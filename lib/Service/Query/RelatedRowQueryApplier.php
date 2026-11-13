@@ -131,9 +131,15 @@ class RelatedRowQueryApplier {
 	 * Does nothing at all when there is no `_related` key, so every existing
 	 * call site is unaffected.
 	 *
+	 * A `_ref` block (query-filter-through-a-reference) is read against the
+	 * queried schema's own reference properties and becomes the same forward
+	 * filter a `_referenced` block makes, so it runs through the same EXISTS
+	 * clause under the referenced schema's own access predicate.
+	 *
 	 * @param RelatedRowFilterTarget $target The query being built, the register the related rows live in and the
 	 *                                       organisation scope of a related table.
 	 * @param array<mixed>           $query  The request query.
+	 * @param Schema|null            $schema The schema being queried, which `_ref` blocks are read against.
 	 *
 	 * The outer object row is joined as `OUTER_ALIAS`, the alias the list path gives it.
 	 *
@@ -143,9 +149,10 @@ class RelatedRowQueryApplier {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
-	public function apply(RelatedRowFilterTarget $target, array $query): int {
-		$filters = $this->filtersIn(query: $query);
+	public function apply(RelatedRowFilterTarget $target, array $query, ?Schema $schema = null): int {
+		$filters = array_merge($this->filtersIn(query: $query), $this->referenceFiltersIn(query: $query, schema: $schema));
 		if ($filters === []) {
 			return 0;
 		}
@@ -262,6 +269,89 @@ class RelatedRowQueryApplier {
 
 		return $filters;
 	}//end filtersIn()
+
+	/**
+	 * Every `_ref` block in a query, read against the queried schema.
+	 *
+	 * @param array<mixed> $query  The request query.
+	 * @param Schema|null  $schema The schema being queried.
+	 *
+	 * @return array<int, RelatedRowFilter> The filters.
+	 *
+	 * @throws InvalidArgumentException When a block is unusable, or there is no schema to read it against.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	private function referenceFiltersIn(array $query, ?Schema $schema): array {
+		if (array_key_exists(ReferenceFilterParser::KEY, $query) === false) {
+			return [];
+		}
+
+		// Refuse rather than drop: without the queried schema the block cannot
+		// be read, and answering without it would return the unfiltered set.
+		if ($schema === null) {
+			throw new InvalidArgumentException(
+				ReferenceFilterParser::KEY . ' filters need the schema being queried; narrow the query to one schema.'
+			);
+		}
+
+		$parser  = new ReferenceFilterParser(resolveSchema: fn (string $name): ?Schema => $this->findSchema(name: $name));
+		$filters = $parser->parse(query: $query, schema: $schema);
+		foreach ($filters as $filter) {
+			$this->refuseListReference(schema: $schema, property: $filter->foreignKey);
+		}
+
+		return $filters;
+	}//end referenceFiltersIn()
+
+	/**
+	 * Refuse a `_ref` block on a property that holds a list of references.
+	 *
+	 * The forward clause joins by equality on one uuid. Run against a list
+	 * column it would match nothing (or fail on the column type), answering a
+	 * narrow question with a wrong set, so the block is refused until the
+	 * clause joins through the list.
+	 *
+	 * @param Schema $schema   The schema being queried.
+	 * @param string $property The reference property.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the property holds a list.
+	 */
+	private function refuseListReference(Schema $schema, string $property): void {
+		$config = (($schema->getProperties() ?? [])[$property] ?? []);
+		if (is_array($config) === true && ($config['type'] ?? null) === 'array') {
+			throw new InvalidArgumentException(
+				sprintf(
+					'%s[%s]: filtering through a list of references is not supported yet; only a property holding one reference can be filtered through.',
+					ReferenceFilterParser::KEY,
+					$property
+				)
+			);
+		}
+	}//end refuseListReference()
+
+	/**
+	 * The schema a reference property's `$ref` names (slug, id or uuid), or null when none.
+	 *
+	 * @param string $name The identifier.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function findSchema(string $name): ?Schema {
+		try {
+			return $this->resolveSchema(name: $name);
+		} catch (InvalidArgumentException $e) {
+			// Not a single slug or a numeric id: try it as a uuid below.
+		}
+
+		try {
+			return $this->lookups->schemaMapper->find(id: $name);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end findSchema()
 
 	/**
 	 * Bind a rendered clause's parameters, then narrow the query by it.
