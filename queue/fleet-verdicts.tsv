@@ -5903,3 +5903,13 @@ pipelinq	3754	9eeea22badc492ed37aafbd84c5ba3ff0ac256a3	GREEN	worker-37	phpunit 7
 pipelinq	3755	6b2c8043680c332640b7da29c3ac0cc18c7aa654	GREEN	worker-37	phpunit 7063 on tree (baseline 7045, 1 inherited failure, 0 new); 666 touched+Cti tests OK; l10n valid; test:l10n OK; tests only
 portaliq	2398	598926b6b23fdd4cc6308f22b7eddfbfd565f3da	GREEN	worker-32	unit 4841 tests (baseline 4837, 0 fail), 0 new failures; behaviour-preserving extract-method refactor of reader/writer
 dossiq	6371	3184045e4c51be3455d29c6bbccffcb721c9ea06	RED	merge-local:merge-gate	GATE RED floor: module_coupling: 5.05 -> 5.03
+planninq	1139	c5d778ee07df39b52542d375d6e519f24875f556	GREEN	worker-57	unit 1015->1022 OK (baseline green), vitest 108 files/3152 passed; tests-only diff, no duplicate class fatal
+pipelinq	3736	9a16156708cb5867054b5c73f11b49f2f2579410	RED	merge-local:merge-gate	GATE RED floor: unit_complexity: 3.78 -> 3.76
+humaniq\t1112\tc7acf4435ca5fafef99f1ac9d30447d3fd974f3e\tGREEN\tworker-47\t3982 tests run, baseline 3928 (0 failures), no new failures; tests only
+humaniq\t1112\tc7acf4435ca5fafef99f1ac9d30447d3fd974f3e\tGREEN\tworker-47\t3982 tests run, baseline 3928 (0 failures), no new failures; tests only
+portaliq\t2401\t19aada71d2e2a4f3555e781b1d659b2580a2751e\tGREEN\tworker-41\ttest-only (StandardProtocolPathsTest), baseline 4842 pass, tree 4855 pass, no production change
+versioniq	677	4040041e4aa48804e6e535b690495842b3dedeb5	GREEN	worker-48	tests only (@uses/#[UsesClass] metadata in 40 test files, no other line); unit suite tests/phpunit-unit-only.xml 1547 tests before and after, the same 2 inherited golden-install failures, none new; neither phpunit config sets beStrictAboutCoverageMetadata, so coverage is unchanged (5663/5823) but nothing breaks
+buildiq\t1543\t22709fae85f7d2171ac636f1737ab76c7a0afc42\tGREEN\tworker-36\t2820 tests (baseline 2784, +36 new), 1 inherited failure ExportZipGoldenTest, 0 new; tests-only PR, no production code touched
+portaliq\t2402\t60d0c02009190d6ce03c23c8ab18fdfaccf827ac\tGREEN\tworker-41\ttest-only (SettingsSectionTest), tree 4855 pass, no production change
+portaliq\t2403\te912f9ebb1f2345329e0d86c5749747e32c1f854\tGREEN\tworker-41\ttest-only (PortalOverviewEdgesTest), tree 4855 pass, no production change
+portaliq\t2404\t2bd67109e534d02a009d28cdd5ce668ab52616fb\tGREEN\tworker-41\ttest-only (AdminSettingsTest), tree 4855 pass, no production change
