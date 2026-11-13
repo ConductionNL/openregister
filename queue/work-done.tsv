@@ -2049,3 +2049,4 @@ cover:dossiq:6ca0231ema7d4:bedd4a8d	already done: lib/Service/Drafts 175/177 (98
 cover:dossiq:6ca0231ema7d4:93ebc4b9	already done: lib/Http/*.php 50/50 covered on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:14:08Z
 cover:hermiq:065f1631m7444:f545d745	PR #1655: 10 tests, lib/Repair 93.5->96.0% stmts	session-20261113T031704-5a455d65	2026-11-13T04:14:06Z
 cover:pipelinq:f67520ecm8c58:1b97f731	PR #3643: 16 tests, SLA created/updated listeners; lib/Listener 1381->1456/1580; inherited 1 failure unchanged	session-20261113T031700-46f75510	2026-11-13T04:14:12Z
+cover:shillinq:05639deb:2befd24e	PR opened: 13 tests for DepreciationRun and AssetRecords (-1 still open for FixedAssetDepreciation); suite 9004->9017, 1 inherited failure unchanged	session-20261113T033859-c661da78	2026-11-13T04:14:23Z
