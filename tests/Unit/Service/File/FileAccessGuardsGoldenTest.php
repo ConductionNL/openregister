@@ -69,6 +69,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\File\ExecutableContentDetector
  */
 class FileAccessGuardsGoldenTest extends TestCase {
+	use PassThroughDigestsTrait;
 
 	/**
 	 * The user the session returns; null for none.
@@ -318,7 +319,7 @@ class FileAccessGuardsGoldenTest extends TestCase {
 		$container = $this->createMock(IServerContainer::class);
 		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileRestrictionGuardInterface::class ? $restrictions : $guard);
 
-		$handler = new FilePublishingHandler($this->createMock(MagicMapper::class), $this->shareMapper(), $this->createMock(LoggerInterface::class), $container);
+		$handler = new FilePublishingHandler($this->createMock(MagicMapper::class), $this->shareMapper(), $this->createMock(LoggerInterface::class), $container, $this->passThroughDigests());
 		$handler->setFileService($this->fileService());
 		return $handler;
 	}//end publishing()

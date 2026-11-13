@@ -680,6 +680,8 @@ Db/FederatedShare.php,82,Db,Integrations,Integrations/Db/FederatedShare.php,0,27
 Db/FederatedShareMapper.php,110,Db,Integrations,Integrations/Db/FederatedShareMapper.php,4,,Integrations
 Db/Feedback.php,45,Db,Platform,Platform/Db/Feedback.php,0,,Platform
 Db/FeedbackMapper.php,50,Db,Platform,Platform/Db/FeedbackMapper.php,0,,Platform
+Db/FileDigest.php,,Db,,,,,Core
+Db/FileDigestMapper.php,,Db,,,,,Core
 Db/FindAllNewestFirstTrait.php,13,Db,Integrations,Integrations/Db/FindAllNewestFirstTrait.php,0,,Integrations
 Db/FindLinksByObjectUuidTrait.php,14,Db,Integrations,Integrations/Db/FindLinksByObjectUuidTrait.php,0,,Integrations
 Db/Flow.php,159,Db,Flows,Flows/Db/Flow.php,71,159,Processes
@@ -2173,6 +2175,7 @@ Service/File/FolderManagementHandler.php,636,Service,Service,Service/File/Folder
 Service/File/ManagedFileOwnerLookup.php,33,Service,Service,Service/File/ManagedFileOwnerLookup.php,0,434,Core
 Service/File/ObjectFileFinder.php,135,Service,Service,Service/File/ObjectFileFinder.php,0,,Core
 Service/File/ObjectFileLookup.php,17,Service,Service,Service/File/ObjectFileLookup.php,0,,Core
+Service/File/PublishedDigestService.php,,Service,,,,,Core
 Service/File/ReadFileHandler.php,148,Service,Service,Service/File/ReadFileHandler.php,0,181,Core
 Service/File/UpdateFileHandler.php,365,Service,Service,Service/File/UpdateFileHandler.php,0,58,Core
 Service/FileService.php,703,Service,Service,Service/FileService.php,480,12,Core

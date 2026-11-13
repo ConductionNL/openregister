@@ -95,12 +95,14 @@ class FilePublishingHandler {
 	 * @param FileMapperInterface $fileMapper File mapper for share operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param IServerContainer $container Container, for the lazily resolved party indicator guard.
+	 * @param PublishedDigestService $publishedDigests Records and seals the digest of a file made public.
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objectEntityMapper,
 		private readonly FileMapperInterface $fileMapper,
 		private readonly LoggerInterface $logger,
 		private readonly IServerContainer $container,
+		private readonly PublishedDigestService $publishedDigests,
 	) {
 	}//end __construct()
 
@@ -148,6 +150,7 @@ class FilePublishingHandler {
 	 * @psalm-return   File
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-files-digest-is-recorded-and-sealed-when-it-becomes-public-req-pfd-001
 	 */
 	public function publishFile(ObjectEntity|string $object, string|int $file): File {
 		$object = $this->objectOf(object: $object);
@@ -170,7 +173,19 @@ class FilePublishingHandler {
 		$this->debug(message: '[FilePublishingHandler] publishFile: Creating share link for file: ' . $fileNode->getPath());
 
 		$this->assertNotRestricted(fileNode: $fileNode);
-		$this->createPublicShare(fileNode: $fileNode);
+
+		// NO SEAL, NO PUBLICATION. The share is created inside the unit of work
+		// that records the file's digest and writes the `file.published` audit
+		// row, as its last step: when the digest or the audit row cannot be
+		// written the share is never created, and when the share cannot be
+		// created the digest and the audit row are rolled back with it.
+		$this->publishedDigests->publishSealed(
+			object: $object,
+			file: $fileNode,
+			makePublic: function () use ($fileNode): void {
+				$this->createPublicShare(fileNode: $fileNode);
+			}
+		);
 		$this->debug(message: '[FilePublishingHandler] publishFile: Successfully published file: ' . $fileNode->getName());
 		return $fileNode;
 	}//end publishFile()
@@ -275,6 +290,7 @@ class FilePublishingHandler {
 	 * @psalm-return   File
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-files-digest-is-recorded-and-sealed-when-it-becomes-public-req-pfd-001
 	 */
 	public function unpublishFile(ObjectEntity|string $object, string|int $filePath): File {
 		$object = $this->objectOf(object: $object);
@@ -284,6 +300,7 @@ class FilePublishingHandler {
 
 		$this->debug(message: '[FilePublishingHandler] unpublishFile: Removing share links for file: ' . $file->getPath());
 		$this->removePublicShares(file: $file);
+		$this->publishedDigests->closePublication(fileId: (int)$file->getId());
 		$this->debug(message: '[FilePublishingHandler] unpublishFile: Successfully unpublished file: ' . $file->getName());
 		return $file;
 	}//end unpublishFile()

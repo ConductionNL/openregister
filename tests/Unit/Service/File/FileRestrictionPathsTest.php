@@ -61,6 +61,7 @@ use Psr\Log\NullLogger;
  * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
  */
 class FileRestrictionPathsTest extends TestCase {
+	use PassThroughDigestsTrait;
 
 	private const RESTRICTED = 42;
 
@@ -247,7 +248,8 @@ class FileRestrictionPathsTest extends TestCase {
 			$this->createMock(MagicMapper::class),
 			$this->createMock(FileMapper::class),
 			new NullLogger(),
-			$container
+			$container,
+			$this->passThroughDigests()
 		);
 		$handler->setFileService($this->fileService);
 
