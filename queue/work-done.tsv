@@ -6886,5 +6886,6 @@ build4:openregister:a-rule-that-reaches-nobody-says-so	failed: blocked - only 3.
 verify:buildiq:1572:82c8c64b	GREEN buildiq#1572	session-20261113T175332-5effc865	2026-11-13T21:11:23Z
 build:opencatalogi:integration-feed-consumer-credentials	partial: PR #2652 — schema, keys (hash-only, shown once, 2 active, hourly last use), OOAPI Bearer gate + catalogue scope, admin endpoints, docs, 47 tests; left 3.1 read rule, 3.2 screen, 4.1 l10n	session-20261113T204551-fafe539e	2026-11-13T21:12:01Z
 build:buildiq:capability-requirements-backfill	partial: T21 verified with spec (no gap); T17 gap found (rule-set export misses tables, rules, test cases) and noted; 29 tasks left; vitest 4077->4080	session-20261113T192651-cb1e4daf	2026-11-13T21:12:00Z
+build4:dossiq:tenders-run-on-the-tender-case-type	partial: PR #6457, task 2.1 FormulaScorer (OR decision tables checked, cannot compute scores) with 20 tests; schemas, flow, UI tasks left; no new suite failures	session-20261113T202603-6c9ef72f	2026-11-13T21:12:07Z
 build4:openregister:audit-and-dashboard-screens-stated	no PR: remaining 2.1/2.2 are Playwright e2e (left by rule), 3.1 archive waits on them; 1.x and 2.3 already ticked on main	session-20261113T185324-28e07ab2	2026-11-13T21:12:09Z
 verify:decidiq:2144:ea0e4a9e	GREEN 2144 2146 2147	session-20261113T192701-f224cbcf	2026-11-13T21:12:37Z
