@@ -115,6 +115,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
  * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Db\HydrationKey
  */
 class BulkWriteEventsTest extends TestCase {
 
