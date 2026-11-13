@@ -3425,3 +3425,18 @@ cover:keepiq:c967a31fmb40c:59826f43	cover	keepiq	development	quality/test-covera
 cover:keepiq:c967a31fmb40c:05630945	cover	keepiq	development	quality/test-coverage-05630945	lang=php;dirs=lib/Middleware/Support/;focus=thin;weight=364;coverage=89.12;target=90.0	2026-11-13T06:12:17Z
 cover:keepiq:c967a31fmb40c:d39f9857	cover	keepiq	development	quality/test-coverage-d39f9857	lang=php;dirs=lib/Support/*.php;focus=thin;weight=269;coverage=89.12;target=90.0	2026-11-13T06:13:52Z
 cover:keepiq:c967a31fmb40c:882bd950	cover	keepiq	development	quality/test-coverage-882bd950	lang=php;dirs=lib/Search/*.php;focus=thin;weight=165;coverage=89.12;target=90.0	2026-11-13T06:15:36Z
+review:openregister:9943:2314f92f	review	openregister	main	9943	sha=2314f92f264d1f395e8ee95462e8169d98aaae3f;last_approved=6aa9d5c88ec5f861d9a47efa88ea4c6c04619335;title=feat(federation): share tokens expire after 90 days and can be renewed	2026-11-13T07:14:03Z
+review:openregister:10015:fb43e991	review	openregister	main	10015	sha=fb43e991a4e1cfff74ec94355081c4334b92827b;last_approved=846b4821f835b1c889c6fb75d914844b39f0025e;title=test(service): list executed collaborators so service tests count toward coverage	2026-11-13T07:14:03Z
+verify:dossiq:6317:73469cb8	verify	dossiq	development	merge	prs=6317@36a475e2648df17037f5b3e85851ff7fdeb46a49,6318@4320a6d3fe5c34ac17ed73ae8339ff1c65a19993	2026-11-13T07:14:03Z
+verify:shillinq:2901:adede82c	verify	shillinq	development	merge	prs=2901@65ee2920d5759c4fb9589ae10d9c1e9a0e86f65b	2026-11-13T07:14:03Z
+merge:shillinq:2897:26298870	merge	shillinq	development	development	prs=2897@d3292b0489b65c31276ebc7e3422dcc726adde68,2898@13a4bb9f7f15cf71ff9118ed149496223e1745a0,2899@050334683b2e908ec7c709e903b3b1788159b4c3	2026-11-13T07:14:03Z
+merge:keepiq:1746:e262a97c	merge	keepiq	development	development	prs=1746@9216999bdec94da4937575b255f435dc44ee8f46	2026-11-13T07:14:03Z
+cover:dossiq:f8a113c5m7e79:3641032a	cover	dossiq	development	quality/test-coverage-3641032a	lang=php;dirs=lib/Service/Pipelinq/;focus=thin;weight=1942;coverage=87.99;target=90.0	2026-08-15T04:42:02Z
+cover:dossiq:f8a113c5m7e79:cd5286bf	cover	dossiq	development	quality/test-coverage-cd5286bf	lang=php;dirs=lib/Service/Session/;focus=thin;weight=1298;coverage=87.99;target=90.0	2026-08-15T04:52:46Z
+cover:integriq:92114ab0m658d:2820f177	cover	integriq	development	quality/test-coverage-2820f177	lang=php;dirs=lib/Service/Mail/;focus=uncovered;weight=366;coverage=88.97;target=90.0	2026-10-14T06:07:07Z
+cover:shillinq:05639debmd8ee:ba4eff5a	cover	shillinq	development	quality/test-coverage-ba4eff5a	lang=php;dirs=lib/Service/Peppol/;focus=thin;weight=397;coverage=85.47;target=90.0	2026-11-13T02:36:36Z
+cover:shillinq:05639debmd8ee:b1a94ae2	cover	shillinq	development	quality/test-coverage-b1a94ae2	lang=php;dirs=lib/Service/Seed/;focus=thin;weight=368;coverage=85.47;target=90.0	2026-11-13T02:37:05Z
+cover:keepiq:c967a31fmb40c:7ddabe24	cover	keepiq	development	quality/test-coverage-7ddabe24	lang=php;dirs=lib/Federation/*.php;focus=thin;weight=147;coverage=89.12;target=90.0	2026-11-13T06:19:50Z
+cover:keepiq:c967a31fmb40c:ca1d90c4	cover	keepiq	development	quality/test-coverage-ca1d90c4	lang=php;dirs=lib/Attribute/*.php;focus=thin;weight=110;coverage=89.12;target=90.0	2026-11-13T06:20:27Z
+cover:keepiq:c967a31fmb40c:6f346b68	cover	keepiq	development	quality/test-coverage-6f346b68	lang=php;dirs=lib/Sections/*.php;focus=thin;weight=96;coverage=89.12;target=90.0	2026-11-13T06:20:41Z
+cover:keepiq:c967a31fmb40c:6925f818	cover	keepiq	development	quality/test-coverage-6925f818	lang=php;dirs=lib/SetupCheck/*.php;focus=thin;weight=95;coverage=89.12;target=90.0	2026-11-13T06:20:42Z
