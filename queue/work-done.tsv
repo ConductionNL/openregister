@@ -4625,3 +4625,4 @@ build:openregister:bag-address-lookup-by-postcode	partial: PR #10139, task 3.1 +
 fix:pipelinq:3721:22fb037c	copy/delete moved to Templates page + spec; new head f8463265, REVERIFY recorded	session-20261113T064519-30004ad4	2026-11-13T11:46:51Z
 build:openregister:contacts-leaf-cases-panel	failed: build tasks never target openregister (worker rule); needs another lane	session-20261113T081048-4978ac57	2026-11-13T11:47:04Z
 build:openregister:draft-owner-activation-and-lifetime	failed: no code task open; only live passes 1.6/3.3 (need an instance) and 6.1 check:strict of an already-merged build	session-20261113T104523-578f6e7a	2026-11-13T11:47:18Z
+build:openregister:capability-rows-stated-requirements	partial: PR #10140 does 1.1 (schema document agrees with save path, 7 tests); 2.1 URN-after-move and 3.1/3.2 file checksum+fixity are storage features left open	session-20261113T104527-c302106c	2026-11-13T11:47:26Z
