@@ -1392,6 +1392,7 @@ Middleware/Exception/ApiVersionRefusedException.php,62,Middleware,Platform,Platf
 Middleware/Exception/CallerRefusedException.php,50,Middleware,Platform,Platform/Middleware/Exception/CallerRefusedException.php,0,,Platform
 Middleware/Exception/ChatProxiedResponseException.php,16,Middleware,Platform,Platform/Middleware/Exception/ChatProxiedResponseException.php,0,,Platform
 Middleware/LanguageMiddleware.php,112,Middleware,Platform,Platform/Middleware/LanguageMiddleware.php,0,,Platform
+Middleware/LoadSheddingMiddleware.php,143,Middleware,Platform,Platform/Middleware/LoadSheddingMiddleware.php,0,,Platform
 Middleware/MaintenanceModeHeldException.php,6,Middleware,Configuration,Configuration/Middleware/MaintenanceModeHeldException.php,0,,Platform
 Middleware/MaintenanceModeMiddleware.php,48,Middleware,Configuration,Configuration/Middleware/MaintenanceModeMiddleware.php,0,,Platform
 Middleware/MiddlewareRegistrar.php,23,Middleware,Platform,Platform/Middleware/MiddlewareRegistrar.php,0,,Platform
@@ -2978,6 +2979,10 @@ Service/Relation/RelationAnnotationValidator.php,239,Service,Service,Service/Rel
 Service/Relation/RelationDeclarationException.php,16,Service,Service,Service/Relation/RelationDeclarationException.php,0,475,Core
 Service/Relation/RelationGraphService.php,304,Service,Service,Service/Relation/RelationGraphService.php,0,,Core
 Service/Relation/RelationTypeResolver.php,221,Service,Service,Service/Relation/RelationTypeResolver.php,0,103,Core
+Service/Resilience/BreakerRegistry.php,237,Service,Platform,Platform/Service/Resilience/BreakerRegistry.php,0,,Platform
+Service/Resilience/BreakerThresholds.php,55,Service,Platform,Platform/Service/Resilience/BreakerThresholds.php,0,,Platform
+Service/Resilience/CircuitBreaker.php,399,Service,Platform,Platform/Service/Resilience/CircuitBreaker.php,0,,Platform
+Service/Resilience/DependencyUnavailableException.php,87,Service,Platform,Platform/Service/Resilience/DependencyUnavailableException.php,0,,Platform
 Service/Resolver/Exception/MissingConfigException.php,27,Service,Service,Service/Resolver/Exception/MissingConfigException.php,20,,Core
 Service/Resolver/Exception/PropertyNotFoundException.php,45,Service,Service,Service/Resolver/Exception/PropertyNotFoundException.php,0,,Core
 Service/Resolver/Exception/RegisterNotFoundException.php,33,Service,Service,Service/Resolver/Exception/RegisterNotFoundException.php,0,,Core
