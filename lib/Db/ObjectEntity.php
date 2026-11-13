@@ -700,6 +700,20 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $fieldRules = null;
 
 	/**
+	 * The object's key under its schema's declared identity
+	 * (`modelling-composite-identity`): the identity values joined in
+	 * declared order, such as `0363:Z-2026-0042`.
+	 *
+	 * Transient property populated by the render layer. Not persisted: the
+	 * identity is declared on the SCHEMA. Exposed in @self as `key`, and
+	 * omitted for a schema without an identity or an object missing one of
+	 * its values.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $identityKey = null;
+
+	/**
 	 * Whether the current user follows this object (`object-watchers`).
 	 *
 	 * Transient property populated by the render layer from
@@ -1006,6 +1020,32 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setFieldRules(?array $rules): void {
 		$this->fieldRules = $rules;
 	}//end setFieldRules()
+
+	/**
+	 * Get the object's key under its schema's identity, when set by the render layer.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function getIdentityKey(): ?string {
+		return $this->identityKey;
+	}//end getIdentityKey()
+
+	/**
+	 * Write the object's key under its schema's identity.
+	 *
+	 * Surfaced in the @self envelope as `key` by getObjectArray().
+	 *
+	 * @param string|null $key The identity values joined in declared order.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function setIdentityKey(?string $key): void {
+		$this->identityKey = $key;
+	}//end setIdentityKey()
 
 	/**
 	 * Write the current user's follow marker.
@@ -1611,6 +1651,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//   that never requested one.
 		// - fieldRules: what the object's lifecycle state hides, freezes and
 		//   demands for this reader, absent when the schema declares none.
+		// - key: the identity values joined in declared order, absent when the
+		//   schema declares no identity (`modelling-composite-identity`).
 		// - watching, watcherCount: the reader's own follow state and the size
 		//   of the audience (`object-watchers`).
 		// - unread: whether the reader has seen this object since it last
@@ -1656,6 +1698,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'_clocks'                 => $this->retentionClocks,
 			'registry'                => $this->registryState,
 			'fieldRules'              => $this->fieldRules,
+			'key'                     => $this->identityKey,
 		];
 	}//end renderedFields()
 

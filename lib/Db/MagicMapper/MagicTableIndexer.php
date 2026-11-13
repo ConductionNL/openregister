@@ -88,6 +88,7 @@ final class MagicTableIndexer {
 			$this->createBaseIndexes(run: $run);
 			$this->createPlatformIndexes(run: $run);
 			$this->createSchemaIndexes(run: $run, schema: $schema);
+			$run->identityIndex = (new MagicTableIdentityIndex(db: $this->db, logger: $this->logger))->create(run: $run, schema: $schema);
 			$this->logCreated(run: $run);
 		} catch (Exception $e) {
 			$this->logger->warning(
@@ -105,16 +106,18 @@ final class MagicTableIndexer {
 	 * @return void
 	 */
 	private function logCreated(MagicTableIndexRun $run): void {
-		$this->logger->debug(
-			message: '[MagicMapper] Created table indexes',
-			context: [
-				'tableName' => $run->tableName,
-				'baseIndexCount' => 5 + count(self::INDEXED_METADATA_FIELDS),
-				'relationIndexes' => $run->relationIndexes,
-				'facetIndexes' => $run->facetIndexes,
-				'searchableIndexes' => $run->searchableIndexes,
-			]
-		);
+		$context = [
+			'tableName' => $run->tableName,
+			'baseIndexCount' => 5 + count(self::INDEXED_METADATA_FIELDS),
+			'relationIndexes' => $run->relationIndexes,
+			'facetIndexes' => $run->facetIndexes,
+			'searchableIndexes' => $run->searchableIndexes,
+		];
+		if ($run->identityIndex !== null) {
+			$context['identityIndex'] = $run->identityIndex;
+		}
+
+		$this->logger->debug(message: '[MagicMapper] Created table indexes', context: $context);
 	}//end logCreated()
 
 	/**
@@ -463,7 +466,8 @@ final class MagicTableIndexer {
 	 * `{table}_{column}_{kind}` for a column of this schema and a droppable
 	 * kind is touched; a hand-made index, a base index and an index on a
 	 * column the schema no longer has all stay. A failed drop is logged and
-	 * the pass goes on.
+	 * the pass goes on. An identity index the schema's identity no longer
+	 * asks for is dropped the same way (modelling-composite-identity).
 	 *
 	 * @param MagicTableIndexRun $run      The pass, on the table.
 	 * @param Schema             $schema   The schema whose properties ask for indexes.
@@ -476,7 +480,12 @@ final class MagicTableIndexer {
 	public function dropUnasked(MagicTableIndexRun $run, Schema $schema, array $existing): array {
 		$run->isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
 		$dropped = [];
-		foreach ($this->unasked(run: $run, schema: $schema, existing: $existing) as $name) {
+		$identity = new MagicTableIdentityIndex(db: $this->db, logger: $this->logger);
+		$names = array_merge(
+			$this->unasked(run: $run, schema: $schema, existing: $existing),
+			$identity->stale(tableName: $run->tableName, schema: $schema, existing: $existing)
+		);
+		foreach ($names as $name) {
 			$sql = "DROP INDEX {$name} ON {$run->fullTableName}";
 			if ($run->isPostgres === true) {
 				$sql = "DROP INDEX IF EXISTS {$name}";
