@@ -30,6 +30,12 @@ use ZipArchive;
  *
  * @covers \OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer
  * @covers \OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer
+ * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationReport
+ * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts
+ * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts
+ * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizationRun
+ * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\OfficePartSurgery
+ * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\RelsPrune
  */
 final class OfficeSanitizerGoldenTest extends TestCase {
 

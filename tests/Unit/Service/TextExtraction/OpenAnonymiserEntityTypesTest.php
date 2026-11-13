@@ -53,6 +53,11 @@ use OCA\OpenRegister\Service\Anonymisation\AnonymiserCall;
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
  * @uses \OCA\OpenRegister\Exception\AnalyzeRequestRejectedException
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeRequest
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\OpenAnonymiserTransport
  */
 class OpenAnonymiserEntityTypesTest extends TestCase {
 

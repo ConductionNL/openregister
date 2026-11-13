@@ -42,6 +42,7 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter
+ * @uses   \OCA\OpenRegister\Files\Service\File\Office\ConversionJob
  */
 class ConversionManagerConverterGoldenTest extends TestCase {
 

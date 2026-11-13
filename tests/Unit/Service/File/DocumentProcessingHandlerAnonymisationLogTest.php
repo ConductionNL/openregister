@@ -48,6 +48,11 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentRedactionServices
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentReplacement
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderLookup
  */
 class DocumentProcessingHandlerAnonymisationLogTest extends TestCase {
 
