@@ -1,7 +1,14 @@
 <?php
 
 /**
- * Create the unaccent extension and the openregister_fold() wrapper on PostgreSQL.
+ * The text disclosure table and the per-step outcomes of an anonymisation run.
+ *
+ * `openregister_text_disclosures` holds one row per external call that
+ * carried a document's text (service, host, moment, byte count; never the
+ * text). `openregister_anonymisation_log.steps` holds, per run, the outcome
+ * of every content-altering step as JSON.
+ *
+ * Idempotent: the table and the column are created only when absent.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -9,13 +16,13 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/search-accent-insensitive/tasks.md#1.1
+ * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md
  */
 
 declare(strict_types=1);
@@ -23,100 +30,63 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use Exception;
-use OCA\OpenRegister\Db\MagicMapper\SearchFolding;
-use OCP\IDBConnection;
+use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Accent folding for object search on PostgreSQL.
+ * Create the text disclosure table and the anonymisation log's steps column.
  *
- * `unaccent()` itself is only STABLE, so no index can use it. The
- * dictionary-qualified call inside an IMMUTABLE SQL function is the standard
- * way to make folded text indexable. A failure (usually missing rights) is
- * reported and skipped, the way the pg_trgm bootstrap degrades: search then
- * keeps the accent-sensitive comparison and the setting reports why.
- * MariaDB and MySQL fold through a collation and need nothing here.
- *
- * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md
+ * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md
  */
 class Version1Date20261113140000 extends SimpleMigrationStep {
 
 	/**
-	 * The wrapper's definition.
+	 * Change the database schema.
+	 *
+	 * @param IOutput                 $output        Output for the migration process.
+	 * @param Closure                 $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options       Migration options.
+	 *
+	 * @return ISchemaWrapper|null The changed schema.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md
 	 */
-	public const CREATE_FUNCTION = 'CREATE OR REPLACE FUNCTION ' . SearchFolding::FOLD_FUNCTION . '(text) RETURNS text'
-		. ' LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT'
-		. " AS \$\$ SELECT lower(public.unaccent('public.unaccent', \$1)) \$\$";
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-	/**
-	 * Constructor.
-	 *
-	 * @param IDBConnection $connection Database connection
-	 */
-	public function __construct(
-		private readonly IDBConnection $connection,
-	) {
-	}//end __construct()
+		$schema = $schemaClosure();
 
-	/**
-	 * Ensure unaccent and the fold wrapper exist after schema changes (PostgreSQL only).
-	 *
-	 * @param IOutput $output        Migration output
-	 * @param Closure $schemaClosure Schema closure
-	 * @param array   $options       Migration options
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/search-accent-insensitive/tasks.md#1.1
-	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-		$platform = $this->connection->getDatabasePlatform();
+		if ($schema->hasTable('openregister_text_disclosures') === false) {
+			$table = $schema->createTable('openregister_text_disclosures');
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+			$table->addColumn('file_id', Types::BIGINT, ['notnull' => false]);
+			$table->addColumn('source_type', Types::STRING, ['notnull' => true, 'length' => 32]);
+			$table->addColumn('source_id', Types::BIGINT, ['notnull' => true]);
+			$table->addColumn('service', Types::STRING, ['notnull' => true, 'length' => 64]);
+			$table->addColumn('host', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('disclosed_at', Types::DATETIME, ['notnull' => true]);
+			$table->addColumn('bytes', Types::BIGINT, ['notnull' => true, 'default' => 0]);
 
-		if (str_contains(get_class($platform), 'PostgreSQL') === false) {
-			$output->info('Skipping unaccent bootstrap: accent folding needs no extension on this database platform');
-			return;
+			$table->setPrimaryKey(['id']);
+			$table->addIndex(['file_id'], 'idx_or_txtdisc_file');
+			$table->addIndex(['source_type', 'source_id'], 'idx_or_txtdisc_source');
+
+			$output->info('Created openregister_text_disclosures table');
 		}
 
-		try {
-			$this->connection->executeStatement('CREATE EXTENSION IF NOT EXISTS unaccent');
-		} catch (Exception $e) {
-			if ($this->extensionInstalled() === false) {
-				$output->warning(
-					'unaccent extension is not installed and could not be created ('
-					. $e->getMessage()
-					. '). Object search stays accent-sensitive. '
-					. 'Run CREATE EXTENSION unaccent; as a database owner and re-run this migration to enable it.'
-				);
-				return;
+		if ($schema->hasTable('openregister_anonymisation_log') === true) {
+			$log = $schema->getTable('openregister_anonymisation_log');
+			if ($log->hasColumn('steps') === false) {
+				$log->addColumn('steps', Types::TEXT, ['notnull' => false]);
+				$output->info('Added steps to openregister_anonymisation_log');
 			}
 		}
 
-		try {
-			$this->connection->executeStatement(self::CREATE_FUNCTION);
-			$output->info('unaccent extension and ' . SearchFolding::FOLD_FUNCTION . '() are available (accent-insensitive search)');
-		} catch (Exception $e) {
-			$output->warning(
-				'Could not create ' . SearchFolding::FOLD_FUNCTION . '() ('
-				. $e->getMessage()
-				. '). Object search stays accent-sensitive.'
-			);
-		}
-	}//end postSchemaChange()
+		return $schema;
 
-	/**
-	 * Whether unaccent is installed already; a failed check counts as no.
-	 *
-	 * @return bool
-	 */
-	private function extensionInstalled(): bool {
-		try {
-			$result = $this->connection->executeQuery("SELECT 1 FROM pg_extension WHERE extname = 'unaccent'");
-
-			return $result->fetchOne() !== false;
-		} catch (Exception $e) {
-			return false;
-		}
-	}//end extensionInstalled()
+	}//end changeSchema()
 }//end class

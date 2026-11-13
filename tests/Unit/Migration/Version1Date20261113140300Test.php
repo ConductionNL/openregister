@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Version1Date20261113140000Test: the unaccent bootstrap and its fold wrapper.
+ * Version1Date20261113140300Test: the unaccent bootstrap and its fold wrapper.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Migration;
 use Closure;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use OCA\OpenRegister\Migration\Version1Date20261113140000;
+use OCA\OpenRegister\Migration\Version1Date20261113140300;
 use OCP\DB\IResult;
 use OCP\DB\ISchemaWrapper;
 use OCP\IDBConnection;
@@ -31,17 +31,17 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(Version1Date20261113140000::class)]
-final class Version1Date20261113140000Test extends TestCase {
+#[CoversClass(Version1Date20261113140300::class)]
+final class Version1Date20261113140300Test extends TestCase {
 
 	private IDBConnection&MockObject $connection;
 
-	private Version1Date20261113140000 $migration;
+	private Version1Date20261113140300 $migration;
 
 	protected function setUp(): void {
 		parent::setUp();
 		$this->connection = $this->createMock(IDBConnection::class);
-		$this->migration  = new Version1Date20261113140000($this->connection);
+		$this->migration  = new Version1Date20261113140300($this->connection);
 	}//end setUp()
 
 	/**

@@ -60,4 +60,15 @@ interface RuleInventoryServiceInterface {
 	 * @return RuleDescriptor|null The descriptor, or null when the schema declares no such rule.
 	 */
 	public function find(Schema $schema, string $ruleId): ?RuleDescriptor;
+
+	/**
+	 * Each named condition of a schema, with the rules that name it directly.
+	 *
+	 * @param Schema $schema The schema to read.
+	 *
+	 * @return array<int, array{name: string, description: string, declared: bool, usedBy: array<int, string>}> One row per condition, by name.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md#requirement-a-condition-is-named-once-and-used-inside-other-rules-req-rct-001
+	 */
+	public function namedConditions(Schema $schema): array;
 }//end interface

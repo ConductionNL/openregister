@@ -189,6 +189,21 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 				[],
 				[],
 			],
+			'parties named by the schema annotation' => [
+				$base + [
+					'annotation' => [
+						'effectiveRetention' => 'P20Y',
+						'matchedRule' => null,
+						'parties' => [
+							['role' => 'aanvrager', 'name' => 'Gemeente Zuiddrecht', 'id' => 'b7a1c2d3-0000-4000-8000-000000000001'],
+							['role' => 'gemachtigde', 'name' => 'J. de Vries'],
+						],
+					],
+				],
+				[],
+				[],
+				[],
+			],
 			'nog niet bepaald waardering' => [
 				['archiefnominatie' => 'nog_niet_bepaald', 'bewaartermijn' => 'P1Y'],
 				[],
@@ -234,6 +249,33 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 
 		$this->assertValidMdto(xml: $xml, what: 'informatieobject');
 	}//end testGeneratedDocumentValidatesAgainstTheMdtoXsd()
+
+	/**
+	 * A declared party is one `betrokkene` naming it, after `archiefvormer`; none declared, none written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.2
+	 */
+	public function testADeclaredPartyIsOneBetrokkene(): void {
+		$base = ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P20Y'];
+		$with = $base + ['annotation' => ['effectiveRetention' => 'P20Y', 'matchedRule' => null, 'parties' => [['role' => 'aanvrager', 'name' => 'Gemeente Zuiddrecht']]]];
+
+		$xml = $this->generator(events: [])->generate($this->objectEntity(retention: $with, tmlo: []), []);
+		$this->assertValidMdto(xml: $xml, what: 'informatieobject with a party');
+
+		$dom = new \DOMDocument();
+		$dom->loadXML($xml);
+		$xpath = new \DOMXPath($dom);
+		$xpath->registerNamespace('m', 'https://www.nationaalarchief.nl/mdto');
+		$this->assertSame(1, $xpath->query('//m:betrokkene')->length);
+		$this->assertSame('Gemeente Zuiddrecht', $xpath->evaluate('string(//m:betrokkene/m:betrokkeneActor/m:verwijzingNaam)'));
+		$this->assertSame('aanvrager', $xpath->evaluate('string(//m:betrokkene/m:betrokkeneTypeRelatie/m:begripLabel)'));
+		$this->assertSame(1.0, $xpath->evaluate('count(//m:archiefvormer/following-sibling::m:betrokkene)'));
+
+		$without = $this->generator(events: [])->generate($this->objectEntity(retention: $base, tmlo: []), []);
+		$this->assertStringNotContainsString('betrokkene', $without);
+	}//end testADeclaredPartyIsOneBetrokkene()
 
 	/**
 	 * Every file's own `bestand` document validates too.

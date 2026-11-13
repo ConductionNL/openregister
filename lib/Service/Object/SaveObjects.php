@@ -428,12 +428,52 @@ class SaveObjects {
 			return $this->nothingPreparedResult(run: $run);
 		}
 
+		$processedObjects = $this->applyBulkQuota(run: $run, rows: $processedObjects);
+		if (empty($processedObjects) === true) {
+			return $this->allRejectedResult(run: $run);
+		}
+
 		// Update statistics to reflect actual processed objects.
 		$run->result['statistics']['totalProcessed'] = count($processedObjects);
 		$this->saveBulkChunks(run: $run, processedObjects: $processedObjects);
 
 		return $this->finishBulkResult(run: $run, processedCount: count($processedObjects));
 	}//end runBulkSave()
+
+	/**
+	 * Hold the prepared creates to each schema's per-organisation cap (object-quota-per-organisation 4.1).
+	 *
+	 * Runs only where the safeguard screen ran, because only it knows which rows update a stored object.
+	 *
+	 * @param BulkSaveRun                      $run  The bulk save call; refused rows are added to its result.
+	 * @param array<int, array<string, mixed>> $rows The prepared rows.
+	 *
+	 * @return array<int, array<string, mixed>> The rows within the cap.
+	 *
+	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md#requirement-a-create-past-an-organisations-cap-is-refused-req-oqp-002
+	 */
+	private function applyBulkQuota(BulkSaveRun $run, array $rows): array {
+		$quota = $this->checks->rowRules?->quota;
+		if ($quota === null || $run->storedUuids === null) {
+			return $rows;
+		}
+
+		[$passed, $refused] = $quota->screen(
+			rows: $rows,
+			storedUuids: $run->storedUuids,
+			schemaOf: fn (string $schemaId): Schema => $this->loadSchemaWithCache(schemaId: $schemaId),
+			registerOf: fn (string $registerId): int => (int)$this->loadRegisterWithCache(registerId: $registerId)->getId()
+		);
+		foreach ($refused as $refusal) {
+			$entry = ['error' => $refusal['error'], 'code' => $refusal['code'], 'index' => null, 'type' => 'ObjectQuotaException'];
+			$run->result['invalid'][] = ['object' => $refusal['object']] + $entry;
+			$run->result['errors'][]  = $entry;
+			$run->result['statistics']['invalid']++;
+			$run->result['statistics']['errors']++;
+		}
+
+		return $passed;
+	}//end applyBulkQuota()
 
 	/**
 	 * The result of a run none of whose rows could be prepared.
@@ -500,6 +540,10 @@ class SaveObjects {
 		);
 		$objects     = $this->applyBulkSafeguards(batch: $batch);
 		$run->result = $batch->result;
+		if ($batch->screened === true) {
+			$run->storedUuids = $batch->storedUuids;
+		}
+
 		$run->safeguardMs = round((microtime(true) - $safeguardStart) * 1000, 2);
 
 		return $objects;
@@ -815,6 +859,8 @@ class SaveObjects {
 			return $batch->objects;
 		}
 
+		$batch->screened = true;
+
 		return $this->screenSafeguardBatch(batch: $batch, run: $this->startBulkSafeguardRun(batch: $batch));
 	}//end applyBulkSafeguards()
 
@@ -832,6 +878,7 @@ class SaveObjects {
 			[$row, $refusal] = $this->screenSafeguardRow(object: $object, run: $run);
 			if ($refusal === null) {
 				$passed[] = $row;
+				self::noteStoredRow(batch: $batch, run: $run);
 				continue;
 			}
 
@@ -843,6 +890,22 @@ class SaveObjects {
 
 		return $passed;
 	}//end screenSafeguardBatch()
+
+	/**
+	 * Note a passed row that updates a stored object, so the bulk quota never counts it.
+	 *
+	 * @param SafeguardBatchRun $batch The batch.
+	 * @param BulkSafeguardRun  $run   The safeguard pass, on the row just screened.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md#requirement-a-create-past-an-organisations-cap-is-refused-req-oqp-002
+	 */
+	private static function noteStoredRow(SafeguardBatchRun $batch, BulkSafeguardRun $run): void {
+		if ($run->rowExisting !== null && (string)$run->rowUuid !== '') {
+			$batch->storedUuids[(string)$run->rowUuid] = true;
+		}
+	}//end noteStoredRow()
 
 	/**
 	 * The caller's own array position of a row, which travels with every rejection (issue #2778).
