@@ -2842,3 +2842,4 @@ verify:shillinq:2886:75da7c98	2886 GREEN (tests only, no new failures)	session-2
 cover:stackiq:df113dffm5ac4:js291a5993	already above target: the six component dirs measure 97.4% (522/536) in vitest on development a05c3dd; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:33:37Z
 cover:stackiq:df113dffm5ac4:jsd48eb217	PR #1843: 3 specs, 21 tests; store modules lines 96.31->98.42, branches 90.41->94.34	session-20261113T061521-423d1e83	2026-11-13T06:33:13Z
 cover:stackiq:df113dffm5ac4:208b4d5f	already done: lib/Service/Stackiq 1959/2274 (86.1%) at development a05c3ddd, above the 85 target	session-20261113T061516-58aa7364	2026-11-13T06:33:43Z
+cover:stackiq:df113dffm5ac4:692f8a78	already done: lib/Service/Contactpersoon 205/205 (100%) at development a05c3ddd	session-20261113T061516-58aa7364	2026-11-13T06:33:54Z
