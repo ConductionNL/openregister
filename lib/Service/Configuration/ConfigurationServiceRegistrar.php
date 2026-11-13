@@ -106,6 +106,11 @@ final class ConfigurationServiceRegistrar {
 			\OCA\OpenRegister\Service\Authorization\GroupProvisioner::class,
 			'GroupProvisioner',
 		],
+		// Restores product-owned groups' rights at the end of every import (REQ-RAH-003).
+		'setGroupReconciler' => [
+			\OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface::class,
+			'GroupReconciler',
+		],
 		// Classifies, versions and logs the schema changes an import makes (#4102).
 		'setSchemaVersioning' => [
 			SchemaVersioningService::class,

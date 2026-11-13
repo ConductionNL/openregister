@@ -15,9 +15,10 @@
 
 ## 3. Product-owned groups (REQ-RAH-003, row 12.26)
 
-- [ ] 3.1 Store `declared_group_rights_<app>` in `ImportHandler` beside `declared_groups_<app>`. Verify: `tests/Unit/Service/Configuration/DeclaredGroupRightsTest.php::testTheImportStoresTheDeclaredRights`.
-- [ ] 3.2 Extend `GroupReconciler::reconcile()` with the rights comparison and repair, the audit rows and the log; call it at the end of every configuration import. Verify: `tests/Unit/Service/Authorization/GroupReconcilerRightsTest.php::testARemovedRightIsRestored`, `testAnAddedRightIsRemoved`, `testAnUndeclaredGroupIsNotTouched`, `testMembershipIsNeverChanged` (the first two fail today: the reconciler only creates groups).
+- [x] 3.1 Store `declared_group_rights_<app>` in `ImportHandler` beside `declared_groups_<app>`. Verify: `tests/Unit/Service/Configuration/DeclaredGroupRightsTest.php::testTheImportStoresTheDeclaredRights`.
+- [x] 3.2 Extend `GroupReconciler::reconcile()` with the rights comparison and repair, the audit rows and the log; call it at the end of every configuration import. Verify: `tests/Unit/Service/Authorization/GroupReconcilerRightsTest.php::testARemovedRightIsRestored`, `testAnAddedRightIsRemoved`, `testAnUndeclaredGroupIsNotTouched`, `testMembershipIsNeverChanged` (the first two fail today: the reconciler only creates groups).
 - [ ] 3.3 Through the callers: `tests/Unit/BackgroundJob/GroupReconcilerJobRightsTest.php` runs the real job's `run()` over a tampered fixture; `tests/Integration/ImportRevertsOwnedGroupTest.php` imports a fixture configuration twice with a tamper between and asserts the revert.
+  - partial (13 Nov): `tests/Unit/BackgroundJob/GroupReconcilerJobRightsTest.php` runs the real job's `run()` over a tampered schema and asserts the revert. Open: `tests/Integration/ImportRevertsOwnedGroupTest.php` (needs a live instance).
 
 ## V. Verification and done
 
