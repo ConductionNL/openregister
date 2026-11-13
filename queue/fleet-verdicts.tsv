@@ -5149,3 +5149,4 @@ stackiq	1841	b27ba509c2af99cb72eef78f1390b7a18b112d39	GREEN	worker-09	3126 tests
 dossiq	6283	08b91181c4eb97340289571aa7596786145b0a02	GREEN	worker-06	14660 tests on tree, baseline 14577 with 19 failures, no new failures; tests only
 dossiq	6284	211d21e5026d77f9df32b4153e4c8c4f6a132430	GREEN	worker-06	14660 tests on tree, baseline 14577 with 19 failures, no new failures; tests only
 integriq	3480	8de11812d049c41ce98b4d4185f47e86314f4945	GREEN	worker-02	tree 3480 on development 9b7f2930: 7182 tests, baseline 7175 (2 errors inherited), new failures 0; tests-only diff
+buildiq	1510	74e6c610d5c56caaa6a1e7651bea006bdc8a19f3	GREEN	worker-01	phpunit 2444 run, baseline 1333 err/fail inherited, PR adds only a JS spec (no PHP change); vitest 359 files/3464 tests pass, 0 new failures
