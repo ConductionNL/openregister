@@ -4546,3 +4546,4 @@ integriq	3427	49677b59437d5125d5a5d650220010071f82afab	GREEN	worker-46	tree of 9
 dossiq	6203	31cc59e43fa01c880e78ebc0b94c6e4a727344e3	GREEN	worker-24	13209 tests on tree 6203-6206, baseline 13072 with 19 failures, new failures 0; tests only
 dossiq	6205	da1ae8d37b7e094d811e51b9c9cb8f32f2b55925	GREEN	worker-24	13209 tests on tree 6203-6206, baseline 13072 with 19 failures, new failures 0; tests only
 dossiq	6206	1a541066c2e97ad9d1eb69f526fdc5183e598a7d	GREEN	worker-24	13209 tests on tree 6203-6206, baseline 13072 with 19 failures, new failures 0; tests only
+dossiq	6204	b8a990511615dce52fe32fc16502a9daf25ef26f	GREEN	worker-24	13209 tests on tree 6203-6206, baseline 13072 with 19 failures, new failures 0; tests only; note: adds tests/Unit/Service/Task/TaskDeclarationReaderTest.php, also added by 6200, so whichever merges second will conflict
