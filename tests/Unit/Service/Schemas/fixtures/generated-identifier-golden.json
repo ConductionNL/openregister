@@ -781,13 +781,13 @@
     },
     "unknown keys": {
         "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
-        "message": "x-openregister-generated at '/p' carries unknown key(s) 'reset, 0'. It accepts sequence, format, resetOn.",
+        "message": "x-openregister-generated at '/p' carries unknown key(s) 'reset, 0'. It accepts sequence, format, resetOn, reserved.",
         "errors": [
             {
                 "code": "generated-identifier-invalid",
                 "key": "x-openregister-generated",
                 "path": "/p",
-                "message": "x-openregister-generated at '/p' carries unknown key(s) 'reset, 0'. It accepts sequence, format, resetOn."
+                "message": "x-openregister-generated at '/p' carries unknown key(s) 'reset, 0'. It accepts sequence, format, resetOn, reserved."
             }
         ]
     },

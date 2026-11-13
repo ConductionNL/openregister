@@ -673,6 +673,18 @@ interface SchemaInterface extends JsonSerializable {
 	public function isArchivingEnabled(): bool;
 
 	/**
+	 * Whether this schema offers the preservation (statisch) regime.
+	 *
+	 * Independent of {@see self::isArchivingEnabled()}: a schema may offer the
+	 * archive state, the preservation state, both or neither.
+	 *
+	 * @return bool True when the schema declares `x-openregister-preserve` with `enabled: true`.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	public function isPreservationEnabled(): bool;
+
+	/**
 	 * The reasons this schema accepts for a value that was not supplied.
 	 *
 	 * Returns a map of code to label, empty when the schema administers none.

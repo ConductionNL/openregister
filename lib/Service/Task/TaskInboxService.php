@@ -94,6 +94,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @param TaskBlockerMapperInterface|null $blockers Answers which blockers are still
 	 *                                         open, for the derived `blocked`
 	 *                                         flag. Absent, no row is blocked.
+	 * @param TaskVerbList|null $verbs The per-row `can` list; without it a row read for someone carries an empty one.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -102,6 +103,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
 		private readonly ?TaskSubjectLocator $locator = null,
 		private readonly ?TaskBlockerMapperInterface $blockers = null,
+		private readonly ?TaskVerbList $verbs = null,
 	) {
 		$this->temporal = new TaskTemporalProjection();
 	}//end __construct()
@@ -135,7 +137,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		$subjects = $this->subjectContexts(tasks: $tasks);
 		$openBlockers = $this->openBlockers(tasks: $tasks);
 
-		$listing = new InboxListing(subjects: $subjects, now: $this->temporal->now(), openBlockers: $openBlockers);
+		$listing = new InboxListing(subjects: $subjects, now: $this->temporal->now(), openBlockers: $openBlockers, caller: $criteria->uid);
 		$results = [];
 		foreach ($tasks as $task) {
 			$results[] = $this->row(task: $task, listing: $listing);
@@ -169,6 +171,12 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		$row = array_merge($row, $this->dueFields(task: $task, now: $listing->now));
 		if ((string)$task->getPerformerType() === TaskInterface::PERFORMER_EXTERNAL) {
 			$row['delivery'] = $this->deliveryState(task: $task);
+		}
+
+		// The verbs the reader may run now (record-tasks-tab D-4), only when the
+		// row is read FOR someone: a notification or a job has no reader to ask.
+		if ($listing->caller !== null) {
+			$row['can'] = ($this->verbs?->for(task: $task, caller: $listing->caller) ?? []);
 		}
 
 		return $row;
@@ -287,16 +295,18 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * inbox and the notification about it.
 	 *
 	 * @param TaskInterface $task The task.
+	 * @param string|null   $caller The reader's uid; when given the row carries `can` (record-tasks-tab D-4).
 	 *
 	 * @return array<string, mixed> The row.
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-truth-flows-one-way-and-the-one-path-back-is-a-gate
 	 */
-	public function enrich(TaskInterface $task): array {
+	public function enrich(TaskInterface $task, ?string $caller = null): array {
 		$listing = new InboxListing(
 			subjects: $this->subjectContexts(tasks: [$task]),
 			now: $this->temporal->now(),
-			openBlockers: $this->openBlockers(tasks: [$task])
+			openBlockers: $this->openBlockers(tasks: [$task]),
+			caller: $caller
 		);
 
 		return $this->row(task: $task, listing: $listing);

@@ -1243,6 +1243,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->checkNotifications(schema: $schema);
 		$records->checkWidgets(schema: $schema);
 		$records->checkArchival(schema: $schema);
+		$records->checkReferenceCard(schema: $schema);
 		$records->checkRetention(schema: $schema);
 	}//end checkDataDeclarations()
 
