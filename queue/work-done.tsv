@@ -1681,3 +1681,4 @@ cover:integriq:9b0f5894md8cd:9d3a1784	PR #3459: 23 tests for 8 background jobs (
 cover:keepiq:d76c2121m88ca:9d3a1784	PR #1722: BackgroundJob cert/trash edge paths (+9 tests); 90.9%->99.8%, no failures	session-20261113T011731-f3798045	2026-11-13T02:34:27Z
 cover:integriq:9b0f5894md8cd:9bbad86f	PR #3461: 63 tests over 9 classes; Service dirs 90.11% -> 95.81% stmts; suite 7113 -> 7176, same 2 inherited errors	session-20261113T015003-f68021a4	2026-11-13T02:35:39Z
 measure:learniq:20261113h02	php 90.94% (pcov, 6101 tests, 1 inherited failure), js 89.01% (c8)	session-20261113T021701-67a73ebd	2026-11-13T02:35:42Z
+cover:buildiq:8ca317f6mefda:b65a63c3	PR #1491: 4 tests, BrokeredRepo 1/9->9/9, lib/Service/GitHub 86/95->94/95	session-20261113T015005-da194c88	2026-11-13T02:35:47Z
