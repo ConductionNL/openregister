@@ -6548,3 +6548,20 @@ learniq	2501	dd3ee75629911da7f6a3311a14f8ba9bd1cef300	REVERIFY	worker-10	merged 
 learniq	2496	9b571bfdbf666eaf617829bf91a07a1ebb593d85	REVERIFY	worker-50	merged development in; l10n/en.json and nl.json conflict resolved as the union of both sides (no key clashed); unit 6575 tests, only inherited HigherEducationExampleSetTest red; new head fa97a1052525c80a1c9d548925fa6538a98ff29e, verify it
 integriq	3549	806edd126dd666e6d9baffc837fd243ffbb6ed02	REVERIFY	worker-03	moved the 4 added l10n keys (en.json, nl.json) from the end of translations to its start, so the branch no longer collides with #3546's appended keys; merges clean with #3546 and development; JSON content unchanged; new head 0b1e6d115aea0a1892b619a84ab29fb80042ab06, verify it
 integriq	3552	3abd08bbdf1e7ae979a9f9ae67570473b2b59305	REVERIFY	worker-47	merged development in; moved the 4 added l10n keys to the top of en.json/nl.json so it no longer conflicts with 3551 (test merge clean); new head 506cd3ae6568deb216819b627dc69d90aca1e10e, verify it
+portaliq	2284	b2a0155204176795c00218d83ecbed38e0434b82	CONFLICT	merge3	conflicts with development; files: lib/Controller/ActivityGuardianController.php lib/Controller/ContentCatalogueController.php lib/Controller/ContentController.php lib/Controller/ContentNewsController.php lib/Controller/EventGuardianCo
+portaliq	2312	e056c2f77fc4c58f02ab1b00a452b62ff26f8662	CONFLICT	merge3	conflicts with development; files: src/shared/portalApi.js 
+portaliq	2380	153b35f2a95519d399aed2c542a3ffad00254b99	CONFLICT	merge3	conflicts with development; files: tests/Unit/Controller/AdminOnlyPostureTest.php 
+portaliq	2393	624f0fe2d2a188af2943bf2df2039b9daf454d8b	CONFLICT	merge3	conflicts with development; files: tests/Unit/Service/Identity/RegisteredDetailsShapeTest.php 
+portaliq	2395	d2fce6d4d67f89ee5472d53516e1a2f1ccd70517	CONFLICT	merge3	conflicts with development; files: tests/Unit/Controller/CitizenCaseControllerTest.php tests/Unit/Controller/ContentControllerGateGoldenTest.php tests/Unit/Controller/ContentNewsCatalogueGoldenTest.php tests/Unit/Service/Traffic/Traffi
+portaliq	2415	1b3e5f2d8564310105899ff754ce3416a97c01ca	CONFLICT	merge3	conflicts with development; files: lib/Controller/ProposalController.php 
+portaliq	2418	bb1fde7dbc7288d45bca01c9f6857ec75a5948a1	CONFLICT	merge3	merges clean on development alone; files: package.json 
+portaliq	2419	cfe4c3357ad9f52b656e2c543a32307e1eebcbbb	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+portaliq	2423	53e7632237b8537d1e74566831a9d303cdc87870	CONFLICT	merge3	merges clean on development alone; files: package.json 
+portaliq	2427	d256286fe99dd5624de69e220db457e2ecc1a78d	CONFLICT	merge3	merges clean on development alone; files: package.json 
+portaliq	2430	bc693f182bde6e31d4cb1a40fcbb0ba4389d5352	CONFLICT	merge3	conflicts with development; files: lib/Controller/PortalIntakeController.php 
+portaliq	2431	71b8662101c91d2c665c5b430fa73837a40a8eea	CONFLICT	merge3	conflicts with development; files: lib/Service/CitizenWritableSetResolver.php 
+portaliq	2432	a871a990a0971470770acfcad63626107a361f4c	CONFLICT	merge3	conflicts with development; files: lib/Service/Mail/MailTemplateRenderer.php 
+portaliq	2433	7c0c09e1763e399975ee8d73f34401957522f6ae	CONFLICT	merge3	merges clean on development alone; files: package.json 
+portaliq	2434	bbc265edc9cd42e7be85d69cd9936441111e1c9b	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ContentController.php lib/Controller/PortalPageController.php lib/Service/SiteShell.php 
+portaliq	2442	39991bbb5496c7ad9db5db692fcc87e5101dbfbe	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/en_US.js l10n/en_US.json l10n/nl.js l10n/nl.json package.json 
+portaliq	2443	4322f3ac1ef3423b13baca3b34799b91c46b8460	CONFLICT	merge3	merges clean on development alone; files: lib/Service/PortalJwtService.php lib/Service/PortalSessionService.php lib/Service/SessionClaims.php lib/Service/Signin/BrokerLogin.php tests/Unit/Service/PortalSessionServiceTest.php tests/Unit/Servic
