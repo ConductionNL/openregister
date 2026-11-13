@@ -7409,6 +7409,7 @@ build:hermiq:scheduling-overview-and-start-choice	partial: PR #1757, task 4 back
 build:hermiq:tools-post-a-talk-message	PR #1756: hermiq.sendTalkMessage tool (grant-gated, agent bot membership, Talk-missing error), tasks 1.1-1.4 and 2.1 done	session-20261113T212411-bd385ec2	2026-11-13T22:56:11Z
 build:hermiq:oversight-ask-and-hold	partial: PR #1755 (task 1 schema, task 2 askPerson tool; 3 chat card, 4 unattended questions, 5 hold delivery, 6 drafts view left)	session-20261113T213325-fbdd5614	2026-11-13T22:56:03Z
 build:hermiq:reports-on-a-schedule	partial: PR opened (schema, hourly job, notifier, 14 tests); 1.2 needs per-card actions in nextcloud-vue CnReportsPage, 2.1 e2e left	session-20261113T205329-39b9195a	2026-11-13T22:56:35Z
+build:hermiq:tool-scope-security-default	PR #1759: read-only report of agents without tools (task 3); tasks 1-2 already hold in OpenRegister ToolGrantResolver	session-20261113T213336-fe5ca7a4	2026-11-13T22:56:54Z
 build:humaniq:hours-leaf-loads-on-a-consuming-page	partial: PR #1124 builds 2.x leaves-bundle parity pass and 3.x named missing-host state + doc (+11 JS tests); build-size test and demo data left	session-20261113T212405-084c59f4	2026-11-13T22:56:38Z
 verify:decidiq:2151:01c868d2	5 GREEN (2151,2152,2153,2156,2157), 2154 RED (seed count after tree merge), 2158 CONFLICT (l10n), 2155 skipped (head moved)	session-20261113T212429-ea8f431f	2026-11-13T22:56:52Z
 review:openregister:10462:960fe196	APPROVE	session-20261113T205325-28f592a9	2026-11-13T22:56:59Z
