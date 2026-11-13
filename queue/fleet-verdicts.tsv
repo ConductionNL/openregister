@@ -6306,3 +6306,4 @@ filinq	2072	63ad4767c635daf03d40c49d4adc5ce949c96b5d	CONFLICT	worker-15	conflict
 filinq	2073	a72f8a207420eabcee5644608b41e538384ab97f	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds intake-paper-archive-digitisation
 filinq	2074	38456639505319b2cf210ecbd471f6b1a8451645	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; builds leaf-integrations (frontend)
 filinq	2075	16fc58d7313050107c498b4feef6e0d5b7b92c08	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; tasks.md only
+filinq	2076	6d21cc2db9b4620e32591891e0743f04b97b88d9	GREEN	worker-15	phpunit tree 6490 tests 0 failures (baseline 6443, 0 failures); vitest 758/758; 7 PRs merged; tasks.md only; queue row carried a truncated sha (6d21cc2db9b4620e32591891e07), head matched it
