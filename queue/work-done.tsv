@@ -5852,3 +5852,4 @@ cover:stackiq:9ac19b3am9d24:9d3a1784	already done: lib/BackgroundJob/*.php at 10
 verify:shillinq:2947:310dae8b	2947 GREEN	session-20261113T171150-996cf694	2026-11-13T18:10:31Z
 cover:dossiq:069ee2d6m2deb:67583626	already done: lib/Service/Lifecycle/*.php at 98.9% stmt coverage on development (target 95); no PR	session-20261113T172328-c860ad55	2026-11-13T18:11:21Z
 verify:stackiq:1885:2daf5a4e	1885 GREEN (tests only)	session-20261113T171149-8b9ea523	2026-11-13T18:11:24Z
+cover:dossiq:069ee2d6m2deb:38e80a9f	already done: lib/Command/*.php at 99.6% stmt coverage on development; no PR	session-20261113T172328-c860ad55	2026-11-13T18:11:42Z
