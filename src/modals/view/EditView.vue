@@ -14,11 +14,7 @@
 			<!-- Tabs -->
 			<div class="tabContainer">
 				<AppTabs v-model="activeTab" contentClass="mt-3" justified>
-					<AppTab active>
-						<template #title>
-							<Cog :size="16" />
-							<span>{{ t('openregister', 'Settings') }}</span>
-						</template>
+					<SettingsTab>
 						<div class="form-editor">
 							<NcTextField
 								v-model="viewData.name"
@@ -61,7 +57,7 @@
 								}}
 							</p>
 						</div>
-					</AppTab>
+					</SettingsTab>
 
 					<AppTab>
 						<template #title>
@@ -177,12 +173,12 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import ShareVariant from 'vue-material-design-icons/ShareVariant.vue'
 import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import SettingsTab from '../../components/tabs/SettingsTab.vue'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
 import { viewsStore } from '../../store/store.js'
 
@@ -215,7 +211,7 @@ export default {
 		NcNoteCard,
 		AppTabs,
 		AppTab,
-		Cog,
+		SettingsTab,
 		ShareVariant,
 		Close,
 		ContentSave,
