@@ -369,7 +369,7 @@ components:
       - ".*/lib/Notifications/Service/WebPush/[^/]*"
       - ".*/lib/Notifications/Service/Webhook/[^/]*"
       - ".*/lib/Push/[^/]*"
-      - ".*/lib/Service/(ActivityFilter|ActivityFilterServiceInterface|NotificationServiceInterface|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php"
+      - ".*/lib/Service/(ActivityFilter|ActivityFilterServiceInterface|AdminRecipientExpander|NotificationServiceInterface|ScheduledReportDelivery|ScheduledReportExportQuery|ScheduledReportExporters|ScheduledReportNotice|ScheduledReportOwnerServices|ScheduledReportStores)[.]php"
   - name: Platform
     include:
       - ".*/lib/AppInfo/[^/]*"
