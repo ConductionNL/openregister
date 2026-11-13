@@ -1932,3 +1932,4 @@ cover:filinq:7a9ef677mc744:js64227517	no change: dir holds DocumentCompare.vue, 
 cover:buildiq:9930949bmefda:js4829b6aa	PR #1504: 36 vitest tests, views stmts 1253/1546 -> 1323/1546	session-20261113T024653-d22c13a3	2026-11-13T03:51:52Z
 cover:stackiq:df113dffm8db8:js17dfdc2e	PR #1835: 23 vitest tests (MergeObject flow, ObjectModal save), src/modals/object 46.2%->54.2%; ViewObject left	session-20261113T031700-0e23c373	2026-11-13T03:52:00Z
 verify:shillinq:2852:6ec1334b	shillinq#2852 GREEN: tests only, +19 tests, no new failures	session-20261113T034631-5fd77fa7	2026-11-13T03:52:13Z
+cover:stackiq:df113dffm8db8:17d367ab	already done: SyncHandler and ModuleRegistrationHandler tests (from -1, merged) cover every branch, logs and exceptions; no PR	session-20261113T033859-c661da78	2026-11-13T03:52:26Z
