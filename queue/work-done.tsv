@@ -1203,3 +1203,4 @@ cover:pipelinq:f67520ecm9d2c:js5cb5a0d3	PR #3607 (-2): ServiceStepsEditor cells 
 fix:hermiq:1496:5ec772b2	conflict resolved (spec-tag-only change on dev side), pushed 2271f36d, REVERIFY recorded	session-20261112T234655-6f442bc3	2026-11-13T00:44:23Z
 fix:hermiq:1527:20970732	conflict resolved, pushed 102d5f61, REVERIFY recorded	session-20261112T234655-c333a6f8	2026-11-13T00:44:35Z
 fix:hermiq:1529:f5305e07	conflict resolved, pushed c0cafc44, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:44:49Z
+cover:shillinq:801aab65:f0c02922	PR #2805: 27 tests over 8 deferred adapters, lib/Service/External 8.7%->68.8%, suite inherited 1 failure unchanged	session-20261112T234655-599f9c9a	2026-11-13T00:45:01Z
