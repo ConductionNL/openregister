@@ -161,6 +161,7 @@ components:
       - ".*/lib/Service/Configuration/[^/]*"
       - ".*/lib/Service/ConfigurationDeployment/[^/]*"
       - ".*/lib/Service/ExampleSet/[^/]*"
+      - ".*/lib/Service/Exchange/[^/]*"
       - ".*/lib/Service/Export/[^/]*"
       - ".*/lib/Service/Export/Odt/[^/]*"
       - ".*/lib/Service/Import/[^/]*"

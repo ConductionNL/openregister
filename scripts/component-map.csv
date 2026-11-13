@@ -2122,6 +2122,10 @@ Service/ExampleSet/ExampleSetTasks.php,188,Service,Configuration,Configuration/S
 Service/ExampleSet/ExampleSetUserPreferences.php,96,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetUserPreferences.php,0,,Configuration
 Service/ExampleSet/ExampleSetValues.php,213,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetValues.php,0,,Configuration
 Service/ExampleSet/ExampleSetWatchers.php,76,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetWatchers.php,0,,Configuration
+Service/Exchange/EncryptedSetException.php,10,Service,Configuration,Configuration/Service/Exchange/EncryptedSetException.php,0,,Configuration
+Service/Exchange/EncryptedSetHeader.php,77,Service,Configuration,Configuration/Service/Exchange/EncryptedSetHeader.php,0,,Configuration
+Service/Exchange/EncryptedSetReader.php,60,Service,Configuration,Configuration/Service/Exchange/EncryptedSetReader.php,0,,Configuration
+Service/Exchange/EncryptedSetWriter.php,43,Service,Configuration,Configuration/Service/Exchange/EncryptedSetWriter.php,0,,Configuration
 Service/Export/ExportAuditRecorder.php,81,Service,Configuration,Configuration/Service/Export/ExportAuditRecorder.php,0,308,Configuration
 Service/Export/ExportGate.php,44,Service,Configuration,Configuration/Service/Export/ExportGate.php,0,402,Configuration
 Service/Export/ExportProfileService.php,181,Service,Configuration,Configuration/Service/Export/ExportProfileService.php,0,,Configuration
