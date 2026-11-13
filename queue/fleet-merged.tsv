@@ -1732,3 +1732,9 @@ dossiq	6342	7cc0d42fdba93cbe6b752453ebd41feeec21cec8	MERGED	merge-local	GATE OK 
 dossiq	6343	c16d5f4cc180ffd1db62119aa0af1b925aa56beb	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 shillinq	2930	a50e12ea6aff1f48bee9eb77b7b2c2e6038f5431	SKIP	merge-local	GATE UNMEASURED a50e12ea6a does not merge cleanly onto development
 launchpad	1188	1cf1fd8175abd79cff0910a1b194af1ffa40da8c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2456	4134001d0f9258e734c57b14c7cbbb00392fe39b	SKIP	merge-local	GATE UNMEASURED 4134001d0f does not merge cleanly onto development
+opencatalogi	2584	d1330364940ead45fba3f7cc3deb79aa133bdac3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2585	919d82c42e4e108b2f47175553efb281ca6ca418	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2586	5b1a8e31515740bdb54ddd615fde427acbfa861b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2587	0acdbab08bb37ce6d40a69b540a5d43776ff1eaf	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2588	50984c0ba774a07f0b3a6ddcbeeb4347e6c7f3b8	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
