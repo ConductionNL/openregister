@@ -2839,3 +2839,4 @@ cover:stackiq:df113dffm5ac4:js089660b5	already done: src/dialogs/ (incl. SuiteWi
 cover:shillinq:05639debmd8ee:dc834159	PR #2892: 28 tests over 10 classes (5 adapters, 5 results); suite 9235, same 1 inherited failure	session-20261113T054516-5d7b6bc4	2026-11-13T06:33:01Z
 cover:stackiq:df113dffm5ac4:jsb1f0efae	already done: src/views/organisaties/ 197/202 lines (97.5%) on development a05c3ddd; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:33:06Z
 verify:shillinq:2886:75da7c98	2886 GREEN (tests only, no new failures)	session-20261113T051707-6c971ec6	2026-11-13T06:33:07Z
+cover:stackiq:df113dffm5ac4:jsd48eb217	PR #1843: 3 specs, 21 tests; store modules lines 96.31->98.42, branches 90.41->94.34	session-20261113T061521-423d1e83	2026-11-13T06:33:13Z
