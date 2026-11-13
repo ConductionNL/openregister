@@ -1213,3 +1213,4 @@ fix:dossiq:5899:035ffd99	conflict resolved (kept PR's CaseReadAndPatch refactor 
 fix:hermiq:1605:b04693e3	add/add conflict resolved by renaming the PR's test file, pushed 600aae13, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:46:11Z
 merge:launchpad:1126:704a9ea9	merge-local over 2 launchpad tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:46:52Z
 merge:launchpad:1139:f3c5a6e1	merge-local over 2 launchpad tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:46:52Z
+fix:hermiq:1487:4d0053da	conflict resolved (spec-tag-only change on dev side), pushed fd5c6f50, REVERIFY recorded	session-20261112T234655-6f442bc3	2026-11-13T00:47:09Z
