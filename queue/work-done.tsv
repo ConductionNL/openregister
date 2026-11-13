@@ -3453,3 +3453,4 @@ cover:launchpad:fb10c50fm911d:34f5c300	PR #1178: +54 tests, 4 Service classes to
 cover:learniq:e6498dddmc027:80b3d955	already done: lib/Service/Catalogue/ at 94.6% (210/222 lines) on development, above the 90% target	session-20261113T080552-2a8a5ff1	2026-11-13T08:26:57Z
 cover:learniq:e6498dddmc027:d0602611	already done: lib/Service/LessonOnboarding at 96.8% lines (703/726) under the full unit suite on development, target 90; queued 0% is stale; no PR	session-20261113T051705-4f5ad12a	2026-11-13T08:27:33Z
 fix:portaliq:2376:06bdb3c4	resolved conflict with #2374 (kept its test files); 2376 now metadata-only on top of 2374; new head b197ca02bb5283f629bbb91c48fd956192c7d4ab; REVERIFY recorded	session-20261113T080549-20301834	2026-11-13T08:28:02Z
+cover:portaliq:b60f3b81:a42ac94e	PR #2384: GeoDatabaseStore 0->68/72, TrafficEventStore 109->132/155; 4552 green	session-20261113T072715-8f8a14e9	2026-11-13T08:28:29Z
