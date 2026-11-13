@@ -4094,3 +4094,8 @@ Command/SeedImportCommand.php,58,Command,Configuration,Configuration/Command/See
 Controller/Settings/SeedReportController.php,19,Controller,Configuration,Configuration/Controller/Settings/SeedReportController.php,0,,Configuration
 Service/Sharing/PlatformShareGate.php,116,Service,Access,Access/Service/Sharing/PlatformShareGate.php,0,,Core
 Service/Sharing/PlatformSharePermissions.php,117,Service,Access,Access/Service/Sharing/PlatformSharePermissions.php,0,,Core
+Calendar/DeclaredDateCalendars.php,184,Calendar,Platform,Platform/Calendar/DeclaredDateCalendars.php,0,,Integrations
+Calendar/ObjectDateCalendar.php,54,Calendar,Platform,Platform/Calendar/ObjectDateCalendar.php,0,,Integrations
+Calendar/ObjectDateCalendarScope.php,14,Calendar,Platform,Platform/Calendar/ObjectDateCalendarScope.php,0,,Integrations
+Calendar/VeventSearchShape.php,202,Calendar,Platform,Platform/Calendar/VeventSearchShape.php,0,,Integrations
+Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/ObjectDateEvents.php,0,,Processes
