@@ -3243,3 +3243,4 @@ cover:integriq:92114ab0m658d:9dc6d594	already above target: lib/Service/Mail/*.p
 gap:larpinq:tcr2:burn1	PR #1012: 8 test files, 32 tests, suite 694->726 green	session-20261113T072715-8f8a14e9	2026-11-13T07:44:16Z
 gap:launchpad:tcr1:burn1	PR #1174: 8 test files, 48 tests (suite 3741->3789, 0 failures)	session-20261113T073916-e9f11dfa	2026-11-13T07:44:25Z
 cover:larpinq:c4471360:60c2c265	PR #1014: 7 phpunit tests, Controller 92.3->99.1%	session-20261113T051709-e616bf69	2026-11-13T07:44:30Z
+cover:larpinq:c4471360:1b97f731	PR #1013: listener fail-soft/ignore paths, 8 tests in 4 files, uncovered 19->4 stmts; suite 697->705 green; tests only	session-20261113T072706-2eaa6a81	2026-11-13T07:44:29Z
