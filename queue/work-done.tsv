@@ -1764,3 +1764,4 @@ cover:filinq:8ecceb86mc744:6079ce8f	PR #2012: 35 tests across 7 Wizard/SubjectEr
 verify:dossiq:6244:d7238605	9 GREEN (6244-6252), tests-only, no new failures	session-20261113T024653-d22c13a3	2026-11-13T03:10:36Z
 cover:openregister:7350e3efm0e99:663e6d64	PR #10092: @uses fix for 8 risky Vocabulary tests + 5 new tests, lib/Service/Vocabulary 79.4->99.4%	session-20261113T015005-da194c88	2026-11-13T03:11:29Z
 cover:filinq:8ecceb86mc744:bb678c92	PR #2013: 15 tests for SvgPrimitives/SvgTextStyle/PieChartRenderer/ChartRequest, suite 5899->5914 green	session-20261113T024656-2f332446	2026-11-13T03:12:07Z
+verify:filinq:2004:ded7d3ce	7 GREEN (2004-2010): test-only; phpunit 5899 ok, vitest 556 ok, jest 15 inherited failures	session-20261113T021703-063c80f1	2026-11-13T03:13:24Z
