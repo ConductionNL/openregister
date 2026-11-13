@@ -3763,3 +3763,4 @@ cover:shillinq:05639debmd8ee:f2147508	already done: lib/BackgroundJob/Support 10
 cover:dossiq:069ee2d6m7275:8b886c00	already done: lib/Service/People/*.php at 92.8% (915/986) on development 31eb27fb, above 90 target	session-20261113T073916-e9f11dfa	2026-11-13T09:13:02Z
 cover:shillinq:05639debmd8ee:8bdc03d4	already done: lib/Service/BbvMigration 100% lines (102/102) on development c421f3c7d; no PR	session-20261113T084521-4cd185d2	2026-11-13T09:13:11Z
 cover:pipelinq:7f9dc8e6m916f:js44da5e7d	PR #3702: 21 vitest tests, 4 specs; views/requests+widgets 81.2->90.7% statements; vitest 3893->3914 all pass	session-20261113T072713-f866e896	2026-11-13T09:13:29Z
+cover:shillinq:05639debmd8ee:5e523ac6	already done: lib/Reporting/Feed 100% lines on development c421f3c7d; no PR	session-20261113T084521-4cd185d2	2026-11-13T09:13:32Z
