@@ -4959,3 +4959,4 @@ build:openregister:semantic-object-handoff-engine	failed: worker rules forbid bu
 build:openregister:scoped-api-tokens-machine-callers	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:40:43Z
 build:openregister:sensitive-field-reveal-audit	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:40:53Z
 build:openregister:several-legal-entities-in-one-instance	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:40:59Z
+build:openregister:saved-view-presentation-picker	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:05Z
