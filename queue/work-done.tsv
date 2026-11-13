@@ -4174,3 +4174,4 @@ cover:portaliq:b60f3b81:b994f46a	already done: lib/Service/Reports 304/313 stmts
 verify:learniq:2462:39dad4c9	GREEN 2462 (tests only; 6383 -> 6388, 1 failure from development, none new)	session-20261113T083916-59f10a3b	2026-11-13T10:11:00Z
 verify:buildiq:1537:6806dd13	1/1 GREEN (1537): clean merge, vitest 3896 pass, phpunit unchanged; tests only	session-20261113T044737-f37de8e3	2026-11-13T10:11:16Z
 verify:stackiq:1866:a68bf803	1866 GREEN: behaviour-preserving refactor, suite 3264 vs baseline 3261, no new failures	session-20261113T074532-3dc49c57	2026-11-13T10:11:30Z
+verify:versioniq:675:4c1e36bf	GREEN 675, 676 (tests only; 1356 -> 1366, 2 failures from development, none new)	session-20261113T083916-59f10a3b	2026-11-13T10:11:44Z
