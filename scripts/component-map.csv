@@ -4010,3 +4010,14 @@ Service/RedactionPolicy/TermRule.php,101,Service,Configuration,Configuration/Ser
 Service/RedactionPolicy/TermRuleMatcher.php,73,Service,Configuration,Configuration/Service/RedactionPolicy/TermRuleMatcher.php,0,,Configuration
 Service/RedactionPolicy/TermRuleSourceInterface.php,6,Service,Configuration,Configuration/Service/RedactionPolicy/TermRuleSourceInterface.php,0,,Configuration
 Service/RedactionPolicy/TextFolder.php,62,Service,Configuration,Configuration/Service/RedactionPolicy/TextFolder.php,0,,Configuration
+Service/File/AnonymiqRegionDetector.php,,Service,,,,,Core
+Service/File/ExAppJsonRequester.php,,Service,,,,,Core
+Service/File/IImageRegionDetector.php,,Service,,,,,Core
+Service/File/ImageBurner.php,,Service,,,,,Core
+Service/File/ImageDetection.php,,Service,,,,,Core
+Service/File/ImageRedactionService.php,,Service,,,,,Core
+Service/File/ImageRegion.php,,Service,,,,,Core
+Service/File/ImageRegionDetectorRegistry.php,,Service,,,,,Core
+Service/File/ImageRegionNotBurnableException.php,,Service,,,,,Core
+Service/File/OcrWordLocator.php,,Service,,,,,Core
+Service/File/OcrWords.php,,Service,,,,,Core
