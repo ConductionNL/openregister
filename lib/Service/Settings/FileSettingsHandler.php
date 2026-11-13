@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
@@ -126,7 +128,11 @@ class FileSettingsHandler {
 		'openAnonymiserPasswordSet' => false,
 		'entityRecognitionEnabled' => false,
 		'entityRecognitionMethod' => 'auto',
-		self::ANONYMISATION_KEY => ['confidenceThreshold' => self::DEFAULT_CONFIDENCE_THRESHOLD],
+		self::ANONYMISATION_KEY => [
+			'confidenceThreshold' => self::DEFAULT_CONFIDENCE_THRESHOLD,
+			'capacityPolicy' => CapacityPolicy::DEFAULT,
+			'officialsSource' => null,
+		],
 		ArchiveBounds::SETTINGS_KEY => ArchiveBounds::DEFAULTS,
 	];
 
@@ -359,8 +365,47 @@ class FileSettingsHandler {
 			$settings['confidenceThreshold'] = (float) $threshold;
 		}
 
+		$settings['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($settings['capacityPolicy'] ?? null))->rules();
+		$settings['officialsSource'] = OfficialsSource::normalise(value: ($settings['officialsSource'] ?? null));
+
 		return $settings;
 	}//end readableAnonymisation()
+
+	/**
+	 * The organisation's capacity policy (REQ-DKP-001): the stored one, else the shipped default.
+	 *
+	 * @return CapacityPolicy
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1-1
+	 */
+	public function capacityPolicy(): CapacityPolicy {
+		return CapacityPolicy::fromStored(stored: $this->storedAnonymisation()['capacityPolicy'] ?? null);
+	}//end capacityPolicy()
+
+	/**
+	 * Where the register of officials is read from, or null when none is configured (REQ-DKP-001).
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1-1
+	 */
+	public function officialsSource(): ?array {
+		return OfficialsSource::normalise(value: $this->storedAnonymisation()['officialsSource'] ?? null);
+	}//end officialsSource()
+
+	/**
+	 * The stored anonymisation settings, as stored.
+	 *
+	 * @return array<string, mixed> Empty when none are stored.
+	 */
+	private function storedAnonymisation(): array {
+		$settings = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		if (is_array($settings) === false || is_array($settings[self::ANONYMISATION_KEY] ?? null) === false) {
+			return [];
+		}
+
+		return $settings[self::ANONYMISATION_KEY];
+	}//end storedAnonymisation()
 
 	/**
 	 * The anonymisation settings to store from a save: the submitted ones, or the
@@ -377,12 +422,19 @@ class FileSettingsHandler {
 	private function submittedAnonymisation(array $fileData): array {
 		$submitted = ($fileData[self::ANONYMISATION_KEY] ?? null);
 		if (is_array($submitted) === false) {
-			return ['confidenceThreshold' => $this->confidenceThreshold()];
+			$submitted = [];
 		}
 
 		if (array_key_exists('confidenceThreshold', $submitted) === false) {
 			$submitted['confidenceThreshold'] = $this->confidenceThreshold();
 		}
+
+		// A save that does not name the capacity policy or the officials
+		// source keeps the stored ones (REQ-DKP-001); what is kept is
+		// normalised, so an unknown capacity or decision never reaches a run.
+		$submitted += array_intersect_key($this->storedAnonymisation(), ['capacityPolicy' => true, 'officialsSource' => true]);
+		$submitted['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($submitted['capacityPolicy'] ?? null))->rules();
+		$submitted['officialsSource'] = OfficialsSource::normalise(value: ($submitted['officialsSource'] ?? null));
 
 		if (self::isThreshold(value: $submitted['confidenceThreshold']) === false) {
 			throw new ConfidenceThresholdOutOfRangeException(message: 'anonymisation.confidenceThreshold must be a number between 0 and 1');
