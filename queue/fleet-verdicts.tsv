@@ -6448,3 +6448,4 @@ dossiq	6453	8b878310d400194ce8f6f1a561d4afbbed0966b3	CONFLICT	worker-57	conflict
 dossiq	6454	2d83bd7af2bbe56233a7df79ce977d926a4f0700	GREEN	worker-57	tasks.md only; unit 16531 on tree, 20 inherited failures as on development, no new
 dossiq	6455	b821b67169f97c8f4239a547a74a12432953aed9	GREEN	worker-57	tasks.md only; unit 16531 on tree, 20 inherited failures as on development, no new
 dossiq	6456	a4dc1f443b8ed6f343437ae18dad659caa583e7d	GREEN	worker-57	build PR, tests, e2e spec and spec text only; unit 16531 on tree, 20 inherited failures as on development, no new
+decidiq	2149	2f8115d6b73387481c8715e3d3a2a5d1946d60de	GREEN	worker-20	tree 2148+2149: phpunit 3949 OK (baseline 3911 OK), 0 new failures; only l10n catalogues among JS files, vitest not needed; build judged against document-accessibility-check: publish gate runs before any write, 409 with findings, override kept on the meeting; new report schema under the register baseline
