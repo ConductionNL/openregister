@@ -5834,3 +5834,4 @@ cover:stackiq:9ac19b3am9d24:59826f43	already done: lib/Settings/*.php 11/11 stat
 build:portaliq:shared-plans-with-a-caseworker	partial: PR #2442 (T07 plan templates admin page); T04 needs personal-action-list dialog, T09/T10 live	session-20261113T172328-c860ad55	2026-11-13T18:08:08Z
 cover:pipelinq:7f9dc8e6m16db:f3231970	already covered: lib/Service/ScheduledTask/ 92/92 lines (100%) at development 4c67daf (pcov, full unit suite); no PR	session-20261113T175335-552e4d60	2026-11-13T18:08:34Z
 build:portaliq:intake-report-pages	partial: PR #2444 builds T07 (designer warning, excludedPaths in schema), T10 docs, T11; T01 live, T08 detail blocked by nextcloud-vue	session-20261113T175336-b2d7fc7c	2026-11-13T18:08:40Z
+cover:stackiq:9ac19b3am9d24:692f8a78	already done: lib/Service/Contactpersoon/ at 100% (205/205) @fb3c61bb	session-20261113T171149-8b9ea523	2026-11-13T18:08:51Z
