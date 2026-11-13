@@ -4198,3 +4198,4 @@ cover:portaliq:b60f3b81:2820f177	already done: lib/Service/Mail 165/167 stmts (9
 verify:planninq:1147:124566ad	GREEN 1147	session-20261113T081040-5e814df2	2026-11-13T10:15:21Z
 cover:decidiq:a5f973bbm1507:60c2c265	PR #2125: lib/Controller/*.php 94.59% -> 95.47% (target 95), PHP 90.73% -> 90.85%; +11 tests (3816 -> 3827, 2 risky from development); tests only	session-20261113T083916-59f10a3b	2026-11-13T10:15:42Z
 verify:buildiq:1538:0c048454	1538 GREEN (tests only, vitest 3894 pass)	session-20261113T071633-17de823f	2026-11-13T10:15:41Z
+verify:portaliq:2389:1cfdf9fe	2389 GREEN, 2390 GREEN: tests only, tree 4560 tests no failures	session-20261113T074532-3dc49c57	2026-11-13T10:16:03Z
