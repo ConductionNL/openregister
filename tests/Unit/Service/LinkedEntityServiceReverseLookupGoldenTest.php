@@ -40,6 +40,13 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\LinkedEntityLookup
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\LinkedTypesRule
+ * @uses \OCA\OpenRegister\Service\LinkedEntityIntegrations
+ * @uses \OCA\OpenRegister\Service\LinkedEntityMappers
  */
 class LinkedEntityServiceReverseLookupGoldenTest extends TestCase {
 

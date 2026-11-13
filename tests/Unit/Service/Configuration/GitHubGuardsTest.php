@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubGuards
  * @uses \OCA\OpenRegister\Service\Configuration\RateLimiterService
+ * @uses \OCA\OpenRegister\Service\Configuration\DistinctKeyBudget
  *
  * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-11
  * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-14

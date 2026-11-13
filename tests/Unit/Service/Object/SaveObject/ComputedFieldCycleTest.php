@@ -38,6 +38,9 @@ use Twig\Environment;
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Twig\MappingExtension
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedExpression
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldCycleWalk
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedPass
  */
 class ComputedFieldCycleTest extends TestCase {
 

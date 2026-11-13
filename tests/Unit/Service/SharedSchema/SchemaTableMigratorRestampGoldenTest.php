@@ -44,6 +44,11 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\SharedSchema\RowRestamp
  * @uses   \OCA\OpenRegister\Service\SharedSchema\TableCopy
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\SharedSchema\RowRestamp
+ * @uses \OCA\OpenRegister\Service\SharedSchema\TableCopy
  */
 class SchemaTableMigratorRestampGoldenTest extends TestCase {
 

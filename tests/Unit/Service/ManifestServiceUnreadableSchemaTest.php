@@ -36,6 +36,14 @@ use RuntimeException;
  * only the always-safe fields of the profile reach the manifest (fail closed).
  *
  * @covers \OCA\OpenRegister\Service\ManifestService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\ManifestProfile
+ * @uses \OCA\OpenRegister\Service\ManifestSources
  */
 class ManifestServiceUnreadableSchemaTest extends TestCase {
 

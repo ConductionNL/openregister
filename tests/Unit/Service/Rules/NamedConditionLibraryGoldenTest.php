@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * code as it stood before the refactor.
  *
  * @covers \OCA\OpenRegister\Service\Rules\NamedConditionLibrary
+ * @uses \OCA\OpenRegister\Service\Rules\NamedConditionGraph
  */
 class NamedConditionLibraryGoldenTest extends TestCase {
 

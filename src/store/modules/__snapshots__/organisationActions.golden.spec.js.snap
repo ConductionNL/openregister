@@ -441,7 +441,9 @@ exports[`organisation.getActiveOrganisation on an allowed answer 1`] = `
         "read": [],
         "update": [],
       },
-      "agent_use": [],
+      "agent_use": [
+        "*",
+      ],
       "application": {
         "create": [],
         "delete": [],
@@ -454,15 +456,15 @@ exports[`organisation.getActiveOrganisation on an allowed answer 1`] = `
         "read": [],
         "update": [],
       },
-      "dashboard_view": [],
-      "llm_use": [],
+      "llm_use": [
+        "*",
+      ],
       "object": {
         "create": [],
         "delete": [],
         "read": [],
         "update": [],
       },
-      "object_publish": [],
       "register": {
         "create": [],
         "delete": [],
@@ -1701,7 +1703,9 @@ exports[`organisation.setActiveOrganisationById on an allowed answer 1`] = `
         "read": [],
         "update": [],
       },
-      "agent_use": [],
+      "agent_use": [
+        "*",
+      ],
       "application": {
         "create": [],
         "delete": [],
@@ -1714,15 +1718,15 @@ exports[`organisation.setActiveOrganisationById on an allowed answer 1`] = `
         "read": [],
         "update": [],
       },
-      "dashboard_view": [],
-      "llm_use": [],
+      "llm_use": [
+        "*",
+      ],
       "object": {
         "create": [],
         "delete": [],
         "read": [],
         "update": [],
       },
-      "object_publish": [],
       "register": {
         "create": [],
         "delete": [],

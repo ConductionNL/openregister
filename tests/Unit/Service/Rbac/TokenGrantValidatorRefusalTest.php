@@ -36,6 +36,11 @@ use PHPUnit\Framework\TestCase;
  * The clock is fixed; nothing here reads the real time.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\TokenGrantValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrant
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantIssue
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantReach
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantTerms
  */
 class TokenGrantValidatorRefusalTest extends TestCase {
 

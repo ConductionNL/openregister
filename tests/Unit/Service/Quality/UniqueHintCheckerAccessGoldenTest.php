@@ -29,6 +29,13 @@ use Psr\Log\LoggerInterface;
  * Pins the allowed and refused disclosure of {@see UniqueHintChecker}.
  *
  * @covers \OCA\OpenRegister\Service\Quality\UniqueHintChecker
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Quality\ObjectEntities
+ * @uses \OCA\OpenRegister\Service\Quality\UniqueHintCandidate
+ * @uses \OCA\OpenRegister\Service\Quality\UniqueHintLookup
+ * @uses \OCA\OpenRegister\Service\Quality\UniqueHintScope
+ * @uses \OCA\OpenRegister\Service\Quality\UniqueHintWarnings
  */
 class UniqueHintCheckerAccessGoldenTest extends TestCase {
 

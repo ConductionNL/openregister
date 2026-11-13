@@ -91,6 +91,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
  * @uses \OCA\OpenRegister\Service\Task\TaskLifecycleServices
  * @uses \OCA\OpenRegister\Service\Task\TaskTables
  * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskDelegation
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskResolution
  */
 class TaskServiceTest extends TestCase {
 

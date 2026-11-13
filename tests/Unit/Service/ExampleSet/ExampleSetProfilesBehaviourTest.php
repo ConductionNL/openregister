@@ -36,6 +36,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProfiles
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach
  */
 class ExampleSetProfilesBehaviourTest extends TestCase {
 

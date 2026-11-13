@@ -52,6 +52,16 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
  */
 class SaveObjectsSchemaAnalysisGoldenTest extends TestCase {
 

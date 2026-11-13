@@ -39,15 +39,6 @@ exports[`Organisation.validate golden authorization 1`] = `
         "agent_use",
       ],
     },
-    {
-      "code": "invalid_type",
-      "message": "Invalid input: expected string, received boolean",
-      "path": [
-        "authorization",
-        "dashboard_view",
-        0,
-      ],
-    },
   ],
   "success": false,
 }
@@ -80,7 +71,9 @@ exports[`Organisation.validate golden mockFull 1`] = `
         "read": [],
         "update": [],
       },
-      "agent_use": [],
+      "agent_use": [
+        "*",
+      ],
       "application": {
         "create": [],
         "delete": [],
@@ -93,15 +86,15 @@ exports[`Organisation.validate golden mockFull 1`] = `
         "read": [],
         "update": [],
       },
-      "dashboard_view": [],
-      "llm_use": [],
+      "llm_use": [
+        "*",
+      ],
       "object": {
         "create": [],
         "delete": [],
         "read": [],
         "update": [],
       },
-      "object_publish": [],
       "register": {
         "create": [],
         "delete": [],
@@ -167,7 +160,9 @@ exports[`Organisation.validate golden mockUsers 1`] = `
         "read": [],
         "update": [],
       },
-      "agent_use": [],
+      "agent_use": [
+        "*",
+      ],
       "application": {
         "create": [],
         "delete": [],
@@ -180,15 +175,15 @@ exports[`Organisation.validate golden mockUsers 1`] = `
         "read": [],
         "update": [],
       },
-      "dashboard_view": [],
-      "llm_use": [],
+      "llm_use": [
+        "*",
+      ],
       "object": {
         "create": [],
         "delete": [],
         "read": [],
         "update": [],
       },
-      "object_publish": [],
       "register": {
         "create": [],
         "delete": [],
@@ -269,7 +264,9 @@ exports[`Organisation.validate golden partial 1`] = `
         "read": [],
         "update": [],
       },
-      "agent_use": [],
+      "agent_use": [
+        "*",
+      ],
       "application": {
         "create": [],
         "delete": [],
@@ -282,15 +279,15 @@ exports[`Organisation.validate golden partial 1`] = `
         "read": [],
         "update": [],
       },
-      "dashboard_view": [],
-      "llm_use": [],
+      "llm_use": [
+        "*",
+      ],
       "object": {
         "create": [],
         "delete": [],
         "read": [],
         "update": [],
       },
-      "object_publish": [],
       "register": {
         "create": [],
         "delete": [],

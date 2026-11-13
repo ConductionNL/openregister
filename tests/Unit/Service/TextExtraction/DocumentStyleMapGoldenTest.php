@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\DocumentStyleMap
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\OoxmlElements
  */
 class DocumentStyleMapGoldenTest extends TestCase {
 

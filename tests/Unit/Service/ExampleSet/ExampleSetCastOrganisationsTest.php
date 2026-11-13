@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastOrganisations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\CastOrganisationsRun
  */
 class ExampleSetCastOrganisationsTest extends TestCase {
 	/**

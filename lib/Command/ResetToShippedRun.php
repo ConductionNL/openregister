@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * The operator's arguments and the console of one reset-to-shipped run.
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 final class ResetToShippedRun {
 
@@ -40,7 +40,7 @@ final class ResetToShippedRun {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function __construct(
 		public readonly InputInterface $input,
@@ -53,7 +53,7 @@ final class ResetToShippedRun {
 	 *
 	 * @return string The schema reference.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function schema(): string {
 		return (string)$this->input->getArgument('schema');
@@ -64,7 +64,7 @@ final class ResetToShippedRun {
 	 *
 	 * @return string The part.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function part(): string {
 		return (string)$this->input->getArgument('part');
@@ -75,7 +75,7 @@ final class ResetToShippedRun {
 	 *
 	 * @return string The administrator's uid.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function actor(): string {
 		return trim((string)($this->input->getOption('actor') ?? ''));

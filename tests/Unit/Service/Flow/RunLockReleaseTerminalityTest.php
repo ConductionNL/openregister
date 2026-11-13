@@ -190,6 +190,29 @@ class LockLifecycleDispatcher implements FlowStepDispatcher {
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeDeclarations
  * @uses \OCA\OpenRegister\Service\Flow\LoweredFlow
+ * @uses \OCA\OpenRegister\Service\Flow\ClaimPass
+ * @uses \OCA\OpenRegister\Service\Flow\EdgeArrival
+ * @uses \OCA\OpenRegister\Service\Flow\FiringClaim
+ * @uses \OCA\OpenRegister\Service\Flow\FlowCommitWrite
+ * @uses \OCA\OpenRegister\Service\Flow\FlowEngineServices
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExitChoice
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowFiringCommitRun
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeExits
+ * @uses \OCA\OpenRegister\Service\Flow\FlowPassFiring
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunCommitRows
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunEnding
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunOrigin
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStepOutcome
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStepOutput
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamWalkParts
+ * @uses \OCA\OpenRegister\Service\Flow\ItemFiring
+ * @uses \OCA\OpenRegister\Service\Flow\ItemSeed
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 class RunLockReleaseTerminalityTest extends TestCase {
 	use FluentQueryBuilderTrait;

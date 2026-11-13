@@ -45,6 +45,15 @@ use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\NodeInvocation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadQuery
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadRun
  */
 final class ObjectReadNodeTest extends TestCase {
 

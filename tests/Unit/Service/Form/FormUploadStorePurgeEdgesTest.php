@@ -33,6 +33,8 @@ use PHPUnit\Framework\TestCase;
  * a record that cannot be read is purged with its bytes.
  *
  * @covers \OCA\OpenRegister\Service\Form\FormUploadStore
+ * @uses \OCA\OpenRegister\Service\Form\FormFileStorage
+ * @uses \OCA\OpenRegister\Service\Form\FormUploadPurgeRun
  */
 class FormUploadStorePurgeEdgesTest extends TestCase {
 

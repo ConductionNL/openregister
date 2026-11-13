@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Dmn\UnaryTestValue;
  * @covers \OCA\OpenRegister\Service\Dmn\UnaryTestEvaluator
  *
  * @uses \OCA\OpenRegister\Service\Dmn\DecisionEvaluationException
+ * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestValue
  */
 class UnaryTestEvaluatorTest extends TestCase {
 

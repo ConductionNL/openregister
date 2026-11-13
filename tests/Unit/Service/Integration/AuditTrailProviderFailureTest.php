@@ -34,6 +34,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider
  * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class AuditTrailProviderFailureTest extends TestCase {
 

@@ -23,6 +23,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
  */
 final class FlowValueTemplateTest extends TestCase {
 

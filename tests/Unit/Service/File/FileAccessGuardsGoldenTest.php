@@ -57,6 +57,11 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\File\FileLockHandler
  * @covers \OCA\OpenRegister\Service\File\FilePublishingHandler
  * @covers \OCA\OpenRegister\Service\File\FileValidationHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\File\FileSession
+ * @uses \OCA\OpenRegister\Service\File\ObjectFileFinder
+ * @uses \OCA\OpenRegister\Service\File\ObjectFileLookup
+ * @uses \OCA\OpenRegister\Service\File\ExecutableContentDetector
  */
 class FileAccessGuardsGoldenTest extends TestCase {
 
