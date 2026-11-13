@@ -1848,3 +1848,4 @@ cover:dossiq:6ca0231ema7d4:71f63b5c	opened dossiq#6262: 17 tests (EscalationRule
 cover:buildiq:9930949bmefda:aae6d66c	already covered: every lib/Exception class with logic has a test (tests/Unit/Exception); RegisterConfigUnavailableException is an empty subclass; no PR	session-20261113T024654-6600dc41	2026-11-13T03:33:03Z
 cover:filinq:8ecceb86mc744:55ab264a	PR #2020: 21 tests, 9 service dirs lines 91.6% -> 93.5%, suite 5920 tests 0 failures	session-20261113T021703-063c80f1	2026-11-13T03:33:11Z
 cover:stackiq:8cfacb29m8db8:jsd48eb217	PR #1825: 12 vitest tests (settings import/polling, navigation handoff), src/store/modules 87.1%->95.0%	session-20261113T031700-0e23c373	2026-11-13T03:33:16Z
+cover:buildiq:8ca317f6mefda:js047e1779	PR #1498: 35 tests, 4 components; dirs 90.4->95.8% stmts	session-20261113T031704-5a455d65	2026-11-13T03:33:30Z
