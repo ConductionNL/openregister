@@ -6492,4 +6492,5 @@ cover:pipelinq:7f9dc8e6m8ce9:dfaef732	already done: lib/Notification/Notifier.ph
 cover:pipelinq:7f9dc8e6m8ce9:2ea9e4f7	already done: lib/Service/CallReview/ at 103/103 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:39Z
 cover:pipelinq:7f9dc8e6m8ce9:0798b7cf	already done: lib/Service/PosCart/ at 67/67 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:45Z
 cover:pipelinq:7f9dc8e6m8ce9:2cc09f74	no PR: lib/Service/Marketing/Transport already 98% lines (322/326) at c2351f22, all 8 classes tested; uncovered lines unreachable (extractProviderId object/string branches only ever get array|null; LocalMessage class guard)	session-20261113T195348-92cf741a	2026-11-13T19:58:15Z
+build:filinq:generate-store-in-case-system	partial: PR #2067 register schemas + CaseSystemDeliveryService (1.1, 2.1), 7 tests; suite 6450/0 fail; 2.2-4.3 open	session-20261113T175327-6e4e7f28	2026-11-13T19:58:06Z
 verify:opencatalogi:2604:d221d470	3 GREEN (2604,2605,2606), tests only, no new failures	session-20261113T195353-2eaa3aed	2026-11-13T19:58:17Z
