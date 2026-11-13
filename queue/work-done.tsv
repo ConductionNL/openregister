@@ -1035,3 +1035,4 @@ cover:keepiq:d76c2121:34f5c300	PR #1705: 8 classes, 80 tests, suite 3727->3807, 
 cover:integriq:9b0f5894m2367:efa2a923	PR integriq#3436: 22 tests for 8 EventListener classes (DocumentRender 0->24/24, DigitalPost 0->11/11, Object* 0->10/12, Lti/OptOut ->100%); SoftwareCatalog/ViewUpdated skipped (int-vs-string schema compare, unreachable); suite 7135, same 2 inherited	session-20261112T221237-836ed3f0	2026-11-13T00:08:55Z
 cover:integriq:9b0f5894m2367:bb4c20c8	PR integriq#3437: Sms providers + planner schema tests (+10), suite 7113->7123, same 2 inherited errors	session-20261112T231640-f6dda86c	2026-11-13T00:09:09Z
 cover:filinq:8ecceb86:efa2a923	PR #1982: 2 EventListener classes, 7 tests; suite 5318 -> 5325 OK	session-20261112T234653-57d11a5b	2026-11-13T00:09:13Z
+cover:filinq:8ecceb86:6ebcfc9b	already done: lib/Service/Editing has no subdirectories; same files covered by PR #1980 (91.3% -> 96.2%)	session-20261112T234653-57d11a5b	2026-11-13T00:09:34Z
