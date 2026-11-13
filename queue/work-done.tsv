@@ -7307,3 +7307,4 @@ build:learniq:training-provider-course-days	partial: PR #2521 (T1 register field
 verify:shillinq:3030:e8077e14	GREEN 3030: tests only; vitest +13 pass, same inherited failure; no PHP change	session-20261113T204539-e70be1ed	2026-11-13T22:45:37Z
 review:openregister:10447:0eb80a71	APPROVE: new unwired snippet builder as specced, suites green	session-20261113T212414-55623216	2026-11-13T22:46:03Z
 build:learniq:school-activities-staff-side	partial: learniq PR #2522 builds T2-T5 (places/open, roster with photo consent, attendance, portaliq records) + 16 tests; T1 page and T6 left	session-20261113T213325-5a151438	2026-11-13T22:46:09Z
+verify:portaliq:2476:c3774482	GREEN 2476	session-20261113T205325-28f592a9	2026-11-13T22:46:12Z
