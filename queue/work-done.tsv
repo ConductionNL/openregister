@@ -1622,3 +1622,4 @@ cover:dossiq:6ca0231ema7d4:67b69054	PR #6226: 8 tests over CaseConversationServi
 cover:dossiq:6ca0231ema7d4:c97e6ec3	PR #6227: 3 queue sources, 7 tests, Queue/Source 78.9->95.2%	session-20261113T004519-b6b86685	2026-11-13T02:22:47Z
 measure:filinq:20261113h02	php 87.6% / js 35.34%	session-20261113T021702-a00af7e3	2026-11-13T02:22:49Z
 cover:dossiq:6ca0231ema7d4:b7fd3ec4	PR #6228: 35 tests for 5 Beschikking classes; suite 13840->13875, 19 inherited failures unchanged	session-20261113T021704-7f11f0d9	2026-11-13T02:23:02Z
+cover:pipelinq:f67520ecm8c58:js3f7698d2	PR #3632: 19 vitest tests for PipelineBoard rendering; src/views/pipeline/ ~82.7% -> 91.0% stmts; suite 3164 -> 3183 passing	session-20261113T015003-f68021a4	2026-11-13T02:23:29Z
