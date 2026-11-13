@@ -5940,3 +5940,4 @@ buildiq	1550	9d5fbc42921afabe63aaf844bbc23692ba48bf4c	GREEN	worker-02	tests only
 stackiq	1876	9a3031dc12797ffd7cf274d47b30ca6eedd9c40c	GREEN	worker-30	unit 3340 tests OK (baseline 3320 OK), 0 new failures; tests only
 dossiq	6412	c035680cbdfcd166c44afb5effb5e2fcfb762d1f	GREEN	worker-10	16225 tests run (16 new), baseline 16209 with 19 inherited failures, no new failures
 buildiq	1543	22709fae85f7d2171ac636f1737ab76c7a0afc42	GREEN	worker-03	tree of 2 on 12f5af00f: PHP 2820 run, baseline 2784 with 1 inherited failure, new failures 0; controller tests only
+stackiq	1874	8ae870cca5a623e208d59aad8a53eb2db9903282	GREEN	worker-30	phpunit 3320 OK (=baseline); vitest 242 files/2471 tests pass on tree; tests only
