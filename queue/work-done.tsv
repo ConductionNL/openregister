@@ -4021,5 +4021,6 @@ fix:dossiq:6353:60a451ec	no change: removals are what case-notes-stay-in-dossiq 
 cover:dossiq:069ee2d6m7275:cee3e6cf	PR #6379: 26 tests (BerichtenboxJournal, ShareStore, TransferStore, CaseChangesFeed); suite 19 inherited failures unchanged	session-20261113T093920-50335e74	2026-11-13T09:43:43Z
 cover:learniq:e6498dddm0533:60c2c265	already done: batch -1 merged; lib/Controller/*.php now 3499/3682 statements (95.03%), at the 95% target; no PR	session-20261113T080556-d189f150	2026-11-13T09:43:36Z
 cover:dossiq:069ee2d6m7275:c900fa11	already done: lib/Service/Email/Filters 155/157 stmts (98.7%)	session-20261113T091527-72c58830	2026-11-13T09:43:36Z
+merge:learniq:2436:2d10e964	merge-local over 1 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:43:59Z
 cover:dossiq:069ee2d6m7275:9ece5c6f	already done: lib/Controller/Support 296/299 stmts (99.0%)	session-20261113T091527-72c58830	2026-11-13T09:43:56Z
 cover:dossiq:069ee2d6m7275:71f63b5c	already done: Remedy, StepConfig, TemplateLibrary, WooPublication 100%; TenantMigration has no statements	session-20261113T091527-72c58830	2026-11-13T09:44:12Z
