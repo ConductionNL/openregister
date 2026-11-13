@@ -5021,3 +5021,4 @@ keepiq	1724	1bde1e7f033608591baa8a14b0e592fb78350742	RED	merge-local:merge-gate	
 hermiq	1653	10c6db1787307a53bd1a3bac6c8d88eea5316133	GREEN	worker-37	tests only; phpunit-unit 4218 run (openregister development as HERMIQ_OPENREGISTER_PATH), baseline 4187 with 6 errors, no new failures
 hermiq	1654	34866bac1e94f54d9459f49a8710331f85b818d6	GREEN	worker-37	tests only; phpunit-unit 4218 run (openregister development as HERMIQ_OPENREGISTER_PATH), baseline 4187 with 6 errors, no new failures
 hermiq	1655	85de2649867977d7a34578031a5c911e402a2640	GREEN	worker-37	tests only; phpunit-unit 4218 run (openregister development as HERMIQ_OPENREGISTER_PATH), baseline 4187 with 6 errors, no new failures
+dossiq	6269	6e876f525954526c042f29a72ced4b6e14733081	GREEN	worker-03	tests 14260 (baseline 14246, 19 inherited failures), 0 new failures; test-only PR, 14 new tests pass
