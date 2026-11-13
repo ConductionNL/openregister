@@ -2422,3 +2422,4 @@ verify:dossiq:6283:37139d12	GREEN 6283, GREEN 6284 (tests only, no new failures 
 cover:launchpad:fb10c50fm2ceb:js0023cfc7	PR #1173: 12 vitest tests, dialogs lines 78->92%	session-20261113T051709-e616bf69	2026-11-13T05:33:45Z
 cover:keepiq:c967a31fm0090:6f346b68	already done: lib/Sections/SettingsSection 100% lines, every getter asserted in AppShellControllersTest::testTheSettingsSectionKeepsItsPlace	session-20261113T034634-f20a8d77	2026-11-13T05:34:22Z
 verify:integriq:3480:2009af82	GREEN 3480 (7175->7182, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T05:34:21Z
+verify:buildiq:1510:d14b752c	GREEN 1510 (spec-only; vitest 3464/3464 pass)	session-20261113T051704-8c56f5b7	2026-11-13T05:34:32Z
