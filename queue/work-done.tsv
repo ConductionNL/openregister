@@ -2275,8 +2275,14 @@ cover:hermiq:065f1631m312d:38e80a9f	PR #1659: lib/Command 91.3%->100%, +2 tests,
 cover:hermiq:065f1631m312d:17bbac84	already covered: lib/TaskProcessing 98.4% stmts (2 left), earlier -1 branch exists; no PR	session-20261113T031704-5a455d65	2026-11-13T04:47:58Z
 cover:stackiq:df113dffm2c76:efa2a923	already done: lib/EventListener/*.php 974/982 stmts (99.2%) on development	session-20261113T024656-d5bfb688	2026-11-13T04:48:02Z
 cover:shillinq:05639deb:8bdc03d4	PR #2865: 2 tests, BbvMigration 101/102 -> 102/102 stmts	session-20261113T024653-d22c13a3	2026-11-13T04:48:25Z
+cover:hermiq:065f1631m312d:d825828c	already done: lib/Service/Literacy 186/190 (97.9%) on development; no PR	session-20261113T041652-f9df3e85	2026-11-13T04:48:47Z
+cover:stackiq:df113dffm2c76:5f20b092	already done: Federation+Settings 1627/1684 (96.6%) on development, target 85	session-20261113T015005-030aa10a	2026-11-13T04:48:51Z
 cover:filinq:7a9ef677mc744:4b9c088d	already covered: batches quality/test-coverage-4b9c088d-1/-2 merged; every concrete Editing class has dedicated tests (untested names are interfaces/value types); no PR	session-20261113T024654-6600dc41	2026-11-13T04:48:34Z
 cover:stackiq:df113dffm2c76:59f569b2	already done: lib/Service/Settings/*.php 1265/1296 stmts (97.6%) on development	session-20261113T024656-d5bfb688	2026-11-13T04:48:56Z
 cover:openregister:7350e3efm0e99:411f17d0	PR #10100: added missing @uses to 5 TalkLink tests (risky 11->0), TalkLink 9.9%->91.9%	session-20261113T031700-0e23c373	2026-11-13T04:49:02Z
 cover:hermiq:065f1631m312d:65e30692	already covered: lib/Service/Intake 100% stmts, earlier -1 branch exists; no PR	session-20261113T031704-5a455d65	2026-11-13T04:49:14Z
+cover:filinq:7a9ef677mc744:f545d745	already covered: batches quality/test-coverage-f545d745-1/-2 exist; every lib/Repair step has dedicated tests (trace, golden, edge); no PR	session-20261113T024654-6600dc41	2026-11-13T04:49:15Z
+cover:shillinq:05639deb:2e7efbf6	already done: lib/Request at 47/47 stmts, InvoiceGenerationRequest has 2 dedicated test files; no PR	session-20261113T024653-d22c13a3	2026-11-13T04:49:18Z
 cover:dossiq:f8a113c5mac88:js00fe026a	already done: src/services/* is at 1548/1586 lines (97.6%) under vitest on development (target 90%)	session-20261113T021703-063c80f1	2026-11-13T04:49:12Z
+verify:dossiq:6270:8c38b9ea	6 GREEN (6270-6275), tests only, no new failures	session-20261113T043934-6a88a50b	2026-11-13T04:49:28Z
+verify:dossiq:6276:883b3c25	GREEN 6276, GREEN 6277 (no new failures; 14350->14368 tests)	session-20261113T041646-2c1d764f	2026-11-13T04:49:57Z
