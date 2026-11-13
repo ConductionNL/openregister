@@ -4788,3 +4788,5 @@ review:openregister:10155:aafcf411	APPROVE: additive GitLab publish, mirrors Git
 cover:portaliq:b60f3b81:0e96d102	already done: lib/Service/Identity/EmailLink/ 237/245 = 96.7% >= 95	session-20261113T051703-1b54bfba	2026-11-13T12:19:01Z
 build:openregister:flow-engine-unification	partial: PR #10170 (1.1, 1.2, 1.4, 1.8, 2.4; 3.1/3.5 need a product decision, rest is other repos or live)	session-20261113T113930-fe243f84	2026-11-13T12:19:10Z
 build:openregister:migration-pack-editor-ui	nothing to build in code: the only open task (5.2) is a live verification on a rig with stackiq; left unchecked, no PR	session-20261113T104650-72c03e13	2026-11-13T12:19:15Z
+merge:keepiq:1631:fed1e9f6	merge-local over 2 keepiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:19:34Z
+merge:keepiq:1756:8bc77560	merge-local over 2 keepiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:19:34Z
