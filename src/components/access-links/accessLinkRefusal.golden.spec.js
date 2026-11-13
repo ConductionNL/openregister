@@ -1,5 +1,5 @@
 import AccessLinkPage from '../../views/accessLink/AccessLinkPage.vue'
-import ObjectAccessLinks from './ObjectAccessLinks.vue'
+import SubjectAccessLinks from './SubjectAccessLinks.vue'
 import { mintAccessLink } from '../../services/accessLinks.js'
 
 /**
@@ -65,7 +65,7 @@ describe.each([
 
 	it('in the object panel', async () => {
 		mintAccessLink.mockRejectedValueOnce(failure)
-		const panel = bound(ObjectAccessLinks, { objectId: 'o-1', form: { password: 'p', label: 'l' }, canCreate: true })
+		const panel = bound(SubjectAccessLinks, { subjectType: 'object', subjectId: 'o-1', form: { password: 'p', label: 'l' }, canCreate: true })
 		await panel.create()
 		expect([panel.error, panel.busy, panel.form]).toEqual([shown, false, { password: 'p', label: 'l' }])
 	})

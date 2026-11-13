@@ -78,7 +78,10 @@ describe('the Archival page', () => {
 		}
 		for (const s of strings.filter((x) => typeof x === 'string')) {
 			expect([s, nl[s]]).toEqual([s, expect.any(String)])
-			expect(nlJs).toContain(JSON.stringify(s) + ':')
+			// The bundle is a key in either catalogue layout: `"k": "v"` as
+			// hand-merged, or `"k" : "v"` as the l10n tooling serialises it.
+			const quoted = JSON.stringify(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+			expect(nlJs).toMatch(new RegExp(quoted + '\\s*:'))
 		}
 		expect(nl.Archiving).toBe('Archivering')
 	})
