@@ -5827,4 +5827,5 @@ verify:pipelinq:3766:c15d54dd	GREEN #3766 (tests only; 7203 tests, 5 inherited f
 cover:stackiq:9ac19b3am9d24:d528dcf0	already done: lib/Dashboard/*.php 12/12 statements covered	session-20261113T171141-a3907367	2026-11-13T18:07:42Z
 build:portaliq:site-nlds-widget-palette	failed: too big for one task; split it: T9 (nine signed-in widgets over the shell's data) and T11 (form widget field inspector) each need their own build; T8b needs a live check; T8c code is merged (e2e/live left); T8d is delivery	session-20261113T171149-8b9ea523	2026-11-13T18:07:40Z
 cover:shillinq:05639debm7b6b:jsb80bc6aa	PR #2952: 22 tests, dirs lines 89.33->93.53% (target 90)	session-20261113T171152-380dbc11	2026-11-13T18:07:53Z
+build:portaliq:site-mandates-the-represented-manage	partial: PR #2441 builds T0 code (KVK claim to session); T0 broker confirmation, T4 e2e and T5 openspec CLI left (live/tooling); suite 4914->4917, 0 failures	session-20261113T172325-6eb25015	2026-11-13T18:07:54Z
 cover:stackiq:9ac19b3am9d24:59826f43	already done: lib/Settings/*.php 11/11 statements covered	session-20261113T171141-a3907367	2026-11-13T18:08:04Z
