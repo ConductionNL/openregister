@@ -6204,3 +6204,4 @@ shillinq	2987	82328584f9c6ec33310e1ca6ea26c10dd51dc617	CONFLICT	worker-22	confli
 shillinq	2991	94f3e87cee61912106213a9f67488d34e1396964	CONFLICT	worker-22	conflicts in appinfo/info.xml and tests/fixtures/register-versions.lock.json after 2962/2988-2990 in the tree
 shillinq	2962	5e1ba47ad11e4978201bc69604a3facfc4078de5	GREEN	worker-22	build bookings-slots-follow-availability, in spec; unit 10460 run on 7-PR tree, baseline 10394/1 failure (PaymentWebhookIntakeCharacterisationTest), no new failures; vitest 2295 pass
 shillinq	2988	531f47d2b3347f8f8efb7657233d085ddb836b01	GREEN	worker-22	tasks.md only; unit 10460 run on 7-PR tree, baseline 10394/1 failure (PaymentWebhookIntakeCharacterisationTest), no new failures; vitest 2295 pass
+shillinq	2989	d7989a2d6a1423d14ba6bdc088e4a9c1b7e89877	GREEN	worker-22	tests only; unit 10460 run on 7-PR tree, baseline 10394/1 failure (PaymentWebhookIntakeCharacterisationTest), no new failures; vitest 2295 pass
