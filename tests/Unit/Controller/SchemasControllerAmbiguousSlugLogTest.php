@@ -53,6 +53,17 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\SchemasController
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterMappers
+ * @uses \OCA\OpenRegister\Controller\Support\SchemaPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\SchemaSemantics
+ * @uses \OCA\OpenRegister\Controller\Support\SchemaServices
+ * @uses \OCA\OpenRegister\Controller\Support\SchemasControllerServices
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolvers
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyTitles
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard
  */
 class SchemasControllerAmbiguousSlugLogTest extends TestCase {
 

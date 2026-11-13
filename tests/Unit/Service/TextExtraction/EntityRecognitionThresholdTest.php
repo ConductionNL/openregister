@@ -47,6 +47,17 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
  * @covers \OCA\OpenRegister\Service\Settings\FileSettingsHandler
+ * @uses \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Db\GdprEntity
+ * @uses \OCA\OpenRegister\Files\Db\Chunk
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\ChunkEntityScan
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\JurisdictionPatternSets
+ * @uses \OCA\OpenRegister\Service\Anonymisation\TextDisclosureSource
+ * @uses \OCA\OpenRegister\Service\File\ArchiveBounds
+ * @uses \OCA\OpenRegister\Service\Settings\EntityPatternSetSetting
+ * @uses \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends
  */
 class EntityRecognitionThresholdTest extends TestCase {
 

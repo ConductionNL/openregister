@@ -56,6 +56,11 @@ use RuntimeException;
 #[UsesClass(EntityRecognitionBackends::class)]
 #[UsesClass(EntityDetectionQuery::class)]
 #[UsesClass(AnalyzeCall::class)]
+#[UsesClass(\OCA\OpenRegister\Exception\AnalyzeRequestRejectedException::class)]
+#[UsesClass(\OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect::class)]
+#[UsesClass(\OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeRequest::class)]
+#[UsesClass(\OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeResponse::class)]
+#[UsesClass(\OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\JurisdictionPatternSets::class)]
 final class TextDisclosureRecorderTest extends TestCase {
 	/**
 	 * Methods that open an HTTP client but send no document text, with the reason.
