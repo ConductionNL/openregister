@@ -2479,3 +2479,4 @@ cover:dossiq:f8a113c5mac88:6f346b68	already done: lib/Sections/*.php 5/5 lines (
 cover:dossiq:f8a113c5mac88:59826f43	already done: lib/Settings/*.php 104/106 lines (98.1%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:55Z
 cover:dossiq:f8a113c5mac88:390adfb9	already done: lib/*.php 49/51 lines (96.1%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:40:01Z
 cover:dossiq:f8a113c5mac88:018cb40a	already done: lib/Contribution/*.php 65/65 lines (100.0%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:40:08Z
+cover:dossiq:f8a113c5mac88:6925f818	already done: lib/SetupCheck/*.php 42/44 lines (95.5%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:40:15Z
