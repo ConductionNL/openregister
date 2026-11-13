@@ -6490,3 +6490,4 @@ cover:pipelinq:7f9dc8e6m8ce9:db675bd6	already done: lib/Activity/Setting/ at 27/
 cover:pipelinq:7f9dc8e6m8ce9:dfaef732	already done: lib/Notification/Notifier.php 100% (162/162) on development c2351f221; no new PR	session-20261113T195345-400acccd	2026-11-13T19:57:41Z
 cover:pipelinq:7f9dc8e6m8ce9:2ea9e4f7	already done: lib/Service/CallReview/ at 103/103 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:39Z
 cover:pipelinq:7f9dc8e6m8ce9:0798b7cf	already done: lib/Service/PosCart/ at 67/67 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:45Z
+cover:pipelinq:7f9dc8e6m8ce9:2cc09f74	no PR: lib/Service/Marketing/Transport already 98% lines (322/326) at c2351f22, all 8 classes tested; uncovered lines unreachable (extractProviderId object/string branches only ever get array|null; LocalMessage class guard)	session-20261113T195348-92cf741a	2026-11-13T19:58:15Z
