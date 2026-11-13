@@ -1841,3 +1841,4 @@ verify:portaliq:2371:9f273ef9	stale	feeder	2026-11-13T03:30:25Z
 merge:humaniq:1101:a2d625e7	stale	feeder	2026-11-13T03:30:25Z
 cover:stackiq:8cfacb29m8db8:3d4b295b	PR #1824: 8 tests, CatalogueLocator 347->373/384, EolSyncSettings 40/40; suite 2854->2862, 57 inherited errors	session-20261113T031700-46f75510	2026-11-13T03:32:13Z
 cover:buildiq:9930949bmefda:d33a91b0	already covered: CopilotPlanValidator (21 tests), CopilotPromptBuilder (unit + golden) reach every branch except unreachable json_encode failures; no PR	session-20261113T024654-6600dc41	2026-11-13T03:32:22Z
+cover:buildiq:9930949bmefda:js0be8c659	already done: src/modals covered by PR buildiq#1494 (verified GREEN) from the duplicate task js0be8c659	session-20261113T024654-6600dc41	2026-11-13T03:32:32Z
