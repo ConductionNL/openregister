@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Archival\ElementMappingValidatorInterface;
 use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
 use OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator;
+use OCA\OpenRegister\Reference\TeamResourceDeclaration;
 use OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use Psr\Log\LoggerInterface;
@@ -252,4 +253,28 @@ final class RecordAnnotationRefusals {
 			)
 		);
 	}//end checkReferenceCard()
+
+	/**
+	 * Refuse a save whose `x-openregister-team-resources` names no property, or one this schema does not have.
+	 *
+	 * A team page reading a property that is not there would list nothing, and
+	 * the schema would look opted in while no team ever sees its objects.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the declaration names no property of this schema.
+	 *
+	 * @spec openspec/changes/platform-team-resource-provider/specs/platform-team-resources/spec.md#requirement-a-teams-page-lists-the-objects-that-team-owns-req-ptr-001
+	 */
+	public function checkTeamResources(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: TeamResourceDeclaration::ANNOTATION);
+		$annotation->faults()->refuseWith(
+			messages: TeamResourceDeclaration::faults(
+				block: $annotation->value(),
+				properties: ($schema->getProperties() ?? [])
+			)
+		);
+	}//end checkTeamResources()
 }//end class

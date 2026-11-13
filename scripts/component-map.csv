@@ -1583,6 +1583,9 @@ Notifications/Service/Webhook/CloudEventFormatterInterface.php,8,Notifications,N
 Notifications/Service/Webhook/WebhookInterceptionCache.php,31,Notifications,Notifications,Notifications/Service/Webhook/WebhookInterceptionCache.php,0,445,Notifications
 Push/PushEvents.php,7,Push,Platform,Platform/Push/PushEvents.php,0,,Notifications
 Reference/ObjectReferenceProvider.php,62,Reference,Platform,Platform/Reference/ObjectReferenceProvider.php,0,,Platform
+Reference/ObjectTeamResourceProvider.php,,Reference,,,,,Platform
+Reference/TeamResourceDeclaration.php,,Reference,,,,,Platform
+Reference/TeamResourcePage.php,,Reference,,,,,Platform
 Repair/AbstractRegisterImportStep.php,46,Repair,Platform,Platform/Repair/AbstractRegisterImportStep.php,0,,Platform
 Repair/AddObjectStateColumns.php,55,Repair,Platform,Platform/Repair/AddObjectStateColumns.php,0,,Platform
 Repair/AdminUserIds.php,,Repair,,,,,Platform
