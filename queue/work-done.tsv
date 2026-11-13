@@ -3441,3 +3441,4 @@ cover:buildiq:70b3e29emc723:aae6d66c	already done: lib/Exception/*.php at 100% (
 cover:buildiq:70b3e29emc723:390adfb9	already done: lib/*.php at 100% (11/11); no PR	session-20261113T080546-98207a87	2026-11-13T08:24:06Z
 cover:openregister:7350e3efmea52:js76b76dfb	already done: src/views/register+schema at 97.27% stmts / 97.41% lines (jest, 186 tests) >= 90 target; no PR	session-20261113T080549-9b0da587	2026-11-13T08:24:03Z
 cover:portaliq:b60f3b81:018cb40a	PR #2381: 12 tests, lib/Contribution/*.php 96.3->98.5% (CitizenWriteActionFinder 0->100, ProviderAudiences 44->100, registry 94->113/115); suite 4527->4539, 0 failures	session-20261113T080549-20301834	2026-11-13T08:24:09Z
+cover:buildiq:70b3e29emc723:b65a63c3	already done: lib/Service/GitHub/ at 98.7% (74/75); no PR	session-20261113T080546-98207a87	2026-11-13T08:24:18Z
