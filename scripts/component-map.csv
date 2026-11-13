@@ -4045,3 +4045,4 @@ Service/File/OcrWords.php,,Service,,,,,Core
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
 Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Configuration
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
+Service/Audit/RuleDigest.php,96,Service,Compliance,Compliance/Service/Audit/RuleDigest.php,0,,Compliance
