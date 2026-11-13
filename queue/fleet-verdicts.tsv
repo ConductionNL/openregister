@@ -6586,3 +6586,12 @@ decidiq	2146	23b793cd3f75f7327a1e105d11c8ed3882e5941a	CONFLICT	merge3	merges cle
 decidiq	2148	e8596bad48afe132c776e2827a4283d31630995c	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Listener/Registrar/SaveGuardSubscriptions.php 
 decidiq	2149	2f8115d6b73387481c8715e3d3a2a5d1946d60de	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/decidesk_register.json 
 hermiq	1714	3a9b3d4386c30b662d03b810b8fac48fa50d7919	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.53 -> 4.48
+hermiq	1487	fd5c6f5097a0523fe20fa4e1e6176458d15d066e	CONFLICT	merge3	conflicts with development; files: lib/Service/Llm/ProviderFactory.php 
+hermiq	1492	43db748c72b2d7f9ee49d0e654067f5c5f72c380	CONFLICT	merge3	conflicts with development; files: lib/Service/Llm/ProviderFactory.php 
+hermiq	1529	c0cafc44a793e4d04cd68ab50962ad06109b6ad4	CONFLICT	merge3	conflicts with development; files: lib/Controller/ApprovalController.php lib/Listener/TalkApprovalReactionListener.php lib/Service/Chat/SessionPendingApprovals.php lib/Service/ContextAgentInteractionService.php tests/Unit/Service/Conte
+hermiq	1653	10c6db1787307a53bd1a3bac6c8d88eea5316133	CONFLICT	merge3	conflicts with development; files: tests/Unit/Service/Engine/ConversationTitleWriterTest.php 
+hermiq	1673	a636a706a08b58fb7880512a512c99657f5b7205	CONFLICT	merge3	conflicts with development; files: lib/Service/Engine/ContextAssembler.php lib/Service/SkillLearningsCaptureService.php 
+hermiq	1674	33bac9078173a4df8c5ec78947c693b6b9914b13	CONFLICT	merge3	conflicts with development; files: tests/Unit/Service/Workspace/WorkspaceAuditorTest.php tests/Unit/Service/Workspace/WorkspaceWritesRoutingTest.php 
+hermiq	1715	84dfb14c88f15604f01e4102ea4b1e08a44baeb6	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1717	94f4b6bd904f3f6eec1d2178612597afd33f8668	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1719	42c3a70eb2a0dc1be19efc69ae5d35122253c4ae	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
