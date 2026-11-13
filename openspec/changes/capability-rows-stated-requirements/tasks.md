@@ -2,7 +2,8 @@
 
 ## 1. JSON Schema download
 
-- [ ] 1.1 Add a test that validates a record against the downloaded schema with a standard JSON Schema validator and gets the same verdict as the save path. Verify: `tests/Unit/Db/SchemaTest.php`.
+- [x] 1.1 Add a test that validates a record against the downloaded schema with a standard JSON Schema validator and gets the same verdict as the save path. Verify: `tests/Unit/Db/SchemaTest.php`.
+      > 2026-11-13: in its own file, `tests/Unit/Db/SchemaJsonSchemaDocumentTest.php` (7 tests). The document declares draft 2020-12 and carries `required`, `maxLength`, `minimum` and `enum`. Opis with the downloaded JSON and `ValidateObject` (the save path) agree on six records: two accepted, and four refused (missing required field, too long, below minimum, outside the enum).
 
 ## 2. URN after a move
 
