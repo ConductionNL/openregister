@@ -2416,3 +2416,4 @@ cover:integriq:92114ab0m1534:6dc9019f	already done: lib/Service/Registry/ at 91.
 verify:stackiq:1841:295fad33	stackiq#1841 GREEN (3126 tests, 0 new failures)	session-20261113T051703-1b54bfba	2026-11-13T05:31:45Z
 cover:dossiq:f8a113c5mac88:a215617b	PR #6288: 7 edge tests for CaseLeafProvider/Reader; suite 19 inherited failures unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:32:13Z
 cover:stackiq:df113dffm2c76:05630945	already done: Middleware/Support 57/62 lines; the 5 left are loop bodies over empty RENAMED/WITHOUT_SUCCESSOR consts, unreachable without production change; risky metadata fixed by stackiq#1841	session-20261113T051703-1b54bfba	2026-11-13T05:32:20Z
+cover:dossiq:f8a113c5mac88:f545d745	PR #6290: 35 tests over 7 Repair classes; lib/Repair 88.06% -> 92.15%; suite 19 inherited failures unchanged	session-20261113T051708-7d5f6071	2026-11-13T05:32:29Z
