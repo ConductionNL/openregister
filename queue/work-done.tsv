@@ -4997,3 +4997,5 @@ build:openregister:tasks-progress-report	failed: build tasks never target openre
 build:openregister:unified-search-magic-table-storage	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:44:52Z
 build:openregister:widget-record-import	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:44:57Z
 build:openregister:virtual-schema-semantic-providers	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:03Z
+build:openregister:store-over-federated-config	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:09Z
+build:openregister:shared-credentials-and-flows	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:15Z
