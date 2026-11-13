@@ -1,24 +1,139 @@
 {
  "app": "versioniq",
- "commit": "2083424e9432bed81dec3d63ff1ca19aba8580dd",
- "measured_at": "2026-11-13T12:11:00Z",
- "php": null,
+ "commit": "07c79a09e01f3b303f0e934a2582e8ebfde1bbc6",
+ "measured_at": "2026-11-13T17:26:20Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 97.8,
+  "statements": 5823,
+  "covered": 5695,
+  "dirs": {
+   "lib/BackgroundJob/": [
+    172,
+    169
+   ],
+   "lib/Command/": [
+    188,
+    186
+   ],
+   "lib/Controller/": [
+    492,
+    479
+   ],
+   "lib/Db/": [
+    122,
+    122
+   ],
+   "lib/Listener/": [
+    12,
+    8
+   ],
+   "lib/Middleware/": [
+    59,
+    58
+   ],
+   "lib/Middleware/Support/": [
+    30,
+    15
+   ],
+   "lib/Notification/": [
+    102,
+    100
+   ],
+   "lib/Repair/": [
+    196,
+    193
+   ],
+   "lib/Sections/": [
+    5,
+    5
+   ],
+   "lib/Service/": [
+    1148,
+    1139
+   ],
+   "lib/Service/Advisory/": [
+    488,
+    468
+   ],
+   "lib/Service/Api/": [
+    6,
+    6
+   ],
+   "lib/Service/Audit/": [
+    39,
+    39
+   ],
+   "lib/Service/AutoUpdate/": [
+    121,
+    121
+   ],
+   "lib/Service/Availability/": [
+    82,
+    82
+   ],
+   "lib/Service/Cache/": [
+    223,
+    223
+   ],
+   "lib/Service/Connection/": [
+    107,
+    97
+   ],
+   "lib/Service/Discovery/": [
+    350,
+    347
+   ],
+   "lib/Service/Installer/": [
+    503,
+    486
+   ],
+   "lib/Service/Lkg/": [
+    21,
+    21
+   ],
+   "lib/Service/Pat/": [
+    272,
+    269
+   ],
+   "lib/Service/Pin/": [
+    92,
+    92
+   ],
+   "lib/Service/Policy/": [
+    25,
+    25
+   ],
+   "lib/Service/Settings/": [
+    136,
+    136
+   ],
+   "lib/Service/Source/": [
+    824,
+    801
+   ],
+   "lib/Settings/": [
+    8,
+    8
+   ]
+  }
+ },
  "js": {
-  "pct": 74.17,
+  "pct": 93.61,
   "statements": 1831,
-  "covered": 1358,
+  "covered": 1714,
   "dirs": {
    "src/": [
     840,
-    562
+    811
    ],
    "src/components/": [
     705,
-    560
+    620
    ],
    "src/dialogs/": [
     81,
-    38
+    81
    ],
    "src/styles/": [
     0,
@@ -26,7 +141,7 @@
    ],
    "src/utils/": [
     205,
-    198
+    202
    ]
   }
  }
