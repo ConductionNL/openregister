@@ -2192,4 +2192,5 @@ cover:stackiq:df113dffm2c76:6f346b68	already done: lib/Sections/*.php is at 6/6 
 cover:stackiq:df113dffm2c76:81b1241f	already done: lib/Portal 23/23 statements covered by 3 test files	session-20261113T034628-9602b641	2026-11-13T04:39:21Z
 cover:stackiq:df113dffm2c76:c2bb21fa	PR #1836 (-2; -1 merged): lib/Service/Stackiq 1830/2274 -> 1888/2274, 3 tests; 4 uncovered private methods have no callers	session-20261113T015005-030aa10a	2026-11-13T04:39:23Z
 cover:stackiq:df113dffm2c76:60c2c265	already done: lib/Controller/*.php at 89.95% (3453/3839) >= target 85 after -1..-3 merged	session-20261113T031704-4f12cb78	2026-11-13T04:39:37Z
+measure:openregister:20261113h04	php 91.08% (pcov, 4 shards merged; 58125 unit tests, 27 err/fail) js 86.99% (jest 7676 passed)	session-20261113T041644-818a1837	2026-11-13T04:39:39Z
 cover:integriq:92114ab0m1534:4f1edf62	already done: lib/Service/Dso 737/762 (96.7%) at development; remaining lines are defensive fallbacks	session-20261113T031700-46f75510	2026-11-13T04:39:31Z
