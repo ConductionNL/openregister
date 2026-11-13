@@ -5875,6 +5875,7 @@ cover:hermiq:065f1631me44a:d825828c	already done: lib/Service/Literacy at 190/19
 cover:hermiq:065f1631me44a:28cccfd9	already done: lib/Repair/Support at 53/53 lines (100%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:14:11Z
 verify:pipelinq:3768:80b4b3ed	GREEN #3768: 7197 tests, 5 inherited failures, none new	session-20261113T171137-8f22ecb0	2026-11-13T18:14:38Z
 verify:portaliq:2433:52c4b74c	GREEN 2433,2434,2436,2438,2439,2441; CONFLICT 2435,2437,2440 (register test)	session-20261113T172329-5f4feaba	2026-11-13T18:14:44Z
+build:portaliq:search-sort-by-relevance	partial: PR #2451 builds T08-T10 (word list, suggester, suggest route, ranking declaration + admin section), 31 PHP tests, suite 4914->4945 green; T04/T11 e2e and T12 full pre-push run left	session-20261113T175400-7ec3993f	2026-11-13T18:14:51Z
 verify:portaliq:2415:0653b651	8 GREEN (2415,2426,2428-2433), 2427 CONFLICT (l10n)	session-20261113T175332-5effc865	2026-11-13T18:15:22Z
 verify:stackiq:1886:c7bcddc2	1886 GREEN (JS test only)	session-20261113T171149-8b9ea523	2026-11-13T18:15:31Z
 cover:pipelinq:7f9dc8e6m16db:0a24f15f	already done: lib/Service/Letter/ measured 160/160 statements covered at 4c67daf1 (both earlier coverage branches merged)	session-20261113T171137-8f22ecb0	2026-11-13T18:15:53Z
