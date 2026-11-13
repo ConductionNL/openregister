@@ -2409,3 +2409,4 @@ cover:keepiq:c967a31fm0090:jsc2c7c3ac	PR #1740: 55 tests, 8 nav/share components
 cover:dossiq:f8a113c5mac88:3b1fd60e	already done: lib/Review/*.php 1178/1298 (90.76%) on development, above 90 target; no PR	session-20261113T031701-b518f7f8	2026-11-13T05:29:54Z
 cover:dossiq:f8a113c5mac88:80b3d955	already done: lib/Service/Catalogue/ 153/154 lines (99.4%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:29:57Z
 cover:keepiq:c967a31fm0090:js06645759	already done: covered by open PR #1735 (src/components/* 9 components to 95-100% lines, same target branch), awaiting merge	session-20261113T034634-f20a8d77	2026-11-13T05:30:17Z
+cover:dossiq:f8a113c5mac88:84ff77b2	PR dossiq#6287: 5 tests + strict @uses fixes; Bulk dir 127/127 lines under strict metadata; same 19 inherited failures	session-20261113T051703-1b54bfba	2026-11-13T05:30:21Z
