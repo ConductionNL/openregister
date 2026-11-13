@@ -2565,3 +2565,4 @@ cover:filinq:7a9ef677m5ffe:60c2c265	PR #2034: 60 tests over 7 controllers, lib/C
 cover:pipelinq:7f9dc8e6mc4ba:jsd48eb217	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T05:54:25Z
 cover:pipelinq:7f9dc8e6mc4ba:jsc41b6099	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T05:54:37Z
 cover:shillinq:05639debmd8ee:jsd48eb217	PR shillinq#2869: 12 vitest tests; src/store/modules 72.05%->100% statements	session-20261113T031701-b518f7f8	2026-11-13T05:54:51Z
+cover:pipelinq:7f9dc8e6mc4ba:js0be8c659	PR #3678: 6 specs/40 tests for SendMessage, Letter, CustomerLookup, CtiDisposition, ArticleEdit, SocialPostCompose modals; src/modals stmt 69.86->78.45% alone (other modals in open -1/-3 PRs); suite 3893->3933 green	session-20261113T044737-f37de8e3	2026-11-13T05:55:08Z
