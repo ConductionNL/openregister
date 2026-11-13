@@ -3634,3 +3634,4 @@ verify:integriq:3512:f501d0fc	GREEN 3512: 8067 tests, 0 new failures (4 inherite
 gap:versioniq:pj:burn1	PR #674: Problem schema + /openapi.json 404 as problem+json; 86 OCS error responses left (OCS envelope, not decorated)	session-20261113T072715-cf04db4e	2026-11-13T08:53:26Z
 verify:launchpad:1176:b07e0bd1	1176 GREEN: 3789 tests, 0 new failures, risky 2->0	session-20261113T073916-e9f11dfa	2026-11-13T08:53:40Z
 cover:learniq:e6498dddmf689:cec0abe6	already done: lib/Service/{Attendance,CourseStore,Portal} at 95.7% lines (2091/2185) under the full unit suite on development, target 95; no PR	session-20261113T051705-4f5ad12a	2026-11-13T08:53:49Z
+cover:pipelinq:7f9dc8e6m916f:50cc8442	already done: lib/Util/*.php at 100% (106/106); no PR	session-20261113T080546-98207a87	2026-11-13T08:53:59Z
