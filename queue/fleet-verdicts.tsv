@@ -5716,3 +5716,4 @@ portaliq	2394	e9d2afafedb7ecece5f00957c33cfc4cde367d8e	GREEN	worker-34	tree 4610
 portaliq	2395	d2fce6d4d67f89ee5472d53516e1a2f1ccd70517	GREEN	worker-34	tree 4610 tests ok (89 skipped), baseline 4527 ok, 0 new failures; tests only (@uses metadata)
 portaliq	2396	fc1d055c4fedebed6671672acff4657b4257347b	GREEN	worker-34	tree 4610 tests ok (89 skipped), baseline 4527 ok, 0 new failures; tests only
 pipelinq	3707	52402cf243bd1496262608ab2e76e81cc89c08c5	GREEN	worker-50	build clients-history-summary-and-risk (risk half 1.1-1.3): churnRisk read-only fragment, ClientRiskService 5 signals/weights/caps/levels writes-on-change, daily job + 2 triggers, +18 unit tests; additive, no deletions, matches REQ-CIN-001. PHP 6650->6668 1 inherited fail (CrmPrivilegeRefusalGoldenTest) both sides; vitest 4108 green
+dossiq	6388	d1bb38257e4525eef64d6f5fbb05eb08722ad30a	GREEN	worker-17	tests-only; tree 6388+6389: 15763 tests vs baseline 15757, same 19 inherited failures, no new failures
