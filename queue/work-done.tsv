@@ -3411,3 +3411,4 @@ cover:learniq:e6498dddmc027:6bb33e5f	no PR: lib/Bpv/*.php is one interface (no e
 gap:launchpad:risky:burn2	PR #1176: risky 2->0, PHP coverage 92.52->92.61%	session-20261113T081040-5e814df2	2026-11-13T08:19:32Z
 cover:buildiq:70b3e29emc723:34f5c300	PR buildiq#1528: 7 untested Service classes, 33 tests; suite 2659->2692, 1 inherited failure (ExportZipGoldenTest)	session-20261113T080549-dde3ba19	2026-11-13T08:19:43Z
 cover:dossiq:f8a113c5m7e79:6ecc72bb	already done: lib/Service/Workflow gaps covered by PR #6333; remaining 2 statements unreachable	session-20261113T080551-294c2aa6	2026-11-13T08:19:54Z
+cover:portaliq:b60f3b81:9f37f66f	PR #2377: Traffic 92.6%->95.5% (TrafficReportMail +3, TrafficRecordingStore new, 1 risky @uses fixed); suite 4527->4535, 0 failures	session-20261113T081043-b24589a6	2026-11-13T08:20:14Z
