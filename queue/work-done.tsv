@@ -4539,3 +4539,4 @@ build:openregister:audit-trail-not-in-filter	already done in openregister: 1.1/1
 fix:pipelinq:3734:20c4f4c2	merged development in (clean now), checks green, pushed b1d9cad7; REVERIFY recorded	session-20261113T104520-9cf91a1e	2026-11-13T11:30:26Z
 cover:pipelinq:7f9dc8e6m84dd:fdb25f89	already done: lib/Service/Access 86/86 statements, RegisterAccessSync has 2 dedicated test files plus 3 callers' tests	session-20261113T064518-860c039d	2026-11-13T11:30:31Z
 cover:pipelinq:7f9dc8e6m84dd:50d794fc	already done: lib/Service/Matomo/ at 100% (72/72) on development; no PR	session-20261113T071633-17de823f	2026-11-13T11:30:40Z
+cover:dossiq:069ee2d6m7275:e7fd1c43	PR #6405: +111 tests, lib/Service/Intake 1923->1995/2001	session-20261113T081040-5e814df2	2026-11-13T11:30:53Z
