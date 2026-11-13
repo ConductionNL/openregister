@@ -6486,6 +6486,7 @@ cover:pipelinq:7f9dc8e6m8ce9:bc26df70	already done: lib/Service/Labels at 96/96 
 build:filinq:letter-email-sending	failed: not started this run: a mail-sending path needs the recipient email field and the caller-rights read (for 404) settled from the data resolver first; left whole for a fresh run	session-20261113T172328-c860ad55	2026-11-13T19:57:15Z
 cover:pipelinq:7f9dc8e6m8ce9:50cc8442	already done: lib/Util/*.php 100% (106/106 stmts) on development c2351f221; earlier -1/-2 branches merged; no new PR	session-20261113T195345-400acccd	2026-11-13T19:57:14Z
 build:filinq:propose-grondslag-per-entity-type	no PR: all in-scope tasks already done; only 7.1-7.3 open, marked deferred and needing an OpenAnonymiser endpoint that does not exist yet	session-20261113T192700-f21ebd18	2026-11-13T19:57:10Z
+build:filinq:portal-signing-actions	already built: claim declaration on development (f8912170a) with tests; PR #2066 ticks the task; only live checks left	session-20261113T175336-b2d7fc7c	2026-11-13T19:57:17Z
 cover:pipelinq:7f9dc8e6m8ce9:e372e6ff	PR #3775: 5 tests for PosStockMovedEvent envelope; suite 7194->7199, same 5 inherited failures; other Event classes tested or getter-only	session-20261113T195351-5d22eaae	2026-11-13T19:57:22Z
 cover:pipelinq:7f9dc8e6m8ce9:ab7f3595	already done: lib/Service/Provider at 103/104 lines (99%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:23Z
 cover:pipelinq:7f9dc8e6m8ce9:db675bd6	already done: lib/Activity/Setting/ at 27/27 100.0 lines at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:29Z
