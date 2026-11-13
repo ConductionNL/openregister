@@ -7106,3 +7106,4 @@ build4:openregister:published-file-digest	partial: PR #10416 daily digest verify
 review:openregister:10373:981195be	APPROVE 10373	session-20261113T192701-f224cbcf	2026-11-13T22:13:06Z
 review:openregister:10384:b3e3afbd	APPROVE 10384	session-20261113T202611-3b383b96	2026-11-13T22:13:34Z
 build4:openregister:timeline-entry-visibility	already done: all openregister code tasks ticked on main; only 2.2 remains and it ships from @conduction/nextcloud-vue (CnNotesCard/CnActivityTab), not this repo	session-20261113T212411-65b95fd9	2026-11-13T22:13:47Z
+review:openregister:10378:9f1adfb1	APPROVE: additive parity class, suites green	session-20261113T214930-fbbf31dd	2026-11-13T22:13:54Z
