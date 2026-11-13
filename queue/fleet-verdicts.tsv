@@ -6101,3 +6101,4 @@ portaliq	2427	ac2b3062b5eb7faafbae89f0fcde70f864e7c321	REVERIFY	worker-24	moved 
 portaliq	2423	8eb905abb2aca81225dcf27cb418f5e5ebebebbe	RED	worker-01	phpunit baseline 4914 OK; node baseline 2477/2 inherited fails; new failure tests/page-detail-tabs.spec.mjs 'the tabs follow the board order' (adds a 'Hulp' tab the test does not expect); reproduced alone on development
 buildiq	1554	4cd4aecc9cac014cfe14f816ca06c4bb80d7bd73	GREEN	worker-22	tests-only; unit 2921 run (with 1555), baseline 2917/1 failure ExportZipGoldenTest, no new failures
 buildiq	1555	d8d971d3e1ce939b78f1b8adc203bfd14dbf8e45	GREEN	worker-22	tests-only; unit 2921 run, baseline 2917/1 failure ExportZipGoldenTest, no new failures
+shillinq	2952	8830cecbf3404a246f21977ac39a42035f6f427d	GREEN	worker-28	phpunit 10394 tests, 1 failure = baseline (clock-bound PaymentWebhookIntakeCharacterisationTest), no new; vitest 226 files/2317 tests passed; tests only
