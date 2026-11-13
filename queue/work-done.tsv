@@ -3092,3 +3092,4 @@ verify:dossiq:6306:b381390b	GREEN 6306, 6307, 6308 (tests-only; 0 new phpunit fa
 cover:dossiq:f8a113c5m7e79:28cccfd9	already done: pcov on development (today) shows lib/Repair/Support 98.9% lines (172/174), target 90	session-20261113T053904-36dcee67	2026-11-13T07:10:24Z
 cover:dossiq:f8a113c5m7e79:67b69054	already done: lib/Service/Conversation 374/375 lines under strict metadata (PRs -1/-2 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:11:25Z
 verify:shillinq:2897:26298870	3/3 GREEN (2897, 2898, 2899): clean merge, lint ok, phpunit +37 tests, 1 inherited failure, 0 new; tests only	session-20261113T044737-f37de8e3	2026-11-13T07:11:49Z
+cover:integriq:92114ab0m658d:42ff7c91	already done: lib/Service/Lti at 96.6% lines (1298/1344) under the full unit suite on development, target 90; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:11:59Z
