@@ -1727,3 +1727,4 @@ verify:keepiq:1721:0b38c8c3	failed: permission	session-20261113T024656-2f332446	
 fix:keepiq:1690:f5feabc3	conflict resolved, new head 0027fec0, REVERIFY recorded	session-20261113T024654-6600dc41	2026-11-13T02:48:45Z
 cover:dossiq:6ca0231ema7d4:c900fa11	already done: lib/Service/Email/Filters 155/157 stmts (98.7%) on development 54d0599 after quality/test-coverage-c900fa11-1 merged; left: same-order tie-break line, unreachable preg failure	session-20261113T024656-d5bfb688	2026-11-13T02:49:49Z
 cover:dossiq:6ca0231ema7d4:js00fe026a	PR #6246 (-2; -1 already pushed earlier): 4 modules to full/near-full, 20 tests; dir 97.5%+ with -1	session-20261113T015005-030aa10a	2026-11-13T02:50:24Z
+cover:dossiq:6ca0231ema7d4:d528dcf0	already covered: every lib/Dashboard class has behavioural tests (c084533dfb); only static Util calls in DashboardPageWidget::load() unexecuted; no PR	session-20261113T024654-6600dc41	2026-11-13T02:51:12Z
