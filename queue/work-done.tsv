@@ -3273,3 +3273,4 @@ cover:larpinq:c4471360:59826f43	already done: Settings/LarpinqAdmin (the only cl
 cover:integriq:92114ab0m658d:c5021ae5	PR #3506: DigitalPostAccount 84/84, DigitalPostService 205/206; 11 tests; suite 7736->7747, baseline unchanged	session-20261113T071640-3ba6da34	2026-11-13T07:49:20Z
 fix:dossiq:6324:e811a9a2	conflict resolved by merging #6322 in; new head 9b502e2f1e; REVERIFY recorded	session-20261113T074535-8a2067c2	2026-11-13T07:49:18Z
 cover:opencatalogi:fc83bfb1:1b97f731	already done: lib/Listener/*.php at 97.92% lines (424/433) on development c77d69df, above the 95 target	session-20261113T071636-117504ad	2026-11-13T07:49:22Z
+cover:humaniq:a18a13fb:60c2c265	PR humaniq#1104: 11 tests, LeaveController 0->27/27, CompController 4->31/31; suite 3807 passing	session-20261113T051703-1b54bfba	2026-11-13T07:49:40Z
