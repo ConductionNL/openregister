@@ -3962,3 +3962,4 @@ cover:keepiq:c967a31fm1147:e372e6ff	already done: lib/Event/*.php 43/43 lines ac
 verify:learniq:2460:79eddddc	GREEN 2460: 6383 tests, 0 new failures (1 inherited)	session-20261113T080556-d189f150	2026-11-13T09:39:05Z
 cover:dossiq:069ee2d6m7275:9cb3375b	already done: lib/Service/Redaction 294/296 lines (only two value-object constructor closers), branches -1/-2 merged	session-20261113T081046-f0858dc4	2026-11-13T09:39:15Z
 verify:keepiq:1751:f988af96	2/2 GREEN (1751 tests only, 1752 formatting only): phpunit 4575 ok, vitest 6244 ok	session-20261113T044737-f37de8e3	2026-11-13T09:39:23Z
+cover:keepiq:c967a31fm1147:6f346b68	already done: lib/Sections/SettingsSection.php 5/5 lines, every getter asserted in AppShellControllersTest::testTheSettingsSectionKeepsItsPlace	session-20261113T084521-fd8a31c7	2026-11-13T09:39:34Z
