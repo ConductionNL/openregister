@@ -3467,6 +3467,7 @@ cover:stackiq:9ac19b3am5ac4:692f8a78	already done: lib/Service/Contactpersoon/ a
 cover:stackiq:9ac19b3am5ac4:efa2a923	already done: lib/EventListener/*.php at 99.2% (974/982); no PR	session-20261113T080546-98207a87	2026-11-13T08:31:34Z
 cover:stackiq:9ac19b3am5ac4:007dc1d0	already done: lib/Service/Cmdb/*.php at 98.1% (1491/1520); no PR	session-20261113T080546-98207a87	2026-11-13T08:31:45Z
 cover:stackiq:9ac19b3am5ac4:05630945	already done: lib/Middleware/Support/ at 91.9% (57/62); no PR	session-20261113T080546-98207a87	2026-11-13T08:31:58Z
+cover:dossiq:f8a113c5m7e79:jsea7197ec	PR #6334: 20 vitest tests in src/utils (4 modules), suite 6445->6465, 1 inherited failure unchanged	session-20261113T080551-294c2aa6	2026-11-13T08:31:57Z
 verify:portaliq:2378:35141d5b	4 GREEN (2378,2379,2380,2381); tree 4579 tests 0 failures vs baseline 4527	session-20261113T081043-b24589a6	2026-11-13T08:32:02Z
 cover:openregister:7350e3efmea52:3421d638	already done by openregister#10113 (metadata fix): lib/Service/Flow/Nodes/ reads 99.74% (3473/3482) with it applied; no PR needed	session-20261113T074532-3dc49c57	2026-11-13T08:32:12Z
 cover:integriq:92114ab0m658d:921a1004	already done: lib/Twig/*.php 100% except MappingRuntime getFileContents/getFiles (11 lines), untestable here: FileService stub lacks getFilesForEntity/formatFile and OC\Files\Node\File is absent	session-20261113T081046-f0858dc4	2026-11-13T08:32:12Z
