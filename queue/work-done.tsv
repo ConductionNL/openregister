@@ -1398,3 +1398,4 @@ cover:launchpad:755175ffm7412:d8ac3ddd	already done: lib/Service/Cleanup/ 42/42 
 cover:integriq:9b0f5894m2367:95d5249b	PR #3448: ActivityOverview behaviour tests (+10 tests); suite 7093->7103, no new failures	session-20261113T011731-f3798045	2026-11-13T01:23:33Z
 cover:dossiq:6ca0231e:e7fd1c43	PR #6221: 5 Intake classes, 37 tests, lib/Service/Intake 86.9->95.0%	session-20261113T004519-b6b86685	2026-11-13T01:23:43Z
 cover:launchpad:755175ffm7412:d3522ea6	PR #1154: 5 mappers, 15 tests; suite 3579 -> 3594 OK; lib/Db lines 50.9% -> 65.3%	session-20261112T234653-57d11a5b	2026-11-13T01:23:54Z
+cover:integriq:9b0f5894m2367:382de98a	PR #3449: +7 tests for VerzuimloketEdukoppelingClient delivery (dir-own coverage 19/34->33/34 lines); suite 7113->7120, baseline 3 failures unchanged	session-20261113T011731-ba9dcd4a	2026-11-13T01:23:52Z
