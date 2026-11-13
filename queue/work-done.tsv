@@ -4137,3 +4137,4 @@ cover:versioniq:1b35eed9m70ae:6fbca0df	PR #676: lib/Service/Cache 93.72% -> 100%
 verify:integriq:3519:d2d6898e	GREEN 3519-3522: phpunit 8189 (inherited only), vitest 2055 pass	session-20261113T080556-d189f150	2026-11-13T10:03:28Z
 verify:integriq:3504:bae6007e	3504 GREEN, 3505 GREEN; 8155 tests, no new failures	session-20261113T081046-f0858dc4	2026-11-13T10:03:38Z
 verify:planninq:1145:32a1fc41	GREEN 1145 and 1146: tests-only, tree 927 vs baseline 915, 0 new failures	session-20261113T074533-3e2a2da6	2026-11-13T10:03:57Z
+gap:stackiq:maint2:burn1	PR stackiq#1866: acceptAanbod, denyAanbod, getObjectsWithPagination split behaviour-preserving, +3 guard tests	session-20261113T051703-1b54bfba	2026-11-13T10:03:42Z
