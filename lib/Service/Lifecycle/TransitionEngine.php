@@ -2043,15 +2043,21 @@ class TransitionEngine {
 		// explicitly to the save path, mirroring the static-mode contract.
 		$actingUser = $this->userSession->getUser();
 
-		$saved = $this->objectService->saveObject(
-			object: $objectData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: $request->object->getRegister(), schema: $request->object->getSchema()),
-				uuid: $request->object->getUuid(),
-				actor: new SaveActor(currentUser: $actingUser)
-			),
-			_rbac: ($request->asSystem === false),
-			_multitenancy: ($request->asSystem === false)
+		// Name the move for the listeners and the audit trail, so a reopen is
+		// recorded as a reopen rather than as an anonymous status change.
+		$saved = $this->writeBoundary->declaringAction(
+			uuid: (string)$request->object->getUuid(),
+			action: $request->action,
+			write: fn (): ObjectEntity => $this->objectService->saveObject(
+				object: $objectData,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $request->object->getRegister(), schema: $request->object->getSchema()),
+					uuid: $request->object->getUuid(),
+					actor: new SaveActor(currentUser: $actingUser)
+				),
+				_rbac: ($request->asSystem === false),
+				_multitenancy: ($request->asSystem === false)
+			)
 		);
 
 		$this->dispatchTransitioned(
