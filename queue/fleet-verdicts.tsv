@@ -6004,3 +6004,4 @@ buildiq	1553	060512f439e3da307671c03a30e692013d754f25	GREEN	worker-39	tests-only
 dossiq	6425	0d1725309dc7849fcceb70c1811069aef3f1a6cb	GREEN	worker-01	tests only (vitest); vitest 6813 run, 1 failure inherited from development (capabilityComparison), 0 new
 dossiq	6426	73ee51ce59f5f228e249e4f79a0aadb7fa53e528	GREEN	worker-01	tests only; phpunit 16543 run vs baseline 16530, same 20 inherited failures, 0 new
 dossiq	6424	0edd0cb288d8aad25a4a21a32cc9eb02bd64acd4	GREEN	worker-01	tests only; phpunit 16537 run vs baseline 16530, same 20 inherited failures, 0 new
+portaliq	2413	d1057005d29d2bce867ff856e086327bdc4440de	GREEN	worker-55	unit 4916 tests (baseline 4914, 0 failures), no new failures; docblock @spec tags + 2 tests per change specs
