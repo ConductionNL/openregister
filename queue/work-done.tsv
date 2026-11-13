@@ -4116,3 +4116,4 @@ cover:integriq:92114ab0m158b:f545d745	PR #3524: 8 Repair classes, 11 tests, lib/
 cover:versioniq:1b35eed9m70ae:f545d745	PR #675: lib/Repair 72.45% -> 98.47%, PHP 92.82% -> 93.70%; +6 tests (1356 -> 1362, 2 failures from development, none new); tests only	session-20261113T083916-59f10a3b	2026-11-13T10:00:40Z
 cover:versioniq:1b35eed9m70ae:38e80a9f	already done: lib/Command/*.php at 98.94% (186/188) on development, above 95 target; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:00:59Z
 cover:versioniq:1b35eed9m70ae:085bdb3f	already done: lib/Service/AutoUpdate at 100% (121/121) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:01:21Z
+cover:versioniq:1b35eed9m70ae:9d3a1784	already done: lib/BackgroundJob/*.php at 98.26% (169/172) on development, above 95 target; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:01:32Z
