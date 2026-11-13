@@ -3416,6 +3416,7 @@ gap:thematiq:risky:burn2	already done: 0 risky tests (beStrictAboutCoverageMetad
 cover:portaliq:b60f3b81:cce0262b	PR #2378: 20 tests, Notifications 463->658/704 lines (4 classes 0->100%); suite 4527->4547, 0 failures	session-20261113T080549-20301834	2026-11-13T08:21:03Z
 merge:stackiq:1854:86b625c8	stale	feeder	2026-11-13T08:20:15Z
 gap:learniq:risky:burn2	PR quality/gap-risky-uses: risky 73->1, coverage 91.46->93.73%; 1 inherited failure (he.json out of date)	session-20261113T051703-1b54bfba	2026-11-13T08:21:25Z
+cover:learniq:e6498dddmc027:5780e2b2	PR #2442: 26 tests over 5 LessonOnboarding classes; suite 6105->6131, no new failures	session-20261113T081038-e8b5210f	2026-11-13T08:21:31Z
 verify:planninq:1139:ce0f18b0	failed: permission (running the planninq unit suite was refused by the permission check)	session-20261113T081045-826fdbe5	2026-11-13T08:21:30Z
 cover:buildiq:70b3e29emc723:60c2c265	PR #1529: 17 tests (listMine, saveManifest writes); lib/Controller 86.5->90.2%	session-20261113T080546-98207a87	2026-11-13T08:21:41Z
 cover:learniq:e6498dddmc027:689c9915	already done: lib/Service/OpenMaterial/ 213/224 lines under strict metadata (target 90.0%)	session-20261113T051703-1b54bfba	2026-11-13T08:21:39Z
