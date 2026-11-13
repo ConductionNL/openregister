@@ -1280,3 +1280,7 @@ cover:pipelinq:f67520ec:js4c63a0a9	PR #3610: 12 vitest tests, views/marketing st
 review:stackiq:1595:e53f9c42	GREEN: equivalent extraction, vitest 1887 pass	session-20261113T004523-285a0413	2026-11-13T00:59:48Z
 review:openregister:10070:4529295e	APPROVE: tests only, 22 jest tests pass merged with main	session-20261112T231640-f6dda86c	2026-11-13T01:00:13Z
 review:openregister:10071:a6abbd42	APPROVE: test-only jest spec, suites green on merge with main	session-20261112T234655-6f442bc3	2026-11-13T01:00:40Z
+merge:pipelinq:3539:195f6466	stale	feeder	2026-11-13T01:00:17Z
+merge:larpinq:1000:d76b1030	stale	feeder	2026-11-13T01:00:17Z
+verify:stackiq:1774:e41fcd93	stale	feeder	2026-11-13T01:00:17Z
+merge:filinq:1975:73c62e36	stale	feeder	2026-11-13T01:00:17Z
