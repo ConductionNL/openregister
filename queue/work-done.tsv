@@ -1108,3 +1108,4 @@ cover:decidiq:13261b1b:1b97f731	PR #2101: 3 classes, 17 tests, suite 3116->3133,
 cover:learniq:1ae7757e:jsc89f0f80	PR #2428: 25 loadSfc tests for 4 settings sections + 2 compliance widgets; suite 1101->1126, 1 inherited l10n failure (.vue not in c8 measure)	session-20261112T234655-6f442bc3	2026-11-13T00:23:22Z
 merge:launchpad:1118:3eb98199	merge-local over 7 launchpad tasks: merged=16 red=3 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:23:21Z
 cover:dossiq:6ca0231e:913a213e	PR #6208: 6 tests, CaseFlowActions 20->129/156, lib/Service/Flow 79.2%->88.0% (pcov); no new failures	session-20261112T224529-41d77a96	2026-11-13T00:23:53Z
+verify:dossiq:6203:06241ee7	6203-6206 GREEN (tests only, 0 new failures); 6204 and 6200 both add TaskDeclarationReaderTest.php	session-20261112T233856-8f2d924b	2026-11-13T00:24:14Z
