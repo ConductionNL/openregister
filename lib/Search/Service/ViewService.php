@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -430,7 +431,9 @@ class ViewService {
 	 * `table` has no field to check. A `kanban` presentation must declare a
 	 * `groupByField`, and a `calendar` presentation a `dateField` (with an
 	 * optional `endDateField`); each declared field MUST be a real property
-	 * on the view's (first configured) schema, or the save is rejected.
+	 * on the view's (first configured) schema, or the save is rejected. A
+	 * `tree` presentation additionally needs a schema that declares a
+	 * hierarchy.
 	 *
 	 * @param array|null $presentation The presentation config to validate, or null
 	 * @param array<string, mixed> $query The view's query (used to resolve its schema)
@@ -454,6 +457,7 @@ class ViewService {
 			'kanban' => $this->assertRequiredField(check: $check, path: 'kanban.groupByField'),
 			'calendar' => $this->validateCalendarPresentation(check: $check),
 			'gallery' => $this->validateGalleryPresentation(check: $check),
+			'tree' => $this->validateTreePresentation(check: $check),
 			default => throw new InvalidArgumentException('Unknown presentation viewType: ' . (string)$viewType),
 		};
 	}//end validatePresentationConfig()
@@ -531,24 +535,68 @@ class ViewService {
 	 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-records-as-a-gallery
 	 */
 	private function assertGalleryCardFields(PresentationCheck $check): void {
-		$fields = $check->declared(path: 'gallery.cardFields');
+		$this->assertOptionalPropertyList(check: $check, path: 'gallery.cardFields');
+	}//end assertGalleryCardFields()
+
+	/**
+	 * A tree presentation needs a schema that declares a hierarchy, a labelField,
+	 * and optionally a list of extra fields per node, each a property of that schema.
+	 *
+	 * The hierarchy is read through AccessDeclarationValidators::hierarchyParentOf(),
+	 * the same reader access inheritance uses, so a schema declares it once.
+	 *
+	 * @param PresentationCheck $check The presentation and the view's query
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the schema has no hierarchy or a field is missing or unknown
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+	 */
+	private function validateTreePresentation(PresentationCheck $check): void {
+		$schema = $this->viewSchema(check: $check, label: 'tree');
+		if (AccessDeclarationValidators::hierarchyParentOf(schema: $schema) === null) {
+			throw new InvalidArgumentException(
+				'A tree presentation requires a schema that declares '
+				. AccessDeclarationValidators::HIERARCHY_ANNOTATION . '; the view\'s schema declares no hierarchy'
+			);
+		}
+
+		$this->assertRequiredField(check: $check, path: 'tree.labelField');
+		$this->assertOptionalPropertyList(check: $check, path: 'tree.fields');
+	}//end validateTreePresentation()
+
+	/**
+	 * An optional list of field names at a path must, when given, name properties of the view's schema.
+	 *
+	 * @param PresentationCheck $check The presentation and the view's query
+	 * @param string            $path  The list's dotted path, also its label in the error message
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the value is not a list of the schema's properties
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+	 */
+	private function assertOptionalPropertyList(PresentationCheck $check, string $path): void {
+		$fields = $check->declared(path: $path);
 		if ($fields === null) {
 			return;
 		}
 
 		if (is_array($fields) === false || array_is_list($fields) === false) {
-			throw new InvalidArgumentException('Presentation gallery.cardFields must be a list of property names');
+			throw new InvalidArgumentException('Presentation ' . $path . ' must be a list of property names');
 		}
 
-		$properties = $this->viewSchema(check: $check, label: 'gallery.cardFields')->getProperties();
+		$properties = $this->viewSchema(check: $check, label: $path)->getProperties();
 		foreach ($fields as $field) {
 			if (is_string($field) === false || array_key_exists($field, $properties) === false) {
 				throw new InvalidArgumentException(
-					'Presentation gallery.cardFields "' . (string)json_encode($field) . '" is not a property of the view\'s schema'
+					'Presentation ' . $path . ' "' . (string)json_encode($field) . '" is not a property of the view\'s schema'
 				);
 			}
 		}
-	}//end assertGalleryCardFields()
+	}//end assertOptionalPropertyList()
 
 	/**
 	 * Whether a schema property holds a file or an image: type `file`, a list of files, or format `image`.
