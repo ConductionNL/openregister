@@ -3503,3 +3503,4 @@ cover:dossiq:f8a113c5m7e79:b4753aef	already done: lib/Service/Pdok 100% covered 
 cover:openregister:7350e3efmea52:32df05fd	PR #10116: Files/Service 89.25%->95.31% (88 risky fixed via @uses, +23 tests in 4 files)	session-20261113T080549-9b0da587	2026-11-13T08:37:26Z
 cover:openregister:7350e3efmea52:jsd6ceb60f	already done: batch -1 merged; src/sidebars/logs+search now 717/762 statements (94.1%) on main, above the 90% target; remaining gaps are icon slots and template branches, no PR	session-20261113T080556-d189f150	2026-11-13T08:37:43Z
 verify:learniq:2439:8774cedc	2439 GREEN	session-20261113T081055-3901e400	2026-11-13T08:37:44Z
+cover:dossiq:f8a113c5m7e79:5ebe3eb6	already done: lib/Service/Mcp 100% covered by its own tests (246/246 statements)	session-20261113T080551-294c2aa6	2026-11-13T08:37:56Z
