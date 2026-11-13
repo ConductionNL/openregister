@@ -2891,3 +2891,4 @@ cover:stackiq:df113dffm5ac4:34f5c300	PR #1847: 2 test files, 18 tests; lib/Servi
 cover:buildiq:9930949bmc723:be0dcca9	already done: lib/Mcp/*.php at 100% (31/31, pcov on development); no PR	session-20261113T054519-189b2666	2026-11-13T06:38:31Z
 cover:buildiq:9930949bmc723:jsea7197ec	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:38:40Z
 cover:buildiq:9930949bmc723:b65a63c3	PR #1517: 23 direct tests for SyncRequestParams/CredentialBrokerClient/ShortLivedCache/PushTarget (were only indirectly covered); suite 2632 -> 2655, 1 inherited failure (ExportZipGoldenTest)	session-20261113T034634-f20a8d77	2026-11-13T06:38:35Z
+cover:stackiq:df113dffm5ac4:js17dfdc2e	PR stackiq#1848: 39 vitest tests on ViewObject helpers; src/modals/object/* 53.6% -> 68.0% (target 85 not reached: rest is template render needing a full mount); vitest 2253 -> 2292 all pass	session-20261113T051714-4ad50f31	2026-11-13T06:38:52Z
