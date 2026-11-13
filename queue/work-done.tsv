@@ -2171,3 +2171,4 @@ cover:pipelinq:f67520ecmc4ba:js7de78384	PR #3654: manifest fragment contract spe
 cover:pipelinq:f67520ecmc4ba:0a8f160f	already done: lib/Service/Sla at 212/212 stmts under 81 existing tests; no PR	session-20261113T024653-d22c13a3	2026-11-13T04:35:47Z
 cover:pipelinq:f67520ecmc4ba:js3f3bfe56	PR #3655: 29 tests, src/*.js 29.13% -> 51.97% (registry.js 100%); suite 3571 -> 3600 green	session-20261113T034628-73e45054	2026-11-13T04:35:59Z
 verify:launchpad:1165:0a0884eb	GREEN 1165	session-20261113T015005-030aa10a	2026-11-13T04:36:06Z
+cover:pipelinq:f67520ecmc4ba:a215617b	already done: lib/Integration/*.php (Party/Ticket/ContactMoment leaf providers) each have main + edges tests with exact assertions on every branch read (-1 merged); no thin spots left worth a PR	session-20261113T034632-47095943	2026-11-13T04:36:12Z
