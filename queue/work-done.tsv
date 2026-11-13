@@ -1725,3 +1725,4 @@ merge:stackiq:1784:5160cda2	stale	feeder	2026-11-13T02:45:07Z
 verify:humaniq:1101:a2d625e7	GREEN 1101 (docs/coverage data only, clean merge)	session-20261113T024653-d22c13a3	2026-11-13T02:47:21Z
 verify:keepiq:1721:0b38c8c3	failed: permission	session-20261113T024656-2f332446	2026-11-13T02:48:10Z
 fix:keepiq:1690:f5feabc3	conflict resolved, new head 0027fec0, REVERIFY recorded	session-20261113T024654-6600dc41	2026-11-13T02:48:45Z
+cover:dossiq:6ca0231ema7d4:c900fa11	already done: lib/Service/Email/Filters 155/157 stmts (98.7%) on development 54d0599 after quality/test-coverage-c900fa11-1 merged; left: same-order tie-break line, unreachable preg failure	session-20261113T024656-d5bfb688	2026-11-13T02:49:49Z
