@@ -2179,3 +2179,4 @@ cover:pipelinq:f67520ecmc4ba:b96c059a	PR pipelinq#3658: 12 tests for SearchQuery
 cover:pipelinq:f67520ecmc4ba:6f346b68	PR #3659: SettingsSectionTest strengthened (4 tests), lib/Sections 4/5 -> 5/5	session-20261113T024653-d22c13a3	2026-11-13T04:37:34Z
 cover:pipelinq:f67520ecmc4ba:8f8dca30	PR #3660: 5 tests for export run values; suite 6233->6238, same 1 inherited failure; services already tested	session-20261113T041649-bbede304	2026-11-13T04:37:49Z
 cover:stackiq:df113dffm2c76:f4b2f7af	already done: lib/Service/ArchiMate/ is at 202/204 lines on development (suite 3057 tests, 0 failures)	session-20261113T021703-063c80f1	2026-11-13T04:37:53Z
+measure:filinq:20261113h04	js 87.61% lines (vitest, 595 specs); php skipped: no pcov/xdebug available in the cloud	session-20261113T024654-6600dc41	2026-11-13T04:38:10Z
