@@ -576,6 +576,27 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 	}
 
 	/**
+	 * A restore moves `updated` to the restore moment, in the same UPDATE and on the entity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md
+	 */
+	public function testARestoreMovesUpdatedToTheRestoreMoment(): void {
+		$setColumns = [];
+		$params = [];
+		$before = new \DateTime('-1 second');
+
+		$restored = $this->restoreWithSlug(['objectSlugField' => 'title'], [], $setColumns, $params);
+
+		$this->assertContains('_updated', $setColumns, 'the UPDATE that clears _deleted also sets _updated');
+		$stamps = array_values(array_filter($params, static fn ($value): bool => $value instanceof \DateTimeInterface));
+		$this->assertCount(1, $stamps);
+		$this->assertGreaterThanOrEqual($before, $stamps[0]);
+		$this->assertEquals($stamps[0], $restored->getUpdated(), 'the entity carries the same moment the row got');
+	}//end testARestoreMovesUpdatedToTheRestoreMoment()
+
+	/**
 	 * Constructor argument list for a real MagicMapper instance whose DB and
 	 * schemaMapper are the shared mocks.
 	 *

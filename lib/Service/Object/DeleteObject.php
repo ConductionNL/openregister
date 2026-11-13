@@ -32,6 +32,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use DateTime;
+
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Exception;
@@ -348,6 +350,7 @@ class DeleteObject {
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md
 	 */
 	private function softDelete(DeletionTarget $target, ?array $cascadeContext): void {
 		$objectEntity = $target->object;
@@ -358,6 +361,9 @@ class DeleteObject {
 		$preDeleteState = clone $objectEntity;
 
 		$objectEntity->setDeleted($deletionData);
+		// A deletion is a change: `updated` moves to the deletion moment, so a
+		// consumer reading "changed since" with deleted objects included sees it.
+		$objectEntity->setUpdated(new DateTime((string)$deletionData['deletedAt']));
 
 		// @psalm-suppress InvalidArgument - ObjectEntity extends Entity.
 		$this->objectEntityMapper->update(

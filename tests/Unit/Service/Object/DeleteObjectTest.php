@@ -751,6 +751,36 @@ class DeleteObjectTest extends TestCase {
 	}
 
 	/**
+	 * A soft delete moves `updated` to the deletion moment, the same one `deleted.deletedAt` records.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md
+	 */
+	public function testASoftDeleteMovesUpdatedToTheDeletionMoment(): void {
+		$object = $this->createObjectEntity('uuid-sync-1');
+		$object->setUpdated(new \DateTime('2020-01-01T00:00:00+00:00'));
+		$context = $this->makeContext($object);
+
+		$this->objectMapper->method('findAcrossAllSources')->willReturn($context);
+		$written = null;
+		$this->objectMapper->method('update')->willReturnCallback(
+			static function ($entity) use (&$written) {
+				$written = clone $entity;
+				return $entity;
+			}
+		);
+
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$this->handler->delete($object);
+
+		$this->assertNotNull($written);
+		$deletedAt = new \DateTime($written->getDeleted()['deletedAt']);
+		$this->assertEquals($deletedAt, $written->getUpdated(), 'updated is the deletion moment');
+		$this->assertGreaterThan(new \DateTime('2020-01-02'), $written->getUpdated());
+	}
+
+	/**
 	 * delete() defaults audit trails to enabled when settingsService throws.
 	 */
 	public function testDeleteDefaultsAuditTrailToEnabledOnSettingsException(): void {

@@ -9409,6 +9409,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the object is not found.
 	 * @throws Exception If register/schema context cannot be resolved.
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md
 	 */
 	public function restoreObject(string $uuid): ObjectEntity {
 		$result = $this->findAcrossAllSources(
@@ -9437,9 +9438,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// Clear the soft-delete marker directly on the owning magic table.
 		// A native UPDATE avoids the Entity-layer array->null serialisation
 		// quirk for JSON columns.
+		// A restore is a change: `updated` moves to the restore moment
+		// (incremental-sync-for-api-consumers, REQ-SYNC-001).
+		$restoredAt = new DateTime();
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($tableName)
 			->set(self::METADATA_PREFIX . 'deleted', $qb->createNamedParameter(null, \PDO::PARAM_NULL))
+			->set(self::METADATA_PREFIX . 'updated', $qb->createNamedParameter($restoredAt, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where(
 				$qb->expr()->eq(
 					self::METADATA_PREFIX . 'uuid',
@@ -9459,6 +9464,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$qb->executeStatement();
 
 		$entity->setDeleted(null);
+		$entity->setUpdated($restoredAt);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Restored soft-deleted object in register+schema table',
