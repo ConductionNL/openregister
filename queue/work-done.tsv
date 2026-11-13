@@ -5396,3 +5396,4 @@ cover:stackiq:9ac19b3amc14f:05630945	cover: Middleware/Support - StandardProtoco
 cover:larpinq:c4471360mcb1b:js0023cfc7	already done: src/dialogs at 99.03% statements (target 90) after quality/test-coverage-js-0023cfc7-1 merged; 63 files / 491 tests green	session-20261113T114525-2ca68289	2026-11-13T14:02:05Z
 review:openregister:10241:e22bdf7a	APPROVE: opt-in preservation guard, suites OK, Controller errors inherited	session-20261113T064519-30004ad4	2026-11-13T14:02:06Z
 cover:humaniq:a18a13fb:d39f9857	lib/Support 194/213 -> 210/213 lines; PR #1117 (FleetAppId id half, ChecksPeriodCoverage, RegisterSlugLookup failure paths); suite 3928 -> 3957	session-20261113T131537-72e2896e	2026-11-13T14:02:15Z
+measure:shillinq:20261113h12	php 92.34% (73745/79866), js 83.12% at 79e59c85	session-20261113T074527-031883a8	2026-11-13T14:02:18Z
