@@ -3202,3 +3202,4 @@ cover:dossiq:f8a113c5m7e79:83885cb7	already done: lib/Service/Routing/Strategy a
 cover:dossiq:f8a113c5m7e79:a797d42e	already done: CasePlanDrain/ and its tests unchanged since 0888b592d1, measured 184/186 lines (98.9%) there; no PR	session-20261113T072711-3523cf52	2026-11-13T07:37:35Z
 gap:shillinq:maint1:burn1	PR #2907: split reconcile/auditReport/generateExport, +9 tests first on old code, suite green bar inherited 1	session-20261113T071633-17de823f	2026-11-13T07:37:43Z
 cover:integriq:92114ab0m658d:f191f1e9	already done: pcov on development (today) shows lib/Service/Lti 96.6% lines (1298/1344), target 95	session-20261113T053904-36dcee67	2026-11-13T07:38:06Z
+review:openregister:9943:2314f92f	APPROVE: expiry+renew, checks green; Controller env errors inherited from main	session-20261113T054517-26499007	2026-11-13T07:38:06Z
