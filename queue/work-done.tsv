@@ -1271,3 +1271,4 @@ cover:hermiq:755cdfe7m7444:js06645759	PR #1641: src/components/* lines 75.7% -> 
 cover:keepiq:d76c2121m70b5:jsfb924eab	PR #1711: 5 components, 50 tests, vitest 5475->5525 pass, dirs lines 59.1%->80.6%	session-20261113T002031-7b3e41b2	2026-11-13T00:58:33Z
 review:openregister:10069:33d5247d	APPROVE: tests-only jest spec; modals/object 504 pass on merge with main	session-20261112T231637-60fd49c4	2026-11-13T00:58:33Z
 review:openregister:10075:c2ae354f	BLOCK: timezone-dependent test in RuleRunSummaryMapperTest	session-20261113T003903-5efbf5ae	2026-11-13T00:59:08Z
+review:hermiq:1518:202e8aaa	GREEN: behaviour-equivalent extraction, no new failures or risky tests	session-20261112T231633-96ffe7b8	2026-11-13T00:59:21Z
