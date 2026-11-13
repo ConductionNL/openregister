@@ -5407,3 +5407,4 @@ shillinq	2908	e952d464b21ffe1ed3068b5d564142e19d77dc77	GREEN	worker-39	unit 9533
 shillinq	2907	cd4773654fe71ef753b96f20b3ab6e767ddb013b	GREEN	worker-30	tree 9541 tests, baseline 9527 (1 inherited failure), new failures 0; DBAController auditReport and ComplianceExportService::generateExport extracted into helpers, same behaviour
 integriq	3506	defe990efdf0bbd439f34542a587735dde632cf6	GREEN	worker-42	7747 tests run, baseline 7736 with 3 failures + 2 errors inherited (golden-file test flaky), new failures 0; tests only
 pipelinq	3693	55799a044e801705f2eba37ea36576bcab060810	GREEN	worker-14	phpunit 6462 (baseline 6454, 1 inherited failure CrmPrivilegeRefusalGoldenTest TicketWooRequestController); extract-method refactor, no behaviour change
+stackiq	1700	a3ab8662e6a95b482f6e64aa3ae9440ea336cbcf	RED	merge-local:merge-gate	GATE RED floor: unit_interfacing: 4.76 -> 4.74
