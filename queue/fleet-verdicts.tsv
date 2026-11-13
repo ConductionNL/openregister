@@ -5749,3 +5749,4 @@ pipelinq	3714	f820e3c86c88852bb271cc32e3a94e52a6cd9def	REVERIFY	worker-33	merged
 stackiq	1870	ce1ef22ac2c1f7b75068f202ced25483b4f4453b	GREEN	worker-09	tree 1869>1870>1871>1872 tests only, merges clean; 3279 -> 3298 tests, all pass (2 warnings inherited)
 stackiq	1871	20b54116649926d1496658a9276fe67c4c02b21e	GREEN	worker-09	tree 1869>1870>1871>1872 tests only, merges clean; 3279 -> 3298 tests, all pass (2 warnings inherited)
 stackiq	1872	d4da94c799ac4e6f5ec7ddd67125851507a3b1cb	GREEN	worker-09	tree 1869>1870>1871>1872 tests only, merges clean; 3279 -> 3298 tests, all pass (2 warnings inherited)
+shillinq	2930	a50e12ea6aff1f48bee9eb77b7b2c2e6038f5431	GREEN	worker-38	unit 10100 run on tree, baseline 10087 with 1 inherited clock-bound failure, no new failures; tests only
