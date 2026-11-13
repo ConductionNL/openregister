@@ -1189,8 +1189,10 @@ Files/Service/TextExtractionService.php,1142,Files,Files,Files/Service/TextExtra
 Files/Service/TextSplitPass.php,71,Files,Files,Files/Service/TextSplitPass.php,0,,Files
 Files/Service/UploadService.php,104,Files,Files,Files/Service/UploadService.php,0,264,Files
 Formats/BsnFormat.php,40,Formats,Formats,Formats/BsnFormat.php,2,,Kernel
+Formats/CalendarRangeValue.php,60,Formats,Formats,Formats/CalendarRangeValue.php,0,,Kernel
 Formats/CronFormat.php,78,Formats,Formats,Formats/CronFormat.php,0,,Kernel
 Formats/ExtendedFieldTypeValidator.php,93,Formats,Formats,Formats/ExtendedFieldTypeValidator.php,0,,Kernel
+Formats/ImageUrlValue.php,55,Formats,Formats,Formats/ImageUrlValue.php,0,,Kernel
 Formats/Iso8601DateTimeFormat.php,18,Formats,Formats,Formats/Iso8601DateTimeFormat.php,0,,Kernel
 Formats/SemVerFormat.php,18,Formats,Formats,Formats/SemVerFormat.php,0,,Kernel
 Formats/UserFormat.php,25,Formats,Formats,Formats/UserFormat.php,0,,Kernel
@@ -2568,6 +2570,7 @@ Service/Notification/NotificationsAnnotationInstaller.php,117,Service,Flows,Flow
 Service/Notification/ReferencedAddressNotifier.php,200,Service,Service,Service/Notification/ReferencedAddressNotifier.php,0,120,Configuration
 Service/NotificationService.php,96,Service,Configuration,Configuration/Service/NotificationService.php,1,,Configuration
 Service/Oas/OasETagComputer.php,50,Service,Service,Service/Oas/OasETagComputer.php,0,,Core
+Service/Oas/OasExtendedTypes.php,60,Service,Service,Service/Oas/OasExtendedTypes.php,0,,Core
 Service/Oas/OasRbacAnnotator.php,118,Service,Service,Service/Oas/OasRbacAnnotator.php,0,,Core
 Service/Oas/OasRequestValidator.php,110,Service,Service,Service/Oas/OasRequestValidator.php,0,255,Core
 Service/Oas/OasValidationReport.php,81,Service,Service,Service/Oas/OasValidationReport.php,0,327,Core
@@ -2679,6 +2682,7 @@ Service/Object/SaveObject/ComputedFieldHandler.php,427,Service,Service,Service/O
 Service/Object/SaveObject/DefaultValueContext.php,6,Service,Service,Service/Object/SaveObject/DefaultValueContext.php,0,,Core
 Service/Object/SaveObject/FilePropertyHandler.php,795,Service,Service,Service/Object/SaveObject/FilePropertyHandler.php,0,,Core
 Service/Object/SaveObject/FilePropertyTarget.php,13,Service,Service,Service/Object/SaveObject/FilePropertyTarget.php,0,,Core
+Service/Object/SaveObject/ImageObjectForm.php,15,Service,Service,Service/Object/SaveObject/ImageObjectForm.php,0,,Core
 Service/Object/SaveObject/InverseRelationWrite.php,12,Service,Service,Service/Object/SaveObject/InverseRelationWrite.php,0,,Core
 Service/Object/SaveObject/LinkedEntityPropertyHandler.php,114,Service,Service,Service/Object/SaveObject/LinkedEntityPropertyHandler.php,0,,Core
 Service/Object/SaveObject/MetadataHydrationHandler.php,309,Service,Service,Service/Object/SaveObject/MetadataHydrationHandler.php,0,,Core

@@ -31,6 +31,30 @@ A schema defines the structure and validation rules for objects. Key capabilitie
 - **Hooks** — lifecycle callbacks to workflow engines (see [Workflow Automation](workflow-automation.md))
 - **Archive configuration** — `archive.enabled`, `archive.defaultNominatie`, `archive.defaultBewaartermijn` for automatic archival metadata (see [Archiving](archiving.md))
 
+### Field types of their own
+
+Besides the JSON Schema types, a property can declare a type OpenRegister checks itself. Each one is offered in the schema editor's type list.
+
+| Type | Value | Refused when |
+|------|-------|--------------|
+| `color` | A colour, written as hex (default), `rgba` or `oklch` per the property's `format` | It does not match that notation |
+| `recurrence` | An RFC 5545 repeat rule, such as `FREQ=WEEKLY;BYDAY=TU` | The rule does not parse |
+| `calendar-range` | `{ "start": ..., "end": ... }`, a period kept as one value. `format: date` makes both `YYYY-MM-DD`; the default `date-time` takes a time too | `start` or `end` is missing, either breaks the format, or `end` is before `start` |
+| `image-url` | A URL, or `{ "url", "width", "height", "altText", "format" }`. A bare URL is stored as `{ "url": ... }`, so a read always returns the object | `url` is not a URL, `width`/`height` is not a positive whole number, or `format` is not one of `jpeg`, `png`, `webp`, `avif`, `svg` |
+
+A refused value fails the save with HTTP 422 and a message that names the property, for example `Property 'period': calendar-range 'end' (2026-05-01T09:00:00Z) must be >= 'start' (2026-05-01T17:00:00Z)`. Nothing is stored.
+
+```json
+{
+  "period": { "type": "calendar-range", "format": "date" },
+  "cover": { "type": "image-url" }
+}
+```
+
+In the generated OpenAPI document, every `calendar-range` property refers to one `CalendarRange` component and every `image-url` property to one `ImageUrl` component.
+
+A `calendar-range` cannot be converted from another type on a schema that already holds objects: migrate the records first.
+
 ### Schema Sources
 
 Schemas can be imported from:
