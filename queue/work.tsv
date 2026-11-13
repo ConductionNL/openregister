@@ -8078,3 +8078,8 @@ review:openregister:10370:f4ef0cfc	review	openregister	main	10370	sha=f4ef0cfcee
 review:openregister:10371:e7974e25	review	openregister	main	10371	sha=e7974e2558f8d18787c20d3833eb7f6719ae2bf2;last_approved=;title=feat(openregister): build identity-survives-a-move	2026-11-13T21:50:10Z
 review:openregister:10372:145208aa	review	openregister	main	10372	sha=145208aa7b0f35bce1db76abc8338694ea3892a9;last_approved=;title=feat(openregister): build external-register-view-leaf (provider)	2026-11-13T21:50:10Z
 measure:pipelinq:20261113h20	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-13T21:50:10Z
+review:openregister:10373:981195be	review	openregister	main	10373	sha=981195be770d57535f8c02ae2c21421e9a03cd84;last_approved=;title=feat(openregister): build lifecycle-over-reference-field (reopen audited)	2026-11-13T21:55:20Z
+review:openregister:10374:e3c0f762	review	openregister	main	10374	sha=e3c0f76266098066d5fae3dff41a3dfc4c71b140;last_approved=;title=feat(openregister): build api-nl-design-rules-conformance	2026-11-13T21:55:20Z
+review:openregister:10375:be3e69d7	review	openregister	main	10375	sha=be3e69d7fcdff75b7b59cc9dcdd864ad2bea4c90;last_approved=;title=feat(openregister): build archive-members-are-searchable	2026-11-13T21:55:20Z
+review:openregister:10376:10e644cf	review	openregister	main	10376	sha=10e644cf3c36db3dd367f2c32f9e55668efea7b5;last_approved=;title=feat(openregister): build import-preview-and-conflict-policy	2026-11-13T21:55:20Z
+review:openregister:10377:cc91b7d5	review	openregister	main	10377	sha=cc91b7d51c19c29bde13ad03f653bdff0061b4bd;last_approved=;title=feat(openregister): build object-event-sync-async-split	2026-11-13T21:55:20Z
