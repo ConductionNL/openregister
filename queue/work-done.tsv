@@ -3658,3 +3658,4 @@ cover:pipelinq:7f9dc8e6m916f:d528dcf0	already done: lib/Dashboard/*.php 100% lin
 cover:learniq:e6498dddmc027:3e1bc8f2	PR #2456: GradeAggregationEngine+GradePlan, 22 tests, suite 6116->6138, no new failures	session-20261113T084527-a728978e	2026-11-13T08:56:13Z
 cover:learniq:e6498dddmc027:aed80a0c	PR #2457: Lifecycle/Action 83.6%->93.8% (LinkCoveringCorrectionActionTest new); suite +6 tests, only the inherited HigherEducationExampleSetTest failure	session-20261113T081043-b24589a6	2026-11-13T08:56:32Z
 cover:dossiq:f8a113c5m7e79:64395ad8	already done: lib/Service/Archival 100% covered by its own tests (153/153)	session-20261113T080551-294c2aa6	2026-11-13T08:56:36Z
+review:openregister:10112:58c023e8	APPROVE: tests-only, suites green bar inherited Controller env errors	session-20261113T080549-9b0da587	2026-11-13T08:56:51Z
