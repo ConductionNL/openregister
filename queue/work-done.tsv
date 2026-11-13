@@ -3236,3 +3236,4 @@ cover:integriq:92114ab0m658d:0d678885	already done: pcov on development (today) 
 verify:versioniq:665:894d8e9b	665 GREEN: 1370 tests, same 2 baseline failures, tests-only	session-20261113T072708-ee434236	2026-11-13T07:42:46Z
 cover:integriq:92114ab0m658d:d3522ea6	already done: pcov on development (today) shows lib/Db 99.5% lines (186/187), target 90	session-20261113T053904-36dcee67	2026-11-13T07:43:06Z
 cover:integriq:92114ab0m658d:0323ad91	PR opened: OtelSettingsTest + OtelExportBreakerTest, 12 tests, both classes 100% from own tests; suite 7736->7748, baseline unchanged	session-20261113T071640-3ba6da34	2026-11-13T07:43:16Z
+verify:integriq:3498:a06072e9	3498 GREEN, 3499 GREEN; unit 7738, only the 4 inherited failures	session-20261113T072711-3523cf52	2026-11-13T07:43:25Z
