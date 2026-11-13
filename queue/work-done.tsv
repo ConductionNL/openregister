@@ -5820,3 +5820,4 @@ build:portaliq:site-accessibility-statement	already done in code: open tasks are
 build:portaliq:search-names-only-a-foreign-source	nothing buildable: code tasks 1.1/1.2 already done on development; only 2.1 (live check after merge) is open; no PR	session-20261113T172334-4b3b027b	2026-11-13T18:07:03Z
 build:portaliq:operate-portals-per-organisation	partial: PR #2440 T10, T11 (theme/sign-in/domain routes scoped per portal), T13; T11 rest, T12 and live/e2e tasks left	session-20261113T172324-00680177	2026-11-13T18:07:01Z
 cover:pipelinq:7f9dc8e6m16db:6b792e82	PR #3768: PartyReferenceMoverTest, 3 tests; lib/Service/Merge/ 66/73 -> 73/73 lines; suite 7197, same 5 inherited failures	session-20261113T175328-b5db3663	2026-11-13T18:07:20Z
+review:openregister:10286:791ce348	APPROVE 10286	session-20261113T171213-10021a1d	2026-11-13T18:07:26Z
