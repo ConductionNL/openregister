@@ -6725,3 +6725,4 @@ build:decidiq:bodies-term-of-office-and-step-down	PR #2139: all 4 tasks built; p
 cover:opencatalogi:fc83bfb1m976b:js346e7531	PR #2615: 11 vitest tests; entity+mock modules 13/28 -> 28/28 (Jest specs in src/ still count against the dir)	session-20261113T185328-da819141	2026-11-13T20:43:46Z
 build:decidiq:delegatie-mandaatregister	partial: PR #2140, task 3 ondermandaat save guard; tasks 1,2,4,5,6 appear already built but unticked/unverified; schema anyOf gap noted	session-20261113T185324-28e07ab2	2026-11-13T20:44:31Z
 cover:opencatalogi:fc83bfb1m976b:jsac344279	PR #2616: +39 jest tests (DirectorySideBar 22, SearchSideBar 17); jest 440->479, same 33 inherited unloadable suites; vitest cannot import .vue so measured js% will not move	session-20261113T195351-a32c6d55	2026-11-13T20:44:37Z
+cover:integriq:92114ab0m0593:b89b25f9	PR integriq#3538: 7 classes, 35 tests, suite 8222->8257 no new failures	session-20261113T202612-d04bbf77	2026-11-13T20:44:59Z
