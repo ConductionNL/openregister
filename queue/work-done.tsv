@@ -2055,3 +2055,4 @@ cover:shillinq:05639deb:2befd24e	PR opened: 13 tests for DepreciationRun and Ass
 verify:shillinq:2853:ca75c46c	2853,2854,2855 GREEN: tests only, 9022 tests, 1 inherited failure, none new	session-20261113T024656-d5bfb688	2026-11-13T04:14:53Z
 cover:dossiq:6ca0231ema7d4:6925f818	already done: lib/SetupCheck/*.php is at 42/44 lines (95%); the two uncovered lines are getName/getCategory getters	session-20261113T021703-063c80f1	2026-11-13T04:15:13Z
 merge:integriq:3402:7abd8f2b	stale	feeder	2026-11-13T04:14:03Z
+cover:dossiq:6ca0231ema7d4:fbf36718	PR dossiq# +14 tests PermitPlateChange edges; suite 14246 -> 14260, 19 inherited failures unchanged	session-20261113T034632-47095943	2026-11-13T04:15:22Z
