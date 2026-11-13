@@ -2332,6 +2332,8 @@ Service/Flow/MacroActionResolver.php,74,Service,Flows,Flows/Service/Flow/MacroAc
 Service/Flow/MacroActionValidator.php,100,Service,Flows,Flows/Service/Flow/MacroActionValidator.php,0,,Processes
 Service/Flow/MacroRunChanges.php,50,Service,Flows,Flows/Service/Flow/MacroRunChanges.php,0,,Processes
 Service/Flow/Nodes/ActionInputsNode.php,58,Service,Flows,Flows/Service/Flow/Nodes/ActionInputsNode.php,0,,Processes
+Service/Flow/Nodes/AuditTrailNode.php,155,Service,Flows,Flows/Service/Flow/Nodes/AuditTrailNode.php,0,,Processes
+Service/Flow/Nodes/AuditTrailNodeInterface.php,6,Service,Flows,Flows/Service/Flow/Nodes/AuditTrailNodeInterface.php,0,,Processes
 Service/Flow/Nodes/AwaitSignalNode.php,191,Service,Flows,Flows/Service/Flow/Nodes/AwaitSignalNode.php,0,,Processes
 Service/Flow/Nodes/DecisionTableNode.php,284,Service,Flows,Flows/Service/Flow/Nodes/DecisionTableNode.php,0,,Processes
 Service/Flow/Nodes/EndNode.php,59,Service,Flows,Flows/Service/Flow/Nodes/EndNode.php,0,,Processes

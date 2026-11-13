@@ -260,6 +260,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
@@ -958,6 +960,7 @@ final class ContractBindings {
 		ObjectOperationsInterface::class => ObjectService::class,
 		QueryHandlerInterface::class => QueryHandler::class,
 		ObjectReadNodeInterface::class => ObjectReadNode::class,
+		AuditTrailNodeInterface::class => AuditTrailNode::class,
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
 		ObjectSlugBackfillServiceInterface::class => ObjectSlugBackfillService::class,
 		ObjectRelationServiceInterface::class => ObjectRelationService::class,
