@@ -3570,4 +3570,5 @@ merge:humaniq:1025:5b7ab4d7	merge-local over 1 humaniq tasks: merged=3 red=0 fai
 cover:stackiq:9ac19b3am5ac4:59f569b2	already done: lib/Service/Settings/*.php 1265/1296 = 97.6% >= 90 (branches -1,-2 merged)	session-20261113T051703-1b54bfba	2026-11-13T08:44:44Z
 measure:hermiq:20261113h08	php 88.68% js 86.98% @66af8e45 (suite: 146 errors, 26 failures at baseline)	session-20261113T083916-59f10a3b	2026-11-13T08:44:43Z
 cover:stackiq:9ac19b3am5ac4:59826f43	already done: lib/Settings/*.php 11/11 = 100% >= 90	session-20261113T051703-1b54bfba	2026-11-13T08:45:10Z
+cover:buildiq:70b3e29embf07:d39f9857	no PR: lib/Support/*.php has 3 uncovered lines (pcov), all defensive guards (preg_replace returning non-string, bind() of an array returning non-array)	session-20261113T080549-dde3ba19	2026-11-13T08:45:30Z
 verify:stackiq:1858:ee695c32	1858,1859 GREEN (3237 tests); CmdbExportImportServiceTest golden flakes on random uuids (inherited)	session-20261113T072715-8f8a14e9	2026-11-13T08:45:33Z
