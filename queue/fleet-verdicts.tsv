@@ -6274,3 +6274,4 @@ shillinq	3014	d48233634c2056466edb729f998612588eee6f7b	GREEN	worker-51	tests onl
 stackiq	1895	c3663e04a77c8e8941c73d169bda79a222e90379	GREEN	worker-06	tests only; unit 3404 on tree, baseline 3397 with 0 failures, 0 new failures
 opencatalogi	2604	e5081b5596c890f18eef83aceb44586bacfca9ac	GREEN	worker-54	tests only; 5297 run, baseline 5254 with 2 failures (AppIdentityTest, WooControllerTest), no new failures
 opencatalogi	2605	1865cf88cfc31f7ca42f7396ff9ade3555a8de2d	GREEN	worker-54	tests only; 5297 run, baseline 5254 with 2 failures (AppIdentityTest, WooControllerTest), no new failures
+opencatalogi	2606	bc0f3b6c3c9419d44d769a322dfd3a2fa99dbceb	GREEN	worker-54	tests only; 5297 run, baseline 5254 with 2 failures (AppIdentityTest, WooControllerTest), no new failures
