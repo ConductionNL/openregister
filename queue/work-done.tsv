@@ -6383,3 +6383,4 @@ review:openregister:10310:82e01f16	APPROVE (risky 16->0)	session-20261113T175327
 cover:stackiq:9ac19b3am9d24:8ed5443b	no PR: lib/Kernel/Contracts/*.php holds only 47 interfaces, no executable lines to cover	session-20261113T192659-0ddb618f	2026-11-13T19:39:36Z
 build3:openregister:platform-search-provider	partial: PR #10315, task 1.5 done (schema-declared search title/subline/order date, save refusal, 11 tests); per-app provider identity 1.1-1.4 needs a mechanism decision (NC registers providers by class at boot), e2e/validate/handover left	session-20261113T182348-cc1b5fea	2026-11-13T19:40:06Z
 cover:shillinq:05639debm7b6b:dec5cec8	already done: lib/Service/Sms/ measures 100% (134/134 statements); every class has its own test file, no PR	session-20261113T182404-f2c28226	2026-11-13T19:40:17Z
+review:openregister:10307:94131617	APPROVE	session-20261113T172328-c860ad55	2026-11-13T19:40:33Z
