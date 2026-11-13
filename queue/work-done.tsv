@@ -7501,3 +7501,4 @@ merge:integriq:3543:066f90d1	merge3 tree of 30 integriq PRs: merged=20 red=2 fai
 merge:integriq:3546:a01a41ce	merge3 tree of 30 integriq PRs: merged=20 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-13T23:25:48Z
 merge:integriq:3551:9133e782	merge3 tree of 30 integriq PRs: merged=20 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-13T23:25:52Z
 merge:integriq:3556:27d9578d	merge3 tree of 30 integriq PRs: merged=20 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-13T23:25:56Z
+merge:humaniq:1025:cd959953	merge3 tree of 7 humaniq PRs: merged=3 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-13T23:28:12Z
