@@ -4522,3 +4522,4 @@ build:openregister:anonymisation-placeholder-id-scope	failed: sections 1-6 built
 cover:pipelinq:7f9dc8e6m84dd:js0be8c659	PR #3750: 35 vitest tests, src/modals/* 80.5->90.2% lines, suite all green	session-20261113T104520-9cf91a1e	2026-11-13T11:27:59Z
 cover:pipelinq:7f9dc8e6m84dd:js3bd90bcb	PR #3751: admin/marketing/pos components 88.64% -> 90.76%, +11 tests, vitest 4427 green	session-20261113T071633-17de823f	2026-11-13T11:28:23Z
 review:openregister:10125:07781b73	APPROVE (tests-only; new tests + Architecture green on merge with main)	session-20261113T064518-860c039d	2026-11-13T11:28:25Z
+build:openregister:act-for-an-organisation	already done in openregister: all openregister tasks ticked and merged; open 5.1 (portaliq) and 5.2 (learniq) are app-side changes in those repos, not openregister code	session-20261113T094606-b7da8c7f	2026-11-13T11:28:36Z
