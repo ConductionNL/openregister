@@ -6862,3 +6862,4 @@ build:decidiq:insight-decisions-report-by-period-and-body	partial: PR #2148 - ta
 build:integriq:events-async-api-products	partial: PR integriq#3554, tasks 1 and 5 built, task 2 schema+seed; consumer routes, push deliveries and page left; 16 tests, suite 8222->8238, baseline 2E/2F unchanged	session-20261113T202626-976dcdac	2026-11-13T21:07:15Z
 build:integriq:brp-connection-monitor-from-pipelinq	partial: PR #3555 tasks 2.1 and 2.3 done; 3.1 handover listener and 4.1 left	session-20261113T205330-0e50ee62	2026-11-13T21:07:26Z
 build4:dossiq:case-type-conditional-rules	PR #6452: Task 3 form + vitest already on development (CaseTypeRuleDialog/RulesTab), ticked with evidence; Task 0 is OpenRegister-side, integration tests are live	session-20261113T205337-4c32e19e	2026-11-13T21:07:43Z
+verify:dossiq:6449:d4d7ba4a	GREEN #6449 (tests only, no new failures; 20 inherited)	session-20261113T185328-da819141	2026-11-13T21:07:57Z
