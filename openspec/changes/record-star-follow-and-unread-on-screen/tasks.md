@@ -15,7 +15,9 @@
 ## 2. Record page (`src/views/object/ObjectDetails.vue`)
 
 - [ ] 2.1 The detail read asks for `_extend=@self.can`. `CnFollowToggle` in the header beside the title, optimistic with revert (D-2); the no-notification tooltip of D-4 from the schema's notification rules. Verify: `ObjectDetails.spec.js` toggles follow and notifications and reverts on a failing request.
-- [ ] 2.2 `PUT .../read-state` after the record renders, never on a failed load; "Mark as unread" in `NcActions` sends `DELETE .../read-state` (D-3). Verify: unit test on the load handler for the rendered and the failed case.
+  - Partly built (second pass): `CnFollowToggle` (already in `@conduction/nextcloud-vue` 2.180.0, which `package.json` allows) sits in the header with `@self.watching`, `watchNotify`, `watcherCount` and `can.manage`; a failure shows the server's message, a 404 reloads the page; the deep-link detail read asks `_extend=@self.can`. The optimistic flip and revert live in the library component. Open: the D-4 tooltip (`notifies` from the schema's notification rules) and `_extend=@self.can` on reads that reach the page from the list.
+- [x] 2.2 `PUT .../read-state` after the record renders, never on a failed load; "Mark as unread" in `NcActions` sends `DELETE .../read-state` (D-3). Verify: unit test on the load handler for the rendered and the failed case.
+  - Built: `markReadAfterRender()` sends the PUT once per record after `$nextTick`, from `mounted`/`updated` only when the store holds a record (a failed load sets none); "Mark as unread" sends DELETE and clears the shown record, and stays on it when the server refuses. Helpers in `src/views/object/recordFollow.js`; tests in `ObjectDetails.follow.spec.js` and `recordFollow.spec.js`.
 - [ ] 2.3 Tab badges from `@self.unreadCounts` on Files and the tabs it names. Verify: unit test with a fixture carrying counts.
 
 ## 3. Tables page (`src/views/search/SearchIndex.vue`)
