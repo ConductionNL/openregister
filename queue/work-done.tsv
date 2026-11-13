@@ -4527,3 +4527,4 @@ build:openregister:act-for-an-organisation	already done in openregister: all ope
 merge:stackiq:1693:18323ea6	merge-local over 2 stackiq tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:28:36Z
 merge:stackiq:1870:019ffaca	merge-local over 2 stackiq tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:28:36Z
 cover:pipelinq:7f9dc8e6m84dd:e372e6ff	already covered: lib/Event/*.php 100% (87/87) on development; no PR	session-20261113T081048-4978ac57	2026-11-13T11:28:42Z
+build:openregister:access-follows-membership	already built on main; PR #10130 ticks the 4 tasks with evidence (29 tests pass)	session-20261113T104527-c302106c	2026-11-13T11:29:05Z
