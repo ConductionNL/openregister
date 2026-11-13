@@ -6542,6 +6542,7 @@ build:filinq:template-library-leaf	partial: PR #2088 (template scope + listForOb
 cover:pipelinq:7f9dc8e6m8ce9:4d8f122a	no PR: OpenMailService already 98.8% lines under 28 strict tests (truncation, dates, refusals, matching); only uncovered line is a uuid fallback unreachable via the real TicketService	session-20261113T195351-a32c6d55	2026-11-13T20:06:43Z
 cover:dossiq:069ee2d6mbd37:c17c6e8e	already done: lib/Service/Kcc/*.php at 98.88% (791/800) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:07:02Z
 cover:dossiq:069ee2d6mbd37:7593a315	already done: lib/Service/Relation/*.php at 703/714 lines (98.5%) at dcd16f59	session-20261113T172349-00278d9d	2026-11-13T20:07:00Z
+build:filinq:one-signing-rail-for-the-fleet	partial: PR #2091 noun+refusal+docs (2.x-4.x); 5.x admin surface, 1/6/7 left	session-20261113T171141-a3907367	2026-11-13T20:07:05Z
 cover:dossiq:069ee2d6mbd37:6ecc72bb	already done: lib/Service/Workflow/*.php at 610/612 99.7 lines at dcd16f59	session-20261113T172349-00278d9d	2026-11-13T20:07:07Z
 cover:dossiq:069ee2d6mbd37:a97b9ee7	already done: lib/Service/Money/*.php at 835/849 98.4 lines at dcd16f59	session-20261113T172349-00278d9d	2026-11-13T20:07:14Z
 cover:dossiq:069ee2d6mbd37:28cccfd9	already done: lib/Repair/Support/ at 174/174 100.0 lines at dcd16f59	session-20261113T172349-00278d9d	2026-11-13T20:07:21Z
