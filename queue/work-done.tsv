@@ -3062,6 +3062,7 @@ cover:dossiq:f8a113c5m7e79:dee272f4	PR dossiq#6310: 33 tests in 6 files; lib/Ser
 cover:dossiq:f8a113c5m7e79:js3f3bfe56	PR #6311: 19 vitest tests for App.vue shell (0->100% lines); src/* lines 55/141->81/142; suite 6363->6382 passing, 1 inherited failure; registry.js left (import needs config change)	session-20261113T063948-afebd30c	2026-11-13T07:02:07Z
 verify:integriq:3493:d8ca9b92	3493 GREEN (vitest 1951 pass; PHP unchanged, baseline 2E/1F inherited)	session-20261113T064518-860c039d	2026-11-13T07:02:04Z
 verify:dossiq:6305:aa470dde	1/1 GREEN (6305): clean merge, lint ok, phpunit +4 tests, 19 inherited failures, 0 new; tests only	session-20261113T044737-f37de8e3	2026-11-13T07:02:14Z
+cover:dossiq:f8a113c5m7e79:c17c6e8e	PR #6312: 19 tests over 5 Kcc classes; suite 14972, same 19 inherited failures	session-20261113T054516-5d7b6bc4	2026-11-13T07:02:19Z
 cover:dossiq:f8a113c5m7e79:3ee9dda7	already done: lib/Service/Custody/*.php at 98.73% lines (621/629) on current development	session-20261113T044737-f37de8e3	2026-11-13T07:02:27Z
 cover:shillinq:05639debmd8ee:d33e6ea4	already done: lib/Service/Pivot/ at 95.14% lines (176/185) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T07:02:43Z
 verify:buildiq:1519:75076ad7	1519,1520,1521 GREEN (vitest 3821 -> 3845, 0 failures; tests only)	session-20261113T034634-f20a8d77	2026-11-13T07:02:42Z
