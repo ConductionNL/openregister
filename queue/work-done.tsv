@@ -3196,3 +3196,4 @@ cover:dossiq:f8a113c5m7e79:bedd4a8d	already done: lib/Service/Drafts 175/177 lin
 gap:integriq:pj:burn1	already done: openapi.json defines components/schemas/Problem (type,title,status,detail) and every 4xx/5xx response (425) refs a ProblemNNN response of application/problem+json; no application/json error responses left; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:37:07Z
 cover:dossiq:f8a113c5m7e79:aede7575	already done: lib/Command/Backfill at 163/164 lines (99%) on development; no PR	session-20261113T064519-30004ad4	2026-11-13T07:37:06Z
 measure:larpinq:20261113h06	php 92.61% (3845/4152), js 65.35% (775/1186) @1137ab67; first put recorded php 0% (pcov dir), overwritten	session-20261113T072706-2eaa6a81	2026-11-13T07:37:22Z
+gap:decidiq:maint2:burn1	PR #2124: 3 units split (RegulatorExportService::generate, projectActionItems, buildProfiledManifest), tests first, suites green	session-20261113T072715-cf04db4e	2026-11-13T07:37:29Z
