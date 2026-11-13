@@ -3608,3 +3608,4 @@ merge:learniq:2436:de34a279	merge-local over 2 learniq tasks: merged=2 red=0 fai
 merge:learniq:2439:8774cedc	merge-local over 2 learniq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:50:08Z
 cover:stackiq:9ac19b3am6096:efa2a923	already done: lib/EventListener/*.php at 99.19% (8 lines left, pcov)	session-20261113T072715-8f8a14e9	2026-11-13T08:50:14Z
 verify:learniq:2444:d3faf885	4 GREEN (2444-2447), tests-only, no new failures	session-20261113T084521-fd8a31c7	2026-11-13T08:50:30Z
+cover:dossiq:f8a113c5m7e79:b12f5203	already done: lib/Service/Import 99% covered by its own tests (492/496 statements); no PR	session-20261113T080551-294c2aa6	2026-11-13T08:50:34Z
