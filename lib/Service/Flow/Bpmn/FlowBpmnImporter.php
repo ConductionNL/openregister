@@ -275,19 +275,64 @@ class FlowBpmnImporter {
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function graphOf(BpmnImportPass $pass, ?DOMNode $process): array {
-		$nodes = [];
-		$edges = [];
+		$nodes    = [];
+		$edges    = [];
+		$gateways = [];
 		foreach ($pass->childElements(process: $process) as $child) {
 			if ($child->localName === 'sequenceFlow') {
 				$edges[] = $this->edgeFrom(element: $child);
 				continue;
 			}
 
-			$nodes[] = $this->nodeFrom(element: $child, pass: $pass);
+			$node = $this->nodeFrom(element: $child, pass: $pass);
+			if ($node !== null && $this->isPlainParallelGateway(element: $child, pass: $pass) === true) {
+				$gateways[] = $node['id'];
+			}
+
+			$nodes[] = $node;
 		}
 
-		return ['nodes' => array_values(array_filter($nodes)), 'edges' => $edges];
+		return ['nodes' => $this->withJoins(nodes: array_values(array_filter($nodes)), edges: $edges, gateways: $gateways), 'edges' => $edges];
 	}//end graphOf()
+
+	/**
+	 * Whether an element is a parallel gateway read through the vocabulary, not through our own extension type.
+	 *
+	 * @param DOMElement     $element The element.
+	 * @param BpmnImportPass $pass    The xpath and the report.
+	 *
+	 * @return bool True for a plain parallel gateway.
+	 */
+	private function isPlainParallelGateway(DOMElement $element, BpmnImportPass $pass): bool {
+		return $pass->kindOf(element: $element) === 'parallelGateway' && $pass->extensionType(element: $element) === '';
+	}//end isPlainParallelGateway()
+
+	/**
+	 * The nodes, with every parallel gateway that two or more paths enter marked as a join.
+	 *
+	 * A converging parallel gateway waits for every incoming path; in the engine
+	 * converging edges merge unless the node says `join: true`, so the gateway
+	 * says it. A diverging one needs nothing: edges out of one node already run
+	 * side by side.
+	 *
+	 * @param array<int, array<string, mixed>> $nodes    The nodes.
+	 * @param array<int, array<string, mixed>> $edges    The edges.
+	 * @param array<int, string>               $gateways The ids of the parallel gateways.
+	 *
+	 * @return array<int, array<string, mixed>> The nodes.
+	 *
+	 * @spec openspec/changes/flow-designer-parallel-paths-and-waits/specs/flow-engine/spec.md#requirement-a-person-draws-parallel-paths-and-waits-in-the-flow-editor-and-the-flow-runs-as-drawn
+	 */
+	private function withJoins(array $nodes, array $edges, array $gateways): array {
+		$incoming = array_count_values(array_map(static fn (array $edge): string => (string)$edge['to'], $edges));
+		foreach ($nodes as $index => $node) {
+			if (in_array($node['id'], $gateways, true) === true && ($incoming[$node['id']] ?? 0) >= 2) {
+				$nodes[$index]['join'] = true;
+			}
+		}
+
+		return $nodes;
+	}//end withJoins()
 
 	/**
 	 * One node, and its entry in the report.
