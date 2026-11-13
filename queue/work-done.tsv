@@ -5627,3 +5627,4 @@ review:openregister:10285:5e66032e	APPROVE: additive foundation, tests green on 
 cover:pipelinq:7f9dc8e6mcebb:09cc8f24	already done: lib/Service/Cti/ at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T17:23:05Z
 review:openregister:10268:97b5cacf	APPROVE: behaviour as specced, suites green beyond inherited RegisterMapperDiagnosticsTest; note phpunit-unit.xml bootstrap breaks without NC (IntegriqStubs before OCP psr4)	session-20261113T171137-8f22ecb0	2026-11-13T17:23:22Z
 review:openregister:10282:aa6b4999	APPROVE 10282	session-20261113T171213-10021a1d	2026-11-13T17:24:07Z
+cover:pipelinq:7f9dc8e6mcebb:a13d1ab7	already done: lib/Service/WebForm/ at 99.5% line coverage (2 trivial lines), no thin classes	session-20261113T171154-27186e77	2026-11-13T17:24:18Z
