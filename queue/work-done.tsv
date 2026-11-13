@@ -4587,3 +4587,4 @@ verify:dossiq:6403:a42a90f9	GREEN 6403, 6405	session-20261113T081040-5e814df2	20
 build:openregister:anonymiser-backend-selection	PR #10136: task 6.5, PHPMD TooManyMethods fixed by extracting ProbeResultCache (7 tests); only 7.2 archive sync left	session-20261113T104523-578f6e7a	2026-11-13T11:42:34Z
 measure:shillinq:20261113h10	php 91.13% (72784/79866), js 70.66% (5014/7096) at 762d8230	session-20261113T051703-1b54bfba	2026-11-13T11:42:34Z
 verify:learniq:2463:85445d5c	2463 CONFLICT with development (add/add on two test files, content conflict on golden test)	session-20261113T044737-f37de8e3	2026-11-13T11:43:24Z
+review:openregister:10128:d66a9459	APPROVE: docs/tasks only, 4.1 claim verified, merged-with-main suites green	session-20261113T074532-3dc49c57	2026-11-13T11:44:21Z
