@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCP\IUser;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
@@ -2915,8 +2916,22 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return array<string, mixed> The compiled rules, by action.
 	 */
 	private function compiledMatrixRules(DepartmentMatrixCompiler $compiler, array $matrix): array {
-		$source = self::matrixUserSource(matrix: $matrix);
 		$userId = $this->callerId(userId: null);
+
+		return $compiler->compile(matrix: $matrix, ownValues: $this->matrixOwnValues(compiler: $compiler, matrix: $matrix, userId: $userId));
+	}//end compiledMatrixRules()
+
+	/**
+	 * A user's own values for a matrix: the union of both declared sources.
+	 *
+	 * @param DepartmentMatrixCompiler $compiler The compiler.
+	 * @param array<string, mixed>     $matrix   The matrix declaration.
+	 * @param string|null              $userId   The user, or null for none.
+	 *
+	 * @return list<string>
+	 */
+	private function matrixOwnValues(DepartmentMatrixCompiler $compiler, array $matrix, ?string $userId): array {
+		$source = self::matrixUserSource(matrix: $matrix);
 
 		// Both sources may be declared; the caller's own values are the
 		// union. The person source is read only when it is declared.
@@ -2927,8 +2942,36 @@ class PermissionHandler implements PermissionHandlerInterface {
 			);
 		}
 
-		return $compiler->compile(matrix: $matrix, ownValues: $ownValues);
-	}//end compiledMatrixRules()
+		return array_values($ownValues);
+	}//end matrixOwnValues()
+
+	/**
+	 * The scopes a schema's department matrix compiles to for one user.
+	 *
+	 * The schema's own authorization block, with the rows its provider apps
+	 * add, through the same compiler the authorization path runs. Unlike that
+	 * path a compile failure is not swallowed: an administrator previewing a
+	 * matrix is told it does not compile.
+	 *
+	 * @param Schema $schema The schema whose matrix is previewed.
+	 * @param IUser  $user   The user previewed.
+	 *
+	 * @return array{values: list<string>, scopes: array<string, mixed>}
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	public function previewDepartmentMatrix(Schema $schema, IUser $user): array {
+		$matrix = ($schema->getAuthorization()[DepartmentMatrixCompiler::KEY] ?? null);
+		if (is_array($matrix) === false) {
+			return ['values' => [], 'scopes' => []];
+		}
+
+		$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+		$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
+		$values = $this->matrixOwnValues(compiler: $compiler, matrix: $matrix, userId: $user->getUID());
+
+		return ['values' => $values, 'scopes' => $compiler->compile(matrix: $matrix, ownValues: $values)];
+	}//end previewDepartmentMatrix()
 
 	/**
 	 * The matrix's user source, or null when it does not declare one as a map.
