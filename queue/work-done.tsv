@@ -2083,3 +2083,4 @@ measure:keepiq:20261113h04	php 87.25% (pcov, pcov.directory=lib), js 85.94% at 2
 cover:shillinq:05639deb:4734f62e	already done: lib/Service/Import/ImportProfile 105/116 stmts (90.5%, target 90) on development	session-20261113T024656-d5bfb688	2026-11-13T04:20:39Z
 verify:dossiq:6269:31f101e3	GREEN 6269 (test-only, 14 new tests pass, 0 new failures)	session-20261113T041644-3c9184ea	2026-11-13T04:20:37Z
 cover:buildiq:9930949bm5861:390adfb9	already covered: lib/Capabilities.php (only file) has tests for anonymous, in-scope, out-of-scope and document shape; no PR	session-20261113T024654-6600dc41	2026-11-13T04:20:53Z
+cover:keepiq:c967a31fm88ca:9d3a1784	already done: lib/BackgroundJob 406/407 statements, app PHP 87.25% at 2f62be10 (target 85)	session-20261113T034634-857dbcc2	2026-11-13T04:20:49Z
