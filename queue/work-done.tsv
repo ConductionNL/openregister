@@ -4224,3 +4224,4 @@ cover:shillinq:05639debm0c05:f545d745	PR #2927: 34 tests for 3 untested repair f
 gap:humaniq:risky:burn2	already done: 0 risky tests on development (strict metadata on), PHP coverage 95.19%	session-20261113T081048-4978ac57	2026-11-13T10:19:16Z
 verify:pipelinq:3705:cddbdadb	3705 GREEN: tasks.md tick only, ticked work present on development; 1 inherited failure	session-20261113T074532-3dc49c57	2026-11-13T10:19:16Z
 verify:learniq:2461:7ec74609	2461 GREEN (tests only, +8 tests, no new failures)	session-20261113T094617-36f80607	2026-11-13T10:19:32Z
+build:pipelinq:example-set-zuiddrecht	already done: fragment + validation (tasks 1, 2.1, 2.4) built/merged in #2465, cast refs only, no BSN/KVK literals; open 2.2/2.3/2.5 are live install/sync	session-20261113T091527-72c58830	2026-11-13T10:19:40Z
