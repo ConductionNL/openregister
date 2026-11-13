@@ -6136,6 +6136,7 @@ cover:hermiq:065f1631md84f:34a55f48	already done: lib/Service/Workspace/*.php at
 cover:dossiq:069ee2d6m2deb:c97e6ec3	PR #6437: 9 tests for ApprovalSource and ConsultationSource (+RegisterBackedSource refusals); suite 16530->16539, same 20 inherited failures	session-20261113T181000-9baff50f	2026-11-13T18:59:28Z
 build:shillinq:sales-billable-rate-per-hour	partial: PR #2996 builds task 2.1 (BillableRateService, 9 tests); 1.1, 2.2-5.2 left	session-20261113T171149-8b9ea523	2026-11-13T18:59:27Z
 cover:hermiq:065f1631md84f:9d3a1784	already done: lib/BackgroundJob/*.php at 100% stmt coverage on development; no PR	session-20261113T172328-c860ad55	2026-11-13T18:59:12Z
+build:shillinq:reporting-ifrs-calculations	partial: PR #2999 builds 1.3 (lease disclosure table stored on period close); 1.1, 1.2, 1.4 left	session-20261113T172329-5f4feaba	2026-11-13T18:59:40Z
 cover:hermiq:065f1631md84f:06285390	PR #1700: 20 tests, NcNative 91.3%->99.9%, suite 4562->4582 no new failures	session-20261113T185324-28e07ab2	2026-11-13T18:59:46Z
 cover:hermiq:065f1631md84f:17d367ab	already done: lib/Controller/Settings/ at 100% stmt coverage on development (with ../openregister beside it); no PR	session-20261113T172328-c860ad55	2026-11-13T18:59:40Z
 verify:learniq:2478:807d796d	GREEN #2478 (tests only, no new failures; 1 inherited baseline failure)	session-20261113T185328-da819141	2026-11-13T18:59:47Z
