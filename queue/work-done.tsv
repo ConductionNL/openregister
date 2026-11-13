@@ -6899,3 +6899,4 @@ build:integriq:gateway-response-cache-and-problem-errors	partial: PR #3556 tasks
 verify:hermiq:1717:de7a8510	GREEN hermiq#1717	session-20261113T175332-5effc865	2026-11-13T21:13:58Z
 build:versioniq:advisories-bundled-libraries	PR #685: 9 of 12 tasks built with unit tests (e2e 3.4, release 4.1/4.2 left); php 1609 tests, 2 baseline fails; vitest 2910 pass	session-20261113T204606-0d8f1c54	2026-11-13T21:14:11Z
 verify:dossiq:6452:a3a40202	#6452 #6454 #6455 #6456 GREEN, #6453 CONFLICT (AdapterHonestyTest vs development); suite 16531, 20 inherited	session-20261113T202603-6c9ef72f	2026-11-13T21:14:23Z
+verify:decidiq:2148:9a404266	GREEN 2148 2149	session-20261113T192701-f224cbcf	2026-11-13T21:14:38Z
