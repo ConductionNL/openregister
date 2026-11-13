@@ -4363,3 +4363,4 @@ build:pipelinq:mcp-full-action-coverage	failed: blocked on unmet dependency. Cor
 cover:stackiq:9ac19b3am10f3:b5905f71	already done: lib/Service/Federation 384/388, every class has dedicated tests; -1 merged	session-20261113T064518-860c039d	2026-11-13T11:01:08Z
 build:pipelinq:forecast-slip-reason	partial: PR pipelinq#3718 builds 1.1, 2.1, 2.2, 4.1 (slip rule, revert, stamp); screens 3.1/3.2, 4.2 and 5.1 left; suite no new failures	session-20261113T074532-3dc49c57	2026-11-13T11:01:09Z
 cover:opencatalogi:fc83bfb1:ceb285b8	PR #2588: 24 tests, lib/Service/Publication 96.29->99.09% stmts, suite 5162->5186, 2 inherited failures	session-20261113T104650-72c03e13	2026-11-13T11:01:24Z
+cover:pipelinq:7f9dc8e6m84dd:2cc09f74	already done: lib/Service/Marketing/Transport measures 330/335 statements (98.5%) at fe9981c, above the 90 target; no PR	session-20261113T104529-f43c7561	2026-11-13T11:01:19Z
