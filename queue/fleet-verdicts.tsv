@@ -5260,3 +5260,5 @@ learniq	2437	3fbcfb37643f1cf35925da07b278b7b36d89ee8e	GREEN	worker-01	JS tests o
 shillinq	2886	28c69d0b747a3d907a42ef07cedeba8818b086cf	GREEN	worker-20	tree 9264 tests (baseline 9256), 1 failure inherited from development (clock-bound PaymentWebhookIntakeCharacterisationTest), no new failures; tests only
 dossiq	6301	3cca74b18a7206cc73b3fa375b12c46da52f20d4	GREEN	worker-47	tests-only (+3 Support test files); tree 14899->14934 tests, baseline 19 failures, 0 new
 dossiq	6302	52de79f98c19f8313ac32ad201a9f5176f9593e1	GREEN	worker-47	tests-only (+2 Intake test files); tree 14899->14934 tests, baseline 19 failures, 0 new
+integriq	3485	a7dd5e51888bfa95c3d82e16a84a5e26e6b4caff	GREEN	worker-20	tree 7329 tests, baseline 7280 with 2 errors 1 failure, no new failures; tests only
+integriq	3492	a4f579ceed23ccfb208b4da1ea75cbedfe9fe904	GREEN	worker-20	tree 7329 tests, baseline 7280 with 2 errors 1 failure, no new failures; tests only
