@@ -5081,3 +5081,4 @@ dossiq	6272	f16aba4d4237175be98d4304c5900bade99ca258	GREEN	worker-46	phpunit 143
 dossiq	6273	8a21165970e77ce9f3add46ddd306b8813996bd7	GREEN	worker-46	phpunit 14328 run (baseline 14291, 47 inherited fails/errors), vitest 6413 (1 inherited), new failures 0; tests only
 dossiq	6274	f5d3765f58fec80f63443da01b369898d77626f0	GREEN	worker-46	phpunit 14328 run (baseline 14291, 47 inherited fails/errors), vitest 6413 (1 inherited), new failures 0; tests only
 dossiq	6275	1b5a3488c83015a29f358c5aca7b50fa5a668263	GREEN	worker-46	phpunit 14328 run (baseline 14291, 47 inherited fails/errors), vitest 6413 (1 inherited), new failures 0; tests only
+dossiq	6276	0894beca223aa90fe0c42b83bc44a838e06634b6	GREEN	worker-02	tree 6276+6277 on development 79a79d1e: 14368 tests, baseline 14350 (1 error, 41 failures inherited), new failures 0; tests-only diff
