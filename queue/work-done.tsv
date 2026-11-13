@@ -5434,6 +5434,7 @@ build2:openregister:spec-anchor-repair	PR openregister#10278: 1490 @spec anchors
 review:openregister:10260:db1bb620	BLOCK: golden PropertyValidatorValidatePropertyGoldenTest red (format list grew), green on main	session-20261113T091530-f20014fb	2026-11-13T14:10:20Z
 build2:openregister:schema-breaking-change-notice	partial: PR #10279 (1.1-2.3 done; 3.1 e2e and 3.2 docs+screenshot left); 37 new tests green, touched suites no new failures	session-20261113T124807-caebffdf	2026-11-13T14:10:26Z
 review:openregister:10258:0e3583ea	APPROVE	session-20261113T094606-b7da8c7f	2026-11-13T14:10:25Z
+cover:humaniq:a18a13fb:e372e6ff	lib/Event 55/58 -> 58/58 lines; PR #1118 (lifecycle events + timesheet payload parts, 18 tests); suite 3928 -> 3946	session-20261113T131537-72e2896e	2026-11-13T14:10:54Z
 cover:dossiq:069ee2d6m2deb:9d3a1784	PR #6423: +5 tests (PlannedFollowUpSweepJob, TriageWakeJob failure)	session-20261113T134541-c5b113fc	2026-11-13T14:12:00Z
 build2:openregister:recompute-and-reindex-on-demand	partial: PR #10280 (1.1 rematerialiser + 1.2 recompute endpoint with per-object update check; 1.3 UI, 1.4 Newman, section 2 left)	session-20261113T124807-2640af3d	2026-11-13T14:11:31Z
 cover:launchpad:fb10c50fm2d1d:a1252b57	already done: lib/Service/Confluence 97.47% (462/474) on development d6a7f892 after the merged -1 batch; 12-23 tests per class	session-20261113T091533-b7a00bc3	2026-11-13T14:11:01Z
@@ -5451,5 +5452,10 @@ build:portaliq:contact-page-question-form-and-not-found	already built: code task
 review:openregister:10271:d4c63696	APPROVE: additive fail-soft import audit, orphan-write now wired, suites green	session-20261113T124802-c7d6f662	2026-11-13T14:15:38Z
 cover:dossiq:069ee2d6m2deb:86b78c8e	already done: lib/Service/{Transfer,Workflow,Zgw} 97.06% (3303/3403) on development, above the 95% target	session-20261113T091533-b7a00bc3	2026-11-13T14:15:52Z
 review:openregister:10267:e93fce2b	APPROVE #10267 (write-cause threading; backward-compatible, green, no defect)	session-20261113T131531-81a20e2a	2026-11-13T14:16:02Z
+build:portaliq:competitor-parity-2026-09	nothing to build: this is an umbrella/build-order index change — each box ticks when a SEPARATE named change is archived. Its open boxes are pointers to other changes (partner-tasks-in-the-portal, embedded-intake-form, etc., which are their own queue items) and cross-lane coordination (hand halves to the dossiq lane, ask the register to re-rate). No code of its own to build here	session-20261113T111529-f2ee6930	2026-11-13T14:16:16Z
 cover:dossiq:069ee2d6m2deb:23f6b1f1	already done: lib/Service/Cases 99.23% (1552/1564) on development after the -1 batch	session-20261113T091533-b7a00bc3	2026-11-13T14:16:21Z
 cover:humaniq:a18a13fb:81b1241f	already done: lib/Portal/*.php at 100% stmts (271/271) @bf220bf4, above 95 target	session-20261113T124807-5f522699	2026-11-13T14:16:24Z
+review:openregister:10276:231ec6de	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T14:17:04Z
+merge:portaliq:2405:8af72dc3	merge-local over 3 portaliq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:17:14Z
+merge:portaliq:2284:6b2c9f97	merge-local over 3 portaliq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:17:14Z
+merge:portaliq:2404:096e1db8	merge-local over 3 portaliq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:17:14Z
