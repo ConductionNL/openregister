@@ -3354,3 +3354,4 @@
 2026-11-13T19:05:48Z integrator-20261111T115842-a749432d NORESULT tree 10f625cb09: checker floor not measured (exit 2)
 2026-11-13T19:29:00Z integrator-20261111T115842-a749432d MERGED-TREE 10f625cb09: 4 PRs in one push, main now 10f625cb09 = tested tree
 2026-11-13T19:44:34Z integrator-20261111T115842-a749432d GREEN tree 7dd6cdd819 on dev 10f625cb09 prs 8 front=skip: Tests: 60503, Assertions: 208044, Errors: 3, Failures: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
+2026-11-13T19:46:51Z integrator-20261111T115842-a749432d MERGED-TREE 7dd6cdd819: 8 PRs in one push, main now 7dd6cdd819 = tested tree
