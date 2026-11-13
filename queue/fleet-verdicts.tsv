@@ -5199,3 +5199,4 @@ decidiq	2111	40d5be1a737c97dfb238665e68fda26b50a710d5	GREEN	worker-07	unit 3445 
 decidiq	2112	08cb8c396fdbf49b202d3c4f0e82c48f04ff95af	GREEN	worker-07	unit 3445 on tree, baseline 3398 OK, 0 new failures; tests only
 decidiq	2113	a5ec2083c9ea754b9d23b1e3fa301a1ff25aeec8	GREEN	worker-07	unit 3445 on tree, baseline 3398 OK, 0 new failures; tests only
 decidiq	2114	185d2944b6d329de8ad67f2395ef2a6367bb92c2	GREEN	worker-47	tests-only (+7 listener test files); tree 3398->3473 tests, baseline 0 failures, 0 new
+decidiq	2115	96519e6e58b059c48ef3b6e8fc1dfd7c6f770bb3	GREEN	worker-47	tests-only (new service tests + @uses metadata); tree 3398->3473 tests, baseline 0 failures, 0 new
