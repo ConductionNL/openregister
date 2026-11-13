@@ -3907,3 +3907,5 @@ Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Service/Object/SaveObjects/BulkObjectQuota.php,,Service,,,,,Core
+Service/Object/SaveObjects/BulkQuotaTally.php,,Service,,,,,Core
