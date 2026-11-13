@@ -4588,3 +4588,4 @@ build:openregister:anonymiser-backend-selection	PR #10136: task 6.5, PHPMD TooMa
 measure:shillinq:20261113h10	php 91.13% (72784/79866), js 70.66% (5014/7096) at 762d8230	session-20261113T051703-1b54bfba	2026-11-13T11:42:34Z
 verify:learniq:2463:85445d5c	2463 CONFLICT with development (add/add on two test files, content conflict on golden test)	session-20261113T044737-f37de8e3	2026-11-13T11:43:24Z
 review:openregister:10128:d66a9459	APPROVE: docs/tasks only, 4.1 claim verified, merged-with-main suites green	session-20261113T074532-3dc49c57	2026-11-13T11:44:21Z
+build:openregister:aggregation-dialect-repair	partial: PR #10137 does Fix 2 (operator aliases), Fix 3 (materialised output needs its property), 4.2, 8.1; Fix 1, Fix 4, seed $ref repair and gates left	session-20261113T104527-c302106c	2026-11-13T11:44:29Z
