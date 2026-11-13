@@ -4563,3 +4563,4 @@ stackiq	1793	09753a640d187939c7ddc436d76c4b3961134d23	GREEN	worker-24	2657 tests
 stackiq	1794	4b6d860f02ad6960de1ccc22ecb4c75294653f52	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; tests only
 stackiq	1795	ca303cd3e3333c98953a27841174fddc89eef4d1	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; tests only
 stackiq	1796	b4808add109d6dea0df15cdb4784d27869754138	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; behaviour-preserving extraction in ArchiMateImportService (xmlToArray, property definitions, bendpoints, labels), golden test added
+learniq	2424	c4f4105e6da47fb6060cb02dd2f0ee777999d9ed	GREEN	worker-31	tests-only JS; PHP 6101 tests baseline 1 fail (he.json) unchanged; JS 1130 run, baseline 1 fail (stale l10n catalogue), 0 new
