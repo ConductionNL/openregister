@@ -5112,3 +5112,4 @@ build2:openregister:files-leaf-save-to-object	failed: open tasks 2.1-2.3 need th
 cover:portaliq:b60f3b81:0e96d102	PR #2400: 6 fail-closed tests for EmailLink (tokens, sender, sign-in address change); dir 96.73%->99.18%	session-20261113T091531-f9ad21ac	2026-11-13T13:15:00Z
 fix:planninq:1139:afab2501	stale: branch head moved to c5d778ee (duplicate tests already dropped by another worker)	session-20261113T094617-36f80607	2026-11-13T13:15:05Z
 cover:stackiq:9ac19b3am10f3:js0b5eefce	failed: permission (npm ci refused by permission check)	session-20261113T131535-3d7413ab	2026-11-13T13:16:21Z
+verify:portaliq:2398:da2af02e	GREEN #2398 (4841 tests, 0 new failures)	session-20261113T131531-81a20e2a	2026-11-13T13:16:43Z
