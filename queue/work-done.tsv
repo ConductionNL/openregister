@@ -1860,3 +1860,4 @@ verify:learniq:2431:8116f8a7	2431 GREEN; 2432 already on development; 0 new fail
 cover:integriq:92114ab0md8cd:js0023cfc7	already done: open branches -1 and -2 bring src/dialogs/* to 506/522 (96.9%), target 85; no third PR	session-20261113T015005-030aa10a	2026-11-13T03:36:03Z
 cover:filinq:7a9ef677mc744:js00fe026a	PR #2021: 18 vitest tests, src/services lines 70.2% -> 73.7% (rest is jest-run code and spec files in the dir), suite 468/0	session-20261113T021703-063c80f1	2026-11-13T03:36:43Z
 gap:dossiq:pcovdir:covpub	PR #6263: -d pcov.directory=lib in coverage:publish; confirmed summary gets PHP 76.1% (publish step run separately, phpunit has 19 inherited failures)	session-20261113T024656-d5bfb688	2026-11-13T03:37:09Z
+cover:dossiq:6ca0231ema7d4:eb8f684c	opened dossiq#6264: 9 tests (ProcessingTimeRows, ProcessingTimeCalculator family grouping); suite 14125 -> 14134, 19 inherited, 0 new	session-20261113T031700-7e4db3e6	2026-11-13T03:37:15Z
