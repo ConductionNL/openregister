@@ -3232,6 +3232,8 @@ Search/,,Search,,,,,Search
 Sections/,,Sections,,,,,Platform
 Service/Aggregation/,,Service,,,,,Core
 Service/Anonymisation/,,Service,,,,,Compliance
+Service/Anonymisation/CapacityPolicy.php,,Service,,,,,Compliance
+Service/Anonymisation/CapacitySuggester.php,,Service,,,,,Compliance
 Service/ApiCaller/,,Service,,,,,Platform
 Service/ApiVersion/,,Service,,,,,Core
 Service/Archival/,,Service,,,,,Compliance
