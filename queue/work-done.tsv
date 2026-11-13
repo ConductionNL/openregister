@@ -5372,6 +5372,7 @@ build2:openregister:settings-change-audit	partial: PR #10271 (1.1b, 1.1c; 2.1 bl
 review:openregister:10237:f1ce52d1	APPROVE: build archival-conformance task 1.2, additive parties/betrokkene behind the x-openregister-archival parties declaration; phpstan clean, touched+Architecture+Contract tests pass on merge with main, no behaviour change outside the declared path	session-20261113T091531-f9ad21ac	2026-11-13T13:59:04Z
 cover:stackiq:9ac19b3amc14f:60c2c265	PR #1881: +34 tests, lib/Controller/*.php 93.2%->97.8%, overall 87.39->87.94	session-20261113T134531-53f143d2	2026-11-13T13:58:56Z
 verify:versioniq:678:99e9570c	GREEN #678: tests only, no new failures	session-20261113T081048-4978ac57	2026-11-13T13:59:04Z
+cover:stackiq:9ac19b3amc14f:34763eb4	already done: lib/Middleware/*.php at 100% lines (57/57); no PR	session-20261113T134531-53f143d2	2026-11-13T13:59:16Z
 cover:launchpad:fb10c50fm2d1d:34f5c300	already done: lib/Service 95.39% (10998/11530) on development d6a7f892 after batches -1..-3, above the 95% target	session-20261113T091533-b7a00bc3	2026-11-13T13:59:12Z
 cover:versioniq:1b35eed9mf055:3b37d68f	already at target: lib/Service/Discovery 99.14% (347/350) on development; no PR	session-20261113T081048-4978ac57	2026-11-13T13:59:21Z
 review:openregister:10254:3f5128ef	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T13:59:32Z
