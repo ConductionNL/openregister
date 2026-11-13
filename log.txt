@@ -3312,3 +3312,4 @@
 2026-11-13T10:20:15Z integrator-20261111T115842-a749432d GREEN tree 894c0584ed on dev 63cf02763f prs 2 front=skip: Tests: 58656, Assertions: 201302, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
 2026-11-13T10:20:53Z integrator-20261111T115842-a749432d MERGED-TREE 894c0584ed: 2 PRs in one push, main now 894c0584ed = tested tree
 2026-11-13T11:26:33Z integrator-20261111T115842-a749432d RED tree 467844bf65 prs 4 front=ok: Tests: 58679, Assertions: 201354, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Service\ExampleSet\ExampleSetTalkStoreBehaviourTest::testTalkIsUnavailableWhenItsS
+2026-11-13T11:33:33Z integrator-20261111T115842-a749432d GREEN tree 467844bf65 on dev 894c0584ed prs 4 front=ok: Tests: 58679, Assertions: 201354, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
