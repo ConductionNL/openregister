@@ -78,9 +78,10 @@ describe('the Archival page', () => {
 		}
 		for (const s of strings.filter((x) => typeof x === 'string')) {
 			expect([s, nl[s]]).toEqual([s, expect.any(String)])
-			// A key in either layout: the Transifex one (`"key" : "value"`) that
-			// the l10n writer emits, or the compact one a hand-appended line has.
-			expect([JSON.stringify(s) + ':', JSON.stringify(s) + ' :'].some((key) => nlJs.includes(key))).toBe(true)
+			// The bundle is a key in either catalogue layout: `"k": "v"` as
+			// hand-merged, or `"k" : "v"` as the l10n tooling serialises it.
+			const quoted = JSON.stringify(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+			expect(nlJs).toMatch(new RegExp(quoted + '\\s*:'))
 		}
 		expect(nl.Archiving).toBe('Archivering')
 	})

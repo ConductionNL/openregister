@@ -1730,6 +1730,7 @@ Service/Anonymisation/AnonymisationBackendService.php,388,Service,Compliance,Com
 Service/Anonymisation/BackendInfo.php,23,Service,Compliance,Compliance/Service/Anonymisation/BackendInfo.php,2,,Compliance
 Service/Anonymisation/BackendState.php,38,Service,Compliance,Compliance/Service/Anonymisation/BackendState.php,13,415,Compliance
 Service/Anonymisation/ProbeResult.php,41,Service,Compliance,Compliance/Service/Anonymisation/ProbeResult.php,0,,Compliance
+Service/Anonymisation/ProbeResultCache.php,64,Service,Compliance,Compliance/Service/Anonymisation/ProbeResultCache.php,0,,Compliance
 Service/AnonymousEvaluationContext.php,19,Service,Service,Service/AnonymousEvaluationContext.php,0,,Core
 Service/ApiCaller/ApiCallRecorder.php,85,Service,Platform,Platform/Service/ApiCaller/ApiCallRecorder.php,0,,Platform
 Service/ApiCaller/CallerPolicy.php,92,Service,Platform,Platform/Service/ApiCaller/CallerPolicy.php,0,,Platform
@@ -3229,6 +3230,7 @@ Service/Anonymisation/,,Service,,,,,Compliance
 Service/ApiCaller/,,Service,,,,,Platform
 Service/ApiVersion/,,Service,,,,,Core
 Service/Archival/,,Service,,,,,Compliance
+Service/Archival/InheritedAppraisal.php,,Service,,,,,Compliance
 Service/Audit/,,Service,,,,,Compliance
 Service/Authorization/,,Service,,,,,Core
 Service/Bindings/,,Service,,,,,Integrations
@@ -3258,6 +3260,10 @@ Service/Export/,,Service,,,,,Configuration
 Service/ExternalLink/,,Service,,,,,Core
 Service/Federation/,,Service,,,,,Core
 Service/File/,,Service,,,,,Core
+Service/File/ArchiveBounds.php,,Service,,,,,Core
+Service/File/ArchiveListing.php,,Service,,,,,Core
+Service/File/ArchiveMemberEnumerator.php,,Service,,,,,Core
+Service/File/ArchiveWalk.php,,Service,,,,,Core
 Service/Flow/,,Service,,,,,Processes
 Service/Form/,,Service,,,,,Processes
 Service/Gdpr/,,Service,,,,,Compliance
@@ -3299,6 +3305,7 @@ Service/Rules/,,Service,,,,,Processes
 Service/Schema/,,Service,,,,,Core
 Service/SchemaImport/,,Service,,,,,Core
 Service/Schemas/,,Service,,,,,Core
+Service/Schemas/RetentionAnnotationValidator.php,,Service,,,,,Core
 Service/Search/,,Service,,,,,Core
 Service/Security/,,Service,,,,,Integrations
 Service/Serializer/,,Service,,,,,Core
@@ -3859,6 +3866,9 @@ Service/TranslationProjectionServiceInterface.php,,Service,,,,,Platform
 Service/TranslationSearch.php,,Service,,,,,Configuration
 Service/TranslationStatusServiceInterface.php,,Service,,,,,Platform
 Service/TranslationStores.php,,Service,,,,,Platform
+Service/Translation/GlossaryService.php,,Service,,,,,Configuration
+Service/Translation/TaskProcessingTranslationProvider.php,,Service,,,,,Configuration
+Service/Translation/TranslationOutcome.php,,Service,,,,,Configuration
 Service/UnclassifiedProcessing.php,,Service,,,,,Compliance
 Service/UrnServiceInterface.php,,Service,,,,,Core
 Service/UserDirectory.php,,Service,,,,,Integrations
