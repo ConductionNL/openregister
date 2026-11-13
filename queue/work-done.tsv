@@ -3624,6 +3624,7 @@ cover:stackiq:9ac19b3am6096:38e80a9f	already done: lib/Command/*.php at 100% (pc
 cover:learniq:e6498dddmf689:9d3a1784	PR #2454: 11 tests, 4 jobs to 100% lines; suite 6105->6116, only inherited failure	session-20261113T081055-3901e400	2026-11-13T08:51:32Z
 cover:stackiq:9ac19b3am5ac4:js5794e9fc	PR #1862: 16 CmdbImport specs; src/views/settings/ 88.0->90.3%	session-20261113T080546-98207a87	2026-11-13T08:52:00Z
 cover:integriq:92114ab0m658d:8addca3f	PR #3515: Rule/Source/Mapping/Job handlers to 100% lines, 6 tests; DigitalPost part already in #3506; suite 8054->8060, baseline unchanged	session-20261113T071640-3ba6da34	2026-11-13T08:51:49Z
+cover:launchpad:fb10c50fm911d:a1252b57	already done: lib/Service/Confluence/ at 97.47% lines (462/474) on development, above 95 target; no PR	session-20261113T073916-e9f11dfa	2026-11-13T08:52:16Z
 cover:dossiq:f8a113c5m7e79:38e8c328	already done: 8 dirs leave 8 uncovered statements (Hearing value objects, a class_exists guard); no PR	session-20261113T080551-294c2aa6	2026-11-13T08:52:17Z
 verify:learniq:2450:12be44a2	4 GREEN (2450-2453), tests only, 0 new failures	session-20261113T084527-a728978e	2026-11-13T08:52:18Z
 fix:stackiq:1700:f9ee16d5	conflict resolved, vitest 2370/2370 green, new head 7a35e49e (REVERIFY)	session-20261113T084521-4cd185d2	2026-11-13T08:52:29Z
