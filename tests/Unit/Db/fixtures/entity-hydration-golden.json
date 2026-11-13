@@ -447,7 +447,8 @@
                 "status": "text-status",
                 "owner": "text-owner",
                 "created": "2026-02-03T04:05:06+00:00",
-                "updated": "2026-02-03T04:05:06+00:00"
+                "updated": "2026-02-03T04:05:06+00:00",
+                "expiresAt": "2026-02-03T04:05:06+00:00"
             },
             "updated": [
                 "id",
@@ -466,7 +467,8 @@
                 "status",
                 "owner",
                 "created",
-                "updated"
+                "updated",
+                "expiresAt"
             ]
         },
         "filled json": {
@@ -491,7 +493,8 @@
                 "status": "text-status",
                 "owner": "text-owner",
                 "created": "2026-02-03T04:05:06+00:00",
-                "updated": "2026-02-03T04:05:06+00:00"
+                "updated": "2026-02-03T04:05:06+00:00",
+                "expiresAt": "2026-02-03T04:05:06+00:00"
             },
             "updated": [
                 "id",
@@ -511,7 +514,8 @@
                 "status",
                 "owner",
                 "created",
-                "updated"
+                "updated",
+                "expiresAt"
             ]
         }
     },

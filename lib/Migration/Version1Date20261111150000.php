@@ -61,7 +61,7 @@ class Version1Date20261111150000 extends SimpleMigrationStep {
 
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false || $schema->getTable(self::TABLE)->hasColumn('expires_at') === true) {
-			return null;
+			return $schema;
 		}
 
 		$schema->getTable(self::TABLE)->addColumn('expires_at', Types::DATETIME, ['notnull' => false, 'default' => null]);
