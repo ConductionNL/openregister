@@ -1,0 +1,124 @@
+{
+ "app": "larpinq",
+ "commit": "1137ab67c8cdaea7e555dc99270e050e09fa11c2",
+ "measured_at": "2026-11-13T07:36:38Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 0.0,
+  "statements": 4153,
+  "covered": 0,
+  "dirs": {
+   "lib/AppInfo/": [
+    106,
+    0
+   ],
+   "lib/BackgroundJob/": [
+    9,
+    0
+   ],
+   "lib/Command/": [
+    19,
+    0
+   ],
+   "lib/Controller/": [
+    558,
+    0
+   ],
+   "lib/Event/": [
+    22,
+    0
+   ],
+   "lib/Listener/": [
+    521,
+    0
+   ],
+   "lib/Middleware/": [
+    56,
+    0
+   ],
+   "lib/Middleware/Support/": [
+    59,
+    0
+   ],
+   "lib/Portal/": [
+    155,
+    0
+   ],
+   "lib/Repair/": [
+    280,
+    0
+   ],
+   "lib/Sections/": [
+    6,
+    0
+   ],
+   "lib/Service/": [
+    2305,
+    0
+   ],
+   "lib/Settings/": [
+    12,
+    0
+   ],
+   "lib/Support/": [
+    45,
+    0
+   ]
+  }
+ },
+ "js": {
+  "pct": 65.35,
+  "statements": 1186,
+  "covered": 775,
+  "dirs": {
+   "src/": [
+    90,
+    39
+   ],
+   "src/assets/": [
+    0,
+    0
+   ],
+   "src/components/": [
+    25,
+    0
+   ],
+   "src/dialogs/": [
+    104,
+    0
+   ],
+   "src/manifest.d/": [
+    22,
+    13
+   ],
+   "src/mixins/": [
+    4,
+    4
+   ],
+   "src/services/": [
+    498,
+    466
+   ],
+   "src/store/": [
+    18,
+    13
+   ],
+   "src/store/modules/": [
+    41,
+    38
+   ],
+   "src/views/": [
+    310,
+    190
+   ],
+   "src/views/flows/": [
+    0,
+    0
+   ],
+   "src/views/settings/": [
+    74,
+    12
+   ]
+  }
+ }
+}

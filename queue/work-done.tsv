@@ -3190,4 +3190,5 @@ cover:dossiq:f8a113c5m7e79:93ebc4b9	already done: RangeStreamResponse edge cases
 cover:dossiq:f8a113c5m7e79:0eb04fa4	already done: lib/Service/Product 147/147 lines (PR -1 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:36:16Z
 cover:integriq:92114ab0m658d:f0d34e00	already done: lib/Connectors/*.php at 98.6% lines (272/276) on development (branch -1 merged as #3474); no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:36:34Z
 cover:dossiq:f8a113c5m7e79:3e42da73	already done: lib/Service/Tenant 97/99 lines (98%, target 95), PR -1 merged	session-20261113T051703-1b54bfba	2026-11-13T07:36:33Z
+cover:dossiq:f8a113c5m7e79:8f99c0f1	already above target: lib/Woo measured 96.3% after PR #6235, which is merged on development (target 90); no PR	session-20261113T072711-3523cf52	2026-11-13T07:36:49Z
 cover:dossiq:f8a113c5m7e79:018cb40a	already done: lib/Contribution 65/65 lines (PR -1 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:36:48Z
