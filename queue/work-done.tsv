@@ -3123,3 +3123,4 @@ measure:openregister:20261113h06	php 91.41% (pcov, phpunit-unit-local.xml; unit 
 cover:dossiq:f8a113c5m7e79:c7ef8f28	already done: pcov on development (today) shows lib/Listener/Support 98.8% lines (158/160), target 90	session-20261113T053904-36dcee67	2026-11-13T07:19:21Z
 cover:dossiq:f8a113c5m7e79:c900fa11	already done: lib/Service/Email/Filters/ at 98.73% lines (155/157) on development 44047ce7d; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:19:27Z
 cover:shillinq:05639debmd8ee:c80330bb	already done: lib/Service/Purchasing/ at 96.7% lines (88/91) on development ebb2e0884; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:19:39Z
+cover:integriq:92114ab0m658d:9d3a1784	already done: lib/BackgroundJob/*.php at 93.3% lines (846/907) under the full unit suite on development, target 90; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:19:48Z
