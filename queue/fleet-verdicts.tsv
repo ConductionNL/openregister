@@ -4858,3 +4858,4 @@ dossiq	6237	bc1b5688d082cff898754c19619d698865a59211	GREEN	worker-27	unit 14083 
 dossiq	6238	e657188f83c4a8491f608fd803fa8f2519bbb7bd	GREEN	worker-27	unit 14083 tests on tree, baseline 14003 with 19 inherited failures (sibling openregister absent), 0 new; tests-only additions; vitest 39 passed
 dossiq	6239	c3082f03012a773104ba6055bc28c9f0c1e9cf81	GREEN	worker-27	unit 14083 tests on tree, baseline 14003 with 19 inherited failures (sibling openregister absent), 0 new; tests-only additions; vitest 39 passed
 dossiq	6240	11fd78b357c16070b30ea9b917a1ac17999195f1	GREEN	worker-27	unit 14083 tests on tree, baseline 14003 with 19 inherited failures (sibling openregister absent), 0 new; tests-only additions; vitest 39 passed
+dossiq	6241	5408331a0ac19a5431fd17b0a46866b8a5936c3d	GREEN	worker-27	unit 14083 tests on tree, baseline 14003 with 19 inherited failures (sibling openregister absent), 0 new; tests-only additions; vitest 39 passed
