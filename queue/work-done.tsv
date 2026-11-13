@@ -6438,3 +6438,4 @@ build:filinq:forms-as-documents	failed: blocked on tasks.md 0.1, the owner's pro
 cover:dossiq:069ee2d6mbd37:js0be8c659	PR #6447: 5 vitest tests; src/modals 94.93% -> 95.92%, above 95%	session-20261113T175336-b2d7fc7c	2026-11-13T19:50:01Z
 cover:keepiq:c967a31fm10bf:2c3e981f	already done: lib/Service/ShareSync/ measures 100% (174/174 statements), each class has its own test file; no PR	session-20261113T182404-f2c28226	2026-11-13T19:50:26Z
 verify:dossiq:6443:2382f907	6443 GREEN, 6444 GREEN; 0 new failures	session-20261113T192700-f21ebd18	2026-11-13T19:50:31Z
+review:openregister:10315:269e7b06	APPROVE: opt-in search result declaration, undeclared unchanged; phpstan clean, suites green	session-20261113T192651-cb1e4daf	2026-11-13T19:50:38Z
