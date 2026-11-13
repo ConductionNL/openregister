@@ -5528,3 +5528,4 @@ cover:pipelinq:7f9dc8e6mcebb:60c2c265	PR #3760: MetricsController 0->12/12, 2 te
 verify:larpinq:1029:578bb7c3	1029 GREEN (spec only; PHP 791 ok, vitest 495 ok)	session-20261113T074535-8a2067c2	2026-11-13T14:24:10Z
 review:openregister:10278:7ba5dae1	APPROVE: @spec-only comment changes; suites green (1 inherited Db failure)	session-20261113T124807-2640af3d	2026-11-13T14:24:49Z
 verify:portaliq:2411:0069c1e8	GREEN 2411: docs only, unit suite 4892 green	session-20261113T074527-031883a8	2026-11-13T14:25:00Z
+cover:keepiq:c967a31fm1bed:js0023cfc7	PR #1758: 12 tests over 3 dialogs, src/dialogs 91.19 -> 92.37%	session-20261113T121536-3cb7eb71	2026-11-13T14:25:07Z
