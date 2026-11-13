@@ -49,6 +49,8 @@ final class ImportedSchemaComparison
 	 * @param Schema $existing The schema already stored.
 	 *
 	 * @return bool True when the properties, the required list, the authorization or the annotations differ.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-catalogue-metadata-travels-with-the-register
 	 */
 	public function differs(array $data, Schema $existing): bool
 	{
@@ -64,8 +66,35 @@ final class ImportedSchemaComparison
 			}
 		}
 
-		return $this->annotationsDiffer(data: $data, existing: $existing);
+		return $this->catalogueDiffers(data: $data, existing: $existing)
+			|| $this->annotationsDiffer(data: $data, existing: $existing);
 	}//end differs()
+
+	/**
+	 * Whether the incoming classification or catalogue block differs from the stored one.
+	 *
+	 * Compared only when the file carries the key: a file written before these
+	 * fields existed says nothing about them, and must not count as a change
+	 * on every import.
+	 *
+	 * @param array<string, mixed> $data     The incoming schema definition.
+	 * @param Schema               $existing The schema already stored.
+	 *
+	 * @return bool True when a carried field differs.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-catalogue-metadata-travels-with-the-register
+	 */
+	private function catalogueDiffers(array $data, Schema $existing): bool
+	{
+		$stored = ['classification' => $existing->getClassification(), 'catalogue' => $existing->getCatalogue()];
+		foreach ($stored as $key => $storedValue) {
+			if (array_key_exists($key, $data) === true && $this->normalised(value: $data[$key]) !== $this->normalised(value: $storedValue)) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end catalogueDiffers()
 
 	/**
 	 * Whether the incoming schema declares an `x-openregister-*` annotation
