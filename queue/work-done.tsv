@@ -4993,3 +4993,4 @@ verify:shillinq:2924:99c0bfff	2924 GREEN, 2925 GREEN	session-20261113T071633-17d
 review:openregister:10174:ad3e5654	APPROVE (scoped discovery per change; suites green, inherited errors only)	session-20261113T081038-e8b5210f	2026-11-13T12:44:20Z
 build:openregister:special-right-to-manage-grants	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:44:33Z
 build:openregister:tables-bulk-jobs-and-file-search	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:44:40Z
+build:openregister:tasks-progress-report	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:44:46Z
