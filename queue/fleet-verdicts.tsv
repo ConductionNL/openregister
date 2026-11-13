@@ -5449,3 +5449,4 @@ portaliq	2375	f787d59a2564b83a94031ab55177f69495853b34	CONFLICT	worker-47	confli
 portaliq	2376	06bdb3c4f5c93d745ee683b5e92e0d1e29e7a096	CONFLICT	worker-47	add/add conflict with 2374 in FormEmailCodeMailerTest/JsValueTest; overlaps 2374+2375
 portaliq	2377	7ea1553aeb8f12b3d4560c9d26844425fd750fc5	GREEN	worker-47	4620 tests on tree (2373+2374+2377), baseline 4527 0 failures, 0 new; tests only
 buildiq	1526	2ab00cf5eec7706a83146c6418b6e3aa926ac0bd	GREEN	worker-06	2674 tests (baseline 2659), 1 inherited failure (ExportZipGoldenTest::testGenerateAppZipMatchesGolden), 0 new; extraction refactor, behaviour unchanged (saveManifest write tests from #1529 also pass on it); touches the same methods as #1525, expect a conflict after one merges
+buildiq	1527	4e8dfa26f031242a99953f1089984830752d3b3f	GREEN	worker-06	2707 tests on tree (baseline 2659), 1 inherited failure (ExportZipGoldenTest::testGenerateAppZipMatchesGolden), 0 new; tests-only
