@@ -1923,3 +1923,5 @@ pipelinq	3721	f846326553ca8ca0ed4c03160ec7125ca4a255c9	SKIP	merge-local	GATE UNM
 humaniq	1118	0a5a0d250345afac4b7b3ded42c708f1c5f671a2	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3756	378892d9943053e06e5b6da185b98139950778a2	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3757	dfbe53e9af73a4ed7ad6c8820cf5cac12c0d85b0	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1686	07c5f2514349fb3fd330f8536f784204297f4901	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1687	a15737f34553027c0fa9c4c021537f0c628eac28	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
