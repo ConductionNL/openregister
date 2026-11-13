@@ -5205,3 +5205,4 @@ buildiq	1513	7ba380d85a93fb298cbec60b3347950757218772	GREEN	worker-02	tree 1513 
 filinq	2035	d131519bb453b67243849bddaa401f3f73e5f92e	GREEN	worker-52	tests only (vitest); php 6112 pass (baseline 6112), vitest 718 pass, 0 new failures
 filinq	2036	c7b0a760fbe432e8a7a599c8d34c43f9c15177c8	GREEN	worker-52	tests only (vitest); php 6112 pass (baseline 6112), vitest 718 pass, 0 new failures
 shillinq	2869	c6f5e69eddd0478c7fb0b53f492c9474c1a48661	GREEN	worker-39	php unit 9031 tests (PR touches no PHP), baseline 1 failure inherited; vitest 1343 passed, 0 new failures; tests only
+shillinq	2870	725902d10e2cfdac4608b465568b516920b423ba	GREEN	worker-06	PHP 9031 tests, baseline 1 failure unchanged; vitest 1356/1356 pass; tests only
