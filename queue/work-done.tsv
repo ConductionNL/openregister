@@ -6779,3 +6779,4 @@ build:opencatalogi:capability-rows-verify-scenarios	partial: PR #2628; 1.3 done 
 build:integriq:brp-relations-read	already done: change archived as obsolete on development (c6201246a, decision 399); nothing to build	session-20261113T202612-d04bbf77	2026-11-13T20:53:06Z
 build:opencatalogi:catalogue-staff-access	PR #2629: task 1.4 enforcement test (4 tests vs OpenRegister PermissionHandler); no tasks left in code	session-20261113T204542-158476ba	2026-11-13T20:53:24Z
 cover:decidiq:a5f973bbm5a4d:98083bbf	PR #2142: 3 tests, Listener/Registrar 91.3%->100%, suite 3911->3914 OK	session-20261113T185324-28e07ab2	2026-11-13T20:53:48Z
+build:integriq:connectors-lti-platform-launch	partial: PR #3545 adds the launch/error page strings (en, nl); left: e2e and live reference-tool tests	session-20261113T204535-8ae4a1d5	2026-11-13T20:53:47Z
