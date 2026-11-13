@@ -5758,4 +5758,3 @@ verify:stackiq:1883:8d47c6e7	GREEN #1883 #1884: 3409 tests, 0 new failures	sessi
 verify:opencatalogi:2591:1bb11622	opencatalogi #2591-#2594 GREEN: 5287 tests, 0 new failures	session-20261113T172325-6eb25015	2026-11-13T17:58:17Z
 build:portaliq:intake-pay-on-submit	partial: code already on development; PR #2422 makes strict openspec validation pass (T08); T01 needs a live instance	session-20261113T175336-b2d7fc7c	2026-11-13T17:58:48Z
 verify:portaliq:2418:0d2821f2	GREEN #2418 (4914->4921 OK, JS specs pass)	session-20261113T171203-c5a044de	2026-11-13T17:58:47Z
-build:portal-account-presence	x	session-20261113T175400-7ec3993f	2026-11-13T17:59:04Z
