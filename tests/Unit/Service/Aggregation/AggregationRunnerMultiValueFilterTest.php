@@ -54,6 +54,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\LanguageService;
@@ -132,7 +133,9 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'count',
 				filter: ['status' => ['open', 'in-progress']],
-				groupBy: ['field' => 'region']
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'region']
+				)
 			)
 		);
 
@@ -159,7 +162,9 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'count',
 				filter: ['status' => []],
-				groupBy: ['field' => 'region']
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'region']
+				)
 			)
 		);
 
@@ -179,7 +184,9 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'count',
 				filter: ['status' => ['in' => ['open', 'in-progress']]],
-				groupBy: ['field' => 'region']
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'region']
+				)
 			)
 		);
 
@@ -230,7 +237,9 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'count',
 				filter: ['region' => 'IS NULL'],
-				groupBy: ['field' => 'status']
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'status']
+				)
 			)
 		);
 
@@ -248,7 +257,9 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'count',
 				filter: ['region' => ['isnull' => 'false']],
-				groupBy: ['field' => 'status']
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'status']
+				)
 			)
 		);
 
@@ -477,7 +488,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
-			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status'])
+			query: AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'status']))
 		);
 
 		$this->assertSame(['backend', 'cached', 'groups'], $this->sortedKeys($result));

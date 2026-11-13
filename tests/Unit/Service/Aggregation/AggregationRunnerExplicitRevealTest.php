@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
@@ -171,7 +172,7 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$this->runner()->runAdhoc(
 			register: $this->register(),
 			schema: $this->schema(),
-			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'citizenServiceNumber'])
+			query: AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'citizenServiceNumber']))
 		);
 	}//end testAnAdhocGroupByOnItIsRefused()
 
@@ -203,7 +204,11 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$this->runner()->runAdhoc(
 			register: $this->register(),
 			schema: $this->schema(),
-			query: AggregationQuery::create(metric: 'count', filter: ['citizenServiceNumber' => '123457609'], groupBy: ['field' => 'municipality'])
+			query: AggregationQuery::create(
+				metric: 'count',
+				filter: ['citizenServiceNumber' => '123457609'],
+				layout: new AggregationLayout(groupBy: ['field' => 'municipality'])
+			)
 		);
 	}//end testAnAdhocFilterOnItIsRefused()
 

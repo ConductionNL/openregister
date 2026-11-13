@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use PHPUnit\Framework\TestCase;
 
@@ -50,7 +51,9 @@ class AggregationQueryTest extends TestCase {
 			metric: 'count',
 			field: null,
 			filter: [],
-			groupBy: ['field' => 'status']
+			layout: new AggregationLayout(
+				groupBy: ['field' => 'status']
+			)
 		);
 		$this->assertTrue($q->isGrouped());
 		$this->assertSame('status', $q->getGroupByField());
@@ -62,7 +65,9 @@ class AggregationQueryTest extends TestCase {
 		$this->expectExceptionMessage('groupBy MUST include a non-empty `field`');
 		AggregationQuery::create(
 			metric: 'count',
-			groupBy: ['field' => '']
+			layout: new AggregationLayout(
+				groupBy: ['field' => '']
+			)
 		);
 
 	}//end testGroupByMustHaveField()
@@ -72,7 +77,9 @@ class AggregationQueryTest extends TestCase {
 			metric: 'sum',
 			field: 'amount',
 			filter: [],
-			groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+			layout: new AggregationLayout(
+				groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+			)
 		);
 		$this->assertTrue($q->isGrouped());
 		$this->assertTrue($q->isMultiFieldGroupBy());
@@ -85,7 +92,9 @@ class AggregationQueryTest extends TestCase {
 	public function testMultiFieldGroupByPlainListShape(): void {
 		$q = AggregationQuery::create(
 			metric: 'count',
-			groupBy: ['vendorId', 'dueDateBucket']
+			layout: new AggregationLayout(
+				groupBy: ['vendorId', 'dueDateBucket']
+			)
 		);
 		$this->assertTrue($q->isMultiFieldGroupBy());
 		$this->assertSame(['vendorId', 'dueDateBucket'], $q->getGroupByFields());
@@ -95,7 +104,9 @@ class AggregationQueryTest extends TestCase {
 	public function testSingleFieldGroupByIsNotMultiField(): void {
 		$q = AggregationQuery::create(
 			metric: 'count',
-			groupBy: ['field' => 'status']
+			layout: new AggregationLayout(
+				groupBy: ['field' => 'status']
+			)
 		);
 		$this->assertFalse($q->isMultiFieldGroupBy());
 		$this->assertSame(['status'], $q->getGroupByFields());
@@ -107,7 +118,9 @@ class AggregationQueryTest extends TestCase {
 		$this->expectExceptionMessage('groupBy MUST include a non-empty `field`');
 		AggregationQuery::create(
 			metric: 'count',
-			groupBy: ['vendorId', '']
+			layout: new AggregationLayout(
+				groupBy: ['vendorId', '']
+			)
 		);
 
 	}//end testMultiFieldGroupByRejectsEmptyMember()
@@ -117,7 +130,9 @@ class AggregationQueryTest extends TestCase {
 		$this->expectExceptionMessage('groupBy fields MUST be distinct');
 		AggregationQuery::create(
 			metric: 'count',
-			groupBy: ['vendorId', 'vendorId']
+			layout: new AggregationLayout(
+				groupBy: ['vendorId', 'vendorId']
+			)
 		);
 
 	}//end testMultiFieldGroupByRejectsDuplicateFields()
@@ -138,12 +153,14 @@ class AggregationQueryTest extends TestCase {
 	public function testDateBucketIsExposedThroughHasDateBucket(): void {
 		$q = AggregationQuery::create(
 			metric: 'count',
-			dateBucket: [
+			layout: new AggregationLayout(
+				dateBucket: [
 				'field' => 'created',
 				'start' => '2026-01-01T00:00:00Z',
 				'end' => '2026-12-31T23:59:59Z',
 				'gap' => 'month',
 			]
+			)
 		);
 		$this->assertTrue($q->hasDateBucket());
 		$this->assertSame('created', $q->dateBucket['field']);
@@ -155,7 +172,9 @@ class AggregationQueryTest extends TestCase {
 		$this->expectExceptionMessage('dateBucket MUST include non-empty');
 		AggregationQuery::create(
 			metric: 'count',
-			dateBucket: ['field' => 'created', 'start' => '2026-01-01']
+			layout: new AggregationLayout(
+				dateBucket: ['field' => 'created', 'start' => '2026-01-01']
+			)
 		);
 
 	}//end testDateBucketRequiresAllFourFields()
@@ -165,12 +184,14 @@ class AggregationQueryTest extends TestCase {
 		$this->expectExceptionMessage('dateBucket gap MUST be one of');
 		AggregationQuery::create(
 			metric: 'count',
-			dateBucket: [
+			layout: new AggregationLayout(
+				dateBucket: [
 				'field' => 'created',
 				'start' => '2026-01-01',
 				'end' => '2026-12-31',
 				'gap' => 'fortnight',
 			]
+			)
 		);
 
 	}//end testDateBucketGapMustBeKnownVocabulary()
@@ -180,13 +201,15 @@ class AggregationQueryTest extends TestCase {
 		$this->expectExceptionMessage('MUST NOT be combined');
 		AggregationQuery::create(
 			metric: 'count',
-			groupBy: ['field' => 'status'],
-			dateBucket: [
+			layout: new AggregationLayout(
+				groupBy: ['field' => 'status'],
+				dateBucket: [
 				'field' => 'created',
 				'start' => '2026-01-01',
 				'end' => '2026-12-31',
 				'gap' => 'month',
 			]
+			)
 		);
 
 	}//end testGroupByAndDateBucketAreMutuallyExclusive()
@@ -196,12 +219,14 @@ class AggregationQueryTest extends TestCase {
 			metric: 'sum',
 			field: 'amount',
 			filter: ['status' => 'open'],
-			dateBucket: [
+			layout: new AggregationLayout(
+				dateBucket: [
 				'field' => 'created',
 				'start' => '2026-01-01T00:00:00Z',
 				'end' => '2026-02-01T00:00:00Z',
 				'gap' => 'day',
 			]
+			)
 		);
 		$arr = $q->toArray();
 		$this->assertSame('sum', $arr['metric']);
@@ -271,10 +296,12 @@ class AggregationQueryTest extends TestCase {
 	public function testExplicitMetricsListIsMultiMetric(): void {
 		$q = AggregationQuery::create(
 			metric: 'count',
-			metrics: [
+			layout: new AggregationLayout(
+				metrics: [
 				['metric' => 'count'],
 				['metric' => 'sum', 'field' => 'price'],
 			]
+			)
 		);
 		$this->assertTrue($q->isMultiMetric());
 		$this->assertSame(
@@ -290,7 +317,9 @@ class AggregationQueryTest extends TestCase {
 	public function testSingleElementMetricsListIsNotMultiMetric(): void {
 		$q = AggregationQuery::create(
 			metric: 'count',
-			metrics: [['metric' => 'count']]
+			layout: new AggregationLayout(
+				metrics: [['metric' => 'count']]
+			)
 		);
 		$this->assertFalse($q->isMultiMetric());
 
@@ -299,7 +328,7 @@ class AggregationQueryTest extends TestCase {
 	public function testMetricsListRejectsEmptyList(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('metrics list, when supplied, MUST NOT be empty');
-		AggregationQuery::create(metric: 'count', metrics: []);
+		AggregationQuery::create(metric: 'count', layout: new AggregationLayout(metrics: []));
 
 	}//end testMetricsListRejectsEmptyList()
 
@@ -308,7 +337,9 @@ class AggregationQueryTest extends TestCase {
 		$this->expectExceptionMessage('invalid metric "median"');
 		AggregationQuery::create(
 			metric: 'count',
-			metrics: [['metric' => 'median']]
+			layout: new AggregationLayout(
+				metrics: [['metric' => 'median']]
+			)
 		);
 
 	}//end testMetricsListRejectsInvalidMetric()
@@ -318,7 +349,9 @@ class AggregationQueryTest extends TestCase {
 		$this->expectExceptionMessage('metrics entry "sum" MUST specify a field');
 		AggregationQuery::create(
 			metric: 'count',
-			metrics: [['metric' => 'sum']]
+			layout: new AggregationLayout(
+				metrics: [['metric' => 'sum']]
+			)
 		);
 
 	}//end testMetricsListEntryRequiresFieldForNonCount()
@@ -328,13 +361,15 @@ class AggregationQueryTest extends TestCase {
 		$this->expectExceptionMessage('MUST NOT be combined with dateBucket');
 		AggregationQuery::create(
 			metric: 'count',
-			metrics: [['metric' => 'count'], ['metric' => 'sum', 'field' => 'price']],
-			dateBucket: [
+			layout: new AggregationLayout(
+				metrics: [['metric' => 'count'], ['metric' => 'sum', 'field' => 'price']],
+				dateBucket: [
 				'field' => 'created',
 				'start' => '2026-01-01T00:00:00Z',
 				'end' => '2026-02-01T00:00:00Z',
 				'gap' => 'day',
 			]
+			)
 		);
 
 	}//end testMetricsListRejectsCombinationWithDateBucket()
@@ -353,7 +388,9 @@ class AggregationQueryTest extends TestCase {
 	public function testToArrayIncludesMetricsList(): void {
 		$withMetrics = AggregationQuery::create(
 			metric: 'count',
-			metrics: [['metric' => 'count'], ['metric' => 'sum', 'field' => 'price']]
+			layout: new AggregationLayout(
+				metrics: [['metric' => 'count'], ['metric' => 'sum', 'field' => 'price']]
+			)
 		);
 		$withoutMetrics = AggregationQuery::create(metric: 'count');
 
@@ -364,5 +401,89 @@ class AggregationQueryTest extends TestCase {
 		$this->assertNull($withoutMetrics->toArray()['metrics']);
 
 	}//end testToArrayIncludesMetricsList()
+
+	/**
+	 * A query created without a layout is an ungrouped single-value aggregation.
+	 *
+	 * @return void
+	 */
+	public function testCreateWithoutLayoutIsUngroupedSingleValue(): void {
+		$q = AggregationQuery::create(metric: 'sum', field: 'price', filter: ['status' => 'open']);
+
+		$this->assertSame(
+			expected: [
+				'metric' => 'sum',
+				'field' => 'price',
+				'filter' => ['status' => 'open'],
+				'groupBy' => null,
+				'dateBucket' => null,
+				'metrics' => null,
+				'cumulative' => false,
+			],
+			actual: $q->toArray()
+		);
+		$this->assertFalse(condition: $q->isGrouped());
+		$this->assertFalse(condition: $q->hasDateBucket());
+		$this->assertFalse(condition: $q->isCumulative());
+	}//end testCreateWithoutLayoutIsUngroupedSingleValue()
+
+	/**
+	 * The layout slots are readable on the query exactly as before.
+	 *
+	 * @return void
+	 */
+	public function testLayoutSlotsAnswerThroughTheQuery(): void {
+		$bucket = ['field' => 'day', 'start' => '2026-01-01', 'end' => '2026-02-01', 'gap' => 'month'];
+		$q      = AggregationQuery::create(
+			metric: 'sum',
+			field: 'price',
+			layout: new AggregationLayout(dateBucket: $bucket, cumulative: true)
+		);
+
+		$this->assertSame(expected: $bucket, actual: $q->dateBucket);
+		$this->assertTrue(condition: $q->hasDateBucket());
+		$this->assertTrue(condition: $q->isCumulative());
+		$this->assertNull(actual: $q->groupBy);
+		$this->assertNull(actual: $q->metrics);
+	}//end testLayoutSlotsAnswerThroughTheQuery()
+
+	/**
+	 * layout() rebuilds a query identical to the original.
+	 *
+	 * @return void
+	 */
+	public function testLayoutRoundTripsIntoAnEquivalentQuery(): void {
+		$original = AggregationQuery::create(
+			metric: 'count',
+			filter: ['b' => 2, 'a' => 1],
+			layout: new AggregationLayout(
+				groupBy: ['fields' => ['status', 'kind']],
+				metrics: [['metric' => 'count'], ['metric' => 'sum', 'field' => 'price']]
+			)
+		);
+		$layout   = $original->layout();
+		$rebuilt  = AggregationQuery::create(metric: $original->metric, field: $original->field, filter: $original->filter, layout: $layout);
+
+		$this->assertEquals(
+			expected: new AggregationLayout(
+				groupBy: ['fields' => ['status', 'kind']],
+				metrics: [['metric' => 'count'], ['metric' => 'sum', 'field' => 'price']]
+			),
+			actual: $layout
+		);
+		$this->assertSame(expected: $original->toArray(), actual: $rebuilt->toArray());
+		$this->assertSame(expected: get_object_vars($original), actual: get_object_vars($rebuilt));
+	}//end testLayoutRoundTripsIntoAnEquivalentQuery()
+
+	/**
+	 * create() still refuses an invalid layout with the same message.
+	 *
+	 * @return void
+	 */
+	public function testLayoutIsValidatedByCreate(): void {
+		$this->expectException(exception: InvalidArgumentException::class);
+		$this->expectExceptionMessage(message: 'cumulative MUST only be combined with a dateBucket (time-bucket) aggregation');
+		AggregationQuery::create(metric: 'count', layout: new AggregationLayout(cumulative: true));
+	}//end testLayoutIsValidatedByCreate()
 
 }//end class

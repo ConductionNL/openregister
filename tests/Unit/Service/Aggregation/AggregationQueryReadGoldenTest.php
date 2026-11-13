@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -48,21 +49,29 @@ class AggregationQueryReadGoldenTest extends TestCase {
 			))],
 			'metrics list with condition and alias' => [static fn () => self::read(AggregationQuery::create(
 				metric: 'count',
-				groupBy: ['fields' => ['x' => 'status', 'y' => 'kind']],
-				metrics: [
+				layout: new AggregationLayout(
+					groupBy: ['fields' => ['x' => 'status', 'y' => 'kind']],
+					metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount', 'condition' => ['status' => 'open'], 'as' => 'openSum'],
 					['metric' => 'count', 'field' => '', 'condition' => [], 'as' => ''],
 					['metric' => 'avg', 'field' => 'x', 'as' => 5, 'condition' => 'str'],
 				]
+				)
 			))],
 			'one metric in list, list groupBy' => [static fn () => self::read(AggregationQuery::create(
 				metric: 'count',
-				groupBy: self::asGroupBy(['status', 'kind']),
-				metrics: [['metric' => 'max', 'field' => 'n', 'extra' => 1]]
+				layout: new AggregationLayout(
+					groupBy: self::asGroupBy(['status', 'kind']),
+					metrics: [['metric' => 'max', 'field' => 'n', 'extra' => 1]]
+				)
 			))],
-			'single field groupBy' => [static fn () => self::read(AggregationQuery::create(metric: 'min', field: 'n', groupBy: ['field' => 'status']))],
-			'cumulative date bucket' => [static fn () => self::read(AggregationQuery::create(metric: 'count', dateBucket: $bucket, cumulative: true))],
+			'single field groupBy' => [static fn () => self::read(
+				AggregationQuery::create(metric: 'min', field: 'n', layout: new AggregationLayout(groupBy: ['field' => 'status']))
+			)],
+			'cumulative date bucket' => [static fn () => self::read(
+				AggregationQuery::create(metric: 'count', layout: new AggregationLayout(dateBucket: $bucket, cumulative: true))
+			)],
 			'normaliseGroupByFields' => [static function (): array {
 				$shapes = [
 					null, 'status', 7, [], ['a', 'b'], ['fields' => ['k' => 'a', 'b']], ['fields' => 'a', 'field' => 'b'],

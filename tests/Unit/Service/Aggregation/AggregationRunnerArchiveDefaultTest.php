@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\LanguageService;
@@ -250,12 +251,14 @@ class AggregationRunnerArchiveDefaultTest extends TestCase {
 	private function dayBucketQuery(): AggregationQuery {
 		return AggregationQuery::create(
 			metric: 'count',
-			dateBucket: [
+			layout: new AggregationLayout(
+				dateBucket: [
 				'field' => 'created',
 				'start' => '2026-05-01T00:00:00Z',
 				'end' => '2026-05-22T00:00:00Z',
 				'gap' => 'day',
 			]
+			)
 		);
 	}//end dayBucketQuery()
 

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -75,7 +76,7 @@ class AggregationQueryCreateGoldenTest extends TestCase {
 	#[DataProvider('cases')]
 	public function testCreate(array $args): void {
 		try {
-			$actual = ['query' => get_object_vars(AggregationQuery::create(...$args))];
+			$actual = ['query' => get_object_vars(self::createFrom(args: $args))];
 		} catch (InvalidArgumentException $e) {
 			$actual = ['error' => $e->getMessage()];
 		}
@@ -95,4 +96,23 @@ class AggregationQueryCreateGoldenTest extends TestCase {
 		$this->assertArrayHasKey($case, $golden, 'No golden entry; record with UPDATE_GOLDEN=1.');
 		$this->assertSame($golden[$case], $actual);
 	}//end testCreate()
+
+	/**
+	 * Call AggregationQuery::create() with a flat argument map, moving the layout keys
+	 * (groupBy, dateBucket, metrics, cumulative) into one AggregationLayout.
+	 *
+	 * @param array<string, mixed> $args The flat create() arguments.
+	 *
+	 * @return AggregationQuery
+	 */
+	private static function createFrom(array $args): AggregationQuery {
+		$layoutKeys = ['groupBy' => null, 'dateBucket' => null, 'metrics' => null, 'cumulative' => null];
+		$layout     = array_intersect_key($args, $layoutKeys);
+		$direct     = array_diff_key($args, $layoutKeys);
+		if ($layout !== []) {
+			$direct['layout'] = new AggregationLayout(...$layout);
+		}
+
+		return AggregationQuery::create(...$direct);
+	}//end createFrom()
 }//end class
