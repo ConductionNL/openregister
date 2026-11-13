@@ -5455,3 +5455,6 @@ build:portaliq:competitor-parity-2026-09	nothing to build: this is an umbrella/b
 cover:dossiq:069ee2d6m2deb:23f6b1f1	already done: lib/Service/Cases 99.23% (1552/1564) on development after the -1 batch	session-20261113T091533-b7a00bc3	2026-11-13T14:16:21Z
 cover:humaniq:a18a13fb:81b1241f	already done: lib/Portal/*.php at 100% stmts (271/271) @bf220bf4, above 95 target	session-20261113T124807-5f522699	2026-11-13T14:16:24Z
 review:openregister:10276:231ec6de	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T14:17:04Z
+merge:portaliq:2405:8af72dc3	merge-local over 3 portaliq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:17:14Z
+merge:portaliq:2284:6b2c9f97	merge-local over 3 portaliq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:17:14Z
+merge:portaliq:2404:096e1db8	merge-local over 3 portaliq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:17:14Z
