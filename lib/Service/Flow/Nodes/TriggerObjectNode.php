@@ -54,12 +54,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Rules\RuleScope;
 
 /**
  * Starts the flow when an object is created, updated or deleted.
  */
-class TriggerObjectNode extends TriggerNodeBase implements TriggerObjectNodeInterface {
+class TriggerObjectNode extends TriggerNodeBase implements TriggerObjectNodeInterface, IFlowNodeConfigForm {
 
 	/**
 	 * The object events a trigger may name.
@@ -139,6 +140,51 @@ class TriggerObjectNode extends TriggerNodeBase implements TriggerObjectNodeInte
 	public function configKeys(): array {
 		return ['event', 'register', 'schema', 'scope'];
 	}//end configKeys()
+
+	/**
+	 * The event, register and schema the trigger listens to, each required.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		// `scope` ({ property, value }) is a keyed structure the field vocabulary
+		// cannot describe; it stays in the JSON pane, and the help below says so.
+		$single = $this->l10n->t(
+			'There is no "any" choice on purpose: a trigger names exactly one event, register and '
+				. 'schema, so the flows an object change starts can be found without opening every flow.'
+		);
+
+		return [
+			[
+				'key' => 'event',
+				'label' => $this->l10n->t('Event'),
+				'type' => 'select',
+				'help' => $this->l10n->t('Which change starts the flow. This '
+					. 'trigger fires on an object being created, updated or deleted.').' '.$single,
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/flow/event-catalog',
+			],
+			[
+				'key' => 'register',
+				'label' => $this->l10n->t('Register'),
+				'type' => 'select',
+				'help' => $single,
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/registers',
+			],
+			[
+				'key' => 'schema',
+				'label' => $this->l10n->t('Schema'),
+				'type' => 'select',
+				'help' => $this->l10n->t('Which objects of the register the flow is about. '
+					. 'To narrow further, set a scope (one property and one value) in the JSON pane.'),
+				'required' => true,
+				'optionsFrom' => '/apps/openregister/api/schemas',
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * All three keys are REQUIRED, and `event` must be one the engine fires.
