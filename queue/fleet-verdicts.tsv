@@ -6578,3 +6578,10 @@ portaliq	2443	4322f3ac1ef3423b13baca3b34799b91c46b8460	CONFLICT	merge3	merges cl
 learniq	2436	c487c8c3f3268f7edce46f86878a9686ecc01d2f	CONFLICT	merge3	conflicts with development; files: tests/unit-js/signUpDecisionRequest.test.mjs 
 learniq	2488	732c334588c8550cc110d428e7795e0bdcec601b	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json scripts/example-sets/__pycache__/example_set.cpython-311.pyc 
 decidiq	2139	9b920569d595bb765d265611a196e8223712be4d	RED	merge3:merge-gate	GATE RED floor: duplication: 3.82 -> 3.80
+decidiq	2121	d094c2d61d91cedc67c0b6a907ae41dcc0fb2d20	CONFLICT	merge3	conflicts with development; files: tests/Unit/Service/MotionForwardingServiceTest.php 
+decidiq	2137	4ad4b50cd5728564d19497327cc79acb48dd2536	CONFLICT	merge3	conflicts with development; files: lib/Service/VotingRoundOpener.php 
+decidiq	2143	eb65d499e28cb1504f0aa98ab052ab2916d43b40	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Listener/Registrar/SaveGuardSubscriptions.php 
+decidiq	2144	2ef993a1cad6bb08147cb4569e93e271222ef672	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/Registrar/SaveGuardSubscriptions.php 
+decidiq	2146	23b793cd3f75f7327a1e105d11c8ed3882e5941a	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2148	e8596bad48afe132c776e2827a4283d31630995c	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Listener/Registrar/SaveGuardSubscriptions.php 
+decidiq	2149	2f8115d6b73387481c8715e3d3a2a5d1946d60de	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/decidesk_register.json 
