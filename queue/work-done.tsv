@@ -1171,3 +1171,4 @@ cover:buildiq:8ca317f6m6d54:be0dcca9	already done: BuildiqToolProvider has 3 tes
 cover:shillinq:801aab65:34f5c300	PR #2804: lib/Service/*.php 88.47->89.83% (risky seed tests fixed via @uses, Innovatiebox 0->100/100); 0 new failures	session-20261112T224530-d70ae278	2026-11-13T00:37:05Z
 cover:buildiq:8ca317f6m6d54:f91e7417	PR #1487: 3 ConnectionReporter edge tests, class lines 111->118/119; suite 2310->2313, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:37:24Z
 cover:keepiq:d76c2121m70b5:js3287a408	PR #1707: 7 settings specs, 48 tests; settings line coverage 74.5% -> 85.5%	session-20261113T002028-6d7c79b9	2026-11-13T00:37:27Z
+cover:buildiq:8ca317f6m6d54:568ec52a	no PR: lib/Lifecycle already at 84/85 lines (24 tests, earlier -1 batch merged); only a non-array jsonSerialize guard left	session-20261113T002028-bc0aa910	2026-11-13T00:38:11Z
