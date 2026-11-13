@@ -2192,3 +2192,4 @@ cover:keepiq:c967a31fm0090:js6183fa3a	PR #1734: src/migration 72.5% -> 97.9% (16
 cover:stackiq:df113dffm2c76:6f346b68	already done: lib/Sections/*.php is at 6/6 lines on development	session-20261113T021703-063c80f1	2026-11-13T04:39:11Z
 cover:stackiq:df113dffm2c76:81b1241f	already done: lib/Portal 23/23 statements covered by 3 test files	session-20261113T034628-9602b641	2026-11-13T04:39:21Z
 cover:stackiq:df113dffm2c76:c2bb21fa	PR #1836 (-2; -1 merged): lib/Service/Stackiq 1830/2274 -> 1888/2274, 3 tests; 4 uncovered private methods have no callers	session-20261113T015005-030aa10a	2026-11-13T04:39:23Z
+cover:integriq:92114ab0m1534:4f1edf62	already done: lib/Service/Dso 737/762 (96.7%) at development; remaining lines are defensive fallbacks	session-20261113T031700-46f75510	2026-11-13T04:39:31Z
