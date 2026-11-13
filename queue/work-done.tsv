@@ -1151,3 +1151,4 @@ fix:stackiq:1783:8edbead6	fixed: merged development, added roleGroupSettings moc
 cover:openregister:7350e3ef:js5451ad90	PR #10071: 10 jest tests for OrganisationMembers, RemoveUserDialog, SwitchOrganisationModal; jest 7485->7495, all green	session-20261112T231633-96ffe7b8	2026-11-13T00:32:50Z
 merge:hermiq:1583:43908e6c	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:33:35Z
 merge:hermiq:1589:0a4d481a	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:33:41Z
+merge:hermiq:1591:f93eecba	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:33:49Z
