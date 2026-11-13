@@ -51,6 +51,12 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @covers \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  * @uses \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskCommit
+ * @uses \OCA\OpenRegister\Service\Task\TaskImport
+ * @uses \OCA\OpenRegister\Service\Task\TaskIntake
+ * @uses \OCA\OpenRegister\Service\Task\TaskLifecycleServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskTables
  */
 class TaskBlockedByCreateTest extends TestCase {
 

@@ -45,6 +45,10 @@ use ReflectionNamedType;
  * whatever shape the service's constructor takes.
  *
  * @covers \OCA\OpenRegister\Service\Edepot\TransferListService
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferExclusion
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferStores
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferRejection
  */
 class TransferListServiceGoldenTest extends TestCase {
 

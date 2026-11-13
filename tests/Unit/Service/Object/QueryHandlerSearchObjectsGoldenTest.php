@@ -52,6 +52,13 @@ use OCA\OpenRegister\Service\Object\QueryRefinements;
  * @uses \OCA\OpenRegister\Service\Object\SearchRenderNeed
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceKey
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses   \OCA\OpenRegister\Service\Object\QueryHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\QueryPlatform
+ * @uses   \OCA\OpenRegister\Service\Object\QueryRefinements
+ * @uses   \OCA\OpenRegister\Service\Object\SearchOptions
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

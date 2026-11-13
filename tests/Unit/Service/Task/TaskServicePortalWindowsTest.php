@@ -56,6 +56,14 @@ use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswerPayload
+ * @uses \OCA\OpenRegister\Service\Task\TaskCommit
+ * @uses \OCA\OpenRegister\Service\Task\TaskCompletion
+ * @uses \OCA\OpenRegister\Service\Task\TaskIntake
+ * @uses \OCA\OpenRegister\Service\Task\TaskLifecycleServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskTables
  */
 class TaskServicePortalWindowsTest extends TestCase {
 

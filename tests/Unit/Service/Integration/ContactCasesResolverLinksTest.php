@@ -26,6 +26,7 @@ use Psr\Log\LoggerInterface;
  * A link that is no array is not a case and is not counted; real links are, and no resolve is attempted without a uuid.
  *
  * @covers \OCA\OpenRegister\Service\Integration\ContactCasesResolver
+ * @uses   \OCA\OpenRegister\Service\Integration\ContactCasesPanel
  */
 class ContactCasesResolverLinksTest extends TestCase {
 

@@ -80,6 +80,40 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses   \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses   \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeItem
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRun
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FolderBind
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation
+ * @uses   \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses   \OCA\OpenRegister\Service\ProtectedCarryForward
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class SaveObjectCascadeScopeTest extends TestCase {
 
