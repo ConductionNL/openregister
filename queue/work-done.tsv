@@ -3121,3 +3121,4 @@ verify:dossiq:6309:74279df0	GREEN 6309-6314 (tests-only; 0 new phpunit failures;
 cover:dossiq:f8a113c5m7e79:cd5286bf	already done: lib/Service/Session/ at 95.02% lines (286/301) on development 44047ce7d; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:19:09Z
 measure:openregister:20261113h06	php 91.41% (pcov, phpunit-unit-local.xml; unit config needs a server checkout; run had 462 errors/41 failures), js 86.99%; @ff4ddab7	session-20261113T054517-26499007	2026-11-13T07:19:08Z
 cover:dossiq:f8a113c5m7e79:c7ef8f28	already done: pcov on development (today) shows lib/Listener/Support 98.8% lines (158/160), target 90	session-20261113T053904-36dcee67	2026-11-13T07:19:21Z
+cover:dossiq:f8a113c5m7e79:c900fa11	already done: lib/Service/Email/Filters/ at 98.73% lines (155/157) on development 44047ce7d; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:19:27Z
