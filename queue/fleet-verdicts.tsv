@@ -5847,3 +5847,4 @@ keepiq\t1748\t67c606188142f7cbf7e6d781d68916966c252f6c\tGREEN\tworker-15\tPHP 48
 keepiq\t1754\t57f8bde30e1bc2b56cc544ea73eb64a43c0d799e\tGREEN\tworker-15\tPHP 4884 run vs baseline 4841 (241 skipped), 0 failures; vitest 6342 vs 6340, 0 failures; tests-only additions
 keepiq\t1755\t60514b4d7364e71ce09e2533f5277eec242d13b2\tGREEN\tworker-15\tPHP 4884 run vs baseline 4841 (241 skipped), 0 failures; vitest 6342 vs 6340, 0 failures; tests-only additions
 shillinq\t2931\t5a030029775adc6ddde229466f8d637973e4ef72\tGREEN\tworker-35\tphpunit 10087->10116, baseline 1 inherited clock-bound failure, 0 new; tests-only (8 new Controller value-object tests), php -l clean
+pipelinq	3749	126d173b94aceb29485e3ac91c7641c0a3751287	REVERIFY	worker-08	merged development in (clean); moved its 15 l10n keys from the catalogue end to mid-catalogue in en/nl.json and rebuilt .js, so it merges after 3725 and 3729; new head ebdb318c33df8603c4b41eac86c7fb61a31f2cbc, verify it
