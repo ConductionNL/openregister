@@ -1046,4 +1046,7 @@ cover:openregister:7350e3efm0e99:js0c3677df	failed: lang=js but dirs=lib/Service
 cover:stackiq:8cfacb29m2f4b:f545d745	PR stackiq#1795: 10 tests for 3 Repair classes, suite 2539->2549 OK	session-20261112T231645-3f0591a5	2026-11-13T00:10:08Z
 cover:stackiq:8cfacb29m2f4b:34f5c300	PR #1794: 18 tests for 5 lib/Service classes, suite 2539->2557 OK	session-20261112T224529-41d77a96	2026-11-13T00:10:41Z
 cover:filinq:8ecceb86:f545d745	opened filinq#1981 (print job mapping + UnownEvidenceRecords edges, 17 tests; suite 5318->5335 OK)	session-20261112T231639-4c562de9	2026-11-13T00:10:52Z
+cover:openregister:7350e3efm0e99:jse5d2a780	failed: lang=js but dirs=lib/Service/Rbac/*.php names PHP files only, no JS subject to cover	session-20261112T231645-3f0591a5	2026-11-13T00:11:19Z
 verify:pipelinq:3597:944e6a0d	3597,3598,3599 GREEN (tests only, 0 new failures)	session-20261112T234653-efce95ba	2026-11-13T00:11:37Z
+verify:keepiq:1680:f5b29958	1680 CONFLICT (add/add lib/Controller/OpenApiController.php); 1703, 1704 GREEN; tree 3740 tests, 0 failures	session-20261112T231633-96ffe7b8	2026-11-13T00:12:17Z
+cover:openregister:7350e3efm0e99:js053b65e7	failed: lang=js but dirs=lib/Db/MagicMapper/ holds PHP only, no JS subject to cover	session-20261112T231645-3f0591a5	2026-11-13T00:12:20Z
