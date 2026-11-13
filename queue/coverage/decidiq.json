@@ -1,16 +1,16 @@
 {
  "app": "decidiq",
- "commit": "7cd7d1756a8b013509ce0733d1ab0e3107975fb4",
- "measured_at": "2026-11-13T04:19:33Z",
+ "commit": "85721b962a5c3c1014a7a8fb91b5df85bc83ccf4",
+ "measured_at": "2026-11-13T06:25:38Z",
  "php": {
   "tool": "pcov",
-  "pct": 82.1,
+  "pct": 87.66,
   "statements": 25598,
-  "covered": 21017,
+  "covered": 22439,
   "dirs": {
    "lib/Activity/": [
     79,
-    70
+    79
    ],
    "lib/AppInfo/": [
     27,
@@ -22,19 +22,19 @@
    ],
    "lib/BackgroundJob/": [
     479,
-    328
+    457
    ],
    "lib/Controller/": [
     3163,
-    2486
+    2680
    ],
    "lib/Dashboard/": [
     65,
-    59
+    65
    ],
    "lib/Event/": [
     145,
-    105
+    145
    ],
    "lib/Exception/": [
     16,
@@ -42,23 +42,23 @@
    ],
    "lib/Flow/": [
     182,
-    181
+    182
    ],
    "lib/Lifecycle/": [
     256,
-    211
+    256
    ],
    "lib/Listener/": [
     1208,
-    1104
+    1176
    ],
    "lib/Mcp/": [
     534,
-    474
+    530
    ],
    "lib/Notification/": [
     53,
-    51
+    53
    ],
    "lib/Portal/": [
     235,
@@ -66,19 +66,19 @@
    ],
    "lib/Repair/": [
     803,
-    645
+    803
    ],
    "lib/Search/": [
     58,
-    56
+    58
    ],
    "lib/Sections/": [
     5,
-    0
+    5
    ],
    "lib/Service/": [
     17588,
-    14364
+    15043
    ],
    "lib/Service/Records/": [
     379,
@@ -86,23 +86,31 @@
    ],
    "lib/Service/Settings/": [
     34,
-    28
+    32
    ],
    "lib/Settings/": [
     36,
-    30
+    34
    ],
    "lib/Support/": [
     62,
-    46
+    62
    ]
   }
  },
  "js": {
-  "pct": 95.21,
-  "statements": 2795,
-  "covered": 2661,
+  "pct": 98.25,
+  "statements": 2920,
+  "covered": 2869,
   "dirs": {
+   "src/": [
+    95,
+    95
+   ],
+   "src/assets/": [
+    0,
+    0
+   ],
    "src/components/minutesEditor/": [
     77,
     77
@@ -129,15 +137,15 @@
    ],
    "src/integrations/": [
     385,
-    355
+    374
    ],
    "src/modals/": [
     18,
     18
    ],
    "src/services/": [
-    282,
-    268
+    312,
+    312
    ],
    "src/store/": [
     10,
@@ -145,11 +153,11 @@
    ],
    "src/store/modules/": [
     72,
-    40
+    72
    ],
    "src/utils/": [
     1581,
-    1549
+    1567
    ],
    "src/views/dashboard/widgets/": [
     103,
