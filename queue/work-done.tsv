@@ -2991,3 +2991,4 @@ cover:filinq:7a9ef677m5ffe:5833c33f	already done: lib/Service/Office/ 127/127 li
 cover:filinq:7a9ef677m5ffe:34763eb4	already done: lib/Middleware/*.php at 99.1% lines (115/116) under the full unit suite on development, target 90; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T06:48:26Z
 cover:buildiq:9930949bmc723:js3f3bfe56	PR buildiq#1519: 6 tests, App.vue 13->25/26, src/* 154->166/197; main.js needs a production change (require.context)	session-20261113T051703-1b54bfba	2026-11-13T06:48:26Z
 cover:buildiq:9930949bmc723:js847d1562	PR #1520: 11 vitest tests, schema-editor 94.4->95.5%	session-20261113T051709-e616bf69	2026-11-13T06:48:32Z
+cover:keepiq:c967a31fmb40c:1b97f731	already done: lib/Listener/*.php 395/418 (94.5%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:48:43Z
