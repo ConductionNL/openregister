@@ -78,6 +78,43 @@ use ReflectionClass;
  *
  * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs
+ * @uses \OCA\OpenRegister\Db\EmptyJsonHydration
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Service\Object\BulkCreateCheck
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerRuntime
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerStores
+ * @uses \OCA\OpenRegister\Service\Object\CacheNameScopeSources
+ * @uses \OCA\OpenRegister\Service\Object\CachedName
+ * @uses \OCA\OpenRegister\Service\Object\DraftCaller
+ * @uses \OCA\OpenRegister\Service\Object\DraftSubject
+ * @uses \OCA\OpenRegister\Service\Object\SafeguardBatchRun
+ * @uses \OCA\OpenRegister\Service\Object\SafeguardRejection
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\BulkSlugCaller
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkChunkRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk
+ * @uses \OCA\OpenRegister\Service\Rbac\MaskedWrite
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class BulkWriteEventsTest extends TestCase {
 

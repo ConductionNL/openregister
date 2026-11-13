@@ -41,6 +41,37 @@ use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\ValidationChunk
  * @uses   \OCA\OpenRegister\Service\Object\ValidationRun
+ * @uses   \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
+ * @uses   \OCA\OpenRegister\Service\Object\DraftCaller
+ * @uses   \OCA\OpenRegister\Service\Object\DraftSubject
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses   \OCA\OpenRegister\Service\Object\SafeguardBatchRun
+ * @uses   \OCA\OpenRegister\Service\Object\SafeguardRejection
+ * @uses   \OCA\OpenRegister\Service\Object\SchemaRevalidation
+ * @uses   \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses   \OCA\OpenRegister\Service\Object\ValidationSchemaSource
+ * @uses   \OCA\OpenRegister\Service\Object\WriteConstraintCheck
+ * @uses   \OCA\OpenRegister\Service\Rbac\MaskedWrite
+ * @uses   \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

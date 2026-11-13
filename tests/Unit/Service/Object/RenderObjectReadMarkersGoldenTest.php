@@ -44,6 +44,18 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses \OCA\OpenRegister\Service\Object\RenderContext
+ * @uses \OCA\OpenRegister\Service\Object\RenderPath
+ * @uses \OCA\OpenRegister\Service\Object\RenderPreloads
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRun
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\EntityRead
+ * @uses \OCA\OpenRegister\Service\Object\WithheldProperties
  */
 class RenderObjectReadMarkersGoldenTest extends TestCase {
 

@@ -41,6 +41,12 @@ use Stringable;
  * deleteOrphanedRelatedObjects' records, without a database.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class SaveObjectOrphanDeletionLogTest extends TestCase {
 

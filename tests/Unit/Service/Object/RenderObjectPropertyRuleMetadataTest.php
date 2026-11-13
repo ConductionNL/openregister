@@ -51,6 +51,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Object\InverseTarget
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Object\EntityRead
+ * @uses   \OCA\OpenRegister\Service\Object\WithheldProperties
  */
 class RenderObjectPropertyRuleMetadataTest extends TestCase {
 

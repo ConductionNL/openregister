@@ -53,6 +53,20 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Object\InverseTarget
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\PresentationAnnotations
+ * @uses \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class RenderObjectLensRowsTest extends TestCase {
 
