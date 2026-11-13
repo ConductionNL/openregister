@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Formats;
 
 
 /**
- * Validates `color` and `recurrence` values and materialises recurrence occurrences.
+ * Validates `color`, `recurrence`, `calendar-range` and `image-url` values and materialises recurrence occurrences.
  * Only the constants and methods ExtendedFieldCheck and RecurrenceOccurrences use.
  *
  * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
@@ -68,6 +68,30 @@ interface ExtendedFieldTypeValidatorInterface {
 	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
 	 */
 	public function validateRecurrence(mixed $value, string $propertyName): ?string;
+
+	/**
+	 * Validate a `calendar-range` value: `{ start, end }`, both present, in the declared format, end not before start.
+	 *
+	 * @param mixed             $value    The range submitted by the client.
+	 * @param FormattedProperty $property The property name and its declared `format` (`date`, else date-time).
+	 *
+	 * @return string|null Null on success, or the exact 422 error message on failure.
+	 *
+	 * @spec openspec/changes/extended-field-types-range-and-image/specs/extended-field-types/spec.md
+	 */
+	public function validateCalendarRange(mixed $value, FormattedProperty $property): ?string;
+
+	/**
+	 * Validate an `image-url` value: a URL, or `{ url, width?, height?, altText?, format? }`.
+	 *
+	 * @param mixed  $value        The image submitted by the client.
+	 * @param string $propertyName The property name (for the error message).
+	 *
+	 * @return string|null Null on success, or the exact 422 error message on failure.
+	 *
+	 * @spec openspec/changes/extended-field-types-range-and-image/specs/extended-field-types/spec.md
+	 */
+	public function validateImageUrl(mixed $value, string $propertyName): ?string;
 
 	/**
 	 * Materialise the occurrences of a recurrence window.

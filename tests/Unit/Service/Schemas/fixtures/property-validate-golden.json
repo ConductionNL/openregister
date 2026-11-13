@@ -16,13 +16,13 @@
     },
     "array items invalid": {
         "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
-        "message": "Invalid type 'bogus' at '/field/items'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
+        "message": "Invalid type 'bogus' at '/field/items'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, calendar-range, image-url, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
         "errors": [
             {
                 "code": "property-vocabulary-unknown-type",
                 "key": "bogus",
                 "path": "/field/items",
-                "message": "Invalid type 'bogus' at '/field/items'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
+                "message": "Invalid type 'bogus' at '/field/items'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, calendar-range, image-url, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
             }
         ]
     },
@@ -250,13 +250,13 @@
     },
     "numeric string type": {
         "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
-        "message": "Invalid type 'string ' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
+        "message": "Invalid type 'string ' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, calendar-range, image-url, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
         "errors": [
             {
                 "code": "property-vocabulary-unknown-type",
                 "key": "string ",
                 "path": "/field",
-                "message": "Invalid type 'string ' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
+                "message": "Invalid type 'string ' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, calendar-range, image-url, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
             }
         ]
     },
@@ -330,13 +330,13 @@
     },
     "oneOf invalid member": {
         "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
-        "message": "Invalid type 'nope' at '/field/oneOf/a'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
+        "message": "Invalid type 'nope' at '/field/oneOf/a'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, calendar-range, image-url, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
         "errors": [
             {
                 "code": "property-vocabulary-unknown-type",
                 "key": "nope",
                 "path": "/field/oneOf/a",
-                "message": "Invalid type 'nope' at '/field/oneOf/a'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
+                "message": "Invalid type 'nope' at '/field/oneOf/a'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, calendar-range, image-url, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
             }
         ]
     },
@@ -397,13 +397,13 @@
     },
     "union type": {
         "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
-        "message": "Invalid type '[\"string\",\"null\"]' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
+        "message": "Invalid type '[\"string\",\"null\"]' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, calendar-range, image-url, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
         "errors": [
             {
                 "code": "property-vocabulary-unknown-type",
                 "key": "[\"string\",\"null\"]",
                 "path": "/field",
-                "message": "Invalid type '[\"string\",\"null\"]' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
+                "message": "Invalid type '[\"string\",\"null\"]' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, calendar-range, image-url, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
             }
         ]
     },
@@ -439,13 +439,13 @@
     },
     "unknown type": {
         "threw": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException",
-        "message": "Invalid type 'text' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
+        "message": "Invalid type 'text' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, calendar-range, image-url, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck",
         "errors": [
             {
                 "code": "property-vocabulary-unknown-type",
                 "key": "text",
                 "path": "/field",
-                "message": "Invalid type 'text' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
+                "message": "Invalid type 'text' at '/field'. Must be one of: string, number, integer, boolean, array, object, null, file, geo, color, recurrence, calendar-range, image-url, NcFile, NcMail, NcContact, NcNote, NcTodo, NcCalendarEvent, NcTalk, NcDeck"
             }
         ]
     },

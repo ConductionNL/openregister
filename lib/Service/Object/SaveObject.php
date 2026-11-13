@@ -71,6 +71,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\CascadeRules;
 use OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\EmptyValues;
+use OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelations;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
@@ -4739,6 +4740,9 @@ class SaveObject implements SaveObjectInterface {
 			$errorMessage = $part1 . $part2;
 			throw new Exception($errorMessage, 0, $e);
 		}
+
+		// An image is stored in its object form, whichever form it was sent in.
+		$data = (new ImageObjectForm())->apply(data: $data, properties: ($schema->getProperties() ?? []));
 
 		// Removed references are only cleaned up when the schema opts in. Read before
 		// the pre-cache below overwrites the entity's data with the incoming data.

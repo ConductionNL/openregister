@@ -106,6 +106,8 @@ class OasPropertySanitizer {
 	 * A valid OpenAPI definition for a property.
 	 *
 	 * Internal keys such as objectConfiguration, inversedBy and authorization go.
+	 * A `calendar-range` or `image-url` property becomes a reference to its shared
+	 * component ({@see OasExtendedTypes}).
 	 *
 	 * @param mixed $definition The property definition
 	 *
@@ -116,6 +118,12 @@ class OasPropertySanitizer {
 	public function sanitize(mixed $definition): array {
 		if (is_array($definition) === false) {
 			return ['type' => 'string', 'description' => 'Property value'];
+		}
+
+		// A structured extended type is described once, as a shared component.
+		$reference = OasExtendedTypes::referenceFor(definition: $definition);
+		if ($reference !== null) {
+			return $reference;
 		}
 
 		$clean = $this->nested(clean: $this->keywordsOf(definition: $definition));

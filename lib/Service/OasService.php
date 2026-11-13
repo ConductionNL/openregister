@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Service\Oas\OasExtendedTypes;
 use OCA\OpenRegister\Service\Oas\OasIssue;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -469,6 +470,7 @@ class OasService implements OasServiceInterface {
 		// register title, so two registers sharing a schema stay unique.
 		$prefixed = ($registerId === null && count($registers) > 1);
 		$this->addAllRegisterPaths(registers: $registers, context: ['schemas' => $schemas, 'prefixed' => $prefixed]);
+		$this->oas = OasExtendedTypes::withUsedComponents(oas: $this->oas);
 
 		$this->assertOasValid(strict: $strict);
 

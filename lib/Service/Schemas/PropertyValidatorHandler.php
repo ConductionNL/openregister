@@ -127,6 +127,18 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 			'conversionNote' => 'A repeat rule cannot be derived from a date or a sentence.',
 			'description' => 'A repeat rule, such as every second Tuesday.',
 		],
+		'calendar-range' => [
+			'category' => 'temporal',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'A start and an end cannot be derived from one stored value. Migrate the records first.',
+			'description' => 'A period: a start and an end kept together, the end not before the start.',
+		],
+		'image-url' => [
+			'category' => 'presentation',
+			'conversion' => 'conditional',
+			'conversionNote' => 'A stored value that is not a URL is refused, so run a migration first.',
+			'description' => 'An image address, with its width, height, alt text and file format.',
+		],
 		'NcFile' => [
 			'category' => 'nextcloud',
 			'conversion' => 'unsupported',
