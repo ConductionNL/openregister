@@ -1660,3 +1660,4 @@ cover:keepiq:d76c2121m88ca:0d67c1f3	already done: lib/Service/Siem 193/193 state
 verify:decidiq:2108:9cdaf28f	2108 GREEN (coverage docs only; 3116 tests, no new failures)	session-20261113T021659-ac072d0a	2026-11-13T02:29:05Z
 cover:keepiq:d76c2121m88ca:a4b15ae4	already done: lib/Event/Audit 19/19 lines covered at e61d518, no PR	session-20261113T011731-f3798045	2026-11-13T02:29:15Z
 cover:keepiq:d76c2121m88ca:6f346b68	already done: lib/Sections/SettingsSection 5/5 lines covered, every getter asserted in AppShellControllersTest; no PR	session-20261113T015002-81190344	2026-11-13T02:29:52Z
+cover:keepiq:d76c2121m88ca:dfaef732	already done: lib/Notification/*.php at 394/396 (99.5%) on development; the 2 uncovered lines are unreachable fallbacks	session-20261113T015002-115b579d	2026-11-13T02:30:12Z
