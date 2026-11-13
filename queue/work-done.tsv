@@ -7234,3 +7234,4 @@ fix:pipelinq:3794:08d129aa	CONFLICT resolved: lock regenerated on merged develop
 build4:openregister:working-calendar-admin	partial: PR #10454 adds C67.5 blackouts and C67.6 firstWeekOfYear capability (24 tests, descriptor 1.4.0); C67.1-4, C67.6 facet wiring, C67.7/8 left	session-20261113T212414-55623216	2026-11-13T22:37:41Z
 build:learniq:workplace-leerbedrijf-check-through-integriq	failed: blocked by the change's own task 0.1 (gap decision is defer; Ruben must confirm the move to build) and integriq development has no SBB source or lookup route to call	session-20261113T205325-28f592a9	2026-11-13T22:37:37Z
 build:learniq:grade-scale-set-by-the-school	PR #2498: GradeScaleRule rounding + band pass flag wired into formula/pass evaluators, tags, 6 tests; 3.1 archive left	session-20261113T205337-4c32e19e	2026-11-13T22:38:01Z
+review:openregister:10430:6908999f	APPROVE #10430	session-20261113T202619-0d7929e0	2026-11-13T22:37:57Z
