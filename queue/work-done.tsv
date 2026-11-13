@@ -3164,3 +3164,4 @@ cover:integriq:92114ab0m658d:2820f177	PR #3500: ImapMailboxTransport 1/48->48/48
 verify:dossiq:6321:6a3f9251	GREEN #6321: 15177 tests, 19 baseline, 0 new	session-20261113T072715-8f8a14e9	2026-11-13T07:31:13Z
 cover:integriq:92114ab0m658d:2af01be6	no PR: lib/Intake/*.php already 471/476 lines (98.9%, target 95); left: 4 plain getters (getter-only tests not allowed) and IntakeChannelSourceResolver:116, unreachable (sourceFor only returns array configurations)	session-20261113T071640-3ba6da34	2026-11-13T07:31:35Z
 gap:shillinq:maint2:burn1	PR #2905: 3 units refactored (PaymentReconciliationService::reconcile CCN20, ::pollPending, DepositReconciliationService::reconcile), tests first, suite unchanged	session-20261113T041646-2c1d764f	2026-11-13T07:31:49Z
+gap:decidiq:tcr1:burn1	PR #2121: 7 test files, 59 tests (3684->3743 OK), tests only	session-20261113T072715-cf04db4e	2026-11-13T07:32:06Z
