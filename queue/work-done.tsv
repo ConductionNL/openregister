@@ -5637,3 +5637,4 @@ verify:learniq:2464:06b6f90b	learniq #2464 GREEN: 6407 tests, 0 new failures	ses
 cover:dossiq:069ee2d6m2deb:33af3743	already covered: lib/Service/Bezwaar/*.php at 99.6% (1567/1573 stmts) on development dcd16f5978, above 95 target; no PR	session-20261113T171150-996cf694	2026-11-13T17:27:50Z
 verify:pipelinq:3759:0cbf8a01	GREEN 3759, GREEN 3760 (tests only, 0 new failures over 5-failure baseline)	session-20261113T172349-00278d9d	2026-11-13T17:27:49Z
 review:openregister:10255:120f472b	APPROVE #10255	session-20261113T171141-a3907367	2026-11-13T17:28:19Z
+cover:pipelinq:7f9dc8e6mcebb:1b97f731	PR #3762: 46 tests, 7 classes, lib/Listener 92.4%->97.7%	session-20261113T171149-8b9ea523	2026-11-13T17:28:26Z
