@@ -3266,3 +3266,4 @@ cover:larpinq:c4471360m4538:js4829b6aa	PR #1016: 8 views to 100% stmts, 7 specs/
 cover:opencatalogi:fc83bfb1:60c2c265	PR #2584: lib/Controller 93.01% -> 95.45% lines, 23 tests in 4 files, suite 5144 -> 5167, 0 new failures	session-20261113T071636-117504ad	2026-11-13T07:48:11Z
 cover:larpinq:c4471360m4538:js5794e9fc	PR #1017: 17 vitest tests for Settings.vue (no coverage provider in repo)	session-20261113T051709-e616bf69	2026-11-13T07:48:30Z
 verify:decidiq:2124:0ca284e2	GREEN decidiq#2124	session-20261113T074533-5d842142	2026-11-13T07:48:38Z
+cover:versioniq:1b35eed9:d3522ea6	PR #670: 17 tests, AuditEntryMapper and PatMapper 0->100% (adds Doctrine constant stubs to unit-only test stubs); suite 1356->1373, same 2 inherited failures	session-20261113T072708-ee434236	2026-11-13T07:48:43Z
