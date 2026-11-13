@@ -52,6 +52,8 @@ final class SyncRecordStatus implements SyncRecordStatusInterface {
 			self::CONFLICT,
 			self::SKIPPED,
 			self::PERMANENT_ERROR,
+			self::SHADOWED,
+			self::REJECTED,
 		];
 	}//end all()
 

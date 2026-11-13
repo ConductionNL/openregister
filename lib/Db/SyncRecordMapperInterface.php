@@ -81,4 +81,17 @@ interface SyncRecordMapperInterface {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function transitionStatus(SyncRecord $record, string $newStatus): SyncRecord;
+
+	/**
+	 * Tombstone every external id of a source a complete run did not see, and clear the tombstone of those it did.
+	 *
+	 * @param int                 $sourceId The source.
+	 * @param array<string, true> $seenIds  External ids the run saw, as keys.
+	 * @param \DateTime           $at       The tombstone time.
+	 *
+	 * @return int How many external ids were newly tombstoned.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function markTombstones(int $sourceId, array $seenIds, \DateTime $at): int;
 }//end interface

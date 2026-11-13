@@ -97,9 +97,9 @@ class SourceTest extends TestCase {
 	// --- getJsonFields ---
 
 	public function testGetJsonFieldsReturnsAuthConfigForSource(): void {
-		// Source now carries the encrypted sync credential blob as a JSON field
-		// (added by the data-sync-harvesting change). No other JSON fields exist.
-		$this->assertSame(['authConfig'], $this->source->getJsonFields());
+		// The encrypted sync credential blob (data-sync-harvesting), then the
+		// fetcher config and item rules (app-harvest-fetchers-and-flow-node).
+		$this->assertSame(['authConfig', 'config', 'protectedFields', 'provenance', 'conflictRules'], $this->source->getJsonFields());
 	}
 
 	// --- hydrate ---

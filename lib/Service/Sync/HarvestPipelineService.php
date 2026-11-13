@@ -57,6 +57,21 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	public const DEFAULT_BATCH_SIZE = 50;
 
 	/**
+	 * Items one run takes when a source sets no maxItemsPerRun.
+	 */
+	public const DEFAULT_MAX_ITEMS_PER_RUN = 1000;
+
+	/**
+	 * The most items one run may take, whatever the source sets.
+	 */
+	public const MAX_ITEMS_PER_RUN = 10000;
+
+	/**
+	 * The most per-item errors a run summary lists.
+	 */
+	public const MAX_SUMMARY_ERRORS = 100;
+
+	/**
 	 * The record status each no-write conflict decision settles on.
 	 *
 	 * @var array<string, string>
@@ -82,11 +97,13 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	 * @param SyncRecordMapperInterface $syncRecordMapper Per-record tracking persistence
 	 * @param HarvestImportServices $importServices Mapping, persistence and conflict resolution for the import stage
 	 * @param LoggerInterface $logger Logger
+	 * @param HarvestHttpClient|null $http The guarded client a batch fetcher reads through (null: none; a batch run then fails)
 	 */
 	public function __construct(
 		private readonly SyncRecordMapperInterface $syncRecordMapper,
 		private readonly HarvestImportServices $importServices,
 		private readonly LoggerInterface $logger,
+		private readonly ?HarvestHttpClient $http = null,
 	) {
 	}//end __construct()
 
@@ -96,16 +113,159 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	 * @param HarvestRun $harvest The source to harvest, its transport, the execution id and the
 	 *                            incremental checkpoint (null = full)
 	 *
-	 * @return array<string, int|string> Execution summary (counts + status)
+	 * @return array<string, mixed> Execution summary (counts + status)
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function run(HarvestRun $harvest): array {
+		if ($harvest->fetcher instanceof IBatchSourceFetcher) {
+			return $this->runBatch(harvest: $harvest, fetcher: $harvest->fetcher);
+		}
+
 		$gathered = $this->gather(harvest: $harvest);
 		$fetched  = $this->fetchAll(harvest: $harvest, records: $gathered);
 
 		return $this->import(harvest: $harvest, records: $fetched);
 	}//end run()
+
+	/**
+	 * Run a whole-document fetcher: one read, no per-item request.
+	 *
+	 * Items past the source's maxItemsPerRun are left for the next run and make
+	 * the batch incomplete. Every id the batch names in its errors keeps its
+	 * last good record data under status fetch_error. After a complete batch,
+	 * every record of the source whose id was neither returned nor named in an
+	 * error is tombstoned; after an incomplete one nothing is.
+	 *
+	 * @param HarvestRun          $harvest The run.
+	 * @param IBatchSourceFetcher $fetcher The run's fetcher.
+	 *
+	 * @return array<string, mixed> The run summary: the import counters plus tombstoned, complete and errorList.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function runBatch(HarvestRun $harvest, IBatchSourceFetcher $fetcher): array {
+		if ($this->http === null) {
+			throw new \RuntimeException('A batch fetcher needs the harvest HTTP client; none is configured.');
+		}
+
+		$batch = $fetcher->gatherItems(source: $harvest->source, since: $harvest->since, http: $this->http)
+			->capped(max: self::maxItemsPerRun(source: $harvest->source));
+
+		$execution = SyncRecordInputs::execution(source: $harvest->source, executionId: $harvest->executionId);
+		$fetched   = [];
+		foreach ($batch->items as $externalId => $raw) {
+			$record = $this->syncRecordMapper->createPending(execution: $execution, externalId: (string)$externalId);
+			$record->setRawData($raw);
+			$record->setAttempts(1);
+			$this->syncRecordMapper->transitionStatus(record: $record, newStatus: SyncRecordStatus::FETCHED);
+			$fetched[] = $record;
+		}
+
+		foreach ($batch->errorsById() as $externalId => $message) {
+			$this->recordItemError(harvest: $harvest, externalId: $externalId, message: $message);
+		}
+
+		$summary = $this->import(harvest: $harvest, records: $fetched);
+		$summary['errors'] = ((int)$summary['errors'] + count($batch->errors));
+		$summary['gathered'] = (count($batch->items) + count($batch->errorsById()));
+
+		$summary['tombstoned'] = 0;
+		if ($batch->complete === true) {
+			$summary['tombstoned'] = $this->syncRecordMapper->markTombstones(
+				sourceId: (int)$harvest->source->getId(),
+				seenIds: $batch->seenIds(),
+				at: new \DateTime()
+			);
+		}
+
+		if ($batch->checkpoint !== null) {
+			$harvest->source->setLastSyncToken($batch->checkpoint);
+		}
+
+		$summary['complete']  = $batch->complete;
+		$summary['errorList'] = self::errorList(batch: $batch);
+		$summary['status']    = $this->deriveStatus(summary: $summary);
+		if ($batch->complete === false && $summary['status'] === 'success') {
+			$summary['status'] = 'partial';
+		}
+
+		return $summary;
+	}//end runBatch()
+
+	/**
+	 * The most items one run of a source takes: its maxItemsPerRun, within 1 and the ceiling.
+	 *
+	 * @param Source $source The source.
+	 *
+	 * @return int The cap.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public static function maxItemsPerRun(Source $source): int {
+		$configured = ($source->getMaxItemsPerRun() ?? self::DEFAULT_MAX_ITEMS_PER_RUN);
+
+		return max(1, min((int)$configured, self::MAX_ITEMS_PER_RUN));
+	}//end maxItemsPerRun()
+
+	/**
+	 * Record a per-item error: the id keeps its last good data, under status fetch_error.
+	 *
+	 * The run's own record of the id copies rawData, contentHash, objectUuid and
+	 * lastAppliedAt from the id's previous record, so the next run compares
+	 * against the last good import and the linked object is left as it is. An id
+	 * with no previous record gets a record with the error and no object.
+	 *
+	 * @param HarvestRun $harvest    The run.
+	 * @param string     $externalId The errored id.
+	 * @param string     $message    The fetcher's message.
+	 *
+	 * @return void
+	 */
+	private function recordItemError(HarvestRun $harvest, string $externalId, string $message): void {
+		$previous = $this->syncRecordMapper->findByExternalId(sourceId: (int)$harvest->source->getId(), externalId: $externalId);
+		$record   = $this->syncRecordMapper->createPending(
+			execution: SyncRecordInputs::execution(source: $harvest->source, executionId: $harvest->executionId),
+			externalId: $externalId
+		);
+		if ($previous !== null) {
+			$record->setRawData($previous->getRawData());
+			$record->setContentHash($previous->getContentHash());
+			$record->setObjectUuid($previous->getObjectUuid());
+			$record->setLastAppliedAt($previous->getLastAppliedAt());
+		}
+
+		$record->setAttempts(1);
+		$this->syncRecordMapper->recordFailure(
+			record: $record,
+			failure: SyncRecordInputs::failure(status: SyncRecordStatus::FETCH_ERROR, message: $message)
+		);
+		$this->logger->warning(
+			message: sprintf('[HarvestPipeline] Fetcher reported an error for %s: %s', $externalId, $message),
+			context: ['source' => $harvest->source->getUuid(), 'execution' => $harvest->executionId]
+		);
+	}//end recordItemError()
+
+	/**
+	 * The batch's errors as the summary lists them, at most MAX_SUMMARY_ERRORS.
+	 *
+	 * @param HarvestBatch $batch The batch.
+	 *
+	 * @return list<array{externalId: string|null, message: string}> The errors.
+	 */
+	private static function errorList(HarvestBatch $batch): array {
+		$list = [];
+		foreach (array_slice($batch->errors, 0, self::MAX_SUMMARY_ERRORS) as $error) {
+			$externalId = ($error['externalId'] ?? null);
+			if ($externalId !== null) {
+				$externalId = (string)$externalId;
+			}
+
+			$list[] = ['externalId' => $externalId, 'message' => (string)($error['message'] ?? '')];
+		}
+
+		return $list;
+	}//end errorList()
 
 	/**
 	 * Gather stage: identify records and create pending tracking rows.
@@ -388,6 +548,8 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	private function settleUnwritten(HarvestedRecord $item, string $status): void {
 		$item->record->setContentHash($item->hash);
 		$item->record->setObjectUuid($item->trackedUuid());
+		// No write: the last harvest write is still the one the previous record names.
+		$item->record->setLastAppliedAt($item->tracked?->getLastAppliedAt());
 		$this->syncRecordMapper->transitionStatus(record: $item->record, newStatus: $status);
 	}//end settleUnwritten()
 
@@ -402,6 +564,8 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	private function settleImported(HarvestedRecord $item, ?string $objectUuid): void {
 		$item->record->setContentHash($item->hash);
 		$item->record->setObjectUuid($objectUuid);
+		// The harvest's own write: a later local edit is one after this moment.
+		$item->record->setLastAppliedAt(new \DateTime());
 		$this->syncRecordMapper->transitionStatus(record: $item->record, newStatus: SyncRecordStatus::IMPORTED);
 	}//end settleImported()
 
@@ -489,7 +653,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	/**
 	 * Derive the overall execution status from the summary counts.
 	 *
-	 * @param array<string, int|string> $summary The summary
+	 * @param array<string, mixed> $summary The summary
 	 *
 	 * @return string success | partial | failed
 	 *

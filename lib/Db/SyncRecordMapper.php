@@ -199,4 +199,84 @@ class SyncRecordMapper extends QBMapper implements SyncRecordMapperInterface {
 
 		return ($records[0] ?? null);
 	}//end findByExternalId()
+
+	/**
+	 * Tombstone every external id of a source a complete run did not see, and clear the tombstone of those it did.
+	 *
+	 * The latest record of an unseen id gets `tombstoned` and `tombstonedAt`;
+	 * every tombstoned record of a seen id has both cleared.
+	 *
+	 * @param int                 $sourceId The source.
+	 * @param array<string, true> $seenIds  External ids the run saw, as keys.
+	 * @param DateTime            $at       The tombstone time.
+	 *
+	 * @return int How many external ids were newly tombstoned.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function markTombstones(int $sourceId, array $seenIds, DateTime $at): int {
+		$latest = $this->latestPerExternalId(sourceId: $sourceId);
+
+		$toTombstone = [];
+		$toClear     = [];
+		foreach ($latest as $externalId => $row) {
+			$isTombstoned = ((bool)$row['tombstoned'] === true);
+			if (isset($seenIds[$externalId]) === false && $isTombstoned === false) {
+				$toTombstone[] = (int)$row['id'];
+			}
+
+			if (isset($seenIds[$externalId]) === true) {
+				$toClear[] = (string)$externalId;
+			}
+		}
+
+		foreach (array_chunk($toTombstone, 500) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->update($this->getTableName())
+				->set('tombstoned', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+				->set('tombstoned_at', $qb->createNamedParameter($at, IQueryBuilder::PARAM_DATE))
+				->where($qb->expr()->in('id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)));
+			$qb->executeStatement();
+		}
+
+		foreach (array_chunk($toClear, 500) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->update($this->getTableName())
+				->set('tombstoned', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL))
+				->set('tombstoned_at', $qb->createNamedParameter(null, IQueryBuilder::PARAM_NULL))
+				->where($qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT)))
+				->andWhere($qb->expr()->eq('tombstoned', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
+				->andWhere($qb->expr()->in('external_id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)));
+			$qb->executeStatement();
+		}
+
+		return count($toTombstone);
+	}//end markTombstones()
+
+	/**
+	 * The latest record (id and tombstone flag) per external id of a source.
+	 *
+	 * @param int $sourceId The source.
+	 *
+	 * @return array<string, array{id: int|string, tombstoned: mixed}> Row per external id.
+	 */
+	private function latestPerExternalId(int $sourceId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id', 'external_id', 'tombstoned')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNotNull('external_id'))
+			->orderBy('id', 'ASC');
+
+		$latest = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			// Ascending ids: the last row seen per external id is its latest record.
+			$latest[(string)$row['external_id']] = ['id' => $row['id'], 'tombstoned' => $row['tombstoned']];
+		}
+
+		$result->closeCursor();
+
+		return $latest;
+	}//end latestPerExternalId()
 }//end class

@@ -399,6 +399,33 @@ class SourcesController extends Controller {
 	}//end recordSync()
 
 	/**
+	 * Lists every registered source type: OpenRegister's own and those apps add.
+	 *
+	 * Each entry carries the type, its display name, the owning app and the
+	 * JSON Schema of its `config`, so an app's form and the sources page read
+	 * the same list. Admin only, like the rest of the sources API.
+	 *
+	 * @return JSONResponse `{results: [{type, displayName, application, configSchema}]}`, or 403.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) and reads no
+	 *   object: it lists the fetcher types registered in this instance.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function types(): JSONResponse {
+		$refusal = $this->adminRefusal();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return new JSONResponse(data: ['results' => $this->services->domain->fetcherRegistry->types()]);
+	}//end types()
+
+	/**
 	 * Return the current sync status for a source.
 	 *
 	 * Organisation-scoped via SourceMapperInterface::find() (per-object guard). Any

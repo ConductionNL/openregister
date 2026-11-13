@@ -4,13 +4,13 @@
 
 ## 1. Fetcher registration (REQ-HAF-001, REQ-HAF-002, D-2, D-3)
 
-- [ ] 1.1 `lib/Service/Sync/RegisterSourceFetchersEvent.php` (shape of `RegisterFlowNodesEvent`) and `SourceFetcherInterface` gains `getType()`, `getDisplayName()`, `getConfigSchema()`; `SourceFetcherRegistry` dispatches the event once on first build, looks up by type, refuses a duplicate with a logged error naming both classes. Replace the hand-filled registry in `lib/AppInfo/Application.php:919-922`; `RestApiSourceFetcher` registers through the event.
-- [ ] 1.2 `IBatchSourceFetcher` and value object `HarvestBatch` (`items`, `complete`, `checkpoint`, `errors`); `HarvestPipelineService` skips the per-id fetch stage for a batch fetcher and enforces `maxItemsPerRun` (items past the cap make the batch incomplete).
-- [ ] 1.3 `GET /api/sources/types` in `SourcesController` + `appinfo/routes.php`, admin only.
+- [x] 1.1 `lib/Service/Sync/RegisterSourceFetchersEvent.php` (shape of `RegisterFlowNodesEvent`) and `SourceFetcherInterface` gains `getType()`, `getDisplayName()`, `getConfigSchema()`; `SourceFetcherRegistry` dispatches the event once on first build, looks up by type, refuses a duplicate with a logged error naming both classes. Replace the hand-filled registry in `lib/AppInfo/Application.php:919-922`; `RestApiSourceFetcher` registers through the event.
+- [x] 1.2 `IBatchSourceFetcher` and value object `HarvestBatch` (`items`, `complete`, `checkpoint`, `errors`); `HarvestPipelineService` skips the per-id fetch stage for a batch fetcher and enforces `maxItemsPerRun` (items past the cap make the batch incomplete).
+- [x] 1.3 `GET /api/sources/types` in `SourcesController` + `appinfo/routes.php`, admin only.
 
 ## 2. Source fields (REQ-HAF-003, D-4)
 
-- [ ] 2.1 Migration adding the ten nullable columns of D-4 to `openregister_sources`; `lib/Db/Source.php` types and `jsonSerialize`; bump `appinfo/info.xml` above every stamp on `development`.
+- [x] 2.1 Migration adding the ten nullable columns of D-4 to `openregister_sources`; `lib/Db/Source.php` types and `jsonSerialize`; bump `appinfo/info.xml` above every stamp on `development`.
 - [ ] 2.2 `lib/Service/Sync/SourceService.php`: create, update, delete with validation (config against the fetcher schema, `runAs` required with `schedule` and resolvable to an enabled account, `conflictRules` through `DecisionTableValidator`, `hard-delete` refused when `application` is set), each refusal a 422 naming the field. `SourcesController` create and update go through it.
 
 ## 3. Harvest node and flow (REQ-HAF-004, REQ-HAF-005, D-5, D-6)
@@ -18,11 +18,11 @@
 - [ ] 3.1 `lib/Service/Flow/Nodes/HarvestSourceNode.php` (`openregister.harvest-source`, config `sourceId`): lock through `ILockingProvider`, run the pipeline, update last-sync fields, emit the D-10 summary; refusals `source-disabled`, `fetcher-missing`, `mapping-missing`, `already-running`. Register it with the engine's own nodes.
 - [ ] 3.2 `SourceService` writes, updates, disables and deletes the source's flow through `FlowService::save()`/`delete()` keyed by the source uuid (D-6 graph); sets `flowId`.
 - [ ] 3.3 `SourcesController::syncNow()`: start the manual trigger when `flowId` is set and return the run id; keep the inline run otherwise.
-- [ ] 3.4 `lib/BackgroundJob/SyncDataJob.php`: skip sources with a `flowId`; log one warning per run naming the sources still on the job.
+- [x] 3.4 `lib/BackgroundJob/SyncDataJob.php`: skip sources with a `flowId`; log one warning per run naming the sources still on the job.
 
 ## 4. Decisions, strategies and states (REQ-HAF-006, REQ-HAF-007, REQ-HAF-008, D-7, D-8)
 
-- [ ] 4.1 Migration on `openregister_sync_records`: `conflict_reason`, `tombstoned`, `tombstoned_at`, `last_applied_at`, `resolutions` (json). `SyncRecord` types; `SyncRecordStatus` gains `shadowed`, `rejected` and the D-8 transitions.
+- [x] 4.1 Migration on `openregister_sync_records`: `conflict_reason`, `tombstoned`, `tombstoned_at`, `last_applied_at`, `resolutions` (json). `SyncRecord` types; `SyncRecordStatus` gains `shadowed`, `rejected` and the D-8 transitions.
 - [ ] 4.2 `HarvestPipelineService::importRecord()`: the D-7 table (pre-existing claim via `identityProperty`, edit time against `lastAppliedAt`, local delete, hash fallback once); local read with `_audit: false`; `lastAppliedAt` on every harvest write; `protectedFields` dropped and `provenance` set after mapping.
 - [ ] 4.3 `SyncConflictResolver`: strategy `reject`; `local-deleted` forced to `manual`; `conflictRules` evaluated with `DecisionTableEvaluator`, falling back to `conflictStrategy`.
 
@@ -34,8 +34,8 @@
 ## 6. Tombstones and guarded fetch (REQ-HAF-010, REQ-HAF-011, D-10, D-11)
 
 - [ ] 6.1 Tombstone pass after a `complete` run; clear on re-seen; `deleteStrategy` `flag` as the default for new sources; `soft-delete` and `ignore` as today's names promise.
-- [ ] 6.2 `lib/Service/Http/OutboundUrlGuard.php` from `WebhookService::assertSafeWebhookUri()`, `isPrivateHost()`, `blockedIpv6Reason()`; `WebhookService` calls it (its tests stay green unchanged). `lib/Service/Sync/HarvestHttpClient.php` with guard per hop, timeouts, retry and backoff, `Retry-After`, 50 MB cap; `RestApiSourceFetcher` moves onto it.
-- [ ] 6.3 `HarvestPipelineService` tombstone pass: the seen set is the batch's `items` keys plus every non-null external id in `errors`; per-item errors do not clear `complete`. An errored id's existing `SyncRecord` keeps `rawData`, `contentHash`, `objectUuid` and `lastAppliedAt` and gets status `fetch_error` plus `errorMessage`; an errored id without a record gets a new `fetch_error` record with no object. PHPUnit in `tests/Unit/Service/Sync/HarvestPipelineServiceTest.php` with a stub batch fetcher: id in errors not tombstoned and run still complete, id in neither tombstoned, errored record keeps its last good data. Unblocks opencatalogi `harvest-observability` D1, which until then reports `complete: false` when it refuses a dataset.
+- [x] 6.2 `lib/Service/Http/OutboundUrlGuard.php` from `WebhookService::assertSafeWebhookUri()`, `isPrivateHost()`, `blockedIpv6Reason()`; `WebhookService` calls it (its tests stay green unchanged). `lib/Service/Sync/HarvestHttpClient.php` with guard per hop, timeouts, retry and backoff, `Retry-After`, 50 MB cap; `RestApiSourceFetcher` moves onto it.
+- [x] 6.3 `HarvestPipelineService` tombstone pass: the seen set is the batch's `items` keys plus every non-null external id in `errors`; per-item errors do not clear `complete`. An errored id's existing `SyncRecord` keeps `rawData`, `contentHash`, `objectUuid` and `lastAppliedAt` and gets status `fetch_error` plus `errorMessage`; an errored id without a record gets a new `fetch_error` record with no object. PHPUnit in `tests/Unit/Service/Sync/HarvestPipelineServiceTest.php` with a stub batch fetcher: id in errors not tombstoned and run still complete, id in neither tombstoned, errored record keeps its last good data. Unblocks opencatalogi `harvest-observability` D1, which until then reports `complete: false` when it refuses a dataset.
 
 ## 7. Sources page (D-14)
 

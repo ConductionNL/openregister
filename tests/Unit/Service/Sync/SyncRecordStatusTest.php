@@ -78,4 +78,23 @@ class SyncRecordStatusTest extends TestCase {
 		$this->assertTrue(SyncRecordStatus::canTransition(SyncRecordStatus::CONFLICT, SyncRecordStatus::IMPORTED));
 		$this->assertTrue(SyncRecordStatus::canTransition(SyncRecordStatus::CONFLICT, SyncRecordStatus::UNCHANGED));
 	}//end testConflictCanResolveToImportedOrUnchanged()
+
+	public function testShadowedAndRejectedAreKnownTerminalStatuses(): void {
+		$this->assertTrue(SyncRecordStatus::isValid(SyncRecordStatus::SHADOWED));
+		$this->assertTrue(SyncRecordStatus::isValid(SyncRecordStatus::REJECTED));
+		$this->assertTrue(SyncRecordStatus::isTerminal(SyncRecordStatus::SHADOWED));
+		$this->assertTrue(SyncRecordStatus::isTerminal(SyncRecordStatus::REJECTED));
+		$this->assertFalse(SyncRecordStatus::isError(SyncRecordStatus::REJECTED));
+	}//end testShadowedAndRejectedAreKnownTerminalStatuses()
+
+	public function testAStrategyOrAResolutionMayEndInShadowedOrRejected(): void {
+		foreach ([SyncRecordStatus::FETCHED, SyncRecordStatus::CONFLICT] as $from) {
+			$this->assertTrue(SyncRecordStatus::canTransition($from, SyncRecordStatus::SHADOWED));
+			$this->assertTrue(SyncRecordStatus::canTransition($from, SyncRecordStatus::REJECTED));
+		}
+
+		$this->assertTrue(SyncRecordStatus::canTransition(SyncRecordStatus::CONFLICT, SyncRecordStatus::IMPORTED));
+		$this->assertFalse(SyncRecordStatus::canTransition(SyncRecordStatus::PENDING, SyncRecordStatus::SHADOWED));
+		$this->assertFalse(SyncRecordStatus::canTransition(SyncRecordStatus::REJECTED, SyncRecordStatus::IMPORTED));
+	}//end testAStrategyOrAResolutionMayEndInShadowedOrRejected()
 }//end class

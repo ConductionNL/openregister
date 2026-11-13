@@ -42,7 +42,12 @@ final class SourceJson {
 	 * @spec exclude source plumbing moved out of the entity, not a capability of its own
 	 */
 	public function serialise(array $fields): array {
-		return array_merge($this->identity(fields: $fields), $this->sync(fields: $fields), $this->target(fields: $fields));
+		return array_merge(
+			$this->identity(fields: $fields),
+			$this->sync(fields: $fields),
+			$this->target(fields: $fields),
+			$this->harvest(fields: $fields)
+		);
 	}//end serialise()
 
 	/**
@@ -105,4 +110,28 @@ final class SourceJson {
 			'managedByConfiguration' => null,
 		];
 	}//end target()
+
+	/**
+	 * The harvest-for-apps fields: owning app, fetcher config, acting identity, schedule, flow and item rules.
+	 *
+	 * @param array<string, mixed> $fields The entity's properties.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	private function harvest(array $fields): array {
+		return [
+			'application' => ($fields['application'] ?? null),
+			'config' => ($fields['config'] ?? null),
+			'runAs' => ($fields['runAs'] ?? null),
+			'schedule' => ($fields['schedule'] ?? null),
+			'flowId' => ($fields['flowId'] ?? null),
+			'identityProperty' => ($fields['identityProperty'] ?? null),
+			'protectedFields' => ($fields['protectedFields'] ?? null),
+			'provenance' => ($fields['provenance'] ?? null),
+			'conflictRules' => ($fields['conflictRules'] ?? null),
+			'maxItemsPerRun' => ($fields['maxItemsPerRun'] ?? null),
+		];
+	}//end harvest()
 }//end class

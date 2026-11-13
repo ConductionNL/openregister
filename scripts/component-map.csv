@@ -3897,3 +3897,10 @@ Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Listener/SourceFetcherRegistrationListener.php,,Listener,,,,,Integrations
+Service/Http/,,Service,,,,,Integrations
+Service/Http/OutboundUrlGuard.php,,Service,,,,,Integrations
+Service/Sync/HarvestBatch.php,,Service,,,,,Integrations
+Service/Sync/HarvestHttpClient.php,,Service,,,,,Integrations
+Service/Sync/IBatchSourceFetcher.php,,Service,,,,,Integrations
+Service/Sync/RegisterSourceFetchersEvent.php,,Service,,,,,Integrations

@@ -80,6 +80,26 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDeleteStrategy(?string $deleteStrategy)
  * @method int|null getBatchSize()
  * @method void setBatchSize(?int $batchSize)
+ * @method string|null getApplication()
+ * @method void setApplication(?string $application)
+ * @method array|null getConfig()
+ * @method void setConfig(?array $config)
+ * @method string|null getRunAs()
+ * @method void setRunAs(?string $runAs)
+ * @method string|null getSchedule()
+ * @method void setSchedule(?string $schedule)
+ * @method string|null getFlowId()
+ * @method void setFlowId(?string $flowId)
+ * @method string|null getIdentityProperty()
+ * @method void setIdentityProperty(?string $identityProperty)
+ * @method array|null getProtectedFields()
+ * @method void setProtectedFields(?array $protectedFields)
+ * @method array|null getProvenance()
+ * @method void setProvenance(?array $provenance)
+ * @method array|null getConflictRules()
+ * @method void setConflictRules(?array $conflictRules)
+ * @method int|null getMaxItemsPerRun()
+ * @method void setMaxItemsPerRun(?int $maxItemsPerRun)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -234,6 +254,76 @@ class Source extends Entity implements JsonSerializable {
 	 * @var integer|null Batch size
 	 */
 	protected ?int $batchSize = null;
+
+	/**
+	 * Owning app id; null for a source OpenRegister itself owns.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $application = null;
+
+	/**
+	 * Fetcher config, validated against the fetcher's config schema. Secrets stay in authConfig.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $config = null;
+
+	/**
+	 * User id the scheduled harvest runs as; required with a schedule.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $runAs = null;
+
+	/**
+	 * Cron expression of the harvest flow's schedule trigger.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $schedule = null;
+
+	/**
+	 * Uuid of the source's harvest flow; read only. A source with one is left to the flow engine.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $flowId = null;
+
+	/**
+	 * Target-object property that carries the external id, to spot a pre-existing local claim.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $identityProperty = null;
+
+	/**
+	 * Property names a harvest never writes.
+	 *
+	 * @var list<string>|null
+	 */
+	protected ?array $protectedFields = null;
+
+	/**
+	 * Provenance properties the pipeline sets after mapping: {externalIdProperty, sourceProperty}.
+	 *
+	 * @var array<string, string>|null
+	 */
+	protected ?array $provenance = null;
+
+	/**
+	 * Decision table that picks a conflict strategy per item.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $conflictRules = null;
+
+	/**
+	 * Most items one run takes (default 1000, at most 10000).
+	 *
+	 * @var int|null
+	 */
+	protected ?int $maxItemsPerRun = null;
 
 	/**
 	 * Last update timestamp
