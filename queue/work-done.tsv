@@ -3293,3 +3293,4 @@ merge:decidiq:2117:18ed3948	merge-local over 3 decidiq tasks: merged=3 red=0 fai
 merge:decidiq:2119:f8ee7896	merge-local over 3 decidiq tasks: merged=3 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T07:51:58Z
 merge:decidiq:2120:56e91b9d	merge-local over 3 decidiq tasks: merged=3 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T07:51:58Z
 fix:shillinq:2900:451b1bee	conflict resolved, pushed d5201979; REVERIFY recorded	session-20261113T074531-ad7036dd	2026-11-13T07:52:04Z
+gap:buildiq:maint1:burn1	PR #1526: split saveManifest/applySchedules/seed, +15 tests first on old code, suite green bar inherited 1	session-20261113T071633-17de823f	2026-11-13T07:52:09Z
