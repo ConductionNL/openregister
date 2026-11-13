@@ -4131,3 +4131,4 @@ merge:integriq:3513:6811747d	merge-local over 7 integriq tasks: merged=8 red=0 f
 merge:integriq:3512:f501d0fc	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
 merge:integriq:3514:373599c5	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
 merge:integriq:3515:3cef6121	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
+cover:larpinq:c4471360m4538:81b1241f	no PR: lib/Portal 155/155 covered, PortalContributionProviderTest has 15 tests incl. full golden manifest; nothing real left to add	session-20261113T094617-36f80607	2026-11-13T10:02:43Z
