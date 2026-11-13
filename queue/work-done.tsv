@@ -6920,3 +6920,4 @@ build4:openregister:archival-conformance	partial: PR #10328 docs of carried/left
 build4:openregister:draft-creation-side-effects	already done: every code task ticked on main; only 5.1 (check:strict before a push) and 5.2 (live) remain, nothing to build	session-20261113T205329-39b9195a	2026-11-13T21:19:10Z
 verify:integriq:3554:9b8f75a4	2 GREEN (3554, 3555); unit 8253 vs baseline 8222, no new failures	session-20261113T202611-3b383b96	2026-11-13T21:19:10Z
 build4:dossiq:overview-cards-per-case-type	PR #6464: built 1.8 (settlement card + /api/cases/{id}/settlements, 12 tests); 1.6b left (needs nextcloud-vue stack ordering); no new failures	session-20261113T205323-a7434fd6	2026-11-13T21:20:06Z
+verify:learniq:2488:9d3046f7	GREEN #2488: 6412 tests, 0 new failures (1 inherited)	session-20261113T210940-b751519f	2026-11-13T21:20:05Z
