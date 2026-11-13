@@ -67,6 +67,11 @@ final class AnnotationVocabulary {
 		// having declared nothing — the same or#460/#462-class silent drop the
 		// entries around this one record.
 		'x-openregister-card',
+		// What a unified-search result of this schema's objects shows: its
+		// title property, subline property and ordering date property
+		// (platform-search-provider). Absent from this list setConfiguration()
+		// would drop the block and every result would keep the derived title.
+		'x-openregister-search-result',
 		'x-openregister-relations',
 		// The named relation vocabulary: a list of
 		// {key, label, inverseLabel, symmetric, inherits} that several `$ref`

@@ -713,7 +713,10 @@ class ObjectsProvider implements IFilteringProvider {
 	/**
 	 * Order two result rows the way the pipeline orders a cross-schema page.
 	 *
-	 * Relevance descending, then uuid ascending as the stable tiebreaker.
+	 * Relevance descending, then the ordering date the row's schema declares
+	 * (newest first, a row without one after those with one), then uuid
+	 * ascending as the stable tiebreaker. A schema that declares no date
+	 * leaves its rows ordered exactly as before.
 	 *
 	 * @param mixed $a A rendered row (array) or an ObjectEntity.
 	 * @param mixed $b A rendered row (array) or an ObjectEntity.
@@ -729,8 +732,49 @@ class ObjectsProvider implements IFilteringProvider {
 			return $scoreB <=> $scoreA;
 		}
 
+		$dateA = $this->declaredOrderDate(row: $a);
+		$dateB = $this->declaredOrderDate(row: $b);
+		if ($dateA !== $dateB) {
+			return (($dateB ?? PHP_INT_MIN) <=> ($dateA ?? PHP_INT_MIN));
+		}
+
 		return strcmp($uuidA, $uuidB);
 	}//end compareRows()
+
+	/**
+	 * The ordering date a row's schema declares, as a timestamp, or null.
+	 *
+	 * @param mixed $row A rendered row (array) or an ObjectEntity.
+	 *
+	 * @return int|null The timestamp, or null when the schema declares none or the row has none.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-schema-declares-its-result-title-subline-and-ordering-date-req-psp-002
+	 */
+	private function declaredOrderDate(mixed $row): ?int {
+		if ($this->output->declarations === null) {
+			return null;
+		}
+
+		if ($row instanceof ObjectEntity) {
+			$row = $row->jsonSerialize();
+		}
+
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		$self = $row['@self'] ?? [];
+		if (is_array($self) === false) {
+			return null;
+		}
+
+		$schema = ($self['schema'] ?? null);
+		if (is_numeric($schema) === false) {
+			return null;
+		}
+
+		return $this->output->declarations->forSchema(schemaId: (int)$schema)?->orderDate(object: $row);
+	}//end declaredOrderDate()
 
 	/**
 	 * The (relevance, uuid) pair a row is ordered on.
