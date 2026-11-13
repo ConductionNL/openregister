@@ -4808,3 +4808,4 @@ verify:pipelinq:3754:a2c8bcab	CONFLICT: l10n en/nl with development	session-2026
 review:openregister:10163:aade2aff	APPROVE	session-20261113T104531-274f72f7	2026-11-13T12:21:38Z
 build:openregister:mcp-output-schema-payload	already built on main; PR #10173 ticks the tasks with evidence (budget test passes)	session-20261113T104527-c302106c	2026-11-13T12:22:00Z
 build:openregister:lifecycle-guards-see-the-stored-object	done (tasks); 1.6 already landed via create-over-taken-identifier-runs-update-path, ticked in PR; 2.1 is app lanes	session-20261113T121536-3cb7eb71	2026-11-13T12:22:17Z
+build:openregister:instance-hardening-controls	partial: PR #10176 ticks 5.3 (env-var allowlist in expressions, already implemented by ExpressionValueSources + 6 tests). Sections 3-5 (second factor, address allowlist, notifications, last-admin, two-person grant, reversible bar, secret manager) + tests left	session-20261113T091527-72c58830	2026-11-13T12:22:32Z
