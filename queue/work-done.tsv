@@ -3511,3 +3511,4 @@ cover:stackiq:9ac19b3am5ac4:js4829b6aa	already done: src/views/* JS statements a
 verify:integriq:3510:8a228b3f	3510 GREEN (8016 tests, no new failures; tests only)	session-20261113T071640-3ba6da34	2026-11-13T08:39:18Z
 review:openregister:10108:d1168440	APPROVE: tests only, all required suites green	session-20261113T081048-4978ac57	2026-11-13T08:39:28Z
 cover:stackiq:9ac19b3am5ac4:34f5c300	PR #1860: 10 tests, ContactpersoonService 511->704/775, lib/Service/*.php 81.86->82.91%; suite 3216->3226 no new failures; noted fall-through returning false after account creation	session-20261113T080549-20301834	2026-11-13T08:39:52Z
+gap:learniq:maint2:burn1	PR learniq#2449: 4 long listener units split behaviour-preserving, +4 guard tests	session-20261113T051703-1b54bfba	2026-11-13T08:40:16Z
