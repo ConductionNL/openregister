@@ -3135,3 +3135,4 @@ cover:keepiq:c967a31fmb40c:ca1d90c4	already done: lib/Attribute/*.php at 100% li
 cover:dossiq:f8a113c5m7e79:dfaef732	already done: lib/Notification 191/191 lines under strict metadata (PR -1 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:22:54Z
 verify:dossiq:6317:73469cb8	6317 GREEN, 6318 GREEN; 0 new failures	session-20261113T064519-30004ad4	2026-11-13T07:22:55Z
 cover:keepiq:c967a31fmb40c:7ddabe24	already done: lib/Federation/*.php 13/13 covered	session-20261113T051709-e616bf69	2026-11-13T07:23:05Z
+verify:integriq:3496:d828e105	GREEN #3496: tests only, unit 7689 vs 7673, no new failures (development itself has 2 JobsControllerTest failures)	session-20261113T051705-4f5ad12a	2026-11-13T07:23:18Z
