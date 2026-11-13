@@ -2275,3 +2275,5 @@ cover:hermiq:065f1631m312d:38e80a9f	PR #1659: lib/Command 91.3%->100%, +2 tests,
 cover:hermiq:065f1631m312d:17bbac84	already covered: lib/TaskProcessing 98.4% stmts (2 left), earlier -1 branch exists; no PR	session-20261113T031704-5a455d65	2026-11-13T04:47:58Z
 cover:stackiq:df113dffm2c76:efa2a923	already done: lib/EventListener/*.php 974/982 stmts (99.2%) on development	session-20261113T024656-d5bfb688	2026-11-13T04:48:02Z
 cover:shillinq:05639deb:8bdc03d4	PR #2865: 2 tests, BbvMigration 101/102 -> 102/102 stmts	session-20261113T024653-d22c13a3	2026-11-13T04:48:25Z
+cover:filinq:7a9ef677mc744:4b9c088d	already covered: batches quality/test-coverage-4b9c088d-1/-2 merged; every concrete Editing class has dedicated tests (untested names are interfaces/value types); no PR	session-20261113T024654-6600dc41	2026-11-13T04:48:34Z
+cover:stackiq:df113dffm2c76:59f569b2	already done: lib/Service/Settings/*.php 1265/1296 stmts (97.6%) on development	session-20261113T024656-d5bfb688	2026-11-13T04:48:56Z
