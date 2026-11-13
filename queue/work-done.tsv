@@ -6670,3 +6670,4 @@ cover:dossiq:069ee2d6mbd37:eb8f684c	already done: lib/Service/Reporting 533/543 
 cover:dossiq:069ee2d6mbd37:9ece5c6f	already done: lib/Controller/Support at 334/337 stmts (99.1%) after -1/-2 merged; target 95	session-20261113T202624-e1abf1c1	2026-11-13T20:30:37Z
 cover:portaliq:b60f3b81m4ccb:3230221b	already done: every statement in lib/Service/Signin/ is covered by the unit suite on development (pcov)	session-20261113T202603-6c9ef72f	2026-11-13T20:30:47Z
 cover:dossiq:069ee2d6mbd37:67b69054	already done: lib/Service/Conversation 374/375 statements (99.7%) on development	session-20261113T175332-5effc865	2026-11-13T20:30:57Z
+cover:portaliq:b60f3b81m4ccb:deb110a3	PR #2464: 2 tests on ExampleSiteRemover refusal paths; suite 4914 -> 4916 OK	session-20261113T202603-6c9ef72f	2026-11-13T20:31:59Z
