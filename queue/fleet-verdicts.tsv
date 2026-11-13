@@ -5332,3 +5332,4 @@ dossiq	6313	58fd9004db4b2992965e4fc6c9cd2f7a376ac17f	GREEN	worker-36	phpunit 151
 dossiq	6314	f5190e91cec234c50520d570cc675f4ab940a19a	GREEN	worker-36	phpunit 15112 run (baseline 15047), 19 baseline failures, 0 new; vitest 877 files, 1 inherited failure (capabilityComparison.spec.js, red on development); tests-only, additions only
 dossiq	6317	36a475e2648df17037f5b3e85851ff7fdeb46a49	GREEN	worker-37	phpunit 15144 (baseline 15141, 19 failures inherited, 0 new); vitest 6389, 1 inherited fail (capabilityComparison); tests only
 dossiq	6318	4320a6d3fe5c34ac17ed73ae8339ff1c65a19993	GREEN	worker-37	phpunit 15144 (baseline 15141, 19 failures inherited, 0 new); tests only
+integriq	3496	8455f1a08ec752fd6d2b644ac5470edc9b5715f0	GREEN	worker-12	unit 7689 run (baseline 7673); inherited 2 CallServiceTest errors + 2 JobsControllerTest failures on development too; 0 new; tests only; authored by this worker
