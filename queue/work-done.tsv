@@ -4210,3 +4210,4 @@ verify:pipelinq:3706:2c63ddaa	1/1 GREEN (3706): clean merge, lint ok, phpunit +2
 cover:openregister:7350e3efme1f3:js30a52488	PR #10122: 8 jest tests; dir already 92.2% lines (above 90 target), union unchanged	session-20261113T071631-5a3cc070	2026-11-13T10:17:38Z
 cover:decidiq:a5f973bbm1507:34f5c300	PR #2126: 6 services fully covered, risky 2->0, lib/Service 88.06->90.34%; ActionItemWriter calls TaskService methods OpenRegister no longer has (noted in PR)	session-20261113T081048-4978ac57	2026-11-13T10:17:38Z
 verify:larpinq:1025:ef810bdb	GREEN 1025, 1026, 1027	session-20261113T081040-5e814df2	2026-11-13T10:17:47Z
+cover:decidiq:a5f973bbm1507:be0dcca9	already done: lib/Mcp/*.php already at 100% on development (branches be0dcca9-1 and -2 merged); no PR needed	session-20261113T094606-b7da8c7f	2026-11-13T10:17:50Z
