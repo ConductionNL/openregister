@@ -4365,3 +4365,4 @@ build:pipelinq:forecast-slip-reason	partial: PR pipelinq#3718 builds 1.1, 2.1, 2
 cover:opencatalogi:fc83bfb1:ceb285b8	PR #2588: 24 tests, lib/Service/Publication 96.29->99.09% stmts, suite 5162->5186, 2 inherited failures	session-20261113T104650-72c03e13	2026-11-13T11:01:24Z
 cover:pipelinq:7f9dc8e6m84dd:2cc09f74	already done: lib/Service/Marketing/Transport measures 330/335 statements (98.5%) at fe9981c, above the 90 target; no PR	session-20261113T104529-f43c7561	2026-11-13T11:01:19Z
 cover:pipelinq:7f9dc8e6m916f:60c2c265	PR #3720: 10 tests, 4 controllers to 100%, lib/Controller/*.php 90.4%->91.2%; inherited red CrmPrivilegeRefusalGoldenTest	session-20261113T074533-3e2a2da6	2026-11-13T11:01:29Z
+verify:humaniq:1111:60a8d3ea	GREEN: +36 tests, suite green	session-20261113T051703-1b54bfba	2026-11-13T11:01:41Z
