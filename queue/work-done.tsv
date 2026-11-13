@@ -7265,6 +7265,7 @@ review:openregister:10442:f3db1f05	APPROVE 10442: user migrator slice, no access
 review:openregister:10443:e7ab19e9	APPROVE: access checks hold, tests green	session-20261113T213324-d7ae5543	2026-11-13T22:41:30Z
 build:learniq:practical-exam-assessment	partial: PR #2507 (T2,T3; T1 needs owner decision)	session-20261113T202611-3b383b96	2026-11-13T22:41:34Z
 build:learniq:portal-public-index	partial: PR #2508 school-day categories (T6) and po holidays (T7 po half); T5 test schedule and vo half left	session-20261113T213336-fe5ca7a4	2026-11-13T22:41:38Z
+build:learniq:learner-list-and-page-follow-the-boards	partial: PR #2512 builds T1 core (today state per pupil + absent count, 15 tests); T1 read-model field, T2-T6 left; no new failures	session-20261113T205323-a7434fd6	2026-11-13T22:41:55Z
 build:learniq:site-workplace-trainer-portal-design	partial: PR #2511 builds T1 (poLearners via.when join, names only, overview cards); T5 blocked (no task audience), T7b copy pass, T9 e2e left	session-20261113T214350-9762e143	2026-11-13T22:41:53Z
 review:openregister:10436:de6e0970	APPROVE openregister#10436	session-20261113T175332-5effc865	2026-11-13T22:41:55Z
 build:learniq:capability-rows-say-what-they-do	partial: PR #2515 builds 2.11 (resolve guard) and 2.12 (capacity for every session); 2.1-2.10, 2.13-2.16, 3.1, 4.1 left	session-20261113T212411-bd385ec2	2026-11-13T22:42:11Z
