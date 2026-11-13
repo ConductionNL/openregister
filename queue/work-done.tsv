@@ -5691,3 +5691,4 @@ cover:shillinq:05639debm2935:js4829b6aa	PR #2945: 6 views, 25 tests, src/views/*
 review:openregister:10280:1aae7114	APPROVE 10280	session-20261113T171213-10021a1d	2026-11-13T17:43:54Z
 build2:openregister:seed-from-a-mounted-directory	partial: PR #10286 (importer, report, repair/job/occ, GET /api/settings/seed, 30 tests); left CI seed job, console section, e2e	session-20261113T171203-c5a044de	2026-11-13T17:44:06Z
 cover:pipelinq:7f9dc8e6m16db:568ec52a	already covered: lib/Lifecycle/*.php measured 345/347 stmts (99.4%) on development 4c67daf; the 2 misses (PosTransactionConfirmGuard:205,220) are unreachable defensive returns; no PR	session-20261113T172334-4b3b027b	2026-11-13T17:44:51Z
+fix:shillinq:2944:c7766ce8	restored deleted spec, new tests in own file, merged development; REVERIFY at 1db10eff	session-20261113T172329-5f4feaba	2026-11-13T17:45:50Z
