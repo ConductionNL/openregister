@@ -3095,6 +3095,7 @@ Service/Schemas/ScopedPropertyGovernance.php,158,Service,Service,Service/Schemas
 Service/Schemas/SemanticRoleHandler.php,120,Service,Service,Service/Schemas/SemanticRoleHandler.php,0,238,Core
 Service/Schemas/UniqueConstraintEvaluator.php,131,Service,Service,Service/Schemas/UniqueConstraintEvaluator.php,0,217,Core
 Service/ScriptManifestLoader.php,48,Service,Flows,Flows/Service/ScriptManifestLoader.php,0,,Processes
+Service/Search/ContentSnippetSource.php,14,Service,Service,Service/Search/ContentSnippetSource.php,0,,Core
 Service/Search/DictionaryExpansion.php,41,Service,Service,Service/Search/DictionaryExpansion.php,0,,Core
 Service/Search/HistoryNarrowing.php,48,Service,Service,Service/Search/HistoryNarrowing.php,0,,Core
 Service/Search/HistoryPredicate.php,115,Service,Service,Service/Search/HistoryPredicate.php,0,,Core
@@ -3106,6 +3107,7 @@ Service/Search/SearchDictionaryProvider.php,188,Service,Service,Service/Search/S
 Service/Search/SearchTermNode.php,86,Service,Service,Service/Search/SearchTermNode.php,0,,Core
 Service/Search/SearchTermParser.php,251,Service,Service,Service/Search/SearchTermParser.php,0,,Core
 Service/Search/SearchTermSqlCompiler.php,22,Service,Service,Service/Search/SearchTermSqlCompiler.php,0,,Core
+Service/Search/SnippetBuilder.php,107,Service,Service,Service/Search/SnippetBuilder.php,0,,Core
 Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchTrailService.php,0,38,Compliance
 Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Integrations
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
