@@ -6696,3 +6696,4 @@ gap:portaliq:owaspsecurecoding:21ddd768	failed: all hits are the committed woo/s
 fix:filinq:2101:cab6810d	failed: 2097-2099 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:34:38Z
 fix:filinq:2090:37852824	failed: #2054/#2092 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:34:50Z
 fix:filinq:2103:deb95ab0	failed: 2097-2099 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:34:59Z
+cover:opencatalogi:fc83bfb1m976b:jse47a1b97	PR #2610: +29 jest tests for FederationDirectory (summary, messages, paging, modals/watcher); jest 440->469 tests, same 33 inherited unloadable suites; vitest cannot import .vue so measured js% will not move	session-20261113T195351-a32c6d55	2026-11-13T20:35:01Z
