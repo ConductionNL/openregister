@@ -266,7 +266,16 @@ class GenericInitializeActionsTest extends TestCase {
 
 		$this->repair($actionAuth, dirname(__DIR__, 3))->run($this->createMock(IOutput::class));
 
-		$this->assertSame($customised + ['webhook.own' => ['admin']], $actionAuth->getMatrix());
+		$this->assertSame(
+			$customised + [
+				'webhook.own'                 => ['admin'],
+				'flow.node.send-email'        => ['admin'],
+				'flow.node.send-notification' => ['admin'],
+				'flow.node.send-talk-message' => ['admin'],
+				'flow.node.object-delete'     => ['admin'],
+			],
+			$actionAuth->getMatrix()
+		);
 		$this->assertFalse(
 			$actionAuth->can(user: $this->user(), action: 'webhook.own'),
 			'nobody but an administrator may own a webhook until an administrator grants it'
