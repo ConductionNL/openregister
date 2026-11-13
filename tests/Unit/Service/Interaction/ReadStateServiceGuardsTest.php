@@ -39,6 +39,10 @@ use RuntimeException;
  * The anonymous, uuid-less and failing-mapper branches ReadStateServiceTest leaves open.
  *
  * @covers \OCA\OpenRegister\Service\Interaction\ReadStateService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\ObjectReadState
+ * @uses \OCA\OpenRegister\Service\Interaction\UnreadCountCalculator
+ * @uses \OCA\OpenRegister\Service\Interaction\AddressedObject
  */
 class ReadStateServiceGuardsTest extends TestCase {
 

@@ -40,6 +40,17 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\TransferResultProcessor
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\AuditRecording
+ * @uses \OCA\OpenRegister\Service\Edepot\ObjectConfirmation
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferAuditLog
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferContext
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferDelivery
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferFailure
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferOutcomeRecorder
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferSettings
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferStores
+ * @uses \OCA\OpenRegister\Service\Edepot\Transport\TransportResult
  */
 class TransferResultProcessorTest extends TestCase {
 

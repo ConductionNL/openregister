@@ -39,6 +39,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion
  */
 class OptOutAuthorityTest extends TestCase {
 

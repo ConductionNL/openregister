@@ -28,6 +28,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\SipMetsDocument
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\SipContents
+ * @uses \OCA\OpenRegister\Service\Edepot\SipLayout
  */
 class SipMetsDocumentTest extends TestCase {
 

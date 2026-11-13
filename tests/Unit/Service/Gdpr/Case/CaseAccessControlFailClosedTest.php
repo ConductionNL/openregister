@@ -35,6 +35,7 @@ use RuntimeException;
  * An unreadable officer-group setting denies the override and says so; the handler still acts.
  *
  * @covers \OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl
+ * @uses \OCA\OpenRegister\Service\Gdpr\GdprCallerMembership
  */
 final class CaseAccessControlFailClosedTest extends TestCase {
 

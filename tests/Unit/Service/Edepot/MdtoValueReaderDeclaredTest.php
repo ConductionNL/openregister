@@ -30,6 +30,9 @@ use PHPUnit\Framework\TestCase;
  * Pins which layer a declared value comes from.
  *
  * @covers \OCA\OpenRegister\Service\Edepot\MdtoValueReader
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\ArchivalFactKey
+ * @uses \OCA\OpenRegister\Service\Edepot\ArchivalSource
  */
 class MdtoValueReaderDeclaredTest extends TestCase {
 
