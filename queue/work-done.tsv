@@ -2382,3 +2382,4 @@ cover:dossiq:f8a113c5mac88:0250a951	already done: lib/Service/Deelzaak/ at 100% 
 cover:dossiq:f8a113c5mac88:38e80a9f	PR #6283: 11 tests for AdoptShippedFlowsCommand, VerifyWooDeliveredSetCommand; suite 19 inherited failures unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:21:23Z
 verify:launchpad:1171:3ec55cfe	GREEN #1171 (test-only, vitest 1927 pass, phpunit 3741 ok)	session-20261113T051709-e616bf69	2026-11-13T05:21:24Z
 verify:keepiq:1738:a718d199	GREEN 1738, 1739 (tests only, 0 failures)	session-20261113T031701-b518f7f8	2026-11-13T05:21:47Z
+merge:integriq:3420:e6bfbb93	stale	feeder	2026-11-13T05:20:42Z
