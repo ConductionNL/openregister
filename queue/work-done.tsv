@@ -4489,3 +4489,4 @@ merge:keepiq:1749:da19075a	merge-local over 11 keepiq tasks: merged=14 red=1 fai
 merge:keepiq:1748:6313cf30	merge-local over 11 keepiq tasks: merged=14 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:22:59Z
 merge:keepiq:1751:f988af96	merge-local over 11 keepiq tasks: merged=14 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:22:59Z
 cover:pipelinq:7f9dc8e6m84dd:4d8f122a	no PR: lib/Service/MailAddIn already 85/86 statements covered (28 tests); the one miss is unreachable through the typed save contract	session-20261113T104531-274f72f7	2026-11-13T11:23:15Z
+fix:pipelinq:3718:5c2cc12e	no change needed: blocked behaviour is required by REQ-FRC-012-02 of the change it builds; REVERIFY recorded	session-20261113T104650-72c03e13	2026-11-13T11:23:14Z
