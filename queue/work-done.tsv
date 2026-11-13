@@ -3437,3 +3437,4 @@ cover:buildiq:70b3e29emc723:1106b038	PR buildiq#1530: 17 tests, AbstractToolHand
 cover:buildiq:70b3e29emc723:34763eb4	already done: lib/Middleware/*.php at 98.3% (58/59); no PR	session-20261113T080546-98207a87	2026-11-13T08:23:24Z
 verify:portaliq:2373:5486e820	2373,2374,2377 GREEN (4620 tests, 0 failures); 2375,2376 CONFLICT with 2374	session-20261113T072715-8f8a14e9	2026-11-13T08:23:36Z
 cover:buildiq:70b3e29emc723:be0dcca9	already done: lib/Mcp/*.php at 100% (31/31); no PR	session-20261113T080546-98207a87	2026-11-13T08:23:46Z
+cover:buildiq:70b3e29emc723:aae6d66c	already done: lib/Exception/*.php at 100% (64/64); no PR	session-20261113T080546-98207a87	2026-11-13T08:23:56Z
