@@ -6098,3 +6098,4 @@ build:shillinq:tax-digipoort-filing	partial: PR #2984 (1.1 register fields: fili
 cover:dossiq:069ee2d6m2deb:59f569b2	PR #6436: 5 tests, lib/Service/Settings/*.php 94.08%->95.46% (SchemaAnnotationReconciler 94->101/104); suite 16530->16535, same 20 inherited failures	session-20261113T175336-e3687686	2026-11-13T18:52:51Z
 cover:dossiq:069ee2d6m2deb:0c7c4f5d	already covered: lib/Service/Term/*.php 483/483 (100%); no PR	session-20261113T175336-e3687686	2026-11-13T18:53:14Z
 review:openregister:10292:0fdfdd20	failed: permission (PR authored by this worker; needs an independent review)	session-20261113T182348-4d2d804b	2026-11-13T18:52:56Z
+cover:dossiq:069ee2d6m2deb:f0c02922	already covered: lib/Service/External/ 401/401 (100%); no PR	session-20261113T175336-e3687686	2026-11-13T18:53:34Z
