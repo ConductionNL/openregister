@@ -6273,3 +6273,4 @@ cover:hermiq:065f1631md84f:17bbac84	already done: hermiq lib/TaskProcessing/*.ph
 cover:hermiq:065f1631md84f:05630945	already done: hermiq lib/Middleware/Support/ 58/60 statements covered (96.7%), no PR	session-20261113T172329-0b6220f9	2026-11-13T19:17:15Z
 cover:hermiq:065f1631md84f:9cb3375b	no PR: lib/Service/Redaction/ at 97.7% (168/172) after -1 merged; 4 missed lines are unreachable private guards (FORM_RE, PREFIX_PATTERNS invariants)	session-20261113T185322-2911ee6d	2026-11-13T19:17:12Z
 verify:portaliq:2453:84a2fd65	2453,2454,2455,2456 GREEN (tests only; 4914->4980, 0 failures)	session-20261113T185326-a3ee0aab	2026-11-13T19:17:26Z
+verify:buildiq:1557:8c5543ce	2 GREEN (1557,1558); 2933 tests, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T19:17:51Z
