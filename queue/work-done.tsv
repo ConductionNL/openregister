@@ -3698,3 +3698,4 @@ build:dossiq:admin-message-and-portal-texts	partial: PR #6342 (1.1 spec tags; 1.
 verify:larpinq:1011:a60973d8	GREEN 1011; phpunit 709 OK vs 697, vitest 284 pass	session-20261113T072715-cf04db4e	2026-11-13T09:02:38Z
 cover:buildiq:70b3e29embf07:be0dcca9	already done: lib/Mcp/*.php at 100% (BuildiqToolProvider 31/31 lines) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:02:47Z
 cover:buildiq:70b3e29embf07:6891a8ac	already done: quality/test-coverage-6891a8ac-1 exists; lib/Service/Dashboard 97.2% (137/141) on development	session-20261113T081043-b24589a6	2026-11-13T09:03:02Z
+cover:dossiq:069ee2d6m7e79:b8cc4419	PR #6343: 10 tests, lib/Service/Sharing/ 92.5->99.7% (CaseAccessPolicy 29->52/52, CaseAccessLinkService 106->128/129); no new failures	session-20261113T080549-20301834	2026-11-13T09:03:13Z
