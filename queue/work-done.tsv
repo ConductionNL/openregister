@@ -2999,4 +2999,5 @@ verify:keepiq:1741:bc690436	1741,1742,1743 GREEN (phpunit 4672, 0 new); 1745 not
 cover:buildiq:9930949bmc723:js15d64f25	PR #1521: 7 tests; src/components/runtime stmts 96.8% -> 100%	session-20261113T054516-5d7b6bc4	2026-11-13T06:49:27Z
 cover:filinq:7a9ef677m5ffe:216a9a0a	PR #2042: +8 tests (EntitySearchQuery normalising, PrintJobRequest); suite 6251->6259 OK	session-20261113T054520-0c8540f8	2026-11-13T06:49:22Z
 cover:dossiq:f8a113c5m7e79:ea81adeb	already done: lib/Service/Zgw/*.php at 95.76% (2215/2313, pcov on development), above 90 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:49:54Z
+cover:buildiq:9930949bmc723:js0023cfc7	already done: open PR #1515 (same branch, another worker) covers the AutomationEditDialog pickers; my equivalent spec reached 85.45% for src/dialogs/* locally, not pushed to avoid a duplicate	session-20261113T054517-06ee2c47	2026-11-13T06:49:56Z
 cover:shillinq:05639debmd8ee:d76b2f72	already done: lib/Guard/*.php at 97.62% lines (1887/1933) on development ebb2e0884; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T06:49:50Z
