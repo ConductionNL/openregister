@@ -4912,3 +4912,4 @@ build:openregister:platform-provided-capabilities	partial: PR #10193 does 1.x ta
 build:openregister:flow-node-config-forms	partial: PR #10194, forms on 10 nodes (3 triggers, End, Wait, Filter, Merge, Explode, Iterate, SubFlow) + key guard test; 7+ nodes, sweep test and editor round-trip left	session-20261113T111529-f2ee6930	2026-11-13T12:35:46Z
 build:openregister:records-restore-with-cascade	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:35:59Z
 build:openregister:register-scoped-slug-resolution	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:06Z
+build:openregister:platform-cloud-federation-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:17Z
