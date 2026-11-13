@@ -5854,3 +5854,4 @@ cover:dossiq:069ee2d6m2deb:67583626	already done: lib/Service/Lifecycle/*.php at
 verify:stackiq:1885:2daf5a4e	1885 GREEN (tests only)	session-20261113T171149-8b9ea523	2026-11-13T18:11:24Z
 cover:dossiq:069ee2d6m2deb:38e80a9f	already done: lib/Command/*.php at 99.6% stmt coverage on development; no PR	session-20261113T172328-c860ad55	2026-11-13T18:11:42Z
 fix:portaliq:2423:50cc9936	l10n keys moved off the catalogue tail; merges clean with #2419 both orders; REVERIFY at 8eb905ab	session-20261113T172329-5f4feaba	2026-11-13T18:11:42Z
+measure:hermiq:20261113h18	php 91.32% (31407/34393), js 91.83% at 7f24df30; note: unit suite on development shows 146 errors, 26 failures	session-20261113T172349-00278d9d	2026-11-13T18:11:53Z
