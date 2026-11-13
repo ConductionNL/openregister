@@ -3029,3 +3029,4 @@ cover:shillinq:05639debmd8ee:6a548709	already done: lib/Service/Migration at 100
 cover:dossiq:f8a113c5m7e79:67583626	PR dossiq#6305: CaseActsOverview archiveReadiness + CaseHoldActs unreadable date, 4 tests, lib/Service/Lifecycle/*.php 867->883/893, suite 14921->14925 (19 inherited failures)	session-20261113T061518-90540a48	2026-11-13T06:55:01Z
 cover:hermiq:065f1631mfaac:7d9a7607	already above target: lib/Service/Config/ and lib/Service/Translation/ measure 100% (67/67) on development beeb8ec; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:55:26Z
 cover:hermiq:065f1631mfaac:716923f8	already above target: lib/Service/Credential/ measures 95.4% (83/87) on development beeb8ec; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:55:36Z
+cover:hermiq:065f1631mfaac:b97b9aec	already above target: lib/Service/Approval/ measures 97.54% (198/203) on development beeb8ec; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:55:46Z
