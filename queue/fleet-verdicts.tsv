@@ -5095,3 +5095,4 @@ pipelinq	3649	0222a0bb9ae31efbd40b0b0bd6f1402317fe9bf3	GREEN	worker-27	unit 6337
 pipelinq	3650	21d624b389d01cdf564d8f4cbc6f49b19ab95aa0	GREEN	worker-27	unit 6337 tests on tree, baseline 6293 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3744 passed; tests-only additions
 pipelinq	3651	57cb73cb5da196990aa71f9ffc167dc903433a28	GREEN	worker-27	unit 6337 tests on tree, baseline 6293 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3744 passed; tests-only additions
 pipelinq	3652	f2256d70f4dfb084639fa5d058c39ea031391025	GREEN	worker-27	unit 6337 tests on tree, baseline 6293 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3744 passed; tests-only additions
+stackiq	1836	bb33d6771dcccc81a5c65c3d9cab5244d4bfe709	GREEN	worker-04	phpunit 3111/0 fail on the 5-PR tree (baseline 3064/0); vitest 2198/0; test-only
