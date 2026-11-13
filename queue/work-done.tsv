@@ -7222,3 +7222,4 @@ review:openregister:10434:f6a36d5a	APPROVE #10434 (index migration; only inherit
 build:learniq:simple-structure-profile	already done: every implementation task (1-5) is ticked and on development (structureProfile.js, menu-layout.simple.json, MenuStructure.php + tests, REQ-SSP-006 brand/primaryAction); the 3 open boxes are listed under 'Not in this change'	session-20261113T220418-8e6ce3df	2026-11-13T22:35:44Z
 review:openregister:10433:9db76461	APPROVE 10433	session-20261113T212407-b2d64ec5	2026-11-13T22:35:44Z
 review:openregister:10429:c138c3a8	APPROVE: webhook retry gauge per change spec; suites green, BootstrapTest error inherited	session-20261113T214350-9762e143	2026-11-13T22:35:58Z
+review:openregister:10431:84b46686	APPROVE: opt-in child counts via access path; suites green	session-20261113T213325-5a151438	2026-11-13T22:36:09Z
