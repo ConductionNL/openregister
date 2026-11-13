@@ -2159,3 +2159,4 @@ cover:launchpad:fb10c50fm2ceb:js4829b6aa	PR #1168: 30 vitest tests, src/views 76
 cover:pipelinq:f67520ecmc4ba:95a79563	PR pipelinq#3647: 8 tests for SchemaLifecycleGraph across register files (fragments, precedence, malformed input); 1 inherited failure unchanged	session-20261113T024654-6600dc41	2026-11-13T04:34:10Z
 cover:pipelinq:f67520ecmc4ba:js00fe026a	PR #3649: 12 vitest tests, services stmts 1957/1989 -> 1973/1989	session-20261113T024653-d22c13a3	2026-11-13T04:34:17Z
 cover:pipelinq:f67520ecmc4ba:js0be8c659	PR #3648: 41 tests, src/modals lines 68.8->77.5%	session-20261113T034628-9602b641	2026-11-13T04:34:15Z
+cover:pipelinq:f67520ecmc4ba:js5794e9fc	PR #3650: +18 vitest specs (MessagingSettings, Settings); src/views/settings 78.1%->85.1%; suite all green	session-20261113T024656-d5bfb688	2026-11-13T04:34:40Z
