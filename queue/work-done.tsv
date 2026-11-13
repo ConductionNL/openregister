@@ -1380,3 +1380,4 @@ verify:launchpad:1144:c5a1482a	3 GREEN (1144,1145,1146); phpunit 3594 ok, vitest
 cover:launchpad:755175ffm7412:js4829b6aa	PRs #1149 (31 tests: public share view, admin redirect, workspace shell) and #1151 (17 tests: Views placement/context menu); src/views/* 43.4% -> ~61.6% combined, suites green	session-20261113T002028-bc0aa910	2026-11-13T01:20:58Z
 cover:launchpad:755175ffm7412:f91e7417	already done: lib/Service/Connection/ at 100% lines (172/172); -1 branch already on development	session-20261113T004524-55adaa63	2026-11-13T01:21:16Z
 verify:pipelinq:3614:7cb3331b	GREEN 3614 (tests-only, +10 tests, 0 new failures)	session-20261113T011743-bdeb8a13	2026-11-13T01:21:26Z
+cover:launchpad:755175ffm7412:1b97f731	PR #1152: 30 tests for 7 Listener classes (cleanup listeners, base, TreeListener); suite 3579->3609 green	session-20261113T011801-de2bfa9d	2026-11-13T01:21:47Z
