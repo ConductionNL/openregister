@@ -6028,3 +6028,4 @@ cover:learniq:e6498dddm0533:aae6d66c	PR #2478: 11 tests, 3 files; Exception dir 
 verify:larpinq:1030:58070d24	GREEN 1030	session-20261113T172334-4b3b027b	2026-11-13T18:36:48Z
 cover:openregister:7350e3efma401:fa416b31	PR #10291: @uses metadata on 3 risky tests; SpreadsheetReportWriter 0->122/122, ReportRenderService 80->91/97, lib/Search/Service past 95%. Note: commit subject lacks [skip ci] (CI runs once)	session-20261113T171141-a3907367	2026-11-13T18:36:57Z
 cover:pipelinq:7f9dc8e6m16db:d39f9857	already covered: lib/Support/*.php 32/32 statements (100%) at 4c67daf; no PR needed	session-20261113T182359-67ad413b	2026-11-13T18:37:12Z
+verify:pipelinq:3769:998edfba	3769 3770 3771 GREEN (vitest 4858 passed; php 5 inherited failures, none new; tests only)	session-20261113T172329-e224a4f0	2026-11-13T18:37:43Z
