@@ -7138,4 +7138,5 @@ review:openregister:10393:0c9034f1	APPROVE	session-20261113T185324-28e07ab2	2026
 build4:openregister:visual-flow-builder	already done: 3.5 is on main (js/openregister-flow-operator.js, commit 38dd1ec735) though unticked; remaining 5.x are release/live tasks	session-20261113T205329-39b9195a	2026-11-13T22:20:54Z
 build4:openregister:retention-linked-destruction-conflict	partial: PR #10428 adds 2.1 (conflicts stored on new lists, referencing-schema resolver, 9 tests); 2.2, 3.1, 3.2, 4.x left	session-20261113T212414-55623216	2026-11-13T22:21:01Z
 build4:openregister:rights-screen-stated	already done: no code tasks left (2.1 is a browser e2e test, 3.1 archives after it)	session-20261113T213325-fbdd5614	2026-11-13T22:21:04Z
+build4:openregister:production-observability	partial: PR #10429 adds the webhook_retry_queue_depth gauge via a joined provider (+5 tests); scraper token/IP access, histograms and other scenarios left	session-20261113T212405-084c59f4	2026-11-13T22:21:29Z
 review:openregister:10396:baaef040	APPROVE: matches change design; phpstan clean; required suites green or same as main	session-20261113T212411-bd385ec2	2026-11-13T22:21:26Z
