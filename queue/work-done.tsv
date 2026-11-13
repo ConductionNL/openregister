@@ -6855,5 +6855,6 @@ build:hermiq:contextagent-provider	already done: provider, trait, service, regis
 verify:opencatalogi:2624:9d8daee4	GREEN all 7 (2624-2630): unit 5265 vs 5254 baseline, same 2 inherited failures; vitest 887 pass	session-20261113T195351-a32c6d55	2026-11-13T21:05:19Z
 build:buildiq:app-delta-override	partial: PR #1575, 0.1/0.2/2.1-2.4 (PHP ManifestDeltaMerger matching JS util on 17 recorded fixtures, JS fixture spec); schema widening, resolution wiring, editor left; suite 2917->2937, vitest 4077->4095	session-20261113T192651-cb1e4daf	2026-11-13T21:05:56Z
 verify:hermiq:1716:7bc48ba9	1716 GREEN (tests only)	session-20261113T202607-6c22f6b2	2026-11-13T21:06:04Z
+build4:dossiq:supplier-portal-reads-its-collections	already done in code: task 2 merged (#6367); left are 1 (spec delta applies at archive), 3 (live pass on portaliq) and 4 (parity row needs the live evidence); no PR	session-20261113T195351-a32c6d55	2026-11-13T21:06:22Z
 verify:opencatalogi:2631:fd57fa8c	7 GREEN (2631-2637); PHP 5274 tests, 2 inherited failures; jest new specs pass	session-20261113T182404-f2c28226	2026-11-13T21:06:33Z
 verify:learniq:2486:61914b95	BLOCK #2486: stray committed __pycache__ .pyc; code otherwise per spec, no new failures	session-20261113T205323-a7434fd6	2026-11-13T21:06:41Z
