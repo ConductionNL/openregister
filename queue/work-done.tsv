@@ -1546,3 +1546,4 @@ cover:buildiq:8ca317f6mefda:aae6d66c	already done: every lib/Exception/*.php fil
 cover:keepiq:d76c2121m70b5:38e80a9f	already done: lib/Command/*.php 180/181 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:06:51Z
 cover:keepiq:d76c2121m70b5:11ebfefd	already done: lib/Backup/*.php 454/481 (94.4%) on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:07:07Z
 cover:openregister:7350e3efm0e99:js0f44bcf4	PR openregister#10089: RegisterSideBar DOM spec (+5), sidebars 83.9%->85.9%	session-20261112T231640-f6dda86c	2026-11-13T02:07:38Z
+cover:buildiq:8ca317f6mefda:6891a8ac	already done: lib/Service/Dashboard 141/145 lines under phpunit.xml (gap = runner-absent branch, unreachable while test doubles are declared). Low figure is a measurement artefact: phpunit-unit.xml bootstrap does not load the OpenRegister contracts, 1328 errors there (WidgetItemProjector reads 0%)	session-20261113T004527-ec0338ee	2026-11-13T02:07:44Z
