@@ -4857,3 +4857,4 @@ build:openregister:or-flow-migrate-definitions	failed: worker rules forbid build
 cover:pipelinq:7f9dc8e6m84dd:60c2c265	already done: lib/Controller/*.php 7524/8277 = 90.9% >= 90 (branches -1,-2 exist)	session-20261113T051703-1b54bfba	2026-11-13T12:30:26Z
 build:openregister:object-tree-read	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:28Z
 build:openregister:or-mcp-registration-event	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:34Z
+build:openregister:notes-leaf-rich-text-lock-export	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:40Z
