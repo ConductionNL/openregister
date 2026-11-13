@@ -4421,3 +4421,4 @@ dossiq	6191	d6d28a6c216fb3c18af1d4109cfb180b9463fa8c	GREEN	worker-24	13231 tests
 dossiq	6192	074dda8cf6542cedb9bff39d6d43affac92e78bc	GREEN	worker-24	13231 tests on tree, baseline 13072 with 19 failures, new failures 0; tests only
 dossiq	6193	d84221538903c4a475defb6284e1b2b9ac939c1a	GREEN	worker-24	13231 tests on tree, baseline 13072 with 19 failures, new failures 0; tests only
 dossiq	6194	8a0eeaf35c40e7dc9b64d643fcdd3091d019d1dd	GREEN	worker-24	13231 tests on tree, baseline 13072 with 19 failures, new failures 0; tests only
+pipelinq	3597	c1040639d04ed8cb32c2af046702989f142774dd	GREEN	worker-40	unit 5792 run on tree, baseline 5774 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new failures; tests only
