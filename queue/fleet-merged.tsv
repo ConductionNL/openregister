@@ -1849,3 +1849,4 @@ pipelinq	3752	b87ad31731214a90f98665830f2026ef2c60af5c	SKIP	merge-local	GATE UNM
 pipelinq	3753	c031db85d7f859b5671aff046299a8ab1085f8bc	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3704	e9392ddfafdb9ca7438e22fa51682953d8d0ab8a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3721	f846326553ca8ca0ed4c03160ec7125ca4a255c9	SKIP	merge-local	GATE UNMEASURED f846326553 does not merge cleanly onto development
+planninq	1139	c5d778ee07df39b52542d375d6e519f24875f556	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
