@@ -5355,3 +5355,4 @@ dossiq	6327	64c678209ff076951fe235f999afde0d2824bbb5	BLOCK	worker-09	tree of 6 o
 filinq	2043	d534bdf2a7544618899e39aecad664d8478a9c7e	GREEN	worker-31	6251 tests (6 skipped) OK, baseline same, new failures 0; header comments only
 integriq	3500	4a680cf0d4e12bac3b1602168a09194da6b543d1	GREEN	worker-36	phpunit 7780 run (baseline 7736), 4 baseline failures/errors, 0 new (SynchronizationSynchronizeEntryGoldenTest timing-dependent slowest-stage name failed once, passed on rerun); tests-only, additions only
 integriq	3501	71635abf199f94850e9edd12a1a35bc04ecc80c6	GREEN	worker-36	phpunit 7780 run (baseline 7736), 4 baseline failures/errors, 0 new (SynchronizationSynchronizeEntryGoldenTest timing-dependent slowest-stage name failed once, passed on rerun); tests-only, additions only
+versioniq	665	20e904c0d2fdad86e171403e2eea550a524007f2	GREEN	worker-43	unit-only suite 1370 tests, baseline 1356 with 2 failures (Installer golden tests), new failures 0; tests-only diff
