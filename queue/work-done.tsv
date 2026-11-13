@@ -6746,3 +6746,4 @@ build:integriq:automation-job-calendar-schedules	PR #3540: tasks 1,2,3,5 + task 
 build:decidiq:decision-outcome-reaches-the-subscriber	partial: PR #2141, task 1 (outcome rule split, fires); task 2 is an OpenRegister change, task 3 depends on it	session-20261113T185324-28e07ab2	2026-11-13T20:47:51Z
 cover:opencatalogi:fc83bfb1m976b:jsb0b70223	PR opencatalogi#2620: src/navigation jest lines 0% -> 96.4% (spec now runs)	session-20261113T175332-5effc865	2026-11-13T20:48:07Z
 build:hermiq:chat-fork-and-share-link	partial: PR #1715 fork (tasks 2,3); task 1 live check and sharing tasks 4-7 left behind it; no new unit failures	session-20261113T202607-6c22f6b2	2026-11-13T20:48:40Z
+cover:opencatalogi:fc83bfb1m976b:jsfa8697ee	PR #2621: widgetTable.js 8 vitest tests (806->814); rest of dirs are .vue not importable by vitest config	session-20261113T204539-805bb895	2026-11-13T20:48:53Z
