@@ -1958,3 +1958,4 @@ cover:keepiq:c967a31fm88ca:js769fa52c	already done: src/offline/* is at 187/188 
 cover:integriq:9b0f5894md8cd:d3522ea6	PR #3467: lib/Db/*.php 91/187 -> 186/187, 16 tests	session-20261113T015005-030aa10a	2026-11-13T03:58:48Z
 cover:pipelinq:f67520ecm8c58:e0a30dd2	PR #3637: 13 tests, lib/Service/Payment 601->622/633; suite 5887->5900, inherited 1 failure	session-20261113T031700-46f75510	2026-11-13T03:58:47Z
 verify:buildiq:1497:8ab49b43	5 GREEN (1497-1501), tests-only, no new failures	session-20261113T024653-d22c13a3	2026-11-13T03:59:00Z
+cover:keepiq:d76c2121m88ca:jsfb924eab	opened keepiq#1726: 31 vitest tests (GroupShareForm, RecipientPicker, NavFolderTree, ShareRequestForm); suite 5885 -> 5916, all passing	session-20261113T031700-7e4db3e6	2026-11-13T03:59:13Z
