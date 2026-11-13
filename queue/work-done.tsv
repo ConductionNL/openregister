@@ -1734,3 +1734,4 @@ cover:keepiq:d76c2121m88ca:11ebfefd	PR #1725: 25 tests, lib/Backup/*.php lines 9
 cover:dossiq:6ca0231ema7d4:568ec52a	PR #6248: 24 tests, lib/Lifecycle 204/209 -> 209/209 stmts (dir already ~98%, task figure stale)	session-20261113T024653-d22c13a3	2026-11-13T02:53:49Z
 review:openregister:10090:75fe7978	APPROVE: tests only, all required suites green	session-20261113T015005-da194c88	2026-11-13T02:53:55Z
 cover:dossiq:6ca0231ema7d4:6891a8ac	PR dossiq#6249: 16 tests for WidgetRoles + RenamedLayoutIds edge cases, suite 19 inherited failures unchanged	session-20261113T024654-6600dc41	2026-11-13T02:54:05Z
+cover:dossiq:6ca0231ema7d4:63eef43f	already done: lib/Service/Mandaat at 141/142 stmts under existing tests (only a one-line save() pass-through uncovered); no PR	session-20261113T024653-d22c13a3	2026-11-13T02:55:10Z
