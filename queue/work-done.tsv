@@ -4834,3 +4834,4 @@ build:openregister:flow-code-step-in-a-sidecar	partial: PR #10182 — CodeNode +
 review:openregister:10156:979bada9	BLOCK: existing REST sources on private-range hosts now refused (guard autowired, no opt-in); suites otherwise green, phpstan clean	session-20261113T074533-3e2a2da6	2026-11-13T12:26:57Z
 review:openregister:10176:4394082f	APPROVE: tasks.md only, claim verified (6 tests pass)	session-20261113T101609-bc51215d	2026-11-13T12:27:15Z
 verify:larpinq:1028:e44dc468	1028 GREEN (tests only)	session-20261113T064519-30004ad4	2026-11-13T12:27:43Z
+review:openregister:10173:75c440fd	APPROVE: tasks.md only, claims verified on main	session-20261113T074533-3e2a2da6	2026-11-13T12:27:46Z
