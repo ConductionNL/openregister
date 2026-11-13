@@ -2867,4 +2867,5 @@ verify:dossiq:6301:795934dd	GREEN 6301, 6302: 14899->14934 tests, same 19 inheri
 cover:buildiq:9930949bmc723:34f5c300	already done pending #1516: with its unit-bootstrap fix lib/Service/*.php is 9898/11417 (86.7%, target 85); the 33% comes from 1382 tests erroring on development's phpunit-unit.xml bootstrap. Remeasure after #1516 merges; no PR	session-20261113T061518-90540a48	2026-11-13T06:35:54Z
 cover:buildiq:9930949bmc723:34763eb4	already done: lib/Middleware/*.php (ApiContractMiddleware) at 98% lines (58/59) on development fc2670dab, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:36:06Z
 verify:integriq:3485:42d2a02c	3485,3492 GREEN (tests only, no new failures)	session-20261113T051707-6c971ec6	2026-11-13T06:36:07Z
+cover:buildiq:9930949bmc723:aae6d66c	already done: lib/Exception/*.php at 100% lines (64/64) on current development	session-20261113T044737-f37de8e3	2026-11-13T06:36:12Z
 cover:buildiq:9930949bmc723:38e80a9f	already above target: lib/Command/*.php measures 99.71% (348/349) with strict metadata on development fc2670d; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:36:10Z
