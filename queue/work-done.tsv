@@ -3052,3 +3052,4 @@ cover:decidiq:a5f973bbmb22b:6f346b68	already done: lib/Sections measured with pc
 cover:integriq:92114ab0m658d:b89b25f9	already above target: lib/Adapters/LearningMaterial/*.php measures 98.8% (413/418) on development 8511b16; no PR	session-20261113T054519-3d0ac77f	2026-11-13T07:00:15Z
 cover:decidiq:a5f973bbmb22b:882bd950	already done: lib/Search/*.php 58/58 statements, two test classes	session-20261113T061521-423d1e83	2026-11-13T07:00:13Z
 cover:shillinq:05639debmd8ee:a215617b	PR #2899: 6 phpunit tests, Integration 248->256/256	session-20261113T051709-e616bf69	2026-11-13T07:00:16Z
+cover:dossiq:f8a113c5m7e79:js2b6606f9	PR #6309: 25 tests, src/views/cases/ lines 87.1%->94.1%	session-20261113T064523-a7dbdf4a	2026-11-13T07:00:40Z
