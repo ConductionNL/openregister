@@ -6080,3 +6080,4 @@ portaliq	2440	7ba6648872e22e5e01a281978b64cf6107605bb9	CONFLICT	worker-24	confli
 portaliq	2441	6e1e8b43cf9a9f60d002efe2db18e91d06a8bd74	GREEN	worker-24	phpunit 4933 run, baseline 4914 OK, 0 new failures; node specs 56/56; check:l10n-js ok; signed kvk claim per site-mandates-the-represented-manage
 portaliq	2426	609e95944cd2d9048045d51547bf6beeb92917b0	GREEN	worker-48	phpunit 4961 run (baseline 4914, 0 fail), 0 new; check:specs per script: only site-look and page-help red, same on development
 portaliq	2427	ac2b3062b5eb7faafbae89f0fcde70f864e7c321	CONFLICT	worker-48	conflicts in l10n/en.js, en.json, nl.js, nl.json with #2415/#2426 in the tree; not tested
+portaliq	2428	d0e935ca43652d49dff546d51dbd0c20bb69fcd5	GREEN	worker-48	phpunit 4961 run (baseline 4914, 0 fail), 0 new; check:specs per script: only site-look and page-help red, same on development
