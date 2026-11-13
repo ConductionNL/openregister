@@ -1361,4 +1361,5 @@ cover:buildiq:8ca317f6m6d54:d39f9857	already done: lib/Support at 375/389 statem
 merge:filinq:1986:53e375fb	merge-local over 1 filinq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:16:51Z
 cover:dossiq:6ca0231e:e2e021bd	PR #6219: 36 tests (CaseStatusStore, CaseTypeReader, CaseResultWriter); dir already 87% before	session-20261113T004523-285a0413	2026-11-13T01:17:23Z
 cover:shillinq:801aab65:38e80a9f	PR #2811: 4 tests over 2 commands, lib/Command/*.php 70.19%->93.27%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:17:36Z
+cover:pipelinq:f67520ecm9d2c:jsd48eb217	already done: src/store/modules at 88.1% on development (target 85), existing branch -1 takes it to 99.7%; no new PR	session-20261112T234653-efce95ba	2026-11-13T01:18:04Z
 cover:shillinq:801aab65:aed80a0c	already done: lib/Lifecycle/Action/ at 92.9% (572/616) on development ff3e15aa9, above the 90% target; remaining gaps are single defensive lines	session-20261112T234655-599f9c9a	2026-11-13T01:18:10Z
