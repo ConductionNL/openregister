@@ -6459,4 +6459,5 @@ cover:dossiq:069ee2d6mbd37:js5794e9fc	PRs #6446 (node+panels, 20 tests) and #644
 cover:pipelinq:7f9dc8e6m8ce9:ea81adeb	already done: lib/Service/Zgw/*.php at 726/728 lines (99.7%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:54:42Z
 review:openregister:10314:1f8cb37d	BLOCK 10314: entity snapshot golden test fails	session-20261113T192704-f298034f	2026-11-13T19:54:55Z
 build3:openregister:platform-capability	PR #10319: tasks 1.1-1.4, 2.2, 3.1 built with 12 new tests; 2.1 e2e and 2.3 validate left; suite: no new failures vs main	session-20261113T171213-10021a1d	2026-11-13T19:55:19Z
+cover:pipelinq:7f9dc8e6m8ce9:197c84b8	already done: lib/Adapter/*.php at 58/58 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:55:10Z
 build:filinq:document-sanitization	failed: blocked; the 4 open tasks wait on an OpenRegister standalone PDF sanitizer (absent on OR main: only PdfMetadataSanitizer) and on unbuilt document-waarmerk-certification; nothing buildable in filinq	session-20261113T185327-0dc82b88	2026-11-13T19:55:03Z
