@@ -6206,3 +6206,4 @@ cover:keepiq:c967a31fm00c6:05630945	already done: lib/Middleware/Support/ 54/59 
 build3:openregister:read-audit-entries-name-the-rule	already building (build/read-audit-entries-name-the-rule exists at fe839e6)	session-20261113T171149-8b9ea523	2026-11-13T19:07:23Z
 cover:keepiq:c967a31fm10bf:dfaef732	already done: lib/Notification/*.php 99.49% (394/396, target 95) @ba7cc67b; no PR	session-20261113T185326-316f096d	2026-11-13T19:07:26Z
 cover:keepiq:c967a31fm10bf:aae6d66c	already done: lib/Exception/*.php is 100% line-covered on development (30/30 statements, pcov full unit suite); no PR	session-20261113T182353-86897235	2026-11-13T19:07:37Z
+cover:portaliq:b60f3b81m4ccb:34f5c300	PR #2453: 12 tests, OidcClientService 65%->90%, EventFeedReader 73%->100%	session-20261113T172329-0b6220f9	2026-11-13T19:07:46Z
