@@ -7052,3 +7052,4 @@ build4:openregister:incremental-sync-for-api-consumers	partial: PR #10390 to mai
 review:openregister:10350:4953ff78	APPROVE 10350: additive XML export, same access path as JSON; Architecture, Contract, Controller and Rules green on the merge	session-20261113T182404-f2c28226	2026-11-13T22:02:17Z
 review:openregister:10362:aae0a66e	APPROVE	session-20261113T205330-0e50ee62	2026-11-13T22:02:25Z
 build4:openregister:modelling-composite-identity	partial: PR #10392 builds 3.1 (@self.key) and 2.3 (identity index); 1.2 and 4.1 left	session-20261113T213311-eb1a0842	2026-11-13T22:02:39Z
+review:openregister:10363:a2336fd6	BLOCK #10363 (architecture test: concrete SchemaMapper)	session-20261113T212920-cf6d8399	2026-11-13T22:02:39Z
