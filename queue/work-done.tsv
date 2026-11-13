@@ -3298,3 +3298,4 @@ cover:dossiq:f8a113c5m7e79:9ece5c6f	already done: lib/Controller/Support/ at 99.
 cover:filinq:7a9ef677mb01f:b25b9f6a	PR #2048: 5 classes, 36 tests; target dirs 94.44->95.92% lines; suite 6260->6296, 0 failures	session-20261113T072713-f866e896	2026-11-13T07:52:27Z
 verify:dossiq:6328:9ee72b4b	GREEN 6328, GREEN 6329 (15190->15192, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T07:52:27Z
 verify:versioniq:666:f50d6817	GREEN 666, GREEN 667; 0 new failures over baseline (2 inherited)	session-20261113T074527-031883a8	2026-11-13T07:52:43Z
+verify:hermiq:1672:e8445c02	GREEN 1672 (behaviour-preserving refactor; 0 new failures; overlaps #1673 in ContextAssembler)	session-20261113T053904-36dcee67	2026-11-13T07:53:01Z
