@@ -2,9 +2,12 @@
 
 ## 1. Open Register side
 
-- [ ] 1.1 Migration adding `client` (string 48, not null, default `''`) to `openregister_api_calls` and rebuilding `idx_or_apicall_unique` over principal, route, method, api_version and client; `ApiCallRecord` and `ApiCallRecordMapper::count()` take `client`. Verify: `tests/Unit/Db/ApiCallRecordMapperTest.php` counts two clients on one route as two rows; `occ migrations:status openregister` shows the migration applied on a copy of development data.
-- [ ] 1.2 `ApiCallerMiddleware` parses `client` from `User-Agent` with the anchored pattern in design D-4 and passes it to the recorder; `GET /api/callers` returns it. Verify: `tests/Unit/Middleware/ApiCallerMiddlewareTest.php` records `openregister-client-ts/1.4.0` and records `''` for a browser user agent.
+- [x] 1.1 Migration adding `client` (string 48, not null, default `''`) to `openregister_api_calls` and rebuilding `idx_or_apicall_unique` over principal, route, method, api_version and client; `ApiCallRecord` and `ApiCallRecordMapper::count()` take `client`. Verify: `tests/Unit/Db/ApiCallRecordMapperTest.php` counts two clients on one route as two rows; `occ migrations:status openregister` shows the migration applied on a copy of development data.
+- [x] 1.2 `ApiCallerMiddleware` parses `client` from `User-Agent` with the anchored pattern in design D-4 and passes it to the recorder; `GET /api/callers` returns it. Verify: `tests/Unit/Middleware/ApiCallerMiddlewareTest.php` records `openregister-client-ts/1.4.0` and records `''` for a browser user agent.
 - [ ] 1.3 Add the contract-suite step to `.github/workflows/api-test-coverage.yml` that installs the latest published release of each library per served contract major and runs `contract-test` against the booted instance. Verify: the step is skipped with a named reason until the first release exists, then passes on development.
+
+Built: `Version1Date20261113190000` adds `client` and rebuilds `idx_or_apicall_unique` over the five keys; `ApiCallKey`, `ApiCallKeys::of()`, `ApiCallRecord` and the mapper's increment and insert carry `client`. `ApiClientName::fromUserAgent()` applies the anchored pattern (each version part capped at six digits, so a value never exceeds the 48-character column); the middleware passes its result and the recorder applies it again before the value reaches the mapper. `GET /api/callers` returns `client` through the record's JSON. Not run here: `occ migrations:status` on a copy of development data (needs a live instance).
+4.1 is drafted in `docs/api/client-libraries.md` (version rule, identification, `openapi-generator` recipe, credentials) and stays open: the install and typed-generation sections wait on the first library release, and the Java recipe check runs in the TypeScript repository's CI.
 
 ## 2. TypeScript library
 

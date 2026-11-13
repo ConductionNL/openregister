@@ -138,10 +138,10 @@ class ApiCallRecordMapperPeriodQueriesTest extends TestCase {
 		$this->assertTrue($this->mapper->count($this->key(), $moment));
 		$this->assertCount(1, $this->queries);
 		$this->assertSame(
-			'update(openregister_api_calls) set(call_count, call_count + 1) set(last_seen, :p0) where(eq(principal, :p1)) andWhere(eq(route, :p2)) andWhere(eq(method, :p3)) andWhere(eq(api_version, :p4)) executeStatement()',
+			'update(openregister_api_calls) set(call_count, call_count + 1) set(last_seen, :p0) where(eq(principal, :p1)) andWhere(eq(route, :p2)) andWhere(eq(method, :p3)) andWhere(eq(api_version, :p4)) andWhere(eq(client, :p5)) executeStatement()',
 			$this->sql()
 		);
-		$this->assertSame([$moment, 'leverancier', '/api/objects/{register}', 'POST', 'v1'], $this->boundValues());
+		$this->assertSame([$moment, 'leverancier', '/api/objects/{register}', 'POST', 'v1', ''], $this->boundValues());
 	}//end testCountIncrementsAKnownKey()
 
 	/**
@@ -161,7 +161,7 @@ class ApiCallRecordMapperPeriodQueriesTest extends TestCase {
 			$this->assertStringContainsString('setValue(' . $column . ', ', $insert);
 		}
 
-		$values = array_slice($this->boundValues(), 5);
+		$values = array_slice($this->boundValues(), 6);
 		$this->assertSame(['leverancier', '/api/objects/{register}', 'POST', 'v1', 1, $moment, $moment], $values);
 	}//end testCountInsertsANewKey()
 
