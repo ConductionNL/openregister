@@ -3987,6 +3987,7 @@ Command/FederationSharesExpiringCommand.php,,Command,,,,,Core
 Repair/GiveFederationSharesALifetime.php,,Repair,,,,,Platform
 BackgroundJob/SharerAccessSweepJob.php,,BackgroundJob,,,,,Compliance
 Listener/SharerViewsEndWithUserListener.php,,Listener,,,,,Processes
+Listener/ServiceAccountLoginListener.php,,Listener,,,,,Core
 Repair/KeyAuditHashChain.php,,Repair,,,,,Platform
 Service/AuditChainKey.php,,Service,,,,,Compliance
 Db/HydrationKey.php,,Db,,,,,Core
@@ -4032,6 +4033,8 @@ Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core
 Service/Authorization/GrantedRight.php,,Service,,,,,Core
+Service/Authorization/MachineCredentialService.php,,Service,,,,,Core
+Service/Authorization/ServiceAccountRequest.php,,Service,,,,,Core
 Service/Anonymisation/TextDisclosureSource.php,,Service,,,,,Compliance
 Service/Anonymisation/TextDisclosureRecorder.php,,Service,,,,,Compliance
 Service/Anonymisation/PipelineSteps.php,,Service,,,,,Compliance
