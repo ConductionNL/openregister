@@ -5349,3 +5349,4 @@ shillinq	2904	ce2b912e5041be337df53a1bf61299ad75424f2b	GREEN	worker-02	tree 2903
 dossiq	6322	75d1559d210fc13dfeda25f129ae514d83064646	GREEN	worker-09	tree of 6 on f174c16ea: 15226 tests run, baseline 15182 with 19 inherited failures, new failures 0; behaviour-preserving refactor plus tests
 dossiq	6323	910e407ea1b066eeabd07af5cebffafe84e68810	GREEN	worker-09	tree of 6 on f174c16ea: 15226 tests run, baseline 15182 with 19 inherited failures, new failures 0; test metadata only
 dossiq	6324	e811a9a2cc4637d2fa8933ececcd0554f27cb311	CONFLICT	worker-09	does not merge onto development after 6322 and 6323
+dossiq	6325	13775766a5dd4e1e81c4a10f65f9b0c3a30e2600	GREEN	worker-09	tree of 6 on f174c16ea: 15226 tests run, baseline 15182 with 19 inherited failures, new failures 0; tests only
