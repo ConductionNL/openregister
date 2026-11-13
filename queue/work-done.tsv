@@ -6348,3 +6348,4 @@ cover:openregister:7350e3efma401:1b97f731	PR #10310: coverage metadata of 7 list
 cover:hermiq:065f1631md84f:e372e6ff	no PR: lib/Event already 8/8 covered; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:30:48Z
 cover:hermiq:065f1631md84f:59826f43	no PR: lib/Settings already 18/18 covered (branch -1 exists); nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:31:00Z
 cover:openregister:7350e3efma401:f545d745	PR #10311: 5 repair classes 0->100% + rename-step failure paths, +141 stmts in lib/Repair/*.php (~94.9% est.), 18 tests; Repair+Architecture green	session-20261113T182359-67ad413b	2026-11-13T19:31:19Z
+verify:shillinq:2976:e674df87	GREEN 2976, 3012; CONFLICT 3011 (with 2976); only inherited clock-bound failure	session-20261113T185327-0dc82b88	2026-11-13T19:31:19Z
