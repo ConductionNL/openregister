@@ -5815,3 +5815,4 @@ dossiq	6405	8df573df6933706f14c56385b2529fa066431fef	GREEN	worker-44	tree of 2: 
 pipelinq	3743	7e564b1c9344a2b762783e2b3a7a605325d88551	CONFLICT	worker-09	l10n en/nl conflict with 3728/3742 earlier in the tree
 learniq	2463	4a5ba2094d4ac78c91a50d9ce7974e29a95af793	CONFLICT	worker-58	conflicts with development: LearniqJsonCourseImporterTest.php and PackageXmlValueReaderTest.php already added there (add/add), CoursePackageFileWriterGoldenTest.php content conflict
 pipelinq	3704	5971767446c5f835099c97f30a5a4634f4b89605	RED	merge-local:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+pipelinq	3725	77b357a77befb4e421ddeb9f2056f8c812348786	GREEN	worker-08	tree of 3725,3729,3747,3750,3751: phpunit 6846 (base 6825), vitest 4623 (base 4578); baseline 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController); no new failures
