@@ -38,6 +38,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\PresentationSlideParser
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\SlideParagraphReader
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\SlideWalk
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SlideParagraphReader
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SlideWalk
  */
 class PresentationSlideParserGoldenTest extends TestCase {
 

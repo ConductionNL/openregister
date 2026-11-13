@@ -54,6 +54,8 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
  * @uses \OCA\OpenRegister\Formats\IdentifierFormats
  * @uses \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
  */
 class BsnDetectionTest extends TestCase {
 

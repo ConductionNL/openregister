@@ -54,6 +54,8 @@ use Throwable;
  * @uses \OCA\OpenRegister\Db\SchemaCatalog
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\ObjectTextPath
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ObjectTextPath
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
  */
 class ObjectHandlerGoldenTest extends TestCase {
 

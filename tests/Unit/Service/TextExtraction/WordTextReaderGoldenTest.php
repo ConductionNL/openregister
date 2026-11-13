@@ -37,6 +37,7 @@ use ZipArchive;
  *
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\WordTextReader
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\OoxmlPackage
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\OoxmlPackage
  */
 class WordTextReaderGoldenTest extends TestCase {
 

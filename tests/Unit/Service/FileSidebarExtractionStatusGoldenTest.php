@@ -45,6 +45,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Files\Db\Chunk
  * @uses \OCA\OpenRegister\Files\Service\FileSidebarEntityStore
  * @uses \OCA\OpenRegister\Files\Service\FileSidebarSchemaLookup
+ * @uses   \OCA\OpenRegister\Files\Service\FileSidebarEntityStore
+ * @uses   \OCA\OpenRegister\Files\Service\FileSidebarSchemaLookup
  */
 final class FileSidebarExtractionStatusGoldenTest extends TestCase {
 

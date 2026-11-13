@@ -58,6 +58,18 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage
+ * @uses   \OCA\OpenRegister\Files\Service\ChunkSizing
+ * @uses   \OCA\OpenRegister\Files\Service\ChunkingPlan
+ * @uses   \OCA\OpenRegister\Files\Service\SourceStamp
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ObjectTextPath
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SourceText
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage
  */
 class TextExtractionServiceExtractObjectGoldenTest extends TestCase {
 
