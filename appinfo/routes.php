@@ -1746,6 +1746,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'requirements' => ['id' => '[^/]+'],
         ],
         ['name' => 'schemas#stats', 'url' => '/api/schemas/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'schemas#indexes', 'url' => '/api/schemas/{id}/indexes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#explore', 'url' => '/api/schemas/{id}/explore', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // Schema versioning & object migration (schema-versioning-and-object-migration).

@@ -2939,6 +2939,49 @@ class SchemasController extends Controller {
 	}//end stats()
 
 	/**
+	 * The indexes on the schema's magic tables, with the property flag that asked for each.
+	 *
+	 * One entry per register that carries the schema and has a table for it:
+	 * the register id and the indexes as the database catalogue lists them
+	 * (modelling-property-index-switch D-4).
+	 *
+	 * @param int|string $id The schema ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Read-only index names of a shared schema *definition*'s storage table,
+	 * the same posture as stats(); exposes no object contents and no per-user data. No IDOR vector.
+	 *
+	 * @return JSONResponse `{results: [{register, indexes: [{name, property, column, kind, flag}]}]}`, 404 for an unknown schema
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-a-property-can-ask-for-an-index-without-being-a-facet
+	 */
+	public function indexes(int|string $id): JSONResponse {
+		try {
+			// Metadata-read bypass, as stats(): the schema definition is a catalogue read.
+			$schema  = $this->schemaMapper->find($id, _multitenancy: false);
+			$results = [];
+			foreach ($this->registerMapper->getAllRegisterIdsWithSchema(schemaId: (int)$schema->getId()) as $registerId) {
+				$register  = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+				$results[] = [
+					'register' => (int)$register->getId(),
+					'indexes' => $this->objectEntityMapper->tableIndexes(register: $register, schema: $schema),
+				];
+			}
+
+			return new JSONResponse(data: ['results' => $results]);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+		} catch (Exception $e) {
+			return $this->errorResponse(e: $e);
+		}//end try
+	}//end indexes()
+
+	/**
 	 * Explore schema properties to discover new properties in objects
 	 *
 	 * Analyzes all objects belonging to a schema to discover properties that exist

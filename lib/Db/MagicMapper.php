@@ -3942,6 +3942,35 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end updateTableIndexes()
 
 	/**
+	 * Every index on a register+schema table, with the property flag that asked
+	 * for each (modelling-property-index-switch D-4). Empty when the table does
+	 * not exist yet.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array<int, array{name: string, property: string|null, column: string|null, kind: string, flag: string|null}> The indexes.
+	 *
+	 * @throws Exception When the catalogue cannot be read.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-a-property-can-ask-for-an-index-without-being-a-facet
+	 */
+	public function tableIndexes(Register $register, Schema $schema): array {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return [];
+		}
+
+		$tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$run        = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
+		$isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+		$existing   = (new MagicTableIndexCatalogue(db: $this->db))->names(fullTableName: $run->fullTableName, isPostgres: $isPostgres);
+
+		$indexer    = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+
+		return $indexer->describe(run: $run, schema: $schema, existing: $existing);
+	}//end tableIndexes()
+
+	/**
 	 * Drop the property indexes no property flag asks for any more. A catalogue
 	 * that cannot be read leaves every index in place and never fails the sync.
 	 *
