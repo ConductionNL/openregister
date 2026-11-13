@@ -4786,3 +4786,4 @@ filinq	1998	a59c38319b805706d14ce593e603259b75daecba	GREEN	worker-05	unit 5725 r
 filinq	1999	9a9f671b5f69f12b180047bf9a1341cea15da53e	GREEN	worker-05	unit 5725 run on 9-PR tree (baseline 5499, 0 fail), new failures: none; test-file additions only
 filinq	2000	8d1bee14b81aee23cf87d25fce8ec98ae5308ac9	GREEN	worker-05	unit 5725 run on 9-PR tree (baseline 5499, 0 fail), new failures: none; test-file additions only
 filinq	2001	8dd695546fc0602aa504877f4372885295e45896	GREEN	worker-05	unit 5725 run on 9-PR tree (baseline 5499, 0 fail), new failures: none; test-file additions only
+shillinq	2822	bfab5d2296f659e381c472c1ec31e17ac6b91f5d	REVERIFY	worker-43	Renamed the test file and class to Iv3ReportGeneratorTotalsTest so it no longer collides with #2820's Iv3ReportGeneratorTest; both pass together (12 tests); new head b0ad862fe82866e3e92045bed9c7ce7951fd2dc5, verify it
