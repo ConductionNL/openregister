@@ -6498,3 +6498,4 @@ integriq	3557	43c29a57ad3a8f00c61880d8317f1393b9398adf	GREEN	worker-21	unit 8282
 learniq	2489	0ab04086854a13d63cca5ff700e425cd1d12bb99	GREEN	worker-57	build PR, @spec annotations and a controller test; unit 6524 on tree, 1 inherited failure, no new
 portaliq	2475	f06702f0b9a33c6fbf597c68ff19f85a6fad8da9	GREEN	worker-09	unit 5003 run (baseline 4941, 0 failures), no new failures; tests only, no production code
 learniq	2486	fa92dc968b0e8b2bd05cfbe2a6f1d6a5d793ceca	GREEN	worker-41	unit 6520 run, baseline 6512 with 1 inherited failure (HigherEducationExampleSetTest he.json generator); new failures 0; implements absence-reports-seen-and-ended (first-look stamp limited to the group's own teachers on submitted reports, open-ended illness)
+pipelinq	3797	cb66ca7dcbaaa8df28a3a26534031c92cad08e50	GREEN	worker-06	7560 tests run on tree, baseline 7332 0 failures, no new failures; tests only
