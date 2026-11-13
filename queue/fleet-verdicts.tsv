@@ -5075,3 +5075,8 @@ integriq	3471	cd7ca71b4dd7c0b43ce686211437c9ca909bdc74	GREEN	worker-09	phpunit t
 integriq	3472	17ed9285e12378bb2e64fc2f7698c98eebf66780	GREEN	worker-09	phpunit tree 7164 vs baseline 7113 (2 inherited CallServiceTest errors), vitest 1779 green; no new failures; tests only
 integriq	3473	ba8bba964f41d6693f98e7602bec98ad21167fbf	GREEN	worker-09	phpunit tree 7164 vs baseline 7113 (2 inherited CallServiceTest errors), vitest 1779 green; no new failures; tests only
 filinq	2032	b8275669bc666e02ffb49de3ae19882310773ccf	GREEN	worker-48	tests-only (one new test file); php unit 6038 -> 6042 tests, 0 failures; no JS touched
+dossiq	6270	bb19cc2da0c25ceacd60143b8713d979f0b3f795	GREEN	worker-46	phpunit 14328 run (baseline 14291, 47 inherited fails/errors), vitest 6413 (1 inherited), new failures 0; tests only
+dossiq	6271	f66d7b451be3d8bb3fa4942f24ecbbb8a2436878	GREEN	worker-46	phpunit 14328 run (baseline 14291, 47 inherited fails/errors), vitest 6413 (1 inherited), new failures 0; tests only
+dossiq	6272	f16aba4d4237175be98d4304c5900bade99ca258	GREEN	worker-46	phpunit 14328 run (baseline 14291, 47 inherited fails/errors), vitest 6413 (1 inherited), new failures 0; tests only
+dossiq	6273	8a21165970e77ce9f3add46ddd306b8813996bd7	GREEN	worker-46	phpunit 14328 run (baseline 14291, 47 inherited fails/errors), vitest 6413 (1 inherited), new failures 0; tests only
+dossiq	6274	f5d3765f58fec80f63443da01b369898d77626f0	GREEN	worker-46	phpunit 14328 run (baseline 14291, 47 inherited fails/errors), vitest 6413 (1 inherited), new failures 0; tests only
