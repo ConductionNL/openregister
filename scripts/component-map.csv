@@ -1999,6 +1999,10 @@ Service/Credential/OAuth2RegistrationFailedException.php,6,Service,Integrations,
 Service/Credential/OAuth2RelayGuard.php,57,Service,Integrations,Integrations/Service/Credential/OAuth2RelayGuard.php,0,,Integrations
 Service/Credential/OAuth2StateService.php,98,Service,Integrations,Integrations/Service/Credential/OAuth2StateService.php,0,,Integrations
 Service/Credential/OAuth2TokenSet.php,177,Service,Integrations,Integrations/Service/Credential/OAuth2TokenSet.php,0,,Integrations
+Service/Credential/DeclarationValidator.php,212,Service,Integrations,Integrations/Service/Credential/DeclarationValidator.php,0,,Integrations
+Service/Credential/DeclaredProviderApprovals.php,47,Service,Integrations,Integrations/Service/Credential/DeclaredProviderApprovals.php,0,,Integrations
+Service/Credential/DeclaredProviderLoader.php,101,Service,Integrations,Integrations/Service/Credential/DeclaredProviderLoader.php,0,,Integrations
+Service/Credential/DeclaredProviderResolver.php,90,Service,Integrations,Integrations/Service/Credential/DeclaredProviderResolver.php,0,,Integrations
 Service/Credential/ProviderCatalogue.php,47,Service,Integrations,Integrations/Service/Credential/ProviderCatalogue.php,5,,Integrations
 Service/CrossRegisterExistenceService.php,166,Service,Service,Service/CrossRegisterExistenceService.php,0,,Core
 Service/DateTimeNormalizer.php,76,Service,Service,Service/DateTimeNormalizer.php,3,,Core

@@ -33,6 +33,71 @@ it — new providers/rules ship only through a reviewed release. Current entries
 GET-only, `/notices` search, `Ocp-Apim-Subscription-Key` header carrying the
 bare key).
 
+## App-declared providers
+
+An app that needs a host or a path the reviewed catalogue does not offer can
+**declare** it, instead of keeping custody of a secret itself. The declaration
+is a shipped file, read-only, in the app's OWN directory:
+`<app>/lib/Settings/credential-providers.json`. It has the catalogue's shape —
+a `providers` map — and nothing in it has any effect until it is admitted.
+OpenRegister's own file at that path is the reviewed catalogue and is never
+read as a declaration.
+
+```json
+{
+    "providers": {
+        "hydra_console:codeberg": {
+            "identifier": "hydra_console:codeberg",
+            "title": "Codeberg",
+            "baseUrl": "https://codeberg.org/api/v1",
+            "authScheme": { "header": "Authorization", "template": "token {secret}" },
+            "allowRules": [
+                { "method": "GET", "pathPattern": "/repos/*" },
+                { "method": "POST", "pathPattern": "/repos/*/issues/*/labels" }
+            ]
+        }
+    }
+}
+```
+
+Rules every entry must meet, or the whole file admits nothing:
+
+- **Namespaced.** The key and `identifier` are `<appId>:<localId>` for the
+  declaring app. Reviewed identifiers carry no colon, so a declaration can never
+  shadow or replace one; the reviewed catalogue is always consulted first.
+- **A host-locked proxy entry.** `title`, an `https` `baseUrl` (no credentials,
+  query or fragment), an `authScheme` of exactly `header` + `template` with
+  `{secret}`, and a non-empty `allowRules[]` of `{method, pathPattern}` with an
+  upper-case method and a `/`-rooted pattern. `inject_only` is refused: the
+  reviewed `generic-*` entries already serve that case, and a declared one would
+  be a secret-egress path with no bound at all. A declared credential is always a
+  `request()` credential; `resolveInjectable()` returns `null` for it.
+- **No other fields.** Only `identifier`, `title`, `baseUrl`, `authScheme`,
+  `allowRules`, `extends` and a `$why` note (on the entry or on a rule).
+
+Two admission lanes:
+
+- **Narrowing** (`"extends": "<reviewed id>"`): the `baseUrl` and `authScheme`
+  must be the base entry's, verbatim, and every rule must be provably narrower
+  than a base rule with the same method — each `*` in the declared pattern may
+  only be absorbed by a `*` in the base pattern, and a pattern with `?`, `[`,
+  `\`, `..`, `.` or an empty segment is never provably narrower. Such a
+  declaration grants nothing the catalogue does not already permit and is
+  admitted without a click. One that is not provably narrower is **invalid**,
+  never turned into an approval request.
+- **Approval**: every other declaration is `pending`, and the broker denies it,
+  until an administrator approves it. A decision is a `credentialProviderApproval`
+  object in the credential-broker register, pinned to a SHA-256 digest over the
+  canonical serialisation of that one entry. Editing the entry changes its
+  digest, so it is pending again; an unrelated entry in the same file does not
+  disturb it. The latest decision on the current digest counts: `approved`
+  admits, `rejected` and `revoked` deny.
+
+A credential on a declared provider is usable by the declaring app only: the
+broker denies any call unless the credential's `allowedApps` is exactly that
+app. Disabling or uninstalling the app makes its declarations unknown, and every
+call on them is denied; the approval records stay in the audit trail.
+
 ## Secret custody: resolved store leaves
 
 The secret itself lives behind the `CredentialStore` interface (`put`/`get`/

@@ -1264,26 +1264,72 @@ class CredentialBrokerService {
 	}//end assertAppAllowed()
 
 	/**
-	 * Resolve the credential's provider from the read-only catalogue.
+	 * Resolve the credential's provider: the read-only catalogue first, then an admitted declaration.
+	 *
+	 * The reviewed catalogue always wins: its identifiers carry no colon, and it is
+	 * consulted before the declaration layer is reached. Anything not admitted denies.
 	 *
 	 * @param array<string, mixed> $data The credential's serialised data.
 	 * @param string $credentialId The credential UUID (for logging).
 	 *
 	 * @return array<string, mixed> The catalogue provider entry.
 	 *
-	 * @throws CredentialAccessDeniedException When the provider is unknown.
+	 * @throws CredentialAccessDeniedException When the provider is unknown or not admitted.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/app-declared-credential-providers/specs/credential-broker/spec.md
 	 */
 	private function resolveProvider(array $data, string $credentialId): array {
 		$providerId = (string)($data['provider'] ?? '');
 		$provider = $this->sources->catalogue->get($providerId);
-		if ($provider === null) {
+		if ($provider !== null) {
+			return $provider;
+		}
+
+		$declared = $this->sources->declared;
+		if ($declared === null || $declared->isDeclaredIdentifier(identifier: $providerId) === false) {
 			$this->deny(reason: 'unknown provider "' . $providerId . '"', credentialId: $credentialId);
 		}
 
-		return $provider;
+		return $this->admittedDeclaredProvider(declared: $declared, data: $data, credentialId: $credentialId);
 	}//end resolveProvider()
+
+	/**
+	 * The entry of an admitted declared provider, for a credential scoped to the declaring app only.
+	 *
+	 * The credential must allow exactly the declaring app. Guard 2 has already checked the
+	 * calling app is in `allowedApps`, so together they keep a declared provider usable by
+	 * the app that declared it and nobody else, whatever path minted the credential.
+	 *
+	 * @param DeclaredProviderResolver $declared     The declaration admission.
+	 * @param array<string, mixed>     $data         The credential's serialised data.
+	 * @param string                   $credentialId The credential UUID (for logging).
+	 *
+	 * @return array<string, mixed> The admitted entry.
+	 *
+	 * @throws CredentialAccessDeniedException When the declaration is not admitted or the credential is shared wider.
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-a-declared-provider-is-usable-only-by-the-app-that-declared-it
+	 */
+	private function admittedDeclaredProvider(DeclaredProviderResolver $declared, array $data, string $credentialId): array {
+		$providerId = (string)($data['provider'] ?? '');
+		$state = $declared->resolve(identifier: $providerId);
+		if ($state['entry'] === null) {
+			$this->deny(
+				reason: 'declared provider "' . $providerId . '" is not admitted (' . $state['status'] . ')',
+				credentialId: $credentialId
+			);
+		}
+
+		if (($data['allowedApps'] ?? null) !== [$state['origin']]) {
+			$this->deny(
+				reason: 'declared provider "' . $providerId . '" is usable only by its declaring app',
+				credentialId: $credentialId
+			);
+		}
+
+		return $state['entry'];
+	}//end admittedDeclaredProvider()
 
 	/**
 	 * Resolve the value the provider's auth template is substituted with.
