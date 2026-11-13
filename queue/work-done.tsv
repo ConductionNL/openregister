@@ -3729,3 +3729,4 @@ cover:dossiq:069ee2d6m7e79:8f99c0f1	PR #6345: 6 Woo classes, 25 tests, lib/Woo 9
 cover:dossiq:069ee2d6m7e79:js00fe026a	already done: src/services/* at 99.11% lines (1572/1586) on development; note inherited red: tests/vitest/capabilityComparison.spec.js 1 failure on development	session-20261113T073916-e9f11dfa	2026-11-13T09:07:51Z
 cover:pipelinq:7f9dc8e6m916f:d39f9857	already done: lib/Support/*.php 32/32 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:08:04Z
 review:openregister:10116:c89dd041	APPROVE: tests only; merged-with-main suites green (webhook DNS-resolution failures inherited on main)	session-20261113T074532-3dc49c57	2026-11-13T09:08:05Z
+cover:dossiq:069ee2d6m7e79:3b1fd60e	PR dossiq#6346: 4 tests, OutstandingDocuments 97->113/113; suite 15357->15361, same 19 inherited failures	session-20261113T080549-dde3ba19	2026-11-13T09:08:36Z
