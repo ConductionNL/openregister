@@ -4927,3 +4927,4 @@ integriq	3462	5350d40fe72dda8c3c60b1b1a3cb5b896d4aed78	GREEN	worker-35	7135 test
 dossiq	6261	9fec4635568a68f446c7a04cff7db4e5bf81bfc4	GREEN	worker-57	phpunit 14179 tests, baseline 19 failures, 0 new; vitest 6341 tests, baseline 1 failure (capabilityComparison), 0 new; tests only
 shillinq	2839	1d31b76671e4dec0d322dc31e1fc9626992169e1	GREEN	worker-12	tree of 9: 9065 tests run, baseline 9004 with 1 failure (PaymentWebhookIntakeCharacterisationTest stripe timestamp), no new failures; tests only
 shillinq	2840	052926d4963bbaad31c9273482599be2f61c6986	GREEN	worker-12	tree of 9: 9065 tests run, baseline 9004 with 1 failure (PaymentWebhookIntakeCharacterisationTest stripe timestamp), no new failures; tests only
+shillinq	2841	1af8f0c383754cfb8b4252a833588a98b77abeba	GREEN	worker-12	tree of 9: 9065 tests run, baseline 9004 with 1 failure (PaymentWebhookIntakeCharacterisationTest stripe timestamp), no new failures; tests only
