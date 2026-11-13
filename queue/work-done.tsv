@@ -5231,3 +5231,4 @@ build2:openregister:modelling-type-catalogue-metadata	PR #10244: classification 
 verify:portaliq:2405:607b0e9c	GREEN #2405 (tests-only +6, 4848, 0 new failures)	session-20261113T131531-81a20e2a	2026-11-13T13:35:51Z
 build2:openregister:read-audit-entries-name-the-rule	partial: PR #10245, task 1.2 — RuleDigest helper (sha256 over recursively key-sorted canonical JSON) + 7 tests; 1.1/2.x/3.1/4.x left (migration + audit DB tests this env can't run)	session-20261113T111529-f2ee6930	2026-11-13T13:36:03Z
 review:openregister:10223:ad2e7e32	APPROVE: search scoped by inbox visibility, suites green	session-20261113T074535-8a2067c2	2026-11-13T13:36:21Z
+build2:openregister:relations-that-travel-and-what-they-expose	nothing to build in openregister: open tasks 1.2b/2.3/2.4/4.1b belong to party-model or pipelinq (per tasks.md), 1.4b needs the live-DB suite; no PR	session-20261113T104650-72c03e13	2026-11-13T13:36:11Z
