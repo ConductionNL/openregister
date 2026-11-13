@@ -2718,4 +2718,5 @@ cover:pipelinq:7f9dc8e6mc4ba:6925f818	already done: lib/SetupCheck 27/27 stateme
 verify:pipelinq:3686:39a25ba7	GREEN pipelinq#3686 (phpunit 6454, 0 new failures; vitest 3910 pass)	session-20261113T053904-36dcee67	2026-11-13T06:17:04Z
 cover:filinq:7a9ef677m5ffe:22152588	already done: lib/Service/SubjectErasure/*.php at 96.83% lines (794/820) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:17:07Z
 cover:filinq:7a9ef677m5ffe:9ece5c6f	already done: lib/Controller/Support/ at 99% lines (87/88) on development 265db8360, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:17:20Z
+cover:filinq:7a9ef677m5ffe:00f8416c	already done: lib/Service/VeraPdf/ at 97.09% lines (300/309) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:17:26Z
 cover:filinq:7a9ef677m5ffe:1174c39d	already done: lib/Service/Support/ at 100% lines (23/23) on development 265db8360, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:17:32Z
