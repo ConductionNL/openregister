@@ -4864,6 +4864,7 @@ build:openregister:flow-error-branch-and-step-retry	partial: PR #10185 (1.1 Flow
 build:openregister:organisation-capability-halt	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:30:58Z
 build:openregister:people-on-objects	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:04Z
 build:openregister:or-flow-connectivity-and-last-run	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:14Z
+cover:openregister:7350e3efmea52:fa416b31	PR #10186: GraphQLRequestGuard 0 -> covered (+6 tests, 64 stmts); lib/Search/Service 90.47% -> ~91.7%	session-20261113T071633-17de823f	2026-11-13T12:31:18Z
 build:openregister:or-form-and-journey-registry	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:20Z
 build:openregister:object-actions-declared-and-run	partial: #10188 docs (5.1); 5.2-5.5 other repos, 6.1-6.2 live	session-20261113T084521-fd8a31c7	2026-11-13T12:31:26Z
 build:openregister:platform-caldav-backend	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:30Z
