@@ -495,7 +495,7 @@ export default {
 		/**
 		 * @param {object} register
 		 * @param {boolean} enabled
-		 * @spec exclude settings-matrix toggle wiring; mutates register read-auth and persists via store (auth-system contract)
+		 * @spec openspec/changes/rights-screen-stated/specs/rbac-scopes/spec.md#REQ-RSS-001
 		 */
 		async togglePublicAccess(register, enabled) {
 			const auth = { ...(register.authorization || {}) }
@@ -525,7 +525,7 @@ export default {
 		 * @param {object} schema
 		 * @param {object} register
 		 * @param {boolean} enabled
-		 * @spec exclude settings-matrix toggle wiring; mutates schema read-auth and persists via store (auth-system contract)
+		 * @spec openspec/changes/rights-screen-stated/specs/rbac-scopes/spec.md#REQ-RSS-001
 		 */
 		async toggleSchemaPublicAccess(schema, register, enabled) {
 			const schemaAuth =
@@ -589,7 +589,7 @@ export default {
 
 		/**
 		 * @param {object} register
-		 * @spec exclude settings-matrix bulk-action wiring; applies a role to a register's schemas via store (auth-system contract)
+		 * @spec openspec/changes/rights-screen-stated/specs/rbac-scopes/spec.md#REQ-RSS-001
 		 */
 		async applyBulkRole(register) {
 			const roleName = this.bulkRole[register.id]?.value

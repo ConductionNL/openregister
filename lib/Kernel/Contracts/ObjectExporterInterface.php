@@ -86,6 +86,17 @@ interface ObjectExporterInterface {
 	public function exportToCsv(ObjectExportRequest $request): string;
 
 	/**
+	 * Export data to TSV format
+	 *
+	 * @param ObjectExportRequest $request The register, schema, filters and user (permission checks) of the export.
+	 *
+	 * @return string TSV content
+	 *
+	 * @throws \InvalidArgumentException If trying to export multiple schemas to TSV
+	 */
+	public function exportToTsv(ObjectExportRequest $request): string;
+
+	/**
 	 * Export data to Excel format
 	 *
 	 * @param ObjectExportRequest $request The register, schema, filters and user (permission checks) of the export.

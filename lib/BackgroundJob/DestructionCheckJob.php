@@ -263,7 +263,13 @@ class DestructionCheckJob extends TimedJob {
 			// both stores, pages them, and caps one run.
 			$scan = $retentionService->scanObjectsWithRetention(accept: $accept);
 
-			$this->notifyEach(objects: $scan['objects'], pass: $pass);
+			// An object a declared ancestor keeps is not going to be destroyed,
+			// so nobody is warned that it will be.
+			$approaching = array_filter(
+				$scan['objects'],
+				static fn (ObjectEntity $object): bool => $retentionService->heldBackByAncestor(object: $object) === null
+			);
+			$this->notifyEach(objects: $approaching, pass: $pass);
 			$pass->save(truncated: ($scan['truncated'] === true));
 		} catch (Exception $e) {
 			$logger->warning('[DestructionCheckJob] Notification error: ' . $e->getMessage());

@@ -13,6 +13,7 @@
                     "description": "",
                     "attendees": [],
                     "status": null,
+                    "reminderMinutesBefore": null,
                     "objectUuid": "obj-1",
                     "registerId": 3,
                     "schemaId": 4
@@ -28,6 +29,7 @@
                     "description": "",
                     "attendees": [],
                     "status": null,
+                    "reminderMinutesBefore": null,
                     "objectUuid": "obj-1x",
                     "registerId": 3,
                     "schemaId": 4
@@ -43,6 +45,7 @@
                     "description": "",
                     "attendees": [],
                     "status": null,
+                    "reminderMinutesBefore": null,
                     "objectUuid": "obj-2",
                     "registerId": 3,
                     "schemaId": 4
@@ -58,6 +61,7 @@
                     "description": "",
                     "attendees": [],
                     "status": null,
+                    "reminderMinutesBefore": null,
                     "objectUuid": "obj-1",
                     "registerId": 3,
                     "schemaId": 4
@@ -73,6 +77,7 @@
                     "description": "",
                     "attendees": [],
                     "status": null,
+                    "reminderMinutesBefore": null,
                     "objectUuid": "obj-1",
                     "registerId": 3,
                     "schemaId": 4
@@ -88,6 +93,7 @@
                     "description": "about obj-1",
                     "attendees": [],
                     "status": null,
+                    "reminderMinutesBefore": null,
                     "objectUuid": null,
                     "registerId": null,
                     "schemaId": null
@@ -172,6 +178,7 @@
                     "description": "",
                     "attendees": [],
                     "status": null,
+                    "reminderMinutesBefore": null,
                     "objectUuid": "obj-1x",
                     "registerId": 3,
                     "schemaId": 4
@@ -187,6 +194,7 @@
                     "description": "",
                     "attendees": [],
                     "status": null,
+                    "reminderMinutesBefore": null,
                     "objectUuid": "obj-2",
                     "registerId": 3,
                     "schemaId": 4
@@ -232,6 +240,7 @@
             "description": "",
             "attendees": [],
             "status": null,
+            "reminderMinutesBefore": null,
             "objectUuid": "o",
             "registerId": 1,
             "schemaId": 2
@@ -273,6 +282,7 @@
                 "b@example.org"
             ],
             "status": null,
+            "reminderMinutesBefore": null,
             "objectUuid": "obj-9",
             "registerId": 3,
             "schemaId": 4
@@ -302,6 +312,7 @@
             "description": "",
             "attendees": [],
             "status": null,
+            "reminderMinutesBefore": null,
             "objectUuid": "obj-9",
             "registerId": 3,
             "schemaId": 4
@@ -346,6 +357,7 @@
                 "description": "",
                 "attendees": [],
                 "status": null,
+                "reminderMinutesBefore": null,
                 "objectUuid": "obj-1",
                 "registerId": 3,
                 "schemaId": 4,
@@ -384,6 +396,7 @@
                 "description": "",
                 "attendees": [],
                 "status": null,
+                "reminderMinutesBefore": null,
                 "objectUuid": "obj-1",
                 "registerId": 3,
                 "schemaId": 4,
@@ -446,6 +459,7 @@
                 "description": "",
                 "attendees": [],
                 "status": null,
+                "reminderMinutesBefore": null,
                 "objectUuid": "obj-1",
                 "registerId": 3,
                 "schemaId": 4,
@@ -476,6 +490,7 @@
                 "description": "",
                 "attendees": [],
                 "status": null,
+                "reminderMinutesBefore": null,
                 "objectUuid": "obj-1",
                 "registerId": 3,
                 "schemaId": 4
@@ -512,6 +527,7 @@
                 "description": "",
                 "attendees": [],
                 "status": null,
+                "reminderMinutesBefore": null,
                 "objectUuid": "obj-1",
                 "registerId": 3,
                 "schemaId": 4
@@ -548,6 +564,7 @@
                 "description": "",
                 "attendees": [],
                 "status": null,
+                "reminderMinutesBefore": null,
                 "objectUuid": "obj-1",
                 "registerId": 3,
                 "schemaId": 4,
@@ -598,6 +615,7 @@
                 "description": "",
                 "attendees": [],
                 "status": null,
+                "reminderMinutesBefore": null,
                 "objectUuid": "obj-2",
                 "registerId": 3,
                 "schemaId": 4,
@@ -649,6 +667,7 @@
                 "description": "",
                 "attendees": [],
                 "status": null,
+                "reminderMinutesBefore": null,
                 "objectUuid": "obj-1",
                 "registerId": 3,
                 "schemaId": 4,
@@ -685,6 +704,7 @@
             "description": "",
             "attendees": [],
             "status": null,
+            "reminderMinutesBefore": null,
             "objectUuid": "obj-2",
             "registerId": 3,
             "schemaId": 4

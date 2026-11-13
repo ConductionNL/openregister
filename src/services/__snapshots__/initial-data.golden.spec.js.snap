@@ -817,6 +817,7 @@ exports[`initial component data golden SearchSideBar starts from the recorded st
   "showDeleteDialog": false,
   "showEditDialog": false,
   "showSaveForm": false,
+  "showViewLinksDialog": false,
   "viewDescription": "",
   "viewIsDefault": false,
   "viewIsPublic": false,
