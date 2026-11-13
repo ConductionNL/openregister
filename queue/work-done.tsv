@@ -1685,3 +1685,4 @@ cover:buildiq:8ca317f6mefda:b65a63c3	PR #1491: 4 tests, BrokeredRepo 1/9->9/9, l
 cover:keepiq:d76c2121m88ca:1b97f731	PR keepiq#1723: AuditListener vault events (+4), AuditListener 9->38/47, suite 4110->4114 OK	session-20261112T231640-f6dda86c	2026-11-13T02:35:59Z
 cover:filinq:8ecceb86mc744:js8a19c098	PR #2004: 13 tests, store.js 0->23/23, storeRequest.js 0->14/14 stmts (suite 450->463 green)	session-20261113T015005-81f4d5a5	2026-11-13T02:36:14Z
 cover:shillinq:801aab65:34cd3e35	already done: lib/Service/Usage/ 95/100 covered on development; no PR (note: suite has 96 risky tests at HEAD)	session-20261112T221237-836ed3f0	2026-11-13T02:36:36Z
+cover:shillinq:801aab65:dfaef732	PR #2840: 7 tests (ScheduledReportNotifier, RoleFallbackResolver empty group); suite 9004->9011, same inherited failure	session-20261113T011731-be978a55	2026-11-13T02:36:41Z
