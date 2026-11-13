@@ -6078,3 +6078,4 @@ portaliq	2438	e1992c4e09dfdff0b9253ba2cf7683f5211ff621	GREEN	worker-24	phpunit 4
 portaliq	2439	e8e5483a434847de6b070e9e1fc19dc085dd658d	GREEN	worker-24	phpunit 4933 run, baseline 4914 OK, 0 new failures; node specs 56/56; check:l10n-js ok
 portaliq	2440	7ba6648872e22e5e01a281978b64cf6107605bb9	CONFLICT	worker-24	conflicts after 2433-2439 greens in tests/Unit/Settings/PortaliqRegisterConfigTest.php (register version bump)
 portaliq	2441	6e1e8b43cf9a9f60d002efe2db18e91d06a8bd74	GREEN	worker-24	phpunit 4933 run, baseline 4914 OK, 0 new failures; node specs 56/56; check:l10n-js ok; signed kvk claim per site-mandates-the-represented-manage
+portaliq	2426	609e95944cd2d9048045d51547bf6beeb92917b0	GREEN	worker-48	phpunit 4961 run (baseline 4914, 0 fail), 0 new; check:specs per script: only site-look and page-help red, same on development
