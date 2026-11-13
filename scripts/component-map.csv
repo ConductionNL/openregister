@@ -3258,6 +3258,9 @@ Service/Export/,,Service,,,,,Configuration
 Service/ExternalLink/,,Service,,,,,Core
 Service/Federation/,,Service,,,,,Core
 Service/File/,,Service,,,,,Core
+Service/File/UrlFetchRefused.php,,Service,,,,,Core
+Service/File/UrlFileFetcher.php,,Service,,,,,Core
+Service/File/UrlStreamOpener.php,,Service,,,,,Core
 Service/Flow/,,Service,,,,,Processes
 Service/Form/,,Service,,,,,Processes
 Service/Gdpr/,,Service,,,,,Compliance
