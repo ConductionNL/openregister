@@ -5338,3 +5338,4 @@ shillinq	2901	65ee2920d5759c4fb9589ae10d9c1e9a0e86f65b	GREEN	worker-58	phpunit 9
 shillinq	2900	0a5d50edcce81ad0d86bf7e650dc319ba145c428	REVERIFY	worker-29	merged development; Sms test conflicts resolved (dev's SmsSendResultTest kept, branch's extra mask assertions kept); suite 9489, 1 inherited failure; new head 451b1bee176ae59c087d57bd16267d8693e30f0b, verify it
 decidiq	2120	48e09f39306c35beddc14352d7af26a86300da26	GREEN	worker-24	phpunit 3684 tests (baseline 3684 OK), vitest 2682 passed/4 skipped, 0 new failures; deps-only override
 dossiq	6321	bc6077730537d26c28332055dc3048b293be62a8	GREEN	worker-47	15177 tests run, baseline 19 failures (sibling openregister missing), 0 new; test-only UsesClass metadata
+shillinq	2902	993c5eabd91571afd542b36df9f4bdb261537dc1	GREEN	worker-11	9491 tests run, baseline 9488 with 1 inherited failure (PaymentWebhookIntakeCharacterisationTest stripe timestamp case), 0 new failures; tests only
