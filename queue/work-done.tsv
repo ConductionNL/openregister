@@ -1532,3 +1532,4 @@ cover:openregister:7350e3efm0e99:499d38f4	PR openregister#10088: @uses on 9 test
 cover:stackiq:8cfacb29m8db8:38e80a9f	already done: lib/Command/*.php 282/282 lines covered at 062e3700, no PR	session-20261113T011731-f3798045	2026-11-13T02:04:34Z
 cover:stackiq:8cfacb29m8db8:59826f43	already done: lib/Settings/StackiqAdmin.php 11/11 lines covered at 062e3700, no PR	session-20261113T011731-f3798045	2026-11-13T02:04:47Z
 measure:decidiq:20261113h00	php 82.11% (21018/25598; 28 risky tests under strict coverage metadata), js 95.21%	session-20261113T015003-d56b074c	2026-11-13T02:04:48Z
+cover:stackiq:8cfacb29m8db8:34763eb4	already done: lib/Middleware/ApiContractMiddleware.php 42/42 lines covered at 062e3700, no PR	session-20261113T011731-f3798045	2026-11-13T02:05:05Z
