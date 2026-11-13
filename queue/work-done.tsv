@@ -6030,3 +6030,4 @@ cover:openregister:7350e3efma401:fa416b31	PR #10291: @uses metadata on 3 risky t
 cover:pipelinq:7f9dc8e6m16db:d39f9857	already covered: lib/Support/*.php 32/32 statements (100%) at 4c67daf; no PR needed	session-20261113T182359-67ad413b	2026-11-13T18:37:12Z
 verify:pipelinq:3769:998edfba	3769 3770 3771 GREEN (vitest 4858 passed; php 5 inherited failures, none new; tests only)	session-20261113T172329-e224a4f0	2026-11-13T18:37:43Z
 verify:integriq:3524:6a8a2f19	3524 GREEN, 3526 GREEN; no new failures	session-20261113T182349-6568f680	2026-11-13T18:37:59Z
+cover:openregister:7350e3efma401:jsee2fd065	2 PRs: #10290 (8 views, 142 tests), #10292 (4 views, 46 tests); suite 8127 -> 8315 passing, tests only	session-20261113T182348-4d2d804b	2026-11-13T18:38:13Z
