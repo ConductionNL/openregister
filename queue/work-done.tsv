@@ -2311,3 +2311,4 @@ cover:hermiq:065f1631m312d:js06645759	PR #1663: 8 tests, src/components/* 89.2->
 cover:dossiq:f8a113c5mac88:js0be8c659	already done: branch quality/test-coverage-js-0be8c659-2 (4 specs, pushed 03:20 today) brings src/modals to 91.1% lines; no duplicate PR. Inherited vitest red: capabilityComparison.spec.js	session-20261113T041645-1e9d4ce1	2026-11-13T04:53:16Z
 cover:keepiq:c967a31fm0090:9d3a1784	already covered: batches quality/test-coverage-9d3a1784-1/-2/-3 merged; every lib/BackgroundJob job has dedicated tests; no PR	session-20261113T024654-6600dc41	2026-11-13T04:53:34Z
 cover:pipelinq:f67520ecmc4ba:36ac5d07	already done: LineTotals/ 59/59 stmts (100%) from own tests on d0c5ea266	session-20261113T044732-d7765ae1	2026-11-13T04:53:42Z
+verify:integriq:3474:40bf5ffa	3/3 GREEN (tests only); phpunit 7132, 2 inherited errors; vitest 1773/0	session-20261113T031700-211f0599	2026-11-13T04:53:52Z
