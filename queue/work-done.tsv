@@ -3720,5 +3720,6 @@ cover:pipelinq:7f9dc8e6m916f:f0c02922	already done: development tests every bran
 verify:integriq:3515:3cef6121	2 GREEN (3515, 3516), tests-only, no new failures	session-20261113T084521-fd8a31c7	2026-11-13T09:06:16Z
 fix:learniq:2419:62ccde47	clean merge of development, pushed 5f8478f65b0bdf7c3e7b6209eef0c83832e3c581, REVERIFY recorded	session-20261113T081055-3901e400	2026-11-13T09:06:43Z
 verify:dossiq:6340:198db1f3	GREEN #6340 (15368 vs 15357, same 19 inherited)	session-20261113T080549-20301834	2026-11-13T09:06:54Z
+cover:buildiq:70b3e29embf07:390adfb9	already done: lib/Capabilities.php (only file) 100% lines, covered by quality/test-coverage-390adfb9-1 already on development	session-20261113T084521-fd8a31c7	2026-11-13T09:07:16Z
 merge:learniq:2436:2368b8ba	merge-local over 1 learniq tasks: merged=7 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:07:16Z
 cover:pipelinq:7f9dc8e6m916f:dfaef732	already done: lib/Notification at 100% (Notifier 120/120 lines) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:07:20Z
