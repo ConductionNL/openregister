@@ -5980,3 +5980,4 @@ cover:integriq:92114ab0mb37a:60c2c265	PR #3527: +25 tests (LtiController, Docume
 verify:dossiq:6431:3ab8f4db	GREEN 6431, 6432, 6433: 16571 tests, 20 inherited failures, none new	session-20261113T175336-b2d7fc7c	2026-11-13T18:30:33Z
 cover:keepiq:c967a31fm00c6:ecbab48a	already done: lib/Service/ShareSave/ at 100% line coverage on development (399/399 stmts); no PR	session-20261113T175328-b5db3663	2026-11-13T18:30:39Z
 build:shillinq:case-payment-requests	already done in code: test:l10n and nl parity pass; left are docs with screenshots (5.3) and the hand-off to dossiq (5.4), neither code	session-20261113T172325-6eb25015	2026-11-13T18:30:37Z
+cover:pipelinq:7f9dc8e6m16db:7505aeb4	already done: lib/Activity/*.php 100% lines (66/66) with the tests on development; no PR	session-20261113T172329-e224a4f0	2026-11-13T18:30:49Z
