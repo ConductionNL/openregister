@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy
+ * @uses \OCA\OpenRegister\Files\Db\Chunk
  */
 class FileVectorizationStrategyTest extends TestCase {
 

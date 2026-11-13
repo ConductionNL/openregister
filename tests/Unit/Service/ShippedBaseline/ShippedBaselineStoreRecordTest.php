@@ -41,6 +41,10 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore
  * @uses \OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore
+ * @uses \OCA\OpenRegister\Db\ConfigurationValue
+ * @uses \OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress
+ * @uses \OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationWrite
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition
  */
 final class ShippedBaselineStoreRecordTest extends TestCase {
 
