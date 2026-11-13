@@ -9037,7 +9037,7 @@
     "owner": "ConductionNL/openregister",
     "evidence": "appinfo/routes.php:1171 POST /api/objects/{register}/{schema} -> lib/Controller/ObjectsController.php:3313 create is an upsert unless _failIfExists -> lib/Service/Object/SaveObject.php:3260 an existing identifier is updated; bulk: routes.php:1282 POST /api/bulk/{register}/{schema}/save; key-based matching only via lib/Service/Import/MatchResolver.php:116 in the two-step import preview (routes.php:1336 create, :1339 commit)",
     "change": "api-upsert-on-a-declared-key",
-    "requirement": "openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud :: A write can create or update by a declared key in one call"
+    "requirement": "openspec/specs/objects-crud :: A write can create or update by a declared key in one call"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}",
    "provider": "openregister",

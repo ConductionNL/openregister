@@ -212,6 +212,7 @@ Controller/ApiCallersController.php,174,Controller,Integrations,Integrations/Con
 Controller/ApiSurfaceController.php,98,Controller,Service,Service/Controller/ApiSurfaceController.php,0,,Core
 Controller/ApplicationsController.php,198,Controller,Configuration,Configuration/Controller/ApplicationsController.php,0,,Configuration
 Controller/ArchivalController.php,698,Controller,Compliance,Compliance/Controller/ArchivalController.php,0,,Compliance
+Controller/ArchivalOverviewController.php,,Controller,,,,,Compliance
 Controller/AuditQueryController.php,109,Controller,Compliance,Compliance/Controller/AuditQueryController.php,0,,Compliance
 Controller/AuditSinkController.php,70,Controller,Compliance,Compliance/Controller/AuditSinkController.php,0,,Compliance
 Controller/AuditTrailController.php,557,Controller,Compliance,Compliance/Controller/AuditTrailController.php,0,,Compliance
@@ -1949,6 +1950,8 @@ Service/ConfigurationDeployment/ConfigurationValueStore.php,155,Service,Configur
 Service/ConfigurationDeployment/DeploymentPreviewService.php,138,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentPreviewService.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentRefusedException.php,38,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentRefusedException.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentService.php,260,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentService.php,0,,Configuration
+Service/ConfigurationDeployment/SettingsDomainMap.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/SettingsDraftGate.php,,Service,,,,,Configuration
 Service/ConfigurationService.php,457,Service,Configuration,Configuration/Service/ConfigurationService.php,200,47,Configuration
 Service/ConfigurationServiceInterface.php,40,Service,Configuration,Configuration/Service/ConfigurationServiceInterface.php,0,,Configuration
 Service/Connection/ConnectionReporter.php,162,Service,Integrations,Integrations/Service/Connection/ConnectionReporter.php,0,163,Integrations
@@ -3887,3 +3890,4 @@ Listener/SharerViewsEndWithUserListener.php,,Listener,,,,,Processes
 Repair/KeyAuditHashChain.php,,Repair,,,,,Platform
 Service/AuditChainKey.php,,Service,,,,,Compliance
 Db/HydrationKey.php,,Db,,,,,Core
+Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
