@@ -6078,3 +6078,4 @@ verify:shillinq:2959:7788337f	2959 GREEN (build, matches REQ-FDO-003/005; only i
 build:shillinq:public-sector-task-field-allocation	partial: PR #2974 (1.1 task-field realisation in the BBV dashboard payload, 5 tests; suite 10394->10399, 1 inherited failure); 1.2, 2.x, 3.x, 4.x left	session-20261113T172329-e224a4f0	2026-11-13T18:47:32Z
 cover:dossiq:069ee2d6m2deb:6ecc72bb	already above target: lib/Service/Workflow/*.php 610/612 statements (99.67%); no PR	session-20261113T175336-e3687686	2026-11-13T18:47:44Z
 cover:dossiq:069ee2d6m2deb:3ee9dda7	already above target: lib/Service/Custody/*.php 628/629 (99.84%); no PR. Real dossiq gaps now: Service/Stuf 45%, AppointmentBackend 55%, Advice 68%, Assistant 72%	session-20261113T175336-e3687686	2026-11-13T18:48:02Z
+build:shillinq:ledger-period-end	partial: PR (1.1 close checklist instantiated on startClose); 1.2-1.3 UI, 2.x deferrals, 3.1 accruals, 4.x live left	session-20261113T172328-c860ad55	2026-11-13T18:48:20Z
