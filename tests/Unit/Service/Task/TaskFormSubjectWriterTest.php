@@ -57,6 +57,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskFormSubjectWriter
  * @covers \OCA\OpenRegister\Service\Task\TaskFormInlineSave
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSubmission
+ * @uses \OCA\OpenRegister\Service\Task\TaskSubjectTransition
  */
 class TaskFormSubjectWriterTest extends TestCase {
 
