@@ -5340,3 +5340,5 @@ decidiq	2120	48e09f39306c35beddc14352d7af26a86300da26	GREEN	worker-24	phpunit 36
 dossiq	6321	bc6077730537d26c28332055dc3048b293be62a8	GREEN	worker-47	15177 tests run, baseline 19 failures (sibling openregister missing), 0 new; test-only UsesClass metadata
 shillinq	2902	993c5eabd91571afd542b36df9f4bdb261537dc1	GREEN	worker-11	9491 tests run, baseline 9488 with 1 inherited failure (PaymentWebhookIntakeCharacterisationTest stripe timestamp case), 0 new failures; tests only
 dossiq	6320	7fdc5f62012f5e0ab10a8d540a1412bade174e5e	GREEN	worker-09	15185 tests run, baseline 15182 with 19 inherited failures, new failures 0; tests only
+decidiq	2121	d094c2d61d91cedc67c0b6a907ae41dcc0fb2d20	GREEN	worker-31	tree of 3: 3770 tests OK, baseline 3684 OK, new failures 0; tests only
+decidiq	2122	fa8d0eb66b8b8d5df1d5b065238cec0090d9520b	GREEN	worker-31	tree of 3: 3770 tests OK, baseline 3684 OK, new failures 0; extract-method refactor, same results/messages/audit
