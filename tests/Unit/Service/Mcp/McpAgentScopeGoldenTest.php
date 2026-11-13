@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Mcp\ToolCall;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -78,7 +79,10 @@ class McpAgentScopeGoldenTest extends TestCase {
 		$tools = $this->createMock(McpToolCatalogueInterface::class);
 		$tools->method('listTools')->willReturn(['tools' => self::catalog()]);
 
-		$this->scope = new McpAgentScope($agentMapper, new ToolGrantResolver(), $tools, $cacheFactory, new NullLogger());
+		$specialRights = $this->createMock(OrganisationSpecialRights::class);
+		$specialRights->method('mayUse')->willReturn(true);
+
+		$this->scope = new McpAgentScope($agentMapper, new ToolGrantResolver(), $tools, $cacheFactory, new NullLogger(), $specialRights);
 	}//end setUp()
 
 	/**

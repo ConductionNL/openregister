@@ -3617,6 +3617,7 @@ Repair/IntakeSourceRegisterSlugsInterface.php,,Repair,,,,,Processes
 Repair/MagicTableSweepRun.php,,Repair,,,,,Platform
 Repair/MigrateRegisterFlowsRun.php,,Repair,,,,,Platform
 Repair/MigratedFlowOrigins.php,,Repair,,,,,Core
+Repair/OpenSpecialRightsToEveryone.php,,Repair,,,,,Core
 Repair/PerformerField.php,,Repair,,,,,Core
 Repair/PerformerTyping.php,,Repair,,,,,Core
 Repair/PhantomFlowPurgeRun.php,,Repair,,,,,Processes

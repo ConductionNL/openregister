@@ -71,10 +71,12 @@
                 "update": [],
                 "delete": []
             },
-            "object_publish": [],
-            "agent_use": [],
-            "dashboard_view": [],
-            "llm_use": [],
+            "agent_use": [
+                "*"
+            ],
+            "llm_use": [
+                "*"
+            ],
             "grant_manage": []
         },
         "status": "active",
@@ -183,10 +185,12 @@
                 "update": [],
                 "delete": []
             },
-            "object_publish": [],
-            "agent_use": [],
-            "dashboard_view": [],
-            "llm_use": [],
+            "agent_use": [
+                "*"
+            ],
+            "llm_use": [
+                "*"
+            ],
             "grant_manage": []
         },
         "status": "active",

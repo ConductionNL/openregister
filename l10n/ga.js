@@ -1,6 +1,8 @@
 OC.L10N.register(
     "openregister",
     {
+        "Everyone": "Gach duine",
+        "Only an administrator or the owner of this organisation can change its special rights.": "Ní féidir ach le riarthóir nó le húinéir na heagraíochta seo a cearta speisialta a athrú.",
         "3": "3",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "An aip a sholáthraíonn nó a bhfuil úinéireacht aici ar an tábla seo, mar shampla `dossiq`. Folamh i gcás tábla a chruthaigh riarthóir.",
