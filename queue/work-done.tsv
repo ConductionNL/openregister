@@ -6402,3 +6402,4 @@ build3:openregister:modelling-property-index-switch	partial: PR openregister#103
 cover:keepiq:c967a31fm10bf:be0dcca9	already done: lib/Mcp/*.php at 100% on development; no PR	session-20261113T172328-c860ad55	2026-11-13T19:44:21Z
 cover:keepiq:c967a31fm10bf:a4b15ae4	already done: lib/Event/Audit 19/19 statements covered on development (earlier -1 branch merged)	session-20261113T182348-cc1b5fea	2026-11-13T19:44:39Z
 review:openregister:10313:0e88b49f	APPROVE 10313	session-20261113T192704-f298034f	2026-11-13T19:44:38Z
+cover:opencatalogi:fc83bfb1:b5905f71	PR #2603: OutboundUrlGuard unresolvable-host test, 5254->5255, same 2 inherited failures	session-20261113T192659-0ddb618f	2026-11-13T19:44:44Z
