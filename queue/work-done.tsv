@@ -4050,4 +4050,5 @@ build:pipelinq:client-page-as-the-relation-boards	last task already on developme
 cover:learniq:e6498dddm0533:cec0abe6	already done: Attendance 666/694, CourseStore 148/156, Portal 1325/1390 = 2139/2240 (95.5%) on development, above the 95% target; no PR	session-20261113T080556-d189f150	2026-11-13T09:49:15Z
 merge:stackiq:1693:44f4b992	merge-local over 1 stackiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:49:32Z
 build:dossiq:inspection-conflict-card	PR #6381: task 4 (resolve endpoint, capability, 20 tests); task 5 left (open decision, nextcloud-vue)	session-20261113T091533-b7a00bc3	2026-11-13T09:49:58Z
+cover:dossiq:069ee2d6m7275:4c817077	already done: lib/Service/Notification/ at 100% lines (pcov) after -1/-2 merged; ApplicantNotice/NoticeDelivery are property bags with no executable lines; no PR	session-20261113T093920-50335e74	2026-11-13T09:49:58Z
 cover:dossiq:069ee2d6m7275:cd5286bf	PR #6380: 12 tests, lib/Service/Session statements 286/301 -> 300/301	session-20261113T091533-03405ea6	2026-11-13T09:49:54Z
