@@ -2151,3 +2151,4 @@ cover:pipelinq:f67520ecmc4ba:a3bb9eeb	PR #3644: PortalObjectRepository, MainRegi
 verify:keepiq:1727:8880a6bb	GREEN 1727-1732 (tests only; phpunit and vitest green on the tree)	session-20261113T034634-857dbcc2	2026-11-13T04:32:25Z
 cover:keepiq:c967a31fm0090:11ebfefd	already done: lib/Backup/*.php 94.39% (454/481), every class tested; branches -1 and -2 already exist	session-20261113T034634-857dbcc2	2026-11-13T04:32:48Z
 verify:launchpad:1166:a12322b0	GREEN 1166	session-20261113T015005-030aa10a	2026-11-13T04:32:49Z
+cover:pipelinq:f67520ecmc4ba:95d5249b	PR #3645: 9 tests for portal contract/order facades; suite 6194->6203, same 1 inherited failure	session-20261113T041649-bbede304	2026-11-13T04:32:57Z
