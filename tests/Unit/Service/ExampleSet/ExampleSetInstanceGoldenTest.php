@@ -36,6 +36,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Db\Organisation
  */
 class ExampleSetInstanceGoldenTest extends TestCase {
 	/**

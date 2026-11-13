@@ -20,6 +20,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunRow
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
  */
 final class FlowRunRowTest extends TestCase {
 

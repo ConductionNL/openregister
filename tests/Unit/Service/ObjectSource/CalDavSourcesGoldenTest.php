@@ -51,6 +51,16 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider
  * @covers \OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedObjectBinding
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
+ * @uses \OCA\OpenRegister\Service\ObjectSource\VtodoScope
+ * @uses \OCA\OpenRegister\Service\ObjectSource\VtodoSelection
  */
 class CalDavSourcesGoldenTest extends TestCase {
 

@@ -51,6 +51,11 @@ use RuntimeException;
  * Branches of the organisation service methods being split into named steps.
  *
  * @covers \OCA\OpenRegister\Service\OrganisationService
+ * @uses \OCA\OpenRegister\Db\Application
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\Organisation\NewOrganisation
  */
 class OrganisationServiceCharacterisationTest extends TestCase {
 

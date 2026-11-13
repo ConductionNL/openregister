@@ -40,6 +40,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSelection;
  *
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubHandler
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubIssueQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSelection
  */
 class GitHubHandlerIssuesGoldenTest extends TestCase {
 

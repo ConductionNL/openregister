@@ -87,6 +87,32 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @uses   \OCA\OpenRegister\Exception\ArchivalImmutableException
  * @uses   \OCA\OpenRegister\Exception\ReadOnlyTypeException
  * @uses   \OCA\OpenRegister\Service\Object\ObjectDeleteRequest
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAuthorisationServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectMapperServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectReadServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRemovalServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRuntimeServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSaveServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSearchServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectShapingServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectStorageServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices
+ * @uses \OCA\OpenRegister\Service\Object\DeletionOptions
+ * @uses \OCA\OpenRegister\Service\Object\DeletionRequest
+ * @uses \OCA\OpenRegister\Service\Object\DraftCaller
+ * @uses \OCA\OpenRegister\Service\Object\DraftSubject
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

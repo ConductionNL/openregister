@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
  * on how often the handler reads the session.
  *
  * @covers \OCA\OpenRegister\Service\File\FileLockHandler
+ * @uses \OCA\OpenRegister\Service\File\FileSession
  */
 class FileLockHandlerOutcomeGoldenTest extends TestCase
 {

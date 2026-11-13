@@ -262,6 +262,11 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationValueStore',
 				'OCP\\IAppConfig',
 			],
+			'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationSeedService' => [
+				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationDraftService',
+				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationValueStore',
+				'OCA\\OpenRegister\\Service\\SettingsService',
+			],
 		];
 	}//end expectedRequests()
 }//end class

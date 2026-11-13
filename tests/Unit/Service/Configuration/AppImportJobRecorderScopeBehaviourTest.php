@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Configuration\FinishedImportJob;
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder
  * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses \OCA\OpenRegister\Service\Configuration\FinishedImportJob
  */
 class AppImportJobRecorderScopeBehaviourTest extends TestCase
 {

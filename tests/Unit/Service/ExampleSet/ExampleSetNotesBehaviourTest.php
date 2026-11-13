@@ -38,6 +38,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserObjectRows
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue
  */
 class ExampleSetNotesBehaviourTest extends TestCase {
 

@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubGuards
+ * @uses \OCA\OpenRegister\Service\Configuration\DistinctKeyBudget
  */
 class GitHubGuardsBehaviourTest extends TestCase
 {

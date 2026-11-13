@@ -47,6 +47,10 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\OutboundMessage
  * @uses   \OCA\OpenRegister\Service\Integration\UpstreamRequest
+ * @uses \OCA\OpenRegister\Exception\ProviderUnavailableException
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\OutboundMessage
+ * @uses \OCA\OpenRegister\Service\Integration\UpstreamRequest
  */
 class MessageDispatchGoldenTest extends TestCase {
 

@@ -1,6 +1,8 @@
 OC.L10N.register(
     "openregister",
     {
+        "Everyone": "Kulħadd",
+        "Only an administrator or the owner of this organisation can change its special rights.": "Amministratur jew is-sid ta' din l-organizzazzjoni biss jista' jibdel id-drittijiet speċjali tagħha.",
         "3": "3",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "L-applikazzjoni li tipprovdi jew li tippossjedi din it-tabella, pereżempju `dossiq`. Vojt għal tabella maħluqa minn amministratur.",

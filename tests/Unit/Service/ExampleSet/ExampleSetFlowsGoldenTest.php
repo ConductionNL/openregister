@@ -40,6 +40,10 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRunCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
  */
 class ExampleSetFlowsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/example-set-flows-golden.json';

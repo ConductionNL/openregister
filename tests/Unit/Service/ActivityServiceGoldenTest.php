@@ -47,6 +47,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Notifications\Service\ObjectDeepLinks
  */
 class ActivityServiceGoldenTest extends TestCase {
 	private const BASE = 'https://cloud/apps/openregister/';

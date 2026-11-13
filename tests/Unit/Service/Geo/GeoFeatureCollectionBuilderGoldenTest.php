@@ -33,6 +33,8 @@ use PHPUnit\Framework\TestCase;
  * set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder
+ * @uses \OCA\OpenRegister\Search\Service\Geo\FeatureShape
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest
  */
 class GeoFeatureCollectionBuilderGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/geo-feature-collection-golden.json';

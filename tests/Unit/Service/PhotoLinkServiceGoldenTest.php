@@ -44,6 +44,12 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\PhotoLinkService
  * @uses   \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Db\PhotoLink
+ * @uses \OCA\OpenRegister\Db\ProcessingLogEntry
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Db\XwikiLink
+ * @uses \OCA\OpenRegister\Service\AlbumLinkRun
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
  */
 class PhotoLinkServiceGoldenTest extends TestCase {
 

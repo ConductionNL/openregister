@@ -236,6 +236,7 @@ class ChatStreamController extends Controller {
 		$turn = $this->readTurn();
 		$this->resolveTurnAgent(turn: $turn);
 		$turn->conversation = $this->turnConversation(turn: $turn);
+		$this->refuseMissingRight(turn: $turn);
 
 		// Emit a heartbeat right after headers so the client knows we're alive
 		// (the synchronous LLM call may take >15s on cold-load).
@@ -346,6 +347,33 @@ class ChatStreamController extends Controller {
 			throw $e;
 		}
 	}//end turnConversation()
+
+	/**
+	 * Stop the stream when the caller lacks a special right the conversation needs.
+	 *
+	 * Checked before the model is called. The SSE headers are already on the
+	 * wire, so a refusal is a `forbidden` frame like a conversation that is not
+	 * the caller's; ChatService checks again for every other path.
+	 *
+	 * @param ChatStreamTurn $turn The turn, with its conversation resolved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	private function refuseMissingRight(ChatStreamTurn $turn): void {
+		$missingRight = $this->chatService->missingRightIn(conversationId: $turn->conversation->getId(), userId: $turn->userId);
+		if ($missingRight !== null) {
+			$this->emitAndExit(
+				eventType: 'error',
+				payload: [
+					'code' => 'forbidden',
+					'message' => 'You do not hold the special right ' . $missingRight . ' in this organisation',
+					'right' => $missingRight,
+				]
+			);
+		}
+	}//end refuseMissingRight()
 
 	/**
 	 * Process the turn through the chat service, streaming over a channel.

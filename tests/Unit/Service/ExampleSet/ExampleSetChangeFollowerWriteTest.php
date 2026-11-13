@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetHeldChange
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetWrittenValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPathValue
  */
 class ExampleSetChangeFollowerWriteTest extends TestCase {
 

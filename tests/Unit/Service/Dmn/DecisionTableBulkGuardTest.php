@@ -54,6 +54,19 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestEvaluator
  * @uses \OCA\OpenRegister\Service\Object\BulkRowRules
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Service\Dmn\DecisionTableColumns
+ * @uses \OCA\OpenRegister\Service\Dmn\TableValidationRun
+ * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestValue
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses \OCA\OpenRegister\Service\Object\SafeguardBatchRun
+ * @uses \OCA\OpenRegister\Service\Object\SafeguardRejection
  */
 class DecisionTableBulkGuardTest extends TestCase {
 

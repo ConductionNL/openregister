@@ -40,6 +40,9 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  * @uses   \OCA\OpenRegister\Kernel\Contracts\TaskLocation
  * @uses   \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TaskLocation
+ * @uses \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices
  */
 class ProviderItemsBelongToObjectTest extends TestCase {
 

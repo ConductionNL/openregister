@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  * Which deny entries name the caller, and how the match is reported.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
  */
 class DenyEntryMatcherTest extends TestCase {
 
