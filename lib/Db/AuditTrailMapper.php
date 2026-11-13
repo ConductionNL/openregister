@@ -596,6 +596,23 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	];
 
 	/**
+	 * Request-shaped filter names findTrail() reads as their column.
+	 *
+	 * The audit-trail rows serialise their attribution as `flowRun`,
+	 * `flowNode` and `flowStep`, so a reader filters on the name it reads.
+	 * Without this map `?flowRun=<uuid>` is outside QUERY_COLUMNS and is
+	 * silently dropped, answering the whole trail as if one run had touched
+	 * everything.
+	 *
+	 * @var array<string, string>
+	 */
+	public const FILTER_ALIASES = [
+		'flowRun' => 'flow_run',
+		'flowNode' => 'flow_node',
+		'flowStep' => 'flow_step',
+	];
+
+	/**
 	 * Audit trails matching a listing's filters, search and sort, from its offset.
 	 *
 	 * An unbounded listing ({@see ListQuery::unbounded()}) returns every match.
@@ -642,7 +659,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 	/**
 	 * Apply the filters of findTrail(): system variables (starting with _) and
-	 * columns outside QUERY_COLUMNS are ignored.
+	 * columns outside QUERY_COLUMNS are ignored; a name in FILTER_ALIASES
+	 * filters on its column.
 	 *
 	 * @param IQueryBuilder $qb      The query being built.
 	 * @param array         $filters The filters, keyed by column.
@@ -650,6 +668,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @return void
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/changes/flow-object-attribution
 	 */
 	private function applyFindFilters(IQueryBuilder $qb, array $filters): void {
 		$filters = array_filter(
@@ -661,6 +680,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		);
 
 		foreach ($filters as $field => $value) {
+			$field = (self::FILTER_ALIASES[$field] ?? $field);
 			if (in_array(
 				$field,
 				self::QUERY_COLUMNS
