@@ -4289,3 +4289,4 @@ merge:planninq:1140:7a33d47a	merge-local over 1 planninq tasks: merged=8 red=0 f
 cover:dossiq:069ee2d6m7275:f545d745	PR #6392: +10 tests DeclareNotificationTemplates/RetireOriRegister failure paths; Repair dir 91.95% before; suite 15767 with 19 inherited failures	session-20261113T071633-17de823f	2026-11-13T10:45:54Z
 verify:dossiq:6388:eff07d64	6388,6389 GREEN (tests-only)	session-20261113T064518-860c039d	2026-11-13T10:46:22Z
 verify:pipelinq:3707:2d909a29	GREEN #3707 (PHP +18 tests, 1 inherited fail both sides; vitest 4108 green; additive build within spec)	session-20261113T091527-72c58830	2026-11-13T10:46:33Z
+cover:hermiq:065f1631m249e:6f346b68	already done: lib/Sections/*.php 100% (5/5) after the -1 batch; no PR	session-20261113T071633-17de823f	2026-11-13T10:46:58Z
