@@ -3157,6 +3157,7 @@ Service/Sync/SyncScheduleService.php,34,Service,Integrations,Integrations/Servic
 Service/SystemOperationContext.php,46,Service,Service,Service/SystemOperationContext.php,55,400,Core
 Service/TalkLinkService.php,540,Service,Integrations,Integrations/Service/TalkLinkService.php,12,,Integrations
 Service/Task/ApprovingOutcomeSet.php,20,Service,Work,Work/Service/Task/ApprovingOutcomeSet.php,0,467,Processes
+Service/Task/ChangeGateDeclaration.php,70,Service,Work,Work/Service/Task/ChangeGateDeclaration.php,0,,Processes
 Service/Task/TaskAuthorizationService.php,247,Service,Work,Work/Service/Task/TaskAuthorizationService.php,0,,Processes
 Service/Task/TaskBlockerGuard.php,71,Service,Work,Work/Service/Task/TaskBlockerGuard.php,0,,Processes
 Service/Task/TaskBuilder.php,205,Service,Work,Work/Service/Task/TaskBuilder.php,0,,Processes
