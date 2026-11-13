@@ -1,12 +1,12 @@
 {
  "app": "integriq",
- "commit": "2210ff7559401c2211cb5176125d65d6ca442226",
- "measured_at": "2026-11-13T04:22:30Z",
+ "commit": "46d1bb08ec8c1954264cec6e6ef4ed7ae89ef731",
+ "measured_at": "2026-11-13T06:35:01Z",
  "php": {
   "tool": "pcov",
-  "pct": 88.01,
+  "pct": 88.97,
   "statements": 64244,
-  "covered": 56543,
+  "covered": 57159,
   "dirs": {
    "lib/Adapters/": [
     151,
@@ -18,7 +18,7 @@
    ],
    "lib/Adapters/Digikoppeling/": [
     315,
-    294
+    307
    ],
    "lib/Adapters/LearningMaterial/": [
     418,
@@ -110,7 +110,7 @@
    ],
    "lib/Directory/": [
     600,
-    499
+    565
    ],
    "lib/Event/": [
     424,
@@ -118,7 +118,7 @@
    ],
    "lib/EventListener/": [
     1377,
-    1154
+    1240
    ],
    "lib/Exception/": [
     55,
@@ -166,15 +166,15 @@
    ],
    "lib/Notification/": [
     125,
-    72
+    101
    ],
    "lib/Observability/": [
     224,
-    207
+    223
    ],
    "lib/Observability/Otel/": [
     276,
-    268
+    272
    ],
    "lib/Outbound/": [
     580,
@@ -186,7 +186,7 @@
    ],
    "lib/Outbound/Identity/": [
     1250,
-    1094
+    1194
    ],
    "lib/PropertySource/": [
     257,
@@ -270,7 +270,7 @@
    ],
    "lib/Service/Consumer/": [
     158,
-    137
+    151
    ],
    "lib/Service/Datasource/": [
     107,
@@ -298,7 +298,7 @@
    ],
    "lib/Service/Forms/": [
     162,
-    155
+    162
    ],
    "lib/Service/Fsc/": [
     189,
@@ -326,7 +326,7 @@
    ],
    "lib/Service/Kiss/": [
     551,
-    400
+    428
    ],
    "lib/Service/Lti/": [
     1344,
@@ -410,11 +410,11 @@
    ],
    "lib/Service/Security/": [
     1045,
-    963
+    1000
    ],
    "lib/Service/Sms/": [
     214,
-    164
+    211
    ],
    "lib/Service/Stuf/": [
     116,
@@ -450,7 +450,7 @@
    ],
    "lib/Service/ZgwVersion/": [
     68,
-    66
+    68
    ],
    "lib/Settings/": [
     15,
@@ -470,7 +470,7 @@
    ],
    "lib/Sources/Pdok/": [
     151,
-    0
+    99
    ],
    "lib/Sources/Roster/": [
     166,
@@ -482,7 +482,7 @@
    ],
    "lib/Twig/": [
     141,
-    45
+    113
    ],
    "lib/Util/": [
     8,
@@ -495,13 +495,17 @@
   }
  },
  "js": {
-  "pct": 82.64,
-  "statements": 6394,
-  "covered": 5284,
+  "pct": 74.8,
+  "statements": 7067,
+  "covered": 5286,
   "dirs": {
    "src/": [
-    44,
+    95,
     44
+   ],
+   "src/assets/": [
+    0,
+    0
    ],
    "src/components/": [
     270,
@@ -531,6 +535,10 @@
     51,
     51
    ],
+   "src/manifest.d/": [
+    32,
+    0
+   ],
    "src/mixins/": [
     263,
     263
@@ -548,7 +556,7 @@
     28
    ],
    "src/modals/Endpoint/": [
-    1,
+    41,
     1
    ],
    "src/modals/EventDelivery/": [
@@ -568,7 +576,7 @@
     73
    ],
    "src/modals/Rule/": [
-    77,
+    239,
     77
    ],
    "src/modals/Subscription/": [
@@ -580,7 +588,7 @@
     22
    ],
    "src/modals/v2/": [
-    1352,
+    1457,
     1101
    ],
    "src/store/": [
@@ -592,7 +600,7 @@
     124
    ],
    "src/views/Approvals/": [
-    75,
+    96,
     68
    ],
    "src/views/EventDelivery/": [
@@ -600,15 +608,31 @@
     36
    ],
    "src/views/ExecutionTrace/": [
-    19,
+    71,
     19
+   ],
+   "src/views/Flow/": [
+    1,
+    0
    ],
    "src/views/Migration/": [
     42,
     40
    ],
+   "src/views/NotificatiesAbonnement/": [
+    38,
+    0
+   ],
+   "src/views/Operations/": [
+    21,
+    0
+   ],
+   "src/views/RecipientOptOuts/": [
+    24,
+    0
+   ],
    "src/views/Rule/": [
-    290,
+    415,
     89
    ],
    "src/views/Rule/actionForms/": [
@@ -617,10 +641,10 @@
    ],
    "src/views/Synchronization/": [
     874,
-    695
+    697
    ],
    "src/views/admin/": [
-    480,
+    481,
     392
    ],
    "src/views/wrappers/": [
