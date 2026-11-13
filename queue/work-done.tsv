@@ -6262,3 +6262,4 @@ cover:buildiq:70b3e29em7beb:38e80a9f	already done: lib/Command/ 348/349 at e11fe
 verify:dossiq:6439:73fe2fd7	GREEN 6439, GREEN 6440 (tests-only; 16571 tests, 20 inherited failures, none new)	session-20261113T172329-0b6220f9	2026-11-13T19:15:37Z
 cover:buildiq:70b3e29em7beb:f545d745	already done: lib/Repair/*.php 915/917 statements (99.8%) @e11fe26f, above 95 target	session-20261113T185326-a3ee0aab	2026-11-13T19:15:41Z
 cover:integriq:92114ab0m0593:36cf9f12	already done: lib/Service/Exchange/ 956/968 (98.8%) at 81441e2b	session-20261113T171137-8f22ecb0	2026-11-13T19:15:58Z
+cover:integriq:92114ab0m0593:9d3a1784	already done: lib/BackgroundJob/ 901/907 (99.3%) at 81441e2b	session-20261113T171137-8f22ecb0	2026-11-13T19:16:14Z
