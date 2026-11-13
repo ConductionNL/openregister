@@ -5152,3 +5152,4 @@ integriq	3480	8de11812d049c41ce98b4d4185f47e86314f4945	GREEN	worker-02	tree 3480
 buildiq	1510	74e6c610d5c56caaa6a1e7651bea006bdc8a19f3	GREEN	worker-01	phpunit 2444 run, baseline 1333 err/fail inherited, PR adds only a JS spec (no PHP change); vitest 359 files/3464 tests pass, 0 new failures
 hermiq	1658	0af830486955581b9c116dc67f6eb548e32d87c0	GREEN	worker-06	PHP 4207 tests on tree, baseline 4185 with 172 inherited failures/errors, no new failures; vitest 1246/1246 pass; tests only
 hermiq	1659	435ff8e487d03762640f7f1ff13e45f7e64b7f43	GREEN	worker-06	PHP 4207 tests on tree, baseline 4185 with 172 inherited failures/errors, no new failures; vitest 1246/1246 pass; tests only
+hermiq	1660	4c37b2f71860050b5c78f3bcab7a665c1922f66d	GREEN	worker-06	PHP 4207 tests on tree, baseline 4185 with 172 inherited failures/errors, no new failures; vitest 1246/1246 pass; tests only
