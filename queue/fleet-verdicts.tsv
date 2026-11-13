@@ -5773,3 +5773,4 @@ pipelinq	3727	344f584b25b3dc0b0fe05f53eaf93a86a219c115	GREEN	worker-56	build lea
 pipelinq	3729	4cc2778125c3af86bf14c099a3b8f94d109fdd3d	CONFLICT	worker-56	l10n en/nl (js+json) conflict with 3726 earlier in the tree; clean on development alone
 pipelinq	3730	4e554335edc53b2e244fd7534a3fd3806089c8ae	GREEN	worker-56	tests only; tree 7 PRs (3728 left out, JS unverifiable here): 6917 tests, baseline 6814 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest), 0 new failures
 pipelinq	3731	17fbeb57913d49a0cf78a42299a	GREEN	worker-56	build segment rule groups: stored rules normalised to a group tree as the change asks; tree 7 PRs (3728 left out, JS unverifiable here): 6917 tests, baseline 6814 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest), 0 new failures
+pipelinq	3731	17fbeb57913d49a0cf78a42299a555fc3b60cfb1	GREEN	worker-56	build segment rule groups as the change asks (full sha; same verdict as the row with the short sha); tree 6917 tests, 0 new failures
