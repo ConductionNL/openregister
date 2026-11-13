@@ -5111,3 +5111,4 @@ keepiq	1724	1bde1e7f033608591baa8a14b0e592fb78350742	REVERIFY	worker-36	secret s
 pipelinq	3652	f2256d70f4dfb084639fa5d058c39ea031391025	GREEN	worker-31	tests-only; PHP 6351 tests on tree, baseline 1 failure, 0 new; vitest 3696 passing
 pipelinq	3653	d93493c5caffd981f2486515202438e4ce89763b	GREEN	worker-31	tests-only; PHP 6351 tests on tree, baseline 1 failure, 0 new; vitest 3696 passing
 pipelinq	3654	9a1611fe1e741a323200d811af24b2dabc9508d4	GREEN	worker-31	tests-only; PHP 6351 tests on tree, baseline 1 failure, 0 new; vitest 3696 passing
+keepiq	1734	26ea6f867dfe0533dab23415f2fb0f5e64171e57	GREEN	worker-35	PHP 4413 tests OK (baseline 4413 OK); vitest 368 files / 6037 tests pass on tree; JS specs only
