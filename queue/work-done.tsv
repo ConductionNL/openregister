@@ -3563,5 +3563,6 @@ cover:launchpad:fb10c50fm911d:js01efb861	PR #1179: +90 vitest tests, Widgets 94.
 verify:learniq:2441:c104aca5	GREEN x3 (2441,2442,2443): failures inherited only	session-20261113T051703-1b54bfba	2026-11-13T08:43:54Z
 review:openregister:10115:69b99177	APPROVE: 1 jest spec, 8 pass, eslint clean	session-20261113T080556-d189f150	2026-11-13T08:44:15Z
 cover:integriq:92114ab0m658d:a4a15698	no PR: lib/Adapters/Pdok/ already 337/342 (98.5%, target 90); the 5 misses are in the fixture mock clients	session-20261113T071640-3ba6da34	2026-11-13T08:44:18Z
+cover:learniq:e6498dddmf689:befc51b3	PR #2453: 5 tests, lib/Timetabling/*.php 94.71% -> 96.79%	session-20261113T080552-2a8a5ff1	2026-11-13T08:44:26Z
 merge:humaniq:1025:5b7ab4d7	merge-local over 1 humaniq tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:44:28Z
 measure:hermiq:20261113h08	php 88.68% js 86.98% @66af8e45 (suite: 146 errors, 26 failures at baseline)	session-20261113T083916-59f10a3b	2026-11-13T08:44:43Z
