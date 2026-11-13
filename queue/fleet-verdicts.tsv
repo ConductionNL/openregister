@@ -5867,3 +5867,4 @@ shillinq\t2934\tf31bd60394b9ec04d5efc3abf037f240e9ec8231\tGREEN\tworker-35\ttest
 shillinq\t2937\t8ffdfccbd50cc73c84ff77b2d07939e5647c242d\tGREEN\tworker-35\ttests-only vitest + test render helper; tree phpunit 10244 (1 inherited clock-bound fail, 0 new), vitest 2038->2091 all green
 shillinq\t2938\t8c5acb82023515d7d84259914fe7d9519564f370\tGREEN\tworker-35\ttests-only phpunit; tree phpunit 10244 (1 inherited clock-bound fail, 0 new), vitest 2038->2091 all green
 shillinq\t2939\tba97f1f0047083eebd35763b9561c21a8dc3ace9\tGREEN\tworker-35\ttests-only vitest, identical render helper merges clean; tree phpunit 10244 (1 inherited clock-bound fail, 0 new), vitest 2038->2091 all green
+launchpad	1187	468907f96b02756394cf9b6b5abe843ff85ea537	GREEN	worker-12	phpunit 4062 OK (baseline 4062 OK, 13 skipped); vitest 2208 (baseline 2193) all passing; 0 new failures; tests only
