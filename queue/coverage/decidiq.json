@@ -1,12 +1,12 @@
 {
  "app": "decidiq",
- "commit": "ee910c6515130cf998cf1089929541e26688cadc",
- "measured_at": "2026-11-13T02:04:40Z",
+ "commit": "7cd7d1756a8b013509ce0733d1ab0e3107975fb4",
+ "measured_at": "2026-11-13T04:19:33Z",
  "php": {
   "tool": "pcov",
-  "pct": 82.11,
+  "pct": 82.1,
   "statements": 25598,
-  "covered": 21018,
+  "covered": 21017,
   "dirs": {
    "lib/Activity/": [
     79,
@@ -26,7 +26,7 @@
    ],
    "lib/Controller/": [
     3163,
-    2489
+    2486
    ],
    "lib/Dashboard/": [
     65,
@@ -42,7 +42,7 @@
    ],
    "lib/Flow/": [
     182,
-    180
+    181
    ],
    "lib/Lifecycle/": [
     256,
@@ -78,7 +78,7 @@
    ],
    "lib/Service/": [
     17588,
-    14363
+    14364
    ],
    "lib/Service/Records/": [
     379,
