@@ -119,6 +119,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\Organisation\OrganisationFromProperty;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
@@ -944,6 +945,24 @@ class SaveObject implements SaveObjectInterface {
 			$call->data = $write->data;
 		}
 	}//end storeCreatedFileProperties()
+
+	/**
+	 * The organisation resolver: `@self.organisation` from the property a schema names.
+	 *
+	 * Built here rather than injected: it needs nothing this pipeline does not
+	 * already hold, and the constructor is at its parameter budget.
+	 *
+	 * @return OrganisationFromProperty The resolver.
+	 *
+	 * @spec openspec/changes/object-organisation-from-a-property/specs/saas-multi-tenant/spec.md#requirement-a-schema-can-derive-an-objects-organisation-from-a-property-req-oop-001
+	 */
+	private function organisationFromProperty(): OrganisationFromProperty {
+		return new OrganisationFromProperty(
+			organisations: $this->organisationService,
+			userSession: $this->userSession,
+			groupManager: $this->groupManager
+		);
+	}//end organisationFromProperty()
 
 	/**
 	 * The relation scanner of this save handler.
@@ -3692,6 +3711,12 @@ class SaveObject implements SaveObjectInterface {
 		// for the system-context contract (openregister#1617).
 		$this->applyOwnerAttribution(objectEntity: $objectEntity, flags: $flags);
 
+		// Take the organisation from the property the schema names, when it names
+		// one (object-organisation-from-a-property). Before the fallback below on
+		// purpose: for such a schema the property IS the organisation, and falling
+		// back to the caller's active one is the disagreement the annotation removes.
+		$this->organisationFromProperty()->apply(object: $objectEntity, schema: $schema, selfData: $selfData);
+
 		// Set organisation from active organisation if not already set.
 		// setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
 		// value when the caller was admin or a verified member of that organisation (SB1 fix).
@@ -3932,6 +3957,10 @@ class SaveObject implements SaveObjectInterface {
 
 		// Hydrate name and description from schema configuration.
 		$this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
+
+		// The same organisation rule as on create: the property the schema names
+		// decides, so an update that moves the property moves the object's rights.
+		$this->organisationFromProperty()->apply(object: $existingObject, schema: $schema, selfData: $selfData);
 
 		// Extract Nc* property references and populate linked entity metadata columns.
 		$this->linkedEntityHandler->extractAndPopulate($existingObject, $schema);

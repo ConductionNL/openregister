@@ -158,6 +158,18 @@ final class AnnotationVocabulary {
 		// key earlier. The two comments above record the same bug twice.
 		'x-openregister-action',
 		'x-openregister-approval-chains',
+		// Which of the object's own properties names the organisation its rights
+		// are scoped to: `{"fromProperty": "organization"}`. Read by
+		// OrganisationFromProperty on every save, and refused at save by
+		// AccessDeclarationChecks::checkOrganisation().
+		//
+		// ⚠️ Absent from this list setConfiguration() DROPS it, and the loss is
+		// the quiet, security-shaped one: every object would keep taking the
+		// caller's active organisation, so a record naming unit A would still have
+		// its rights follow unit B while the schema's author reads a 200 and
+		// believes the two were tied together. The comments above this list record
+		// the same shape of loss six times over.
+		'x-openregister-organisation',
 		// What makes an object unread again, and which sub-resources badge a
 		// tab (`object-read-state`). Read by SubstantiveChangeEvaluator. Absent
 		// from this list the key would be silently dropped, every schema would

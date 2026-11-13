@@ -528,6 +528,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\ResetSchemaToShippedCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
 		<command>OCA\OpenRegister\Command\AdoptOrganisationlessRowsCommand</command>
+		<command>OCA\OpenRegister\Command\ReconcileOrganisationCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillObjectSlugsCommand</command>
 		<command>OCA\OpenRegister\Files\Command\MoveObjectFilesCommand</command>
 		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>

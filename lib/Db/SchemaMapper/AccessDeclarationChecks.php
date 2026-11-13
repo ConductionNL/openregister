@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Organisation\OrganisationAnnotation;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\ClassificationDeclarationValidator;
 use OCA\OpenRegister\Service\Rbac\ClassificationScale;
@@ -180,6 +181,40 @@ final class AccessDeclarationChecks {
 			throw new Exception(ClassificationScale::ANNOTATION . ': ' . implode('; ', $errors));
 		}
 	}//end checkClassification()
+
+	/**
+	 * Refuse an `x-openregister-organisation` declaration that cannot resolve.
+	 *
+	 * REFUSES, it does not warn. A declaration naming a property the schema
+	 * does not have, or one that cannot hold an organisation, resolves nothing
+	 * on every save, so every object of the schema keeps taking the caller's
+	 * active organisation — which is the disagreement the annotation exists to
+	 * remove, wearing the appearance of a saved setting.
+	 *
+	 * Validated at the mapper because this is the one choke point the create,
+	 * update and file-upload paths all pass through.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the declaration names no usable property.
+	 *
+	 * @spec openspec/changes/object-organisation-from-a-property/specs/saas-multi-tenant/spec.md#requirement-a-schema-can-derive-an-objects-organisation-from-a-property-req-oop-001
+	 */
+	public function checkOrganisation(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: OrganisationAnnotation::ANNOTATION);
+		if ($annotation->isWritten() === false) {
+			return;
+		}
+
+		$annotation->faults()->refuseWith(
+			messages: OrganisationAnnotation::refusals(
+				declaration: $annotation->value(),
+				properties: ($schema->getProperties() ?? [])
+			)
+		);
+	}//end checkOrganisation()
 
 	/**
 	 * The hierarchy with the schema's identities, as the validator reads it.

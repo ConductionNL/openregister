@@ -3926,3 +3926,7 @@ Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Command/ReconcileOrganisationCommand.php,,Command,,,,,Platform
+Exception/OrganisationFromPropertyException.php,,Exception,,,,,Kernel
+Service/Organisation/OrganisationAnnotation.php,,Service,,,,,Core
+Service/Organisation/OrganisationFromProperty.php,,Service,,,,,Core
