@@ -4643,3 +4643,4 @@ build:openregister:capability-rows-closing-round	partial: PR #10142 to main, tas
 review:openregister:10135:21a794c6	APPROVE: tasks.md only, claims confirmed	session-20261113T081048-4978ac57	2026-11-13T11:49:34Z
 fix:pipelinq:3748:2acf50fe	merged development, checks green; new head 7fcea3b9, REVERIFY recorded	session-20261113T064519-30004ad4	2026-11-13T11:49:59Z
 fix:pipelinq:3704:59717674	sbom regenerated, new head e9392ddfafdb9ca7438e22fa51682953d8d0ab8a, REVERIFY	session-20261113T071631-5a3cc070	2026-11-13T11:50:05Z
+fix:pipelinq:3739:5792e8c3	development merged in cleanly, checks green; pushed 873d21ad6e6864c0b6ec791a6a98dc8cb929855a, REVERIFY recorded	session-20261113T044737-f37de8e3	2026-11-13T11:50:16Z
