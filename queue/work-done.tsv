@@ -3958,3 +3958,4 @@ cover:dossiq:069ee2d6m7275:d528dcf0	already done: lib/Dashboard/*.php at 69/73 s
 cover:keepiq:c967a31fm1147:59826f43	already done: every lib/Settings/*.php class at 100% lines (28/28), per-area behaviour tested; quality/test-coverage-59826f43-1 merged	session-20261113T084521-fd8a31c7	2026-11-13T09:38:29Z
 build:dossiq:retire-cmmn-caseplanstate	partial: PR #6375 task 7.2; 3.2 gated on drain report, group 5 live, 6 with removal release	session-20261113T091527-72c58830	2026-11-13T09:38:37Z
 build:dossiq:task-forms-keep-a-draft	partial: PR #6376 tasks 1,2,3,5 (draft props on TaskDetail and CaseDetail, vitest spec); 4 e2e, 6 live, 7 row left	session-20261113T091530-f20014fb	2026-11-13T09:38:48Z
+cover:keepiq:c967a31fm1147:e372e6ff	already done: lib/Event/*.php 43/43 lines across 8 event classes, each with its own tests; quality/test-coverage-e372e6ff-1 on remote	session-20261113T084521-fd8a31c7	2026-11-13T09:38:56Z
