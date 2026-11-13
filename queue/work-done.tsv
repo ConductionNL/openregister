@@ -2465,3 +2465,4 @@ verify:shillinq:2865:f69ec358	shillinq #2865 #2866 #2867 GREEN (9060 tests, 0 ne
 cover:openregister:7350e3efmaea4:js76b76dfb	PR #10102: 5 mount specs, 27 tests; register+schema views 85.3%->97.4% lines; suite 7703 pass	session-20261113T051710-d9c31c61	2026-11-13T05:37:05Z
 cover:openregister:7350e3efmaea4:js5794e9fc	PR #10103: 35 jest tests (PermissionMatrix, LlmConfiguration); src/views/settings lines 85.2% -> 92.7%	session-20261113T051705-4f5ad12a	2026-11-13T05:37:31Z
 cover:hermiq:065f1631m312d:716923f8	already done: lib/Service/Credential/ 83/87 lines (95.4%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:37:29Z
+cover:hermiq:065f1631m312d:9c1d94a2	PR #1666: 4 edge tests for OpenRegisterManageableOrganisations; suite inherited 146E/26F unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:37:43Z
