@@ -156,7 +156,7 @@
 		"squizlabs/php_codesniffer": "^3.9",
 		"symfony/console": "^6.4 || ^7.4",
 		"symfony/http-foundation": "^6.4 || ^7.4",
-		"vimeo/psalm": "^5.26"
+		"vimeo/psalm": "^7.3"
 	},
 	"config": {
 		"allow-plugins": {
