@@ -1691,3 +1691,4 @@ cover:buildiq:8ca317f6mefda:bede5e5d	PR #1492-ish: 7 tests, VirtualAppCredential
 cover:filinq:8ecceb86mc744:js049d6958	failed: not coverable by vitest - the dir's 278 stmts are the 3 *.golden.spec.js jest specs in src/views/policy (vitest excludes src/**); PolicyRuleIndex.vue only loads via the eval SFC harness (not instrumented, no @vitejs/plugin-vue); measurement should exclude *.spec.js	session-20261113T015005-81f4d5a5	2026-11-13T02:37:34Z
 cover:dossiq:6ca0231ema7d4:815aefd8	PR #6243: AiAuditLog 8 tests; Service/Ai 77.5%->92.8% stmts	session-20261113T015002-81190344	2026-11-13T02:37:39Z
 verify:dossiq:6226:a059f646	GREEN 6226-6234 (9 tests-only PRs, 14126 tests, 0 new failures)	session-20261113T011743-bdeb8a13	2026-11-13T02:37:57Z
+cover:shillinq:801aab65:c80330bb	PR #2843: 2 tests for duplicateOfUnresolved; lib/Service/Purchasing/ 88 -> 91/91 lines; suite 9006, same 1 inherited clock-bound failure	session-20261113T015003-d56b074c	2026-11-13T02:38:09Z
