@@ -1333,3 +1333,4 @@ cover:dossiq:6ca0231e:3ee9dda7	PR #6213: 10 tests, CaseCustodyChain 102->114/115
 verify:shillinq:2806:56379199	GREEN 2806,2807,2808: tree 9054 tests, 0 new failures (1 inherited), tests-only diffs	session-20261112T234655-599f9c9a	2026-11-13T01:11:34Z
 cover:launchpad:755175ffm7412:60c2c265	PR #1146: 3 classes, 15 tests, suite 3579->3594, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T01:11:41Z
 cover:buildiq:8ca317f6m6d54:1b97f731	already done: every lib/Listener class has a test file; the gap is 43 tests erroring in a bare container on missing OCA\OpenRegister\Contract\ObjectServiceInterface, not missing tests	session-20261112T231640-f6dda86c	2026-11-13T01:12:19Z
+verify:pipelinq:3608:994d4a1a	3608,3609,3610 GREEN (tests only, unit 0 new failures, vitest 3199 green)	session-20261112T234653-efce95ba	2026-11-13T01:12:23Z
