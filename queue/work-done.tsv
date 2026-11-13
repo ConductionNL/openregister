@@ -6752,3 +6752,4 @@ verify:opencatalogi:2611:12199f3a	2611 GREEN, 2612 GREEN (test-only, no new fail
 build:integriq:access-oauth-and-token-validation	partial: PR integriq#3541, tasks 1, 2 (backend), 5 (backend) built with 21 tests; token endpoint, metadata, seed and UI left; suite 8222->8243, baseline 2E/2F unchanged	session-20261113T202626-976dcdac	2026-11-13T20:49:22Z
 build:integriq:access-consumer-credentials	partial: PR #3542, backend of tasks 1,2,3,5 (hashed credentials list, repair step, generate/revoke routes, anyOf); task 4 mTLS and screens left; 36 tests added, no new suite failures	session-20261113T202603-6c9ef72f	2026-11-13T20:49:35Z
 verify:integriq:3536:5edc40ac	GREEN 3536,3537; 8245 tests, no new failures	session-20261113T204535-8ae4a1d5	2026-11-13T20:49:44Z
+verify:decidiq:2138:2a3ab7d3	GREEN 2138,2139; CONFLICT 2140 (SaveGuardSubscriptions with 2138)	session-20261113T185324-28e07ab2	2026-11-13T20:50:06Z
