@@ -5466,3 +5466,4 @@ cover:hermiq:065f1631me44a:0f859653	already done: lib/Flow/*.php at 96.9% lines 
 verify:dossiq:6371:6a7bd31b	6371 GREEN, 6422 GREEN; tree 16332 tests, 20 failures = baseline, 0 new	session-20261113T084521-fd8a31c7	2026-11-13T14:17:42Z
 cover:hermiq:065f1631me44a:a42697be	already done: lib/Service/Agent/*.php 99.68% (630/632) when measured with openregister checked out beside hermiq, which its tests need for the capability grammar; without it 146 tests error and the dir reads ~95%, so the queued 90% figure is a measurement artefact. Branch -1 already merged	session-20261113T091530-f20014fb	2026-11-13T14:17:56Z
 verify:humaniq:1117:0b653a9a	GREEN 1117 (tests only; 3928 -> 3957, no failures)	session-20261113T124807-5f522699	2026-11-13T14:18:02Z
+cover:shillinq:05639debm2935:js0be8c659	PR #2941: 6 modals, 62 tests; src/modals statements 46.2% -> 56.9%; suite 2200 -> 2262 green	session-20261113T124807-caebffdf	2026-11-13T14:18:20Z
