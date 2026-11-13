@@ -2960,14 +2960,8 @@
 10244 2993a846fd149e7e7d6996b3cbbe90c3653dcc13 APPROVE integrator IL5: on top of approved 0dd96122: conflict only in component-map rows / regenerated yaml; ComponentDefinitionTest and the PR's tests pass
 10251 80b697f111a7cf8607e3ec6c490e5cf63af42b1b APPROVE integrator IL5: on top of approved 9d0fcb0d: conflict only in component-map rows / regenerated yaml; ComponentDefinitionTest and the PR's tests pass
 10255 152e23980cd9d7d63d013f65d48df21025a5ac58 APPROVE integrator IL5: on top of approved 120f472b: conflict only in component-map rows / regenerated yaml; ComponentDefinitionTest and the PR's tests pass
-vendor  APPROVE integrator IL5: on top of approved ignored: conflict only in component-map rows / regenerated yaml; ComponentDefinitionTest and the PR's tests pass
-0  APPROVE integrator IL5: on top of approved : conflict only in component-map rows / regenerated yaml; ComponentDefinitionTest and the PR's tests pass
 10206 59972453ea13e281c5bd41de88807bec854e1d2d APPROVE integrator IL5: on top of approved 9d864393: listener order golden re-pinned to the merged registrar, map/yaml rows unioned; Listener tests and the PR's tests pass
-vendor  APPROVE integrator IL5: on top of approved ignored: listener order golden re-pinned to the merged registrar, map/yaml rows unioned; Listener tests and the PR's tests pass
-0  APPROVE integrator IL5: on top of approved : listener order golden re-pinned to the merged registrar, map/yaml rows unioned; Listener tests and the PR's tests pass
 10228 9359809a6f133e78dc3d79a8b559a93d73400f50 APPROVE integrator IL5: on top of approved 19a9b2ef: listener order golden re-pinned to the merged registrar, map/yaml rows unioned; Listener tests and the PR's tests pass
-vendor  APPROVE integrator IL5: on top of approved ignored: listener order golden re-pinned to the merged registrar, map/yaml rows unioned; Listener tests and the PR's tests pass
-0  APPROVE integrator IL5: on top of approved : listener order golden re-pinned to the merged registrar, map/yaml rows unioned; Listener tests and the PR's tests pass
 10264 f8ac2afb91f30c66d2ca908fc5003afb2a49ee0c APPROVE integrator IL5: on top of approved ca9f350f: listener order golden re-pinned to the merged registrar, map/yaml rows unioned; Listener tests and the PR's tests pass
 10229 43248cebc98ac265e581dde4cfe0c1de0771c2ef APPROVE integrator IL5: on top of approved 91b334dd: its migration renamed to Version1Date20261113120200 (main ships 120000), WebhookMapperOwnedByTest covers the new name; the PR's tests pass
 10240 6c36cd0ce3eb4f108c8aaf8f63b6b4d50c48815c APPROVE integrator IL5: on top of approved fd961afd: additive conflicts kept side by side (main first), settings golden re-recorded where touched; Settings/TextExtraction/Files/Controller tests and the PR's tests pass
