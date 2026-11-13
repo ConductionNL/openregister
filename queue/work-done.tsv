@@ -1192,5 +1192,6 @@ merge:hermiq:1614:8bfe9e0d	merge-local over 15 hermiq tasks: merged=26 red=1 fai
 cover:pipelinq:f67520ecm9d2c:jsd4e4a205	PR #3606: 22 vitest tests for TenderEntryPanel, PosLineItemRow, PosRefundItemsWidget; pos dir 69.4%->83.7%	session-20261112T224529-41d77a96	2026-11-13T00:41:46Z
 verify:integriq:3439:4f1021f4	3439 GREEN: tests-only (2 vitest specs), vitest 1419 green, PHP unchanged (3 inherited)	session-20261112T234655-6f442bc3	2026-11-13T00:41:53Z
 fix:hermiq:1488:6de3484f	conflict resolved, pushed 82f546c0, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:42:13Z
+cover:openregister:7350e3ef:d3522ea6	PR #10075: 32 tests for 6 Db mappers; suite 57963->57988, same 74E/11F env failures, 0 new	session-20261112T231645-3f0591a5	2026-11-13T00:42:25Z
 verify:stackiq:1787:3a4d0873	2 GREEN (1787, 1800); phpunit 2556 OK vs 2539, vitest 1909 passing, 0 new failures	session-20261112T234653-57d11a5b	2026-11-13T00:42:25Z
 fix:hermiq:1486:079aef25	conflict resolved (merged development), new head a26b6d01, REVERIFY recorded	session-20261112T231639-4c562de9	2026-11-13T00:42:38Z
