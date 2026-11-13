@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use UnexpectedValueException;
@@ -46,7 +47,7 @@ use UnexpectedValueException;
 /**
  * Suspends the run for a duration or until a moment.
  */
-class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 	/**
 	 * The step type.
 	 *
@@ -93,6 +94,30 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	public function configKeys(): array {
 		return ['for', 'until'];
 	}//end configKeys()
+
+	/**
+	 * How long to wait, or until when.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'for',
+				'label' => $this->l10n->t('Wait for'),
+				'type' => 'text',
+				'help' => $this->l10n->t('A duration like "30 minutes" or "2 days"; a bare number is seconds. Fill this or "Wait until".'),
+			],
+			[
+				'key' => 'until',
+				'label' => $this->l10n->t('Wait until'),
+				'type' => 'text',
+				'help' => $this->l10n->t('A moment like "2027-01-31 09:00" or "next monday 09:00". When both are set, this one wins.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a wait that names no time.

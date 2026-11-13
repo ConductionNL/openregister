@@ -45,6 +45,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Repair\ImportMergeOperationRegister
  * @covers \OCA\OpenRegister\Repair\ImportSurveyRegister
  * @covers \OCA\OpenRegister\Repair\ImportTrustConfigurationRegister
+ * @covers \OCA\OpenRegister\Repair\ImportRedactionPolicyRegister
  * @uses \OCA\OpenRegister\Repair\RegisterDescriptorImport
  */
 class RegisterImportStepsGoldenTest extends TestCase {
@@ -59,6 +60,7 @@ class RegisterImportStepsGoldenTest extends TestCase {
 		'ImportEdepotTransferRegister',
 		'ImportFlowRegister',
 		'ImportMergeOperationRegister',
+		'ImportRedactionPolicyRegister',
 		'ImportSurveyRegister',
 		'ImportTrustConfigurationRegister',
 	];

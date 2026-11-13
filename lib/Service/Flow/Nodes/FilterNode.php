@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -43,7 +44,9 @@ use UnexpectedValueException;
 /**
  * Drops items that do not match.
  */
-class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys,
+	IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowSideEffectFree
+{
 	/**
 	 * The step type.
 	 *
@@ -90,6 +93,28 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 	public function configKeys(): array {
 		return ['condition'];
 	}//end configKeys()
+
+	/**
+	 * The condition each item is kept by.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'condition',
+				'label' => $this->l10n->t('Keep items where'),
+				'type' => 'textarea',
+				'help' => $this->l10n->t(
+					'A flow expression (JSONLogic), checked for each item; items for which it is '
+						. 'false are dropped. A fixed value is refused: it would keep everything or nothing.'
+				),
+				'required' => true,
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a filter with no condition, or one that cannot be evaluated.

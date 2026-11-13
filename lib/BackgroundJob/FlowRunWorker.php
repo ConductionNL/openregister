@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Service\Flow\FlowErrorPolicy;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\Support\AbandonedFlowClaim;
 use OCA\OpenRegister\BackgroundJob\Support\FlowReapRun;
@@ -522,7 +523,7 @@ class FlowRunWorker extends TimedJob {
 
 		$step = (new FlowTokenRouter())->stepFor(flow: $flow, transitionName: $transition);
 
-		return ((string)($step['onError'] ?? 'stop')) === 'continue';
+		return FlowErrorPolicy::continues(step: $step);
 	}//end abandonedStepContinues()
 
 	/**

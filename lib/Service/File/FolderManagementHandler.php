@@ -67,15 +67,9 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Lifecycle + access-control by design.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-006
  */
 class FolderManagementHandler {
-	/**
-	 * Root folder name for all OpenRegister files.
-	 *
-	 * @var string
-	 */
-	private const ROOT_FOLDER = 'Open Registers';
-
 	/**
 	 * Application group name.
 	 *
@@ -116,8 +110,26 @@ class FolderManagementHandler {
 		private readonly RegisterFolderRecorder $folderRecorder,
 		private ?FileHandlerSupportInterface $fileService = null,
 		private readonly ?ContainerInterface $container = null,
+		private readonly ?DocumentStore $documentStore = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The document store root every managed folder sits under.
+	 *
+	 * Without a DocumentStore (a handler built by hand) it is the default root.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function documentRoot(): string {
+		if ($this->documentStore === null) {
+			return DocumentStore::DEFAULT_ROOT;
+		}
+
+		return $this->documentStore->root();
+	}//end documentRoot()
 
 	/**
 	 * Set the FileService facade for cross-handler coordination.
@@ -257,7 +269,7 @@ class FolderManagementHandler {
 
 		// Create the folder path and node.
 		$registerFolderName = $this->getRegisterFolderName(register: $register);
-		$folderPath = self::ROOT_FOLDER . '/' . $registerFolderName;
+		$folderPath = $this->documentRoot() . '/' . $registerFolderName;
 
 		$folderNode = $this->createFolderPath(folderPath: $folderPath);
 
@@ -767,7 +779,7 @@ class FolderManagementHandler {
 		// Check if folder exists and if not create it.
 		try {
 			// First, check if the root folder exists, and if not, create it and share it with the openregister group.
-			$root = $this->getOrCreateFolder(parent: $userFolder, path: self::ROOT_FOLDER);
+			$root = $this->getOrCreateFolder(parent: $userFolder, path: $this->documentRoot());
 			if ($root['created'] === true && $this->groupManager->groupExists(self::APP_GROUP) === false) {
 				$this->groupManager->createGroup(self::APP_GROUP);
 			}
@@ -1480,7 +1492,7 @@ class FolderManagementHandler {
 	 * @return bool True when the path is inside an `Open Registers` tree.
 	 */
 	private function isManagedFolderPath(string $path): bool {
-		$pattern = '#^/[^/]+/files/' . preg_quote(self::ROOT_FOLDER, '#') . '(/|$)#';
+		$pattern = '#^/[^/]+/files/' . preg_quote($this->documentRoot(), '#') . '(/|$)#';
 
 		return preg_match($pattern, $path) === 1;
 	}//end isManagedFolderPath()
@@ -1497,7 +1509,7 @@ class FolderManagementHandler {
 	 * @return bool True when the path is "/<uid>/files/Open Registers/<one folder>".
 	 */
 	private function isRegisterFolderPath(string $path): bool {
-		$pattern = '#^/[^/]+/files/' . preg_quote(self::ROOT_FOLDER, '#') . '/[^/]+/?$#';
+		$pattern = '#^/[^/]+/files/' . preg_quote($this->documentRoot(), '#') . '/[^/]+/?$#';
 
 		return preg_match($pattern, $path) === 1;
 	}//end isRegisterFolderPath()
