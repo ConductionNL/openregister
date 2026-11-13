@@ -2,27 +2,27 @@
 
 ## 1. Engine
 
-- [ ] 1.1 `StoreManifest` parses `types` and exposes `declaredTypes()`
-- [ ] 1.2 `StoreDescriptor` carries the declared type ids
-- [ ] 1.3 `GenericStoreService::searchFederated()` calls
+- [x] 1.1 `StoreManifest` parses `types` and exposes `declaredTypes()`
+- [x] 1.2 `StoreDescriptor` carries the declared type ids
+- [x] 1.3 `GenericStoreService::searchFederated()` calls
       `FederatedConfigService::discover()` per declared topic and normalises the
       results to the same card shape the objects path returns
-- [ ] 1.4 A card carries `type`, `publisher` and `source` alongside the existing
+- [x] 1.4 A card carries `type`, `publisher` and `source` alongside the existing
       fields, so the surface can show where a set came from
-- [ ] 1.5 `GenericStoreService::resolveFederated()` maps a card slug back to its
+- [x] 1.5 `GenericStoreService::resolveFederated()` maps a card slug back to its
       repo, path and type id
 
 ## 2. Install
 
-- [ ] 2.1 `GenericStoreController::install()` routes a card with a type id
+- [x] 2.1 `GenericStoreController::install()` routes a card with a type id
       through `FederatedConfigService::install()`
-- [ ] 2.2 A source outside the org allowlist is refused before any fetch, and
+- [x] 2.2 A source outside the org allowlist is refused before any fetch, and
       the refusal names the source
-- [ ] 2.3 The object install path is unchanged for a card with no type id
+- [x] 2.3 The object install path is unchanged for a card with no type id
 
 ## 3. Selection
 
-- [ ] 3.1 A descriptor with no declared types keeps the objects API, verified by
+- [x] 3.1 A descriptor with no declared types keeps the objects API, verified by
       a test that asserts no discovery call is made
 
 ## 4. Surface
@@ -47,9 +47,25 @@
 
 ## 6. Verification
 
-- [ ] 6.1 Unit tests for descriptor selection, discovery normalisation and
+- [x] 6.1 Unit tests for descriptor selection, discovery normalisation and
       install routing
 - [ ] 6.2 An e2e test opens a store declaring types and asserts a config-set
       card renders
 - [ ] 6.3 Live check on a throwaway instance: publish a set from one instance,
       install it on another
+
+## Build notes (second pass)
+
+1.1–1.5, 2.1–2.3, 3.1 and 6.1 were already implemented on main but not ticked:
+`StoreManifest::declaredTypes()` and `StoreDescriptor::$types` (1.1, 1.2);
+discovery, the card shape (`type`, `publisher`, `source`) and slug resolution
+live in `lib/AppHost/Store/FederatedStoreCatalog.php` (`search()`, `resolve()`)
+rather than on `GenericStoreService` (1.3–1.5); `GenericStoreController`
+routes search, resolve and install through that catalogue when the descriptor
+declares types, and through the objects path otherwise (2.1, 2.3); the install
+refuses a source `isSourceAllowed()` rejects before any fetch and names it
+(2.2). Evidence: `tests/Unit/AppHost/FederatedStoreCatalogTest.php`
+(the refusal now also asserts the named source) and
+`GenericStoreControllerTest::testAStoreWithoutTypesNeverAsksTheConfigurationCatalogue`
+(3.1: no discovery, resolve or catalogue install for an app without types).
+

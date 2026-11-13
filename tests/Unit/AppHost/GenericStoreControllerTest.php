@@ -888,4 +888,27 @@ class GenericStoreControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertTrue($response->getData()['success']);
 	}//end testInstallHandsTheDeclaredStoreToTheInstaller()
+
+	/**
+	 * A store that declares no types keeps the objects API: neither its search
+	 * nor its install makes a discovery call or touches the configuration
+	 * catalogue (store-over-federated-config 2.3 and 3.1).
+	 *
+	 * @return void
+	 */
+	public function testAStoreWithoutTypesNeverAsksTheConfigurationCatalogue(): void {
+		$this->signIn(isAdmin: true);
+		$store = $this->enabledStore();
+		$this->assertSame([], $store->declaredTypes());
+		$this->manifestLoader->method('loadStore')->willReturn($store);
+		$this->catalog->expects($this->never())->method('search');
+		$this->catalog->expects($this->never())->method('resolve');
+		$this->catalog->expects($this->never())->method('install');
+		$this->storeService->expects($this->once())->method('search')->willReturn(['outcome' => 'ok', 'cards' => [['slug' => 'vth']]]);
+		$this->storeService->expects($this->once())->method('resolve')->willReturn(['components' => []]);
+		$this->installer->expects($this->once())->method('install')->willReturn(['success' => true, 'components' => []]);
+
+		$this->assertSame([['slug' => 'vth']], $this->controller()->search()->getData()['cards']);
+		$this->assertTrue($this->controller()->install(slug: 'vth')->getData()['success']);
+	}//end testAStoreWithoutTypesNeverAsksTheConfigurationCatalogue()
 }//end class

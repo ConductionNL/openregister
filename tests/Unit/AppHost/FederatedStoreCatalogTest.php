@@ -172,6 +172,10 @@ class FederatedStoreCatalogTest extends TestCase {
 
 		$this->assertFalse($report['success']);
 		$this->assertSame('refused', $report['components'][0]['status']);
+		$this->assertSame(
+			'This organisation does not trust https://github.com/someone/else as a store source.',
+			$report['components'][0]['message']
+		);
 	}//end testUntrustedSourceIsRefused()
 
 	/**
