@@ -6125,3 +6125,4 @@ measure:integriq:20261113h18	php 93.54% (pcov, 8222 tests, 2F/2E inherited), js 
 cover:integriq:92114ab0mb37a:102ac6fb	already done: lib/Service/Security/*.php at 97.7% (1021/1045) on development after -1 and -2 merged, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T18:58:17Z
 build:shillinq:public-sector-council-and-auditor-statements	partial: PR #2994, task 2.1 (AuditSampleDrawer + AuditSample.sampledLineIds), 6 tests; 1.1, 2.2, 3.x, 4.x left	session-20261113T172329-0b6220f9	2026-11-13T18:58:22Z
 cover:integriq:92114ab0mb37a:9d3a1784	already done: lib/BackgroundJob/*.php at 99.34% (901/907) on development, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T18:58:37Z
+cover:hermiq:065f1631md84f:e76da670	PR #1699: 6 ToolInvocationLog tests (largest gap, ToolOversight); suite 4562->4568, same inherited 146 errors/26 failures	session-20261113T172325-6eb25015	2026-11-13T18:58:32Z
