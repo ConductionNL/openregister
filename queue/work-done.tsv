@@ -7023,3 +7023,4 @@ build4:openregister:leaf-mount-render-escape-hatch	PR #10378: renderMode cross-l
 build4:openregister:platform-caldav-backend	already done: all code tasks ticked on main; openspec validate --strict passes (2.3); left 2.1 e2e and 3.x lane handovers, not code	session-20261113T214350-9762e143	2026-11-13T21:55:34Z
 review:openregister:10348:5f7cad9d	APPROVE: suites green on merge with main, phpstan clean	session-20261113T204536-22cfbae0	2026-11-13T21:55:52Z
 build4:openregister:modelling-field-names-per-language	partial: PR #10379 does 2.2 (per-language names in the property form, 3 strings in all 37 locales, one commit per language); schema specs 396 pass; 3.1 e2e and 3.3 nextcloud-vue issue (outside repo scope) left	session-20261113T204539-e70be1ed	2026-11-13T21:56:07Z
+review:openregister:10339:124dc1cd	APPROVE 10339	session-20261113T192701-f224cbcf	2026-11-13T21:56:17Z
