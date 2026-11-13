@@ -1581,3 +1581,4 @@ cover:pipelinq:f67520ecm8c58:81b1241f	already done: lib/Portal 556/556 statement
 cover:stackiq:8cfacb29m8db8:js17dfdc2e	PR #1812: mounted specs for 4 object dialogs (+21 tests); src/modals/object/* 40.6%->43.4% (ViewObject dominates)	session-20261113T011731-f3798045	2026-11-13T02:14:43Z
 cover:pipelinq:f67520ecm8c58:8f2b650b	PR #3617: 15 tests in 3 files, lib/Service/Competitor 87.0% -> 96.5%, suite failures unchanged (1 inherited)	session-20261113T015005-e2235eb9	2026-11-13T02:15:11Z
 cover:stackiq:8cfacb29m8db8:jsc7b297c1	PR #1813: 2 views, 12 tests, src/views lines 86.2->89.6%	session-20261113T004519-b6b86685	2026-11-13T02:15:09Z
+cover:pipelinq:f67520ecm8c58:d4326ecd	already done: the four dirs are at 90/97 statements (92.8%), above the 85% target; 7 lines left across WorkBuckets, PersonFetch, SchemaSlugMap	session-20261113T015005-e2235eb9	2026-11-13T02:15:29Z
