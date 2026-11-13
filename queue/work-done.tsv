@@ -3211,4 +3211,8 @@ cover:dossiq:f8a113c5m7e79:b8cc4419	already above target: lib/Service/Sharing 58
 verify:decidiq:2121:8c25ecc0	3 GREEN (2121, 2122, 2123); 3770 tests OK vs baseline 3684	session-20261113T072715-cf04db4e	2026-11-13T07:39:02Z
 cover:shillinq:05639debmd8ee:d39f9857	PR #2908: lib/Support 40/48 -> 48/48 lines, 6 tests, suite 9503 -> 9509, 0 new failures	session-20261113T071636-117504ad	2026-11-13T07:39:09Z
 cover:shillinq:05639debmd8ee:2bda60fb	already done: lib/Service/Project/ at 93% (105/113) at d33c9cc and quality/test-coverage-2bda60fb-1 merged since; above the 90 target	session-20261113T071636-117504ad	2026-11-13T07:39:40Z
+cover:dossiq:f8a113c5m7e79:c3bd9e51	PR #6329: +1 test (require race), 0 new failures; rest already pinned	session-20261113T072715-8f8a14e9	2026-11-13T07:39:39Z
 verify:shillinq:2900:54387f04	CONFLICT 2900 (Sms tests vs development), GREEN 2903, GREEN 2904	session-20261113T041646-2c1d764f	2026-11-13T07:39:48Z
+cover:larpinq:c4471360:05630945	PR #1009: StandardProtocolPaths 100%, 21 tests; suite 697->718 green; tests only	session-20261113T072706-2eaa6a81	2026-11-13T07:39:53Z
+gap:keepiq:pj:burn1	PR #1747: Problem schema (application/problem+json) in generator + regenerated openapi.json for the 26 alias error responses; 266 native /api/v1 routes really return application/json errors (middleware leaves them) and are left and noted; redocly valid, tests OK	session-20261113T044737-f37de8e3	2026-11-13T07:40:02Z
+verify:dossiq:6322:7277cbc2	6322 6323 6325 6326 GREEN, 6324 CONFLICT, 6327 BLOCK (behaviour change: API contract middleware/routes); 0 new failures	session-20261113T051703-1b54bfba	2026-11-13T07:40:16Z
