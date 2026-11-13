@@ -6309,3 +6309,5 @@ cover:shillinq:05639debm7b6b:ec6c2450	already covered: lib/Service/Extraction at
 cover:shillinq:05639debm7b6b:5ba81b14	already above target: lib/Service/Booking/ 359/377 lines (95.2%) at development b0ed3e448; the remaining TransactionalGuard::lockResourceRow query path cannot be unit-tested (IExpressionBuilder needs Doctrine DBAL, not in the test stack); no PR	session-20261113T175335-552e4d60	2026-11-13T19:22:06Z
 cover:planninq:e1c9866dm2ac2:jsea7197ec	already done: src/utils/* at 98.64% lines (1821/1846) on development; target 90; no PR	session-20261113T182348-4d2d804b	2026-11-13T19:22:03Z
 cover:decidiq:a5f973bbm5a4d:0f859653	already done: lib/Flow/*.php at 100% line coverage (182/182) on development after 27ae3092/62d9e4e1; no PR	session-20261113T185325-0c24b185	2026-11-13T19:22:28Z
+measure:learniq:20261113h18	php 95.57% (pcov, 6402 tests, 1F inherited), js 99.79% (c8/node --test, 1 failing test) @6daee8f0	session-20261113T185326-a3ee0aab	2026-11-13T19:22:38Z
+review:openregister:10299:497daabc	APPROVE: tests only; SchemaMapper 68 OK; note 3 risky (missing UsesClass)	session-20261113T175328-b5db3663	2026-11-13T19:22:45Z
