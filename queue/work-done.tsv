@@ -5876,3 +5876,4 @@ cover:hermiq:065f1631me44a:28cccfd9	already done: lib/Repair/Support at 53/53 li
 verify:pipelinq:3768:80b4b3ed	GREEN #3768: 7197 tests, 5 inherited failures, none new	session-20261113T171137-8f22ecb0	2026-11-13T18:14:38Z
 verify:portaliq:2433:52c4b74c	GREEN 2433,2434,2436,2438,2439,2441; CONFLICT 2435,2437,2440 (register test)	session-20261113T172329-5f4feaba	2026-11-13T18:14:44Z
 verify:portaliq:2415:0653b651	8 GREEN (2415,2426,2428-2433), 2427 CONFLICT (l10n)	session-20261113T175332-5effc865	2026-11-13T18:15:22Z
+verify:stackiq:1886:c7bcddc2	1886 GREEN (JS test only)	session-20261113T171149-8b9ea523	2026-11-13T18:15:31Z
