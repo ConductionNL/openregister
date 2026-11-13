@@ -4428,3 +4428,4 @@ pipelinq	3599	40b587068b6d807a3cc3df9b5dfb00d9ffdc511e	GREEN	worker-40	unit 5792
 keepiq	1703	ce172f60ad145967b2877f28fad087d6d722ed9a	GREEN	worker-34	test-only (3 new test files); tree without 1680: 3740 tests vs baseline 3727, 0 failures
 keepiq	1704	305c2aa1fb48bbec4ca598fbdf1f4e5da80bbb01	GREEN	worker-34	test-only (1 new test file); tree without 1680: 3740 tests vs baseline 3727, 0 failures
 buildiq	1469	32a620ea17cf85a0557a4a262d61bb3d5fb1ccc2	BLOCK	worker-16	php 2326 tests, baseline 2299 with 5 failures and 1292 errors (inherited, same set), 0 new; existing error bodies now unchanged, but every existing API response gains API-Version/Deprecation/Link headers, all routes duplicated under /api/v1, new unauthenticated /api/openapi.json - needs human review
+filinq	1978	e09de570d7c8684fd5a1f7dd090c3f76cf23a356	GREEN	worker-45	5402 tests run on 6-PR tree, baseline 5318 OK (6 skipped), 0 new failures; tests-only additions
