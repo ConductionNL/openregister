@@ -2298,3 +2298,4 @@ cover:stackiq:df113dffm2c76:007dc1d0	already done: lib/Service/Cmdb/*.php measur
 cover:stackiq:df113dffm2c76:e99dc6f8	already done: lib/Service/Cmdb 1481/1520 stmts (97.4%) on development (suite green; reader tests need no OR sibling)	session-20261113T024656-d5bfb688	2026-11-13T04:51:29Z
 cover:stackiq:df113dffm2c76:34763eb4	PR #1841: @uses metadata fix un-risks 8 tests; ApiContractMiddleware 10.5%->100% lines	session-20261113T044735-792ed933	2026-11-13T04:51:50Z
 cover:hermiq:065f1631m312d:93e5f5a4	PR #1660: 13 tests, lib/Service/AiFeature 100% statements; suite unchanged otherwise	session-20261113T044732-d7765ae1	2026-11-13T04:51:42Z
+fix:integriq:3410:05595700	merged development, conflicts resolved, pushed 68fe5572; REVERIFY recorded	session-20261113T044737-16b30d6d	2026-11-13T04:52:01Z
