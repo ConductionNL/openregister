@@ -2590,6 +2590,7 @@ cover:shillinq:05639debmd8ee:jsdefec9cf	PR shillinq#2870: 25 tests; src/views/bo
 cover:buildiq:9930949bm5861:a215617b	already done: lib/Integration/*.php at 98.2% (216/220) with openregister development as sibling (as CI does); app 85.14%. Without the sibling 1355 tests error	session-20261113T051708-7d5f6071	2026-11-13T05:59:20Z
 cover:buildiq:9930949bm5861:34f5c300	already done: lib/Service/*.php at 86.68% (9766/11267), above target 85, with openregister development as sibling	session-20261113T051708-7d5f6071	2026-11-13T05:59:38Z
 verify:filinq:2033:cbf9441c	2033 GREEN, 2034 GREEN (6216 tests, 0 failures)	session-20261113T054516-469bb7f6	2026-11-13T05:59:40Z
+cover:filinq:7a9ef677m5ffe:js00fe026a	PR #2036: 50 vitest tests, src/services non-spec 91.7%->99.5%, suite 626->676 green	session-20261113T054519-3d0ac77f	2026-11-13T05:59:52Z
 cover:buildiq:9930949bm5861:1b97f731	PR #1513: Listener already 90.52% under phpunit.xml; unit bootstrap missed OR contracts (1355 errors) - fixed, unit config now 2505 tests/1 inherited failure	session-20261113T054517-06ee2c47	2026-11-13T05:59:49Z
 review:openregister:10106:b7607f51	APPROVE: tests-only spec, 16/16 jest green merged with main	session-20261113T054516-5d7b6bc4	2026-11-13T05:59:52Z
 cover:filinq:7a9ef677m5ffe:9d3a1784	already done: lib/BackgroundJob/*.php at 100% lines on development 4ff0b7c1b (pcov), no PR	session-20261113T054516-469bb7f6	2026-11-13T06:00:13Z
