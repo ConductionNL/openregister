@@ -1456,3 +1456,4 @@ review:openregister:10082:a518e4f3	APPROVE: metadata only, Timer 374 pass, risky
 cover:filinq:8ecceb86:5b37a982	PR #1997: Suggestion 83/88 -> 87/88 statements, +3 tests	session-20261113T011743-bdeb8a13	2026-11-13T01:35:13Z
 verify:keepiq:1716:a44d8a66	1716 GREEN: tests-only, phpunit 3792 ok, vitest 5594 ok	session-20261113T011731-f3798045	2026-11-13T01:35:27Z
 cover:shillinq:801aab65:d76b2f72	PR opened: 9 tests closing Guard gaps (Cashflow, InventoryScan, ProgrammaLink, Kor, Iv3); 9004->9013, 1 inherited failure	session-20261113T004527-ec0338ee	2026-11-13T01:35:41Z
+cover:filinq:8ecceb86:5833c33f	PR #1998: +3 SupportedTypeProbe tests (version/provenance); dir otherwise fully covered; suite 5499->5502 OK	session-20261113T011731-be978a55	2026-11-13T01:36:17Z
