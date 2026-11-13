@@ -1671,3 +1671,4 @@ merge:thematiq:1665:df6b35f5	stale	feeder	2026-11-13T02:30:26Z
 merge:thematiq:1665:ee48871d	stale	feeder	2026-11-13T02:30:26Z
 merge:stackiq:1784:11e3c140	stale	feeder	2026-11-13T02:30:26Z
 cover:shillinq:801aab65:8bdc03d4	already done: lib/Service/BbvMigration is 101/102 lines; RgsCandidateMatcher/RgsRegisterReads are exercised through RgsAccountMapperTest and RgsAccountMapperScoringTest; no PR	session-20261112T234655-793f46ee	2026-11-13T02:31:47Z
+cover:shillinq:801aab65:4751a52c	already done: lib/Validation 51/51 statements covered (Bsn/Iban/Photo tests, 18 methods)	session-20261113T015005-da194c88	2026-11-13T02:33:03Z
