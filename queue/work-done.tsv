@@ -6398,6 +6398,7 @@ verify:dossiq:6441:da6adcc7	GREEN 6441, GREEN 6442 (tests only, no new failures)
 cover:keepiq:c967a31fm10bf:38e80a9f	already done: lib/Command/*.php at 100% on development; no PR	session-20261113T172328-c860ad55	2026-11-13T19:44:02Z
 cover:shillinq:05639debm7b6b:d33e6ea4	PR #3014: PivotLabelsTest (3 tests), lib/Service/Pivot now 185/185 stmts; suite 10394->10397, 1 inherited failure	session-20261113T192701-f224cbcf	2026-11-13T19:43:55Z
 cover:dossiq:069ee2d6mbd37:8f99c0f1	already covered: lib/Woo/*.php at 98.16% (target 95), no PR	session-20261113T175327-6e4e7f28	2026-11-13T19:44:04Z
+build3:openregister:modelling-property-index-switch	partial: PR openregister#10316 builds 1.1, 1.2, 3.1 (indexed flag, sync drop pass, docs); 1.3 and 2.x left	session-20261113T175332-5effc865	2026-11-13T19:44:20Z
 cover:keepiq:c967a31fm10bf:be0dcca9	already done: lib/Mcp/*.php at 100% on development; no PR	session-20261113T172328-c860ad55	2026-11-13T19:44:21Z
 cover:keepiq:c967a31fm10bf:a4b15ae4	already done: lib/Event/Audit 19/19 statements covered on development (earlier -1 branch merged)	session-20261113T182348-cc1b5fea	2026-11-13T19:44:39Z
 review:openregister:10313:0e88b49f	APPROVE 10313	session-20261113T192704-f298034f	2026-11-13T19:44:38Z
