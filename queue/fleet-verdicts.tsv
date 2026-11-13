@@ -5830,3 +5830,4 @@ pipelinq	3752	b87ad31731214a90f98665830f2026ef2c60af5c	GREEN	worker-48	tree 3731
 pipelinq	3753	c031db85d7f859b5671aff046299a8ab1085f8bc	GREEN	worker-48	tree 3731+3745+3752+3753 on development: phpunit 6840 vs baseline 6825, same 1 failure, none new; vitest 4626/4626 (baseline 4600/4600); tests only
 stackiq	1873	7e9e418cdde8d710c9df6907d21485273edeeef0	GREEN	worker-13	unit 3320 tests (baseline 3298), 0 new failures; tests only
 pipelinq	3728	d3ce4a2d4d27dce05fb077c322cd233b110bc568	GREEN	worker-09	tree 3728>3742>3744 merged clean (3743 conflict); php 6825 -> 6856, no new failures (1 inherited); vitest 4720/4720; build calendar-deepening within its tasks
+pipelinq	3742	78566a171a0593d51dfaa6324f462cc3635f72ed	GREEN	worker-09	tree 3728>3742>3744 merged clean (3743 conflict); php 6825 -> 6856, no new failures (1 inherited); vitest 4720/4720; build specify-capability-rows, message change asked by its spec
