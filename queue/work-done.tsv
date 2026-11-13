@@ -4138,3 +4138,4 @@ verify:integriq:3519:d2d6898e	GREEN 3519-3522: phpunit 8189 (inherited only), vi
 verify:integriq:3504:bae6007e	3504 GREEN, 3505 GREEN; 8155 tests, no new failures	session-20261113T081046-f0858dc4	2026-11-13T10:03:38Z
 cover:versioniq:1b35eed9m70ae:f43f8f49	already done: Api/Audit/Lkg/Policy at 100% (91/91) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:03:50Z
 gap:stackiq:maint2:burn1	PR stackiq#1866: acceptAanbod, denyAanbod, getObjectsWithPagination split behaviour-preserving, +3 guard tests	session-20261113T051703-1b54bfba	2026-11-13T10:03:42Z
+cover:dossiq:069ee2d6m7275:6891a8ac	already done: lib/Service/Dashboard/ 160/160 = 100% (measure at 629b047c)	session-20261113T051703-1b54bfba	2026-11-13T10:04:04Z
