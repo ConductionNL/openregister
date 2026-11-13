@@ -3462,3 +3462,4 @@ verify:launchpad:1175:13899a12	GREEN 1175	session-20261113T081040-5e814df2	2026-
 cover:portaliq:b60f3b81:62d4ff69	PR #2385: Identity 91.2%->94.8% (RegisteredDetailsShape, PortalRegisteredDetailsLookup new; ContactConfirmationMailer +3); suite 4527->4544, 0 failures	session-20261113T081043-b24589a6	2026-11-13T08:30:14Z
 measure:buildiq:20261113h08	php 88.48% (pcov), js 91.32% at 8fa03037	session-20261113T080549-dde3ba19	2026-11-13T08:30:16Z
 cover:portaliq:b60f3b81:9d3a1784	PR #2386: 7 tests, lib/BackgroundJob/*.php 86.8->94.8% (TaskNoticeBody, ActionReminderJob, MediaUsageJob 0->100); suite 4527->4534, 0 failures	session-20261113T080549-20301834	2026-11-13T08:30:28Z
+cover:stackiq:9ac19b3am5ac4:c2bb21fa	PR #1858: 15 ContactPersonHandler tests; lib/Service/Stackiq/*.php 86.1->90.4%	session-20261113T080546-98207a87	2026-11-13T08:31:12Z
