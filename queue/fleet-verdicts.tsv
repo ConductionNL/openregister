@@ -6028,3 +6028,4 @@ pipelinq	3736	b7ce4bd444c45c7dde75a425d27adfd6cdb36f66	GREEN	worker-01	build pro
 learniq	2465	941c60a3498e1961c032ce5ef6ab83ad0fb40e3f	GREEN	worker-41	unit 6429 run (baseline 6402, 1 inherited failure HigherEducationExampleSetTest), 0 new failures; tests only
 keepiq	1754	57f8bde30e1bc2b56cc544ea73eb64a43c0d799e	GREEN	worker-46	phpunit 4897 on tree (baseline 4854, 0 failures), vitest 6354 passed; tests only
 keepiq	1755	60514b4d7364e71ce09e2533f5277eec242d13b2	GREEN	worker-46	phpunit 4897 on tree (baseline 4854, 0 failures), vitest 6354 passed; tests only
+keepiq	1758	bad14ff36344732b2334bb2eb79612f04cd586f8	GREEN	worker-46	phpunit 4897 on tree (baseline 4854, 0 failures), vitest 6354 passed; js tests only
