@@ -5941,3 +5941,4 @@ cover:shillinq:05639debm7b6b:89bf3ba4	already done: four earlier PRs for this ta
 cover:pipelinq:7f9dc8e6m16db:js0023cfc7	PR #3770: +21 vitest tests (BlastWizard, PosPayment, Segment/Campaign form dialogs); src/dialogs lines 91.58% -> 96.68%; suite 4804 -> 4825 passed	session-20261113T175335-552e4d60	2026-11-13T18:24:22Z
 fix:portaliq:2427:ac2b3062	l10n keys moved off the catalogue tail, .js regenerated; clean with #2415/#2426; REVERIFY at d256286f	session-20261113T172329-5f4feaba	2026-11-13T18:24:34Z
 cover:pipelinq:7f9dc8e6m16db:36ac5d07	already done: lib/Service/LineTotals/ at 100% line coverage on development (59/59 stmts); no PR	session-20261113T175328-b5db3663	2026-11-13T18:24:43Z
+cover:pipelinq:7f9dc8e6m16db:e19add4c	already covered: lib/Service/Consent/ 67/67 lines (100%) at development 4c67daf (pcov, full unit suite); no PR	session-20261113T175335-552e4d60	2026-11-13T18:24:59Z
