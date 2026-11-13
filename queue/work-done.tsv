@@ -6964,3 +6964,4 @@ build4:openregister:ai-translation-with-a-glossary	partial: PR #10345 tasks 1.1 
 verify:pipelinq:3789:2322258a	GREEN #3789 (gitleaks allowlist only; 5 inherited unit failures)	session-20261113T213335-001b7417	2026-11-13T21:35:27Z
 review:openregister:10337:b1b19aed	APPROVE 10337	session-20261113T213336-fe5ca7a4	2026-11-13T21:35:55Z
 verify:hermiq:1720:0063bbdc	GREEN 1720: 0 new failures (baseline 172 inherited), vitest green	session-20261113T213320-1f5acbff	2026-11-13T21:36:02Z
+build4:openregister:detection-knows-the-person	partial: PR openregister#10347 to main, task 1.1 (capacity policy + officials source settings, 4 tests) and 1.2 ticked; 1.3, 2.x, 3.x left	session-20261113T202626-976dcdac	2026-11-13T21:36:23Z
