@@ -3933,3 +3933,4 @@ build:dossiq:public-api-access-with-keys-and-certificates	partial: PR #6368 reso
 build:dossiq:woo-review-reports	already done: tasks 1.1-5.1 built and ticked on development (parties half now the manifest widget MailPartiesReportWidget); only 5.2 live check and 6.x delivery steps remain, not code	session-20261113T084521-fd8a31c7	2026-11-13T09:34:06Z
 build:dossiq:woo-request-scoped-access	no PR: every code task is done on development; open ones are Newman/live passes (1.2, 3.3, 6.1), the 4.2 screen state that waits on a design board (decision 162), and delivery steps 7.x	session-20261113T081040-5e814df2	2026-11-13T09:34:03Z
 build:dossiq:tenant-quotas-enforced-and-billing-shown	already built (#4873); open: 1.2 upload half waits on a storage unit decision, 3.x e2e/live	session-20261113T084527-a728978e	2026-11-13T09:34:21Z
+verify:stackiq:1851:e93e1711	1851 GREEN: test infra only, 3133 tests, 0 new failures	session-20261113T071636-117504ad	2026-11-13T09:34:18Z
