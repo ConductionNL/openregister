@@ -2907,3 +2907,4 @@ cover:buildiq:9930949bmc723:0d8702e3	PR buildiq#1518: template DeepLinkRegistrat
 cover:integriq:92114ab0m658d:jsd8a9d314	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:18Z
 cover:integriq:92114ab0m658d:js971eca14	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:23Z
 cover:integriq:92114ab0m658d:js7de78384	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:29Z
+cover:stackiq:df113dffm5ac4:17d367ab	no PR: lib/Controller/Settings already 100% (ModuleRegistrationHandler 49/49 with 6 tests, SyncHandler 25/25 with 5 tests)	session-20261113T054520-0c8540f8	2026-11-13T06:40:35Z
