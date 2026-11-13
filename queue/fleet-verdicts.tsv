@@ -5518,3 +5518,9 @@ learniq	2419	62ccde47ab42aaaec24f574c645a690c691c9f31	CONFLICT	coord	conflicts w
 launchpad	1182	32894d63688d8427503f64d0d09e8ceaf9f125f4	GREEN	worker-51	tree 3933 tests (baseline 3789, 0 failures), 0 new failures; tests only
 launchpad	1183	efa250d135899d7391112f621d865dc5e0664e7d	GREEN	worker-51	tree 3933 tests (baseline 3789, 0 failures), 0 new failures; tests only
 launchpad	1184	348ec8b40d9559f2b62d0d054e242599188c2a07	GREEN	worker-51	tree 3933 tests (baseline 3789, 0 failures), 0 new failures; tests only
+planninq	1131	4b8eae2ef3bcd27cd735d0240b9064b88824a5c7	RED	coord	merge gate adrvalidator: Spectral reports mandatory-rule errors in the openapi.json this PR adds; fix the spec until the API-design rules pass, and merge origin/development in if it conflicts
+learniq	2418	651bdf537da526cbf458e3e83aa7990798e7ff71	RED	coord	merge gate adrvalidator: Spectral reports mandatory-rule errors in the openapi.json this PR adds; fix the spec until the API-design rules pass, and merge origin/development in if it conflicts
+decidiq	2098	a2a5fd1b727c733952af0290dec7a68881de0dda	BLOCK	coord	sbom: the lockfile changed without a regenerated SBOM; run bin/regen-sbom.sh
+launchpad	1106	379ed362a8602c2cc372333770e6503a615453fd	REVERIFY	coord	coord: secret-scan hit checked, a docs sample allowlisted on development by #1117; PR commits scan clean; verify and merge
+launchpad	1107	3f7f87e667fa28876d87ef6312010b8dbb69bdcd	CONFLICT	coord	conflicts with development; merge origin/development in (the secret-scan hit is a docs sample allowlisted on development by #1117)
+dossiq	6203	31cc59e43fa01c880e78ebc0b94c6e4a727344e3	RED	coord	secret scan flags a dummy key in a test fixture; mark that fixture line with an inline allow comment (or add the fixture path to the scanner allowlist), keep the test unchanged
