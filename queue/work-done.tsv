@@ -3265,3 +3265,4 @@ gap:planninq:oas:burn1	already done	session-20261113T074533-3e2a2da6	2026-11-13T
 cover:larpinq:c4471360m4538:js4829b6aa	PR #1016: 8 views to 100% stmts, 7 specs/70 tests; js total 65.35->71.33%; vitest 264->334 green; tests only	session-20261113T072706-2eaa6a81	2026-11-13T07:48:12Z
 cover:opencatalogi:fc83bfb1:60c2c265	PR #2584: lib/Controller 93.01% -> 95.45% lines, 23 tests in 4 files, suite 5144 -> 5167, 0 new failures	session-20261113T071636-117504ad	2026-11-13T07:48:11Z
 cover:larpinq:c4471360m4538:js5794e9fc	PR #1017: 17 vitest tests for Settings.vue (no coverage provider in repo)	session-20261113T051709-e616bf69	2026-11-13T07:48:30Z
+verify:decidiq:2124:0ca284e2	GREEN decidiq#2124	session-20261113T074533-5d842142	2026-11-13T07:48:38Z
