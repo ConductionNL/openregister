@@ -3406,5 +3406,6 @@ verify:keepiq:1749:da19075a	GREEN 1749, GREEN 1750	session-20261113T081040-5e814
 fix:learniq:2419:6339bf29	conflict resolved, pushed f709e6508b25423d3eff9f5fc94d6e27ef0ddb8c, REVERIFY recorded	session-20261113T081055-3901e400	2026-11-13T08:18:44Z
 cover:integriq:92114ab0m658d:a64a0bdb	PR #3509: 23 tests, Tables coercer/OCS client/sync adapter lines to 100%; suite 7783->7806, no new failures	session-20261113T081046-f0858dc4	2026-11-13T08:19:15Z
 cover:dossiq:f8a113c5m7e79:cee3e6cf	already done: 8 dirs at 2 uncovered statements total (ANSWER_LIMIT break, OpenRegister-absent branch); no PR	session-20261113T080551-294c2aa6	2026-11-13T08:19:22Z
+cover:portaliq:b60f3b81:65e30692	PR #2376: risky 41->0, Intake 91.7->96.7%, PHP 90.14->91.61%, 4577 tests green	session-20261113T072715-8f8a14e9	2026-11-13T08:19:23Z
 cover:learniq:e6498dddmc027:6bb33e5f	no PR: lib/Bpv/*.php is one interface (no executable lines) already pinned by a 4-test contract test; nothing coverable	session-20261113T081055-3901e400	2026-11-13T08:19:21Z
 gap:launchpad:risky:burn2	PR #1176: risky 2->0, PHP coverage 92.52->92.61%	session-20261113T081040-5e814df2	2026-11-13T08:19:32Z
