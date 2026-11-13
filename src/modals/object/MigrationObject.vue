@@ -1,11 +1,19 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import { n, t } from './l10n.js'
 </script>
 
 <template>
 	<NcDialog
-		:name="`Migrate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
+		:name="
+			n(
+				'openregister',
+				'Migrate {count} object',
+				'Migrate {count} objects',
+				selectedObjects.length,
+				{ count: selectedObjects.length },
+			)
+		"
 		size="large"
 		noClose>
 		<!-- Source and Target Information -->
@@ -43,7 +51,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 			<div class="migration-arrow">→</div>
 
 			<div class="source-info">
-				<h4>Target</h4>
+				<h4>{{ t('openregister', 'Target') }}</h4>
 				<div class="info-card">
 					<div class="card-item">
 						<div class="card-label-with-icon">
@@ -53,7 +61,8 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 							}}</span>
 						</div>
 						<span class="card-value">{{
-							targetRegister?.title || 'Not selected'
+							targetRegister?.title
+							|| t('openregister', 'Not selected')
 						}}</span>
 					</div>
 					<div class="card-item">
@@ -64,7 +73,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 							}}</span>
 						</div>
 						<span class="card-value">{{
-							targetSchema?.title || 'Not selected'
+							targetSchema?.title || t('openregister', 'Not selected')
 						}}</span>
 					</div>
 				</div>
@@ -73,40 +82,48 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 
 		<!-- Step 1: Confirm Selection -->
 		<div v-if="step === 1" class="migration-step step-1">
-			<h3 class="step-title">Confirm Object Selection</h3>
+			<h3 class="step-title">
+				{{ t('openregister', 'Confirm the selection') }}
+			</h3>
 
 			<NcNoteCard type="info">
-				Review the selected objects below. You can remove any objects you
-				don't want to migrate by clicking the remove button.
+				{{
+					t(
+						'openregister',
+						'Remove any object you do not want to migrate.',
+					)
+				}}
 			</NcNoteCard>
 
 			<SelectedObjectsList
 				:objects="selectedObjects"
 				:emptyDescription="
-					t(
-						'openregister',
-						'No objects are currently selected for migration.',
-					)
+					t('openregister', 'Select objects in the list to migrate them.')
 				"
 				@remove="removeObject" />
 		</div>
 
 		<!-- Step 2: Select Target Register and Schema -->
 		<div v-if="step === 2" class="migration-step">
-			<h3>Select Target Register and Schema</h3>
+			<h3>{{ t('openregister', 'Choose the target register and schema') }}</h3>
 			<p>
-				Choose the destination register and schema for the
-				{{ selectedObjects.length }} selected object{{
-					selectedObjects.length > 1 ? 's' : ''
-				}}:
+				{{
+					n(
+						'openregister',
+						'Choose where {count} selected object goes.',
+						'Choose where {count} selected objects go.',
+						selectedObjects.length,
+						{ count: selectedObjects.length },
+					)
+				}}
 			</p>
 
 			<!-- Target Register Selection -->
 			<div class="selection-section">
-				<h4>Target Register</h4>
+				<h4>{{ t('openregister', 'Target register') }}</h4>
 				<NcSelect
 					v-model="targetRegister"
-					inputLabel="Target Register"
+					:inputLabel="t('openregister', 'Target register')"
 					:options="availableRegisters"
 					label="title"
 					trackBy="id"
@@ -116,10 +133,10 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 
 			<!-- Target Schema Selection -->
 			<div v-if="targetRegister" class="selection-section">
-				<h4>Target Schema</h4>
+				<h4>{{ t('openregister', 'Target schema') }}</h4>
 				<NcSelect
 					v-model="targetSchema"
-					inputLabel="Target Schema"
+					:inputLabel="t('openregister', 'Target schema')"
 					:options="availableSchemas"
 					label="title"
 					trackBy="id"
@@ -130,30 +147,40 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 
 		<!-- Step 3: Property Mapping -->
 		<div v-if="step === 3" class="migration-step">
-			<h3>Property Mapping</h3>
+			<h3>{{ t('openregister', 'Property mapping') }}</h3>
 			<p>
-				Map properties from the source schema to the target schema.
-				Properties not mapped will be discarded.
+				{{
+					t(
+						'openregister',
+						'Map each source property to a target property. We discard properties you leave unmapped.',
+					)
+				}}
 			</p>
 
 			<NcNoteCard type="info">
-				Configure how properties should be mapped when migrating from source
-				schema
-				<strong>{{ schemaStore.schemaItem?.title }}</strong> to target schema
-				<strong>{{ targetSchema?.title }}</strong>
+				{{
+					t(
+						'openregister',
+						'You move objects from {source} to {target}.',
+						{
+							source: schemaStore.schemaItem?.title,
+							target: targetSchema?.title,
+						},
+					)
+				}}
 			</NcNoteCard>
 
 			<div class="mapping-container">
 				<div class="mapping-header">
 					<div class="source-header">
-						<h4>Source Properties</h4>
+						<h4>{{ t('openregister', 'Source properties') }}</h4>
 						<span class="schema-name">{{
 							schemaStore.schemaItem?.title
 						}}</span>
 					</div>
 					<div class="arrow-header">→</div>
 					<div class="target-header">
-						<h4>Target Properties</h4>
+						<h4>{{ t('openregister', 'Target properties') }}</h4>
 						<span class="schema-name">{{ targetSchema?.title }}</span>
 					</div>
 				</div>
@@ -175,11 +202,21 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 						<div class="target-property">
 							<NcSelect
 								v-model="uiMappings[sourceProperty.name]"
-								inputLabel="Ui Mappings[Source Property Name]"
+								:inputLabel="
+									t(
+										'openregister',
+										'Target property for {property}',
+										{
+											property: sourceProperty.name,
+										},
+									)
+								"
 								:options="targetPropertyOptions"
 								label="label"
 								trackBy="value"
-								placeholder="Map to target property..."
+								:placeholder="
+									t('openregister', 'Map to target property…')
+								"
 								:clearable="true"
 								@update:modelValue="
 									updateMappingFromUI(sourceProperty.name)
@@ -192,38 +229,49 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 
 		<!-- Step 4: Migration Report -->
 		<div v-if="step === 4" class="migration-step">
-			<h3 class="report-title">Migration Report</h3>
+			<h3 class="report-title">{{ t('openregister', 'Migration report') }}</h3>
 
 			<NcNoteCard v-if="migrationResult?.success" type="success">
-				<p>Objects successfully migrated!</p>
+				<p>{{ t('openregister', 'Objects migrated') }}</p>
 			</NcNoteCard>
 			<NcNoteCard
 				v-if="migrationResult && !migrationResult.success"
 				type="error">
-				<p>Migration failed. Please check the details below.</p>
+				<p>
+					{{
+						t(
+							'openregister',
+							'Migration failed. Check the details below.',
+						)
+					}}
+				</p>
 			</NcNoteCard>
 
 			<div v-if="migrationResult" class="migration-report">
 				<!-- Migration Summary -->
 				<div class="report-section">
-					<h4>Migration Summary</h4>
+					<h4>{{ t('openregister', 'Migration summary') }}</h4>
 					<div class="migration-info">
 						<div class="migration-detail">
-							<strong>Source:</strong>
+							<strong>{{ t('openregister', 'Source:') }}</strong>
 							<div class="migration-meta">
 								<span
 									>{{ registerStore.registerItem?.title }} /
 									{{ schemaStore.schemaItem?.title }}</span
 								>
-								<span class="object-count"
-									>{{ selectedObjects.length }} object{{
-										selectedObjects.length > 1 ? 's' : ''
-									}}</span
-								>
+								<span class="object-count">{{
+									n(
+										'openregister',
+										'{count} object',
+										'{count} objects',
+										selectedObjects.length,
+										{ count: selectedObjects.length },
+									)
+								}}</span>
 							</div>
 						</div>
 						<div class="migration-detail">
-							<strong>Target:</strong>
+							<strong>{{ t('openregister', 'Target:') }}</strong>
 							<div class="migration-meta">
 								<span
 									>{{ targetRegister?.title }} /
@@ -236,24 +284,42 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 
 				<!-- Statistics -->
 				<div class="report-section">
-					<h4>Statistics</h4>
+					<h4>{{ t('openregister', 'Statistics') }}</h4>
 					<ul>
 						<li>
-							Objects migrated:
-							{{ migrationResult.statistics?.objectsMigrated || 0 }}
-						</li>
-						<li>
-							Objects failed:
-							{{ migrationResult.statistics?.objectsFailed || 0 }}
-						</li>
-						<li>
-							Properties mapped:
-							{{ migrationResult.statistics?.propertiesMapped || 0 }}
-						</li>
-						<li>
-							Properties discarded:
 							{{
-								migrationResult.statistics?.propertiesDiscarded || 0
+								t('openregister', 'Objects migrated: {count}', {
+									count:
+										migrationResult.statistics?.objectsMigrated
+										|| 0,
+								})
+							}}
+						</li>
+						<li>
+							{{
+								t('openregister', 'Objects failed: {count}', {
+									count:
+										migrationResult.statistics?.objectsFailed
+										|| 0,
+								})
+							}}
+						</li>
+						<li>
+							{{
+								t('openregister', 'Properties mapped: {count}', {
+									count:
+										migrationResult.statistics?.propertiesMapped
+										|| 0,
+								})
+							}}
+						</li>
+						<li>
+							{{
+								t('openregister', 'Properties discarded: {count}', {
+									count:
+										migrationResult.statistics
+											?.propertiesDiscarded || 0,
+								})
 							}}
 						</li>
 					</ul>
@@ -261,7 +327,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 
 				<!-- Migration Details -->
 				<div v-if="migrationResult.details?.length" class="report-section">
-					<h4>Migration Details</h4>
+					<h4>{{ t('openregister', 'Migration details') }}</h4>
 					<div class="migration-details">
 						<div
 							v-for="detail in migrationResult.details"
@@ -274,7 +340,11 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 								<span
 									class="status"
 									:class="[detail.success ? 'success' : 'error']">
-									{{ detail.success ? 'Success' : 'Failed' }}
+									{{
+										detail.success
+											? t('openregister', 'Success')
+											: t('openregister', 'Failed')
+									}}
 								</span>
 							</div>
 							<div v-if="detail.error" class="detail-error">
@@ -293,7 +363,11 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ step === 4 ? 'Close' : 'Cancel' }}
+				{{
+					step === 4
+						? t('openregister', 'Close')
+						: t('openregister', 'Cancel')
+				}}
 			</NcButton>
 
 			<NcButton
@@ -304,14 +378,14 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				<template #icon>
 					<ArrowRight :size="20" />
 				</template>
-				Next
+				{{ t('openregister', 'Next') }}
 			</NcButton>
 
 			<NcButton v-if="step === 2" variant="secondary" @click="previousStep">
 				<template #icon>
 					<ArrowLeft :size="20" />
 				</template>
-				Back
+				{{ t('openregister', 'Back') }}
 			</NcButton>
 
 			<NcButton
@@ -322,14 +396,14 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				<template #icon>
 					<ArrowRight :size="20" />
 				</template>
-				Next
+				{{ t('openregister', 'Next') }}
 			</NcButton>
 
 			<NcButton v-if="step === 3" variant="secondary" @click="previousStep">
 				<template #icon>
 					<ArrowLeft :size="20" />
 				</template>
-				Back
+				{{ t('openregister', 'Back') }}
 			</NcButton>
 
 			<NcButton
@@ -341,7 +415,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<DatabaseExport v-else :size="20" />
 				</template>
-				Migrate Objects
+				{{ t('openregister', 'Migrate objects') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -441,7 +515,7 @@ export default {
 			}))
 
 			options.push({
-				label: '(Do not map)',
+				label: t('openregister', '(Do not map)'),
 				value: null,
 			})
 
@@ -648,7 +722,7 @@ export default {
 			console.error('Error performing migration:', error)
 			this.migrationResult = failedTransfer(
 				error,
-				'An error occurred during migration',
+				t('openregister', 'An error occurred during migration'),
 			)
 			this.step = 4
 		},

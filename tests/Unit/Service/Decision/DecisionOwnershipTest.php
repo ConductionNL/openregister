@@ -34,6 +34,8 @@ use RuntimeException;
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
  * @uses \OCA\OpenRegister\Service\Decision\DecisionOwnedException
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionQuestion
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform
  */
 class DecisionOwnershipTest extends TestCase {
 

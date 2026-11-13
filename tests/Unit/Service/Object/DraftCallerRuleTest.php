@@ -29,6 +29,11 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Object\DraftCaller
+ * @uses \OCA\OpenRegister\Service\Object\DraftSubject
  */
 class DraftCallerRuleTest extends TestCase {
 

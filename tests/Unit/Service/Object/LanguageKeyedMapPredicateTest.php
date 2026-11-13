@@ -25,6 +25,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\Object\TranslationHandler
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler
  * @uses   \OCA\OpenRegister\Service\Object\LanguageKeyedMap
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\LanguageMapText
  */
 class LanguageKeyedMapPredicateTest extends TestCase {
 

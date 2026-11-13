@@ -30,6 +30,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder
+ * @uses \OCA\OpenRegister\Support\AppConfigValue
  */
 class SecurityTxtBuilderReadTest extends TestCase {
 

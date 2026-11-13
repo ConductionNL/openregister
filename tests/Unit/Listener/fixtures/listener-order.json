@@ -336,6 +336,9 @@
 	"OCP\\SystemTag\\TagUnassignedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
 	],
+	"OCP\\User\\Events\\BeforeUserDeletedEvent": [
+		"OCA\\OpenRegister\\Listener\\SharerViewsEndWithUserListener"
+	],
 	"OCP\\User\\Events\\UserCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
 	],

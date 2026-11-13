@@ -19,5 +19,5 @@
 ## 4. Verification
 - [x] 4.1 PHPUnit for all four consumables incl. fail-mode paths — `tests/Unit/AppHost/{GenericSettingsServiceTest,GenericSettingsControllerBaseTest,GenericPreferencesControllerTest,RegisterConfigResolverTest}.php` + `tests/Unit/Controller/HandlesExceptionsTraitTest.php`; 165 tests green in nextcloud:34 container
 - [ ] 4.2 `composer check:strict` green
-- [ ] 4.3 Playwright: settings surface e2e on the reference consumer
+- [ ] 4.3 Playwright: settings surface e2e on the reference consumer (live pass, decision 139)
 - [ ] 4.4 Update ADR-066 status Proposed→Accepted + ADR-022 abstraction table row

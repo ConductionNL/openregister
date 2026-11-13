@@ -34,6 +34,14 @@ use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Object\ValidationChunk
  * @uses \OCA\OpenRegister\Service\Object\ValidationRun
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Service\Object\SchemaRevalidation
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  */
 class ValidationHandlerArrayChunkTest extends TestCase {
 

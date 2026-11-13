@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\FormatFactory;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -2217,7 +2218,8 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end handleValidationException()
 
 	/**
-	 * Check of the value of a parameter, or a combination of parameters, is unique
+	 * Check of the value of a parameter, or a combination of parameters, is unique within the organisation
+	 * the write lands in (see UniqueFieldScope)
 	 *
 	 * @param array $object The object to check
 	 * @param Schema $schema The schema of the object
@@ -2233,8 +2235,21 @@ class ValidateObject implements ValidateObjectInterface {
 			return;
 		}
 
-		$filters = self::uniqueFilters(object: $object, uniqueFields: $uniqueFields);
-		if ($this->lookups->objectMapper->countAll(_filters: $filters, schema: $schema) !== 0) {
+		$scope   = new UniqueFieldScope(organisations: $this->lookups->organisations());
+		$unique  = self::uniqueFilters(object: $object, uniqueFields: $uniqueFields);
+		$filters = $scope->countFilters(object: $object, uniqueFilters: $unique);
+		// Counted as a system operation, so a property read or reveal rule cannot refuse the filter and count 0.
+		$existing = SystemOperationContext::run(
+			function () use ($scope, $unique, $filters, $schema): int {
+				$count = $this->lookups->objectMapper->countAll(_filters: $filters, schema: $schema);
+				if ($count === 0 && $scope->countsOrganisationlessSeparately() === true) {
+					$count = $this->lookups->objectMapper->countOrganisationless(filters: $unique, schema: $schema);
+				}
+
+				return $count;
+			}
+		);
+		if ($existing !== 0) {
 			throw self::notUniqueException(object: $object, uniqueFields: $uniqueFields);
 		}
 	}//end validateUniqueFields()

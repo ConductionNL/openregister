@@ -35,6 +35,13 @@ use RuntimeException;
  * Which schema each event installs, which configurations install nothing, and the payload defaults.
  *
  * @covers \OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Webhook
+ * @uses \OCA\OpenRegister\Event\AbstractSchemaEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
  */
 class NotificationsAnnotationInstallerEventsTest extends TestCase {
 

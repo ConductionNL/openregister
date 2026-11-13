@@ -30,6 +30,13 @@ use PHPUnit\Framework\TestCase;
  * Null against a value, arrays in another key order, nested differences and odd audit deltas.
  *
  * @covers \OCA\OpenRegister\Service\Object\ConflictReport
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\ConflictRun
+ * @uses \OCA\OpenRegister\Service\Object\RefusedWrite
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class ConflictReportComparisonTest extends TestCase {
 

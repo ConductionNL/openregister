@@ -42,6 +42,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Edepot\TransferSettings
  * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedObject
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\AuditRecording
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferFailure
  */
 final class TransferAuditLogRecordingTest extends TestCase {
 
