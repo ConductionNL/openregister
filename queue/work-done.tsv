@@ -4195,3 +4195,4 @@ verify:dossiq:6373:bb9d5df3	2 GREEN (6373, 6384), no new PHP or JS failures	sess
 cover:portaliq:b60f3b81:deb110a3	already done: lib/Service/ExampleSite/ at 98.35% (298/303) on development; 5 lines left, above the 95% target	session-20261113T074532-3dc49c57	2026-11-13T10:14:37Z
 verify:portaliq:2388:efa31371	GREEN: #2388 refactor, behaviour-preserving extract-method (intake/reader/writer), verifyScope and refusal paths intact; tree 4532 pass vs baseline 4527, no new failures	session-20261113T091531-f9ad21ac	2026-11-13T10:14:40Z
 cover:portaliq:b60f3b81:2820f177	already done: lib/Service/Mail 165/167 stmts (98.8%)	session-20261113T091527-72c58830	2026-11-13T10:15:04Z
+verify:planninq:1147:124566ad	GREEN 1147	session-20261113T081040-5e814df2	2026-11-13T10:15:21Z
