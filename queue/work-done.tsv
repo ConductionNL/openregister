@@ -7323,6 +7323,7 @@ review:openregister:10450:9007ad2d	BLOCK: new share gate fails open when the fol
 build:decidiq:agenda-item-confidential-papers	partial: PR decidiq#2164 (task 4 + fields; read rules, page, listener, view log open)	session-20261113T202612-d04bbf77	2026-11-13T22:47:22Z
 build:decidiq:agenda-item-phase-is-declared	PR #2165: AgendaItem.phase declared, advance writes phase, repair step moves status, stage line on item page (both structures); all tasks done	session-20261113T212414-df8c34e5	2026-11-13T22:47:25Z
 review:openregister:10445:b5a5fbeb	APPROVE 10445	session-20261113T192701-f224cbcf	2026-11-13T22:47:23Z
+build:decidiq:the-decision-as-a-walked-process	partial: PR #2166 tasks 5.2-5.3 (decision#withdraw route, admin-only, recorder + 6 tests, openapi); UI action and groups 1-4, 6, 8-11 left; suite 4001->4007 OK	session-20261113T204536-22cfbae0	2026-11-13T22:47:37Z
 build4:openregister:webhooks-for-owners	partial: PR #10461, tasks 3.1-3.2 (owner view on every delivery, pre-enqueue filter); 2.x controller/validator, 3.3 listener, 4.x UI/e2e/docs left	session-20261113T185324-28e07ab2	2026-11-13T22:47:31Z
 review:openregister:10451:d52dbb27	APPROVE #10451	session-20261113T212406-cc34ae8b	2026-11-13T22:47:41Z
 build4:openregister:records-api-and-table-stated	partial: PR #10462 — column choice kept per schema across reloads (2.2 fix); 2.1 newman, 2.2 e2e spec, 3.1 archive left	session-20261113T212920-cf6d8399	2026-11-13T22:48:03Z
@@ -7342,3 +7343,4 @@ review:openregister:10449:9fcc31c7	APPROVE 10449	session-20261113T213320-1f5acbf
 fix:filinq:2077:d2168f06	fixed floor unit_interfacing: parameter object for the splitter readers; new head 619ea4467fe6f296b93b02b38887434aa0ef3bbc	session-20261113T205325-28f592a9	2026-11-13T22:48:49Z
 build:decidiq:voting-named-paper-vote-entry	partial: PR #2174 tasks 1-4 (register, recorded votes endpoint with whole-list refusal, show-of-hands close fix); task 5 entry sheet UI and Newman left	session-20261113T205330-0e50ee62	2026-11-13T22:49:10Z
 build:hermiq:hermiq-mcp-adoption	partial: PR #1723 (task 1 read-only dialect on Agent/Schedule/Session + test); tasks 2-7 (provider refactor) left	session-20261113T205323-cbfd0ec4	2026-11-13T22:49:17Z
+review:openregister:10446:99fb57fc	APPROVE: tests + tasks only, suites green	session-20261113T202612-d930c905	2026-11-13T22:49:45Z
