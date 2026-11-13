@@ -5084,3 +5084,4 @@ dossiq	6275	1b5a3488c83015a29f358c5aca7b50fa5a668263	GREEN	worker-46	phpunit 143
 dossiq	6276	0894beca223aa90fe0c42b83bc44a838e06634b6	GREEN	worker-02	tree 6276+6277 on development 79a79d1e: 14368 tests, baseline 14350 (1 error, 41 failures inherited), new failures 0; tests-only diff
 dossiq	6277	df2fc6c8664733fe28737535196ab484b78ffb40	GREEN	worker-02	tree 6276+6277 on development 79a79d1e: 14368 tests, baseline 14350 (1 error, 41 failures inherited), new failures 0; tests-only diff
 buildiq	1506	e3662b915b9e0dc9ce4a8147c510b053594f4291	GREEN	worker-38	vitest 360 files/3466 tests all pass on tree (2 new specs, 18 tests); phpunit 2445 tests, 1333 failing = baseline 1333 (OpenRegister contract not loadable here), 0 new; tests only
+buildiq	1507	2dbe888c07dc6d025e35105b501dbe0ff5f95537	GREEN	worker-38	phpunit 2445 tests on tree, 1333 failing = baseline 1333, 0 new; new AppTemplateNamedParametersSniffTest 27 tests pass; tests only
