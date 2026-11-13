@@ -4818,3 +4818,4 @@ stackiq	1812	335e3e7e638e3f392c542381506e0a8690346b43	GREEN	worker-12	phpunit 25
 stackiq	1813	8e311d81de144657f97c1cd6ce4b36e739a2a7ed	GREEN	worker-12	phpunit 2555 tests (baseline 2539, 0 failures), vitest 1956 passed; 0 new failures; tests only
 keepiq	1719	bf494193e15b7a6f011fa36af5ce37d6009d9872	GREEN	worker-27	4119 tests on tree (baseline 4110, 0 failures), no new failures; new test file only
 keepiq	1720	9a73d13f84164cdcd1dd2f82f573fd29f039c80a	GREEN	worker-27	4119 tests on tree (baseline 4110, 0 failures), no new failures; README and coverage-summary.json only
+integriq	3455	7c6df4754d3c94ce4c9456daedc51b9679a3d9b5	GREEN	worker-43	vitest 1420 (baseline 1392), 0 failures; PHP 7113 tests, 2 errors inherited from baseline; tests only
