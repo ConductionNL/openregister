@@ -101,11 +101,11 @@ class FlowEngine {
 	/**
 	 * Per-step error policies, ported from openconnector's `onError`.
 	 */
-	public const ON_ERROR_STOP = 'stop';
+	public const ON_ERROR_STOP = FlowErrorPolicy::STOP;
 
-	public const ON_ERROR_CONTINUE = 'continue';
+	public const ON_ERROR_CONTINUE = FlowErrorPolicy::CONTINUE;
 
-	public const ON_ERROR_DEAD_LETTER = 'dead_letter';
+	public const ON_ERROR_DEAD_LETTER = FlowErrorPolicy::DEAD_LETTER;
 
 	/**
 	 * Hard ceiling on transitions fired in one run.
@@ -802,12 +802,14 @@ class FlowEngine {
 	 * @param FlowWalkHop|FlowStreamHop $hop   The failed hop.
 	 * @param Throwable                 $error The failure.
 	 *
-	 * @return string The step's onError policy; `stop` when it declares none.
+	 * @return string The step's onError policy through {@see FlowErrorPolicy::for()}; `stop` when it declares none or an unknown one.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	private function logStepFailure(FlowWalkHop|FlowStreamHop $hop, Throwable $error): string {
-		$policy = (string)($hop->step['onError'] ?? self::ON_ERROR_STOP);
+		// One reading of the policy for both walks and the worker; an unknown
+		// policy reads as `stop`, while the log still shows what was written.
+		$policy = FlowErrorPolicy::for(step: $hop->step);
 		$this->logger->warning(
 			message: '[FlowEngine] Flow step failed',
 			context: [
@@ -815,7 +817,7 @@ class FlowEngine {
 				'line' => __LINE__,
 				'flow' => ($hop->pass->flow['id'] ?? null),
 				'transition' => $hop->name(),
-				'policy' => $policy,
+				'policy' => FlowErrorPolicy::declared(step: $hop->step),
 				'error' => $error->getMessage(),
 			]
 		);

@@ -42,6 +42,8 @@ use Exception;
 use OCA\OpenRegister\Service\ProtectedCarryForward;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\PropertyWriteCheck;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
@@ -71,6 +73,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\CascadeRules;
 use OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\EmptyValues;
+use OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelations;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
@@ -4740,6 +4743,9 @@ class SaveObject implements SaveObjectInterface {
 			throw new Exception($errorMessage, 0, $e);
 		}
 
+		// An image is stored in its object form, whichever form it was sent in.
+		$data = (new ImageObjectForm())->apply(data: $data, properties: ($schema->getProperties() ?? []));
+
 		// Removed references are only cleaned up when the schema opts in. Read before
 		// the pre-cache below overwrites the entity's data with the incoming data.
 		$run->data = $data;
@@ -4948,6 +4954,8 @@ class SaveObject implements SaveObjectInterface {
 		$data           = $update->data;
 		$run            = new ObjectUpdateRun();
 		$run->silent    = $options->silent;
+		$run->origin    = $options->origin;
+		$run->marks     = $options->marks;
 
 		// Prefer the caller's oldObject (handleObjectUpdate): a clone taken here may
 		// already hold data prepareObjectForUpdate changed in place.
@@ -5080,10 +5088,31 @@ class SaveObject implements SaveObjectInterface {
 		);
 
 		if ($this->writesAuditRow(silent: $run->silent) === true) {
-			$log = $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
+			$log = $this->auditUpdate(run: $run, updatedEntity: $updatedEntity);
 			$updatedEntity->setLastLog($log->jsonSerialize());
 		}
 	}//end recordObjectUpdate()
+
+	/**
+	 * Write the audit row of an update: an edit as before, an update with an
+	 * origin (a revert) under that origin as its action, with its markers.
+	 *
+	 * @param ObjectUpdateRun $run           The update call.
+	 * @param ObjectEntity    $updatedEntity The updated entity.
+	 *
+	 * @return AuditTrail The audit row.
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	private function auditUpdate(ObjectUpdateRun $run, ObjectEntity $updatedEntity): AuditTrail {
+		if ($run->origin === null && $run->marks === []) {
+			return $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
+		}
+
+		return $this->auditTrailMapper->recordChange(
+			change: new AuditedChange(old: $run->oldObject, new: $updatedEntity, action: $run->origin, marks: $run->marks)
+		);
+	}//end auditUpdate()
 
 	/**
 	 * Check if audit trails are enabled in the settings

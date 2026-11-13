@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
+use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 
 /**
  * The `x-openregister-*` keys a schema configuration keeps.
@@ -274,6 +275,13 @@ final class AnnotationVocabulary {
 		// every subsequent invite would answer 403 "does not allow", the
 		// same silent no-op class every entry above records.
 		'x-openregister-talk-participants',
+		// An ordered classification vocabulary, the property carrying the
+		// label, group clearances, scope ceilings and a floor. Read by
+		// ClassificationScale, refused at save by
+		// ClassificationDeclarationValidator. Absent from this list
+		// setConfiguration() would drop it and every classified object would
+		// read as unclassified, the same silent no-op every entry above records.
+		ClassificationScale::ANNOTATION,
 	];
 
 

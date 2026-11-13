@@ -124,6 +124,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyFields)            File service orchestrates many handler classes
  * @SuppressWarnings(PHPMD.LongVariable)             Handler properties use descriptive names for clarity
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-006
  */
 class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
@@ -305,15 +306,6 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * @var array<string, true>
 	 */
 	private array $folderAccessRevalidationCache = [];
-
-	/**
-	 * Root folder name for all OpenRegister files.
-	 *
-	 * @var string
-	 * @readonly
-	 * @psalm-readonly
-	 */
-	private const ROOT_FOLDER = 'Open Registers';
 
 	/**
 	 * Application group name.

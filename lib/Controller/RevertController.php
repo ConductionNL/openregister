@@ -30,12 +30,11 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\RevertControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\RevertHandlerInterface;
 use OCA\OpenRegister\Service\Object\RevertPoint;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -51,30 +50,35 @@ use OCP\IRequest;
  */
 class RevertController extends Controller {
 	/**
-	 * The status each refusal of the handler answers with, checked in this order; any other is a 500.
+	 * The status and fixed sentence each refusal of the handler answers with,
+	 * checked in this order; any other is a 500. No exception text reaches a body.
 	 *
-	 * @var array<class-string<\Exception>, int>
+	 * @var array<class-string<\Exception>, array{0: int, 1: string}>
 	 */
-	private const REFUSAL_STATUS = [
-		NotAuthorizedException::class => 403,
-		LockedException::class => 423,
-		ObjectStateWriteException::class => ObjectStateWriteException::HTTP_STATUS,
-		ValidationException::class => 400,
+	private const REFUSALS = [
+		DoesNotExistException::class => [404, 'Record not found.'],
+		NotAuthorizedException::class => [403, 'You may not restore this record.'],
+		LockedException::class => [423, 'This record is locked by someone else.'],
+		ObjectStateWriteException::class => [ObjectStateWriteException::HTTP_STATUS, 'This record is archived or frozen and cannot be changed.'],
+		HookStoppedException::class => [422, 'A rule on this record refused the restore.'],
 	];
 
 	/**
-	 * The revert service
-	 *
-	 * @var RevertHandlerInterface
+	 * The sentence a revert that failed for any other reason answers with.
 	 */
-	private readonly RevertHandlerInterface $revertService;
+	private const FAILED = 'The record could not be restored.';
 
 	/**
-	 * Renders the reverted object as every object read does
-	 *
-	 * @var ?ObjectOperationsInterface
+	 * The sentence a restored version the current schema refuses answers with.
 	 */
-	private readonly ?ObjectOperationsInterface $objectService;
+	private const NO_LONGER_VALID = 'This version does not fit the record\'s schema as it is now.';
+
+	/**
+	 * The revert service, the read renderer and the logger
+	 *
+	 * @var RevertControllerServices
+	 */
+	private readonly RevertControllerServices $services;
 
 	/**
 	 * Constructor.
@@ -87,8 +91,7 @@ class RevertController extends Controller {
 		RevertControllerServices $services,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
-		$this->revertService = $services->revertService;
-		$this->objectService = $services->objectService;
+		$this->services = $services;
 	}//end __construct()
 
 	/**
@@ -124,7 +127,7 @@ class RevertController extends Controller {
 		try {
 			return $this->revertTo(route: $route, data: $this->request->getParams());
 		} catch (\Exception $e) {
-			return self::refusal(exception: $e);
+			return $this->refusal(exception: $e);
 		}
 	}//end revertOrRefuse()
 
@@ -144,7 +147,7 @@ class RevertController extends Controller {
 			return new JSONResponse(data: ['error' => 'Must specify either datetime, auditTrailId, or version'], statusCode: 400);
 		}
 
-		$revertedObject = $this->revertService->revert(
+		$revertedObject = $this->services->revertService->revert(
 			register: $route->register,
 			schema: $route->schema,
 			id: $route->id,
@@ -186,36 +189,73 @@ class RevertController extends Controller {
 	 * @return JSONResponse The 200
 	 */
 	private function answer(ObjectEntity $revertedObject): JSONResponse {
-		if ($this->objectService !== null) {
-			return new JSONResponse(data: $this->objectService->renderEntity(entity: $revertedObject, _rbac: true));
+		if ($this->services->objectService !== null) {
+			return new JSONResponse(data: $this->services->objectService->renderEntity(entity: $revertedObject, _rbac: true));
 		}
 
 		return new JSONResponse(data: $revertedObject->jsonSerialize());
 	}//end answer()
 
 	/**
-	 * A refusal as its status: each keeps its own rather than collapsing into a 500.
+	 * A refusal as its status and a fixed sentence: each keeps its own status
+	 * rather than collapsing into a 500, and no exception text is answered.
 	 *
-	 * A frozen object refuses a revert as it refuses any write (#4105); a
-	 * validation failure means the restored data no longer fits the current schema.
+	 * A frozen object refuses a revert as it refuses any write (#4105). A
+	 * restored version the current schema refuses answers 422 with the
+	 * validation errors, the shape an edit gets. Anything else is a 500 whose
+	 * request id is also on the log entry holding the exception.
 	 *
 	 * @param \Exception $exception The refusal
 	 *
 	 * @return JSONResponse The mapped response
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
 	 */
-	private static function refusal(\Exception $exception): JSONResponse {
-		if ($exception instanceof DoesNotExistException) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+	private function refusal(\Exception $exception): JSONResponse {
+		if ($exception instanceof ValidationException) {
+			return $this->validationRefusal(exception: $exception);
 		}
 
-		$status = 500;
-		foreach (self::REFUSAL_STATUS as $class => $mapped) {
+		foreach (self::REFUSALS as $class => [$status, $sentence]) {
 			if ($exception instanceof $class) {
-				$status = $mapped;
-				break;
+				$data = ['error' => $sentence];
+				if ($exception instanceof HookStoppedException) {
+					$data['errors'] = $exception->getErrors();
+				}
+
+				return new JSONResponse(data: $data, statusCode: $status);
 			}
 		}
 
-		return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $status);
+		$requestId = (string) $this->request->getId();
+		$this->services->logger?->error(
+			message: '[RevertController] A revert failed',
+			context: ['requestId' => $requestId, 'exception' => $exception]
+		);
+
+		return new JSONResponse(data: ['error' => self::FAILED, 'requestId' => $requestId], statusCode: 500);
 	}//end refusal()
+
+	/**
+	 * The 422 of a restored version the current schema refuses: the validation
+	 * errors as an edit answers them, under a fixed sentence.
+	 *
+	 * @param ValidationException $exception The validation failure
+	 *
+	 * @return JSONResponse The 422
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	private function validationRefusal(ValidationException $exception): JSONResponse {
+		if ($this->services->objectService !== null) {
+			$edit = $this->services->objectService->handleValidationException(exception: $exception)->getData();
+
+			return new JSONResponse(data: ['error' => self::NO_LONGER_VALID, 'errors' => ($edit['errors'] ?? [])], statusCode: 422);
+		}
+
+		return new JSONResponse(
+			data: ['error' => self::NO_LONGER_VALID, 'errors' => [['message' => $exception->getMessage()]]],
+			statusCode: 422
+		);
+	}//end validationRefusal()
 }//end class

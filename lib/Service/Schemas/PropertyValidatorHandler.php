@@ -127,6 +127,18 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 			'conversionNote' => 'A repeat rule cannot be derived from a date or a sentence.',
 			'description' => 'A repeat rule, such as every second Tuesday.',
 		],
+		'calendar-range' => [
+			'category' => 'temporal',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'A start and an end cannot be derived from one stored value. Migrate the records first.',
+			'description' => 'A period: a start and an end kept together, the end not before the start.',
+		],
+		'image-url' => [
+			'category' => 'presentation',
+			'conversion' => 'conditional',
+			'conversionNote' => 'A stored value that is not a URL is refused, so run a migration first.',
+			'description' => 'An image address, with its width, height, alt text and file format.',
+		],
 		'NcFile' => [
 			'category' => 'nextcloud',
 			'conversion' => 'unsupported',
@@ -493,6 +505,11 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 	 */
 	public const MODIFIERS = [
 		'title' => ['value' => 'string', 'description' => 'The label a person reads above the field.'],
+		'titles' => [
+			'value' => 'object',
+			'description' => 'The label in other languages, by language tag: {"nl": "Einddatum contract", "en": "Contract end date"}. '
+				. 'A schema read with _lang or Accept-Language answers title in that language when it is here.',
+		],
 		'description' => ['value' => 'string', 'description' => 'The sentence under the field.'],
 		'example' => ['value' => 'any', 'description' => 'A sample answer, shown in the API documentation.'],
 		'order' => ['value' => 'number', 'description' => 'Where the field sits in the form.'],
@@ -909,6 +926,7 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
 		ScopedPropertyDeclaration::assert(property: $property, path: $path);
 		PropertySourceDeclaration::assert(property: $property, path: $path);
+		PropertyTitles::assert(property: $property, path: $path);
 	}//end assertDeclarations()
 
 	/**
