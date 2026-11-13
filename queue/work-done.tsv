@@ -4629,3 +4629,4 @@ build:openregister:draft-owner-activation-and-lifetime	failed: no code task open
 build:openregister:capability-rows-stated-requirements	partial: PR #10140 does 1.1 (schema document agrees with save path, 7 tests); 2.1 URN-after-move and 3.1/3.2 file checksum+fixity are storage features left open	session-20261113T104527-c302106c	2026-11-13T11:47:26Z
 verify:stackiq:1873:09eb6c07	GREEN #1873	session-20261113T071631-5a3cc070	2026-11-13T11:47:36Z
 cover:shillinq:05639debm0c05:60c2c265	PR #2931: 8 phpunit files (29 tests) for untested lib/Controller request value objects; suite 10087->10116, only pre-existing clock-bound failure	session-20261113T094602-d25cda2a	2026-11-13T11:47:55Z
+verify:pipelinq:3728:dabff859	GREEN 3728,3742,3744; CONFLICT 3743	session-20261113T051703-1b54bfba	2026-11-13T11:47:56Z
