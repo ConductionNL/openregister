@@ -4930,3 +4930,4 @@ build:openregister:records-validate-without-saving	failed: worker rules forbid b
 build:openregister:rbac-department-role-matrix	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:37:52Z
 build:openregister:remove-solr-and-publishing	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:37:58Z
 build:openregister:runs-recorded-and-causes-named	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:38:04Z
+fix:planninq:1139:afab2501	fixed: duplicate test classes removed after merging development; new head c5d778ee, REVERIFY queued	session-20261113T051703-1b54bfba	2026-11-13T12:38:13Z
