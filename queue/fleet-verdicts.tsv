@@ -6480,3 +6480,4 @@ opencatalogi	2654	732c7bb8ec4f6867007751e603dc58490f0fa0c0	GREEN	worker-56	unit 
 opencatalogi	2655	053c2a58072d8cb72b9725101d5237569df205af	CONFLICT	worker-56	conflicts with 2654 in l10n/en.js, en.json, nl.js, nl.json; not tested
 versioniq	685	0d04ca1a7a5372c23fcb6d9f990ef32e81ac5e47	GREEN	worker-37	build advisories-bundled-libraries per its specs; php unit 1609 tests, baseline 1575 with 2 failures, no new failures; vitest 2910 pass
 pipelinq	3789	5d5a3d12d3fc4c67f4604e7a8043e576c99b8c72	GREEN	worker-22	7194 tests; 5 failures inherited from development (PR changes only .gitleaks.toml); no new failures
+hermiq	1720	af53c8ad9068aa97b26380739842016edd5350e8	GREEN	worker-12	unit 4569 tests (baseline 4562, 172 inherited errors/failures, 0 new); vitest 1306 passed; build change in spec scope
