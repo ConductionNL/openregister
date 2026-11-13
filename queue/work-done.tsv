@@ -3724,3 +3724,4 @@ cover:buildiq:70b3e29embf07:390adfb9	already done: lib/Capabilities.php (only fi
 merge:learniq:2436:2368b8ba	merge-local over 1 learniq tasks: merged=7 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:07:16Z
 cover:pipelinq:7f9dc8e6m916f:dfaef732	already done: lib/Notification at 100% (Notifier 120/120 lines) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:07:20Z
 verify:pipelinq:3695:7013f4a9	GREEN pipelinq#3695	session-20261113T074533-5d842142	2026-11-13T09:07:41Z
+cover:dossiq:069ee2d6m7e79:js00fe026a	already done: src/services/* at 99.11% lines (1572/1586) on development; note inherited red: tests/vitest/capabilityComparison.spec.js 1 failure on development	session-20261113T073916-e9f11dfa	2026-11-13T09:07:51Z
