@@ -3,7 +3,7 @@
 ## 1. Draft store
 
 - [ ] 1.1 `ObjectDraft` entity, mapper and migration for `openregister_object_drafts` (key rules from the spec: `main` reserved, lowercase and hyphens). Verify: mapper test on PostgreSQL and MariaDB, and 422 for key `main`.
-- [ ] 1.2 `DraftService` create, update (delta only), list, discard, with the spec's visibility rule. Verify: `DraftServiceTest` including a read-only user who cannot see another user's draft.
+- [x] 1.2 `DraftService` create, update (delta only), list, discard, with the spec's visibility rule. Verify: `DraftServiceTest` including a read-only user who cannot see another user's draft.
 
 ## 2. Reading and routes
 

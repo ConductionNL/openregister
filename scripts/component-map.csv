@@ -639,6 +639,8 @@ Db/ConfigurationDraft.php,58,Db,Configuration,Configuration/Db/ConfigurationDraf
 Db/ConfigurationDraftMapper.php,73,Db,Configuration,Configuration/Db/ConfigurationDraftMapper.php,0,,Configuration
 Db/ConfigurationDraftSet.php,56,Db,Configuration,Configuration/Db/ConfigurationDraftSet.php,0,,Configuration
 Db/ConfigurationDraftSetMapper.php,55,Db,Configuration,Configuration/Db/ConfigurationDraftSetMapper.php,0,,Configuration
+Db/DraftVersion.php,48,Db,Db,Db/DraftVersion.php,0,,Core
+Db/DraftVersionMapper.php,32,Db,Db,Db/DraftVersionMapper.php,0,,Core
 Db/ConfigurationMapper.php,184,Db,Configuration,Configuration/Db/ConfigurationMapper.php,2,,Configuration
 Db/ConfigurationValue.php,49,Db,Configuration,Configuration/Db/ConfigurationValue.php,0,,Configuration
 Db/ConfigurationValueMapper.php,63,Db,Configuration,Configuration/Db/ConfigurationValueMapper.php,0,,Configuration
@@ -2640,6 +2642,7 @@ Service/Object/MigrationRun.php,56,Service,Service,Service/Object/MigrationRun.p
 Service/Object/MigrationSide.php,14,Service,Service,Service/Object/MigrationSide.php,0,,Core
 Service/Object/MoveAddress.php,15,Service,Service,Service/Object/MoveAddress.php,0,,Core
 Service/Object/MoveObject.php,191,Service,Service,Service/Object/MoveObject.php,0,,Core
+Service/Object/DraftService.php,133,Service,Service,Service/Object/DraftService.php,0,,Core
 Service/Object/MovedObjectLookup.php,71,Service,Service,Service/Object/MovedObjectLookup.php,0,,Core
 Service/Object/MovedObjectLookupInterface.php,6,Service,Service,Service/Object/MovedObjectLookupInterface.php,0,,Core
 Service/Object/NameLookupRun.php,6,Service,Service,Service/Object/NameLookupRun.php,0,,Core
