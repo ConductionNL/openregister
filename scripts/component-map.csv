@@ -3941,3 +3941,6 @@ Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Db/MagicMapper/SearchFolding.php,234,Db,Service,Service/Db/MagicMapper/SearchFolding.php,0,,Core
+Db/MagicMapper/MagicUnaccentProbe.php,160,Db,Service,Service/Db/MagicMapper/MagicUnaccentProbe.php,0,,Core
+Migration/Version1Date20261113140000.php,122,Migration,,,,,Platform
