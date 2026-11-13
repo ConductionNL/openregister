@@ -29,6 +29,8 @@ use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
@@ -77,6 +79,7 @@ final class FilesRegistrar
         ChunkSourceReaderInterface::class         => ChunkMapper::class,
         ChunkStoreInterface::class                => ChunkMapper::class,
         DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
+        FileAuditHandlerInterface::class          => FileAuditHandler::class,
         FileMapperInterface::class                => FileMapper::class,
         FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
         FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,

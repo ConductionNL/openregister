@@ -43,7 +43,7 @@ use Symfony\Component\Uid\Uuid;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
-class FileAuditHandler {
+class FileAuditHandler implements FileAuditHandlerInterface {
 	/**
 	 * Constructor for FileAuditHandler.
 	 *
@@ -74,8 +74,6 @@ class FileAuditHandler {
 	 *
 	 * @return AuditTrail|null The persisted audit row, or null on failure.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-4
 	 */
 	public function logBulkDownload(ObjectEntity $object, BulkDownloadArchive $archive): ?AuditTrail {
@@ -85,13 +83,7 @@ class FileAuditHandler {
 		$totalBytes = $archive->totalBytes;
 
 		try {
-			$auditTrail = new AuditTrail();
-			$auditTrail->setUuid((string)Uuid::v4());
-			$auditTrail->setObject($object->getId());
-			$auditTrail->setObjectUuid($object->getUuid());
-			$auditTrail->setRegister($object->getRegister());
-			$auditTrail->setSchema($object->getSchema());
-			$auditTrail->setAction('file.bulk_downloaded');
+			$auditTrail = $this->newAuditRow(object: $object, action: 'file.bulk_downloaded');
 			$auditTrail->setChanged(
 				[
 					'fileIds' => array_values($fileIds),
@@ -102,13 +94,7 @@ class FileAuditHandler {
 				]
 			);
 
-			$user = $this->userSession->getUser();
-			if ($user !== null) {
-				$auditTrail->setUser($user->getUID());
-				$auditTrail->setUserName($user->getDisplayName());
-			}
-
-			if ($user === null) {
+			if ($this->stampSessionUser(auditTrail: $auditTrail) === false) {
 				// Anonymous bulk downloads still get attributed by IP + UA so the
 				// download can be traced back even without a logged-in user.
 				$remote = $this->request->getRemoteAddress();
@@ -116,12 +102,7 @@ class FileAuditHandler {
 				$auditTrail->setUserName('Anonymous (' . $remote . ')');
 			}
 
-			$auditTrail->setCreated(new DateTime());
-			// Expiry follows the record's retention, not a flat 30 days (or#4101).
-			$this->auditTrailMapper->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $object);
-			$auditTrail->setSize(14);
-
-			return $this->auditTrailMapper->insert($auditTrail);
+			return $this->persistRow(auditTrail: $auditTrail, object: $object);
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[FileAuditHandler] Failed to log bulk download: ' . $e->getMessage(),
@@ -153,50 +134,18 @@ class FileAuditHandler {
 	 *
 	 * @return AuditTrail|null The persisted audit row, or null on failure.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-4
 	 */
-	public function logFileAction(
-		ObjectEntity $object,
-		int $fileId,
-		string $action,
-		array $data = [],
-	): ?AuditTrail {
+	public function logFileAction(ObjectEntity $object, int $fileId, string $action, array $data=[]): ?AuditTrail {
 		try {
-			$auditTrail = new AuditTrail();
-			$auditTrail->setUuid((string)Uuid::v4());
-			$auditTrail->setObject($object->getId());
-			$auditTrail->setObjectUuid($object->getUuid());
-			$auditTrail->setRegister($object->getRegister());
-			$auditTrail->setSchema($object->getSchema());
-			$auditTrail->setAction($action);
-			$auditTrail->setChanged(
-				[
-					'fileId' => $fileId,
-					'data' => $data,
-				]
-			);
-
-			// User context.
-			$user = $this->userSession->getUser();
-			if ($user !== null) {
-				$auditTrail->setUser($user->getUID());
-				$auditTrail->setUserName($user->getDisplayName());
-			}
-
-			if ($user === null) {
+			$auditTrail = $this->newAuditRow(object: $object, action: $action);
+			$auditTrail->setChanged(['fileId' => $fileId, 'data' => $data]);
+			if ($this->stampSessionUser(auditTrail: $auditTrail) === false) {
 				$auditTrail->setUser('System');
 				$auditTrail->setUserName('System');
 			}
 
-			$auditTrail->setCreated(new DateTime());
-			// Expiry follows the record's retention, not a flat 30 days (or#4101).
-			$this->auditTrailMapper->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $object);
-			// Minimum default size from AuditTrailMapper::createAuditTrail.
-			$auditTrail->setSize(14);
-
-			return $this->auditTrailMapper->insert($auditTrail);
+			return $this->persistRow(auditTrail: $auditTrail, object: $object);
 		} catch (Exception $e) {
 			// Audit logging should never break the file operation.
 			$this->logger->warning(
@@ -207,5 +156,64 @@ class FileAuditHandler {
 		}//end try
 
 	}//end logFileAction()
+
+	/**
+	 * A new audit row keyed off the parent object, carrying the action.
+	 *
+	 * @param ObjectEntity $object The parent object the file belongs to.
+	 * @param string       $action The namespaced action (e.g. 'file.renamed').
+	 *
+	 * @return AuditTrail The unsaved row.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 */
+	private function newAuditRow(ObjectEntity $object, string $action): AuditTrail {
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setObject($object->getId());
+		$auditTrail->setObjectUuid($object->getUuid());
+		$auditTrail->setRegister($object->getRegister());
+		$auditTrail->setSchema($object->getSchema());
+		$auditTrail->setAction($action);
+
+		return $auditTrail;
+	}//end newAuditRow()
+
+	/**
+	 * Attribute the row to the signed-in user, when there is one.
+	 *
+	 * @param AuditTrail $auditTrail The row to attribute.
+	 *
+	 * @return bool Whether a signed-in user was found; the caller attributes the row otherwise.
+	 */
+	private function stampSessionUser(AuditTrail $auditTrail): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		$auditTrail->setUser($user->getUID());
+		$auditTrail->setUserName($user->getDisplayName());
+
+		return true;
+	}//end stampSessionUser()
+
+	/**
+	 * Stamp the creation time, retention expiry and size, and insert the row.
+	 *
+	 * @param AuditTrail   $auditTrail The row to persist.
+	 * @param ObjectEntity $object     The parent object whose retention the row follows.
+	 *
+	 * @return AuditTrail The persisted row.
+	 */
+	private function persistRow(AuditTrail $auditTrail, ObjectEntity $object): AuditTrail {
+		$auditTrail->setCreated(new DateTime());
+		// Expiry follows the record's retention, not a flat 30 days (or#4101).
+		$this->auditTrailMapper->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $object);
+		// Minimum default size from AuditTrailMapper::createAuditTrail.
+		$auditTrail->setSize(14);
+
+		return $this->auditTrailMapper->insert($auditTrail);
+	}//end persistRow()
 
 }//end class
