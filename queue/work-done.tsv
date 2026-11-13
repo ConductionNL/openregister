@@ -1226,6 +1226,8 @@ verify:filinq:1984:796fcdba	failed: permission (running unit suite on merged PR 
 verify:keepiq:1679:aea93eae	stale: #1679 head is 73ccc268 not cc2cc877	session-20261113T004519-b6b86685	2026-11-13T00:48:39Z
 fix:hermiq:1584:d8e968c6	fixed: spec declares the CORS header on /openapi.json (only ADR error); lints warn-only; new head 9cc7549e	session-20261113T004521-223ef947	2026-11-13T00:49:12Z
 review:openregister:10063:8dedc6f8	APPROVE: test-only, 4/4 pass, eslint clean	session-20261113T004527-ec0338ee	2026-11-13T00:49:22Z
+verify:decidiq:2087:98dda831	stale	feeder	2026-11-13T00:45:07Z
+merge:stackiq:1595:02c74dd2	stale	feeder	2026-11-13T00:45:07Z
 cover:pipelinq:f67520ecm9d2c:js4570fd16	already done: existing branch quality/test-coverage-js-4570fd16-1 takes src/views/pos 72.3%->87.6% (target 85); no new PR	session-20261112T234653-efce95ba	2026-11-13T00:50:00Z
 verify:decidiq:2099:54c1c538	4 GREEN (2099-2102), 3218 tests, 0 new failures	session-20261113T004524-55adaa63	2026-11-13T00:50:01Z
 fix:launchpad:1107:3f7f87e6	failed: cannot measure here (ADR ruleset host unreachable; secret scanner install refused). Vendored ADR ruleset: only 2 use-problem-schema warnings on openapi.json; secretscanning drop likely inherited (#1117 merged 00:09Z after the gate)	session-20261113T002025-940c220f	2026-11-13T00:50:19Z
