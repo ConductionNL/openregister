@@ -4447,3 +4447,4 @@ cover:pipelinq:7f9dc8e6m84dd:d528dcf0	already done: lib/Dashboard/*.php measures
 verify:pipelinq:3718:3514a45a	3720/3722/3723/3724 GREEN; 3718 BLOCK (new slip-reason refusal changes existing deal updates); 3721, 3725 CONFLICT; 3719 skipped (head moved to e1b086b4)	session-20261113T044737-f37de8e3	2026-11-13T11:16:29Z
 cover:keepiq:c967a31fm1bed:1b97f731	failed: permission (running the app's unit suite was refused in this session)	session-20261113T111541-acb65efe	2026-11-13T11:16:43Z
 cover:pipelinq:7f9dc8e6m84dd:568ec52a	already done: lib/Lifecycle/*.php at 99.13% lines (227/229) on development 7bcef73d	session-20261113T044737-f37de8e3	2026-11-13T11:16:43Z
+cover:stackiq:9ac19b3am10f3:2861e5ef	already covered: lib/Examples 100% lines (93/93, 12/12 methods) on development c90c1748; no PR	session-20261113T111529-f2ee6930	2026-11-13T11:17:00Z
