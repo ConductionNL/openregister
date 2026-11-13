@@ -161,6 +161,32 @@ class TaskEntitiesTest extends TestCase {
 	}//end testTaskAuditSerialises()
 
 	/**
+	 * The mandate columns round-trip: a required verb on the task, and the
+	 * granted-authority evidence on both the task and an audit entry.
+	 *
+	 * @return void
+	 */
+	public function testMandateFieldsRoundTrip(): void {
+		$evidence = ['verb' => 'besluiten', 'source' => 'rbac', 'rule' => 'rule-7', 'until' => '2026-12-31'];
+
+		$task = new Task();
+		$task->hydrate(['uuid' => 'u-2', 'requiredMandate' => 'besluiten', 'mandateEvidence' => $evidence]);
+		$row = $task->jsonSerialize();
+
+		$this->assertSame('besluiten', $row['requiredMandate']);
+		$this->assertSame($evidence, $row['mandateEvidence']);
+		$this->assertSame('string', $task->getFieldTypes()['requiredMandate']);
+		$this->assertSame('json', $task->getFieldTypes()['mandateEvidence']);
+
+		$entry = new TaskAudit();
+		$entry->setMandateEvidence($evidence);
+		$auditRow = $entry->jsonSerialize();
+
+		$this->assertSame($evidence, $auditRow['mandateEvidence']);
+		$this->assertSame('json', $entry->getFieldTypes()['mandateEvidence']);
+	}//end testMandateFieldsRoundTrip()
+
+	/**
 	 * A candidate index row carries kind and ref; the kinds are the three
 	 * the inbox EXISTS matches.
 	 *
