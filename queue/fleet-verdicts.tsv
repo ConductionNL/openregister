@@ -5534,3 +5534,4 @@ launchpad	1185	762f505c36c8c3a22024c2350e31fd09424ff95a	GREEN	worker-54	3842 tes
 integriq	3515	9f710cc8ec5b691bd8bfb5ef3f7ecf443359950d	GREEN	worker-33	tree 8064 tests (baseline 8054, inherited 2 errors + 3 failures), no new failures; tests-only additions
 integriq	3516	aa4aff58cb53ab5dcba9f521e36be25c342640ba	GREEN	worker-33	tree 8064 tests (baseline 8054, inherited 2 errors + 3 failures), no new failures; tests-only additions
 learniq	2419	62ccde47ab42aaaec24f574c645a690c691c9f31	REVERIFY	worker-19	merged development in cleanly (no middleware/route changes from development, /api/v1-only error-body rewrite kept); unit 6201 tests, 1 failure inherited (HigherEducationExampleSetTest); new head 5f8478f65b0bdf7c3e7b6209eef0c83832e3c581, verify it
+dossiq	6340	dfb4fba3fc5ebeaea9cf331c3e670ee8d0105184	GREEN	worker-23	phpunit 15368 on 1-PR tree vs baseline 15357 (19 failures inherited), 0 new; 2 new test files, tests only
