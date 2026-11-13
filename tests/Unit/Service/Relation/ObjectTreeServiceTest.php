@@ -63,6 +63,18 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Party\PartyMergeRules
+ * @uses \OCA\OpenRegister\Service\Party\PartyPropertyFields
+ * @uses \OCA\OpenRegister\Service\Party\PartyPropertyNames
+ * @uses \OCA\OpenRegister\Service\Rbac\HierarchyLevel
+ * @uses \OCA\OpenRegister\Service\Relation\ObjectTreeBounds
+ * @uses \OCA\OpenRegister\Service\Relation\ObjectTreeQuery
+ * @uses \OCA\OpenRegister\Service\Relation\ObjectTreeSources
+ * @uses \OCA\OpenRegister\Service\Relation\RelationGraphSources
+ * @uses \OCA\OpenRegister\Service\Relation\TreeDescentRun
  */
 class ObjectTreeServiceTest extends TestCase {
 

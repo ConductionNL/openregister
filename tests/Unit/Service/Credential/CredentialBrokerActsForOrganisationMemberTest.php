@@ -64,6 +64,17 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Controller\CredentialController
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\Credential\ProviderCatalogue
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialTokens
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialVault
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialOutbound
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	private const UUID = '11111111-2222-3333-4444-555555555555';

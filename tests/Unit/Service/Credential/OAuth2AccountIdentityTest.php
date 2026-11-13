@@ -45,6 +45,12 @@ use OCA\OpenRegister\Service\Credential\TokenResponseOptions;
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Issuance
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Tokens
+ * @uses \OCA\OpenRegister\Service\Credential\RedeemedConnection
+ * @uses \OCA\OpenRegister\Service\Credential\TokenResponseOptions
+ * @uses \OCA\OpenRegister\Service\Credential\TokenSetAddress
  */
 class OAuth2AccountIdentityTest extends TestCase {
 	/** @var array<int, array<string, mixed>> Every brokered call made. */

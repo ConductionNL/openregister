@@ -52,6 +52,10 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityCascadeControls
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityRelationIndex
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityStorage
  */
 class ReferentialIntegrityReferencingGoldenTest extends TestCase {
 

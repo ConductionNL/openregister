@@ -37,6 +37,13 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\TransferOutcomeRecorder
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\AuditRecording
+ * @uses \OCA\OpenRegister\Service\Edepot\ObjectConfirmation
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferAuditLog
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferContext
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferSettings
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferStores
  */
 class TransferOutcomeRecorderTest extends TestCase {
 

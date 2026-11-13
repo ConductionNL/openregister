@@ -97,4 +97,39 @@ class HydrationKeyTest extends TestCase {
 		self::assertFalse(HydrationKey::admits(entity: $application, key: 0));
 		self::assertFalse(HydrationKey::admits(entity: $application, key: 'unknownField'));
 	}//end testEmptyAndNumericKeysAreRefused()
+
+	public function testOnlyLowerCaseFirstKeysAreFieldNames(): void {
+		self::assertTrue(HydrationKey::isFieldName(key: 'organisation'));
+		self::assertTrue(HydrationKey::isFieldName(key: 'quota'));
+		self::assertFalse(HydrationKey::isFieldName(key: 'Organisation'));
+		self::assertFalse(HydrationKey::isFieldName(key: ''));
+		self::assertFalse(HydrationKey::isFieldName(key: 0));
+	}//end testOnlyLowerCaseFirstKeysAreFieldNames()
+
+	/**
+	 * Entities with an owner and an organisation, one per hydrate path that carries them.
+	 *
+	 * @return array<string, array{0: object}>
+	 */
+	public static function entities(): array {
+		return [
+			'empty-json trait (application)' => [new Application()],
+			'empty-json hydration (object)'  => [new ObjectEntity()],
+		];
+	}//end entities()
+
+	#[DataProvider('entities')]
+	public function testACapitalisedOwnerOrOrganisationIsNotHydrated(object $entity): void {
+		$entity->hydrate(['Owner' => 'mallory', 'Organisation' => 'other-org']);
+
+		self::assertNull($entity->getOwner());
+		self::assertNull($entity->getOrganisation());
+	}//end testACapitalisedOwnerOrOrganisationIsNotHydrated()
+
+	public function testTheLowerCaseSpellingStillHydrates(): void {
+		$application = new Application();
+		$application->hydrate(['organisation' => 'own-org']);
+
+		self::assertSame('own-org', $application->getOrganisation());
+	}//end testTheLowerCaseSpellingStillHydrates()
 }//end class

@@ -48,6 +48,11 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Db\FlowTimerMapper
  *
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTally
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTasks
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTimers
+ * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
+ * @uses \OCA\OpenRegister\Service\Task\TimerOutcome
  */
 class FlowTimerSweepTest extends TestCase {
 

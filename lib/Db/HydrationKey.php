@@ -49,7 +49,7 @@ final class HydrationKey {
 	 * @spec exclude shared entity plumbing, not a capability of its own
 	 */
 	public static function admits(object $entity, int|string $key): bool {
-		if (is_string($key) === false || $key === '') {
+		if (self::isFieldName(key: $key) === false) {
 			return false;
 		}
 
@@ -64,4 +64,21 @@ final class HydrationKey {
 
 		return (new ReflectionMethod($entity, $method))->getName() === $method;
 	}//end admits()
+
+	/**
+	 * Whether a key names a field the way the entity spells it.
+	 *
+	 * The setter is found as 'set' . ucfirst($key), so `Organisation` would reach
+	 * setOrganisation() just like `organisation`. Field names start lower-case,
+	 * so a key that does not is not a field name.
+	 *
+	 * @param int|string $key The body key.
+	 *
+	 * @return bool True for a non-empty string key whose first character is not upper-case.
+	 *
+	 * @spec exclude shared entity plumbing, not a capability of its own
+	 */
+	public static function isFieldName(int|string $key): bool {
+		return is_string($key) === true && $key !== '' && lcfirst($key) === $key;
+	}//end isFieldName()
 }//end class
