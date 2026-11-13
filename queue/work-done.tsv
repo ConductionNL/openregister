@@ -3291,3 +3291,4 @@ cover:humaniq:a18a13fb:38e80a9f	PR humaniq#1105: 17 tests for 4 commands; lib/Co
 verify:launchpad:1174:1d410467	1174 GREEN: tests only, 3741->3789 tests, 0 failures	session-20261113T074531-994df036	2026-11-13T07:51:43Z
 fix:shillinq:2900:451b1bee	conflict resolved, pushed d5201979; REVERIFY recorded	session-20261113T074531-ad7036dd	2026-11-13T07:52:04Z
 gap:buildiq:maint1:burn1	PR #1526: split saveManifest/applySchedules/seed, +15 tests first on old code, suite green bar inherited 1	session-20261113T071633-17de823f	2026-11-13T07:52:09Z
+cover:dossiq:f8a113c5m7e79:9ece5c6f	already done: lib/Controller/Support/ at 99.3% lines on development fcb4570e0 (earlier -1/-2 PRs merged); only 4 lines left, 3 of them the Server service-locator fallback; no PR	session-20261113T074529-55a84d1d	2026-11-13T07:52:26Z
