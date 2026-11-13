@@ -55,6 +55,7 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\WriteCause
  *
  * @spec openspec/changes/flow-tag-object-step/specs/flow-engine/spec.md
  */

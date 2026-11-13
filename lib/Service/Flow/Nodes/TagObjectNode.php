@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -64,7 +65,8 @@ use UnexpectedValueException;
 /**
  * Puts a tag on, or takes it off, the object of each item.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate::render() is the stateless renderer every node uses.
+ * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate::render() is the stateless renderer every node uses;
+ *   WriteCause::asLookup() marks a lookup.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
  * @spec openspec/changes/flow-tag-object-step/specs/flow-engine/spec.md
@@ -420,7 +422,8 @@ class TagObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 */
 	private function requireUpdate(string $uuid, IUser $actor): void {
 		try {
-			$object   = $this->objects->find(id: $uuid);
+			// A lookup for the step, not a person opening the object: no read is recorded.
+			$object   = WriteCause::asLookup(fn () => $this->objects->find(id: $uuid));
 			$mayWrite = ($object instanceof ObjectEntity) && $this->mayUpdate(object: $object, actor: $actor);
 		} catch (Throwable $e) {
 			$mayWrite = false;
