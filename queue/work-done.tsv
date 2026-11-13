@@ -6616,3 +6616,4 @@ cover:pipelinq:7f9dc8e6m8ce9:js7d7ad082	PR #3782: target dirs 92.39->95.53% (34 
 cover:keepiq:c967a31fm10bf:6925f818	already done: lib/SetupCheck/*.php is 100% line-covered (12/12) by existing ShareQuarantineScanPendingTest; no PR	session-20261113T201015-b01220aa	2026-11-13T20:15:06Z
 fix:filinq:2058:e0070c28	fixed: editor delivery now passes the write gate; new head a3af2f8726dd3c0a8b4dcd4ca86d4f55fea43155, REVERIFY recorded	session-20261113T175327-6e4e7f28	2026-11-13T20:15:10Z
 cover:opencatalogi:fc83bfb1:59826f43	PR #2607: OpenCatalogiAdmin 54% to 88% lines, 6 tests; suite 5254 to 5260, same 2 inherited failures	session-20261113T195345-400acccd	2026-11-13T20:15:18Z
+fix:filinq:2061:0c60fc72	fixed: deep-link test reads manifest.d fragments; pushed cbadad25, REVERIFY recorded	session-20261113T195348-92cf741a	2026-11-13T20:15:47Z
