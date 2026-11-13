@@ -5543,3 +5543,4 @@ versioniq	674	9d4240dd376faadbfe42cb6d484bd08b45b15e0a	GREEN	worker-55	1356 test
 learniq	2458	8f859bf5455ad8979920c84c3929cb48e1a7f600	GREEN	worker-19	tree dev+2458+2459: unit 6271 tests, 1 failure inherited from development (HigherEducationExampleSetTest); no new failures; tests only
 learniq	2459	25d374627d40e24ee79338ef4b69e503faf38270	GREEN	worker-19	tree dev+2458+2459: unit 6271 tests, 1 failure inherited from development (HigherEducationExampleSetTest); no new failures; tests only
 learniq	2460	6a2ecbd87473690e9e032d76814b5457a886b23b	CONFLICT	worker-19	22 test files conflict with development (coverage metadata lines already changed there); not merged into the tree
+pipelinq	3696	a8202aa4647ec7f7cd6e3aac65fde67d74d728de	GREEN	worker-31	phpunit 6454 tests, 1 failure inherited from development (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), new failures 0; vitest 546 files/3915 tests pass; tests only
