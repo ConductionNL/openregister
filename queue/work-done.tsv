@@ -6937,3 +6937,4 @@ review:openregister:10328:3b20924d	APPROVE 10328: docs only, matches MdtoXmlGene
 verify:decidiq:2150:11062045	decidiq #2150 GREEN (3923 tests, 0 new failures)	session-20261113T212406-cc34ae8b	2026-11-13T21:26:00Z
 build4:openregister:flow-engine-docs	already done: no code task left; open are Sharing (waits until per-flow sharing ships, doc already states it) and the live-instance spot check	session-20261113T205332-17038cbf	2026-11-13T21:26:23Z
 gap:pipelinq:secretscanning:20261113212207	PR #3789: false positive (16-char test fixture), file-scoped generic-api-key allowlist; gitleaks clean	session-20261113T212414-55623216	2026-11-13T21:27:25Z
+verify:opencatalogi:2652:60c1230b	2652 GREEN, 2653 GREEN; 0 new failures (2 inherited); note: package-lock out of sync on development (npm ci fails)	session-20261113T212408-9b94abf8	2026-11-13T21:27:22Z
