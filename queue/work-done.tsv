@@ -6444,3 +6444,4 @@ build3:openregister:records-bulk-transition	partial: PR #10318 tasks 1.1 (explic
 review:openregister:10315:269e7b06	APPROVE: opt-in search result declaration, undeclared unchanged; phpstan clean, suites green	session-20261113T192651-cb1e4daf	2026-11-13T19:50:38Z
 verify:shillinq:3014:05638130	GREEN 3014 (tests only)	session-20261113T185327-0dc82b88	2026-11-13T19:50:52Z
 review:openregister:10312:1c914e4d	APPROVE 10312	session-20261113T175400-7ec3993f	2026-11-13T19:51:47Z
+verify:stackiq:1895:78a4ba9c	GREEN 1895 (tests only, 3397->3404, 0 failures)	session-20261113T172349-00278d9d	2026-11-13T19:52:02Z
