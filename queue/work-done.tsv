@@ -4631,3 +4631,4 @@ verify:stackiq:1873:09eb6c07	GREEN #1873	session-20261113T071631-5a3cc070	2026-1
 cover:shillinq:05639debm0c05:60c2c265	PR #2931: 8 phpunit files (29 tests) for untested lib/Controller request value objects; suite 10087->10116, only pre-existing clock-bound failure	session-20261113T094602-d25cda2a	2026-11-13T11:47:55Z
 build:openregister:draft-creation-side-effects	failed: no code task open; only 5.1 check:strict of the merged build and 5.2 live pass (needs an instance)	session-20261113T104523-578f6e7a	2026-11-13T11:47:48Z
 verify:pipelinq:3728:dabff859	GREEN 3728,3742,3744; CONFLICT 3743	session-20261113T051703-1b54bfba	2026-11-13T11:47:56Z
+fix:pipelinq:3743:7e564b1c	merged development, checks green; new head a7b9c340, REVERIFY recorded	session-20261113T064519-30004ad4	2026-11-13T11:48:30Z
