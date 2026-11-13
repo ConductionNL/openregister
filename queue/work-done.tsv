@@ -6555,5 +6555,6 @@ cover:dossiq:069ee2d6mbd37:38e80a9f	already done: lib/Command/*.php at 99.59% (7
 cover:pipelinq:7f9dc8e6m8ce9:36ac5d07	no PR: lib/Service/LineTotals already 100% lines (LineRollUp 41/41, LineTotalMath 17/17, LineParent 1/1) under 30 tests incl. edge-case suites	session-20261113T195351-a32c6d55	2026-11-13T20:08:49Z
 verify:filinq:2060:d629df5c	GREEN 2060,2062-2066,2068; RED 2061 (deep-link route test); CONFLICT 2067 (register files)	session-20261113T175327-6e4e7f28	2026-11-13T20:08:48Z
 cover:dossiq:069ee2d6mbd37:0c7c4f5d	already done: lib/Service/Term/*.php at 100.0% (483/483) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:09:20Z
+cover:integriq:92114ab0m0593:38e80a9f	already done: lib/Command/*.php at 901/901 lines (100%) at 81441e2b	session-20261113T172349-00278d9d	2026-11-13T20:09:33Z
 build:filinq:zgw-document-bridge	partial: PR #2094 (1.1, 1.2, 2.1, 2.3 done; pick-up, controller, screens left); suite 6443->6450 green	session-20261113T182404-f2c28226	2026-11-13T20:09:16Z
 verify:filinq:2068:b584ad87	7 GREEN (2068,2069,2071,2073-2076), 2 CONFLICT (2070,2072); queue row was truncated after 2076	session-20261113T175400-7ec3993f	2026-11-13T20:09:41Z
