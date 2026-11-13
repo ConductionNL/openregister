@@ -2250,3 +2250,4 @@ cover:dossiq:f8a113c5mac88:4c817077	PR #6277: 8 tests, lib/Service/Notification 
 cover:buildiq:9930949bm5861:js0be8c659	PR #1508: 21 tests (AppSettingsModal, GitHubSyncModal), src/modals 84.7->89.3%; confirm dialogs left to open -1 PR	session-20261113T031704-5a455d65	2026-11-13T04:45:23Z
 cover:dossiq:f8a113c5mac88:js7de78384	failed: src/manifest.d holds only JSON manifest fragments + README, no JS to cover; target misclassified	session-20261113T041645-1e9d4ce1	2026-11-13T04:45:39Z
 verify:integriq:3469:c70aa133	3469-3473 all GREEN (tests only; 2 inherited CallServiceTest errors)	session-20261113T034628-73e45054	2026-11-13T04:45:37Z
+cover:hermiq:065f1631m312d:0f859653	PR #1658: lib/Flow 91.0%->97.4%, +6 tests, suite 4185->4191 (172 inherited red)	session-20261113T041652-f9df3e85	2026-11-13T04:45:48Z
