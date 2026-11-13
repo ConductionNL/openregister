@@ -291,6 +291,11 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
+			<!-- After the register import: a credential written before the derived
+			     share lists existed, or by a path that bypassed the deriver, has
+			     sharedUsers/sharedGroups brought in line with its sharedWith
+			     (shared-credentials-and-flows 3.7). Rewrites only stale rows. -->
+			<step>OCA\OpenRegister\Repair\RepairSharedPrincipalLists</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDestructionListRegister</step>

@@ -3136,6 +3136,7 @@ Service/Sharing/AccessLinkMintGuard.php,85,Service,Access,Access/Service/Sharing
 Service/Sharing/AccessLinkService.php,266,Service,Access,Access/Service/Sharing/AccessLinkService.php,1,,Core
 Service/Sharing/AccessLinkSubject.php,30,Service,Access,Access/Service/Sharing/AccessLinkSubject.php,0,446,Core
 Service/Sharing/SharePrincipalDeriver.php,70,Service,Integrations,Integrations/Service/Sharing/SharePrincipalDeriver.php,0,,Core
+Service/Sharing/SharePrincipalRepair.php,126,Service,Integrations,Integrations/Service/Sharing/SharePrincipalRepair.php,0,,Core
 Service/ShippedBaseline/AuthorizationBlocks.php,114,Service,Configuration,Configuration/Service/ShippedBaseline/AuthorizationBlocks.php,0,,Configuration
 Service/ShippedBaseline/DescriptorParts.php,72,Service,Configuration,Configuration/Service/ShippedBaseline/DescriptorParts.php,1,,Configuration
 Service/ShippedBaseline/DivergenceComparator.php,88,Service,Configuration,Configuration/Service/ShippedBaseline/DivergenceComparator.php,1,,Configuration
@@ -4116,3 +4117,4 @@ Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/Obje
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
+Repair/RepairSharedPrincipalLists.php,,Repair,,,,,Platform
