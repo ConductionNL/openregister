@@ -4180,3 +4180,4 @@ cover:portaliq:b60f3b81:81b1241f	already done: lib/Portal/*.php 129/132 stmts (9
 cover:openregister:7350e3efmea52:7a62cd5d	PR #10120: 7 tests, Service/Dbal 92.2%->95.6%	session-20261113T071631-5a3cc070	2026-11-13T10:12:01Z
 verify:stackiq:1867:6770aa5b	1867 GREEN: tests only, suite 3270 no failures	session-20261113T074532-3dc49c57	2026-11-13T10:12:20Z
 cover:portaliq:b60f3b81:11ce03ab	PR #2392: 18 tests for Theme (3 new files + 2 extended), lib/Service/Theme 97.7->100%, suite 4527->4545 OK	session-20261113T094606-b7da8c7f	2026-11-13T10:12:23Z
+cover:portaliq:b60f3b81:7a286478	PR #2393: covered 5 untested lib/Service/Identity classes (RegisteredDetailsShape, PortalAccountLookup, MandateParties, ContactOverview, ContactAddressValues), each 0%->100%, 40 tests; dir 91.01%->93.99%, below 95 target as the rest is in large existing-test services	session-20261113T091531-f9ad21ac	2026-11-13T10:12:31Z
