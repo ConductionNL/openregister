@@ -1561,3 +1561,24 @@ keepiq	1750	3fa421f5ad57587fe2cbe03e780b2308c956485c	MERGED	merge-local	GATE OK 
 keepiq	1748	b7d7047304dff62f4607a3a248fa4f127b92cc46	RED	merge-local	GATE RED floor: unit_complexity: 4.44 -> 4.41
 keepiq	1751	8742fe72483295e9b46fac520245ef7ab7f3c54c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1752	a57772f791cce271eb1bc1030eb9cb6a2226a8f8	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1111	20bf4791d8632d07ef4ab020f51b79d76185306a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6281	22cf87006d6df6ba848d44fbf6274a6ce9425b21	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6295	b7529b6eba7a36583a30a983d9c9d77520d1a926	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6300	ed842e92ccf1359bcd4b23501b4ac328bc95caad	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6301	3cca74b18a7206cc73b3fa375b12c46da52f20d4	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6302	52de79f98c19f8313ac32ad201a9f5176f9593e1	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6303	eb9fbf87cf28c0bbc23b3e5b3b0c2db3d515acb1	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6304	51303319ea04d57b1eaeb7c6754cdedcbdf62093	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6305	ef9a86d76d04e9cb3469f39be4ddbee978d48186	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6306	ce1960223700d552c45ee8e7c23723346244e832	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6307	f6a3a9d6f4104a88bcd429152ef60f4ce6a93be3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6308	6c7122e7a7cce7a19bc1fab48b9b9521e2f40cd2	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6309	9da83645864f1adc2d8f63291387e14f5ac1267e	SKIP	merge-local	GATE UNMEASURED 9da8364586 does not merge cleanly onto development
+dossiq	6310	54d8ae101f67950026fe045bbb9f0f1ecb76179b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6311	02430c2c7dcf79d3445f991ad0713eab6e140256	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6312	d8db4c5c20063158b699598f4874eda85f174245	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6313	58fd9004db4b2992965e4fc6c9cd2f7a376ac17f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6314	f5190e91cec234c50520d570cc675f4ab940a19a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6315	e779507ecdb87ba4c23d52a8cf9ab5571f2daced	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6316	95a280b35ab2c02e3542cd4762648a4a42880312	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6317	36a475e2648df17037f5b3e85851ff7fdeb46a49	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
