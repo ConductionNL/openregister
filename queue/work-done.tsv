@@ -7235,3 +7235,4 @@ build4:openregister:working-calendar-admin	partial: PR #10454 adds C67.5 blackou
 build:learniq:workplace-leerbedrijf-check-through-integriq	failed: blocked by the change's own task 0.1 (gap decision is defer; Ruben must confirm the move to build) and integriq development has no SBB source or lookup route to call	session-20261113T205325-28f592a9	2026-11-13T22:37:37Z
 build:learniq:grade-scale-set-by-the-school	PR #2498: GradeScaleRule rounding + band pass flag wired into formula/pass evaluators, tags, 6 tests; 3.1 archive left	session-20261113T205337-4c32e19e	2026-11-13T22:38:01Z
 review:openregister:10430:6908999f	APPROVE #10430	session-20261113T202619-0d7929e0	2026-11-13T22:37:57Z
+build:learniq:timetabling-student-choice-placement	already done: every code task is ticked; left are 1.10 (live check with planninq v2), 2.1b (Playwright) and 3.2 (archive), none buildable in code	session-20261113T205325-28f592a9	2026-11-13T22:38:03Z
