@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -50,7 +51,9 @@ use UnexpectedValueException;
 /**
  * Merges branch item lists — append, merge-by-key, or unique.
  */
-class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, IFlowNodeConfigKeys,
+	IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowSideEffectFree
+{
 
 	/**
 	 * The modes this node understands.
@@ -105,6 +108,34 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	public function configKeys(): array {
 		return ['mode', 'key'];
 	}//end configKeys()
+
+	/**
+	 * How the arriving branches are combined, and the field they are matched on.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'mode',
+				'label' => $this->l10n->t('How to combine'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'"append" keeps every item in branch order (the default), "mergeByKey" joins '
+						. 'the items that share a key into one, "unique" keeps only the first item per key.'
+				),
+			],
+			[
+				'key' => 'key',
+				'label' => $this->l10n->t('Key field'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The field items are matched on. Needed for '
+					. '"mergeByKey" and "unique"; when two branches set the same field, the later branch wins.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject an unknown mode, or a keyed mode with no key.
