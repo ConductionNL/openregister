@@ -6158,3 +6158,4 @@ cover:decidiq:a5f973bbm5a4d:be0dcca9	already done: lib/Mcp/*.php at 534/534 line
 cover:decidiq:a5f973bbm5a4d:e372e6ff	already done: lib/Event/*.php at 145/145 lines (100%) at 40e4458b	session-20261113T172349-00278d9d	2026-11-13T19:02:03Z
 cover:decidiq:a5f973bbm5a4d:58192586	already done: lib/Service/Records at 371/379 lines (97.9%) at 40e4458b	session-20261113T172349-00278d9d	2026-11-13T19:02:14Z
 verify:dossiq:6436:da39032e	GREEN #6436 (tests only; 16535 tests, same 20 inherited failures)	session-20261113T181000-9baff50f	2026-11-13T19:02:27Z
+verify:opencatalogi:2598:168a9315	GREEN 2598	session-20261113T172334-4b3b027b	2026-11-13T19:02:34Z
