@@ -2394,3 +2394,4 @@ cover:dossiq:f8a113c5mac88:ab2de1d0	PR #6285: 15 edge tests for ObligationDeclar
 verify:pipelinq:3669:2570871f	2/2 GREEN (3669, 3670): clean merge, phpunit +13 no new failures, vitest 3871 pass, tests only	session-20261113T044737-f37de8e3	2026-11-13T05:26:47Z
 cover:pipelinq:f67520ecmc4ba:d39f9857	already done: lib/Support/FleetAppId.php at 100% lines (32/32)	session-20261113T044737-f37de8e3	2026-11-13T05:27:12Z
 review:openregister:10099:cbc55f04	APPROVE: tests only, 17 new tests pass, required suites green	session-20261113T051710-d9c31c61	2026-11-13T05:28:02Z
+cover:dossiq:f8a113c5mac88:c3bd9e51	already done: ServiceAccount/ 93/93 lines (100%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:28:10Z
