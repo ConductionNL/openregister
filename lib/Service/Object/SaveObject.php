@@ -60,6 +60,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\UuidFormat;
@@ -2551,9 +2552,10 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return void
 	 *
-	 * @throws Exception When the incoming data touches an unauthorized property.
+	 * @throws PropertyWriteNotAuthorizedException When the incoming data touches a property the caller may not modify.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md
 	 */
 	private function refuseUnauthorizedProperties(ObjectSaveCall $call): void {
 		$isCreate = ($call->uuid === null);
@@ -2571,9 +2573,7 @@ class SaveObject implements SaveObjectInterface {
 		);
 
 		if (empty($unauthorizedProps) === false) {
-			throw new Exception(
-				'You are not authorized to modify the following properties: ' . implode(', ', $unauthorizedProps)
-			);
+			throw new PropertyWriteNotAuthorizedException(properties: array_values($unauthorizedProps));
 		}
 	}//end refuseUnauthorizedProperties()
 

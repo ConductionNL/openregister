@@ -2354,6 +2354,7 @@ class RenderObject implements RenderObjectInterface {
 		// the strip because the two must agree: what was just removed is what
 		// `hidden` names. StateFieldRuleListener still enforces them on save.
 		$this->attachFieldRules(run: $run, stored: $unprojectedData);
+		$this->attachReadOnlyProperties(run: $run, stored: $unprojectedData);
 
 		$run->data = $this->decryptRenderedProperties(schema: $run->schema, objectData: $run->data);
 
@@ -3430,6 +3431,47 @@ class RenderObject implements RenderObjectInterface {
 
 		$run->entity->setFieldRules($rules->jsonSerialize());
 	}//end attachFieldRules()
+
+	/**
+	 * Publish `@self.readOnlyProperties`: the properties this reader may read
+	 * but not change, from the property-level authorization the API enforces.
+	 *
+	 * A hint for a form to disable those inputs; the save path refuses the same
+	 * write either way. Only on an RBAC read, and only when there is something
+	 * to list, so an admin and a schema without property authorization carry
+	 * nothing. A failure is logged and swallowed, as the field-rules hint is.
+	 *
+	 * @param RenderRun $run    The render, with the resolved schema.
+	 * @param array     $stored The object data before caller projection, for a rule's `match` condition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md#requirement-the-client-knows-which-fields-it-may-not-change
+	 */
+	private function attachReadOnlyProperties(RenderRun $run, array $stored): void {
+		if ($run->schema === null || $run->context->rbac === false) {
+			return;
+		}
+
+		try {
+			$readOnly = $this->propertyRbacHandler->readOnlyProperties(schema: $run->schema, object: $stored);
+		} catch (\Throwable $e) {
+			$this->runtime->logger->debug(
+				sprintf(
+					'[RenderObject] read-only properties could not be resolved for %s: %s',
+					(string)$run->entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+			return;
+		}
+
+		if ($readOnly === []) {
+			return;
+		}
+
+		$run->entity->setReadOnlyProperties($readOnly);
+	}//end attachReadOnlyProperties()
 
 	/**
 	 * Attach `@self._clocks`: the AVG date and the Archiefwet date, each with

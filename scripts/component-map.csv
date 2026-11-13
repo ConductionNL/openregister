@@ -1042,6 +1042,7 @@ Exception/ObjectExistsException.php,19,Exception,Exception,Exception/ObjectExist
 Exception/ObjectFileAccessDeniedException.php,21,Exception,Exception,Exception/ObjectFileAccessDeniedException.php,0,,Kernel
 Exception/ObjectFolderConflictException.php,6,Exception,Exception,Exception/ObjectFolderConflictException.php,0,,Kernel
 Exception/ObjectStateWriteException.php,82,Exception,Exception,Exception/ObjectStateWriteException.php,0,,Kernel
+Exception/PropertyWriteNotAuthorizedException.php,85,Exception,Exception,Exception/PropertyWriteNotAuthorizedException.php,0,,Kernel
 Exception/OfficeOpenRefusedException.php,20,Exception,Exception,Exception/OfficeOpenRefusedException.php,0,,Kernel
 Exception/OfficeServerRequiredException.php,15,Exception,Exception,Exception/OfficeServerRequiredException.php,0,,Kernel
 Exception/OrganisationSlugConflictException.php,13,Exception,Exception,Exception/OrganisationSlugConflictException.php,9,,Kernel
