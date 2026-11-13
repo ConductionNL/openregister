@@ -3717,3 +3717,4 @@ cover:dossiq:069ee2d6m7e79:jsd48eb217	already done: src/store/modules at 96.4% l
 cover:pipelinq:7f9dc8e6m916f:168f7791	already done: lib/Dossiq is one static-data provider with 2 test files (batch -1 exists); nothing left to cover; no PR	session-20261113T072715-cf04db4e	2026-11-13T09:05:45Z
 cover:dossiq:069ee2d6m7e79:js0be8c659	covered by open PRs dossiq#6261+#6317: src/modals/* 727/897 (81.1%) -> 817/897 (91.1%) combined; PR budget used	session-20261113T051703-1b54bfba	2026-11-13T09:06:04Z
 cover:pipelinq:7f9dc8e6m916f:f0c02922	already done: development tests every branch of LogBerichtenboxAdapter; open batches -1 and -2 add the remaining edge cases (and overlap each other); no PR	session-20261113T072715-cf04db4e	2026-11-13T09:06:24Z
+verify:integriq:3515:3cef6121	2 GREEN (3515, 3516), tests-only, no new failures	session-20261113T084521-fd8a31c7	2026-11-13T09:06:16Z
