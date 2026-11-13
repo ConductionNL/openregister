@@ -1298,3 +1298,5 @@ launchpad	1175	b36da8bea115f254ee4bb314c4813f9d51087e9f	MERGED	merge-local	GATE 
 dossiq	6330	fd9bc4b8b91b2442afe6360a33362dd132d7c984	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2438	958f268b62c1ebd070fe7611a358eb2a01b97113	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2439	593b59dae40344039fd55d62cb3b74929f15bfa6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1524	82ce07c5670ec35b13ce956d509ce00f237674c6	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+dossiq	6331	b0ed1a7d33abac0895c2008099a631ea3d48d3fb	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
