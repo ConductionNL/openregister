@@ -5265,3 +5265,14 @@ verify:pipelinq:3754:a2c8bcab	verify	pipelinq	development	merge	prs=3754@2d2541a
 verify:shillinq:2939:fe7cf195	verify	shillinq	development	merge	prs=2939@ba97f1f0047083eebd35763b9561c21a8dc3ace9	2026-11-13T12:15:17Z
 merge:pipelinq:3743:ff9392bc	merge	pipelinq	development	development	prs=3743@222fa459e19bbc0c4f9efa55f0f2e055f7d0e121,3748@31cb846ec448de79964868c85163ef60210a2469	2026-11-13T12:15:17Z
 merge:launchpad:1187:9363eb59	merge	launchpad	development	development	prs=1187@468907f96b02756394cf9b6b5abe843ff85ea537	2026-11-13T12:15:17Z
+review:openregister:10166:f81d25a0	review	openregister	main	10166	sha=f81d25a0068eb46478903dbc976d25b58004d70d;last_approved=;title=feat(openregister): build config-import-seed-objects	2026-11-13T12:20:21Z
+review:openregister:10167:e33911f8	review	openregister	main	10167	sha=e33911f82d4ca8d9aa368f902b2fccfd03246f4a;last_approved=;title=feat(openregister): build leaf-reference-provider-convergence	2026-11-13T12:20:21Z
+review:openregister:10168:27f234c2	review	openregister	main	10168	sha=27f234c20e64c3a42eb38932e3f00cc355d5acda;last_approved=;title=feat(openregister): build dbal-source-resolution-system-context	2026-11-13T12:20:21Z
+review:openregister:10169:bb4406de	review	openregister	main	10169	sha=bb4406de13f0eb0566f9f67275b8a45c6ce5920e;last_approved=;title=feat(openregister): build anonymisation-discloses-itself	2026-11-13T12:20:21Z
+review:openregister:10170:dbb679c8	review	openregister	main	10170	sha=dbb679c8de151a1bcf6e4ed68e4bfe0052af9b31;last_approved=;title=feat(openregister): build flow-engine-unification	2026-11-13T12:20:21Z
+review:openregister:10171:8a15efcd	review	openregister	main	10171	sha=8a15efcdd376d92e2f7675534655c67c1dde9e85;last_approved=;title=feat(openregister): build incremental-sync-for-api-consumers (deletion and restore move updated)	2026-11-13T12:20:21Z
+review:openregister:10172:8acb05a2	review	openregister	main	10172	sha=8acb05a2ea45a85da66fda183e714841a3882fd6;last_approved=;title=feat(openregister): build leaf-mount-render-escape-hatch	2026-11-13T12:20:21Z
+verify:portaliq:2388:856b3bfe	verify	portaliq	development	merge	prs=2388@45d8f99f97efb6f6d11f60c29058dd2aa28fcf50	2026-11-13T12:20:21Z
+merge:shillinq:2819:c4032723	merge	shillinq	development	development	prs=2819@c6c0b8c1134a82fd85b5eb3acaf0418ad0d0df55,2930@a50e12ea6aff1f48bee9eb77b7b2c2e6038f5431	2026-11-13T12:20:21Z
+merge:launchpad:1188:02d6964f	merge	launchpad	development	development	prs=1188@1cf1fd8175abd79cff0910a1b194af1ffa40da8c	2026-11-13T12:20:21Z
+cover:pipelinq:7f9dc8e6m84dd:f545d745	cover	pipelinq	development	quality/test-coverage-f545d745	lang=php;dirs=lib/Repair/*.php;focus=uncovered;weight=723;coverage=86.73;target=90.0	2026-11-13T08:52:32Z
