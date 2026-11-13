@@ -1,0 +1,696 @@
+{
+ "app": "dossiq",
+ "commit": "88024ca75657fde080cb8e4497819129743cb294",
+ "measured_at": "2026-11-13T02:00:51Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 0.0,
+  "statements": 99368,
+  "covered": 0,
+  "dirs": {
+   "lib/": [
+    51,
+    0
+   ],
+   "lib/AppInfo/": [
+    56,
+    0
+   ],
+   "lib/AppInfo/Registrar/": [
+    859,
+    0
+   ],
+   "lib/BackgroundJob/": [
+    659,
+    0
+   ],
+   "lib/BulkAction/": [
+    232,
+    0
+   ],
+   "lib/Command/": [
+    737,
+    0
+   ],
+   "lib/Command/Backfill/": [
+    164,
+    0
+   ],
+   "lib/Contribution/": [
+    65,
+    0
+   ],
+   "lib/Controller/": [
+    12286,
+    0
+   ],
+   "lib/Controller/Support/": [
+    299,
+    0
+   ],
+   "lib/Dashboard/": [
+    73,
+    0
+   ],
+   "lib/Event/": [
+    7,
+    0
+   ],
+   "lib/Exception/": [
+    45,
+    0
+   ],
+   "lib/Flow/": [
+    374,
+    0
+   ],
+   "lib/Http/": [
+    50,
+    0
+   ],
+   "lib/Integration/": [
+    113,
+    0
+   ],
+   "lib/Lifecycle/": [
+    209,
+    0
+   ],
+   "lib/Listener/": [
+    4084,
+    0
+   ],
+   "lib/Listener/Support/": [
+    160,
+    0
+   ],
+   "lib/Mcp/": [
+    10,
+    0
+   ],
+   "lib/Middleware/": [
+    191,
+    0
+   ],
+   "lib/Notification/": [
+    191,
+    0
+   ],
+   "lib/Portal/": [
+    1412,
+    0
+   ],
+   "lib/Repair/": [
+    5948,
+    0
+   ],
+   "lib/Repair/Support/": [
+    175,
+    0
+   ],
+   "lib/Review/": [
+    1300,
+    0
+   ],
+   "lib/Sections/": [
+    5,
+    0
+   ],
+   "lib/Service/": [
+    19394,
+    0
+   ],
+   "lib/Service/Access/": [
+    1137,
+    0
+   ],
+   "lib/Service/Actions/": [
+    202,
+    0
+   ],
+   "lib/Service/Activity/": [
+    24,
+    0
+   ],
+   "lib/Service/Advice/": [
+    258,
+    0
+   ],
+   "lib/Service/Ai/": [
+    405,
+    0
+   ],
+   "lib/Service/AppointmentBackend/": [
+    62,
+    0
+   ],
+   "lib/Service/Archival/": [
+    154,
+    0
+   ],
+   "lib/Service/Assessment/": [
+    78,
+    0
+   ],
+   "lib/Service/Assistant/": [
+    250,
+    0
+   ],
+   "lib/Service/Berichtenbox/": [
+    59,
+    0
+   ],
+   "lib/Service/BerichtenboxAdapter/": [
+    136,
+    0
+   ],
+   "lib/Service/Beschikking/": [
+    856,
+    0
+   ],
+   "lib/Service/Bezwaar/": [
+    1556,
+    0
+   ],
+   "lib/Service/Board/": [
+    49,
+    0
+   ],
+   "lib/Service/Bulk/": [
+    127,
+    0
+   ],
+   "lib/Service/CaseDefinition/": [
+    1190,
+    0
+   ],
+   "lib/Service/CasePlanDrain/": [
+    186,
+    0
+   ],
+   "lib/Service/CaseShare/": [
+    7,
+    0
+   ],
+   "lib/Service/CaseTransfer/": [
+    9,
+    0
+   ],
+   "lib/Service/CaseType/": [
+    1497,
+    0
+   ],
+   "lib/Service/Cases/": [
+    1565,
+    0
+   ],
+   "lib/Service/Catalogue/": [
+    154,
+    0
+   ],
+   "lib/Service/Checklist/": [
+    54,
+    0
+   ],
+   "lib/Service/Complaint/": [
+    291,
+    0
+   ],
+   "lib/Service/Consultation/": [
+    378,
+    0
+   ],
+   "lib/Service/Conversation/": [
+    375,
+    0
+   ],
+   "lib/Service/Csv/": [
+    11,
+    0
+   ],
+   "lib/Service/Custody/": [
+    629,
+    0
+   ],
+   "lib/Service/Dashboard/": [
+    160,
+    0
+   ],
+   "lib/Service/DecisionDocument/": [
+    378,
+    0
+   ],
+   "lib/Service/Deelzaak/": [
+    152,
+    0
+   ],
+   "lib/Service/Dmn/": [
+    70,
+    0
+   ],
+   "lib/Service/DocumentSeries/": [
+    155,
+    0
+   ],
+   "lib/Service/Documents/": [
+    56,
+    0
+   ],
+   "lib/Service/Doorlooptijd/": [
+    364,
+    0
+   ],
+   "lib/Service/Drafts/": [
+    177,
+    0
+   ],
+   "lib/Service/Dso/": [
+    298,
+    0
+   ],
+   "lib/Service/Email/": [
+    1874,
+    0
+   ],
+   "lib/Service/Email/Filters/": [
+    157,
+    0
+   ],
+   "lib/Service/Export/": [
+    44,
+    0
+   ],
+   "lib/Service/External/": [
+    60,
+    0
+   ],
+   "lib/Service/External/Brk/": [
+    176,
+    0
+   ],
+   "lib/Service/External/Woz/": [
+    165,
+    0
+   ],
+   "lib/Service/FileSet/": [
+    44,
+    0
+   ],
+   "lib/Service/Flow/": [
+    1241,
+    0
+   ],
+   "lib/Service/FrozenRecord/": [
+    184,
+    0
+   ],
+   "lib/Service/Gdpr/": [
+    237,
+    0
+   ],
+   "lib/Service/Governance/": [
+    63,
+    0
+   ],
+   "lib/Service/Hearing/": [
+    5,
+    0
+   ],
+   "lib/Service/Import/": [
+    496,
+    0
+   ],
+   "lib/Service/Inspection/": [
+    373,
+    0
+   ],
+   "lib/Service/Intake/": [
+    2001,
+    0
+   ],
+   "lib/Service/Kcc/": [
+    800,
+    0
+   ],
+   "lib/Service/Lifecycle/": [
+    893,
+    0
+   ],
+   "lib/Service/Mandaat/": [
+    142,
+    0
+   ],
+   "lib/Service/Mcp/": [
+    404,
+    0
+   ],
+   "lib/Service/Milestone/": [
+    358,
+    0
+   ],
+   "lib/Service/Money/": [
+    849,
+    0
+   ],
+   "lib/Service/Notes/": [
+    165,
+    0
+   ],
+   "lib/Service/Notice/": [
+    24,
+    0
+   ],
+   "lib/Service/Notification/": [
+    372,
+    0
+   ],
+   "lib/Service/Obligations/": [
+    177,
+    0
+   ],
+   "lib/Service/Onboarding/": [
+    11,
+    0
+   ],
+   "lib/Service/Outbound/": [
+    91,
+    0
+   ],
+   "lib/Service/Pause/": [
+    324,
+    0
+   ],
+   "lib/Service/Pdok/": [
+    203,
+    0
+   ],
+   "lib/Service/People/": [
+    986,
+    0
+   ],
+   "lib/Service/Permit/": [
+    102,
+    0
+   ],
+   "lib/Service/Pipelinq/": [
+    521,
+    0
+   ],
+   "lib/Service/PlannedAction/": [
+    163,
+    0
+   ],
+   "lib/Service/ProcessMining/": [
+    571,
+    0
+   ],
+   "lib/Service/Product/": [
+    147,
+    0
+   ],
+   "lib/Service/Publication/": [
+    339,
+    0
+   ],
+   "lib/Service/Queue/": [
+    926,
+    0
+   ],
+   "lib/Service/Queue/Source/": [
+    351,
+    0
+   ],
+   "lib/Service/RecordTemplate/": [
+    19,
+    0
+   ],
+   "lib/Service/Recycle/": [
+    444,
+    0
+   ],
+   "lib/Service/Redaction/": [
+    296,
+    0
+   ],
+   "lib/Service/Registry/": [
+    100,
+    0
+   ],
+   "lib/Service/Relation/": [
+    714,
+    0
+   ],
+   "lib/Service/Remedy/": [
+    93,
+    0
+   ],
+   "lib/Service/Reporting/": [
+    543,
+    0
+   ],
+   "lib/Service/Routing/": [
+    538,
+    0
+   ],
+   "lib/Service/Routing/Strategy/": [
+    138,
+    0
+   ],
+   "lib/Service/ServiceAccount/": [
+    96,
+    0
+   ],
+   "lib/Service/Session/": [
+    301,
+    0
+   ],
+   "lib/Service/Settings/": [
+    507,
+    0
+   ],
+   "lib/Service/Setup/": [
+    300,
+    0
+   ],
+   "lib/Service/Sharing/": [
+    629,
+    0
+   ],
+   "lib/Service/SociaalDomein/": [
+    531,
+    0
+   ],
+   "lib/Service/Starter/": [
+    892,
+    0
+   ],
+   "lib/Service/Status/": [
+    504,
+    0
+   ],
+   "lib/Service/StepConfig/": [
+    94,
+    0
+   ],
+   "lib/Service/Stuf/": [
+    128,
+    0
+   ],
+   "lib/Service/Subsidie/": [
+    453,
+    0
+   ],
+   "lib/Service/Substitution/": [
+    298,
+    0
+   ],
+   "lib/Service/Support/": [
+    682,
+    0
+   ],
+   "lib/Service/Task/": [
+    855,
+    0
+   ],
+   "lib/Service/Team/": [
+    272,
+    0
+   ],
+   "lib/Service/TemplateLibrary/": [
+    4,
+    0
+   ],
+   "lib/Service/Tenant/": [
+    99,
+    0
+   ],
+   "lib/Service/TenantMigration/": [
+    0,
+    0
+   ],
+   "lib/Service/Term/": [
+    483,
+    0
+   ],
+   "lib/Service/Termijn/": [
+    1402,
+    0
+   ],
+   "lib/Service/Timeline/": [
+    221,
+    0
+   ],
+   "lib/Service/Transfer/": [
+    411,
+    0
+   ],
+   "lib/Service/Transitions/": [
+    1843,
+    0
+   ],
+   "lib/Service/Vth/": [
+    355,
+    0
+   ],
+   "lib/Service/WooPublication/": [
+    2,
+    0
+   ],
+   "lib/Service/Workflow/": [
+    612,
+    0
+   ],
+   "lib/Service/Zaakdossier/": [
+    1732,
+    0
+   ],
+   "lib/Service/Zgw/": [
+    2313,
+    0
+   ],
+   "lib/Settings/": [
+    106,
+    0
+   ],
+   "lib/SetupCheck/": [
+    44,
+    0
+   ],
+   "lib/Support/": [
+    60,
+    0
+   ],
+   "lib/Woo/": [
+    1557,
+    0
+   ]
+  }
+ },
+ "js": {
+  "pct": 85.5,
+  "statements": 11800,
+  "covered": 10089,
+  "dirs": {
+   "src/": [
+    36,
+    32
+   ],
+   "src/components/CapabilityComparison/": [
+    49,
+    45
+   ],
+   "src/components/case/": [
+    445,
+    390
+   ],
+   "src/components/caseType/": [
+    209,
+    183
+   ],
+   "src/components/dialog/": [
+    4,
+    4
+   ],
+   "src/components/initiator/": [
+    43,
+    41
+   ],
+   "src/data/": [
+    3,
+    3
+   ],
+   "src/dialogs/": [
+    2686,
+    2074
+   ],
+   "src/manifest.d/": [
+    2,
+    2
+   ],
+   "src/modals/": [
+    901,
+    686
+   ],
+   "src/services/": [
+    1624,
+    1568
+   ],
+   "src/store/": [
+    11,
+    11
+   ],
+   "src/store/modules/": [
+    770,
+    743
+   ],
+   "src/utils/": [
+    2427,
+    2363
+   ],
+   "src/views/": [
+    36,
+    36
+   ],
+   "src/views/admin/": [
+    54,
+    41
+   ],
+   "src/views/cases/components/": [
+    419,
+    328
+   ],
+   "src/views/casetypes/components/": [
+    99,
+    84
+   ],
+   "src/views/intake/": [
+    78,
+    72
+   ],
+   "src/views/public/": [
+    72,
+    68
+   ],
+   "src/views/reports/": [
+    6,
+    6
+   ],
+   "src/views/settings/": [
+    701,
+    454
+   ],
+   "src/views/settings/components/": [
+    506,
+    324
+   ],
+   "src/views/settings/tabs/": [
+    560,
+    476
+   ],
+   "src/views/widgets/": [
+    59,
+    55
+   ]
+  }
+ }
+}
