@@ -1097,4 +1097,5 @@ cover:pipelinq:f67520ec:js04169458	PR #3603: 19 vitest tests, 5 view dirs stmts 
 cover:learniq:1ae7757e:js4829b6aa	PR #2427: 45 loadSfc tests for ExportRequestView, RollCallView, EnrolmentForecastView; suite 1101->1146, 1 inherited l10n failure (.vue not in c8 measure)	session-20261112T234655-6f442bc3	2026-11-13T00:20:40Z
 cover:openregister:7350e3ef:76ffbaf3	already done: lib/Db/MagicMapper/*.php at 93.8% statements (5601/5971) from tests/Unit/Db alone on main, target 85; no PR	session-20261112T231638-72e59130	2026-11-13T00:20:25Z
 cover:decidiq:13261b1b:dfaef732	PR #2100: Notifier edge cases, 14 tests, suite 3116->3130, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:21:14Z
+fix:buildiq:1469:32a620ea	failed: remaining BLOCK is the PR's intended, spec'd feature (v1 aliases, Deprecation/API-Version headers, public OpenAPI doc); error bodies already unchanged; needs a human decision, not a code fix	session-20261113T002028-bc0aa910	2026-11-13T00:21:08Z
 cover:pipelinq:f67520ec:db729d29	PR #3602: 13 tests, Social dir 75.3%->~89.6%, suite 5774->5787, 1 inherited failure	session-20261112T234653-efce95ba	2026-11-13T00:21:12Z
