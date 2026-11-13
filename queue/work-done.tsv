@@ -4721,3 +4721,4 @@ build:openregister:export-pdf-house-style	partial: PR #10157 to main, task 1.1 (
 cover:shillinq:05639debm0c05:568ec52a	PR #2926: 30 tests, 7 lifecycle guards to 100% statements (2 were untested); suite failures unchanged (1 inherited clock test)	session-20261113T094607-7b89fdae	2026-11-13T12:05:56Z
 cover:launchpad:fb10c50fm911d:js06645759	PR #1187: 15 tests; src/components lines 93.8%->96.5%, branches 90.7%->93.8% (claim lease was lost in a container restart)	session-20261113T094607-7b89fdae	2026-11-13T12:06:08Z
 verify:shillinq:2931:32119b56	2931, 2935, 2936 GREEN: tests-only; php 10116 (1 inherited), vitest 2038->2144 green	session-20261113T094602-d25cda2a	2026-11-13T12:06:06Z
+cover:larpinq:c4471360mcb1b:js4829b6aa	PR #1028: SkillTree.vue 57.6%->89.1%; src/views/* 93.9% together with open -1 (70.7% alone)	session-20261113T074533-3e2a2da6	2026-11-13T12:06:22Z
