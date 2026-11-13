@@ -33,6 +33,9 @@ use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCA\OpenRegister\Service\Rules\ConditionJudgement;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
@@ -287,17 +290,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return array<string, mixed>|null
 	 */
 	private function conditionRefusal(LifecycleAttempt $attempt): ?array {
-		$edit    = $attempt->edit;
-		$refusal = $this->checks->conditionEvaluator->refusal(
-			spec: $attempt->spec,
-			newData: $edit->getNewData(),
-			oldData: $edit->getOldData(),
-			action: $attempt->action,
-			from: $edit->getFromState(),
-			to: $edit->getToState(),
-			schemaSlug: (string)$edit->declaration->schema->getSlug(),
-			field: $edit->declaration->field()
-		);
+		$refusal = $this->checks->conditionEvaluator->refusalOf(spec: $attempt->spec, attempt: $this->transitionAttempt(attempt: $attempt));
 		$this->recordCondition(attempt: $attempt, refusal: $refusal);
 
 		return $refusal;
@@ -463,14 +456,27 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return array<string, mixed>
 	 */
 	private function conditionDocument(LifecycleAttempt $attempt): array {
+		return $this->checks->conditionEvaluator->documentOf(attempt: $this->transitionAttempt(attempt: $attempt));
+	}//end conditionDocument()
+
+	/**
+	 * The write and the move of the matched transition, as the condition evaluator reads them.
+	 *
+	 * @param LifecycleAttempt $attempt The matched transition.
+	 *
+	 * @return TransitionAttempt
+	 */
+	private function transitionAttempt(LifecycleAttempt $attempt): TransitionAttempt {
 		$edit = $attempt->edit;
 
-		return $this->checks->conditionEvaluator->document(
-			newData: $edit->getNewData(),
-			oldData: $edit->getOldData(),
-			action: $attempt->action,
-			from: $edit->getFromState(),
-			to: $edit->getToState()
+		return new TransitionAttempt(
+			write: new LifecycleWrite(
+				newData: $edit->getNewData(),
+				oldData: $edit->getOldData(),
+				schemaSlug: (string)$edit->declaration->schema->getSlug(),
+				field: $edit->declaration->field()
+			),
+			move: new TransitionMove(action: $attempt->action, from: $edit->getFromState(), to: $edit->getToState())
 		);
-	}//end conditionDocument()
+	}//end transitionAttempt()
 }//end class

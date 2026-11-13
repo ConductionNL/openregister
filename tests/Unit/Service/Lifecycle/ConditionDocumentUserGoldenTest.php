@@ -97,7 +97,10 @@ final class ConditionDocumentUserGoldenTest extends TestCase {
 					'user' => $user,
 					'transition' => ['action' => 'close', 'from' => 'open', 'to' => 'closed'],
 				],
-				$evaluator->document(['a' => 1], ['a' => 0], 'close', 'open', 'closed')
+				$evaluator->documentOf(new \OCA\OpenRegister\Service\Lifecycle\TransitionAttempt(
+					write: new \OCA\OpenRegister\Service\Lifecycle\LifecycleWrite(newData: ['a' => 1], oldData: ['a' => 0], schemaSlug: '', field: ''),
+					move: new \OCA\OpenRegister\Service\Lifecycle\TransitionMove(action: 'close', from: 'open', to: 'closed')
+				))
 			);
 		}
 	}//end testTheTransitionDocumentNamesTheSessionUser()
