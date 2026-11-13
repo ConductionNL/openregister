@@ -3330,3 +3330,4 @@
 2026-11-13T13:11:17Z integrator-20261111T115842-a749432d GREEN tree 36a932ab11 on dev cfdd05df11 prs 15 front=ok: Tests: 59121, Assertions: 202964, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
 2026-11-13T13:11:55Z integrator-20261111T115842-a749432d MERGED-TREE 36a932ab11: 15 PRs in one push, main now 36a932ab11 = tested tree
 2026-11-13T13:17:34Z integrator-20261111T115842-a749432d CONFLICT-DEV #10188 295efa62
+2026-11-13T13:19:36Z integrator-20261111T115842-a749432d CONFLICT-DEV #10197 1ca18135
