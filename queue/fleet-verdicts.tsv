@@ -5761,3 +5761,4 @@ pipelinq	3721	38c600aaa11105d34e0d9e0e87e97cc36f3f384b	CONFLICT	worker-58	merge 
 pipelinq	3722	830f55ec406a959d704481c4505f8f438a90338a	GREEN	worker-58	phpunit 6827 on tree vs baseline 6791, 1 inherited failure, 0 new; vitest 586/4327 pass; new QuoteService plus tests, nothing existing changed
 pipelinq	3723	a9615a63e5b0211d728bb2a51a6e7560c0f64981	GREEN	worker-58	phpunit 6827 on tree vs baseline 6791, 1 inherited failure, 0 new; vitest 586/4327 pass; new contact-capture route/controller (session-checked) and services with tests
 pipelinq	3724	58e973cdbece9e8efc87974d5ff940d3e67a704e	GREEN	worker-58	phpunit 6827 on tree vs baseline 6791, 1 inherited failure, 0 new; vitest 586/4327 pass; tests only
+pipelinq	3725	7b4589e1ab21416e636bf07899933e56a6dcd540	CONFLICT	worker-58	merge conflict on the tree (routes/l10n/CrmPrivilegeRefusalGoldenTest); rebase on development needed
