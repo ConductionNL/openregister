@@ -4330,3 +4330,4 @@ verify:dossiq:6392:abc66d3f	GREEN 6392, 6393	session-20261113T081040-5e814df2	20
 cover:openregister:7350e3efme1f3:js5794e9fc	PR #10124: 6 tests for OrganisationConfiguration (computed options/hasChanges, selectDefaultOrganisation) and RegisterDescriptors (rowKey/rowClass/stateLabel/versionLabel); dir 92.72->93.38% lines	session-20261113T084521-fd8a31c7	2026-11-13T10:55:07Z
 verify:stackiq:1868:8b188e93	GREEN 1868: tests-only, 3279 tests 0 failures	session-20261113T104650-72c03e13	2026-11-13T10:55:06Z
 verify:shillinq:2928:96c2fd36	2928 GREEN	session-20261113T071633-17de823f	2026-11-13T10:55:19Z
+merge:decidiq:2121:a1dcfec2	merge-local over 1 decidiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:55:31Z
