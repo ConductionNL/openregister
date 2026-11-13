@@ -7198,3 +7198,4 @@ build:learniq:bpv-coach-today-and-placement-board	partial: PR #2492, T2 bpv-visi
 review:openregister:10415:9eb41f27	APPROVE: additive copy endpoint, suites green	session-20261113T210940-b751519f	2026-11-13T22:31:55Z
 build4:openregister:query-filter-through-a-reference	partial: PR #10449 applies _ref for single references and documents it; list references refused, facets/Solr/Newman left	session-20261113T213311-eb1a0842	2026-11-13T22:32:00Z
 build4:openregister:platform-share-provider	partial: PR #10450 routes platform-surface shares on object folders through the gate (opt-in + bit mapping); IShareProvider 1.1/1.2, e2e, live verification left	session-20261113T213320-1f5acbff	2026-11-13T22:32:06Z
+review:openregister:10426:6d5c8a8f	APPROVE 10426: opt-in sync header for deferred events, default unchanged	session-20261113T205332-17038cbf	2026-11-13T22:32:24Z
