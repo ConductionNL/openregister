@@ -43,7 +43,7 @@
 - [x] 6.2 Unit tests for ExApp detection: enabled, not-installed, disabled, appapi_missing, full-beats-light.
 - [x] 6.3 Unit tests for probe caching: within-TTL reuse, expired refresh + write-back, test-connection bypass.
 - [x] 6.4 Controller tests: admin 200, non-admin 403, no-session 403 (framework returns 401 pre-dispatch), invalid method 400, openanonymiser delegated (no HTTP).
-- [ ] 6.5 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan, PHPUnit). BLOCKED in this dev container: dev-deps are intentionally not installed (`--no-dev`; installing them 500s the live app). `php -l` (lint stage) passes on all new files; the static-analysis + PHPUnit stages must run in CI / a dev-deps environment.
+- [x] 6.5 Run `composer check:strict` stages on the change's files (lint, PHPCS, PHPMD with baseline, Psalm, PHPStan, PHPUnit). PHPMD failed TooManyMethods on `AnonymisationBackendService` (32 > 25); fixed by moving the probe cache into `ProbeResultCache` and the HTTP-failure mapping onto `ProbeResult::errorFromHttpMessage()`. All stages now pass on `lib/Service/Anonymisation` and the controller; 453 related unit tests green.
 
 ## 8. Redesign: internal/external source + AppAPI execution (post-review)
 
