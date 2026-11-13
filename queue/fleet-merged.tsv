@@ -504,3 +504,22 @@ hermiq	1611	7d6bc8aba38d3544d8ed290507c0e90b9c747b19	MERGED	merge-local	GATE OK 
 hermiq	1612	d4bebea7efe9518e99088ce1592f0e7c536d6af1	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1613	b6b1ea56dbc830140a10653837824b534e37c09c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1614	56913f84cf82ae3fbea0b9f899f0b672d3797567	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1106	379ed362a8602c2cc372333770e6503a615453fd	RED	merge-local	GATE RED checker floor: secretscanning: pass -> fail
+launchpad	1107	3f7f87e667fa28876d87ef6312010b8dbb69bdcd	RED	merge-local	GATE RED checker floor: adrvalidator: warn -> fail; secretscanning: pass -> fail; score: 77 -> 74
+launchpad	1109	c9075734883c11bb9c5297fbda1a7761da702f4d	RED	merge-local	GATE RED checker floor: secretscanning: pass -> fail
+launchpad	1117	e91297e020781d24dd73dfc710a674a60f8c8622	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1118	2e7af7e79cee5662357d05c872c6f141f5774308	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1119	8564248b334dc48455ee7373d6cec646fa6ac229	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1120	43c00cedc0bdb6d0d94c8226b36ccae0dad83bb3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1122	d8cb5009938f0e30ad45a9930ebf6ed710264146	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1123	f3d6f08eef3f30587c9e9125732f1af752826f2e	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1124	a29edd79c80712606cf441b4f41c1242f02b02eb	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1125	3cd1a863d81d8ef16b8f692cfefdccbd3aa99519	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1128	c741292d42fd094389aa0c800253c5be96f35002	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1129	83cd9a2d317349659546bba600570e799b75dd80	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1130	c12354b3f8fe22efb435967822de02a8b1592338	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1132	5fbe07dd5a984418f8bd67bce3425dc17f92f89d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1133	648a855f744441cd9af503c0899806dfd055be44	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1134	90944dbbe7cf8e3174b23b962fe6fbc7abb03c26	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1135	5c24ef4fc40a914363c8a2ecc39ed839d767b812	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1138	e654c7062e2ec27a1f1e006871a9e2d6c2440b72	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
