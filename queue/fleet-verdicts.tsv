@@ -5734,3 +5734,4 @@ hermiq	1683	2d99530497451c3be6b38fee4b0993d9ef2f0dfa	GREEN	worker-08	tree 4518 t
 hermiq	1684	7d1cd6ace379ea726d5703e4f5a1ffc802746cea	GREEN	worker-08	tree 4518 tests (base 4465); baseline 146 errors+26 failures inherited, identical set; no new failures; tests only
 humaniq	1111	20bf4791d8632d07ef4ab020f51b79d76185306a	GREEN	worker-09	tests only, merges clean; 3892 -> 3928 tests, all pass
 shillinq	2929	c9a02a763e10ceab8926dd0366b74988bd942b31	GREEN	worker-38	unit 10100 run on tree, baseline 10087 with 1 inherited clock-bound failure, no new failures; tests only
+opencatalogi	2587	0acdbab08bb37ce6d40a69b540a5d43776ff1eaf	GREEN	worker-27	tests-only; unit 5177 tests (baseline 5162, 2 inherited failures AppIdentityTest/WooControllerTest), +15 pass; no new failures
