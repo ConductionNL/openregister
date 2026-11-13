@@ -6197,3 +6197,4 @@ shillinq	2985	909231b1333dfe9da084190b2be86a283a1f46ec	GREEN	worker-54	tree of 7
 shillinq	2986	50a24a77efc50c7a3e24f7da92cb8fb15e7d0374	GREEN	worker-54	tree of 7: phpunit 10474 tests vs baseline 10394, same 1 inherited failure (clock-bound webhook data set); vitest 2295/2295 as on base; build PRs judged against their changes, access changes are added refusals
 shillinq	2987	82328584f9c6ec33310e1ca6ea26c10dd51dc617	CONFLICT	worker-54	conflicts with #2982 in tests/fixtures/register-versions.lock.json (and #2982/#2986 in appinfo/info.xml): register version bumps
 dossiq	6437	cd04bfd97b20addafada54909cf1c29073486fd8	GREEN	worker-38	tests only; phpunit-unit 16530->16551 on tree, baseline 20 failures, no new failures
+dossiq	6438	d1a49871e4a1298671ac40e6373fa2d2b0cfbeb5	GREEN	worker-38	tests only; phpunit-unit 16530->16551 on tree, baseline 20 failures, no new failures
