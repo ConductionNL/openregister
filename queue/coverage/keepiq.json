@@ -1,12 +1,12 @@
 {
  "app": "keepiq",
- "commit": "8a5d84f3c74896e758c87e523513c8d254a56bd4",
- "measured_at": "2026-11-13T10:57:56Z",
+ "commit": "ba7cc67b800031fdf7dd399953bcf4cb34c3fbe9",
+ "measured_at": "2026-11-13T14:02:16Z",
  "php": {
   "tool": "pcov",
-  "pct": 89.12,
+  "pct": 92.04,
   "statements": 25166,
-  "covered": 22427,
+  "covered": 23163,
   "dirs": {
    "lib/AppInfo/": [
     146,
@@ -22,7 +22,7 @@
    ],
    "lib/Backup/": [
     481,
-    474
+    479
    ],
    "lib/Command/": [
     181,
@@ -30,11 +30,11 @@
    ],
    "lib/Controller/": [
     4115,
-    3871
+    4029
    ],
    "lib/Db/": [
     3212,
-    2481
+    2854
    ],
    "lib/Event/": [
     43,
@@ -62,7 +62,7 @@
    ],
    "lib/Middleware/": [
     212,
-    211
+    212
    ],
    "lib/Middleware/Support/": [
     59,
@@ -74,7 +74,7 @@
    ],
    "lib/Repair/": [
     1051,
-    1027
+    1035
    ],
    "lib/Search/": [
     31,
@@ -86,7 +86,7 @@
    ],
    "lib/Service/": [
     13236,
-    11522
+    11712
    ],
    "lib/Service/Connection/": [
     150,
@@ -94,7 +94,7 @@
    ],
    "lib/Service/ShareSave/": [
     399,
-    398
+    399
    ],
    "lib/Service/ShareSync/": [
     174,
@@ -119,9 +119,9 @@
   }
  },
  "js": {
-  "pct": 90.99,
-  "statements": 12718,
-  "covered": 11572,
+  "pct": 91.82,
+  "statements": 12721,
+  "covered": 11680,
   "dirs": {
    "src/": [
     131,
@@ -145,7 +145,7 @@
    ],
    "src/components/KeepiqAppNav/": [
     146,
-    124
+    146
    ],
    "src/components/application/": [
     92,
@@ -165,7 +165,7 @@
    ],
    "src/components/share/": [
     255,
-    227
+    251
    ],
    "src/crypto/": [
     748,
@@ -176,8 +176,8 @@
     188
    ],
    "src/dialogs/": [
-    1703,
-    1522
+    1704,
+    1554
    ],
    "src/export/": [
     155,
@@ -240,8 +240,8 @@
     3
    ],
    "src/store/modules/": [
-    3158,
-    2628
+    3160,
+    2641
    ],
    "src/totp/": [
     187,
@@ -253,7 +253,7 @@
    ],
    "src/views/": [
     941,
-    877
+    894
    ],
    "src/views/flows/": [
     2,
