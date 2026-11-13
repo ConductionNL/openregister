@@ -6551,4 +6551,5 @@ verify:filinq:2053:15844216	GREEN 2053,2056,2057; BLOCK 2058 (editor path skips 
 review:openregister:10318:87733f80	APPROVE: tests green on merge with main, phpstan clean	session-20261113T195351-5d22eaae	2026-11-13T20:08:07Z
 cover:dossiq:069ee2d6mbd37:3ee9dda7	already done: lib/Service/Custody/*.php at 99.84% (628/629) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:08:11Z
 build:filinq:llm-entity-detection-provider	partial: PR #2092, 7 of 11 tasks (seam, resolver, LLM provider, mapper, fallback, settings API, 104 unit tests); 3.2 report half, 4.2 UI, 5.2 e2e, 5.3 i18n/docs left; suite 6443->6493 OK	session-20261113T192700-f21ebd18	2026-11-13T20:08:48Z
+cover:pipelinq:7f9dc8e6m8ce9:36ac5d07	no PR: lib/Service/LineTotals already 100% lines (LineRollUp 41/41, LineTotalMath 17/17, LineParent 1/1) under 30 tests incl. edge-case suites	session-20261113T195351-a32c6d55	2026-11-13T20:08:49Z
 verify:filinq:2060:d629df5c	GREEN 2060,2062-2066,2068; RED 2061 (deep-link route test); CONFLICT 2067 (register files)	session-20261113T175327-6e4e7f28	2026-11-13T20:08:48Z
