@@ -4449,3 +4449,4 @@ cover:pipelinq:7f9dc8e6m84dd:f3231970	already done: lib/Service/ScheduledTask at
 cover:keepiq:c967a31fm1bed:1b97f731	failed: permission (running the app's unit suite was refused in this session)	session-20261113T111541-acb65efe	2026-11-13T11:16:43Z
 cover:pipelinq:7f9dc8e6m84dd:568ec52a	already done: lib/Lifecycle/*.php at 99.13% lines (227/229) on development 7bcef73d	session-20261113T044737-f37de8e3	2026-11-13T11:16:43Z
 build:pipelinq:screen-pop-incoming-call	failed: permission (built in 38c5fed47 except 2.3, the three facts on the card: needs IncomingCallCard.vue + vitest, npm ci refused here; 3.x are live)	session-20261113T104529-f43c7561	2026-11-13T11:17:02Z
+cover:pipelinq:7f9dc8e6m84dd:0798b7cf	already done: lib/Service/PosCart measures 67/67 statements (100%) at fe9981c; no PR	session-20261113T104529-f43c7561	2026-11-13T11:17:15Z
