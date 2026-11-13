@@ -1425,3 +1425,4 @@ cover:filinq:8ecceb86:aba6f390	PR #1989: EntitySearchLog/Gate/Catalogue scope te
 cover:pipelinq:f67520ecm9d2c:jsde685378	PR #3616: 23 vitest tests, portal/views stmts 48.3% -> 84.3%	session-20261112T234648-144479e8	2026-11-13T01:27:35Z
 cover:openregister:7350e3efm0e99:8858fbd3	PR #10083: @uses metadata on 4 Sync test classes, risky 38->0, dir stmts 37.1->98.5% (own tests)	session-20261113T011735-9a84fbde	2026-11-13T01:27:32Z
 cover:learniq:1ae7757em6be5:js3f3bfe56	already done: branch quality/test-coverage-js-3f3bfe56-1 (unmerged) takes src/* 89.01% -> 94.94%, only main.js bootstrap left	session-20261113T004523-285a0413	2026-11-13T01:27:44Z
+cover:filinq:8ecceb86:0906d460	PR filinq#1990: +24 tests, BulkSigning 265/286 -> 284/286 stmts; suite 5499 -> 5523 OK	session-20261113T011729-46bd3dd4	2026-11-13T01:27:49Z
