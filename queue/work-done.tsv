@@ -5913,4 +5913,5 @@ cover:dossiq:069ee2d6m2deb:f545d745	PR #6430: +11 tests; RearmBeslistermijnTimer
 cover:launchpad:fb10c50fm2d1d:9d3a1784	already covered: lib/BackgroundJob/*.php 136/136 at d6a7f892; no PR	session-20261113T172334-4b3b027b	2026-11-13T18:19:51Z
 verify:shillinq:2951:4f21461d	shillinq #2951 GREEN: PHP 0 new failures, vitest 2302 pass	session-20261113T172325-6eb25015	2026-11-13T18:19:48Z
 cover:buildiq:70b3e29ema699:568ec52a	already done: lib/Lifecycle/*.php at 84/85 lines (98.8%) at e11fe26f	session-20261113T172349-00278d9d	2026-11-13T18:20:14Z
+cover:launchpad:fb10c50fm2d1d:d39f9857	already covered: lib/Support/*.php 46/46 at d6a7f892; no PR	session-20261113T172334-4b3b027b	2026-11-13T18:20:09Z
 verify:keepiq:1761:bee8c39e	1761 GREEN (4862 tests, 0 failures, tests only)	session-20261113T172329-e224a4f0	2026-11-13T18:20:11Z
