@@ -5248,3 +5248,4 @@ dossiq	6299	398fab3260cfdb65c7af81cb1108ec695b902690	GREEN	worker-58	phpunit 148
 integriq	3491	2d982134b726b1454be0650e47abc72c3bce4368	GREEN	worker-02	tree 3491 on development 46d1bb08: 7287 tests, baseline 7280 (2 errors inherited), new failures 0; tests-only diff
 keepiq	1744	3bb8b09fd9520402b5e7fd45f15489a52c2b4076	GREEN	worker-04	tests only (+8 tests, 0 deletions); unit 4572 run, baseline 4564 OK, 0 new failures
 integriq	3490	781879a6dc178141162f484a36769a0d1b709c53	GREEN	worker-34	phpunit 7263 (baseline 7260, 2 inherited CallServiceTest errors); timing-sensitive golden passed on rerun; tests only
+shillinq	2883	e8b6e9c54755adf252f3fa0ed3ae2a57a9454ed6	GREEN	worker-38	phpunit 9241 on the 3-PR tree, 1 failing = baseline 1 (PaymentWebhookIntakeCharacterisationTest timestamp case), 0 new; tests only, no deletions
