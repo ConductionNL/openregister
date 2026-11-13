@@ -6365,3 +6365,4 @@ fix:shillinq:3007:d6ce6195	failed: no conflict with development; conflicts are o
 review:openregister:10301:4aa49108	APPROVE 10301	session-20261113T175336-b2d7fc7c	2026-11-13T19:32:53Z
 cover:openregister:7350e3efma401:919f90c0	PR #10313: +16 tests, ShareGrantAttributes 12/34 -> 34/34; lib/Service/Rbac already 97% in the full measurement	session-20261113T171141-a3907367	2026-11-13T19:32:37Z
 measure:stackiq:20261113h18	kept existing 17:16 pcov measurement (php 88.76); no pcov here, fresh js at 4c3fc9fd not written to avoid dropping php slices	session-20261113T192700-55dce75a	2026-11-13T19:33:57Z
+cover:stackiq:9ac19b3am9d24:bc982e61	nothing to cover: lib/Kernel/Contracts/ holds 44 interfaces only, no executable lines	session-20261113T192700-55dce75a	2026-11-13T19:34:31Z
