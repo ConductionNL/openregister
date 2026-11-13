@@ -4138,5 +4138,6 @@ verify:integriq:3519:d2d6898e	GREEN 3519-3522: phpunit 8189 (inherited only), vi
 cover:larpinq:c4471360m4538:6f346b68	PR #1026: Sections\LarpinqAdmin 3 tests, suite 697->700 OK	session-20261113T094617-36f80607	2026-11-13T10:03:39Z
 verify:integriq:3504:bae6007e	3504 GREEN, 3505 GREEN; 8155 tests, no new failures	session-20261113T081046-f0858dc4	2026-11-13T10:03:38Z
 cover:buildiq:70b3e29embf07:js0be8c659	PR #1538: 3 rendered specs/14 tests (RuleSetTestSandbox, UserDeltaEdit, PublishConfirm); src/modals stmt 91.60->95.04%; suite 3880->3894 green	session-20261113T044737-f37de8e3	2026-11-13T10:03:52Z
+verify:planninq:1145:32a1fc41	GREEN 1145 and 1146: tests-only, tree 927 vs baseline 915, 0 new failures	session-20261113T074533-3e2a2da6	2026-11-13T10:03:57Z
 cover:versioniq:1b35eed9m70ae:f43f8f49	already done: Api/Audit/Lkg/Policy at 100% (91/91) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:03:50Z
 gap:stackiq:maint2:burn1	PR stackiq#1866: acceptAanbod, denyAanbod, getObjectsWithPagination split behaviour-preserving, +3 guard tests	session-20261113T051703-1b54bfba	2026-11-13T10:03:42Z
