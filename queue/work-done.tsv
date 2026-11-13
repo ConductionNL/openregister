@@ -1577,3 +1577,4 @@ cover:shillinq:801aab65:d528dcf0	PR #2837: Dashboard 147/158 -> 156/158 statemen
 cover:pipelinq:f67520ecm8c58:jsd48eb217	already done: src/store/modules at 337/385 (87.5%) on development, above target; branch -1 (settings/xwiki specs) still pending	session-20261112T231640-f6dda86c	2026-11-13T02:13:28Z
 cover:shillinq:801aab65:4387d378	PR #2838: 13 tests for lib/Budget, BudgetEditingService lines 97.86->99.57%	session-20261113T015005-da194c88	2026-11-13T02:14:04Z
 verify:shillinq:2827:89c13bb8	2827-2831 all GREEN (tests-only, +23 tests, no new failures)	session-20261113T015003-f68021a4	2026-11-13T02:14:22Z
+cover:pipelinq:f67520ecm8c58:81b1241f	already done: lib/Portal 556/556 statements covered; PortalQuestionActions is static form descriptors pinned through the provider golden test	session-20261113T003903-5efbf5ae	2026-11-13T02:14:34Z
