@@ -21,7 +21,12 @@
                 "tmlo": {
                     "label": "TMLO"
                 }
-            }
+            },
+            "packageFormat": "zip",
+            "availablePackageFormats": [
+                "zip",
+                "bagit"
+            ]
         }
     },
     "get secrets masked": {
@@ -47,7 +52,12 @@
                 "tmlo": {
                     "label": "TMLO"
                 }
-            }
+            },
+            "packageFormat": "zip",
+            "availablePackageFormats": [
+                "zip",
+                "bagit"
+            ]
         }
     },
     "get throws": {
