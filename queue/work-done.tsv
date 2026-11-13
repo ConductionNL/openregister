@@ -6644,5 +6644,6 @@ cover:shillinq:05639debm3747:2befd24e	already done: lib/Service/Asset/ measures 
 verify:opencatalogi:2608:53924f62	GREEN #2608: tests only, +4 passing, 2 inherited failures	session-20261113T195351-a32c6d55	2026-11-13T20:24:08Z
 cover:shillinq:05639debm3747:6a548709	already done: lib/Service/Migration/ measures 100% (283/283) on development b0ed3e448; no PR	session-20261113T182404-f2c28226	2026-11-13T20:24:26Z
 verify:pipelinq:3782:44f27144	GREEN 3782: tests only, vitest 4804 -> 4838 all pass	session-20261113T175332-5effc865	2026-11-13T20:25:38Z
+cover:openregister:7350e3efma401:449273d9	PR #10322: 14 tests (MessageMapper, PushSubscriptionMapper, Watcher); dirs 94.95% -> ~97.3%	session-20261113T185328-da819141	2026-11-13T20:26:52Z
 gap:learniq:14:732b368d	already done: development c75b2371 pins dompurify 3.4.17 via override (only copy in lock)	session-20261113T202619-0d7929e0	2026-11-13T20:26:48Z
 gap:portaliq:complexity:812a4fdd	failed: lib/ and src/ have no function over CCN 30; the 278 is the committed woo/static/js bundle, which clears only with gap 6 (cgx/retire-woo-bundle), still blocked on its pinned release asset answering 404. Only tests/ tooling scripts exceed 30.	session-20261113T202603-6c9ef72f	2026-11-13T20:26:53Z
