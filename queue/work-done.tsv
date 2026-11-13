@@ -2411,3 +2411,4 @@ cover:dossiq:f8a113c5mac88:80b3d955	already done: lib/Service/Catalogue/ 153/154
 cover:keepiq:c967a31fm0090:js06645759	already done: covered by open PR #1735 (src/components/* 9 components to 95-100% lines, same target branch), awaiting merge	session-20261113T034634-f20a8d77	2026-11-13T05:30:17Z
 cover:dossiq:f8a113c5mac88:84ff77b2	PR dossiq#6287: 5 tests + strict @uses fixes; Bulk dir 127/127 lines under strict metadata; same 19 inherited failures	session-20261113T051703-1b54bfba	2026-11-13T05:30:21Z
 cover:integriq:92114ab0m1534:b89b25f9	already done: lib/Adapters/LearningMaterial/*.php at 98.8% lines (413/418) on development 4aa851de; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:31:04Z
+cover:openregister:7350e3efmaea4:jsbd7d0461	PR #10101: 19 jest tests for ExploreSchema results; src/modals/schema lines 86.7% -> 93.4%	session-20261113T051705-4f5ad12a	2026-11-13T05:31:18Z
