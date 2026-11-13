@@ -2653,3 +2653,4 @@ cover:dossiq:f8a113c5mac88:23f6b1f1	PR #6294: 7 tests for ConnectedSystemDocumen
 merge:decidiq:2110:978356bb	merge-local over 1 decidiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:07:29Z
 cover:shillinq:05639debmd8ee:js0be8c659	PR shillinq#2877: 3 dialogs, 13 tests; src/modals 25.64%->30% (85 needs ~28 more dialogs)	session-20261113T031701-b518f7f8	2026-11-13T06:08:34Z
 cover:buildiq:9930949bm5861:js06645759	already done: src/components/* at 93.42% lines (625/669) on development, above 90% target; no PR	session-20261113T051704-8c56f5b7	2026-11-13T06:08:45Z
+cover:dossiq:f8a113c5mac88:59f569b2	already done: lib/Service/Settings/*.php at 91.32% lines (463/507) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:08:52Z
