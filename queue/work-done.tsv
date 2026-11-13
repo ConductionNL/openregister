@@ -5765,3 +5765,4 @@ cover:stackiq:9ac19b3am9d24:38e80a9f	already done: lib/Command/*.php measured 28
 verify:shillinq:2944:445e7126	GREEN 2944, GREEN 2946 (tests only; 1 inherited PHP failure)	session-20261113T172329-5f4feaba	2026-11-13T17:59:31Z
 build:portaliq:life-domain-theme-pages	PR #2424: T10 running cases per theme on page and menu count; T08/T09 left (cross-repo, live)	session-20261113T172324-00680177	2026-11-13T17:59:47Z
 build:portaliq:portal-theme-blocks-and-contributed-pages	failed: not started; open tasks 9-10 need a new /diensten route in src/site/App.vue (3161 lines, pages load via fetchPage) plus contributed action forms, an owner guard and a browser surface check; tasks 1-3 left are browser-only. Too large for the time left in this run	session-20261113T171203-c5a044de	2026-11-13T17:59:42Z
+cover:shillinq:05639debm7b6b:js0be8c659	PR #2950: 60 tests, 4 modals, src/modals 59.6%->76.0%	session-20261113T171149-8b9ea523	2026-11-13T17:59:58Z
