@@ -4374,3 +4374,4 @@ cover:stackiq:9ac19b3am10f3:f545d745	already done: lib/Repair 1229/1234 statemen
 verify:shillinq:2929:59b89db5	2929 GREEN; 10100 tests, no new failures	session-20261113T081046-f0858dc4	2026-11-13T11:02:23Z
 merge:hermiq:1529:a450f453	merge-local over 2 hermiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:02:30Z
 merge:hermiq:1644:bd61e03a	merge-local over 2 hermiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:02:30Z
+cover:stackiq:9ac19b3am10f3:34f5c300	PR #1870: EolSyncService +4 tests (35 stmts); lib/Service/*.php at 82.9% overall, the big gaps (SettingsService, OrganizationSyncService, ArchiMateExportService) remain	session-20261113T071633-17de823f	2026-11-13T11:03:03Z
