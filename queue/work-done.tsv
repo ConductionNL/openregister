@@ -3512,3 +3512,30 @@ verify:integriq:3510:8a228b3f	3510 GREEN (8016 tests, no new failures; tests onl
 review:openregister:10108:d1168440	APPROVE: tests only, all required suites green	session-20261113T081048-4978ac57	2026-11-13T08:39:28Z
 cover:stackiq:9ac19b3am5ac4:34f5c300	PR #1860: 10 tests, ContactpersoonService 511->704/775, lib/Service/*.php 81.86->82.91%; suite 3216->3226 no new failures; noted fall-through returning false after account creation	session-20261113T080549-20301834	2026-11-13T08:39:52Z
 gap:learniq:maint2:burn1	PR learniq#2449: 4 long listener units split behaviour-preserving, +4 guard tests	session-20261113T051703-1b54bfba	2026-11-13T08:40:16Z
+merge:integriq:3341:3b2ebe57	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3433:0a310b26	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3440:5992af93	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3448:293c5113	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3452:3a092dfb	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3455:5099c730	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3456:14ca74b9	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3458:bfb583c7	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3462:0eab413f	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3465:1ce2b7cd	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3468:62f2c1a2	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3469:caf20690	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3477:e5965216	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3480:2009af82	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3479:aebdef25	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3481:92758e96	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3410:af6acaa0	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3488:fd671dbb	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3484:65bacf6c	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3490:c14703d4	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3485:42d2a02c	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:25Z
+merge:integriq:3493:d8ca9b92	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:26Z
+merge:integriq:3494:4498c894	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:26Z
+merge:integriq:3496:d828e105	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:26Z
+merge:integriq:3498:9c3c207a	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:26Z
+merge:integriq:3502:f297e7b4	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:26Z
+merge:integriq:3506:3a3b7fa0	merge-local over 27 integriq tasks: merged=20 red=0 fail=0 skip=4; already in development 50; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:40:26Z
