@@ -1855,3 +1855,4 @@ cover:stackiq:df113dffm8db8:38e80a9f	already done: lib/Command 282/282 statement
 cover:integriq:9b0f5894md8cd:38e80a9f	PR #3465: lib/Command/*.php 795/901 -> 901/901, 5 tests	session-20261113T015005-030aa10a	2026-11-13T03:34:27Z
 cover:buildiq:8ca317f6mefda:js37c784b6	PR #1499: 12 vitest tests, composables stmts 753/778 -> 769/778	session-20261113T024653-d22c13a3	2026-11-13T03:34:38Z
 cover:buildiq:8ca317f6mefda:js10b588fb	already above target: src/components/applicationDetail measures 93.7% lines (target 85) with 125 existing specs; no PR	session-20261113T024654-6600dc41	2026-11-13T03:34:33Z
+cover:buildiq:9930949bmefda:be0dcca9	already covered: BuildiqToolProvider has 26 tests (catalogue, dispatch, every tool's access refusals); no PR	session-20261113T024654-6600dc41	2026-11-13T03:35:13Z
