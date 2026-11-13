@@ -6510,3 +6510,4 @@ learniq	2494	4a5ebbac106b506e613a5702d0882e74a01513fe	GREEN	worker-11	phpunit 65
 learniq	2484	e9288c776175e1ab9a4a07620c3270db1881308e	CONFLICT	worker-11	conflicts with development in l10n/nl.json (and the tracked example-set .pyc)
 learniq	2493	a30a88709bf3d951b17553cb1fda563e3d5b086b	CONFLICT	worker-11	conflicts with #2490 in l10n/nl.js and l10n/nl.json
 shillinq	3030	a91189ffbda8957f5e6637091637db29b7060371	GREEN	worker-51	vitest 2401->2414 (+13 new, all pass), same 1 inherited failure dunningNextRun; no PHP changed (phpunit on tree 10446, inherited 8 errors 1 failure); tests only
+portaliq	2476	f95cafc4a3d58d64919fa63b34a4c17b0a19716e	GREEN	worker-11	phpunit 5023 tests OK on the tree, baseline 5023 OK, 0 new; behaviour-preserving split of ContributionController and CitizenCaseController (same checks, order, codes)
