@@ -5296,3 +5296,4 @@ cover:stackiq:9ac19b3amc14f:59f569b2	already done: lib/Service/Settings/*.php at
 verify:buildiq:1548:d0593b06	GREEN 1548,1549,1550 (tests only, 0 new failures)	session-20261113T134554-ac2fc6ec	2026-11-13T13:47:45Z
 review:openregister:10252:f7ab1269	APPROVE: tests-only, 3 breakLock tests pass on merged tree, contract-accurate, metadata complete	session-20261113T094607-7b89fdae	2026-11-13T13:48:00Z
 cover:stackiq:9ac19b3amc14f:2302034c	already done: lib/Service/Cmdb + lib/Service/Stackiq at 98.2% lines (56 uncovered edge lines left across 8 files); suite 3320 tests OK; no PR	session-20261113T134531-53f143d2	2026-11-13T13:48:18Z
+cover:versioniq:1b35eed9mf055:72b7d712	PR #678: 28 tests, lib/Service/Installer 90.3->96.6%	session-20261113T081048-4978ac57	2026-11-13T13:48:29Z
