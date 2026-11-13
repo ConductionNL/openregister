@@ -5954,11 +5954,15 @@ stackiq	1880	da02479f2b8051decd4e806f8855507df72b4e38	GREEN	worker-30	tree 1879+
 stackiq	1881	45bf2b2a96d65e266e5b93336768d4f004c06163	GREEN	worker-30	tree 1879+1880+1881: unit 3383 OK (baseline 3340 OK), 0 new failures; tests only
 dossiq	6371	3184045e4c51be3455d29c6bbccffcb721c9ea06	REVERIFY	worker-46	floor fix: StoppingRules reconciles through ReviewWrites::ruleStored() instead of depending on CaseReviewerAccess directly, so CaseReviewerAccess fan-in stays at its base and module_coupling is back to 5.05 (floor_check PASS on every property vs merge base); behaviour unchanged, touched tests 29 OK; new head cea13ccf507e61c09e3a6a0bb136b2f942cc1eb8, verify it
 portaliq	2410	172fe59cf7dc1eea967ab3b2f17c3a45b73d69d7	GREEN	worker-44	4874 tests run (baseline 4857, +17 new), 89 skipped, 0 new failures; build PR for case-page-objection-and-complaint, OnCaseConfigNormaliser is config validation (guards nothing), no access weakening
+humaniq	1114	ac940b114987b43ca30ffedfcc49c54fe66b5b90	GREEN	worker-22	Unit suite on the merged tree: 3966 tests OK (baseline 3928 OK, 1 skipped); no new failures; test-only additions
 versioniq	679	8cf4fd9f9fd62ae84945bde847e8edd8f9868bd8	GREEN	worker-28	vitest 57 files/2895 pass (baseline 53/2825, 0 new failures); phpunit unit-only 1575 tests, 2 failures inherited (PR has no PHP); diff adds 4 spec files only
 humaniq	1112	c7acf4435ca5fafef99f1ac9d30447d3fd974f3e	GREEN	worker-13	tests only; tree 4055 tests, baseline 3928 OK, no new failures
 humaniq	1113	299a7cece9d116e66d8a97ff5b411ae33423a106	GREEN	worker-13	tests only; tree 4055 tests, baseline 3928 OK, no new failures
 humaniq	1115	2a6078888b9f207c1a25210ecefa541e568f239f	GREEN	worker-13	tests only; tree 4055 tests, baseline 3928 OK, no new failures
+dossiq	6414	419b7232bf80bace2e2af578a88a0e2959a10361	GREEN	worker-44	16336 tests on 2-PR tree (baseline 16317, 20 inherited failures), 0 new failures; tests only (7 ZGW unit test files)
 humaniq	1117	de9f4e04ba1248d3ce52313e904bebb0c4b7651f	GREEN	worker-13	tests only; tree 3957 tests, baseline 3928 OK, no new failures
 dossiq	6371	cea13ccf507e61c09e3a6a0bb136b2f942cc1eb8	GREEN	worker-33	tree 16332 tests; baseline 16325 with 20 failures; new failures 0 (build of woo-review-recall-and-stopping task 1: stoppingRule private + reconcile, as the change asks)
 portaliq	2409	5e94bd91bb4c22cc7cec5cada6b93d18c925a4ef	GREEN	worker-02	tests only; tree 4897 tests OK, baseline 4892 OK, 0 new failures
 dossiq	6422	c60a1ed91dbe4e7f437f26280de1443d10c640ed	GREEN	worker-33	tree 16332 tests; baseline 16325 with 20 failures; new failures 0 (tests only)
+humaniq	1116	d0a2bc5ea6eb93a0ebe7aec083ccb63c5153f80d	GREEN	worker-22	Unit suite on the merged tree: 3966 tests OK (baseline 3928 OK, 1 skipped); no new failures; test-only additions with fixtures
+dossiq	6415	473ff8b87e83d683f587d8c686a97cad9bc98aec	GREEN	worker-44	16336 tests on 2-PR tree (baseline 16317, 20 inherited failures), 0 new failures; tests only (ReviewSummaryTest)
