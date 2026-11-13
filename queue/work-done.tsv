@@ -3138,3 +3138,4 @@ gap:decidiq:14:732b368d	PR #2120: npm override resolves @toast-ui/editor's dompu
 cover:keepiq:c967a31fmb40c:7ddabe24	already done: lib/Federation/*.php 13/13 covered	session-20261113T051709-e616bf69	2026-11-13T07:23:05Z
 verify:integriq:3496:d828e105	GREEN #3496: tests only, unit 7689 vs 7673, no new failures (development itself has 2 JobsControllerTest failures)	session-20261113T051705-4f5ad12a	2026-11-13T07:23:18Z
 cover:dossiq:f8a113c5m7e79:d528dcf0	already done: lib/Dashboard 69/73; the 4 left are DashboardPageWidget::load() static Util calls needing OC_Util/server, unreachable in unit tests without a production change	session-20261113T051703-1b54bfba	2026-11-13T07:23:26Z
+cover:shillinq:05639debmd8ee:b12f5203	already done: lib/Service/Import/ at 92.2% lines (935/1014) on development e0fbc72a after quality/test-coverage-b12f5203-1 merged (after the d33c9cc measure)	session-20261113T071636-117504ad	2026-11-13T07:24:17Z
