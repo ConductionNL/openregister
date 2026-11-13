@@ -3063,6 +3063,7 @@ Service/Sharing/SharePrincipalDeriver.php,70,Service,Integrations,Integrations/S
 Service/ShippedBaseline/AuthorizationBlocks.php,114,Service,Configuration,Configuration/Service/ShippedBaseline/AuthorizationBlocks.php,0,,Configuration
 Service/ShippedBaseline/DescriptorParts.php,72,Service,Configuration,Configuration/Service/ShippedBaseline/DescriptorParts.php,1,,Configuration
 Service/ShippedBaseline/DivergenceComparator.php,88,Service,Configuration,Configuration/Service/ShippedBaseline/DivergenceComparator.php,1,,Configuration
+Service/ShippedBaseline/GuardedAnnotations.php,180,Service,Configuration,Configuration/Service/ShippedBaseline/GuardedAnnotations.php,0,,Configuration
 Service/ShippedBaseline/GuardedDescriptorMerge.php,175,Service,Configuration,Configuration/Service/ShippedBaseline/GuardedDescriptorMerge.php,1,,Configuration
 Service/ShippedBaseline/ShippedAuthorizationDecision.php,28,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedAuthorizationDecision.php,0,,Configuration
 Service/ShippedBaseline/ShippedBaselineResetService.php,145,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedBaselineResetService.php,0,,Configuration
