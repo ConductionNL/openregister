@@ -3182,3 +3182,4 @@ gap:dossiq:oas:burn1	PR #6327 (quality/gap-openapi @64c67820): openapi.json 518 
 cover:dossiq:f8a113c5m7e79:6f346b68	already done: SettingsSection fully pinned by merged -1 test; nothing non-trivial left	session-20261113T072715-8f8a14e9	2026-11-13T07:35:16Z
 verify:dossiq:6320:f50ae2bb	dossiq#6320 GREEN (15185 tests, 0 new failures)	session-20261113T051703-1b54bfba	2026-11-13T07:35:28Z
 cover:versioniq:1b35eed9:3b37d68f	PR #666: 14 tests for DiscoveryMerge and the 3 discovery providers; suite 1356->1370, same 2 inherited failures	session-20261113T072708-ee434236	2026-11-13T07:35:39Z
+cover:dossiq:f8a113c5m7e79:6dc9019f	already done: lib/Service/Registry 100/100 lines under strict metadata (PR -1 merged)	session-20261113T051703-1b54bfba	2026-11-13T07:35:43Z
