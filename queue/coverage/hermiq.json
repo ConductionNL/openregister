@@ -1,12 +1,12 @@
 {
  "app": "hermiq",
- "commit": "7f24df30060ab233a6c2f3e566992f713c6c3494",
- "measured_at": "2026-11-13T18:11:23Z",
+ "commit": "c72c46983511f066ac6f495ad1f601b220439df0",
+ "measured_at": "2026-11-13T20:29:27Z",
  "php": {
   "tool": "pcov",
-  "pct": 91.32,
-  "statements": 34393,
-  "covered": 31407,
+  "pct": 90.78,
+  "statements": 34605,
+  "covered": 31414,
   "dirs": {
    "lib/AppInfo/": [
     27,
@@ -36,20 +36,28 @@
     391,
     379
    ],
+   "lib/Kernel/": [
+    0,
+    0
+   ],
+   "lib/Kernel/Contracts/": [
+    0,
+    0
+   ],
    "lib/Lifecycle/": [
     22,
     22
    ],
    "lib/Listener/": [
-    460,
-    426
+    521,
+    433
    ],
    "lib/Mcp/": [
-    333,
+    337,
     333
    ],
    "lib/Middleware/": [
-    69,
+    71,
     68
    ],
    "lib/Middleware/Support/": [
@@ -57,7 +65,7 @@
     58
    ],
    "lib/Notification/": [
-    74,
+    75,
     74
    ],
    "lib/Repair/": [
@@ -73,7 +81,7 @@
     5
    ],
    "lib/Service/": [
-    11715,
+    11849,
     10560
    ],
    "lib/Service/Agent/": [
@@ -181,11 +189,11 @@
     19
    ],
    "lib/TaskProcessing/": [
-    125,
+    131,
     123
    ],
    "lib/Tenant/": [
-    26,
+    30,
     26
    ]
   }
