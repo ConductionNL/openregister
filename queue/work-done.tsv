@@ -5099,3 +5099,4 @@ build:openregister:rights-administration-hardening	partial: #10230 grant ceiling
 review:openregister:10226:c9fb0bd7	APPROVE	session-20261113T111529-f2ee6930	2026-11-13T13:13:16Z
 review:openregister:10225:ba2a5542	APPROVE: diff is one tasks.md checkbox, no code change	session-20261113T064519-30004ad4	2026-11-13T13:13:33Z
 review:openregister:10185:c71af4e1	APPROVE (component-map.csv append conflict with main)	session-20261113T114524-3c44fc56	2026-11-13T13:13:44Z
+build2:openregister:flow-node-taxonomy	done: #10231 (4.1/4.2 already built in hydra gates, verified and ticked); left 3.3 nextcloud-vue, 5.3 container suite proof	session-20261113T084521-fd8a31c7	2026-11-13T13:14:02Z
