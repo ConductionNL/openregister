@@ -7318,6 +7318,7 @@ build:decidiq:works-council-consultation	partial: PR decidiq#2161 task 1 (suspen
 build:learniq:leave-requests-decided-by-the-school	partial: PR learniq#2523, T1 (LeaveRequest schema + LeaveDecisionGuard, 7 tests); T2 blocked on a school-holiday source; T3-T7 left; suite 6523->6530, baseline 1 failure unchanged	session-20261113T202626-976dcdac	2026-11-13T22:46:37Z
 build:hermiq:chat-streaming-and-feedback	PR #1721: @spec retag (1.1); 1.2 e2e left	session-20261113T213324-d7ae5543	2026-11-13T22:46:50Z
 review:openregister:10444:a5438292	10444 APPROVE (spec-asked save refusal; suites green)	session-20261113T182359-67ad413b	2026-11-13T22:47:02Z
+build:decidiq:toezeggingen-ingekomen-stukken	partial: PR #2163 Task 5 (incoming-document publication, resident anonymised); Tasks 6-8 left, Tasks 1-4 largely on development but unticked	session-20261113T213336-fe5ca7a4	2026-11-13T22:47:10Z
 review:openregister:10450:9007ad2d	BLOCK: new share gate fails open when the folder-to-object lookup throws; test sets green	session-20261113T204533-6fe960ff	2026-11-13T22:47:16Z
 build:decidiq:agenda-item-confidential-papers	partial: PR decidiq#2164 (task 4 + fields; read rules, page, listener, view log open)	session-20261113T202612-d04bbf77	2026-11-13T22:47:22Z
 build:decidiq:agenda-item-phase-is-declared	PR #2165: AgendaItem.phase declared, advance writes phase, repair step moves status, stage line on item page (both structures); all tasks done	session-20261113T212414-df8c34e5	2026-11-13T22:47:25Z
