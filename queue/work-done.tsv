@@ -1030,6 +1030,7 @@ cover:learniq:1ae7757e:jsea7197ec	PR #2423: 5 tests for signUpDecisionRequest.js
 cover:pipelinq:f67520ec:bec85fb4	PR #3600: 27 tests, Zgw dir 81.6% -> 97.3%	session-20261112T234648-144479e8	2026-11-13T00:06:47Z
 cover:filinq:8ecceb86:4b9c088d	PR #1980: 3 Editing classes, 19 tests; suite 5318 -> 5337 OK; Editing lines 91.3% -> 96.2%	session-20261112T234653-57d11a5b	2026-11-13T00:06:30Z
 verify:integriq:3420:e6bfbb93	5 GREEN (3420-3424, test-only); tree 7147 tests, no failures beyond baseline	session-20261112T231633-96ffe7b8	2026-11-13T00:06:45Z
+cover:integriq:9b0f5894m2367:acd8f15d	PR #3433: 16 tests for OutboundSecurityService (17->93/112 lines) and SenderIdentityService; suite 7113->7129, same 2 inherited errors	session-20261112T234655-793f46ee	2026-11-13T00:07:56Z
 verify:stackiq:1783:5f2df86f	1784,1785,1786,1788,1789 GREEN; 1783 RED (test ctor args); 1787 LINT (duplicate use after 1785)	session-20261112T231638-72e59130	2026-11-13T00:08:23Z
 cover:keepiq:d76c2121:34f5c300	PR #1705: 8 classes, 80 tests, suite 3727->3807, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:08:30Z
 cover:integriq:9b0f5894m2367:efa2a923	PR integriq#3436: 22 tests for 8 EventListener classes (DocumentRender 0->24/24, DigitalPost 0->11/11, Object* 0->10/12, Lti/OptOut ->100%); SoftwareCatalog/ViewUpdated skipped (int-vs-string schema compare, unreachable); suite 7135, same 2 inherited	session-20261112T221237-836ed3f0	2026-11-13T00:08:55Z
