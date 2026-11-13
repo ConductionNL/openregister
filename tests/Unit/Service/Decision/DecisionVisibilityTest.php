@@ -45,6 +45,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\Decision
  * @uses   \OCA\OpenRegister\Db\EntityRelation
  * @uses   \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionQuestion
  */
 class DecisionVisibilityTest extends TestCase
 {

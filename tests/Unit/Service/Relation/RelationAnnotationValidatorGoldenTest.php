@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
  * Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Relation\DeclaredProperty
  */
 class RelationAnnotationValidatorGoldenTest extends TestCase {
 

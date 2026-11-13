@@ -41,6 +41,13 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
  * @covers \OCA\OpenRegister\Formats\UserFormat
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Formats\FormatFactory
+ * @uses \OCA\OpenRegister\Service\Object\ExtendedFieldCheck
+ * @uses \OCA\OpenRegister\Service\Object\PlannedAccountsCheck
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuardParser
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
+ * @uses \OCA\OpenRegister\Service\Object\ValidationErrorMessages
  */
 class ValidateObjectPlannedUsersTest extends TestCase {
 	private ValidateObject $handler;

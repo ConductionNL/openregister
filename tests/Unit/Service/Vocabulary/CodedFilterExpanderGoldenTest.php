@@ -39,6 +39,19 @@ use PHPUnit\Framework\TestCase;
  * fixtures/coded-filter-expander-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Vocabulary\BranchFilter
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedNarrowing
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedValueRules
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptBranch
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptRelations
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess
  */
 class CodedFilterExpanderGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/coded-filter-expander-golden.json';

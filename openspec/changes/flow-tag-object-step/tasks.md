@@ -11,7 +11,7 @@
 
 ## 3. Tests and docs
 
-- [ ] 3.1 Add `tests/e2e/ci/flow-tag-object.spec.ts`: a flow on lead created with a filter on `value` and a tag step with a colour; create a lead over and one under the threshold; assert only the first carries the tag through `GET /api/objects/{register}/{schema}/{id}/tags`, and that a second run adds nothing.
+- [ ] 3.1 Add `tests/e2e/ci/flow-tag-object.spec.ts`: a flow on lead created with a filter on `value` and a tag step with a colour; create a lead over and one under the threshold; assert only the first carries the tag through `GET /api/objects/{register}/{schema}/{id}/tags`, and that a second run adds nothing. (live pass, decision 139)
 - [ ] 3.2 Document the step in the flow steps documentation under `docs/`, with the "Large deal" example and a screenshot of the node form.
 
 Acceptance:

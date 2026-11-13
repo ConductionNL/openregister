@@ -52,6 +52,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  * @uses \OCA\OpenRegister\Db\FlowTimer
  * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarBatch
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
  */
 class CalendarRecomputeFailureBehaviourTest extends TestCase {
 

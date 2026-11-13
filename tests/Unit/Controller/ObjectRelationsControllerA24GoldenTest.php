@@ -86,6 +86,9 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Service\Relation\ProseMention
  * @uses \OCA\OpenRegister\Service\Relation\ProvenanceLink
  * @uses \OCA\OpenRegister\Service\Relation\RelationEndpoint
+ * @uses \OCA\OpenRegister\Service\Export\SpreadsheetCell
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
  */
 class ObjectRelationsControllerA24GoldenTest extends TestCase {
 

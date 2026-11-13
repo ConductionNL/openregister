@@ -43,6 +43,13 @@ use RuntimeException;
  * The declarations the resolver answers, pinned.
  *
  * @covers \OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedNarrowing
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedValueRules
+ * @uses \OCA\OpenRegister\Service\Vocabulary\DeclarationLookup
  */
 final class VocabularyDeclarationResolverGoldenTest extends TestCase {
 

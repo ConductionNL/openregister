@@ -1470,7 +1470,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * Apply the '@self' values of an extended object over the object array.
 	 *
 	 * Register, schema, owner and application are taken only when they are
-	 * arrays (expanded); organisation whenever it is set.
+	 * arrays (expanded). Organisation is taken only as an expanded array that
+	 * names the record's own organisation: access checks read the rendered
+	 * organisation, so the object's data must never change it.
 	 *
 	 * @param array $objectArray The object array.
 	 * @param array $object      The object whose '@self' may carry overrides.
@@ -1489,12 +1491,27 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			}
 		}
 
-		if (($self['organisation'] ?? null) !== null) {
+		if ($this->namesOwnOrganisation(organisation: ($self['organisation'] ?? null)) === true) {
 			$objectArray['organisation'] = $self['organisation'];
 		}
 
 		return $objectArray;
 	}//end applySelfOverrides()
+
+	/**
+	 * Whether an expanded '@self' organisation is the record's own organisation.
+	 *
+	 * @param mixed $organisation The '@self' organisation value.
+	 *
+	 * @return bool True for an array whose uuid (or id) equals the record's organisation.
+	 */
+	private function namesOwnOrganisation(mixed $organisation): bool {
+		if (is_array($organisation) === false || $this->organisation === null) {
+			return false;
+		}
+
+		return (string) ($organisation['uuid'] ?? $organisation['id'] ?? '') === $this->organisation;
+	}//end namesOwnOrganisation()
 
 	/**
 	 * The record as an access rule's `match` reads it: its data, with `@self` set from its own metadata.

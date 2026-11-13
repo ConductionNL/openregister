@@ -56,6 +56,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSubquery
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowField
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowClauseBatch
  */
 class RelatedRowExistsClauseTest extends TestCase {
 

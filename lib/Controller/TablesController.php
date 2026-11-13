@@ -140,7 +140,7 @@ class TablesController extends Controller {
 	 * @param int|string $registerId The register ID or slug.
 	 * @param int|string $schemaId The schema ID or slug.
 	 *
-	 * @NoAdminRequired
+	 * @auth admin-only syncing changes database table structure, so only an administrator runs it
 	 *
 	 * @return JSONResponse
 	 *
@@ -280,7 +280,7 @@ class TablesController extends Controller {
 	/**
 	 * Sync all magic tables for all register/schema combinations.
 	 *
-	 * @NoAdminRequired
+	 * @auth admin-only syncing changes database table structure, so only an administrator runs it
 	 *
 	 * @return JSONResponse
 	 *

@@ -42,6 +42,8 @@ class RoomNotFoundException extends \Exception {
  * Golden outcomes of TalkSender::postAsUser().
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\TalkSender
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TalkMessage
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TalkUserPost
  */
 class TalkSenderPostAsUserGoldenTest extends TestCase {
 

@@ -53,6 +53,18 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Db\SyncRecord
  * @uses \OCA\OpenRegister\Service\Sync\SyncConflictResolver
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Db\SyncRecordInputs
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestImportServices
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestRun
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestedRecord
+ * @uses \OCA\OpenRegister\Service\Sync\SourceMapping
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Sync\SyncConflict
  */
 class HarvestPipelineServiceTest extends TestCase {
 

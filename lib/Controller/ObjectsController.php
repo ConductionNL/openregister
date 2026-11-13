@@ -58,6 +58,7 @@ use OCA\OpenRegister\Controller\Support\ReferenceOptionsAsk;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SentWrite;
 use OCA\OpenRegister\Controller\Support\ServedExport;
+use OCA\OpenRegister\Controller\Support\WriteFailureAnswer;
 use OCA\OpenRegister\Controller\Support\ShowServices;
 use OCA\OpenRegister\Controller\Support\ShownEntity;
 use OCA\OpenRegister\Controller\Support\VersionClaim;
@@ -3515,7 +3516,7 @@ class ObjectsController extends Controller {
 			$e instanceof ObjectExistsException => new JSONResponse(data: ['error' => $e->getMessage(), 'uuid' => $e->getUuid()], statusCode: 409),
 			$e instanceof DuplicateBlockedException => new JSONResponse(data: ['error' => $e->getMessage(), 'matches' => $e->getMatches()], statusCode: 409),
 			$e instanceof DbalWriteException => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getStatusCode()),
-			default => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403),
+			default => (new WriteFailureAnswer(logger: $this->logger))->respond(exception: $e),
 		});
 	}//end createRefusal()
 
@@ -3925,7 +3926,7 @@ class ObjectsController extends Controller {
 		return ($this->writeRefusal(exception: $e, objectService: $objectService) ?? match (true) {
 			$e instanceof ObjectStateWriteException => $this->stateRefusal(exception: $e),
 			$e instanceof DbalWriteException => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getStatusCode()),
-			default => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403),
+			default => (new WriteFailureAnswer(logger: $this->logger))->respond(exception: $e),
 		});
 	}//end updateRefusal()
 
@@ -6458,7 +6459,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with batch vectorization results
 	 *
-	 * @NoAdminRequired
+	 * @auth admin-only batch vectorization is an instance-wide maintenance job, so only an administrator starts it
 	 *
 	 * @psalm-suppress NoValue
 	 *
@@ -6486,7 +6487,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse Vectorization statistics
 	 *
-	 * @NoAdminRequired
+	 * @auth admin-only vectorization statistics count objects across every register, so only an administrator reads them
 	 *
 	 * @NoCSRFRequired
 	 *

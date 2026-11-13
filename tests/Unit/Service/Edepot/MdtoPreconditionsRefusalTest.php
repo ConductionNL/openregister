@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Edepot\MdtoPreconditions
  * @uses   \OCA\OpenRegister\Service\Edepot\MdtoInputReaders
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Configuration\AppSettingsAccess
  */
 class MdtoPreconditionsRefusalTest extends TestCase {
 

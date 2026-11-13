@@ -82,11 +82,17 @@ exclude:
   # the skills stay in the repository for developers.
   - ".*/[.]claude/.*"
 
-# Open Source Health. These eight are the Nextcloud platform's own libraries,
-# which a Nextcloud app cannot avoid. Their AGPL and GPL licences are accepted, so
-# only the licence property is excluded: vulnerabilities, freshness, activity and
-# management are still scored. [:/] matches the scoped npm name in either form,
-# because the name Sigrid compares against is not documented.
+# Open Source Health. Every @nextcloud package is part of the Nextcloud
+# platform's own libraries, which a Nextcloud app cannot avoid. Their AGPL and GPL
+# licences are accepted, so only the licence property is excluded for them:
+# vulnerabilities, freshness, activity and management are still scored. [:/]
+# matches the scoped npm name in either form, because the name the analysis
+# compares against is not documented.
+#
+# The @nextcloud production packages in package-lock.json that this covers:
+# auth, axios, browser-storage, capabilities, dialogs, event-bus, files,
+# initial-state, l10n, logger, notify_push, password-confirmation, paths, router,
+# sharing, typings, vue and vue-select.
 #
 # The path entry excludes the Newman test harness (tests/integration/package.json),
 # which runs the API tests against a dev instance and is not shipped with the app.
@@ -95,14 +101,7 @@ exclude:
 dependencychecker:
   exclude:
     - path: ".*/tests/integration/.*"
-    - license: "^@nextcloud[:/]vue$"
-    - license: "^@nextcloud[:/]dialogs$"
-    - license: "^@nextcloud[:/]auth$"
-    - license: "^@nextcloud[:/]axios$"
-    - license: "^@nextcloud[:/]l10n$"
-    - license: "^@nextcloud[:/]router$"
-    - license: "^@nextcloud[:/]initial-state$"
-    - license: "^@nextcloud[:/]capabilities$"
+    - license: "^@nextcloud[:/].*$"
 
 # Architecture Quality. Knowledge Awareness and Team Stability are computed from
 # commit authors. Most commits here are made by AI agents, recorded either as

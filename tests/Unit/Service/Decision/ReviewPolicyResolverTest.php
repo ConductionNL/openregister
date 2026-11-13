@@ -36,6 +36,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\EntityRelation
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners
  */
 class ReviewPolicyResolverTest extends TestCase {
 

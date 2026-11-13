@@ -33,10 +33,12 @@ use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Federation\CreatorPropertyFilter;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
+use OCA\OpenRegister\Service\Federation\PlainQueryMatch;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -373,6 +375,10 @@ class FederationController extends Controller {
 		$data = (array)$this->request->getParams();
 		unset($data['shareToken'], $data['_route']);
 
+		if ($this->scopeAdmitsNewObject(share: $share, data: $data) === false) {
+			return new JSONResponse(data: ['error' => 'This share does not cover the object to create'], statusCode: Http::STATUS_FORBIDDEN);
+		}
+
 		// 🔴 STRIP THE CALLER'S IDENTITY. This endpoint CREATES.
 		//
 		// `saveObject()` resolves its target from the payload:
@@ -493,11 +499,14 @@ class FederationController extends Controller {
 			$ok = $this->objectService->deleteObject(
 				deletion: new ObjectDeletion(
 					uuid: $target['uuid'],
-					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema())
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema()),
+					reach: fn (string $uuid): bool => $uuid !== '' && $this->reachableEntity(share: $share, id: $uuid) !== null
 				),
 				_rbac: false,
 				_multitenancy: false
 			);
+		} catch (ReferentialIntegrityException $e) {
+			return new JSONResponse(data: ['error' => self::blockedDeleteMessage(refusal: $e)], statusCode: Http::STATUS_CONFLICT);
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] delete object failed: ' . $e->getMessage());
 			return new JSONResponse(data: ['error' => 'Could not delete object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -505,6 +514,55 @@ class FederationController extends Controller {
 
 		return new JSONResponse(data: ['deleted' => $ok]);
 	}//end deleteObject()
+
+	/**
+	 * Whether a share's scope covers an object about to be created.
+	 *
+	 * A schema or register share covers any new object in its table. An object share
+	 * grants one existing object, so it covers none. A query share covers a new object
+	 * only when each of its conditions is a plain value (or list of values) on a property
+	 * the payload sets to that value; a condition this check cannot read, such as an
+	 * operator, `_ids` or a search, covers nothing.
+	 *
+	 * @param FederatedShare       $share The share being served.
+	 * @param array<string, mixed> $data  The payload to create.
+	 *
+	 * @return bool Whether the create falls inside the share.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
+	 */
+	private function scopeAdmitsNewObject(FederatedShare $share, array $data): bool {
+		if ($share->getScope() === 'object') {
+			return false;
+		}
+
+		if ($share->getScope() !== 'query') {
+			return true;
+		}
+
+		if (is_array($share->getQueryFilter()) === false) {
+			return false;
+		}
+
+		return (new PlainQueryMatch())->admits(filters: $this->buildScopeConfig(share: $share)['filters'], data: $data);
+	}//end scopeAdmitsNewObject()
+
+	/**
+	 * Why a federated delete was blocked by the objects it would change.
+	 *
+	 * @param ReferentialIntegrityException $refusal The refusal.
+	 *
+	 * @return string The message.
+	 */
+	private static function blockedDeleteMessage(ReferentialIntegrityException $refusal): string {
+		foreach ($refusal->getAnalysis()->blockers as $blocker) {
+			if (($blocker['reason'] ?? null) === 'out_of_reach') {
+				return 'The delete would change or remove objects outside this share, so it was not carried out.';
+			}
+		}
+
+		return 'Other objects refer to this object, so it was not deleted.';
+	}//end blockedDeleteMessage()
 
 	/**
 	 * Resolve a share that grants write access (accepted, read-write, bound to an organisation), or null.

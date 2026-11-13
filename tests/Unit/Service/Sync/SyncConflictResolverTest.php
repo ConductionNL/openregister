@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Sync\SyncConflictResolver
+ * @uses \OCA\OpenRegister\Service\Sync\SyncConflict
  */
 class SyncConflictResolverTest extends TestCase {
 

@@ -48,6 +48,27 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Sync\HarvestPipelineService
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
+ * @uses \OCA\OpenRegister\Db\Source
+ * @uses \OCA\OpenRegister\Db\SyncFailure
+ * @uses \OCA\OpenRegister\Db\SyncRecord
+ * @uses \OCA\OpenRegister\Db\SyncRecordInputs
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestImportServices
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestRun
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestedRecord
+ * @uses \OCA\OpenRegister\Service\Sync\SourceMapping
+ * @uses \OCA\OpenRegister\Service\Sync\SyncConflict
+ * @uses \OCA\OpenRegister\Service\Sync\SyncConflictResolver
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class HarvestPipelineImportGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/harvest-pipeline-import-golden.json';

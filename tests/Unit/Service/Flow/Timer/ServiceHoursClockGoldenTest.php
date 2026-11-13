@@ -39,6 +39,11 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursWalk
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursFrame
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  */
 class ServiceHoursClockGoldenTest extends TestCase {
 

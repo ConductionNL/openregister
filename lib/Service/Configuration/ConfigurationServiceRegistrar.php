@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ConfigurationBindingMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapperInterface;
@@ -35,6 +36,9 @@ use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHan
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationBundleService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDomainMap;
+use OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDraftGate;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
@@ -520,7 +524,8 @@ final class ConfigurationServiceRegistrar {
 			fileSettingsHandler: $container->get(FileSettingsHandler::class),
 			objRetentionHandler: $container->get(ObjectRetentionHandler::class),
 			cacheSettingsHandler: $container->get(CacheSettingsHandler::class),
-			cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
+			cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class),
+			draftGate: $container->get(SettingsDraftGate::class)
 		);
 	}//end buildSettingsService()
 
@@ -579,6 +584,8 @@ final class ConfigurationServiceRegistrar {
 		$context->registerService(DeploymentPreviewService::class, self::buildDeploymentPreviewService(...));
 		$context->registerService(DeploymentService::class, self::buildDeploymentService(...));
 		$context->registerService(ConfigurationExplainer::class, self::buildConfigurationExplainer(...));
+		$context->registerService(ConfigurationBundleService::class, self::buildConfigurationBundleService(...));
+		$context->registerService(SettingsDraftGate::class, self::buildSettingsDraftGate(...));
 		$context->registerService(ConfigurationSeedService::class, self::buildConfigurationSeedService(...));
 	}//end registerConfigurationDeploymentServices()
 
@@ -718,9 +725,47 @@ final class ConfigurationServiceRegistrar {
 	private static function buildConfigurationExplainer(ContainerInterface $container): ConfigurationExplainer {
 		return new ConfigurationExplainer(
 			store: $container->get(ConfigurationValueStore::class),
-			deployments: $container->get(ConfigurationDeploymentMapperInterface::class)
+			deployments: $container->get(ConfigurationDeploymentMapperInterface::class),
+			bindings: $container->get(ConfigurationBindingMapperInterface::class)
 		);
 	}//end buildConfigurationExplainer()
+
+	/**
+	 * Build the bundle service over the bindings, the layered values and the drafts.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ConfigurationBundleService The service.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private static function buildConfigurationBundleService(ContainerInterface $container): ConfigurationBundleService {
+		return new ConfigurationBundleService(
+			bindings: $container->get(ConfigurationBindingMapperInterface::class),
+			values: $container->get(ConfigurationValueMapper::class),
+			drafts: $container->get(ConfigurationDraftService::class),
+			session: $container->get('OCP\IUserSession')
+		);
+	}//end buildConfigurationBundleService()
+
+	/**
+	 * Build the draft gate the settings facade asks before every write.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return SettingsDraftGate The gate.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/settings-management/spec.md
+	 */
+	private static function buildSettingsDraftGate(ContainerInterface $container): SettingsDraftGate {
+		return new SettingsDraftGate(
+			drafts: $container->get(ConfigurationDraftService::class),
+			store: $container->get(ConfigurationValueStore::class),
+			domains: new SettingsDomainMap(),
+			appConfig: $container->get('OCP\IAppConfig'),
+			appName: 'openregister'
+		);
+	}//end buildSettingsDraftGate()
 
 	/**
 	 * Build the seed action over the drafts, the live values and the settings getters.

@@ -45,6 +45,10 @@ final class ObjectDeletion {
 	 * @param bool             $permanent   Destroy the row rather than tombstone it, so its identifier
 	 *                                      becomes reusable. Reserve it for rows that are a claim rather
 	 *                                      than a record (openregister#2459).
+	 * @param \Closure|null    $reach       Whether the delete may change an object it reaches through a
+	 *                                      reference (a cascade child, or a dependent the onDelete rules
+	 *                                      delete or rewrite), asked with that object's uuid. A dependent
+	 *                                      it refuses blocks the delete. Null lets the rules decide alone.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Soft delete is the default every caller gets.
 	 *
@@ -55,6 +59,7 @@ final class ObjectDeletion {
 		public readonly ObjectFindTarget $target=new ObjectFindTarget(),
 		public readonly ?IUser $currentUser=null,
 		public readonly bool $permanent=false,
+		public readonly ?\Closure $reach=null,
 	) {
 	}//end __construct()
 

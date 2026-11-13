@@ -668,6 +668,10 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		);
 		$object->setOwner($handover->newOwner);
 
+		if ($record->previousOwner !== null && $record->previousOwner !== '') {
+			$this->guards->sharerAccess?->endViewOf(object: $object, uid: $record->previousOwner);
+		}
+
 		$this->writers->auditTrailMapper->createAuditTrail(
 			old: $before,
 			new: $object,

@@ -1,6 +1,7 @@
 <?php
 
-return [
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases([
     'resources' => [
         'Registers' => ['url' => 'api/registers'],
         'Schemas' => ['url' => 'api/schemas'],
@@ -580,6 +581,19 @@ return [
             'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'configurationDeployment#effective', 'url' => '/api/configuration/effective',
             'verb' => 'GET'],
+        // Configuration bundles. A bundle is a binding, not a model: its values
+        // live at the bundle layer of openregister_config_values and these
+        // routes address it by name. Administrator only, same as above.
+        ['name' => 'configurationBundle#index', 'url' => '/api/configuration/bundles',
+            'verb' => 'GET'],
+        ['name' => 'configurationBundle#show', 'url' => '/api/configuration/bundles/{id}',
+            'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationBundle#bind', 'url' => '/api/configuration/bundles/{id}/bindings',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'configurationBundle#unbind', 'url' => '/api/configuration/bundles/{id}/bindings/{subject}',
+            'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'subject' => '[^/]+']],
+        ['name' => 'configurationBundle#copy', 'url' => '/api/configuration/draft-sets/{id}/copy',
+            'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // Stage the working defaults as a draft set. Administrator only, same as above.
         ['name' => 'configurationSeed#create', 'url' => '/api/configuration/seed',
             'verb' => 'POST'],
@@ -2119,6 +2133,8 @@ return [
 		['name' => 'archival#decideEntry', 'url' => '/api/archival/destruction-lists/{id}/entries/{entryId}/decision', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+']],
 		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
 		['name' => 'archival#recomputeNomination', 'url' => '/api/archival/objects/{id}/nomination/recompute', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archivalOverview#overview', 'url' => '/api/archival/overview', 'verb' => 'GET'],
+		['name' => 'archivalOverview#drawUp', 'url' => '/api/archival/destruction-lists/draw-up', 'verb' => 'POST'],
 
 		// The classification plan arrives as a file, versioned, and a new
 		// version is diffed against the one in use before it is switched to.
@@ -2331,4 +2347,4 @@ return [
 		['name' => 'dashboard#catchAll', 'url' => '/{path}', 'verb' => 'GET',
 			'requirements' => ['path' => '(?!api/).+'], 'defaults' => ['path' => '']],
     ],
-];
+]);

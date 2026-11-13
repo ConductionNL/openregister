@@ -30,6 +30,8 @@ use PHPUnit\Framework\TestCase;
  * Restoring the shipped text, cleaning an edit, unreadable edits, the any-locale fallback and long keys.
  *
  * @covers \OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TemplateRendering
+ * @uses \OCA\OpenRegister\Service\Notification\TemplateCatalogue
  */
 class NotificationTemplateRegistryEditsTest extends TestCase {
 

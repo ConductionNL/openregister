@@ -72,6 +72,11 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowField
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Db\MagicMapper\AliasedRows
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowApplyRun
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBlockField
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterTarget
  */
 class RelatedRowQueryGoldenTest extends TestCase {
 

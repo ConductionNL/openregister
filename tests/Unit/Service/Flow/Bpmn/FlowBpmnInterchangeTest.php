@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary
  * @uses   \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter
  * @uses   \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnReading
  */
 class FlowBpmnInterchangeTest extends TestCase {
 

@@ -24,6 +24,11 @@ use PHPUnit\Framework\TestCase;
  * Koningsdag (27 April) moves to the 26th when it falls on a Sunday, and stays put otherwise.
  *
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  */
 class WorkingCalendarObservedShiftTest extends TestCase {
 

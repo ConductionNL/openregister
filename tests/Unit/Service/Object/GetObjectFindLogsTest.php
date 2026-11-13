@@ -19,6 +19,7 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Service\Object\GetObject
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class GetObjectFindLogsTest extends TestCase {
 

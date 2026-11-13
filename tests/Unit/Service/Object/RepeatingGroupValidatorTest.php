@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\Object\RepeatingGroupValidator
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\RepeatingGroupPlace
  */
 final class RepeatingGroupValidatorTest extends TestCase {
 

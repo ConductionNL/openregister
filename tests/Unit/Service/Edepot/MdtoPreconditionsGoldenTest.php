@@ -37,6 +37,9 @@ use Psr\Log\LoggerInterface;
  * elements (one and several), and every missing generator input.
  *
  * @covers \OCA\OpenRegister\Service\Edepot\MdtoPreconditions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Configuration\AppSettingsAccess
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoInputReaders
  */
 class MdtoPreconditionsGoldenTest extends TestCase {
 

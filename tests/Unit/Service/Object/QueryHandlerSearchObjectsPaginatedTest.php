@@ -24,6 +24,11 @@ use ReflectionParameter;
  * What QueryHandler::searchObjectsPaginated() hands the database search and how it annotates the answer.
  *
  * @covers \OCA\OpenRegister\Service\Object\QueryHandler
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Service\Object\QueryHandlers
+ * @uses \OCA\OpenRegister\Service\Object\QueryPlatform
+ * @uses \OCA\OpenRegister\Service\Object\QueryRefinements
+ * @uses \OCA\OpenRegister\Service\Object\SearchOptions
  */
 class QueryHandlerSearchObjectsPaginatedTest extends TestCase {
 

@@ -33,6 +33,8 @@ use RuntimeException;
  * touches no other collaborator than the checksum.
  *
  * @covers \OCA\OpenRegister\Service\Edepot\TransferObjectGatherer
+ * @uses \OCA\OpenRegister\Service\Edepot\PackagedFileChecksum
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferStores
  */
 class EdepotTransferServiceFilesTest extends TestCase {
 

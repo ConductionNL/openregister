@@ -37,6 +37,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\TransferListService
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferStores
  */
 class TransferListServicePersistenceTest extends TestCase {
 

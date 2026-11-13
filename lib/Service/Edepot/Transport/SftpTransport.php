@@ -26,10 +26,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot\Transport;
 
-use phpseclib3\Crypt\PublicKeyLoader;
-use phpseclib3\Net\SFTP;
+use phpseclib4\Crypt\PublicKeyLoader;
+use phpseclib4\Net\SFTP;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * SFTP transport for e-Depot SIP packages.
@@ -113,8 +114,10 @@ class SftpTransport implements SftpTransportInterface {
 	private function put(string $sipFilePath, array $config): array {
 		$remotePath = rtrim(($config['remotePath'] ?? '/'), '/') . '/' . basename($sipFilePath);
 		$sftp = $this->createSftpConnection(config: $config);
-		if ($sftp->put($remotePath, $sipFilePath, SFTP::SOURCE_LOCAL_FILE) === false) {
-			throw new RuntimeException('SFTP upload failed: ' . $sftp->getLastSFTPError());
+		try {
+			$sftp->put($remotePath, $sipFilePath, SFTP::SOURCE_LOCAL_FILE);
+		} catch (Throwable $e) {
+			throw new RuntimeException('SFTP upload failed: ' . $e->getMessage(), 0, $e);
 		}
 
 		return [$remotePath, $sftp->filesize($remotePath)];
@@ -181,7 +184,7 @@ class SftpTransport implements SftpTransportInterface {
 	 *
 	 * @param array<string,mixed> $config SFTP configuration.
 	 *
-	 * @return \phpseclib3\Net\SFTP The SFTP connection.
+	 * @return \phpseclib4\Net\SFTP The SFTP connection.
 	 *
 	 * @throws RuntimeException If connection fails.
 	 *

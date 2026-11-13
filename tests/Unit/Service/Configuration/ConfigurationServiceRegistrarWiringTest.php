@@ -200,6 +200,7 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 				'OCA\\OpenRegister\\Service\\Settings\\ObjectRetentionHandler',
 				'OCA\\OpenRegister\\Service\\Settings\\CacheSettingsHandler',
 				'OCA\\OpenRegister\\Service\\Settings\\ConfigurationSettingsHandler',
+				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\SettingsDraftGate',
 			],
 			'OCA\\OpenRegister\\Service\\TenantKeyService' => [
 				'OCP\\IDBConnection',
@@ -248,6 +249,18 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 			'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationExplainer' => [
 				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationValueStore',
 				'OCA\\OpenRegister\\Db\\ConfigurationDeploymentMapperInterface',
+				'OCA\\OpenRegister\\Db\\ConfigurationBindingMapperInterface',
+			],
+			'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationBundleService' => [
+				'OCA\\OpenRegister\\Db\\ConfigurationBindingMapperInterface',
+				'OCA\\OpenRegister\\Db\\ConfigurationValueMapper',
+				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationDraftService',
+				'OCP\\IUserSession',
+			],
+			'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\SettingsDraftGate' => [
+				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationDraftService',
+				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationValueStore',
+				'OCP\\IAppConfig',
 			],
 			'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationSeedService' => [
 				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationDraftService',

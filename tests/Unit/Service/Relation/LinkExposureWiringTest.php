@@ -65,6 +65,12 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Relation\DescribeRun
+ * @uses \OCA\OpenRegister\Service\Relation\ExposureDeclaration
+ * @uses \OCA\OpenRegister\Service\Relation\RelationValueReader
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
  */
 final class LinkExposureWiringTest extends TestCase {
 

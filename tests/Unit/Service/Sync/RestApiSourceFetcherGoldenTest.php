@@ -37,6 +37,8 @@ use Psr\Log\LoggerInterface;
  * fixtures/rest-api-source-fetcher-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Sync\RestApiSourceFetcher
+ * @uses \OCA\OpenRegister\Db\Source
+ * @uses \OCA\OpenRegister\Service\Sync\ListingGather
  */
 class RestApiSourceFetcherGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/rest-api-source-fetcher-golden.json';

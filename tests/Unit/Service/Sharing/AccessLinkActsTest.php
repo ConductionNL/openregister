@@ -40,6 +40,14 @@ use PHPUnit\Framework\TestCase;
  * The comment and the upload a link makes.
  *
  * @covers \OCA\OpenRegister\Service\Sharing\AccessLinkActs
+ * @uses \OCA\OpenRegister\Db\AccessLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteAuthor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft
+ * @uses \OCA\OpenRegister\Service\Sharing\LinkAct
+ * @uses \OCA\OpenRegister\Service\File\FileTarget
+ * @uses \OCA\OpenRegister\Service\File\FileUpload
+ * @uses \OCA\OpenRegister\Service\Sharing\LinkFile
  */
 class AccessLinkActsTest extends TestCase {
 

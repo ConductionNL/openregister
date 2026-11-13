@@ -57,6 +57,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  * @uses \OCA\OpenRegister\Service\Flow\Timer\EscalationRule
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerArithmetic
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
  */
 class FlowTimerFactoryTest extends TestCase {
 

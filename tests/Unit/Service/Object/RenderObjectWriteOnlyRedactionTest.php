@@ -70,6 +70,35 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\Object\RenderContext
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalDecisionSources
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalText
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
+ * @uses \OCA\OpenRegister\Service\Object\EntityRead
+ * @uses \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses \OCA\OpenRegister\Service\Object\RenderPath
+ * @uses \OCA\OpenRegister\Service\Object\RenderPreloads
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRequest
+ * @uses \OCA\OpenRegister\Service\Object\RenderRun
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Service\Object\WithheldProperties
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\ProtectedPropertyRead
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
  */
 class RenderObjectWriteOnlyRedactionTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

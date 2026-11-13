@@ -55,6 +55,14 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Exception\TaskAccessDeniedException
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunContext
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\Task\FormCompletionRequest
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswerPayload
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormInlineSave
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSubjectWriter
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSubmission
+ * @uses \OCA\OpenRegister\Service\Task\TaskSubjectTransition
  */
 class TaskFormCompletionTest extends TestCase {
 
