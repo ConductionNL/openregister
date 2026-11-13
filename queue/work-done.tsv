@@ -4614,4 +4614,5 @@ merge:pipelinq:3696:ad232941	merge-local over 24 pipelinq tasks: merged=69 red=1
 merge:pipelinq:3697:d0d19b96	merge-local over 24 pipelinq tasks: merged=69 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:44:40Z
 merge:pipelinq:3699:92fa567e	merge-local over 24 pipelinq tasks: merged=69 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:44:40Z
 merge:pipelinq:3704:c9e52e73	merge-local over 24 pipelinq tasks: merged=69 red=1 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:44:40Z
+build:openregister:content-search-index	failed: remaining 1.1/1.3/2.1/2.2 are one search-pipeline return-shape change (carry chunk hits from ContentSearchHandler::widen through QueryHandler to ObjectsProvider as kind:file entries); over one task, needs its own scoped build; 3.2 is live	session-20261113T104527-c302106c	2026-11-13T11:45:23Z
 verify:pipelinq:3725:e744b492	GREEN 3725 3729 3747 3750 3751; CONFLICT 3734 3748 3749 (l10n catalogues)	session-20261113T104531-16da055e	2026-11-13T11:45:29Z
