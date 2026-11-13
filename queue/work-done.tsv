@@ -4712,3 +4712,4 @@ build:openregister:app-harvest-fetchers-and-flow-node	partial: PR #10156 (tasks 
 cover:shillinq:05639debm0c05:5fe382d1	PR #2938: 11 tests, lib/Service/Import/*.php 91.2% -> 96.2% statements	session-20261113T091533-03405ea6	2026-11-13T12:03:41Z
 cover:larpinq:c4471360mcb1b:js5794e9fc	already covered: open branch quality/test-coverage-js-5794e9fc-1 (settingsView.spec.js) takes src/views/settings from 17.1% to 100% when applied, 281 tests green; no duplicate PR	session-20261113T074533-3e2a2da6	2026-11-13T12:03:58Z
 build:openregister:file-publication-window	already done: built on main in 6e8bc8f7db; open 6.1 (opencatalogi schema) and 6.2 (a decision) are marked out of this change	session-20261113T101609-bc51215d	2026-11-13T12:04:10Z
+review:openregister:10139:07832807	BLOCK: ComponentDefinitionTest 3 failures (component yaml not regenerated); rest fine	session-20261113T071633-17de823f	2026-11-13T12:04:52Z
