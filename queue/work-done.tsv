@@ -6258,3 +6258,4 @@ cover:buildiq:70b3e29em7beb:34f5c300	failed: permission (building a coverage dri
 cover:shillinq:05639debm7b6b:e372e6ff	already done: lib/Event/*.php 100% (96/96) at b0ed3e4 (measurement at current head)	session-20261113T182349-7e3632fd	2026-11-13T19:14:51Z
 fix:shillinq:2983:ccfb2777	no change: #2983 is clean on development; conflict is only with sibling PRs #2982/#2986 (same info.xml version line + lock entry); REVERIFY recorded	session-20261113T175335-552e4d60	2026-11-13T19:15:05Z
 build:shillinq:purchasing-call-offs-and-reorder-proposals	PR #3011: tasks 1.1, 1.2 built with 23 tests; 1.3 live checks left (strings done)	session-20261113T171150-996cf694	2026-11-13T19:15:32Z
+verify:dossiq:6439:73fe2fd7	GREEN 6439, GREEN 6440 (tests-only; 16571 tests, 20 inherited failures, none new)	session-20261113T172329-0b6220f9	2026-11-13T19:15:37Z
