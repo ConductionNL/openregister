@@ -1,12 +1,12 @@
 {
  "app": "launchpad",
- "commit": "39f2121728adcf3b230072c39f41de8d5807d93d",
- "measured_at": "2026-11-13T04:06:14Z",
+ "commit": "7a18021a5ff15fbbd5705aea9bc165beed80c00f",
+ "measured_at": "2026-11-13T06:16:16Z",
  "php": {
   "tool": "pcov",
-  "pct": 90.54,
-  "statements": 21987,
-  "covered": 19906,
+  "pct": 92.52,
+  "statements": 22125,
+  "covered": 20470,
   "dirs": {
    "lib/Activity/": [
     337,
@@ -17,8 +17,8 @@
     22
    ],
    "lib/AppInfo/": [
-    131,
-    99
+    132,
+    100
    ],
    "lib/BackgroundJob/": [
     136,
@@ -29,12 +29,12 @@
     1354
    ],
    "lib/Controller/": [
-    4607,
-    4219
+    4625,
+    4284
    ],
    "lib/Db/": [
     2102,
-    1372
+    1614
    ],
    "lib/Event/": [
     6,
@@ -52,6 +52,14 @@
     267,
     267
    ],
+   "lib/Middleware/": [
+    59,
+    58
+   ],
+   "lib/Middleware/Support/": [
+    60,
+    54
+   ],
    "lib/Notification/": [
     85,
     85
@@ -66,7 +74,7 @@
    ],
    "lib/Service/": [
     11530,
-    10652
+    10796
    ],
    "lib/Service/Cleanup/": [
     42,
@@ -95,9 +103,9 @@
   }
  },
  "js": {
-  "pct": 84.14,
+  "pct": 92.45,
   "statements": 7243,
-  "covered": 6094,
+  "covered": 6696,
   "dirs": {
    "src/": [
     44,
@@ -105,7 +113,7 @@
    ],
    "src/components/": [
     464,
-    345
+    435
    ],
    "src/components/Widgets/": [
     234,
@@ -113,7 +121,7 @@
    ],
    "src/components/Widgets/Renderers/": [
     1302,
-    1121
+    1210
    ],
    "src/components/Workspace/": [
     324,
@@ -125,7 +133,7 @@
    ],
    "src/components/admin/": [
     1056,
-    934
+    980
    ],
    "src/components/admin/tabs/": [
     233,
@@ -141,11 +149,11 @@
    ],
    "src/dialogs/": [
     267,
-    212
+    246
    ],
    "src/modals/": [
     638,
-    545
+    618
    ],
    "src/services/": [
     526,
@@ -153,7 +161,7 @@
    ],
    "src/stores/": [
     715,
-    592
+    684
    ],
    "src/utils/": [
     132,
@@ -161,7 +169,7 @@
    ],
    "src/views/": [
     717,
-    441
+    619
    ],
    "src/views/settings/": [
     40,
