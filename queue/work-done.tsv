@@ -3151,3 +3151,4 @@ verify:dossiq:6319:479ba67b	GREEN #6319 (tests only, no new failures)	session-20
 gap:shillinq:oas:burn1	already done: openapi.json at repo root on development since 53ccdf480 (2026-11-12): 258 paths, servers .../api/v1, info.contact, problem+json responses	session-20261113T044737-f37de8e3	2026-11-13T07:27:09Z
 verify:shillinq:2903:c7240894	failed: permission	session-20261113T072709-0175c828	2026-11-13T07:28:22Z
 gap:decidiq:dompurify:burn1	failed: permission (verify of open PR #2120 carrying the dompurify override was refused)	session-20261113T072706-2eaa6a81	2026-11-13T07:28:27Z
+gap:filinq:spdx:burn1	PR #2043: SPDX headers added to 6 files (2 lib, 4 tests)	session-20261113T072713-f866e896	2026-11-13T07:29:00Z
