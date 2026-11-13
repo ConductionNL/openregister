@@ -7110,3 +7110,4 @@ review:openregister:10378:9f1adfb1	APPROVE: additive parity class, suites green	
 review:openregister:10405:e7d049dd	APPROVE (docs-only)	session-20261113T205330-0e50ee62	2026-11-13T22:13:57Z
 review:openregister:10409:020562fe	APPROVE 10409 (docs only)	session-20261113T192701-f224cbcf	2026-11-13T22:14:12Z
 build4:openregister:store-over-federated-config	partial: PR #10417 backend tasks 1.x, 2.x, 3.1, 6.1 verified (already implemented) and ticked, 2 tests added; 4.x nextcloud-vue, 5.x decidiq, 6.2-6.3 live left	session-20261113T204536-22cfbae0	2026-11-13T22:14:20Z
+review:openregister:10399:350560f4	APPROVE 10399: frontend-only Rights tab, save keeps other authorization keys; jest/eslint green; l10n reds inherited	session-20261113T205337-4c32e19e	2026-11-13T22:14:38Z
