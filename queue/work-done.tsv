@@ -6740,3 +6740,5 @@ cover:opencatalogi:fc83bfb1m976b:js17dfdc2e	PR #2619: 40 vitest tests; objectPay
 verify:shillinq:3020:14ea862e	1 GREEN (3020); 10402 tests, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T20:46:49Z
 build:learniq:an-invited-trainer-may-assess	already built: T1-T4 ticked; T5 (steps/draft/confirmation) already in TrainerSitePages::assessmentAction, tested in PlacementPagesTest (tasks.md not ticked); T6 is a live check, left	session-20261113T202619-0d7929e0	2026-11-13T20:47:23Z
 fix:filinq:2107:143981a1	failed: #2106 not yet on development; #2107 merges clean with development, conflict vs #2106 is only the register info.description/version bump, redo after #2106 lands	session-20261113T204536-22cfbae0	2026-11-13T20:47:28Z
+verify:shillinq:3022:40a55ac6	stale	feeder	2026-11-13T20:45:10Z
+verify:portaliq:2468:006653bf	stale	feeder	2026-11-13T20:45:10Z
