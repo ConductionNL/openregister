@@ -194,6 +194,7 @@ Command/RematerialiseCalculationsCommand.php,262,Command,Flows,Flows/Command/Rem
 Command/RematerialiseRun.php,53,Command,Flows,Flows/Command/RematerialiseRun.php,0,,Processes
 Command/ResetSchemaToShippedCommand.php,85,Command,Configuration,Configuration/Command/ResetSchemaToShippedCommand.php,0,,Configuration
 Command/ResolverListCommand.php,41,Command,Service,Service/Command/ResolverListCommand.php,0,,Core
+Command/DocumentStoreStatusCommand.php,102,Command,Service,Service/Command/DocumentStoreStatusCommand.php,0,,Core
 Command/RollbackApprovalMigrationCommand.php,112,Command,Configuration,Configuration/Command/RollbackApprovalMigrationCommand.php,0,,Configuration
 Command/RotateTenantKeyCommand.php,58,Command,Configuration,Configuration/Command/RotateTenantKeyCommand.php,0,,Configuration
 Command/TablesSyncCommand.php,70,Command,Integrations,Integrations/Command/TablesSyncCommand.php,0,,Integrations

@@ -28,6 +28,7 @@ use Exception;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Service\File\DocumentStore;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -96,6 +97,13 @@ class FileSettingsController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * Where the documents live; null leaves `documentStore` out of the file settings.
+	 *
+	 * @var DocumentStore|null
+	 */
+	private readonly ?DocumentStore $documentStore;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                       $request  The request.
@@ -109,10 +117,14 @@ class FileSettingsController extends Controller {
 		$this->container = $services->container;
 		$this->settingsService = $services->settingsService;
 		$this->logger = $services->logger;
+		$this->documentStore = $services->documentStore;
 	}//end __construct()
 
 	/**
 	 * Get File Management settings
+	 *
+	 * The settings carry `documentStore`: where the managed documents live. It is
+	 * read from the storage on each call and never stored with the settings.
 	 *
 	 * @NoCSRFRequired
 	 *
@@ -121,15 +133,43 @@ class FileSettingsController extends Controller {
 	 * @psalm-return JSONResponse<200|500, array, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
 	 */
 	public function getFileSettings(): JSONResponse {
 		try {
 			$data = $this->settingsService->getFileSettingsOnly();
+			if ($this->documentStore !== null) {
+				$data['documentStore'] = $this->describeDocumentStore();
+			}
+
 			return new JSONResponse(data: $data);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
 	}//end getFileSettings()
+
+	/**
+	 * Where the documents live, or null when the storage cannot be read.
+	 *
+	 * A store that cannot be described does not keep the rest of the file
+	 * settings from loading; the reason is logged.
+	 *
+	 * @return array<string, mixed>|null The description, or null.
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function describeDocumentStore(): ?array {
+		try {
+			return $this->documentStore?->describe();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[FileSettingsController] The document store cannot be described: {error}',
+				context: ['error' => $e->getMessage()]
+			);
+
+			return null;
+		}
+	}//end describeDocumentStore()
 
 	/**
 	 * Update File Management settings
