@@ -9,6 +9,28 @@ import {
 	readFileAsDataUri,
 } from './propertyEditor.js'
 
+describe('editorFor per field type (capability-rows-verified-a)', () => {
+	// @spec openspec/changes/capability-rows-verified-a/specs/objects-crud/spec.md
+	it('gives a date, a time and a date-time string a date picker', () => {
+		expect(editorFor({ type: 'string', format: 'date' })).toBe('date')
+		expect(editorFor({ type: 'string', format: 'time' })).toBe('date')
+		expect(editorFor({ type: 'string', format: 'date-time' })).toBe('date')
+	})
+
+	it('keeps a date format on a non-string a plain field', () => {
+		expect(editorFor({ type: 'integer', format: 'date-time' })).toBe('text')
+	})
+
+	it('gives a yes or no field a switch', () => {
+		expect(editorFor({ type: 'boolean' })).toBe('switch')
+	})
+
+	it('edits an email or web address as text, leaving the check to the save', () => {
+		expect(editorFor({ type: 'string', format: 'email' })).toBe('text')
+		expect(editorFor({ type: 'string', format: 'uri' })).toBe('text')
+	})
+})
+
 describe('editorFor', () => {
 	it('gives an enum field a choice list', () => {
 		expect(editorFor({ type: 'string', enum: ['open', 'closed'] })).toBe(
