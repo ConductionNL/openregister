@@ -4156,3 +4156,4 @@ verify:integriq:3523:24253660	3523 GREEN; 8150 tests, no new failures	session-20
 fix:dossiq:6366:88c769f1	fixed: label + en/nl strings added, vitest green beyond inherited; new head 92d7b0dc	session-20261113T084521-fd8a31c7	2026-11-13T10:07:41Z
 cover:openregister:7350e3efmea52:e98782c5	PR #10119: 23 tests, Notifications/Service 94.7%->95.6%	session-20261113T071631-5a3cc070	2026-11-13T10:07:51Z
 cover:portaliq:b60f3b81:e372e6ff	PR #2389: 6 tests, lib/Event 79.8->99.1% stmts	session-20261113T091527-72c58830	2026-11-13T10:08:06Z
+cover:stackiq:9ac19b3am6096:60c2c265	PR stackiq#1867: 9 tests for ContactpersonenController read paths; lib/Controller 91.25->92.13%, suite 3261->3270 green	session-20261113T074532-3dc49c57	2026-11-13T10:08:11Z
