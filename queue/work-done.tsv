@@ -5073,8 +5073,85 @@ build2:openregister:fields-a-user-adds-and-choices-a-record-narrows	already buil
 review:openregister:10204:095193e3	APPROVE: new uncalled classes, tests and Architecture green; 6 risky tests noted	session-20261113T101609-bc51215d	2026-11-13T13:06:01Z
 cover:openregister:7350e3efma401:0b640b77	already done: lib/Service/ObjectSource/ at 99.74% (1923/1928) on main after test/coverage-0b640b77-1 merged	session-20261113T124807-b8fee1f0	2026-11-13T13:06:31Z
 build2:openregister:flow-task-inbox-projections	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:07:15Z
+cover:openregister:7350e3efma401:73ef2b6e	already done: the nine Service dirs measure 13257/13875 (95.55%, target 95) from their own tests alone; the 0% Archival classes are covered by tests elsewhere (RetentionInheritedAppraisalTest, RelatedRetentionRecalculationJobTest, Tmlo/Mdto export tests)	session-20261113T081046-f0858dc4	2026-11-13T13:07:42Z
+cover:openregister:7350e3efma401:js0b5eefce	PR #10226: object-modal DOM render goldens + TransferMessages (0->100%); dir lines 90.89->92.33, funcs 72.76->79.27	session-20261113T121557-e4ef0d76	2026-11-13T13:07:24Z
 merge:shillinq:2819:4b0f7ec1	merge-local over 3 shillinq tasks: merged=10 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:07:45Z
 merge:shillinq:2938:96c3cb02	merge-local over 3 shillinq tasks: merged=10 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:07:45Z
 merge:shillinq:2924:99c0bfff	merge-local over 3 shillinq tasks: merged=10 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:07:45Z
 review:openregister:10194:3325393c	APPROVE	session-20261113T121536-3cb7eb71	2026-11-13T13:08:10Z
+cover:openregister:7350e3efma401:34f5c300	PR #10227: 7 untested lib/Service helpers, 28 tests	session-20261113T114527-9a216dd1	2026-11-13T13:08:10Z
 cover:buildiq:70b3e29ema699:60c2c265	2 PRs: #1543 (4 controllers, 36 tests), #1544 (3 controllers, 15 tests); lib/Controller/*.php 91.38%->94.21%, suite 2784->2835, only the inherited ExportZipGoldenTest failure	session-20261113T094607-ad655fd0	2026-11-13T13:08:04Z
+review:openregister:10182:31e74c8d	BLOCK: new CodeNode missing from FlowNodeDeclaredTaxonomyTest list (fails only with PR)	session-20261113T074527-031883a8	2026-11-13T13:08:53Z
+cover:openregister:7350e3efma401:73ef2b6e	already done: the nine Service dirs measure 13257/13875 (95.55%, target 95) from their own tests alone; the 0% Archival classes are covered by tests elsewhere (RetentionInheritedAppraisalTest, RelatedRetentionRecalculationJobTest, Tmlo/Mdto export tests)	session-20261113T081046-f0858dc4	2026-11-13T13:08:25Z
+review:openregister:10206:c4a1a6b9	APPROVE; golden-test conflict with main noted, no new failures	session-20261113T124805-1586d4f8	2026-11-13T13:09:05Z
+build:openregister:modelling-required-when-enforced	PR #10228 (build/modelling-required-when-enforced): RequiredWhenDeclaration + RequiredWhenListener on both write events, schema-save validation, vocabulary key, docs, 40+ new tests; suite 58842 with no new failures vs main; task 2.2 (Newman live API) left unchecked	session-20261113T094606-70524295	2026-11-13T13:09:21Z
+build2:openregister:flow-sync-decomposition	failed: every open code task (1-6, 8) builds openconnector classes (lib/Flow nodes, FlowNodeListener, SynchronizationService); nothing to build in openregister; 7 and 9 are live checks	session-20261113T124805-1586d4f8	2026-11-13T13:10:05Z
+build:openregister:webhooks-for-owners	partial: PR #10229 does 1.1 (owner column/field/findOwnedBy) and 1.2 (webhook.own seeded admin-only), no access change; 2.x-4.x left (they open access and must land with owner-view delivery)	session-20261113T094606-b7da8c7f	2026-11-13T13:10:02Z
+review:openregister:10205:35695c2d	APPROVE 10205: new unwired parser + tests; conflict only in component-map.csv	session-20261113T104650-72c03e13	2026-11-13T13:10:18Z
+review:openregister:10222:6ec25b23	APPROVE: tests only, 132 search-sidebar jest tests pass merged with main	session-20261113T074527-031883a8	2026-11-13T13:10:48Z
+review:openregister:10201:6a3f9b3c	APPROVE: additive crypto container, suites green; component-map.csv merge conflict noted (not a block)	session-20261113T094602-d25cda2a	2026-11-13T13:11:32Z
+review:openregister:10212:01dfee0f	BLOCK: PR's own diagnostics test fails (mock stubs fetch() not fetchAssociative(), so existsBeforeFilter stays false and the error-path assertion never fires)	session-20261113T111529-f2ee6930	2026-11-13T13:11:47Z
+review:openregister:10211:77d5cedc	APPROVE	session-20261113T103904-e108be02	2026-11-13T13:12:04Z
+review:openregister:10214:addc2884	BLOCK: dictionary scheme seed runs without the trusted scope the other seeds use; suites green (DBAL-env errors in BulkAtomicSaveTest inherited)	session-20261113T124807-5f522699	2026-11-13T13:12:12Z
+build:openregister:rights-administration-hardening	partial: #10213 grant ceiling (2.1, 2.2 schema update+upload); left 2.2 other paths, 1.x export, 3.x group rights, 2.3 live	session-20261113T084521-fd8a31c7	2026-11-13T13:12:21Z
+review:openregister:10218:44eb7da6	APPROVE: tests-only, 392/392 schema-modal suite green on PR+main, eslint clean	session-20261113T094606-b7da8c7f	2026-11-13T13:12:26Z
+review:openregister:10212:876c2868	BLOCK: PR's own new test testTheMissIsReportedWithWhetherTheRowExistedBeforeFilters fails deterministically (mock execution-counter makes probe miss, error branch not hit); production change is sound	session-20261113T064519-30004ad4	2026-11-13T13:12:36Z
+build:openregister:rights-administration-hardening	partial: #10230 grant ceiling (2.1, 2.2 schema update+upload); left 2.2 other paths, 1.x export, 3.x group rights, 2.3 live (corrects the PR number in the previous row)	session-20261113T084521-fd8a31c7	2026-11-13T13:12:51Z
+review:openregister:10226:c9fb0bd7	APPROVE	session-20261113T111529-f2ee6930	2026-11-13T13:13:16Z
+review:openregister:10225:ba2a5542	APPROVE: diff is one tasks.md checkbox, no code change	session-20261113T064519-30004ad4	2026-11-13T13:13:33Z
+review:openregister:10185:c71af4e1	APPROVE (component-map.csv append conflict with main)	session-20261113T114524-3c44fc56	2026-11-13T13:13:44Z
+build2:openregister:flow-node-taxonomy	done: #10231 (4.1/4.2 already built in hydra gates, verified and ticked); left 3.3 nextcloud-vue, 5.3 container suite proof	session-20261113T084521-fd8a31c7	2026-11-13T13:14:02Z
+merge:larpinq:1008:a63cd5ff	merge-local over 7 larpinq tasks: merged=19 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:14:13Z
+merge:larpinq:1015:36c19de2	merge-local over 7 larpinq tasks: merged=19 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:14:13Z
+merge:larpinq:1011:a60973d8	merge-local over 7 larpinq tasks: merged=19 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:14:13Z
+merge:larpinq:1020:a01f8c34	merge-local over 7 larpinq tasks: merged=19 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:14:13Z
+merge:larpinq:1024:4f2c7f3f	merge-local over 7 larpinq tasks: merged=19 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:14:13Z
+merge:larpinq:1025:ef810bdb	merge-local over 7 larpinq tasks: merged=19 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:14:13Z
+merge:larpinq:1028:e44dc468	merge-local over 7 larpinq tasks: merged=19 red=0 fail=0 skip=2; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:14:13Z
+build2:openregister:form-destination-validator	already building: all code tasks (1.x, 2.x, 2b.1-2b.7, 3.x, 4.1, 5.1) are on main with routes and tests; 77 form tests green; only live (2b.8), deferred-to-another-change (2b.3) and the verification gate (6.1) remain	session-20261113T111529-f2ee6930	2026-11-13T13:14:38Z
+build2:openregister:files-leaf-save-to-object	failed: open tasks 2.1-2.3 need the object picker, and design D-2's premise is missing at main: no object search with _writable (RBAC) exists and nothing determines hasFilesLeaf per schema; needs a design decision on both before the Files/Talk actions can be built; 3.2 is e2e	session-20261113T094606-b7da8c7f	2026-11-13T13:14:56Z
+cover:portaliq:b60f3b81:0e96d102	PR #2400: 6 fail-closed tests for EmailLink (tokens, sender, sign-in address change); dir 96.73%->99.18%	session-20261113T091531-f9ad21ac	2026-11-13T13:15:00Z
+fix:planninq:1139:afab2501	stale: branch head moved to c5d778ee (duplicate tests already dropped by another worker)	session-20261113T094617-36f80607	2026-11-13T13:15:05Z
+cover:stackiq:9ac19b3am10f3:js0b5eefce	failed: permission (npm ci refused by permission check)	session-20261113T131535-3d7413ab	2026-11-13T13:16:21Z
+verify:portaliq:2398:da2af02e	GREEN #2398 (4841 tests, 0 new failures)	session-20261113T131531-81a20e2a	2026-11-13T13:16:43Z
+cover:planninq:e1c9866d:9d3a1784	PR #1148: 3 background jobs, 8 tests, suite 1015->1023 OK	session-20261113T094617-36f80607	2026-11-13T13:17:04Z
+verify:buildiq:1544:6c19482f	failed: permission	session-20261113T131537-8f770eeb	2026-11-13T13:17:05Z
+build:openregister:expired-object-sweep	partial: PR #10232, tasks 1.1 2.1 3.2 4.1 done with 24 unit tests (sweeper implemented and unit-tested); left: 3.1 DB test, 5.1 docs build not run; architecture/rules/controller/contract suites green, 0 new failures in 672 related test files	session-20261113T094607-7b89fdae	2026-11-13T13:17:04Z
+merge:larpinq:1012:10040d6a	merge-local over 1 larpinq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:17:20Z
+cover:portaliq:b60f3b81:05630945	PR #2401: StandardProtocolPaths covered (4 tests); dir 89.83%->91.53%, the last 5 lines iterate empty constants in ApiPathAliases and are unreachable without a production change	session-20261113T091531-f9ad21ac	2026-11-13T13:17:14Z
+verify:buildiq:1542:8d1ecaef	failed: permission (npm ci / test:unit refused in cloud worker; PHP baseline 2784 tests, 1 inherited failure ExportZipGoldenTest)	session-20261113T131537-142f7747	2026-11-13T13:17:24Z
+build2:openregister:object-presence	already done: server tasks 1.1-1.4 and 3.2 built in #3875; open tasks 2.1/2.2 are @conduction/nextcloud-vue changes and 3.1 is a live two-context e2e, none buildable in openregister; no PR	session-20261113T094607-7b89fdae	2026-11-13T13:17:49Z
+cover:portaliq:b60f3b81:6f346b68	PR #2402: SettingsSection +2 tests, CoversClass (4842->4844)	session-20261113T131531-81a20e2a	2026-11-13T13:17:53Z
+review:openregister:10210:d7ed0581	APPROVE: tests-only cron interval architecture test, green merged with main	session-20261113T124808-08869abe	2026-11-13T13:18:06Z
+cover:portaliq:b60f3b81:dfaef732	already done: lib/Notification/*.php at 22/23 statements (95.65%) on development, above target 95; no PR	session-20261113T091531-f9ad21ac	2026-11-13T13:18:10Z
+cover:buildiq:70b3e29ema699:a215617b	already done: lib/Integration/*.php lines 100/98.1/98.1% (target 95) after merged quality/test-coverage-a215617b-1	session-20261113T131537-142f7747	2026-11-13T13:18:18Z
+review:openregister:10189:dadb71dd	APPROVE: behaviour-compatible, all suites green; csv conflict with main noted	session-20261113T074535-8a2067c2	2026-11-13T13:18:30Z
+review:openregister:10216:e73d099a	APPROVE (tests and docs only; suites green)	session-20261113T104531-16da055e	2026-11-13T13:18:42Z
+merge:portaliq:2284:d88a1b59	merge-local over 2 portaliq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:19:05Z
+merge:portaliq:2388:856b3bfe	merge-local over 2 portaliq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:19:05Z
+verify:planninq:1139:e6274a1a	1139 GREEN (tests only, unit 1015->1022, vitest 3152 passed)	session-20261113T094617-36f80607	2026-11-13T13:19:22Z
+measure:stackiq:20261113h12	php 87.39% (pcov, 3320 tests), js 91.96% (2437 tests) @e4a96a07	session-20261113T131537-72e2896e	2026-11-13T13:19:33Z
+cover:portaliq:b60f3b81:b5d4a28f	PR #2403: PortalOverview +4 edge tests (4842->4846); SessionTrust already fully pinned	session-20261113T131531-81a20e2a	2026-11-13T13:19:33Z
+cover:portaliq:b60f3b81:59826f43	PR #2404: AdminSettings covered (3 tests); lib/Settings/*.php 14.29%->100%	session-20261113T091531-f9ad21ac	2026-11-13T13:19:47Z
+cover:portaliq:b60f3b81:e5d17af2	nothing to cover: lib/Auth/*.php holds a marker interface and two exception classes with no executable statements; no PR	session-20261113T091531-f9ad21ac	2026-11-13T13:20:04Z
+build:openregister:upload-malware-scan	partial: PR #10233 (1.1 gate+adapter, 1.2 contract suite+workflow, 2.1 archive members; 1.3 wiring must land with 3.1 CI ClamAV, 1.4 settings, 3.x CI/e2e left)	session-20261113T074532-3dc49c57	2026-11-13T13:20:14Z
+cover:portaliq:b60f3b81:13d51e6a	already done: lib/Service/Branch/ at 51/51 statements (100%) on development; no PR	session-20261113T091531-f9ad21ac	2026-11-13T13:20:16Z
+review:openregister:10227:bdaa165c	APPROVE	session-20261113T114524-3c44fc56	2026-11-13T13:20:49Z
+merge:pipelinq:3705:fed391b7	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3707:2d909a29	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3708:fe5ce0e8	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3712:f701563e	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3720:5b8990e2	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3710:ef358e1d	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3733:fd876d2f	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3741:af5a4ce6	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3711:623fd923	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3602:6e1f3656	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3728:de742ce0	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:16Z
+merge:pipelinq:3753:b58eaed9	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:17Z
+merge:pipelinq:3704:83bcb87e	merge-local over 13 pipelinq tasks: merged=34 red=1 fail=0 skip=10; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:21:17Z
+review:openregister:10213:bc4c8ebd	APPROVE #10213 build register-document-store (suites green, no behaviour change)	session-20261113T084525-9d890807	2026-11-13T13:21:44Z
+cover:planninq:e1c9866d:aae6d66c	PR #1149: CaseHandoverException + MsProjectImportException 3 tests, suite 1015->1018 OK	session-20261113T094617-36f80607	2026-11-13T13:22:08Z
+merge:planninq:1139:e6274a1a	merge-local over 1 planninq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:22:24Z
+verify:humaniq:1112:30696823	GREEN: #1112 tests only, 3928->3982, no new failures	session-20261113T131537-72e2896e	2026-11-13T13:22:47Z
+cover:buildiq:70b3e29ema699:1b97f731	PR #1545: AutomationApprovalTriggerListener 87.8%→98.65% lines, +6 tests, suite 2784→2790 (1 inherited fail)	session-20261113T131537-142f7747	2026-11-13T13:23:38Z

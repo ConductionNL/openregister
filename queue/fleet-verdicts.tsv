@@ -5901,3 +5901,8 @@ pipelinq	3739	6c64c80f54661efb12fa6cb34f2c90dd259d59b9	BLOCK	worker-37	phpunit 7
 pipelinq	3749	a9ac3f12fd84606854a384d302bad66b133da585	GREEN	worker-37	phpunit 7021 on tree (baseline 7011, 1 inherited failure, 0 new); vitest 4705 OK; l10n OK; public read removed, no access change left
 pipelinq	3754	9eeea22badc492ed37aafbd84c5ba3ff0ac256a3	GREEN	worker-37	phpunit 7063 on tree (baseline 7045, 1 inherited failure, 0 new); 666 touched+Cti tests OK; l10n valid; test:l10n OK; additive call transcription, attachRecording keeps its return and queues behind a default-off config
 pipelinq	3755	6b2c8043680c332640b7da29c3ac0cc18c7aa654	GREEN	worker-37	phpunit 7063 on tree (baseline 7045, 1 inherited failure, 0 new); 666 touched+Cti tests OK; l10n valid; test:l10n OK; tests only
+portaliq	2398	598926b6b23fdd4cc6308f22b7eddfbfd565f3da	GREEN	worker-32	unit 4841 tests (baseline 4837, 0 fail), 0 new failures; behaviour-preserving extract-method refactor of reader/writer
+dossiq	6371	3184045e4c51be3455d29c6bbccffcb721c9ea06	RED	merge-local:merge-gate	GATE RED floor: module_coupling: 5.05 -> 5.03
+planninq	1139	c5d778ee07df39b52542d375d6e519f24875f556	GREEN	worker-57	unit 1015->1022 OK (baseline green), vitest 108 files/3152 passed; tests-only diff, no duplicate class fatal
+pipelinq	3736	9a16156708cb5867054b5c73f11b49f2f2579410	RED	merge-local:merge-gate	GATE RED floor: unit_complexity: 3.78 -> 3.76
+humaniq\t1112\tc7acf4435ca5fafef99f1ac9d30447d3fd974f3e\tGREEN\tworker-47\t3982 tests run, baseline 3928 (0 failures), no new failures; tests only
