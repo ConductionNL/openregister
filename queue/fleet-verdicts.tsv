@@ -5589,3 +5589,4 @@ dossiq	6355	31f38c7294c592371836816c9328a32427ecd50b	BLOCK	worker-23	phpunit 154
 hermiq	1682	be9d722e75d1269d1a3e70fca3ac88def4f5f4bd	GREEN	worker-08	tests 4211 (baseline 4209, 172 inherited errors/failures), no new failures; tests only
 learniq	2460	92ca06ee9eff91e0ca9dcdd8efccabfb436bcdc4	GREEN	worker-18	tests-only; tree 6383 run (baseline 6373, 1 inherited failure HigherEducationExampleSetTest), 0 new failures
 keepiq	1751	8742fe72483295e9b46fac520245ef7ab7f3c54c	GREEN	worker-58	phpunit 4575 on 2-PR tree vs baseline 4564, 0 failures; tests only
+keepiq	1752	a57772f791cce271eb1bc1030eb9cb6a2226a8f8	GREEN	worker-58	phpunit 4575 and vitest 6244 pass on 2-PR tree; formatting only (same map entry)
