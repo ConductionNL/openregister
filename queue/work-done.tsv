@@ -3063,3 +3063,4 @@ cover:dossiq:f8a113c5m7e79:js3f3bfe56	PR #6311: 19 vitest tests for App.vue shel
 verify:integriq:3493:d8ca9b92	3493 GREEN (vitest 1951 pass; PHP unchanged, baseline 2E/1F inherited)	session-20261113T064518-860c039d	2026-11-13T07:02:04Z
 verify:dossiq:6305:aa470dde	1/1 GREEN (6305): clean merge, lint ok, phpunit +4 tests, 19 inherited failures, 0 new; tests only	session-20261113T044737-f37de8e3	2026-11-13T07:02:14Z
 cover:dossiq:f8a113c5m7e79:3ee9dda7	already done: lib/Service/Custody/*.php at 98.73% lines (621/629) on current development	session-20261113T044737-f37de8e3	2026-11-13T07:02:27Z
+cover:hermiq:065f1631mfaac:568ec52a	already done: lib/Lifecycle/*.php 22/22 statements, two test classes	session-20261113T061521-423d1e83	2026-11-13T07:02:43Z
