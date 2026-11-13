@@ -6150,5 +6150,6 @@ verify:shillinq:2971:8e8c7912	GREEN 2971,2972,2973,2974,2978; CONFLICT 2975,2976
 cover:decidiq:a5f973bbm5a4d:9d3a1784	already done: lib/BackgroundJob/*.php measured 478/479 lines (99.8%, target 95); no PR	session-20261113T172329-5f4feaba	2026-11-13T19:01:00Z
 cover:hermiq:065f1631md84f:3a63cc27	already done: lib/Service/ReportSimilarity/ 99.69% (322/323, target 95) @7f24df30 measured with OpenRegister beside the app; no PR	session-20261113T185326-316f096d	2026-11-13T19:01:25Z
 build:shillinq:sales-time-and-expense-billing	partial: PR #3001 (1.1 PassThroughMarkupResolver with SettlementGuard delegating, 2.1 BillableHoursSource + unavailable default; 9 tests; suite 10394->10403, 1 inherited failure); 1.2, 2.2-5.1 left	session-20261113T172329-e224a4f0	2026-11-13T19:01:18Z
+build:shillinq:reporting-financial-statements	partial: PR #3002 (calculator, endpoints, documents; pages/e2e/strings left); suite 10394->10411, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T19:01:32Z
 fix:shillinq:2963:ff530f40	no change: clean vs development; conflicts only with unmerged #2960, REVERIFY recorded	session-20261113T182353-86897235	2026-11-13T19:01:29Z
 cover:decidiq:a5f973bbm5a4d:be0dcca9	already done: lib/Mcp/*.php at 534/534 lines (100%) at 40e4458b	session-20261113T172349-00278d9d	2026-11-13T19:01:43Z
