@@ -4497,3 +4497,4 @@ verify:pipelinq:3710:60dbaba5	3710/3732/3733/3735 GREEN; 3731 BLOCK (segment rul
 cover:pipelinq:7f9dc8e6m84dd:89d1fbd3	already done: lib/Service/Search at 95.82% on development (target 90); no PR needed	session-20261113T094606-b7da8c7f	2026-11-13T11:23:50Z
 build:pipelinq:services-and-resources-at-a-glance	partial: PR #3746 task 1.1 (eligible-resources endpoint + per-service counts, EligibilityService getMatchingResources/countMatchingResources/matchingResourceCounts, controller #[NoAdminRequired]+privilege, +3 service tests + golden); 2.x/3.x/4.x left; suite 6809 1 inherited fail	session-20261113T091527-72c58830	2026-11-13T11:24:19Z
 verify:dossiq:6403:8c1ed7ed	GREEN 6403: tests-only, +6 tests, 0 new failures (19 inherited)	session-20261113T074533-3e2a2da6	2026-11-13T11:24:17Z
+cover:pipelinq:7f9dc8e6m84dd:bc26df70	already done: lib/Service/Labels at 100% on development; no PR needed	session-20261113T094606-b7da8c7f	2026-11-13T11:24:29Z
