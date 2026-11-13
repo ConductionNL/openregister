@@ -5012,3 +5012,4 @@ build:openregister:search-file-text-and-vector-facade	failed: build tasks never 
 build:openregister:query-filter-through-a-reference	partial: PR #10205 (1.1 ReferenceFilterParser; 2.1 wiring next)	session-20261113T113930-fe243f84	2026-11-13T12:46:22Z
 build:openregister:retention-linked-destruction-conflict	partial: PR #10204 task 1.1 finder + 11 tests; 2.x-4.x left	session-20261113T104531-274f72f7	2026-11-13T12:46:11Z
 review:openregister:10179:a43a36e9	APPROVE: additive field types, suites green on merge with main, phpstan clean	session-20261113T074533-3e2a2da6	2026-11-13T12:46:19Z
+build:openregister:object-archive-state	partial: PR #10206 C29.2 state-entry freeze listener + validation + tests; C29.4-6/9, W.4, V.* left (timeline lane, live, process)	session-20261113T121536-3cb7eb71	2026-11-13T12:46:39Z
