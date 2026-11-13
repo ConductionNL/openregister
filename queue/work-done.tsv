@@ -1905,3 +1905,4 @@ cover:launchpad:fb10c50fm31b6:js4a0489d3	already done: src/components/Workspace/
 cover:dossiq:6ca0231ema7d4:d0b3b142	already done: lib/Service/Substitution 272/298 stmts (91.3%, target 85) on development after quality/test-coverage-d0b3b142-1	session-20261113T024656-d5bfb688	2026-11-13T03:48:15Z
 verify:shillinq:2839:96a1b868	9/9 GREEN (tests only); 9065 tests, 1 inherited failure, no new	session-20261113T031700-211f0599	2026-11-13T03:48:19Z
 cover:learniq:1ae7757ema84a:js0023cfc7	PR learniq#2435-ish: 14 tests for 4 untested dialogs; dialogs .js already 100% via -1 branch	session-20261113T031704-4f12cb78	2026-11-13T03:48:38Z
+verify:shillinq:2847:59af2f0a	4/4 GREEN (tests-only; 9041 tests, 0 new failures)	session-20261113T015005-da194c88	2026-11-13T03:48:53Z
