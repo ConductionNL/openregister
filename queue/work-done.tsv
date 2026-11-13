@@ -3713,3 +3713,4 @@ cover:pipelinq:7f9dc8e6m916f:7505aeb4	already done: lib/Activity/*.php at 66/66 
 cover:pipelinq:7f9dc8e6m916f:36ac5d07	already done: LineRollUp/LineTotalMath have 31 tests over every branch (LineParent is a value holder); no PR	session-20261113T072715-cf04db4e	2026-11-13T09:04:35Z
 cover:pipelinq:7f9dc8e6m916f:be0dcca9	already done: lib/Mcp (McpAnswer, PipelinqScannableServices) has 9 tests over every branch; batch -1 merged; no PR	session-20261113T072715-cf04db4e	2026-11-13T09:05:11Z
 verify:launchpad:1185:7ded26d1	GREEN 1185 (tests only; 3789 -> 3842 tests, 0 failures)	session-20261113T083916-59f10a3b	2026-11-13T09:05:13Z
+cover:pipelinq:7f9dc8e6m916f:168f7791	already done: lib/Dossiq is one static-data provider with 2 test files (batch -1 exists); nothing left to cover; no PR	session-20261113T072715-cf04db4e	2026-11-13T09:05:45Z
