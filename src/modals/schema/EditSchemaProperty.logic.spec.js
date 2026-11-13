@@ -66,6 +66,21 @@ afterEach(() => {
 })
 
 describe('EditSchemaProperty option lookups', () => {
+	it('offers geometry formats for an object property and disables the format for other non-string types', () => {
+		const vm = form()
+		vm.properties.type = 'object'
+		expect(vm.propertyFormatOptions.options).toContain('geo:multipolygon')
+		expect(vm.formatDisabled).toBe(false)
+
+		vm.properties.type = 'string'
+		expect(vm.propertyFormatOptions.options).toContain('email')
+		expect(vm.propertyFormatOptions.options).not.toContain('geo:point')
+		expect(vm.formatDisabled).toBe(false)
+
+		vm.properties.type = 'number'
+		expect(vm.formatDisabled).toBe(true)
+	})
+
 	it('falls back to the first or a fixed option when the value is unknown', () => {
 		const vm = form()
 		expect(vm.codedStoreOption).toBe(vm.codedStoreOptions[0])
