@@ -1842,7 +1842,9 @@ Service/AuthenticationService.php,288,Service,Integrations,Integrations/Service/
 Service/Authorization/DeclaredGroupInventoryService.php,47,Service,Access,Access/Service/Authorization/DeclaredGroupInventoryService.php,0,,Core
 Service/Authorization/GrantableRightsIndex.php,125,Service,Access,Access/Service/Authorization/GrantableRightsIndex.php,0,,Core
 Service/Authorization/GroupProvisioner.php,76,Service,Access,Access/Service/Authorization/GroupProvisioner.php,0,317,Core
+Service/Authorization/DeclaredGroupRights.php,,Service,,,,,Core
 Service/Authorization/GroupReconciler.php,92,Service,Access,Access/Service/Authorization/GroupReconciler.php,0,,Core
+Service/Authorization/GroupRightsReconciler.php,,Service,,,,,Core
 Service/Authorization/RbacGroupCollector.php,126,Service,Access,Access/Service/Authorization/RbacGroupCollector.php,0,236,Core
 Service/AuthorizationAuditService.php,112,Service,Compliance,Compliance/Service/AuthorizationAuditService.php,0,254,Compliance
 Service/AuthorizationService.php,198,Service,Integrations,Integrations/Service/AuthorizationService.php,8,,Integrations
