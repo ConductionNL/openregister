@@ -1309,6 +1309,7 @@ Listener/RelatedRetentionRecalculationListener.php,57,Listener,Compliance,Compli
 Listener/SchemaFlowImportListener.php,167,Listener,Flows,Flows/Listener/SchemaFlowImportListener.php,0,,Processes
 Listener/ShareableConfigTypeRegistrationListener.php,30,Listener,Configuration,Configuration/Listener/ShareableConfigTypeRegistrationListener.php,0,,Configuration
 Listener/SourceRecordChangeListener.php,168,Listener,Flows,Flows/Listener/SourceRecordChangeListener.php,0,,Processes
+Listener/StateEntryFreezeListener.php,157,Listener,Flows,Flows/Listener/StateEntryFreezeListener.php,0,,Processes
 Listener/StateFieldRuleListener.php,238,Listener,Flows,Flows/Listener/StateFieldRuleListener.php,0,,Processes
 Listener/StateHistoryProjectionListener.php,54,Listener,Service,Service/Listener/StateHistoryProjectionListener.php,0,368,Core
 Listener/SurvivorshipRecomputeListener.php,176,Listener,Service,Service/Listener/SurvivorshipRecomputeListener.php,0,139,Core
