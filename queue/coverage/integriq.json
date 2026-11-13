@@ -1,12 +1,12 @@
 {
  "app": "integriq",
- "commit": "82e99ee39b8c1b40cfeb74d139865ebdfaa31c6d",
- "measured_at": "2026-11-13T08:43:13Z",
+ "commit": "81441e2bad4e4e0b4e76154295ff8bc242131182",
+ "measured_at": "2026-11-13T12:53:40Z",
  "php": {
   "tool": "pcov",
-  "pct": 92.98,
+  "pct": 93.54,
   "statements": 64342,
-  "covered": 59826,
+  "covered": 60184,
   "dirs": {
    "lib/Adapters/": [
     151,
@@ -18,7 +18,7 @@
    ],
    "lib/Adapters/Digikoppeling/": [
     315,
-    307
+    313
    ],
    "lib/Adapters/LearningMaterial/": [
     418,
@@ -70,11 +70,11 @@
    ],
    "lib/Auth/Idp/": [
     591,
-    570
+    583
    ],
    "lib/BackgroundJob/": [
     907,
-    846
+    901
    ],
    "lib/BackgroundJob/ExchangeRate/": [
     144,
@@ -102,7 +102,7 @@
    ],
    "lib/Controller/": [
     6383,
-    5787
+    5925
    ],
    "lib/Db/": [
     187,
@@ -110,7 +110,7 @@
    ],
    "lib/Directory/": [
     600,
-    589
+    594
    ],
    "lib/Event/": [
     424,
@@ -178,7 +178,7 @@
    ],
    "lib/Observability/Otel/": [
     276,
-    272
+    275
    ],
    "lib/Outbound/": [
     580,
@@ -222,7 +222,7 @@
    ],
    "lib/Service/": [
     22731,
-    20266
+    20278
    ],
    "lib/Service/Adapter/": [
     48,
@@ -270,7 +270,7 @@
    ],
    "lib/Service/ConfigurationHandlers/": [
     364,
-    327
+    361
    ],
    "lib/Service/Consumer/": [
     158,
@@ -282,7 +282,7 @@
    ],
    "lib/Service/DigitalPost/": [
     753,
-    708
+    733
    ],
    "lib/Service/DocumentGeneration/": [
     444,
@@ -346,7 +346,7 @@
    ],
    "lib/Service/MessageValidation/": [
     364,
-    339
+    356
    ],
    "lib/Service/Migration/": [
     370,
@@ -402,7 +402,7 @@
    ],
    "lib/Service/Registry/": [
     289,
-    264
+    278
    ],
    "lib/Service/Rod/": [
     182,
@@ -414,7 +414,7 @@
    ],
    "lib/Service/Security/": [
     1045,
-    1003
+    1021
    ],
    "lib/Service/Sms/": [
     214,
@@ -438,7 +438,7 @@
    ],
    "lib/Service/Tables/": [
     283,
-    265
+    283
    ],
    "lib/Service/UwlrEduV/": [
     112,
@@ -499,9 +499,9 @@
   }
  },
  "js": {
-  "pct": 90.18,
-  "statements": 6581,
-  "covered": 5935,
+  "pct": 92.11,
+  "statements": 6734,
+  "covered": 6203,
   "dirs": {
    "src/": [
     44,
@@ -584,8 +584,8 @@
     22
    ],
    "src/modals/v2/": [
-    1372,
-    1122
+    1483,
+    1233
    ],
    "src/store/": [
     31,
@@ -612,16 +612,16 @@
     40
    ],
    "src/views/Rule/": [
-    425,
-    317
+    445,
+    401
    ],
    "src/views/Rule/actionForms/": [
     421,
     413
    ],
    "src/views/Synchronization/": [
-    874,
-    749
+    896,
+    822
    ],
    "src/views/admin/": [
     512,
