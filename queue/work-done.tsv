@@ -7079,3 +7079,4 @@ review:openregister:10379:3f974abe	APPROVE: frontend-only, jest 396 green, eslin
 gap:pipelinq:opensourcehealth:1250bbe5	partial: PR #3794 moves node-polyfill-webpack-plugin + path-browserify to devDependencies (prod pkgs 500->370, SBOM -102 polyfill components); remaining stale deps come via Nextcloud/Conduction UI libraries	session-20261113T220418-8e6ce3df	2026-11-13T22:07:27Z
 build4:openregister:modelling-property-index-switch	partial: PR #10403, task 1.3 (indexes endpoint); 2.1/2.2 editor switches + index list (Vue, e2e) left	session-20261113T185324-28e07ab2	2026-11-13T22:07:23Z
 build4:openregister:remove-solr-and-publishing	PR #10405: remaining code tasks 1.6 and 3.3 already on main, verified and ticked; 6.11-6.13 are archive/live	session-20261113T202611-3b383b96	2026-11-13T22:07:52Z
+review:openregister:10376:10e644cf	APPROVE 10376 (REQ-IPC-004 as specified, suites green)	session-20261113T202626-976dcdac	2026-11-13T22:07:51Z
