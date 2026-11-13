@@ -3457,3 +3457,4 @@ cover:portaliq:b60f3b81:a42ac94e	PR #2384: GeoDatabaseStore 0->68/72, TrafficEve
 fix:portaliq:2375:f787d59a	closed as superseded: #2376 (fixed to sit on #2374) carries the same @uses additions; 2375 would conflict with it	session-20261113T080549-20301834	2026-11-13T08:28:33Z
 verify:integriq:3507:b1b08a46	3507 GREEN, 3509 GREEN; 7888 tests, no new failures	session-20261113T081046-f0858dc4	2026-11-13T08:28:53Z
 cover:integriq:92114ab0m658d:c135a8f0	already done: lib/Sources/Pdok at 100% lines on development (branches -1/-2 merged)	session-20261113T081046-f0858dc4	2026-11-13T08:29:33Z
+cover:openregister:7350e3efmea52:js33227456	PR openregister#10114: 24 jest tests (UploadFiles, ExportRegister, ClearAuditTrails); modal dirs 90.3->93.5%, jest 7788->7812 green	session-20261113T074532-3dc49c57	2026-11-13T08:29:40Z
