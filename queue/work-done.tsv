@@ -6981,3 +6981,4 @@ build4:openregister:credential-outside-vault-reference	partial: PR #10352 to mai
 build4:openregister:calendar-leaf-inbound	partial: PR #10354 — reverse lookup + idempotent linking (+9 tests); left migration, DAV listeners, backfill registration	session-20261113T204551-fafe539e	2026-11-13T21:39:34Z
 review:openregister:10345:348905ca	APPROVE: change-asked behaviour, defaults unchanged, no access weakening; tests green, phpstan clean	session-20261113T195351-a32c6d55	2026-11-13T21:39:31Z
 build4:openregister:notes-replies-by-parent	already done: every code task is ticked on main; only 2.1 (Playwright e2e spec) remains, which needs a live instance	session-20261113T204551-fafe539e	2026-11-13T21:40:08Z
+build4:openregister:api-test-coverage	partial: PR #10355, the composer api-test commands and run-all.sh collection table guarded by ApiCoverageCommandsTest; the 17 Newman collection tasks need a live instance	session-20261113T192701-f224cbcf	2026-11-13T21:40:06Z
