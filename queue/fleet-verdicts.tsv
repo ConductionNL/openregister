@@ -5317,3 +5317,4 @@ shillinq	2897	d3292b0489b65c31276ebc7e3422dcc726adde68	GREEN	worker-58	phpunit 9
 shillinq	2898	13a4bb9f7f15cf71ff9118ed149496223e1745a0	GREEN	worker-58	phpunit 9437 on 3-PR tree vs baseline 9400, 1 inherited failure (PaymentWebhookIntake stripe timestamp), 0 new; tests only
 shillinq	2899	050334683b2e908ec7c709e903b3b1788159b4c3	GREEN	worker-58	phpunit 9437 on 3-PR tree vs baseline 9400, 1 inherited failure (PaymentWebhookIntake stripe timestamp), 0 new; tests only
 keepiq	1746	9216999bdec94da4937575b255f435dc44ee8f46	GREEN	worker-02	tree 1746 on development 8a5d84f3: 4565 tests, baseline 4564 (0 failures, 241 skipped), new failures 0; one added test, no production change
+integriq	3494	af13419bfd030cfae11fd33849cac7dc3c15fadc	GREEN	worker-12	tree 3494+3495: unit 7727 run (baseline 7630), same 2 inherited CallServiceTest errors, 0 new; tests only
