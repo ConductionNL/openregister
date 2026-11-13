@@ -2074,3 +2074,4 @@ cover:shillinq:05639deb:123a624c	PR #2862: 16 tests, lib/Reporting/Generator 90.
 verify:learniq:2433:e68ae7e8	2433 GREEN, 2435 GREEN (tests only; inherited: 1 phpunit, 1 node l10n failure)	session-20261113T034628-73e45054	2026-11-13T04:18:59Z
 merge:keepiq:1607:bcbdedcb	merge-local over 2 keepiq tasks: merged=5 red=1 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:19:15Z
 merge:keepiq:1690:a192fae6	merge-local over 2 keepiq tasks: merged=5 red=1 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:19:15Z
+cover:buildiq:9930949bm5861:aae6d66c	already done: lib/Exception/*.php at 100% lines (64/64) on development 5f5f87c6 with existing tests; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T04:19:19Z
