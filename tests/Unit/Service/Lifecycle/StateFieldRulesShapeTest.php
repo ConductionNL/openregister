@@ -23,6 +23,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
  */
 final class StateFieldRulesShapeTest extends TestCase {
 

@@ -27,6 +27,9 @@ use PHPUnit\Framework\TestCase;
  * a list with a required input is.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
  */
 class LifecycleTransitionOptionsAutoWhenInputsTest extends TestCase {
 

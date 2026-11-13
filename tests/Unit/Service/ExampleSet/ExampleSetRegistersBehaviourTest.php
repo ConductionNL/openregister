@@ -41,6 +41,9 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\ShippedRegister
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion

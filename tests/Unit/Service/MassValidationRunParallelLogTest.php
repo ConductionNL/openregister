@@ -28,6 +28,7 @@ use Psr\Log\LoggerInterface;
  * A parallel run logs the start and the end of each chunk of up to four batches.
  *
  * @covers \OCA\OpenRegister\Service\MassValidationRun
+ * @uses \OCA\OpenRegister\Service\ValidationChunkResult
  */
 class MassValidationRunParallelLogTest extends TestCase {
 

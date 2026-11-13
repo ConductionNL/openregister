@@ -68,7 +68,7 @@ graph TB
 
 ### Authorization & RBAC (Role-Based Access Control)
 - **Hierarchical Permissions**: Define CRUD permissions per entity type (register, schema, object, view, agent)
-- **Special Rights**: Grant special permissions like object_publish, agent_use, dashboard_view, llm_use
+- **Special Rights**: Grant special permissions: agent_use, llm_use and grant_manage
 - **Group-Based**: Assign permissions to Nextcloud groups
 - **Quick Authorization Checks**: Use singular entity names for efficient permission checking
 
@@ -301,9 +301,7 @@ The authorization field contains the complete RBAC configuration:
       'update': ['admin'],
       'delete': ['admin']
     },
-    'object_publish': ['admin', 'publisher'],
     'agent_use': ['admin', 'ai-user'],
-    'dashboard_view': ['admin', 'manager'],
     'llm_use': ['admin', 'ai-user']
   }
 }
@@ -350,9 +348,7 @@ The authorization system uses **singular entity names** for easier permission ch
       'update': ['admin', 'ai-specialist'],
       'delete': ['admin']
     },
-    'object_publish': ['admin', 'publisher'],
     'agent_use': ['admin', 'ai-user', 'developer'],
-    'dashboard_view': ['admin', 'manager', 'viewer'],
     'llm_use': ['admin', 'ai-user']
   }
 }
@@ -372,32 +368,59 @@ Each entity type has four standard CRUD permissions:
 
 ### Special Rights
 
-Beyond CRUD operations, special rights grant additional capabilities:
+Beyond CRUD operations, special rights grant additional capabilities. Each is a
+list of Nextcloud group ids. `*` gives the right to every signed-in user (not
+accepted under `grant_manage`). An administrator always holds every right. Only
+an administrator or the organisation's owner may change who holds one: the API
+answers anybody else with 403, and the editor's Special Rights tab is read-only
+for them.
 
-| Right | Description | Common Groups |
-|-------|-------------|---------------|
-| **object_publish** | Publish objects to make them publicly available | 'publisher', 'editor', 'admin' |
-| **agent_use** | Use AI agents for processing and analysis | 'ai-user', 'developer', 'admin' |
-| **dashboard_view** | Access organisation dashboard and analytics | 'manager', 'admin', 'analyst' |
-| **llm_use** | Use Large Language Model features | 'ai-user', 'researcher', 'admin' |
-| **grant_manage** | List, add and remove the grants on records the holder does not own, and name their owning group. Enforced. An entry can be narrowed to a register and schemas. Only an administrator or the organisation's owner assigns it. | a service account's group |
+| Right | What it guards | Read from | Default |
+|-------|----------------|-----------|---------|
+| **agent_use** | Running an agent: a chat message in a conversation with an agent (`POST /api/chat/send`, `POST /api/chat/stream`), and an MCP session that declares an agent (`initialize`, `tools/list`, `tools/call`). Enforced. | The agent's organisation | `["*"]` |
+| **llm_use** | Having a language model called on your behalf: every chat message (`POST /api/chat/send`, `POST /api/chat/stream`), including the title and summary calls it makes. Enforced. | The conversation's organisation | `["*"]` |
+| **grant_manage** | List, add and remove the grants on records the holder does not own, and name their owning group. Enforced. An entry can be narrowed to a register and schemas. | The record's organisation | `[]` |
+
+When the organisation an agent or conversation belongs to is not set, the
+instance's default organisation is read. When there is no default organisation
+either, nothing could have narrowed the right and it holds. A key the
+organisation does not carry at all holds for everybody, except `grant_manage`.
+
+**Upgrade.** Before this was enforced, every signed-in user could run agents and
+use the language model, whatever the lists said (new organisations got `[]`,
+most others `["admin"]`). On upgrade the repair step
+`OpenSpecialRightsToEveryone` adds `*` to `agent_use` and `llm_use` in every
+organisation, once, so nobody is refused. To narrow a right, take `*` out of
+its list in the Special Rights tab. A narrowed right is not reopened by a
+later upgrade.
+
+**Retired rights.** `object_publish` and `dashboard_view` are retired. They
+were stored and shown in the editor but never enforced: objects have no publish
+action, and the dashboard API is administrator only. An organisation that still
+has them in its authorization block loads as before; nothing reads them, and
+new organisations, the editor and the upgrade no longer write them.
+
+Semantic and hybrid search embed the query with an embedding model; that does
+not need `llm_use`.
 
 ### Permission Check Example
 
+A special right is read through `OrganisationSpecialRights`
+(`lib/Service/Rbac/OrganisationSpecialRights.php`):
+
 ```php
-// Quick authorization check using singular entity names
-$canCreateRegister = $organisationService->hasPermission(
-    $organisation,
-    'register',  // Entity type (singular)
-    'create',    // Action
-    $userId
+// May this user use something guarded by agent_use or llm_use?
+$mayChat = $specialRights->mayUse(
+    right: OrganisationSpecialRights::LLM_USE,
+    userId: $userId,
+    organisationUuid: $conversation->getOrganisation()
 );
 
-// Check special right
-$canPublish = $organisationService->hasSpecialRight(
-    $organisation,
-    'object_publish',
-    $userId
+// Does this user hold grant_manage on this record?
+$mayManageGrants = $specialRights->holdsOn(
+    right: OrganisationSpecialRights::GRANT_MANAGE,
+    userGroups: $userGroups,
+    object: $record
 );
 ```
 
@@ -677,9 +700,7 @@ $organisation->setAuthorization([
         'update' => ['lab-managers'],
         'delete' => ['lab-managers'],
     ],
-    'object_publish' => ['lab-managers'],
     'agent_use'      => ['researchers', 'lab-managers'],
-    'dashboard_view' => ['lab-managers'],
     'llm_use'        => ['researchers', 'lab-managers'],
 ]);
 

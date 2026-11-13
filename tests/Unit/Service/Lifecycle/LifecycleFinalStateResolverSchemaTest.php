@@ -29,6 +29,8 @@ use Psr\Log\LoggerInterface;
  * A row resolved without a schema entity cannot be shown to belong to the declared schema, so the state is not final.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Lifecycle\FinalStateReference
  */
 class LifecycleFinalStateResolverSchemaTest extends TestCase {
 

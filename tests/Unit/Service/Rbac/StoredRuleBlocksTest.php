@@ -35,6 +35,8 @@ use PHPUnit\Framework\TestCase;
  * Reading the rule blocks as they are stored, before a save changes them.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\SchemaSave
  */
 class StoredRuleBlocksTest extends TestCase {
 

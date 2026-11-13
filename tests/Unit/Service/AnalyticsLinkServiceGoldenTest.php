@@ -51,6 +51,12 @@ if (class_exists('OCA\\Analytics\\Service\\ReportService') === false) {
 
 /**
  * @covers \OCA\OpenRegister\Service\AnalyticsLinkService
+ * @uses \OCA\OpenRegister\Db\AnalyticsLink
+ * @uses \OCA\OpenRegister\Db\ObjectLinkTypesTrait
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\AnalyticsReportDraft
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class AnalyticsLinkServiceGoldenTest extends TestCase {
 

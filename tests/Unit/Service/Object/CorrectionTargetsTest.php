@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Object\CorrectionTargets
  * @covers \OCA\OpenRegister\Service\Object\CorrectionTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class CorrectionTargetsTest extends TestCase {
 

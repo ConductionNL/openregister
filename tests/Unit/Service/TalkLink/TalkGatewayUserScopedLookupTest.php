@@ -69,6 +69,8 @@ class TalkGatewayCurrentManager {
  * @covers \OCA\OpenRegister\Service\TalkLink\TalkGateway
  * @uses   \OCA\OpenRegister\Service\LinkServiceRuntime
  * @uses   \OCA\OpenRegister\Service\TalkLink\TalkSession
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\TalkLink\TalkSession
  */
 class TalkGatewayUserScopedLookupTest extends TestCase {
 

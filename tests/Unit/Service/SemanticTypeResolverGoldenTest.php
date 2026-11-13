@@ -39,6 +39,14 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\SemanticTypeResolver
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\JsonLd\JsonLdContextService
+ * @uses \OCA\OpenRegister\Service\SemanticTypeQuery
  */
 class SemanticTypeResolverGoldenTest extends TestCase {
 

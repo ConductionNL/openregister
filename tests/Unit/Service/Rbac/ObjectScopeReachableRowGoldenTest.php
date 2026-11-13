@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  * Golden SQL for the reachable-row predicate.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationColumn
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantedRows
  */
 class ObjectScopeReachableRowGoldenTest extends TestCase {
 

@@ -44,6 +44,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Search\Service\Search\SearchIndexRowCounts
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Search\Service\Search\SearchIndexStores
  */
 class SearchIndexRowCountsTest extends TestCase {
 

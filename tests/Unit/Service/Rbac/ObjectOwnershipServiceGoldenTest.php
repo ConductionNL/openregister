@@ -68,6 +68,28 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectOwnershipService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationAssignment
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantCaller
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantManageGuard
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantedPrincipal
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectLookup
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\OwnedRecord
+ * @uses \OCA\OpenRegister\Service\Rbac\OwnerAssignment
+ * @uses \OCA\OpenRegister\Service\Rbac\OwnershipCascade
+ * @uses \OCA\OpenRegister\Service\Rbac\OwnershipGuards
+ * @uses \OCA\OpenRegister\Service\Rbac\OwnershipHandover
+ * @uses \OCA\OpenRegister\Service\Rbac\OwnershipLog
+ * @uses \OCA\OpenRegister\Service\Rbac\OwnershipReassignment
+ * @uses \OCA\OpenRegister\Service\Rbac\OwnershipSources
+ * @uses \OCA\OpenRegister\Service\Rbac\OwnershipWriters
+ * @uses \OCA\OpenRegister\Service\Rbac\PrincipalDirectory
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 final class ObjectOwnershipServiceGoldenTest extends TestCase {
 

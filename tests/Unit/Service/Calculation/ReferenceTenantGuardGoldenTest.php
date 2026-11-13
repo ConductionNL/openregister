@@ -43,6 +43,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Calculation\ReferenceTenantGuard
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\DeclaredPair
  */
 final class ReferenceTenantGuardGoldenTest extends TestCase {
 

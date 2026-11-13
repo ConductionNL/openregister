@@ -26,6 +26,10 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\MetricsDeclaration
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationSpecEntry
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaAggregationValidator
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\GroupByMember
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\JoinClause
  */
 class AggregationAnnotationValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/aggregation-annotation-golden.json';

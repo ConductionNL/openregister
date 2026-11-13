@@ -27,6 +27,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyValue
  */
 final class WriteOnlyPathWalkerTest extends TestCase {
 

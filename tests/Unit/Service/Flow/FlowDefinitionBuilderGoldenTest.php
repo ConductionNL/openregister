@@ -35,6 +35,7 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Flow\FlowGraph
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeDeclarations
  * @uses \OCA\OpenRegister\Service\Flow\LoweredFlow
+ * @uses \OCA\OpenRegister\Service\Flow\EdgeArrival
  */
 class FlowDefinitionBuilderGoldenTest extends TestCase {
 

@@ -51,6 +51,11 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\CaseItemMapper
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTransitions
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTree
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanMove
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanStore
+ * @uses \OCA\OpenRegister\Service\Case\CaseStateChange
+ * @uses \OCA\OpenRegister\Service\Case\CaseTransitionCause
+ * @uses \OCA\OpenRegister\Service\Case\CaseTransitionEffects
  */
 class CasePlanStateMachineTest extends TestCase {
 

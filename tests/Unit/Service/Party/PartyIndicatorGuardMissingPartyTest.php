@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  * reported by its label.
  *
  * @covers \OCA\OpenRegister\Service\Party\PartyIndicatorGuard
+ * @uses \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class PartyIndicatorGuardMissingPartyTest extends TestCase {
 

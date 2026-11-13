@@ -25,6 +25,9 @@ use PHPUnit\Framework\TestCase;
  * validation still accepts what the schema allows and refuses what it does not.
  *
  * @covers \OCA\OpenRegister\Service\Oas\OasRequestValidator
+ * @uses \OCA\OpenRegister\Service\Oas\DynamicAnchorScan
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuard
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuardParser
  */
 class OasRequestValidatorNestedIdTest extends TestCase {
 

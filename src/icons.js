@@ -32,6 +32,7 @@ import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.v
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import FileReplaceOutline from 'vue-material-design-icons/FileReplaceOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import Gavel from 'vue-material-design-icons/Gavel.vue'
 import History from 'vue-material-design-icons/History.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
@@ -74,6 +75,7 @@ export default {
 	FileOutline,
 	FileReplaceOutline,
 	FileTreeOutline,
+	Gavel,
 	History,
 	InformationOutline,
 	Magnify,

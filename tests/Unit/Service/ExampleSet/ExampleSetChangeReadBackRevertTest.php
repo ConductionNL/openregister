@@ -38,6 +38,8 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetWrittenValue
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPathValue
  */
 class ExampleSetChangeReadBackRevertTest extends TestCase {
 
