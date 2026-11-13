@@ -4655,3 +4655,4 @@ review:openregister:10132:98a75336	BLOCK: phpcs 0->3 errors from misplaced docbl
 cover:keepiq:c967a31fm1bed:f91e7417	no PR: lib/Service/Connection already 100% lines, 35 tests; 31/31 sampled condition mutants killed, nothing thin	session-20261113T071631-5a3cc070	2026-11-13T11:52:08Z
 cover:shillinq:05639debm4eb8:js4829b6aa	PR #2932: 4 vitest specs (46 tests) for src/views BudgetScenarioComparison 15->79%, ReceiptCapture 0->70%, BudgetGrid 39->57%, BudgetLineCommitments 41->78%; suite 1833->1879 green	session-20261113T094602-d25cda2a	2026-11-13T11:52:17Z
 build:openregister:brp-family-members-lookup	partial: PR #10146 (1.1, 1.2, 3.1 done; 2.1 mock-register mode left, unspecified)	session-20261113T104520-9cf91a1e	2026-11-13T11:52:21Z
+cover:shillinq:05639debm4eb8:jsea7197ec	PR #2933: 11 tests for utils action handlers; src/utils 90.6->94.0% statements, suite 1924 OK	session-20261113T064519-30004ad4	2026-11-13T11:52:51Z
