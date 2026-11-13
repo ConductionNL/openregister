@@ -1615,3 +1615,4 @@ cover:pipelinq:f67520ecm8c58:f3231970	PR #3630: 21 direct tests for ScheduledTas
 cover:dossiq:6ca0231ema7d4:bf05c668	already done: lib/BulkAction/*.php measured 97.0% lines (225/232) on development, target 85; no PR	session-20261113T021659-ac072d0a	2026-11-13T02:21:10Z
 verify:stackiq:1776:c5595d91	4 GREEN (1776,1809,1810,1811); php+vitest 0 new failures	session-20261113T015005-81f4d5a5	2026-11-13T02:21:21Z
 cover:pipelinq:f67520ecm8c58:js0be8c659	PR #3631: 27 mounted vitest tests for 5 modals (PosTenderTypeForm, AddTender, ContactEmailPhone, ContactSocialProfile, LinkSubmissionToClient); vitest 3164 -> 3191; src/modals/* 65.0% -> 74.0% lines	session-20261113T015003-d56b074c	2026-11-13T02:21:40Z
+cover:launchpad:755175ffm31b6:js01efb861	already done: src/components/Widgets/ 1326/1536 (86.3%) statements on development, above the 85% target; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:21:53Z
