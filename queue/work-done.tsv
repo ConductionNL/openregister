@@ -4963,6 +4963,7 @@ build:openregister:several-legal-entities-in-one-instance	failed: worker rules f
 build:openregister:saved-view-presentation-picker	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:05Z
 build:openregister:stored-decision-tables	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:11Z
 build:openregister:schema-breaking-change-notice	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:17Z
+gap:versioniq:risky:burn2	PR #677: risky tests 129->0, strict-metadata coverage 76.61->92.82%, tests-only	session-20261113T072708-ee434236	2026-11-13T12:41:22Z
 build:openregister:shared-decision-table-evaluator	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:23Z
 build:openregister:object-quota-per-organisation	PR #10199: task 4.1 (bulk creates held to the per-organisation cap), 9 tests; 4.2 is hermiq lane	session-20261113T103904-e108be02	2026-11-13T12:41:31Z
 build:openregister:survey-object	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:41:29Z
