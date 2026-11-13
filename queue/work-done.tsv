@@ -4515,3 +4515,4 @@ build:openregister:apphost-settings-plane	failed: only open tasks are 3.1 Settin
 build:openregister:app-leaf-provider-registration	nothing to build here: both open tasks are nextcloud-vue / hydra changes, out of this repo	session-20261113T104527-c302106c	2026-11-13T11:26:29Z
 build:openregister:a-leaf-that-cannot-render-refuses-to-register	failed: build tasks never run on openregister (worker rules); left for the openregister lane	session-20261113T074532-3dc49c57	2026-11-13T11:26:35Z
 build:pipelinq:product-service-catalogue-public	partial: PR #3749 (schema fields, public RBAC rules, catalogue card, tests); left 2.2 live check, 4.1 UPL import, archive edits	session-20261113T081048-4978ac57	2026-11-13T11:26:36Z
+build:openregister:anonymisation-image-seam	failed: build tasks never run on openregister (worker rules); left for the openregister lane	session-20261113T074532-3dc49c57	2026-11-13T11:26:47Z
