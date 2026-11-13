@@ -3734,3 +3734,5 @@ cover:pipelinq:7f9dc8e6m916f:js06645759	PR #3698: src/components/* 89.45->91.01%
 cover:pipelinq:7f9dc8e6m916f:js3f3bfe56	in flight: branches -1 and -2 already open, both covering src/registry.js (the only gap, 4/33; other src/* files fully covered, 59/88 total); both add tests/vitest/registryWidgetProps.spec.js so they will conflict, merge one; no new PR	session-20261113T080556-d189f150	2026-11-13T09:08:48Z
 verify:learniq:2455:e8432c53	GREEN 2455, 2456, 2457: 6239 tests, 0 new failures	session-20261113T080552-2a8a5ff1	2026-11-13T09:09:06Z
 cover:pipelinq:7f9dc8e6m916f:6925f818	already done: lib/SetupCheck at 100% (27/27 lines, 3 classes) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:09:22Z
+merge:learniq:2453:aee4f3b9	merge-local over 2 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:09:22Z
+merge:learniq:2454:60467ee9	merge-local over 2 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:09:22Z
