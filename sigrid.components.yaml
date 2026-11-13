@@ -189,7 +189,7 @@ components:
       - ".*/lib/Db/ProcessingPurpose/[^/]*"
       - ".*/lib/Db/SubjectExport/[^/]*"
       - ".*/lib/Db/Verwerkingsactiviteit/[^/]*"
-      - ".*/lib/Listener/(ArchivalNominationListener|ContentReportRemovalListener|QualityScoreOnSaveListener|RelatedRetentionRecalculationListener)[.]php"
+      - ".*/lib/Listener/(ArchivalNominationListener|ContentReportRemovalListener|QualityScoreOnSaveListener|RelatedRetentionRecalculationListener|SchemaAuthorizationAuditListener)[.]php"
       - ".*/lib/Repair/(RechainAuditTrailForFlowAttribution)[.]php"
       - ".*/lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthFailureRun|AuthorizationAuditService|AuthorizationChange|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ContentScanService|DescriptorReimportRun|DsarErasureRun|DsarGuards|DsarService|DsarStores|DsarSubjectQuery|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaDeletionService|SearchMeasurement|SearchPeriod|SearchTrailService|TableDeletionRun|TmloService|UnclassifiedProcessing)[.]php"
       - ".*/lib/Service/Anonymisation/[^/]*"
