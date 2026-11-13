@@ -5675,3 +5675,4 @@ portaliq\t2388\t6952d338c43380d1a03403d4e61b9ee61c927484\tGREEN\tworker-41\tbase
 planninq	1147	c233be05d9daa5589da13ec0cbf7a34ba74104e7	GREEN	worker-44	one-PR tree: PHPUnit 927 tests 0 fail (baseline 915, 0 fail); tests only, no JS touched
 buildiq	1538	59d9088a273d7862e520adc456d2dde5c2811c2b	GREEN	worker-29	tests-only (3 JS specs, +470 lines, no deletions); vitest 402 files/3894 tests all pass incl. 14 new; PHP unit 2784 with 1 inherited failure unchanged
 shillinq	2917	eebaa833fa9f589e7addba5c6718975b5f2285a7	GREEN	worker-18	tests-only (vitest specs, no PHP changed); tree vitest 1920/1920; phpunit baseline 10087 with 1 inherited clock-bound PaymentWebhookIntakeCharacterisationTest failure; 0 new failures
+portaliq	2389	f4daf84e23a1b73fbdc2a9bb8f75630880252e9c	GREEN	worker-46	PHP unit 4560 on tree 2389+2390 (baseline 4527, 0 failures); tests only
