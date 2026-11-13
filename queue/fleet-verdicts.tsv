@@ -5471,3 +5471,4 @@ portaliq	2386	9cf19378e66479bb6ecc344d0d955f9fe1d854f5	GREEN	worker-27	tree 2376
 hermiq	1675	5b87dae589b004492f90582fed9b87d0ff223b85	GREEN	worker-09	tests only, ff onto development; +36 tests pass; 146E/26F identical to base
 versioniq	671	694c92fbc69747a7a8d246882965dbc8a17d8c3e	GREEN	worker-23	phpunit (tests/phpunit-unit-only.xml) 1411 on 3-PR tree vs baseline 1356 (2 failures inherited), 0 new; vitest 2761/2761; 2 new spec files, tests only
 versioniq	672	6ff00a79cf273818bf6ff67a4a7ba07087526011	GREEN	worker-23	phpunit (tests/phpunit-unit-only.xml) 1411 on 3-PR tree vs baseline 1356 (2 failures inherited), 0 new; vitest 2761/2761; 4 new test files, tests only
+versioniq	673	c5d12bdd035942275433eab7fbe09f34e29edef1	GREEN	worker-23	phpunit (tests/phpunit-unit-only.xml) 1411 on 3-PR tree vs baseline 1356 (2 failures inherited), 0 new; vitest 2761/2761; 5 new test files, tests only
