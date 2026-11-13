@@ -291,6 +291,13 @@
                 "severity": "warning"
             },
             {
+                "path": "servers.0.url",
+                "message": "Declared deviation from NLGov /core/uri-version: The server URL \"/apps/openregister/api\" does not end in the major version (/v{major}). The URL pattern /index.php/apps/{app}/api/{resource} is fixed for every app (hydra ADR-002); the version is negotiated by the API-Version header instead.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/uri-version"
+            },
+            {
                 "path": "paths./a.get.responses.299",
                 "message": "Non-standard HTTP status code \"299\" violates NLGov /core/http-response-code conventions.",
                 "code": "invalid_status_code",

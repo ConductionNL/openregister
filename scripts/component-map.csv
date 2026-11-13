@@ -3367,6 +3367,8 @@ Service/Merge/,,Service,,,,,Core
 Service/MigrationPack/,,Service,,,,,Configuration
 Service/Notification/,,Service,,,,,Configuration
 Service/Oas/,,Service,,,,,Core
+Service/Oas/NlGovDocumentRules.php,245,Service,Service,Service/Oas/NlGovDocumentRules.php,0,,Core
+Service/Oas/NlGovRuleCatalogue.php,201,Service,Service,Service/Oas/NlGovRuleCatalogue.php,0,,Core
 Service/Object/,,Service,,,,,Core
 Service/ObjectAction/,,Service,,,,,Processes
 Service/ObjectSource/,,Service,,,,,Core

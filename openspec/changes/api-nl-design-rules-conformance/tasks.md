@@ -2,12 +2,12 @@
 
 ## 1. Rule catalogue
 
-- [ ] 1.1 Add `lib/Service/Oas/NlGovRuleCatalogue.php` with the 34 rules of ruleset 2.2.1 (id, title, kind, deviation reason) and move `ALLOWED_HTTP_METHODS` and `ALLOWED_STATUS_CODES` out of `OasService` behind it. Verify: `tests/Unit/Service/Oas/NlGovRuleCatalogueTest.php` asserts 34 unique ids, a kind on every rule, and a reason on exactly the deviations named in design D-4.
+- [x] 1.1 Add `lib/Service/Oas/NlGovRuleCatalogue.php` with the 34 rules of ruleset 2.2.1 (id, title, kind, deviation reason) and move `ALLOWED_HTTP_METHODS` and `ALLOWED_STATUS_CODES` out of `OasService` behind it. Verify: `tests/Unit/Service/Oas/NlGovRuleCatalogueTest.php` asserts 34 unique ids, a kind on every rule, and a reason on exactly the deviations named in design D-4.
 
 ## 2. Document checks in pass 6
 
-- [ ] 2.1 Add `CODE_NLGOV_RULE` and a `rule` field to `OasValidationReport` issues, keeping the existing codes. Verify: `OasValidationReportTest` asserts `toSummary()` still returns the old keys and each issue now carries `rule` when set.
-- [ ] 2.2 Path and query rules in `validateNlGovRules()`: no-trailing-slash, path-segments-kebab-case, query-keys-camel-case, uri-version. Verify: `tests/Unit/Service/OasServiceNlGovPathRulesTest.php` with a fixture path `/objects/foo/` failing and `_extend` reported as a deviation.
+- [x] 2.1 Add `CODE_NLGOV_RULE` and a `rule` field to `OasValidationReport` issues, keeping the existing codes. Verify: `OasValidationReportTest` asserts `toSummary()` still returns the old keys and each issue now carries `rule` when set.
+- [x] 2.2 Path and query rules in `validateNlGovRules()`: no-trailing-slash, path-segments-kebab-case, query-keys-camel-case, uri-version. Verify: `tests/Unit/Service/OasServiceNlGovPathRulesTest.php` with a fixture path `/objects/foo/` failing and `_extend` reported as a deviation.
 - [ ] 2.3 Schema, error and document rules: date-time/format, date-time/date-omit-time-portion, error-handling/problem-details, error-handling/invalid-input, doc-openapi, doc-openapi-contact, semver (through `SemVerFormat`), publish-openapi, transport/tls; set `info.version` in `BaseOas.json` to `1.0.0`. Verify: `tests/Unit/Service/OasServiceNlGovDocumentRulesTest.php`, including the 20-schema fixture staying under the 2 second budget.
 - [ ] 2.4 Write the `x-nl-api-design-rules` root marker in `createOas()`. Verify: `GET /api/registers/{id}/oas` returns 200 and the body has `x-nl-api-design-rules.version` `2.2.1`; the ETag is unchanged between two calls with no schema change.
 
