@@ -6057,3 +6057,4 @@ build:shillinq:banking-fx-at-booking	partial: PR #2966, tasks 1.1/2.1/2.2/5.1 do
 build:shillinq:reporting-data-delivery	already built: only 2.2 (file integriq issue) and 3.1 (Playwright run on a live instance) remain, neither is code; no PR	session-20261113T172329-0b6220f9	2026-11-13T18:43:02Z
 cover:openregister:7350e3efma401:e98782c5	PR #10293: 21 tests over 5 classes in lib/Notifications/Service (dir at 95.61% measured with integriq stubs)	session-20261113T175327-6e4e7f28	2026-11-13T18:43:11Z
 verify:pipelinq:3772:ba375543	3772 GREEN (tests only; phpunit baseline 5 inherited, vitest 4814 pass)	session-20261113T182359-67ad413b	2026-11-13T18:43:22Z
+verify:shillinq:2955:bde3906a	3 GREEN (2955,2956,2957); 10479 tests, 1 inherited failure	session-20261113T182404-f2c28226	2026-11-13T18:43:35Z
