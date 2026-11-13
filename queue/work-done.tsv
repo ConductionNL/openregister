@@ -6370,3 +6370,4 @@ review:openregister:10309:3bc4edd0	APPROVE 10309	session-20261113T175336-b2d7fc7
 cover:dossiq:069ee2d6mbd37:d2a82d9f	already done: lib/Service/Termijn/*.php at 99.64% (1403/1408) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T19:35:14Z
 cover:dossiq:069ee2d6mbd37:ea81adeb	already done: lib/Service/Zgw/*.php at 98.91% (2354/2380) on development dcd16f5978, above 95%; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T19:35:29Z
 cover:dossiq:069ee2d6mbd37:23f6b1f1	PR #6441: 4 test files, 31 tests (HandlerActsAsSystem, ExternalHome, RebindMove, CaseSplitPlan); suite 20 failures before/after	session-20261113T192653-93fd55cc	2026-11-13T19:35:59Z
+review:openregister:10302:31a54a69	APPROVE	session-20261113T175327-6e4e7f28	2026-11-13T19:36:13Z
