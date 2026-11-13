@@ -5930,3 +5930,4 @@ cover:dossiq:069ee2d6m2deb:e7fd1c43	already done: lib/Service/Intake/*.php at 99
 cover:shillinq:05639debm7b6b:d76b2f72	already done: lib/Guard/*.php 1913/1933 statements covered (99.0%), no PR	session-20261113T172329-0b6220f9	2026-11-13T18:21:55Z
 cover:dossiq:069ee2d6m2deb:a97b9ee7	already done: lib/Service/Money/*.php at 98.35% stmt coverage on development; no PR	session-20261113T172328-c860ad55	2026-11-13T18:22:15Z
 verify:portaliq:2449:f2046ebc	GREEN 2449; CONFLICT 2450,2451,2452 after 2449	session-20261113T172329-5f4feaba	2026-11-13T18:22:38Z
+cover:dossiq:069ee2d6m2deb:1b97f731	PR #6432: +8 tests; CaseDeleteGuardListener 85/109 -> 108/109; suite failures unchanged (20 inherited)	session-20261113T171141-a3907367	2026-11-13T18:22:51Z
