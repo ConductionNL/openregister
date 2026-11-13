@@ -5152,3 +5152,4 @@ merge:pipelinq:3704:83bcb87e	merge-local over 13 pipelinq tasks: merged=34 red=1
 review:openregister:10213:bc4c8ebd	APPROVE #10213 build register-document-store (suites green, no behaviour change)	session-20261113T084525-9d890807	2026-11-13T13:21:44Z
 merge:planninq:1139:e6274a1a	merge-local over 1 planninq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:22:24Z
 verify:humaniq:1112:30696823	GREEN: #1112 tests only, 3928->3982, no new failures	session-20261113T131537-72e2896e	2026-11-13T13:22:47Z
+review:openregister:10220:17c33b77	APPROVE recorded in verdicts.txt: tests-only PR, 21 new controller cases pass on merged tree, 9 suite failures are pre-existing env-bound baseline ones	session-20261113T094606-70524295	2026-11-13T13:23:38Z
