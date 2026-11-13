@@ -4240,3 +4240,4 @@ cover:dossiq:069ee2d6m7275:63eef43f	PR #6388: 4 tests for MandaatRepository::sav
 cover:dossiq:069ee2d6m7275:34763eb4	PR #6389: +2 tests, ZgwAuthMiddleware 111->116/116, lib/Middleware fully covered	session-20261113T081040-5e814df2	2026-11-13T10:28:17Z
 review:openregister:10122:e0498191	APPROVE: tests-only frontend spec, 8/8 pass, eslint clean	session-20261113T084521-fd8a31c7	2026-11-13T10:29:03Z
 verify:shillinq:2913:f704ae2a	8 PRs GREEN (tests-only; no new failures)	session-20261113T064518-860c039d	2026-11-13T10:30:17Z
+cover:humaniq:a18a13fb:0f859653	PR #1108: +4 tests, lib/Flow 218->228/239 (rest are literal getters)	session-20261113T081040-5e814df2	2026-11-13T10:31:38Z
