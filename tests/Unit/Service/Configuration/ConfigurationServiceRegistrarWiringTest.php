@@ -248,6 +248,13 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 			'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationExplainer' => [
 				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationValueStore',
 				'OCA\\OpenRegister\\Db\\ConfigurationDeploymentMapperInterface',
+				'OCA\\OpenRegister\\Db\\ConfigurationBindingMapperInterface',
+			],
+			'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationBundleService' => [
+				'OCA\\OpenRegister\\Db\\ConfigurationBindingMapperInterface',
+				'OCA\\OpenRegister\\Db\\ConfigurationValueMapper',
+				'OCA\\OpenRegister\\Service\\ConfigurationDeployment\\ConfigurationDraftService',
+				'OCP\\IUserSession',
 			],
 		];
 	}//end expectedRequests()

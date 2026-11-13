@@ -9,7 +9,7 @@
 ## 2. Trace, proof and docs
 
 - [ ] 2.1 Trace entries per attempt and the `branched` outcome. Verify: unit test reads the step report.
-- [ ] 2.2 Add `tests/e2e/ci/flow-error-branch.spec.ts`: a flow whose HTTP step calls an unreachable host, with `retry` 2 and an error branch that writes a note; assert the note and three attempts in the trace.
+- [ ] 2.2 Add `tests/e2e/ci/flow-error-branch.spec.ts`: a flow whose HTTP step calls an unreachable host, with `retry` 2 and an error branch that writes a note; assert the note and three attempts in the trace. (live pass, decision 139)
 - [ ] 2.3 Document retry and the error branch in `docs/`, with the idempotency warning.
 - [ ] 2.4 Open a nextcloud-vue issue for drawing the `error` output on `CnFlowCanvas`, and link it here.
 

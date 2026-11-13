@@ -30,10 +30,27 @@ or not bundles exist yet. Sections 4 and 5, and task 1.3, continue on
 chain all carry the bundle layer already, so a bundle is a binding to write
 rather than a model to add.
 
-- [ ] 4.1 A named bundle of permissions, notification rules and lifecycle settings, bound to many schemas (D-5): entity `lib/Db/ConfigurationBundle.php` with mapper and a migration (name, description, bound schema ids). Its values are written in `ConfigurationLayer::BUNDLE` with the bundle uuid as layer ref, only through a draft set. Routes `configurationBundle#index`, `#create`, `#update` and `#bind` under `/api/configuration/bundles` in `appinfo/routes.php`, admin only.
-- [ ] 4.2 A subject override recorded and listed as an exception: a draft value in `ConfigurationLayer::SUBJECT` for a schema bound to a bundle stores the bundle uuid it overrides. `ConfigurationExplainer::explain()` reports it as `exceptionTo`, and `GET /api/configuration/bundles/{id}/exceptions` lists the overrides of one bundle.
-- [ ] 4.3 Integration configuration inherited from instance or register, overridable, explained: keys under `integration.` in `ConfigurationKeyRegistry` resolve instance, then register, then subject in `ConfigurationExplainer::chainFor()`, and the explanation names the layer that won.
-- [ ] 4.4 A transition or permission matrix copied onto another role or schema as a draft (D-6): `POST /api/configuration/draft-sets/{id}/copy` with `{from, to[], kind: transition|permission}` reads the source's `authorization` or `x-openregister-lifecycle` block and writes one draft per target in the set, so the copy is previewed and deployed like any other change.
+- [x] 4.1 A named bundle of permissions, notification rules and lifecycle settings,
+  bound to many schemas (D-5). No bundle model: a bundle's values are rows at
+  `ConfigurationLayer::BUNDLE` with the bundle name as layer ref, written only
+  through a draft set. The one new table is `openregister_config_bindings`
+  (`ConfigurationBinding`, its mapper and interface, migration
+  `Version1Date20261112000000`), unique on the subject: each subject follows one
+  bundle. Routes `configurationBundle#index`, `#show`, `#bind` and `#unbind`,
+  admin only.
+- [x] 4.2 A subject override recorded and listed as an exception: a subject-layer
+  value wins by precedence, and `GET /api/configuration/bundles/{id}` lists each
+  bound subject with `overriding` and the keys it overrides. The explainer finds a
+  subject's bundle from its binding, so callers pass only the schema.
+- [x] 4.3 Integration configuration inherited from instance or register,
+  overridable, explained: the explainer's chain already resolves instance,
+  register, bundle, subject; `ConfigurationBundleServiceTest` pins a mail relay
+  at the instance applying to a schema that sets none, named as the instance.
+- [x] 4.4 A transition or permission matrix copied onto another role or schema as
+  a draft (D-6): `POST /api/configuration/draft-sets/{id}/copy` with `prefix`,
+  `from`, `to` and an optional `layer` copies every value under the prefix into
+  the set. A prefix that does not end in a dot, a copy onto itself and an empty
+  source are refused.
 
 ## 5. Seeding
 

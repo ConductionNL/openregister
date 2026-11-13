@@ -64,6 +64,16 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\ObjectMove
  *
  * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
  */
 final class MoveObjectTest extends TestCase {
 

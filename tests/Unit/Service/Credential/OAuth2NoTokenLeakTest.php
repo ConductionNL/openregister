@@ -42,6 +42,9 @@ use OCA\OpenRegister\Service\Credential\TokenResponseOptions;
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
  * @covers \OCA\OpenRegister\Event\CredentialRelinkRequiredEvent
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Issuance
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Tokens
+ * @uses \OCA\OpenRegister\Service\Credential\TokenResponseOptions
  */
 class OAuth2NoTokenLeakTest extends TestCase {
 	/**

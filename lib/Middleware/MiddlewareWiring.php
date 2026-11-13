@@ -123,6 +123,11 @@ final class MiddlewareWiring {
 		// deprecated version keeps exactly the behaviour it had before.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiVersionMiddleware::class);
 
+		// Marks the unversioned API paths deprecated in favour of their
+		// `/api/v1/` aliases. After ApiVersionMiddleware, so a deprecated
+		// contract version's own Deprecation and Link headers win.
+		$context->registerMiddleware(UnversionedPathDeprecationMiddleware::class);
+
 		// Register the ApiCallerMiddleware (api-as-a-versioned-surface): binds a
 		// caller to its administered source addresses, bounds it to its
 		// administered ceiling, and records which route and version it called.

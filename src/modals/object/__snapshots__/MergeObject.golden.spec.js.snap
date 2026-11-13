@@ -1,20 +1,20 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`MergeObject merge choices (golden) offers the options for absent 1`] = `"[{"label":"Other/Custom","value":"custom"}]"`;
+exports[`MergeObject merge choices (golden) offers the options for absent 1`] = `"[{"label":"Other value","value":"custom"}]"`;
 
-exports[`MergeObject merge choices (golden) offers the options for city 1`] = `"[{"label":"From Source: Ede","value":"Ede"},{"label":"Other/Custom","value":"custom"}]"`;
+exports[`MergeObject merge choices (golden) offers the options for city 1`] = `"[{"label":"From source: Ede","value":"Ede"},{"label":"Other value","value":"custom"}]"`;
 
-exports[`MergeObject merge choices (golden) offers the options for empty 1`] = `"[{"label":"Other/Custom","value":"custom"}]"`;
+exports[`MergeObject merge choices (golden) offers the options for empty 1`] = `"[{"label":"Other value","value":"custom"}]"`;
 
-exports[`MergeObject merge choices (golden) offers the options for name 1`] = `"[{"label":"From Source: Source","value":"Source"},{"label":"From Target: Target","value":"Target"},{"label":"Other/Custom","value":"custom"}]"`;
+exports[`MergeObject merge choices (golden) offers the options for name 1`] = `"[{"label":"From source: Source","value":"Source"},{"label":"From target: Target","value":"Target"},{"label":"Other value","value":"custom"}]"`;
 
-exports[`MergeObject merge choices (golden) offers the options for nested 1`] = `"[{"label":"From Source: {\\n  \\"a\\": 1\\n}","value":{"a":1}},{"label":"From Target: {\\n  \\"b\\": 2\\n}","value":{"b":2}},{"label":"Other/Custom","value":"custom"}]"`;
+exports[`MergeObject merge choices (golden) offers the options for nested 1`] = `"[{"label":"From source: {\\n  \\"a\\": 1\\n}","value":{"a":1}},{"label":"From target: {\\n  \\"b\\": 2\\n}","value":{"b":2}},{"label":"Other value","value":"custom"}]"`;
 
-exports[`MergeObject merge choices (golden) offers the options for onlySource 1`] = `"[{"label":"From Source: x","value":"x"},{"label":"Other/Custom","value":"custom"}]"`;
+exports[`MergeObject merge choices (golden) offers the options for onlySource 1`] = `"[{"label":"From source: x","value":"x"},{"label":"Other value","value":"custom"}]"`;
 
-exports[`MergeObject merge choices (golden) offers the options for onlyTarget 1`] = `"[{"label":"From Target: false","value":false},{"label":"Other/Custom","value":"custom"}]"`;
+exports[`MergeObject merge choices (golden) offers the options for onlyTarget 1`] = `"[{"label":"From target: false","value":false},{"label":"Other value","value":"custom"}]"`;
 
-exports[`MergeObject merge choices (golden) offers the options for zero 1`] = `"[{"label":"From Source: 0","value":0},{"label":"From Target: 0","value":0},{"label":"Other/Custom","value":"custom"}]"`;
+exports[`MergeObject merge choices (golden) offers the options for zero 1`] = `"[{"label":"From source: 0","value":0},{"label":"From target: 0","value":0},{"label":"Other value","value":"custom"}]"`;
 
 exports[`MergeObject merge choices (golden) searches merge targets fails 1`] = `
 {
@@ -56,7 +56,7 @@ exports[`MergeObject merge choices (golden) searches merge targets without a reg
 }
 `;
 
-exports[`MergeObject merge choices (golden) seeds the merge data, custom values and dropdown selections 1`] = `"{"mergedData":{"id":"t","name":"Target","city":"Ede","empty":"custom","zero":0,"nested":{"b":2},"onlySource":"x","onlyTarget":false},"customValues":{"empty":""},"propertySelections":{"name":{"label":"From Target: Target","value":"Target"},"city":{"label":"From Source: Ede","value":"Ede"},"empty":{"label":"Other/Custom","value":"custom"},"zero":{"label":"From Source: 0","value":0},"nested":{"label":"From Target: {\\n  \\"b\\": 2\\n}","value":{"b":2}},"onlySource":{"label":"From Source: x","value":"x"},"onlyTarget":{"label":"From Target: false","value":false}}}"`;
+exports[`MergeObject merge choices (golden) seeds the merge data, custom values and dropdown selections 1`] = `"{"mergedData":{"id":"t","name":"Target","city":"Ede","empty":"custom","zero":0,"nested":{"b":2},"onlySource":"x","onlyTarget":false},"customValues":{"empty":""},"propertySelections":{"name":{"label":"From target: Target","value":"Target"},"city":{"label":"From source: Ede","value":"Ede"},"empty":{"label":"Other value","value":"custom"},"zero":{"label":"From source: 0","value":0},"nested":{"label":"From target: {\\n  \\"b\\": 2\\n}","value":{"b":2}},"onlySource":{"label":"From source: x","value":"x"},"onlyTarget":{"label":"From target: false","value":false}}}"`;
 
 exports[`MergeObject.loadSourceData loads bare, noRegister, answering brokenJson 1`] = `
 {
