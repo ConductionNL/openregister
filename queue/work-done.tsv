@@ -7143,3 +7143,4 @@ review:openregister:10396:baaef040	APPROVE: matches change design; phpstan clean
 build4:openregister:property-code-list-from-concept-scheme	partial: PR #10430 - scheme membership and deprecated refusals were missing (guard skipped unknown values); fixed, 5 scenario tests; options paging not built, 4.2 hand-over left	session-20261113T204539-805bb895	2026-11-13T22:21:43Z
 build4:openregister:records-tree-view	partial: PR #10431 (1.2 _childCount grouped count on the list access path + tests; 1.3 parentHidden and 2.x UI left)	session-20261113T210940-b751519f	2026-11-13T22:22:14Z
 review:openregister:10407:280f9137	APPROVE 10407	session-20261113T213325-fbdd5614	2026-11-13T22:22:29Z
+review:openregister:10425:4bfe7acd	APPROVE: tasks.md only, claims verified on main	session-20261113T212411-bd385ec2	2026-11-13T22:22:36Z
