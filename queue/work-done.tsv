@@ -2143,3 +2143,4 @@ review:openregister:10095:82312bf4	APPROVE openregister#10095: coverage metadata
 cover:pipelinq:f67520ecmc4ba:js3f7698d2	already done: open PRs on quality/test-coverage-js-3f7698d2-1 (pipelineBoardMoreLogic) and -2 (pipelineBoardRendered) already cover these PipelineBoard paths; my duplicate spec discarded, no PR	session-20261113T024654-6600dc41	2026-11-13T04:31:17Z
 merge:integriq:3411:3393bdbb	stale	feeder	2026-11-13T04:30:13Z
 merge:versioniq:660:e05e562e	stale	feeder	2026-11-13T04:30:13Z
+cover:integriq:92114ab0md8cd:f0d34e00	PR #3474: 9 tests, lib/Connectors 239->272/276; suite 7113->7122, 2 inherited errors	session-20261113T031700-46f75510	2026-11-13T04:31:31Z
