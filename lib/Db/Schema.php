@@ -360,9 +360,9 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	protected bool $appendOnly = false;
 
 	/**
-	 * Whether objects of this schema should be indexed in SOLR for searching
+	 * Whether objects of this schema are included in search
 	 *
-	 * When set to false, objects of this schema will be excluded from SOLR indexing,
+	 * When set to false, objects of this schema are excluded from search,
 	 * making them unsearchable through the search functionality but still accessible
 	 * through direct API calls.
 	 *
@@ -1916,18 +1916,18 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end getLinkedTypes()
 
 	/**
-	 * Check whether this schema should be searchable in SOLR
+	 * Check whether this schema's objects are included in search
 	 *
-	 * @return bool True if schema objects should be indexed in SOLR
+	 * @return bool True if schema objects are included in search
 	 */
 	public function isSearchable(): bool {
 		return $this->searchable;
 	}//end isSearchable()
 
 	/**
-	 * Set whether this schema should be searchable in SOLR
+	 * Set whether this schema's objects are included in search
 	 *
-	 * @param bool $searchable Whether schema objects should be indexed in SOLR
+	 * @param bool $searchable Whether schema objects are included in search
 	 *
 	 * @return void
 	 */
