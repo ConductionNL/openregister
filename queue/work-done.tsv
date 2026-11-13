@@ -6252,6 +6252,7 @@ verify:hermiq:1701:4e7fa927	3 GREEN (1701,1702,1703): test-only vitest, 1347 pas
 cover:buildiq:70b3e29em7beb:a215617b	already done: lib/Integration/ 216/220 (98%) at e11fe26f, above 95 target	session-20261113T171137-8f22ecb0	2026-11-13T19:13:58Z
 cover:buildiq:70b3e29em7beb:9d3a1784	already done: lib/BackgroundJob/*.php 245/247 statements (99.2%) @e11fe26f; left: missing-temp-dir and glob-false guards	session-20261113T185326-a3ee0aab	2026-11-13T19:14:27Z
 verify:shillinq:2994:5e15fca9	GREEN 2994,2995,2996,2999,3001; CONFLICT 2997,2998,3000,3002 (version/lock/openapi vs earlier tree PRs); 0 new failures	session-20261113T182349-7e3632fd	2026-11-13T19:14:34Z
+cover:buildiq:70b3e29em7beb:1b97f731	already done: lib/Listener/*.php 538/546 statements (98.5%) @e11fe26f, above 95 target	session-20261113T185326-a3ee0aab	2026-11-13T19:15:08Z
 fix:shillinq:2987:82328584	failed: conflict is with open #2982/#2986 (register version bumps in register-versions.lock.json, info.xml), not development; branch already contains development; needs a merge of development after #2982 lands	session-20261113T185327-0dc82b88	2026-11-13T19:15:06Z
 cover:buildiq:70b3e29em7beb:34f5c300	failed: permission (building a coverage driver to locate gaps in lib/Service/*.php was refused; every class already has a test, gaps are not findable without one)	session-20261113T171137-8f22ecb0	2026-11-13T19:15:04Z
 cover:shillinq:05639debm7b6b:e372e6ff	already done: lib/Event/*.php 100% (96/96) at b0ed3e4 (measurement at current head)	session-20261113T182349-7e3632fd	2026-11-13T19:14:51Z
