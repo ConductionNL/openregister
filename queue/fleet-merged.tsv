@@ -560,3 +560,10 @@ dossiq	6118	68cd0970fb06d635b6f8ffdb6b8e7084419ac8f7	MERGED	merge-local	GATE OK 
 dossiq	6119	9305ba0ab56e28f2c257c82ecaeddfe1c20c8344	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6120	80efd1f45c7635d2047391507f278ae9ab8edbf2	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6121	030bf714014167598b36dfbb23c46fcdd47553c7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2281	dd1912a93a69d729cabf98c1cb7d3f31871a754b	FAIL	merge-local	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+portaliq	2282	967a054bb8c4a02b82172a588692b995e10a233a	FAIL	merge-local	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+portaliq	2312	e056c2f77fc4c58f02ab1b00a452b62ff26f8662	SKIP	merge-local	GATE UNMEASURED e056c2f77f does not merge cleanly onto development
+portaliq	2284	b2a0155204176795c00218d83ecbed38e0434b82	SKIP	merge-local	GATE UNMEASURED b2a0155204 does not merge cleanly onto development
+portaliq	2366	7406159f36b6d214dc1498388a0bf472170aca33	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2370	5ff6f0c9f3e7b71faf9988c939c67d5474a1e060	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2367	437d70ffe18e7fce4897491008f43c83c7a8a717	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
