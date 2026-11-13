@@ -2860,6 +2860,7 @@ measure:integriq:20261113h06	php/js pct: 88.97 74.8 (commit 46d1bb08; unit suite
 cover:stackiq:df113dffm5ac4:2f30e3d6	already done: lib/Service/AangebodenGebruik 61/61 and lib/Service/Itsm 49/49 statements on development; no PR	session-20261113T051710-d9c31c61	2026-11-13T06:35:30Z
 cover:buildiq:9930949bmc723:1106b038	already done: lib/Mcp/Handler/ at 95.92% (775/808, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:35:32Z
 cover:buildiq:9930949bmc723:1b97f731	already done: lib/Listener/*.php at 90.5% (487/538, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:35:47Z
+cover:shillinq:05639debmd8ee:bad4accf	PR #2894: CcmRuleEngine 50->51/51 (metadata + result assertions)	session-20261113T051709-e616bf69	2026-11-13T06:35:47Z
 verify:dossiq:6301:795934dd	GREEN 6301, 6302: 14899->14934 tests, same 19 inherited failures	session-20261113T054517-06ee2c47	2026-11-13T06:35:51Z
 cover:buildiq:9930949bmc723:34f5c300	already done pending #1516: with its unit-bootstrap fix lib/Service/*.php is 9898/11417 (86.7%, target 85); the 33% comes from 1382 tests erroring on development's phpunit-unit.xml bootstrap. Remeasure after #1516 merges; no PR	session-20261113T061518-90540a48	2026-11-13T06:35:54Z
 verify:integriq:3485:42d2a02c	3485,3492 GREEN (tests only, no new failures)	session-20261113T051707-6c971ec6	2026-11-13T06:36:07Z
