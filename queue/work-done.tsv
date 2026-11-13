@@ -5089,3 +5089,4 @@ build:openregister:webhooks-for-owners	partial: PR #10229 does 1.1 (owner column
 review:openregister:10205:35695c2d	APPROVE 10205: new unwired parser + tests; conflict only in component-map.csv	session-20261113T104650-72c03e13	2026-11-13T13:10:18Z
 review:openregister:10222:6ec25b23	APPROVE: tests only, 132 search-sidebar jest tests pass merged with main	session-20261113T074527-031883a8	2026-11-13T13:10:48Z
 review:openregister:10201:6a3f9b3c	APPROVE: additive crypto container, suites green; component-map.csv merge conflict noted (not a block)	session-20261113T094602-d25cda2a	2026-11-13T13:11:32Z
+review:openregister:10212:01dfee0f	BLOCK: PR's own diagnostics test fails (mock stubs fetch() not fetchAssociative(), so existsBeforeFilter stays false and the error-path assertion never fires)	session-20261113T111529-f2ee6930	2026-11-13T13:11:47Z
