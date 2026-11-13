@@ -5875,3 +5875,4 @@ pipelinq	3749	ebdb318c33df8603c4b41eac86c7fb61a31f2cbc	BLOCK	worker-37	phpunit 6
 portaliq	2388	6952d338c43380d1a03403d4e61b9ee61c927484	REVERIFY	worker-09	moved 9 pure helpers from PortalObjectReader into PortalRowRefs; floor passes (module_coupling 4.56 -> 4.58); unit suite 4532 green; new head 45d8f99f97efb6f6d11f60c29058dd2aa28fcf50, verify it
 launchpad	1188	1cf1fd8175abd79cff0910a1b194af1ffa40da8c	GREEN	worker-12	phpunit 4062 OK and vitest 2193 passing, same as baseline; 0 new failures; deps only: dompurify ^3.4.16 (locks 3.4.17) with an override that also moves @toast-ui/editor off its nested 2.5.9; sbom regenerated
 pipelinq	3754	2d2541abe5ee571f262f04181167faa53457e2f8	CONFLICT	worker-09	conflicts with development in l10n en/nl (.js and .json)
+shillinq	2932	a1bec6cdd395b0459e4a6fee29dd115452fcfb71	CONFLICT	worker-09	tests/vitest/receiptCaptureView.spec.js conflicts after 2931 in the tree
