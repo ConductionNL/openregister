@@ -8096,3 +8096,14 @@ review:openregister:10387:0b98336f	review	openregister	main	10387	sha=0b98336fd6
 review:openregister:10388:f86d1ded	review	openregister	main	10388	sha=f86d1ded7ba4483ec5b6d7ce2597ff18f747a7f2;last_approved=;title=feat(openregister): build flow-node-config-forms	2026-11-13T22:00:34Z
 verify:dossiq:6464:d2b312d1	verify	dossiq	development	merge	prs=6464@a0506858be8d952910a34e957aefbdfe936f4c34	2026-11-13T22:00:34Z
 cover:pipelinq:7f9dc8e6m8ce9:34f5c300	cover	pipelinq	development	quality/test-coverage-34f5c300	lang=php;dirs=lib/Service/*.php;focus=uncovered;weight=18432;coverage=81.79;target=90.0	2026-11-13T12:58:28Z
+review:openregister:10389:1b924185	review	openregister	main	10389	sha=1b9241859fb5692209d947310c17a9b06b09845f;last_approved=;title=feat(openregister): build flow-engine-unification	2026-11-13T22:05:36Z
+review:openregister:10390:4f1739ad	review	openregister	main	10390	sha=4f1739adfd427ee263524a19ef7b1f64df58bdbd;last_approved=;title=feat(openregister): build incremental-sync-for-api-consumers	2026-11-13T22:05:36Z
+review:openregister:10391:aa853099	review	openregister	main	10391	sha=aa853099c8db276822f58af9b2d9a6f718544771;last_approved=;title=feat(openregister): build history-schema-and-settings-edits-audited	2026-11-13T22:05:36Z
+review:openregister:10392:d840911f	review	openregister	main	10392	sha=d840911f1359cd2294859ece0f7d18a1536f08bc;last_approved=;title=feat(openregister): build modelling-composite-identity	2026-11-13T22:05:36Z
+review:openregister:10393:0c9034f1	review	openregister	main	10393	sha=0c9034f1e48db7393a7ba0010988bb53c9521526;last_approved=;title=feat(openregister): build list-query-condition-groups	2026-11-13T22:05:36Z
+review:openregister:10394:d9564fa8	review	openregister	main	10394	sha=d9564fa8c89473d42fffddcdfc30c4d64b1b1d65;last_approved=;title=feat(openregister): build modelling-schema-diagram (diagram view, saved layout, table, SVG)	2026-11-13T22:05:36Z
+review:openregister:10395:ca41c89d	review	openregister	main	10395	sha=ca41c89dfbd3cdfbd18bb3be0fb67b9fb9a7f68c;last_approved=;title=feat(openregister): build files-leaf-save-to-object	2026-11-13T22:05:36Z
+review:openregister:10396:baaef040	review	openregister	main	10396	sha=baaef040428d9027d8d00e8a32149db376b1ffa1;last_approved=;title=feat(openregister): build dbal-query-schema-guarded-and-previewed (read-only reads and preview)	2026-11-13T22:05:36Z
+review:openregister:10397:ad134761	review	openregister	main	10397	sha=ad134761edc4be5bf2c0df161821141594f149df;last_approved=;title=feat(openregister): build files-create-from-url	2026-11-13T22:05:36Z
+review:openregister:10398:a56acc57	review	openregister	main	10398	sha=a56acc57737f6c7de5b4e886fab90ff5eb23b12e;last_approved=;title=feat(openregister): build object-archive-state (withdrawn timeline entries)	2026-11-13T22:05:36Z
+measure:shillinq:20261113h22	measure	shillinq	development	queue/coverage/shillinq.json	why=slices need per-directory coverage	2026-11-13T22:05:36Z
