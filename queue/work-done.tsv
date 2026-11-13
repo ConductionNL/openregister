@@ -5405,6 +5405,7 @@ merge:stackiq:1874:c59c311c	merge-local over 1 stackiq tasks: merged=3 red=0 fai
 cover:shillinq:05639debm4eb8:89bf3ba4	no PR: lib/Reporting/Generator/ measured 1526/1528 lines (99.9%) at 79e59c85 (queue/coverage/shillinq.json)	session-20261113T074527-031883a8	2026-11-13T14:03:44Z
 merge:pipelinq:3721:4b92cd6f	merge-local over 2 pipelinq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:03:58Z
 merge:pipelinq:3602:8969c50d	merge-local over 2 pipelinq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:03:58Z
+cover:launchpad:fb10c50fm2d1d:js4829b6aa	already done: src/views/* 100% statements (717/717) on development after batches -1..-5	session-20261113T091533-b7a00bc3	2026-11-13T14:04:03Z
 merge:versioniq:678:99e9570c	merge-local over 1 versioniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:04:48Z
 build2:openregister:records-restore-with-cascade	partial: PR #10277 — 1.1 trigger_object column + 1.2 evidence floor; 2.x/3.x left	session-20261113T091533-03405ea6	2026-11-13T14:06:16Z
 fix:dossiq:6371:3184045e	fixed floor: module_coupling restored 5.03->5.05 by routing the stopping-rule reconcile through ReviewWrites; floor_check PASS; pushed cea13ccf507e61c09e3a6a0bb136b2f942cc1eb8, REVERIFY recorded	session-20261113T074532-3dc49c57	2026-11-13T14:07:11Z
