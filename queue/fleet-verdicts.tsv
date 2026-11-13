@@ -5376,3 +5376,4 @@ dossiq	6324	e811a9a2cc4637d2fa8933ececcd0554f27cb311	REVERIFY	worker-03	merged #
 larpinq	1010	7fce3b861d08610eb74931468afeeef5fe75de9a	GREEN	worker-34	phpunit 754 on tree of 1010,1012,1013,1014 (baseline 697, all pass); tests only
 larpinq	1011	4df9687afb6cd18f6b2774816b55a1d48006e5b5	CONFLICT	worker-34	add/add conflict with 1010 on PlayerAttendanceServiceTest.php and SettingsLoadServiceTest.php; 1012 also adds InitializeRegisterTest.php and LarpinqAdminTest.php under the same paths
 larpinq	1012	ef4abe687e638b6310d495b0a7ec7304d4e22d7a	GREEN	worker-34	phpunit 754 on tree of 1010,1012,1013,1014 (baseline 697, all pass); tests only
+larpinq	1013	badda1abb64e2828186e668653f0dc18c0113b4b	GREEN	worker-34	phpunit 754 on tree of 1010,1012,1013,1014 (baseline 697, all pass); tests only
