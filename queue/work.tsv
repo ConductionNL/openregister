@@ -5823,3 +5823,20 @@ cover:pipelinq:7f9dc8e6mcebb:9d3a1784	cover	pipelinq	development	quality/test-co
 cover:pipelinq:7f9dc8e6mcebb:f545d745	cover	pipelinq	development	quality/test-coverage-f545d745	lang=php;dirs=lib/Repair/*.php;focus=uncovered;weight=609;coverage=87.48;target=90.0	2026-11-13T11:09:13Z
 cover:pipelinq:7f9dc8e6mcebb:1b97f731	cover	pipelinq	development	quality/test-coverage-1b97f731	lang=php;dirs=lib/Listener/*.php;focus=uncovered;weight=384;coverage=87.48;target=90.0	2026-11-13T11:12:58Z
 cover:pipelinq:7f9dc8e6mcebb:8f8dca30	cover	pipelinq	development	quality/test-coverage-8f8dca30	lang=php;dirs=lib/Service/Export/*.php;focus=thin;weight=4873;coverage=87.48;target=90.0	2026-11-13T10:29:22Z
+review:openregister:10262:d0056d60	review	openregister	main	10262	sha=d0056d60f611862fc798db933b28ae7844959f1c;last_approved=;title=feat(openregister): build platform-reference-provider	2026-11-13T13:55:10Z
+review:openregister:10263:84fb9f40	review	openregister	main	10263	sha=84fb9f40130292f74baa7a225d016d64ac0ae2e4;last_approved=;title=feat(openregister): build notes-leaf-rich-text-lock-export (lock)	2026-11-13T13:55:10Z
+review:openregister:10264:ca9f350f	review	openregister	main	10264	sha=ca9f350f446485dfe2cdd2114a17024f4ef1a72f;last_approved=;title=feat(openregister): build modelling-composite-identity	2026-11-13T13:55:10Z
+review:openregister:10265:1caf04d7	review	openregister	main	10265	sha=1caf04d7c1dde581ac8648ca0fc8645fb0c2167d;last_approved=;title=feat(openregister): build sensitive-field-reveal-audit	2026-11-13T13:55:10Z
+review:openregister:10266:fbc6c154	review	openregister	main	10266	sha=fbc6c1548104d5ced9b76b1f38c415ad0bf997c9;last_approved=;title=feat(openregister): build rules-compose-read-transitions-and-time	2026-11-13T13:55:10Z
+verify:stackiq:1878:5d5449f4	verify	stackiq	development	merge	prs=1878@228ca24399676997fd421d91ba13181284f380a9	2026-11-13T13:55:10Z
+verify:dossiq:6413:c8c15d15	verify	dossiq	development	merge	prs=6413@bfa3341b9ee523cbf060e2fad231b3609e991f46	2026-11-13T13:55:10Z
+verify:humaniq:1114:885f68df	verify	humaniq	development	merge	prs=1114@ac940b114987b43ca30ffedfcc49c54fe66b5b90,1116@d0a2bc5ea6eb93a0ebe7aec083ccb63c5153f80d	2026-11-13T13:55:10Z
+verify:launchpad:1190:6373d45c	verify	launchpad	development	merge	prs=1190@817847ca89f5851946d3be89677b54a839583366	2026-11-13T13:55:10Z
+merge:stackiq:1874:c59c311c	merge	stackiq	development	development	prs=1874@8ae870cca5a623e208d59aad8a53eb2db9903282,1875@1f9c0fc619f88c608f558f05488248954bd361b1,1877@6e37f1eb6b18b1d2cccfb5e400855a2e7c718710	2026-11-13T13:55:10Z
+merge:dossiq:6412:536f529c	merge	dossiq	development	development	prs=6412@c035680cbdfcd166c44afb5effb5e2fcfb762d1f	2026-11-13T13:55:10Z
+merge:buildiq:1526:6f4d0e76	merge	buildiq	development	development	prs=1526@2ab00cf5eec7706a83146c6418b6e3aa926ac0bd,1543@22709fae85f7d2171ac636f1737ab76c7a0afc42,1545@c59548746b4de1c4eec150370e2d3809f102ad44,1546@ee0f10f1671047bf452687e64511a5add8b89fb5,1547@9d3c80bf28d9e36be82b9025401d02f539ad8431	2026-11-13T13:55:10Z
+cover:stackiq:9ac19b3amc14f:9d3a1784	cover	stackiq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=thin;weight=938;coverage=87.39;target=90.0	2026-07-16T11:03:19Z
+cover:stackiq:9ac19b3amc14f:2f30e3d6	cover	stackiq	development	quality/test-coverage-2f30e3d6	lang=php;dirs=lib/Service/AangebodenGebruik/,lib/Service/Itsm/;focus=thin;weight=448;coverage=87.39;target=90.0	2026-07-16T11:11:29Z
+cover:stackiq:9ac19b3amc14f:81b1241f	cover	stackiq	development	quality/test-coverage-81b1241f	lang=php;dirs=lib/Portal/*.php;focus=thin;weight=389;coverage=87.39;target=90.0	2026-07-16T11:12:28Z
+cover:stackiq:9ac19b3amc14f:05630945	cover	stackiq	development	quality/test-coverage-05630945	lang=php;dirs=lib/Middleware/Support/;focus=thin;weight=384;coverage=87.39;target=90.0	2026-07-16T11:12:33Z
+cover:stackiq:9ac19b3amc14f:34763eb4	cover	stackiq	development	quality/test-coverage-34763eb4	lang=php;dirs=lib/Middleware/*.php;focus=thin;weight=353;coverage=87.39;target=90.0	2026-07-16T11:13:04Z
