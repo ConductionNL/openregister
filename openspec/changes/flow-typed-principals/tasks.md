@@ -13,7 +13,8 @@
 
 - [x] 2.1 `FlowRunAssignee::mayAnswer()` consults the registry instead of comparing strings. Keep the null-assignee branch exactly as it is.
 - [x] 2.2 The task service's answer guard takes the same path, so the two cannot disagree.
-- [ ] 2.3 Record the resolution at creation as evidence only. Assert in a test that the guard does **not** read it — a former member must be refused while still appearing in the record.
+- [x] 2.3 Record the resolution at creation as evidence only. Assert in a test that the guard does **not** read it — a former member must be refused while still appearing in the record.
+      > 2026-11-13: `UserTaskPerformers::resolutionEvidence()` (the references, the users they resolved to, the moment), written by `UserTaskNode::createTask()` into the task's `metadata.performersAtCreation`, which no authorization rule may read. `UserTaskResolutionEvidenceTest`: bram is still in the record after leaving the group and is refused by `FlowRunAssignee::mayAnswer()`; anna is still allowed.
 - [x] 2.4 Check every caller of `mayAnswer` for the hot-path trap: inbox listing must still predicate in the datastore, never resolve row by row.
 - [x] 2.5 Tests: a position authorises; a coincidental group name no longer authorises a `user` reference; an unassigned task is unchanged.
 

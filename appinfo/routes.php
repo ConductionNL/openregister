@@ -1758,6 +1758,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ],
         ['name' => 'registers#publishToGitHub', 'url' => '/api/registers/{id}/publish/github', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#schemas', 'url' => '/api/registers/{id}/schemas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'registers#model', 'url' => '/api/registers/{id}/model', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
@@ -1828,6 +1829,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Configuration publish endpoints.
         ['name' => 'configuration#publishToGitHub', 'url' => '/api/configurations/{id}/publish/github', 'verb' => 'POST'],
+        ['name' => 'configuration#publishToGitLab', 'url' => '/api/configurations/{id}/publish/gitlab', 'verb' => 'POST'],
 
         // User Settings - GitHub Integration.
         ['name' => 'userSettings#getGitHubTokenStatus', 'url' => '/api/user-settings/github/status', 'verb' => 'GET'],

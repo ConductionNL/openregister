@@ -20,8 +20,8 @@
 
 ## 6. Threshold setting (REQ-ADI-007)
 
-- [ ] 6.1 Add `anonymisation.confidenceThreshold` (default 0.5, refused outside 0 to 1) to `FileSettingsHandler` and replace the literals in `TextExtractionService.php` and `EntityRecognitionHandler.php`. Verify: `tests/Unit/Service/TextExtraction/EntityRecognitionThresholdTest.php::testTheSettingReplacesTheLiteral` and `testAnOutOfRangeValueIsRefused`; a grep test asserts no `'confidence_threshold' => 0.5` literal remains in `lib/`.
-- [ ] 6.2 Cross-app contract for filinq: the key is `anonymisation.confidenceThreshold` in the body of `GET /api/settings/files`, a float. Verify: `tests/Contract/FileSettingsContractTest.php` pins the key and type. filinq's `anonymization-review-workbench` carries the consumer test; when OpenRegister is absent filinq uses its own default and says so.
+- [x] 6.1 Add `anonymisation.confidenceThreshold` (default 0.5, refused outside 0 to 1) to `FileSettingsHandler` and replace the literals in `TextExtractionService.php` and `EntityRecognitionHandler.php`. Verify: `tests/Unit/Service/TextExtraction/EntityRecognitionThresholdTest.php::testTheSettingReplacesTheLiteral` and `testAnOutOfRangeValueIsRefused`; a grep test asserts no `'confidence_threshold' => 0.5` literal remains in `lib/`.
+- [x] 6.2 Cross-app contract for filinq: the key is `anonymisation.confidenceThreshold` in the body of `GET /api/settings/files`, a float. Verify: `tests/Contract/FileSettingsContractTest.php` pins the key and type. filinq's `anonymization-review-workbench` carries the consumer test; when OpenRegister is absent filinq uses its own default and says so.
 
 ## V. Verification and done
 

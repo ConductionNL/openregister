@@ -1,9 +1,9 @@
 # Tasks — credential broker organisation scope
 
 ## Schema
-- [ ] Add `scope` (enum personal|organisation, default personal) + `organisation`
+- [x] Add `scope` (enum personal|organisation, default personal) + `organisation`
       (UUID, required when scope=organisation) to the `credential` schema in
-      `lib/Settings/credential_broker_register.json`; keep it secret-free. (code exists, test missing: lib/Settings/credential_broker_register.json)
+      `lib/Settings/credential_broker_register.json`; keep it secret-free. (code exists; now tested: tests/Unit/Service/Credential/CredentialOrganisationScopeSchemaTest.php pins the enum/default, the optional UUID field, and that neither property can hold a secret)
 - [ ] Bump the register descriptor + confirm the Repair-step materialisation picks up
       the new properties (ADR-037: OR does not self-import its own register JSON). (code exists, test missing: lib/Repair/ImportCredentialBrokerRegister.php)
 
@@ -26,7 +26,7 @@
 - [x] `POST /api/credentials`: accept `scope` + `organisation`; gate organisation
       creation to org-admin (or NC admin); default organisation to the caller's active
       organisation when omitted. (verified: lib/Controller/CredentialController.php, tests/Unit/Controller/CredentialControllerOrganisationTest.php)
-- [ ] `PUT` / `DELETE` on an organisation credential: same org-admin gate. (code exists, test missing: lib/Controller/CredentialController.php (DELETE tested in tests/Unit/Controller/CredentialControllerOrganisationTest.php; PUT path untested))
+- [x] `PUT` / `DELETE` on an organisation credential: same org-admin gate. (code exists; now tested: CredentialControllerOrganisationTest::testUpdateOrganisationCredentialRequiresAdmin covers the PUT path, mirroring the DELETE test — a non-admin member is refused 403 before any save)
 - [x] `GET /api/credentials?scope=organisation`: list the active organisation's
       credentials (members may read metadata; secrets never returned). (verified: lib/Controller/CredentialController.php, tests/Unit/Controller/CredentialControllerOrganisationTest.php::testIndexOrganisationListsActiveOrgMetadataWithoutSecrets)
 - [x] Confirm the no-scope / `?scope=personal` paths are unchanged. (verified: lib/Controller/CredentialController.php, tests/Unit/Controller/CredentialControllerOrganisationTest.php::testPersonalCreateIsUnchanged)

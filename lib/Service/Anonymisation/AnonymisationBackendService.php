@@ -26,7 +26,6 @@ use OCP\App\IAppManager;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
-use OCP\ICache;
 use OCP\Server;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -61,31 +60,11 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	private const EXAPP_LIGHT = 'openanonymiser_light';
 
 	/**
-	 * IAppConfig key holding the probe-cache TTL in seconds.
-	 */
-	private const TTL_CONFIG_KEY = 'anonymisation.probe_cache_ttl';
-
-	/**
-	 * Default probe-cache TTL in seconds.
-	 */
-	private const TTL_DEFAULT = 60;
-
-	/**
-	 * Minimum allowed probe-cache TTL in seconds.
-	 */
-	private const TTL_MIN = 10;
-
-	/**
-	 * Maximum allowed probe-cache TTL in seconds.
-	 */
-	private const TTL_MAX = 600;
-
-	/**
-	 * Distributed probe-result cache, or null when no backend is available.
+	 * The cached probe result of each backend.
 	 *
-	 * @var ICache|null
+	 * @var ProbeResultCache
 	 */
-	private ?ICache $cache = null;
+	private readonly ProbeResultCache $probeCache;
 
 	/**
 	 * App manager used for ExApp detection.
@@ -157,12 +136,14 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 		$this->logger              = $collaborators->logger;
 		$this->connectionReporter  = $collaborators->connectionReporter;
 
+		$cache = null;
 		try {
-			$this->cache = $platform->cacheFactory->createDistributed('openregister_anon_probe');
+			$cache = $platform->cacheFactory->createDistributed('openregister_anon_probe');
 		} catch (Throwable $e) {
 			$this->logger->warning('[AnonymisationBackendService] cache backend unavailable: ' . $e->getMessage());
-			$this->cache = null;
 		}
+
+		$this->probeCache = new ProbeResultCache(cache: $cache, appConfig: $this->appConfig);
 	}//end __construct()
 
 	/**
@@ -241,7 +222,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 */
 	public function testConnection(string $method): ProbeResult {
 		$result = $this->freshProbe(method: $method);
-		$this->writeCache(method: $method, result: $result);
+		$this->probeCache->write(method: $method, result: $result);
 
 		if ($method === BackendState::METHOD_OPENANONYMISER) {
 			$this->reportOpenAnonymiser(result: $result);
@@ -316,13 +297,13 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * @return ProbeResult The (possibly cached) probe result.
 	 */
 	public function probe(string $method): ProbeResult {
-		$cached = $this->readCache(method: $method);
+		$cached = $this->probeCache->read(method: $method);
 		if ($cached !== null) {
 			return $cached;
 		}
 
 		$result = $this->freshProbe(method: $method);
-		$this->writeCache(method: $method, result: $result);
+		$this->probeCache->write(method: $method, result: $result);
 
 		return $result;
 	}//end probe()
@@ -548,7 +529,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 
 			return $this->presidioHealthResult(latency: $latency, statusCode: $response->getStatusCode());
 		} catch (Throwable $e) {
-			return $this->unreachable(error: $this->mapHttpException(message: $e->getMessage()));
+			return $this->unreachable(error: ProbeResult::errorFromHttpMessage(message: $e->getMessage()));
 		}
 	}//end probePresidio()
 
@@ -742,130 +723,6 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 
 		return BackendState::METHOD_REGEX;
 	}//end resolveEffectiveMethod()
-
-	/**
-	 * Map an HTTP client exception message to a probe error code.
-	 *
-	 * @param string $message The exception message.
-	 *
-	 * @return string One of the ProbeResult::ERROR_* codes.
-	 */
-	private function mapHttpException(string $message): string {
-		$lower = strtolower($message);
-
-		if (str_contains($lower, 'timed out') === true || str_contains($lower, 'timeout') === true) {
-			return ProbeResult::ERROR_TIMEOUT;
-		}
-
-		if (str_contains($lower, 'could not resolve') === true || str_contains($lower, 'name or service not known') === true) {
-			return ProbeResult::ERROR_DNS_ERROR;
-		}
-
-		return ProbeResult::ERROR_CONNECT_REFUSED;
-	}//end mapHttpException()
-
-	/**
-	 * Resolve the probe-cache TTL, clamped to the allowed range.
-	 *
-	 * @return int The TTL in seconds.
-	 */
-	private function resolveTtl(): int {
-		$ttl = $this->appConfig->getValueInt('openregister', self::TTL_CONFIG_KEY, self::TTL_DEFAULT);
-
-		return max(self::TTL_MIN, min(self::TTL_MAX, $ttl));
-	}//end resolveTtl()
-
-	/**
-	 * Read a cached probe result for a method, or null on miss / disabled cache.
-	 *
-	 * @param string $method The method enum value.
-	 *
-	 * @return ProbeResult|null The cached result, or null.
-	 */
-	private function readCache(string $method): ?ProbeResult {
-		$data = $this->cachedProbeData(method: $method);
-		if ($data === null) {
-			return null;
-		}
-
-		return new ProbeResult(
-			reachable: (bool)($data['reachable'] ?? false),
-			latencyMs: $this->nullableInt(value: ($data['latencyMs'] ?? null)),
-			error: $this->nullableString(value: ($data['error'] ?? null)),
-			probedAt: (string)($data['probedAt'] ?? $this->now()),
-		);
-	}//end readCache()
-
-	/**
-	 * The decoded cache entry of a method, or null when there is no cache, no entry or no readable one.
-	 *
-	 * @param string $method One of BackendState::METHODS.
-	 *
-	 * @return array<string, mixed>|null The decoded entry.
-	 */
-	private function cachedProbeData(string $method): ?array {
-		if ($this->cache === null) {
-			return null;
-		}
-
-		$blob = $this->cache->get($method);
-		if (is_string($blob) === false) {
-			return null;
-		}
-
-		$data = json_decode($blob, true);
-		if (is_array($data) === false) {
-			return null;
-		}
-
-		return $data;
-	}//end cachedProbeData()
-
-	/**
-	 * A cached value as an int, keeping null.
-	 *
-	 * @param mixed $value The cached value.
-	 *
-	 * @return int|null The int, or null.
-	 */
-	private function nullableInt(mixed $value): ?int {
-		if ($value === null) {
-			return null;
-		}
-
-		return (int)$value;
-	}//end nullableInt()
-
-	/**
-	 * A cached value as a string, keeping null.
-	 *
-	 * @param mixed $value The cached value.
-	 *
-	 * @return string|null The string, or null.
-	 */
-	private function nullableString(mixed $value): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		return (string)$value;
-	}//end nullableString()
-
-	/**
-	 * Write a probe result to the cache with the configured TTL.
-	 *
-	 * @param string $method The method enum value.
-	 * @param ProbeResult $result The result to cache.
-	 *
-	 * @return void
-	 */
-	private function writeCache(string $method, ProbeResult $result): void {
-		if ($this->cache === null) {
-			return;
-		}
-
-		$this->cache->set($method, json_encode($result->jsonSerialize()), $this->resolveTtl());
-	}//end writeCache()
 
 	/**
 	 * Current time as an ISO-8601 string.

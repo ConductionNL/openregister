@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCP\IAppConfig;
 use RuntimeException;
@@ -214,6 +215,11 @@ class ConfigurationSettingsHandler {
 					AppIdentity::APP_ID,
 					PartySearchService::CAP_KEY,
 					PartySearchService::DEFAULT_CAP
+				),
+			],
+			'audit' => [
+				'readEventsVisibleTo' => ReadEventVisibility::groupsFrom(
+					raw: $this->appConfig->getValueString(AppIdentity::APP_ID, ReadEventVisibility::CONFIG_KEY, '[]')
 				),
 			],
 		];
@@ -435,6 +441,7 @@ class ConfigurationSettingsHandler {
 
 		$this->storePartyCap(party: $data['party'] ?? null);
 		$this->storeFlowSettings(flow: $data['flow'] ?? null);
+		$this->storeAuditSettings(audit: $data['audit'] ?? null);
 		foreach (['multitenancy', 'retention'] as $key) {
 			if (($data[$key] ?? null) !== null) {
 				$this->storeSection(key: $key, values: $data[$key]);
@@ -489,6 +496,39 @@ class ConfigurationSettingsHandler {
 			$this->appConfig->setValueBool(AppIdentity::APP_ID, $key, (bool)($flow[$field] ?? $default));
 		}
 	}//end storeFlowSettings()
+
+	/**
+	 * Store which groups see who read a record, as a JSON list of group ids.
+	 *
+	 * Only a submitted list is written: an `audit` block without one leaves the
+	 * stored value as it is, so a save that does not concern it cannot widen or
+	 * narrow it. Blank and non-text entries are dropped and each group is kept
+	 * once; an empty list means only administrators see read entries.
+	 *
+	 * @param mixed $audit The submitted `audit` block.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/audit-read-events-visible-to/specs/audit-trail-immutable/spec.md#requirement-read-entries-are-shown-only-to-the-groups-named-for-them
+	 */
+	private function storeAuditSettings($audit): void {
+		if (is_array($audit) === false || is_array($audit['readEventsVisibleTo'] ?? null) === false) {
+			return;
+		}
+
+		$groups = [];
+		foreach ($audit['readEventsVisibleTo'] as $group) {
+			if (is_string($group) === true && trim($group) !== '') {
+				$groups[] = trim($group);
+			}
+		}
+
+		$this->appConfig->setValueString(
+			AppIdentity::APP_ID,
+			ReadEventVisibility::CONFIG_KEY,
+			(string)json_encode(array_values(array_unique($groups)))
+		);
+	}//end storeAuditSettings()
 
 	/**
 	 * Get focused RBAC settings only
