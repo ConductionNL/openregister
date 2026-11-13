@@ -43,6 +43,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun
+ * @uses   \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
  * @uses   \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class MagicMapperIdentityIndexTest extends TestCase {

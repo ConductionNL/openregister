@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
-use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
+use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -181,7 +181,7 @@ final class RecordAnnotations {
 		$this->guarded(
 			failure: 'identity key failed for ' . (string)$entity->getUuid(),
 			step: static function () use ($entity, $schema): void {
-				$evaluator = new UniqueConstraintEvaluator();
+				$evaluator = SchemaDeclarationValidators::uniqueConstraints();
 				$identity = $evaluator->identity(configuration: $schema->getConfiguration());
 				if ($identity === null) {
 					return;

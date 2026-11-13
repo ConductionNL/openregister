@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
+use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -74,7 +74,7 @@ final class MagicTableIdentityIndex {
 	 * @spec openspec/changes/modelling-composite-identity/tasks.md
 	 */
 	public function columns(Schema $schema): ?array {
-		$identity = (new UniqueConstraintEvaluator())->identity(configuration: $schema->getConfiguration());
+		$identity = SchemaDeclarationValidators::uniqueConstraints()->identity(configuration: $schema->getConfiguration());
 		if ($identity === null) {
 			return null;
 		}

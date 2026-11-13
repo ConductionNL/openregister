@@ -33,6 +33,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
  * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class RecordAnnotationsKeyTest extends TestCase {
