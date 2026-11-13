@@ -7306,3 +7306,4 @@ cover:shillinq:05639debm3ffd:js0be8c659	PR #3031: 8 modals, 47 tests; suite 2401
 build:decidiq:ori-adoption	partial: PR #2159 adds the additive schema deltas (1.1); importer, export mapper, feeds and seed left; 3993 tests, no failures	session-20261113T205332-17038cbf	2026-11-13T22:45:37Z
 build:learniq:training-provider-course-days	partial: PR #2521 (T1 register fields; T2 derivation built, manual move log left; T3-T8 left); suite 6545->6559, same 1 inherited failure	session-20261113T205323-cbfd0ec4	2026-11-13T22:45:32Z
 verify:shillinq:3030:e8077e14	GREEN 3030: tests only; vitest +13 pass, same inherited failure; no PHP change	session-20261113T204539-e70be1ed	2026-11-13T22:45:37Z
+review:openregister:10447:0eb80a71	APPROVE: new unwired snippet builder as specced, suites green	session-20261113T212414-55623216	2026-11-13T22:46:03Z
