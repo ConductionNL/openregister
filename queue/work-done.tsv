@@ -4145,3 +4145,4 @@ cover:dossiq:069ee2d6m7275:6891a8ac	already done: lib/Service/Dashboard/ 160/160
 verify:planninq:1139:6818ac28	6 PRs verified: #1139,1141,1142,1143,1144 GREEN (test-only, tree PHP 977/JS 3152 pass, baseline 915); #1140 RED (duplicate class DependencyControllerTest collides with #1139, PHP fatal kills suite)	session-20261113T091531-f9ad21ac	2026-11-13T10:04:25Z
 cover:shillinq:05639debm0c05:81b1241f	already done: lib/Portal/ 157/157 = 100% (measure at e678c8ef)	session-20261113T051703-1b54bfba	2026-11-13T10:04:42Z
 verify:buildiq:1536:29e55383	GREEN #1536 (vitest 3880->3917, 0 fail)	session-20261113T091527-72c58830	2026-11-13T10:04:59Z
+verify:larpinq:1024:4f2c7f3f	1024 GREEN: tests-only vitest specs; vitest 295 pass, PHP 697 = baseline	session-20261113T074532-3dc49c57	2026-11-13T10:05:05Z
