@@ -2951,3 +2951,4 @@ cover:pipelinq:7f9dc8e6m1e6e:23d187f5	PR pipelinq#3690: Store assembler + ledger
 cover:pipelinq:7f9dc8e6m1e6e:36ac5d07	already above target: lib/Service/LineTotals/ measures 100% (59/59) with strict metadata on development 50e93fc; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:44:32Z
 cover:pipelinq:7f9dc8e6m1e6e:be0dcca9	already done: pcov on development (today) shows lib/Mcp McpAnswer and PipelinqScannableServices 100% lines	session-20261113T053904-36dcee67	2026-11-13T06:44:27Z
 verify:stackiq:1846:7def2824	GREEN 1846-1849 (tests only; PHP clean; vitest 2311 pass)	session-20261113T051714-4ad50f31	2026-11-13T06:44:37Z
+cover:pipelinq:7f9dc8e6m1e6e:d39f9857	already above target: lib/Support/*.php measures 100% (32/32) on development 50e93fc; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:44:53Z
