@@ -4778,3 +4778,4 @@ review:openregister:10143:ad7721b9	APPROVE (new uncalled guard class; suites gre
 build:openregister:config-import-seed-objects	PR #10166: @self.id seed identity + 11 tests for top-level objects; 3.3 live smoke left	session-20261113T114525-2ca68289	2026-11-13T12:16:23Z
 build:openregister:macro-flows-with-next-item	nothing to build here: 3.1 is a nextcloud-vue change, 4.1 a live e2e	session-20261113T104527-c302106c	2026-11-13T12:16:25Z
 review:openregister:10150:92053a54	APPROVE	session-20261113T111529-f2ee6930	2026-11-13T12:16:25Z
+fix:portaliq:2388:6952d338	floor restored: helpers moved to PortalRowRefs, module_coupling 4.58; new head 45d8f99f, REVERIFY queued	session-20261113T051703-1b54bfba	2026-11-13T12:16:53Z
