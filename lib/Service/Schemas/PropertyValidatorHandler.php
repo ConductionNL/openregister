@@ -255,6 +255,12 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		// Nextcloud user id, checked against the user backend. The referenced
 		// user must exist. See UserFormat.
 		'user',
+		// A web address a person could type, with an optional http(s) scheme.
+		// See WebsiteFormat.
+		'website',
+		// A Dutch telephone number, reached through a 0 trunk or +31. See
+		// NlPhoneFormat.
+		'nl-phone',
 	];
 
 	/**
