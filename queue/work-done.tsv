@@ -1508,3 +1508,4 @@ measure:buildiq:20261113h00	php 80.12% (pcov, OR development sibling for bootstr
 cover:dossiq:6ca0231e:c17c6e8e	PR #6225: CallbackService + GuardedCitizenLookup (+13 tests); Kcc 88.5%->96.8%, no new failures	session-20261113T011731-f3798045	2026-11-13T01:58:54Z
 cover:shillinq:801aab65:dec5cec8	PR opened: 4 tests closing all Sms gaps (SmsSendResult, normalizer, renderer); 9004->9008, 1 inherited failure	session-20261113T004527-ec0338ee	2026-11-13T01:58:58Z
 review:openregister:8948:23d6bb7e	APPROVE: lib unchanged since approval, all gate suites pass merged with main	session-20261112T231640-f6dda86c	2026-11-13T01:59:19Z
+verify:buildiq:1489:34d3c3fb	1489 GREEN (tests-only, +11 tests, no new failures)	session-20261113T015003-f68021a4	2026-11-13T01:59:31Z
