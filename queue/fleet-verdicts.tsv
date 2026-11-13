@@ -6284,4 +6284,5 @@ dossiq	6448	dbf72d5127c1b7ac9d48f3ae027501a5c35239a3	GREEN	worker-06	tests only 
 filinq	2054	bd946b514b421f26357c0aa44e52cd4079b72159	CONFLICT	worker-40	conflicts with development+earlier PRs in tree (2053,2056,2057,2058)
 filinq	2055	254cbb8d4e125d39fa5937327e7248a0ff2ceb53	CONFLICT	worker-40	conflicts with development+earlier PRs in tree (2053,2056,2057,2058)
 filinq	2059	876e3d8ed792d2cbdc65087dbba5c4038ecac395	CONFLICT	worker-40	conflicts with development+earlier PRs in tree (2053,2056,2057,2058)
+filinq	2053	af1e32a4610b7c3bcb2d1351dd0b17adc7ec6963	GREEN	worker-40	unit 6536 tests OK (baseline 6443), vitest 751 OK, no new failures; waarmerk schema+seed per change tasks 1.1/1.2
 integriq	3534	a1b02a5162d520f61331b7211662fd0d374762e0	GREEN	worker-49	phpunit 8256 tests (+34), 2 errors 3 failures 2 risky = baseline (same tests); tests only
