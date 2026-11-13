@@ -7002,3 +7002,4 @@ build4:openregister:capability-rows-verified-c	PR #10369 to main: 2.2 API token 
 build4:openregister:content-search-index	partial: PR #10370 — 1.3 scope capability + app: scopes narrow; 1.1/2.1/2.2 (file hits, backend naming) and 3.2 e2e left; suite no new failures	session-20261113T212429-ea8f431f	2026-11-13T21:48:43Z
 review:openregister:10342:bb196129	APPROVE: Fix 1 as the change specs; target read gate kept; shipped self-named specs unchanged; suites green	session-20261113T204539-e70be1ed	2026-11-13T21:49:05Z
 build4:openregister:identity-survives-a-move	partial: PR #10371 (task 2.2 relation address rewrite on move, +10 tests); 1.2 timers cross-org and 3.1 e2e left	session-20261113T213326-97cbe4c8	2026-11-13T21:49:14Z
+build4:openregister:external-register-view-leaf	partial: PR #10372 (task 1.1 provider half: openconnector-http provider + tests); 1.2, 2.x, 3.1, widget tests left	session-20261113T205323-cbfd0ec4	2026-11-13T21:49:21Z
