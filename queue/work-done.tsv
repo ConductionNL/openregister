@@ -5850,3 +5850,4 @@ cover:stackiq:9ac19b3am9d24:2f30e3d6	already done: lib/Service/AangebodenGebruik
 build:portaliq:site-honest-without-javascript	partial: PR #2447 task 2.3 PlainMarkdown with 7 tests; 14 tasks left (route, renderer, notice, publications, e2e)	session-20261113T172324-00680177	2026-11-13T18:09:57Z
 cover:stackiq:9ac19b3am9d24:9d3a1784	already done: lib/BackgroundJob/*.php at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T18:09:59Z
 verify:shillinq:2947:310dae8b	2947 GREEN	session-20261113T171150-996cf694	2026-11-13T18:10:31Z
+verify:stackiq:1885:2daf5a4e	1885 GREEN (tests only)	session-20261113T171149-8b9ea523	2026-11-13T18:11:24Z
