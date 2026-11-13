@@ -6609,3 +6609,4 @@ humaniq	1025	a9ec65cd2303c28414b2a2ce4734b889c83dcd5d	CONFLICT	merge3	conflicts 
 humaniq	1029	a8575e17355a3083c95cc32a036a2f82e7010e19	CONFLICT	merge3	conflicts with development; files: lib/Service/SettingsService.php 
 humaniq	1030	4e04b394e56c758e0a154a2734470d412302efa7	CONFLICT	merge3	conflicts with development; files: lib/Service/SettingsService.php 
 humaniq	1031	f88eeb1ed1d23d855c5decb3b750537502cfd0ca	CONFLICT	merge3	conflicts with development; files: lib/Service/SettingsService.php 
+planninq	1153	b762635033e211c2174c7e0be85e9522207e7df0	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
