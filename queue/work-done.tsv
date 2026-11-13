@@ -1374,3 +1374,4 @@ fix:stackiq:1776:84125e62	conflict resolved, pushed c4d2b1a5, REVERIFY	session-2
 merge:launchpad:1142:caafba6d	merge-local over 1 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:19:43Z
 verify:dossiq:6210:c039092d	6 GREEN (6210-6215), 13637 tests, 0 new failures	session-20261113T004524-55adaa63	2026-11-13T01:20:08Z
 review:openregister:10079:60d7fbb2	APPROVE: tests only, 13 jest tests pass merged with main	session-20261112T231640-f6dda86c	2026-11-13T01:20:15Z
+cover:integriq:9b0f5894m2367:d9b69b92	already done: Lvs/Oso/Roster/Swv/UwlrEduV adapters 92/92 statements covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T01:20:23Z
