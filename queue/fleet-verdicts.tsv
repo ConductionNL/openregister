@@ -5145,3 +5145,4 @@ dossiq	6279	a23db83d40a75b340079be8bc89e999373073efb	GREEN	worker-38	phpunit 145
 dossiq	6280	7b260fb2dee9415ba74c199c6ba5b6042832643b	GREEN	worker-38	phpunit 14581 on tree, 13 failing = baseline 13, 0 new; vitest 6381, 1 failing = inherited capabilityComparison docs check; tests only, no deletions
 dossiq	6281	22cf87006d6df6ba848d44fbf6274a6ce9425b21	GREEN	worker-38	phpunit 14581 on tree, 13 failing = baseline 13, 0 new; vitest 6381, 1 failing = inherited capabilityComparison docs check; tests only, no deletions
 dossiq	6282	1a587279b02c83cf008b1c2e3d9e3e18d1eac94f	GREEN	worker-38	phpunit 14581 on tree, 13 failing = baseline 13, 0 new; vitest 6381, 1 failing = inherited capabilityComparison docs check; tests only, no deletions
+stackiq	1841	b27ba509c2af99cb72eef78f1390b7a18b112d39	GREEN	worker-09	3126 tests run, baseline 0 failures, new failures 0; test @uses metadata only
