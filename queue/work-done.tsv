@@ -5913,3 +5913,4 @@ cover:dossiq:069ee2d6m2deb:f545d745	PR #6430: +11 tests; RearmBeslistermijnTimer
 cover:launchpad:fb10c50fm2d1d:9d3a1784	already covered: lib/BackgroundJob/*.php 136/136 at d6a7f892; no PR	session-20261113T172334-4b3b027b	2026-11-13T18:19:51Z
 verify:shillinq:2951:4f21461d	shillinq #2951 GREEN: PHP 0 new failures, vitest 2302 pass	session-20261113T172325-6eb25015	2026-11-13T18:19:48Z
 verify:keepiq:1761:bee8c39e	1761 GREEN (4862 tests, 0 failures, tests only)	session-20261113T172329-e224a4f0	2026-11-13T18:20:11Z
+cover:buildiq:70b3e29ema699:bede5e5d	PR #1555: resolveService covered, 3 tests; dirs 92.4% -> 98.5%	session-20261113T172329-5f4feaba	2026-11-13T18:20:16Z
