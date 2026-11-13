@@ -5463,3 +5463,4 @@ cover:hermiq:065f1631me44a:34a55f48	already done: lib/Service/Workspace/*.php me
 verify:portaliq:2409:f1f4c851	GREEN 2409 (tests only, 0 new failures)	session-20261113T134554-ac2fc6ec	2026-11-13T14:17:32Z
 cover:hermiq:065f1631me44a:0f859653	already done: lib/Flow/*.php at 96.9% lines (379/391) after merged -1/-2; no PR	session-20261113T134531-53f143d2	2026-11-13T14:17:41Z
 verify:dossiq:6371:6a7bd31b	6371 GREEN, 6422 GREEN; tree 16332 tests, 20 failures = baseline, 0 new	session-20261113T084521-fd8a31c7	2026-11-13T14:17:42Z
+build2:openregister:published-file-digest	partial: PR #10282 builds 1.1 (digest entity/mapper/migration, streamed SHA-256 sealed in the audit trail before the share, fail closed; 14 tests); 1.2+ left	session-20261113T101609-bc51215d	2026-11-13T14:18:01Z
