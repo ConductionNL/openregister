@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Policy for ny forsøk",
     "Retry upload" : "Prøv opplasting på nytt",
     "Retrying..." : "Prøver igjen...",
+    "Reveal" : "Avslør",
     "Reverse" : "Reverse",
     "Reversed / final" : "Reversed / final",
     "Reversible" : "Reversible",

@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Reglament d'empruvas",
     "Retry upload" : "Tentar novamente o carregamento",
     "Retrying..." : "Reemprovar...",
+    "Reveal" : "Revelar",
     "Reverse" : "Inversar",
     "Reversed / final" : "Inversà / final",
     "Reversible" : "Inversabel",

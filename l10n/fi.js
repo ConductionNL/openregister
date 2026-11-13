@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Uudelleenyrityskäytäntö",
     "Retry upload" : "Yritä latausta uudelleen",
     "Retrying..." : "Yritetään uudelleen...",
+    "Reveal" : "Paljasta",
     "Reverse" : "Reverse",
     "Reversed / final" : "Reversed / final",
     "Reversible" : "Reversible",

@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Zasady ponawiania",
     "Retry upload" : "Ponów przesyłanie",
     "Retrying..." : "Ponawianie...",
+    "Reveal" : "Ujawnienie",
     "Reverse" : "Reverse",
     "Reversed / final" : "Reversed / final",
     "Reversible" : "Reversible",

@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Wiederholungsrichtlinie",
     "Retry upload" : "Hochladen wiederholen",
     "Retrying..." : "Wird wiederholt …",
+    "Reveal" : "Offenlegen",
     "Reverse" : "Rückgängig machen",
     "Reversed / final" : "Rückgängig gemacht / endgültig",
     "Reversible" : "Umkehrbar",

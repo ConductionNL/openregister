@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Beartas Atrialach",
     "Retry upload" : "Atriail uaslódáil",
     "Retrying..." : "Ag atriail...",
+    "Reveal" : "Nocht",
     "Reverse" : "Aisiompaigh",
     "Reversed / final" : "Aisiompaithe / críochnaitheach",
     "Reversible" : "In-aisiompaithe",

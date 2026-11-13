@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Újrapróbálkozási irányelv",
     "Retry upload" : "Feltöltés újrapróbálkozása",
     "Retrying..." : "Újrapróbálkozás...",
+    "Reveal" : "Felfedés",
     "Reverse" : "Reverse",
     "Reversed / final" : "Reversed / final",
     "Reversible" : "Reversible",

@@ -2717,6 +2717,7 @@ OC.L10N.register(
     "Retry Policy" : "Beleid voor nieuwe pogingen",
     "Retry upload" : "Upload opnieuw proberen",
     "Retrying..." : "Opnieuw proberen...",
+    "Reveal" : "Onthullen",
     "Reverse" : "Terugdraaien",
     "Reversed / final" : "Teruggedraaid / definitief",
     "Reversible" : "Omkeerbaar",

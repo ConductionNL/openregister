@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Πολιτική επανάληψης",
     "Retry upload" : "Επανάληψη μεταφόρτωσης",
     "Retrying..." : "Επανάληψη...",
+    "Reveal" : "Αποκάλυψη",
     "Reverse" : "Reverse",
     "Reversed / final" : "Reversed / final",
     "Reversible" : "Reversible",

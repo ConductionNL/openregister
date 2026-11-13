@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Yeniden Deneme Politikası",
     "Retry upload" : "Yüklemeyi yeniden dene",
     "Retrying..." : "Yeniden deneniyor...",
+    "Reveal" : "Açığa çıkar",
     "Reverse" : "Geri al",
     "Reversed / final" : "Geri alındı / kesin",
     "Reversible" : "Geri alınabilir",

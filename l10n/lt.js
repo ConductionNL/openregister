@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Pakartojimų politika",
     "Retry upload" : "Bandyti įkelti dar kartą",
     "Retrying..." : "Kartojama...",
+    "Reveal" : "Atskleisti",
     "Reverse" : "Atšaukti",
     "Reversed / final" : "Atšaukta / galutinė",
     "Reversible" : "Atšaukiama",

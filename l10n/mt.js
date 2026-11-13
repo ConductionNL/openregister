@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Politika ta' Ripetizzjoni",
     "Retry upload" : "Erġa' pprova t-tlugħ",
     "Retrying..." : "Qed jerġa' jipprova...",
+    "Reveal" : "Ikxef",
     "Reverse" : "Irriversja",
     "Reversed / final" : "Riversjat / finali",
     "Reversible" : "Riversibbli",

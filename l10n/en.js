@@ -2641,6 +2641,7 @@ OC.L10N.register(
     "Retry Policy" : "Retry Policy",
     "Retry upload" : "Retry upload",
     "Retrying..." : "Retrying...",
+    "Reveal" : "Reveal",
     "Reverse" : "Reverse",
     "Reversed / final" : "Reversed / final",
     "Reversible" : "Reversible",

@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Politică de reîncercare",
     "Retry upload" : "Reîncercați încărcarea",
     "Retrying..." : "Se reîncearcă...",
+    "Reveal" : "Dezvăluire",
     "Reverse" : "Anulați",
     "Reversed / final" : "Anulat / definitiv",
     "Reversible" : "Reversibil",

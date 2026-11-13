@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Politique de nouvelle tentative",
     "Retry upload" : "Réessayer le téléversement",
     "Retrying..." : "Nouvelle tentative en cours...",
+    "Reveal" : "Divulgation",
     "Reverse" : "Annuler l'opération",
     "Reversed / final" : "Annulé / définitif",
     "Reversible" : "Réversible",

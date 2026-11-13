@@ -2532,6 +2532,7 @@ OC.L10N.register(
     "Retry Policy" : "Política de reintentos",
     "Retry upload" : "Reintentar la subida",
     "Retrying..." : "Reintentando...",
+    "Reveal" : "Revelar",
     "Reverse" : "Revertir",
     "Reversed / final" : "Revertido / definitivo",
     "Reversible" : "Reversible",
