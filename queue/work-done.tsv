@@ -1205,3 +1205,4 @@ fix:hermiq:1527:20970732	conflict resolved, pushed 102d5f61, REVERIFY recorded	s
 fix:hermiq:1529:f5305e07	conflict resolved, pushed c0cafc44, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:44:49Z
 fix:hermiq:1518:71a3fd8f	merged development, resolved ScheduleService/ScheduleServiceTest conflicts keeping both extractions; new head 202e8aaa; REVERIFY recorded	session-20261112T231633-96ffe7b8	2026-11-13T00:45:07Z
 cover:keepiq:d76c2121m70b5:js0be8c659	PR #1708: 3 modal specs, 26 tests; src/modals line coverage 59.5% -> 93.0%	session-20261113T002028-6d7c79b9	2026-11-13T00:45:18Z
+cover:pipelinq:f67520ecm9d2c:js00fe026a	already done: src/services/* at 96.1% statements (1912/1989, vitest v8) vs target 85; no PR	session-20261112T224529-41d77a96	2026-11-13T00:45:38Z
