@@ -4359,3 +4359,4 @@ merge:stackiq:1693:7130effa	merge-local over 1 stackiq tasks: merged=1 red=0 fai
 cover:stackiq:9ac19b3am10f3:692f8a78	already done: lib/Service/Contactpersoon 205/205 statements, each class has behaviour tests; -1/-2 merged	session-20261113T064518-860c039d	2026-11-13T11:00:43Z
 cover:stackiq:9ac19b3am10f3:68d2b5ba	already done: lib/Service/Cmdb/ + Settings/ at 97.82% (2732/2793) on development, above the 90% target; no PR	session-20261113T071633-17de823f	2026-11-13T11:00:46Z
 build:pipelinq:exports-switch-off-after-repeated-failure	partial: PR #3719 (backend: count, switch-off, admin notification, threshold setting, 34 tests); left 4.1-4.3 and the 5.1 settings field (Vue, npm unavailable here)	session-20261113T104529-f43c7561	2026-11-13T11:01:00Z
+cover:stackiq:9ac19b3am10f3:b5905f71	already done: lib/Service/Federation 384/388, every class has dedicated tests; -1 merged	session-20261113T064518-860c039d	2026-11-13T11:01:08Z
