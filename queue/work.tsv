@@ -1675,3 +1675,16 @@ cover:filinq:8ecceb86:dfaef732	cover	filinq	development	quality/test-coverage-df
 cover:openregister:7350e3efm0e99:9d3a1784	cover	openregister	main	test/coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=uncovered;weight=486;coverage=89.22;target=90.0	2026-11-13T00:51:50Z
 cover:openregister:7350e3efm0e99:499d38f4	cover	openregister	main	test/coverage-499d38f4	lang=php;dirs=lib/Service/Sharing/,lib/Service/ShippedBaseline/,lib/Service/Vectorization/,lib/Service/WellKnown/;focus=uncovered;weight=483;coverage=89.22;target=90.0	2026-11-13T00:51:53Z
 cover:openregister:7350e3efm0e99:356f590c	cover	openregister	main	test/coverage-356f590c	lang=php;dirs=lib/Service/File/;focus=uncovered;weight=453;coverage=89.22;target=90.0	2026-11-13T00:52:23Z
+review:openregister:10087:aedf78ee	review	openregister	main	10087	sha=aedf78ee3e24be3d67bee204c569f975649d7fb4;last_approved=;title=test(openregister): cover the broadcast controller and the timeline search provider	2026-11-13T01:47:45Z
+verify:integriq:3451:7c814cf9	verify	integriq	development	merge	prs=3451@87f94f91e216e2d0bc92165b7340d49ccb11f9e5	2026-11-13T01:47:45Z
+verify:filinq:2001:b5697f6a	verify	filinq	development	merge	prs=2001@8dd695546fc0602aa504877f4372885295e45896,2002@6de4a7190a7e94449876d34db27b26803fbe191e	2026-11-13T01:47:45Z
+measure:buildiq:20261113h00	measure	buildiq	development	queue/coverage/buildiq.json	why=slices need per-directory coverage	2026-11-12T23:48:32Z
+measure:decidiq:20261113h00	measure	decidiq	development	queue/coverage/decidiq.json	why=slices need per-directory coverage	2026-11-13T01:47:45Z
+measure:dossiq:20261113h00	measure	dossiq	development	queue/coverage/dossiq.json	why=slices need per-directory coverage	2026-11-12T22:48:32Z
+measure:hermiq:20261113h00	measure	hermiq	development	queue/coverage/hermiq.json	why=slices need per-directory coverage	2026-11-13T01:47:45Z
+measure:integriq:20261113h00	measure	integriq	development	queue/coverage/integriq.json	why=slices need per-directory coverage	2026-11-13T00:48:32Z
+measure:keepiq:20261113h00	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-13T01:47:45Z
+measure:launchpad:20261113h00	measure	launchpad	development	queue/coverage/launchpad.json	why=slices need per-directory coverage	2026-11-13T01:47:45Z
+measure:openregister:20261113h00	measure	openregister	main	queue/coverage/openregister.json	why=slices need per-directory coverage	2026-11-13T01:47:45Z
+measure:pipelinq:20261113h00	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-13T01:47:45Z
+measure:stackiq:20261113h00	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-12T21:48:32Z
