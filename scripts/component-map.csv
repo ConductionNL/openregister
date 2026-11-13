@@ -158,6 +158,7 @@ Calendar/RegisterCalendarProvider.php,100,Calendar,Platform,Platform/Calendar/Re
 Capabilities/CapabilityRegistrar.php,23,Capabilities,Platform,Platform/Capabilities/CapabilityRegistrar.php,0,,Platform
 Capabilities/IntegrationsCapability.php,80,Capabilities,Platform,Platform/Capabilities/IntegrationsCapability.php,0,,Platform
 Capabilities/UrnCapability.php,35,Capabilities,Platform,Platform/Capabilities/UrnCapability.php,0,,Platform
+Collaboration/ObjectResourceProvider.php,,Collaboration,,,,,Platform
 Command/AdoptLeafOrganisationsCommand.php,312,Command,Access,Access/Command/AdoptLeafOrganisationsCommand.php,0,,Core
 Command/AdoptOrganisationlessRowsCommand.php,,Command,,,,,Core
 Command/AdoptionRun.php,,Command,,,,,Processes
