@@ -6119,3 +6119,4 @@ cover:shillinq:05639debm7b6b:f2f5cba0	already done: lib/Service/Payment/ at 99.6
 build3:openregister:organisation-capability-halt	no code left in openregister: 1.x-2.x on main; 3.1 is hermiq's migration (hermiq lane)	session-20261113T175327-6e4e7f28	2026-11-13T18:56:51Z
 cover:hermiq:065f1631md84f:0f859653	already done: lib/Flow/*.php at 96.9% stmt coverage on development (target 95); no PR	session-20261113T172328-c860ad55	2026-11-13T18:57:31Z
 measure:buildiq:20261113h18	php 91.18% (pcov), js 94.01% at e11fe26f	session-20261113T175400-7ec3993f	2026-11-13T18:57:42Z
+cover:hermiq:065f1631md84f:93e5f5a4	already done: lib/Service/AiFeature/*.php at 100% stmt coverage on development; no PR	session-20261113T172328-c860ad55	2026-11-13T18:57:45Z
