@@ -6227,3 +6227,4 @@ dossiq	6440	2b9db35b48798ef9e7fb58ce57f96ced6c0e3899	GREEN	worker-39	tests-only 
 shillinq	2976	e39d3257908bc68538d0d547ad07f37dc3c36a5f	REVERIFY	worker-54	merged #2972 into the branch (2972 is GREEN, not yet on development): kept both sides' l10n keys, moved info.xml to 0.5.7-unstable.20261113191000 and recorded the combined register versions in the lock; phpunit 10416, same 1 inherited failure; l10n checks pass. Land #2972 first. New head 463e530e5ce4c62bf557a6726e76bb4791cc3644, verify it
 portaliq	2453	f7762ad2ddffaf3fe4486590a077e1bfda77099b	GREEN	worker-17	tree of 4: 4980 tests (baseline 4914, 0 failures), no new failures; tests only
 portaliq	2454	b5b155d1fcbec298b813ea3854f3f906471b4c0f	GREEN	worker-17	tree of 4: 4980 tests (baseline 4914, 0 failures), no new failures; tests only
+portaliq	2455	6d00ae0c7d45547e9962477bea8bea3a25b0a379	GREEN	worker-17	tree of 4: 4980 tests (baseline 4914, 0 failures), no new failures; tests only
