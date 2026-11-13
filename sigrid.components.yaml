@@ -62,6 +62,7 @@ components:
       - ".*/lib/Service/GraphQL/[^/]*"
       - ".*/lib/Service/Hinge/[^/]*"
       - ".*/lib/Service/History/[^/]*"
+      - ".*/lib/Service/Import/RecordImport/[^/]*"
       - ".*/lib/Service/JsonLd/[^/]*"
       - ".*/lib/Service/Merge/[^/]*"
       - ".*/lib/Service/Oas/[^/]*"
