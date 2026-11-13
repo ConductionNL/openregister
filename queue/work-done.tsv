@@ -1629,3 +1629,4 @@ cover:launchpad:755175ffm31b6:js0be8c659	already done: src/modals/* 545/638 (85.
 cover:dossiq:6ca0231ema7d4:28cccfd9	PR #6230: 19 tests for CaseTimerSweeper, MovesShardColumns, ColumnMoveTally/ColumnMove, RunsUnderSystemIdentity; suite 13840->13859, same 19 inherited failures	session-20261113T021702-a5aabca2	2026-11-13T02:24:49Z
 cover:launchpad:755175ffm31b6:aae6d66c	already done: lib/Exception/*.php 55/55 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:25:07Z
 cover:dossiq:6ca0231ema7d4:a07ceba0	PR #6231: 5 DSO edge tests; Dso dir 283->291/298; suite 13867->13872, same 19 inherited failures	session-20261112T234655-0bdbf2be	2026-11-13T02:25:01Z
+cover:openregister:7350e3efm0e99:356f590c	PR #10091: 25 tests, 4 classes in Service/File; File suite 972->997 OK	session-20261113T015002-81190344	2026-11-13T02:25:22Z
