@@ -5408,3 +5408,5 @@ shillinq	2907	cd4773654fe71ef753b96f20b3ab6e767ddb013b	GREEN	worker-30	tree 9541
 integriq	3506	defe990efdf0bbd439f34542a587735dde632cf6	GREEN	worker-42	7747 tests run, baseline 7736 with 3 failures + 2 errors inherited (golden-file test flaky), new failures 0; tests only
 pipelinq	3693	55799a044e801705f2eba37ea36576bcab060810	GREEN	worker-14	phpunit 6462 (baseline 6454, 1 inherited failure CrmPrivilegeRefusalGoldenTest TicketWooRequestController); extract-method refactor, no behaviour change
 stackiq	1700	a3ab8662e6a95b482f6e64aa3ae9440ea336cbcf	RED	merge-local:merge-gate	GATE RED floor: unit_interfacing: 4.76 -> 4.74
+dossiq	6330	fd9bc4b8b91b2442afe6360a33362dd132d7c984	GREEN	merge-local	unit 15198 tests on tree, 19 failures = baseline (dev e35111f8), 0 new, same 4 warnings; diff adds @uses/UsesClass lines in tests only
+learniq	2419	6339bf2933eda835ac5522e585535cd86fcf1bc7	CONFLICT	merge-local	does not merge cleanly onto development (re-gate after APIFIX)
