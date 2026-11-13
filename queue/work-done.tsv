@@ -6133,6 +6133,7 @@ cover:integriq:92114ab0mb37a:36cf9f12	already done: lib/Service/Exchange/*.php a
 cover:openregister:7350e3efma401:c8e24f36	PR #10295: 21 tests, CascadeRules to 100%, object source paging and search lenses	session-20261113T171213-10021a1d	2026-11-13T18:58:55Z
 cover:hermiq:065f1631md84f:1191da39	already done: quality/test-coverage-1191da39-1 merged; lib/Service/WebResearch/ at 328/336; the classes without own tests are plain value objects	session-20261113T172325-6eb25015	2026-11-13T18:59:00Z
 cover:hermiq:065f1631md84f:34a55f48	already done: lib/Service/Workspace/*.php at 98.4% when ../openregister is checked out beside hermiq (tests/bootstrap.php needs it; without it 146 tests error and coverage reads 93.5%); no PR	session-20261113T172328-c860ad55	2026-11-13T18:58:59Z
+cover:dossiq:069ee2d6m2deb:c97e6ec3	PR #6437: 9 tests for ApprovalSource and ConsultationSource (+RegisterBackedSource refusals); suite 16530->16539, same 20 inherited failures	session-20261113T181000-9baff50f	2026-11-13T18:59:28Z
 build:shillinq:sales-billable-rate-per-hour	partial: PR #2996 builds task 2.1 (BillableRateService, 9 tests); 1.1, 2.2-5.2 left	session-20261113T171149-8b9ea523	2026-11-13T18:59:27Z
 cover:hermiq:065f1631md84f:9d3a1784	already done: lib/BackgroundJob/*.php at 100% stmt coverage on development; no PR	session-20261113T172328-c860ad55	2026-11-13T18:59:12Z
 cover:hermiq:065f1631md84f:17d367ab	already done: lib/Controller/Settings/ at 100% stmt coverage on development (with ../openregister beside it); no PR	session-20261113T172328-c860ad55	2026-11-13T18:59:40Z
