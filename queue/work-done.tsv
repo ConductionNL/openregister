@@ -1075,3 +1075,4 @@ cover:openregister:7350e3efm0e99:jse98782c5	failed: feeder mis-map (lang=js with
 cover:openregister:7350e3efm0e99:jsf91e7417	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
 cover:openregister:7350e3efm0e99:jsfa416b31	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
 cover:keepiq:d76c2121:2c3e981f	PR #1706: 3 classes, 54 tests, suite 3727->3781, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:15:07Z
+cover:openregister:7350e3efm0e99:js913a213e	failed: lang=js but dirs=lib/Service/Flow/*.php is PHP only; a PHP coverage run on the full suite was OOM-killed and restarted the container	session-20261112T234655-793f46ee	2026-11-13T00:15:23Z
