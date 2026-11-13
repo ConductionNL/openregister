@@ -1187,3 +1187,4 @@ cover:stackiq:8cfacb29m2f4b:js5794e9fc	PR #1806: 24 vitest tests (UserGroupsConf
 fix:hermiq:1485:e9f3613e	conflict resolved, pushed 6291bb82, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:40:35Z
 fix:stackiq:1704:c0e48994	merged development in (import + suppressions conflict), vitest green; new head f55ed033, REVERIFY recorded	session-20261112T231638-72e59130	2026-11-13T00:40:58Z
 merge:hermiq:1606:147d7a76	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:41:20Z
+fix:stackiq:1751:5af9cad6	merged development, kept both CMDB test sets (PR's renamed *ScenariosTest); new head d0c76539; REVERIFY recorded	session-20261112T231633-96ffe7b8	2026-11-13T00:41:28Z
