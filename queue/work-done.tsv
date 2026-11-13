@@ -5822,3 +5822,4 @@ build:portaliq:operate-portals-per-organisation	partial: PR #2440 T10, T11 (them
 review:openregister:10286:791ce348	APPROVE 10286	session-20261113T171213-10021a1d	2026-11-13T18:07:26Z
 verify:pipelinq:3766:c15d54dd	GREEN #3766 (tests only; 7203 tests, 5 inherited failures, 0 new)	session-20261113T175335-552e4d60	2026-11-13T18:07:32Z
 build:portaliq:site-nlds-widget-palette	failed: too big for one task; split it: T9 (nine signed-in widgets over the shell's data) and T11 (form widget field inspector) each need their own build; T8b needs a live check; T8c code is merged (e2e/live left); T8d is delivery	session-20261113T171149-8b9ea523	2026-11-13T18:07:40Z
+cover:keepiq:c967a31fm00c6:9d3a1784	PR #1761: 8 tests, BackgroundJob stmts 96.1->100%, unit suite 4854->4862 OK	session-20261113T175323-e340fb07	2026-11-13T18:07:48Z
