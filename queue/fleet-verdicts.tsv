@@ -6595,3 +6595,5 @@ hermiq	1674	33bac9078173a4df8c5ec78947c693b6b9914b13	CONFLICT	merge3	conflicts w
 hermiq	1715	84dfb14c88f15604f01e4102ea4b1e08a44baeb6	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 hermiq	1717	94f4b6bd904f3f6eec1d2178612597afd33f8668	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 hermiq	1719	42c3a70eb2a0dc1be19efc69ae5d35122253c4ae	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+integriq	3539	d13d98400d1ddb28100f51d9bbce21eadfc88278	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.00 -> 3.98
+integriq	3541	e2cae68ddf2d5fa07921a9743743a06816171833	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.00 -> 3.96
