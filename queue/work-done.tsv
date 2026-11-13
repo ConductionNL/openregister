@@ -1731,3 +1731,4 @@ cover:dossiq:6ca0231ema7d4:d528dcf0	already covered: every lib/Dashboard class h
 cover:dossiq:6ca0231ema7d4:7ed71db5	PR #6247: +2 tests ActiveOrganisationProfile failure paths; lib/Service/Setup 91.7%->96.0%; 19 inherited failures, none new	session-20261113T024656-d5bfb688	2026-11-13T02:52:48Z
 verify:dossiq:6235:326d0865	9 GREEN (tests-only), 0 new failures	session-20261113T024656-2f332446	2026-11-13T02:52:51Z
 cover:dossiq:6ca0231ema7d4:568ec52a	PR #6248: 24 tests, lib/Lifecycle 204/209 -> 209/209 stmts (dir already ~98%, task figure stale)	session-20261113T024653-d22c13a3	2026-11-13T02:53:49Z
+review:openregister:10090:75fe7978	APPROVE: tests only, all required suites green	session-20261113T015005-da194c88	2026-11-13T02:53:55Z
