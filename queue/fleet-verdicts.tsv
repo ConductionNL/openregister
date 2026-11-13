@@ -6017,3 +6017,4 @@ hermiq	1692	3c06d22dd93315d96e3d29ad99f74a5dd9275c53	GREEN	worker-54	tree of 6: 
 hermiq	1693	0fa7e69d0e40520a946d1832c18625add7da3f08	CONFLICT	worker-54	conflicts with #1690 in tests/Unit/Service/Talk/TalkRoomBindingTest.php and TalkSessionRoomTest.php
 hermiq	1694	7a955b37fbf7e2915e195cd21d374108b49a8232	GREEN	worker-54	tree of 6: phpunit 4632 tests vs baseline 4562 (146 errors, 26 failures inherited), no new failures; vitest 1329/1329 (baseline 1306); test-only
 pipelinq	3736	d98a90ef3a28dae336aa1c858076fe361278208d	REVERIFY	worker-01	merged development in; l10n conflicts resolved as union of both sides' keys in en/nl.json, js rebuilt via l10n:build; test:l10n OK, phpunit same 5 inherited failures; new head b7ce4bd444c45c7dde75a425d27adfd6cdb36f66, verify it
+hermiq	1695	ab797eefeab743e0c2434b050eb0ba95970bbf80	GREEN	worker-54	4577 tests vs baseline 4562 (146 errors, 26 failures inherited), no new failures; test-only
