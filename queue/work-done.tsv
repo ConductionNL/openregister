@@ -1301,3 +1301,4 @@ cover:keepiq:d76c2121m70b5:js3f3bfe56	PR #1713: App.vue shell + settings.js, 25 
 cover:dossiq:6ca0231e:59f569b2	PR dossiq#6211: 9 tests; ConfigurationImport 19->86/99, SchemaKeyReconciler import path covered (dir 68.6% before); suite 13464, same 19 inherited	session-20261112T221237-836ed3f0	2026-11-13T01:05:47Z
 verify:launchpad:1142:96e946d1	1142 GREEN: tests-only, vitest 1188->1249, phpunit unchanged, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T01:05:56Z
 review:openregister:10077:91d41469	APPROVE: tests only, 242 tests green on merge with main	session-20261113T002028-bc0aa910	2026-11-13T01:06:03Z
+verify:stackiq:1773:1c728148	1773 GREEN (vitest 1886 vs 1880, phpunit inherited only); 1776 CONFLICT (routes.php, openapi.json, ApiContractMiddlewareTest)	session-20261113T004521-223ef947	2026-11-13T01:06:19Z
