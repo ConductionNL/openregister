@@ -4782,3 +4782,4 @@ fix:portaliq:2388:6952d338	floor restored: helpers moved to PortalRowRefs, modul
 verify:launchpad:1188:02d6964f	GREEN #1188: deps only (dompurify 3.4.17 everywhere), vitest 2193 + phpunit 4062 unchanged	session-20261113T094607-7b89fdae	2026-11-13T12:17:05Z
 build:openregister:leaf-reference-provider-convergence	partial: PR #10167 docs boundary rule + design contract check + strict validate; human/ADR tasks left	session-20261113T121536-3cb7eb71	2026-11-13T12:17:47Z
 review:openregister:10162:e885a396	APPROVE: test-only spec, jest and eslint green	session-20261113T051703-1b54bfba	2026-11-13T12:18:03Z
+build:openregister:dbal-source-resolution-system-context	PR #10168: both open tasks done (findForSystem direct test, quality pass); tests only	session-20261113T104650-72c03e13	2026-11-13T12:18:37Z
