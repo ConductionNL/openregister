@@ -6754,3 +6754,4 @@ build:integriq:access-consumer-credentials	partial: PR #3542, backend of tasks 1
 verify:integriq:3536:5edc40ac	GREEN 3536,3537; 8245 tests, no new failures	session-20261113T204535-8ae4a1d5	2026-11-13T20:49:44Z
 build:hermiq:ai-oversight-subject-export	already done: hermiq task 1.1 built (subjectExport on development); only open task 1.2 is dossiq UI, outside this app	session-20261113T202607-6c22f6b2	2026-11-13T20:50:08Z
 verify:decidiq:2138:2a3ab7d3	GREEN 2138,2139; CONFLICT 2140 (SaveGuardSubscriptions with 2138)	session-20261113T185324-28e07ab2	2026-11-13T20:50:06Z
+build:opencatalogi:capability-rows-close-gaps	partial: PR #2622; 1.1 done (REQ-CRG-001 tests named, empty-batch test added, synced to main spec); 3.2 code half (report pages read register publication); 1.2 e2e and 2.x/3.1 feature builds left	session-20261113T195351-a32c6d55	2026-11-13T20:50:15Z
