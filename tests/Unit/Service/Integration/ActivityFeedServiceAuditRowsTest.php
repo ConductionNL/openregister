@@ -29,6 +29,10 @@ use Psr\Log\LoggerInterface;
  * No trail page means no audit rows; an entry whose moment cannot be read sorts as the epoch.
  *
  * @covers \OCA\OpenRegister\Service\Integration\ActivityFeedService
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Service\Integration\ActivityFeedMerge
+ * @uses   \OCA\OpenRegister\Service\Integration\ActivityFeedObject
+ * @uses   \OCA\OpenRegister\Service\Integration\ActivityFeedOptions
  */
 class ActivityFeedServiceAuditRowsTest extends TestCase {
 

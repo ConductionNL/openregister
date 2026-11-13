@@ -47,6 +47,9 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormFields
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormResolverServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSources
  */
 class TaskFormResolverTest extends TestCase {
 

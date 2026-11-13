@@ -307,4 +307,32 @@ class ViewAlertSweepJobTest extends TestCase {
 
 		$this->assertLessThanOrEqual(500, ViewAlertSweepJob::BATCH);
 	}//end testThePassIsBounded()
+
+	/**
+	 * A pass that cannot list its views logs a warning and leaves every view alone.
+	 *
+	 * @return void
+	 */
+	public function testAPassThatCannotListItsViewsWarnsAndDispatchesNothing(): void {
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('warning')
+			->with(
+				'[ViewAlertSweepJob] The pass failed; the watermark stands: {error}',
+				$this->callback(static fn (array $context): bool => $context['error'] === 'table missing' && $context['exception'] instanceof \RuntimeException)
+			);
+		$logger->expects($this->never())->method('info');
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->expects($this->never())->method('dispatchTyped');
+		$this->views->method('findWithAlerts')->willThrowException(new \RuntimeException('table missing'));
+		$this->objects->expects($this->never())->method('countSearchObjects');
+
+		$job = new ViewAlertSweepJob(
+			$this->createMock(ITimeFactory::class),
+			new ViewAlertSweepSources($this->views, $this->objects, new ViewObjectQuery()),
+			new ViewAlertSweepPlatform($this->users, $dispatcher, $logger)
+		);
+
+		$this->pass($job);
+	}//end testAPassThatCannotListItsViewsWarnsAndDispatchesNothing()
 }//end class

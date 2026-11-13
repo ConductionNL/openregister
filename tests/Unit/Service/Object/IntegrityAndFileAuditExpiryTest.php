@@ -79,6 +79,18 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
  * @uses \OCA\OpenRegister\Service\Object\CascadeDeleteOrigin
  * @uses \OCA\OpenRegister\Service\AuditRetentionResolver
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Dto\DeletionEffects
+ * @uses \OCA\OpenRegister\Files\Service\File\BulkDownloadArchive
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup
+ * @uses \OCA\OpenRegister\Service\Audit\AuditTrailCollaborators
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityCascadeControls
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityRelationIndex
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityStorage
+ * @uses \OCA\OpenRegister\Service\Object\RefusedDeletion
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class IntegrityAndFileAuditExpiryTest extends TestCase {
 

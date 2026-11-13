@@ -270,13 +270,13 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 	}//end testCreateBlankMessage()
 
 	/**
-	 * Readable: update checks ownership on the PATH uuid, then rewrites.
+	 * Readable: update checks ownership on the resolved task uuid, then rewrites.
 	 *
 	 * @return void
 	 */
 	public function testUpdateAllowed(): void {
 		$this->givenReadable();
-		$this->notes->expects($this->once())->method('requireNoteOf')->with('t-1', 7);
+		$this->notes->expects($this->once())->method('requireNoteOf')->with('real-uuid', 7);
 		$this->notes->expects($this->once())->method('editNote')->with(7, new NoteEdit(message: 'new'))->willReturn(['id' => 7]);
 
 		$response = $this->controller(params: ['message' => 'new'])->update('t-1', '7');
@@ -326,7 +326,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 	 */
 	public function testDestroyAllowed(): void {
 		$this->givenReadable();
-		$this->notes->expects($this->once())->method('requireNoteOf')->with('t-1', 7);
+		$this->notes->expects($this->once())->method('requireNoteOf')->with('real-uuid', 7);
 		$this->notes->expects($this->once())->method('deleteNote')->with(7);
 
 		$response = $this->controller()->destroy('t-1', '7');

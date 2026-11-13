@@ -223,7 +223,10 @@
       "title": "Flow",
       "sidebarComponent": "FlowDetailSidebar",
       "_note": "The shared `flow` page type: a direct-manipulation canvas over a node/edge document is not expressible as a widget grid, and the built-in detail type is record-shaped — but that no longer requires a custom page. CnFlowEditorPage mounts the same CnFlowDetail canvas this app wrapped by hand, including the router.replace that lets a newly created flow pick up its server-assigned id. Controls live in the sidebar so the canvas gets full width, and both halves share useFlowStore.",
-      "config": {}
+      "config": {
+        "listMode": true,
+        "testPayload": true
+      }
     },
     {
       "id": "flow-task-inbox",
