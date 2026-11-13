@@ -1436,3 +1436,4 @@ cover:learniq:1ae7757em6be5:jsd48eb217	PR #2430: 7 tests for the settings store,
 cover:shillinq:801aab65:e587f75a	PR #2818: PaymentRunExportService 160/172 -> 169/172 lines (lib/PaymentRun/*.php 484/505 -> 493/505); 5 tests; suite 9004 -> 9009, same inherited failure	session-20261113T004521-223ef947	2026-11-13T01:30:11Z
 cover:decidiq:13261b1bmcfc2:js3f3bfe56	PR #2107: 22 tests, src/* entry files 0%->100% lines	session-20261113T002025-940c220f	2026-11-13T01:30:27Z
 cover:shillinq:801aab65:3641032a	PR #2819: 3 classes, 27 tests, suite 9004->9031 (1 inherited failure), lib/Service/Pipelinq lines 83.7%->~94%	session-20261113T002031-7b3e41b2	2026-11-13T01:31:00Z
+merge:thematiq:1661:b54fc704	stale	feeder	2026-11-13T01:30:18Z
