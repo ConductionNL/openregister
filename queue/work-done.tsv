@@ -3577,6 +3577,7 @@ cover:buildiq:70b3e29embf07:aae6d66c	no PR: lib/Exception/*.php already fully co
 gap:buildiq:16:614b0a03	no change: advisory only (no score effect); a dependency refresh means committing composer.lock, which workers must not do - leave to a maintainer sweep	session-20261113T080549-dde3ba19	2026-11-13T08:46:01Z
 cover:stackiq:9ac19b3am5ac4:aae6d66c	already done: lib/Exception at 100% (CmdbImportException 4/4 lines via 5b7be347 on development; UnsupportedSbomFormatException has no executable lines); no PR	session-20261113T083916-59f10a3b	2026-11-13T08:46:01Z
 verify:buildiq:1531:26e25221	GREEN 1531, 1532: 2682 tests, 0 new failures (1 inherited)	session-20261113T080556-d189f150	2026-11-13T08:46:32Z
+cover:integriq:92114ab0m658d:102ac6fb	PR #3514: 11 tests, executor broker lookup/refusals and masker map keys; executor 96.9%, masker 100%; suite 8043->8054, no new failures	session-20261113T081046-f0858dc4	2026-11-13T08:46:57Z
 cover:learniq:e6498dddmf689:568ec52a	already done: lib/Lifecycle/*.php at 95.9% lines (2628/2740) under the full unit suite on development, target 95; no PR	session-20261113T051705-4f5ad12a	2026-11-13T08:46:38Z
 merge:launchpad:1174:1d410467	merge-local over 2 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:46:56Z
 merge:launchpad:1175:13899a12	merge-local over 2 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:46:56Z
@@ -3588,6 +3589,7 @@ cover:stackiq:9ac19b3am5ac4:jsd48eb217	already done: src/store/modules/ at 769/7
 cover:stackiq:9ac19b3am6096:59f569b2	already done: lib/Service/Settings/*.php at 1265/1296 lines (97.6%) on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:47:39Z
 cover:buildiq:70b3e29embf07:f91e7417	no PR: lib/Service/Connection/ at 170/171 lines (pcov); the uncovered line is the single-candidate branch of a fixed two-entry constant	session-20261113T080549-dde3ba19	2026-11-13T08:47:41Z
 cover:stackiq:9ac19b3am6096:007dc1d0	already done: lib/Service/Cmdb/*.php 1491/1520 = 98.1% >= 90	session-20261113T051703-1b54bfba	2026-11-13T08:47:48Z
+cover:stackiq:9ac19b3am5ac4:js0f856eeb	already done: contracts/organisations/sbom JS coverage 97.65% lines on development 2a8336ce (target 90); suite 2344/2344 green; no PR	session-20261113T084521-4cd185d2	2026-11-13T08:48:08Z
 verify:integriq:3513:6811747d	3513 GREEN (8069 tests, no new failures; tests only)	session-20261113T071640-3ba6da34	2026-11-13T08:48:05Z
 cover:stackiq:9ac19b3am6096:b5905f71	already done: lib/Service/Federation/ at 384/388 lines (99.0%) on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:48:08Z
 cover:stackiq:9ac19b3am5ac4:js06645759	already done: src/components/* at 99.5% statements (440/442; 2344 vitest tests pass); -1 branch already on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T08:48:20Z
