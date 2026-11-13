@@ -389,4 +389,5 @@ components:
       - ".*/lib/Service/(LanguageServiceInterface|OpenRegisterActionAuthService|TranslationProjectionServiceInterface|TranslationStatusServiceInterface|TranslationStores)[.]php"
       - ".*/lib/Service/ApiCaller/[^/]*"
       - ".*/lib/Service/Chat/[^/]*"
+      - ".*/lib/Service/Resilience/[^/]*"
       - ".*/lib/Settings/[^/]*"
