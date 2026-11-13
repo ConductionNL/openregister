@@ -2678,3 +2678,4 @@ merge:pipelinq:3672:7b90864a	stale	feeder	2026-11-13T06:10:49Z
 cover:integriq:92114ab0m1534:c210cc74	already done: lib/Service/Ownership/ 189/192 lines (98.4%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:12:00Z
 cover:integriq:92114ab0m1534:3f68c935	already done: lib/Intake/Adapter/ 360/372 lines (96.8%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:12:06Z
 cover:integriq:92114ab0m1534:bec85fb4	already done: lib/Service/Zgw/ 214/218 lines (98.2%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:12:13Z
+cover:dossiq:f8a113c5mac88:9b457b26	PR #6298: PlannedSeriesLedgerTest (9 tests); ledger 76->130/130 lines; lib/Service/Flow 87.99->~92.3%; suite 14721->14730, 19 inherited failures unchanged	session-20261113T044737-f37de8e3	2026-11-13T06:12:22Z
