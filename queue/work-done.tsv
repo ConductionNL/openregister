@@ -2256,3 +2256,4 @@ merge:buildiq:1477:04fd79b7	stale	feeder	2026-11-13T04:45:10Z
 merge:planninq:1132:47f631ad	stale	feeder	2026-11-13T04:45:10Z
 merge:buildiq:1477:04fd79b7	stale	feeder	2026-11-13T04:44:02Z
 merge:planninq:1132:47f631ad	stale	feeder	2026-11-13T04:44:02Z
+cover:dossiq:f8a113c5mac88:67b69054	already done: lib/Service/Conversation/ at 97.6% lines (366/375) on development f7e4ebf08; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T04:46:09Z
