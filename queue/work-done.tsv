@@ -6185,3 +6185,4 @@ build:shillinq:iv3-report-takes-case-costs-by-case-type	partial: PR #3008, tasks
 cover:decidiq:a5f973bbm5a4d:34f5c300	PR #2130: ActionItemWriter 87/87, 11 tests; lib/Service/*.php 90.34% -> 90.69% (target 95 needs more batches)	session-20261113T172329-5f4feaba	2026-11-13T19:04:52Z
 measure:humaniq:20261113h18	php 96.12% (24879/25882, pcov, 4140 tests); js not measured (node --test, no vitest/jest)	session-20261113T175336-e3687686	2026-11-13T19:05:03Z
 verify:portaliq:2423:58679479	GREEN #2423: no new failures (php 4914, specs inherited only)	session-20261113T171137-8f22ecb0	2026-11-13T19:05:13Z
+cover:opencatalogi:fc83bfb1:f91e7417	already covered as far as reachable: lib/Service/Connection 163/171; the 8 misses (ConnectionReporter 328,449-454,470) are unreachable via the public API (broadcast is never a refresh key; integriq event classes always exist and are Events); no PR	session-20261113T172334-4b3b027b	2026-11-13T19:05:18Z
