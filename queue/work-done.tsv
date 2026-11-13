@@ -5216,3 +5216,4 @@ build2:openregister:modelling-field-access-editor	PR #10239: task 2.2 server sli
 review:openregister:10187:52bd77cf	APPROVE: test-only, 21 new tests pass, suites match main	session-20261113T124807-b8fee1f0	2026-11-13T13:34:08Z
 build2:openregister:anonymisation-discloses-itself-pipeline	partial: PR #10240 (1.1, 2.1, 2.2 + 1.2 route/controller; 1.2 Newman, 2.3 UI list with 37-locale l10n, e2e left)	session-20261113T124807-2640af3d	2026-11-13T13:34:13Z
 merge:pipelinq:3602:a98549bd	merge-local over 1 pipelinq tasks: merged=0 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:34:20Z
+build2:openregister:archiving-as-a-process-with-sign-off	partial: PR #10241 — preservation regime (2.2 done, 2.1 guard/distinctness built; working-views exclusion left), 15 tests	session-20261113T091533-03405ea6	2026-11-13T13:34:47Z
