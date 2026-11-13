@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\NamedConditionCheck;
 use OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
@@ -1220,6 +1221,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		))->check(schema: $schema);
 		(new PropertyDeclarationRefusals())->checkDependentValues(schema: $schema);
 		(new ReferenceLoopCheck())->check(schema: $schema);
+		(new NamedConditionCheck())->check(schema: $schema);
 	}//end checkBehaviourDeclarations()
 
 	/**
