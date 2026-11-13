@@ -4910,3 +4910,4 @@ dossiq	6258	55027d8ed574689ba5539c2ad01c85d781133c54	GREEN	worker-16	phpunit 141
 dossiq	6259	044c33f68a41fe4aa5f62599eda492bc7b0f5f21	GREEN	worker-16	phpunit 14106 (baseline 14046, 19 failures inherited); new failures 0; vitest 6323 (1 inherited: capabilityComparison closure state); tests-only additions
 dossiq	6260	befe577495414351413a82f13a0d5d539362bc98	GREEN	worker-16	phpunit 14106 (baseline 14046, 19 failures inherited); new failures 0; vitest 6323 (1 inherited: capabilityComparison closure state); tests-only additions
 pipelinq	3627	b45e90cdeef27915f72074675fa991eadf7dad3b	GREEN	worker-07	tree of 3627-3635: php 5818 tests, baseline 1 failure (CrmPrivilegeRefusalGoldenTest), 0 new; vitest 3236 passed; tests only
+pipelinq	3628	caa0e92fb6aaa791fbea2a2a4d18d017fabb908f	GREEN	worker-07	tree of 3627-3635: php 5818 tests, baseline 1 failure (CrmPrivilegeRefusalGoldenTest), 0 new; vitest 3236 passed; tests only
