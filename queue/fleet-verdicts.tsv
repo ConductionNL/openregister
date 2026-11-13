@@ -4655,3 +4655,4 @@ keepiq	1707	2dfcbc25ad436e000660ee49ca6dee90d2da63c1	GREEN	worker-34	test-only (
 stackiq	1776	84125e628f1f73a22a188e3e827947c1cecb55bd	CONFLICT	worker-21	does not merge onto development: conflicts in appinfo/routes.php, openapi.json, tests/Unit/Middleware/ApiContractMiddlewareTest.php
 pipelinq	3606	3841a295da60a8584cb65d9a27da85ea26ae843a	GREEN	worker-15	tree of 3, tests-only vitest specs: vitest 475 files / 3203 tests all pass; PHP unit 5774 tests unchanged (1 inherited CrmPrivilegeRefusalGoldenTest failure), 0 new
 pipelinq	3607	b041d650905cb358ef4036a50537d600c747c360	GREEN	worker-15	tree of 3, tests-only vitest specs: vitest 475 files / 3203 tests all pass; PHP unit 5774 tests unchanged (1 inherited CrmPrivilegeRefusalGoldenTest failure), 0 new
+pipelinq	3603	e72e9419c10b7ece13ecbeec22d48f3cfc2c800d	GREEN	worker-32	PHP 5787 tests on tree (baseline 5774, 1 inherited failure), vitest 3194 passed, 0 new failures; tests only
