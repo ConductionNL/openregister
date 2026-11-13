@@ -1291,3 +1291,4 @@ review:stackiq:1704:f55ed033	GREEN: behaviour-preserving refactor; eslint clean;
 cover:shillinq:801aab65:f545d745	PR #2809: 30 tests over 5 repair classes, lib/Repair/*.php 52.79%->62.30%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:02:37Z
 verify:integriq:3440:5992af93	4 GREEN (3440-3443, vitest-only), vitest 1494 OK, phpunit = baseline	session-20261112T231639-4c562de9	2026-11-13T01:03:45Z
 cover:openregister:7350e3efm0e99:jsb7158e4e	PR #10080: src/dialogs/avg 55/56->56/56 (+2 jest tests); jest 7485->7487 passing	session-20261112T231637-60fd49c4	2026-11-13T01:04:05Z
+review:openregister:10076:2e819f39	APPROVE: tests only, 149 log-view tests green on merge with main	session-20261113T002028-bc0aa910	2026-11-13T01:04:02Z
