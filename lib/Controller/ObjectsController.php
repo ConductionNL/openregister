@@ -5679,6 +5679,7 @@ class ObjectsController extends Controller {
 		// Call ExportService directly (bypassing ObjectService which has circular dependency issues).
 		return match ($type) {
 			'csv' => $this->csvExport(export: $export),
+			'tsv' => $this->tsvExport(export: $export),
 			'json' => $this->jsonExport(export: $export),
 			'pdf' => $this->pdfExport(export: $export),
 			default => $this->excelExport(export: $export),
@@ -5763,6 +5764,25 @@ class ObjectsController extends Controller {
 
 		return $export->download(format: 'csv', content: $content);
 	}//end csvExport()
+
+	/**
+	 * Export as TSV.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function tsvExport(ObjectExport $export): DataDownloadResponse {
+		$content = $this->services->transfer->exportService->exportToTsv(
+			request: $this->callerExportRequest(export: $export),
+		);
+
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'tsv', rowCount: $this->countCsvExportRows(csv: $content)));
+
+		return $export->download(format: 'tsv', content: $content);
+	}//end tsvExport()
 
 	/**
 	 * Export as JSON.
