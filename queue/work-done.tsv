@@ -6707,3 +6707,4 @@ cover:opencatalogi:fc83bfb1m976b:js5794e9fc	PR opencatalogi#2611: 9 jest tests; 
 	failed: blocking PR not on development yet (dev still 95d364be) - requeue after it lands	session-20261113T202612-d04bbf77	2026-11-13T20:36:52Z
 fix:filinq:2088:cfd39c35	failed: #2085 not on development yet (dev still 95d364be) - requeue after it lands	session-20261113T202612-d04bbf77	2026-11-13T20:37:06Z
 fix:filinq:2089:b315e20a	failed: #2085 not on development yet (dev still 95d364be) - requeue after it lands	session-20261113T202612-d04bbf77	2026-11-13T20:37:09Z
+cover:opencatalogi:fc83bfb1m976b:js8b29c4b9	PR #2612: 28 vitest tests for src/modals/generic/uploadSteps.js (now 100%); vitest 806->834, all green; .vue files there already have jest specs	session-20261113T195351-a32c6d55	2026-11-13T20:37:16Z
