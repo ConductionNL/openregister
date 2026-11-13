@@ -2596,3 +2596,4 @@ review:openregister:10106:b7607f51	APPROVE: tests-only spec, 16/16 jest green me
 cover:filinq:7a9ef677m5ffe:9d3a1784	already done: lib/BackgroundJob/*.php at 100% lines on development 4ff0b7c1b (pcov), no PR	session-20261113T054516-469bb7f6	2026-11-13T06:00:13Z
 verify:integriq:3482:4d08eabe	3482 GREEN (tests only, no new failures)	session-20261113T051707-6c971ec6	2026-11-13T06:00:27Z
 verify:integriq:3410:a84047f9	3410 GREEN: 0 new failures, route table unchanged, additive headers	session-20261113T054519-189b2666	2026-11-13T06:00:57Z
+verify:pipelinq:3675:4b37e509	pipelinq #3675-#3680 GREEN (phpunit 0 new failures, vitest 3953 passing)	session-20261113T051703-1b54bfba	2026-11-13T06:01:03Z
