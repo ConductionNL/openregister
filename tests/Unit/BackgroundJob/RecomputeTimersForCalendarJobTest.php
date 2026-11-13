@@ -174,4 +174,38 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 		$this->runWith(['slug' => 'nl', 'version' => '2.0.0']);
 		$this->runWith(['slug' => 'nl', 'version' => '2.0.0']);
 	}//end testASkippedOrFailedPassIsNotMarked()
+
+	/**
+	 * A timer page that cannot be read ends the candidate list there, and says which state and calendar.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableTimerPageEndsTheCandidatesWithAnError(): void {
+		$asked = [];
+		$this->timers->method('findByStatePaged')->willReturnCallback(
+			static function (string $state, IdCursor $cursor) use (&$asked): array {
+				$asked[] = $state;
+				throw new RuntimeException('timeout');
+			}
+		);
+		$this->logger->expects($this->once())
+			->method('error')
+			->with('[RecomputeTimersForCalendarJob] could not page '.FlowTimer::STATE_ARMED.' timers for nl: timeout');
+		$offered = [];
+		$this->recompute->method('recompute')->willReturnCallback(
+			static function (CalendarBatch $batch) use (&$offered): array {
+				foreach ($batch->timers as $timer) {
+					$offered[] = $timer;
+				}
+
+				return ['examined' => 0, 'moved' => 0, 'unchanged' => 0, 'unresolvable' => 0, 'deferred' => 0, 'skipped' => false];
+			}
+		);
+
+		$this->runWith(['slug' => 'nl', 'version' => '2.0.0']);
+
+		// The failure stops the whole list: the suspended timers are not paged either.
+		$this->assertSame([FlowTimer::STATE_ARMED], $asked);
+		$this->assertSame([], $offered);
+	}//end testAnUnreadableTimerPageEndsTheCandidatesWithAnError()
 }//end class

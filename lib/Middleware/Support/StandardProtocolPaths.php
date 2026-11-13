@@ -81,8 +81,10 @@ final class StandardProtocolPaths {
 	 * @param string $path An app-relative path or a request path under the app root.
 	 *
 	 * @return string The app-relative path.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
-	private static function appRelative(string $path): string {
+	public static function appRelative(string $path): string {
 		$candidate = '/' . ltrim($path, '/');
 		$rootAt    = strpos($candidate, self::APP_ROOT . '/');
 		if ($rootAt === false) {

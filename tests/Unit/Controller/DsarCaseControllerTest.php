@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\DeclaredRoutes;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\DsarCaseControllerFactory;
 use OCA\OpenRegister\Controller\DsarCaseController;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -171,9 +172,8 @@ class DsarCaseControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testRouteMethodReachability(): void {
-		$routes = (include __DIR__ . '/../../../appinfo/routes.php')['routes'];
 		$mapped = [];
-		foreach ($routes as $route) {
+		foreach (DeclaredRoutes::unversioned() as $route) {
 			if (str_starts_with((string)$route['name'], 'dsarCase#') === true) {
 				$mapped[] = substr((string)$route['name'], strlen('dsarCase#'));
 			}

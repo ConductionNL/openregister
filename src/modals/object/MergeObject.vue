@@ -1,15 +1,15 @@
 <script setup>
-import { translate as t } from '@nextcloud/l10n'
 import {
 	navigationStore,
 	objectStore,
 	registerStore,
 	schemaStore,
 } from '../../store/store.js'
+import { t } from './l10n.js'
 </script>
 
 <template>
-	<NcDialog name="Merge Objects" size="large" noClose>
+	<NcDialog :name="t('openregister', 'Merge objects')" size="large" noClose>
 		<!-- Register and Schema Information -->
 		<div class="detail-grid">
 			<div class="detail-item">
@@ -31,23 +31,25 @@ import {
 
 		<!-- Information about merge restrictions (only show if not completed) -->
 		<NcNoteCard v-if="step !== 3" type="info">
-			Objects can only be merged if they belong to the same register and
-			schema. If you want to merge objects from different schemas or registers,
-			you need to migrate them first.
+			{{
+				t(
+					'openregister',
+					'You can merge objects from the same register and schema. Migrate objects from elsewhere first.',
+				)
+			}}
 		</NcNoteCard>
 
 		<!-- Step 1: Select Target Object -->
 		<div v-if="step === 1" class="merge-step step-1">
-			<h3 class="step-title">Select Target Object</h3>
+			<h3 class="step-title">
+				{{ t('openregister', 'Select the target object') }}
+			</h3>
 			<p>
-				Select the object to merge
-				<strong>{{
-					sourceObject?.['@self']?.name
-					|| sourceObject?.name
-					|| sourceObject?.['@self']?.title
-					|| sourceObject?.['@self']?.id
-				}}</strong>
-				into:
+				{{
+					t('openregister', 'Select the object to merge {source} into.', {
+						source: objectLabel(sourceObject),
+					})
+				}}
 			</p>
 
 			<div class="search-container">
@@ -60,7 +62,7 @@ import {
 
 			<div v-if="loading" class="loading-container">
 				<NcLoadingIcon :size="32" />
-				<p>Loading objects...</p>
+				<p>{{ t('openregister', 'Loading objects…') }}</p>
 			</div>
 
 			<div v-else-if="availableObjects.length" class="object-list">
@@ -81,14 +83,14 @@ import {
 					@keydown.enter="selectTargetObject(obj)"
 					@keydown.space.prevent="selectTargetObject(obj)">
 					<div class="object-info">
-						<strong>{{
-							obj['@self']?.name
-							|| obj.name
-							|| obj.title
-							|| obj['@self']?.title
-							|| obj['@self']?.id
-						}}</strong>
-						<p class="object-id">ID: {{ obj['@self'].id }}</p>
+						<strong>{{ objectLabel(obj) }}</strong>
+						<p class="object-id">
+							{{
+								t('openregister', 'ID: {id}', {
+									id: obj['@self'].id,
+								})
+							}}
+						</p>
 					</div>
 				</div>
 			</div>
@@ -99,8 +101,8 @@ import {
 				<template #description>
 					{{
 						searchTerm
-							? 'No objects match your search criteria'
-							: 'No objects available for merging'
+							? t('openregister', 'No objects match your search')
+							: t('openregister', 'No objects to merge with')
 					}}
 				</template>
 			</NcEmptyContent>
@@ -108,22 +110,14 @@ import {
 
 		<!-- Step 2: Merge Configuration -->
 		<div v-if="step === 2" class="merge-step">
-			<h3>Configure Merge</h3>
+			<h3>{{ t('openregister', 'Configure the merge') }}</h3>
 			<p>
-				Merging
-				<strong>{{
-					sourceObject?.['@self']?.name
-					|| sourceObject?.name
-					|| sourceObject?.['@self']?.title
-					|| sourceObject?.['@self']?.id
-				}}</strong>
-				into
-				<strong>{{
-					selectedTargetObject?.['@self']?.name
-					|| selectedTargetObject?.name
-					|| selectedTargetObject?.['@self']?.title
-					|| selectedTargetObject?.['@self']?.id
-				}}</strong>
+				{{
+					t('openregister', 'You merge {source} into {target}.', {
+						source: objectLabel(sourceObject),
+						target: objectLabel(selectedTargetObject),
+					})
+				}}
 			</p>
 
 			<!-- Property Comparison Table -->
@@ -131,10 +125,12 @@ import {
 				<table class="merge-table">
 					<thead>
 						<tr>
-							<th scope="col">Property</th>
-							<th scope="col">Source</th>
-							<th scope="col">Target</th>
-							<th scope="col">Result Value</th>
+							<th scope="col">{{ t('openregister', 'Property') }}</th>
+							<th scope="col">{{ t('openregister', 'Source') }}</th>
+							<th scope="col">{{ t('openregister', 'Target') }}</th>
+							<th scope="col">
+								{{ t('openregister', 'Result value') }}
+							</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -161,19 +157,32 @@ import {
 							</td>
 							<td class="merge-target">
 								<template v-if="property === 'id'">
-									<span class="fixed-value"
-										>{{ selectedTargetObject[property] }} (Target
-										ID)</span
-									>
+									<span class="fixed-value">{{
+										t('openregister', '{id} (target ID)', {
+											id: selectedTargetObject[property],
+										})
+									}}</span>
 								</template>
 								<template v-else>
 									<NcSelect
 										v-model="propertySelections[property]"
-										inputLabel="Property Selections[Property]"
+										:inputLabel="
+											t(
+												'openregister',
+												'Value for {property}',
+												{ property },
+											)
+										"
 										:options="getMergeOptions(property)"
 										label="label"
 										trackBy="value"
-										:placeholder="'Choose value for ' + property"
+										:placeholder="
+											t(
+												'openregister',
+												'Choose a value for {property}',
+												{ property },
+											)
+										"
 										@update:modelValue="
 											onPropertySelectionChange(
 												property,
@@ -184,10 +193,18 @@ import {
 										v-if="mergedData[property] === 'custom'"
 										v-model="customValues[property]"
 										:aria-label="
-											'Enter custom value for ' + property
+											t(
+												'openregister',
+												'Enter a custom value for {property}',
+												{ property },
+											)
 										"
 										:placeholder="
-											'Enter custom value for ' + property
+											t(
+												'openregister',
+												'Enter a custom value for {property}',
+												{ property },
+											)
 										"
 										class="custom-input" />
 								</template>
@@ -199,7 +216,13 @@ import {
 
 			<!-- File Handling Options -->
 			<div class="options-section">
-				<h4>Files attached to source object: ({{ sourceFiles.length }})</h4>
+				<h4>
+					{{
+						t('openregister', 'Files on the source object ({count})', {
+							count: sourceFiles.length,
+						})
+					}}
+				</h4>
 
 				<div class="radio-options">
 					<NcCheckboxRadioSwitch
@@ -207,20 +230,29 @@ import {
 						value="transfer"
 						name="fileAction"
 						type="radio">
-						Transfer to target object's folder
+						{{
+							t(
+								'openregister',
+								'Move to the folder of the target object',
+							)
+						}}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
 						v-model="fileAction"
 						value="delete"
 						name="fileAction"
 						type="radio">
-						Delete files
+						{{ t('openregister', 'Delete files') }}
 					</NcCheckboxRadioSwitch>
 				</div>
 
 				<div class="table-toggle">
 					<NcButton variant="tertiary" @click="toggleFileList">
-						{{ showFileList ? 'Hide Files' : 'View Files' }}
+						{{
+							showFileList
+								? t('openregister', 'Hide files')
+								: t('openregister', 'View files')
+						}}
 						<template #icon>
 							<ChevronUp v-if="showFileList" :size="20" />
 							<ChevronDown v-else :size="20" />
@@ -232,9 +264,11 @@ import {
 					<table class="file-table">
 						<thead>
 							<tr>
-								<th scope="col">Filename</th>
-								<th scope="col">Size</th>
-								<th scope="col">Type</th>
+								<th scope="col">
+									{{ t('openregister', 'Filename') }}
+								</th>
+								<th scope="col">{{ t('openregister', 'Size') }}</th>
+								<th scope="col">{{ t('openregister', 'Type') }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -258,16 +292,18 @@ import {
 				<div
 					v-else-if="showFileList && !sourceFiles.length"
 					class="no-files">
-					<p>No files attached to source object</p>
+					<p>{{ t('openregister', 'The source object has no files') }}</p>
 				</div>
 			</div>
 
 			<!-- Outgoing Relation Handling Options -->
 			<div class="options-section">
 				<h4>
-					Outgoing relations from source object: ({{
-						sourceRelations.length
-					}})
+					{{
+						t('openregister', 'Outgoing relations ({count})', {
+							count: sourceRelations.length,
+						})
+					}}
 				</h4>
 
 				<div class="radio-options">
@@ -276,20 +312,24 @@ import {
 						value="transfer"
 						name="relationAction"
 						type="radio">
-						Transfer to target object
+						{{ t('openregister', 'Move to the target object') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
 						v-model="relationAction"
 						value="drop"
 						name="relationAction"
 						type="radio">
-						Drop relations
+						{{ t('openregister', 'Drop relations') }}
 					</NcCheckboxRadioSwitch>
 				</div>
 
 				<div class="table-toggle">
 					<NcButton variant="tertiary" @click="toggleRelationList">
-						{{ showRelationList ? 'Hide Relations' : 'View Relations' }}
+						{{
+							showRelationList
+								? t('openregister', 'Hide relations')
+								: t('openregister', 'View relations')
+						}}
 						<template #icon>
 							<ChevronUp v-if="showRelationList" :size="20" />
 							<ChevronDown v-else :size="20" />
@@ -303,8 +343,12 @@ import {
 					<table class="relation-table">
 						<thead>
 							<tr>
-								<th scope="col">Related Object</th>
-								<th scope="col">Relation Type</th>
+								<th scope="col">
+									{{ t('openregister', 'Related object') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Relation type') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -326,7 +370,12 @@ import {
 										)
 									}}
 								</td>
-								<td>{{ relation.relationType || 'Related' }}</td>
+								<td>
+									{{
+										relation.relationType
+										|| t('openregister', 'Related')
+									}}
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -335,21 +384,33 @@ import {
 				<div
 					v-else-if="showRelationList && !sourceRelations.length"
 					class="no-relations">
-					<p>No outgoing relations from source object</p>
+					<p>
+						{{
+							t(
+								'openregister',
+								'The source object has no outgoing relations',
+							)
+						}}
+					</p>
 				</div>
 			</div>
 
 			<!-- Incoming References Handling Options -->
 			<div class="options-section">
 				<h4>
-					Incoming references to source object: ({{
-						sourceIncomingReferences.length
-					}})
+					{{
+						t('openregister', 'Incoming references ({count})', {
+							count: sourceIncomingReferences.length,
+						})
+					}}
 				</h4>
 				<p class="options-description">
-					These are objects from other schemas that reference the source
-					object. Transferring will update their references to point to the
-					target object.
+					{{
+						t(
+							'openregister',
+							'Objects in other schemas refer to the source object. You can point them to the target object.',
+						)
+					}}
 				</p>
 
 				<div class="radio-options">
@@ -358,21 +419,28 @@ import {
 						value="transfer"
 						name="referenceAction"
 						type="radio">
-						Transfer references to target object
+						{{
+							t(
+								'openregister',
+								'Point references to the target object',
+							)
+						}}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
 						v-model="referenceAction"
 						value="keep"
 						name="referenceAction"
 						type="radio">
-						Don't update references
+						{{ t('openregister', 'Keep references as they are') }}
 					</NcCheckboxRadioSwitch>
 				</div>
 
 				<div class="table-toggle">
 					<NcButton variant="tertiary" @click="toggleReferenceList">
 						{{
-							showReferenceList ? 'Hide References' : 'View References'
+							showReferenceList
+								? t('openregister', 'Hide references')
+								: t('openregister', 'View references')
 						}}
 						<template #icon>
 							<ChevronUp v-if="showReferenceList" :size="20" />
@@ -387,9 +455,13 @@ import {
 					<table class="relation-table">
 						<thead>
 							<tr>
-								<th scope="col">Referencing Object</th>
-								<th scope="col">Type</th>
-								<th scope="col">Register / Schema</th>
+								<th scope="col">
+									{{ t('openregister', 'Referencing object') }}
+								</th>
+								<th scope="col">{{ t('openregister', 'Type') }}</th>
+								<th scope="col">
+									{{ t('openregister', 'Register / schema') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -399,7 +471,12 @@ import {
 								<td :title="ref.title || ref.id">
 									{{ truncateText(ref.title || ref.id, 40) }}
 								</td>
-								<td>{{ ref.relationType || 'Related' }}</td>
+								<td>
+									{{
+										ref.relationType
+										|| t('openregister', 'Related')
+									}}
+								</td>
 								<td
 									:title="
 										(ref.register || 'N/A')
@@ -423,29 +500,40 @@ import {
 				<div
 					v-else-if="showReferenceList && !sourceIncomingReferences.length"
 					class="no-relations">
-					<p>No incoming references to source object</p>
+					<p>
+						{{
+							t(
+								'openregister',
+								'No objects refer to the source object',
+							)
+						}}
+					</p>
 				</div>
 			</div>
 		</div>
 
 		<!-- Step 3: Merge Report -->
 		<div v-if="step === 3" class="merge-step">
-			<h3 class="report-title">Merge Report</h3>
+			<h3 class="report-title">{{ t('openregister', 'Merge report') }}</h3>
 
 			<NcNoteCard v-if="mergeResult?.success" type="success">
-				<p>Objects successfully merged!</p>
+				<p>{{ t('openregister', 'Objects merged') }}</p>
 			</NcNoteCard>
 			<NcNoteCard v-if="mergeResult && !mergeResult.success" type="error">
-				<p>Merge failed. Please check the details below.</p>
+				<p>
+					{{ t('openregister', 'Merge failed. Check the details below.') }}
+				</p>
 			</NcNoteCard>
 
 			<div v-if="mergeResult" class="merge-report">
 				<!-- Object Information -->
 				<div class="report-section">
-					<h4>Merge Summary</h4>
+					<h4>{{ t('openregister', 'Merge summary') }}</h4>
 					<div class="object-info">
 						<div class="object-detail">
-							<strong>Target Object (Result):</strong>
+							<strong>{{
+								t('openregister', 'Target object (result):')
+							}}</strong>
 							<div class="object-meta">
 								<span class="object-id"
 									>ID:
@@ -459,12 +547,14 @@ import {
 									|| selectedTargetObject?.name
 									|| selectedTargetObject?.['@self']?.title
 									|| selectedTargetObject?.title
-									|| 'Untitled'
+									|| t('openregister', 'Untitled')
 								}}</span>
 							</div>
 						</div>
 						<div class="object-detail">
-							<strong>Source Object:</strong>
+							<strong>{{
+								t('openregister', 'Source object:')
+							}}</strong>
 							<div class="object-meta">
 								<span class="object-id"
 									>ID:
@@ -478,7 +568,7 @@ import {
 									|| sourceObject?.name
 									|| sourceObject?.['@self']?.title
 									|| sourceObject?.title
-									|| 'Untitled'
+									|| t('openregister', 'Untitled')
 								}}</span>
 								<span class="object-status deleted"
 									>Status: Deleted</span
@@ -489,31 +579,59 @@ import {
 				</div>
 				<!-- Statistics -->
 				<div class="report-section">
-					<h4>Statistics</h4>
+					<h4>{{ t('openregister', 'Statistics') }}</h4>
 					<ul>
 						<li>
-							Properties changed:
-							{{ mergeResult.statistics?.propertiesChanged || 0 }}
+							{{
+								t('openregister', 'Properties changed: {count}', {
+									count:
+										mergeResult.statistics?.propertiesChanged
+										|| 0,
+								})
+							}}
 						</li>
 						<li>
-							Files transferred:
-							{{ mergeResult.statistics?.filesTransferred || 0 }}
+							{{
+								t('openregister', 'Files transferred: {count}', {
+									count:
+										mergeResult.statistics?.filesTransferred
+										|| 0,
+								})
+							}}
 						</li>
 						<li>
-							Files deleted:
-							{{ mergeResult.statistics?.filesDeleted || 0 }}
+							{{
+								t('openregister', 'Files deleted: {count}', {
+									count: mergeResult.statistics?.filesDeleted || 0,
+								})
+							}}
 						</li>
 						<li>
-							Relations transferred:
-							{{ mergeResult.statistics?.relationsTransferred || 0 }}
+							{{
+								t('openregister', 'Relations transferred: {count}', {
+									count:
+										mergeResult.statistics?.relationsTransferred
+										|| 0,
+								})
+							}}
 						</li>
 						<li>
-							Relations dropped:
-							{{ mergeResult.statistics?.relationsDropped || 0 }}
+							{{
+								t('openregister', 'Relations dropped: {count}', {
+									count:
+										mergeResult.statistics?.relationsDropped
+										|| 0,
+								})
+							}}
 						</li>
 						<li>
-							References updated:
-							{{ mergeResult.statistics?.referencesUpdated || 0 }}
+							{{
+								t('openregister', 'References updated: {count}', {
+									count:
+										mergeResult.statistics?.referencesUpdated
+										|| 0,
+								})
+							}}
 						</li>
 					</ul>
 				</div>
@@ -522,13 +640,19 @@ import {
 				<div
 					v-if="mergeResult.actions?.properties?.length"
 					class="report-section">
-					<h4>Changed Properties</h4>
+					<h4>{{ t('openregister', 'Changed properties') }}</h4>
 					<table class="report-table">
 						<thead>
 							<tr>
-								<th scope="col">Property</th>
-								<th scope="col">Old Value</th>
-								<th scope="col">New Value</th>
+								<th scope="col">
+									{{ t('openregister', 'Property') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Old value') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'New value') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -547,14 +671,18 @@ import {
 				<div
 					v-if="mergeResult.actions?.files?.length"
 					class="report-section">
-					<h4>File Actions</h4>
+					<h4>{{ t('openregister', 'File actions') }}</h4>
 					<ul>
 						<li
 							v-for="fileActionItem in mergeResult.actions.files"
 							:key="fileActionItem.name">
 							{{ fileActionItem.name }}: {{ fileActionItem.action }}
 							<span v-if="!fileActionItem.success" class="error-text">
-								(Failed: {{ fileActionItem.error }})</span
+								({{
+									t('openregister', 'Failed: {error}', {
+										error: fileActionItem.error,
+									})
+								}})</span
 							>
 						</li>
 					</ul>
@@ -569,7 +697,11 @@ import {
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				{{ step === 3 ? 'Close' : 'Cancel' }}
+				{{
+					step === 3
+						? t('openregister', 'Close')
+						: t('openregister', 'Cancel')
+				}}
 			</NcButton>
 
 			<NcButton
@@ -579,7 +711,7 @@ import {
 				<template #icon>
 					<Eye :size="20" />
 				</template>
-				View Object
+				{{ t('openregister', 'View object') }}
 			</NcButton>
 
 			<NcButton
@@ -590,14 +722,14 @@ import {
 				<template #icon>
 					<ArrowRight :size="20" />
 				</template>
-				Next
+				{{ t('openregister', 'Next') }}
 			</NcButton>
 
 			<NcButton v-if="step === 2" variant="secondary" @click="previousStep">
 				<template #icon>
 					<ArrowLeft :size="20" />
 				</template>
-				Back
+				{{ t('openregister', 'Back') }}
 			</NcButton>
 
 			<NcButton
@@ -609,7 +741,7 @@ import {
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Merge v-else :size="20" />
 				</template>
-				Merge Objects
+				{{ t('openregister', 'Merge objects') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -930,31 +1062,27 @@ export default {
 			const targetValue = this.selectedTargetObject[property]
 
 			if (isFilled(sourceValue)) {
-				options.push(this.mergeOption('From Source', sourceValue))
+				options.push({
+					label: t('openregister', 'From source: {value}', {
+						value: this.displayValue(sourceValue),
+					}),
+					value: sourceValue,
+				})
 			}
 
 			if (isFilled(targetValue)) {
-				options.push(this.mergeOption('From Target', targetValue))
+				options.push({
+					label: t('openregister', 'From target: {value}', {
+						value: this.displayValue(targetValue),
+					}),
+					value: targetValue,
+				})
 			}
 
 			// Always add the custom option
 			options.push(customOption())
 
 			return options
-		},
-
-		/**
-		 * A dropdown option for a value from the source or the target.
-		 *
-		 * @param {string} origin Where the value comes from, as the label says it
-		 * @param {unknown} value The value
-		 * @return {{label: string, value: unknown}} The option
-		 */
-		mergeOption(origin, value) {
-			return {
-				label: `${origin}: ${this.displayValue(value)}`,
-				value,
-			}
 		},
 
 		/**
@@ -998,6 +1126,22 @@ export default {
 			}
 
 			return displayText
+		},
+
+		/**
+		 * @param {object} object
+		 * @spec exclude Display name of an object; UI presentation helper.
+		 * @return {string|undefined} Its name, title or id
+		 */
+		objectLabel(object) {
+			const self = object?.['@self']
+			return (
+				self?.name
+				|| object?.name
+				|| object?.title
+				|| self?.title
+				|| self?.id
+			)
 		},
 
 		/**
@@ -1059,7 +1203,7 @@ export default {
 			console.error('Error performing merge:', error)
 			this.mergeResult = failedTransfer(
 				error,
-				'An error occurred during merge',
+				t('openregister', 'An error occurred during merge'),
 			)
 			this.step = 3
 		},
@@ -1271,7 +1415,7 @@ function imageAndArchiveTypeNames() {
  */
 function customOption() {
 	return {
-		label: 'Other/Custom',
+		label: t('openregister', 'Other value'),
 		value: 'custom',
 	}
 }

@@ -94,6 +94,9 @@ interface AuditHashServiceInterface {
 	 *     brokenAt: int|null,
 	 *     skippedNullHashes: int,
 	 *     purgedTombstones: int,
+	 *     unkeyedEntries: int,
+	 *     keyedFrom: int|null,
+	 *     keyBoundaryIntact: bool,
 	 *     range?: array{from: int, to: int}
 	 * }
 	 *

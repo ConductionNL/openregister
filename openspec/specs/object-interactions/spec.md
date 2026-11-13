@@ -697,6 +697,13 @@ The object query SHALL accept `_watching=true` returning the current user's foll
 - **THEN** the query carries the caller's uid as `_watchingFor` and no uuid list on `_ids`
 - @e2e exclude {query construction; asserted by SearchQueryHandlerWatchingLensTest}
 
+#### Scenario: the lens is resolved in the query
+
+- **GIVEN** a signed-in user
+- **WHEN** a query asks `_watching=true`
+- **THEN** the query carries the caller's uid as `_watchingFor` and no uuid list on `_ids`
+- @e2e exclude {query construction; asserted by SearchQueryHandlerWatchingLensTest}
+
 ### Requirement: Deleting an object removes its watchers
 
 Deleting an object SHALL delete its watcher rows.

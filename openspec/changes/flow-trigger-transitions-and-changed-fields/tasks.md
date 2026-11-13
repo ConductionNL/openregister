@@ -13,8 +13,8 @@
 
 ## 3. Proof and docs
 
-- [ ] 3.1 Add `tests/e2e/ci/flow-trigger-transition.spec.ts`: publish a flow on `object.transitioned` with `to: ["closed"]`, move a record to `closed` and to `open`, and assert one run.
-- [ ] 3.2 Newman: an update that changes an unwatched field queues no run; one that changes a watched field queues one.
+- [ ] 3.1 Add `tests/e2e/ci/flow-trigger-transition.spec.ts`: publish a flow on `object.transitioned` with `to: ["closed"]`, move a record to `closed` and to `open`, and assert one run. (live pass, decision 139)
+- [ ] 3.2 Newman: an update that changes an unwatched field queues no run; one that changes a watched field queues one. (live pass, decision 139)
 - [ ] 3.3 Document both filters in `docs/` beside the object trigger.
 
 Acceptance:

@@ -24,13 +24,13 @@ list is long.
 
 ## 2. The mapping node
 
-- [ ] 2.1 Add `openregister.map` implementing `IFlowNode`, resolving its mapping
+- [x] 2.1 Add `openregister.map` implementing `IFlowNode`, resolving its mapping (verified: lib/Service/Flow/Nodes/MapNode.php, tests/Unit/Service/Flow/Nodes/MapNodeTest.php)
       by id or slug.
-- [ ] 2.2 Register it through `RegisterFlowNodesEvent` so every app's flows can
+- [x] 2.2 Register it through `RegisterFlowNodesEvent` so every app's flows can (verified: lib/Listener/FlowNodeRegistrationListener.php, tests/Unit/Listener/FlowNodeRegistrationListenerTest.php)
       use it.
-- [ ] 2.3 Fail the step when the mapping cannot be resolved, naming the
+- [x] 2.3 Fail the step when the mapping cannot be resolved, naming the (verified: lib/Service/Flow/Nodes/MapNode.php, tests/Unit/Service/Flow/Nodes/MapNodeTest.php)
       identifier. Do NOT pass items through unchanged.
-- [ ] 2.4 Unit-test both paths, including the negative: assert the failure, and
+- [x] 2.4 Unit-test both paths, including the negative: assert the failure, and (verified: lib/Service/Flow/Nodes/MapNode.php, tests/Unit/Service/Flow/Nodes/MapNodeTest.php)
       assert the items were not silently forwarded.
 - [ ] 2.5 Add it to the node catalogue endpoint so the authoring palette offers it.
 
@@ -87,7 +87,7 @@ silently completing) when it cannot do its work.
 
 ## 7. Verification
 
-- [ ] 7.1 Playwright e2e over the flow surface, each assertion observed failing
+- [ ] 7.1 Playwright e2e over the flow surface, each assertion observed failing (live pass, decision 139)
       before it passes.
 - [ ] 7.2 Confirm the mapping-parity test from 1.4 is still meaningful after
       consolidation — with one implementation left it can no longer compare two,

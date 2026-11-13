@@ -1,7 +1,7 @@
 ## 1. Importer fix
 
-- [ ] 1.1 In `ImportHandler::importFromJson()` (`lib/Service/Configuration/ImportHandler.php`), immediately before the object loop (~line 1960), build a merged seed-object list from `data['components']['objects']` plus a top-level `data['objects']` array.
-- [ ] 1.2 De-duplicate the merged list by `@self` identity (slug within (register, schema), falling back to `@self.id`/uuid) so an object declared in both keys is processed once.
+- [ ] 1.1 In `ImportHandler::importFromJson()` (`lib/Service/Configuration/ImportHandler.php`), immediately before the object loop (~line 1960), build a merged seed-object list from `data['components']['objects']` plus a top-level `data['objects']` array. (code exists, test missing: lib/Service/Configuration/ImportHandler.php)
+- [ ] 1.2 De-duplicate the merged list by `@self` identity (slug within (register, schema), falling back to `@self.id`/uuid) so an object declared in both keys is processed once. (code exists, test missing: lib/Service/Configuration/ImportHandler.php)
 - [ ] 1.3 Feed the merged list into the existing loop (register/schema resolution, search-by-(register, schema, slug), version compare, `saveObject()` with `_rbac:false`/`_multitenancy:false`, per-entity try/catch) without altering that logic, the slug guard, or `@ref` token resolution.
 - [ ] 1.4 Ensure folded top-level objects are counted in the existing `result['objects']` and `result['skipped']['objects']` counters.
 
@@ -15,7 +15,7 @@
 
 - [ ] 3.1 Run the configuration import test suite (`ImportHandler*Test`) and confirm new + existing tests pass.
 - [ ] 3.2 Run `composer check:strict` on `ImportHandler.php` and fix any new findings.
-- [ ] 3.3 Smoke-verify against `shillinq/lib/Settings/shillinq_register.json` (78 top-level objects) — a forced import imports the seed objects (0 → 78) and a second import does not duplicate.
+- [ ] 3.3 Smoke-verify against `shillinq/lib/Settings/shillinq_register.json` (78 top-level objects) — a forced import imports the seed objects (0 → 78) and a second import does not duplicate. (live pass, decision 139)
 
 Acceptance criteria:
 - A top-level `objects` array imports identically to `components.objects` on the app-init/forced path.

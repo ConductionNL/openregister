@@ -9,7 +9,7 @@
 ## 2. Provider
 
 - [ ] 2.1 `lib/Search/FlowTasksProvider.php` (`IFilteringProvider`, id `openregister_flow_tasks`): results per D-3 and D-4, cursor paging; registered in `lib/AppInfo/Application.php` beside `ObjectsProvider`. Verify: `tests/Unit/Search/FlowTasksProviderTest.php` for a match, a refusal and a deep-link override.
-- [ ] 2.2 `tests/e2e/ci/flow-task-search.spec.ts`: create a task for the test user, search it in the top bar, open it.
+- [ ] 2.2 `tests/e2e/ci/flow-task-search.spec.ts`: create a task for the test user, search it in the top bar, open it. (live pass, decision 139)
 
 ## 3. Close
 

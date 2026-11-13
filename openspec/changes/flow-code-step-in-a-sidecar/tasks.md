@@ -14,7 +14,7 @@
 
 ## 3. Proof and docs
 
-- [ ] 3.1 Add `tests/e2e/ci/flow-code-step.spec.ts` on a stack with the runner: a flow with a code step that upper-cases a field, run it, and read the trace.
+- [ ] 3.1 Add `tests/e2e/ci/flow-code-step.spec.ts` on a stack with the runner: a flow with a code step that upper-cases a field, run it, and read the trace. (live pass, decision 139)
 - [ ] 3.2 Document the node, the runner install and the limits in `docs/`.
 
 Acceptance:

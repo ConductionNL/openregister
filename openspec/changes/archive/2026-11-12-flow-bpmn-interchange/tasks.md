@@ -132,7 +132,13 @@
       `FlowController` now imports from `Bpmn\`, which is a CONTROLLER and so
       outside the rule as written — but the rule should be spelled out before
       it is enforced, not after somebody trips it.
+<<<<<<<< HEAD:openspec/changes/archive/2026-10-10-flow-bpmn-interchange/tasks.md
+- [ ] UI follow-up filed against nextcloud-vue: export/import actions on the (not run: a nextcloud-vue change) (live pass, decision 139)
+|||||||| dcb02fb4f4:openspec/changes/flow-bpmn-interchange/tasks.md
+- [ ] UI follow-up filed against nextcloud-vue: export/import actions on the (not run: a nextcloud-vue change)
+========
 - Not in this change (a nextcloud-vue change): UI follow-up filed against nextcloud-vue: export/import actions on the (not run: a nextcloud-vue change)
+>>>>>>>> origin/main:openspec/changes/archive/2026-11-12-flow-bpmn-interchange/tasks.md
       flow detail surface rendering the mapping report (out of this repo's
       scope; endpoint contract is this change).
 

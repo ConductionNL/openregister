@@ -313,7 +313,14 @@
             "returned": null
         },
         "filters": {
-            "a": 1
+            "a": 1,
+            "@self": {
+                "organisation": {
+                    "isnull": true
+                }
+            },
+            "_rbac": false,
+            "_multitenancy": false
         }
     },
     "unique: one field, hit": {
@@ -325,7 +332,14 @@
             }
         },
         "filters": {
-            "a": 1
+            "a": 1,
+            "@self": {
+                "organisation": {
+                    "isnull": true
+                }
+            },
+            "_rbac": false,
+            "_multitenancy": false
         }
     },
     "unique: one field, null hit": {
@@ -337,7 +351,14 @@
             }
         },
         "filters": {
-            "a": null
+            "a": null,
+            "@self": {
+                "organisation": {
+                    "isnull": true
+                }
+            },
+            "_rbac": false,
+            "_multitenancy": false
         }
     },
     "unique: list, miss": {
@@ -346,7 +367,14 @@
         },
         "filters": {
             "a": 1,
-            "b": "x"
+            "b": "x",
+            "@self": {
+                "organisation": {
+                    "isnull": true
+                }
+            },
+            "_rbac": false,
+            "_multitenancy": false
         }
     },
     "unique: list, hit": {
@@ -359,7 +387,14 @@
         },
         "filters": {
             "a": 1,
-            "b": "x"
+            "b": "x",
+            "@self": {
+                "organisation": {
+                    "isnull": true
+                }
+            },
+            "_rbac": false,
+            "_multitenancy": false
         }
     },
     "unique: list, null value": {
@@ -372,7 +407,14 @@
         },
         "filters": {
             "a": 1,
-            "b": null
+            "b": null,
+            "@self": {
+                "organisation": {
+                    "isnull": true
+                }
+            },
+            "_rbac": false,
+            "_multitenancy": false
         }
     },
     "unique: one-item list, hit": {
@@ -384,7 +426,14 @@
             }
         },
         "filters": {
-            "b": "x"
+            "b": "x",
+            "@self": {
+                "organisation": {
+                    "isnull": true
+                }
+            },
+            "_rbac": false,
+            "_multitenancy": false
         }
     },
     "unique: numeric field, hit": {
@@ -395,7 +444,15 @@
                 "7": "The identifying fields (7) are not unique. Found duplicate values: 7=v"
             }
         },
-        "filters": []
+        "filters": {
+            "@self": {
+                "organisation": {
+                    "isnull": true
+                }
+            },
+            "_rbac": false,
+            "_multitenancy": false
+        }
     },
     "response: custom, no errors": [
         400,

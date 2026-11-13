@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 /**
  * Re-chaining the audit trail end to end, verifying it and counting the unsealed backlog.
- * Only the methods RechainAuditTrailCommand and RechainAuditTrailForFlowAttribution call.
+ * Only the methods RechainAuditTrailCommand and the audit chain repair steps call.
  */
 interface AuditRechainInterface {
 
@@ -54,12 +54,26 @@ interface AuditRechainInterface {
 	 *     brokenAt: int|null,
 	 *     skippedNullHashes: int,
 	 *     purgedTombstones: int,
+	 *     unkeyedEntries: int,
+	 *     keyedFrom: int|null,
+	 *     keyBoundaryIntact: bool,
 	 *     range?: array{from: int, to: int}
 	 * }
 	 *
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	public function verifyChain(?int $from = null, ?int $to = null): array;
+
+	/**
+	 * Start the keyed chain after the last existing row, once; the existing rows are verified first.
+	 *
+	 * @return array{started: bool, keyedFrom: int|null, unkeyedChain: array<string, mixed>|null}
+	 *
+	 * @throws \RuntimeException When the seal lock cannot be taken.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	public function startKeyedChain(): array;
 
 	/**
 	 * Count rows still awaiting a seal.

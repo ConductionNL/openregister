@@ -182,7 +182,7 @@
 
 ## 4. Tests
 
-- [ ] 4.1 Unit tests for the scope on read and write, the ceiling, the promotion and the retained values.
-- [ ] 4.2 Unit tests for the filtered options, the refused out-of-filter write and the unresolved operand.
-- [ ] 4.3 An e2e over a reference offering only the contacts of the chosen organisation.
+- [x] 4.1 Unit tests for the scope on read and write, the ceiling, the promotion and the retained values. (verified: tests/Unit/Service/Schemas/ScopedPropertyGovernanceTest.php, tests/Unit/Service/Schemas/ScopedPropertyDeclarationTest.php, tests/Unit/Db/SchemaSaveGovernsScopedPropertiesTest.php)
+- [x] 4.2 Unit tests for the filtered options, the refused out-of-filter write and the unresolved operand. (verified: lib/Service/Schemas/ReferenceOptionsReader.php, tests/Unit/Service/Schemas/ReferenceOptionsReaderTest.php, tests/Unit/Service/Schemas/ReferenceFilterMatchTest.php)
+- [ ] 4.3 An e2e over a reference offering only the contacts of the chosen organisation. (live pass, decision 139)
 - [ ] 4.4 Deduplication check (ADR-012) recorded in the PR body.

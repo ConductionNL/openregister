@@ -17,4 +17,4 @@
 
 ## 4. Live check
 
-- [ ] 4.1 On the integration instance, withdraw a dossiq case as a resident on the portal. `statusPublicLabel`, `deadline` and `statutoryTerm` stay set, and the audit trail shows no null write.
+- [ ] 4.1 On the integration instance, withdraw a dossiq case as a resident on the portal. `statusPublicLabel`, `deadline` and `statutoryTerm` stay set, and the audit trail shows no null write. (live pass, decision 139)

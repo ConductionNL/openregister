@@ -73,7 +73,7 @@ code named beside it:
       documented `openregister.*` node ids == registry ids; `README.md`
       links `flows.md`. Positive control: the test fails when an id is
       removed from the doc.
-- [ ] Every behaviour claim spot-checked against the live dev instance
+- [ ] Every behaviour claim spot-checked against the live dev instance (live pass, decision 139)
       while writing; each mismatch filed as an issue and the doc worded to
       the shipped behaviour.
 
