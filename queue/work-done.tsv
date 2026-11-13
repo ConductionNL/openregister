@@ -3557,3 +3557,4 @@ cover:stackiq:9ac19b3am5ac4:38e80a9f	already done: lib/Command/*.php at 100% (28
 cover:stackiq:9ac19b3am5ac4:d528dcf0	already done: lib/Dashboard/*.php is one class at 12/12 lines with 3 test files; no PR	session-20261113T080549-20301834	2026-11-13T08:43:11Z
 cover:stackiq:9ac19b3am5ac4:f545d745	already done: lib/Repair/*.php at 1229/1234 lines (99.6%) on 2a8336ce; no PR	session-20261113T080549-20301834	2026-11-13T08:43:24Z
 fix:larpinq:1011:c34753f4	renamed 4 test classes to match files; 12 tests now run; suite 697->709, 0 failures; head 27666447	session-20261113T081043-b24589a6	2026-11-13T08:43:37Z
+cover:launchpad:fb10c50fm911d:js01efb861	PR #1179: +90 vitest tests, Widgets 94.09->99.07% lines	session-20261113T081040-5e814df2	2026-11-13T08:43:47Z
