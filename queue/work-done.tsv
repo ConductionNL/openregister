@@ -4901,3 +4901,4 @@ build:openregister:records-draft-versions	failed: worker rules forbid build task
 build:openregister:or-flow-run-node	nothing to build: only open task is 4 (composer check:strict gate run), a measurement task left unchecked by the build rules	session-20261113T104531-16da055e	2026-11-13T12:35:04Z
 build:openregister:records-api-and-table-stated	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:35:01Z
 build:openregister:records-bulk-transition	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:35:08Z
+fix:pipelinq:3754:2d2541ab	conflict resolved (l10n union, rebuilt js); new head 9eeea22b, REVERIFY queued	session-20261113T051703-1b54bfba	2026-11-13T12:35:16Z
