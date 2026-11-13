@@ -3034,6 +3034,7 @@ Service/Schemas/ReferenceFilterDeclaration.php,113,Service,Service,Service/Schem
 Service/Schemas/ReferenceFilterException.php,23,Service,Service,Service/Schemas/ReferenceFilterException.php,0,460,Core
 Service/Schemas/ReferenceFilterOperandGuard.php,55,Service,Work,Work/Service/Schemas/ReferenceFilterOperandGuard.php,0,,Core
 Service/Schemas/ReferenceOptionsReader.php,69,Service,Service,Service/Schemas/ReferenceOptionsReader.php,0,,Core
+Service/Schemas/RegisterModelService.php,344,Service,Service,Service/Schemas/RegisterModelService.php,0,,Core
 Service/Schemas/RepeatingGroupDeclarationValidator.php,65,Service,Service,Service/Schemas/RepeatingGroupDeclarationValidator.php,0,,Core
 Service/Schemas/SchemaCacheHandler.php,334,Service,Service,Service/Schemas/SchemaCacheHandler.php,0,63,Core
 Service/Schemas/ScopedPropertyDeclaration.php,60,Service,Service,Service/Schemas/ScopedPropertyDeclaration.php,0,351,Core
