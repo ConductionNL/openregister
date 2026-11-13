@@ -1159,3 +1159,4 @@ cover:buildiq:8ca317f6m6d54:jsd48eb217	PR #1486: 21 vitest tests for src/store/m
 cover:integriq:9b0f5894m2367:js198de082	PR #3440: 30 vitest tests; EventSubscription+NotificatiesAbonnement lines 52.2->88.4%; vitest 1392->1422 green	session-20261112T234655-6f442bc3	2026-11-13T00:34:41Z
 verify:keepiq:1705:05038cd6	2 GREEN (1705, 1706); 3861 tests, 0 failures	session-20261113T002031-7b3e41b2	2026-11-13T00:34:42Z
 cover:stackiq:8cfacb29m2f4b:jsd48eb217	PR #1803: 2 modules, 22 tests, vitest 1880->1902, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:35:04Z
+cover:integriq:9b0f5894m2367:js971eca14	PR #3441: AddEndpointRuleModal vitest spec, 11 tests; vitest 1392->1403 OK	session-20261112T231639-4c562de9	2026-11-13T00:35:33Z
