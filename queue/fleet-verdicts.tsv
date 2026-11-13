@@ -6048,3 +6048,4 @@ opencatalogi	2591	82c61351038f3bc335fe5b9e69c471ed59ca7255	GREEN	worker-41	unit 
 learniq	2472	37b719d88e78dfb1c8b32c47f379225dcdf31b59	GREEN	worker-29	tests only; suite 6423 run, baseline 1 failure (HigherEducationExampleSetTest), 0 new
 stackiq	1883	ee55afb308b5eca55912db6909cd13a498c5bbfe	GREEN	worker-32	tree 1883+1884: 3409 tests (baseline 3397 OK), 0 new failures; tests only
 stackiq	1884	d3b423439b45ae895ecae3b375edb36423201cfc	GREEN	worker-32	tree 1883+1884: 3409 tests (baseline 3397 OK), 0 new failures; tests only
+opencatalogi	2592	3da08e95e74637bf489bdc1dcf6f2c8d673ccff8	GREEN	worker-41	unit 5287 run on tree 2591-2594 (baseline 5254, 2 inherited failures AppIdentityTest, WooControllerTest), 0 new failures; tests only
