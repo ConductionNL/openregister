@@ -2821,3 +2821,4 @@ cover:shillinq:05639debmd8ee:46ce5a44	PR #2891: 10 tests over 4 classes, six Ser
 merge:launchpad:1171:3ec55cfe	merge-local over 3 launchpad tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:31:28Z
 merge:launchpad:1172:ba1d4b65	merge-local over 3 launchpad tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:31:28Z
 merge:launchpad:1173:2c5aa39c	merge-local over 3 launchpad tasks: merged=3 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:31:28Z
+cover:pipelinq:7f9dc8e6m1e6e:e372e6ff	PR #3688: lib/Event 77/87 -> 83/87 (95.4%); listener test now covers TimeEntryApprovedEvent, +1 assertion; suite unchanged	session-20261113T061516-58aa7364	2026-11-13T06:31:43Z
