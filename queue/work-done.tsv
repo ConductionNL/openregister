@@ -2291,3 +2291,4 @@ verify:buildiq:1506:6f59a194	GREEN 1506, 1507 (tests only; no new failures vs ba
 cover:stackiq:df113dffm2c76:d528dcf0	already done: lib/Dashboard/*.php 12/12 on development	session-20261113T015005-030aa10a	2026-11-13T04:50:30Z
 cover:keepiq:c967a31fm0090:2c3e981f	already done: lib/Service/ShareSync 174/174 (100%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:50:53Z
 merge:launchpad:1165:9c97e3a2	merge-local over 1 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:50:53Z
+cover:decidiq:a5f973bbma14b:d39f9857	already done: lib/Support/*.php at 100% lines/methods on development (09e26a39), no risky tests; no PR	session-20261113T041644-786bb7fc	2026-11-13T04:51:16Z
