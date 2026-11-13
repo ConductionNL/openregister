@@ -62,6 +62,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 	 * @var array<string, array<int, string>>
 	 */
 	private const NOT_OBJECT_SERVICE = [
+		'lib/BackgroundJob/SharerAccessSweepJob.php' => ['objectOf'],
 		'lib/Controller/ContentReportController.php' => ['create'],
 		'lib/Service/Portal/PortalPartyResolver.php' => ['resolveFromObject'],
 		'lib/Service/Object/SaveObject/InverseRelations.php' => ['relatedObject'],

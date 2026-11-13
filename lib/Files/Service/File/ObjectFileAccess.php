@@ -169,15 +169,21 @@ class ObjectFileAccess {
 	 * file search. The object is read again under the caller's RBAC, so the
 	 * answer is the one an object read would give.
 	 *
-	 * @param ObjectEntity $object The object.
+	 * Without `$multitenancy` the organisation filter is left out. That is for a
+	 * caller already admitted to the object by its owner rule, an administrator
+	 * or an organisation right ({@see \OCA\OpenRegister\Service\Rbac\GrantManageGuard}).
+	 *
+	 * @param ObjectEntity $object       The object.
+	 * @param bool         $multitenancy Whether the organisation filter applies.
 	 *
 	 * @return bool True when the caller may read it.
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The same read with or without the organisation filter.
 	 */
-	public function mayRead(ObjectEntity $object): bool {
+	public function mayRead(ObjectEntity $object, bool $multitenancy = true): bool {
 		$identifier = ($object->getUuid() ?? (string)$object->getId());
 		if ($identifier === '') {
 			return false;
@@ -188,7 +194,7 @@ class ObjectFileAccess {
 				id: $identifier,
 				options: new ObjectFindOptions(register: $object->getRegister(), schema: $object->getSchema()),
 				_rbac: true,
-				_multitenancy: true
+				_multitenancy: $multitenancy
 			));
 		} catch (Throwable $e) {
 			return false;

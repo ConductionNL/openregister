@@ -48,5 +48,11 @@ final class AccessListenerRegistrar {
 			\OCP\User\Events\UserLoggedInEvent::class,
 			\OCA\OpenRegister\Listener\IdentityClaimsLoginListener::class
 		);
+
+		// A removed user's object shares end with them.
+		$context->registerEventListener(
+			\OCP\User\Events\BeforeUserDeletedEvent::class,
+			\OCA\OpenRegister\Listener\SharerViewsEndWithUserListener::class
+		);
 	}//end register()
 }//end class
