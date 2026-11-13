@@ -5024,3 +5024,4 @@ verify:pipelinq:3739:bc850dd6	3739 BLOCK (access change remains), 3749 GREEN	ses
 build:openregister:modelling-field-names-per-language	partial: PR #10211 (4/7 tasks; editor inputs need l10n pass, e2e and nextcloud-vue issue left)	session-20261113T114527-9a216dd1	2026-11-13T12:50:01Z
 review:openregister:10188:295efa62	APPROVE: docs-only, removed sections verified stale, documented routes verified	session-20261113T094602-d25cda2a	2026-11-13T12:50:03Z
 cover:pipelinq:7f9dc8e6m84dd:9d3a1784	already done: lib/BackgroundJob/*.php at 1449/1606 lines (90.2%) on development; no PR	session-20261113T064519-30004ad4	2026-11-13T12:51:35Z
+build:openregister:register-document-store	partial: PR #10213 DocumentStore root + describe, root wired through file handlers, literal and byte-path guards; 1.2, move (2.x), integration (3.x) left	session-20261113T114525-2ca68289	2026-11-13T12:52:20Z
