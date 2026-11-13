@@ -2790,3 +2790,4 @@ cover:shillinq:05639debmd8ee:34f5c300	PR opened: 17 cases for FeeScheduleMatcher
 cover:pipelinq:7f9dc8e6m1e6e:38e80a9f	already done: lib/Command/*.php 382/382 statements covered on development; no PR	session-20261113T061518-90540a48	2026-11-13T06:27:02Z
 cover:pipelinq:7f9dc8e6m1e6e:js06645759	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:27:19Z
 cover:shillinq:05639debmd8ee:588dbc92	already done: lib/Service/External/Bunq 40/41 (97.56%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:27:21Z
+cover:pipelinq:7f9dc8e6m1e6e:197c84b8	already done: lib/Adapter/*.php 58/58 statements covered on development; no PR	session-20261113T061518-90540a48	2026-11-13T06:27:39Z
