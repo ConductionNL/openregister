@@ -50,6 +50,7 @@ use RuntimeException;
  * One worker pass, with the reapers switched off unless a test needs them.
  */
 #[CoversClass(FlowRunWorker::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Flow\FlowErrorPolicy::class)]
 #[UsesClass(FlowRunWorkerServices::class)]
 #[UsesClass(FlowRunRecoveryServices::class)]
 #[UsesClass(AbandonedFlowClaim::class)]

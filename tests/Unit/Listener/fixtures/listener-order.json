@@ -136,6 +136,7 @@
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\HandoffLifecycleListener",
 		"OCA\\OpenRegister\\Listener\\ArchivalNominationListener",
+		"OCA\\OpenRegister\\Listener\\StateEntryFreezeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\AggregationThresholdListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectUnlockedEvent": [
@@ -164,7 +165,8 @@
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\GraphQLSubscriptionListener",
 		"OCA\\OpenRegister\\Listener\\NotifyPushListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\LifecycleActionRecordListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectUpdatingEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyTreeGuardListener",

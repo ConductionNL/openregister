@@ -42,6 +42,8 @@ use Exception;
 use OCA\OpenRegister\Service\ProtectedCarryForward;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\PropertyWriteCheck;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
@@ -3111,6 +3113,7 @@ class SaveObject implements SaveObjectInterface {
 
 			$this->refuseLockedByAnother(existingObject: $existingObject);
 			$this->refuseArchivedOrFrozen(existingObject: $existingObject);
+			$this->refusePreservedContentWrite(existingObject: $existingObject, schema: $call->schema);
 
 			return $existingObject;
 		} catch (DoesNotExistException $e) {
@@ -3227,6 +3230,36 @@ class SaveObject implements SaveObjectInterface {
 			throw ObjectStateWriteException::frozen($existingObject);
 		}
 	}//end refuseArchivedOrFrozen()
+
+	/**
+	 * Refuse a content write to an object in the preservation (statisch) regime.
+	 *
+	 * The preservation regime is enforced only where the object's schema offers
+	 * it ({@see \OCA\OpenRegister\Db\Schema::isPreservationEnabled()}), so a
+	 * schema that does not declare `x-openregister-preserve` behaves exactly as
+	 * before and the regime is opt-in (REQ-APS-006, backwards compatible). A
+	 * preserved object refuses writes to its own content; its references stay
+	 * resolvable and it stays readable, because resolving a reference and
+	 * reading the object do not pass through this write path.
+	 *
+	 * @param ObjectEntity $existingObject The object being written.
+	 * @param Schema|null  $schema         The object's schema, when the save call carries it.
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectStateWriteException When the object is preserved and its schema offers the regime.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	private function refusePreservedContentWrite(ObjectEntity $existingObject, ?Schema $schema): void {
+		if ($schema === null || $schema->isPreservationEnabled() === false) {
+			return;
+		}
+
+		if ($existingObject->isPreserved() === true) {
+			throw ObjectStateWriteException::preserved($existingObject);
+		}
+	}//end refusePreservedContentWrite()
 
 	/**
 	 * The `@self` an update works from: a version the caller carries counts only for a trusted caller.
@@ -4952,6 +4985,8 @@ class SaveObject implements SaveObjectInterface {
 		$data           = $update->data;
 		$run            = new ObjectUpdateRun();
 		$run->silent    = $options->silent;
+		$run->origin    = $options->origin;
+		$run->marks     = $options->marks;
 
 		// Prefer the caller's oldObject (handleObjectUpdate): a clone taken here may
 		// already hold data prepareObjectForUpdate changed in place.
@@ -5084,10 +5119,31 @@ class SaveObject implements SaveObjectInterface {
 		);
 
 		if ($this->writesAuditRow(silent: $run->silent) === true) {
-			$log = $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
+			$log = $this->auditUpdate(run: $run, updatedEntity: $updatedEntity);
 			$updatedEntity->setLastLog($log->jsonSerialize());
 		}
 	}//end recordObjectUpdate()
+
+	/**
+	 * Write the audit row of an update: an edit as before, an update with an
+	 * origin (a revert) under that origin as its action, with its markers.
+	 *
+	 * @param ObjectUpdateRun $run           The update call.
+	 * @param ObjectEntity    $updatedEntity The updated entity.
+	 *
+	 * @return AuditTrail The audit row.
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	private function auditUpdate(ObjectUpdateRun $run, ObjectEntity $updatedEntity): AuditTrail {
+		if ($run->origin === null && $run->marks === []) {
+			return $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
+		}
+
+		return $this->auditTrailMapper->recordChange(
+			change: new AuditedChange(old: $run->oldObject, new: $updatedEntity, action: $run->origin, marks: $run->marks)
+		);
+	}//end auditUpdate()
 
 	/**
 	 * Check if audit trails are enabled in the settings

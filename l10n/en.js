@@ -2351,6 +2351,7 @@ OC.L10N.register(
     "Preferred Label" : "Preferred Label",
     "Prerequisites" : "Prerequisites",
     "Present" : "Present",
+    "Presentation" : "Presentation",
     "Press Enter to send, Shift+Enter for new line" : "Press Enter to send, Shift+Enter for new line",
     "Press enter to send, shift+enter for new line" : "Press enter to send, shift+enter for new line",
     "Prettify" : "Prettify",

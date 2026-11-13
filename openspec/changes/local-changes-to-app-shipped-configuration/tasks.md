@@ -13,10 +13,16 @@
 - [ ] 1.2b Registers and the declared configuration blocks. `KEY_REGISTER`
       exists and the store is subject-agnostic; the register import path is a
       second seam in the same 5,484-line handler and is its own task.
-- [ ] 1.2c Annotations (`x-openregister-*`) are deliberately NOT guarded:
-      `Schema::setConfiguration()` DROPS an unknown key, so a guarded
-      annotation would read as removed on every import and conflict with
-      itself forever. Guarding them needs the vocabulary check first.
+- [x] 1.2c Annotations (`x-openregister-*`), as one more part,
+      `configuration`, holding only keys of `AnnotationVocabulary::KEYS`
+      (the keys that survive `setConfiguration()`), read from the top level
+      and from `configuration` with the nested form winning, and written back
+      nested with the maintained keys (`objectNameField`, ...) untouched
+      (`GuardedAnnotations`). Guarded only when the app ships any, so an app
+      that ships none leaves them as an import always has. A baseline recorded
+      before this has no `configuration` part and is seeded from the instance,
+      so the first guarded release lands the app's annotation changes instead
+      of reporting every one as a conflict.
 
 ## 2. The divergence
 

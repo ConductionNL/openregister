@@ -2420,6 +2420,7 @@ OC.L10N.register(
     "Preferred Label" : "Voorkeurslabel",
     "Prerequisites" : "Vereisten",
     "Present" : "Aanwezig",
+    "Presentation" : "Presentatie",
     "Press Enter to send, Shift+Enter for new line" : "Druk op Enter om te verzenden, Shift+Enter voor een nieuwe regel",
     "Press enter to send, shift+enter for new line" : "Druk op Enter om te verzenden, shift+Enter voor nieuwe regel",
     "Prettify" : "Opmaken",
