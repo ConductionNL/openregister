@@ -2777,7 +2777,9 @@ cover:integriq:92114ab0m1534:3bc85ed6	already done: lib/Service/Stuf at 96.6% li
 cover:pipelinq:7f9dc8e6m1e6e:jsa5192f20	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:25:16Z
 verify:shillinq:2883:0ca7c1fe	GREEN 2883-2885 (PHP tests only; no new failures)	session-20261113T031701-b518f7f8	2026-11-13T06:25:27Z
 measure:decidiq:20261113h06	php 87.66 js 98.25 at 85721b96	session-20261113T051708-7d5f6071	2026-11-13T06:25:42Z
+cover:integriq:92114ab0m1534:63ce5d61	PR #3492: 15 tests, lib/PropertySource/Provider 208/229 -> 229/229; suite 7295, failures unchanged vs baseline	session-20261113T061516-58aa7364	2026-11-13T06:25:48Z
 cover:dossiq:f8a113c5mac88:65e30692	already done: lib/Service/Intake/ at 94.95% lines (1900/2001) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:25:55Z
 verify:pipelinq:3687:9aa599c7	GREEN 3687: vitest 3893->3962, all pass	session-20261113T054517-06ee2c47	2026-11-13T06:25:53Z
+cover:dossiq:f8a113c5mac88:1174c39d	PR #6301: 22 tests (ConfiguredRegistryService, CaseObjectReference, CaseAssigneeWriter to 100%); suite 14846->14868, 19 inherited failures unchanged	session-20261113T054516-469bb7f6	2026-11-13T06:26:02Z
 fix:integriq:3485:5d621940	renamed 3 colliding test files; merges after 3484, no new failures; new head a7dd5e51	session-20261113T041646-2c1d764f	2026-11-13T06:26:14Z
 cover:dossiq:f8a113c5mac88:e2e021bd	already done: lib/Service/Transitions/ at 93.11% lines (1716/1843) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T06:26:17Z
