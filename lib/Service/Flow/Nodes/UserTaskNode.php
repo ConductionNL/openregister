@@ -480,6 +480,13 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 
 		$data = $this->config->taskData(step: $step, nodeType: $this->getId());
 
+		// Who the performers resolved to NOW, kept as evidence in `metadata`
+		// only: the answer guard resolves again when somebody answers, and must.
+		$evidence = $this->performers->resolutionEvidence(config: $config);
+		if ($evidence !== null) {
+			$data['metadata']['performersAtCreation'] = $evidence;
+		}
+
 		// 🔴 BEFORE THE TASK EXISTS, AND IT THROWS. `attachTo` naming a role the
 		// run never recorded fails the step and creates NOTHING: a task attached
 		// to nothing looks fine in every list and is exactly the task an author
