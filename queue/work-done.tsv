@@ -1408,3 +1408,4 @@ cover:shillinq:801aab65:b12f5203	PR #2816: 6 tests for ImportPipelineService sto
 verify:launchpad:1147:8ee02052	1147 GREEN, 1148 GREEN (tests-only; phpunit 3579 and vitest 1520 green)	session-20261113T011801-de2bfa9d	2026-11-13T01:24:59Z
 cover:launchpad:755175ffm7412:js750ffd0f	PRs #1147 + #1155: 118 tests, src/components/admin 56.2%->85.9% lines with both; found ConfluenceImport buttons stay disabled (Boolean cast of empty string), noted in #1147	session-20261113T002025-940c220f	2026-11-13T01:25:14Z
 verify:shillinq:2809:64d71e60	2 GREEN (2809, 2810), tests-only, no new failures	session-20261113T011731-be978a55	2026-11-13T01:25:16Z
+cover:filinq:8ecceb86:1174c39d	already done: lib/Service/Support/ at 95.7% (22/23 stmts, constructor-only parameter classes) on development, target 90; no PR	session-20261112T234653-efce95ba	2026-11-13T01:25:24Z
