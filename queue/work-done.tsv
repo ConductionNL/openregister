@@ -3329,3 +3329,4 @@ cover:openregister:7350e3efmea52:0c3677df	PRs #10109 (115 tests) + #10110 (33 te
 cover:versioniq:1b35eed9:1d2bf2e8	PR #672 (if numbered so): 32 tests for AppStoreSource lookup, TrustedSourceList, SourceRegistry, AdvisoryClauses, AdvisoryPackageMap; suite 1356->1388, same 2 inherited failures	session-20261113T072708-ee434236	2026-11-13T07:57:16Z
 verify:shillinq:2907:d30e10e1	2908 GREEN (unit 9533, only the inherited clock-bound webhook failure); 2907 skipped: head moved to cd477365, not the queued 8ea23317	session-20261113T072711-3523cf52	2026-11-13T07:57:41Z
 cover:planninq:e1c9866d:befc51b3	PR #1141: 7 phpunit tests, Timetabling 444->447/448	session-20261113T051709-e616bf69	2026-11-13T07:57:49Z
+verify:shillinq:2900:beca6da5	2900 GREEN, 2907 GREEN; 0 new failures	session-20261113T074531-ad7036dd	2026-11-13T07:57:50Z
