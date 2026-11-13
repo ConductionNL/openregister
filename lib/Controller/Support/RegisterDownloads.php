@@ -45,15 +45,13 @@ final class RegisterDownloads {
 	private const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 	/**
-	 * Keep the session and services the downloads read.
+	 * Keep the services the downloads read.
 	 *
-	 * @param ControllerSession           $session  The session, for the current user.
-	 * @param RegistersControllerServices $services The controller's services.
+	 * @param RegistersControllerServices $services The controller's services, with the session for the current user.
 	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	public function __construct(
-		private readonly ControllerSession $session,
 		private readonly RegistersControllerServices $services,
 	) {
 	}//end __construct()
@@ -69,7 +67,7 @@ final class RegisterDownloads {
 	 */
 	public function excel(Register $register): DataDownloadResponse {
 		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
-			request: new ObjectExportRequest(register: $register, currentUser: $this->session->userSession->getUser()),
+			request: new ObjectExportRequest(register: $register, currentUser: $this->services->session->userSession->getUser()),
 		);
 		$filename    = $this->stamped(stem: $register->getSlug() ?? 'register', extension: 'xlsx');
 		return new DataDownloadResponse($this->xlsxBytes(spreadsheet: $spreadsheet), $filename, self::XLSX_MIME);
@@ -87,7 +85,7 @@ final class RegisterDownloads {
 	 */
 	public function csv(Register $register, Schema $schema): DataDownloadResponse {
 		$csv = $this->services->transfer->exportService->exportToCsv(
-			request: new ObjectExportRequest(register: $register, schema: $schema, currentUser: $this->session->userSession->getUser()),
+			request: new ObjectExportRequest(register: $register, schema: $schema, currentUser: $this->services->session->userSession->getUser()),
 		);
 		$stem = $this->schemaStem(register: $register, schema: $schema);
 		return new DataDownloadResponse($csv, $this->stamped(stem: $stem, extension: 'csv'), 'text/csv');
@@ -105,7 +103,7 @@ final class RegisterDownloads {
 	 */
 	public function pdf(Register $register, Schema $schema): JSONResponse|DataDownloadResponse {
 		try {
-			$user = $this->session->userSession->getUser();
+			$user = $this->services->session->userSession->getUser();
 			$pdf = $this->services->transfer->exportService->exportToPdf(
 				request: new ObjectExportRequest(
 					register: $register,
@@ -161,7 +159,7 @@ final class RegisterDownloads {
 	 */
 	public function templateCsv(Register $register, Schema $schema): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->buildTemplateCsv(
-			request: new ObjectExportRequest(register: $register, schema: $schema, currentUser: $this->session->userSession->getUser()),
+			request: new ObjectExportRequest(register: $register, schema: $schema, currentUser: $this->services->session->userSession->getUser()),
 		);
 		return new DataDownloadResponse($content, $this->templateName(schema: $schema) . '.csv', 'text/csv');
 	}//end templateCsv()
@@ -178,7 +176,7 @@ final class RegisterDownloads {
 	 */
 	public function templateXlsx(Register $register, Schema $schema): DataDownloadResponse {
 		$spreadsheet = $this->services->transfer->exportService->buildTemplateSpreadsheet(
-			request: new ObjectExportRequest(register: $register, schema: $schema, currentUser: $this->session->userSession->getUser()),
+			request: new ObjectExportRequest(register: $register, schema: $schema, currentUser: $this->services->session->userSession->getUser()),
 		);
 		$content     = $this->xlsxBytes(spreadsheet: $spreadsheet);
 		return new DataDownloadResponse($content, $this->templateName(schema: $schema) . '.xlsx', self::XLSX_MIME);

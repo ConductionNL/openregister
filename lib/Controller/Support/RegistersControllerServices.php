@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 /**
- * Everything the registers controller injects besides the request and the controller session.
+ * Everything the registers controller injects besides the request.
  *
  * @spec openspec/specs/register-service-extensions/spec.md
  */
@@ -31,6 +31,7 @@ final class RegistersControllerServices {
 	/**
 	 * Bundle the services.
 	 *
+	 * @param ControllerSession    $session      The current user, group manager and logger.
 	 * @param RegisterMappers      $mappers      Register, schema, audit and object mappers.
 	 * @param RegisterServices     $registers    Register service, cache, serializer and packs.
 	 * @param RegisterIntegrations $integrations Configuration, GitHub, OpenAPI and container.
@@ -39,6 +40,7 @@ final class RegistersControllerServices {
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 */
 	public function __construct(
+		public readonly ControllerSession $session,
 		public readonly RegisterMappers $mappers,
 		public readonly RegisterServices $registers,
 		public readonly RegisterIntegrations $integrations,

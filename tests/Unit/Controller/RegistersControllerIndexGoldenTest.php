@@ -156,7 +156,6 @@ class RegistersControllerIndexGoldenTest extends TestCase {
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$controller = RegistersControllerFactory::create(
-			'openregister',
 			$request,
 			$this->registerService(),
 			$objectMapper,

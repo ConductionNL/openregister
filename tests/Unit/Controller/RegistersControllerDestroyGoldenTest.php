@@ -189,7 +189,6 @@ class RegistersControllerDestroyGoldenTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 
 		return RegistersControllerFactory::create(
-			'openregister',
 			$request,
 			$this->registerService(case: $case),
 			$objects,

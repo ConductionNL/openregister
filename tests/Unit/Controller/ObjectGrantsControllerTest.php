@@ -80,7 +80,6 @@ class ObjectGrantsControllerTest extends TestCase {
 		$this->report = $this->createMock(ObjectGrantsReport::class);
 
 		return ObjectGrantsControllerFactory::create(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			objectService: $objectService,
 			gate: $gate,
