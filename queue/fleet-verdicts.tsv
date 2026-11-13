@@ -4411,3 +4411,4 @@ stackiq	1785	fb694538d190e7652b9270411ff86d1affd56b9a	GREEN	worker-38	type-only 
 stackiq	1786	fc45177490fbad05f0ca2a34d05384829646925a	GREEN	worker-38	type-only refactor to RegisterConfigReaderInterface; tree without 1783/1787: 2584 tests, baseline 2539 green, 0 new failures
 stackiq	1787	230bfe9748120a2eaf73b1633b1e985ad44ef778	LINT	worker-38	php -l fails on lib/Service/ContactpersoonService.php after 1785 is merged: duplicate use of RegisterConfigReaderInterface (line 29); lints clean on development alone, needs development merged in once 1785 lands
 stackiq	1788	bfec93d2ccd4fc6a297f26f60155d206ef898f70	GREEN	worker-38	extract-method refactor, same checks/messages/order, golden test added; tree 2584 tests, baseline 2539 green, 0 new failures
+stackiq	1789	f80ba5d8f9ec46221e04762c436dee87f3a1e7e3	GREEN	worker-38	extract-method refactor, node order preserved, golden test added; tree 2584 tests, baseline 2539 green, 0 new failures
