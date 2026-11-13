@@ -1206,6 +1206,7 @@ fix:hermiq:1529:f5305e07	conflict resolved, pushed c0cafc44, REVERIFY recorded	s
 cover:shillinq:801aab65:f0c02922	PR #2805: 27 tests over 8 deferred adapters, lib/Service/External 8.7%->68.8%, suite inherited 1 failure unchanged	session-20261112T234655-599f9c9a	2026-11-13T00:45:01Z
 fix:hermiq:1518:71a3fd8f	merged development, resolved ScheduleService/ScheduleServiceTest conflicts keeping both extractions; new head 202e8aaa; REVERIFY recorded	session-20261112T231633-96ffe7b8	2026-11-13T00:45:07Z
 cover:keepiq:d76c2121m70b5:js0be8c659	PR #1708: 3 modal specs, 26 tests; src/modals line coverage 59.5% -> 93.0%	session-20261113T002028-6d7c79b9	2026-11-13T00:45:18Z
+cover:pipelinq:f67520ecm9d2c:js00fe026a	already done: src/services/* at 96.1% statements (1912/1989, vitest v8) vs target 85; no PR	session-20261112T224529-41d77a96	2026-11-13T00:45:38Z
 fix:launchpad:1109:c9075734	failed: permission (installing the secret scanner to reproduce the gate was refused; gate here reports UNMEASURED)	session-20261113T002025-940c220f	2026-11-13T00:45:49Z
 fix:hermiq:1534:a9242b37	merged development in, head a68a0c8c, REVERIFY recorded	session-20261113T003903-5efbf5ae	2026-11-13T00:45:48Z
 fix:dossiq:5899:035ffd99	conflict resolved (kept PR's CaseReadAndPatch refactor + dev @spec tags); suite same 19 inherited failures; REVERIFY new head 05064fadad1bf15bf5341fb8b73ae4dc333dea18	session-20261112T221237-836ed3f0	2026-11-13T00:45:51Z
