@@ -1079,3 +1079,6 @@ cover:openregister:7350e3efm0e99:js913a213e	failed: lang=js but dirs=lib/Service
 cover:filinq:8ecceb86:7718b0ba	opened filinq#1984 (Contract/Sanitization/RedactionReviewMark repositories, 15 tests; suite 5318->5333 OK)	session-20261112T231639-4c562de9	2026-11-13T00:15:39Z
 cover:openregister:7350e3efm0e99:js7505aeb4	failed: lang=js but dirs are PHP only (payload inconsistent)	session-20261112T234655-793f46ee	2026-11-13T00:15:39Z
 cover:filinq:8ecceb86:59d1e403	PR #1985: NativeSigningProvider + ValidSignProvider, 13 tests; suite 5318 -> 5331 OK	session-20261112T234653-57d11a5b	2026-11-13T00:15:52Z
+merge:learniq:2379:c049af5a	stale	feeder	2026-11-13T00:15:19Z
+merge:learniq:2333:a0fb782d	stale	feeder	2026-11-13T00:15:19Z
+merge:filinq:1971:e7e07441	stale	feeder	2026-11-13T00:15:19Z
