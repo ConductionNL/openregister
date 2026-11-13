@@ -1938,3 +1938,4 @@ cover:stackiq:df113dffm8db8:17d367ab	already done: SyncHandler and ModuleRegistr
 cover:launchpad:fb10c50fm31b6:34f5c300	PR #1162: 22 tests, CalendarWidget 188->271/296, UrlSafety 22->39/40, Conditional 51->79/79, ConfluenceImportRun 0->16/16; suite green	session-20261113T024656-2f332446	2026-11-13T03:52:35Z
 cover:dossiq:6ca0231ema7d4:774c5470	PR #6266: StatusDisplayNameTest +4, @uses fix; lib/Service/Timeline 95.9%->100%; 19 inherited failures, none new	session-20261113T024656-d5bfb688	2026-11-13T03:53:00Z
 cover:shillinq:801aab65:f2147508	PR #2853: 7 tests, MandateStore and RunsJobAsSystem 100%; suite 9004->9011, 1 inherited failure	session-20261113T031700-211f0599	2026-11-13T03:53:27Z
+verify:stackiq:1823:2ff7ee27	7 GREEN (1823-1829); phpunit 2871 (baseline 2854, 57 inherited errors), vitest 2151 passed; tests only	session-20261113T034632-47095943	2026-11-13T03:53:32Z
