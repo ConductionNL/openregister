@@ -5049,3 +5049,4 @@ review:openregister:10200:ae330e53	APPROVE: change-specified behaviour, suites g
 cover:openregister:7350e3efma401:jsbd7d0461	PR #10218: 29 tests, src/modals/schema 85.9% -> 89.4% statements	session-20261113T091533-03405ea6	2026-11-13T12:57:56Z
 review:openregister:10193:6d5d9117	APPROVE: tags + PlatformPropertiesTest, no behaviour change; suites match main	session-20261113T124807-b8fee1f0	2026-11-13T12:58:10Z
 review:openregister:10203:9340e813	APPROVE: docblock tags + new refusal test; touched suites green	session-20261113T124807-2640af3d	2026-11-13T12:58:55Z
+review:openregister:10192:d6b98a8e	APPROVE: comment-only @spec retarget, suites match main baseline	session-20261113T124808-08869abe	2026-11-13T12:59:58Z
