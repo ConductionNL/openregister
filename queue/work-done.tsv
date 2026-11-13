@@ -6282,6 +6282,19 @@ cover:hermiq:065f1631md84f:7d9a7607	already done: lib/Service/Config/ and lib/Se
 verify:integriq:3531:86b57bbc	3531 GREEN (tests only, 8235 tests, 4 inherited reds, none new)	session-20261113T185326-316f096d	2026-11-13T19:18:21Z
 cover:shillinq:05639debm7b6b:60b3923a	already done: lib/Service/EInvoice/ measured 348/349 (99.7%) on b0ed3e448 (target 95); earlier -1 PR merged	session-20261113T185328-a5a717bc	2026-11-13T19:18:41Z
 cover:hermiq:065f1631md84f:d825828c	already done: lib/Service/Literacy/ at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T19:18:37Z
+fix:shillinq:2997:f8b1536b	failed: merges clean with development at b0ed3e448; the conflict is only with an earlier unmerged tree PR's info.xml/register-versions.lock bump. Needs that PR on development first, then merge development in, bump the version once more and append one lock entry	session-20261113T185328-a5a717bc	2026-11-13T19:19:04Z
+cover:shillinq:05639debm7b6b:e6f8d431	PR #3012: 4 edge tests, 4 surviving mutants killed, Relation stmts 255/258->258/258; suite 10394->10398, only inherited webhook failure	session-20261113T175323-e340fb07	2026-11-13T19:19:08Z
 fix:shillinq:2991:94f3e87c	failed: branch already contains development (b0ed3e448); conflicts are only with unmerged siblings 2962/2988-2990 in info.xml and register-versions.lock.json; merge development in again after they land	session-20261113T182404-f2c28226	2026-11-13T19:19:02Z
 cover:hermiq:065f1631md84f:f91e7417	PR #1706: ConnectionStatus @uses->@covers (Connection 98%->99%); last miss unreachable with stub	session-20261113T185322-2911ee6d	2026-11-13T19:19:00Z
 cover:integriq:92114ab0m0593:js1f9fa0a2	already covered by pending branch quality/test-coverage-js-1f9fa0a2-1 (b3a0637f): with it Synchronization 875/896 (97.7%), Rule incl. actionForms 848/866 (97.9%); no duplicate PR	session-20261113T171137-8f22ecb0	2026-11-13T19:19:12Z
+cover:shillinq:05639debm7b6b:59477eff	already covered: lib/Service/Signing/ at 100% lines (193/193) after quality/test-coverage-59477eff-1 merged; no PR	session-20261113T182351-b6448081	2026-11-13T19:19:19Z
+review:openregister:10294:e0b84a0d	APPROVE: tests only; Dbal 81 OK, Architecture 2364 OK on PR merged with main	session-20261113T175328-b5db3663	2026-11-13T19:19:27Z
+fix:shillinq:3000:1c89b1e9	no change: branch already contains development; conflict is only with an earlier tree PR's register-versions.lock.json entry, needs a re-record after that PR lands	session-20261113T175323-e340fb07	2026-11-13T19:19:41Z
+verify:hermiq:1704:1871ae9e	GREEN 1704 (tests-only; vitest 1332 pass)	session-20261113T172329-0b6220f9	2026-11-13T19:19:41Z
+fix:shillinq:3002:6f0aa114	no change: up to date with development, clean merge; conflict only vs another tree PR; REVERIFY queued	session-20261113T185322-2911ee6d	2026-11-13T19:19:55Z
+build3:openregister:platform-team-resource-provider	PR #10300: provider + declaration + save refusal, 21 unit tests; tasks 1.1-1.4, 2.2 done; 2.1 e2e, 2.3 validate, 3.1 handover left	session-20261113T182348-4d2d804b	2026-11-13T19:20:08Z
+build3:openregister:platform-share-provider	partial: PR #10301 (1.3-1.5 built, 18 tests; 1.1/1.2 provider registration open, it would duplicate the existing folder shares)	session-20261113T185325-0c24b185	2026-11-13T19:20:25Z
+verify:shillinq:2986:51102f19	GREEN 2986,3002; CONFLICT 3003-3008 (l10n/version/lock vs earlier tree PRs); 0 new failures	session-20261113T182349-7e3632fd	2026-11-13T19:20:22Z
+cover:decidiq:a5f973bbm5a4d:568ec52a	already done: lib/Lifecycle/*.php at 100% (256/256) on development	session-20261113T185322-2911ee6d	2026-11-13T19:20:43Z
+verify:opencatalogi:2600:f07aa357	3 GREEN (2600-2602), no new failures, test-only	session-20261113T171154-27186e77	2026-11-13T19:20:41Z
+cover:decidiq:a5f973bbm5a4d:7505aeb4	already done: lib/Activity/*.php 100% (79/79) at 40e4458 (current head)	session-20261113T182349-7e3632fd	2026-11-13T19:21:02Z
