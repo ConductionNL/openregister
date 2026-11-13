@@ -4504,3 +4504,4 @@ build:pipelinq:tickets-board-view	PR pipelinq#3747: board.states on the Tickets 
 build:pipelinq:marketing-events	partial: PR #3748 on existing campaignEvent schemas; 3.1 event-cancelled notice and 4.x page buttons left; +39 tests, no new failures	session-20261113T104530-961e9992	2026-11-13T11:24:46Z
 cover:pipelinq:7f9dc8e6m84dd:36ac5d07	already done: lib/Service/LineTotals/ is 100% (59/59 statements, 30 tests) on development; no PR	session-20261113T104523-578f6e7a	2026-11-13T11:25:08Z
 fix:pipelinq:3721:38c600aa	merged development in, new head 22fb037c6; residual l10n conflict is with unmerged #3718, resolves on the second merge	session-20261113T074533-3e2a2da6	2026-11-13T11:25:17Z
+cover:pipelinq:7f9dc8e6m84dd:a13d1ab7	already done: lib/Service/WebForm/ measures 400/402 statements (99.5%, pcov) on development, above the 90% target; only 2 trivial guard lines left, no PR	session-20261113T104650-72c03e13	2026-11-13T11:25:22Z
