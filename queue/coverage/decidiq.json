@@ -1,12 +1,12 @@
 {
  "app": "decidiq",
- "commit": "85721b962a5c3c1014a7a8fb91b5df85bc83ccf4",
- "measured_at": "2026-11-13T06:25:38Z",
+ "commit": "a2b2245462458a0131bfe89981ae399c1037584c",
+ "measured_at": "2026-11-13T08:57:19Z",
  "php": {
   "tool": "pcov",
-  "pct": 87.66,
-  "statements": 25598,
-  "covered": 22439,
+  "pct": 90.73,
+  "statements": 25732,
+  "covered": 23346,
   "dirs": {
    "lib/Activity/": [
     79,
@@ -22,15 +22,15 @@
    ],
    "lib/BackgroundJob/": [
     479,
-    457
+    478
    ],
    "lib/Controller/": [
-    3163,
-    2680
+    3181,
+    3009
    ],
    "lib/Dashboard/": [
     65,
-    65
+    63
    ],
    "lib/Event/": [
     145,
@@ -54,7 +54,15 @@
    ],
    "lib/Mcp/": [
     534,
-    530
+    534
+   ],
+   "lib/Middleware/": [
+    59,
+    58
+   ],
+   "lib/Middleware/Support/": [
+    60,
+    55
    ],
    "lib/Notification/": [
     53,
@@ -77,8 +85,8 @@
     5
    ],
    "lib/Service/": [
-    17588,
-    15043
+    17585,
+    15485
    ],
    "lib/Service/Records/": [
     379,
@@ -99,9 +107,9 @@
   }
  },
  "js": {
-  "pct": 98.25,
-  "statements": 2920,
-  "covered": 2869,
+  "pct": 98.26,
+  "statements": 2932,
+  "covered": 2881,
   "dirs": {
    "src/": [
     95,
@@ -144,8 +152,8 @@
     18
    ],
    "src/services/": [
-    312,
-    312
+    317,
+    317
    ],
    "src/store/": [
     10,
@@ -156,8 +164,8 @@
     72
    ],
    "src/utils/": [
-    1581,
-    1567
+    1588,
+    1574
    ],
    "src/views/dashboard/widgets/": [
     103,
