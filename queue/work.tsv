@@ -5840,3 +5840,22 @@ cover:stackiq:9ac19b3amc14f:2f30e3d6	cover	stackiq	development	quality/test-cove
 cover:stackiq:9ac19b3amc14f:81b1241f	cover	stackiq	development	quality/test-coverage-81b1241f	lang=php;dirs=lib/Portal/*.php;focus=thin;weight=389;coverage=87.39;target=90.0	2026-07-16T11:12:28Z
 cover:stackiq:9ac19b3amc14f:05630945	cover	stackiq	development	quality/test-coverage-05630945	lang=php;dirs=lib/Middleware/Support/;focus=thin;weight=384;coverage=87.39;target=90.0	2026-07-16T11:12:33Z
 cover:stackiq:9ac19b3amc14f:34763eb4	cover	stackiq	development	quality/test-coverage-34763eb4	lang=php;dirs=lib/Middleware/*.php;focus=thin;weight=353;coverage=87.39;target=90.0	2026-07-16T11:13:04Z
+review:openregister:10267:e93fce2b	review	openregister	main	10267	sha=e93fce2b5dd1e4f1323658e9af97dccd1eea5377;last_approved=;title=feat(openregister): build runs-recorded-and-causes-named	2026-11-13T14:00:23Z
+review:openregister:10268:97b5cacf	review	openregister	main	10268	sha=97b5cacf09c4bf4db542c5e15974428678da9e40;last_approved=;title=feat(openregister): build search-value-or-empty-filter	2026-11-13T14:00:23Z
+review:openregister:10269:5438489f	review	openregister	main	10269	sha=5438489f71ccc39c4ffe91157cd162fefd742e9e;last_approved=;title=feat(openregister): build tasks-delegation-and-substitution storage (partial)	2026-11-13T14:00:23Z
+review:openregister:10270:1462b41e	review	openregister	main	10270	sha=1462b41e658b65cbf2622713a2d59f92ff7a9b2f;last_approved=;title=feat(openregister): build saved-view-presentation-picker	2026-11-13T14:00:23Z
+review:openregister:10271:d4c63696	review	openregister	main	10271	sha=d4c636962933c837530b7d07e0977e07a597a1ac;last_approved=;title=feat(openregister): build settings-change-audit	2026-11-13T14:00:23Z
+review:openregister:10272:41fce17c	review	openregister	main	10272	sha=41fce17cc0225cbd218dd7c0a7596e65b0f21190;last_approved=;title=feat(openregister): build term-engine-diagnostic	2026-11-13T14:00:23Z
+review:openregister:10273:8479ecde	review	openregister	main	10273	sha=8479ecde3e6b241f4af3618bcda3ed37d50a1308;last_approved=;title=feat(openregister): build mdm-merge-relinks-every-reference	2026-11-13T14:00:23Z
+verify:stackiq:1879:3f616c62	verify	stackiq	development	merge	prs=1879@7fe110e9f701ccd5c3ec70134aa810c757613355,1880@da02479f2b8051decd4e806f8855507df72b4e38,1881@45bf2b2a96d65e266e5b93336768d4f004c06163	2026-11-13T14:00:23Z
+verify:dossiq:6414:5311d611	verify	dossiq	development	merge	prs=6414@419b7232bf80bace2e2af578a88a0e2959a10361,6415@473ff8b87e83d683f587d8c686a97cad9bc98aec	2026-11-13T14:00:23Z
+verify:pipelinq:3756:33ff2c6d	verify	pipelinq	development	merge	prs=3756@378892d9943053e06e5b6da185b98139950778a2,3757@dfbe53e9af73a4ed7ad6c8820cf5cac12c0d85b0	2026-11-13T14:00:23Z
+verify:versioniq:679:49cae245	verify	versioniq	development	merge	prs=679@8cf4fd9f9fd62ae84945bde847e8edd8f9868bd8	2026-11-13T14:00:23Z
+merge:versioniq:678:99e9570c	merge	versioniq	development	development	prs=678@22dd7e2ca6718ce349540f1dca20d8d852c759e6	2026-11-13T14:00:23Z
+cover:stackiq:9ac19b3amc14f:17d367ab	cover	stackiq	development	quality/test-coverage-17d367ab	lang=php;dirs=lib/Controller/Settings/;focus=thin;weight=327;coverage=87.39;target=90.0	2026-07-16T11:18:43Z
+cover:stackiq:9ac19b3amc14f:2861e5ef	cover	stackiq	development	quality/test-coverage-2861e5ef	lang=php;dirs=lib/Examples/*.php;focus=thin;weight=261;coverage=87.39;target=90.0	2026-07-16T11:19:49Z
+cover:stackiq:9ac19b3amc14f:aae6d66c	cover	stackiq	development	quality/test-coverage-aae6d66c	lang=php;dirs=lib/Exception/*.php;focus=thin;weight=164;coverage=87.39;target=90.0	2026-07-16T11:21:26Z
+cover:stackiq:9ac19b3amc14f:59826f43	cover	stackiq	development	quality/test-coverage-59826f43	lang=php;dirs=lib/Settings/*.php;focus=thin;weight=137;coverage=87.39;target=90.0	2026-07-16T11:21:53Z
+cover:stackiq:9ac19b3amc14f:d528dcf0	cover	stackiq	development	quality/test-coverage-d528dcf0	lang=php;dirs=lib/Dashboard/*.php;focus=thin;weight=114;coverage=87.39;target=90.0	2026-07-16T11:22:16Z
+cover:pipelinq:7f9dc8e6mcebb:ea81adeb	cover	pipelinq	development	quality/test-coverage-ea81adeb	lang=php;dirs=lib/Service/Zgw/*.php;focus=thin;weight=3389;coverage=87.48;target=90.0	2026-11-13T10:39:35Z
+measure:larpinq:20261113h14	measure	larpinq	development	queue/coverage/larpinq.json	why=slices need per-directory coverage	2026-11-13T14:00:23Z
