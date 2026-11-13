@@ -4218,3 +4218,17 @@ merge:launchpad:1180:d60b6809	merge	launchpad	development	development	prs=1180@f
 gap:stackiq:16:614b0a03	gap	stackiq	development	16	criterion=opensourcehealth WARN;row=stackiq;fix=Held by Activity 2 stars and Freshness 3 stars plus 1 medium-risk licence. Recommended, no score effect. Only worth a dependency refresh sweep.	2026-11-13T09:00:23Z
 cover:pipelinq:7f9dc8e6m916f:6f346b68	cover	pipelinq	development	quality/test-coverage-6f346b68	lang=php;dirs=lib/Sections/*.php;focus=thin;weight=85;coverage=84.95;target=90.0	2026-11-13T03:56:32Z
 cover:shillinq:05639debmd8ee:d47bb994	cover	shillinq	development	quality/test-coverage-d47bb994	lang=php;dirs=lib/Reporting/*.php;focus=uncovered;weight=300;coverage=85.47;target=90.0	2026-11-13T04:24:12Z
+review:openregister:10118:7a35c2de	review	openregister	main	10118	sha=7a35c2debed99c900ab33046853d318a7f0fa1db;last_approved=;title=test(openregister): cover deletion, federation, interaction and credential services	2026-11-13T09:05:11Z
+verify:stackiq:1863:48caa4ef	verify	stackiq	development	merge	prs=1863@222faabc2fd5cc98e2bfad56b8c300d28b23183e,1864@a9af792e188eed982e281451b47304d06f9042b5	2026-11-13T09:05:11Z
+verify:learniq:2458:96eade7f	verify	learniq	development	merge	prs=2458@8f859bf5455ad8979920c84c3929cb48e1a7f600,2459@25d374627d40e24ee79338ef4b69e503faf38270,2460@6a2ecbd87473690e9e032d76814b5457a886b23b	2026-11-13T09:05:11Z
+verify:dossiq:6341:3f763da8	verify	dossiq	development	merge	prs=6341@b1fe51edc1a1017a4aa4911d352ca67f1e10c160,6342@7cc0d42fdba93cbe6b752453ebd41feeec21cec8,6343@c16d5f4cc180ffd1db62119aa0af1b925aa56beb	2026-11-13T09:05:11Z
+verify:pipelinq:3696:ad232941	verify	pipelinq	development	merge	prs=3696@a8202aa4647ec7f7cd6e3aac65fde67d74d728de	2026-11-13T09:05:11Z
+merge:stackiq:1861:876b757b	merge	stackiq	development	development	prs=1861@aea61954679e34639b032a15172092ad225c7dd4,1862@0bd168bc40d4440cb728e374f05d7178ef169348,1700@7a35e49eb1b32d5be3010c6b8d503c6225924fe9;stacks=1700	2026-11-13T09:05:11Z
+merge:learniq:2454:60467ee9	merge	learniq	development	development	prs=2454@508373f8515c4716b70b653b0e28ad22a109bb02	2026-11-13T09:05:11Z
+merge:larpinq:1011:a60973d8	merge	larpinq	development	development	prs=1011@27666447f590e135c63694e39a522e20a546462c	2026-11-13T09:05:11Z
+cover:stackiq:9ac19b3am6096:js0b5eefce	cover	stackiq	development	quality/test-coverage-js-0b5eefce	lang=js;dirs=src/modals/object/;focus=uncovered;weight=2076;coverage=88.5;target=90.0	2026-07-16T07:00:57Z
+cover:dossiq:069ee2d6m7275:ea81adeb	cover	dossiq	development	quality/test-coverage-ea81adeb	lang=php;dirs=lib/Service/Zgw/*.php;focus=thin;weight=9036;coverage=89.34;target=90.0	2026-08-15T07:36:02Z
+cover:dossiq:069ee2d6m7275:b6fccd13	cover	dossiq	development	quality/test-coverage-b6fccd13	lang=php;dirs=lib/Service/Access/*.php;focus=thin;weight=5009;coverage=89.34;target=90.0	2026-08-15T07:36:02Z
+cover:buildiq:70b3e29embf07:34763eb4	cover	buildiq	development	quality/test-coverage-34763eb4	lang=php;dirs=lib/Middleware/*.php;focus=thin;weight=342;coverage=88.48;target=90.0	2026-09-14T07:28:45Z
+cover:buildiq:70b3e29embf07:568ec52a	cover	buildiq	development	quality/test-coverage-568ec52a	lang=php;dirs=lib/Lifecycle/*.php;focus=thin;weight=270;coverage=88.48;target=90.0	2026-09-14T07:29:57Z
+cover:buildiq:70b3e29embf07:390adfb9	cover	buildiq	development	quality/test-coverage-390adfb9	lang=php;dirs=lib/*.php;focus=thin;weight=101;coverage=88.48;target=90.0	2026-09-14T07:32:46Z
