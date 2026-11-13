@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
@@ -42,6 +43,7 @@ use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeleteRowRules;
 use OCA\OpenRegister\Service\Object\DeletionAttribution;
 use OCA\OpenRegister\Service\Object\DeletionIntegrity;
+use OCA\OpenRegister\Service\Object\DeletionOptions;
 use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
@@ -386,6 +388,61 @@ class DeleteObjectCascadeChildChecksTest extends TestCase {
 
 		$this->assertTrue($this->deleteParent());
 	}//end testADeletedChildIsLeftOut()
+
+	/**
+	 * A reach that does not cover a `cascade: true` child refuses the delete.
+	 *
+	 * @return void
+	 */
+	public function testAChildOutsideTheReachRefusesTheDelete(): void {
+		$this->childIs($this->entity(uuid: 'child-uuid', schema: '20'));
+		$this->expectNothingWritten();
+		$asked = [];
+		$reach = static function (string $uuid) use (&$asked): bool {
+			$asked[] = $uuid;
+			return false;
+		};
+
+		try {
+			$this->handler()->deleteObject(
+				new DeletionRequest(register: 1, schema: 10, uuid: 'parent-uuid', options: new DeletionOptions(reach: $reach)),
+				false,
+				false
+			);
+			$this->fail('The delete went ahead.');
+		} catch (ReferentialIntegrityException $e) {
+			$this->assertSame('out_of_reach', $e->getAnalysis()->blockers[0]['reason']);
+			$this->assertSame('kid', $e->getAnalysis()->blockers[0]['property']);
+		}
+
+		$this->assertSame(['child-uuid'], $asked);
+	}//end testAChildOutsideTheReachRefusesTheDelete()
+
+	/**
+	 * A reach that does not cover an onDelete dependent refuses the delete; one that does lets it run.
+	 *
+	 * @return void
+	 */
+	public function testAnOnDeleteDependentOutsideTheReachRefusesTheDelete(): void {
+		$this->parentSchema->setProperties([]);
+		$this->integrity = $this->createMock(ReferentialIntegrityService::class);
+		$this->integrity->method('hasIncomingOnDeleteReferences')->willReturn(true);
+		$this->integrity->method('canDelete')->willReturn(
+			new DeletionAnalysis(deletable: true, effects: new DeletionEffects(nullifyTargets: [['objectUuid' => 'referrer', 'property' => 'parent']]))
+		);
+		$this->integrity->expects($this->once())->method('applyDeletionActions')->willReturn(['retained' => []]);
+		$request = static fn (bool $inside): DeletionRequest => new DeletionRequest(
+			register: 1,
+			schema: 10,
+			uuid: 'parent-uuid',
+			options: new DeletionOptions(reach: static fn (string $uuid): bool => $inside)
+		);
+
+		$this->assertTrue($this->handler()->deleteObject($request(true), false, false));
+
+		$this->expectException(ReferentialIntegrityException::class);
+		$this->handler()->deleteObject($request(false), false, false);
+	}//end testAnOnDeleteDependentOutsideTheReachRefusesTheDelete()
 
 	/**
 	 * When the root delete fails, the cascade rolls back with it.

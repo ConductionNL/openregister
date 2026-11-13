@@ -38,6 +38,7 @@ final readonly class DeleteCaller {
 	 * @param string|null $userId       The acting user; null resolves the session user.
 	 * @param bool        $rbac         Whether RBAC applies.
 	 * @param bool        $multitenancy Whether the organisation filter applies.
+	 * @param \Closure|null $reach      Whether the delete may change an object it reaches, by uuid; null for no limit.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags mirror DeleteObject::deleteObject().
 	 *
@@ -47,6 +48,7 @@ final readonly class DeleteCaller {
 		public ?string $userId = null,
 		public bool $rbac = true,
 		public bool $multitenancy = true,
+		public ?\Closure $reach = null,
 	) {
 	}//end __construct()
 }//end class

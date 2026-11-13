@@ -4167,7 +4167,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             multitenancy: $_multitenancy,
             retentionSweep: $_retentionSweep,
             currentUser: $deletion->currentUser,
-            scoped: $deletion->isScoped()
+            scoped: $deletion->isScoped(),
+            reach: $deletion->reach
         );
         return $this->preservingScope(operation: function () use ($request, $deletion): bool {
             $this->enterDeleteScope(register: $deletion->target->register, schema: $deletion->target->schema);
@@ -4261,7 +4262,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 register: $this->currentRegister,
                 schema: $this->currentSchema,
                 uuid: $request->uuid,
-                options: new DeletionOptions(scoped: $request->scoped, permanent: $permanent, actingUserId: $request->actingUserId())
+                options: new DeletionOptions(
+                    scoped: $request->scoped,
+                    permanent: $permanent,
+                    actingUserId: $request->actingUserId(),
+                    reach: $request->reach
+                )
             ),
             _rbac: $request->rbac,
             _multitenancy: $request->multitenancy

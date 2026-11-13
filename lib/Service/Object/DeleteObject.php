@@ -580,7 +580,7 @@ class DeleteObject {
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.ctx');
 
-		$caller = new DeleteCaller(userId: $request->options->actingUserId, rbac: $_rbac, multitenancy: $_multitenancy);
+		$caller = new DeleteCaller(userId: $request->options->actingUserId, rbac: $_rbac, multitenancy: $_multitenancy, reach: $request->options->reach);
 
 		return $this->deleteResolved(run: new DeletionRun(context: $context, uuid: $request->uuid, caller: $caller), options: $request->options);
 	}//end deleteObject()
@@ -769,6 +769,8 @@ class DeleteObject {
 			$this->logAndThrowRestrict(run: $run, analysis: $analysis);
 		}
 
+		$this->refuseUnreachedDependents(run: $run, analysis: $analysis, children: $children);
+
 		return $this->executeIntegrityTransaction(run: $run, analysis: self::withChildren(analysis: $analysis, children: $children), children: $children, permanent: $permanent);
 	}//end handleIntegrityDeletion()
 
@@ -918,6 +920,41 @@ class DeleteObject {
 	}//end withoutRetained()
 
 	/**
+	 * Refuse the delete when the caller's reach does not cover every object it would change.
+	 *
+	 * Asked of each onDelete cascade, set-null and set-default target and each `cascade: true`
+	 * child, before anything is written. The blocker names the property, not the object.
+	 *
+	 * @param DeletionRun                 $run      The root and the caller's reach.
+	 * @param DeletionAnalysis            $analysis The onDelete analysis.
+	 * @param array<string, CascadeChild> $children The checked `cascade: true` children, keyed by uuid.
+	 *
+	 * @return void
+	 *
+	 * @throws ReferentialIntegrityException When a dependent is outside the reach.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
+	 */
+	private function refuseUnreachedDependents(DeletionRun $run, DeletionAnalysis $analysis, array $children): void {
+		$reach = $run->caller->reach;
+		if ($reach === null) {
+			return;
+		}
+
+		$dependents = array_merge($analysis->cascadeTargets, $analysis->nullifyTargets, $analysis->defaultTargets);
+		foreach ($children as $child) {
+			$dependents[] = $child->cascadeTarget();
+		}
+
+		foreach ($dependents as $dependent) {
+			if ($reach((string)($dependent['objectUuid'] ?? '')) !== true) {
+				$blocked = self::blockedDependent(run: $run, propertyName: (string)($dependent['property'] ?? ''), reason: 'out_of_reach');
+				$this->logAndThrowRestrict(run: $run, analysis: $blocked);
+			}
+		}
+	}//end refuseUnreachedDependents()
+
+	/**
 	 * The live `cascade: true` children of the root, each checked the way a direct delete of it is.
 	 *
 	 * Each referenced id is looked up in the table its property names, with the caller's RBAC
@@ -984,7 +1021,7 @@ class DeleteObject {
 		}
 
 		if ($child === null) {
-			$this->logAndThrowRestrict(run: $run, analysis: self::outOfScopeChild(run: $run, propertyName: $propertyName));
+			$this->logAndThrowRestrict(run: $run, analysis: self::blockedDependent(run: $run, propertyName: $propertyName));
 		}
 
 		if ($child->isSoftDeleted() === true) {
@@ -1020,16 +1057,17 @@ class DeleteObject {
 	}//end findCascadeChild()
 
 	/**
-	 * The analysis that refuses a root whose cascade property refers outside its table.
+	 * The analysis that refuses a root over one dependent: a cascade child outside its table, or one outside the reach.
 	 *
 	 * The blocker names the property, not the referenced id.
 	 *
 	 * @param DeletionRun $run          The root.
 	 * @param string      $propertyName The cascade property.
+	 * @param string      $reason       Why the dependent blocks.
 	 *
 	 * @return DeletionAnalysis
 	 */
-	private static function outOfScopeChild(DeletionRun $run, string $propertyName): DeletionAnalysis {
+	private static function blockedDependent(DeletionRun $run, string $propertyName, string $reason='out_of_scope'): DeletionAnalysis {
 		return new DeletionAnalysis(
 			deletable: false,
 			blockers: [[
@@ -1037,11 +1075,11 @@ class DeleteObject {
 				'schema' => $run->object()->getSchema(),
 				'property' => $propertyName,
 				'action' => 'CASCADE',
-				'reason' => 'out_of_scope',
+				'reason' => $reason,
 				'chain' => [],
 			]]
 		);
-	}//end outOfScopeChild()
+	}//end blockedDependent()
 
 	/**
 	 * Build cascade context metadata for audit trail tagging.
