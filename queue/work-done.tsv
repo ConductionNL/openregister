@@ -4679,3 +4679,4 @@ verify:pipelinq:3704:80d8f11e	GREEN 3704,3721; CONFLICT 3734,3739,3743,3748 (l10
 build:openregister:audit-read-events-visible-to	PR #10150: task 2.1 admin UI field for audit.readEventsVisibleTo (settings read/save + recorded, admin section), 15 tests; suite same 23 inherited reds	session-20261113T094606-b7da8c7f	2026-11-13T11:58:12Z
 fix:pipelinq:3734:666ee86d	failed: branch already contains development; the l10n conflict is only with unmerged #3721 and resolves by merging development once #3721 lands	session-20261113T071631-5a3cc070	2026-11-13T11:58:27Z
 fix:pipelinq:3739:873d21ad	moved new l10n keys mid-catalogue, merges cleanly with #3721; REVERIFY 21e54109	session-20261113T093920-50335e74	2026-11-13T11:58:28Z
+fix:pipelinq:3743:a7b9c340	fixed: l10n strings moved mid-catalogue, merges beside 3721; new head 222fa459	session-20261113T104531-16da055e	2026-11-13T11:59:03Z
