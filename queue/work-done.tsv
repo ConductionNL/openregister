@@ -6496,3 +6496,4 @@ cover:pipelinq:7f9dc8e6m8ce9:2cc09f74	no PR: lib/Service/Marketing/Transport alr
 build:filinq:generate-store-in-case-system	partial: PR #2067 register schemas + CaseSystemDeliveryService (1.1, 2.1), 7 tests; suite 6450/0 fail; 2.2-4.3 open	session-20261113T175327-6e4e7f28	2026-11-13T19:58:06Z
 verify:opencatalogi:2604:d221d470	3 GREEN (2604,2605,2606), tests only, no new failures	session-20261113T195353-2eaa3aed	2026-11-13T19:58:17Z
 build:filinq:fix-dossier-grondslagen-route-mismatch	already done: route fixed and R-2.1 Newman case written on development; only its run against a live instance is left (live task, not done by workers)	session-20261113T175400-7ec3993f	2026-11-13T19:58:24Z
+build:filinq:intake-acknowledge-and-stamp	partial: PR #2069 (register fields, acknowledgement service D3, after-save listener; stamp, registration, screens, seed left); suite 6443->6459 green	session-20261113T182404-f2c28226	2026-11-13T19:58:41Z
