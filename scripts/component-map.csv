@@ -3950,6 +3950,10 @@ Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
+Service/Authorization/AddedGrants.php,,Service,,,,,Core
+Service/Authorization/GrantCeiling.php,,Service,,,,,Core
+Service/Authorization/GrantedRight.php,,Service,,,,,Core
 Db/AutomationRecord.php,,Db,,,,,Processes
 Db/AutomationRecordFilter.php,,Db,,,,,Processes
 Db/AutomationRecordMapper.php,,Db,,,,,Processes
