@@ -610,6 +610,17 @@
 			</div>
 		</SettingsCard>
 
+		<!-- Anonymisation pipeline: every content-altering step and its state (REQ-ADI-006) -->
+		<SettingsCard
+			:title="t('openregister', 'Anonymisation pipeline')"
+			icon="🛡️"
+			:collapsible="true"
+			:defaultCollapsed="true">
+			<div class="settings-group compact">
+				<AnonymisationPipelineList :refreshKey="backendState" />
+			</div>
+		</SettingsCard>
+
 		<!-- Supported File Types -->
 		<SettingsCard
 			:title="t('openregister', 'Supported File Types')"
@@ -762,6 +773,7 @@ import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import AnonymisationPipelineList from './AnonymisationPipelineList.vue'
 import ConnectionTestIcon from './ConnectionTestIcon.vue'
 import LabeledSelect from './LabeledSelect.vue'
 import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
@@ -1205,6 +1217,7 @@ export default {
 		KeyIcon,
 		CheckIcon,
 		AlertCircleIcon,
+		AnonymisationPipelineList,
 		ConnectionTestIcon,
 		DotsVertical,
 		LabeledSelect,
