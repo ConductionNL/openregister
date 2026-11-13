@@ -5174,3 +5174,4 @@ keepiq	1740	b3eb9b1ee9bbf5640c8605f11af26bd85dfa8a13	GREEN	worker-24	vitest 391 
 integriq	3481	1d633f4589ffe04dfe5b01491a627d7fb69f3e9e	GREEN	worker-02	tree 3481 on development 9fafbd83: 7220 tests, baseline 7209 (2 errors inherited), new failures 0; tests-only diff
 pipelinq	3671	a07454f5dd4415eee4eb3aee93250259af945a0c	GREEN	worker-06	PHP 6425 tests, baseline 1 failure unchanged; vitest 3908/3908 pass; tests only
 decidiq	2098	4c96686d6809aaa436ce2b7738d8c7811d2d1263	RED	merge-local:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+decidiq	2110	cfed87e94fe407d9a21f84ef7b15c9a87fb2db01	GREEN	worker-28	3414 tests run, baseline 3396 OK, 0 new failures; tests-only (2 new test files)
