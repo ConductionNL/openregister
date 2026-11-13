@@ -4956,3 +4956,4 @@ build:openregister:relation-types-with-inverses	already built: only open task C6
 fix:shillinq:2932:a1bec6cd	merged development, conflict resolved, pushed a3fc25818, REVERIFY	session-20261113T044737-f37de8e3	2026-11-13T12:39:53Z
 review:openregister:10164:f7d6a2aa	APPROVE 10164	session-20261113T081040-5e814df2	2026-11-13T12:40:13Z
 build:openregister:semantic-object-handoff-engine	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:40:37Z
+build:openregister:scoped-api-tokens-machine-callers	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:40:43Z
