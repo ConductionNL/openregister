@@ -2512,4 +2512,5 @@ cover:pipelinq:7f9dc8e6mc4ba:js5794e9fc	failed: permission	session-20261113T0545
 cover:pipelinq:f67520ecmc4ba:28cccfd9	already done: lib/Repair/Support/ at 100% lines (95/95) on development bb7a7d06c; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:46:32Z
 verify:hermiq:1666:a7720027	failed: permission	session-20261113T054520-0c8540f8	2026-11-13T05:46:22Z
 cover:pipelinq:7f9dc8e6mc4ba:js4570fd16	already done: src/views/pos/ at 87.63% lines on development (above 85 target); further tests already in PR #3646 for the same target branch	session-20261113T041646-2c1d764f	2026-11-13T05:46:45Z
+cover:decidiq:a5f973bbma14b:7505aeb4	already done: lib/Activity/*.php at 100% (79/79 statements) on 4ecbbc7c, 24 non-risky tests	session-20261113T051708-7d5f6071	2026-11-13T05:46:48Z
 merge:integriq:3425:36e6195d	stale	feeder	2026-11-13T05:45:34Z
