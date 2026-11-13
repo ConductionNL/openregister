@@ -7124,3 +7124,4 @@ review:openregister:10398:a56acc57	BLOCK: withdrawn public note leaks back via P
 build4:openregister:notifications-new-notes-and-referrers	partial: PR #10422 (task 1.1 ObjectNoteAddedEvent dispatched after save); 1.2-1.3, 2.x, 3.x left	session-20261113T205323-cbfd0ec4	2026-11-13T22:17:13Z
 review:openregister:10389:1b924185	APPROVE 10389 (task 3.4e as specified, suites green)	session-20261113T202626-976dcdac	2026-11-13T22:17:37Z
 build4:openregister:register-document-store	partial: PR #10424 store status in file settings API + occ document-store:status (1.2 backend); left 1.1 foreign-root refusal, Vue block (l10n), 2.x move, 3.x, 4.1	session-20261113T214350-9762e143	2026-11-13T22:18:03Z
+build4:openregister:runs-recorded-and-causes-named	partial: PR #10423, section 2 core (audit definition check, evaluator with existing scorer, verdict, failures, CSV) + 4.2; storage, runner and section 3 left	session-20261113T202611-3b383b96	2026-11-13T22:18:08Z
