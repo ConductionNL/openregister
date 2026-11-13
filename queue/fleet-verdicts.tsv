@@ -6577,3 +6577,4 @@ portaliq	2442	39991bbb5496c7ad9db5db692fcc87e5101dbfbe	CONFLICT	merge3	merges cl
 portaliq	2443	4322f3ac1ef3423b13baca3b34799b91c46b8460	CONFLICT	merge3	merges clean on development alone; files: lib/Service/PortalJwtService.php lib/Service/PortalSessionService.php lib/Service/SessionClaims.php lib/Service/Signin/BrokerLogin.php tests/Unit/Service/PortalSessionServiceTest.php tests/Unit/Servic
 learniq	2436	c487c8c3f3268f7edce46f86878a9686ecc01d2f	CONFLICT	merge3	conflicts with development; files: tests/unit-js/signUpDecisionRequest.test.mjs 
 learniq	2488	732c334588c8550cc110d428e7795e0bdcec601b	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json scripts/example-sets/__pycache__/example_set.cpython-311.pyc 
+decidiq	2139	9b920569d595bb765d265611a196e8223712be4d	RED	merge3:merge-gate	GATE RED floor: duplication: 3.82 -> 3.80
