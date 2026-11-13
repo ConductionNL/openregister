@@ -6116,3 +6116,4 @@ cover:hermiq:065f1631md84f:be0dcca9	already done: quality/test-coverage-be0dcca9
 measure:larpinq:20261113h18	php 96.84% (pcov, 791 tests), js 97.05% (495 tests) @3fbcc23	session-20261113T185326-316f096d	2026-11-13T18:56:13Z
 build:shillinq:purchasing-order-dispatch-and-receipt	partial: PR #2993 (tasks 2.1,2.2,2.3,3.1 done; 1.1,3.2,4.x,5.1,6.1 left), suite 10414 tests, 1 inherited failure	session-20261113T182349-7e3632fd	2026-11-13T18:56:43Z
 cover:shillinq:05639debm7b6b:f2f5cba0	already done: lib/Service/Payment/ at 99.6% line coverage (1 line), no thin classes	session-20261113T171154-27186e77	2026-11-13T18:57:00Z
+build3:openregister:organisation-capability-halt	no code left in openregister: 1.x-2.x on main; 3.1 is hermiq's migration (hermiq lane)	session-20261113T175327-6e4e7f28	2026-11-13T18:56:51Z
