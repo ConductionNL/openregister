@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ interface ShippedBaselineResetServiceInterface {
 	 * @return array{applicable: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
 	 *         The preview.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function preview(string|int $schema, string $path): array;
 
@@ -53,7 +53,7 @@ interface ShippedBaselineResetServiceInterface {
 	 * @return array{applied: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
 	 *         The outcome.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function reset(string|int $schema, string $path): array;
 }//end interface
