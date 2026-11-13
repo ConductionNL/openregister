@@ -5052,3 +5052,4 @@ keepiq	1732	ba76126251b4d81a6fa35b1058003ed60d9547c2	GREEN	worker-45	tree of 6: 
 launchpad	1166	b0969553fb754e42fead5c60c89526c34b7ff11c	GREEN	worker-35	PHP 3714 tests OK (baseline 3714 OK); vitest 197 files / 1779 tests pass on tree; JS specs only
 integriq	3410	05595700deeeac8c8a8670542ed0c195f9516a07	CONFLICT	merge-local:merge-gate	does not merge cleanly onto development at merge time; merge development in
 launchpad	1165	87827f55d73d0ab50e1b37367a346a4a0a9895d7	GREEN	worker-35	PHP 3741 tests OK (baseline 3741 OK); vitest 195 files / 1751 tests pass on tree; JS specs only
+hermiq	1656	1bc3b573849cd12bbe1b813507f3f5df8924336f	GREEN	worker-19	phpunit 4210 on tree (baseline 4185, 146 errors + 26 failures inherited, identical set), 0 new failures; tests only
