@@ -2945,3 +2945,4 @@ cover:pipelinq:7f9dc8e6m1e6e:fdb25f89	already done: pcov on development (today) 
 cover:pipelinq:7f9dc8e6m1e6e:6f346b68	already done (second time this queue sent it): lib/Sections/SettingsSection 100% lines per pcov on development; the generating measure appears not to see this dir's coverage	session-20261113T053904-36dcee67	2026-11-13T06:43:47Z
 cover:pipelinq:7f9dc8e6m1e6e:d528dcf0	already done: lib/Dashboard/*.php at 100% lines (36/36) on development, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:43:46Z
 cover:pipelinq:7f9dc8e6m1e6e:168f7791	already done: pcov on development (today) shows lib/Dossiq/CaseTypeContributionProvider 100% lines (26/26)	session-20261113T053904-36dcee67	2026-11-13T06:44:08Z
+verify:filinq:2041:ba5bdc82	GREEN #2041: tests only, unit 6260 OK vs baseline 6251	session-20261113T051705-4f5ad12a	2026-11-13T06:44:07Z
