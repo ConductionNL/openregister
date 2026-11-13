@@ -816,3 +816,10 @@ filinq	2019	59bddfe8ab722b08b3a67f0c7f4c9d0c027b1856	MERGED	merge-local	GATE OK 
 filinq	2020	ea6485417b395ea64a91f18389434df592975f29	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 filinq	2021	b046b616b623dae57a7dcb8b47f061cf82272e2f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 filinq	2022	1c1121f338facdf3330bede9ef3878e9e6bef980	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1607	676f8fccab3cdaf376d130ae501e5df4eb3f2ebd	SKIP	merge-local	GATE UNMEASURED fetch failed
+keepiq	1690	0027fec09b1fc7da8109b589da210f23f117adb0	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1721	0a6dd6faa39c352d0fc083cd59204e2e9bab6238	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1722	8ac69bcaebdaffe50cde3cc9e762417f0d84558d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1723	36395f41a44b5f893b854cd07951a53a669d415b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1724	1bde1e7f033608591baa8a14b0e592fb78350742	RED	merge-local	GATE RED checker floor: secretscanning: pass -> fail
+keepiq	1725	81ab9037e6ed95b780b7de8d6bc373d5fd9ec33b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
