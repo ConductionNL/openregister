@@ -5984,3 +5984,4 @@ dossiq	6424	7e3709bd0924ab1938f7eee7e2f13c641dcf3b24	CONFLICT	worker-10	add/add 
 decidiq	2127	310fc962bd7bd4d967a5b488b985ff5e56e40ecc	GREEN	worker-01	tests only; tree 3934 tests OK, baseline 3911 OK, 0 new failures
 decidiq	2128	0a32a828d86a61d2ae6026a8b6581c47e58e7f28	GREEN	worker-01	tests only; tree 3934 tests OK, baseline 3911 OK, 0 new failures
 decidiq	2129	47e0f5f3d0eb2e1c37de1b7a2e80829ec6af5cf2	GREEN	worker-01	tests only; tree 3934 tests OK, baseline 3911 OK, 0 new failures
+dossiq	6427	128c7f2dfb4a31fc1a0956704cb887ddf633605e	GREEN	worker-10	vitest 6815 run, 1 inherited failure (capabilityComparison, red on development), 0 new; PHP unchanged (baseline 20 inherited)
