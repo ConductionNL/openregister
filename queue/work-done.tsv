@@ -6019,6 +6019,8 @@ cover:pipelinq:7f9dc8e6m16db:6925f818	already done: lib/SetupCheck/*.php at 100%
 fix:portaliq:2445:45374ce5	no change: branch already contains development; it conflicts only with open #2442 (both add l10n keys in en/en_US/nl). Re-verify #2445 after #2442 lands (or verify it before #2442)	session-20261113T181000-9baff50f	2026-11-13T18:35:05Z
 cover:pipelinq:7f9dc8e6m16db:6f346b68	already done: lib/Sections/*.php at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T18:35:25Z
 fix:portaliq:2443:927479fa	fixed: example-site.spec.mjs version pin 0.108.0->0.109.0 (spec 15/15); new head 4322f3ac; REVERIFY recorded	session-20261113T175336-e3687686	2026-11-13T18:35:30Z
+build:shillinq:inbound-payable-from-another-app	PR #2960: 2.1 built (Payouts to pay page, menu, 3 row actions with step dialog, en/nl strings, 6 vitest); live Playwright and 2.2 (dossiq) left; vitest 2301 pass	session-20261113T172325-6eb25015	2026-11-13T18:35:44Z
 cover:pipelinq:7f9dc8e6m16db:168f7791	already done: lib/Dossiq/*.php at 100% line coverage on development	session-20261113T171154-27186e77	2026-11-13T18:35:47Z
 cover:keepiq:c967a31fm00c6:js4c193b9b	PR #1764: 4 specs, 21 tests; dirs 93.89% -> 94.83% lines (with open #1759 past 95)	session-20261113T171153-e1c17962	2026-11-13T18:35:57Z
 fix:portaliq:2423:8eb905ab	fixed: tab-order test expects the spec'd Hulp tab; REVERIFY at 53e76322	session-20261113T182353-86897235	2026-11-13T18:35:57Z
+verify:shillinq:2954:e40b4935	GREEN 2954 (tests only)	session-20261113T172329-5f4feaba	2026-11-13T18:36:07Z
