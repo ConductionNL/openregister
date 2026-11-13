@@ -5570,3 +5570,4 @@ pipelinq	3702	e9840228876bfa064d7dfb299f423e33000e4d48	GREEN	worker-18	tests-onl
 pipelinq	3703	6d7aa8258b59c89f112a3706ffaf0c7f193bcd7f	GREEN	worker-18	tests-only (vitest specs); tree vitest 557 files/3981 tests pass (baseline 545/3893), phpunit 6454 with 1 inherited failure, 0 new failures
 dossiq	6351	7c9acf60d523692e77c09d5e680f48f91e0f791f	GREEN	worker-05	tasks.md ticks only; 15443 tests, baseline 19 failures, no new failures
 dossiq	6352	74e2a50ae99bd366cc7222a985757258a1f0b25f	GREEN	worker-05	tasks.md tick only; 15443 tests, baseline 19 failures, no new failures
+hermiq	1679	11f132b6c2e5073acb20e6a367fdde0b889d96db	GREEN	worker-18	tests-only; tree phpunit 4223 run, same 146 errors + 26 failures as development baseline (4209), ReportSimilarity 36 OK; 0 new failures
