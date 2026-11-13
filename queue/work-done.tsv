@@ -2994,5 +2994,6 @@ cover:filinq:7a9ef677m5ffe:34763eb4	already done: lib/Middleware/*.php at 99.1% 
 cover:buildiq:9930949bmc723:js3f3bfe56	PR buildiq#1519: 6 tests, App.vue 13->25/26, src/* 154->166/197; main.js needs a production change (require.context)	session-20261113T051703-1b54bfba	2026-11-13T06:48:26Z
 cover:buildiq:9930949bmc723:js847d1562	PR #1520: 11 vitest tests, schema-editor 94.4->95.5%	session-20261113T051709-e616bf69	2026-11-13T06:48:32Z
 cover:keepiq:c967a31fmb40c:1b97f731	already done: lib/Listener/*.php 395/418 (94.5%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:48:43Z
+cover:dossiq:f8a113c5m7e79:js00fe026a	already done: src/services/* 1605/1644 (97.6%) on development 31f9e20d; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:49:10Z
 verify:keepiq:1741:bc690436	1741,1742,1743 GREEN (phpunit 4672, 0 new); 1745 not verified: JS specs only and npm ci is refused in this worker, no verdict recorded	session-20261113T054519-189b2666	2026-11-13T06:49:14Z
 cover:filinq:7a9ef677m5ffe:216a9a0a	PR #2042: +8 tests (EntitySearchQuery normalising, PrintJobRequest); suite 6251->6259 OK	session-20261113T054520-0c8540f8	2026-11-13T06:49:22Z
