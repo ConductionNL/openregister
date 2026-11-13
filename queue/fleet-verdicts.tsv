@@ -5102,3 +5102,4 @@ integriq	3476	cda3c6648ca33212fb281bdc1b5f8ab82c20521a	GREEN	worker-12	tree of 3
 stackiq	1837	fcb8fb244b0e0d0047713fb54ef867fc6410022e	GREEN	worker-04	phpunit 3111/0 fail on the 5-PR tree (baseline 3064/0); vitest 2198/0; test-only
 stackiq	1838	9a140ac4d803e26748ed5bf38a37675226d076da	GREEN	worker-04	phpunit 3111/0 fail on the 5-PR tree (baseline 3064/0); vitest 2198/0; test-only
 stackiq	1840	3b1e21947eb7f7ac33b0c121538d6b62749484ab	GREEN	worker-04	phpunit 3111/0 fail on the 5-PR tree (baseline 3064/0); vitest 2198/0; test-only
+stackiq	1839	96a1216652fc14dc1a0b3af5f981b92a853975f5	GREEN	worker-04	phpunit 3111/0 fail on the tree (baseline 3064/0); test-only; note: ArchiMateExportRoundTripTest triggers a PHP warning at lib/Service/ArchiMateExportService.php:1380 (addAttribute: attribute already exists), a production-side duplicate attribute worth a follow-up
