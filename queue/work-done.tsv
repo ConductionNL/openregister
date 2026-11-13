@@ -5052,3 +5052,4 @@ review:openregister:10203:9340e813	APPROVE: docblock tags + new refusal test; to
 review:openregister:10192:d6b98a8e	APPROVE: comment-only @spec retarget, suites match main baseline	session-20261113T124808-08869abe	2026-11-13T12:59:58Z
 review:openregister:10199:95de0f89	APPROVE: bulk quota per change 4.1; no new failures vs main	session-20261113T124805-1586d4f8	2026-11-13T12:59:15Z
 review:openregister:10186:7bd57cef	APPROVE: GraphQLRequestGuardTest, 6 tests pass, behaviour-faithful, mutation-checked	session-20261113T091533-03405ea6	2026-11-13T13:00:10Z
+build:openregister:record-star-follow-and-unread-on-screen	partial: PR openregister#10219, task 1.2 (manage in @self.can) with tests; 1.1 2.x 3.x frontend, newman and docs left	session-20261113T104531-16da055e	2026-11-13T13:00:50Z
