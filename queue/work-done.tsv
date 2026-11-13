@@ -3664,3 +3664,4 @@ cover:stackiq:9ac19b3am6096:2861e5ef	already done: lib/Examples/ContactpersoonSe
 verify:launchpad:1180:f77364f4	1180 GREEN, 1181 GREEN: 3805 PHP + 2051 JS tests, 0 new failures	session-20261113T073916-e9f11dfa	2026-11-13T08:57:12Z
 cover:learniq:e6498dddmf689:83cf1abf	already done: lib/Service/Accessibility at 96.5% lines (136/141) under the full unit suite on development, target 95; no PR	session-20261113T051705-4f5ad12a	2026-11-13T08:57:30Z
 measure:decidiq:20261113h08	php 90.73% js 98.26% at a2b22454	session-20261113T080556-d189f150	2026-11-13T08:57:32Z
+gap:pipelinq:risky:burn2	PR #3695: risky 1->0 (@uses SupplierTarget), PHP coverage 84.95->85.03%	session-20261113T072713-f866e896	2026-11-13T08:57:56Z
