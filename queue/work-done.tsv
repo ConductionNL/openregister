@@ -3201,3 +3201,4 @@ gap:decidiq:maint2:burn1	PR #2124: 3 units split (RegulatorExportService::genera
 cover:dossiq:f8a113c5m7e79:83885cb7	already done: lib/Service/Routing/Strategy at 130/138 lines (94%) on development; no PR	session-20261113T064519-30004ad4	2026-11-13T07:37:39Z
 cover:dossiq:f8a113c5m7e79:a797d42e	already done: CasePlanDrain/ and its tests unchanged since 0888b592d1, measured 184/186 lines (98.9%) there; no PR	session-20261113T072711-3523cf52	2026-11-13T07:37:35Z
 gap:shillinq:maint1:burn1	PR #2907: split reconcile/auditReport/generateExport, +9 tests first on old code, suite green bar inherited 1	session-20261113T071633-17de823f	2026-11-13T07:37:43Z
+cover:integriq:92114ab0m658d:f191f1e9	already done: pcov on development (today) shows lib/Service/Lti 96.6% lines (1298/1344), target 95	session-20261113T053904-36dcee67	2026-11-13T07:38:06Z
