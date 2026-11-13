@@ -4020,3 +4020,4 @@ cover:stackiq:9ac19b3am6096:34f5c300	PR budget exhausted (branches -1..-5 exist)
 fix:dossiq:6353:60a451ec	no change: removals are what case-notes-stay-in-dossiq asks; REVERIFY recorded as a build PR	session-20261113T091533-03405ea6	2026-11-13T09:43:31Z
 cover:learniq:e6498dddm0533:60c2c265	already done: batch -1 merged; lib/Controller/*.php now 3499/3682 statements (95.03%), at the 95% target; no PR	session-20261113T080556-d189f150	2026-11-13T09:43:36Z
 cover:dossiq:069ee2d6m7275:c900fa11	already done: lib/Service/Email/Filters 155/157 stmts (98.7%)	session-20261113T091527-72c58830	2026-11-13T09:43:36Z
+cover:learniq:e6498dddm0533:81b1241f	already done: batch -1 merged; lib/Portal/*.php now 2933/2957 statements (99.2%); no PR	session-20261113T080556-d189f150	2026-11-13T09:44:01Z
