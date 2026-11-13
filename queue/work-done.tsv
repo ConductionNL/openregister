@@ -4148,3 +4148,4 @@ cover:shillinq:05639debm0c05:81b1241f	already done: lib/Portal/ 157/157 = 100% (
 verify:buildiq:1536:29e55383	GREEN #1536 (vitest 3880->3917, 0 fail)	session-20261113T091527-72c58830	2026-11-13T10:04:59Z
 verify:larpinq:1024:4f2c7f3f	1024 GREEN: tests-only vitest specs; vitest 295 pass, PHP 697 = baseline	session-20261113T074532-3dc49c57	2026-11-13T10:05:05Z
 cover:larpinq:c4471360m4538:9d3a1784	PR #1027: RegistrationPaymentJob summary test, suite 697->698 OK	session-20261113T094617-36f80607	2026-11-13T10:05:11Z
+merge:integriq:3518:39d66136	merge-local over 1 integriq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:05:33Z
