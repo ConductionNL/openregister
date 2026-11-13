@@ -1944,3 +1944,4 @@ cover:shillinq:801aab65:2e7efbf6	already done: lib/Request 47/47 statements cove
 verify:learniq:2434:a42c4889	2434 GREEN; 0 new failures	session-20261113T031704-4f12cb78	2026-11-13T03:53:54Z
 cover:dossiq:6ca0231ema7d4:d1bf7ebd	PR #6267: 19 tests for PauseChaseService/ChaseSchedule/PauseReason; suite 19 failures before and after	session-20261113T034629-21e68669	2026-11-13T03:54:22Z
 fix:keepiq:1714:aa5475c9	fixed: PEM armour literal in keyProof.spec.js built at runtime; pushed 79e77cf1, REVERIFY recorded	session-20261113T034632-47095943	2026-11-13T03:55:36Z
+cover:keepiq:d76c2121m88ca:js3287a408	already done: src/components/settings/** is at 85.5% lines under vitest on development (target 85%), suite 5885/0	session-20261113T021703-063c80f1	2026-11-13T03:55:45Z
