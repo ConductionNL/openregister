@@ -4017,3 +4017,20 @@ cover:integriq:92114ab0m658d:63512d7f	cover	integriq	development	quality/test-co
 cover:shillinq:05639debmd8ee:e587f75a	cover	shillinq	development	quality/test-coverage-e587f75a	lang=php;dirs=lib/PaymentRun/*.php;focus=thin;weight=2025;coverage=85.47;target=90.0	2026-11-13T03:15:20Z
 measure:buildiq:20261113h08	measure	buildiq	development	queue/coverage/buildiq.json	why=slices need per-directory coverage	2026-11-13T06:20:58Z
 measure:pipelinq:20261113h08	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-13T08:20:15Z
+fix:portaliq:2375:f787d59a	fix	portaliq	development	2375	sha=f787d59a2564b83a94031ab55177f69495853b34;verdict=CONFLICT;branch=quality/gap-risky-uses;reason=conflicts with 2374 in ActionDraftTest/PortalDraftDrainTest (same @uses lines added)	2026-11-13T08:25:18Z
+fix:portaliq:2376:06bdb3c4	fix	portaliq	development	2376	sha=06bdb3c4f5c93d745ee683b5e92e0d1e29e7a096;verdict=CONFLICT;branch=quality/test-coverage-65e30692-1;reason=add/add conflict with 2374 in FormEmailCodeMailerTest/JsValueTest, overlaps 2374+2375	2026-11-13T08:25:18Z
+review:openregister:10112:58c023e8	review	openregister	main	10112	sha=58c023e80c0d9ffa3944c945e27bb7ef4bb76570;last_approved=;title=test(openregister): cover Service/Rbac access report and coverage metadata	2026-11-13T08:25:18Z
+review:openregister:10113:2769b568	review	openregister	main	10113	sha=2769b568e114a3c9fbde6095c0f25e07577c1756;last_approved=;title=test(openregister): list executed classes in flow tests so their coverage counts	2026-11-13T08:25:18Z
+verify:learniq:2441:c104aca5	verify	learniq	development	merge	prs=2441@02e9748fb47d0f07e8f752ea1732c83164cdb04b,2442@56a21904622ef8d2924d6e346ceae85aea70c9c9,2443@c75b2371230aefef1da306f2196eb454e5806181	2026-11-13T08:25:18Z
+verify:buildiq:1529:b9be700a	verify	buildiq	development	merge	prs=1529@03dee35f9017ecc99dbe332a9682c03441c6007f,1530@20fb8e4b069c4d54091d3b3844e683afdc190cdb	2026-11-13T08:25:18Z
+verify:integriq:3510:8a228b3f	verify	integriq	development	merge	prs=3510@8ab883cb23d0f8c5e0b2027ba12c9149e7ae9a35	2026-11-13T08:25:18Z
+verify:portaliq:2378:35141d5b	verify	portaliq	development	merge	prs=2378@2e83ccc2821ad1d8c485cb80ea628fd46a818072,2379@a901ed8aabb68e912dc24764d58b1b022c70d7fa,2380@153b35f2a95519d399aed2c542a3ffad00254b99,2381@240e70a34c6a7d690df03dbd24818075f94f0a28	2026-11-13T08:25:18Z
+verify:launchpad:1177:891afa15	verify	launchpad	development	merge	prs=1177@5a975205ea03eedcb3cba62deaf918c747ae88d7	2026-11-13T08:25:18Z
+merge:portaliq:2373:f434b2df	merge	portaliq	development	development	prs=2373@bb97388c39c057f93227cd42c789d323d300541c,2374@1bea661319a4811a4dd73c579b9f512352aec6b1,2377@7ea1553aeb8f12b3d4560c9d26844425fd750fc5	2026-11-13T08:25:18Z
+cover:dossiq:f8a113c5m7e79:da74a02d	cover	dossiq	development	quality/test-coverage-da74a02d	lang=php;dirs=lib/Service/BerichtenboxAdapter/;focus=thin;weight=733;coverage=87.99;target=90.0	2026-08-15T06:12:57Z
+cover:dossiq:f8a113c5m7e79:b4753aef	cover	dossiq	development	quality/test-coverage-b4753aef	lang=php;dirs=lib/Service/Pdok/;focus=thin;weight=701;coverage=87.99;target=90.0	2026-08-15T06:13:29Z
+cover:integriq:92114ab0m658d:c135a8f0	cover	integriq	development	quality/test-coverage-c135a8f0	lang=php;dirs=lib/Sources/Pdok/;focus=uncovered;weight=156;coverage=88.97;target=90.0	2026-10-14T07:21:30Z
+cover:shillinq:05639debmd8ee:c37ad97a	cover	shillinq	development	quality/test-coverage-c37ad97a	lang=php;dirs=lib/PaymentPlan/*.php;focus=uncovered;weight=129;coverage=85.47;target=90.0	2026-11-13T03:52:00Z
+measure:decidiq:20261113h08	measure	decidiq	development	queue/coverage/decidiq.json	why=slices need per-directory coverage	2026-11-13T08:25:18Z
+measure:hermiq:20261113h08	measure	hermiq	development	queue/coverage/hermiq.json	why=slices need per-directory coverage	2026-11-13T08:25:18Z
+measure:stackiq:20261113h08	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-13T04:26:00Z
