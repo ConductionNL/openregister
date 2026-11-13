@@ -5072,3 +5072,4 @@ build2:openregister:contacts-leaf-cases-panel	already building: all code tasks (
 build2:openregister:fields-a-user-adds-and-choices-a-record-narrows	already built: open 4.3 is a live e2e, 4.4 a PR-body dedup note of the original build; nothing buildable	session-20261113T114545-cd8d833c	2026-11-13T13:05:58Z
 review:openregister:10204:095193e3	APPROVE: new uncalled classes, tests and Architecture green; 6 risky tests noted	session-20261113T101609-bc51215d	2026-11-13T13:06:01Z
 cover:openregister:7350e3efma401:0b640b77	already done: lib/Service/ObjectSource/ at 99.74% (1923/1928) on main after test/coverage-0b640b77-1 merged	session-20261113T124807-b8fee1f0	2026-11-13T13:06:31Z
+build2:openregister:flow-task-inbox-projections	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:07:15Z
