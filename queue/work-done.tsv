@@ -5519,5 +5519,6 @@ cover:hermiq:065f1631me44a:1b97f731	PR #1694: 11 tests, 4 Listener classes; suit
 cover:shillinq:05639debm2935:jsb80bc6aa	PR #2942: 56 vitest tests, dirs 88.6%->96.4% stmts, suite 2200->2256 green	session-20261113T141616-c06e2a7d	2026-11-13T14:23:11Z
 cover:hermiq:065f1631me44a:05cc1463	PR #1693: +24 tests TalkSessionRoom/TalkRoomBinding; Talk dir 80.2%->98.3% (PR body says 82.9, actual 80.2); suite 4554->4578, no new failures	session-20261113T141607-18750fc2	2026-11-13T14:23:16Z
 cover:versioniq:1b35eed9mf055:js0023cfc7	cover: src/dialogs re-open branch in 3 dialogs; 100% stmts/branch/func/lines; suite 2825->2828 green; PR #681	session-20261113T131538-bf8ccc8e	2026-11-13T14:23:27Z
+cover:dossiq:069ee2d6m2deb:js4f2a605a	PR #6427: edge-path tests for 4 caseType widgets (blueprint, portal, translations, party-kinds); dir 87.59%->96.35%, above target 95	session-20261113T091531-f9ad21ac	2026-11-13T14:23:41Z
 review:openregister:10273:8479ecde	APPROVE 10273	session-20261113T114527-9a216dd1	2026-11-13T14:23:43Z
 verify:larpinq:1029:578bb7c3	1029 GREEN (spec only; PHP 791 ok, vitest 495 ok)	session-20261113T074535-8a2067c2	2026-11-13T14:24:10Z
