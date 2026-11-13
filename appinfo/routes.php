@@ -1724,6 +1724,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // Schema versioning & object migration (schema-versioning-and-object-migration).
         ['name' => 'schemaMigration#changelog', 'url' => '/api/schemas/{id}/changelog', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        // Follow a schema's breaking changes (schema-breaking-change-notice).
+        ['name' => 'schemaChangeFollowers#follow', 'url' => '/api/schemas/{id}/change-followers', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'schemaChangeFollowers#unfollow', 'url' => '/api/schemas/{id}/change-followers', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#revalidate', 'url' => '/api/schemas/{id}/revalidate', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#runs', 'url' => '/api/schemas/{id}/runs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#run', 'url' => '/api/schemas/{id}/runs/{run}', 'verb' => 'GET', 'requirements' => ['id' => '\d+', 'run' => '\d+']],

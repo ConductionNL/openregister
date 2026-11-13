@@ -57,6 +57,7 @@ class MiddlewareRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Middleware\ApiVersionMiddleware',
 				'OCA\OpenRegister\Middleware\UnversionedPathDeprecationMiddleware',
 				'OCA\OpenRegister\Middleware\ApiCallerMiddleware',
+				'OCA\OpenRegister\Middleware\SchemaChangeHeaderMiddleware',
 				'OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware',
 			],
 			actual: $registered

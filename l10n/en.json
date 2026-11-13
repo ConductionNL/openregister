@@ -3479,7 +3479,11 @@
         "_%n category_::_%n categories_": [
             "%n category",
             "%n categories"
-        ]
+        ],
+        "Schema \"%1$s\" changed in a way that can break your use of it (version %2$s)": "Schema \"%1$s\" changed in a way that can break your use of it (version %2$s)",
+        "A breaking change to schema \"%1$s\" was applied as version %2$s. Check the changelog before your next call.": "A breaking change to schema \"%1$s\" was applied as version %2$s. Check the changelog before your next call.",
+        "Note from the administrator: %s": "Note from the administrator: %s",
+        "Open changelog": "Open changelog"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

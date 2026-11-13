@@ -155,6 +155,119 @@ class ApiCallRecordMapper extends QBMapper implements ApiCallRecordMapperInterfa
 	}//end findInPeriod()
 
 	/**
+	 * The principals that called any of the given route prefixes since a moment, busiest first.
+	 *
+	 * A route matches a prefix when it is the prefix or continues it with `/`,
+	 * so `/apps/openregister/api/objects/zaken/melding` matches its list route and
+	 * every object route below it, and not `.../meldingen`. Counts are summed per
+	 * principal over routes, methods and versions; the anonymous principal is an
+	 * empty string and is returned like any other.
+	 *
+	 * @param array<int, string> $prefixes The route prefixes.
+	 * @param DateTime           $from     The earliest last call.
+	 * @param int                $limit    The most principals to return.
+	 *
+	 * @return array<int, array{principal: string, calls: int, lastSeen: string|null}> The callers.
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-the-breaking-change-gate-shows-who-will-be-affected
+	 */
+	public function findCallersOfRoutes(array $prefixes, DateTime $from, int $limit = 500): array {
+		if ($prefixes === []) {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('principal')
+			->selectAlias($qb->func()->sum('call_count'), 'calls')
+			->selectAlias($qb->func()->max('last_seen'), 'last_call')
+			->from(self::TABLE)
+			->where($qb->expr()->gte('last_seen', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($this->routeMatches(qb: $qb, prefixes: $prefixes))
+			->groupBy('principal')
+			->orderBy('calls', 'DESC')
+			->addOrderBy('principal', 'ASC')
+			->setMaxResults(max(1, $limit));
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return array_map(
+			static fn (array $row): array => [
+				'principal' => (string)($row['principal'] ?? ''),
+				'calls' => (int)($row['calls'] ?? 0),
+				'lastSeen' => self::moment(value: ($row['last_call'] ?? null)),
+			],
+			$rows
+		);
+	}//end findCallersOfRoutes()
+
+	/**
+	 * How many principals called any of the given route prefixes since a moment.
+	 *
+	 * @param array<int, string> $prefixes The route prefixes.
+	 * @param DateTime           $from     The earliest last call.
+	 *
+	 * @return int The number of distinct principals.
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-the-breaking-change-gate-shows-who-will-be-affected
+	 */
+	public function countCallersOfRoutes(array $prefixes, DateTime $from): int {
+		if ($prefixes === []) {
+			return 0;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(DISTINCT principal)'))
+			->from(self::TABLE)
+			->where($qb->expr()->gte('last_seen', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($this->routeMatches(qb: $qb, prefixes: $prefixes));
+
+		$result = $qb->executeQuery();
+		$count = $result->fetchOne();
+		$result->closeCursor();
+
+		return (int)$count;
+	}//end countCallersOfRoutes()
+
+	/**
+	 * A condition: the route is one of the prefixes or continues one with `/`.
+	 *
+	 * @param IQueryBuilder      $qb       The query.
+	 * @param array<int, string> $prefixes The route prefixes.
+	 *
+	 * @return \OCP\DB\QueryBuilder\ICompositeExpression The condition.
+	 */
+	private function routeMatches(IQueryBuilder $qb, array $prefixes): \OCP\DB\QueryBuilder\ICompositeExpression {
+		$any = [];
+		foreach (array_values(array_unique($prefixes)) as $prefix) {
+			$any[] = $qb->expr()->eq('route', $qb->createNamedParameter($prefix));
+			$any[] = $qb->expr()->like('route', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix) . '/%'));
+		}
+
+		return $qb->expr()->orX(...$any);
+	}//end routeMatches()
+
+	/**
+	 * A stored moment as ISO 8601, or null.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return string|null The moment.
+	 */
+	private static function moment(mixed $value): ?string {
+		if ($value === null || $value === '') {
+			return null;
+		}
+
+		try {
+			return (new DateTime((string)$value))->format(DATE_ATOM);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end moment()
+
+	/**
 	 * Drop records nothing has called since a moment.
 	 *
 	 * The record is an operational aid with no evidential value, so it does not

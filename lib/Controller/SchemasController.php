@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaChangelog;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -63,6 +65,7 @@ use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCA\OpenRegister\Service\Schema\IncomingDefinition;
+use OCA\OpenRegister\Service\Schema\SchemaChangeNoticeService;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
@@ -1458,7 +1461,7 @@ class SchemasController extends Controller {
 		// `?draft=true` holds the edit beside the published definition instead
 		// of applying it (modelling-schema-draft).
 		$asDraft = $this->isTrue(value: ($data['draft'] ?? null));
-		unset($data['draft'], $data['acknowledgeBreaking'], $data['renames']);
+		unset($data['draft'], $data['acknowledgeBreaking'], $data['renames'], $data['changeNotice']);
 		if ($asDraft === true) {
 			return $this->saveDraft(id: $id, data: $data);
 		}
@@ -1675,6 +1678,62 @@ class SchemasController extends Controller {
 	}//end writeUpdateWithForms()
 
 	/**
+	 * Who a breaking change to the schema would reach; empty when that cannot be told.
+	 *
+	 * @param Schema $schema The stored schema
+	 *
+	 * @return array<string, mixed> `affectedCallers` and `followers`, or nothing
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-the-breaking-change-gate-shows-who-will-be-affected
+	 */
+	private function changeReach(Schema $schema): array {
+		try {
+			return $this->changeNotices()->reach(schema: $schema);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemasController] The reach of a breaking change could not be read',
+				context: ['schema_id' => $schema->getId(), 'error' => $e->getMessage()]
+			);
+
+			return [];
+		}
+	}//end changeReach()
+
+	/**
+	 * Queue the notice of an applied, acknowledged breaking change; a failure never fails the save.
+	 *
+	 * @param SchemaChangelog|null $entry  The changelog entry, or null when nothing was recorded
+	 * @param array<string, mixed> $update The update: changeSet, acknowledged, changeNotice
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-an-acknowledged-breaking-change-tells-the-people-who-build-on-the-schema
+	 */
+	private function queueChangeNotice(?SchemaChangelog $entry, array $update): void {
+		if ($entry === null || $update['acknowledged'] !== true || $update['changeSet']->isBreaking() === false) {
+			return;
+		}
+
+		try {
+			$this->changeNotices()->queue(entry: $entry, note: ($update['changeNotice'] ?? null));
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[SchemasController] The breaking-change notice could not be queued',
+				context: ['changelog_id' => $entry->getId(), 'error' => $e->getMessage()]
+			);
+		}
+	}//end queueChangeNotice()
+
+	/**
+	 * The breaking-change notice service.
+	 *
+	 * @return SchemaChangeNoticeService The service
+	 */
+	private function changeNotices(): SchemaChangeNoticeService {
+		return $this->container->get(SchemaChangeNoticeService::class);
+	}//end changeNotices()
+
+	/**
 	 * Classify a definition change and apply the schema versioning gate.
 	 *
 	 * Only runs when the update carries properties or required. An unacknowledged
@@ -1690,6 +1749,12 @@ class SchemasController extends Controller {
 		$update['changeSet'] = null;
 		$update['acknowledged'] = ($this->request->getParam('acknowledgeBreaking') === true
 			|| $this->request->getParam('acknowledgeBreaking') === 'true');
+		try {
+			$update['changeNotice'] = SchemaChangeNoticeService::note(note: $this->request->getParam('changeNotice'));
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		}
+
 		$data = $update['data'];
 		if (isset($data['properties']) === false && isset($data['required']) === false) {
 			return $update;
@@ -1717,7 +1782,7 @@ class SchemasController extends Controller {
 				record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: $update['acknowledged'])
 			);
 		} catch (BreakingSchemaChangeException $e) {
-			return new JSONResponse(data: $e->toResponse(), statusCode: 409);
+			return new JSONResponse(data: $e->withReach(reach: $this->changeReach(schema: $existing))->toResponse(), statusCode: 409);
 		}
 
 		if (isset($data['version']) === false && $changeSet->hasChanges() === true) {
@@ -1806,10 +1871,11 @@ class SchemasController extends Controller {
 		$updatedSchema = $this->schemaMapper->updateFromArray(id: $update['id'], object: $update['data']);
 
 		if ($update['changeSet'] !== null) {
-			$this->schemaVersioningService->recordChange(
+			$entry = $this->schemaVersioningService->recordChange(
 				schemaId: $updatedSchema->getId(),
 				record: new SchemaChangeRecord(changeSet: $update['changeSet'], acknowledged: $update['acknowledged'], version: $updatedSchema->getVersion())
 			);
+			$this->queueChangeNotice(entry: $entry, update: $update);
 		}
 
 		if (isset($update['data']['authorization']) === true) {

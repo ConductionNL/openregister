@@ -50,4 +50,41 @@ interface SchemaChangelogMapperInterface {
 	 * @return SchemaChangelog[] The entries.
 	 */
 	public function findBySchema(int $schemaId, ListQuery $query): array;
+
+	/**
+	 * One entry by id.
+	 *
+	 * @param int $id The entry id.
+	 *
+	 * @return SchemaChangelog The entry.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When there is none.
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-an-acknowledged-breaking-change-tells-the-people-who-build-on-the-schema
+	 */
+	public function find(int $id): SchemaChangelog;
+
+	/**
+	 * The newest breaking entry of a schema created since a moment, or null.
+	 *
+	 * @param int       $schemaId The schema.
+	 * @param \DateTime $since    The earliest creation.
+	 *
+	 * @return SchemaChangelog|null The entry.
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-clients-see-a-breaking-change-on-the-schemas-responses
+	 */
+	public function findLatestBreakingSince(int $schemaId, \DateTime $since): ?SchemaChangelog;
+
+	/**
+	 * Record on an entry how many the breaking-change notice told, and when.
+	 *
+	 * @param SchemaChangelog $entry The entry.
+	 * @param int             $count How many were told.
+	 *
+	 * @return SchemaChangelog The updated entry.
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-an-acknowledged-breaking-change-tells-the-people-who-build-on-the-schema
+	 */
+	public function recordNotice(SchemaChangelog $entry, int $count): SchemaChangelog;
 }//end interface

@@ -15,6 +15,8 @@ return array (
     'actor' => 'string',
     'acknowledgedBy' => 'string',
     'acknowledgedAt' => 'datetime',
+    'noticeSentTo' => 'integer',
+    'noticeSentAt' => 'datetime',
     'created' => 'datetime',
   ),
   'empty' => 
@@ -29,6 +31,8 @@ return array (
     'actor' => NULL,
     'acknowledgedBy' => NULL,
     'acknowledgedAt' => NULL,
+    'noticeSentTo' => NULL,
+    'noticeSentAt' => NULL,
     'created' => NULL,
   ),
   'filled' => 
@@ -44,6 +48,8 @@ return array (
     'actor' => 'actor-v',
     'acknowledgedBy' => 'acknowledgedBy-v',
     'acknowledgedAt' => '2026-01-02T03:04:05+00:00',
+    'noticeSentTo' => 12,
+    'noticeSentAt' => '2026-01-02T03:04:05+00:00',
     'created' => '2026-01-02T03:04:05+00:00',
   ),
   'filledUpdated' => 
@@ -56,7 +62,9 @@ return array (
     5 => 'actor',
     6 => 'acknowledgedBy',
     7 => 'acknowledgedAt',
-    8 => 'created',
+    8 => 'noticeSentTo',
+    9 => 'noticeSentAt',
+    10 => 'created',
   ),
   'refused' => 
   array (
@@ -77,6 +85,8 @@ return array (
       'actor' => 'actor-v',
       'acknowledgedBy' => 'acknowledgedBy-v',
       'acknowledgedAt' => '2026-01-02T03:04:05+00:00',
+      'noticeSentTo' => 12,
+      'noticeSentAt' => '2026-01-02T03:04:05+00:00',
       'created' => '2026-01-02T03:04:05+00:00',
     ),
     'updated' => 
@@ -89,7 +99,9 @@ return array (
       5 => 'actor',
       6 => 'acknowledgedBy',
       7 => 'acknowledgedAt',
-      8 => 'created',
+      8 => 'noticeSentTo',
+      9 => 'noticeSentAt',
+      10 => 'created',
     ),
   ),
   'hydratedBlank' => 
@@ -107,6 +119,8 @@ return array (
       'actor' => '',
       'acknowledgedBy' => '',
       'acknowledgedAt' => 'now',
+      'noticeSentTo' => 0,
+      'noticeSentAt' => 'now',
       'created' => 'now',
     ),
     'updated' => 
@@ -118,7 +132,9 @@ return array (
       4 => 'actor',
       5 => 'acknowledgedBy',
       6 => 'acknowledgedAt',
-      7 => 'created',
+      7 => 'noticeSentTo',
+      8 => 'noticeSentAt',
+      9 => 'created',
     ),
   ),
 );
