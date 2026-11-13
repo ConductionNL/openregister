@@ -65,6 +65,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCP\App\IAppManager;
+use OCP\IConfig;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -117,6 +118,53 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	public const CAUSE_INVALID_IDENTIFIER = 'invalid-identifier';
 
 	/**
+	 * Cause when the instance has no secret to key the family references with.
+	 */
+	public const CAUSE_NO_INSTANCE_SECRET = 'no-instance-secret';
+
+	/**
+	 * The relations `lookupFamily()` answers.
+	 *
+	 * @var array<int,string>
+	 */
+	public const FAMILY_RELATIONS = ['partner', 'child'];
+
+	/**
+	 * At most this many relatives are asked in the second call (design D1).
+	 */
+	private const MAX_RELATIVES = 20;
+
+	/**
+	 * Length of a family reference: a truncated hex HMAC (design D3).
+	 */
+	private const REFERENCE_LENGTH = 32;
+
+	/**
+	 * Fields of the resident call: the address and the relations (design D1).
+	 *
+	 * @var array<int,string>
+	 */
+	private const FAMILY_RESIDENT_FIELDS = [
+		'burgerservicenummer',
+		'verblijfplaats.adresseerbaarObjectIdentificatie',
+		'partners',
+		'kinderen',
+	];
+
+	/**
+	 * Fields of the relatives call (design D1).
+	 *
+	 * @var array<int,string>
+	 */
+	private const FAMILY_RELATIVE_FIELDS = [
+		'burgerservicenummer',
+		'naam.volledigeNaam',
+		'geboorte.datum',
+		'overlijden',
+		'verblijfplaats.adresseerbaarObjectIdentificatie',
+	];
+
+	/**
 	 * Default field set requested from HaalCentraal. The BRP API requires an
 	 * explicit `fields` list on every query. Mirrors the field set pipelinq's
 	 * `HaalCentraalClient` requests so the consuming app's normaliser receives
@@ -146,6 +194,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	 * @param IAppManager $appManager NC app manager (isEnabled check).
 	 * @param IL10N $l10n Localisation.
 	 * @param LoggerInterface $logger Logger for degraded paths (never receives a BSN).
+	 * @param IConfig|null $config System config; its `secret` keys the family references.
 	 *
 	 * @return void
 	 */
@@ -154,6 +203,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 		private IAppManager $appManager,
 		private IL10N $l10n,
 		private LoggerInterface $logger,
+		private ?IConfig $config = null,
 	) {
 	}//end __construct()
 
@@ -302,6 +352,316 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 			'meta' => $this->shapeMeta(meta: ($envelope['meta'] ?? [])),
 		];
 	}//end lookupByBsn()
+
+	/**
+	 * A resident's current partner and living children, minimised.
+	 *
+	 * Two `RaadpleegMetBurgerservicenummer` calls (design D1): the resident
+	 * with their address and relations, then the selected relatives (at most
+	 * 20) with name, birth date, death and address. A partner whose
+	 * partnership has ended and a deceased relative are dropped; with
+	 * `$sameAddressOnly` so is a relative on another address. Per relative the
+	 * answer holds an opaque reference, the display name, the relation, the
+	 * birth year and `sameAddress` — never a BSN, a full birth date or an
+	 * address. Degrades as `lookupByBsn()` does.
+	 *
+	 * @param string            $bsn             The resident's BSN.
+	 * @param array<int,string> $relations       `partner` and/or `child`.
+	 * @param bool              $sameAddressOnly Drop relatives on another address.
+	 *
+	 * @return array<string,mixed> `{ results, total, meta, relativesMeta }`, or
+	 *                             `{ unavailable, cause, results, total }`.
+	 *
+	 * @spec openspec/changes/brp-family-members-lookup/specs/integration-person-lookup/spec.md#requirement-the-brp-provider-answers-a-residents-partner-and-children-minimised-req-brp-fam-001
+	 */
+	public function lookupFamily(string $bsn, array $relations=self::FAMILY_RELATIONS, bool $sameAddressOnly=false): array {
+		$bsn = trim($bsn);
+		$relations = array_values(array_intersect(self::FAMILY_RELATIONS, $relations));
+		if ($bsn === '' || $relations === []) {
+			return ['results' => [], 'total' => 0, 'meta' => $this->emptyMeta(), 'relativesMeta' => null];
+		}
+
+		$secret = $this->instanceSecret();
+		if ($secret === '') {
+			return $this->degraded(cause: self::CAUSE_NO_INSTANCE_SECRET);
+		}
+
+		try {
+			$residentCall = $this->familyCall(bsns: [$bsn], fields: self::FAMILY_RESIDENT_FIELDS);
+			$resident = ($this->extractPersonen(response: ($residentCall['body'] ?? []))[0] ?? []);
+			$candidates = array_intersect_key($this->currentRelatives(resident: $resident), array_flip($relations));
+			$relationOf = $this->relationByBsn(candidates: $candidates);
+
+			$relativesCall = null;
+			$relatives = [];
+			if ($relationOf !== []) {
+				$relativesCall = $this->familyCall(bsns: array_map('strval', array_keys($relationOf)), fields: self::FAMILY_RELATIVE_FIELDS);
+				$relatives = $this->extractPersonen(response: ($relativesCall['body'] ?? []));
+			}
+		} catch (ProviderUnavailableException $e) {
+			return $this->degraded(cause: $e->getCause());
+		} catch (Throwable $e) {
+			// Never include a BSN or the message body — only that a lookup failed.
+			$this->logger->warning('BrpPersonProvider::lookupFamily failed (transport).');
+			return $this->degraded(cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN);
+		}//end try
+
+		$results = $this->familyResults(
+			residentBsn: $bsn,
+			residentAddress: self::addressObjectOf(person: $resident),
+			relatives: $relatives,
+			relationOf: $relationOf,
+			sameAddressOnly: $sameAddressOnly
+		);
+
+		$relativesMeta = null;
+		if ($relativesCall !== null) {
+			$relativesMeta = $this->shapeMeta(meta: ($relativesCall['meta'] ?? []));
+		}
+
+		return [
+			'results' => $results,
+			'total' => count($results),
+			'meta' => $this->shapeMeta(meta: ($residentCall['meta'] ?? [])),
+			'relativesMeta' => $relativesMeta,
+		];
+	}//end lookupFamily()
+
+	/**
+	 * Turn a family reference back into the relative's BSN.
+	 *
+	 * Repeats the resident call and recomputes the references of the current
+	 * partner and children (design D3), so a reference from another resident's
+	 * answer, or of someone who is no longer a relative, answers null. A
+	 * source that cannot be reached answers null too.
+	 *
+	 * @param string $bsn       The resident's BSN.
+	 * @param string $reference A reference `lookupFamily()` answered.
+	 *
+	 * @return string|null The relative's BSN, or null.
+	 *
+	 * @spec openspec/changes/brp-family-members-lookup/specs/integration-person-lookup/spec.md#requirement-the-brp-provider-answers-a-residents-partner-and-children-minimised-req-brp-fam-001
+	 */
+	public function resolveFamilyReference(string $bsn, string $reference): ?string {
+		$bsn = trim($bsn);
+		$reference = strtolower(trim($reference));
+		$secret = $this->instanceSecret();
+		if ($bsn === '' || $secret === '' || preg_match('/^[0-9a-f]{' . self::REFERENCE_LENGTH . '}$/', $reference) !== 1) {
+			return null;
+		}
+
+		try {
+			$residentCall = $this->familyCall(bsns: [$bsn], fields: self::FAMILY_RESIDENT_FIELDS);
+		} catch (Throwable $e) {
+			$this->logger->warning('BrpPersonProvider::resolveFamilyReference failed (transport).');
+			return null;
+		}
+
+		$resident = ($this->extractPersonen(response: ($residentCall['body'] ?? []))[0] ?? []);
+		foreach (array_keys($this->relationByBsn(candidates: $this->currentRelatives(resident: $resident))) as $relativeBsn) {
+			if (hash_equals($this->familyReference(residentBsn: $bsn, relativeBsn: (string)$relativeBsn, secret: $secret), $reference) === true) {
+				return (string)$relativeBsn;
+			}
+		}
+
+		return null;
+	}//end resolveFamilyReference()
+
+	/**
+	 * One `RaadpleegMetBurgerservicenummer` call with its transport metadata.
+	 *
+	 * @param array<int,string> $bsns   The BSNs asked.
+	 * @param array<int,string> $fields The fields asked.
+	 *
+	 * @return array<string,mixed> The router envelope: `body` and `meta`.
+	 */
+	private function familyCall(array $bsns, array $fields): array {
+		return $this->router->callWithMeta(
+			provider: $this,
+			request: $this->personenRequest(
+				body: [
+					'type' => 'RaadpleegMetBurgerservicenummer',
+					'burgerservicenummer' => array_values($bsns),
+					'fields' => $fields,
+				]
+			)
+		);
+	}//end familyCall()
+
+	/**
+	 * The current partners and the children of a resident, by relation.
+	 *
+	 * A partner whose partnership has ended (`ontbindingHuwelijkPartnerschap`
+	 * holds anything) is left out.
+	 *
+	 * @param array<string,mixed> $resident The resident as the BRP answered.
+	 *
+	 * @return array{partner: array<int,array<string,mixed>>, child: array<int,array<string,mixed>>}
+	 */
+	private function currentRelatives(array $resident): array {
+		$partners = [];
+		foreach ((array)($resident['partners'] ?? []) as $partner) {
+			if (is_array($partner) === true && empty($partner['ontbindingHuwelijkPartnerschap']) === true) {
+				$partners[] = $partner;
+			}
+		}
+
+		$children = array_values(array_filter((array)($resident['kinderen'] ?? []), 'is_array'));
+
+		return ['partner' => $partners, 'child' => $children];
+	}//end currentRelatives()
+
+	/**
+	 * Each relative's BSN with its relation, at most MAX_RELATIVES, first relation wins.
+	 *
+	 * @param array<string,array<int,array<string,mixed>>> $candidates Relatives by relation.
+	 *
+	 * @return array<string,string> BSN => relation.
+	 */
+	private function relationByBsn(array $candidates): array {
+		$relationOf = [];
+		foreach ($candidates as $relation => $people) {
+			foreach ($people as $person) {
+				$relativeBsn = trim((string)($person['burgerservicenummer'] ?? ''));
+				if ($relativeBsn === '' || isset($relationOf[$relativeBsn]) === true) {
+					continue;
+				}
+
+				$relationOf[$relativeBsn] = (string)$relation;
+			}
+		}
+
+		return array_slice($relationOf, 0, self::MAX_RELATIVES, true);
+	}//end relationByBsn()
+
+	/**
+	 * The minimised answer rows for the relatives the second call returned.
+	 *
+	 * @param string                         $residentBsn     The resident's BSN (keys the references).
+	 * @param string                         $residentAddress The resident's address object id, or ''.
+	 * @param array<int,array<string,mixed>> $relatives       The relatives as the BRP answered.
+	 * @param array<string,string>           $relationOf      BSN => relation, of the relatives asked.
+	 * @param bool                           $sameAddressOnly Drop relatives on another address.
+	 *
+	 * @return array<int,array{reference: string, name: string, relation: string, birthYear: int|null, sameAddress: bool}>
+	 */
+	private function familyResults(string $residentBsn, string $residentAddress, array $relatives, array $relationOf, bool $sameAddressOnly): array {
+		$secret = $this->instanceSecret();
+		$results = [];
+		foreach ($relatives as $relative) {
+			$relativeBsn = trim((string)($relative['burgerservicenummer'] ?? ''));
+			if (isset($relationOf[$relativeBsn]) === false || empty($relative['overlijden']) === false) {
+				continue;
+			}
+
+			$address = self::addressObjectOf(person: $relative);
+			$sameAddress = ($residentAddress !== '' && $address === $residentAddress);
+			if ($sameAddressOnly === true && $sameAddress === false) {
+				continue;
+			}
+
+			$results[] = [
+				'reference' => $this->familyReference(residentBsn: $residentBsn, relativeBsn: $relativeBsn, secret: $secret),
+				'name' => self::displayName(person: $relative),
+				'relation' => $relationOf[$relativeBsn],
+				'birthYear' => self::birthYearOf(person: $relative),
+				'sameAddress' => $sameAddress,
+			];
+		}//end foreach
+
+		return $results;
+	}//end familyResults()
+
+	/**
+	 * The reference of one relative: HMAC-SHA256 over resident and relative, truncated (design D3).
+	 *
+	 * @param string $residentBsn The resident's BSN.
+	 * @param string $relativeBsn The relative's BSN.
+	 * @param string $secret      The instance secret.
+	 *
+	 * @return string 32 hex characters.
+	 */
+	private function familyReference(string $residentBsn, string $relativeBsn, string $secret): string {
+		return substr(hash_hmac('sha256', $residentBsn . ':' . $relativeBsn, $secret), 0, self::REFERENCE_LENGTH);
+	}//end familyReference()
+
+	/**
+	 * The instance secret that keys the family references, or '' without one.
+	 *
+	 * @return string
+	 */
+	private function instanceSecret(): string {
+		if ($this->config === null) {
+			return '';
+		}
+
+		return (string)$this->config->getSystemValueString('secret', '');
+	}//end instanceSecret()
+
+	/**
+	 * A person's address object id, or ''.
+	 *
+	 * @param array<string,mixed> $person The person as the BRP answered.
+	 *
+	 * @return string
+	 */
+	private static function addressObjectOf(array $person): string {
+		$place = ($person['verblijfplaats'] ?? []);
+		if (is_array($place) === false) {
+			return '';
+		}
+
+		$identifier = ($place['adresseerbaarObjectIdentificatie'] ?? ($place['verblijfadres']['adresseerbaarObjectIdentificatie'] ?? ''));
+
+		return trim((string)$identifier);
+	}//end addressObjectOf()
+
+	/**
+	 * A person's display name: `naam.volledigeNaam`, else the name parts.
+	 *
+	 * @param array<string,mixed> $person The person as the BRP answered.
+	 *
+	 * @return string
+	 */
+	private static function displayName(array $person): string {
+		$name = ($person['naam'] ?? []);
+		if (is_array($name) === false) {
+			return trim((string)$name);
+		}
+
+		$full = trim((string)($name['volledigeNaam'] ?? ''));
+		if ($full !== '') {
+			return $full;
+		}
+
+		$parts = [($name['voornamen'] ?? ''), ($name['voorvoegsel'] ?? ''), ($name['geslachtsnaam'] ?? '')];
+
+		return trim(implode(' ', array_filter(array_map('strval', $parts), static fn (string $part): bool => trim($part) !== '')));
+	}//end displayName()
+
+	/**
+	 * A person's birth year, from a full or a partial BRP date, or null.
+	 *
+	 * @param array<string,mixed> $person The person as the BRP answered.
+	 *
+	 * @return int|null
+	 */
+	private static function birthYearOf(array $person): ?int {
+		$date = ($person['geboorte']['datum'] ?? null);
+		if (is_array($date) === true) {
+			if (isset($date['jaar']) === true && is_numeric($date['jaar']) === true) {
+				return (int)$date['jaar'];
+			}
+
+			$date = ($date['datum'] ?? null);
+		}
+
+		if (is_string($date) === true && preg_match('/^(\d{4})/', $date, $match) === 1) {
+			return (int)$match[1];
+		}
+
+		return null;
+	}//end birthYearOf()
 
 	/**
 	 * Count the people the BRP registers at an address object.
