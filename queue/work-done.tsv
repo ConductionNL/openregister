@@ -6006,3 +6006,4 @@ fix:portaliq:2446:0f1d5cb2	no change: clean vs development; conflicts only with 
 cover:humaniq:a18a13fb:05630945	PR #1121: 9 tests; lib/Middleware/Support 88.33% -> 91.67%; remaining 5 lines unreachable (empty constant lists), 95% not reachable with tests only	session-20261113T175336-b2d7fc7c	2026-11-13T18:34:03Z
 cover:integriq:92114ab0mb37a:0d678885	PR #3530: 32 tests over 7 identity classes; suite 8222->8254, no new failures (golden sync test inherited)	session-20261113T182349-6568f680	2026-11-13T18:34:00Z
 cover:opencatalogi:fc83bfb1:ff806a5e	PR #2595: 14 tests, Community 254/265 -> 264/265 stmts, suite 5268 (2 inherited failures)	session-20261113T182348-cc1b5fea	2026-11-13T18:34:04Z
+cover:opencatalogi:fc83bfb1:81b1241f	PR opencatalogi#2596: 6 tests; lib/Portal statements 284/294 -> 294/294	session-20261113T175332-5effc865	2026-11-13T18:34:22Z
