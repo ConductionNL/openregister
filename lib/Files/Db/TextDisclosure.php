@@ -43,8 +43,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setService(string $service)
  * @method string getHost()
  * @method void setHost(string $host)
- * @method DateTime getAt()
- * @method void setAt(DateTime $at)
+ * @method DateTime getDisclosedAt()
+ * @method void setDisclosedAt(DateTime $disclosedAt)
  * @method int getBytes()
  * @method void setBytes(int $bytes)
  *
@@ -96,7 +96,7 @@ class TextDisclosure extends Entity implements JsonSerializable {
 	 *
 	 * @var DateTime
 	 */
-	protected DateTime $at;
+	protected DateTime $disclosedAt;
 
 	/**
 	 * The number of bytes sent.
@@ -114,9 +114,9 @@ class TextDisclosure extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'sourceId', type: 'integer');
 		$this->addType(fieldName: 'service', type: 'string');
 		$this->addType(fieldName: 'host', type: 'string');
-		$this->addType(fieldName: 'at', type: 'datetime');
+		$this->addType(fieldName: 'disclosedAt', type: 'datetime');
 		$this->addType(fieldName: 'bytes', type: 'integer');
 
-		$this->at = new DateTime();
+		$this->disclosedAt = new DateTime();
 	}//end __construct()
 }//end class

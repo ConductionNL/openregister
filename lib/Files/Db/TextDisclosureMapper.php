@@ -62,7 +62,7 @@ class TextDisclosureMapper extends QBMapper {
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-			->orderBy('at', 'DESC')
+			->orderBy('disclosed_at', 'DESC')
 			->addOrderBy('id', 'DESC');
 
 		return $this->findEntities(query: $qb);

@@ -66,7 +66,7 @@ class TextDisclosureRecorder {
 		$disclosure->setSourceId($source->sourceId);
 		$disclosure->setService($service);
 		$disclosure->setHost($this->hostOf(url: $url));
-		$disclosure->setAt(new DateTime());
+		$disclosure->setDisclosedAt(new DateTime());
 		$disclosure->setBytes($bytes);
 
 		try {

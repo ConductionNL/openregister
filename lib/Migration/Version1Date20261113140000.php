@@ -68,7 +68,7 @@ class Version1Date20261113140000 extends SimpleMigrationStep {
 			$table->addColumn('source_id', Types::BIGINT, ['notnull' => true]);
 			$table->addColumn('service', Types::STRING, ['notnull' => true, 'length' => 64]);
 			$table->addColumn('host', Types::STRING, ['notnull' => true, 'length' => 255]);
-			$table->addColumn('at', Types::DATETIME, ['notnull' => true]);
+			$table->addColumn('disclosed_at', Types::DATETIME, ['notnull' => true]);
 			$table->addColumn('bytes', Types::BIGINT, ['notnull' => true, 'default' => 0]);
 
 			$table->setPrimaryKey(['id']);

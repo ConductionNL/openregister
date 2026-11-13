@@ -75,7 +75,7 @@ final class FileDisclosuresControllerTest extends TestCase {
 		$disclosure->setFileId(31);
 		$disclosure->setService('Presidio');
 		$disclosure->setHost('presidio.example:5002');
-		$disclosure->setAt(new DateTime('2026-11-13T10:15:00+00:00'));
+		$disclosure->setDisclosedAt(new DateTime('2026-11-13T10:15:00+00:00'));
 		$disclosure->setBytes(42);
 
 		$mapper = $this->createMock(TextDisclosureMapper::class);

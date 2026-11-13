@@ -216,7 +216,7 @@ final class TextDisclosureRecorderTest extends TestCase {
 			[31, 'file', 31, 'Presidio', 'presidio.example:5002', 42],
 			[$record->getFileId(), $record->getSourceType(), $record->getSourceId(), $record->getService(), $record->getHost(), $record->getBytes()]
 		);
-		$this->assertGreaterThanOrEqual($before->getTimestamp(), $record->getAt()->getTimestamp());
+		$this->assertGreaterThanOrEqual($before->getTimestamp(), $record->getDisclosedAt()->getTimestamp());
 	}//end testTheRecordNamesFileServiceHostAndBytes()
 
 	/**

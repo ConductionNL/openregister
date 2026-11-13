@@ -82,7 +82,7 @@ class FileDisclosuresController extends Controller {
 			static fn (TextDisclosure $disclosure): array => [
 				'service' => $disclosure->getService(),
 				'host' => $disclosure->getHost(),
-				'at' => $disclosure->getAt()->format(DATE_ATOM),
+				'at' => $disclosure->getDisclosedAt()->format(DATE_ATOM),
 				'bytes' => $disclosure->getBytes(),
 			],
 			$this->mapper->findByFileId(fileId: $fileId)
