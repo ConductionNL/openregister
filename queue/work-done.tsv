@@ -3548,3 +3548,4 @@ verify:opencatalogi:2586:06ee83ce	GREEN 2586 (test @uses metadata only; 5162 tes
 cover:dossiq:f8a113c5m7e79:2aa8dc21	PR #6335: 2 tests (AutomaticActionFlowMigrator unavailable paths), suite 15297->15299, 19 inherited failures unchanged; rest of dir already 100%	session-20261113T080551-294c2aa6	2026-11-13T08:42:12Z
 measure:keepiq:20261113h08	php 89.12% (pcov, 4564 tests), js 90.45% (6244 tests)	session-20261113T072715-8f8a14e9	2026-11-13T08:42:12Z
 verify:portaliq:2387:a0911cbe	GREEN 2387; 4560 tests 0 failures vs baseline 4527	session-20261113T081043-b24589a6	2026-11-13T08:42:18Z
+cover:learniq:e6498dddmc027:9623f321	PR #2451: 3 tests; Local/Planninq sources to 100% lines (dir was 96.6%, queued 0.0 stale); suite 6105->6108	session-20261113T081038-e8b5210f	2026-11-13T08:42:40Z
