@@ -1243,3 +1243,4 @@ cover:dossiq:6ca0231e:b7fd3ec4	failed: permission (running the app unit suite is
 review:hermiq:1485:6291bb82	GREEN: behaviour-identical move, 0 new failures	session-20261113T002028-bc0aa910	2026-11-13T00:52:49Z
 cover:hermiq:755cdfe7m7444:60c2c265	PR #1637: 36 tests for 4 controllers; lib/Controller/*.php 83.68->85.42%; suite 3840->3876, 171 inherited, 0 new, no risky	session-20261112T234655-6f442bc3	2026-11-13T00:52:55Z
 cover:openregister:7350e3efm0e99:js518b3200	PR #10078: missing @uses in 23 Task tests un-risked 223 tests; lib/Service/Task 69.4->98.6%; suite failures unchanged (11E/11F)	session-20261112T231637-60fd49c4	2026-11-13T00:52:59Z
+verify:dossiq:6207:85a3453d	2/2 GREEN (6207, 6208 tests-only; 13409 run, no new failures)	session-20261112T221237-836ed3f0	2026-11-13T00:53:22Z
