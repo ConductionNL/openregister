@@ -2902,3 +2902,20 @@ cover:stackiq:df113dffm5ac4:81b1241f	already done: lib/Portal/*.php 23/23 statem
 cover:integriq:92114ab0m658d:js9fcd1176	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:39:23Z
 cover:stackiq:df113dffm5ac4:34763eb4	already done: lib/Middleware/*.php 57/57 lines (100.0%) on development a05c3ddd; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:39:27Z
 cover:stackiq:df113dffm5ac4:05630945	already done: lib/Middleware/Support/ at 91.94% (57/62, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:39:41Z
+cover:shillinq:05639debmd8ee:f545d745	PR #2895: 14 tests (InitializeBbvAdministration 0->147/148, StampJournalTypeOnGlTransactions 37->137/137); lib/Repair 62.3->67.7%, suite 9207->9221 (1 inherited failure)	session-20261113T041646-2c1d764f	2026-11-13T06:40:01Z
+cover:stackiq:df113dffm5ac4:6f346b68	already done: lib/Sections/*.php at 100% (6/6, pcov on development); no PR	session-20261113T054519-189b2666	2026-11-13T06:39:58Z
+cover:buildiq:9930949bmc723:0d8702e3	PR buildiq#1518: template DeepLinkRegistrationListener + Application, 4 tests, lib/Resources/template/ 377->391/548, suite 2632->2636 (1 inherited failure)	session-20261113T061518-90540a48	2026-11-13T06:40:05Z
+cover:integriq:92114ab0m658d:jsd8a9d314	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:18Z
+cover:integriq:92114ab0m658d:js971eca14	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:23Z
+cover:integriq:92114ab0m658d:js7de78384	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:29Z
+cover:stackiq:df113dffm5ac4:17d367ab	no PR: lib/Controller/Settings already 100% (ModuleRegistrationHandler 49/49 with 6 tests, SyncHandler 25/25 with 5 tests)	session-20261113T054520-0c8540f8	2026-11-13T06:40:35Z
+cover:integriq:92114ab0m658d:js3ad0f4bb	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:35Z
+cover:integriq:92114ab0m658d:js0023cfc7	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:40Z
+cover:integriq:92114ab0m658d:js9402c870	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:46Z
+cover:integriq:92114ab0m658d:js3f3bfe56	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:52Z
+cover:integriq:92114ab0m658d:js0a858bda	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:59Z
+cover:hermiq:065f1631mfaac:js4829b6aa	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:05Z
+measure:dossiq:20261113h06	php 87.99% (87234/99144), js 85.31% at 31f9e20d	session-20261113T031701-b518f7f8	2026-11-13T06:41:07Z
+cover:hermiq:065f1631mfaac:js3f3bfe56	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:16Z
+cover:hermiq:065f1631mfaac:js77cf3af4	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:22Z
+cover:hermiq:065f1631mfaac:js0246d36e	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:41:28Z
