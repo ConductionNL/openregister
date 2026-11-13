@@ -6477,6 +6477,7 @@ cover:pipelinq:7f9dc8e6m8ce9:a3bb9eeb	already done: lib/Service/Portal/*.php at 
 cover:pipelinq:7f9dc8e6m8ce9:38e80a9f	already done: lib/Command/*.php at 100% statements (382/382) on development c2351f22	session-20261113T175400-7ec3993f	2026-11-13T19:56:32Z
 build:filinq:document-chart-embedding	PR #2064: code already on development; added the no-workbook limit to the tool description + test; task 4 (live suite) left; suite 6443->6444 OK	session-20261113T192700-f21ebd18	2026-11-13T19:56:27Z
 build:filinq:office-suite-portability	partial: PR #2065 ticks 9 implemented tasks (sections 1-3); 1.4 runtime capability needs a design decision; measurement/E2E tasks need live suites	session-20261113T185327-0dc82b88	2026-11-13T19:56:35Z
+cover:pipelinq:7f9dc8e6m8ce9:0a24f15f	already done: lib/Service/Letter/ at 100% lines (160/160) on development c2351f221 after b45e90cde/6b2c80436; no PR	session-20261113T195349-c4c36e69	2026-11-13T19:57:00Z
 cover:pipelinq:7f9dc8e6m8ce9:e19add4c	already done: lib/Service/Consent at 67/67 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:56:47Z
 cover:pipelinq:7f9dc8e6m8ce9:bc26df70	already done: lib/Service/Labels at 96/96 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T19:57:07Z
 build:filinq:letter-email-sending	failed: not started this run: a mail-sending path needs the recipient email field and the caller-rights read (for 404) settled from the data resolver first; left whole for a fresh run	session-20261113T172328-c860ad55	2026-11-13T19:57:15Z
