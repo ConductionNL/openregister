@@ -1932,3 +1932,4 @@ cover:filinq:7a9ef677mc744:js64227517	no change: dir holds DocumentCompare.vue, 
 cover:buildiq:9930949bmefda:js4829b6aa	PR #1504: 36 vitest tests, views stmts 1253/1546 -> 1323/1546	session-20261113T024653-d22c13a3	2026-11-13T03:51:52Z
 cover:buildiq:9930949bmefda:0d8702e3	failed: not applicable - lib/Resources/template is the OCA\AppTemplate scaffold copied into generated apps, excluded from buildiq's autoload classmap, with its own tests/unit; it should be excluded from buildiq's coverage measurement rather than tested from buildiq's suite	session-20261113T024654-6600dc41	2026-11-13T03:52:02Z
 cover:stackiq:df113dffm8db8:js17dfdc2e	PR #1835: 23 vitest tests (MergeObject flow, ObjectModal save), src/modals/object 46.2%->54.2%; ViewObject left	session-20261113T031700-0e23c373	2026-11-13T03:52:00Z
+verify:shillinq:2852:6ec1334b	shillinq#2852 GREEN: tests only, +19 tests, no new failures	session-20261113T034631-5fd77fa7	2026-11-13T03:52:13Z
