@@ -3110,6 +3110,7 @@ class SaveObject implements SaveObjectInterface {
 
 			$this->refuseLockedByAnother(existingObject: $existingObject);
 			$this->refuseArchivedOrFrozen(existingObject: $existingObject);
+			$this->refusePreservedContentWrite(existingObject: $existingObject, schema: $call->schema);
 
 			return $existingObject;
 		} catch (DoesNotExistException $e) {
@@ -3226,6 +3227,36 @@ class SaveObject implements SaveObjectInterface {
 			throw ObjectStateWriteException::frozen($existingObject);
 		}
 	}//end refuseArchivedOrFrozen()
+
+	/**
+	 * Refuse a content write to an object in the preservation (statisch) regime.
+	 *
+	 * The preservation regime is enforced only where the object's schema offers
+	 * it ({@see \OCA\OpenRegister\Db\Schema::isPreservationEnabled()}), so a
+	 * schema that does not declare `x-openregister-preserve` behaves exactly as
+	 * before and the regime is opt-in (REQ-APS-006, backwards compatible). A
+	 * preserved object refuses writes to its own content; its references stay
+	 * resolvable and it stays readable, because resolving a reference and
+	 * reading the object do not pass through this write path.
+	 *
+	 * @param ObjectEntity $existingObject The object being written.
+	 * @param Schema|null  $schema         The object's schema, when the save call carries it.
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectStateWriteException When the object is preserved and its schema offers the regime.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	private function refusePreservedContentWrite(ObjectEntity $existingObject, ?Schema $schema): void {
+		if ($schema === null || $schema->isPreservationEnabled() === false) {
+			return;
+		}
+
+		if ($existingObject->isPreserved() === true) {
+			throw ObjectStateWriteException::preserved($existingObject);
+		}
+	}//end refusePreservedContentWrite()
 
 	/**
 	 * The `@self` an update works from: a version the caller carries counts only for a trusted caller.

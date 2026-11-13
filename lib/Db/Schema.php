@@ -657,6 +657,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public const ARCHIVE_ANNOTATION = 'x-openregister-archive';
 
 	/**
+	 * Annotation that declares this schema offers the preservation (statisch) state.
+	 *
+	 * @var string
+	 */
+	public const PRESERVE_ANNOTATION = 'x-openregister-preserve';
+
+	/**
 	 * The property-level keyword that makes a value immutable once set.
 	 *
 	 * A property carrying `"immutable": true` accepts its first value and
@@ -2035,6 +2042,33 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return ($annotation['enabled'] ?? false) === true;
 	}//end isArchivingEnabled()
+
+	/**
+	 * Whether this schema offers the preservation (statisch) regime.
+	 *
+	 * The preservation state is distinct from the archive state
+	 * {@see self::isArchivingEnabled()} declares: the archive takes a finished
+	 * object out of the working views while it still has business use; the
+	 * preservation regime is where a dossier enters once that business use ends
+	 * and the Archiefwet clock governs it. A schema may offer the archive state,
+	 * the preservation state, both or neither, so a product can tell "closed"
+	 * from "statisch" (REQ-APS-006). Declared once on the schema (ADR-031), like
+	 * the archive annotation, so no caller re-reads it.
+	 *
+	 * @return bool True when the schema declares `x-openregister-preserve` with `enabled: true`.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	public function isPreservationEnabled(): bool {
+		$configuration = ($this->getConfiguration() ?? []);
+		$annotation = ($configuration[self::PRESERVE_ANNOTATION] ?? null);
+
+		if (is_array($annotation) === false) {
+			return false;
+		}
+
+		return ($annotation['enabled'] ?? false) === true;
+	}//end isPreservationEnabled()
 
 	/**
 	 * The reasons this schema accepts for a value that was not supplied.

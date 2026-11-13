@@ -87,6 +87,8 @@ final class AnnotationVocabulary {
 		// register-level worked, so the capability looked healthy.
 		'x-openregister-processing',
 		'x-openregister-archival',
+		// Read by Schema::isPreservationEnabled() (REQ-APS-006): the preservation (statisch) regime.
+		'x-openregister-preserve',
 		// Which reference properties a record inherits a permanent appraisal
 		// through: `{"inheritAppraisalFrom": ["subjects"]}`. Read by
 		// InheritedAppraisal before an object is judged eligible for

@@ -121,6 +121,7 @@ final class ObjectEntityObjectArrayGoldenTest extends TestCase {
 		'deleted' => [],
 		'archived' => [],
 		'frozen' => [],
+		'preserved' => false,
 		'status' => null,
 		'source' => null,
 		'mail' => null,
@@ -196,6 +197,7 @@ final class ObjectEntityObjectArrayGoldenTest extends TestCase {
 		'frozen' => [
 			'k' => 'frozen',
 		],
+		'preserved' => false,
 		'status' => 'status-v',
 		'source' => null,
 		'mail' => [
@@ -297,6 +299,7 @@ final class ObjectEntityObjectArrayGoldenTest extends TestCase {
 		'frozen' => [
 			'k' => 'frozen',
 		],
+		'preserved' => false,
 		'status' => 'status-v',
 		'source' => null,
 		'mail' => [
