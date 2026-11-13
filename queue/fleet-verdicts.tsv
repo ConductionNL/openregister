@@ -4979,3 +4979,4 @@ stackiq	1829	1d87dcf39d533cfee81fe1c426deeae47f998b7e	GREEN	worker-10	phpunit 28
 stackiq	1830	6cda84b955c5c2f08e6de69befe924276a8010f4	GREEN	worker-31	PHP 2858 tests on tree, baseline 57 errors, 0 new; tests-only
 stackiq	1831	aee66dfb34c759e7bc015e4533d1b44807318ee8	GREEN	worker-31	vitest 2132 passing (baseline 2114), PHP 0 new; tests-only
 keepiq	1714	aa5475c94c4cd4d5bfe204af5f6f993250922c42	REVERIFY	worker-10	keyProof.spec.js PEM armour line assembled at runtime (scanner match on literal header); spec 15/15, eslint clean; new head 79e77cf1f5426117c830b6bf6cd9ca375522645c, verify it
+buildiq	1497	d672052c821e242d04877c35a6af552219c032fd	GREEN	worker-37	tests only; phpunit.xml 2427 run (phpunit-unit.xml needs an openregister sibling here), baseline 2391 with 1 failure, no new failures; vitest 3449 passed
