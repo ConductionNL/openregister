@@ -2060,3 +2060,4 @@ merge:filinq:2014:e3714f92	merge-local over 1 filinq tasks: merged=9 red=0 fail=
 cover:dossiq:6ca0231ema7d4:fbf36718	PR dossiq# +14 tests PermitPlateChange edges; suite 14246 -> 14260, 19 inherited failures unchanged	session-20261113T034632-47095943	2026-11-13T04:15:22Z
 verify:keepiq:1714:98bf0694	GREEN 1714, 1726 (tests only; phpunit and vitest green)	session-20261113T034634-857dbcc2	2026-11-13T04:16:02Z
 cover:hermiq:065f1631m7444:60c2c265	PR #1656: 25 tests, Controller/*.php 5297/6150 -> 5412/6150 (Agents 166->228, Skill 199->252; PR body per-class figures slightly off)	session-20261113T024653-d22c13a3	2026-11-13T04:16:15Z
+merge:filinq:2022:bcde23c6	stale	feeder	2026-11-13T04:15:14Z
