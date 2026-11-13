@@ -152,14 +152,14 @@ trigger types ship:
 
 | Step id | Name in the palette | Config keys |
 |---|---|---|
-| `openregister.trigger-object` | When an object changes | `event`, `register`, `schema`, `scope` |
+| `openregister.trigger-object` | When an object changes | `event`, `register`, `schema`, `scope`, `transition`, `changedFields` |
 | `openregister.trigger-schedule` | On a schedule | `cron`, `runAs` |
 | `openregister.trigger-manual` | When someone runs it | `next` |
 
 **`openregister.trigger-object`** names exactly one `event`, one `register` and
-one `schema`. `event` must be `object.created`, `object.updated` or
-`object.deleted`; the node refuses the other catalogue events. Both `register`
-and `schema` are required: there is no "any".
+one `schema`. `event` must be `object.created`, `object.updated`,
+`object.deleted` or `object.transitioned`; the node refuses the other catalogue
+events. Both `register` and `schema` are required: there is no "any".
 
 ```json
 { "id": "onCreate", "type": "openregister.trigger-object",
@@ -176,6 +176,35 @@ The optional `scope` names one `property` and one scalar `value`, for example
 rule overview. It does **not** filter which events start the flow: a run starts
 for every matching object. Put an `openregister.filter` or
 `openregister.switch` after the trigger to narrow it.
+
+Two keys **do** decide whether a run starts:
+
+- **`transition`**, with `event: object.transitioned` only. An object of lists:
+  `actions` (the lifecycle action names), `from` and `to` (states). A run starts
+  only when every list you give contains the transition's own value. An empty
+  object, or no `transition` at all, starts on every transition of the schema.
+  The run context carries `action`, `from`, `to` and `automatic`.
+
+  ```json
+  { "id": "onClosed", "type": "openregister.trigger-object",
+    "config": { "event": "object.transitioned", "register": "zaken", "schema": "aanvraag",
+                "transition": { "to": ["closed"] } } }
+  ```
+
+- **`changedFields`**, with `event: object.updated` only. A list of top-level
+  property names. A run starts only when at least one of them has a different
+  value after the save than before it. A nested change counts as a change of its
+  top-level property. The run context carries the names that changed as
+  `changedFields`, so a later step can branch on them too. An update that
+  arrives without the previous version starts nothing: nothing proves a watched
+  field changed.
+
+  This is also how a flow that writes back onto its own record avoids starting
+  itself again: watch the fields it reads, not the fields it writes.
+
+Both keys are refused on any other event, and as an empty list or a list holding
+anything but names. Publishing a flow refuses a `changedFields` name that is not
+a property of the trigger's schema, because such a trigger would never start.
 
 **`openregister.trigger-schedule`** carries a five-field `cron` expression and
 `runAs`, the user the run acts as. `runAs` is required and must be an existing
@@ -219,7 +248,8 @@ These are the events the engine fires into flows, from
 | `case.item.disabled` | A case plan item is disabled | Case |
 <!-- flow-event-catalogue:end -->
 
-Only the first three can be expressed as an `openregister.trigger-object` node.
+`object.created`, `object.updated`, `object.deleted` and `object.transitioned`
+can be expressed as an `openregister.trigger-object` node.
 The others are reached through the flow's trigger fields (`trigger`,
 `triggerRegister`, `triggerSchema`), as described in
 [the cutover](#the-trigger-cutover-honestly).

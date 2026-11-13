@@ -2264,6 +2264,8 @@ Service/Flow/FlowTaskMootness.php,71,Service,Flows,Flows/Service/Flow/FlowTaskMo
 Service/Flow/FlowToken.php,44,Service,Flows,Flows/Service/Flow/FlowToken.php,0,,Processes
 Service/Flow/FlowTokenRouter.php,166,Service,Flows,Flows/Service/Flow/FlowTokenRouter.php,0,,Processes
 Service/Flow/FlowTriggerDerivation.php,133,Service,Flows,Flows/Service/Flow/FlowTriggerDerivation.php,0,,Processes
+Service/Flow/FlowTriggerFieldsCheck.php,145,Service,Flows,Flows/Service/Flow/FlowTriggerFieldsCheck.php,0,,Processes
+Service/Flow/FlowTriggerFilter.php,156,Service,Flows,Flows/Service/Flow/FlowTriggerFilter.php,0,,Processes
 Service/Flow/FlowTriggerIndex.php,112,Service,Flows,Flows/Service/Flow/FlowTriggerIndex.php,0,,Processes
 Service/Flow/FlowTriggerService.php,96,Service,Flows,Flows/Service/Flow/FlowTriggerService.php,0,,Processes
 Service/Flow/FlowTriggerSlugs.php,54,Service,Flows,Flows/Service/Flow/FlowTriggerSlugs.php,0,,Processes

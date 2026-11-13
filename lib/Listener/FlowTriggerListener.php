@@ -251,8 +251,46 @@ class FlowTriggerListener implements IEventListener {
 			return ['payload' => $event->getObject()->jsonSerialize()];
 		}
 
+		if ($event instanceof ObjectUpdatedEvent) {
+			return ['changedFields' => $this->changedFields(event: $event)];
+		}
+
 		return [];
 	}//end contextFor()
+
+	/**
+	 * The top-level properties whose values differ between the old and new object.
+	 *
+	 * `@self` metadata is left out. Without the old object nothing proves a
+	 * field changed, so the list is empty and a watching trigger does not start.
+	 *
+	 * @param ObjectUpdatedEvent $event The update.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	private function changedFields(ObjectUpdatedEvent $event): array {
+		$old = $event->getOldObject();
+		if ($old === null) {
+			return [];
+		}
+
+		$before = ($old->getObject() ?? []);
+		$after = ($event->getNewObject()->getObject() ?? []);
+		$changed = [];
+		foreach (array_keys($before + $after) as $key) {
+			if ((string)$key === '@self') {
+				continue;
+			}
+
+			if (array_key_exists($key, $before) !== array_key_exists($key, $after) || ($before[$key] ?? null) !== ($after[$key] ?? null)) {
+				$changed[] = (string)$key;
+			}
+		}
+
+		return $changed;
+	}//end changedFields()
 
 	/**
 	 * Map an event class to the trigger id flows are wired to.
