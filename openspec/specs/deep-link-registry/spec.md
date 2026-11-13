@@ -389,9 +389,9 @@ returning the registration's `displayName`, falling back to its
   - Backward compatible: falls back to `openregister.objects.show` when no deep link is registered
   - `OCA\OpenRegister\AppHost\Listener\GenericDeepLinkRegistrationListener` (`lib/AppHost/Listener/GenericDeepLinkRegistrationListener.php`) -- manifest-driven alternative to a bespoke per-app listener, reading `src/manifest.json`'s `deepLinks` block
   - **Consumer implementations:** Pipelinq (4 schemas) and Procest (2 schemas) have migrated from their original bespoke `lib/Listener/DeepLinkRegistrationListener.php` classes to the manifest-driven `GenericDeepLinkRegistrationListener` path
+  - `ICapability` exposure of deep link patterns: `OCA\OpenRegister\Capabilities\PlatformCapability` (change `platform-capability`) publishes them under `openregister.platform`, per claiming app (`apps.<appId>.deepLinks`) and as one deduplicated list (`deepLinks`). The patterns are not keyed by `{registerSlug}::{schemaSlug}` and a pattern that spells out its register or schema slug is left out, because the capability block is readable without authentication and must not enumerate the data model (REQ-PCA-002)
 
 - **NOT implemented:**
-  - `ICapability` exposure of deep link patterns
   - `Notifier` integration with deep link registry for notification links (currently uses hardcoded `openregister.dashboard.page` + hash fragment)
   - OpenGraph metadata injection in template responses
   - Deep link context with query parameters (supported by architecture but no consuming app uses it yet)

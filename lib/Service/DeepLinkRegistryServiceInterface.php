@@ -45,6 +45,19 @@ interface DeepLinkRegistryServiceInterface extends DeepLinkResolverInterface {
 	public function add(DeepLinkRegistration $registration): void;
 
 	/**
+	 * Every registration, keyed `{registerSlug}::{schemaSlug}`.
+	 *
+	 * Asks the apps first when nothing is registered yet, the same way
+	 * resolve() does, so a process that never booted OpenRegister still sees
+	 * what the apps claim.
+	 *
+	 * @return array<string, DeepLinkRegistration> The registrations.
+	 *
+	 * @spec openspec/changes/platform-capability/specs/deep-link-registry/spec.md#requirement-the-instance-publishes-a-capability-block-with-one-block-per-claiming-app-req-pca-001
+	 */
+	public function registrations(): array;
+
+	/**
 	 * Ask the apps for their deep links, once per process.
 	 *
 	 * OpenRegister's boot() calls this with its dispatcher. A process that

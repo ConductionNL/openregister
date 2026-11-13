@@ -331,6 +331,21 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	}//end resolveDisplayName()
 
 	/**
+	 * Every registration, keyed `{registerSlug}::{schemaSlug}`.
+	 *
+	 * @return array<string, DeepLinkRegistration> The registrations.
+	 *
+	 * @spec openspec/changes/platform-capability/specs/deep-link-registry/spec.md#requirement-the-instance-publishes-a-capability-block-with-one-block-per-claiming-app-req-pca-001
+	 */
+	public function registrations(): array {
+		if (empty(self::$registrations) === true) {
+			$this->requestRegistrations();
+		}
+
+		return self::$registrations;
+	}//end registrations()
+
+	/**
 	 * Ask the apps for their deep links, once per process.
 	 *
 	 * OpenRegister's boot() calls this with its dispatcher. A process that
