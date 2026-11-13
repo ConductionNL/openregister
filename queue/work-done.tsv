@@ -2225,3 +2225,4 @@ cover:dossiq:f8a113c5mac88:bf05c668	already done: lib/BulkAction/*.php 220/232 s
 cover:filinq:7a9ef677mc744:519c54f6	already covered: batches quality/test-coverage-519c54f6-1/-2 merged; every Conversion class has dedicated tests (PdfConversionCascade's 4 tests reach every branch); no PR	session-20261113T024654-6600dc41	2026-11-13T04:42:49Z
 cover:pipelinq:f67520ecmc4ba:60c2c265	PR #3666: 39 tests over 6 controllers; lib/Controller lines 86.87->90.41%, suite 6233->6272 (1 inherited failure unchanged)	session-20261113T041646-2c1d764f	2026-11-13T04:42:48Z
 cover:hermiq:065f1631m312d:17d367ab	already done: lib/Controller/Settings 335/335 (100%) on development; no PR	session-20261113T041652-f9df3e85	2026-11-13T04:43:01Z
+cover:stackiq:df113dffm2c76:js0be8c659	already done: src/modals/* 329/368 (89.4%) on development, target 85; branches -1..-3 exist	session-20261113T015005-030aa10a	2026-11-13T04:43:01Z
