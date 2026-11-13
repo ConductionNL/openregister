@@ -834,3 +834,4 @@ launchpad	1164	38654e80a1d0c19961d912cd8ed7b33228cdb13d	MERGED	merge-local	GATE 
 buildiq	1469	32a620ea17cf85a0557a4a262d61bb3d5fb1ccc2	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 launchpad	1121	f23e458f40ac7cf02c615105d4a4ea1e41222d46	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 integriq	3410	05595700deeeac8c8a8670542ed0c195f9516a07	SKIP	merge-local	GATE UNMEASURED 05595700de does not merge cleanly onto development
+versioniq	660	cc4e8f8a5de1d9a9ece060b05d8a4261f778fd43	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
