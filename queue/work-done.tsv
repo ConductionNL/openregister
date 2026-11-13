@@ -2677,3 +2677,4 @@ cover:integriq:92114ab0m1534:d74bee87	already done: lib/Service/Rod/ 182/182 lin
 merge:pipelinq:3672:7b90864a	stale	feeder	2026-11-13T06:10:49Z
 cover:integriq:92114ab0m1534:c210cc74	already done: lib/Service/Ownership/ 189/192 lines (98.4%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:12:00Z
 cover:integriq:92114ab0m1534:3f68c935	already done: lib/Intake/Adapter/ 360/372 lines (96.8%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:12:06Z
+cover:dossiq:f8a113c5mac88:53c979ad	PR #6297: 6 tests for Dispatch and DocumentMove; suite 14758->14764, 19 inherited	session-20261113T054519-189b2666	2026-11-13T06:12:12Z
