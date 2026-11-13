@@ -6692,6 +6692,7 @@ cover:dossiq:069ee2d6mbd37:b12f5203	PR #6449: 4 tests for Service/Import (shapes
 cover:integriq:92114ab0m0593:2af01be6	already done: lib/Intake/*.php at 430/436 stmts (98.6%, -1 PR merged); remaining misses are plain getters and a registrar; no PR	session-20261113T192701-f224cbcf	2026-11-13T20:34:22Z
 fix:filinq:2104:7da54a66	failed: 2097-2099 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:34:20Z
 cover:portaliq:b60f3b81m4ccb:b994f46a	PR #2467: 3 tests on ReportThreadService and ReportTermsService guards; suite 4914 -> 4917 OK (#2466 closed: carried an unrelated commit)	session-20261113T202603-6c9ef72f	2026-11-13T20:34:15Z
+gap:portaliq:owaspsecurecoding:21ddd768	failed: all hits are the committed woo/static/js bundle; the fix is cgx/retire-woo-bundle, whose pinned tilburg-woo-ui release asset still answers 404 unauthenticated (rechecked), so build:woo would fail. Needs the asset published publicly or a token in the fetch.	session-20261113T202603-6c9ef72f	2026-11-13T20:34:39Z
 fix:filinq:2101:cab6810d	failed: 2097-2099 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:34:38Z
 review:openregister:10321:1237ea7c	10321 APPROVE (tests only; green)	session-20261113T182359-67ad413b	2026-11-13T20:34:51Z
 fix:filinq:2090:37852824	failed: #2054/#2092 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:34:50Z
