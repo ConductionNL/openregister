@@ -5827,6 +5827,7 @@ build:portaliq:site-messages-per-record	no code left: T4 is a live check needing
 verify:pipelinq:3766:c15d54dd	GREEN #3766 (tests only; 7203 tests, 5 inherited failures, 0 new)	session-20261113T175335-552e4d60	2026-11-13T18:07:32Z
 cover:stackiq:9ac19b3am9d24:d528dcf0	already done: lib/Dashboard/*.php 12/12 statements covered	session-20261113T171141-a3907367	2026-11-13T18:07:42Z
 build:portaliq:site-nlds-widget-palette	failed: too big for one task; split it: T9 (nine signed-in widgets over the shell's data) and T11 (form widget field inspector) each need their own build; T8b needs a live check; T8c code is merged (e2e/live left); T8d is delivery	session-20261113T171149-8b9ea523	2026-11-13T18:07:40Z
+cover:keepiq:c967a31fm00c6:9d3a1784	PR #1761: 8 tests, BackgroundJob stmts 96.1->100%, unit suite 4854->4862 OK	session-20261113T175323-e340fb07	2026-11-13T18:07:48Z
 cover:shillinq:05639debm7b6b:jsb80bc6aa	PR #2952: 22 tests, dirs lines 89.33->93.53% (target 90)	session-20261113T171152-380dbc11	2026-11-13T18:07:53Z
 cover:pipelinq:7f9dc8e6m16db:a215617b	already covered: lib/Integration/*.php 302/302 lines (100%) at development 4c67daf (pcov, full unit suite); no PR	session-20261113T175335-552e4d60	2026-11-13T18:08:06Z
 build:portaliq:site-mandates-the-represented-manage	partial: PR #2441 builds T0 code (KVK claim to session); T0 broker confirmation, T4 e2e and T5 openspec CLI left (live/tooling); suite 4914->4917, 0 failures	session-20261113T172325-6eb25015	2026-11-13T18:07:54Z
@@ -5834,4 +5835,9 @@ cover:stackiq:9ac19b3am9d24:59826f43	already done: lib/Settings/*.php 11/11 stat
 build:portaliq:shared-plans-with-a-caseworker	partial: PR #2442 (T07 plan templates admin page); T04 needs personal-action-list dialog, T09/T10 live	session-20261113T172328-c860ad55	2026-11-13T18:08:08Z
 build:portaliq:resident-identity-in-forms	partial: PR #2443 builds T05 server side (Yivi via broker, attributes in session, form prefill); T04/T06/T07 and the Yivi UI left	session-20261113T172329-5f4feaba	2026-11-13T18:08:35Z
 cover:pipelinq:7f9dc8e6m16db:f3231970	already covered: lib/Service/ScheduledTask/ 92/92 lines (100%) at development 4c67daf (pcov, full unit suite); no PR	session-20261113T175335-552e4d60	2026-11-13T18:08:34Z
+cover:stackiq:9ac19b3am9d24:17d367ab	already done: quality/test-coverage-17d367ab-1 merged, lib/Controller/Settings/ at 74/74 statements	session-20261113T172325-6eb25015	2026-11-13T18:08:49Z
 build:portaliq:intake-report-pages	partial: PR #2444 builds T07 (designer warning, excludedPaths in schema), T10 docs, T11; T01 live, T08 detail blocked by nextcloud-vue	session-20261113T175336-b2d7fc7c	2026-11-13T18:08:40Z
+build:portaliq:site-at-the-root-of-a-portal-host	partial: PR #2445 T8 Domains field-list settings + records; T8 return addresses and T7 live left; suite 4914->4915, 0 failures	session-20261113T172349-00278d9d	2026-11-13T18:08:58Z
+cover:stackiq:9ac19b3am9d24:692f8a78	already done: lib/Service/Contactpersoon/ at 100% (205/205) @fb3c61bb	session-20261113T171149-8b9ea523	2026-11-13T18:08:51Z
+cover:stackiq:9ac19b3am9d24:2861e5ef	already done: lib/Examples/ at 93/93 statements; ContactpersoonServiceExampleTest asserts every path with exact outputs	session-20261113T172325-6eb25015	2026-11-13T18:09:13Z
+cover:stackiq:9ac19b3am9d24:81b1241f	already done: lib/Portal/*.php at 100% (23/23) @fb3c61bb	session-20261113T171149-8b9ea523	2026-11-13T18:09:11Z
