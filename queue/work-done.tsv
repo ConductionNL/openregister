@@ -2658,3 +2658,4 @@ cover:dossiq:f8a113c5mac88:59f569b2	already done: lib/Service/Settings/*.php at 
 cover:shillinq:05639debmd8ee:js4dad1dd8	PR #2878: 12 vitest tests for StandardsPolicyEditor, Settings (dirs 44.4->65.3% statements)	session-20261113T051707-6c971ec6	2026-11-13T06:09:04Z
 cover:shillinq:05639debmd8ee:2e7efbf6	already done: lib/Request/*.php 47/47 (100%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:09:06Z
 cover:shillinq:05639debmd8ee:2befd24e	already done: lib/Service/Asset 551/564 (97.7%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:09:18Z
+cover:filinq:7a9ef677m5ffe:6079ce8f	PR #2038: 20 tests (WizardRepository 100%, WizardService, SubjectErasure edges); suite 6112->6132	session-20261113T054516-469bb7f6	2026-11-13T06:09:27Z
