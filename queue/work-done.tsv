@@ -3702,3 +3702,4 @@ cover:buildiq:70b3e29embf07:6891a8ac	already done: quality/test-coverage-6891a8a
 cover:dossiq:069ee2d6m7e79:b8cc4419	PR #6343: 10 tests, lib/Service/Sharing/ 92.5->99.7% (CaseAccessPolicy 29->52/52, CaseAccessLinkService 106->128/129); no new failures	session-20261113T080549-20301834	2026-11-13T09:03:13Z
 cover:pipelinq:7f9dc8e6m916f:0798b7cf	already done: lib/Service/PosCart/ at 67/67 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:03:08Z
 cover:pipelinq:7f9dc8e6m916f:0a8f160f	already done: lib/Service/Sla/ at 212/212 (100%) in current measurement	session-20261113T074533-5d842142	2026-11-13T09:03:28Z
+cover:dossiq:069ee2d6m7e79:ea81adeb	already done: lib/Service/Zgw/*.php at 2261/2313 lines (97.8%), no class with more than 7 uncovered lines; no PR	session-20261113T080549-20301834	2026-11-13T09:03:33Z
