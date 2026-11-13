@@ -2741,4 +2741,5 @@ measure:pipelinq:20261113h06	php 84.95% (pcov, 50e93fcd); js not re-measured (np
 verify:decidiq:2098:08d9a2aa	2 GREEN (2098, 2116); 3684 tests, 0 new failures	session-20261113T061521-423d1e83	2026-11-13T06:19:33Z
 cover:shillinq:05639debmd8ee:60c2c265	already above target: lib/Controller/*.php measures 93.28% (9217/9881) with strict metadata on development d33c9cc; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:19:46Z
 cover:pipelinq:7f9dc8e6mc4ba:dfaef732	already done: lib/Notification 120/120 statements (100%) on development 50e93fcda; latest measurement agrees	session-20261113T061516-58aa7364	2026-11-13T06:19:38Z
+cover:pipelinq:7f9dc8e6mc4ba:d528dcf0	already done: lib/Dashboard/*.php at 100% (36/36 statements, pcov on 50e93fcd); no PR	session-20261113T054519-189b2666	2026-11-13T06:19:55Z
 verify:shillinq:2873:7a88bd74	GREEN 2873-2881 (JS specs only; vitest 1660 all pass)	session-20261113T031701-b518f7f8	2026-11-13T06:20:29Z
