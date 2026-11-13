@@ -299,6 +299,12 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'access-link.js'),
 		filename: appId + '-access-link.js',
 	},
+	// The public page of a form open to visitors without an account.
+	// Loaded by templates/publicForm.php from PublicFormPageController::show().
+	publicForm: {
+		import: path.join(__dirname, 'src', 'public-form.js'),
+		filename: appId + '-public-form.js',
+	},
 }
 
 // Replace VueLoaderPlugin (don't push — duplicates break templates when using local package)
