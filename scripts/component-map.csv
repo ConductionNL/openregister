@@ -4088,3 +4088,8 @@ Repair/SeedFromDirectory.php,37,Repair,Platform,Platform/Repair/SeedFromDirector
 BackgroundJob/SeedDirectoryJob.php,19,BackgroundJob,Configuration,Configuration/BackgroundJob/SeedDirectoryJob.php,0,,Configuration
 Command/SeedImportCommand.php,58,Command,Configuration,Configuration/Command/SeedImportCommand.php,0,,Configuration
 Controller/Settings/SeedReportController.php,19,Controller,Configuration,Configuration/Controller/Settings/SeedReportController.php,0,,Configuration
+Calendar/DeclaredDateCalendars.php,184,Calendar,Platform,Platform/Calendar/DeclaredDateCalendars.php,0,,Integrations
+Calendar/ObjectDateCalendar.php,54,Calendar,Platform,Platform/Calendar/ObjectDateCalendar.php,0,,Integrations
+Calendar/ObjectDateCalendarScope.php,14,Calendar,Platform,Platform/Calendar/ObjectDateCalendarScope.php,0,,Integrations
+Calendar/VeventSearchShape.php,202,Calendar,Platform,Platform/Calendar/VeventSearchShape.php,0,,Integrations
+Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/ObjectDateEvents.php,0,,Processes
