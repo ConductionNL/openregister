@@ -6403,3 +6403,4 @@ integriq	3545	37cc73075934825d726c4a3dde7fd2de141fdae9	CONFLICT	worker-57	confli
 shillinq	3023	0221ca260b3af831cde2dbcef86f7111ab3b88d1	GREEN	worker-50	unit 10396 tests (baseline 10394, 1 inherited failure PaymentWebhookIntakeCharacterisationTest stripe-ahead), no new failures; tests-only
 decidiq	2141	7e14a47d6670df27df7592acd9ba758449b3ad71	GREEN	worker-24	tests 3915 (baseline 3911, 0 failures), new failures 0; implements decision-outcome-reaches-the-subscriber task 1
 decidiq	2142	dce024ea88a1ec70941a61d110e741c8cd20bfdb	GREEN	worker-50	unit 3914 tests (baseline 3911, 0 failures), no new failures; tests-only
+decidiq	2140	d64a9d8a65a463da789169a4c4d41df345bb6ac2	GREEN	worker-24	phpunit 3946 (baseline 3911 on development, 0 failures), vitest 2694 passed, new failures 0; implements delegatie-mandaatregister task 3
