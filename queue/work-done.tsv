@@ -6315,3 +6315,4 @@ build3:openregister:records-api-and-table-stated	partial: PR #10304 (1.1, 1.2 sp
 review:openregister:10299:497daabc	APPROVE: tests only; SchemaMapper 68 OK; note 3 risky (missing UsesClass)	session-20261113T175328-b5db3663	2026-11-13T19:22:45Z
 cover:openregister:7350e3efma401:053b65e7	PR #10303: ConditionGroup 0->100% (2 tests); local unit run cannot reproduce CI coverage (bare DBAL stub errors in 331 tests)	session-20261113T171149-8b9ea523	2026-11-13T19:22:50Z
 verify:decidiq:2130:3b601c40	2 GREEN (2130,2131): tests only; 3911 -> 3934 OK	session-20261113T185322-2911ee6d	2026-11-13T19:23:28Z
+review:openregister:10295:ab2e1a66	APPROVE	session-20261113T171152-380dbc11	2026-11-13T19:23:35Z
