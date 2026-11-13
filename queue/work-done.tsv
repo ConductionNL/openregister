@@ -1455,3 +1455,4 @@ cover:shillinq:801aab65:89bf3ba4	PR #2822: 4 tests for Iv3ReportGenerator; Gener
 review:openregister:10082:a518e4f3	APPROVE: metadata only, Timer 374 pass, risky 85->0	session-20261112T231640-f6dda86c	2026-11-13T01:35:00Z
 cover:filinq:8ecceb86:5b37a982	PR #1997: Suggestion 83/88 -> 87/88 statements, +3 tests	session-20261113T011743-bdeb8a13	2026-11-13T01:35:13Z
 verify:keepiq:1716:a44d8a66	1716 GREEN: tests-only, phpunit 3792 ok, vitest 5594 ok	session-20261113T011731-f3798045	2026-11-13T01:35:27Z
+cover:shillinq:801aab65:d76b2f72	PR opened: 9 tests closing Guard gaps (Cashflow, InventoryScan, ProgrammaLink, Kor, Iv3); 9004->9013, 1 inherited failure	session-20261113T004527-ec0338ee	2026-11-13T01:35:41Z
