@@ -1161,3 +1161,4 @@ cover:pipelinq:f67520ecm9d2c:jsa5192f20	PR #3605: 13 vitest tests, blasts dir st
 cover:stackiq:8cfacb29m2f4b:jsd48eb217	PR #1803: 2 modules, 22 tests, vitest 1880->1902, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:35:04Z
 cover:integriq:9b0f5894m2367:js971eca14	PR #3441: AddEndpointRuleModal vitest spec, 11 tests; vitest 1392->1403 OK	session-20261112T231639-4c562de9	2026-11-13T00:35:33Z
 cover:buildiq:8ca317f6m6d54:390adfb9	already done: lib/*.php (Capabilities) at 11/11 statements on development	session-20261112T231640-f6dda86c	2026-11-13T00:35:59Z
+cover:buildiq:8ca317f6m6d54:9d3a1784	already done: AppHealthSampleCleanup and RuleExecutionLogCleanup have 4 test files; they read 0% here only because OpenRegister contract interfaces are absent in a bare container (1303 env errors), other jobs 158/171	session-20261112T231640-f6dda86c	2026-11-13T00:36:31Z
