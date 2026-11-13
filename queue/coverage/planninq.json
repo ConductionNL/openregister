@@ -1,0 +1,112 @@
+{
+ "app": "planninq",
+ "commit": "2cbac43bf2d4eecd160908bd8f7362c217c285fd",
+ "measured_at": "2026-11-13T19:05:18Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 97.46,
+  "statements": 7323,
+  "covered": 7137,
+  "dirs": {
+   "lib/Activity/": [
+    76,
+    76
+   ],
+   "lib/AppInfo/": [
+    99,
+    77
+   ],
+   "lib/BackgroundJob/": [
+    23,
+    23
+   ],
+   "lib/Command/": [
+    32,
+    32
+   ],
+   "lib/Controller/": [
+    857,
+    840
+   ],
+   "lib/Event/": [
+    26,
+    26
+   ],
+   "lib/Exception/": [
+    8,
+    8
+   ],
+   "lib/Lifecycle/": [
+    15,
+    15
+   ],
+   "lib/Listener/": [
+    1409,
+    1397
+   ],
+   "lib/Middleware/": [
+    58,
+    58
+   ],
+   "lib/Middleware/Support/": [
+    59,
+    54
+   ],
+   "lib/Notification/": [
+    14,
+    14
+   ],
+   "lib/Portal/": [
+    7,
+    7
+   ],
+   "lib/Repair/": [
+    318,
+    318
+   ],
+   "lib/Service/": [
+    3874,
+    3745
+   ],
+   "lib/Settings/": [
+    0,
+    0
+   ],
+   "lib/Timetabling/": [
+    448,
+    447
+   ]
+  }
+ },
+ "js": {
+  "pct": 88.25,
+  "statements": 2962,
+  "covered": 2614,
+  "dirs": {
+   "src/api/": [
+    73,
+    63
+   ],
+   "src/integrations/": [
+    60,
+    49
+   ],
+   "src/mixins/": [
+    47,
+    47
+   ],
+   "src/store/": [
+    646,
+    352
+   ],
+   "src/store/modules/": [
+    76,
+    73
+   ],
+   "src/utils/": [
+    2060,
+    2030
+   ]
+  }
+ }
+}
