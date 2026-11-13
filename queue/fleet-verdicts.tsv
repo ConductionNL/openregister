@@ -5440,3 +5440,4 @@ opencatalogi	2585	919d82c42e4e108b2f47175553efb281ca6ca418	GREEN	worker-48	5192 
 stackiq	1854	bd7c45c931b16eb29c3fa5d79e1727629030491c	GREEN	worker-23	phpunit 3167 on 2-PR tree vs baseline 3154 (0 failures), 0 new failures; 2 new test files, tests only
 stackiq	1855	0d7d47c483ba9ccb36807ca678cad1a4071bde3a	GREEN	worker-23	phpunit 3167 on 2-PR tree vs baseline 3154, 0 new failures; README coverage line and coverage-summary.json only
 learniq	2438	958f268b62c1ebd070fe7611a358eb2a01b97113	GREEN	worker-04	unit 6116 run (baseline 6105, 1 inherited failure HigherEducationExampleSetTest::testTheFileIsWhatTheGeneratorProduces), 0 new; behaviour-preserving extraction
+keepiq	1749	00e195e8636ba3ad1c8282f262e30c7534a225f3	GREEN	worker-44	PHP unit 4564 (baseline 4564, 0 fail; no PHP touched); vitest 6259 pass on tree; refactor extracts helpers, behaviour unchanged
