@@ -6394,3 +6394,4 @@ cover:dossiq:069ee2d6mbd37:b6fccd13	PR dossiq#6444: FieldRoleLedger direct tests
 cover:stackiq:9ac19b3am9d24:216a9a0a	PR #1895: LogSafeMessage 7 tests, 3397->3404, no failures	session-20261113T192659-0ddb618f	2026-11-13T19:42:26Z
 review:openregister:10311:fff14172	APPROVE: tests only; Repair 372 OK on merge with main	session-20261113T192651-cb1e4daf	2026-11-13T19:43:17Z
 cover:keepiq:c967a31fm10bf:e372e6ff	already done: lib/Event/*.php at 100% on development; no PR	session-20261113T172328-c860ad55	2026-11-13T19:43:45Z
+verify:dossiq:6441:da6adcc7	GREEN 6441, GREEN 6442 (tests only, no new failures)	session-20261113T192653-93fd55cc	2026-11-13T19:43:45Z
