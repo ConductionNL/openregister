@@ -151,6 +151,7 @@ BulkAction/RestorePriorValuesAction.php,163,BulkAction,Flows,Flows/BulkAction/Re
 BulkAction/ReversibleBulkActionInterface.php,10,BulkAction,Flows,Flows/BulkAction/ReversibleBulkActionInterface.php,0,,Processes
 BulkAction/RunActionAction.php,83,BulkAction,Flows,Flows/BulkAction/RunActionAction.php,0,,Processes
 BulkAction/SetPropertiesAction.php,40,BulkAction,Flows,Flows/BulkAction/SetPropertiesAction.php,0,,Processes
+BulkAction/TransitionAction.php,102,BulkAction,Flows,Flows/BulkAction/TransitionAction.php,0,,Processes
 Calendar/CalendarEventTransformer.php,199,Calendar,Platform,Platform/Calendar/CalendarEventTransformer.php,0,,Integrations
 Calendar/RegisterCalendar.php,176,Calendar,Platform,Platform/Calendar/RegisterCalendar.php,0,,Integrations
 Calendar/RegisterCalendarProvider.php,100,Calendar,Platform,Platform/Calendar/RegisterCalendarProvider.php,0,,Integrations
@@ -3423,6 +3424,7 @@ BulkAction/BulkStep.php,,BulkAction,,,,,Processes
 BulkAction/RestorePriorValuesActionInterface.php,,BulkAction,,,,,Core
 BulkAction/RunActionActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/SetPropertiesActionInterface.php,,BulkAction,,,,,Core
+BulkAction/TransitionActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/WholeSetExportRun.php,,BulkAction,,,,,Configuration
 Command/DedupeRegistersRun.php,,Command,,,,,Compliance
 Command/DescriptorImportTarget.php,,Command,,,,,Core

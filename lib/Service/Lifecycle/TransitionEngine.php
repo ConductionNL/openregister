@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
+use OCP\IUser;
 use OCP\IUserSession;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
@@ -385,6 +386,12 @@ class TransitionEngine {
 	 * @param string $objectId Object id/uuid/slug.
 	 * @param string $action Transition action name.
 	 * @param array<string, mixed> $data Optional input values for the transition's declared `inputs`.
+	 * @param IUser|null $actor The user the move is made as, for the permission checks, the
+	 *                          lifecycle guards and the audit entry; null for the session user.
+	 *                          A bulk job passes the user who started it, since its worker
+	 *                          may hold no session user or another one. The move runs
+	 *                          through ObjectService::runAs(), so every reader of the session
+	 *                          user agrees on who acts; nothing is granted.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 *
@@ -404,16 +411,23 @@ class TransitionEngine {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function transition(string $objectId, string $action, array $data = []): ObjectEntity {
+	public function transition(string $objectId, string $action, array $data = [], ?IUser $actor = null): ObjectEntity {
 		// OPEN THE AUTOMATIC-TRANSITION BOUNDARY around the whole transition,
 		// not around its save: this transition's own `ObjectTransitionedEvent`
 		// is dispatched after the save returns, and a listener must see the
 		// named move before any automatic move that followed from it. Leaving
 		// the OUTERMOST boundary drains, so the entity answered here is the one
 		// the last automatic move produced, when there was one.
-		return $this->writeBoundary->around(
+		$move = fn (): ObjectEntity => $this->writeBoundary->around(
 			write: fn (): ObjectEntity => $this->applyTransition(objectId: $objectId, action: $action, data: $data)
 		);
+		if ($actor === null) {
+			return $move();
+		}
+
+		// The whole move, automatic moves after it included, as the actor
+		// (records-bulk-transition D-1).
+		return $this->objectService->runAs($actor, $move);
 	}//end transition()
 
 	/**

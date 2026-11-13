@@ -2,8 +2,8 @@
 
 ## 1. Engine and action
 
-- [ ] 1.1 Optional `?IUser $actor` on `TransitionEngine::transition()` used for the permission check and attribution. Verify: `TransitionEngineTest` with a session user and a different explicit actor, asserting the actor's rights decide.
-- [ ] 1.2 `TransitionAction` (`openregister:transition`) with preview, commit, outcome mapping and the homogeneity guard; registered in `BulkActionRegistrationListener`. Verify: `tests/Unit/BulkAction/TransitionActionTest.php` for applied, skipped (already there), failed (not available, missing input, stopped by a listener).
+- [x] 1.1 Optional `?IUser $actor` on `TransitionEngine::transition()` used for the permission check and attribution. Verify: `TransitionEngineTest` with a session user and a different explicit actor, asserting the actor's rights decide.
+- [x] 1.2 `TransitionAction` (`openregister:transition`) with preview, commit, outcome mapping and the homogeneity guard; registered in `BulkActionRegistrationListener`. Verify: `tests/Unit/BulkAction/TransitionActionTest.php` for applied, skipped (already there), failed (not available, missing input, stopped by a listener).
 
 ## 2. Proof and docs
 
