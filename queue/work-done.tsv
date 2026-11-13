@@ -7210,3 +7210,4 @@ verify:learniq:2489:85b194ce	GREEN #2489	session-20261113T202603-6c9ef72f	2026-1
 verify:portaliq:2475:55352372	2475 GREEN	session-20261113T204551-fafe539e	2026-11-13T22:34:01Z
 build:learniq:attendance-warns-before-the-threshold	partial: PR #2493 (T1,T5; T2 change-wiring only)	session-20261113T202611-3b383b96	2026-11-13T22:34:23Z
 review:openregister:10424:6922cd65	APPROVE: additive admin-only settings field + occ command; suites green	session-20261113T204539-805bb895	2026-11-13T22:34:35Z
+build:learniq:bpv-hours-per-day	partial: PR #2494 (T1 days on the week, T3 server half of the return, T5 already present); T2, T3 form+notice, T4, T6, T7 left	session-20261113T212411-65b95fd9	2026-11-13T22:34:40Z
