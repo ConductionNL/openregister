@@ -7326,3 +7326,4 @@ build:decidiq:urgent-decision-procedure	partial: PR #2167 (Task 1 awaitingRatifi
 build:hermiq:agents-sharing-and-catalog-columns	failed: blocked: only task 5 page half (needs a nextcloud-vue source registry per design D4; hand-built pages not allowed) and live two-user/verification runs remain	session-20261113T213324-d7ae5543	2026-11-13T22:47:49Z
 review:openregister:10452:ac5590ab	APPROVE: change-scoped, green merged with main (inherited Migration errors)	session-20261113T204535-8ae4a1d5	2026-11-13T22:48:05Z
 review:openregister:10448:16ea330c	APPROVE #10448	session-20261113T202619-0d7929e0	2026-11-13T22:48:19Z
+build:decidiq:document-annotations	partial: PR #2171 builds task 1 (Annotation schema, closed writes, own-only read, 4 seeds, en/nl strings); tasks 2-7 left	session-20261113T205329-39b9195a	2026-11-13T22:48:23Z
