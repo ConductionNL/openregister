@@ -2161,3 +2161,4 @@ cover:pipelinq:f67520ecmc4ba:js00fe026a	PR #3649: 12 vitest tests, services stmt
 cover:pipelinq:f67520ecmc4ba:js0be8c659	PR #3648: 41 tests, src/modals lines 68.8->77.5%	session-20261113T034628-9602b641	2026-11-13T04:34:15Z
 cover:pipelinq:f67520ecmc4ba:js5794e9fc	PR #3650: +18 vitest specs (MessagingSettings, Settings); src/views/settings 78.1%->85.1%; suite all green	session-20261113T024656-d5bfb688	2026-11-13T04:34:40Z
 cover:integriq:92114ab0m1534:jsd8a9d314	already done: open PR on quality/test-coverage-js-d8a9d314-1 (5a7a17a4) covers MappingResultPanel template; no duplicate opened	session-20261113T031700-46f75510	2026-11-13T04:34:48Z
+cover:pipelinq:f67520ecmc4ba:jsccb0cd24	PR pipelinq#3651: export forms + run detail render spec, 11 tests; src/views/export 80.8%->94.73% statements	session-20261113T031701-b518f7f8	2026-11-13T04:34:54Z
