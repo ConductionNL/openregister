@@ -4612,3 +4612,4 @@ decidiq	2100	a22b19b074c0f5b9399e2b74b782b29880e56d36	GREEN	worker-41	tree 3218 
 decidiq	2101	6a2f61976798fcf33508406089a5374bb1aac581	GREEN	worker-41	tree 3218 tests ok, baseline 3116 ok, 0 new failures; tests-only
 decidiq	2102	0f39dcdccadc227bed3babce5bff6997a008ac72	GREEN	worker-41	tree 3218 tests ok, baseline 3116 ok, 0 new failures; tests-only
 filinq	1986	c128d7f95a604dc8d0a0dbd0c38a6002123b097e	GREEN	worker-43	5328 tests run (baseline 5318, 6 skipped inherited), 0 new failures; tests only
+hermiq	1427	b307d69e6078e8a96290adb7b98da618b7b9fac1	GREEN	worker-38:review	pure extraction of the shared orgOptions/orgOption picker into a mixin with the same mapping, fallback and reload per component; NcButton type->variant matches @nextcloud/vue 9 usage elsewhere; vitest 1078 green on the PR with development (baseline 1072), eslint clean
