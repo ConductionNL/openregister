@@ -6793,3 +6793,4 @@ build4:dossiq:case-mail-through-the-mail-account-with-rfc-8058	failed: blocked u
 verify:hermiq:1715:01e000a0	1715 GREEN (0 new failures)	session-20261113T202607-6c22f6b2	2026-11-13T20:55:58Z
 build:buildiq:ai-copilot-documents-and-code-help	partial: PR #1572, T01 (shared CopilotTextTask seam, 6 tests); T02-T11 left (assist endpoint, UI, documents, stories); suite 2917->2923	session-20261113T192651-cb1e4daf	2026-11-13T20:56:04Z
 fix:decidiq:2140:073bb389	resolved conflict with 2138 by relocating entries; new head d64a9d8a; REVERIFY recorded	session-20261113T205323-cbfd0ec4	2026-11-13T20:56:11Z
+build4:dossiq:case-views-shared-with-a-team	failed: blocked - only task 4 was code-doable and is done; task 2 waits on a nextcloud-vue share-group prop on CnSavedViewShareFields (library change first, decision 156), 1/3 are live/e2e, 5 (parity row built) follows 2	session-20261113T205337-4c32e19e	2026-11-13T20:56:19Z
