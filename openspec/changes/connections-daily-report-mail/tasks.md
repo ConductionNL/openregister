@@ -2,16 +2,16 @@
 
 ## 1. Report kind
 
-- [ ] 1.1 Migration adding `kind` (default `export`) and `options` to the scheduled report table; `ScheduledReport` accessors; `validate()` rules for `connection-health` (no register or schema, e-mail delivery, `onlyWhenAttention`, `lookbackHours` 1 to 168); a 403 in `ScheduledReportsController` for a non-administrator creating or changing that kind. Verify: `tests/Unit/Service/ScheduledReportServiceKindTest.php`; an existing report without `kind` still runs its export; a Newman request asserts 403 for a non-administrator.
+- [x] 1.1 Migration adding `kind` (default `export`) and `options` to the scheduled report table; `ScheduledReport` accessors; `validate()` rules for `connection-health` (no register or schema, e-mail delivery, `onlyWhenAttention`, `lookbackHours` 1 to 168); a 403 in `ScheduledReportsController` for a non-administrator creating or changing that kind. Verify: `tests/Unit/Service/ScheduledReportServiceKindTest.php`; an existing report without `kind` still runs its export; a Newman request asserts 403 for a non-administrator.
 
 ## 2. Builder
 
-- [ ] 2.1 Add `lib/Service/Connection/ConnectionHealthReportBuilder.php`: bounded reads of `app_connection`, `synchronization_run`, `synchronization` and `source` in register `integriq` (design D-2), the attention rules (D-3), the three-part body and the formula-safe CSV (D-4), and `ConnectionRegistryMissingException` without integriq. Verify: `tests/Unit/Service/Connection/ConnectionHealthReportBuilderTest.php` covers each attention rule, the caps with their stated truncation, a `source` credential never reaching the output, and the missing-register failure.
-- [ ] 2.2 Dispatch on kind in `runExport()`, add `buildConnectionReportBody()` to the existing mail template, and record a quiet day under `onlyWhenAttention` as success without a mail. Verify: `tests/Unit/Service/ScheduledReportConnectionHealthRunTest.php` with a mocked `IMailer` asserts one mail with the attachment on an attention day and none on a quiet day.
+- [x] 2.1 Add `lib/Service/Connection/ConnectionHealthReportBuilder.php`: bounded reads of `app_connection`, `synchronization_run`, `synchronization` and `source` in register `integriq` (design D-2), the attention rules (D-3), the three-part body and the formula-safe CSV (D-4), and `ConnectionRegistryMissingException` without integriq. Verify: `tests/Unit/Service/Connection/ConnectionHealthReportBuilderTest.php` covers each attention rule, the caps with their stated truncation, a `source` credential never reaching the output, and the missing-register failure.
+- [x] 2.2 Dispatch on kind in `runExport()`, add `buildConnectionReportBody()` to the existing mail template, and record a quiet day under `onlyWhenAttention` as success without a mail. Verify: `tests/Unit/Service/ScheduledReportConnectionHealthRunTest.php` with a mocked `IMailer` asserts one mail with the attachment on an attention day and none on a quiet day.
 
 ## 3. Recipients
 
-- [ ] 3.1 Teach `resolveRecipients()` and `validateRecipients()` the `@admins` token: members of the `admin` group with an address, capped at 20, with skipped members and overflow named in the run record. Verify: `tests/Unit/Service/ScheduledReportRecipientsTest.php`.
+- [x] 3.1 Teach `resolveRecipients()` and `validateRecipients()` the `@admins` token: members of the `admin` group with an address, capped at 20, with skipped members and overflow named in the run record. Verify: `tests/Unit/Service/ScheduledReportRecipientsTest.php`.
 
 ## 4. Page
 
@@ -26,3 +26,16 @@
 
 - An existing scheduled export behaves exactly as before.
 - No mail says "all clear" when the connection rows could not be read.
+
+## Build notes
+
+- 1.1: the kind, options, validation and the 403 are built and unit-tested; the Newman request is not added here.
+  `register_id` became nullable, since a connection report has no register.
+- 2.2: a quiet day is recorded as `success` with "Nothing needed attention; no mail sent" in `lastError`, the
+  scheduled report's one text field beside its status. The mail reuses `composeEmail()` with the builder's
+  subject and lines instead of a separate `buildConnectionReportBody()`.
+- 3.1: skipped administrators and the overflow are named in `lastError` of a successful run, for the same reason.
+- The read of synchronizations and sources is a bounded list (1,000 each) rather than a fetch by id.
+- Fixed sentences go through `IL10N`; the backend catalogue (`l10n/*.json`) gets no new keys in this build.
+- 4.1, 5.1 and 5.2 are left open: the Connections page action and dialog, the user doc, and the Playwright
+  spec are not built here.

@@ -2,7 +2,7 @@
 
 ## 1. Finder
 
-- [ ] 1.1 Add `lib/Service/Archival/LinkedRetentionConflictFinder.php`: outgoing links from `relations`, incoming links with one `findByRelationBatchInSchema()` per referencing schema, 50 links each way per entry, and the five conflict kinds in design D-2 with their direction. Verify: `tests/Unit/Service/Archival/LinkedRetentionConflictFinderTest.php` covers each kind, a linked record on the same list ignored, the truncation flag at 51 links, and one query per referencing schema asserted on the mapper double.
+- [x] 1.1 Add `lib/Service/Archival/LinkedRetentionConflictFinder.php`: outgoing links from `relations`, incoming links with one `findByRelationBatchInSchema()` per referencing schema, 50 links each way per entry, and the five conflict kinds in design D-2 with their direction. Verify: `tests/Unit/Service/Archival/LinkedRetentionConflictFinderTest.php` covers each kind, a linked record on the same list ignored, the truncation flag at 51 links, and one query per referencing schema asserted on the mapper double.
 
 ## 2. On the list
 

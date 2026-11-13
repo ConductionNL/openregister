@@ -117,7 +117,8 @@ class ValidateObject implements ValidateObjectInterface {
 
 	/**
 	 * Custom OpenRegister types and the JSON Schema type they validate as. File references are
-	 * integer file ids, data URIs or null; the others are stored as strings.
+	 * integer file ids, data URIs or null; a calendar range is an object, an image a URL or an
+	 * object; the others are stored as strings.
 	 *
 	 * @var array<string, string|array<int, string>>
 	 */
@@ -132,6 +133,8 @@ class ValidateObject implements ValidateObjectInterface {
 		'phone' => 'string',
 		'color' => 'string',
 		'recurrence' => 'string',
+		'calendar-range' => 'object',
+		'image-url' => ['string', 'object'],
 	];
 
 	/**
@@ -1379,6 +1382,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/modelling-stated-requirements/specs/objects-crud/spec.md#REQ-MSR-002
 	 */
 	public function validateObject(
 		array $object,
@@ -2153,6 +2157,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @return string A meaningful error message.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/modelling-stated-requirements/specs/objects-crud/spec.md#REQ-MSR-001
 	 */
 	public function generateErrorMessage(ValidationResult $result): string {
 		return (new ValidationErrorMessages())->forResult(result: $result);

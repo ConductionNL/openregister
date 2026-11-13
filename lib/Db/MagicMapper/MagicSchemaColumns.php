@@ -122,6 +122,8 @@ final class MagicSchemaColumns {
 			'boolean' => $this->booleanColumn(propertyName: $propertyName, propertyConfig: $propertyConfig),
 			'file' => $this->fileColumn(propertyName: $propertyName, propertyConfig: $propertyConfig),
 			'array', 'object' => $this->structuredColumn(propertyName: $propertyName, propertyConfig: $propertyConfig),
+			// Stored as their object form: `{ start, end }` and `{ url, ... }`.
+			'calendar-range', 'image-url' => ['name' => $columnName, 'type' => 'json', 'nullable' => true],
 			default => $this->unknownTypeColumn(propertyName: $propertyName, propertyConfig: $propertyConfig),
 		};
 	}//end forProperty()

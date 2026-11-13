@@ -1047,6 +1047,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		$changed = $this->diffForAudit(pair: $pair, action: $action);
 		$changed = $this->foldCascadeContext(changed: $changed, cascadeContext: $change->cascadeContext);
+		$changed = array_merge($changed, $change->marks);
 		// The markers are added before the row is built and sealed: the hash
 		// chain covers whatever is in the row.
 		$changed = $this->markTransitionOrigin(changed: $changed, objectEntity: $objectEntity);

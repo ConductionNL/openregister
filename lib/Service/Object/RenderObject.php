@@ -53,6 +53,7 @@ use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use Symfony\Component\Uid\Uuid;
 use WeakMap;
 
@@ -3721,8 +3722,47 @@ class RenderObject implements RenderObjectInterface {
 			objectOwner: $owner,
 			object: $entity
 		);
+		$can['manage'] = $this->mayManage(entity: $entity, owner: $owner);
 		$entity->setCan($can);
 	}//end setRightsMarker()
+
+	/**
+	 * Whether the reader may manage the object: its owner, a member of its owning group, or an administrator.
+	 *
+	 * The same decision `WatcherService` takes before it changes who follows an
+	 * object, so the followers popover offers "Add a colleague" only to a caller
+	 * the watchers endpoint will admit. `false` when the decision cannot be taken.
+	 *
+	 * @param ObjectEntity $entity The rendered entity.
+	 * @param string|null  $owner  The object's owner.
+	 *
+	 * @return bool True when the reader may manage the object.
+	 *
+	 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+	 */
+	private function mayManage(ObjectEntity $entity, ?string $owner): bool {
+		try {
+			$user   = $this->runtime->container->get(\OCP\IUserSession::class)->getUser();
+			$uid    = null;
+			$groups = [];
+			if ($user !== null) {
+				$uid    = $user->getUID();
+				$groups = $this->runtime->container->get(\OCP\IGroupManager::class)->getUserGroupIds($user);
+			}
+
+			return $this->runtime->container->get(ObjectScopeResolver::class)->admitsUnconditionally(
+				userId: $uid,
+				userGroups: $groups,
+				objectOwner: $owner,
+				authorization: $entity->getAuthorization()
+			);
+		} catch (\Throwable $e) {
+			$this->runtime->logger->debug(
+				sprintf('[RenderObject] manage right marker false for %s: %s', (string)$entity->getUuid(), $e->getMessage())
+			);
+			return false;
+		}
+	}//end mayManage()
 
 	/**
 	 * Check whether the current request opts in to the `_translationMeta`

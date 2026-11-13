@@ -83,10 +83,23 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 	/**
 	 * Build the mapper over a query builder that finds nothing.
 	 *
+	 * @param bool $rowExistsBeforeFilters Whether the unfiltered probe finds a row
+	 *
 	 * @return RegisterMapper the mapper under test
 	 */
-	private function mapperFindingNothing(): RegisterMapper {
-		$this->db->method('getQueryBuilder')->willReturnCallback(fn () => $this->emptyQueryBuilder());
+	private function mapperFindingNothing(bool $rowExistsBeforeFilters = false): RegisterMapper {
+		// The first execution is the unfiltered existence probe, the second the
+		// filtered lookup: a row for the probe and none after the filters models
+		// "a filter removed the row".
+		$executions = 0;
+		$this->db->method('getQueryBuilder')->willReturnCallback(
+			function () use (&$executions, $rowExistsBeforeFilters) {
+				return $this->emptyQueryBuilder(
+					probeRow: $rowExistsBeforeFilters === true ? ['id' => 19, 'uuid' => 'u-19', 'slug' => 'r19'] : false,
+					executions: $executions
+				);
+			}
+		);
 
 		return new RegisterMapper(
 			db: $this->db,
@@ -102,11 +115,15 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 	}
 
 	/**
-	 * A query builder whose every execution yields zero rows.
+	 * A query builder that yields zero rows, except that the first execution
+	 * (the unfiltered probe) yields `$probeRow` when one is given.
+	 *
+	 * @param array|false $probeRow    The row the first execution returns, or false for none
+	 * @param int         $executions  Shared execution counter
 	 *
 	 * @return IQueryBuilder&MockObject the mocked builder
 	 */
-	private function emptyQueryBuilder(): IQueryBuilder {
+	private function emptyQueryBuilder(array|false $probeRow = false, int &$executions = 0): IQueryBuilder {
 		$expr = $this->createMock(IExpressionBuilder::class);
 		$expr->method('orX')->willReturnCallback(
 			function () {
@@ -129,9 +146,10 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 		}
 
 		$qb->method('executeQuery')->willReturnCallback(
-			function (): IResult {
+			function () use ($probeRow, &$executions): IResult {
+				$executions++;
 				$result = $this->createMock(IResult::class);
-				$result->method('fetch')->willReturn(false);
+				$result->method('fetch')->willReturn($executions === 1 ? $probeRow : false);
 				$result->method('closeCursor')->willReturn(true);
 				return $result;
 			}
@@ -183,7 +201,8 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 	}
 
 	/**
-	 * The miss is reported at error level WITH `existsBeforeFilter`.
+	 * A register removed by a filter is reported at error level WITH
+	 * `existsBeforeFilter`.
 	 *
 	 * That flag is the whole diagnostic: it distinguishes "no such row" from
 	 * "the row matched and then a filter removed it", which is the difference
@@ -193,7 +212,7 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheMissIsReportedWithWhetherTheRowExistedBeforeFilters(): void {
-		$mapper = $this->mapperFindingNothing();
+		$mapper = $this->mapperFindingNothing(rowExistsBeforeFilters: true);
 
 		try {
 			$mapper->find(id: '19', _rbac: false, _multitenancy: false);
@@ -224,6 +243,31 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 			$found['context'],
 			'the diagnostic must say whether the row existed before filtering'
 		);
+		$this->assertTrue($found['context']['existsBeforeFilter']);
 		$this->assertSame('19', (string)($found['context']['identifier'] ?? ''));
-	}
+	}//end testTheMissIsReportedWithWhetherTheRowExistedBeforeFilters()
+
+	/**
+	 * A register that does not exist at all is an ordinary miss: callers probe
+	 * several register spellings and catch the exception, so nothing is logged
+	 * at error level, and the exception is still rethrown.
+	 *
+	 * @return void
+	 */
+	public function testARegisterThatDoesNotExistIsNotLoggedAsAnError(): void {
+		$mapper = $this->mapperFindingNothing(rowExistsBeforeFilters: false);
+
+		try {
+			$mapper->find(id: 'openconnector', _rbac: false, _multitenancy: false);
+			$this->fail('expected the lookup to miss');
+		} catch (DoesNotExistException) {
+			// Expected: the exception is still rethrown.
+		}
+
+		$this->assertSame([], $this->messagesAt('error'), 'a plain miss must not be logged at error level');
+		$this->assertContains(
+			'[RegisterMapper] Register does not exist',
+			$this->messagesAt('debug')
+		);
+	}//end testARegisterThatDoesNotExistIsNotLoggedAsAnError()
 }
