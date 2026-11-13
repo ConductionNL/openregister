@@ -7068,3 +7068,4 @@ build4:openregister:dbal-query-schema-guarded-and-previewed	partial: PR #10396, 
 build4:openregister:files-create-from-url	partial: PR #10397 (1.2, 1.4, 2.1 done; 1.1 property-path switch and 1.3 Newman left)	session-20261113T213325-fbdd5614	2026-11-13T22:04:57Z
 build4:openregister:object-archive-state	partial: PR #10398, C29.5 withdrawn timeline entries (migration, PATCH withdraw, audited, excluded from working views) + C29.6 ticked with evidence; C29.4 left; suite failing names identical	session-20261113T204533-6fe960ff	2026-11-13T22:05:20Z
 review:openregister:10364:d85b6064	APPROVE: spec-driven, tests green on main merge	session-20261113T213324-d7ae5543	2026-11-13T22:05:18Z
+review:openregister:10374:e3c0f762	APPROVE: findings warnings-only, suites green, phpstan clean	session-20261113T214930-fbbf31dd	2026-11-13T22:06:11Z
