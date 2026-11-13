@@ -1,12 +1,12 @@
 {
  "app": "buildiq",
- "commit": "0ac5011246218872109a77f0d2e065178b05352c",
- "measured_at": "2026-11-13T06:20:25Z",
+ "commit": "8fa0303778caf78c4426faa7e669b469e9db2bce",
+ "measured_at": "2026-11-13T08:30:09Z",
  "php": {
   "tool": "pcov",
-  "pct": 33.42,
-  "statements": 19656,
-  "covered": 6570,
+  "pct": 88.48,
+  "statements": 19653,
+  "covered": 17389,
   "dirs": {
    "lib/": [
     11,
@@ -18,15 +18,15 @@
    ],
    "lib/BackgroundJob/": [
     245,
-    158
+    230
    ],
    "lib/Command/": [
     349,
-    0
+    348
    ],
    "lib/Controller/": [
     3352,
-    1084
+    2897
    ],
    "lib/Dashboard/": [
     81,
@@ -38,23 +38,23 @@
    ],
    "lib/Integration/": [
     220,
-    14
+    216
    ],
    "lib/Lifecycle/": [
     85,
-    0
+    84
    ],
    "lib/Listener/": [
     538,
-    251
+    487
    ],
    "lib/Mcp/": [
     31,
-    0
+    31
    ],
    "lib/Mcp/Handler/": [
     808,
-    0
+    775
    ],
    "lib/Middleware/": [
     59,
@@ -66,7 +66,7 @@
    ],
    "lib/Repair/": [
     915,
-    366
+    895
    ],
    "lib/Resources/template/": [
     3,
@@ -78,7 +78,7 @@
    ],
    "lib/Resources/template/lib/AppInfo/": [
     34,
-    27
+    33
    ],
    "lib/Resources/template/lib/Controller/": [
     17,
@@ -86,7 +86,7 @@
    ],
    "lib/Resources/template/lib/Listener/": [
     8,
-    0
+    8
    ],
    "lib/Resources/template/lib/Repair/": [
     51,
@@ -137,8 +137,8 @@
     0
    ],
    "lib/Service/": [
-    11270,
-    3156
+    11267,
+    9766
    ],
    "lib/Service/Automation/": [
     9,
@@ -158,7 +158,7 @@
    ],
    "lib/Service/Dashboard/": [
     141,
-    32
+    137
    ],
    "lib/Service/GitHub/": [
     75,
@@ -174,5 +174,127 @@
    ]
   }
  },
- "js": null
+ "js": {
+  "pct": 91.32,
+  "statements": 13627,
+  "covered": 12444,
+  "dirs": {
+   "src/": [
+    185,
+    183
+   ],
+   "src/components/": [
+    690,
+    646
+   ],
+   "src/components/agents/": [
+    28,
+    27
+   ],
+   "src/components/applicationDetail/": [
+    308,
+    293
+   ],
+   "src/components/applicationDetail/widgets/": [
+    260,
+    235
+   ],
+   "src/components/copilot/": [
+    63,
+    59
+   ],
+   "src/components/dashboard/": [
+    65,
+    61
+   ],
+   "src/components/page-editor/": [
+    1685,
+    1441
+   ],
+   "src/components/page-editor/fields/": [
+    1378,
+    1192
+   ],
+   "src/components/runtime/": [
+    218,
+    218
+   ],
+   "src/components/schema-editor/": [
+    805,
+    771
+   ],
+   "src/components/store/": [
+    94,
+    87
+   ],
+   "src/components/tabs/": [
+    116,
+    109
+   ],
+   "src/components/walkthrough-editor/": [
+    284,
+    280
+   ],
+   "src/composables/": [
+    778,
+    769
+   ],
+   "src/dialogs/": [
+    2022,
+    1734
+   ],
+   "src/dialogs/CreateApplicationWizard/": [
+    205,
+    204
+   ],
+   "src/manifest.d/": [
+    14,
+    14
+   ],
+   "src/manifests/": [
+    3,
+    3
+   ],
+   "src/mixins/": [
+    206,
+    205
+   ],
+   "src/modals/": [
+    726,
+    665
+   ],
+   "src/router/": [
+    1,
+    1
+   ],
+   "src/services/": [
+    1224,
+    1210
+   ],
+   "src/services/manifestValidation/": [
+    479,
+    477
+   ],
+   "src/store/": [
+    50,
+    50
+   ],
+   "src/store/modules/": [
+    52,
+    52
+   ],
+   "src/utils/": [
+    99,
+    99
+   ],
+   "src/views/": [
+    1543,
+    1323
+   ],
+   "src/views/settings/": [
+    46,
+    36
+   ]
+  }
+ }
 }
