@@ -1019,3 +1019,8 @@ decidiq	2105	a28355b3c1d4684c1c2ac07d4ca72638f0b2115f	MERGED	merge-local	GATE OK
 decidiq	2106	e36901354332ab55dc19411b201e598c7f4cbb93	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2107	96873588ff9ef18e5703b4996407b9dec3f20554	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2109	27ae309286f2f3d57a0645a1ee6bc0123e74968a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1025	a9ec65cd2303c28414b2a2ce4734b889c83dcd5d	SKIP	merge-local	GATE UNMEASURED a9ec65cd23 does not merge cleanly onto development
+humaniq	1029	a8575e17355a3083c95cc32a036a2f82e7010e19	SKIP	merge-local	GATE UNMEASURED a8575e1735 does not merge cleanly onto development
+humaniq	1030	4e04b394e56c758e0a154a2734470d412302efa7	SKIP	merge-local	GATE UNMEASURED 4e04b394e5 does not merge cleanly onto development
+humaniq	1031	f88eeb1ed1d23d855c5decb3b750537502cfd0ca	SKIP	merge-local	GATE UNMEASURED f88eeb1ed1 does not merge cleanly onto development
+humaniq	1094	77832e4d8369f59b17dadd1107884681f3427d5a	SKIP	merge-local	GATE UNMEASURED 77832e4d83 does not merge cleanly onto development
