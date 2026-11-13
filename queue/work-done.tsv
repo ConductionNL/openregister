@@ -1211,6 +1211,7 @@ fix:launchpad:1109:c9075734	failed: permission (installing the secret scanner to
 fix:hermiq:1534:a9242b37	merged development in, head a68a0c8c, REVERIFY recorded	session-20261113T003903-5efbf5ae	2026-11-13T00:45:48Z
 fix:dossiq:5899:035ffd99	conflict resolved (kept PR's CaseReadAndPatch refactor + dev @spec tags); suite same 19 inherited failures; REVERIFY new head 05064fadad1bf15bf5341fb8b73ae4dc333dea18	session-20261112T221237-836ed3f0	2026-11-13T00:45:51Z
 cover:buildiq:8ca317f6m6d54:js5794e9fc	PR buildiq#1488: settings views spec (+8), src/views/settings 0->36/46, vitest 2962->2970	session-20261112T231640-f6dda86c	2026-11-13T00:46:13Z
+cover:pipelinq:f67520ecm9d2c:js3a5df78e	PR #3608: 18 vitest tests (ArticleContentSection 64->98/101 stmts); -1 branch PR already open for five other sections	session-20261112T234648-144479e8	2026-11-13T00:46:00Z
 cover:keepiq:d76c2121m70b5:js4829b6aa	PR #1709: 4 views, 57 tests, vitest 5475->5532 pass, src/views/* lines 57.4%->66.5%	session-20261113T002031-7b3e41b2	2026-11-13T00:46:09Z
 fix:hermiq:1605:b04693e3	add/add conflict resolved by renaming the PR's test file, pushed 600aae13, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:46:11Z
 cover:openregister:7350e3efm0e99:jscebea196	PR #10076: 9 jest tests for logs views; jest 7485->7494 passing	session-20261112T231645-3f0591a5	2026-11-13T00:46:53Z
