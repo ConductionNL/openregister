@@ -4072,3 +4072,6 @@ AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
 Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Configuration
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
 Service/Audit/RuleDigest.php,96,Service,Compliance,Compliance/Service/Audit/RuleDigest.php,0,,Compliance
+Service/Object/ObjectSaveCheck.php,8,Service,Service,Service/Object/ObjectSaveCheck.php,0,,Core
+Service/Object/ObjectSaveChecks.php,26,Service,Service,Service/Object/ObjectSaveChecks.php,0,,Core
+Service/Object/SampleValidationErrors.php,48,Service,Service,Service/Object/SampleValidationErrors.php,0,,Core
