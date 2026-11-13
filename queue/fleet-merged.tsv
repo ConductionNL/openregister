@@ -1069,3 +1069,4 @@ decidiq	2110	cfed87e94fe407d9a21f84ef7b15c9a87fb2db01	MERGED	merge-local	GATE OK
 pipelinq	3672	ba210f5711ce9cd32257d1c7ae234f3479f136ef	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3673	d39bc73fb6a27fc07068468ece01822432f4fdf6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3674	f32f90dab9517c1408db762715fd3421ff3b0694	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1584	9cc7549e6375611e5f874b2884f47adfa6614326	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
