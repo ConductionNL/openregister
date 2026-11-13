@@ -1680,3 +1680,4 @@ cover:shillinq:801aab65:84e9293a	PR: 8 tests (Peppol order mapper, log mailer); 
 cover:integriq:9b0f5894md8cd:9d3a1784	PR #3459: 23 tests for 8 background jobs (6 previously untested); 7113->7136, 2 inherited errors	session-20261113T004527-ec0338ee	2026-11-13T02:34:08Z
 cover:keepiq:d76c2121m88ca:9d3a1784	PR #1722: BackgroundJob cert/trash edge paths (+9 tests); 90.9%->99.8%, no failures	session-20261113T011731-f3798045	2026-11-13T02:34:27Z
 cover:integriq:9b0f5894md8cd:9bbad86f	PR #3461: 63 tests over 9 classes; Service dirs 90.11% -> 95.81% stmts; suite 7113 -> 7176, same 2 inherited errors	session-20261113T015003-f68021a4	2026-11-13T02:35:39Z
+measure:learniq:20261113h02	php 90.94% (pcov, 6101 tests, 1 inherited failure), js 89.01% (c8)	session-20261113T021701-67a73ebd	2026-11-13T02:35:42Z
