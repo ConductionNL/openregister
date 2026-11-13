@@ -7098,3 +7098,4 @@ cover:pipelinq:7f9dc8e6m8ce9:05630945	PR #3795: 48 tests for lib/Middleware/Supp
 review:openregister:10387:0b98336f	APPROVE: build of large-file-handling 1.2 per spec, suites green merged with main	session-20261113T202612-d930c905	2026-11-13T22:11:52Z
 review:openregister:10380:2c57b8d4	APPROVE: spec'd random sequence kind, phpstan clean, suites green	session-20261113T212411-65b95fd9	2026-11-13T22:11:59Z
 build4:openregister:records-saved-templates	partial: PR #10414 (2.2 start-from-template on create dialog, drops misfit values; 7 jest tests, en/nl/de); 2.1 save-as-template, 2.3 library, e2e left	session-20261113T205324-91f6ae17	2026-11-13T22:12:16Z
+build4:openregister:object-write-at-instance-floor	partial: PR openregister#10412 - task 5 (dropTable clears the request table memos) with 3 tests; tasks 1-4, 6-12, 14-19 left (refactors, other repos, measurement, product decision)	session-20261113T202612-d04bbf77	2026-11-13T22:12:12Z
