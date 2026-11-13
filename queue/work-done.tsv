@@ -2379,4 +2379,5 @@ merge:stackiq:1832:72315b69	merge-local over 3 stackiq tasks: merged=9 red=0 fai
 merge:stackiq:1693:69301140	merge-local over 3 stackiq tasks: merged=9 red=0 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:21:14Z
 merge:stackiq:1836:7d187e10	merge-local over 3 stackiq tasks: merged=9 red=0 fail=0 skip=4; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:21:14Z
 cover:dossiq:f8a113c5mac88:0250a951	already done: lib/Service/Deelzaak/ at 100% lines (152/152) from existing tests after quality/test-coverage-0250a951-1 merged; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:21:26Z
+cover:dossiq:f8a113c5mac88:38e80a9f	PR #6283: 11 tests for AdoptShippedFlowsCommand, VerifyWooDeliveredSetCommand; suite 19 inherited failures unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:21:23Z
 verify:launchpad:1171:3ec55cfe	GREEN #1171 (test-only, vitest 1927 pass, phpunit 3741 ok)	session-20261113T051709-e616bf69	2026-11-13T05:21:24Z
