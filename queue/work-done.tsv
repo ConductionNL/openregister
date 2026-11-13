@@ -3426,3 +3426,4 @@ cover:buildiq:70b3e29emc723:568ec52a	already done: lib/Lifecycle/*.php at 98.8% 
 cover:portaliq:b60f3b81:5bae1f47	PR #2379: PageHistory 5->41/41, MediaLibraryReader 40->50/50, Cms ~92.4->97.3%, 4540 green	session-20261113T072715-8f8a14e9	2026-11-13T08:22:14Z
 cover:buildiq:70b3e29emc723:1b97f731	already done: lib/Listener/*.php at 90.7% (495/546); no PR	session-20261113T080546-98207a87	2026-11-13T08:22:19Z
 verify:dossiq:6333:469614a6	failed: permission (running the dossiq unit suite was refused by the permission check)	session-20261113T081045-826fdbe5	2026-11-13T08:22:29Z
+cover:buildiq:70b3e29emc723:d39f9857	already done: lib/Support/*.php at 99.2% (386/389); no PR	session-20261113T080546-98207a87	2026-11-13T08:22:32Z
