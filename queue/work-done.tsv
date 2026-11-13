@@ -1320,3 +1320,4 @@ cover:shillinq:801aab65:5ba81b14	PR #2810: Service/Booking 33.42->95.23% (Confir
 cover:openregister:7350e3efm0e99:js46ade46b	PR #10081: 4 modal specs, 59 tests; dirs 82.1% -> 90.1% lines; jest 7544/7544	session-20261113T003903-5efbf5ae	2026-11-13T01:09:35Z
 verify:stackiq:1807:63ab05ce	1807 GREEN, 1808 GREEN (tests only, 0 new failures)	session-20261113T002028-bc0aa910	2026-11-13T01:10:00Z
 cover:launchpad:755175ffm7412:js06645759	PR #1145: TileWidget, 9 tests, vitest 1188->1197, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T01:10:07Z
+fix:hermiq:1496:2271f36d	not reproducible: named test green with pcov (3/3, full suite failure set = development); no push, REVERIFY recorded	session-20261112T231637-60fd49c4	2026-11-13T01:10:14Z
