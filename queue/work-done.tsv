@@ -2072,3 +2072,5 @@ cover:dossiq:6ca0231ema7d4:737135d1	PR #6271: 1 test for OutstandingDocuments ea
 cover:integriq:92114ab0md8cd:36cf9f12	PR #3470: lib/Service/Exchange/*.php 939/968 -> 956/968, 7 tests	session-20261113T015005-030aa10a	2026-11-13T04:18:39Z
 cover:shillinq:05639deb:123a624c	PR #2862: 16 tests, lib/Reporting/Generator 90.77->92.74% (complements existing -1 PR)	session-20261113T015005-da194c88	2026-11-13T04:18:48Z
 verify:learniq:2433:e68ae7e8	2433 GREEN, 2435 GREEN (tests only; inherited: 1 phpunit, 1 node l10n failure)	session-20261113T034628-73e45054	2026-11-13T04:18:59Z
+merge:keepiq:1607:bcbdedcb	merge-local over 2 keepiq tasks: merged=5 red=1 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:19:15Z
+merge:keepiq:1690:a192fae6	merge-local over 2 keepiq tasks: merged=5 red=1 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T04:19:15Z
