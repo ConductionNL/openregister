@@ -1076,4 +1076,5 @@ cover:openregister:7350e3efm0e99:jsf91e7417	failed: feeder mis-map (lang=js with
 cover:openregister:7350e3efm0e99:jsfa416b31	failed: feeder mis-map (lang=js with PHP dirs), purged by coordinator	session-20261109T050614-5c7ab2c1	2026-11-13T00:14:55Z
 cover:keepiq:d76c2121:2c3e981f	PR #1706: 3 classes, 54 tests, suite 3727->3781, 0 failures	session-20261112T234655-c333a6f8	2026-11-13T00:15:07Z
 cover:openregister:7350e3efm0e99:js913a213e	failed: lang=js but dirs=lib/Service/Flow/*.php is PHP only; a PHP coverage run on the full suite was OOM-killed and restarted the container	session-20261112T234655-793f46ee	2026-11-13T00:15:23Z
+cover:filinq:8ecceb86:7718b0ba	opened filinq#1984 (Contract/Sanitization/RedactionReviewMark repositories, 15 tests; suite 5318->5333 OK)	session-20261112T231639-4c562de9	2026-11-13T00:15:39Z
 cover:openregister:7350e3efm0e99:js7505aeb4	failed: lang=js but dirs are PHP only (payload inconsistent)	session-20261112T234655-793f46ee	2026-11-13T00:15:39Z
