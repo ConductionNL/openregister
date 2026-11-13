@@ -134,6 +134,7 @@ class MappingsControllerTest extends TestCase {
 		$result = $this->controller->show(1);
 
 		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
 	}
 
 	public function testCreateReturnsCreatedMapping(): void {
@@ -248,6 +249,17 @@ class MappingsControllerTest extends TestCase {
 		$result = $this->controller->destroy(1);
 
 		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
+	}
+
+	public function testDestroyTranslatesATypedRefusal(): void {
+		$this->mappingMapper->method('find')
+			->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('Not your mapping'));
+
+		$result = $this->controller->destroy(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame(['message' => 'Not your mapping', 'error' => 'not-authorized'], $result->getData());
 	}
 
 	public function testTestReturnsBadRequestWhenMissingParams(): void {

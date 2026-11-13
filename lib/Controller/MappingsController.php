@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\MappingsControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Service\MappingServiceInterface;
@@ -60,6 +61,8 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/openapi-generation/spec.md
  */
 class MappingsController extends Controller {
+	use HandlesExceptionsTrait;
+
 	/**
 	 * App configuration
 	 *
@@ -205,7 +208,7 @@ class MappingsController extends Controller {
 		} catch (DoesNotExistException $exception) {
 			return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Mapping read failed');
 		}
 	}//end show()
 
@@ -258,22 +261,17 @@ class MappingsController extends Controller {
 	/**
 	 * Log a failed creation and answer it.
 	 *
+	 * A typed failure keeps its status and message; anything else answers a
+	 * generic 500 and the message goes to the server log only.
+	 *
 	 * @param Exception $exception Why the creation failed
 	 *
-	 * @return JSONResponse 500 with the message
+	 * @return JSONResponse The translated error response
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
 	 */
 	private function creationFailed(Exception $exception): JSONResponse {
-		$this->logger->error(
-			message: '[MappingsController] Mapping creation failed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'error_message' => $exception->getMessage(),
-				'error_code' => $exception->getCode(),
-			]
-		);
-
-		return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+		return $this->handleApiException(e: $exception, context: 'Mapping creation failed');
 	}//end creationFailed()
 
 	/**
@@ -312,24 +310,18 @@ class MappingsController extends Controller {
 	/**
 	 * Log a failed update and answer it.
 	 *
+	 * A typed failure keeps its status and message; anything else answers a
+	 * generic 500 and the message goes to the server log only.
+	 *
 	 * @param int       $id        The mapping
 	 * @param Exception $exception Why the update failed
 	 *
-	 * @return JSONResponse 500 with the message
+	 * @return JSONResponse The translated error response
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
 	 */
 	private function updateFailed(int $id, Exception $exception): JSONResponse {
-		$this->logger->error(
-			message: '[MappingsController] Mapping update failed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'mapping_id' => $id,
-				'error_message' => $exception->getMessage(),
-				'error_code' => $exception->getCode(),
-			]
-		);
-
-		return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+		return $this->handleApiException(e: $exception, context: 'Mapping update failed (mapping ' . $id . ')');
 	}//end updateFailed()
 
 	/**
@@ -376,7 +368,7 @@ class MappingsController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Mapping deletion failed');
 		}
 	}//end destroy()
 
@@ -431,6 +423,12 @@ class MappingsController extends Controller {
 				input: $input
 			);
 		} catch (Exception $e) {
+			// The author sees why the trial failed; the log keeps the class for support.
+			$this->logger->debug(
+				message: '[MappingsController] Mapping trial failed',
+				context: ['exception' => $e::class]
+			);
+
 			// If mapping fails, return an error response.
 			return new JSONResponse(
 				data: [
