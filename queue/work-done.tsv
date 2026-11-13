@@ -7226,3 +7226,4 @@ review:openregister:10429:c138c3a8	APPROVE: webhook retry gauge per change spec;
 build:learniq:portal-message-contacts	already done: T1/T2 on development; T3 live check, T4 follow-up outside the change	session-20261113T205323-a7434fd6	2026-11-13T22:36:08Z
 review:openregister:10431:84b46686	APPROVE: opt-in child counts via access path; suites green	session-20261113T213325-5a151438	2026-11-13T22:36:09Z
 review:openregister:10428:e7ba5ff7	APPROVE	session-20261113T205323-cbfd0ec4	2026-11-13T22:36:25Z
+build:learniq:parity-rows-written-as-requirements	already done: spec-only change, 1.1/1.2 ticked on development; only 2.1 archive left (not a code task)	session-20261113T205323-a7434fd6	2026-11-13T22:36:37Z
