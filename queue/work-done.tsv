@@ -7195,3 +7195,4 @@ review:openregister:10411:87ce5acb	10411 APPROVE (tests + tasks tick; green)	ses
 build:learniq:hermiq-ai-tooling	already done: every code task is ticked or superseded on development; only live tasks remain (Task 6 Playwright chat flows, manual verification, needing hermiq driving an agent); no PR	session-20261113T213326-97cbe4c8	2026-11-13T22:31:37Z
 build4:openregister:unit-test-coverage	partial: PR #10448 makes webhook delivery/retry tests hermetic (17 offline failures fixed); umbrella tasks remain	session-20261113T213324-d7ae5543	2026-11-13T22:31:37Z
 build:learniq:bpv-coach-today-and-placement-board	partial: PR #2492, T2 bpv-visit schema with lifecycle and report link, 4 tests; T1 derivation, T3-T6 left (T5 waits on today-first-per-school-role)	session-20261113T202603-6c9ef72f	2026-11-13T22:31:46Z
+review:openregister:10415:9eb41f27	APPROVE: additive copy endpoint, suites green	session-20261113T210940-b751519f	2026-11-13T22:31:55Z
