@@ -7006,3 +7006,4 @@ build4:openregister:external-register-view-leaf	partial: PR #10372 (task 1.1 pro
 review:openregister:10340:7e1545e6	APPROVE: frontend-only, change task 3.1, jest green, l10n same as main	session-20261113T212411-65b95fd9	2026-11-13T21:49:45Z
 build4:openregister:lifecycle-over-reference-field	PR #10373: task 2.3 reopen audited (graph moves declared, audit transitionKind reopen); 3.2 e2e left	session-20261113T213320-1f5acbff	2026-11-13T21:50:33Z
 review:openregister:10332:063891d5	APPROVE	session-20261113T205330-0e50ee62	2026-11-13T21:50:47Z
+build4:openregister:api-nl-design-rules-conformance	partial: PR #10374, tasks 1.1, 2.1, 2.2 built (rule catalogue, rule field, path/query/uri-version rules); 2.3-7.2 left; no new failures beyond 2 re-recorded goldens	session-20261113T205325-28f592a9	2026-11-13T21:51:09Z
