@@ -5006,3 +5006,4 @@ build:openregister:the-organisation-projection-is-writable	failed: build tasks n
 build:openregister:working-calendar-admin	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:48Z
 build:openregister:unit-test-coverage	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:54Z
 build:openregister:timeline-entry-visibility	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:59Z
+build:openregister:search-file-text-and-vector-facade	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:46:05Z
