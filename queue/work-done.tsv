@@ -1567,3 +1567,4 @@ verify:buildiq:1490:9eed6d5f	1490 GREEN: coverage summary refresh only, no new f
 cover:stackiq:8cfacb29m8db8:js0be8c659	PR #1809: mounted specs for Grant/AddContactpersoon modals (+12 tests); src/modals/* 83.1%->89.8%	session-20261113T011731-f3798045	2026-11-13T02:10:33Z
 cover:stackiq:8cfacb29m8db8:jsb37eacd1	PR #1810: 4 components, 22 tests, src/components lines 80.7->90.3%	session-20261113T004519-b6b86685	2026-11-13T02:10:46Z
 cover:stackiq:8cfacb29m8db8:js0023cfc7	PR #1811: ChangePasswordDialog mounted, 9 tests; src/dialogs 87.3% -> 90.9% lines (user-groups dialog already in open -1 PR); found ManageUserGroupsDialog username binding bug, noted in PR	session-20261113T003903-5efbf5ae	2026-11-13T02:11:02Z
+cover:stackiq:8cfacb29m8db8:17d367ab	already done: lib/Controller/Settings 74/74 lines covered on development	session-20261113T004527-ec0338ee	2026-11-13T02:11:10Z
