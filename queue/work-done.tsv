@@ -3100,3 +3100,4 @@ cover:dossiq:f8a113c5m7e79:js0be8c659	PR #6317: 25 mount specs for 5 modals; src
 cover:keepiq:c967a31fmb40c:882bd950	already done: lib/Search/*.php at 100% lines (31/31) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:12:49Z
 cover:keepiq:c967a31fmb40c:59826f43	already done: lib/Settings/*.php at 100% lines (28/28) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:13:01Z
 cover:keepiq:c967a31fmb40c:05630945	already done: lib/Middleware/Support/ at 91.53% lines (54/59) on development 8a5d84f3, above 90 target; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:13:13Z
+cover:keepiq:c967a31fmb40c:d39f9857	already done: lib/Support/*.php at 100% lines (15/15) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:13:28Z
