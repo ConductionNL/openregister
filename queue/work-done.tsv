@@ -4572,3 +4572,4 @@ verify:pipelinq:3711:f5f633d1	GREEN 3711,3736,3737,3738,3740; CONFLICT 3739 (l10
 fix:pipelinq:3744:5b7b3df4	CONFLICT resolved: both specs kept, PR's renamed; vitest 4526 green; new head 96442cf6a8e0642136462967d9e064ac931084cb	session-20261113T072706-2eaa6a81	2026-11-13T11:38:10Z
 review:openregister:10130:7326e65b	APPROVE (docs/tasks only; stray generated lock file noted)	session-20261113T071633-17de823f	2026-11-13T11:38:22Z
 review:openregister:10126:ecfb7096	APPROVE: tests only, all required groups green	session-20261113T103904-e108be02	2026-11-13T11:38:32Z
+cover:pipelinq:7f9dc8e6m84dd:6f346b68	no PR: lib/Sections/SettingsSection.php already 5/5 statements covered (SettingsSectionTest)	session-20261113T104531-274f72f7	2026-11-13T11:39:12Z
