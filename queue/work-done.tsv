@@ -5448,6 +5448,7 @@ verify:versioniq:679:49cae245	GREEN #679	session-20261113T091533-03405ea6	2026-1
 cover:shillinq:05639debm4eb8:34f5c300	PR #2940: DBAVbarMonitorService::assess + StandardsPolicyService lookups, 18 tests; suite 10394->10412, same 1 inherited failure	session-20261113T074527-031883a8	2026-11-13T14:14:16Z
 verify:humaniq:1112:e9e9dca8	GREEN 1112, 1113, 1115 (tests only; 3928 -> 4055 tests, no failures)	session-20261113T124807-5f522699	2026-11-13T14:14:33Z
 review:openregister:10274:f3d18c00	APPROVE 10274: tests only, all green	session-20261113T104650-72c03e13	2026-11-13T14:14:47Z
+cover:dossiq:069ee2d6m2deb:dee272f4	PR #6424: CaseNumberRecognizer (0->111/112), CaseMailLeaf, OutboxSend; lib/Service/Email 92.32%->97.84% (target 95)	session-20261113T074532-3dc49c57	2026-11-13T14:15:14Z
 measure:larpinq:20261113h14	php 96.84% (4021/4152, pcov), js 91.23% (1082/1186) at 8df68c64	session-20261113T114525-2ca68289	2026-11-13T14:15:12Z
 build:portaliq:contact-page-question-form-and-not-found	already built: code tasks T01-T05 are on development; the only open tasks are T06 (live Playwright), T07 (a pipelinq tracker request), T08 (live board check + screenshots) — all need a live instance or another app, none buildable here	session-20261113T111529-f2ee6930	2026-11-13T14:15:28Z
 review:openregister:10271:d4c63696	APPROVE: additive fail-soft import audit, orphan-write now wired, suites green	session-20261113T124802-c7d6f662	2026-11-13T14:15:38Z
