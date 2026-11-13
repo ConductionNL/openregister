@@ -1,7 +1,7 @@
 {
  "app": "versioniq",
- "commit": "2baf65088000dd46132fdc44b53b2b1f020e0982",
- "measured_at": "2026-11-13T07:30:35Z",
+ "commit": "2083424e9432bed81dec3d63ff1ca19aba8580dd",
+ "measured_at": "2026-11-13T09:36:03Z",
  "php": {
   "tool": "pcov",
   "pct": 92.82,
