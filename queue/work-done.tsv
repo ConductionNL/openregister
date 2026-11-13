@@ -4867,3 +4867,4 @@ build:openregister:or-flow-connectivity-and-last-run	failed: worker rules forbid
 build:openregister:or-form-and-journey-registry	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:20Z
 build:openregister:platform-caldav-backend	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:30Z
 build:openregister:or-flow-object-write-node	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:36Z
+build:openregister:notification-scheduled-filter-grammar	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:42Z
