@@ -154,6 +154,13 @@
             "message": "x-openregister-lifecycle.states.\"open\".fields must be a non-empty object of \"hidden\", \"readOnly\" and/or \"required\" lists."
         }
     ],
+    "states: freezesObject string": [
+        {
+            "code": "lifecycle-state-freezes-object-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\".freezesObject must be true or false."
+        }
+    ],
+    "states: freezesObject true": [],
     "states: groups bad member": [
         {
             "code": "lifecycle-state-field-groups-malformed",

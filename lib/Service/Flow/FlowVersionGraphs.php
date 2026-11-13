@@ -37,6 +37,7 @@ final class FlowVersionGraphs {
 	 * @param FlowLifecycleGuard  $guard    The preconditions on every transition.
 	 * @param FlowTriggerIndex    $triggers The derived trigger rows.
 	 * @param FlowSemanticVersion $semver   What to call the version that results.
+	 * @param FlowTriggerFieldsCheck|null $fields The publish check of watched trigger fields.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
@@ -45,6 +46,7 @@ final class FlowVersionGraphs {
 		public readonly FlowLifecycleGuard $guard,
 		public readonly FlowTriggerIndex $triggers,
 		public readonly FlowSemanticVersion $semver,
+		public readonly ?FlowTriggerFieldsCheck $fields=null,
 	) {
 	}//end __construct()
 }//end class

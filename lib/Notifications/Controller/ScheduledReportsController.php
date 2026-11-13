@@ -35,6 +35,8 @@ use OCA\OpenRegister\Notifications\Controller\Support\ScheduledReportsController
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledReportRunNowJob;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
+use OCA\OpenRegister\Service\Connection\ConnectionReportForbiddenException;
+use OCA\OpenRegister\Service\Connection\ConnectionReportKind;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -219,6 +221,10 @@ class ScheduledReportsController extends Controller {
 			}
 		}
 
+		if (($data['kind'] ?? null) === ConnectionReportKind::CONNECTION_HEALTH && $this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => (new ConnectionReportForbiddenException())->getMessage()], statusCode: 403);
+		}
+
 		try {
 			$report = $this->service->create(data: $data, ownerUid: $userId);
 		} catch (InvalidArgumentException $e) {
@@ -264,6 +270,8 @@ class ScheduledReportsController extends Controller {
 			$report = $this->service->applyUpdate(update: new ScheduledReportUpdate(id: $id, data: $data, caller: $caller));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
+		} catch (ConnectionReportForbiddenException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
 		} catch (\RuntimeException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
 		} catch (InvalidArgumentException $e) {

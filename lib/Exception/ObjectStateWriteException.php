@@ -143,6 +143,25 @@ class ObjectStateWriteException extends Exception {
 	}//end frozen()
 
 	/**
+	 * A refusal of a content write to a preserved (statisch) object.
+	 *
+	 * The preservation marker is the object's archival metadata, where the
+	 * state lives, so there is no `by`/`at` to name; the message names the
+	 * state and that references still resolve (REQ-APS-006).
+	 *
+	 * @param ObjectEntity $object The object being written.
+	 *
+	 * @return self The refusal.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	public static function preserved(ObjectEntity $object): self {
+		$marker = new ObjectStateMarker(marker: ($object->getTmlo() ?? []));
+
+		return self::refusal(state: 'preserved', marker: $marker);
+	}//end preserved()
+
+	/**
 	 * The state that refused the write.
 	 *
 	 * @return string|null `archived`, `frozen`, or null when not built by a factory.
@@ -219,6 +238,10 @@ class ObjectStateWriteException extends Exception {
 		$message = $marker->archivedMessage();
 		if ($state === 'frozen') {
 			$message = $marker->frozenMessage();
+		}
+
+		if ($state === 'preserved') {
+			$message = $marker->preservedMessage();
 		}
 
 		$exception = new self(message: $message);

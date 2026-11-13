@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\DraftVersion;
 use OCA\OpenRegister\Db\DraftVersionMapper;
-use OCA\OpenRegister\Migration\Version1Date20261113140000;
+use OCA\OpenRegister\Migration\Version1Date20261113140200;
 use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 use OCP\DB\ISchemaWrapper;
 use OCP\IDBConnection;
@@ -34,7 +34,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\DraftVersionMapper
- * @covers \OCA\OpenRegister\Migration\Version1Date20261113140000
+ * @covers \OCA\OpenRegister\Migration\Version1Date20261113140200
  * @uses   \OCA\OpenRegister\Db\DraftVersion
  */
 final class DraftVersionMapperTest extends TestCase {
@@ -138,7 +138,7 @@ final class DraftVersionMapperTest extends TestCase {
 				return $table;
 			}
 		);
-		$migration = new Version1Date20261113140000();
+		$migration = new Version1Date20261113140200();
 
 		$this->assertSame($wrapper, $migration->changeSchema($this->createMock(IOutput::class), fn () => $wrapper, []));
 		$this->assertSame(

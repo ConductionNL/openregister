@@ -5578,6 +5578,66 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $result->getHeaders()['Content-Type']);
 	}
 
+	/**
+	 * ODS carries the same sheet the Excel export builds, written as an
+	 * OpenDocument spreadsheet.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md
+	 */
+	public function testExportReturnsOdsWithTheSameSheetAsExcel(): void {
+		$this->grantExport();
+		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$registerEntity->method('getSlug')->willReturn('zaken');
+
+		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$schemaEntity->method('getSlug')->willReturn('meldingen');
+
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+			if ($key === 'format') {
+				return 'ods';
+			}
+			return $default;
+		});
+
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+		$spreadsheet->getActiveSheet()->setTitle('meldingen');
+		$spreadsheet->getActiveSheet()->fromArray([['id', 'status', '_toegewezen_aan'], ['m-1', 'nieuw', 'Jan'], ['m-2', 'afgehandeld', 'Piet']]);
+		$this->exportService->expects($this->once())->method('exportToExcel')->willReturn($spreadsheet);
+
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=zaken_meldingen_\d{4}-\d{2}-\d{2}_\d{6}\.ods$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/vnd.oasis.opendocument.spreadsheet', $result->getHeaders()['Content-Type']);
+
+		// The bytes are a real OpenDocument spreadsheet holding the same rows.
+		$path = tempnam(sys_get_temp_dir(), 'ods');
+		file_put_contents($path, $result->render());
+		$read = (new \PhpOffice\PhpSpreadsheet\Reader\Ods())->load($path);
+		unlink($path);
+		$this->assertSame(
+			[['id', 'status', '_toegewezen_aan'], ['m-1', 'nieuw', 'Jan'], ['m-2', 'afgehandeld', 'Piet']],
+			$read->getActiveSheet()->toArray()
+		);
+		$this->assertSame('meldingen', $read->getActiveSheet()->getTitle());
+	}
+
 	// =========================================================================
 	// export() — Register/Schema with null slugs uses fallback names
 	// =========================================================================
