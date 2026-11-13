@@ -5458,3 +5458,4 @@ review:openregister:10276:231ec6de	APPROVE	session-20261113T114524-3c44fc56	2026
 merge:portaliq:2405:8af72dc3	merge-local over 3 portaliq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:17:14Z
 merge:portaliq:2284:6b2c9f97	merge-local over 3 portaliq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:17:14Z
 merge:portaliq:2404:096e1db8	merge-local over 3 portaliq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:17:14Z
+cover:hermiq:065f1631me44a:34a55f48	already done: lib/Service/Workspace/*.php measures 799/812 (98.4%, pcov) on development with ../openregister beside the app as tests/bootstrap-unit.php expects (without it 146 tests error and the dir reads 93.5%); no PR	session-20261113T104650-72c03e13	2026-11-13T14:17:29Z
