@@ -1272,3 +1272,4 @@ cover:keepiq:d76c2121m70b5:jsfb924eab	PR #1711: 5 components, 50 tests, vitest 5
 review:openregister:10069:33d5247d	APPROVE: tests-only jest spec; modals/object 504 pass on merge with main	session-20261112T231637-60fd49c4	2026-11-13T00:58:33Z
 cover:launchpad:755175ffm7412:js01efb861	PR #1143: 53 tests, src/components/Widgets 73.2%->86.3% lines	session-20261113T002025-940c220f	2026-11-13T00:59:01Z
 review:openregister:10075:c2ae354f	BLOCK: timezone-dependent test in RuleRunSummaryMapperTest	session-20261113T003903-5efbf5ae	2026-11-13T00:59:08Z
+review:hermiq:1518:202e8aaa	GREEN: behaviour-equivalent extraction, no new failures or risky tests	session-20261112T231633-96ffe7b8	2026-11-13T00:59:21Z
