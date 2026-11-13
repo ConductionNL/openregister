@@ -2729,6 +2729,7 @@ Service/Object/RunLockRegistry.php,130,Service,Service,Service/Object/RunLockReg
 Service/Object/SaveObject.php,3491,Service,Service,Service/Object/SaveObject.php,0,2,Core
 Service/Object/SaveObject/BulkObjectSlugs.php,156,Service,Service,Service/Object/SaveObject/BulkObjectSlugs.php,0,,Core
 Service/Object/SaveObject/CascadeRun.php,12,Service,Service,Service/Object/SaveObject/CascadeRun.php,0,,Core
+Service/Object/SaveObject/ClassificationFloorGuard.php,131,Service,Service,Service/Object/SaveObject/ClassificationFloorGuard.php,0,,Core
 Service/Object/SaveObject/ComputedFieldHandler.php,427,Service,Service,Service/Object/SaveObject/ComputedFieldHandler.php,0,,Core
 Service/Object/SaveObject/DefaultValueContext.php,6,Service,Service,Service/Object/SaveObject/DefaultValueContext.php,0,,Core
 Service/Object/SaveObject/FilePropertyHandler.php,795,Service,Service,Service/Object/SaveObject/FilePropertyHandler.php,0,,Core

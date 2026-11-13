@@ -24,7 +24,7 @@
 - [ ] 3.2 `MagicRbacHandler` compiles the comparison into the list and
       aggregation queries as an `IN` over the admitted labels.
 - [ ] 3.3 Ceilings refuse a scope ahead of every grant and schema rule.
-- [ ] 3.4 The floor is checked at save and a lowering write is refused naming
+- [x] 3.4 The floor is checked at save and a lowering write is refused naming
       both levels.
 
 ## 4. The dead vocabulary
