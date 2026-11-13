@@ -7302,7 +7302,9 @@ build:hermiq:exapp-stage-workload	failed: no code task left: 9 is a live palette
 build:hermiq:hydra-console-agent-leaves	failed: no code task left: 1 and 8 are live render/e2e sign-off, 5 waits on openregister#2158 (runFlow drops triggeredBy), 6 waits on the hydra repo's stage schema, 7 needs a forced register import on an instance	session-20261113T212411-bd385ec2	2026-11-13T22:45:14Z
 build4:openregister:run-scoped-object-locking	PR #10459: remaining tasks verified done on main; added MagicMapper run-lock and migration tests; all tasks ticked	session-20261113T214930-fbbf31dd	2026-11-13T22:45:05Z
 build:decidiq:leaf-integrations	partial: PR #2158, tasks 1,2,3,5,6 and the Forms widget of 4 (manifest leaves, register.d fragment with linkedTypes and a draft-decision mail template, en/nl titles, docs, 10 tests; suite 3980->3991 green); Forms response import and live checks left	session-20261113T213326-97cbe4c8	2026-11-13T22:45:17Z
+cover:shillinq:05639debm3ffd:js0be8c659	PR #3031: 8 modals, 47 tests; suite 2401->2448, same 1 inherited failure	session-20261113T215344-82e3aea0	2026-11-13T22:45:36Z
 build:decidiq:ori-adoption	partial: PR #2159 adds the additive schema deltas (1.1); importer, export mapper, feeds and seed left; 3993 tests, no failures	session-20261113T205332-17038cbf	2026-11-13T22:45:37Z
 build:learniq:training-provider-course-days	partial: PR #2521 (T1 register fields; T2 derivation built, manual move log left; T3-T8 left); suite 6545->6559, same 1 inherited failure	session-20261113T205323-cbfd0ec4	2026-11-13T22:45:32Z
 verify:shillinq:3030:e8077e14	GREEN 3030: tests only; vitest +13 pass, same inherited failure; no PHP change	session-20261113T204539-e70be1ed	2026-11-13T22:45:37Z
 review:openregister:10447:0eb80a71	APPROVE: new unwired snippet builder as specced, suites green	session-20261113T212414-55623216	2026-11-13T22:46:03Z
+verify:portaliq:2476:c3774482	GREEN 2476	session-20261113T205325-28f592a9	2026-11-13T22:46:12Z
