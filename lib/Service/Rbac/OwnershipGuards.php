@@ -37,12 +37,14 @@ final class OwnershipGuards {
 	 *
 	 * @param IUserSession               $userSession The acting user, which is where an owner comes from.
 	 * @param GrantManageGuard           $grantManage Who may name a record's owning group.
-	 * @param PermissionHandlerInterface $permissions The rules, for "may this caller edit this record".
+	 * @param PermissionHandlerInterface $permissions  The rules, for "may this caller edit this record".
+	 * @param SharerFolderAccess|null    $sharerAccess Ends a former owner's view of the folder, with their right to share it.
 	 */
 	public function __construct(
 		public readonly IUserSession $userSession,
 		public readonly GrantManageGuard $grantManage,
 		public readonly PermissionHandlerInterface $permissions,
+		public readonly ?SharerFolderAccess $sharerAccess = null,
 	) {
 	}//end __construct()
 }//end class

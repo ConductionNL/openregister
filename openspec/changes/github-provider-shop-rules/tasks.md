@@ -1,7 +1,7 @@
 ## 1. Catalogue rules
 
-- [ ] 1.1 In `lib/Settings/credential-providers.json`, append six allow-rules to the `github` provider's `allowRules[]`: `{method:"GET", pathPattern:"/search/repositories"}`, `{method:"GET", pathPattern:"/user"}`, `{method:"POST", pathPattern:"/user/repos"}`, `{method:"POST", pathPattern:"/orgs/*/repos"}`, `{method:"PATCH", pathPattern:"/repos/*/git/refs/*"}`, `{method:"PUT", pathPattern:"/repos/*/topics"}`. Leave the four existing `github` rules and the whole `gitlab`/`doffin` entries byte-identical. Do NOT add any GET contents/git rule — `GET /repos/*` already covers those (fnmatch spans slashes).
-- [ ] 1.2 Bump the catalogue's top-level `version` (1.1.0 → 1.2.0) and extend the file's `$comment` only if the GitHub-shop rationale needs recording there.
+- [ ] 1.1 In `lib/Settings/credential-providers.json`, append six allow-rules to the `github` provider's `allowRules[]`: `{method:"GET", pathPattern:"/search/repositories"}`, `{method:"GET", pathPattern:"/user"}`, `{method:"POST", pathPattern:"/user/repos"}`, `{method:"POST", pathPattern:"/orgs/*/repos"}`, `{method:"PATCH", pathPattern:"/repos/*/git/refs/*"}`, `{method:"PUT", pathPattern:"/repos/*/topics"}`. Leave the four existing `github` rules and the whole `gitlab`/`doffin` entries byte-identical. Do NOT add any GET contents/git rule — `GET /repos/*` already covers those (fnmatch spans slashes). (code exists, test missing: lib/Settings/credential-providers.json)
+- [ ] 1.2 Bump the catalogue's top-level `version` (1.1.0 → 1.2.0) and extend the file's `$comment` only if the GitHub-shop rationale needs recording there. (code exists, test missing: lib/Settings/credential-providers.json (catalogue version is already 1.11.0))
 
 ## 2. Verification
 

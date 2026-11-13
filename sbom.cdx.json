@@ -2,10 +2,8 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:83587c9d-fd1f-4129-aa1f-c54fc1c58797",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-11T17:34:52Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +80,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-main",
+      "bom-ref": "conductionnl/openregister-1.0.0.0",
       "type": "application",
       "name": "openregister",
-      "version": "dev-main",
+      "version": "1.0.0",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,16 +94,8 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-main",
+      "purl": "pkg:composer/conductionnl/openregister@1.0.0",
       "properties": [
-        {
-          "name": "cdx:composer:package:distReference",
-          "value": "996bfaf616b171bab4d42deb43cae8175073b328"
-        },
-        {
-          "name": "cdx:composer:package:sourceReference",
-          "value": "996bfaf616b171bab4d42deb43cae8175073b328"
-        },
         {
           "name": "cdx:composer:package:type",
           "value": "library"
@@ -1434,10 +1424,10 @@
       ]
     },
     {
-      "bom-ref": "paragonie/constant_time_encoding-3.1.3.0",
+      "bom-ref": "paragonie/constant_time_encoding-3.1.4.0",
       "type": "library",
       "name": "constant_time_encoding",
-      "version": "v3.1.3",
+      "version": "v3.1.4",
       "group": "paragonie",
       "description": "Constant-time Implementations of RFC 4648 Encoding (Base-64, Base-32, Base-16)",
       "author": "Paragon Initiative Enterprises, Steve 'Sc00bz' Thomas",
@@ -1448,17 +1438,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/paragonie/constant_time_encoding@v3.1.3",
+      "purl": "pkg:composer/paragonie/constant_time_encoding@v3.1.4",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/paragonie/constant_time_encoding/zipball/d5b01a39b3415c2cd581d3bd3a3575c1ebbd8e77",
-          "comment": "dist reference: d5b01a39b3415c2cd581d3bd3a3575c1ebbd8e77"
+          "url": "https://api.github.com/repos/paragonie/constant_time_encoding/zipball/5efef6e6cb43e088ccab7d0c1e2f2ab25b9e8b54",
+          "comment": "dist reference: 5efef6e6cb43e088ccab7d0c1e2f2ab25b9e8b54"
         },
         {
           "type": "vcs",
           "url": "https://github.com/paragonie/constant_time_encoding.git",
-          "comment": "source reference: d5b01a39b3415c2cd581d3bd3a3575c1ebbd8e77"
+          "comment": "source reference: 5efef6e6cb43e088ccab7d0c1e2f2ab25b9e8b54"
         },
         {
           "type": "other",
@@ -1479,69 +1469,11 @@
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "d5b01a39b3415c2cd581d3bd3a3575c1ebbd8e77"
+          "value": "5efef6e6cb43e088ccab7d0c1e2f2ab25b9e8b54"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "d5b01a39b3415c2cd581d3bd3a3575c1ebbd8e77"
-        },
-        {
-          "name": "cdx:composer:package:type",
-          "value": "library"
-        }
-      ]
-    },
-    {
-      "bom-ref": "paragonie/random_compat-9.99.100.0",
-      "type": "library",
-      "name": "random_compat",
-      "version": "v9.99.100",
-      "group": "paragonie",
-      "description": "PHP 5.x polyfill for random_bytes() and random_int() from PHP 7",
-      "author": "Paragon Initiative Enterprises",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:composer/paragonie/random_compat@v9.99.100",
-      "externalReferences": [
-        {
-          "type": "distribution",
-          "url": "https://api.github.com/repos/paragonie/random_compat/zipball/996434e5492cb4c3edcb9168db6fbb1359ef965a",
-          "comment": "dist reference: 996434e5492cb4c3edcb9168db6fbb1359ef965a"
-        },
-        {
-          "type": "vcs",
-          "url": "https://github.com/paragonie/random_compat.git",
-          "comment": "source reference: 996434e5492cb4c3edcb9168db6fbb1359ef965a"
-        },
-        {
-          "type": "other",
-          "url": "info@paragonie.com",
-          "comment": "as detected from Composer manifest 'support.email'"
-        },
-        {
-          "type": "issue-tracker",
-          "url": "https://github.com/paragonie/random_compat/issues",
-          "comment": "as detected from Composer manifest 'support.issues'"
-        },
-        {
-          "type": "vcs",
-          "url": "https://github.com/paragonie/random_compat",
-          "comment": "as detected from Composer manifest 'support.source'"
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:composer:package:distReference",
-          "value": "996434e5492cb4c3edcb9168db6fbb1359ef965a"
-        },
-        {
-          "name": "cdx:composer:package:sourceReference",
-          "value": "996434e5492cb4c3edcb9168db6fbb1359ef965a"
+          "value": "5efef6e6cb43e088ccab7d0c1e2f2ab25b9e8b54"
         },
         {
           "name": "cdx:composer:package:type",
@@ -1954,13 +1886,13 @@
       ]
     },
     {
-      "bom-ref": "phpseclib/phpseclib-3.0.58.0",
+      "bom-ref": "phpseclib/phpseclib-4.0.3.0",
       "type": "library",
       "name": "phpseclib",
-      "version": "3.0.58",
+      "version": "4.0.3",
       "group": "phpseclib",
       "description": "PHP Secure Communications Library - Pure-PHP implementations of RSA, AES, SSH2, SFTP, X.509 etc.",
-      "author": "Jim Wigginton, Patrick Monnerat, Andreas Fischer, Hans-Jürgen Petrich, Graham Campbell",
+      "author": "Jim Wigginton, Patrick Monnerat, Andreas Fischer, Hans-Jürgen Petrich, Graham Campbell, Jack Worman",
       "licenses": [
         {
           "license": {
@@ -1968,21 +1900,21 @@
           }
         }
       ],
-      "purl": "pkg:composer/phpseclib/phpseclib@3.0.58",
+      "purl": "pkg:composer/phpseclib/phpseclib@4.0.3",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/91f3a6436bb84040ac0cf49e761977f17d16a39b",
-          "comment": "dist reference: 91f3a6436bb84040ac0cf49e761977f17d16a39b"
+          "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/6077cecfed9e371993d3aa339b0afeb23f7bf636",
+          "comment": "dist reference: 6077cecfed9e371993d3aa339b0afeb23f7bf636"
         },
         {
           "type": "vcs",
           "url": "https://github.com/phpseclib/phpseclib.git",
-          "comment": "source reference: 91f3a6436bb84040ac0cf49e761977f17d16a39b"
+          "comment": "source reference: 6077cecfed9e371993d3aa339b0afeb23f7bf636"
         },
         {
           "type": "website",
-          "url": "http://phpseclib.sourceforge.net",
+          "url": "https://phpseclib.com/",
           "comment": "as detected from Composer manifest 'homepage'"
         },
         {
@@ -1992,18 +1924,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/phpseclib/phpseclib/tree/3.0.58",
+          "url": "https://github.com/phpseclib/phpseclib/tree/4.0.3",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "91f3a6436bb84040ac0cf49e761977f17d16a39b"
+          "value": "6077cecfed9e371993d3aa339b0afeb23f7bf636"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "91f3a6436bb84040ac0cf49e761977f17d16a39b"
+          "value": "6077cecfed9e371993d3aa339b0afeb23f7bf636"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3034,10 +2966,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/polyfill-php82-1.38.1.0",
+      "bom-ref": "symfony/polyfill-php82-1.43.0.0",
       "type": "library",
       "name": "polyfill-php82",
-      "version": "v1.38.1",
+      "version": "v1.43.0",
       "group": "symfony",
       "description": "Symfony polyfill backporting some PHP 8.2+ features to lower PHP versions",
       "author": "Nicolas Grekas, Symfony Community",
@@ -3048,17 +2980,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/polyfill-php82@v1.38.1",
+      "purl": "pkg:composer/symfony/polyfill-php82@v1.43.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/polyfill-php82/zipball/002dc0cfe5fd4ed6033d48f27d4f19a486c4b04b",
-          "comment": "dist reference: 002dc0cfe5fd4ed6033d48f27d4f19a486c4b04b"
+          "url": "https://api.github.com/repos/symfony/polyfill-php82/zipball/843bbe8b2a7934307b749751eede0f111f5d1cfc",
+          "comment": "dist reference: 843bbe8b2a7934307b749751eede0f111f5d1cfc"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/polyfill-php82.git",
-          "comment": "source reference: 002dc0cfe5fd4ed6033d48f27d4f19a486c4b04b"
+          "comment": "source reference: 843bbe8b2a7934307b749751eede0f111f5d1cfc"
         },
         {
           "type": "website",
@@ -3067,18 +2999,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/polyfill-php82/tree/v1.38.1",
+          "url": "https://github.com/symfony/polyfill-php82/tree/v1.43.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "002dc0cfe5fd4ed6033d48f27d4f19a486c4b04b"
+          "value": "843bbe8b2a7934307b749751eede0f111f5d1cfc"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "002dc0cfe5fd4ed6033d48f27d4f19a486c4b04b"
+          "value": "843bbe8b2a7934307b749751eede0f111f5d1cfc"
         },
         {
           "name": "cdx:composer:package:type",
@@ -4733,8 +4665,8 @@
       "type": "library",
       "name": "nextcloud-vue",
       "group": "@conduction",
-      "version": "2.175.0",
-      "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.175.0",
+      "version": "2.180.0",
+      "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0",
       "licenses": [
         {
           "license": {
@@ -4742,15 +4674,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.175.0",
+      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.180.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.175.0.tgz",
+          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.180.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "549ab1ac5d2783d5cbe2b93ea1932d219054a17a91280b809d8f3ba3c7ce2e31a799721689925390da5380394118f73c6b6f4b7d76e9b7f1a45f86f65bdd83f5"
+              "content": "6deed18686d29c1328f786009a99a14fab4cf52e8a8aa2ea6f0035c1d4eaa77f5d064ff23fe6142873a61e9201ac1ac40e28e56cfc9ae96ce536608df4ed7493"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -7982,8 +7914,8 @@
       "type": "library",
       "name": "entities",
       "group": "@nodable",
-      "version": "3.0.0",
-      "bom-ref": "openregister@1.0.0|@nodable/entities@3.0.0",
+      "version": "3.1.0",
+      "bom-ref": "openregister@1.0.0|@nodable/entities@3.1.0",
       "licenses": [
         {
           "license": {
@@ -7991,15 +7923,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40nodable/entities@3.0.0",
+      "purl": "pkg:npm/%40nodable/entities@3.1.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@nodable/entities/-/entities-3.0.0.tgz",
+          "url": "https://registry.npmjs.org/@nodable/entities/-/entities-3.1.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "f0bf7115e4d82a19b8f717c8ca9a1ed96e705759bfdd9e7c913fbb911f40f0ec85c5c3ddb88e159b1694310c8a62b4635282cb497bfa10a2880f94ef8fd71457"
+              "content": "2ec4bf0e31ebfae0cceb8ec6aeefdc03cf89ddadc77e1b6dc0228bcaea3237bc974c50b1281b5280c401beb5bdc8d3dadbfcc345436e18f687e50505a1ae1aad"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9498,8 +9430,8 @@
       "type": "library",
       "name": "estree",
       "group": "@types",
-      "version": "0.0.39",
-      "bom-ref": "openregister@1.0.0|@types/estree@0.0.39",
+      "version": "1.0.10",
+      "bom-ref": "openregister@1.0.0|@types/estree@1.0.10",
       "licenses": [
         {
           "license": {
@@ -9507,15 +9439,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40types/estree@0.0.39",
+      "purl": "pkg:npm/%40types/estree@1.0.10",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@types/estree/-/estree-0.0.39.tgz",
+          "url": "https://registry.npmjs.org/@types/estree/-/estree-1.0.10.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "118370a776d4fbdf1ca54e250166182fb673fb682bc961f5a9b7434e275577a864891eb07a4b1d6cc69dc9729734f12440585733e8553bd6728289875e9f8023"
+              "content": "953c8e32739c991073742bfaff8cd4642ac4855d31aea422519059b5571b98b1c15ca2e737cabcf6fff029117f4341dbc15b2a6c81b7a391c3a0597db1db8cfa"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -9805,40 +9737,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@types/sizzle"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "sortablejs",
-      "group": "@types",
-      "version": "1.15.9",
-      "bom-ref": "openregister@1.0.0|@types/sortablejs@1.15.9",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/%40types/sortablejs@1.15.9",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/@types/sortablejs/-/sortablejs-1.15.9.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "ec73fead9184da9f3ce8f295f5cf4e2732c123a04126ed4eee52466273f21b77d2e3f76e5027278243428ec2f020c57e58ca8035ededb788abad71d221eebc39"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/@types/sortablejs"
         }
       ]
     },
@@ -10910,8 +10808,8 @@
       "type": "library",
       "name": "devtools-api",
       "group": "@vue",
-      "version": "7.7.10",
-      "bom-ref": "openregister@1.0.0|@vue/devtools-api@7.7.10",
+      "version": "8.2.1",
+      "bom-ref": "openregister@1.0.0|@vue/devtools-api@8.2.1",
       "licenses": [
         {
           "license": {
@@ -10919,15 +10817,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/devtools-api@7.7.10",
+      "purl": "pkg:npm/%40vue/devtools-api@8.2.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/devtools-api/-/devtools-api-7.7.10.tgz",
+          "url": "https://registry.npmjs.org/@vue/devtools-api/-/devtools-api-8.2.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "2b1b44a5438ea45cffa8e191ac0c00dfa405ec3a8803e157802622b7d9a4f708db699b74b17385cfcd4494e66d280e076d61d4770363647045b05172a7905988"
+              "content": "eaee2f5c19480400b5c0ca65219829c8f9fbba1fece017fa1796cccef2eff84749d1a1ecffee01ed882ff3ae044ad4128d16ec4734e4a3f9141b503521e8d0dc"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10944,8 +10842,8 @@
       "type": "library",
       "name": "devtools-kit",
       "group": "@vue",
-      "version": "7.7.10",
-      "bom-ref": "openregister@1.0.0|@vue/devtools-kit@7.7.10",
+      "version": "8.2.1",
+      "bom-ref": "openregister@1.0.0|@vue/devtools-kit@8.2.1",
       "licenses": [
         {
           "license": {
@@ -10953,15 +10851,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/devtools-kit@7.7.10",
+      "purl": "pkg:npm/%40vue/devtools-kit@8.2.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/devtools-kit/-/devtools-kit-7.7.10.tgz",
+          "url": "https://registry.npmjs.org/@vue/devtools-kit/-/devtools-kit-8.2.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "dd6362d8aab8b5ba556e686697b462a61980b74dbbf688777ca35e58c408ae5b5f5fc43dd5be22e4f2fc0edc8d29dc2672c1ab5787e0f9eaf058e983d3908b23"
+              "content": "148188baadc0591784a5b00763f71119e1c37c8d2a39bf0e090dd88db1005f4e2e6b12036c673dae191b55c1bbae77c73d713746c5392ab58ebbd57fa2477c01"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10978,8 +10876,8 @@
       "type": "library",
       "name": "devtools-shared",
       "group": "@vue",
-      "version": "7.7.10",
-      "bom-ref": "openregister@1.0.0|@vue/devtools-shared@7.7.10",
+      "version": "8.2.1",
+      "bom-ref": "openregister@1.0.0|@vue/devtools-shared@8.2.1",
       "licenses": [
         {
           "license": {
@@ -10987,15 +10885,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/devtools-shared@7.7.10",
+      "purl": "pkg:npm/%40vue/devtools-shared@8.2.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/devtools-shared/-/devtools-shared-7.7.10.tgz",
+          "url": "https://registry.npmjs.org/@vue/devtools-shared/-/devtools-shared-8.2.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "c0e3ec97307cbd3be9c7075a39c476a806f09ae48fd0bfab869a02e827f9e95dc98a9f8759becf4105ce50f801350011a57b1b417ffe9af8bc90ab9c981191c1"
+              "content": "16469cee551d1917a1ea954e8b70183d119ef362d0a919807d3856ed14658a03803f4640fd9d73f572c70ccf5dbf7e295761d173bf432bcb8a3de1b67cb9c0fe"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12480,8 +12378,8 @@
     {
       "type": "library",
       "name": "asynckit",
-      "version": "0.4.0",
-      "bom-ref": "openregister@1.0.0|asynckit@0.4.0",
+      "version": "0.5.0",
+      "bom-ref": "openregister@1.0.0|asynckit@0.5.0",
       "licenses": [
         {
           "license": {
@@ -12489,15 +12387,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/asynckit@0.4.0",
+      "purl": "pkg:npm/asynckit@0.5.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/asynckit/-/asynckit-0.4.0.tgz",
+          "url": "https://registry.npmjs.org/asynckit/-/asynckit-0.5.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "39e8bd387e2d461d18a94dc6c615fbf5d33f9b0560bdb64969235a464f9bb21923d12e5c7c772061a92b7818eb1f06ad5ca6f3f88a087582f1aca8a6d8c8d6d1"
+              "content": "b95b4d316da6312ada2d0e640bf249f63d673eb77b73acea3054d6e7b409e5589b089b14e9c91c79d3a8352a2aee4409e161602488c59b4545de16c7be1ebfc3"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -13752,39 +13650,6 @@
     },
     {
       "type": "library",
-      "name": "copy-anything",
-      "version": "4.0.5",
-      "bom-ref": "openregister@1.0.0|copy-anything@4.0.5",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/copy-anything@4.0.5",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/copy-anything/-/copy-anything-4.0.5.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "ed5bfa6ac8d2e2030eb882da6c3de5ef7f6db1ac454260be6bba4b666d36cf2becf29f7bedb2f7cc482adf20e4e6b9fd0743db62022ffbe8e61dcb9469be1184"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/copy-anything"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "core-js",
       "version": "3.50.0",
       "bom-ref": "openregister@1.0.0|core-js@3.50.0",
@@ -14175,8 +14040,8 @@
     {
       "type": "library",
       "name": "d3-dispatch",
-      "version": "3.0.1",
-      "bom-ref": "openregister@1.0.0|d3-dispatch@3.0.1",
+      "version": "3.0.2",
+      "bom-ref": "openregister@1.0.0|d3-dispatch@3.0.2",
       "licenses": [
         {
           "license": {
@@ -14184,15 +14049,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/d3-dispatch@3.0.1",
+      "purl": "pkg:npm/d3-dispatch@3.0.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/d3-dispatch/-/d3-dispatch-3.0.1.tgz",
+          "url": "https://registry.npmjs.org/d3-dispatch/-/d3-dispatch-3.0.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "af35323d4fd2eebc147e53322dcd444c37818f4351b8728a01cbee928cf086c86bea0e9ce5df338787368108d8d9b6747577862d67353c5d7be0fdad56f2a17e"
+              "content": "b00cc7e18e27b0ba3c792ab0e632a266df8b536c1998bfea4be3a4c501a38706b307f0fb4d8df847f40ad5eb217c6afb71910aca6299fc769e9bb9be96ef7c4a"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -14208,8 +14073,8 @@
     {
       "type": "library",
       "name": "d3-drag",
-      "version": "3.0.0",
-      "bom-ref": "openregister@1.0.0|d3-drag@3.0.0",
+      "version": "3.0.1",
+      "bom-ref": "openregister@1.0.0|d3-drag@3.0.1",
       "licenses": [
         {
           "license": {
@@ -14217,15 +14082,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/d3-drag@3.0.0",
+      "purl": "pkg:npm/d3-drag@3.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/d3-drag/-/d3-drag-3.0.0.tgz",
+          "url": "https://registry.npmjs.org/d3-drag/-/d3-drag-3.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "a566d424b7444d503c95034979c331a177c7eb1fa63b6510a3cad2999f90ab171bc80de17dea6b160213fff1d6da79470a159e2083304b616afa010046485392"
+              "content": "3967a86b20aaf09ebd854223bcbf8c6fa43a39a8ff7f21d5e57697072114006f8952321f4c60e7937a86a5c5eb0f756643705257de9f71b33a7eaabb0b4b5b3c"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -14241,8 +14106,8 @@
     {
       "type": "library",
       "name": "d3-ease",
-      "version": "3.0.1",
-      "bom-ref": "openregister@1.0.0|d3-ease@3.0.1",
+      "version": "3.0.2",
+      "bom-ref": "openregister@1.0.0|d3-ease@3.0.2",
       "licenses": [
         {
           "license": {
@@ -14250,15 +14115,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/d3-ease@3.0.1",
+      "purl": "pkg:npm/d3-ease@3.0.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/d3-ease/-/d3-ease-3.0.1.tgz",
+          "url": "https://registry.npmjs.org/d3-ease/-/d3-ease-3.0.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "c11fd72b70f75dc2c8670a5bbd0c10e5f2bef1891db358a9ec0d93c5ed32c6771749dab52fdb24706edb95c79d90e5fe65c83118098b5f516b4466c00f0ce2d3"
+              "content": "079ce72aa466291380378a07590e745bfaa2b158c0f465e1d9632c54a745569e03c5699caceb307aa81439456cbf9b61f7a930699968914e92955e09de06a4d7"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -14274,8 +14139,8 @@
     {
       "type": "library",
       "name": "d3-interpolate",
-      "version": "3.0.1",
-      "bom-ref": "openregister@1.0.0|d3-interpolate@3.0.1",
+      "version": "3.0.2",
+      "bom-ref": "openregister@1.0.0|d3-interpolate@3.0.2",
       "licenses": [
         {
           "license": {
@@ -14283,15 +14148,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/d3-interpolate@3.0.1",
+      "purl": "pkg:npm/d3-interpolate@3.0.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/d3-interpolate/-/d3-interpolate-3.0.1.tgz",
+          "url": "https://registry.npmjs.org/d3-interpolate/-/d3-interpolate-3.0.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "ddb62cd6b383df7ba8f1aa897ca3f72563c089b830f199b6f8bf6f04a107276460faf89347ba39326bf999972278df854586803965f94890135fa9353d6cfbda"
+              "content": "211cc653ad83b7186fb2749358c408767a19ea003e0425b00689f510923a4a3a0de7de7bf7d6facff4110735df16113c8aea543e9df4e36c81368d124cfaa7cd"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -14307,8 +14172,8 @@
     {
       "type": "library",
       "name": "d3-selection",
-      "version": "3.0.0",
-      "bom-ref": "openregister@1.0.0|d3-selection@3.0.0",
+      "version": "3.0.1",
+      "bom-ref": "openregister@1.0.0|d3-selection@3.0.1",
       "licenses": [
         {
           "license": {
@@ -14316,15 +14181,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/d3-selection@3.0.0",
+      "purl": "pkg:npm/d3-selection@3.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/d3-selection/-/d3-selection-3.0.0.tgz",
+          "url": "https://registry.npmjs.org/d3-selection/-/d3-selection-3.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "7e64d159b34c9ac996abac4957c0f5f54fe0c3f6f0ac77cd5f1ac837e1df6609f3a931e9f633a628c86c4d48d73899d939d658f50dbccb8c9e6cacea0ca97195"
+              "content": "38349fdf9bea0ab9427e9ee1ae6d1e663bcea2c4974982e3aaf22584c055f6af553b1ec40491baa5cfae5c1b30119349802189faa9ca61c5aeb5b6432317bf5e"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -14340,8 +14205,8 @@
     {
       "type": "library",
       "name": "d3-timer",
-      "version": "3.0.1",
-      "bom-ref": "openregister@1.0.0|d3-timer@3.0.1",
+      "version": "3.0.2",
+      "bom-ref": "openregister@1.0.0|d3-timer@3.0.2",
       "licenses": [
         {
           "license": {
@@ -14349,15 +14214,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/d3-timer@3.0.1",
+      "purl": "pkg:npm/d3-timer@3.0.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/d3-timer/-/d3-timer-3.0.1.tgz",
+          "url": "https://registry.npmjs.org/d3-timer/-/d3-timer-3.0.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "9dd7c9fc9c7131dde7c37d6ec8aa18da76a2bc5fabdbd57e2dcd2cbd9c5ed49bef2119a2f2152caccbdd3b0812d68eae0479a2cfdd60790d3294f3f46a3d5550"
+              "content": "d489756a58aba15484aebbf96ae951071018fbbf839daa0b21619dd42e92b014d60dea1b5a23ff57af6fc1bf2f4fa69b47590ac1a35ed75f7aa66690d5f2bdd0"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -14373,8 +14238,8 @@
     {
       "type": "library",
       "name": "d3-transition",
-      "version": "3.0.1",
-      "bom-ref": "openregister@1.0.0|d3-transition@3.0.1",
+      "version": "3.0.2",
+      "bom-ref": "openregister@1.0.0|d3-transition@3.0.2",
       "licenses": [
         {
           "license": {
@@ -14382,15 +14247,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/d3-transition@3.0.1",
+      "purl": "pkg:npm/d3-transition@3.0.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/d3-transition/-/d3-transition-3.0.1.tgz",
+          "url": "https://registry.npmjs.org/d3-transition/-/d3-transition-3.0.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "0292af7e3b1247ab60d3ac6b2f8df80b45b274bafb25ec0107757eff7f51307b1a5d3386d339adfce0177a78393392c19b4a239b126ba68990559d5a3ef04be3"
+              "content": "45c8c2b1d160c85a0307e4172c2e66eb46644cdd24f731fea2fa0b9537499c34b501b7db72ea3088ce2908a49339c94d89b4b87f827871bbf69bb3bbcbc35339"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -14406,8 +14271,8 @@
     {
       "type": "library",
       "name": "d3-zoom",
-      "version": "3.0.0",
-      "bom-ref": "openregister@1.0.0|d3-zoom@3.0.0",
+      "version": "3.0.1",
+      "bom-ref": "openregister@1.0.0|d3-zoom@3.0.1",
       "licenses": [
         {
           "license": {
@@ -14415,15 +14280,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/d3-zoom@3.0.0",
+      "purl": "pkg:npm/d3-zoom@3.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/d3-zoom/-/d3-zoom-3.0.0.tgz",
+          "url": "https://registry.npmjs.org/d3-zoom/-/d3-zoom-3.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "6fc02657791f41aa9602e69c6cfb8d6cbeaf6a19ce25f94e85ec4bccc30d2e06badbefe7874273bc9d1a3bfe5ae4c560505192ec7bb53fd3f4de8ddf2640c2cb"
+              "content": "91f8c3dc10d0bbf14e6ada59e8974c4b22280f04f1229236f724932362796650da1f559bb8919027643da099164c46445bdf23ea275ece8a26483dc29f6cf08b"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -15663,46 +15528,6 @@
           "name": "cdx:npm:package:path",
           "value": "node_modules/eslint-scope"
         }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "estree",
-          "group": "@types",
-          "version": "1.0.9",
-          "bom-ref": "openregister@1.0.0|eslint-scope@9.1.2|@types/estree@1.0.9",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40types/estree@1.0.9",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "1a174f832d5e978fc898fd395f4e54c38730dbf33ddc10949a712f599352b650b310a304e05924f98a680393a21cd426a12ec269f6fc5dadcfc9af26d50af37a"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:development",
-              "value": "true"
-            },
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/eslint-scope/node_modules/@types/estree"
-            }
-          ]
-        }
       ]
     },
     {
@@ -15779,44 +15604,6 @@
         }
       ],
       "components": [
-        {
-          "type": "library",
-          "name": "estree",
-          "group": "@types",
-          "version": "1.0.9",
-          "bom-ref": "openregister@1.0.0|eslint@10.11.0|@types/estree@1.0.9",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40types/estree@1.0.9",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "1a174f832d5e978fc898fd395f4e54c38730dbf33ddc10949a712f599352b650b310a304e05924f98a680393a21cd426a12ec269f6fc5dadcfc9af26d50af37a"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:development",
-              "value": "true"
-            },
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/eslint/node_modules/@types/estree"
-            }
-          ]
-        },
         {
           "type": "library",
           "name": "ajv",
@@ -16530,8 +16317,8 @@
     {
       "type": "library",
       "name": "fast-xml-parser",
-      "version": "5.10.1",
-      "bom-ref": "openregister@1.0.0|fast-xml-parser@5.10.1",
+      "version": "5.12.0",
+      "bom-ref": "openregister@1.0.0|fast-xml-parser@5.12.0",
       "licenses": [
         {
           "license": {
@@ -16539,15 +16326,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/fast-xml-parser@5.10.1",
+      "purl": "pkg:npm/fast-xml-parser@5.12.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/fast-xml-parser/-/fast-xml-parser-5.10.1.tgz",
+          "url": "https://registry.npmjs.org/fast-xml-parser/-/fast-xml-parser-5.12.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "2043087fbdbdf245ee652445a067cc62b97b8acf0ba5abce0e06cdcf573022e76fecac15167b94f94b0ca68adfaba3c3e9a5d295ac19940462037532c024df33"
+              "content": "fe95f1441b70c58f70f33ed86e0b2f20f3dc3ef143b136c8916c134098733493e8923f936cde9fb6672fe23fe91100ef3823672860f3ba4e41a36a288083a216"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -17750,42 +17537,6 @@
           "name": "cdx:npm:package:path",
           "value": "node_modules/hast-util-to-jsx-runtime"
         }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "estree",
-          "group": "@types",
-          "version": "1.0.9",
-          "bom-ref": "openregister@1.0.0|hast-util-to-jsx-runtime@2.3.6|@types/estree@1.0.9",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40types/estree@1.0.9",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "1a174f832d5e978fc898fd395f4e54c38730dbf33ddc10949a712f599352b650b310a304e05924f98a680393a21cd426a12ec269f6fc5dadcfc9af26d50af37a"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/hast-util-to-jsx-runtime/node_modules/@types/estree"
-            }
-          ]
-        }
       ]
     },
     {
@@ -18952,8 +18703,8 @@
     {
       "type": "library",
       "name": "is-unsafe",
-      "version": "2.0.0",
-      "bom-ref": "openregister@1.0.0|is-unsafe@2.0.0",
+      "version": "2.0.3",
+      "bom-ref": "openregister@1.0.0|is-unsafe@2.0.3",
       "licenses": [
         {
           "license": {
@@ -18961,15 +18712,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/is-unsafe@2.0.0",
+      "purl": "pkg:npm/is-unsafe@2.0.3",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/is-unsafe/-/is-unsafe-2.0.0.tgz",
+          "url": "https://registry.npmjs.org/is-unsafe/-/is-unsafe-2.0.3.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "d8b755f36d91fb0988f3aba75c0f775821692fa83e6aff329d69349eb1f226a1a8a79568a1c62c48b16037c8eb7da953ea219e2cd338297b954ac50b3f9de410"
+              "content": "6419657330823b6ebbbe07456fa4eade9bfe2e11da0a218c76bf99b2e2fe3a8a6bb8083b4bedd90ecd6f0f444f0b4b92ae48f36eb6b16868ed5f5601c633de15"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -18979,39 +18730,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/is-unsafe"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "is-what",
-      "version": "5.5.0",
-      "bom-ref": "openregister@1.0.0|is-what@5.5.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/is-what@5.5.0",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/is-what/-/is-what-5.5.0.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "a06edc81b9a0e642d869ed8de4855dde39b6b3ebe5763c49ccad6972ef4b7e91ae43ddcc412ce8d2892f4676beef2e627eb0fedb4144f05be3bacc866b3d787f"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/is-what"
         }
       ]
     },
@@ -21409,39 +21127,6 @@
     },
     {
       "type": "library",
-      "name": "mitt",
-      "version": "3.0.1",
-      "bom-ref": "openregister@1.0.0|mitt@3.0.1",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/mitt@3.0.1",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/mitt/-/mitt-3.0.1.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "bca8af0137ebf7b976fd00426009176036eb2163ccd8820a125ed83e18c2bca946de4136826fae068ea71172b7339fc57e1fc52e9284c73390dc926824614a07"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/mitt"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "mlly",
       "version": "1.8.2",
       "bom-ref": "openregister@1.0.0|mlly@1.8.2",
@@ -22453,8 +22138,8 @@
     {
       "type": "library",
       "name": "perfect-debounce",
-      "version": "1.0.0",
-      "bom-ref": "openregister@1.0.0|perfect-debounce@1.0.0",
+      "version": "2.1.0",
+      "bom-ref": "openregister@1.0.0|perfect-debounce@2.1.0",
       "licenses": [
         {
           "license": {
@@ -22462,15 +22147,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/perfect-debounce@1.0.0",
+      "purl": "pkg:npm/perfect-debounce@2.1.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/perfect-debounce/-/perfect-debounce-1.0.0.tgz",
+          "url": "https://registry.npmjs.org/perfect-debounce/-/perfect-debounce-2.1.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "c42cbd574e7918b12aa05687a02d52a0b21a2e659cb60094681696c4367bfd9c78093c97edc2502c93a893fa2b7e364087d9046298c96b877429c26609b72d64"
+              "content": "2e381d4f2b5515779482d1d9afd59856261233f83c3247133d80e53daddc0ea322ac78ca89264f61de83a0bee92bc00942bfae5a442f0a31cd76232ab2b26cfa"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -22556,8 +22241,8 @@
     {
       "type": "library",
       "name": "pinia",
-      "version": "3.0.4",
-      "bom-ref": "openregister@1.0.0|pinia@3.0.4",
+      "version": "4.1.0",
+      "bom-ref": "openregister@1.0.0|pinia@4.1.0",
       "licenses": [
         {
           "license": {
@@ -22565,15 +22250,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/pinia@3.0.4",
+      "purl": "pkg:npm/pinia@4.1.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/pinia/-/pinia-3.0.4.tgz",
+          "url": "https://registry.npmjs.org/pinia/-/pinia-4.1.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "97ba6a2d415323ff844979fa9379eedf4648cd6e44d96645fcb687244a68aba12570b0fec1db99a01da404dd7d76ee8aff8143a4f31acd8db026bf889dd06d43"
+              "content": "fb9fc732e5636107ca9420f9c50ef37d79f5c54cd81446bba5dd0340ae5268c7d909a1514c795a1ff734d8dd45a0639d9734a2c1fe4438f809c7fff5403c3a83"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -23902,39 +23587,6 @@
     },
     {
       "type": "library",
-      "name": "rfdc",
-      "version": "1.4.1",
-      "bom-ref": "openregister@1.0.0|rfdc@1.4.1",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/rfdc@1.4.1",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/rfdc/-/rfdc-1.4.1.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "ab56f737942445459497b8b2ca569a8f790ea484f43768bd32a2044173fbdc656c37d730ddf771f17eb77049968491a2d8f3c2176dc88e9ee4b66777f6b6b020"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/rfdc"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "rollup",
       "version": "4.62.4",
       "bom-ref": "openregister@1.0.0|rollup@4.62.4",
@@ -23967,46 +23619,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/rollup"
-        }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "estree",
-          "group": "@types",
-          "version": "1.0.9",
-          "bom-ref": "openregister@1.0.0|rollup@4.62.4|@types/estree@1.0.9",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40types/estree@1.0.9",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "1a174f832d5e978fc898fd395f4e54c38730dbf33ddc10949a712f599352b650b310a304e05924f98a680393a21cd426a12ec269f6fc5dadcfc9af26d50af37a"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:development",
-              "value": "true"
-            },
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/rollup/node_modules/@types/estree"
-            }
-          ]
         }
       ]
     },
@@ -24434,39 +24046,6 @@
     },
     {
       "type": "library",
-      "name": "speakingurl",
-      "version": "14.0.1",
-      "bom-ref": "openregister@1.0.0|speakingurl@14.0.1",
-      "licenses": [
-        {
-          "license": {
-            "id": "BSD-3-Clause"
-          }
-        }
-      ],
-      "purl": "pkg:npm/speakingurl@14.0.1",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/speakingurl/-/speakingurl-14.0.1.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "d4f398bfbbafda05e8c861690429a90d548d57be087ec5a50d6db5e943e36d6b9f35ff9b494e8675b0ecc5d731b5fc1be31948df2c73393282954a2cc40458ad"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/speakingurl"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "splitpanes",
       "version": "4.1.2",
       "bom-ref": "openregister@1.0.0|splitpanes@4.1.2",
@@ -24641,8 +24220,8 @@
     {
       "type": "library",
       "name": "strnum",
-      "version": "2.4.2",
-      "bom-ref": "openregister@1.0.0|strnum@2.4.2",
+      "version": "2.5.1",
+      "bom-ref": "openregister@1.0.0|strnum@2.5.1",
       "licenses": [
         {
           "license": {
@@ -24650,15 +24229,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/strnum@2.4.2",
+      "purl": "pkg:npm/strnum@2.5.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/strnum/-/strnum-2.4.2.tgz",
+          "url": "https://registry.npmjs.org/strnum/-/strnum-2.5.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "ac31b7021e13574935856bcb4b3919b4c98b37df9e4be877927ab830fe80e36637621e6a18d9ce52cd63264a12afc146e5db0bdbc73b2a0908073484ca4aadbb"
+              "content": "50ce274cb5b34220c1b1e571506c4dd30273224d1453cf508bba4a5f3f6a212a3e961be2262913ba2901b0afe8151969bd81ef49dcf44d5a0bc90fac129630c4"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -25733,39 +25312,6 @@
               "value": "node_modules/stylelint/node_modules/ansi-regex"
             }
           ]
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "superjson",
-      "version": "2.2.6",
-      "bom-ref": "openregister@1.0.0|superjson@2.2.6",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/superjson@2.2.6",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/superjson/-/superjson-2.2.6.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "1feb9ef19a38bc9995da7463a71f3a3f7e65cf00d3de722d9c8b28720ba682bd211cc43e646ab9beb11183d909068e405869b16438730e8f9654826a901d1c18"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/superjson"
         }
       ]
     },
@@ -27401,39 +26947,6 @@
     },
     {
       "type": "library",
-      "name": "vue-draggable-plus",
-      "version": "0.6.1",
-      "bom-ref": "openregister@1.0.0|vue-draggable-plus@0.6.1",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/vue-draggable-plus@0.6.1",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/vue-draggable-plus/-/vue-draggable-plus-0.6.1.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "15bb50fdfba88b188e7d36731b7ca83e5e09028f47257447981419141f71d8d60287aa6ad13a261dfee0e4c526a5a0d8bfe2d4da7e813ead9837db013be15b22"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/vue-draggable-plus"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "vue-eslint-parser",
       "version": "10.4.1",
       "bom-ref": "openregister@1.0.0|vue-eslint-parser@10.4.1",
@@ -27505,39 +27018,6 @@
               "value": "node_modules/vue-eslint-parser/node_modules/semver"
             }
           ]
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "vue-loading-overlay",
-      "version": "6.0.6",
-      "bom-ref": "openregister@1.0.0|vue-loading-overlay@6.0.6",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/vue-loading-overlay@6.0.6",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/vue-loading-overlay/-/vue-loading-overlay-6.0.6.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "64fad66b08c2a0d2866c21bdcf89de3e06ecfcaf4a5cf6b58f5a002573fa4fc150868dcd3befdc8618f1e0c2d81737e9c2bfb192243c48dad5d64506d5b64f03"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/vue-loading-overlay"
         }
       ]
     },
@@ -27642,40 +27122,6 @@
       "components": [
         {
           "type": "library",
-          "name": "devtools-api",
-          "group": "@vue",
-          "version": "8.2.1",
-          "bom-ref": "openregister@1.0.0|vue-router@5.3.1|@vue/devtools-api@8.2.1",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vue/devtools-api@8.2.1",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vue/devtools-api/-/devtools-api-8.2.1.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "eaee2f5c19480400b5c0ca65219829c8f9fbba1fece017fa1796cccef2eff84749d1a1ecffee01ed882ff3ae044ad4128d16ec4734e4a3f9141b503521e8d0dc"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/vue-router/node_modules/@vue/devtools-api"
-            }
-          ]
-        },
-        {
-          "type": "library",
           "name": "magic-string",
           "version": "0.30.21",
           "bom-ref": "openregister@1.0.0|vue-router@5.3.1|magic-string@0.30.21",
@@ -27737,107 +27183,6 @@
             {
               "name": "cdx:npm:package:path",
               "value": "node_modules/vue-router/node_modules/picomatch"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "devtools-kit",
-          "group": "@vue",
-          "version": "8.2.1",
-          "bom-ref": "openregister@1.0.0|vue-router@5.3.1|@vue/devtools-kit@8.2.1",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vue/devtools-kit@8.2.1",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vue/devtools-kit/-/devtools-kit-8.2.1.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "148188baadc0591784a5b00763f71119e1c37c8d2a39bf0e090dd88db1005f4e2e6b12036c673dae191b55c1bbae77c73d713746c5392ab58ebbd57fa2477c01"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/vue-router/node_modules/@vue/devtools-kit"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "devtools-shared",
-          "group": "@vue",
-          "version": "8.2.1",
-          "bom-ref": "openregister@1.0.0|vue-router@5.3.1|@vue/devtools-shared@8.2.1",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40vue/devtools-shared@8.2.1",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@vue/devtools-shared/-/devtools-shared-8.2.1.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "16469cee551d1917a1ea954e8b70183d119ef362d0a919807d3856ed14658a03803f4640fd9d73f572c70ccf5dbf7e295761d173bf432bcb8a3de1b67cb9c0fe"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/vue-router/node_modules/@vue/devtools-shared"
-            }
-          ]
-        },
-        {
-          "type": "library",
-          "name": "perfect-debounce",
-          "version": "2.1.0",
-          "bom-ref": "openregister@1.0.0|vue-router@5.3.1|perfect-debounce@2.1.0",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/perfect-debounce@2.1.0",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/perfect-debounce/-/perfect-debounce-2.1.0.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "2e381d4f2b5515779482d1d9afd59856261233f83c3247133d80e53daddc0ea322ac78ca89264f61de83a0bee92bc00942bfae5a442f0a31cd76232ab2b26cfa"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/vue-router/node_modules/perfect-debounce"
             }
           ]
         }
@@ -28286,44 +27631,6 @@
         }
       ],
       "components": [
-        {
-          "type": "library",
-          "name": "estree",
-          "group": "@types",
-          "version": "1.0.9",
-          "bom-ref": "openregister@1.0.0|webpack@5.109.2|@types/estree@1.0.9",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40types/estree@1.0.9",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "1a174f832d5e978fc898fd395f4e54c38730dbf33ddc10949a712f599352b650b310a304e05924f98a680393a21cd426a12ec269f6fc5dadcfc9af26d50af37a"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:development",
-              "value": "true"
-            },
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/webpack/node_modules/@types/estree"
-            }
-          ]
-        },
         {
           "type": "library",
           "name": "eslint-scope",
@@ -28791,13 +28098,13 @@
       "dependsOn": [
         "open-telemetry/context-1.5.0.0",
         "psr/log-3.0.2.0",
-        "symfony/polyfill-php82-1.38.1.0"
+        "symfony/polyfill-php82-1.43.0.0"
       ]
     },
     {
       "ref": "open-telemetry/context-1.5.0.0",
       "dependsOn": [
-        "symfony/polyfill-php82-1.38.1.0"
+        "symfony/polyfill-php82-1.43.0.0"
       ]
     },
     {
@@ -28825,10 +28132,7 @@
       ]
     },
     {
-      "ref": "paragonie/constant_time_encoding-3.1.3.0"
-    },
-    {
-      "ref": "paragonie/random_compat-9.99.100.0"
+      "ref": "paragonie/constant_time_encoding-3.1.4.0"
     },
     {
       "ref": "php-di/invoker-2.3.7.0",
@@ -28873,10 +28177,10 @@
       "ref": "phpoffice/wmf-0.2.1.0"
     },
     {
-      "ref": "phpseclib/phpseclib-3.0.58.0",
+      "ref": "phpseclib/phpseclib-4.0.3.0",
       "dependsOn": [
-        "paragonie/constant_time_encoding-3.1.3.0",
-        "paragonie/random_compat-9.99.100.0"
+        "paragonie/constant_time_encoding-3.1.4.0",
+        "symfony/polyfill-php82-1.43.0.0"
       ]
     },
     {
@@ -28953,7 +28257,7 @@
       "ref": "symfony/polyfill-php80-1.43.0.0"
     },
     {
-      "ref": "symfony/polyfill-php82-1.38.1.0"
+      "ref": "symfony/polyfill-php82-1.43.0.0"
     },
     {
       "ref": "symfony/polyfill-php83-1.43.0.0"
@@ -29055,7 +28359,7 @@
       ]
     },
     {
-      "ref": "conductionnl/openregister-dev-main",
+      "ref": "conductionnl/openregister-1.0.0.0",
       "dependsOn": [
         "adbario/php-dot-notation-3.5.0.0",
         "ddn/sapp-dev-feat/chained-filter-text-replace",
@@ -29066,7 +28370,7 @@
         "minishlink/web-push-11.0.0.0",
         "opis/json-schema-2.6.1.0",
         "phpoffice/phpspreadsheet-5.11.0.0",
-        "phpseclib/phpseclib-3.0.58.0",
+        "phpseclib/phpseclib-4.0.3.0",
         "react/async-4.3.0.0",
         "react/event-loop-1.6.0.0",
         "react/promise-3.3.0.0",

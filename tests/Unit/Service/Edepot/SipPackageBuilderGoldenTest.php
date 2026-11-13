@@ -38,6 +38,17 @@ use OCA\OpenRegister\Service\Edepot\TransferPackageRequest;
  * of packaging (PREMIS event time, Bagging-Date) is not pinned literally.
  *
  * @covers \OCA\OpenRegister\Service\Edepot\SipPackageBuilder
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\BagitPayload
+ * @uses \OCA\OpenRegister\Service\Edepot\PremisIdentifier
+ * @uses \OCA\OpenRegister\Service\Edepot\SipArchiveWriter
+ * @uses \OCA\OpenRegister\Service\Edepot\SipContents
+ * @uses \OCA\OpenRegister\Service\Edepot\SipLayout
+ * @uses \OCA\OpenRegister\Service\Edepot\SipMetsDocument
+ * @uses \OCA\OpenRegister\Service\Edepot\SipPackageRun
+ * @uses \OCA\OpenRegister\Service\Edepot\SipPart
+ * @uses \OCA\OpenRegister\Service\Edepot\SipPremisDocument
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferPackageRequest
  */
 class SipPackageBuilderGoldenTest extends TestCase {
 

@@ -48,7 +48,10 @@ class SystemOperationContextBoundaryTest extends TestCase {
 	 *
 	 * Each entry is here because the work genuinely has no user to act for:
 	 * a repair step seeding a shipped register, an app's own config import at
-	 * boot or under webcron, and seeding of shipped seed-data objects. Adding
+	 * boot or under webcron, seeding of shipped seed-data objects, and the
+	 * uniqueness check of ValidateObject, which only counts matching objects
+	 * (so a read or reveal rule cannot hide a duplicate) and returns no object
+	 * data. Adding
 	 * an entry means asserting the same of the new caller.
 	 *
 	 * @var string[]
@@ -59,6 +62,7 @@ class SystemOperationContextBoundaryTest extends TestCase {
 		'lib/Service/Configuration/ImportHandler.php',
 		'lib/Repair/SeedVocabularyRegister.php',
 		'lib/Service/ExampleSet/ExampleSetStore.php',
+		'lib/Service/Object/ValidateObject.php',
 	];
 
 	/**

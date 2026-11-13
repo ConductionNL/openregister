@@ -14,6 +14,9 @@ import type { APIRequestContext } from '@playwright/test'
  * @e2e configuration-deployment::a-broken-weekend-is-undone-in-one-act
  * @e2e configuration-deployment::a-partial-deployment-does-not-happen
  * @e2e configuration-deployment::why-does-this-instance-behave-like-this
+ * @e2e configuration-deployment::two-hundred-case-types-stay-in-step
+ * @e2e configuration-deployment::an-exception-is-visible-as-an-exception
+ * @e2e configuration-deployment::a-copied-matrix-is-reviewed-before-it-is-live
  *
  * WHAT THIS FILE CAN PROVE, AND WHAT IT DELIBERATELY DOES NOT.
  *
@@ -377,5 +380,174 @@ test.describe('configuration as a deployment over HTTP', () => {
 		expect(String((await keyless.json()).message ?? '')).toContain(
 			'key is required',
 		)
+	})
+})
+
+/*
+ * BUNDLES, EXCEPTIONS AND THE MATRIX COPY.
+ *
+ * Same safety rule as above, one layer lower: every address hangs off a bundle,
+ * a subject or a role named for this run, under the open `notification.` and
+ * `permission.` prefixes.
+ *
+ * WHAT IT LEAVES BEHIND. Bundle-layer and subject-layer configuration values
+ * under this run's references, and the deployments that published them. The
+ * bindings are removed by the last test. Nothing aggregates onto anything a
+ * person reads.
+ */
+test.describe('configuration bundles over HTTP', () => {
+	test.describe.configure({ mode: 'serial' })
+
+	let admin: APIRequestContext
+
+	const BUNDLES = `${API}/configuration/bundles`
+
+	const BUNDLE = `e2e-bundle-${RUN}`
+	const FOLLOWER = `e2e-follower-${RUN}`
+	const EXCEPTION = `e2e-exception-${RUN}`
+	const ROLE_FROM = `e2e-role-from-${RUN}`
+	const ROLE_TO = `e2e-role-to-${RUN}`
+	const RULE = 'notification.assigned'
+
+	/** Draft one value at any address and deploy it in one act. */
+	async function publish(
+		name: string,
+		layer: string,
+		layerRef: string,
+		key: string,
+		value: Record<string, unknown>,
+	): Promise<void> {
+		const opened = await admin.post(SETS, { data: { name, description: 'e2e bundles' } })
+		expect(opened.status(), `opening a set failed: ${await opened.text()}`).toBe(201)
+		const setUuid = String((await opened.json()).uuid)
+
+		const drafted = await admin.post(`${SETS}/${setUuid}/values`, {
+			data: { layer, layerRef, key, value },
+		})
+		expect(drafted.status(), `drafting failed: ${await drafted.text()}`).toBe(201)
+
+		const deployed = await admin.post(`${SETS}/${setUuid}/deploy`, { data: { name } })
+		expect(deployed.status(), `deploy failed: ${await deployed.text()}`).toBe(201)
+	}
+
+	/** What the explainer answers for one subject, resolving its bundle itself. */
+	async function forSubject(subject: string, key = RULE): Promise<Record<string, unknown>> {
+		const res = await admin.get(`${EFFECTIVE}?key=${key}&subject=${subject}`)
+		expect(res.ok(), `the explainer failed: ${await res.text()}`).toBeTruthy()
+
+		return (await res.json()) as Record<string, unknown>
+	}
+
+	test.beforeAll(async () => {
+		admin = await contextFor(ADMIN, ADMIN_PASS)
+
+		const reach = await admin.get(BUNDLES)
+		expect(
+			reach.status(),
+			`the administrator account cannot reach the bundle surface (${reach.status()})`,
+		).toBeLessThan(400)
+	})
+
+	test('two hundred case types stay in step', async () => {
+		await publish(`e2e bundle rule ${RUN}`, 'bundle', BUNDLE, RULE, { channel: 'mail' })
+
+		for (const subject of [FOLLOWER, EXCEPTION]) {
+			const bound = await admin.post(`${BUNDLES}/${BUNDLE}/bindings`, { data: { subject } })
+			expect(bound.status(), `binding failed: ${await bound.text()}`).toBe(201)
+		}
+
+		/* THE WHOLE POINT. Neither subject holds a copy of the rule, and the
+		 * caller names only the subject: the bundle is resolved from the
+		 * binding. Change the one bundle row and both change with it. */
+		for (const subject of [FOLLOWER, EXCEPTION]) {
+			const answer = await forSubject(subject)
+			expect(answer.found, `${subject} does not see its bundle`).toBe(true)
+			expect((answer.value as Record<string, unknown>).channel).toBe('mail')
+			expect(answer.layer, `${subject} reads the rule from the wrong layer`).toBe('bundle')
+			expect(answer.layerRef).toBe(BUNDLE)
+		}
+
+		/* And changing the bundle moves both, which a copy could never do. */
+		await publish(`e2e bundle rule changed ${RUN}`, 'bundle', BUNDLE, RULE, { channel: 'push' })
+
+		for (const subject of [FOLLOWER, EXCEPTION]) {
+			expect(((await forSubject(subject)).value as Record<string, unknown>).channel).toBe('push')
+		}
+	})
+
+	test('an exception is visible as an exception', async () => {
+		await publish(`e2e subject override ${RUN}`, 'subject', EXCEPTION, RULE, { channel: 'none' })
+
+		/* The override wins for the subject that made it, and only for it. */
+		const overridden = await forSubject(EXCEPTION)
+		expect((overridden.value as Record<string, unknown>).channel).toBe('none')
+		expect(overridden.layer).toBe('subject')
+		expect(((await forSubject(FOLLOWER)).value as Record<string, unknown>).channel).toBe('push')
+
+		/* And the bundle's own listing names it, rather than showing two
+		 * subjects that look equally compliant. */
+		const shown = (await (await admin.get(`${BUNDLES}/${BUNDLE}`)).json()) as Record<string, unknown>
+		const bindings = shown.bindings as Array<Record<string, unknown>>
+		const exception = bindings.find((row) => row.subject === EXCEPTION)
+		const follower = bindings.find((row) => row.subject === FOLLOWER)
+
+		expect(exception?.overriding, 'an override is not listed as an exception').toBe(true)
+		expect(exception?.overrides).toContain(RULE)
+		expect(follower?.overriding, 'a compliant subject is listed as overriding').toBe(false)
+	})
+
+	test('a copied matrix is reviewed before it is live', async () => {
+		await publish(`e2e matrix read ${RUN}`, 'subject', ROLE_FROM, 'permission.read', { allowed: true })
+		await publish(`e2e matrix write ${RUN}`, 'subject', ROLE_FROM, 'permission.write', { allowed: true })
+
+		const opened = await admin.post(SETS, { data: { name: `e2e matrix copy ${RUN}` } })
+		const setUuid = String((await opened.json()).uuid)
+
+		const copied = await admin.post(`${SETS}/${setUuid}/copy`, {
+			data: { prefix: 'permission.', from: ROLE_FROM, to: ROLE_TO },
+		})
+		expect(copied.status(), `the copy failed: ${await copied.text()}`).toBe(201)
+
+		const body = (await copied.json()) as Record<string, unknown>
+		expect(body.total, 'the copy did not take the whole matrix').toBe(2)
+
+		/* THE WHOLE POINT of D-6. The copy exists as a draft and the target's
+		 * live matrix has not moved. */
+		const live = await forSubject(ROLE_TO, 'permission.read')
+		expect(live.found, 'a copied matrix went live without review').toBe(false)
+
+		const set = (await (await admin.get(`${SETS}/${setUuid}`)).json()) as Record<string, unknown>
+		expect(set.drafts as Array<unknown>, 'the copy left no drafts to review').toHaveLength(2)
+
+		/* A copy onto itself, and a prefix that is not one, refuse by name. */
+		const itself = await admin.post(`${SETS}/${setUuid}/copy`, {
+			data: { prefix: 'permission.', from: ROLE_FROM, to: ROLE_FROM },
+		})
+		expect(itself.status()).toBe(400)
+
+		const loose = await admin.post(`${SETS}/${setUuid}/copy`, {
+			data: { prefix: 'permission', from: ROLE_FROM, to: ROLE_TO },
+		})
+		expect(loose.status(), 'a prefix without a dot was accepted').toBe(400)
+	})
+
+	test('a subject follows one bundle, and unbinding says so', async () => {
+		const twice = await admin.post(`${API}/configuration/bundles/e2e-other-${RUN}/bindings`, {
+			data: { subject: FOLLOWER },
+		})
+		expect(twice.status(), 'a subject was rebound to a second bundle').toBe(409)
+		expect(String((await twice.json()).message ?? '')).toContain(BUNDLE)
+
+		for (const subject of [FOLLOWER, EXCEPTION]) {
+			const gone = await admin.delete(`${BUNDLES}/${BUNDLE}/bindings/${subject}`)
+			expect(gone.ok(), `unbinding failed: ${await gone.text()}`).toBeTruthy()
+		}
+
+		const again = await admin.delete(`${BUNDLES}/${BUNDLE}/bindings/${FOLLOWER}`)
+		expect(again.status(), 'unbinding something unbound reported success').toBe(404)
+
+		/* Unbinding is not a delete: the subject keeps the value it set. */
+		const kept = await forSubject(EXCEPTION)
+		expect((kept.value as Record<string, unknown>).channel).toBe('none')
 	})
 })

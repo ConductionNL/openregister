@@ -80,6 +80,45 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses   \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
+ * @uses   \OCA\OpenRegister\Service\Object\DraftCaller
+ * @uses   \OCA\OpenRegister\Service\Object\DraftSubject
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses   \OCA\OpenRegister\Service\Object\SafeguardBatchRun
+ * @uses   \OCA\OpenRegister\Service\Object\SafeguardRejection
+ * @uses   \OCA\OpenRegister\Service\Rbac\MaskedWrite
+ * @uses   \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
+ * @uses   \OCA\OpenRegister\Service\Rbac\UndeclaredPropertyConditions
+ * @uses   \OCA\OpenRegister\Db\EmptyJsonHydration
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\BulkCreateCheck
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses   \OCA\OpenRegister\Service\Object\RelationDetectionTrait
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\BulkSlugCaller
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkChunkRun
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk
  */
 class SaveObjectsOrganisationBoundaryTest extends TestCase {
 

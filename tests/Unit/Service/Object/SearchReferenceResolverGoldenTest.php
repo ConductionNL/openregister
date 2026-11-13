@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
  * @uses   \OCA\OpenRegister\Exception\RegisterNotFoundException
  * @uses   \OCA\OpenRegister\Exception\SchemaNotFoundException
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
  */
 final class SearchReferenceResolverGoldenTest extends TestCase {
 	/**

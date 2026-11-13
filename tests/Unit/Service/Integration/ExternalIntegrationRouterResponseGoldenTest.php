@@ -39,6 +39,15 @@ use Psr\Log\AbstractLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Exception\ProviderUnavailableException
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses   \OCA\OpenRegister\Service\Integration\ConnectorResponseReader
+ * @uses   \OCA\OpenRegister\Service\Integration\UpstreamCallRun
+ * @uses   \OCA\OpenRegister\Service\Integration\UpstreamRequest
+ * @uses   \OCA\OpenRegister\Support\FleetAppId
+ * @uses   \OCA\OpenRegister\Support\FleetApp\FleetAppCatalogue
+ * @uses   \OCA\OpenRegister\Support\FleetApp\FleetAppProbe
  */
 final class ExternalIntegrationRouterResponseGoldenTest extends TestCase {
 

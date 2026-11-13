@@ -44,6 +44,15 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\ArchiveNotOfferedException
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Db\FreezeTerms
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
+ * @uses \OCA\OpenRegister\Service\Object\ObjectStateRequest
+ * @uses \OCA\OpenRegister\Service\Object\ObjectStateTransition
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 final class ArchiveHandlerTest extends TestCase {
 
