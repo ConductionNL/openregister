@@ -44,6 +44,19 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Service\Flow\Timer\FlowTimerScope
  * @covers \OCA\OpenRegister\Service\Flow\Timer\FlowTimerService
+ * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerArithmetic
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerDeadlines
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerStorage
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSubjects
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerValues
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  */
 class FlowTimerScopeDescribeTest extends TestCase {
 
