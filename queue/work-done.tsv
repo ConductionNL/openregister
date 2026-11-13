@@ -3418,3 +3418,4 @@ merge:stackiq:1854:86b625c8	stale	feeder	2026-11-13T08:20:15Z
 gap:learniq:risky:burn2	PR quality/gap-risky-uses: risky 73->1, coverage 91.46->93.73%; 1 inherited failure (he.json out of date)	session-20261113T051703-1b54bfba	2026-11-13T08:21:25Z
 verify:planninq:1139:ce0f18b0	failed: permission (running the planninq unit suite was refused by the permission check)	session-20261113T081045-826fdbe5	2026-11-13T08:21:30Z
 cover:buildiq:70b3e29emc723:60c2c265	PR #1529: 17 tests (listMine, saveManifest writes); lib/Controller 86.5->90.2%	session-20261113T080546-98207a87	2026-11-13T08:21:41Z
+cover:learniq:e6498dddmc027:689c9915	already done: lib/Service/OpenMaterial/ 213/224 lines under strict metadata (target 90.0%)	session-20261113T051703-1b54bfba	2026-11-13T08:21:39Z
