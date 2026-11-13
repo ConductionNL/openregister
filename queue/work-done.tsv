@@ -2884,3 +2884,4 @@ cover:buildiq:9930949bmc723:bede5e5d	already done: Automation+Credential at 92.4
 cover:stackiq:df113dffm5ac4:68d2b5ba	PR stackiq#1846: 3 tests, Cmdb+Settings 2746->2756/2816 lines; rest defensive/unreachable; 3129 tests passing	session-20261113T051703-1b54bfba	2026-11-13T06:37:22Z
 cover:buildiq:9930949bmc723:60c2c265	already done: lib/Controller/*.php at 86.49% (2914/3369, pcov on development), above 85 target; biggest remaining gaps ApplicationsController (240 lines), ExportsController (72); no PR	session-20261113T054519-189b2666	2026-11-13T06:37:38Z
 verify:shillinq:2887:f9ea0900	2887/2888/2889 GREEN (tests-only; 9289 run, 0 new failures)	session-20261113T054516-5d7b6bc4	2026-11-13T06:37:46Z
+cover:buildiq:9930949bmc723:d33a91b0	already done: Service/Copilot at 98.68% (149/151) under phpunit.xml on development f1c5b5564; low figure is the unit-bootstrap gap fixed by PR #1513; no PR	session-20261113T054517-06ee2c47	2026-11-13T06:37:59Z
