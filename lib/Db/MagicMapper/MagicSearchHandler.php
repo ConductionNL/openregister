@@ -264,6 +264,13 @@ class MagicSearchHandler {
 	private array $ignoredFilters = [];
 
 	/**
+	 * Whether the current count reads past an active organisation context (see countOrganisationless()).
+	 *
+	 * @var bool
+	 */
+	private bool $outsideOrganisationContext = false;
+
+	/**
 	 * The pg_trgm probe, built on first use.
 	 *
 	 * @var MagicPgTrgmProbe|null
@@ -482,6 +489,45 @@ class MagicSearchHandler {
 	}//end searchTable()
 
 	/**
+	 * Count the rows with no organisation that match a query, ignoring RBAC and any active organisation context.
+	 *
+	 * Org-less rows belong to no tenant, so reading past the context here
+	 * reaches no other organisation's rows. The organisation filter is forced
+	 * to IS NULL whatever the query says.
+	 *
+	 * @param array       $query       The filters.
+	 * @param TableSearch $tableSearch The table to count in.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/specs/object-validation/spec.md
+	 */
+	public function countOrganisationless(array $query, TableSearch $tableSearch): int {
+		$query['@self']         = array_merge((array) ($query['@self'] ?? []), ['organisation' => 'IS NULL']);
+		$query['_rbac']         = false;
+		$query['_multitenancy'] = false;
+		$query['_count']        = true;
+
+		$this->outsideOrganisationContext = true;
+		try {
+			return (int) $this->searchTable(query: $query, tableSearch: $tableSearch);
+		} finally {
+			$this->outsideOrganisationContext = false;
+		}
+	}//end countOrganisationless()
+
+	/**
+	 * Whether an active organisation context bounds this read.
+	 *
+	 * @return bool True inside an organisation context, unless countOrganisationless() is running.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
+	 */
+	private function organisationContextBounds(): bool {
+		return $this->outsideOrganisationContext === false && OrganisationContext::isActive() === true;
+	}//end organisationContextBounds()
+
+	/**
 	 * Apply the SAME multitenancy + RBAC access-control filters used by the
 	 * list/search path to an arbitrary query builder.
 	 *
@@ -553,6 +599,7 @@ class MagicSearchHandler {
 		$schema = $table->schema;
 		// A filter or sort on a value that is only shown masked would read it without the reveal.
 		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
+		$this->refuseUnreadablePropertyQuery(query: $query, schema: $schema);
 
 		// Extract options from query (prefixed with _).
 		$_rbac = $query['_rbac'] ?? true;
@@ -919,6 +966,29 @@ class MagicSearchHandler {
 	}//end applyLensAndSearchFilters()
 
 	/**
+	 * Refuse a filter or sort on a property the caller may not read; reserved keys are not filters.
+	 *
+	 * @param array<mixed> $query  The search query.
+	 * @param Schema       $schema The schema being searched.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\ExplicitRevealQueryException When the query filters or sorts on such a property.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function refuseUnreadablePropertyQuery(array $query, Schema $schema): void {
+		$this->relatedRows->refuseUnreadableFilterOrSort(
+			query: array_filter(
+				$query,
+				fn ($key): bool => str_starts_with((string)$key, '_') === true || $this->isObjectFieldFilterKey(key: (string)$key) === true,
+				ARRAY_FILTER_USE_KEY
+			),
+			schema: $schema
+		);
+	}//end refuseUnreadablePropertyQuery()
+
+	/**
 	 * Decide whether a query key is a genuine object-field filter.
 	 *
 	 * Excludes the `@self` metadata bag, every underscore-prefixed system
@@ -975,6 +1045,7 @@ class MagicSearchHandler {
 		$schema = $request->table->schema;
 		$this->refuseRelatedRowFilters(query: $query);
 		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
+		$this->refuseUnreadablePropertyQuery(query: $query, schema: $schema);
 
 		// Get connection for value quoting through QueryBuilder.
 		$qb = $this->db->getQueryBuilder();
@@ -1337,7 +1408,7 @@ class MagicSearchHandler {
 		bool $multitenancyExplicit,
 	): bool {
 		// Code acting for an organisation always reads inside it.
-		if (OrganisationContext::isActive() === true) {
+		if ($this->organisationContextBounds() === true) {
 			return true;
 		}
 
@@ -2791,7 +2862,7 @@ class MagicSearchHandler {
 		bool $multitenancyExplicit,
 		Schema $schema,
 	): bool {
-		if (OrganisationContext::isActive() === true) {
+		if ($this->organisationContextBounds() === true) {
 			return true;
 		}
 

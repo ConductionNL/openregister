@@ -35,6 +35,14 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * transfer-record persistence.
  *
  * @covers \OCA\OpenRegister\Service\Edepot\TransferRecordService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class TransferRecordServiceGoldenTest extends TestCase {
 

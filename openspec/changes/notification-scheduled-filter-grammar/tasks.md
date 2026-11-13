@@ -2,72 +2,72 @@
 
 ## 1. The grammar, defined once
 
-- [ ] 1.1 `lib/Service/Notification/ScheduledFilterGrammar.php` — the operator
+- [x] 1.1 `lib/Service/Notification/ScheduledFilterGrammar.php` — the operator
       table as constants: `OPERATORS` (`equals`, `notEquals`, `withinNext`,
       `olderThan`, `in`, `notIn`, `before`, `after`), `MEMBERSHIP_OPERATORS`,
       `DURATION_OPERATORS`, `INSTANT_OPERATORS`, `COMBINATORS` (`all`, `any`),
-      `MAX_DEPTH = 5`. `@license EUPL-1.2`, `@copyright 2026 Conduction B.V.`
-- [ ] 1.2 `lib/Service/Notification/ScheduledFilterParser.php` — raw `filter`
+      `MAX_DEPTH = 5`. `@license EUPL-1.2`, `@copyright 2026 Conduction B.V.` (verified: lib/Service/Notification/ScheduledFilterGrammar.php)
+- [x] 1.2 `lib/Service/Notification/ScheduledFilterParser.php` — raw `filter`
       array → normalised AST (leaf nodes `{field, operator, operand}` under
       `all`/`any` nodes) OR a list of structured errors in the existing
       `{code, ruleKey, field, value, message}` shape. Accepts the four entry
       forms; reserves `all`/`any` at the top level; enforces `MAX_DEPTH`.
-      Resolves nothing time-dependent — the AST holds the raw operand.
-- [ ] 1.3 Reference-instant resolution in the parser's operand validation and a
+      Resolves nothing time-dependent — the AST holds the raw operand. (verified: lib/Service/Notification/ScheduledFilterParser.php, tests/Unit/Service/Notification/ScheduledFilterParserTest.php)
+- [x] 1.3 Reference-instant resolution in the parser's operand validation and a
       `resolveInstant()` helper on the evaluator: `"now"`, an ISO-8601
       date/date-time, or a **signed** ISO-8601 duration (`P7D` = `now + 7d`,
       `-P7D` = `now - 7d`; strip the `-`, set `DateInterval::$invert`).
-      Unresolvable → parser error at save time, `null` → no match at scan time.
+      Unresolvable → parser error at save time, `null` → no match at scan time. (verified: lib/Service/Notification/ScheduledFilterParser.php, lib/Service/Notification/ScheduledFilterEvaluator.php, tests/Unit/Service/Notification/ScheduledFilterEvaluatorTest.php)
 
 ## 2. Evaluator
 
-- [ ] 2.1 `ScheduledFilterEvaluator::matches()` parses once via
+- [x] 2.1 `ScheduledFilterEvaluator::matches()` parses once via
       `ScheduledFilterParser` and walks the AST; `entryMatches()`
       (`ScheduledFilterEvaluator.php:113-170`) is replaced by an AST walker.
       A filter that fails to parse matches nothing and logs at warning level —
-      unlike a bad date, an unexecutable rule is not normal data.
-- [ ] 2.2 New leaf arms: `in`/`notIn` with strict comparison and non-empty
+      unlike a bad date, an unexecutable rule is not normal data. (verified: lib/Service/Notification/ScheduledFilterEvaluator.php, tests/Unit/Service/Notification/ScheduledFilterEvaluatorTest.php)
+- [x] 2.2 New leaf arms: `in`/`notIn` with strict comparison and non-empty
       intersection when the field value is itself a list; `before`/`after`
       against the resolved instant. `equals`, `notEquals`, `withinNext`,
       `olderThan` keep their current comparisons unchanged, including
-      `notEquals`'s missing/null rule (`:128-132`).
-- [ ] 2.3 Combinator arms: `all` = conjunction (empty list matches), `any` =
+      `notEquals`'s missing/null rule (`:128-132`). (verified: lib/Service/Notification/ScheduledFilterEvaluator.php, tests/Unit/Service/Notification/ScheduledFilterEvaluatorTest.php)
+- [x] 2.3 Combinator arms: `all` = conjunction (empty list matches), `any` =
       disjunction (empty list does NOT match), nested to `MAX_DEPTH`. Top-level
-      entries stay ANDed, including combinator entries alongside field entries.
+      entries stay ANDed, including combinator entries alongside field entries. (verified: lib/Service/Notification/ScheduledFilterEvaluator.php, tests/Unit/Service/Notification/ScheduledFilterEvaluatorTest.php)
 
 ## 3. Validator
 
-- [ ] 3.1 `NotificationAnnotationValidator::validateScheduledFilterEntry()`
+- [x] 3.1 `NotificationAnnotationValidator::validateScheduledFilterEntry()`
       (`:1018-1102`) delegates to `ScheduledFilterParser` and returns its
       errors. Delete the "Scalar shortcut: always accepted" branch (`:1019-1021`)
       — the accept-set becomes exactly the parser's, which is exactly the
-      evaluator's.
-- [ ] 3.2 The `op`-key diagnostic: an array carrying `op` but not `operator`
+      evaluator's. (verified: lib/Service/Notification/NotificationAnnotationValidator.php, tests/Unit/Service/Notification/NotificationAnnotationValidatorTest.php)
+- [x] 3.2 The `op`-key diagnostic: an array carrying `op` but not `operator`
       produces `notification-scheduled-bad-filter-operator-key` whose message
-      names `operator` as the expected key and quotes the offending spelling.
+      names `operator` as the expected key and quotes the offending spelling. (verified: lib/Service/Notification/ScheduledFilterParser.php, tests/Unit/Service/Notification/NotificationAnnotationValidatorTest.php)
 - [ ] 3.3 Update the class docblocks that enumerate the old four-operator
       grammar: `ScheduledFilterEvaluator.php:5-9` and `:39-55`,
       `NotificationAnnotationValidator.php:1004-1017`.
 
 ## 4. PERF-3 seam
 
-- [ ] 4.1 Update `ScheduledNotificationJob`'s deferred-work notes
+- [x] 4.1 Update `ScheduledNotificationJob`'s deferred-work notes
       (`lib/BackgroundJob/ScheduledNotificationJob.php:64-67` and the rotating
       -window warning at `:347`) to name the AST as the pushdown input and
       record the two constraints from design Decision 6 (instants resolved
       before compilation; partial pushdown must equal full in-memory
-      evaluation). No behaviour change in this task.
+      evaluation). No behaviour change in this task. (verified: lib/BackgroundJob/ScheduledNotificationJob.php (comment-only task))
 
 ## 5. Detection
 
-- [ ] 5.1 `tests/Unit/Service/Notification/ScheduledFilterParserTest.php` — every
+- [x] 5.1 `tests/Unit/Service/Notification/ScheduledFilterParserTest.php` — every
       accept form and every reject form, including the four fleet dialects
       verbatim: decidesk's bare list, shillinq's `all`/`notIn`/`before`,
-      openconnector's `op`/`lt` (must reject), and a canonical operator object.
-- [ ] 5.2 Extend `ScheduledFilterEvaluatorTest.php` (new operators, combinators,
+      openconnector's `op`/`lt` (must reject), and a canonical operator object. (verified: tests/Unit/Service/Notification/ScheduledFilterParserTest.php)
+- [x] 5.2 Extend `ScheduledFilterEvaluatorTest.php` (new operators, combinators,
       empty-`all`/empty-`any` asymmetry, array-field intersection, fail-closed
       instants) and `NotificationAnnotationValidatorTest.php` (the entry that
-      used to be silently accepted is now an error).
+      used to be silently accepted is now an error). (verified: tests/Unit/Service/Notification/ScheduledFilterEvaluatorTest.php)
 - [ ] 5.3 Gate-18 check (c) in `ConductionNL/.github`
       (`hydra-gates/scripts/lib/check_notification_dialect.py`, wired at
       `scripts/run-hydra-gates.sh:3926-4031`): classify every `scheduled` filter

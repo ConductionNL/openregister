@@ -40,6 +40,12 @@ use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
  * @uses   \OCA\OpenRegister\Mcp\Db\Conversation
  * @uses   \OCA\OpenRegister\Notifications\Db\Message
  * @uses   \OCA\OpenRegister\Mcp\Db\Agent
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatReply
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim
  */
 class ChatServiceProcessMessageGoldenTest extends TestCase {
 

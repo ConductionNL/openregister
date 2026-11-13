@@ -51,6 +51,17 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\DraftRemovalRecord
  * @uses   \OCA\OpenRegister\Service\Object\DeletionTarget
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Service\Object\AuditRecording
+ * @uses   \OCA\OpenRegister\Service\Object\DeletionAttribution
+ * @uses   \OCA\OpenRegister\Service\Object\DeletionIntegrity
+ * @uses   \OCA\OpenRegister\Service\Object\RemovalOptions
+ * @uses   \OCA\OpenRegister\Service\Object\RemovedDraft
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

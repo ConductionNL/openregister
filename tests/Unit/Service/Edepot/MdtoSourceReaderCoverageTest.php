@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Edepot\MdtoSourceReader
  * @uses   \OCA\OpenRegister\Service\Edepot\MdtoValueReader
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\ArchivalFactKey
+ * @uses \OCA\OpenRegister\Service\Edepot\ArchivalSource
  */
 class MdtoSourceReaderCoverageTest extends TestCase {
 

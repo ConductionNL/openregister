@@ -61,6 +61,25 @@ use OCA\OpenRegister\Service\Credential\TokenSetAddress;
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2CodeExchange
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2CodeGrant
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2ConnectClients
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2ConnectSteps
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2ConnectionWriter
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2CredentialObjects
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2FlowClaims
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2UpstreamRevoker
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialMint
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialMintOptions
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2CodeRedemption
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Issuance
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2ProviderConfig
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Tokens
+ * @uses \OCA\OpenRegister\Service\Credential\RedeemedConnection
+ * @uses \OCA\OpenRegister\Service\Credential\TokenResponseOptions
+ * @uses \OCA\OpenRegister\Service\Credential\TokenSetAddress
  */
 class OAuth2ReauthorisationTest extends TestCase {
 	/** @var integer How many brand-new credentials were minted. */

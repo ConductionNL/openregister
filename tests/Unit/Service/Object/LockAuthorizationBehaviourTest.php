@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
@@ -41,6 +42,9 @@ use RuntimeException;
  * Locks carry a far-future absolute expiration so the decision never depends on the clock.
  *
  * @covers \OCA\OpenRegister\Service\Object\LockAuthorization
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class LockAuthorizationBehaviourTest extends TestCase {
 
@@ -142,6 +146,19 @@ class LockAuthorizationBehaviourTest extends TestCase {
 		$this->expectExceptionMessage('denied');
 		$this->auth(permissions: $permissions)->assertMayLock(['object' => $object, 'schema' => $schema]);
 	}//end testAssertMayLockChecksUpdatePermission()
+
+	/**
+	 * An object whose schema did not resolve cannot be locked: there is no update rule to ask.
+	 *
+	 * @return void
+	 */
+	public function testALockWithoutASchemaIsRefused(): void {
+		$permissions = $this->createMock(PermissionHandlerInterface::class);
+		$permissions->expects($this->never())->method('checkPermission');
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->auth(permissions: $permissions)->assertMayLock(['object' => new ObjectEntity(), 'schema' => null]);
+	}//end testALockWithoutASchemaIsRefused()
 
 	/**
 	 * Without a session nobody may unlock or break.

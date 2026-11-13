@@ -24,6 +24,7 @@ use PHPUnit\Framework\TestCase;
  * A row that is no array is skipped; an undated row exports an empty moment.
  *
  * @covers \OCA\OpenRegister\Service\Integration\ActivityFeedExport
+ * @uses   \OCA\OpenRegister\Service\Export\SpreadsheetCell
  */
 class ActivityFeedExportRowsTest extends TestCase {
 

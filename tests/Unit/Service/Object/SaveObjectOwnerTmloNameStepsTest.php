@@ -46,6 +46,11 @@ use Stringable;
  * Owner, TMLO and name-cache steps, golden.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
  */
 final class SaveObjectOwnerTmloNameStepsTest extends TestCase {
 

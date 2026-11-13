@@ -36,6 +36,10 @@ use RuntimeException;
  * today's date; the logged file and line are left out, being where the code is.
  *
  * @covers \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject
  */
 final class VectorStorageHandlerStoreGoldenTest extends TestCase {
 
