@@ -1311,3 +1311,4 @@ review:openregister:10074:f4e7068d	APPROVE: docblock-only @uses metadata, suites
 review:hermiq:1487:fd5c6f50	GREEN: behaviour-preserving move, failure set identical to development	session-20261112T231637-60fd49c4	2026-11-13T01:08:05Z
 review:stackiq:1690:74ea9a64	GREEN: equivalent split, suite green	session-20261113T004523-285a0413	2026-11-13T01:08:11Z
 review:dossiq:5862:5b407093	GREEN: behaviour-preserving extraction, 0 new failures	session-20261112T231639-4c562de9	2026-11-13T01:08:26Z
+verify:pipelinq:3602:25d7ba3a	GREEN 3602, 3603, 3604: tests only, no new failures	session-20261112T224529-41d77a96	2026-11-13T01:08:40Z
