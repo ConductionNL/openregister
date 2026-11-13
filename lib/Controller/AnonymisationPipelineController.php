@@ -26,6 +26,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Anonymisation\ContentPipelineReport;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -64,6 +65,7 @@ class AnonymisationPipelineController extends Controller {
 	 *
 	 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md#requirement-every-content-altering-step-reports-its-state-req-adi-006
 	 */
+	#[NoCSRFRequired]
 	public function index(): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null || $this->groupManager->isAdmin($user->getUID()) === false) {
