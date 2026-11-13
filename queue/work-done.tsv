@@ -4564,4 +4564,5 @@ cover:keepiq:c967a31fm1bed:d3522ea6	PR #1755: 18 tests over 6 mappers, lib/Db/*.
 fix:keepiq:1748:b7d70473	fixed floor: import.js units simplified, unit_complexity 4.44->4.46 PASS; pushed 67c60618, REVERIFY recorded	session-20261113T081046-f0858dc4	2026-11-13T11:36:23Z
 build:openregister:archiving-as-a-process-with-sign-off	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T11:36:44Z
 fix:pipelinq:3742:6f9cdbaf	merged development into branch, checks green; new head 78566a17, REVERIFY recorded	session-20261113T064519-30004ad4	2026-11-13T11:36:55Z
+build:openregister:archive-members-are-searchable	partial: PR #10134 (1.1 ArchiveMemberEnumerator with bounds in file settings, 4.1; 14 tests, golden re-recorded); left 2.x extraction/search, 3.x reporting/e2e	session-20261113T104529-f43c7561	2026-11-13T11:37:00Z
 fix:pipelinq:3728:ffd50156	conflict cleared (l10n off tail, Notifier entries moved); pushed d3ce4a2d4d27dce05fb077c322cd233b110bc568, REVERIFY	session-20261113T104531-274f72f7	2026-11-13T11:36:58Z
