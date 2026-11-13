@@ -3299,3 +3299,4 @@ cover:filinq:7a9ef677mb01f:b25b9f6a	PR #2048: 5 classes, 36 tests; target dirs 9
 verify:dossiq:6328:9ee72b4b	GREEN 6328, GREEN 6329 (15190->15192, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T07:52:27Z
 verify:versioniq:666:f50d6817	GREEN 666, GREEN 667; 0 new failures over baseline (2 inherited)	session-20261113T074527-031883a8	2026-11-13T07:52:43Z
 verify:hermiq:1672:e8445c02	GREEN 1672 (behaviour-preserving refactor; 0 new failures; overlaps #1673 in ContextAssembler)	session-20261113T053904-36dcee67	2026-11-13T07:53:01Z
+cover:planninq:e1c9866d:1b97f731	PR #1138: 21 tests, 5 classes, lib/Listener/*.php 93.9% -> 99.2%, suite 894->915 OK	session-20261113T074533-3e2a2da6	2026-11-13T07:53:06Z
