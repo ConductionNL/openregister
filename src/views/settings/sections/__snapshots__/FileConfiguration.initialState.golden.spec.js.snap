@@ -94,6 +94,7 @@ exports[`file configuration initial state starts from the recorded defaults 1`] 
     "chunkingStrategy": "RECURSIVE_CHARACTER",
     "dolphinApiEndpoint": "",
     "dolphinApiKey": "",
+    "entityPatternSets": null,
     "entityRecognitionEnabled": false,
     "entityRecognitionMethod": {
       "id": "regex",

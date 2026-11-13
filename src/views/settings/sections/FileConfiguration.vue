@@ -327,6 +327,24 @@
 					</p>
 				</div>
 
+				<!-- Jurisdiction pattern sets, merged into every method's results -->
+				<div
+					v-if="fileSettings.entityRecognitionEnabled"
+					class="setting-item">
+					<label for="entity-pattern-sets">{{ t('openregister', 'Country-specific identifiers') }}</label>
+					<LabeledSelect
+						:modelValue="selectedPatternSets"
+						inputId="entity-pattern-sets"
+						:inputLabel="t('openregister', 'Country-specific identifiers')"
+						:options="entityPatternSetOptions"
+						:multiple="true"
+						:closeOnSelect="false"
+						@update:modelValue="savePatternSets" />
+					<p class="setting-description">
+						{{ t('openregister', 'Detected with every detection method. The default follows the server\'s default phone region.') }}
+					</p>
+				</div>
+
 				<!-- Backend availability (single source of truth: GET backend-state) -->
 				<div
 					v-if="fileSettings.entityRecognitionEnabled && backendState"
@@ -811,6 +829,12 @@ const BACKEND_LABELS = {
 	hybrid: 'Hybrid',
 }
 
+// The jurisdiction pattern sets the server knows (JurisdictionPatternSets::SETS),
+// by code, with the label each shows.
+const PATTERN_SET_LABELS = {
+	nl: () => t('openregister', 'Netherlands: licence plates and BSN'),
+}
+
 // The select fields of the file settings: the option list each picks from,
 // and the option it falls back to when the stored id is not in the list.
 const SELECT_SETTINGS = [
@@ -879,6 +903,34 @@ function applyPlainSettings(fileSettings, settings) {
 	}
 	fileSettings.openAnonymiserPasswordSet =
 		settings.openAnonymiserPasswordSet === true
+}
+
+/**
+ * Take over the stored jurisdiction pattern set codes.
+ *
+ * @param {object} fileSettings The form's settings.
+ * @param {object} settings The stored file settings.
+ * @return {void}
+ */
+function applyPatternSets(fileSettings, settings) {
+	if (Array.isArray(settings.entityPatternSets)) {
+		fileSettings.entityPatternSets = settings.entityPatternSets.filter(
+			(code) => typeof code === 'string',
+		)
+	}
+}
+
+/**
+ * The pattern set codes to save: only once the stored ones were loaded, so a
+ * save before the load cannot replace the server's default with none.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function patternSetFields(settings) {
+	return Array.isArray(settings.entityPatternSets)
+		? { entityPatternSets: [...settings.entityPatternSets] }
+		: {}
 }
 
 /**
@@ -1047,6 +1099,8 @@ const INITIAL_STATE = {
 		// HTTP Basic user for the external endpoint; the password is write-only.
 		openAnonymiserUsername: '',
 		openAnonymiserPasswordSet: false,
+		// Enabled jurisdiction pattern set codes; null until loaded.
+		entityPatternSets: null,
 	},
 
 	// A newly typed OpenAnonymiser password, sent once and then cleared.
@@ -1220,6 +1274,34 @@ export default {
 		...mapStores(useSettingsStore),
 
 		/**
+		 * The jurisdiction pattern sets an admin can switch on.
+		 *
+		 * @return {Array<object>} One option per known set code
+		 * @spec openspec/changes/detection-dutch-licence-plates
+		 */
+		entityPatternSetOptions() {
+			return Object.entries(PATTERN_SET_LABELS).map(([id, label]) => ({
+				id,
+				label: label(),
+			}))
+		},
+
+		/**
+		 * The options of the enabled pattern set codes; a code this page has no
+		 * label for still shows, under its code.
+		 *
+		 * @return {Array<object>} The selected options
+		 * @spec openspec/changes/detection-dutch-licence-plates
+		 */
+		selectedPatternSets() {
+			return (this.fileSettings.entityPatternSets || []).map(
+				(code) =>
+					this.entityPatternSetOptions.find((option) => option.id === code)
+					|| { id: code, label: code },
+			)
+		},
+
+		/**
 		 * Check if any file operation is currently running
 		 *
 		 * @spec exclude UI plumbing — derived busy-state for disabling buttons.
@@ -1355,6 +1437,20 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Store the chosen jurisdiction pattern sets and save.
+		 *
+		 * @param {Array<object>|null} options The selected options
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/detection-dutch-licence-plates
+		 */
+		async savePatternSets(options) {
+			this.fileSettings.entityPatternSets = (options || []).map(
+				(option) => option.id,
+			)
+			await this.saveSettings()
+		},
+
 		...saveMessageMethods,
 
 		/**
@@ -1369,6 +1465,7 @@ export default {
 					applySelectedOptions(this, settings)
 					applyPlainSettings(this.fileSettings, settings)
 					applyEnabledFileTypes(this.fileTypes, settings)
+					applyPatternSets(this.fileSettings, settings)
 				}
 				// Load object settings
 				await this.loadObjectSettings()
@@ -1591,6 +1688,7 @@ export default {
 				...extractionFields(this.fileSettings),
 				...recognitionFields(this.fileSettings),
 				...openAnonymiserFields(this.fileSettings),
+				...patternSetFields(this.fileSettings),
 				enabledFileTypes: this.fileTypes
 					.filter((ft) => ft.enabled)
 					.map((ft) => ft.extension),

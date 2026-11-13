@@ -44,5 +44,13 @@ exports[`file configuration selects draws every select and its option the same w
 </div>
 </slot-option>
 </x-ncselect>",
+  "<x-ncselect modelvalue="[]" inputid="entity-pattern-sets" inputlabel="[Country-specific identifiers]" options="[{&quot;id&quot;:&quot;nl&quot;,&quot;label&quot;:&quot;[Netherlands: licence plates and BSN]&quot;}]" multiple="true" closeonselect="false">
+<slot-option>
+<div class="option-item">
+<span class="option-label">[label]</span>
+<span class="option-description">[description]</span>
+</div>
+</slot-option>
+</x-ncselect>",
 ]
 `;

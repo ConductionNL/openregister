@@ -12,7 +12,7 @@
 
 ## 3. Setting
 
-- [ ] 3.1 Add `entityPatternSets` to `FileSettingsHandler` with the `default_phone_region` default and 400 on an unknown code; add the multi-select to `FileConfiguration.vue`. Verify: `FileSettingsHandlerTest` for NL default, other-region default and unknown code; `PATCH /api/settings/files` with `["xx"]` answers 400. PARTIAL: the setting, its `default_phone_region` default, the 400 naming the code and the tests are in (`EntityPatternSetSetting`, `FileSettingsHandler`, `FileSettingsController`). The multi-select in `FileConfiguration.vue` is not: its labels are new user-visible strings, which this repository's l10n gate requires in every locale, so it lands with its translations in its own change.
+- [x] 3.1 Add `entityPatternSets` to `FileSettingsHandler` with the `default_phone_region` default and 400 on an unknown code; add the multi-select to `FileConfiguration.vue`. Verify: `FileSettingsHandlerTest` for NL default, other-region default and unknown code; `PATCH /api/settings/files` with `["xx"]` answers 400. The setting, its default, the 400 naming the code and the tests are in (`EntityPatternSetSetting`, `FileSettingsHandler`, `FileSettingsController`); the multi-select ("Country-specific identifiers") is in `FileConfiguration.vue` with its strings in every locale, covered by `FileConfiguration.patternSets.spec.js`.
 
 ## 4. Tests and docs
 
