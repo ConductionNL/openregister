@@ -5370,3 +5370,4 @@ fix:portaliq:2398:598926b6	failed: cannot measure/verify — module_coupling is 
 cover:launchpad:fb10c50fm2d1d:js78214db1	already done: src/components (top level, Widgets/, admin/) at 97.23% statements (3198/3289) with vitest v8, above the 95% target; no gap over 7 statements per file	session-20261113T091533-b7a00bc3	2026-11-13T13:58:27Z
 build2:openregister:settings-change-audit	partial: PR #10271 (1.1b, 1.1c; 2.1 blocked on audit-log-page, 3.1 e2e, 3.2b needs preferences writer)	session-20261113T124805-1586d4f8	2026-11-13T13:58:41Z
 verify:versioniq:678:99e9570c	GREEN #678: tests only, no new failures	session-20261113T081048-4978ac57	2026-11-13T13:59:04Z
+build2:openregister:term-engine-diagnostic	partial: PR #10272 docs only, 1.1b ticked (roll landed in #3939); 2.1 panel needs ~12 new labels x 36 locales (l10n parity), left with reason	session-20261113T103904-e108be02	2026-11-13T13:59:10Z
