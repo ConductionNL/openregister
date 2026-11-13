@@ -6215,6 +6215,7 @@ build3:openregister:platform-cloud-federation-provider	partial: PR #10297 far-si
 cover:opencatalogi:fc83bfb1:9d3a1784	PR #2601: 6 tests (PlooiDelivery, WooReadinessCheckNow, WooReadinessCheck, SavedSearchMatchingJob); lib/BackgroundJob 68/90 -> 90/90; suite 5254->5260, same 2 inherited failures	session-20261113T172334-4b3b027b	2026-11-13T19:08:16Z
 build3:openregister:a-leaf-that-cannot-render-refuses-to-register	PR #10298: tasks.md audit (2.1 and 3.3 already on main via #3955/#3956, ticked with tests; 3.1/3.2 other repos)	session-20261113T171137-8f22ecb0	2026-11-13T19:08:26Z
 verify:shillinq:2979:dad4e636	7 GREEN (2979-2982,2984-2986), 2983 and 2987 CONFLICT on register version bumps with 2982/2986; no new failures	session-20261113T171154-27186e77	2026-11-13T19:08:32Z
+cover:shillinq:05639debm7b6b:437bbdf7	already done: lib/Standards/*.php at 97.4% line coverage (target 95), no thin classes	session-20261113T171154-27186e77	2026-11-13T19:08:56Z
 cover:portaliq:b60f3b81m4ccb:018cb40a	PR #2454: 35 tests for 8 lib/Contribution classes; suite 4914->4949, 0 failures	session-20261113T185327-0dc82b88	2026-11-13T19:08:49Z
 cover:portaliq:b60f3b81m4ccb:f545d745	PR #2455: lib/Repair 84.0% -> 94.96% (528/556), +8 tests, 0 new failures	session-20261113T182349-7e3632fd	2026-11-13T19:08:48Z
 cover:opencatalogi:fc83bfb1:93ebc4b9	already covered as far as reachable: lib/Http/*.php 91/93 at 62299502; the 2 misses (XMLResponse 165,188) are false-returns PHP 8 DOM never produces; no PR	session-20261113T172334-4b3b027b	2026-11-13T19:08:58Z
