@@ -24,7 +24,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidatorInterface;
+use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
+use OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use Psr\Log\LoggerInterface;
 
@@ -173,6 +175,31 @@ final class RecordAnnotationRefusals {
 
 		$annotation->faults()->refuse(errors: $split['errors']);
 	}//end checkArchival()
+
+	/**
+	 * Refuse an `x-openregister-retention` declaration that names a property the
+	 * schema lacks, or one that holds no reference.
+	 *
+	 * It throws rather than warns: a declaration that follows nothing holds no
+	 * record back, and the first anyone would learn of it is a destroyed record
+	 * whose parent was meant to be kept.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the declaration cannot be followed.
+	 *
+	 * @spec openspec/changes/appraisal-inherited-from-a-parent/specs/archivering-vernietiging/spec.md
+	 */
+	public function checkRetention(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: InheritedAppraisal::ANNOTATION);
+		if ($annotation->isWritten() === true) {
+			$annotation->faults()->refuseWith(
+				messages: (new RetentionAnnotationValidator())->validate(annotation: $annotation->value(), properties: ($schema->getProperties() ?? []))
+			);
+		}
+	}//end checkRetention()
 
 	/**
 	 * Refuse a broken `x-openregister-external-links` declaration at save.
