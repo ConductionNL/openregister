@@ -3044,3 +3044,4 @@ cover:dossiq:f8a113c5m7e79:8b886c00	already done: lib/Service/People/*.php at 90
 cover:shillinq:05639debmd8ee:60b3923a	already done: lib/Service/EInvoice 348/349 (99.7%) on development 2b913ee42	session-20261113T061516-58aa7364	2026-11-13T06:59:09Z
 cover:decidiq:a5f973bbmb22b:dfaef732	already done: lib/Notification measured with pcov at 53/53 statements (100%)	session-20261113T051707-6c971ec6	2026-11-13T06:59:12Z
 cover:keepiq:c967a31fmb40c:dfaef732	already done: lib/Notification/*.php at 99.49% (target 90)	session-20261113T061521-423d1e83	2026-11-13T06:59:24Z
+cover:dossiq:f8a113c5m7e79:jsd48eb217	PR dossiq#6308: 12 tests, src/store/modules 705->731/731 lines; same 1 inherited vitest failure	session-20261113T051703-1b54bfba	2026-11-13T06:59:31Z
