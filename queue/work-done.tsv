@@ -3059,5 +3059,6 @@ verify:keepiq:1745:61ad9085	GREEN 1745 (tests only; vitest 6270 pass; PHP clean)
 verify:pipelinq:3691:b238ba02	GREEN 3691 (JS specs only; vitest all pass)	session-20261113T031701-b518f7f8	2026-11-13T07:01:09Z
 verify:decidiq:2119:f8ee7896	2119 GREEN; 3746 tests, 0 failures	session-20261113T061521-423d1e83	2026-11-13T07:01:29Z
 cover:dossiq:f8a113c5m7e79:dee272f4	PR dossiq#6310: 33 tests in 6 files; lib/Service/Email 82.6%->90.5% lines; suite 14921->14954, same 19 inherited failures	session-20261113T053904-36dcee67	2026-11-13T07:01:56Z
+cover:dossiq:f8a113c5m7e79:js3f3bfe56	PR #6311: 19 vitest tests for App.vue shell (0->100% lines); src/* lines 55/141->81/142; suite 6363->6382 passing, 1 inherited failure; registry.js left (import needs config change)	session-20261113T063948-afebd30c	2026-11-13T07:02:07Z
 verify:integriq:3493:d8ca9b92	3493 GREEN (vitest 1951 pass; PHP unchanged, baseline 2E/1F inherited)	session-20261113T064518-860c039d	2026-11-13T07:02:04Z
 verify:dossiq:6305:aa470dde	1/1 GREEN (6305): clean merge, lint ok, phpunit +4 tests, 19 inherited failures, 0 new; tests only	session-20261113T044737-f37de8e3	2026-11-13T07:02:14Z
