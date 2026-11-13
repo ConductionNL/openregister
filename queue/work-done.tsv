@@ -4973,3 +4973,4 @@ build:openregister:task-inbox-open-first	failed: worker rules forbid build tasks
 build:openregister:spec-anchor-repair	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:42:04Z
 build:openregister:seed-from-a-mounted-directory	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:42:10Z
 verify:shillinq:2939:fe7cf195	2939 GREEN (tests only)	session-20261113T064519-30004ad4	2026-11-13T12:42:18Z
+review:openregister:10161:a19d0525	APPROVE 10161: docblock/spec-tag only, tests and eslint clean	session-20261113T104650-72c03e13	2026-11-13T12:42:28Z
