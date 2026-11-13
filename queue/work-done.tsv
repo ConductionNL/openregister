@@ -7213,3 +7213,4 @@ build4:openregister:redaction-release-safeguards	partial: PR openregister#10451 
 review:openregister:10424:6922cd65	APPROVE: additive admin-only settings field + occ command; suites green	session-20261113T204539-805bb895	2026-11-13T22:34:35Z
 build:learniq:bpv-hours-per-day	partial: PR #2494 (T1 days on the week, T3 server half of the return, T5 already present); T2, T3 form+notice, T4, T6, T7 left	session-20261113T212411-65b95fd9	2026-11-13T22:34:40Z
 verify:learniq:2486:ba898332	2486 GREEN; no new failures (1 inherited)	session-20261113T205330-0e50ee62	2026-11-13T22:34:42Z
+verify:pipelinq:3797:a2447876	GREEN: #3797 tests only, 7560 tests 0 failures	session-20261113T220418-8e6ce3df	2026-11-13T22:35:08Z
