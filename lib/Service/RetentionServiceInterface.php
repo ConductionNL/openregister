@@ -316,4 +316,15 @@ interface RetentionServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function certify(ExecutedDestruction $execution): array;
+
+	/**
+	 * Why a declared ancestor holds an object back, or null when none does.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return string|null An InheritedAppraisal reason naming the ancestor or the unresolved reference.
+	 *
+	 * @spec openspec/changes/appraisal-inherited-from-a-parent/specs/archivering-vernietiging/spec.md
+	 */
+	public function heldBackByAncestor(ObjectEntity $object): ?string;
 }//end interface

@@ -3229,6 +3229,7 @@ Service/Anonymisation/,,Service,,,,,Compliance
 Service/ApiCaller/,,Service,,,,,Platform
 Service/ApiVersion/,,Service,,,,,Core
 Service/Archival/,,Service,,,,,Compliance
+Service/Archival/InheritedAppraisal.php,,Service,,,,,Compliance
 Service/Audit/,,Service,,,,,Compliance
 Service/Authorization/,,Service,,,,,Core
 Service/Bindings/,,Service,,,,,Integrations
@@ -3299,6 +3300,7 @@ Service/Rules/,,Service,,,,,Processes
 Service/Schema/,,Service,,,,,Core
 Service/SchemaImport/,,Service,,,,,Core
 Service/Schemas/,,Service,,,,,Core
+Service/Schemas/RetentionAnnotationValidator.php,,Service,,,,,Core
 Service/Search/,,Service,,,,,Core
 Service/Security/,,Service,,,,,Integrations
 Service/Serializer/,,Service,,,,,Core
