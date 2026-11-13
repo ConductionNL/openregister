@@ -1,12 +1,12 @@
 {
  "app": "pipelinq",
- "commit": "b1df23f489e5acb260deb7ac38119fcaabd883e4",
- "measured_at": "2026-11-13T13:46:24Z",
+ "commit": "4c67daf18432a564e46e1b7ebf9ebd15b4dfa9df",
+ "measured_at": "2026-11-13T17:19:41Z",
  "php": {
   "tool": "pcov",
-  "pct": 87.48,
+  "pct": 87.68,
   "statements": 60457,
-  "covered": 52886,
+  "covered": 53007,
   "dirs": {
    "lib/Activity/": [
     66,
@@ -106,7 +106,7 @@
    ],
    "lib/Service/CallReview/": [
     103,
-    16
+    103
    ],
    "lib/Service/Competitor/": [
     600,
@@ -142,7 +142,7 @@
    ],
    "lib/Service/Export/": [
     1204,
-    1153
+    1187
    ],
    "lib/Service/External/Berichtenbox/": [
     48,
@@ -287,17 +287,21 @@
   }
  },
  "js": {
-  "pct": 92.59,
-  "statements": 17670,
-  "covered": 16361,
+  "pct": 93.17,
+  "statements": 17586,
+  "covered": 16385,
   "dirs": {
    "src/": [
-    190,
+    88,
     88
    ],
    "src/components/": [
     1464,
     1383
+   ],
+   "src/components/CapabilityComparison/": [
+    25,
+    23
    ],
    "src/components/admin/": [
     473,
@@ -333,7 +337,7 @@
    ],
    "src/components/products/": [
     71,
-    60
+    61
    ],
    "src/components/rapportage/": [
     139,
@@ -524,7 +528,7 @@
     175
    ],
    "src/views/settings/": [
-    1189,
+    1182,
     1123
    ],
    "src/views/social/": [
