@@ -3302,3 +3302,4 @@
 2026-11-13T08:27:20Z integrator-20261111T115842-a749432d MERGED-TREE afe9628fc0: 4 PRs in one push, main now afe9628fc0 = tested tree
 2026-11-13T08:37:10Z integrator-20261111T115842-a749432d RED tree 0b2832837f prs 3 front=red: Tests: 58353, Assertions: 200497, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Db\OrganisationJsonGoldenTest::testJsonSerializeMatchesGolden;FAIL src/services/initial-data.golden.spec.js;FAIL src/store/modules/organisationActions.golden.spec.js
 2026-11-13T08:54:53Z integrator-20261111T115842-a749432d GREEN tree c32593f4f1 on dev afe9628fc0 prs 2 front=skip: Tests: 58305, Assertions: 200365, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
+2026-11-13T08:57:24Z integrator-20261111T115842-a749432d MERGED-TREE c32593f4f1: 2 PRs in one push, main now c32593f4f1 = tested tree
