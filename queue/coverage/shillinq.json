@@ -1,12 +1,12 @@
 {
  "app": "shillinq",
- "commit": "762d823037b280807c56a58ce776864c4d0f3204",
- "measured_at": "2026-11-13T11:42:14Z",
+ "commit": "79e59c85b1e0e9b6056c37aaa175e640178fa93a",
+ "measured_at": "2026-11-13T14:02:02Z",
  "php": {
   "tool": "pcov",
-  "pct": 91.13,
+  "pct": 92.34,
   "statements": 79866,
-  "covered": 72784,
+  "covered": 73745,
   "dirs": {
    "lib/AppInfo/": [
     269,
@@ -46,7 +46,7 @@
    ],
    "lib/Guard/": [
     1933,
-    1912
+    1913
    ],
    "lib/Integration/": [
     256,
@@ -54,15 +54,15 @@
    ],
    "lib/Lifecycle/": [
     6921,
-    6180
+    6268
    ],
    "lib/Lifecycle/Action/": [
     616,
-    573
+    587
    ],
    "lib/Listener/": [
     2842,
-    2578
+    2702
    ],
    "lib/Middleware/": [
     59,
@@ -94,7 +94,7 @@
    ],
    "lib/Repair/": [
     3923,
-    2691
+    3140
    ],
    "lib/Repair/Support/": [
     113,
@@ -110,7 +110,7 @@
    ],
    "lib/Reporting/Generator/": [
     1528,
-    1511
+    1526
    ],
    "lib/Reporting/Schedule/": [
     235,
@@ -126,11 +126,11 @@
    ],
    "lib/Service/": [
     32533,
-    29234
+    29318
    ],
    "lib/Service/Asset/": [
     564,
-    558
+    562
    ],
    "lib/Service/Bank/": [
     681,
@@ -218,7 +218,7 @@
    ],
    "lib/Service/Import/": [
     898,
-    819
+    864
    ],
    "lib/Service/Import/ImportProfile/": [
     116,
@@ -262,7 +262,7 @@
    ],
    "lib/Service/PublicSector/": [
     462,
-    450
+    452
    ],
    "lib/Service/PurchaseOrder/": [
     126,
@@ -322,7 +322,7 @@
    ],
    "lib/Standards/Checks/": [
     3759,
-    3384
+    3519
    ],
    "lib/Support/": [
     48,
@@ -339,9 +339,9 @@
   }
  },
  "js": {
-  "pct": 70.66,
-  "statements": 7096,
-  "covered": 5014,
+  "pct": 83.12,
+  "statements": 7410,
+  "covered": 6159,
   "dirs": {
    "src/": [
     3,
@@ -353,11 +353,11 @@
    ],
    "src/components/": [
     235,
-    144
+    217
    ],
    "src/components/BudgetBBVMapping/": [
     457,
-    409
+    427
    ],
    "src/components/Dashboard/": [
     45,
@@ -381,7 +381,7 @@
    ],
    "src/components/budget-charts/": [
     171,
-    111
+    141
    ],
    "src/components/cluster-overview/": [
     10,
@@ -389,19 +389,19 @@
    ],
    "src/components/dashboard/financial/": [
     262,
-    245
+    260
    ],
    "src/components/goods-receipt-note/": [
     208,
-    165
+    193
    ],
    "src/components/import/": [
     6,
-    1
+    4
    ],
    "src/components/inventory/": [
     327,
-    246
+    278
    ],
    "src/components/invoice/": [
     95,
@@ -409,7 +409,7 @@
    ],
    "src/components/period-close/": [
     167,
-    75
+    161
    ],
    "src/components/pipelinq/": [
     45,
@@ -417,7 +417,7 @@
    ],
    "src/components/purchase-order/": [
     163,
-    70
+    140
    ],
    "src/components/purchasing/": [
     24,
@@ -449,23 +449,23 @@
    ],
    "src/components/widget/": [
     178,
-    114
+    174
    ],
    "src/composables/": [
     378,
-    367
+    371
    ],
    "src/integrations/": [
     405,
-    263
+    369
    ],
    "src/manifest.d/": [
     4,
     4
    ],
    "src/modals/": [
-    1230,
-    468
+    1467,
+    721
    ],
    "src/store/": [
     3,
@@ -481,23 +481,23 @@
    ],
    "src/utils/": [
     638,
-    578
+    612
    ],
    "src/views/": [
-    425,
-    240
+    502,
+    422
    ],
    "src/views/bookings/": [
     308,
-    275
+    294
    ],
    "src/views/bookkeeping/": [
     98,
-    72
+    90
    ],
    "src/views/bookkeeping/dimensions/": [
     119,
-    96
+    119
    ],
    "src/views/bookkeeping/multi-currency/": [
     33,
@@ -505,7 +505,7 @@
    ],
    "src/views/import/": [
     122,
-    74
+    122
    ],
    "src/views/invoice/": [
     17,
@@ -513,7 +513,7 @@
    ],
    "src/views/settings/": [
     155,
-    107
+    150
    ]
   }
  }
