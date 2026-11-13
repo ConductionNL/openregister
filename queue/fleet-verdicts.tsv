@@ -6212,3 +6212,4 @@ shillinq	2993	0555adba82ab0656828cef11983ad3d08696b985	GREEN	worker-22	build pur
 shillinq	2994	2c7bd3aef3c5cec37461b7ad29a	GREEN	worker-22	build public-sector-council-and-auditor-statements, new class; unit 10460 run on 7-PR tree, baseline 10394/1 failure (PaymentWebhookIntakeCharacterisationTest), no new failures; vitest 2295 pass
 hermiq	1702	695dd3dc15c6bfc831c739430f92dac72098efc5	GREEN	worker-19	tests only (vitest); tree vitest 1347/1347 pass; phpunit baseline 4562 (172 inherited err/fail), no PHP touched; no new failures
 hermiq	1703	31e5fd3c839ae4044a4180229d7f7ee7fbaa9d04	GREEN	worker-19	tests only (vitest); tree vitest 1347/1347 pass; phpunit baseline 4562 (172 inherited err/fail), no PHP touched; no new failures
+shillinq	2994	2c7bd3aef3c5cec37461b7ad29a811bf17da6910	GREEN	worker-16	tree 2994+2995+2996+2999+3001: unit 10433 tests (baseline 10394, 1 inherited clock-bound failure), 0 new failures; build PR judged against its change specs
