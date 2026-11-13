@@ -38,6 +38,7 @@ final class ObjectExport {
 	 */
 	private const FILE_TYPES = [
 		'csv'   => ['csv', 'text/csv'],
+		'tsv'   => ['tsv', 'text/tab-separated-values; charset=utf-8'],
 		'json'  => ['json', 'application/json'],
 		'pdf'   => ['pdf', 'application/pdf'],
 		'excel' => ['xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],

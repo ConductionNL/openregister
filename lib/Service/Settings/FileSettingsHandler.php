@@ -28,6 +28,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
+use OCA\OpenRegister\Service\File\ArchiveBounds;
 use OCP\IAppConfig;
 use RuntimeException;
 
@@ -47,6 +48,8 @@ use RuntimeException;
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/archive-members-are-searchable/specs
  */
 class FileSettingsHandler {
 
@@ -123,6 +126,7 @@ class FileSettingsHandler {
 		'entityRecognitionEnabled' => false,
 		'entityRecognitionMethod' => 'auto',
 		self::ANONYMISATION_KEY => ['confidenceThreshold' => self::DEFAULT_CONFIDENCE_THRESHOLD],
+		ArchiveBounds::SETTINGS_KEY => ArchiveBounds::DEFAULTS,
 	];
 
 	/**
@@ -187,6 +191,10 @@ class FileSettingsHandler {
 		if (array_key_exists('batchSize', $fileSettings) === true) {
 			$fileSettings['batchSize'] = $this->boundedBatchSize(batchSize: $fileSettings['batchSize']);
 		}
+
+		// The archive bounds always read whole: an install saved before they
+		// existed still states the bounds archives are opened under.
+		$fileSettings[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileSettings)->toArray();
 
 		unset($fileSettings[self::OPENANONYMISER_CREDENTIAL_FIELD]);
 		$fileSettings[self::ANONYMISATION_KEY] = $this->readableAnonymisation(stored: ($fileSettings[self::ANONYMISATION_KEY] ?? null));
@@ -286,6 +294,7 @@ class FileSettingsHandler {
 
 		unset($fileConfig['openAnonymiserPasswordSet']);
 		$fileConfig['batchSize'] = $this->boundedBatchSize(batchSize: $fileConfig['batchSize']);
+		$fileConfig[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileConfig)->toArray();
 		$fileConfig['openAnonymiserUsername'] = trim((string) $fileConfig['openAnonymiserUsername']);
 		$fileConfig[ReviewPolicy::SETTINGS_KEY] = $this->reviewDefault(fileData: $fileData);
 		$fileConfig[self::ANONYMISATION_KEY] = $this->submittedAnonymisation(fileData: $fileData);

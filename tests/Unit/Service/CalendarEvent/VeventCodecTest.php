@@ -38,6 +38,30 @@ class VeventCodecTest extends TestCase {
 		$this->assertSame(['obj-1', 3, 4], [$event['objectUuid'], $event['registerId'], $event['schemaId']]);
 	}
 
+	public function testAReminderWritesADisplayAlarmThatReadsBack(): void {
+		$codec = new VeventCodec();
+		$ics = $codec->calendarDataOf(new VeventDraft('UID2', new DateTime('2026-03-01T09:00:00+00:00'), ['summary' => 'Follow up', 'reminderMinutesBefore' => 30], ['registerId' => 3, 'schemaId' => 4, 'objectUuid' => 'obj-1', 'objectTitle' => 'Zaak']));
+
+		$this->assertStringContainsString("BEGIN:VALARM\r\n", $ics);
+		$this->assertStringContainsString("ACTION:DISPLAY\r\n", $ics);
+		$this->assertStringContainsString("TRIGGER:-PT30M\r\n", $ics);
+		$this->assertStringContainsString("DESCRIPTION:Follow up\r\n", $ics);
+
+		$event = $codec->eventArrayAt(Reader::read($ics)->VEVENT, new CalendarObjectAddress('7', 'UID2.ics'));
+		$this->assertSame(30, $event['reminderMinutesBefore']);
+	}
+
+	public function testNoReminderWritesNoAlarmAndReadsBackNull(): void {
+		$codec = new VeventCodec();
+		foreach ([[], ['reminderMinutesBefore' => 0], ['reminderMinutesBefore' => -5], ['reminderMinutesBefore' => '30']] as $extra) {
+			$ics = $codec->calendarDataOf(new VeventDraft('UID3', new DateTime('2026-03-01T09:00:00+00:00'), (['summary' => 'Plain'] + $extra), ['registerId' => 3, 'schemaId' => 4, 'objectUuid' => 'obj-1', 'objectTitle' => 'Zaak']));
+
+			$this->assertStringNotContainsString('BEGIN:VALARM', $ics, json_encode($extra));
+			$event = $codec->eventArrayAt(Reader::read($ics)->VEVENT, new CalendarObjectAddress('7', 'UID3.ics'));
+			$this->assertNull($event['reminderMinutesBefore'], json_encode($extra));
+		}
+	}
+
 	public function testRequiresAStart(): void {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Event start time (dtstart) is required');
