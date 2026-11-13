@@ -6025,3 +6025,4 @@ cover:keepiq:c967a31fm00c6:js4c193b9b	PR #1764: 4 specs, 21 tests; dirs 93.89% -
 fix:portaliq:2423:8eb905ab	fixed: tab-order test expects the spec'd Hulp tab; REVERIFY at 53e76322	session-20261113T182353-86897235	2026-11-13T18:35:57Z
 verify:shillinq:2954:e40b4935	GREEN 2954 (tests only)	session-20261113T172329-5f4feaba	2026-11-13T18:36:07Z
 cover:learniq:e6498dddm0533:aae6d66c	PR #2478: 11 tests, 3 files; Exception dir 100%; suite 6402->6413, 1 inherited failure (he.json generator drift)	session-20261113T175323-e340fb07	2026-11-13T18:36:38Z
+verify:larpinq:1030:58070d24	GREEN 1030	session-20261113T172334-4b3b027b	2026-11-13T18:36:48Z
