@@ -567,3 +567,25 @@ portaliq	2284	b2a0155204176795c00218d83ecbed38e0434b82	SKIP	merge-local	GATE UNM
 portaliq	2366	7406159f36b6d214dc1498388a0bf472170aca33	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2370	5ff6f0c9f3e7b71faf9988c939c67d5474a1e060	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2367	437d70ffe18e7fce4897491008f43c83c7a8a717	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1607	676f8fccab3cdaf376d130ae501e5df4eb3f2ebd	SKIP	merge-local	GATE UNMEASURED fetch failed
+keepiq	1631	b88267e065a281bd8637bf013e2c84a7b3804548	SKIP	merge-local	GATE UNMEASURED b88267e065 does not merge cleanly onto development
+keepiq	1677	b1c8d74745acae1039a4276808f8a8c5bfa230bf	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1678	d8b203903df132cde38d17b3749fcaf172754f8b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1682	aad996eff8ec23fa8f827c8276f8d65db201c331	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1683	72facf5e23747c0981b962def108fd4a60101820	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1684	9572dbdfe7af6b7387d139664bb57160949d2a17	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1685	623efad5e714259f77f6ad980d3b8ab62b1a337e	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1686	222eb1c494c64a3d43a094af5c634f55688b9693	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1687	5f724f63b0f276502f4cbd82058e921f09400bff	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1688	1a99a7d5281feecb263a10fcabd6b5f9563bab87	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1689	7e41a57e9966540605061a109b09279b52bf3505	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1690	f5feabc390d7e92ed8113c85039b1000e83ad400	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
+keepiq	1691	cf0a99b078204c7d3552ddc52789ec40cc9b8fc5	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1692	f3514af9c8a09bcb9cb863b3dbc753e4ffa073f6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1693	be0bafe6cb3d7bc91d83f3737a0c2b2229bb114c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1694	7c6dd131f7235ba7f5beb8c28569921a0d645dc4	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1695	a9d3a867f8b247b9b33e0b2dc8f6bb97bb0defb1	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1696	cb8390ea487dcaaaa386625e3361210177e887f6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1697	8178e96052cf640b777ad18b1aa8f50f167aa138	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1698	1b78e69bcc14aad2b92b99edd2367c886022ca7f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1699	1f4885904a5e6ea2cf39a7aabb52c04a315cf729	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
