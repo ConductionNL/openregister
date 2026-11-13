@@ -2573,3 +2573,4 @@ cover:pipelinq:7f9dc8e6mc4ba:50cc8442	already done: lib/Util/*.php at 100% lines
 cover:pipelinq:7f9dc8e6mc4ba:js0023cfc7	PR pipelinq#3680: 20 mounted tests on 4 dialogs, src/dialogs lines 80.09->82.04%; vitest 3893->3913 all passing	session-20261113T051703-1b54bfba	2026-11-13T05:55:39Z
 cover:decidiq:a5f973bbma14b:1b97f731	PR decidiq#2114: 7 test files, 35 tests; lib/Listener 91.7%->97.1% statements; unit 3431 pass	session-20261113T051710-d9c31c61	2026-11-13T05:56:02Z
 cover:decidiq:a5f973bbma14b:34f5c300	PR #2115: 40 tests over 7 Service classes + @uses for 28 risky tests; Service/*.php 81.87% -> 85.53%, app 83.6% -> 86.52%; 0 failures, 0 risky	session-20261113T051708-7d5f6071	2026-11-13T05:56:07Z
+cover:pipelinq:7f9dc8e6mc4ba:38e80a9f	already done: lib/Command 382/382 lines covered under strict metadata (37 tests, no risky)	session-20261113T051703-1b54bfba	2026-11-13T05:56:29Z
