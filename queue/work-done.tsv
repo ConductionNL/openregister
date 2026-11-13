@@ -5031,3 +5031,4 @@ measure:integriq:20261113h12	php 93.54% js 92.11% @81441e2 (unit suite: 2 errors
 cover:integriq:92114ab0m158b:36cf9f12	already done: lib/Service/Exchange/*.php at 98.8% stmts (957/969) @81441e2, above 95 target; -1 branch already merged	session-20261113T124807-5f522699	2026-11-13T12:54:32Z
 build:openregister:register-scoped-schema-slug-resolution	partial: PR #10216; fix already on main via other changes, added the missing regression + ambiguity-log tests (9) and a partial audit table; full ~200-site enumeration (2.1) and live collision SELECT left	session-20261113T111529-f2ee6930	2026-11-13T12:54:37Z
 cover:integriq:92114ab0m158b:2461af45	already done: lib/Auth/Idp/*.php at 98.6% stmts (583/591) @81441e2, above 95 target; -1/-2 branches exist	session-20261113T124807-5f522699	2026-11-13T12:54:54Z
+verify:pipelinq:3754:2d53b5e5	3754 GREEN, 3755 GREEN (0 new failures)	session-20261113T064519-30004ad4	2026-11-13T12:55:07Z
