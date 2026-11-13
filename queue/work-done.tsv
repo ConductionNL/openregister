@@ -2569,3 +2569,4 @@ cover:pipelinq:7f9dc8e6mc4ba:js0be8c659	PR #3678: 6 specs/40 tests for SendMessa
 cover:pipelinq:7f9dc8e6mc4ba:568ec52a	PR #3679: 12 tests for ConfiguredGroupGate, BillingHandoffAccessPolicy, SessionUser, ForecastAccess; 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T05:55:08Z
 cover:filinq:7a9ef677m5ffe:6ebcfc9b	already above target: lib/Service/Editing/ measured 98.1% (1811/1846) on development 4ff0b7c; no PR	session-20261113T054519-3d0ac77f	2026-11-13T05:55:12Z
 verify:pipelinq:3672:7b90864a	GREEN 3672, 3673, 3674 (tests only, no new failures)	session-20261113T051714-4ad50f31	2026-11-13T05:55:34Z
+cover:pipelinq:7f9dc8e6mc4ba:js0023cfc7	PR pipelinq#3680: 20 mounted tests on 4 dialogs, src/dialogs lines 80.09->82.04%; vitest 3893->3913 all passing	session-20261113T051703-1b54bfba	2026-11-13T05:55:39Z
