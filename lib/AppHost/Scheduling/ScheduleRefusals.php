@@ -28,7 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Scheduling;
 
+use OCA\OpenRegister\Exception\DatabaseErrorChain;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Logs a refused schedule and keeps it for the publish response.
@@ -72,6 +74,27 @@ class ScheduleRefusals implements ScheduleRefusalReportInterface {
 			context: ['application' => $release->applicationUuid(), 'publisher' => $release->publisher]
 		);
 	}//end refuse()
+
+	/**
+	 * Record a schedule whose store failed; a database error is reported in neutral words and logged.
+	 *
+	 * @param ScheduleRelease $release The publish.
+	 * @param Throwable       $failure What the store threw.
+	 *
+	 * @return void
+	 */
+	public function refuseFailure(ScheduleRelease $release, Throwable $failure): void {
+		if (DatabaseErrorChain::causeOf(failure: $failure) === null) {
+			$this->refuse(release: $release, reason: $failure->getMessage());
+			return;
+		}
+
+		$this->refusals[] = 'A schedule could not be stored.';
+		$this->logger->error(
+			message: '[AppHost\\Scheduling] Schedule could not be stored',
+			context: ['application' => $release->applicationUuid(), 'publisher' => $release->publisher, 'exception' => $failure]
+		);
+	}//end refuseFailure()
 
 	/**
 	 * This request's refusals.
