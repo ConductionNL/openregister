@@ -6417,5 +6417,6 @@ cover:dossiq:069ee2d6mbd37:js0023cfc7	PR #6445: 26 tests for 5 dialogs; src/dial
 cover:keepiq:c967a31fm10bf:0d67c1f3	already done: lib/Service/Siem/ at 100% on development; no PR	session-20261113T172328-c860ad55	2026-11-13T19:47:15Z
 cover:portaliq:b60f3b81m4ccb:e7fbb139	already done: lib/Service/Plans 693/693 statements covered on development	session-20261113T175332-5effc865	2026-11-13T19:47:22Z
 gap:opencatalogi:19:4c6ff92f	already done: lizard -C 30 -w lib src reports no function over CCN 30 on development (max 26)	session-20261113T192701-f224cbcf	2026-11-13T19:47:30Z
+cover:integriq:92114ab0m0593:2b49da71	already done: lib/Adapters/Slo/*.php measured ~99% (only 7 defensive-guard lines uncovered), above the 95 target	session-20261113T171141-a3907367	2026-11-13T19:47:42Z
 cover:portaliq:b60f3b81m4ccb:e372e6ff	already done: lib/Event 113/114 statements (99%) on development	session-20261113T175332-5effc865	2026-11-13T19:47:37Z
 gap:keepiq:19:4c6ff92f	already done: lizard -C 30 -w finds no function over CCN 30 in keepiq development	session-20261113T172328-c860ad55	2026-11-13T19:47:47Z
