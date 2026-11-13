@@ -51,6 +51,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowGraphDiff
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowVersion
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraph
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraphRevision
+ * @uses \OCA\OpenRegister\Service\Flow\FlowVersionGraphs
+ * @uses \OCA\OpenRegister\Service\Flow\FlowVersionRows
  */
 final class FlowVersionPreviewTest extends TestCase {
 

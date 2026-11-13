@@ -30,6 +30,9 @@ use UnexpectedValueException;
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowSemanticVersion
  * @uses \OCA\OpenRegister\Service\Flow\FlowGraphDiff
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraph
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraphFinding
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraphRevision
  */
 class FlowSemanticVersionTest extends TestCase {
 

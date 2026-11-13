@@ -75,6 +75,16 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses \OCA\OpenRegister\Db\Flow\TriggerLookup
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExecution
+ * @uses \OCA\OpenRegister\Service\Flow\FlowLocatorStores
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTrigger
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class FlowTriggerIdSlugMatchTest extends TestCase {
 

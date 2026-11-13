@@ -36,6 +36,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\FlowStateHandle
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowStateStep
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class FlowStateSlotsBehaviourTest extends TestCase {
 

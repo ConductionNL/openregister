@@ -29,6 +29,10 @@ use stdClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSubjectItems
+ * @uses \OCA\OpenRegister\Service\Flow\LiveSubject
  */
 final class FlowItemsDelegationGoldenTest extends TestCase {
 

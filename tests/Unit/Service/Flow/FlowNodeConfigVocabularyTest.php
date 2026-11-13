@@ -111,6 +111,11 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowPreflightStep
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTaxonomyVocabulary
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeBase
  */
 class FlowNodeConfigVocabularyTest extends TestCase {
 	use FiltersFlowLevelFindings;

@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
  * The flow endpoints' three authorisation answers.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowAccess
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
  */
 class FlowAccessTest extends TestCase {
 

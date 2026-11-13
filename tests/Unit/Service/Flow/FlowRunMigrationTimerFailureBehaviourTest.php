@@ -47,6 +47,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigration
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerChange
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigrationRun
  */
 class FlowRunMigrationTimerFailureBehaviourTest extends TestCase {
 

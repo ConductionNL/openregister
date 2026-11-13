@@ -36,6 +36,13 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowToken
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\SubFlowTarget
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExecution
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunOrigin
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunPass
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SubFlowRun
  */
 class SubFlowNodeFailedChildBehaviourTest extends TestCase {
 

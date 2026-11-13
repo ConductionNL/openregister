@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  * Tests for {@see FlowGraphDiff}.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowGraphDiff
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraph
  */
 class FlowGraphDiffTest extends TestCase {
 

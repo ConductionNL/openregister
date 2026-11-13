@@ -39,6 +39,7 @@ use UnexpectedValueException;
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunSubjects
  * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSubjectClaim
  */
 final class FlowRunSubjectsTest extends TestCase {
 

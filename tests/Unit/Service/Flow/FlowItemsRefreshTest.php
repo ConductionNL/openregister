@@ -32,6 +32,10 @@ use PHPUnit\Framework\TestCase;
  * Branch coverage for {@see FlowSubjectItems::refreshSubjectProjection()}.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSubjectItems
+ * @uses \OCA\OpenRegister\Service\Flow\LiveSubject
  */
 class FlowItemsRefreshTest extends TestCase {
 

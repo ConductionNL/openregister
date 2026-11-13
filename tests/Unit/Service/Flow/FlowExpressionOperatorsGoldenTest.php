@@ -26,6 +26,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionOperators
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
  */
 final class FlowExpressionOperatorsGoldenTest extends TestCase {
 

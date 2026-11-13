@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\EndNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  * @uses   \OCA\OpenRegister\Service\Flow\FlowStop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class EndNodeBehaviourTest extends TestCase {
 

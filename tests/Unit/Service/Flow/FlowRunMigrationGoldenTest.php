@@ -57,6 +57,19 @@ use Stringable;
  * @uses \OCA\OpenRegister\Db\FlowVersion
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigration
+ * @uses \OCA\OpenRegister\Db\FlowRunFilter
+ * @uses \OCA\OpenRegister\Db\FlowRunListing
+ * @uses \OCA\OpenRegister\Db\FlowRunSubjectScope
+ * @uses \OCA\OpenRegister\Db\FlowRunViewer
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerChange
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunCommit
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunMarkingRemap
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigrationRun
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigrationTimers
+ * @uses \OCA\OpenRegister\Service\Flow\SubjectRunsMigration
+ * @uses \OCA\OpenRegister\Service\Flow\VersionRunsMigration
  */
 final class FlowRunMigrationGoldenTest extends TestCase {
 

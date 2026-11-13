@@ -36,6 +36,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunGuard
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunGuardClock
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\StepDispatch
  */
 class RegistryStepDispatcherContextGuardBehaviourTest extends TestCase {
 

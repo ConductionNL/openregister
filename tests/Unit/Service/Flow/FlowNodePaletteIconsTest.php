@@ -139,6 +139,7 @@ class PaletteProbeNode implements IFlowNode {
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodeRegistry
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeTaxonomyResolver
  * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTaxonomyVocabulary
  */
 class FlowNodePaletteIconsTest extends TestCase {
 

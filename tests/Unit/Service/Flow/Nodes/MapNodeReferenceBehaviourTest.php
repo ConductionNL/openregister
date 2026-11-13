@@ -39,6 +39,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class MapNodeReferenceBehaviourTest extends TestCase {
 

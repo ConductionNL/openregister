@@ -61,6 +61,12 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigCommon
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSources
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormFields
  */
 final class UserTaskConfigReadingTest extends TestCase {
 

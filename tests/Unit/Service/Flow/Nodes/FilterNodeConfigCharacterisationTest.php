@@ -21,6 +21,9 @@ use UnexpectedValueException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\FilterNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  */
 final class FilterNodeConfigCharacterisationTest extends TestCase {
 

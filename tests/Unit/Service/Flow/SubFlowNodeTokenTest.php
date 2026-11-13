@@ -27,6 +27,16 @@ use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\FlowToken
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExecution
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunOrigin
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunPass
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SubFlowRun
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SubFlowTarget
  */
 class SubFlowNodeTokenTest extends TestCase {
 
