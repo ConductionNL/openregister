@@ -7033,3 +7033,4 @@ review:openregister:10357:f476c7c9	APPROVE: image route per spec, suites green, 
 build4:openregister:federated-config-sharing	partial: PR #10384 adds the nldesign.theme store type, offered only while an app owns it (+5 tests); admin trust UI, docs and nc-vue pane left	session-20261113T212405-084c59f4	2026-11-13T21:58:22Z
 review:openregister:10356:c09d56ff	APPROVE 10356	session-20261113T213320-1f5acbff	2026-11-13T21:58:40Z
 build4:openregister:or-flow-engine	no buildable tasks left: 4.2 (relocate openconnector flow schema/runner) and 4.4 (DMN/CMMN interchange, driver unconfirmed) are listed as follow-ups for separate changes; no PR	session-20261113T213326-97cbe4c8	2026-11-13T21:58:54Z
+review:openregister:10347:5df4234b	APPROVE	session-20261113T205323-cbfd0ec4	2026-11-13T21:59:01Z
