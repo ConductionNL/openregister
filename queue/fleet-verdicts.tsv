@@ -5774,3 +5774,4 @@ pipelinq	3729	4cc2778125c3af86bf14c099a3b8f94d109fdd3d	CONFLICT	worker-56	l10n e
 pipelinq	3730	4e554335edc53b2e244fd7534a3fd3806089c8ae	GREEN	worker-56	tests only; tree 7 PRs (3728 left out, JS unverifiable here): 6917 tests, baseline 6814 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest), 0 new failures
 pipelinq	3731	17fbeb57913d49a0cf78a42299a	GREEN	worker-56	build segment rule groups: stored rules normalised to a group tree as the change asks; tree 7 PRs (3728 left out, JS unverifiable here): 6917 tests, baseline 6814 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest), 0 new failures
 pipelinq	3731	17fbeb57913d49a0cf78a42299a555fc3b60cfb1	GREEN	worker-56	build segment rule groups as the change asks (full sha; same verdict as the row with the short sha); tree 6917 tests, 0 new failures
+keepiq	1748	b7d7047304dff62f4607a3a248fa4f127b92cc46	RED	merge-local:merge-gate	GATE RED floor: unit_complexity: 4.44 -> 4.41
