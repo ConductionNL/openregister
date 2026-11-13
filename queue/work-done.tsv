@@ -4005,5 +4005,6 @@ merge:shillinq:2901:adede82c	merge-local over 28 shillinq tasks: merged=53 red=0
 merge:shillinq:2902:c910ddca	merge-local over 28 shillinq tasks: merged=53 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:41:18Z
 merge:shillinq:2903:9de9c184	merge-local over 28 shillinq tasks: merged=53 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:41:18Z
 merge:shillinq:2905:e1d62568	merge-local over 28 shillinq tasks: merged=53 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:41:18Z
+cover:keepiq:c967a31fm1147:7ddabe24	already done: lib/Federation/KeepiqSecretFederationProvider.php 13/13 lines, 9 tests in its own class; quality/test-coverage-7ddabe24-1 on remote	session-20261113T084521-fd8a31c7	2026-11-13T09:41:31Z
 cover:dossiq:069ee2d6m7275:774c5470	already covered: lib/Service/Timeline 100% (221/221 statements) from its own tests after -1/-2 merged; no PR	session-20261113T081048-4978ac57	2026-11-13T09:41:33Z
 build:dossiq:capability-rows-say-the-whole-capability	partial: PR #6378 — tasks 1.6, 2.2, 3.3 built with tests; providers and remaining dossiq tasks left	session-20261113T091533-03405ea6	2026-11-13T09:41:43Z
