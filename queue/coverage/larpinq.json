@@ -1,7 +1,7 @@
 {
  "app": "larpinq",
  "commit": "1137ab67c8cdaea7e555dc99270e050e09fa11c2",
- "measured_at": "2026-11-13T07:37:09Z",
+ "measured_at": "2026-11-13T09:50:05Z",
  "php": {
   "tool": "pcov",
   "pct": 92.61,
@@ -67,28 +67,16 @@
   }
  },
  "js": {
-  "pct": 65.35,
-  "statements": 1186,
+  "pct": 79.0,
+  "statements": 981,
   "covered": 775,
   "dirs": {
    "src/": [
-    90,
+    52,
     39
    ],
-   "src/assets/": [
-    0,
-    0
-   ],
-   "src/components/": [
-    25,
-    0
-   ],
-   "src/dialogs/": [
-    104,
-    0
-   ],
    "src/manifest.d/": [
-    22,
+    13,
     13
    ],
    "src/mixins/": [
@@ -96,7 +84,7 @@
     4
    ],
    "src/services/": [
-    498,
+    492,
     466
    ],
    "src/store/": [
@@ -108,12 +96,8 @@
     38
    ],
    "src/views/": [
-    310,
+    287,
     190
-   ],
-   "src/views/flows/": [
-    0,
-    0
    ],
    "src/views/settings/": [
     74,
