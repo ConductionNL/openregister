@@ -1544,3 +1544,5 @@ buildiq	1539	19adbe957e9b64b5947ac6d256575d8c8be0d66c	MERGED	merge-local	GATE OK
 stackiq	1868	5df8ddbe7f814f86d73fc99527b1d647509d1ec8	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1678	3705435c24e0855b026f44fdd1b91388de059c49	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1644	5f5443ddef61241bde3570c956879466d61f14e7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1683	2d99530497451c3be6b38fee4b0993d9ef2f0dfa	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1684	7d1cd6ace379ea726d5703e4f5a1ffc802746cea	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
