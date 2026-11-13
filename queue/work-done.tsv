@@ -5203,3 +5203,4 @@ build2:openregister:records-tree-view	failed: worker rules forbid build tasks on
 merge:pipelinq:3743:ff9392bc	merge-local over 3 pipelinq tasks: merged=4 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:33:05Z
 merge:pipelinq:3749:5510695c	merge-local over 3 pipelinq tasks: merged=4 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:33:05Z
 merge:pipelinq:3754:2d53b5e5	merge-local over 3 pipelinq tasks: merged=4 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:33:05Z
+build2:openregister:records-api-and-table-stated	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:33:15Z
