@@ -4608,3 +4608,4 @@ decidiq	2099	5c20d9f9147f975b20eda0c756b697a0c218c29a	GREEN	worker-41	tree 3218 
 hermiq	1584	d8e968c6a84e0c414a147894b5f87b3c8e3be1b6	REVERIFY	worker-21	openapi.json declares the access-control-allow-origin header the controller already sends on /openapi.json responses (the one ADR 2.1 error); spec now lints 0 errors / 7 warnings, so adrvalidator stays warn; spec only, OpenApiControllerTest OK; new head 9cc7549e6375611e5f874b2884f47adfa6614326, verify it
 decidiq	2100	a22b19b074c0f5b9399e2b74b782b29880e56d36	GREEN	worker-41	tree 3218 tests ok, baseline 3116 ok, 0 new failures; tests-only
 decidiq	2101	6a2f61976798fcf33508406089a5374bb1aac581	GREEN	worker-41	tree 3218 tests ok, baseline 3116 ok, 0 new failures; tests-only
+decidiq	2102	0f39dcdccadc227bed3babce5bff6997a008ac72	GREEN	worker-41	tree 3218 tests ok, baseline 3116 ok, 0 new failures; tests-only
