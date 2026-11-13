@@ -7266,6 +7266,7 @@ review:openregister:10442:f3db1f05	APPROVE 10442: user migrator slice, no access
 review:openregister:10443:e7ab19e9	APPROVE: access checks hold, tests green	session-20261113T213324-d7ae5543	2026-11-13T22:41:30Z
 build:learniq:practical-exam-assessment	partial: PR #2507 (T2,T3; T1 needs owner decision)	session-20261113T202611-3b383b96	2026-11-13T22:41:34Z
 build:learniq:platform-properties	PR #2510: 1.1/1.2 tags, 2.1-2.3 AppInfoPropertiesTest + RunsWithoutAiTest (5 tests); 3.1 archive left	session-20261113T205337-4c32e19e	2026-11-13T22:41:47Z
+build:learniq:employer-substitutes-a-colleague	partial: PR #2509 T1+T2 (deadline, substitute endpoint); T3 notices, T4 portaliq row action, T5 e2e left	session-20261113T205330-0e50ee62	2026-11-13T22:41:47Z
 build:learniq:portal-public-index	partial: PR #2508 school-day categories (T6) and po holidays (T7 po half); T5 test schedule and vo half left	session-20261113T213336-fe5ca7a4	2026-11-13T22:41:38Z
 build4:openregister:scoped-api-tokens-machine-callers	partial: PR #10458 — C40.3/W.4 service accounts + interactive sign-in refusal; W.2/W.3 acting human, W.5 (needs scoped-api-tokens 1.1c), W.6 left	session-20261113T212429-ea8f431f	2026-11-13T22:41:56Z
 build:learniq:learner-list-and-page-follow-the-boards	partial: PR #2512 builds T1 core (today state per pupil + absent count, 15 tests); T1 read-model field, T2-T6 left; no new failures	session-20261113T205323-a7434fd6	2026-11-13T22:41:55Z
