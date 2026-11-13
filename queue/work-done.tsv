@@ -5477,3 +5477,4 @@ build2:openregister:operate-admin-query-console	partial: PR #10283 (build/operat
 verify:humaniq:1114:885f68df	GREEN 1114, GREEN 1116	session-20261113T094606-b7da8c7f	2026-11-13T14:18:32Z
 cover:shillinq:05639debm4eb8:e763166c	no PR: lib/Service/PublicSector/ measured 452/462 lines (97.8%) at 79e59c85 (queue/coverage/shillinq.json), above the 95 target	session-20261113T074527-031883a8	2026-11-13T14:19:14Z
 review:openregister:10277:cc2f0752	BLOCK: migration added without the info.xml version bump; cascade audit inserts would name a missing column	session-20261113T131535-3d7413ab	2026-11-13T14:19:13Z
+review:openregister:10275:1f7d4e72	APPROVE: can list per D-4, no new failures	session-20261113T124805-1586d4f8	2026-11-13T14:19:28Z
