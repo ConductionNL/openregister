@@ -7051,5 +7051,6 @@ review:openregister:10359:6d61fcd8	APPROVE: spec'd preserved list lens, phpstan 
 build4:openregister:incremental-sync-for-api-consumers	partial: PR #10390 to main - group 2 (deleted-list filters, REQ-SYNC-002), 11 new tests; groups 3-5 and 1.4 left	session-20261113T204539-805bb895	2026-11-13T22:02:02Z
 review:openregister:10350:4953ff78	APPROVE 10350: additive XML export, same access path as JSON; Architecture, Contract, Controller and Rules green on the merge	session-20261113T182404-f2c28226	2026-11-13T22:02:17Z
 review:openregister:10362:aae0a66e	APPROVE	session-20261113T205330-0e50ee62	2026-11-13T22:02:25Z
+build4:openregister:history-schema-and-settings-edits-audited	partial: PR #10391 (EntityEditAuditor + listener for six schema/register events, tests; endpoints, pages, organisations, category column left)	session-20261113T210940-b751519f	2026-11-13T22:02:30Z
 build4:openregister:modelling-composite-identity	partial: PR #10392 builds 3.1 (@self.key) and 2.3 (identity index); 1.2 and 4.1 left	session-20261113T213311-eb1a0842	2026-11-13T22:02:39Z
 review:openregister:10363:a2336fd6	BLOCK #10363 (architecture test: concrete SchemaMapper)	session-20261113T212920-cf6d8399	2026-11-13T22:02:39Z
