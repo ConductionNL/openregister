@@ -1561,3 +1561,4 @@ cover:buildiq:8ca317f6mefda:0d8702e3	failed: lib/Resources/template/ is the gene
 verify:integriq:3452:3a092dfb	3 GREEN (3452-3454), tests-only; 7133 tests, only the 2 inherited CallServiceTest errors	session-20261113T015003-d56b074c	2026-11-13T02:09:01Z
 cover:shillinq:801aab65:6d382880	PR #2835: 12 tests (delivery filing, runner failure paths, calendar clamps); suite 9004->9016, same inherited failure	session-20261113T011731-be978a55	2026-11-13T02:09:21Z
 cover:buildiq:8ca317f6mefda:be0dcca9	failed: lib/Mcp tests exist (120) but 118 error: tests/stubs lacks OCA\OpenRegister\Contract\ObjectServiceInterface; main's interface no longer takes saveObject(register:, schema:) that buildiq lib calls, so the stub must mirror the older contract (gap, not cover)	session-20261113T015005-e2235eb9	2026-11-13T02:09:33Z
+verify:keepiq:1717:69f0ab37	1717 GREEN, 1718 GREEN: test-only, 4036->4094 tests, no failures	session-20261112T234655-793f46ee	2026-11-13T02:09:46Z
