@@ -5067,5 +5067,6 @@ build2:openregister:api-client-libraries	failed: worker rules forbid build tasks
 build:openregister:redaction-policy-as-data	partial: PR #10224 (1.1 register+repair, 1.2 validation, 2.1 matcher core; 2.1 source/listener, 2.2-5.2 left)	session-20261113T114545-cd8d833c	2026-11-13T13:05:08Z
 review:openregister:10209:c7722e08	APPROVE: miss-only lookup, access kept; suites green	session-20261113T124802-c7d6f662	2026-11-13T13:05:26Z
 build2:openregister:a-leaf-that-cannot-render-refuses-to-register	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:05:50Z
+build2:openregister:contacts-leaf-cases-panel	already building: all code tasks (1.1, 1.2, 3.1) are on main under lib/Search/ with component-map rows and the route; 19 tests green; only leaf-surface (2.x) and e2e (3.2) tasks remain, which are nextcloud-vue/browser work	session-20261113T111529-f2ee6930	2026-11-13T13:06:06Z
 build2:openregister:fields-a-user-adds-and-choices-a-record-narrows	already built: open 4.3 is a live e2e, 4.4 a PR-body dedup note of the original build; nothing buildable	session-20261113T114545-cd8d833c	2026-11-13T13:05:58Z
 review:openregister:10204:095193e3	APPROVE: new uncalled classes, tests and Architecture green; 6 risky tests noted	session-20261113T101609-bc51215d	2026-11-13T13:06:01Z
