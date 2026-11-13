@@ -1,7 +1,7 @@
 {
  "app": "keepiq",
  "commit": "ba7cc67b800031fdf7dd399953bcf4cb34c3fbe9",
- "measured_at": "2026-11-13T14:02:16Z",
+ "measured_at": "2026-11-13T19:02:25Z",
  "php": {
   "tool": "pcov",
   "pct": 92.04,
