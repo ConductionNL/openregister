@@ -6559,3 +6559,4 @@ build:filinq:zgw-document-bridge	partial: PR #2094 (1.1, 1.2, 2.1, 2.3 done; pic
 verify:filinq:2068:b584ad87	7 GREEN (2068,2069,2071,2073-2076), 2 CONFLICT (2070,2072); queue row was truncated after 2076	session-20261113T175400-7ec3993f	2026-11-13T20:09:41Z
 cover:integriq:92114ab0m0593:aae6d66c	already done: lib/Exception/*.php at 54/55 98.2 lines at 81441e2b	session-20261113T172349-00278d9d	2026-11-13T20:09:52Z
 cover:integriq:92114ab0m0593:19badfa5	already done: lib/Outbound/Call/*.php at 670/698 96.0 lines at 81441e2b	session-20261113T172349-00278d9d	2026-11-13T20:09:58Z
+build:filinq:whole-collection-integrity-scan	partial: PR filinq#2095 builds task 1 (scan service, integrityScan schema) and the occ command; job, notifier, admin section left	session-20261113T175332-5effc865	2026-11-13T20:10:02Z
