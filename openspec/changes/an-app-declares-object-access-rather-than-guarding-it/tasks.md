@@ -13,14 +13,30 @@
 
 ## 2. The undecidable posture
 
-- [ ] 2.1 Read `authorization.onUndecidable` at schema save, validate it
+- [x] 2.1 Read `authorization.onUndecidable` at schema save, validate it
       against `closed` and `open`, default `closed`.
-- [ ] 2.2 Apply it in `PermissionHandler` at every branch that today returns
+- [x] 2.2 Apply it in `PermissionHandler` at every branch that today returns
       early on an unresolvable object or a caught throwable.
-- [ ] 2.3 Apply it in `MagicRbacHandler` so the list path takes the same
+- [x] 2.3 Apply it in `MagicRbacHandler` so the list path takes the same
       posture as the find path.
-- [ ] 2.4 Log the unanswerable question with the missing input, at warning,
+- [x] 2.4 Log the unanswerable question with the missing input, at warning,
       under both postures.
+
+Build note (2): `UndecidablePosture` reads the key from the schema's OWN block,
+because the resolved block is what failed. It is a control key in
+`PermissionCatalogueInterface::CONTROL_KEYS`, and a block holding only
+`onUndecidable` still cascades to its register (otherwise the posture would
+switch the cascade off and never apply). The undecidable branches are the
+unresolvable-authorization ones: `PermissionHandler::evaluatePermission()`, and
+on the list side the filter, the row predicate conditions, the row verdict and
+`callerQualifiesForAction()`. The tenancy helpers
+(`admitsOrganisationlessRowsThroughCascade()`, `updateCrossesOrganisations()`)
+keep refusing, because they decide whether to lift the organisation filter and
+not whether to grant access. On 2.4: `open` logs at warning with the schema,
+action, caller, object and the missing input. `closed` keeps the existing
+fail-closed line unchanged, at error, which is above warning and names the
+schema, action, caller and the missing input. That keeps the recorded golden
+logs stable.
 
 ## 3. Grant issuer
 

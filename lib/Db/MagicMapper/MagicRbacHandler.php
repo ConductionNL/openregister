@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\RbacFallbacks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RuleColumns;
+use OCA\OpenRegister\Service\Rbac\UndecidablePosture;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -352,6 +353,36 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $call->schema->getId(), 'action' => $call->action, 'error' => $error->getMessage()]
 		);
 	}//end logUnresolvable()
+
+	/**
+	 * Whether the schema serves a question its authorization cannot answer; logged at warning when it does.
+	 *
+	 * The posture is read from the schema's OWN block, because the resolved one
+	 * is what failed. `closed` (the default) answers no and leaves the caller's
+	 * fail-closed path, and its log line, as they were; `open` answers yes and
+	 * says so, with what was missing, so the list path takes the same posture
+	 * as PermissionHandler on the find path.
+	 *
+	 * @param Schema      $schema The schema asked about.
+	 * @param string      $action The action asked.
+	 * @param string|null $userId The caller.
+	 * @param string      $error  What could not be resolved.
+	 *
+	 * @return bool True only when the schema declares `onUndecidable: open`.
+	 *
+	 * @spec openspec/changes/an-app-declares-object-access-rather-than-guarding-it/specs/object-access-contract/spec.md#requirement-a-schema-declares-what-an-undecidable-access-question-means
+	 */
+	private function undecidableAdmits(Schema $schema, string $action, ?string $userId, string $error): bool {
+		if ((new UndecidablePosture())->admits(authorization: $schema->getAuthorization()) === false) {
+			return false;
+		}
+
+		$this->logger->warning(
+			message: '[MagicRbacHandler] Authorization unresolvable; granting access because the schema declares onUndecidable: open',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'action' => $action, 'userId' => $userId, 'error' => $error]
+		);
+		return true;
+	}//end undecidableAdmits()
 
 	/**
 	 * The caller as the rule interpreters read it.
@@ -832,6 +863,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return true;
 		}
 
+		// Declared `open`: the query is left unnarrowed by RBAC, and the rest of
+		// the RBAC filter is skipped because there is no resolved block to apply.
+		if ($this->undecidableAdmits(schema: $call->schema, action: $call->action, userId: $call->userId, error: $unresolvable->getMessage()) === true) {
+			return false;
+		}
+
 		$this->logUnresolvable(call: $call, error: $unresolvable);
 		$call->denyAll();
 		return false;
@@ -1213,7 +1250,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @return array<int, mixed> The rules; none for a schema without its own block or an unresolvable one.
 	 */
 	private function ownReadRules(Schema $schema): array {
-		if (empty(RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization())) === true) {
+		$ownRules = RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization());
+		if (empty((new UndecidablePosture())->rulesOf(authorization: $ownRules)) === true) {
 			return [];
 		}
 
@@ -1487,8 +1525,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		// The cascaded block, resolved ONCE for the deny pass, the scope and the
 		// rule chain, with one fail-closed path.
-		if ($this->cascadeResolves(check: $check) === false) {
-			return false;
+		$unresolvable = $this->cascadeUnresolvable(check: $check);
+		if ($unresolvable !== null) {
+			return $this->undecidableAdmits(schema: $check->schema, action: $check->action, userId: $check->userId, error: $unresolvable->getMessage());
 		}
 
 		return $this->objectVerdict(check: $check, objectOwner: $objectOwner);
@@ -1499,16 +1538,16 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @param RbacPermissionCheck $check The check; its cascaded block is set when it resolves.
 	 *
-	 * @return bool False when the block is unresolvable, which refuses (fail-closed).
+	 * @return AuthorizationUnresolvableException|null Why it did not resolve, or null when it did.
 	 */
-	private function cascadeResolves(RbacPermissionCheck $check): bool {
+	private function cascadeUnresolvable(RbacPermissionCheck $check): ?AuthorizationUnresolvableException {
 		try {
 			$check->cascaded = $this->resolveSchemaAuthorization(schema: $check->schema);
-			return true;
+			return null;
 		} catch (AuthorizationUnresolvableException $e) {
-			return false;
+			return $e;
 		}
-	}//end cascadeResolves()
+	}//end cascadeUnresolvable()
 
 	/**
 	 * The verdict for a non-admin caller once the cascaded block is known.
@@ -2005,6 +2044,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		// (`bypass => false` with no conditions) rather than the open bypass.
 		$unresolvable = $this->unresolvableAuthorization(call: $call);
 		if ($unresolvable !== null) {
+			if ($this->undecidableAdmits(schema: $call->schema, action: $call->action, userId: $call->userId, error: $unresolvable->getMessage()) === true) {
+				return ['bypass' => true, 'conditions' => []];
+			}
+
 			$this->logUnresolvable(call: $call, error: $unresolvable);
 			return ['bypass' => false, 'conditions' => []];
 		}
@@ -2337,8 +2380,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return true;
 		}
 
-		if ($this->unresolvableAuthorization(call: $call) !== null) {
-			return false;
+		$unresolvable = $this->unresolvableAuthorization(call: $call);
+		if ($unresolvable !== null) {
+			return $this->undecidableAdmits(schema: $schema, action: $action, userId: $call->userId, error: $unresolvable->getMessage());
 		}
 
 		return $this->authorizationAdmitsCaller(call: $call);
@@ -2439,7 +2483,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
 	public function admitsOrganisationlessRowsThroughCascade(Schema $schema, string $action = 'read'): bool {
-		$ownAuthorization = RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization());
+		$ownAuthorization = (new UndecidablePosture())->rulesOf(
+			authorization: RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization())
+		);
 		if (empty($ownAuthorization) === false) {
 			return false;
 		}

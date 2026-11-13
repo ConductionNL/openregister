@@ -135,6 +135,11 @@ interface PermissionCatalogueInterface {
 		// a read asks for it (ExplicitReveal). A flag, like `audit` above;
 		// Schema::validateRevealValue() checks its value.
 		ExplicitReveal::KEY,
+		// `onUndecidable: closed|open` says what an access question that
+		// cannot be decided means (UndecidablePosture). A setting, not a verb:
+		// read as a verb the narrower and the catalogue would treat it as a
+		// grantable action. AuthorizationControlKeys checks its value.
+		UndecidablePosture::KEY,
 	];
 
 	/**
