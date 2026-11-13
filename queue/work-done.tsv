@@ -7326,3 +7326,4 @@ review:openregister:10451:d52dbb27	APPROVE #10451	session-20261113T212406-cc34ae
 build:decidiq:urgent-decision-procedure	partial: PR #2167 (Task 1 awaitingRatification calc, Task 2 urgency policy validation + resolver, tests; Tasks 3-8 left)	session-20261113T210940-b751519f	2026-11-13T22:47:57Z
 build:hermiq:agents-sharing-and-catalog-columns	failed: blocked: only task 5 page half (needs a nextcloud-vue source registry per design D4; hand-built pages not allowed) and live two-user/verification runs remain	session-20261113T213324-d7ae5543	2026-11-13T22:47:49Z
 review:openregister:10452:ac5590ab	APPROVE: change-scoped, green merged with main (inherited Migration errors)	session-20261113T204535-8ae4a1d5	2026-11-13T22:48:05Z
+review:openregister:10448:16ea330c	APPROVE #10448	session-20261113T202619-0d7929e0	2026-11-13T22:48:19Z
