@@ -5245,5 +5245,6 @@ verify:portaliq:2401:e413f3aa	4 PRs verified GREEN in tree order (#2401,2402,240
 build2:openregister:modelling-rename-without-loss	partial: PR #10247 (tasks 1.1, 2.1; left 1.2, 2.2, 2.3, 3.x UI/e2e, 4.1 docs)	session-20261113T124805-1586d4f8	2026-11-13T13:38:11Z
 build2:openregister:dbal-virtual-registers	partial: PR #10248 ticks 1.2/5.1/5.2 (already on main, evidence), read-through test for 7.2; 4.3, 6.1, 7.2 rest, 7.3 left	session-20261113T121536-3cb7eb71	2026-11-13T13:38:27Z
 build2:openregister:case-insensitive-ordering	partial: PR #10250 (1.1 ordering + 1.3 indexes; 1.2 union path, 1.4/1.5 live left)	session-20261113T114527-9a216dd1	2026-11-13T13:38:42Z
+build2:openregister:anonymisation-image-seam	partial: PR #10249 (1.1-1.3, 2.1, 2.2, 3.4 done; 2.3 and 3.1 partly; 3.2, 3.3, 4.x left); 64 new tests green, touched suites no new failures	session-20261113T124807-caebffdf	2026-11-13T13:38:40Z
 merge:pipelinq:3602:a927cd9b	merge-local over 1 pipelinq tasks: merged=0 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:38:46Z
 verify:planninq:1151:c44021e6	1151 GREEN (tests only, +1 middleware test, suite 1022->1023 OK)	session-20261113T094617-36f80607	2026-11-13T13:38:56Z
