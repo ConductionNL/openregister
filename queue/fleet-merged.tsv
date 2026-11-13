@@ -1537,3 +1537,6 @@ integriq	3522	c0e610a0bfecb0364177d4a42dfb55b48031614d	MERGED	merge-local	GATE O
 integriq	3523	205dd3edf87a34612c6e64b8373dbf4e44b4fb91	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2125	61fb144e6708487cd653f17c1dbea700472a8d91	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2126	8232ebea247d80f90f11f8c96eb75e217ab2b540	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1108	7419b066a58991e41ad827505b8f9828ef0c5387	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1109	109a0a03f8a00a56a3528beb4cdc6adb760cdc70	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1110	60073c1fc3430b6a711937fa3210d59c7fc123fc	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
