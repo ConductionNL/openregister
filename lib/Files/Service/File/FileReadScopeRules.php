@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Files\Service\File;
 /**
  * The rules a file-search read scope applies beyond the caller's tree: the object read rule for an object's file and the file restriction guard.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class FileReadScopeRules {
 	/**
@@ -34,7 +34,7 @@ final class FileReadScopeRules {
 	 * @param ObjectFileAccess|null     $objectFileAccess The object read rule for an object's file.
 	 * @param FileRestrictionGuard|null $restrictions     Refuses a restricted file the caller is not admitted to.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly ?ObjectFileAccess $objectFileAccess = null,

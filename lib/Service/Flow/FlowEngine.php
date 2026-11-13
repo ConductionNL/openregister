@@ -847,7 +847,7 @@ class FlowEngine {
 	 *
 	 * @return object|null The transition to fire, or null when none is eligible.
 	 *
-	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 * @spec openspec/specs/flow-logic/spec.md
 	 */
 	private function selectTransition(array $enabled, FlowWalkPass|FlowStreamPass $pass): ?object {
 		$fallback = null;
@@ -877,7 +877,7 @@ class FlowEngine {
 	 *
 	 * @return array<string, mixed> The expression data.
 	 *
-	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 * @spec openspec/specs/flow-logic/spec.md
 	 */
 	private function conditionData(object $transition, FlowWalkPass|FlowStreamPass $pass): array {
 		$items = $this->services->placement->itemsForTransition(transition: $transition, placeItems: $pass->placeItems);

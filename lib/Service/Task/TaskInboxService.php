@@ -539,7 +539,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 *
 	 * @return string|null The identifier, or null when the object has none.
 	 *
-	 * @spec openspec/changes/task-subject-identifier/specs/flow-tasks/spec.md#requirement-the-task-subject-context-carries-the-subjects-identifier
+	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	private function subjectIdentifier(array $serialised): ?string {
 		$identifier = ($serialised['identifier'] ?? null);

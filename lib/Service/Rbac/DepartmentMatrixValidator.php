@@ -75,7 +75,7 @@ class DepartmentMatrixValidator {
 	 *
 	 * @return self The validator.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function withDeclaredActions(array $declaredActions): self {
 		return new self(declaredActions: $declaredActions);

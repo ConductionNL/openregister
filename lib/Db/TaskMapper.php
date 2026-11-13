@@ -160,7 +160,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function announceTerminality(Task $task): void {
 		if ($this->entityEvents === null || $task->isInTerminalState() === false) {

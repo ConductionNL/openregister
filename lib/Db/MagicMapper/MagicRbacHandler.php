@@ -1887,7 +1887,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @throws InvalidArgumentException When the alias is not a plain identifier.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function buildRbacPredicateForAlias(Schema $schema, AliasedRows $rows): string {
 		$this->assertPredicateAlias(alias: $rows->alias);

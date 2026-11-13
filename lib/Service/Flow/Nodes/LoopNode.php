@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+ * @spec openspec/specs/flow-merge/spec.md
  */
 
 declare(strict_types=1);
@@ -97,7 +97,7 @@ class LoopNode extends ObjectNodeBase implements IFlowNode, LoopNodeInterface, I
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['batchSize'];

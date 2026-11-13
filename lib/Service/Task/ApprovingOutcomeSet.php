@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
  */
 
 declare(strict_types=1);
@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Task;
  * The usable entries of a declared `approvingOutcomes` value: trimmed,
  * lowercased, without empty or non-string entries.
  *
- * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
  */
 final class ApprovingOutcomeSet {
 
@@ -61,7 +61,7 @@ final class ApprovingOutcomeSet {
 	 *
 	 * @return array<int, string> The entries; empty when none is usable.
 	 *
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	public function entries(): array {
 		return $this->entries;

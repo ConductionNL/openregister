@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+ * @spec openspec/specs/flow-merge/spec.md
  */
 
 declare(strict_types=1);
@@ -103,7 +103,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['mode', 'key'];
@@ -219,7 +219,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	 *
 	 * @return array<int, array> One item per distinct key value.
 	 *
-	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+	 * @spec openspec/specs/flow-merge/spec.md
 	 */
 	private function mergeByKey(array $items, string $key): array {
 		$groups = [];
@@ -253,7 +253,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	 *
 	 * @return array<int, array> The deduplicated items.
 	 *
-	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+	 * @spec openspec/specs/flow-merge/spec.md
 	 */
 	private function unique(array $items, string $key): array {
 		$seen = [];

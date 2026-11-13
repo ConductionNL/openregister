@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use DOMElement;
 /**
  * A DOM document rooted at `bpmn:definitions`.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 final class BpmnExportDocument {
 

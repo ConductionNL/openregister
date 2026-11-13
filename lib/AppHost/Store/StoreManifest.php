@@ -610,7 +610,7 @@ class StoreManifest {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/store-plane-install-ops/specs/apphost-store-plane/spec.md#requirement-a-config-write-must-be-allowlisted-by-key-and-scoped-to-the-declaring-app
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-config-write-must-be-allowlisted-by-key-and-scoped-to-the-declaring-app
 	 */
 	public function isConfigurable(string $key): bool {
 		if ($key === '' || $this->configurable === []) {

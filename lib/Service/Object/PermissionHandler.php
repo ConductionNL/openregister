@@ -700,7 +700,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private function dispatchActionEvaluated(PermissionAsk $ask, bool $granted): void {
 		if ($this->rules->eventDispatcher === null) {
@@ -2799,7 +2799,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/file-actions/spec.md
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function resolveDeclaredAuthorization(Schema $schema, ?ObjectEntity $object = null): ?array {
 		return self::stripMcpScope(
@@ -3222,7 +3222,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return array|null The block with the mcp scope removed, or null when
 	 *                    nothing enforceable remains.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function stripMcpScope(?array $authorization): ?array {
 		return McpScope::strip(authorization: $authorization);
@@ -3237,7 +3237,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @return array<int, string> The offered action names, in declaration order.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function mcpOfferedActions(?array $authorization): array {
 		return McpScope::offeredActions(authorization: $authorization);

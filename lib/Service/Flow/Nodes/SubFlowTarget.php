@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
  * These three always travel together from the moment the sub-flow is
  * resolved: every child run of one step gets the same document, id and stack.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 final class SubFlowTarget {
 	/**

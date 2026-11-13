@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 /**
  * The processing log the retention job prunes and the audit trail that records each purge.
  *
- * @spec openspec/changes/processing-activity-register/specs/avg-verwerkingsregister/spec.md
+ * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
 final readonly class ProcessingLogRetentionStores {
 	/**
@@ -37,7 +37,7 @@ final readonly class ProcessingLogRetentionStores {
 	 * @param ProcessingLogMapperInterface $entries    Deletes expired entries.
 	 * @param AuditTrailMapperInterface    $auditTrail Holds the record of each purge.
 	 *
-	 * @spec openspec/changes/processing-activity-register/specs/avg-verwerkingsregister/spec.md
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function __construct(
 		public ProcessingLogMapperInterface $entries,

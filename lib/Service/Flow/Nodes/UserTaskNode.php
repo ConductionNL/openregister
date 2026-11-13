@@ -564,7 +564,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function armDeadline(UserTaskStep $step, array $binding): void {
 		$config = $step->config;
@@ -586,7 +586,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 *
 	 * @return bool True when a deadline should be armed.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function declaresSla(array $config): bool {
 		$sla = ($config['sla'] ?? null);
@@ -600,7 +600,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 *
 	 * @return string|null The title.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function timerTitle(array $config): ?string {
 		$title = trim((string)($config['title'] ?? ''));
@@ -621,7 +621,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 *
 	 * @return array<string, mixed> The keys that are present, not null and not ''.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function optionalTimerKeys(array $config): array {
 		$set = [];

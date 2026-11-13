@@ -30,7 +30,7 @@ use OCP\Files\File;
 /**
  * One request to open a document in Nextcloud Office.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class OfficeOpenRequest {
 	/**
@@ -41,7 +41,7 @@ final class OfficeOpenRequest {
 	 * @param string $displayName The name the editor is shown under; empty for the uid.
 	 * @param bool   $canWrite    Whether the caller grants write access.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly File $file,

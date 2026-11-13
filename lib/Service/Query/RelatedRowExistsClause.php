@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
  * because a second evaluator of the access question disagrees with the first
  * within a week, and the one that ends up wider is the one that discloses.
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 final class RelatedRowExistsClause {
 	use MagicColumnNameTrait;
@@ -141,7 +141,7 @@ final class RelatedRowExistsClause {
 	 *
 	 * @throws InvalidArgumentException When the engine is unknown or no access predicate was given.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function render(RelatedRowFilter $filter, RelatedRowSubquery $subquery): array {
@@ -305,7 +305,7 @@ final class RelatedRowExistsClause {
 	 *
 	 * @return array{sql: array<int, string>, parameters: array<string, mixed>} The clauses and their bindings.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function renderAll(RelatedRowClauseBatch $batch): array {
 		$sql        = [];
@@ -626,7 +626,7 @@ final class RelatedRowExistsClause {
 	 *
 	 * @return string The engine.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function engineFor(IDBConnection $db, LoggerInterface $logger): string {
 		try {

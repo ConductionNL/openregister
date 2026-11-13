@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+ * @spec openspec/specs/flow-tooling/spec.md
  */
 
 declare(strict_types=1);
@@ -196,8 +196,8 @@ class FlowRunController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -323,7 +323,7 @@ class FlowRunController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -379,7 +379,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return array<int, string> The flow ids, empty when none were given.
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	private function flowIdsParam(): array {
 		$raw = $this->request->getParam('flowIds');
@@ -417,7 +417,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return DateTime|false|null The moment, null when absent, false when unreadable.
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	private function sinceParam(): DateTime|false|null {
 		$raw = $this->request->getParam('since');
@@ -467,7 +467,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return JSONResponse The refusal naming the parameter.
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	private function badSince(): JSONResponse {
 		return new JSONResponse(
@@ -507,7 +507,7 @@ class FlowRunController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
 	#[NoAdminRequired]
@@ -653,7 +653,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return string|null The organisation uuid.
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 */
 	private function activeOrganisation(): ?string {
 		$uuid = $this->organisationService->getActiveOrganisation()?->getUuid();
@@ -677,7 +677,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return array<string, mixed> The row shape.
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 */
 	private function summarise(FlowRun $run): array {
 		$flowId = (string)$run->getFlowId();
@@ -715,7 +715,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return string The name, or the id.
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 */
 	private function flowName(string $flowId): string {
 		$flow = $this->resolvers->resolveFlow(flowId: $flowId);
@@ -740,7 +740,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return string|null The step name(s), comma-joined.
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 */
 	private function currentStep(FlowRun $run): ?string {
 		$marking = $run->getMarking();
@@ -763,7 +763,7 @@ class FlowRunController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -919,7 +919,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	#[NoAdminRequired]
 	public function retry(string $uuid): JSONResponse {

@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
+ * @spec openspec/specs/flow-mcp/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 /**
  * A dependency bundle of {@see FlowMcpToolProvider}.
  *
- * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
+ * @spec openspec/specs/flow-mcp/spec.md
  */
 final class FlowToolServices {
 	/**
@@ -43,7 +43,7 @@ final class FlowToolServices {
 	 * @param FlowServiceInterface       $flows     Authors flows, with the organisation scoping.
 	 * @param FlowNodePreflightInterface $preflight Reports what a saved document is missing.
 	 *
-	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
+	 * @spec openspec/specs/flow-mcp/spec.md
 	 */
 	public function __construct(
 		public readonly FlowRunServiceInterface $runner,

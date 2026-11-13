@@ -35,7 +35,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use JsonSerializable;
 /**
  * The lossy-mapping report an import returns beside the flow.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 class BpmnMappingReport implements JsonSerializable {
 
@@ -103,7 +103,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return bool True when the entry was recorded.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function record(string $elementId, BpmnReading $reading): bool {
 		if (trim($elementId) === '' || in_array($reading->verdict, self::VERDICTS, true) === false) {
@@ -125,7 +125,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return array<int, array<string, string>> The entries.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function entries(): array {
 		return $this->entries;
@@ -138,7 +138,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return array<int, array<string, string>> The entries.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function withVerdict(string $verdict): array {
 		return array_values(
@@ -155,7 +155,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return bool True when something was approximated or refused.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function lostSomething(): bool {
 		return ($this->withVerdict(verdict: self::APPROXIMATED) !== []
@@ -172,7 +172,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return bool True when strict must refuse the import.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function failsStrict(): bool {
 		return ($this->withVerdict(verdict: self::REFUSED) !== []);
@@ -183,7 +183,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return array<string, int> Verdict to count.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function summary(): array {
 		$summary = [];
@@ -199,7 +199,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The serialised report.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

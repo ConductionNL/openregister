@@ -383,7 +383,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @return array<int, string> The constraint names, in declaration order.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function getUpsertKeys(): array;
 
@@ -423,7 +423,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *                                                                       The parsed object-source declaration, or null when absent/invalid.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-2.2
-	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function getObjectSource(): ?array;
 
@@ -439,7 +439,7 @@ interface SchemaInterface extends JsonSerializable {
 	 * @return array<string, array{through: string, property: string, label?: string}>
 	 *                                                                                The declared lenses, keyed by property name.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getLenses(): array;
 
@@ -455,7 +455,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @psalm-return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getListPresentation(): array;
 
@@ -469,7 +469,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @return array<int, array{through: string, label?: string}> The reference properties to collect from.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getGeoInheritance(): array;
 
@@ -553,7 +553,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function getPartyKinds(): array;
 
@@ -562,7 +562,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @return array<string, mixed> The annotation as stored.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function getPartyAnnotation(): array;
 
@@ -682,7 +682,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @return array<string, string> Reason codes mapped to their labels.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function notSuppliedReasons(): array;
 

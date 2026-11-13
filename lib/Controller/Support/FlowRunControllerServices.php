@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 /**
  * The service bundles of the flow run API.
  *
- * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+ * @spec openspec/specs/flow-tooling/spec.md
  */
 final class FlowRunControllerServices {
 	/**
@@ -35,7 +35,7 @@ final class FlowRunControllerServices {
 	 * @param FlowRunAccess   $access   The access bundle.
 	 * @param FlowRunPlatform $platform The platform bundle.
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	public function __construct(
 		public readonly FlowRunRuns $runs,

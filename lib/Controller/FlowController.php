@@ -474,7 +474,7 @@ class FlowController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function validate(): JSONResponse {
 		$flow = $this->request->getParam('flow');
@@ -576,7 +576,7 @@ class FlowController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -627,7 +627,7 @@ class FlowController extends Controller {
 	 *
 	 * @return string|null The trimmed-nonempty value, or null.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function trimmedFilter(string $key): ?string {
 		$value = $this->request->getParam($key);
@@ -671,7 +671,7 @@ class FlowController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	#[NoAdminRequired]
 	public function exportBpmn(string $id): DataDownloadResponse|JSONResponse {
@@ -728,7 +728,7 @@ class FlowController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	#[NoAdminRequired]
 	public function importBpmn(): JSONResponse {
@@ -870,7 +870,7 @@ class FlowController extends Controller {
 	 *
 	 * @return string|JSONResponse|null The file's content, a 400 refusal, or null when no file was sent.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function readBpmnUpload(): string|JSONResponse|null {
 		$file = $this->request->getUploadedFile('file');
@@ -1208,7 +1208,7 @@ class FlowController extends Controller {
 	 *
 	 * @return JSONResponse The 401 or 403 with `error` and `verdict`.
 	 *
-	 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+	 * @spec openspec/specs/flow-and-run-detail-pages/spec.md
 	 */
 	private function runRefusal(FlowRunRefused $refusal): JSONResponse {
 		$status = Http::STATUS_FORBIDDEN;

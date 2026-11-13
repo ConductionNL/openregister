@@ -383,7 +383,7 @@ class FileVersioningHandler {
 	 *
 	 * @return IUser|null The openregister account for an object's file, else the session user.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function versionUser(File $file): ?IUser {
 		try {

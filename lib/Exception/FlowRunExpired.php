@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+ * @spec openspec/specs/flow-stale-runs/spec.md
  */
 
 declare(strict_types=1);

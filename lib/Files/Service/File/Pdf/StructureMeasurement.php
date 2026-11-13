@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-002
+ * @spec openspec/specs/tag-preserving-redaction/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 /**
  * Structure counts of one redaction run.
  *
- * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-002
+ * @spec openspec/specs/tag-preserving-redaction/spec.md
  */
 final class StructureMeasurement {
 	/**
@@ -45,7 +45,7 @@ final class StructureMeasurement {
 	 * @param int $tagCountAfter `/StructElem` count of the output.
 	 * @param bool $structureIntactAfter Whether the output is still detected as tagged.
 	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-002
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function __construct(
 		public readonly ?bool $rawOption,
@@ -63,7 +63,7 @@ final class StructureMeasurement {
 	 *
 	 * @return bool True when preservation is in effect for this run.
 	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-004
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function requested(): bool {
 		if ($this->rawOption === null) {
@@ -92,7 +92,7 @@ final class StructureMeasurement {
 	 *
 	 * @return StructurePreservation The result block for this run.
 	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-002
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function attest(int $streamsModified): StructurePreservation {
 		if ($this->rawOption === false) {

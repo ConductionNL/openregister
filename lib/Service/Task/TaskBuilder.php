@@ -384,7 +384,7 @@ class TaskBuilder {
 	 *
 	 * @throws TaskValidationException When present but unparsable.
 	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-due_at-advises-expires_at-enforces
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-due-at-advises-expires-at-enforces
 	 */
 	private function parseDate(mixed $value, string $field): ?DateTime {
 		if ($value === null || $value === '') {

@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use Throwable;
 /**
  * Raised when a BPMN file could not be imported.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 class BpmnImportRefused extends RuntimeException {
 

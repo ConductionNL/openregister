@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ interface ConnectionReporterInterface {
 	 *
 	 * @return array<int, string> The connection keys a refresh was sent for.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function refreshFromSave(array $savedKeys): array;
 
@@ -55,7 +55,7 @@ interface ConnectionReporterInterface {
 	 *
 	 * @return bool True when the report was sent.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function report(string $key, string $status, string $message = ''): bool;
 
@@ -72,7 +72,7 @@ interface ConnectionReporterInterface {
 	 *
 	 * @return bool True when the report was sent.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function reportLlmProviders(mixed $chatProvider, mixed $embeddingProvider): bool;
 }//end interface

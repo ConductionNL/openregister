@@ -149,7 +149,7 @@ class LockHandler {
 	 *                    that actually fires on contention.
 	 * @throws NotAuthorizedException If a user who may not update the object asks for its lock.
 	 *
-	 * @spec openspec/changes/lock-needs-update-permission/specs/lock-needs-update-permission/spec.md#requirement-a-user-lock-needs-update-permission-on-the-object
+	 * @spec openspec/specs/lock-needs-update-permission/spec.md#requirement-a-user-lock-needs-update-permission-on-the-object
 	 */
 	private function lockStoredObject(array $context, LockRequest $request): array {
 		$this->authorization->assertMayLock(context: $context);

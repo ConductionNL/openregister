@@ -399,7 +399,7 @@ class GenericStoreController extends Controller {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/store-plane-action-auth/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
 	 */
 	private function mayInstall(StoreManifest $store, ?IUser $user): bool {
 		$action = $store->installAction();

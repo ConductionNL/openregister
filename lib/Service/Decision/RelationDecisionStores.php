@@ -29,7 +29,7 @@ use OCP\IDBConnection;
  * Where a relation decision is written: the relation, its decision record and
  * the one transaction around both.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 final class RelationDecisionStores {
 	/**
@@ -39,7 +39,7 @@ final class RelationDecisionStores {
 	 * @param DecisionService               $decisions      Records decision objects.
 	 * @param IDBConnection                 $db             One transaction for the write and its decision.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(
 		public readonly EntityRelationMapperInterface $relationMapper,

@@ -343,7 +343,7 @@ final class ObjectActionDefinition implements ObjectActionDefinitionInterface {
 	 *
 	 * @return string|null The property name.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function selfAssignField(): ?string {
 		if ($this->kind !== self::KIND_SELF_ASSIGN || is_array($this->body) === false) {

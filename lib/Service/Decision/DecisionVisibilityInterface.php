@@ -41,7 +41,7 @@ interface DecisionVisibilityInterface {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function present(EntityRelation $relation, string $userId, ?array $serialised=null): array;
 
@@ -53,7 +53,7 @@ interface DecisionVisibilityInterface {
 	 *
 	 * @return list<array<string, mixed>>
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function presentAll(array $relations, string $userId): array;
 }//end interface

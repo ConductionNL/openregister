@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use OCP\AppFramework\Middleware;
 /**
  * Adds this request's schedule refusals to its response.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleRefusalMiddleware extends Middleware {
 	/**
@@ -65,7 +65,7 @@ class ScheduleRefusalMiddleware extends Middleware {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the Middleware contract.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function afterController(Controller $controller, string $methodName, Response $response): Response {
 		return $this->withRefusals(response: $response);

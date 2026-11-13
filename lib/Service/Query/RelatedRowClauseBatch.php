@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ use Closure;
  * The filters of one query, the table they run against, the access predicate
  * per inner row, and the prefix every placeholder of the batch carries.
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 final readonly class RelatedRowClauseBatch {
 

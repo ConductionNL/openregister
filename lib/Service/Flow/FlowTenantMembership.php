@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Throwable;
 /**
  * Fail-closed organisation membership, for a user with no session.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class FlowTenantMembership implements FlowTenantMembershipInterface {
 	/**
@@ -55,7 +55,7 @@ class FlowTenantMembership implements FlowTenantMembershipInterface {
 	 *
 	 * @return bool False too when the organisation cannot be read.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function isMember(string $uid, string $organisation): bool {
 		try {

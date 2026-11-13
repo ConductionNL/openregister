@@ -28,7 +28,7 @@ use OCP\IUserSession;
 /**
  * The caller and the file tree a file-search read scope resolves hits in.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class FileReadScopeTree {
 	/**
@@ -37,7 +37,7 @@ final class FileReadScopeTree {
 	 * @param IRootFolder  $rootFolder  The Nextcloud file tree.
 	 * @param IUserSession $userSession The signed-in caller.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly IRootFolder $rootFolder,

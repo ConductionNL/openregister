@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\FlowStreamMapperInterface;
  * All three are needed for a stream walk; when any is null the run walks a single
  * in-memory stream exactly as before.
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 final readonly class FlowRunStreamStores {
 	/**
@@ -40,7 +40,7 @@ final readonly class FlowRunStreamStores {
 	 * @param FlowPlaceClaims|null           $claims       The claim protocol.
 	 * @param FlowRunCommit|null             $commit       The locked delta commit path.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function __construct(
 		public ?FlowStreamMapperInterface $streamMapper = null,

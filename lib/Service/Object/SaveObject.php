@@ -3991,7 +3991,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function setSelfMetadata(ObjectEntity $objectEntity, SelfSubmission $submission): void {
 		$selfData = $submission->selfData;
@@ -4085,7 +4085,7 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function bindSelfFolder(ObjectEntity $objectEntity, FolderBind|null $bind): void {
 		// Propagate @self.folder so the access-control check governs the bind

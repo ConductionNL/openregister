@@ -127,7 +127,7 @@ interface FlowTimerInterface extends JsonSerializable {
 	 *
 	 * @return boolean True for armed and suspended.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function isOpen(): bool;
 
@@ -136,7 +136,7 @@ interface FlowTimerInterface extends JsonSerializable {
 	 *
 	 * @return boolean True for an expiry timer carrying an outcome.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
 	public function isEnforcing(): bool;
 
@@ -145,7 +145,7 @@ interface FlowTimerInterface extends JsonSerializable {
 	 *
 	 * @return array<string, mixed> The timer.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
 	 */
 	public function jsonSerialize(): array;
 }//end interface

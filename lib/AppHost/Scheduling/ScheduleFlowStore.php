@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 /**
  * Reads, writes and removes the flows compiled from one application's schedules.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	/**
@@ -73,7 +73,7 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	 *
 	 * @return array<string, Flow> The flows. A flow an author drew is never among them.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function ofApplication(string $application): array {
 		$flows = [];
@@ -97,7 +97,7 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	 *
 	 * @return bool True when one does.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function hasFlowsNamedFor(string $slug): bool {
 		$selection = new FlowSelection(app: Flow::APP_MANIFEST_SCHEDULE);
@@ -120,7 +120,7 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	 *
 	 * @throws \InvalidArgumentException When the trigger rejects its config.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function write(CompiledScheduleFlow $compiled, ?Flow $stored): void {
 		if ($stored === null) {
@@ -144,7 +144,7 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function remove(Flow $flow): void {
 		$this->flows->deleteStored(flow: $flow);

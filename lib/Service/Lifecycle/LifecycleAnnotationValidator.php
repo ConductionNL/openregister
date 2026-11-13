@@ -89,7 +89,7 @@ final class LifecycleAnnotationValidator implements LifecycleAnnotationValidator
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function validate(array $schema): array {
 		if (isset($schema['x-openregister-lifecycle']) === false) {

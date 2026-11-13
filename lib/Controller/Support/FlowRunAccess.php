@@ -30,7 +30,7 @@ use OCA\OpenRegister\Service\OrganisationServiceInterface;
 /**
  * The domain services of the flow run API.
  *
- * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+ * @spec openspec/specs/flow-tooling/spec.md
  */
 final class FlowRunAccess {
 	/**
@@ -41,7 +41,7 @@ final class FlowRunAccess {
 	 * @param ?FlowCaller           $flowOwnership       Reads which flows the caller owns, from the
 	 * @param ?FlowRunSignalInterface $signalService       The guarded signal seam the
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	public function __construct(
 		public readonly OrganisationServiceInterface $organisationService,

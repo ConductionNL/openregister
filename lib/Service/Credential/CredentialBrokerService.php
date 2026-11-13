@@ -706,7 +706,7 @@ class CredentialBrokerService {
 	 *
 	 * @return string|null The trimmed secret, or null unchanged.
 	 *
-	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-a-credential-secret-is-trimmed-of-surrounding-whitespace-before-storage
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-a-credential-secret-is-trimmed-of-surrounding-whitespace-before-storage
 	 */
 	private function trimmedSecret(#[\SensitiveParameter] ?string $secret): ?string {
 		if ($secret === null) {
@@ -1562,7 +1562,7 @@ class CredentialBrokerService {
 	 *
 	 * @throws CredentialUpstreamException When the call fails at the transport level.
 	 *
-	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
 	 */
 	private function performCall(string $method, string $url, array $headers, ?string $body, string $credentialId, string $secret): array {
 		$options = [
@@ -1627,7 +1627,7 @@ class CredentialBrokerService {
 	 *
 	 * @return string A secret-redacted `ClassName: message` description.
 	 *
-	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
 	 */
 	private function describeUpstreamFailure(Throwable $exception, string $secret): string {
 		$message = $exception->getMessage();

@@ -33,7 +33,7 @@ interface ReviewPolicyInterface {
 	 *
 	 * @return bool True for `decider` ownership.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function isDeciderOwned(): bool;
 
@@ -42,7 +42,7 @@ interface ReviewPolicyInterface {
 	 *
 	 * @return array<string> Group ids.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function getSupervisors(): array;
 
@@ -51,7 +51,7 @@ interface ReviewPolicyInterface {
 	 *
 	 * @return bool True when hiding is on.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function hidesOthers(): bool;
 
@@ -60,7 +60,7 @@ interface ReviewPolicyInterface {
 	 *
 	 * @return array{ownership: string, supervisors: array<string>, hideOthers: bool}
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function toArray(): array;
 }//end interface

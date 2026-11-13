@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+ * @spec openspec/specs/flow-per-item-routing/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Holds the per-place item buffers and moves items as transitions fire.
  *
- * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+ * @spec openspec/specs/flow-per-item-routing/spec.md
  */
 class FlowItemPlacement {
 	/**
@@ -49,7 +49,7 @@ class FlowItemPlacement {
 	 *
 	 * @return array<int, mixed> The gathered input items.
 	 *
-	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 * @spec openspec/specs/flow-logic/spec.md
 	 */
 	public function itemsForTransition(object $transition, array $placeItems): array {
 		$items = [];
@@ -80,7 +80,7 @@ class FlowItemPlacement {
 	 *
 	 * @return array<string, array> Items keyed by place.
 	 *
-	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+	 * @spec openspec/specs/flow-merge/spec.md
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function seed(ItemSeed $seed): array {
@@ -135,8 +135,8 @@ class FlowItemPlacement {
 	 *
 	 * @return array<string, array> The updated buffers.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
-	 * @spec openspec/changes/flow-or-merge-keeps-every-firing/specs/flow-merge/spec.md#requirement-an-or-merge-place-keeps-every-firings-items
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-merge/spec.md
 	 */
 	public function advance(ItemFiring $firing, array $placeItems): array {
 		// A FIRING THAT PRODUCED NOTHING PLACES NOTHING AND DESTROYS NOTHING.
@@ -187,7 +187,7 @@ class FlowItemPlacement {
 	 *
 	 * @return array<string, array> The buffers with the outputs written.
 	 *
-	 * @spec openspec/changes/flow-or-merge-keeps-every-firing/specs/flow-merge/spec.md#requirement-an-or-merge-place-keeps-every-firings-items
+	 * @spec openspec/specs/flow-merge/spec.md
 	 */
 	private function land(ItemFiring $firing, array $placeItems): array {
 		foreach ($firing->transition->getTos() as $to) {
@@ -227,7 +227,7 @@ class FlowItemPlacement {
 	 *
 	 * @return array<int, array> The items for that output, tag removed.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
 	 */
 	public function itemsForOutput(array $items, string $output): array {
 		// A routing step tags an item with the NODE it is routing to, and a
@@ -284,7 +284,7 @@ class FlowItemPlacement {
 	 *
 	 * @return array<int, mixed>|null The pinned items, or null when not pinned.
 	 *
-	 * @spec openspec/changes/or-flow-pins/specs/flow-pins/spec.md
+	 * @spec openspec/specs/flow-pins/spec.md
 	 */
 	public function pinnedItems(FlowWalkPass|FlowStreamPass $pass, string $transitionName): ?array {
 		$pins = (array)($pass->context['pins'] ?? ($pass->flow['pins'] ?? []));

@@ -406,7 +406,7 @@ class FileSettingsHandler {
 	 *
 	 * @throws InvalidArgumentException When the declaration names an ownership nobody can honour.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	private function reviewDefault(array $fileData): ?array {
 		if (array_key_exists(ReviewPolicy::SETTINGS_KEY, $fileData) === false) {

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+ * @spec openspec/specs/flow-run-summary/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use DateTime;
  * mean "no restriction" on that axis. Visibility is NOT a filter: who may see
  * a run travels separately as a {@see FlowRunViewer}.
  *
- * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+ * @spec openspec/specs/flow-run-summary/spec.md
  */
 final readonly class FlowRunFilter {
 	/**

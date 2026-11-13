@@ -118,7 +118,7 @@ class GenericStoreInstaller {
 	 *
 	 * @return array<string, string> The per-component report row.
 	 *
-	 * @spec openspec/changes/store-plane-install-ops/specs/apphost-store-plane/spec.md#requirement-a-component-must-declare-its-install-operation-defaulting-to-writing-an-object
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-component-must-declare-its-install-operation-defaulting-to-writing-an-object
 	 */
 	private function installComponent(StoreManifest $store, array $component): array {
 		$op = (string)($component['op'] ?? StoreManifest::DEFAULT_INSTALL_OP);
@@ -202,7 +202,7 @@ class GenericStoreInstaller {
 	 *
 	 * @return array<string, string>
 	 *
-	 * @spec openspec/changes/store-plane-install-ops/specs/apphost-store-plane/spec.md#requirement-a-config-write-must-be-allowlisted-by-key-and-scoped-to-the-declaring-app
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-config-write-must-be-allowlisted-by-key-and-scoped-to-the-declaring-app
 	 */
 	private function setAppConfig(StoreManifest $store, array $component): array {
 		$key     = (string)($component['key'] ?? '');

@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\AppHost\Search;
 /**
  * The term, page size and offset a search asks for.
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 final class SchemaSearchPage {
 	/**
@@ -35,7 +35,7 @@ final class SchemaSearchPage {
 	 * @param int    $limit  The page size.
 	 * @param int    $offset The offset of the page.
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function __construct(
 		public readonly string $term,

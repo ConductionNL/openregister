@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 /**
  * The calendar a term rolls on and the day step it rolls by ({@see WorkingDayRoll}).
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 final class CalendarRoll {
 	/**

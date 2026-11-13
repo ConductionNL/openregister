@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
  */
 
 declare(strict_types=1);
@@ -117,7 +117,7 @@ class EscalationLadderService {
 	 *
 	 * @throws FlowTimerValidationException When `ladder_slug` names no ladder.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function resolveLadder(FlowTimer $timer): array {
 		$sla = ['value' => (int)round((float)$timer->getBudgetValue()), 'unit' => (string)$timer->getBudgetUnit()];
@@ -155,7 +155,7 @@ class EscalationLadderService {
 	 *
 	 * @throws FlowTimerValidationException On any refused shape or value.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
 	 */
 	public function normaliseRules(mixed $rules, ?array $sla): array {
 		if (is_array($rules) === false) {
@@ -186,7 +186,7 @@ class EscalationLadderService {
 	 *
 	 * @throws FlowTimerValidationException When an offset exceeds the SLA, naming the anchor.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
 	 */
 	public function validateAgainstTimeline(RungTimeline $timeline, DateTimeInterface $anchorAt): void {
 		$calendar = $timeline->calendar;
@@ -212,7 +212,7 @@ class EscalationLadderService {
 	 *
 	 * @return DateTimeImmutable The rung's instant.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function rungInstant(array $rung, RungTimeline $timeline): DateTimeImmutable {
 		$offset = (float)$rung['offset'];
@@ -238,7 +238,7 @@ class EscalationLadderService {
 	 *
 	 * @return DateTimeImmutable|null The instant, or null when every rung has fired.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function nextRungAt(RungTimeline $timeline): ?DateTimeImmutable {
 		$earliest = null;
@@ -261,7 +261,7 @@ class EscalationLadderService {
 	 *
 	 * @return array<int, array{rung: array<string, mixed>, at: DateTimeImmutable}> The due rungs.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function dueRungs(RungTimeline $timeline, DateTimeInterface $now): array {
 		$due = [];
@@ -283,7 +283,7 @@ class EscalationLadderService {
 	 *
 	 * @return list<array{rung: array<string, mixed>, at: DateTimeImmutable}> The unfired entries.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	private function unfired(RungTimeline $timeline): array {
 		$entries = [];
@@ -312,7 +312,7 @@ class EscalationLadderService {
 	 *
 	 * @return array<int, array{type: string, id: string, role: string}> The recipients, deduplicated.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function resolveRecipients(array $rung, EscalationAudience $audience): array {
 		$roles = array_values(array_unique(array_merge($rung['notifyRole'], $rung['escalateToRole'])));
@@ -369,7 +369,7 @@ class EscalationLadderService {
 	 *
 	 * @return string|null The slug.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	private function ladderSlugOwnedBy(string $organisation): ?string {
 		foreach ($this->definitions->ladders() as $slug => $definition) {
@@ -526,7 +526,7 @@ class EscalationLadderService {
 	 *
 	 * @return array<int, array{type: string, id: string, role: string}> The bound recipient, or [].
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	private function boundRecipients(mixed $binding, string $role): array {
 		if (is_string($binding) === true && str_contains($binding, ':') === true) {
@@ -546,7 +546,7 @@ class EscalationLadderService {
 	 *
 	 * @return array<int, array{type: string, id: string, role: string}> The performers, or [].
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	private function handlerRecipients(string $role, ?Task $subject): array {
 		if ($role === self::ROLE_HANDLER && $subject !== null) {
@@ -580,7 +580,7 @@ class EscalationLadderService {
 	 *
 	 * @return string The type.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	private function assigneeType(Task $subject): string {
 		if ((string)$subject->getPerformerType() !== Task::PERFORMER_USER) {
@@ -598,7 +598,7 @@ class EscalationLadderService {
 	 *
 	 * @return array<int, array{type: string, id: string, role: string}> The candidates, possibly none.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	private function candidateRecipients(Task $subject, string $role): array {
 		$recipients = [];

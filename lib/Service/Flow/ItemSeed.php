@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+ * @spec openspec/specs/flow-merge/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use Symfony\Component\Workflow\Workflow;
 /**
  * The inputs of seeding a run's per-place items.
  *
- * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+ * @spec openspec/specs/flow-merge/spec.md
  */
 final class ItemSeed {
 	/**
@@ -40,7 +40,7 @@ final class ItemSeed {
 	 * @param array      $items    The seed items.
 	 * @param array|null $stored   The per-place items persisted by the last commit, or null when none.
 	 *
-	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+	 * @spec openspec/specs/flow-merge/spec.md
 	 */
 	public function __construct(
 		public readonly Workflow $workflow,

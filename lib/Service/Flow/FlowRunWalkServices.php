@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ use OCP\IAppConfig;
  * What a run is walked with: the engine, the step types, the instance-wide runtime
  * ceiling and the audit of each recorded hop.
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 final readonly class FlowRunWalkServices {
 	/**
@@ -39,7 +39,7 @@ final readonly class FlowRunWalkServices {
 	 * @param IAppConfig|null           $appConfig Reads the instance-wide runtime ceiling; null applies the compiled-in default.
 	 * @param FlowHopAudit|null         $hopAudit  Audits each hop recorded by the step history.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function __construct(
 		public FlowEngine $engine,

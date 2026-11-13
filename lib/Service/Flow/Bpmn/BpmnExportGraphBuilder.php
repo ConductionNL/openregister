@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\Flow;
 /**
  * Cleans a flow's graph and resolves its ids and layout.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 class BpmnExportGraphBuilder {
 
@@ -42,7 +42,7 @@ class BpmnExportGraphBuilder {
 	 *
 	 * @return BpmnExportGraph The graph.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function graphOf(Flow $flow): BpmnExportGraph {
 		$nodes = $this->nodesOf(flow: $flow);
@@ -248,7 +248,7 @@ class BpmnExportGraphBuilder {
 	 *
 	 * @return string The NCName.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function ncName(string $value): string {
 		$clean = (string)preg_replace('/[^A-Za-z0-9_.-]/', '_', trim($value));

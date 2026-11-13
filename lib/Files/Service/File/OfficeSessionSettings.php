@@ -28,7 +28,7 @@ use OCP\IConfig;
 /**
  * The configuration an Office session service reads: the instance id and richdocuments' callback address.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class OfficeSessionSettings {
 	/**
@@ -37,7 +37,7 @@ final class OfficeSessionSettings {
 	 * @param IConfig    $config    Reads the instance id.
 	 * @param IAppConfig $appConfig Reads richdocuments' callback address.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly IConfig $config,

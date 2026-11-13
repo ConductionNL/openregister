@@ -277,7 +277,7 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	 *
 	 * @return ObjectSlugHandler The handler.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function getSlugHandler(): ObjectSlugHandler;
 

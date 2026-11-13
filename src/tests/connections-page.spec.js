@@ -8,7 +8,7 @@
  * without `requiresApp` renders an empty table where it should say integriq is
  * missing. The page exists to stop that class of quiet untruth.
  *
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */

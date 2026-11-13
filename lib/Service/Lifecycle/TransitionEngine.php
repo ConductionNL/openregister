@@ -394,7 +394,7 @@ class TransitionEngine {
 	 *                          it would refuse any other object write.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function transition(string $objectId, string $action, array $data = []): ObjectEntity {
 		// OPEN THE AUTOMATIC-TRANSITION BOUNDARY around the whole transition,
@@ -767,7 +767,7 @@ class TransitionEngine {
 	 * @return ObjectEntity|null The saved object, or null when no delegating mode is declared.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function applyDelegatedTransition(
 		TransitionRequest $request,
@@ -999,7 +999,7 @@ class TransitionEngine {
 	 * without losing safety or fidelity.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	public function availableActions(string $objectId): array {
@@ -1273,7 +1273,7 @@ class TransitionEngine {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      FK read + sibling fetch + current-state
 	 * location + per-move-policy branching are each irreducible steps of the derivation.
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function deriveGraphActions(ObjectEntity $object, array $graph, string $field): array {
 		$parentFromKey = (string)($graph['parentFrom'] ?? '');
@@ -1363,7 +1363,7 @@ class TransitionEngine {
 	 *
 	 * @return array<int, ObjectEntity> The ordered sibling entities (0-indexed, re-keyed).
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function fetchOrderedSiblings(array $graph, string $parentValue): array {
 		$query = self::siblingQuery(graph: $graph, parentValue: $parentValue);
@@ -1387,7 +1387,7 @@ class TransitionEngine {
 	 *
 	 * @return array<string, mixed>|null The findAll config.
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private static function siblingQuery(array $graph, string $parentValue): array|null {
 		$schemaSlug = (string)($graph['schema'] ?? '');
@@ -1413,7 +1413,7 @@ class TransitionEngine {
 	 *
 	 * @return array<int, ObjectEntity> The entities, 0-indexed.
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private static function objectEntitiesOf(array $siblings): array {
 		$entities = [];
@@ -1435,7 +1435,7 @@ class TransitionEngine {
 	 *
 	 * @return array<int, ObjectEntity> The sorted siblings.
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private static function sortedByOrder(array $entities, string $orderField): array {
 		usort(
@@ -1464,7 +1464,7 @@ class TransitionEngine {
 	 *
 	 * @return array{action:string, to:string, label:string, requires:?string, description:?string, inputs:array<int,array{field:string,required:bool}>}
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	private function buildGraphAction(ObjectEntity $sibling): array {
@@ -1846,7 +1846,7 @@ class TransitionEngine {
 	 * @throws InvalidTransitionInputException When `$data` is non-empty.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function applyGraphTransition(
 		TransitionRequest $request,

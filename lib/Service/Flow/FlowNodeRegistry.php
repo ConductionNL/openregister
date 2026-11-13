@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -142,7 +142,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function register(IFlowNode $node): void {
 		$id = $node->getId();
@@ -191,7 +191,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @return array<string, IFlowNode> Nodes keyed by type id.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function all(?int $scope = null): array {
 		$this->load();
@@ -220,7 +220,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @return array<int, array<string, mixed>> One entry per available node.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function palette(int $scope = IManager::SCOPE_ADMIN): array {
 		$palette = [];
@@ -345,7 +345,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @return string|null The icon path, the app's icon, or null when neither resolves.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function iconFor(IFlowNode $node, string $type): ?string {
 		try {
@@ -428,7 +428,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @throws UnexpectedValueException When no app provides that type.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function get(string $type): IFlowNode {
 		$this->load();
@@ -576,7 +576,7 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function load(): void {
 		if ($this->loaded === true) {

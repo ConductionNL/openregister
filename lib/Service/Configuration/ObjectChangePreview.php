@@ -38,7 +38,7 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
  * duplicate slug is skipped, and properties the schema does not declare are
  * discarded.
  *
- * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class ObjectChangePreview {
 
@@ -48,7 +48,7 @@ final class ObjectChangePreview {
 	 * @param MagicObjectFinderInterface $objectMapper The object mapper, to find the local object a remote one would update.
 	 * @param Closure     $compare      PreviewHandler::compareArrays(), as fn(array $current, array $proposed): array.
 	 *
-	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objectMapper,
@@ -68,7 +68,7 @@ final class ObjectChangePreview {
 	 * @return array<string, mixed> Preview row: type, action, slug, title, register, schema, current, proposed, changes,
 	 *                              discarded (undeclared properties the import drops), and reason on a skip.
 	 *
-	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function preview(array $objectData, ObjectPreviewTargets $targets): array {
 		$preview = $this->baseRow(objectData: $objectData);
@@ -179,7 +179,7 @@ final class ObjectChangePreview {
 	 *
 	 * @return array<string, true>
 	 *
-	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function createdSlugs(array $rows): array {
 		$slugs = [];

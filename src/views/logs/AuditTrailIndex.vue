@@ -458,7 +458,7 @@ export default {
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
+		 * @spec openspec/specs/enhanced-audit-trail/spec.md
 		 */
 		async loadAuditTrails() {
 			try {
@@ -476,7 +476,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
+		 * @spec openspec/specs/enhanced-audit-trail/spec.md
 		 */
 		handleFiltersChanged(filters) {
 			auditTrailStore.setAuditTrailFilters(filters)
@@ -491,7 +491,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
+		 * @spec openspec/specs/enhanced-audit-trail/spec.md
 		 */
 		handleExport(options) {
 			this.exportFilteredAuditTrails(options)
@@ -639,7 +639,7 @@ export default {
 		 * @return {void}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
+		 * @spec openspec/specs/enhanced-audit-trail/spec.md
 		 */
 		exportAuditTrails() {
 			this.exportFilteredAuditTrails({ format: 'csv', includeChanges: true })
@@ -652,7 +652,7 @@ export default {
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#REQ-ADS-001
+		 * @spec openspec/specs/enhanced-audit-trail/spec.md
 		 */
 		async exportFilteredAuditTrails(options) {
 			try {

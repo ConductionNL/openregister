@@ -111,7 +111,7 @@ class SendNotificationNode extends MessagingNodeBase implements
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['recipients', 'title', 'message'];

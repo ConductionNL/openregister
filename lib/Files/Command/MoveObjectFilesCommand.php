@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Move object files from people's homes into the openregister account's home.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 class MoveObjectFilesCommand extends Command {
 
@@ -54,7 +54,7 @@ class MoveObjectFilesCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:files:move-to-account')
@@ -71,7 +71,7 @@ class MoveObjectFilesCommand extends Command {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Symfony's signature; the command takes no input.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$tally = $this->migration->run();

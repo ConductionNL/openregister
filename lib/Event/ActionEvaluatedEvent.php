@@ -37,7 +37,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -83,7 +83,7 @@ class ActionEvaluatedEvent extends Event {
 	 *
 	 * @return string|int|null The register id, or null when not determinable.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function getRegister(): string|int|null {
 		return $this->object?->getRegister();
@@ -94,7 +94,7 @@ class ActionEvaluatedEvent extends Event {
 	 *
 	 * @return ObjectEntity|null The object, or null for a schema-level decision.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function getObject(): ?ObjectEntity {
 		return $this->object;
@@ -105,7 +105,7 @@ class ActionEvaluatedEvent extends Event {
 	 *
 	 * @return string|null The object UUID, or null for a schema-level decision.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function getObjectId(): ?string {
 		return $this->object?->getUuid();
@@ -116,7 +116,7 @@ class ActionEvaluatedEvent extends Event {
 	 *
 	 * @return string|null The user's UID, or null for an anonymous principal.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function getActor(): ?string {
 		return $this->actor;
@@ -127,7 +127,7 @@ class ActionEvaluatedEvent extends Event {
 	 *
 	 * @return bool True when granted, false when refused.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function isGranted(): bool {
 		return $this->granted;
@@ -138,7 +138,7 @@ class ActionEvaluatedEvent extends Event {
 	 *
 	 * @return bool True when refused.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function isRefused(): bool {
 		return ($this->granted === false);

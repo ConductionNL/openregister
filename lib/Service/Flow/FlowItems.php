@@ -118,7 +118,7 @@ final class FlowItems {
 	 *
 	 * @return string|null The output branch, or null when the item is unrouted.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
 	 */
 	public static function outputOf(array $member): ?string {
 		return FlowItemShape::outputOf(member: $member);

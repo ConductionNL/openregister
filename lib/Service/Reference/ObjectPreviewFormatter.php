@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 
 declare(strict_types=1);

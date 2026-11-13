@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\Flow;
 /**
  * Compares itself with a stored flow and writes itself onto one.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 final class CompiledScheduleFlow {
 	/**
@@ -58,7 +58,7 @@ final class CompiledScheduleFlow {
 	 *
 	 * @return string The uuid.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function uuid(): string {
 		return $this->release->flowUuid(scheduleId: $this->schedule->id);
@@ -71,7 +71,7 @@ final class CompiledScheduleFlow {
 	 *
 	 * @return bool True when applying would change nothing.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function matches(Flow $flow): bool {
 		return $this->graphMatches(flow: $flow)
@@ -88,7 +88,7 @@ final class CompiledScheduleFlow {
 	 *
 	 * @return bool True when no new flow version is needed.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function graphMatches(Flow $flow): bool {
 		return $flow->getNodes() === $this->nodes()
@@ -103,7 +103,7 @@ final class CompiledScheduleFlow {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function applyTo(Flow $flow): void {
 		$flow->setName($this->release->slug() . ': ' . $this->schedule->id);

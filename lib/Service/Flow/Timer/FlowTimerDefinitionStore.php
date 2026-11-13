@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
  */
 
 declare(strict_types=1);
@@ -87,7 +87,7 @@ class FlowTimerDefinitionStore {
 	 *
 	 * @return array<string, array<string, mixed>> The definitions.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function calendars(): array {
 		return $this->definitions(schema: self::SCHEMA_CALENDAR);
@@ -98,7 +98,7 @@ class FlowTimerDefinitionStore {
 	 *
 	 * @return array<string, array<string, mixed>> The definitions.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function ladders(): array {
 		return $this->definitions(schema: self::SCHEMA_LADDER);
@@ -109,7 +109,7 @@ class FlowTimerDefinitionStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function reset(): void {
 		$this->cache = [

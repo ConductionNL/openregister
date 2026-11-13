@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
  */
 
 declare(strict_types=1);
@@ -117,7 +117,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 *
 	 * @throws FlowTimerValidationException When the shape, the range or the unit is refused.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validateSla(mixed $sla): array {
 		return $this->declarations->validateSla(sla: $sla);
@@ -132,7 +132,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 *
 	 * @throws FlowTimerValidationException On an unknown unit.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validateUnit(mixed $unit): string {
 		return $this->declarations->validateUnit(unit: $unit);
@@ -146,7 +146,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 *
 	 * @return array{at: DateTimeImmutable, unrolledAt: ?DateTimeImmutable, rolledBy: ?string} Where it ended up.
 	 *
-	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
 	public function roll(DateTimeInterface $moment, RollRule $rule): array {
 		return $this->workingDayRoll->apply(moment: $moment, rule: $rule);
@@ -161,7 +161,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 *
 	 * @return DateTimeImmutable The resulting instant.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function add(SlaAddition $addition): DateTimeImmutable {
 		return $this->addWatched(addition: $addition, collector: null);
@@ -201,7 +201,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 *
 	 * @return DateTimeImmutable The resulting instant.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
 	 */
 	public function sub(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar): DateTimeImmutable {
 		return $this->add(
@@ -222,7 +222,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 *
 	 * @return float The amount in the unit.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function measure(CalendarSpan $span, string $unit): float {
 		return $this->measureSpan(span: $span, unit: $unit);
@@ -236,7 +236,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 *
 	 * @return float The amount in the unit.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	private function measureSpan(CalendarSpan $span, string $unit): float {
 		$this->validateUnit(unit: $unit);
@@ -309,7 +309,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 *
 	 * @return float The converted amount.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
 	public function convert(UnitConversion $conversion): float {
 		$fromHours = $this->hoursPer(unit: $conversion->fromUnit, calendar: $conversion->calendar);
@@ -331,7 +331,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 *
 	 * @throws FlowTimerValidationException When the unit is not one of the three.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
 	private function hoursPer(string $unit, WorkingCalendar $calendar): float {
 		$this->validateUnit(unit: $unit);

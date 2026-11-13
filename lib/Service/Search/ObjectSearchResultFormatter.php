@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -164,7 +164,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 *
 	 * @return string The link.
 	 *
-	 * @spec openspec/changes/search-deep-link-names-object-properties/specs/deep-link-registry/spec.md#requirement-a-search-hits-deep-link-can-name-the-objects-own-properties
+	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	private function resolveObjectUrl(ObjectSearchHit $hit): string {
 		// The object's own scalar properties come first, so a template can
@@ -209,7 +209,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 *
 	 * @return array<string,string> Property name to encoded value.
 	 *
-	 * @spec openspec/changes/search-deep-link-names-object-properties/specs/deep-link-registry/spec.md#requirement-a-search-hits-deep-link-can-name-the-objects-own-properties
+	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	private function ownLinkProperties(array $object): array {
 		$properties = [];

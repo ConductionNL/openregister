@@ -41,7 +41,7 @@ final class DeclaredActions {
 	 *
 	 * @return array<int, string> Declared action keys.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function names(mixed $configuration): array {
 		$configuration = ($configuration ?? []);

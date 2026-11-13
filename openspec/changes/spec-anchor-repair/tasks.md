@@ -9,5 +9,7 @@
 - [x] task-7: Comment-only proof — 0 non-`@spec` changed lines out of 7,030; 0 files with asymmetric insertions/deletions.
 - [x] task-8: Gate-46 re-verify — broken 5,051 → 1,408 (all repointed anchors resolve).
 - [x] task-9: File the 1,408 residual-dangling anchors for human triage (`residual-dangling.md` + umbrella issue).
-- [ ] task-10: STALE-BASE GUARD before push — `git diff --numstat origin/development` is `@spec`-lines-only (no logic deletions).
+- [x] task-10: STALE-BASE GUARD before push — `git diff --numstat origin/development` is `@spec`-lines-only (no logic deletions).
 - [ ] task-11: PR to `development`, admin-merge, archive change.
+
+> 2026-11-13: re-applied on main (the earlier run never landed). Base had 4,092 broken anchors; the repointer rewrote 1,490 (329 to a requirement heading, 1,161 to the spec file) in 472 files, leaving 2,602 for triage. `prove_comment_only.sh . origin/main`: 2,980 changed lines, 0 non-`@spec`, 0 asymmetric files, nothing outside `lib/` and `src/`. task-11 stays open: the PR is opened, merging and archiving are not part of this build.

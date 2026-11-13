@@ -30,7 +30,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 /**
  * Services of the flow run API.
  *
- * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+ * @spec openspec/specs/flow-tooling/spec.md
  */
 final class FlowRunRuns {
 	/**
@@ -41,7 +41,7 @@ final class FlowRunRuns {
 	 * @param FlowLocatorInterface           $resolvers   Resolves a flow id to its document.
 	 * @param ?AuditFlowAttributionInterface $auditTrails Reads the attribution stamped on
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	public function __construct(
 		public readonly FlowRunMapperInterface $mapper,

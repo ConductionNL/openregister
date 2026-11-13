@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
  */
 
 declare(strict_types=1);
@@ -91,7 +91,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @throws FlowTimerValidationException On any refused definition, naming the fault.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public static function fromArray(array $definition): self {
 		return new self(definition: new WorkingCalendarDefinition(raw: $definition));
@@ -118,7 +118,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return string The slug.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getSlug(): string {
 		return $this->definition->getSlug();
@@ -129,7 +129,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return string|null The organisation, or null for a shared calendar.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getOrganisation(): ?string {
 		return $this->definition->getOrganisation();
@@ -156,7 +156,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return float The hours.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getHoursPerWorkingDay(): float {
 		return $this->definition->getHoursPerWorkingDay();
@@ -231,7 +231,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return boolean True on a working weekday that is not a non-working date.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function isWorkingDay(DateTimeInterface $moment): bool {
 		if (in_array((int)$moment->format('N'), $this->getWorkingWeekdays(), true) === false) {
@@ -250,7 +250,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return array<string, string> `Y-m-d` => name.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function nonWorkingDates(int $year): array {
 		return ($this->holidays->cached(year: $year) ?? $this->holidays->remember(year: $year, easter: self::easterSunday(year: $year)));
@@ -263,7 +263,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return DateTimeImmutable Easter Sunday at midnight UTC.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public static function easterSunday(int $year): DateTimeImmutable {
 		$sum = self::computus(year: $year);

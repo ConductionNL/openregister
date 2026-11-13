@@ -758,7 +758,7 @@ class MagicSearchHandler {
 	 *
 	 * @throws InvalidArgumentException When a block names a schema that cannot be resolved.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	private function applyRelatedRowFilters(TableFilterRun $run): void {

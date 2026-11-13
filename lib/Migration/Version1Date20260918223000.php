@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Add the roll and its explanation to timers and their events.
  *
- * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
  */
 class Version1Date20260918223000 extends SimpleMigrationStep {
 
@@ -69,7 +69,7 @@ class Version1Date20260918223000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper The changed schema.
 	 *
-	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/*

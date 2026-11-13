@@ -180,7 +180,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
-	 * @spec openspec/changes/sequence-fields-are-set-by-the-sequence-service-only/specs/flow-approval-consolidation/spec.md#requirement-only-the-task-sequence-sets-a-tasks-sequence-fields
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md
 	 */
 	public function create(array $data, ?string $actor): Task {
 		$this->refuseSequenceFields(data: $data);
@@ -240,7 +240,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @throws TaskValidationException When a sequence field carries a value.
 	 *
-	 * @spec openspec/changes/sequence-fields-are-set-by-the-sequence-service-only/specs/flow-approval-consolidation/spec.md#requirement-only-the-task-sequence-sets-a-tasks-sequence-fields
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md
 	 */
 	private function refuseSequenceFields(array $data): void {
 		$given = [];
@@ -988,7 +988,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @throws TaskConflictException When not an unconsumed approving decision.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
-	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	public function consume(string $uuid, TaskTrigger $trigger): Task {
 		$task = $this->unconsumedApproval(uuid: $uuid);
@@ -1092,7 +1092,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @throws TaskConflictException When the task is open, rejected or undecided.
 	 *
-	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	private function assertApprovingDecision(Task $task): void {
 		$completed = ((string)$task->getState() === Task::STATE_COMPLETED);
@@ -1198,7 +1198,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @throws TaskValidationException On an outcome outside the vocabulary.
 	 * @throws TaskConflictException When the row was closed concurrently.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
 	public function applyTimerOutcome(string $uuid, TimerOutcome $outcome): Task {
 		[$state, $recorded, $action] = $this->timerOutcomeTarget(outcome: $outcome->outcome);
@@ -1253,7 +1253,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @throws TaskValidationException On an outcome outside the vocabulary.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
 	private function timerOutcomeTarget(string $outcome): array {
 		$reserved = [

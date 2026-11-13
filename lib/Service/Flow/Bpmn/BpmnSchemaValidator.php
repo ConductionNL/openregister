@@ -31,7 +31,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 /**
  * Validates a BPMN document against the vendored, version-pinned OMG XSD set.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 class BpmnSchemaValidator {
 
@@ -87,7 +87,7 @@ class BpmnSchemaValidator {
 	 *
 	 * @return string The absolute path.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function schemaDirectory(): string {
 		return (__DIR__ . DIRECTORY_SEPARATOR . 'schema');
@@ -98,7 +98,7 @@ class BpmnSchemaValidator {
 	 *
 	 * @return string The absolute path.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function rootSchema(): string {
 		return ($this->schemaDirectory() . DIRECTORY_SEPARATOR . self::ROOT_SCHEMA);
@@ -115,7 +115,7 @@ class BpmnSchemaValidator {
 	 *
 	 * @return array{message: string, line: int, element: string}|null The violation.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function firstViolation(DOMDocument $document): ?array {
 		$previous = libxml_use_internal_errors(true);
@@ -194,7 +194,7 @@ class BpmnSchemaValidator {
 	 *
 	 * @return bool Whether the document validates.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function validateAgainstVendoredSet(DOMDocument $document): bool {
 		$restore = $this->installVendoredSchemaLoader();
@@ -224,7 +224,7 @@ class BpmnSchemaValidator {
 	 *
 	 * @return string|null The absolute path, or null when it is not ours.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function resolveSchemaReference(string $systemId): ?string {
 		$path = $this->requestedPath(systemId: $systemId);
@@ -247,7 +247,7 @@ class BpmnSchemaValidator {
 	 *
 	 * @return string The requested path, possibly ''.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function requestedPath(string $systemId): string {
 		$path = $systemId;
@@ -270,7 +270,7 @@ class BpmnSchemaValidator {
 	 *
 	 * @return string|null The absolute path, or null when it is not ours.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function vendoredFile(string $path, string $directory): string|null {
 		if (str_starts_with($path, DIRECTORY_SEPARATOR) === false) {
@@ -387,7 +387,7 @@ class BpmnSchemaValidator {
 	 *
 	 * @throws BpmnSchemaInvalid When it does not validate.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function assertValid(DOMDocument $document, string $subject = 'The file'): void {
 		$violation = $this->firstViolation(document: $document);

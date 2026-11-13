@@ -25,7 +25,7 @@ use OCA\OpenRegister\Db\Schema;
  * One search across several schemas: its queries and scope, and the registers,
  * schemas, tables and total it collects while resolving them.
  *
- * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+ * @spec openspec/specs/unified-search-provider/spec.md
  */
 final class MultiSchemaSearch {
 
@@ -109,7 +109,7 @@ final class MultiSchemaSearch {
 	 *
 	 * @return self This search.
 	 *
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function securedBy(bool $rbac, bool $multitenancy): self {
 		$this->rbac         = $rbac;
@@ -124,7 +124,7 @@ final class MultiSchemaSearch {
 	 *
 	 * @return array The query with `_rbac` and `_multitenancy`.
 	 *
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function withFlags(array $query): array {
 		$query['_rbac']         = $this->rbac;

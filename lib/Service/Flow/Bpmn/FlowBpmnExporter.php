@@ -28,7 +28,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 /**
  * Serialises a flow's node/edge graph to a `bpmn:process` with diagram interchange.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 class FlowBpmnExporter {
 
@@ -129,7 +129,7 @@ class FlowBpmnExporter {
 	 *
 	 * @throws BpmnSchemaInvalid When our own output does not validate, which is a bug here.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function export(Flow $flow): string {
 		$graph = $this->builder->graphOf(flow: $flow);

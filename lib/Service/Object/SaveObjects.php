@@ -2780,7 +2780,7 @@ class SaveObjects {
 	 *
 	 * @return array<string, true>
 	 *
-	 * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md#requirement-a-bulk-write-with-events-on-runs-each-rows-pre-save-event-and-refuses-only-the-stopped-row
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function bulkEventTargets(array $transformedObjects, array $context): array {
 		if ($this->checks->rowRules?->bulkWriteEvents === null || $context['events'] === true) {

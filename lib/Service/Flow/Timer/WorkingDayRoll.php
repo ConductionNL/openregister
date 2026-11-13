@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
  * one it decides; every other name is whatever the administrator called the
  * day they declared.
  *
- * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
  */
 class WorkingDayRoll {
 
@@ -73,7 +73,7 @@ class WorkingDayRoll {
 	 *
 	 * @return array{at: DateTimeImmutable, unrolledAt: ?DateTimeImmutable, rolledBy: ?string} Where it ended up.
 	 *
-	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
 	public function apply(DateTimeInterface $moment, RollRule $rule): array {
 		$instant = DateTimeImmutable::createFromInterface($moment);

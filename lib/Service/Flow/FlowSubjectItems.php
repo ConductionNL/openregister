@@ -92,7 +92,7 @@ final class FlowSubjectItems {
 	 *
 	 * @return array<int, array<string, mixed>> The items, subject fields refreshed.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public static function refreshSubjectProjection(array $items, LiveSubject $subject): array {
 		$subjectUuid = trim($subject->uuid);
@@ -143,7 +143,7 @@ final class FlowSubjectItems {
 	 *
 	 * @return string The identity, or '' when the item carries none.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private static function identityOf(array $json): string {
 		$self = ($json['@self'] ?? null);

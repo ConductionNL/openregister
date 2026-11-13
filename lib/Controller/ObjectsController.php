@@ -292,7 +292,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return ObjectVersionGuard The guard for this request.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function versionGuard(): ObjectVersionGuard {
 		return new ObjectVersionGuard(
@@ -3533,7 +3533,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function upsertRefusal(ObjectCreate $create): ?JSONResponse {
 		if ($create->controls->upsertOn === '') {
@@ -3577,7 +3577,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return array{object: ObjectEntity, created: bool} The saved object.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function savedObject(ObjectCreate $create): array {
 		$create->objectService->clearCreatedSubObjects();
@@ -3664,7 +3664,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function upsertPreconditionRefusal(bool $failIfExists, array $resolved): ?JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -3936,7 +3936,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function preWriteRefusal(ObjectUpdate $update, ObjectEntity $existing): ?JSONResponse {
 		if ($update->target->holds(object: $existing) === false) {
@@ -4113,7 +4113,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse The object, or the refusal.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function patchedResponse(ObjectUpdate $patch): JSONResponse {
 		$existing = $this->findReadableForPatch(patch: $patch);
@@ -4156,7 +4156,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function versionRefusal(ObjectUpdate $patch, ObjectEntity $existing): ?JSONResponse {
 		$this->noteClientSuppliedCause(object: $existing);

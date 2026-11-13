@@ -372,7 +372,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	 * @return array<string,mixed> `{ results, total, meta, relativesMeta }`, or
 	 *                             `{ unavailable, cause, results, total }`.
 	 *
-	 * @spec openspec/changes/brp-family-members-lookup/specs/integration-person-lookup/spec.md#requirement-the-brp-provider-answers-a-residents-partner-and-children-minimised-req-brp-fam-001
+	 * @spec openspec/specs/integration-person-lookup/spec.md
 	 */
 	public function lookupFamily(string $bsn, array $relations=self::FAMILY_RELATIONS, bool $sameAddressOnly=false): array {
 		$bsn = trim($bsn);
@@ -440,7 +440,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	 *
 	 * @return string|null The relative's BSN, or null.
 	 *
-	 * @spec openspec/changes/brp-family-members-lookup/specs/integration-person-lookup/spec.md#requirement-the-brp-provider-answers-a-residents-partner-and-children-minimised-req-brp-fam-001
+	 * @spec openspec/specs/integration-person-lookup/spec.md
 	 */
 	public function resolveFamilyReference(string $bsn, string $reference): ?string {
 		$bsn = trim($bsn);

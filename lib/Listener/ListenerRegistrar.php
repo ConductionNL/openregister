@@ -348,7 +348,7 @@ final class ListenerRegistrar {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	private static function registerPublishListener(IRegistrationContext $context): void {
 		$publish = \OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener::class;

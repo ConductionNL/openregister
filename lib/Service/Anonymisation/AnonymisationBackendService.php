@@ -218,7 +218,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @return ProbeResult The fresh probe result.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function testConnection(string $method): ProbeResult {
 		$result = $this->freshProbe(method: $method);
@@ -241,7 +241,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function reportOpenAnonymiser(ProbeResult $result): void {
 		$this->connectionReporter->report(
@@ -414,7 +414,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @throws AnalyzeRequestRejectedException When the ExApp answers 4xx: it was reached and refused the request.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function requestOpenAnonymiser(AnonymiserCall $call): ?array {
 		return $this->sendToExApp(call: $call);
@@ -482,7 +482,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) The exception's own status predicate.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function decodeExAppResponse(IResponse $response, string $appId): ?array {
 		$status = $response->getStatusCode();

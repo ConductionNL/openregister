@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
  * through the container only when the app is enabled, and every missing piece
  * refuses with 409 rather than failing open.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 class OfficeSessionService {
 
@@ -98,7 +98,7 @@ class OfficeSessionService {
 	 *
 	 * @throws OfficeOpenRefusedException 409, 415 or 403 when the document cannot be opened.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function openSession(OfficeOpenRequest $request): OfficeSession {
 		$services = $this->richdocuments();
@@ -209,7 +209,7 @@ class OfficeSessionService {
 	 *
 	 * @return bool True when richdocuments is enabled.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function isAvailable(): bool {
 		try {

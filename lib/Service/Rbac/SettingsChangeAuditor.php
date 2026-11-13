@@ -43,7 +43,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 
 declare(strict_types=1);
@@ -60,7 +60,7 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Turns a settings write into per-key audit rows on the existing chain.
  *
- * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 class SettingsChangeAuditor {
 
@@ -130,7 +130,7 @@ class SettingsChangeAuditor {
 	 *
 	 * @return array<int, array{key: string, old: mixed, new: mixed, secret: bool}> The changes.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function diff(SettingsChange $change): array {
 		$keys = array_unique(array_merge(array_keys($change->before), array_keys($change->after)));
@@ -184,7 +184,7 @@ class SettingsChangeAuditor {
 	 *
 	 * @return array<int, string> The secret keys.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function secretKeysIn(array $configuration): array {
 		$secrets = [];
@@ -213,7 +213,7 @@ class SettingsChangeAuditor {
 	 *
 	 * @return int How many rows were written.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function recordUpdate(string $app, array $before, array $after, array $secretKeys = []): int {
 		return $this->recordChange(app: $app, change: new SettingsChange(before: $before, after: $after, secretKeys: $secretKeys));
@@ -227,7 +227,7 @@ class SettingsChangeAuditor {
 	 *
 	 * @return int How many rows were written.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function recordChange(string $app, SettingsChange $change): int {
 		$rows = [];
@@ -279,7 +279,7 @@ class SettingsChangeAuditor {
 	 *   loadConfiguration() does not yet compute the overwritten-key count this row
 	 *   needs, so it is not called from there.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function recordImport(string $app, SettingsImport $import): int {
 		return $this->write(

@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+ * @spec openspec/specs/objects-crud/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ class UpsertOnKeyException extends RuntimeException {
 	 * @param array<string, string> $headers   Extra response headers.
 	 * @param Throwable|null       $previous   The cause, when there is one.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function __construct(
 		private readonly int $statusCode,
@@ -59,7 +59,7 @@ class UpsertOnKeyException extends RuntimeException {
 	 *
 	 * @return int The status.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function getStatusCode(): int {
 		return $this->statusCode;
@@ -70,7 +70,7 @@ class UpsertOnKeyException extends RuntimeException {
 	 *
 	 * @return array<string, mixed> The body.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function getBody(): array {
 		return $this->body;
@@ -81,7 +81,7 @@ class UpsertOnKeyException extends RuntimeException {
 	 *
 	 * @return array<string, string> The headers.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function getHeaders(): array {
 		return $this->headers;

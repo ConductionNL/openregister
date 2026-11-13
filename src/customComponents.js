@@ -28,7 +28,7 @@ export const INTEGRIQ_CONNECTIONS_PATH =
  * name inside this app's router, which cannot leave the app.
  *
  * @return {void}
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  */
 export function openIntegriqConnections() {
 	window.location.assign(generateUrl(INTEGRIQ_CONNECTIONS_PATH))

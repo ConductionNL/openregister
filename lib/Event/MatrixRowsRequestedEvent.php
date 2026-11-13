@@ -119,7 +119,7 @@ class MatrixRowsRequestedEvent extends Event {
 	 *
 	 * @return string The app id.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function answeredBy(int $index): string {
 		return ($this->answeredBy[$index] ?? '');

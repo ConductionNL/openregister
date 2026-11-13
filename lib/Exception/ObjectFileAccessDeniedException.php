@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Throwable;
  * that the object exists. A person who may read but not change it gets 403.
  * It extends NotAuthorizedException so every existing catch still refuses.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ObjectFileAccessDeniedException extends NotAuthorizedException {
 

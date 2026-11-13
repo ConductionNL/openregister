@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
  */
 
 declare(strict_types=1);
@@ -61,7 +61,7 @@ class FlowTimerFireMapper extends QBMapper implements FlowTimerFireMapperInterfa
 	 *
 	 * @return FlowTimerFire The inserted row.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function insert(Entity $entity): FlowTimerFire {
 		if ($entity instanceof FlowTimerFire === false) {
@@ -95,7 +95,7 @@ class FlowTimerFireMapper extends QBMapper implements FlowTimerFireMapperInterfa
 	 *
 	 * @throws \LogicException Always.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function update(Entity $entity): FlowTimerFire {
 		throw new LogicException('The rung-fire ledger is append-only; row ' . (string)$entity->getId() . ' cannot be updated.');
@@ -110,7 +110,7 @@ class FlowTimerFireMapper extends QBMapper implements FlowTimerFireMapperInterfa
 	 *
 	 * @throws \LogicException Always.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function delete(Entity $entity): FlowTimerFire {
 		throw new LogicException('The rung-fire ledger is append-only; row ' . (string)$entity->getId() . ' cannot be deleted.');
@@ -125,7 +125,7 @@ class FlowTimerFireMapper extends QBMapper implements FlowTimerFireMapperInterfa
 	 *
 	 * @throws DbException On any failure other than the unique-constraint violation.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function claim(FlowTimerFire $fire): ?FlowTimerFire {
 		try {
@@ -147,7 +147,7 @@ class FlowTimerFireMapper extends QBMapper implements FlowTimerFireMapperInterfa
 	 *
 	 * @return array<int, FlowTimerFire> The fire rows.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function findByTimer(string $timerUuid): array {
 		$qb = $this->selectWhere(column: new LinkColumn(name: 'timer_uuid', value: $timerUuid));

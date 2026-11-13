@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
  * these when a term is DECLARED, the calculator's arithmetic every time one
  * is armed or measured.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 class SlaDeclaration {
 
@@ -50,7 +50,7 @@ class SlaDeclaration {
 	 *
 	 * @throws FlowTimerValidationException When the shape, the range or the unit is refused.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validateSla(mixed $sla): array {
 		$this->refuseUnlessShaped(sla: $sla);
@@ -136,7 +136,7 @@ class SlaDeclaration {
 	 *
 	 * @throws FlowTimerValidationException On an unknown roll.
 	 *
-	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
 	public function validateRoll(mixed $roll): string {
 		if ($roll === null || $roll === '') {
@@ -165,7 +165,7 @@ class SlaDeclaration {
 	 *
 	 * @throws FlowTimerValidationException On an unknown unit.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validateUnit(mixed $unit): string {
 		if (is_string($unit) === false || in_array($unit, SlaCalculatorInterface::UNITS, true) === false) {

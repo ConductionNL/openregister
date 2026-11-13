@@ -230,7 +230,7 @@ final class CalculationAnnotationValidator implements CalculationAnnotationValid
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/aggregation-dialect-repair/specs/computed-fields/spec.md#requirement-a-materialised-calculations-declared-name-must-also-be-a-declared-schema-property
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function checkMaterialisedOutput(array $spec, CalculationWalk $walk): void {
 		if (($spec['materialise'] ?? false) !== true || in_array($walk->name, $walk->propKeys, true) === true) {

@@ -116,7 +116,7 @@ class FlowStepReport {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-step-log-lines/specs/flow-step-log-lines/spec.md
+	 * @spec openspec/specs/flow-step-log-lines/spec.md
 	 */
 	public function line(string $level, string $message): void {
 		$lines = ($this->detail['lines'] ?? []);
@@ -194,7 +194,7 @@ class FlowStepReport {
 	 *
 	 * @return string The moment.
 	 *
-	 * @spec openspec/changes/flow-step-log-lines/specs/flow-step-log-lines/spec.md
+	 * @spec openspec/specs/flow-step-log-lines/spec.md
 	 */
 	private function now(): string {
 		$moment = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', microtime(true)), new DateTimeZone('UTC'));

@@ -46,7 +46,7 @@ interface AnonymisationBackendServiceInterface {
 	 *
 	 * @return ProbeResult The fresh probe result.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function testConnection(string $method): ProbeResult;
 }//end interface

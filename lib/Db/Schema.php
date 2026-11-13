@@ -991,7 +991,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return array<int, string> Declared action keys.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function declaredActionNames(): array {
 		return (new DeclaredActions())->names(configuration: $this->configuration);
@@ -1454,7 +1454,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return array<int, string> The constraint names, in declaration order.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function getUpsertKeys(): array {
 		$keys = [];
@@ -1541,7 +1541,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *                                                                       The parsed object-source declaration, or null when absent/invalid.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-2.2
-	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function getObjectSource(): ?array {
 		return (new ObjectSourceDeclaration())->declared(configuration: $this->getConfiguration());

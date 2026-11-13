@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 /**
  * An application, its production manifest and who published it.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 final class ScheduleRelease {
 	/**
@@ -58,7 +58,7 @@ final class ScheduleRelease {
 	 *
 	 * @return string The object uuid.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function applicationUuid(): string {
 		return (string)$this->application->getUuid();
@@ -69,7 +69,7 @@ final class ScheduleRelease {
 	 *
 	 * @return string The slug, or the object uuid when it carries none.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function slug(): string {
 		$slug = ($this->application->getObject()['slug'] ?? null);
@@ -85,7 +85,7 @@ final class ScheduleRelease {
 	 *
 	 * @return string|null The application's organisation uuid, or null when it has none.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function organisation(): ?string {
 		$organisation = trim((string)$this->application->getOrganisation());
@@ -103,7 +103,7 @@ final class ScheduleRelease {
 	 *
 	 * @return string A name-based uuid.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function flowUuid(string $scheduleId): string {
 		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.

@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+ * @spec openspec/specs/flow-triggers/spec.md
  */
 
 declare(strict_types=1);
@@ -93,7 +93,7 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 * @spec openspec/specs/flow-triggers/spec.md
 	 */
 	public function handle(Event $event): void {
 		// A plan item reaching a terminal state (flow-cmmn-case-semantics)
@@ -261,7 +261,7 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return string|null The trigger id, or null when this is not an object event.
 	 *
-	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 * @spec openspec/specs/flow-triggers/spec.md
 	 */
 	private function eventIdFor(Event $event): ?string {
 		foreach (self::EVENT_IDS as $class => $eventId) {

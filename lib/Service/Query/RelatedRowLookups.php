@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 /**
  * The lookups `RelatedRowQueryApplier` works with.
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 final readonly class RelatedRowLookups {
 

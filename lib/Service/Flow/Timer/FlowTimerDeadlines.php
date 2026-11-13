@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -63,7 +63,7 @@ final class FlowTimerDeadlines {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function recompute(FlowTimerScope $scope, array $firedKeys): void {
 		$timer = $scope->timer;
@@ -86,7 +86,7 @@ final class FlowTimerDeadlines {
 	 *
 	 * @return DateTimeInterface The moment.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function landed(FlowTimerScope $scope): DateTimeInterface {
 		$timer = $scope->timer;
@@ -108,7 +108,7 @@ final class FlowTimerDeadlines {
 	 *
 	 * @return float The remainder; negative once overdue.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function remaining(FlowTimerScope $scope, DateTimeImmutable $now): float {
 		$timer = $scope->timer;

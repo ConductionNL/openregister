@@ -19,7 +19,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/specs/pdf-anonymisation/spec.md
- * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-003
+ * @spec openspec/specs/tag-preserving-redaction/spec.md
  */
 
 declare(strict_types=1);

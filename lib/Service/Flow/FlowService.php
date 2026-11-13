@@ -145,7 +145,7 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * Kept for its callers (FlowController, other apps); delegates to listFlows().
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findAll(?string $app=null, ?string $applicationSlug=null, ?bool $enabled=null, int $limit=100, int $offset=0): array {
 		$filters = ['app' => $app, 'applicationSlug' => $applicationSlug, 'enabled' => $enabled];
@@ -159,7 +159,7 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * @return array<int, Flow> The flows visible to the caller.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function listFlows(ListQuery $query): array {
 		$organisation = $this->caller()->activeOrganisation();
@@ -187,7 +187,7 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * @return integer The number of matching flows.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function count(?string $app = null, ?string $applicationSlug = null): int {
 		$organisation = $this->caller()->activeOrganisation();

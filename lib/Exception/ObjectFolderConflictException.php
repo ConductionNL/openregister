@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use Exception;
  * A name already taken in the target folder, or a file below a folder that
  * someone else holds a lock on. Answered with 409; nothing was changed.
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ObjectFolderConflictException extends Exception {
 }//end class

@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * A write refused because the object changed since the caller read it.
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+ * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
  */
 final class RefusedWrite {
 	/**

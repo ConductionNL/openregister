@@ -1474,7 +1474,7 @@ class OasService implements OasServiceInterface {
 	 *
 	 * @return array<string, mixed> The operation, with the upsert documented when it applies.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function withUpsertOnKey(array $operation, object $schema): array {
 		if (method_exists($schema, 'getUpsertKeys') === false) {
@@ -1498,7 +1498,7 @@ class OasService implements OasServiceInterface {
 	 *
 	 * @return array<string, mixed> The operation with the upsert documented.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function documentUpsert(array $operation, array $keys): array {
 		$operation['parameters'][] = (self::UPSERT_ON_PARAMETER + ['schema' => ['type' => 'string', 'enum' => $keys]]);

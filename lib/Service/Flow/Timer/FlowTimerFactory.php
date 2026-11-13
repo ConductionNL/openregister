@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -89,7 +89,7 @@ final class FlowTimerFactory {
 	 *
 	 * @throws FlowTimerValidationException On any refused value.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function build(array $config, FlowTimerAct $act): FlowTimer {
 		$timer = new FlowTimer();
@@ -118,7 +118,7 @@ final class FlowTimerFactory {
 	 *
 	 * @return FlowTimer The successor.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function successor(FlowTimerScope $scope, FlowTimerAct $act): FlowTimer {
 		$prior = $scope->timer;

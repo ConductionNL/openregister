@@ -26,7 +26,7 @@ use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 /**
  * The backing view, and the catalog its source register, schema and table come from.
  *
- * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+ * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
  */
 final readonly class ViewSourceMappers {
 

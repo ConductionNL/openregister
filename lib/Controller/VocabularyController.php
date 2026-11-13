@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -67,7 +67,7 @@ use Throwable;
 /**
  * Public resolution controller for the vocabulary register.
  *
- * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 class VocabularyController extends Controller {
 
@@ -268,7 +268,7 @@ class VocabularyController extends Controller {
 	 *
 	 * @return JSONResponse The concept object, or a 404 standard error shape.
 	 *
-	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -293,7 +293,7 @@ class VocabularyController extends Controller {
 	 *
 	 * @return JSONResponse The concept object, or a 404 standard error shape.
 	 *
-	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -342,7 +342,7 @@ class VocabularyController extends Controller {
 	 *
 	 * @return JSONResponse The standard paginated objects envelope, or a 404 when the scheme is unknown.
 	 *
-	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

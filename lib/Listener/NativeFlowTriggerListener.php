@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-native-triggers/specs/flow-native-triggers/spec.md
+ * @spec openspec/specs/flow-native-triggers/spec.md
  */
 
 declare(strict_types=1);
@@ -77,7 +77,7 @@ class NativeFlowTriggerListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-native-triggers/specs/flow-native-triggers/spec.md
+	 * @spec openspec/specs/flow-native-triggers/spec.md
 	 */
 	public function handle(Event $event): void {
 		[$eventId, $payload] = $this->describe(event: $event);

@@ -437,7 +437,7 @@ export default {
 	/**
 	 * Lifecycle hook: preload dashboard and search-trail data on mount.
 	 *
-	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/built-in-dashboards/spec.md#REQ-ADS-002
+	 * @spec openspec/specs/built-in-dashboards/spec.md
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
@@ -505,7 +505,7 @@ export default {
 		 *
 		 * @spec openspec/specs/realtime-updates/spec.md
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/built-in-dashboards/spec.md#REQ-ADS-002
+		 * @spec openspec/specs/built-in-dashboards/spec.md
 		 */
 		async refetchLiveWidgets() {
 			try {
@@ -549,7 +549,7 @@ export default {
 		/**
 		 * Load search-trail statistics and popular terms from the store.
 		 *
-		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/built-in-dashboards/spec.md#REQ-ADS-002
+		 * @spec openspec/specs/built-in-dashboards/spec.md
 		 * @return {Promise<void>}
 		 */
 		async loadSearchTrailData() {
@@ -569,7 +569,7 @@ export default {
 		 * Restore the persisted KPI date range from localStorage (falls back
 		 * to "all time"). Validates the stored preset against the known set.
 		 *
-		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/built-in-dashboards/spec.md#REQ-ADS-002
+		 * @spec openspec/specs/built-in-dashboards/spec.md
 		 * @return {void}
 		 */
 		loadPersistedRange() {
@@ -584,7 +584,7 @@ export default {
 		 * Events): resolve its window, persist it, and refetch both metrics.
 		 *
 		 * @param {string} presetId The chosen preset id.
-		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/built-in-dashboards/spec.md#REQ-ADS-002
+		 * @spec openspec/specs/built-in-dashboards/spec.md
 		 * @return {void}
 		 */
 		pickRange(presetId) {
@@ -599,7 +599,7 @@ export default {
 		/**
 		 * Reload all dashboard and search-trail data.
 		 *
-		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/built-in-dashboards/spec.md#REQ-ADS-002
+		 * @spec openspec/specs/built-in-dashboards/spec.md
 		 * @return {Promise<void>}
 		 */
 		async refreshDashboard() {

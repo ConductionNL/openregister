@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Query;
  * part of the clause (the row conditions, the join and each filter condition)
  * reads both, so they travel together.
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 final readonly class RelatedRowSubquery {
 
@@ -54,7 +54,7 @@ final readonly class RelatedRowSubquery {
 	 *
 	 * @return string The placeholder name.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function placeholderFor(int|string $index): string {
 		return sprintf('%s_c%d', $this->inner->parameterPrefix, $index);
@@ -67,7 +67,7 @@ final readonly class RelatedRowSubquery {
 	 *
 	 * @return RelatedRowField The field.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function innerField(string $name): RelatedRowField {
 		return new RelatedRowField(alias: $this->inner->alias, name: $name);
@@ -80,7 +80,7 @@ final readonly class RelatedRowSubquery {
 	 *
 	 * @return RelatedRowField The field.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function outerField(string $name): RelatedRowField {
 		return new RelatedRowField(alias: $this->target->outerAlias, name: $name);

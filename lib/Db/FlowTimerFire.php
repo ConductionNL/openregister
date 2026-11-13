@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
  */
 
 declare(strict_types=1);
@@ -130,7 +130,7 @@ class FlowTimerFire extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The fire row.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function jsonSerialize(): array {
 		$names = array_diff(array_keys($this->getFieldTypes()), ['created']);

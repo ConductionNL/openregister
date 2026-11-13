@@ -201,7 +201,7 @@ class FlowStateNode extends LogicNodeBase implements IFlowNode, FlowStateNodeInt
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return self::CONFIG_KEYS;

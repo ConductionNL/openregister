@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Controller\Support;
 /**
  * What a caller is writing, as the version check needs it.
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+ * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
  */
 final class SentWrite {
 	/**
@@ -37,7 +37,7 @@ final class SentWrite {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	public function __construct(
 		public readonly array $data,

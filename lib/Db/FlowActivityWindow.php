@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+ * @spec openspec/specs/flow-run-summary/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use DateTime;
  * The "runs this week" half of a flow list counts the runs created at or
  * after `since`; the "last run" half reads the newest run of the same flows.
  *
- * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+ * @spec openspec/specs/flow-run-summary/spec.md
  */
 final readonly class FlowActivityWindow {
 	/**

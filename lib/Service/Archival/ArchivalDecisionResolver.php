@@ -328,7 +328,7 @@ class ArchivalDecisionResolver {
      *
      * @return array<string, mixed> The evaluation, with `defaulted` beside `matchedRule`.
      *
-     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-_retention-block
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-get-on-an-archival-schema-row-surfaces-retention-block
      */
     private function annotationForRender(array $annotation): array {
         if (array_key_exists('matchedRule', $annotation) === false) {

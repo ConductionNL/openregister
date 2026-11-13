@@ -30,7 +30,7 @@ use OCA\OpenRegister\Files\Service\File\ObjectFolderUploads;
 /**
  * The services of the object folder API.
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-a-reader-can-browse-an-objects-folder-without-a-share-that-outlives-the-read-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class ObjectFolderControllerServices {
 	/**
@@ -41,7 +41,7 @@ final class ObjectFolderControllerServices {
 	 * @param ObjectFolderUploads   $uploads          Stores a batch of uploads.
 	 * @param ObjectFolderResponder $responder        Turns outcomes and failures into responses.
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-a-reader-can-browse-an-objects-folder-without-a-share-that-outlives-the-read-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectFileAccess $objectFileAccess,

@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
  */
 
 declare(strict_types=1);
@@ -539,7 +539,7 @@ class FlowTimer extends Entity implements JsonSerializable, FlowTimerInterface {
 	 *
 	 * @return boolean True for armed and suspended.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function isOpen(): bool {
 		return in_array((string)$this->state, self::TERMINAL_STATES, true) === false;
@@ -550,7 +550,7 @@ class FlowTimer extends Entity implements JsonSerializable, FlowTimerInterface {
 	 *
 	 * @return boolean True for an expiry timer carrying an outcome.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
 	public function isEnforcing(): bool {
 		return $this->purpose === self::PURPOSE_EXPIRY && $this->onExpiry !== null && $this->onExpiry !== '';
@@ -563,7 +563,7 @@ class FlowTimer extends Entity implements JsonSerializable, FlowTimerInterface {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
 	 */
 	protected function jsonOverrides(): array {
 		return [

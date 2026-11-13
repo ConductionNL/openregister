@@ -44,7 +44,7 @@ interface FlowTriggerServiceInterface {
 	 *
 	 * @return int The number of runs queued.
 	 *
-	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 * @spec openspec/specs/flow-triggers/spec.md
 	 */
 	public function fire(string $event, array $subject = [], ?string $user = null, array $context = []): int;
 
@@ -55,7 +55,7 @@ interface FlowTriggerServiceInterface {
 	 *
 	 * @return int The number of runs queued.
 	 *
-	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 * @spec openspec/specs/flow-triggers/spec.md
 	 */
 	public function trigger(FlowTrigger $trigger): int;
 }//end interface

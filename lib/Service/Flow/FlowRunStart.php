@@ -119,7 +119,7 @@ final class FlowRunStart {
 	 *
 	 * @return self This start, or a copy that starts at the node.
 	 *
-	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 * @spec openspec/specs/flow-partial-run/spec.md
 	 */
 	public function startingAt(?string $node): self {
 		if (($node ?? '') === '') {

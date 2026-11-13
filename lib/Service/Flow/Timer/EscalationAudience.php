@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Task;
  *
  * Passed to {@see EscalationLadderService::resolveRecipients()} by the timer service.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
  */
 final class EscalationAudience {
 	/**

@@ -349,7 +349,7 @@ class ObjectActionRunner implements ObjectActionRunnerInterface {
 	 *
 	 * @return array{status: int, body: array<string, mixed>} The answer.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private function runSelfAssign(ObjectEntity $object, ObjectActionDefinition $definition): array {
 		try {

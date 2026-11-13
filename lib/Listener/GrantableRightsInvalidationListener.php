@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);

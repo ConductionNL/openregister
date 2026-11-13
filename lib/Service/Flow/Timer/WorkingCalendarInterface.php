@@ -33,7 +33,7 @@ interface WorkingCalendarInterface {
 	 *
 	 * @return string The slug.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getSlug(): string;
 
@@ -106,7 +106,7 @@ interface WorkingCalendarInterface {
 	 *
 	 * @return float The hours.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getHoursPerWorkingDay(): float;
 
@@ -117,7 +117,7 @@ interface WorkingCalendarInterface {
 	 *
 	 * @return array<string, string> `Y-m-d` => name.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function nonWorkingDates(int $year): array;
 }//end interface

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 /**
  * An extension as extend() and extendWithOverride() grant it.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
  */
 final class FlowTimerExtension {
 

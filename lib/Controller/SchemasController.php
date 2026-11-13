@@ -1450,7 +1450,7 @@ class SchemasController extends Controller {
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
-	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function update(int $id): JSONResponse {
 		$data = $this->withoutInternalParams(data: $this->request->getParams());
@@ -1562,7 +1562,7 @@ class SchemasController extends Controller {
 	 *     array<never, never>>|JSONResponse<422, array{error: string,
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
-	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	private function applyUpdate(int $id, array $data): JSONResponse {
 		// Immutable fields are dropped to prevent tampering.
@@ -1885,7 +1885,7 @@ class SchemasController extends Controller {
 	 *
 	 * @return JSONResponse The schema with its draft, or an error
 	 *
-	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	private function saveDraft(int $id, array $data): JSONResponse {
 		$schema = $this->manageableSchema(id: $id);
@@ -1914,7 +1914,7 @@ class SchemasController extends Controller {
 	 *
 	 * @return JSONResponse The updated schema, 409 when there is no draft, or the update's error
 	 *
-	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function publishDraft(int $id): JSONResponse {
 		$schema = $this->manageableSchema(id: $id);
@@ -1959,7 +1959,7 @@ class SchemasController extends Controller {
 	 *
 	 * @return JSONResponse The schema without a draft, or an error
 	 *
-	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function discardDraft(int $id): JSONResponse {
 		$schema = $this->manageableSchema(id: $id);

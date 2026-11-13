@@ -47,7 +47,7 @@ interface FlowRunAdvancerInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function advance(FlowRun $run, bool $rethrow = false): FlowRun;
 }//end interface

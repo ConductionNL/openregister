@@ -12,7 +12,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  */
 
 declare(strict_types=1);
@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\Anonymisation;
 /**
  * The ExApp route, the request body and the HTTP method of one call.
  *
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  */
 final class AnonymiserCall {
 

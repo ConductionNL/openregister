@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class BulkRowRules {
 

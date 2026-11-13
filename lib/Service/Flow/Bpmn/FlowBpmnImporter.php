@@ -36,7 +36,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 /**
  * Reads a documented BPMN subset into a flow document, reporting every loss.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 class FlowBpmnImporter {
 
@@ -115,7 +115,7 @@ class FlowBpmnImporter {
 	 * @throws BpmnImportRefused When the file cannot be read.
 	 * @throws BpmnSchemaInvalid When the document is not valid BPMN 2.0, which is a different answer.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function import(string $xml): array {
 		return $this->read(xml: $xml, strict: false);
@@ -131,7 +131,7 @@ class FlowBpmnImporter {
 	 * @throws BpmnImportRefused When the file cannot be read, or when anything in it is refused.
 	 * @throws BpmnSchemaInvalid When the document is not valid BPMN 2.0, which is a different answer.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function importStrictly(string $xml): array {
 		return $this->read(xml: $xml, strict: true);
@@ -153,7 +153,7 @@ class FlowBpmnImporter {
 	 * @throws BpmnImportRefused When the file cannot be read, or when strict meets a refusal.
 	 * @throws BpmnSchemaInvalid When the document is not valid BPMN 2.0, which is a different answer.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function read(string $xml, bool $strict): array {
 		$document = $this->parse(xml: $xml);
@@ -176,7 +176,7 @@ class FlowBpmnImporter {
 	 *
 	 * @return DOMXPath The xpath.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function xpathOf(DOMDocument $document): DOMXPath {
 		$xpath = new DOMXPath($document);
@@ -201,7 +201,7 @@ class FlowBpmnImporter {
 	 *
 	 * @throws BpmnImportRefused When the file declares no process, or several.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function singleProcess(DOMXPath $xpath): ?DOMNode {
 		$processes = $xpath->query('//bpmn:process');
@@ -224,7 +224,7 @@ class FlowBpmnImporter {
 	 *
 	 * @return array<string, mixed> The flow document.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function flowOf(BpmnImportPass $pass, ?DOMNode $process): array {
 		$positions = $this->layout->positions(xpath: $pass->xpath);
@@ -247,7 +247,7 @@ class FlowBpmnImporter {
 	 *
 	 * @throws BpmnImportRefused When strict meets a refusal.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function refuseWhenStrict(BpmnMappingReport $report, bool $strict): void {
 		if ($strict === true && $report->failsStrict() === true) {
@@ -272,7 +272,7 @@ class FlowBpmnImporter {
 	 *
 	 * @return array{nodes: array<int, array<string, mixed>>, edges: array<int, array<string, mixed>>} The graph.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function graphOf(BpmnImportPass $pass, ?DOMNode $process): array {
 		$nodes = [];

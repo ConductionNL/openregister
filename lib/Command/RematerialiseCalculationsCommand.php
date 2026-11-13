@@ -444,7 +444,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 *
 	 * @return array<string, mixed> The row with current data and the values still to change.
 	 *
-	 * @spec openspec/changes/rematerialise-rereads-before-save/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function withCurrentState(RematerialiseRun $run, array $row): array {
 		$current = $this->reread(run: $run, entity: $row['entity']);
@@ -469,7 +469,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 *
 	 * @return array<string, mixed>|null The stored data, or null when the row cannot be read again.
 	 *
-	 * @spec openspec/changes/rematerialise-rereads-before-save/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function reread(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): ?array {
 		try {
@@ -502,7 +502,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 *
 	 * @return bool True when every expected value is on the saved row.
 	 *
-	 * @spec openspec/changes/rematerialise-writes-calculated-values/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function saveForMaterialisation(RematerialiseRun $run, array $row): bool {
 		$entity = $row['entity'];

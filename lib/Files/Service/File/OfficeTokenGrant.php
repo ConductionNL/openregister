@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Files\Service\File;
 /**
  * The request and write right one Office token is issued for.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 final readonly class OfficeTokenGrant {
 	/**
@@ -37,7 +37,7 @@ final readonly class OfficeTokenGrant {
 	 * @param OfficeOpenRequest $request  The file, the editor, their display name and the caller's write right.
 	 * @param bool              $writable Whether the token may save: the caller's and Office's write right both hold.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public OfficeOpenRequest $request,
@@ -50,7 +50,7 @@ final readonly class OfficeTokenGrant {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function fileId(): string {
 		return (string)$this->request->file->getId();
@@ -61,7 +61,7 @@ final readonly class OfficeTokenGrant {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function guestName(): string {
 		$guestName = $this->request->displayName;

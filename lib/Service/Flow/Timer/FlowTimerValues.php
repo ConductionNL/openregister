@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ final class FlowTimerValues {
 	 *
 	 * @return DateTimeImmutable Now.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function instant(?DateTimeInterface $now): DateTimeImmutable {
 		if ($now === null) {
@@ -57,7 +57,7 @@ final class FlowTimerValues {
 	 *
 	 * @return DateTime The copy.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function mutable(DateTimeInterface $value): DateTime {
 		return (new DateTime('@' . $value->format('U.u')))->setTimezone($value->getTimezone());
@@ -70,7 +70,7 @@ final class FlowTimerValues {
 	 *
 	 * @return DateTime|null The copy.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function mutableOrNull(?DateTimeInterface $value): ?DateTime {
 		if ($value === null) {
@@ -90,7 +90,7 @@ final class FlowTimerValues {
 	 *
 	 * @throws FlowTimerValidationException On an unparseable value.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function dateOrNull(mixed $value, string $field): ?DateTimeImmutable {
 		if (in_array($value, [null, ''], true) === true) {
@@ -135,7 +135,7 @@ final class FlowTimerValues {
 	 *
 	 * @return string|null The string.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function stringOrNull(mixed $value): ?string {
 		if (is_string($value) === false || trim($value) === '') {
@@ -152,7 +152,7 @@ final class FlowTimerValues {
 	 *
 	 * @return array<string, mixed>|null The array.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function arrayOrNull(mixed $value): ?array {
 		if (is_array($value) === false || $value === []) {

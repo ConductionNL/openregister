@@ -4880,7 +4880,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @throws ReadOnlyTypeException When the current schema is view-backed.
      *
-     * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
      */
     private function rejectIfViewBacked(string $operation): void
     {

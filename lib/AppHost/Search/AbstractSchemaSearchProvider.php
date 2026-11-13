@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -143,7 +143,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 *
 	 * @return string Search provider ID
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	final public function getId(): string {
 		return 'openregister_objects_' . $this->getRegisterSlug() . '_' . $this->getSchemaSlug();
@@ -156,7 +156,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 *
 	 * @return string The schema's current title, or its slug as fallback
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	final public function getName(): string {
 		return $this->schemaTitle();
@@ -173,7 +173,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function getOrder(string $route, array $routeParameters): ?int {
 		unset($route, $routeParameters);
@@ -196,7 +196,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function search(IUser $user, ISearchQuery $query): SearchResult {
 		unset($user);
@@ -220,7 +220,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 *
 	 * @return array<string, int>
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	private function searchScope(): array {
 		if ($this->isSmartPickerEnabled() === false) {

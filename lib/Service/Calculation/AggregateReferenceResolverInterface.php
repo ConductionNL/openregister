@@ -42,7 +42,7 @@ interface AggregateReferenceResolverInterface {
 	 *
 	 * @return array{values: array<string, mixed>, failed: array<string, string>} Values and failures by name.
 	 *
-	 * @spec openspec/changes/rematerialise-writes-calculated-values/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function resolveOutcome(ReferringObject $referrer, array $aggregates): array;
 }//end interface

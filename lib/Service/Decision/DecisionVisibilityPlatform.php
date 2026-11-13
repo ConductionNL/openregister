@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Asks the app that owns a subject, and records a listener that failed.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 final class DecisionVisibilityPlatform {
 	/**
@@ -39,7 +39,7 @@ final class DecisionVisibilityPlatform {
 	 * @param IEventDispatcher $eventDispatcher Asks the app that owns the subject (REQ-DEC-003).
 	 * @param LoggerInterface  $logger          Records a listener that failed.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(
 		public readonly IEventDispatcher $eventDispatcher,

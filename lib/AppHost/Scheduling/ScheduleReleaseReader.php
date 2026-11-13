@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup is the ambient audit-cause frame.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleReleaseReader {
 	/**
@@ -76,7 +76,7 @@ class ScheduleReleaseReader {
 	 *
 	 * @return ScheduleRelease|null The publish, or null when this write is none.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function releaseOf(ObjectEntity $object, ?ObjectEntity $before): ?ScheduleRelease {
 		$after = $object->getObject();
@@ -104,7 +104,7 @@ class ScheduleReleaseReader {
 	 *
 	 * @return ScheduleRelease|null The release, or null when it is no application.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function releaseOfDeleted(ObjectEntity $object): ?ScheduleRelease {
 		if ($this->productionOf(data: $object->getObject()) === ''

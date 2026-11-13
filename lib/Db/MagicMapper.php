@@ -1969,7 +1969,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return array Array of ObjectEntity objects from all tables.
 	 *
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	private function searchAcrossMultipleTablesWithUnion(array $query, array $registerSchemaPairs): array {
 		$batches = array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE);
@@ -3582,7 +3582,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @throws PropertyAlreadySetException When the property was filled after it was read as empty.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private function updateClaimedObject(string $uuid, array $write): void {
 		$column = $this->sanitizeColumnName(name: $write['property']);
@@ -6575,7 +6575,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @throws ObjectExistsException When the identifier is taken and the caller asked to fail.
 	 *
-	 * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
 	 */
 	private function writeClaimingIdentifier(ObjectEntity $entity, array $write): array {
 		// Reset here, after the creating listeners ran, so an insert nested in one of them cannot leave its flag behind.
@@ -6611,7 +6611,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return HookStoppedException|null The refusal to throw unless the write turns out to be an update.
 	 *
-	 * @spec openspec/changes/create-over-taken-identifier-runs-update-path/specs/object-lifecycle/spec.md#requirement-a-refused-create-over-a-taken-identifier-is-judged-as-an-update
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-refused-create-over-a-taken-identifier-is-judged-as-an-update
 	 */
 	private function runCreatingHooks(ObjectEntity $entity): ?HookStoppedException {
 		$creatingEvent = new ObjectCreatingEvent(object: $entity);
@@ -6646,7 +6646,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @throws HookStoppedException The creating refusal, when this is a create after all.
 	 *
-	 * @spec openspec/changes/create-over-taken-identifier-runs-update-path/specs/object-lifecycle/spec.md#requirement-a-refused-create-over-a-taken-identifier-is-judged-as-an-update
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-refused-create-over-a-taken-identifier-is-judged-as-an-update
 	 */
 	private function updateRefusedCreate(ObjectEntity $entity, array $write): string {
 		$stored = null;
@@ -6695,7 +6695,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @throws HookStoppedException When a listener stops the update, or the refused create's row is no longer live.
 	 *
-	 * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-create-that-finds-its-identifier-taken-runs-the-update-guard
 	 */
 	private function updateTakenIdentifier(ObjectEntity $entity, array $target): string {
 		$stored = $this->storedRowOf(entity: $entity, target: $target);
@@ -9071,7 +9071,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/insert-race-follow-ups/specs/object-lifecycle/spec.md#requirement-a-create-written-as-an-update-is-announced-as-an-update
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-create-written-as-an-update-is-announced-as-an-update
 	 */
 	private function announceInsert(ObjectEntity $inserted, RegisterSchema $target): void {
 		$replaced = $this->replacedByLastInsert;
@@ -10634,7 +10634,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
 	 *
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function searchObjectsPaginated(
 		array $searchQuery = [],
@@ -10658,7 +10658,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param string|null          $_activeOrgUuid Active organization UUID.
 	 *
 	 * @return array<string, mixed>
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function searchPaginatedBy(MagicPaginatedSearch $search, bool $_rbac=true, bool $_multitenancy=true, ?string $_activeOrgUuid=null): array {
 		$searchQuery = $search->searchQuery;
@@ -10938,7 +10938,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return array{registers: array, registersCache: array, schemaToRegisterId: array<int, int>}
 	 *
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	private function resolveSchemaOwnership(array $registerIds): array {
 		$registers = [];
@@ -11011,7 +11011,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return array{results: ObjectEntity[], total: int, registers: array, schemas: array}
 	 *
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	private function searchObjectsPaginatedMultiSchema(MultiSchemaSearch $search): array {
 		// When no register filter is given (unified search passes a searchable-schema

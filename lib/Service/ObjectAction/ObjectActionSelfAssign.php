@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) EmptyPropertyClaim is the request-scoped claim the mapper reads, as DraftStatusPolicy is.
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 class ObjectActionSelfAssign {
 
@@ -70,7 +70,7 @@ class ObjectActionSelfAssign {
 	 * @throws RuntimeException When there is no caller or the action is not a self-assign.
 	 * @throws PropertyAlreadySetException When another caller filled the property after it was read as empty.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function assign(ObjectEntity $object, ObjectActionDefinition $definition): ObjectEntity {
 		$user = $this->userSession->getUser();
