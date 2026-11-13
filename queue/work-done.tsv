@@ -3177,3 +3177,4 @@ gap:decidiq:maint1:burn1	PR decidiq#2122: refactored RegulatorExportService::gen
 cover:dossiq:f8a113c5m7e79:59826f43	PR #6325: 1 phpunit test, Settings 104->106/106	session-20261113T051709-e616bf69	2026-11-13T07:34:01Z
 cover:dossiq:f8a113c5m7e79:6925f818	PR #6326: SetupCheck tests 11->20, 0 new failures	session-20261113T072715-8f8a14e9	2026-11-13T07:34:15Z
 cover:integriq:92114ab0m658d:e372e6ff	already done: lib/Event/*.php at 97.6% lines (408/418) under the full unit suite on development, target 95; branches -1,-2 exist; no PR	session-20261113T051705-4f5ad12a	2026-11-13T07:34:33Z
+gap:decidiq:tcr2:burn1	PR #2123: 5 migration test files, 21 tests, suite 3684->3705 green; tests only	session-20261113T072706-2eaa6a81	2026-11-13T07:34:42Z
