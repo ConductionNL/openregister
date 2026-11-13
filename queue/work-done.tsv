@@ -4134,3 +4134,4 @@ merge:integriq:3514:373599c5	merge-local over 7 integriq tasks: merged=8 red=0 f
 merge:integriq:3515:3cef6121	merge-local over 7 integriq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T10:02:49Z
 cover:larpinq:c4471360m4538:81b1241f	no PR: lib/Portal 155/155 covered, PortalContributionProviderTest has 15 tests incl. full golden manifest; nothing real left to add	session-20261113T094617-36f80607	2026-11-13T10:02:43Z
 cover:versioniq:1b35eed9m70ae:6fbca0df	PR #676: lib/Service/Cache 93.72% -> 100%, PHP 92.82% -> 93.06%; +4 tests (1356 -> 1360, 2 failures from development, none new); tests only	session-20261113T083916-59f10a3b	2026-11-13T10:03:09Z
+verify:integriq:3519:d2d6898e	GREEN 3519-3522: phpunit 8189 (inherited only), vitest 2055 pass	session-20261113T080556-d189f150	2026-11-13T10:03:28Z
