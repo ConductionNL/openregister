@@ -2,8 +2,8 @@
 
 ## 1. Prove the defect before fixing it
 
-- [ ] Write a failing test asserting `searchObjectsBySlug('document','anonymizationLink')` resolves schema `9177`, not `5084` — and confirm it FAILS against unmodified code first
-- [ ] Write a failing test asserting a register-scoped miss throws instead of returning a foreign schema
+- [x] Write a failing test asserting `searchObjectsBySlug('document','anonymizationLink')` resolves schema `9177`, not `5084` — and confirm it FAILS against unmodified code first (verified: `ObjectServiceSearchBySlugTest::testDocumentRegisterResolvesItsOwnAnonymizationLinkSchema`, which fails when the global `find()` fallback is put back)
+- [x] Write a failing test asserting a register-scoped miss throws instead of returning a foreign schema (verified: `ObjectServiceSearchBySlugTest::testSearchObjectsBySlugRefusesSchemaSlugOutsideTheRegister`, `...RefusesWhenRegisterCarriesNoSchemas`)
 
 Acceptance criteria:
 - Both tests fail before any production code changes. A test that passes on unmodified code is measuring nothing.
@@ -11,13 +11,13 @@ Acceptance criteria:
 
 ## 2. The refusal
 
-- [ ] Add `SchemaNotInRegisterException extends DoesNotExistException`, carrying register id, register slug, requested slug and same-slug candidate count
-- [ ] Replace the global fallback with a throw in `ObjectService::setSchema()`
-- [ ] Replace the global fallback with a throw in `ObjectService::searchObjectsBySlug()`
-- [ ] Replace the global fallback with a throw in `Service\Flow\Nodes\ObjectWriteNode`
-- [ ] Replace the global fallback with a throw in `Service\Flow\Nodes\ObjectReadNode`
-- [ ] Replace the global fallback with a throw in `Controller\SchemasController`
-- [ ] Verify no register-scoped call site retains a fallback — grep every `findBySlugInIds` caller and confirm each one throws
+- [x] Add `SchemaNotInRegisterException extends DoesNotExistException`, carrying register id, register slug, requested slug and same-slug candidate count (verified: lib/Exception/SchemaNotInRegisterException.php, SchemaNotInRegisterExceptionMessageGoldenTest)
+- [x] Replace the global fallback with a throw in `ObjectService::setSchema()` (verified: shared `ObjectService::schemaWithinRegister()`)
+- [x] Replace the global fallback with a throw in `ObjectService::searchObjectsBySlug()` (verified: `schemaWithinRegister()`)
+- [x] Replace the global fallback with a throw in `Service\Flow\Nodes\ObjectWriteNode` (verified: ObjectWriteNodeResolutionBehaviourTest)
+- [x] Replace the global fallback with a throw in `Service\Flow\Nodes\ObjectReadNode` (verified: ObjectReadNodeBehaviourTest)
+- [x] Replace the global fallback with a throw in `Controller\SchemasController` (verified: SchemasControllerShowRegisterScopeTest, SchemasControllerRegisterLinkageTest)
+- [x] Verify no register-scoped call site retains a fallback — grep every `findBySlugInIds` caller and confirm each one throws (verified 2026-11-13: ObjectService, ObjectReadNode and ObjectWriteNode throw; `BackfillObjectSlugsCommand` refuses a schema outside the register after resolving; `ImportHandler` is an import that creates on a miss, not a read)
 
 Acceptance criteria:
 - Register-less callers still reach `SchemaMapper::find()` unchanged.
@@ -26,10 +26,10 @@ Acceptance criteria:
 
 ## 3. Linkage repair
 
-- [ ] Add `RegisterSchemaLinkageRepairService` reconstructing a register's schema ids from `oc_openregister_table_<reg>_<schema>` names, reporting live row count per id
-- [ ] Add a platform switch so the catalogue query works on both Postgres and MySQL, and mark the MySQL arm unverified if it is not exercised
-- [ ] Add `occ openregister:registers:relink-schemas` — dry-run by default, `--write` to apply, `--register=<id>` to target one
-- [ ] Make the repair strictly additive — never remove an id already in a register's list
+- [x] Add `RegisterSchemaLinkageRepairService` reconstructing a register's schema ids from `oc_openregister_table_<reg>_<schema>` names, reporting live row count per id (verified: RegisterSchemaLinkageRepairServiceTest, RegisterSchemaLinkageRepairEvidenceTest)
+- [x] Add a platform switch so the catalogue query works on both Postgres and MySQL, and mark the MySQL arm unverified if it is not exercised (verified: the query uses `information_schema.tables`, which both platforms provide, so no switch was needed; the MySQL arm is not exercised by unit tests and is unverified)
+- [x] Add `occ openregister:registers:relink-schemas` — dry-run by default, `--write` to apply, `--register=<id>` to target one (verified: RelinkRegisterSchemasCommand, RelinkRegisterSchemasCommandTest)
+- [x] Make the repair strictly additive — never remove an id already in a register's list (verified: `testRepairIsAdditiveAndNeverRemoves`)
 
 Acceptance criteria:
 - Default invocation mutates nothing and prints register, ids-to-add and row counts.
@@ -38,8 +38,8 @@ Acceptance criteria:
 
 ## 4. Tests
 
-- [ ] Unit tests for all five call sites: scoped hit resolves the register's schema, scoped miss throws, register-less caller unchanged, numeric id unaffected
-- [ ] Unit tests for the repair: reconstruction from table names, additive-only, empty-evidence case, dry-run mutates nothing
+- [x] Unit tests for all five call sites: scoped hit resolves the register's schema, scoped miss throws, register-less caller unchanged, numeric id unaffected (verified: the tests named above)
+- [x] Unit tests for the repair: reconstruction from table names, additive-only, empty-evidence case, dry-run mutates nothing (verified: `testReconstructsLostLinkageFromTableNames`, `testRepairIsAdditiveAndNeverRemoves`, `testReportsNothingWithoutPhysicalEvidence`, `testDryRunRendersEvidenceAndAppliesNothing`)
 - [ ] Playwright E2E proving the fix end to end against the real instance — read `anonymizationLink` from register `document` and get the 4 rows that are currently unreachable
 
 Acceptance criteria:
