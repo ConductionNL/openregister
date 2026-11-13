@@ -2729,3 +2729,4 @@
 9939 525239453b71102be5f07c45166200b68977a40c APPROVE integrator: main merge on top of 043d8823, conflicts only in component-map rows (union) and the regenerated sigrid.components.yaml
 4641 414ed9a35da40f32192618c87e1c3daeda920ec1 APPROVE integrator IL4: main merge on top of 8c55a53e; conflicts only in info.xml: main's KeyAuditHashChain install step and this branch's OpenSpecialRightsToEveryone install step both kept.
 4796 6a3e7b16196a3f23f1dedf56b30fe5879b73d019 APPROVE integrator IL4: main merge on top of 09be2076; conflicts only in l10n en/nl js+json: union of main's and this branch's translation entries.
+10015 fb43e991a4e1cfff74ec94355081c4334b92827b APPROVE Tests-only: adds coverage collaborator metadata to 735 Service tests, all referenced classes exist; Architecture/Rules/Controller/Contract green, Service suite matches main (17 inherited webhook DNS failures).
