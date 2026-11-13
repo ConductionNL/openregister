@@ -438,3 +438,23 @@ stackiq	1542	69e306bb1fd600b807c20d41242916836e2328fa	MERGED	merge-local	GATE OK
 stackiq	1546	db138c93a358741b35322339037564984a8996e8	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 stackiq	1595	3325e9bea6413097830c0ae0c491df3926af883c	SKIP	merge-local	GATE UNMEASURED 3325e9bea6 does not merge cleanly onto development
 stackiq	1774	f03648cc89aec6bee957a465287d9d7329c73deb	MERGED	merge-local	light gate: quality config yaml only, parses, applies cleanly
+dossiq	6056	71a55d4c2c8941b528c9647aef6122075841c38f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6057	c2946f8873a4bb64ff819857b2d002e780da6a59	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6058	7f5c1feb1ddf4b8ace1ca7f6be9fb2f0e6945ba1	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6005	0f2941b078db12835df39729c1316c01c5d14649	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6068	21ce2b6dc1525c054c3badc3206087943dd7fff2	SKIP	merge-local	GATE UNMEASURED checker_floor exit 2: /usr/bin/python3: can't open file '/home/rubenlinde/.cache/hydra-gates/dotgithub/hydra-gates/scripts/lib/checker_floor.py': [Errno 2] No such file or directory
+dossiq	6077	b57d032df779567aa73aa1b9ab57d07184614a4b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	5856	62cc120674c33a258fb48da15a34bfd7ec54d4d9	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	5879	37188db1d23db547f2ecd4e10554a1752021d84f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	5880	d89b2e63818e64e345a8c958ba1b70e101a572af	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	5882	569621bf84ff9c81d5e6d14639a4b8fafb1ee2a9	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	5883	d96cf3c37771c80b8a687a6cd948b54bc1cf19f4	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	5899	035ffd99f68e76e8fd862c25e3a043847ed0bcaf	SKIP	merge-local	GATE UNMEASURED 035ffd99f6 does not merge cleanly onto development
+dossiq	6082	31c9cf673cc5d024413adafdc0a7e39f20ff0a03	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6091	f47446c79c37527fd734a235824b1bf939e4c079	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6092	4a8cea85ae330aecd179624a06e1e87ad0a83945	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6093	bc3c150c7af23f5e8cdd96dac63c177d66c1142f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6094	9fecf9710291423f6ed76c6e119109d44f5b65a7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6095	16c34b6ba21a9767b969294599fb871f2e228bf3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6096	7be207b85160ce1e5cc61020911f83df4722ac5c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6097	856c057083edac18e944061515829e2698bcf602	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
