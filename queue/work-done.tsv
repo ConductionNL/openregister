@@ -2487,3 +2487,8 @@ cover:dossiq:f8a113c5mac88:93ebc4b9	already done: lib/Http (RangeStreamResponse)
 cover:dossiq:f8a113c5mac88:e372e6ff	already done: lib/Event/*.php 7/7 lines (100.0%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:40:32Z
 verify:launchpad:1173:2c5aa39c	GREEN 1173 (JS spec only; vitest all pass)	session-20261113T031701-b518f7f8	2026-11-13T05:40:42Z
 cover:integriq:92114ab0m1534:36cd350f	already done: lib/Adapters/Digikoppeling/ at 97.46% lines (307/315) on development 4aa851de; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:41:00Z
+cover:integriq:92114ab0m1534:59f49d26	already done: lib/PropertySource/*.php at 93.39% lines (240/257) on development 4aa851de, above 90 target; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:41:12Z
+merge:dossiq:6107:31ee98b4	stale	feeder	2026-11-13T05:40:13Z
+merge:dossiq:6159:7c5940b9	stale	feeder	2026-11-13T05:40:13Z
+merge:dossiq:6172:7ca90664	stale	feeder	2026-11-13T05:40:13Z
+merge:dossiq:6187:e9049bcb	stale	feeder	2026-11-13T05:40:13Z
