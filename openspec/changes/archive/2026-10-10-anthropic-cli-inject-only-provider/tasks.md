@@ -22,8 +22,8 @@ This is the head of a three-link chain (ADR-032). It MUST merge before hermiq's
   - `$injectOnlyComment` is extended so `inject_only` no longer reads as "the five `generic-*` entries": it must state the general rule (the broker cannot bound the call) covering BOTH an unbounded host and a non-HTTP consumer
   - `anthropic` and `anthropic-oauth` are byte-for-byte unchanged
   - The file remains valid JSON and contains no secret — `{secret}` is a placeholder only
-- [ ] Implement
-- [ ] Test
+- [x] Implement (verified: lib/Settings/credential-providers.json)
+- [x] Test (verified: tests/Unit/Service/Credential/ProviderCatalogueTest.php, catalogue-wide inject-only invariants)
 
 ### Task 2: Verify the broker's existing guards against the new entry
 - **spec_ref**: `openspec/changes/anthropic-cli-inject-only-provider/specs/credential-broker/spec.md#requirement-an-inject-only-credential-is-never-proxied`
@@ -35,8 +35,8 @@ This is the head of a three-link chain (ADR-032). It MUST merge before hermiq's
   - `resolveInjectable()` still returns null for `anthropic-oauth` — the host-locked proxy providers stay zero-knowledge
   - No provider-specific branch is added: both paths must keep keying on the `inject_only` flag alone (`isInjectOnly()`)
   - If this task finds a gap, a code change is OUT OF SCOPE here — raise it rather than widening this `kind: config` change into a `mixed` one (ADR-032)
-- [ ] Implement
-- [ ] Test
+- [x] Implement (verified: lib/Service/Credential/CredentialBrokerService.php, no edit needed)
+- [x] Test (verified: tests/Unit/Service/Credential/CredentialBrokerServiceTest.php, provider-agnostic inject_only guards)
 
 ## Quality checklist
 

@@ -48,5 +48,5 @@
 - [x] 5.1 `npm run lint` passes on the touched files.
 - [x] 5.2 `npm test` (jest) passes.
 - [x] 5.3 `npm run build` (webpack production) succeeds.
-- [ ] 5.4 Live two-session verification on a notify_push-enabled instance
+- [ ] 5.4 Live two-session verification on a notify_push-enabled instance (live pass, decision 139)
   (deferred — requires a deployed instance; not part of this change's CI).

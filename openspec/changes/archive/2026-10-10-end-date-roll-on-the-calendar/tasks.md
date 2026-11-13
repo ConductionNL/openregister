@@ -13,7 +13,7 @@
 ## 3. Tests
 
 - [x] 3.1 Unit tests: Easter cluster, Koningsdag observed shift, weekend, `previous`, `businessDays` ignored, default `none`.
-- [ ] 3.2 Newman: arm a timer with the option through the API and read the description.
+- [ ] 3.2 Newman: arm a timer with the option through the API and read the description. (live pass, decision 139)
 
 ## Status, 2026-09-18
 

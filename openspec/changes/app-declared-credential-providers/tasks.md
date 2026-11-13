@@ -35,7 +35,7 @@
 - [ ] 6.1 Unit-test the validator and the narrowing test, including the adversarial cases (`*` at the pattern head, `/repos/*` vs `/repos/*/../../admin`, method mismatch, wider host).
 - [ ] 6.2 Unit-test every deny path on the broker: pending, rejected, revoked, digest drift, disabled declaring app, cross-app borrow, shadowing attempt, `inject_only` declaration, mint against a non-admitted declaration.
 - [ ] 6.3 Assert no regression for reviewed providers — existing `CredentialBrokerServiceTest`, `ProviderCatalogueTest`, `DoffinProviderTest` and the organisation-scope tests stay green, and `generic-*` inject_only behaviour is unchanged.
-- [ ] 6.4 Live-verify end to end on the dev instance with a real declaration: pending denies, approval admits, an edited declaration re-pends; confirm opencatalogi and softwarecatalog show no regression and run `composer check:strict`.
+- [ ] 6.4 Live-verify end to end on the dev instance with a real declaration: pending denies, approval admits, an edited declaration re-pends; confirm opencatalogi and softwarecatalog show no regression and run `composer check:strict`. (live pass, decision 139)
 
 ## Acceptance criteria
 

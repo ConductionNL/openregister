@@ -152,7 +152,7 @@
       with no escalation raised; and an invariant test asserting
       `fire_at = calendar.add(running_since, budget - consumed)` and the task
       projection after EVERY operation in the state machine.
-- [ ] 7.3 Regression pass with opencatalogi and softwarecatalog installed:
+- [ ] 7.3 Regression pass with opencatalogi and softwarecatalog installed: (live pass, decision 139)
       flows still queue, advance and complete; `WaitNode` and
       `AwaitSignalNode` behave identically; the migration applied twice yields
       identical schema and seed state; and `openregister_flow_triggers` and

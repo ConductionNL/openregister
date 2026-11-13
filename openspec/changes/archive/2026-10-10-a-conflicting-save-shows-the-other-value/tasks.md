@@ -18,7 +18,7 @@
 ## 4. Tests
 
 - [x] 4.1 Unit tests for the three-value body, the intersection rule, the filtered property and the PUT assertion.
-- [ ] 4.2 A Newman request asserting the 409 shape.
+- [ ] 4.2 A Newman request asserting the 409 shape. (live pass, decision 139)
 - [x] 4.3 Deduplication check (ADR-012) recorded in the PR body.
 
 ## What was built
