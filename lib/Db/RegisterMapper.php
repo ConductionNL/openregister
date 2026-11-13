@@ -196,7 +196,8 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * "Register not found: '19'", and the error-level line that would have said
 	 * WHY — "Register not found after filters", carrying `existsBeforeFilter`,
 	 * i.e. "the row matched, then a filter removed it" — silently did not fire.
-	 * openregister#2820.
+	 * A register that does not exist at all is logged as
+	 * "Register does not exist" at debug, not as an error. openregister#2820.
 	 *
 	 * @return void
 	 */
