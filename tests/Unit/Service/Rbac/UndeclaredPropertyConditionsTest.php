@@ -34,6 +34,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\ConditionMatcher
  * @uses   \OCA\OpenRegister\Service\OperatorEvaluator
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\ConditionUserResolvers
  */
 class UndeclaredPropertyConditionsTest extends TestCase {
 
