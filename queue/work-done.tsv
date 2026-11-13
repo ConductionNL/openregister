@@ -6785,3 +6785,4 @@ build:hermiq:companion-everywhere	PR #1716: tasks 2 and 4.1 as vitest guards; li
 build:integriq:connectors-education-live-clients	PR #3544: live Zermelo/UWLR/SWV clients behind their flags, 21 new tests; suite 8222->8243, inherited failures only; openspec validate left (no CLI)	session-20261113T192701-f224cbcf	2026-11-13T20:53:34Z
 build:integriq:connectors-lti-platform-launch	partial: PR #3545 adds the launch/error page strings (en, nl); left: e2e and live reference-tool tests	session-20261113T204535-8ae4a1d5	2026-11-13T20:53:47Z
 build:integriq:connectors-course-marketplace	nothing to build: every code task is ticked; open boxes are e2e/live tests and Task 6 form half, which the change defers (build decision 57)	session-20261113T202612-d04bbf77	2026-11-13T20:54:59Z
+verify:opencatalogi:2613:97adbb72	4 GREEN (2613-2616); vitest 855 passed; jest failing suites 33 -> 31; PHP 2 inherited	session-20261113T182404-f2c28226	2026-11-13T20:55:14Z
