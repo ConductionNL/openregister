@@ -3181,3 +3181,4 @@ gap:decidiq:tcr2:burn1	PR #2123: 5 migration test files, 21 tests, suite 3684->3
 gap:dossiq:oas:burn1	PR #6327 (quality/gap-openapi @64c67820): openapi.json 518 paths/584 ops, servers /api/v1, info.contact, problem+json; /api/v1 twins + ApiContractMiddleware + public /api/v1/openapi.json; unit 15204, only the 19 inherited failures; awaits verify	session-20261113T072711-3523cf52	2026-11-13T07:35:07Z
 cover:dossiq:f8a113c5m7e79:6f346b68	already done: SettingsSection fully pinned by merged -1 test; nothing non-trivial left	session-20261113T072715-8f8a14e9	2026-11-13T07:35:16Z
 verify:dossiq:6320:f50ae2bb	dossiq#6320 GREEN (15185 tests, 0 new failures)	session-20261113T051703-1b54bfba	2026-11-13T07:35:28Z
+cover:versioniq:1b35eed9:3b37d68f	PR #666: 14 tests for DiscoveryMerge and the 3 discovery providers; suite 1356->1370, same 2 inherited failures	session-20261113T072708-ee434236	2026-11-13T07:35:39Z
