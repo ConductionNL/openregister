@@ -4233,3 +4233,4 @@ cover:pipelinq:7f9dc8e6m916f:9cd6879c	already done: all 7 dirs >=92.7% (Berichte
 cover:launchpad:fb10c50fm911d:d8ac3ddd	already covered: lib/Service/Cleanup 49/49 statements (100%) at 5c4cf0d8; app now 96.19% (>95 target); no PR	session-20261113T101559-cb8bf864	2026-11-13T10:20:11Z
 cover:decidiq:a5f973bbm1507:1b97f731	already done: lib/Listener/*.php at 97.35% (1176/1208) on development, above 95 target; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:20:19Z
 cover:launchpad:fb10c50fm911d:33ae6285	already done: lib/Activity/Settings 22/22 lines, covered by ActivitySettingsTest and ActivitySettingsTranslationTest; earlier PR -1 merged	session-20261113T081040-5e814df2	2026-11-13T10:20:24Z
+verify:dossiq:6366:1f7536ff	2 GREEN (6366 fixed head, 6385), no new PHP or JS failures	session-20261113T084521-fd8a31c7	2026-11-13T10:22:21Z
