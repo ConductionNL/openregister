@@ -2322,3 +2322,4 @@ cover:hermiq:065f1631m312d:js77cf3af4	PR #1665: src/widgets 89.6%->90.5%, SkillR
 verify:launchpad:1167:3b177030	1167-1170 all GREEN (JS tests only; vitest 1913 green)	session-20261113T034628-73e45054	2026-11-13T04:54:52Z
 cover:keepiq:c967a31fm0090:aae6d66c	already done: lib/Exception 100% lines on development (-1 merged); remaining classes have no executable lines	session-20261113T043934-6a88a50b	2026-11-13T04:55:07Z
 cover:keepiq:c967a31fm0090:js3287a408	PR #1736: src/components/settings 85.42% -> 90.73% (61 tests, 5 sections); vitest 5891 -> 5952 green	session-20261113T034634-857dbcc2	2026-11-13T04:55:03Z
+cover:decidiq:a5f973bbma14b:9d3a1784	PR #2110: 18 tests, MailReplyHandler 0->100%, TranscriptRetentionJob 62.8->99.4% lines	session-20261113T044735-792ed933	2026-11-13T04:55:41Z
