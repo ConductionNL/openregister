@@ -21,7 +21,7 @@
       `AuditTrailMapper::insertAuditTrails()`. A save that changed nothing
       writes nothing, and `"1"` over a stored `1` is not a change — `IAppConfig`
       stores strings, so a strict comparison would record one on every save.
-- [ ] 1.1b The entry in `GenericSettingsService::update()`.
+- [x] 1.1b The entry in `GenericSettingsService::update()`.
       > 🔑 **THAT METHOD DOES NOT EXIST.** The generic service carries only
       > `loadConfiguration()`, and `apphost-settings-plane` has six open tasks.
       > Measured 2026-09-18. The auditor is therefore DOOR-AGNOSTIC — it takes
@@ -30,9 +30,18 @@
       > lands it calls the same auditor; nothing here has to be rewritten, and
       > in the meantime settings changes on the live door are recorded rather
       > than waiting for a plane that is half built.
-- [ ] 1.1c The import entry on `load(force)`: `recordImport()` exists and is
+- [x] 1.1c The import entry on `load(force)`: `recordImport()` exists and is
       tested, and is not yet called from `loadConfiguration()`, which would
       need the overwritten-key count that method does not currently compute.
+      Done: both load doors (`GenericSettingsService::loadConfiguration()` and
+      `AppHostSettingsService::loadConfiguration()`) snapshot the managed keys
+      before the import and call `recordImport()` after a non-empty import,
+      before the `config_version` stamp. A key counts as overwritten when it
+      held a value and holds a different one after (compared as text); a key
+      set for the first time does not. Fail-soft like the update path. Proven
+      by `tests/Unit/AppHost/SettingsImportAuditTest.php`, which also shows
+      the generic service's `update` (the inherited `updateSettings()`) going
+      through the same auditor (1.1b).
 - [x] 1.2 `x-openregister-secret` read from the register configuration
       (`secretKeysIn()`), and masking. A secret is recorded as CHANGED WITH
       BOTH VALUES MASKED rather than omitted: the credential somebody rotated

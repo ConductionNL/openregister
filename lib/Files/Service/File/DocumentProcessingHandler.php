@@ -30,6 +30,7 @@ use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
+use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
@@ -143,6 +144,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @var array<int|string, string>
 	 */
 	private array $lastPlaceholderMap = [];
+
+	/**
+	 * The content-altering steps that ran in the current anonymisation run.
+	 *
+	 * @var list<string>
+	 */
+	private array $stepsRan = [];
 
 	/**
 	 * Constructor for DocumentProcessingHandler.
@@ -380,6 +388,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 				preserveStructure: $request->options->preserveStructure
 			)
 		);
+		$this->markStepRan(step: PipelineSteps::ANONYMISER);
 		if (($node instanceof File) === true
 			&& $this->redaction->sanitizer->isSanitizable($node->getMimeType()) === true
 		) {
@@ -426,7 +435,23 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		$this->lastResidualEntities = [];
 		$this->lastPlaceholderMap = [];
 		$this->lastStructurePreservation = null;
+		$this->stepsRan = [];
 	}//end resetRunState()
+
+	/**
+	 * Note that a content-altering step ran in this run.
+	 *
+	 * @param string $step One of the PipelineSteps ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md#requirement-every-content-altering-step-reports-its-state-req-adi-006
+	 */
+	private function markStepRan(string $step): void {
+		if (in_array($step, $this->stepsRan, true) === false) {
+			$this->stepsRan[] = $step;
+		}
+	}//end markStepRan()
 
 	/**
 	 * The replacement map of an anonymisation: trimmed entity text to its
@@ -725,6 +750,12 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		$entity->setStatus(AnonymisationLog::STATUS_SUCCESS);
 		$entity->setReplacements(count($replacements));
 
+		// Every content-altering step: ran, skipped with the reason, or not-applicable (REQ-ADI-006).
+		$steps = json_encode((new PipelineSteps())->outcomes(ran: $this->stepsRan, mimeType: $mimeType));
+		if (is_string($steps) === true) {
+			$entity->setSteps($steps);
+		}
+
 		if ($this->lastSanitizationReport !== null) {
 			$encoded = json_encode($this->lastSanitizationReport->jsonSerialize());
 			if (is_string($encoded) === true) {
@@ -840,6 +871,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		}//end try
 
 		$this->lastSanitizationReport = $result->report;
+		$this->markStepRan(step: $this->sanitiserStep(node: $job->node));
 
 		$fileExtension = strtolower(pathinfo($job->node->getName(), PATHINFO_EXTENSION));
 
@@ -851,6 +883,21 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		return $this->replaceWordsInOfficeContainer(job: $job->withSanitizedSource(path: $result->path));
 	}//end anonymizeSanitizableDocument()
+
+	/**
+	 * The sanitiser step of an Office document: DOCX by its MIME type, else ODT.
+	 *
+	 * @param Node $node The source file.
+	 *
+	 * @return string The step id.
+	 */
+	private function sanitiserStep(Node $node): string {
+		if ($this->logMimeType(node: $node) === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+			return PipelineSteps::DOCX_SANITISER;
+		}
+
+		return PipelineSteps::ODT_SANITISER;
+	}//end sanitiserStep()
 
 	/**
 	 * Replace words inside a sanitised Office ZIP container's text parts.
@@ -1119,6 +1166,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// `replaceInPdf` already reflects the accessibility structure of the
 		// bytes this method goes on to write.
 		$this->lastStructurePreservation = $redaction->structurePreservation;
+		$this->markStepRan(step: PipelineSteps::PDF_TEXT_REPLACER);
 
 		if (empty($redaction->residualEntities) === false) {
 			$this->lastResidualEntities = $this->residualEntityRecords(
@@ -1128,6 +1176,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		}
 
 		$replacedBytes = $this->sanitizePdfMetadata(replacer: $replacer, pdfBytes: $redaction->bytes);
+		$this->markStepRan(step: PipelineSteps::PDF_METADATA_SANITISER);
 
 		$this->removeExistingOutput(job: $job);
 		$newFile = $job->node->getParent()->newFile(path: $job->outputName, content: $replacedBytes);
