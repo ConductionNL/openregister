@@ -5776,3 +5776,4 @@ build:portaliq:portal-white-label-runtime-config	already built: every code task 
 build:portaliq:guardian-pages-follow-the-wilgenboom-boards	already done: T1-T5 landed in #1969 (5115bbc0); only T6 is open and it is learniq's repo, nothing to build in portaliq	session-20261113T171137-8f22ecb0	2026-11-13T18:00:48Z
 build:portaliq:portal-cms-admin-ui	PR #2428: Task 3 copy buttons for TXT record name/value via field-list detail.copy; e2e and pre-save hook left	session-20261113T171154-27186e77	2026-11-13T18:01:17Z
 build:portaliq:portal-traffic-zero-result-searches	nothing to build: code tasks done on development; open 3.1/3.2 need a live instance, 4.3-4.5 are pre-merge/process steps	session-20261113T172328-c860ad55	2026-11-13T18:01:27Z
+cover:pipelinq:7f9dc8e6m16db:e372e6ff	already done: lib/Event/*.php at 100% line coverage on development (130/130 stmts); no PR	session-20261113T175328-b5db3663	2026-11-13T18:01:35Z
