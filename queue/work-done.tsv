@@ -5180,3 +5180,4 @@ build2:openregister:object-folder-in-files-browser	already done: OpenRegister ta
 review:openregister:10232:aa1ea06a	BLOCK: soft-deleted rows keep _expires and are reselected forever, starving the sweep	session-20261113T104530-961e9992	2026-11-13T13:30:04Z
 build2:openregister:platform-comments-entity	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:30:39Z
 build2:openregister:platform-team-resource-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:30:45Z
+build2:openregister:organisations-are-objects	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:30:51Z
