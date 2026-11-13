@@ -7250,3 +7250,4 @@ build:learniq:governance-four-eyes-on-approved-data	failed: nothing buildable; o
 verify:pipelinq:3798:4ef2080f	GREEN 3798: 7418 tests, 0 failures (baseline 7396/0)	session-20261113T215342-fabaa836	2026-11-13T22:39:14Z
 build:learniq:pupil-books-support-lessons-and-mentor-talks	partial: PR #2503 (T2 pupilMayBook and the pupil booking guard); T1, T3-T6 left	session-20261113T212411-65b95fd9	2026-11-13T22:39:39Z
 build:learniq:ai-disclosure-for-every-user	PR #2502: disclosure in the footer for every role, AiDisclosureText schema (admin/compliance write), edit mode gated incl. policy editor; left: Playwright check, matrix/archive	session-20261113T212414-df8c34e5	2026-11-13T22:39:37Z
+build:learniq:week-timetable-grid	failed: blocked on T1, a nextcloud-vue week grid component (not in learniq); T2-T3 are pages over it and T4 needs an occupancy bar CnWeekStripWidget lacks; nothing buildable in learniq yet	session-20261113T212406-cc34ae8b	2026-11-13T22:39:41Z
