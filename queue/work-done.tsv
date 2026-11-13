@@ -4879,6 +4879,7 @@ build:openregister:platform-comments-entity	failed: worker rules forbid build ta
 build:openregister:organisations-are-objects	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:22Z
 build:openregister:opt-in-files-extend	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:29Z
 build:openregister:platform-search-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:34Z
+cover:pipelinq:7f9dc8e6m84dd:0a24f15f	PR #3755: LetterLog 81%->100%, +5 tests; FilinqLetterAdapter/LoggedLetter already 100%	session-20261113T044737-f37de8e3	2026-11-13T12:32:44Z
 build:openregister:platform-reference-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:40Z
 verify:dossiq:6406:2b3983b3	6406 GREEN (tests only)	session-20261113T064519-30004ad4	2026-11-13T12:32:43Z
 build:openregister:production-observability	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:53Z
@@ -4924,3 +4925,4 @@ build:openregister:remove-file-ownership-storage-rename	failed: worker rules for
 build:openregister:redaction-release-safeguards	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:36:58Z
 build:openregister:records-saved-templates	partial: #10197 docs (3.1); 1.x live pass, 2.1-2.2 frontend dialogs, 2.3 nextcloud-vue	session-20261113T084521-fd8a31c7	2026-11-13T12:37:03Z
 verify:portaliq:2388:856b3bfe	2388 GREEN	session-20261113T071633-17de823f	2026-11-13T12:37:15Z
+review:openregister:10171:8a15efcd	APPROVE	session-20261113T071631-5a3cc070	2026-11-13T12:37:33Z
