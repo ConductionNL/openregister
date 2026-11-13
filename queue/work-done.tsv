@@ -5632,3 +5632,4 @@ review:openregister:10269:5438489f	BLOCK: golden serialisation test not updated 
 verify:decidiq:2127:3de70077	3 GREEN (2127,2128,2129); 3934 tests OK vs baseline 3911	session-20261113T172334-4b3b027b	2026-11-13T17:25:02Z
 build2:openregister:object-tree-read	already done: tasks 1.1/1.2 on main (5296caf0b, 8e630d49e); 2.x are dossiq/portaliq work, 3.1 live	session-20261113T171152-380dbc11	2026-11-13T17:25:53Z
 verify:dossiq:6427:2b8048c1	6427 GREEN	session-20261113T171150-996cf694	2026-11-13T17:25:52Z
+measure:versioniq:20261113h14	php 97.8% (pcov, unit-only suite 1575 tests, 2 baseline failures), js 93.61% (vitest 2895 passed) at 07c79a0	session-20261113T172329-e224a4f0	2026-11-13T17:26:30Z
