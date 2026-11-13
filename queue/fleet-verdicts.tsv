@@ -4863,3 +4863,4 @@ dossiq	6242	aa340e26998368d098fad43afa91265e669facfa	GREEN	worker-27	unit 14083 
 dossiq	6243	0041ff48e2d760ae72738d5e6d0319e8bfec3b18	GREEN	worker-27	unit 14083 tests on tree, baseline 14003 with 19 inherited failures (sibling openregister absent), 0 new; tests-only additions; vitest 39 passed
 thematiq	1660	29d2f8f752354a21e785d3549b52ecdb722d711a	RED	merge-local:merge-gate	GATE RED checker floor: adrvalidator: warn -> fail
 filinq	2004	6162a520b231cd6275108addd7c8b879593818ee	GREEN	worker-27	PHP unit 5899 tests, baseline 0 failures, 0 new; vitest 556 passed; jest on new src specs 73 passed; tests/coverage-metadata only
+filinq	2005	ae46f74cc4c665474b0a40a5cc4a3bb0aa7d0a96	GREEN	worker-27	PHP unit 5899 tests, baseline 0 failures, 0 new; vitest 556 passed; jest on new src specs 73 passed; tests/coverage-metadata only
