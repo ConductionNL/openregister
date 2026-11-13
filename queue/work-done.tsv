@@ -7134,3 +7134,4 @@ build4:openregister:virtual-schema-semantic-providers	already built on main; PR 
 build4:openregister:object-write-sub-500ms	partial: PR #10426 builds task 9 (consistency contract, X-OpenRegister-Effects: sync); tasks 2-4, 6, 7 and live 10-13 left	session-20261113T205329-39b9195a	2026-11-13T22:19:56Z
 review:openregister:10414:88c34433	APPROVE 10414 (frontend 2.2; parity note: other locales +2 missing on an already-red gate)	session-20261113T202626-976dcdac	2026-11-13T22:20:01Z
 build4:openregister:rights-administration-hardening	partial: PR #10427 (3.1, 3.2 done, 3.3 job test; matrix export 1.x, ceiling paths 2.2/2.3, integration test left)	session-20261113T213325-fbdd5614	2026-11-13T22:20:17Z
+review:openregister:10393:0c9034f1	APPROVE	session-20261113T185324-28e07ab2	2026-11-13T22:20:29Z
