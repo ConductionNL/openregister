@@ -5645,3 +5645,4 @@ planninq\t1140\t46ed3246c5b00dbf80611a12aa16cfd71d56deef\tRED\tworker-41\ttest-o
 planninq\t1141\t7f921534a502d800e312feffeb03847a4ff4ffc7\tGREEN\tworker-41\ttree without #1140: PHP 977 pass (baseline 915), JS 3152 pass; test-only (Timetabling week grid, wish checker)
 planninq\t1142\ta4237981c04f03ba9f7bc998b318ce7e16554a88\tGREEN\tworker-41\ttree without #1140: PHP 977 pass, JS 3152 pass; test-only (dependency repo/guards, finance line, flow history, notification switch, settings override)
 planninq\t1143\t1e28bdba239ec64a5c2c38758a5b339e71a90b2b\tGREEN\tworker-41\ttree without #1140: PHP 977 pass, JS 3152 pass; test-only vitest (case handover, flow, member search, phase files, register projects leaf, response helpers)
+planninq\t1144\t450a536e823032d93a329c4ea4e2b523cfee9a0c\tGREEN\tworker-41\ttree without #1140: PHP 977 pass, JS 3152 pass; test-only (StandardProtocolPaths)
