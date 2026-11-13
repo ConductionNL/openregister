@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Controller\OperationsConsistencyController;
 use OCA\OpenRegister\Controller\OperationsConsoleController;
 use OCA\OpenRegister\Controller\OperationsMaintenanceController;
+use OCA\OpenRegister\Controller\OperationsQueryController;
 
 /**
  * The list of controllers that stay reachable while maintenance mode holds.
@@ -53,5 +54,8 @@ interface MaintenanceReachableControllersInterface {
 		// The consistency check and its repair plan, which an administrator
 		// runs while the instance is closed for exactly that repair.
 		OperationsConsistencyController::class,
+		// The read-only query console, so an administrator can still look at
+		// the data while the instance is closed for maintenance.
+		OperationsQueryController::class,
 	];
 }//end interface
