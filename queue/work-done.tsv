@@ -5966,3 +5966,4 @@ cover:keepiq:c967a31fm00c6:dfaef732	already done: lib/Notification/*.php 394/396
 cover:keepiq:c967a31fm00c6:f545d745	PR #1763: Repair 98.5% already; mutation sweep, 1 test for missing configurations table; suite 4854->4855 OK	session-20261113T175323-e340fb07	2026-11-13T18:28:29Z
 fix:portaliq:2450:1e7c63b3	no change: branch already up to date with development (head 1e7c63b3 unchanged); conflict is only with open sibling PRs (register version bump vs 2449), resolves after the earlier one lands	session-20261113T172334-4b3b027b	2026-11-13T18:28:36Z
 cover:openregister:7350e3efma401:ed33d83e	PR #10289: 26 tests, GraphMoveCatalogue and OperationsJobsService to 100%	session-20261113T171213-10021a1d	2026-11-13T18:28:44Z
+cover:dossiq:069ee2d6m2deb:js0023cfc7	PR dossiq#6435: 11 tests, 4 dialogs; src/dialogs lines 91.23% -> 92.52%	session-20261113T175332-5effc865	2026-11-13T18:28:51Z
