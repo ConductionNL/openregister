@@ -6482,3 +6482,4 @@ versioniq	685	0d04ca1a7a5372c23fcb6d9f990ef32e81ac5e47	GREEN	worker-37	build adv
 pipelinq	3789	5d5a3d12d3fc4c67f4604e7a8043e576c99b8c72	GREEN	worker-22	7194 tests; 5 failures inherited from development (PR changes only .gitleaks.toml); no new failures
 hermiq	1720	af53c8ad9068aa97b26380739842016edd5350e8	GREEN	worker-12	unit 4569 tests (baseline 4562, 172 inherited errors/failures, 0 new); vitest 1306 passed; build change in spec scope
 dossiq	6465	02c58b7ff20128eb56c6074052d5ad88e100c07a	GREEN	worker-01	unit 16534 run, baseline 20 failures, 0 new; pure extraction per method-decomposition 8j, behaviour unchanged
+versioniq	686	3f4bd26e4fa747fda9ffd2fa195731faa550fa26	GREEN	worker-46	phpunit unit-only 1624 tests (baseline 1575, 2 inherited golden failures, no new); vitest 2902 pass; implements audit-external-changes per its specs
