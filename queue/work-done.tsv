@@ -3456,3 +3456,4 @@ fix:portaliq:2376:06bdb3c4	resolved conflict with #2374 (kept its test files); 2
 cover:portaliq:b60f3b81:a42ac94e	PR #2384: GeoDatabaseStore 0->68/72, TrafficEventStore 109->132/155; 4552 green	session-20261113T072715-8f8a14e9	2026-11-13T08:28:29Z
 fix:portaliq:2375:f787d59a	closed as superseded: #2376 (fixed to sit on #2374) carries the same @uses additions; 2375 would conflict with it	session-20261113T080549-20301834	2026-11-13T08:28:33Z
 verify:integriq:3507:b1b08a46	3507 GREEN, 3509 GREEN; 7888 tests, no new failures	session-20261113T081046-f0858dc4	2026-11-13T08:28:53Z
+cover:integriq:92114ab0m658d:c135a8f0	already done: lib/Sources/Pdok at 100% lines on development (branches -1/-2 merged)	session-20261113T081046-f0858dc4	2026-11-13T08:29:33Z
