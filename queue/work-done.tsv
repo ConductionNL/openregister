@@ -3351,3 +3351,4 @@ cover:learniq:e6498dddmc027:3449807e	already done: lib/Service/Attendance/*.php 
 cover:learniq:e6498dddmc027:c1ca350a	already done: Enrolment 44/44, Grading 73/73, Programme 59/59	session-20261113T051703-1b54bfba	2026-11-13T08:05:48Z
 cover:learniq:e6498dddmc027:59477eff	already done: lib/Service/Signing 133/136 (98%)	session-20261113T051703-1b54bfba	2026-11-13T08:06:20Z
 cover:learniq:e6498dddmc027:d39f9857	already done: lib/Support/*.php 71/75 (95%)	session-20261113T051703-1b54bfba	2026-11-13T08:06:32Z
+cover:learniq:e6498dddmc027:34763eb4	already done: lib/Middleware/*.php 24/24	session-20261113T051703-1b54bfba	2026-11-13T08:06:44Z
