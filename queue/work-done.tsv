@@ -1750,3 +1750,6 @@ fix:hermiq:1528:f04a3678	stale	feeder	2026-11-13T03:00:26Z
 cover:dossiq:6ca0231ema7d4:64395ad8	PR #6256: 5 tests, lib/Service/Archival 143/153 -> 153/153 stmts	session-20261113T024653-d22c13a3	2026-11-13T03:01:48Z
 cover:dossiq:6ca0231ema7d4:9cb3375b	PR #6257 (-2; -1 merged earlier): Redaction 286/296 -> 294/296, 11 tests	session-20261113T015005-030aa10a	2026-11-13T03:01:53Z
 cover:dossiq:6ca0231ema7d4:83885cb7	PR #6258: 10 tests for round-robin/least-loaded (other strategies already in open -1 PR), no new failures	session-20261113T024656-2f332446	2026-11-13T03:02:14Z
+merge:filinq:1984:d4341fee	merge-local over 3 filinq tasks: merged=19 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:02:29Z
+merge:filinq:1993:0bbff91d	merge-local over 3 filinq tasks: merged=19 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:02:29Z
+merge:filinq:2001:dc44d38e	merge-local over 3 filinq tasks: merged=19 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:02:29Z
