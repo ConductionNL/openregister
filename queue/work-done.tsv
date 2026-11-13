@@ -3691,3 +3691,4 @@ review:stackiq:1700:7a35e49e	GREEN: behaviour-preserving extraction, vitest 2370
 cover:stackiq:9ac19b3am6096:6f346b68	already done: lib/Sections at 100% (StackiqAdmin 6/6 lines) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:01:45Z
 cover:learniq:e6498dddmf689:38e80a9f	PR #2458: 14 tests, 3 commands 0->100%, lib/Command 66->99.6%; suite 6116->6130, only inherited failure	session-20261113T081055-3901e400	2026-11-13T09:01:58Z
 cover:buildiq:70b3e29embf07:b65a63c3	already done: quality/test-coverage-b65a63c3-1 is on development; lib/Service/GitHub 98.7% (74/75)	session-20261113T081043-b24589a6	2026-11-13T09:02:10Z
+cover:learniq:e6498dddmf689:81b1241f	PR #2459: 21 tests over 5 Portal classes, Portal/*.php 97.50->99.19%, suite 6116->6137 (1 inherited failure)	session-20261113T084521-fd8a31c7	2026-11-13T09:02:20Z
