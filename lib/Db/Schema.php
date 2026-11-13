@@ -125,6 +125,8 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setDeck(?array $deck)
  * @method array|null getDraft()
  * @method void setDraft(?array $draft)
+ * @method array|null getFormerSlugs()
+ * @method void setFormerSlugs(?array $formerSlugs)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -455,6 +457,18 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var array|null The draft body, or null when there is none
 	 */
 	protected ?array $draft = null;
+
+	/**
+	 * The slugs this schema answered to before it was renamed, oldest first.
+	 *
+	 * Only the `renameSchema` migration writes it, never hydrate(): a former slug
+	 * keeps an old API path and an app re-import pointing at this schema.
+	 *
+	 * @var array|null The former slugs, or null when the schema was never renamed
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md
+	 */
+	protected ?array $formerSlugs = null;
 
 	/**
 	 * Constructor for the Schema class
@@ -1119,7 +1133,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<string, mixed>
 	 */
 	private static function withHydrateDefaults(array $object): array {
-		unset($object['draft']);
+		unset($object['draft'], $object['formerSlugs']);
 
 		$object['metadata'] = ($object['metadata'] ?? []);
 		$object['required'] = ($object['required'] ?? []);
@@ -1383,8 +1397,24 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'_talk' => $this->talk,
 			'_deck' => $this->deck,
 			'draft' => $this->draft,
-		];
+		] + $this->serialisedFormerSlugs();
 	}//end serialisedLinks()
+
+	/**
+	 * The former slugs, only on a schema that was renamed, so every other
+	 * schema serialises as before.
+	 *
+	 * @return array<string, array<int, string>>
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-record-type-can-be-renamed-without-breaking-its-links
+	 */
+	private function serialisedFormerSlugs(): array {
+		if ($this->formerSlugs === null || $this->formerSlugs === []) {
+			return [];
+		}
+
+		return ['formerSlugs' => $this->formerSlugs];
+	}//end serialisedFormerSlugs()
 
 	/**
 	 * Converts schema to an object representation

@@ -3009,6 +3009,7 @@ Service/Schema/SchemaMigrationService.php,252,Service,Service,Service/Schema/Sch
 Service/Schema/SchemaObjectReader.php,65,Service,Service,Service/Schema/SchemaObjectReader.php,0,,Core
 Service/Schema/SchemaRevalidationService.php,112,Service,Service,Service/Schema/SchemaRevalidationService.php,0,177,Core
 Service/Schema/SchemaRunPopulation.php,49,Service,Service,Service/Schema/SchemaRunPopulation.php,0,,Core
+Service/Schema/SchemaSlugRename.php,247,Service,Service,Service/Schema/SchemaSlugRename.php,0,,Core
 Service/Schema/SchemaVersioningService.php,124,Service,Service,Service/Schema/SchemaVersioningService.php,0,232,Core
 Service/SchemaApplicationMigrator.php,85,Service,Configuration,Configuration/Service/SchemaApplicationMigrator.php,4,,Configuration
 Service/SchemaDeletionService.php,403,Service,Compliance,Compliance/Service/SchemaDeletionService.php,19,54,Compliance
