@@ -5126,3 +5126,5 @@ cover:portaliq:b60f3b81:dfaef732	already done: lib/Notification/*.php at 22/23 s
 cover:buildiq:70b3e29ema699:a215617b	already done: lib/Integration/*.php lines 100/98.1/98.1% (target 95) after merged quality/test-coverage-a215617b-1	session-20261113T131537-142f7747	2026-11-13T13:18:18Z
 review:openregister:10189:dadb71dd	APPROVE: behaviour-compatible, all suites green; csv conflict with main noted	session-20261113T074535-8a2067c2	2026-11-13T13:18:30Z
 review:openregister:10216:e73d099a	APPROVE (tests and docs only; suites green)	session-20261113T104531-16da055e	2026-11-13T13:18:42Z
+merge:portaliq:2284:d88a1b59	merge-local over 2 portaliq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:19:05Z
+merge:portaliq:2388:856b3bfe	merge-local over 2 portaliq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:19:05Z
