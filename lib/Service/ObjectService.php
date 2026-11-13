@@ -40,7 +40,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\Archival\RecordState;
 use Adbar\Dot;
 use DateTime;
 use Exception;
@@ -71,6 +70,7 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeleteRowRules;
 use OCA\OpenRegister\Service\Object\DeletionOptions;
 use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\DeletionGraph\ReadableDeletionAnalysis;
@@ -245,7 +245,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Why a transferred object refuses a write.
      */
-    private const TRANSFERRED_MESSAGE = 'This object has been transferred to the e-Depot and is read-only.';
+    private const TRANSFERRED_MESSAGE = DeleteRowRules::TRANSFERRED_MESSAGE;
 
     /**
      * The current register context.
@@ -4167,7 +4167,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             multitenancy: $_multitenancy,
             retentionSweep: $_retentionSweep,
             currentUser: $deletion->currentUser,
-            scoped: $deletion->isScoped()
+            scoped: $deletion->isScoped(),
+            reach: $deletion->reach
         );
         return $this->preservingScope(operation: function () use ($request, $deletion): bool {
             $this->enterDeleteScope(register: $deletion->target->register, schema: $deletion->target->schema);
@@ -4261,7 +4262,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 register: $this->currentRegister,
                 schema: $this->currentSchema,
                 uuid: $request->uuid,
-                options: new DeletionOptions(scoped: $request->scoped, permanent: $permanent)
+                options: new DeletionOptions(
+                    scoped: $request->scoped,
+                    permanent: $permanent,
+                    actingUserId: $request->actingUserId(),
+                    reach: $request->reach
+                )
             ),
             _rbac: $request->rbac,
             _multitenancy: $request->multitenancy
@@ -4400,10 +4406,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function appendOnlyDeleteRefusal(Schema $schema): AppendOnlyException
     {
-        return new AppendOnlyException(
-            schemaIdentifier: ($schema->getSlug() ?? (string) $schema->getId()),
-            operation: 'delete'
-        );
+        return DeleteRowRules::appendOnlyRefusal(schema: $schema);
     }//end appendOnlyDeleteRefusal()
 
     /**
@@ -4949,9 +4952,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function isTransferred(ObjectEntity $object): bool
     {
-        $retention = ($object->getRetention() ?? []);
-
-        return in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true);
+        return DeleteRowRules::isTransferred(object: $object);
     }//end isTransferred()
 
     /**
