@@ -4686,3 +4686,4 @@ review:openregister:10144:983e77cc	APPROVE: build matches its specs, additive/sa
 build:openregister:external-register-view-leaf	failed: blocked on the three open design questions for Ruben in design.md (response mapping format, how the provider calls a named source, leaf endpoint/degrade answer); every open task depends on them	session-20261113T094606-b7da8c7f	2026-11-13T11:59:57Z
 verify:learniq:2463:61f436f8	GREEN: +6 tests, failures inherited only	session-20261113T051703-1b54bfba	2026-11-13T11:59:55Z
 cover:keepiq:c967a31fm1bed:e372e6ff	already done: lib/Event/ 43/43 = 100%	session-20261113T051703-1b54bfba	2026-11-13T12:00:09Z
+cover:keepiq:c967a31fm1bed:05630945	already done: lib/Middleware/Support/ 54/59 = 91.5% >= 90	session-20261113T051703-1b54bfba	2026-11-13T12:00:24Z
