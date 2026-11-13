@@ -5411,3 +5411,4 @@ stackiq	1700	a3ab8662e6a95b482f6e64aa3ae9440ea336cbcf	RED	merge-local:merge-gate
 dossiq	6330	fd9bc4b8b91b2442afe6360a33362dd132d7c984	GREEN	merge-local	unit 15198 tests on tree, 19 failures = baseline (dev e35111f8), 0 new, same 4 warnings; diff adds @uses/UsesClass lines in tests only
 learniq	2419	6339bf2933eda835ac5522e585535cd86fcf1bc7	CONFLICT	merge-local	does not merge cleanly onto development (re-gate after APIFIX)
 planninq	1138	6ef4623cd7982b30ea266aaf0a8226f4a798c535	GREEN	worker-55	915 tests run (baseline 894, 0 failures), 0 new failures; tests only
+larpinq	1015	27c0a35b57f6cea4168b379f6c30e1839dd6410b	GREEN	worker-06	php 697 (baseline 697, 0 fail); vitest 401 on tree (baseline 264); tests-only, 0 new failures
