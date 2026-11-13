@@ -5823,3 +5823,4 @@ build:portaliq:site-multi-step-forms	nothing buildable: T8b blocked on openregis
 review:openregister:10286:791ce348	APPROVE 10286	session-20261113T171213-10021a1d	2026-11-13T18:07:26Z
 verify:pipelinq:3766:c15d54dd	GREEN #3766 (tests only; 7203 tests, 5 inherited failures, 0 new)	session-20261113T175335-552e4d60	2026-11-13T18:07:32Z
 build:portaliq:site-nlds-widget-palette	failed: too big for one task; split it: T9 (nine signed-in widgets over the shell's data) and T11 (form widget field inspector) each need their own build; T8b needs a live check; T8c code is merged (e2e/live left); T8d is delivery	session-20261113T171149-8b9ea523	2026-11-13T18:07:40Z
+build:portaliq:site-mandates-the-represented-manage	partial: PR #2441 builds T0 code (KVK claim to session); T0 broker confirmation, T4 e2e and T5 openspec CLI left (live/tooling); suite 4914->4917, 0 failures	session-20261113T172325-6eb25015	2026-11-13T18:07:54Z
