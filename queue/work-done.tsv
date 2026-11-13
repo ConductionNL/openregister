@@ -2903,3 +2903,4 @@ cover:stackiq:df113dffm5ac4:34763eb4	already done: lib/Middleware/*.php 57/57 li
 cover:stackiq:df113dffm5ac4:05630945	already done: lib/Middleware/Support/ at 91.94% (57/62, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:39:41Z
 cover:shillinq:05639debmd8ee:f545d745	PR #2895: 14 tests (InitializeBbvAdministration 0->147/148, StampJournalTypeOnGlTransactions 37->137/137); lib/Repair 62.3->67.7%, suite 9207->9221 (1 inherited failure)	session-20261113T041646-2c1d764f	2026-11-13T06:40:01Z
 cover:stackiq:df113dffm5ac4:6f346b68	already done: lib/Sections/*.php at 100% (6/6, pcov on development); no PR	session-20261113T054519-189b2666	2026-11-13T06:39:58Z
+cover:buildiq:9930949bmc723:0d8702e3	PR buildiq#1518: template DeepLinkRegistrationListener + Application, 4 tests, lib/Resources/template/ 377->391/548, suite 2632->2636 (1 inherited failure)	session-20261113T061518-90540a48	2026-11-13T06:40:05Z
