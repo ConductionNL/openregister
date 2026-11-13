@@ -1808,3 +1808,4 @@ cover:dossiq:6ca0231ema7d4:80b3d955	already done: lib/Service/Catalogue 153/154 
 cover:filinq:8ecceb86mc744:59d1e403	PR #2016: 24 tests, lib/Service/Signing/*.php lines 96.8% -> 99.5%, suite 5923 tests 0 failures	session-20261113T021703-063c80f1	2026-11-13T03:23:45Z
 cover:stackiq:8cfacb29m8db8:21c17a45	PR #1815: 26 tests, FederationMerger+FederationService covered; suite 2854->2880, 57 inherited errors	session-20261113T031700-46f75510	2026-11-13T03:23:54Z
 verify:pipelinq:3635:15b52369	3635 GREEN, 3636 GREEN; 0 new failures (1 inherited)	session-20261113T031704-4f12cb78	2026-11-13T03:23:55Z
+cover:filinq:8ecceb86mc744:efa2a923	PR #2017: 5 tests, ObjectEventRegistrar 24->49/49, DossierCheckedOnListener 68->70/74; suite green	session-20261113T024656-2f332446	2026-11-13T03:24:40Z
