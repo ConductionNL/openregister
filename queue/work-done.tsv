@@ -4024,6 +4024,7 @@ cover:dossiq:069ee2d6m7275:c900fa11	already done: lib/Service/Email/Filters 155/
 cover:learniq:e6498dddm0533:81b1241f	already done: batch -1 merged; lib/Portal/*.php now 2933/2957 statements (99.2%); no PR	session-20261113T080556-d189f150	2026-11-13T09:44:01Z
 merge:learniq:2436:2d10e964	merge-local over 1 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:43:59Z
 cover:dossiq:069ee2d6m7275:9ece5c6f	already done: lib/Controller/Support 296/299 stmts (99.0%)	session-20261113T091527-72c58830	2026-11-13T09:43:56Z
+cover:dossiq:069ee2d6m7275:67b69054	already done: lib/Service/Conversation/ measured 99.73% lines (374/375) on development; branches -1 and -2 already merged	session-20261113T091530-f20014fb	2026-11-13T09:44:23Z
 cover:dossiq:069ee2d6m7275:71f63b5c	already done: Remedy, StepConfig, TemplateLibrary, WooPublication 100%; TenantMigration has no statements	session-20261113T091527-72c58830	2026-11-13T09:44:12Z
 cover:buildiq:9930949bmc723:js39373934	PR #1536: page-editor/fields 86.6% -> 93.5%, +37 tests, suite 3895 green	session-20261113T071633-17de823f	2026-11-13T09:44:22Z
 cover:learniq:e6498dddm0533:83cf1abf	already done: lib/Service/Accessibility/ at 136/141 statements (96.5%) on development, above the 95% target; no PR	session-20261113T080556-d189f150	2026-11-13T09:44:36Z
