@@ -4868,3 +4868,12 @@ build:openregister:or-form-and-journey-registry	failed: worker rules forbid buil
 build:openregister:github-provider-shop-rules	PR #10187: rules already on main; added GithubShopRulesTest (22 cases), tasks 1.1/1.2/2.2/2.3 ticked, 2.1 composer check:strict left open	session-20261113T084525-9d890807	2026-11-13T12:31:26Z
 build:openregister:platform-caldav-backend	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:30Z
 build:openregister:or-flow-object-write-node	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:36Z
+build:openregister:notification-scheduled-filter-grammar	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:42Z
+review:openregister:10170:dbb679c8	APPROVE: additive mapper methods + tests, no behaviour change	session-20261113T104527-c302106c	2026-11-13T12:31:45Z
+build:openregister:platform-collaboration-resources	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:31:55Z
+build:openregister:operate-load-shedding	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:01Z
+build:openregister:platform-share-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:07Z
+build:openregister:platform-comments-entity	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:16Z
+build:openregister:organisations-are-objects	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:22Z
+build:openregister:opt-in-files-extend	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:29Z
+build:openregister:platform-search-provider	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:32:34Z
