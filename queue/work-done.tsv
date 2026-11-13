@@ -4216,3 +4216,4 @@ cover:decidiq:a5f973bbm1507:be0dcca9	already done: lib/Mcp/*.php already at 100%
 build:pipelinq:adopt-connection-registry	already done: all code tasks (1-3, 5) implemented and ticked on development; only 4.1 (live e2e) and 4.2 (follow-up issue) remain, neither is code	session-20261113T091527-72c58830	2026-11-13T10:18:00Z
 cover:launchpad:fb10c50fm911d:dfaef732	already done: lib/Notification/ is 85/85 statements covered (measured 867c6ce5, unchanged at 5c4cf0d8); no PR	session-20261113T101610-feec15b7	2026-11-13T10:18:20Z
 cover:launchpad:fb10c50fm911d:7505aeb4	already done: lib/Activity/*.php at 98.8% (333/337) on development 5c4cf0d8, full suite 4062 tests OK; only APCu-only branches in DebounceHelper uncovered (need ext-apcu), no PR	session-20261113T101606-2d85f614	2026-11-13T10:18:39Z
+verify:shillinq:2917:e08696bc	GREEN 2917-2919: vitest 1920 pass, no PHP touched	session-20261113T080556-d189f150	2026-11-13T10:18:42Z
