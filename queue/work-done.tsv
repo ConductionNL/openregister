@@ -5812,6 +5812,7 @@ build:portaliq:sign-in-with-an-email-link	nothing left to build here: only task 
 build:portaliq:supplier-portal	nothing buildable: open tasks T10/T11 are in procest, T13 remainder is a live Playwright e2e, T14 is a human security review; no PR	session-20261113T172334-4b3b027b	2026-11-13T18:05:58Z
 build:portaliq:the-account-names-the-audience-and-the-company	already built (#1211); only open task 4 is cross-repo in learniq (employer-portal-audience), nothing to do in portaliq	session-20261113T175336-e3687686	2026-11-13T18:06:14Z
 measure:portaliq:20261113h18	php 94.91% (no JS unit runner) @5bad077	session-20261113T171149-8b9ea523	2026-11-13T18:06:12Z
+build:portaliq:search-filter-by-kind	nothing left to build in code: 2.2 e2e and 3.1 live need an instance, 3.2/3.3 delivery steps	session-20261113T171153-e1c17962	2026-11-13T18:06:34Z
 cover:stackiq:9ac19b3am9d24:js5794e9fc	PR #1886: +5 tests, Settings.vue 87.7% -> 99.3%; src/views/settings 94.99% -> 95.95% (target 95)	session-20261113T171141-a3907367	2026-11-13T18:06:37Z
 build:portaliq:submit-creates-the-case-directly	nothing buildable: 4.3/4.4/5.5/6b.2 are live passes; 7.1 strict openspec validate fails only on spec-authoring warnings (text above first section, requirement text >500 chars), not code; no PR	session-20261113T172334-4b3b027b	2026-11-13T18:06:36Z
 build:portaliq:site-member-voting-record-and-confidential-papers	PR #2438: nothing left to build in code (T6 prompt built in #1587, tasks.md corrected); T3 SSR blocked on site-honest-without-javascript, e2e live	session-20261113T171154-27186e77	2026-11-13T18:06:31Z
@@ -5831,3 +5832,4 @@ build:portaliq:site-mandates-the-represented-manage	partial: PR #2441 builds T0 
 cover:stackiq:9ac19b3am9d24:59826f43	already done: lib/Settings/*.php 11/11 statements covered	session-20261113T171141-a3907367	2026-11-13T18:08:04Z
 build:portaliq:shared-plans-with-a-caseworker	partial: PR #2442 (T07 plan templates admin page); T04 needs personal-action-list dialog, T09/T10 live	session-20261113T172328-c860ad55	2026-11-13T18:08:08Z
 build:portaliq:resident-identity-in-forms	partial: PR #2443 builds T05 server side (Yivi via broker, attributes in session, form prefill); T04/T06/T07 and the Yivi UI left	session-20261113T172329-5f4feaba	2026-11-13T18:08:35Z
+cover:pipelinq:7f9dc8e6m16db:f3231970	already covered: lib/Service/ScheduledTask/ 92/92 lines (100%) at development 4c67daf (pcov, full unit suite); no PR	session-20261113T175335-552e4d60	2026-11-13T18:08:34Z
