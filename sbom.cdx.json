@@ -3873,8 +3873,8 @@
       "type": "library",
       "name": "helper-string-parser",
       "group": "@babel",
-      "version": "7.29.7",
-      "bom-ref": "openregister@1.0.0|@babel/helper-string-parser@7.29.7",
+      "version": "7.29.14",
+      "bom-ref": "openregister@1.0.0|@babel/helper-string-parser@7.29.14",
       "licenses": [
         {
           "license": {
@@ -3882,15 +3882,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.7",
+      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.7.tgz",
+          "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "3dbe628cfad9f3d1831fcdb6dcbe143fc8ba400a56c6cd3845b3d02537960d5d3f91e476137e8c78a9f2afa2d899452fa91448f88bfced2b85d56e84ac837363"
+              "content": "097bca305bccf348a123b568c7d8dbfa44239f28c449034f33ebc1ed4d19cfa4d6b9903e67f14bd103cc1f7d34877dea26d231f9111e0615ea58e3d6e3c4dc01"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -3941,8 +3941,8 @@
       "type": "library",
       "name": "parser",
       "group": "@babel",
-      "version": "7.29.8",
-      "bom-ref": "openregister@1.0.0|@babel/parser@7.29.8",
+      "version": "7.29.14",
+      "bom-ref": "openregister@1.0.0|@babel/parser@7.29.14",
       "licenses": [
         {
           "license": {
@@ -3950,15 +3950,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/parser@7.29.8",
+      "purl": "pkg:npm/%40babel/parser@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.8.tgz",
+          "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "13c953018341d4a5be147f95189b993358a8031d84ea8565bd0151adfe4ff19666b222576000fdbd3155ef2c84511373821d5d16a319b8eead53070045ba8508"
+              "content": "54bdb6d2f5eec8edb3deb34843063b7ed8fd530a6a3adfb7dec1feb015a439e91bb1247683b1043273b1db8665087d31380dc333fdf74a27d51466e7243f2bff"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4009,8 +4009,8 @@
       "type": "library",
       "name": "types",
       "group": "@babel",
-      "version": "7.29.8",
-      "bom-ref": "openregister@1.0.0|@babel/types@7.29.8",
+      "version": "7.29.14",
+      "bom-ref": "openregister@1.0.0|@babel/types@7.29.14",
       "licenses": [
         {
           "license": {
@@ -4018,15 +4018,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/types@7.29.8",
+      "purl": "pkg:npm/%40babel/types@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.8.tgz",
+          "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "563d6317770f7f183b3807e823b42754a2e820b966d8917da67547ad7f2ac7b0073226164fe343000ee30a194d8114b85932dcfdf0f59572e63e2c65ba3fb71a"
+              "content": "52323f74a9b02704fda4eb33262b6ad86e8439b64f9ec6547dd0abf76cf64e51771192bd27711d7ce294ac2cc797ac05b616f3c21ce5d52a1cfd4230c518aaeb"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4987,6 +4987,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/aix-ppc64"
         }
@@ -5021,6 +5025,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-arm64"
@@ -5057,6 +5065,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-arm"
         }
@@ -5091,6 +5103,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-x64"
@@ -5127,6 +5143,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/darwin-arm64"
         }
@@ -5161,6 +5181,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/darwin-x64"
@@ -5197,6 +5221,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/freebsd-arm64"
         }
@@ -5231,6 +5259,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/freebsd-x64"
@@ -5267,6 +5299,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-arm64"
         }
@@ -5301,6 +5337,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-arm"
@@ -5337,6 +5377,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-ia32"
         }
@@ -5371,6 +5415,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-loong64"
@@ -5407,6 +5455,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-mips64el"
         }
@@ -5441,6 +5493,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-ppc64"
@@ -5477,6 +5533,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-riscv64"
         }
@@ -5511,6 +5571,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-s390x"
@@ -5547,6 +5611,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-x64"
         }
@@ -5581,6 +5649,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/netbsd-arm64"
@@ -5617,6 +5689,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/netbsd-x64"
         }
@@ -5651,6 +5727,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openbsd-arm64"
@@ -5687,6 +5767,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openbsd-x64"
         }
@@ -5721,6 +5805,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openharmony-arm64"
@@ -5757,6 +5845,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/sunos-x64"
         }
@@ -5791,6 +5883,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-arm64"
@@ -5827,6 +5923,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-ia32"
         }
@@ -5861,6 +5961,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-x64"
@@ -7220,6 +7324,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@napi-rs/lzma-linux-x64-gnu"
         }
@@ -8088,6 +8196,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-android-arm-eabi"
         }
@@ -8122,6 +8234,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-android-arm64"
@@ -8158,6 +8274,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-darwin-arm64"
         }
@@ -8192,6 +8312,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-darwin-x64"
@@ -8228,6 +8352,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-freebsd-arm64"
         }
@@ -8262,6 +8390,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-freebsd-x64"
@@ -8298,6 +8430,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm-gnueabihf"
         }
@@ -8332,6 +8468,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm-musleabihf"
@@ -8368,6 +8508,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm64-gnu"
         }
@@ -8402,6 +8546,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm64-musl"
@@ -8438,6 +8586,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-loong64-gnu"
         }
@@ -8472,6 +8624,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-loong64-musl"
@@ -8508,6 +8664,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-ppc64-gnu"
         }
@@ -8542,6 +8702,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-ppc64-musl"
@@ -8578,6 +8742,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-riscv64-gnu"
         }
@@ -8612,6 +8780,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-riscv64-musl"
@@ -8648,6 +8820,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-s390x-gnu"
         }
@@ -8682,6 +8858,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-x64-gnu"
@@ -8718,6 +8898,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-x64-musl"
         }
@@ -8752,6 +8936,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-openbsd-x64"
@@ -8788,6 +8976,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-openharmony-arm64"
         }
@@ -8822,6 +9014,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-arm64-msvc"
@@ -8858,6 +9054,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-ia32-msvc"
         }
@@ -8893,6 +9093,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-x64-gnu"
         }
@@ -8927,6 +9131,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-x64-msvc"
@@ -10637,8 +10845,8 @@
       "type": "library",
       "name": "compiler-core",
       "group": "@vue",
-      "version": "3.5.43",
-      "bom-ref": "openregister@1.0.0|@vue/compiler-core@3.5.43",
+      "version": "3.5.45",
+      "bom-ref": "openregister@1.0.0|@vue/compiler-core@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10646,15 +10854,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/compiler-core@3.5.43",
+      "purl": "pkg:npm/%40vue/compiler-core@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/compiler-core/-/compiler-core-3.5.43.tgz",
+          "url": "https://registry.npmjs.org/@vue/compiler-core/-/compiler-core-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "cdd88b8676ded5042a8034fcc59329366caa677aa523efd0fc51d0728e7b2b097f6f4e47842ccde9e54637d414f6b6e06b80ab4b41f949863c5461d90adff51e"
+              "content": "5c61c9acceae7d901101cff0fadc8eb304adc3db5d2a2a8228149c23880668dc43f9a686bbf1d05a0289f8922d8d12cfa9e9d0ee213b1bc0090bb4f97b0d69fa"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10671,8 +10879,8 @@
       "type": "library",
       "name": "compiler-dom",
       "group": "@vue",
-      "version": "3.5.43",
-      "bom-ref": "openregister@1.0.0|@vue/compiler-dom@3.5.43",
+      "version": "3.5.45",
+      "bom-ref": "openregister@1.0.0|@vue/compiler-dom@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10680,15 +10888,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/compiler-dom@3.5.43",
+      "purl": "pkg:npm/%40vue/compiler-dom@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/compiler-dom/-/compiler-dom-3.5.43.tgz",
+          "url": "https://registry.npmjs.org/@vue/compiler-dom/-/compiler-dom-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "3c4668024dcd426b27fde8cccd2382c9362ac06a9cceb5a6ef43ee8412a38efd7e4c2a1001a3bfccea8dc2357e8689e536cb53e482f1b5cfbcafc5147e3fa211"
+              "content": "2db3f6775f4648e6063e6bcc04109525596fed32ad8ccd427decaeddc6226bbdb4a649d93fed5c2d7ec7e4c55ab6faee4fa32e26188fb8d6d0056fcc0e7fc4c0"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10705,8 +10913,8 @@
       "type": "library",
       "name": "compiler-sfc",
       "group": "@vue",
-      "version": "3.5.43",
-      "bom-ref": "openregister@1.0.0|@vue/compiler-sfc@3.5.43",
+      "version": "3.5.45",
+      "bom-ref": "openregister@1.0.0|@vue/compiler-sfc@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10714,15 +10922,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/compiler-sfc@3.5.43",
+      "purl": "pkg:npm/%40vue/compiler-sfc@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/compiler-sfc/-/compiler-sfc-3.5.43.tgz",
+          "url": "https://registry.npmjs.org/@vue/compiler-sfc/-/compiler-sfc-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "1426eb1b75cd09197e8ecde1bae2b1e0854704b4ef32426155ea636f148fbb5827e3258b698b4635076324665a332b5707aa9befaa900c398348bcbfbe49a579"
+              "content": "30a1636f6517d0cfe5fe385fcea30bac8f15338a5fbc5286de9a8566449914744bb4d95dfcee11b543d91564b086ba3fd78a8ff3c5101245b31f1019010d2db3"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10739,7 +10947,7 @@
           "type": "library",
           "name": "magic-string",
           "version": "0.30.21",
-          "bom-ref": "openregister@1.0.0|@vue/compiler-sfc@3.5.43|magic-string@0.30.21",
+          "bom-ref": "openregister@1.0.0|@vue/compiler-sfc@3.5.45|magic-string@0.30.21",
           "licenses": [
             {
               "license": {
@@ -10774,8 +10982,8 @@
       "type": "library",
       "name": "compiler-ssr",
       "group": "@vue",
-      "version": "3.5.43",
-      "bom-ref": "openregister@1.0.0|@vue/compiler-ssr@3.5.43",
+      "version": "3.5.45",
+      "bom-ref": "openregister@1.0.0|@vue/compiler-ssr@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10783,15 +10991,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/compiler-ssr@3.5.43",
+      "purl": "pkg:npm/%40vue/compiler-ssr@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/compiler-ssr/-/compiler-ssr-3.5.43.tgz",
+          "url": "https://registry.npmjs.org/@vue/compiler-ssr/-/compiler-ssr-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "185eb6a2b7fb2a2257f51aab1cd1ab601b9db10183d0e849e670ecf743bc5220ee4b8d3e60c6289a25eeeb0e84bafb57b910dcdcc48d8acdc469a48a015496a6"
+              "content": "445e6c6d939f633e402b4d2d389527d8fc055d1d9f4b5bb61d5cc8f03f5517dac6005c6e181aa0d9b075909dd91cca6ba9296d5e74fd31913522caa348cf287b"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10910,8 +11118,8 @@
       "type": "library",
       "name": "reactivity",
       "group": "@vue",
-      "version": "3.5.43",
-      "bom-ref": "openregister@1.0.0|@vue/reactivity@3.5.43",
+      "version": "3.5.45",
+      "bom-ref": "openregister@1.0.0|@vue/reactivity@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10919,15 +11127,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/reactivity@3.5.43",
+      "purl": "pkg:npm/%40vue/reactivity@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/reactivity/-/reactivity-3.5.43.tgz",
+          "url": "https://registry.npmjs.org/@vue/reactivity/-/reactivity-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "1bf73d1b2399348da355a692e8e5f5105d524854afec7d0446a353978f834c5325666079795001e7768b40d6a6ffb34bd8d3ed6830fb45d56bcdff2e27332e38"
+              "content": "5aa932b9b356a48e0e6013a2a52ae322cb0c7493bc2b58bd66db3f5a6f04af5d3fd26b0e1300b25965af667008ed65b7910b13a2783a0c9a7c09b6febdde1c3c"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10944,8 +11152,8 @@
       "type": "library",
       "name": "runtime-core",
       "group": "@vue",
-      "version": "3.5.43",
-      "bom-ref": "openregister@1.0.0|@vue/runtime-core@3.5.43",
+      "version": "3.5.45",
+      "bom-ref": "openregister@1.0.0|@vue/runtime-core@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10953,15 +11161,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/runtime-core@3.5.43",
+      "purl": "pkg:npm/%40vue/runtime-core@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/runtime-core/-/runtime-core-3.5.43.tgz",
+          "url": "https://registry.npmjs.org/@vue/runtime-core/-/runtime-core-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "854e94e959d58411900e9be59e70e5201f1918906239c824da587fd089e5b478b3dc3f284a496ebeebd8f9da351b61f7fae75e285b266819605583fb81743313"
+              "content": "6f320edfe140063a63f39b8829273e4278f7ebfb310cd237b5c1fd8bac3ac4a03593a7b47a3bf41b48cc09f78906f2b7c862f95db2770cc663f8296ac821c563"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -10978,8 +11186,8 @@
       "type": "library",
       "name": "runtime-dom",
       "group": "@vue",
-      "version": "3.5.43",
-      "bom-ref": "openregister@1.0.0|@vue/runtime-dom@3.5.43",
+      "version": "3.5.45",
+      "bom-ref": "openregister@1.0.0|@vue/runtime-dom@3.5.45",
       "licenses": [
         {
           "license": {
@@ -10987,15 +11195,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/runtime-dom@3.5.43",
+      "purl": "pkg:npm/%40vue/runtime-dom@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/runtime-dom/-/runtime-dom-3.5.43.tgz",
+          "url": "https://registry.npmjs.org/@vue/runtime-dom/-/runtime-dom-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "05bd897346238c974cb7548999bf5bd8bfc859ddc8f25213f71f5e4bfc6fbcff428958276b47dfb9aef8c4a466b78fee489fb4af888df1ec758ebaa485019643"
+              "content": "66f45314c0e07ea4c3616bc97e8569413271d5137933a97b3f277ac1f758d8d697cdb3d0561f5ecde41815b34f3fa6c8711567d92a92491db937f8d25baf4117"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -11012,8 +11220,8 @@
       "type": "library",
       "name": "server-renderer",
       "group": "@vue",
-      "version": "3.5.43",
-      "bom-ref": "openregister@1.0.0|@vue/server-renderer@3.5.43",
+      "version": "3.5.45",
+      "bom-ref": "openregister@1.0.0|@vue/server-renderer@3.5.45",
       "licenses": [
         {
           "license": {
@@ -11021,15 +11229,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/server-renderer@3.5.43",
+      "purl": "pkg:npm/%40vue/server-renderer@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/server-renderer/-/server-renderer-3.5.43.tgz",
+          "url": "https://registry.npmjs.org/@vue/server-renderer/-/server-renderer-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "9766208eff4d7a157de0f481c4d5ac0070b48ff78820a6e7f76981b965c03c62e79fa1df27a307e6e6ec77e364d18a19e4546ec562353f6552a21f9d6cf42109"
+              "content": "d5f357507861b167f81152f85e2c5b18153998a76221724007cd9f787453c8f3e8e99504616209b8479497799557a403069e741c9397e286cb87161796b8ebcc"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -11046,8 +11254,8 @@
       "type": "library",
       "name": "shared",
       "group": "@vue",
-      "version": "3.5.43",
-      "bom-ref": "openregister@1.0.0|@vue/shared@3.5.43",
+      "version": "3.5.45",
+      "bom-ref": "openregister@1.0.0|@vue/shared@3.5.45",
       "licenses": [
         {
           "license": {
@@ -11055,15 +11263,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/shared@3.5.43",
+      "purl": "pkg:npm/%40vue/shared@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/shared/-/shared-3.5.43.tgz",
+          "url": "https://registry.npmjs.org/@vue/shared/-/shared-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "ba4b12ed818c479359cabe0936ad11a7e4322e7b34b9e6b3db42b0cc83d6f51d0b1f5567b7813e5d4336f4f36c7846dfd70c30da03ae86e0e2e4028e2176a0f5"
+              "content": "b9ef5f80799534f94fee25b7f9cc68057fc29e5c39ddd1e5552c3424a198eb3d6539b83ca47a23f76f0cda7cc6e3fc95b0c67735a459dacdb3eb5b82d7a343c1"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -16868,6 +17076,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/fsevents"
@@ -27224,8 +27436,8 @@
     {
       "type": "library",
       "name": "vue",
-      "version": "3.5.43",
-      "bom-ref": "openregister@1.0.0|vue@3.5.43",
+      "version": "3.5.45",
+      "bom-ref": "openregister@1.0.0|vue@3.5.45",
       "licenses": [
         {
           "license": {
@@ -27233,15 +27445,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/vue@3.5.43",
+      "purl": "pkg:npm/vue@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/vue/-/vue-3.5.43.tgz",
+          "url": "https://registry.npmjs.org/vue/-/vue-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "a39a99a24b1d9e320abd6d6cad9dda6fba5c0cd6007ab06345ee780f42c12df45d09816b4a0047557a2431ab37e5ccd0734fff966c78fedb98e19350f917f636"
+              "content": "ddcbec89bf26f5cd2f076e3e3032ac81c5b8f836b8c5a065f59ff94db9b6a66488b113f172297871d5e35e556c989da0eb85c9a3987e21177baec7464fda596b"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
