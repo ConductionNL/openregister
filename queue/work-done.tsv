@@ -6244,3 +6244,4 @@ build:shillinq:sales-quote-and-order-to-invoice	partial: PR #3009, tasks 1.1-1.4
 cover:dossiq:069ee2d6m2deb:9951e799	already done: lib/Service/DecisionDocument/ 378/378 statements covered @dcd16f597 (branches -1..-3 merged)	session-20261113T185326-a3ee0aab	2026-11-13T19:13:13Z
 verify:shillinq:2962:8a4de8a1	GREEN 2962,2988,2989,2990,2992,2993,2994; CONFLICT 2987,2991; no new failures	session-20261113T182351-b6448081	2026-11-13T19:13:22Z
 review:openregister:10298:02886e88	APPROVE: tasks.md only; cited tests pass	session-20261113T171137-8f22ecb0	2026-11-13T19:13:44Z
+verify:hermiq:1701:4e7fa927	3 GREEN (1701,1702,1703): test-only vitest, 1347 pass	session-20261113T185322-2911ee6d	2026-11-13T19:13:55Z
