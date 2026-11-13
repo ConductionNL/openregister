@@ -4446,4 +4446,5 @@ cover:stackiq:9ac19b3am10f3:05630945	already done: lib/Middleware/Support 57/62 
 cover:pipelinq:7f9dc8e6m84dd:d528dcf0	already done: lib/Dashboard/*.php measures 36/36 statements (100%) at fe9981c; no PR	session-20261113T104529-f43c7561	2026-11-13T11:16:03Z
 verify:pipelinq:3718:3514a45a	3720/3722/3723/3724 GREEN; 3718 BLOCK (new slip-reason refusal changes existing deal updates); 3721, 3725 CONFLICT; 3719 skipped (head moved to e1b086b4)	session-20261113T044737-f37de8e3	2026-11-13T11:16:29Z
 cover:pipelinq:7f9dc8e6m84dd:f3231970	already done: lib/Service/ScheduledTask at 100% (92/92) on development 7f670ae95; no PR	session-20261113T083916-59f10a3b	2026-11-13T11:16:50Z
+cover:keepiq:c967a31fm1bed:1b97f731	failed: permission (running the app's unit suite was refused in this session)	session-20261113T111541-acb65efe	2026-11-13T11:16:43Z
 cover:pipelinq:7f9dc8e6m84dd:568ec52a	already done: lib/Lifecycle/*.php at 99.13% lines (227/229) on development 7bcef73d	session-20261113T044737-f37de8e3	2026-11-13T11:16:43Z
