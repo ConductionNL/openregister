@@ -5489,3 +5489,4 @@ buildiq	1532	c4123addebd16184c524812d14b99017d77e0887	GREEN	worker-18	tests-only
 buildiq	1533	3fa5c2538d89565075d742096633cd7dd37b38d9	GREEN	worker-21	2660 tests run, baseline 2659 with 1 inherited failure (ExportZipGoldenTest), 0 new failures; tests only
 integriq	3513	1e28a3b1a465e644f0b3ec341341287216c46f0b	GREEN	worker-22	8069 tests (baseline 8054, 2 errors + 2 failures inherited), new failures: none; tests-only PR
 learniq	2448	50d50efa6acf21977fd4e421fb3aee577a2f4f6e	GREEN	worker-55	6112 tests run on tree, baseline 6105 with 1 failure (HigherEducationExampleSetTest, inherited), 0 new failures; tests only
+learniq	2449	a3b78678d7177a1073f1ad1f341138ee053e62cd	GREEN	worker-55	6112 tests run on tree, baseline 6105 with 1 failure (inherited), 0 new failures; extract-method refactor of 4 listeners, same outcomes
