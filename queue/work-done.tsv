@@ -3673,3 +3673,4 @@ cover:dossiq:f8a113c5m7e79:d214aba4	PR #6340: 11 tests, lib/Service/Queue/*.php 
 cover:learniq:e6498dddmc027:2baf2b6e	no PR: lib/Proctoring/*.php already fully covered on development (FlagReview 76/76 lines, pcov; FlagWrite and ProvidesProctoring have no executable statements)	session-20261113T080549-dde3ba19	2026-11-13T08:58:31Z
 cover:pipelinq:7f9dc8e6m916f:4d8f122a	already done: lib/Service/MailAddIn/ 85/86 lines (98.8%) under the full unit suite on development, target 90; no PR	session-20261113T072713-f866e896	2026-11-13T08:58:41Z
 cover:stackiq:9ac19b3am6096:17d367ab	already done: lib/Controller/Settings/ 74/74 = 100% >= 90	session-20261113T051703-1b54bfba	2026-11-13T08:59:01Z
+cover:pipelinq:7f9dc8e6m916f:js00fe026a	already done: src/services/* at 98.54% lines (vitest 3893 green)	session-20261113T072715-8f8a14e9	2026-11-13T08:59:09Z
