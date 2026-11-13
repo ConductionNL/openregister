@@ -1826,3 +1826,4 @@ cover:dossiq:6ca0231ema7d4:5706f9f2	already done: lib/Service/Notes 165/165 stmt
 cover:stackiq:8cfacb29m8db8:e99dc6f8	PR #1823: 6 tests; Cmdb 77.9% -> 78.1%; rest of the gap is the reader parse path whose tests skip without OPENREGISTER_DIR/PhpSpreadsheet	session-20261113T031700-211f0599	2026-11-13T03:29:23Z
 cover:stackiq:8cfacb29m8db8:81b1241f	already done: lib/Portal 23/23 statements covered by existing 22 tests; no PR	session-20261113T031701-470b4a5e	2026-11-13T03:29:40Z
 verify:pipelinq:3627:93588bb4	3627-3634 GREEN (3635 already GREEN); 0 new failures, 1 inherited	session-20261113T031704-4f12cb78	2026-11-13T03:29:41Z
+cover:integriq:9b0f5894md8cd:0f859653	PR #3464: lib/Flow/*.php 2428/2514 -> 2485/2514, 23 tests	session-20261113T015005-030aa10a	2026-11-13T03:29:56Z
