@@ -1891,3 +1891,4 @@ cover:stackiq:df113dffm8db8:34763eb4	PR opened: 4 successor-link tests for ApiCo
 cover:stackiq:df113dffm8db8:f4b2f7af	already done: lib/Service/ArchiMate 202/204 covered, 10 test files; untested classes are value objects only (getter-only tests not allowed)	session-20261113T031700-0e23c373	2026-11-13T03:44:42Z
 cover:launchpad:fb10c50fm31b6:js0be8c659	PR #1160: 21 vitest tests, TileEditor 46->70/73, WidgetMovePanel 47->61/61 stmts; suite green	session-20261113T024656-2f332446	2026-11-13T03:45:04Z
 cover:filinq:7a9ef677mc744:js09173935	PR #2022: 21 vitest tests; correspondence 39->60/60, customDictionary 0->60/60, fileViewer 0->39/39 lines; suite 471/0	session-20261113T021703-063c80f1	2026-11-13T03:45:10Z
+cover:learniq:1ae7757ema84a:js3f3bfe56	PR learniq#2434: main.js boot, 13 tests, main.js 0->100%, JS 89.01->96.97% (other src/* files on -1 branch)	session-20261113T031704-4f12cb78	2026-11-13T03:45:15Z
