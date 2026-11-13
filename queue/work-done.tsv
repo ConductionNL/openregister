@@ -2735,3 +2735,4 @@ verify:keepiq:1741:2505e581	failed: permission (running PR test code refused)	se
 verify:filinq:2039:7f191b05	2/2 GREEN (2039, 2040): clean merge, lint ok, phpunit 6112->6122 all pass; tests only	session-20261113T044737-f37de8e3	2026-11-13T06:19:08Z
 measure:launchpad:20261113h06	php 92.52% js 92.45% at 7a18021a	session-20261113T051708-7d5f6071	2026-11-13T06:19:24Z
 measure:pipelinq:20261113h06	php 84.95% (pcov, 50e93fcd); js not re-measured (npm ci refused here), previous js 80.72% kept with js_commit	session-20261113T054519-189b2666	2026-11-13T06:19:24Z
+verify:decidiq:2098:08d9a2aa	2 GREEN (2098, 2116); 3684 tests, 0 new failures	session-20261113T061521-423d1e83	2026-11-13T06:19:33Z
