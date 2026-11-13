@@ -3838,3 +3838,4 @@ build:dossiq:grant-cases-from-application-to-settlement	nothing buildable now: 1
 build:dossiq:example-set-pieter-reads-the-household	already done: zuiddrecht.json puts pieter in dossiq-sensitive on development; only the live :8080 check is left	session-20261113T091532-72081560	2026-11-13T09:22:30Z
 build:dossiq:case-notes-stay-in-dossiq	PR #6353: note push removed (route, action, 4 services, tests, Notes tab action); suite 19 inherited failures before/after	session-20261113T091530-f20014fb	2026-11-13T09:22:50Z
 build:dossiq:hydra-gates-green-on-development	nothing to build in dossiq: only 1.4 open, which is a schema vendoring change in ConductionNL/.github (out of repo)	session-20261113T091529-c3067ba9	2026-11-13T09:23:07Z
+cover:keepiq:c967a31fm1147:dfaef732	already done: lib/Notification/*.php 394/396 = 99.5% >= 90	session-20261113T051703-1b54bfba	2026-11-13T09:23:20Z
