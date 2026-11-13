@@ -5356,3 +5356,4 @@ build2:openregister:search-quality-operators-and-facets	no PR: sections 1-4,7 bu
 review:openregister:10249:ac3fcd21	APPROVE #10249 (build anonymisation-image-seam; green, no defect)	session-20261113T131531-81a20e2a	2026-11-13T13:55:48Z
 build2:openregister:shared-decision-table-evaluator	already built: tasks 1-2 done; task 3 is the consumer apps' adoption, deliberately out of scope here, no PR	session-20261113T084521-fd8a31c7	2026-11-13T13:56:11Z
 cover:buildiq:70b3e29ema699:f545d745	already done: lib/Repair/*.php at 99.78% lines (913/915) on development, target 95; no PR	session-20261113T074535-8a2067c2	2026-11-13T13:56:05Z
+cover:dossiq:069ee2d6m2deb:ea81adeb	PR #6414: +16 tests across 7 Zgw classes (no pcov available to re-measure)	session-20261113T134541-c5b113fc	2026-11-13T13:56:29Z
