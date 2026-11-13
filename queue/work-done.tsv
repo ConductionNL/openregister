@@ -4058,3 +4058,4 @@ cover:learniq:e6498dddm0533:f545d745	PR #2461: failure paths of 5 repair steps, 
 cover:shillinq:05639debm0c05:js0be8c659	PR #2913: 58 tests for 10 modals; src/modals lines 31.3%->48.4%; suite 1775->1833 passing	session-20261113T094607-7b89fdae	2026-11-13T09:51:23Z
 cover:integriq:92114ab0m158b:js971eca14	PR #3519: 27 vitest tests, ModalHost and SynchronizationNodeEditor 0%->100%; modals/v2 76.4%->83.9%; suite 1993->2020 all pass	session-20261113T081046-f0858dc4	2026-11-13T09:51:23Z
 gap:planninq:tcr2:burn1	PR #1143: 6 vitest specs for flow/phaseFiles/caseHandover api, asList/responseBody, memberSearchInput mixin, registerProjectsLeaf; suite 3133 green	session-20261113T074533-3e2a2da6	2026-11-13T09:51:32Z
+cover:larpinq:c4471360m4538:59826f43	PR #1020: LarpinqAdmin 4 tests, suite 697->701 OK	session-20261113T094617-36f80607	2026-11-13T09:51:44Z
