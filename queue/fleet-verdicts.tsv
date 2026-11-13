@@ -6054,3 +6054,4 @@ opencatalogi	2593	dbc43a153f4f0fa5a85ea47da394ffde90194b62	GREEN	worker-41	unit 
 opencatalogi	2594	eb176729c56e0dce8bbea5eee015e5d98541744e	GREEN	worker-41	unit 5287 run on tree 2591-2594 (baseline 5254, 2 inherited failures AppIdentityTest, WooControllerTest), 0 new failures; tests only
 shillinq	2944	1db10effc136833766464b8612092ec8dd177a72	GREEN	worker-24	phpunit 10413 run, baseline 1 failure (clock-bound PaymentWebhookIntakeCharacterisationTest), 0 new; vitest 224 files/2310 passed; tests only, adds one spec file
 shillinq	2946	d6eef526a03df96e56b2e5d9f56b8c2a15cf93a1	GREEN	worker-24	phpunit 10413 run (+19), baseline 1 failure (clock-bound), 0 new; php -l clean; tests only
+portaliq	2415	7a440f0cacb7ce03e9090097cd02f89d60b6ff77	REVERIFY	worker-06	check:specs line restored to development's; widget spec now runs through check:proposal-queue-leaf (25/25 pass); merges clean with #2414; new head 1b3e5f2d8564310105899ff754ce3416a97c01ca, verify it
