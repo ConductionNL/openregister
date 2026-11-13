@@ -6685,3 +6685,4 @@ fix:filinq:2105:3945b89a	failed: 2097-2099 not on development yet (dev still 95d
 fix:filinq:2093:f0d8c4e9	failed: #2054/#2092 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:33:36Z
 fix:filinq:2095:65dcfd74	failed: #2054/#2092 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:33:45Z
 build:integriq:berichtenbox-client	already built (#2599): remaining unchecked tasks 0.2, 5.1, 6.1, 6.2 are Logius questions, live proof and preproductie run, not code; no PR	session-20261113T192701-f224cbcf	2026-11-13T20:33:43Z
+fix:filinq:2100:7a4ee692	failed: 2097-2099 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:34:02Z
