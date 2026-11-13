@@ -4091,3 +4091,5 @@ Repair/SeedFromDirectory.php,37,Repair,Platform,Platform/Repair/SeedFromDirector
 BackgroundJob/SeedDirectoryJob.php,19,BackgroundJob,Configuration,Configuration/BackgroundJob/SeedDirectoryJob.php,0,,Configuration
 Command/SeedImportCommand.php,58,Command,Configuration,Configuration/Command/SeedImportCommand.php,0,,Configuration
 Controller/Settings/SeedReportController.php,19,Controller,Configuration,Configuration/Controller/Settings/SeedReportController.php,0,,Configuration
+Service/ApiCaller/ApiClientName.php,22,Service,Platform,Platform/Service/ApiCaller/ApiClientName.php,0,,Platform
+Migration/Version1Date20261113190000.php,36,Migration,,,,,Platform
