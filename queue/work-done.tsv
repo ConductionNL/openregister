@@ -2706,3 +2706,4 @@ cover:pipelinq:7f9dc8e6mc4ba:ab7f3595	already done: lib/Service/Provider/ at 99.
 cover:pipelinq:7f9dc8e6mc4ba:23d187f5	already done: lib/Service/Store/ at 95.35% statements (82/86) on development bb7a7d06c, target 85, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:57Z
 cover:pipelinq:7f9dc8e6mc4ba:d39f9857	already done: lib/Support/*.php 32/32 lines (100.0%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:15:57Z
 cover:pipelinq:7f9dc8e6mc4ba:fdb25f89	already done: lib/Service/Access/ at 100% statements (86/86) on development bb7a7d06c, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:16:18Z
+cover:pipelinq:7f9dc8e6mc4ba:09cc8f24	already done: lib/Service/Cti/ 365/368 lines (99.2%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:16:03Z
