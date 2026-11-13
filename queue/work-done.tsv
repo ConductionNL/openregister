@@ -6615,3 +6615,4 @@ cover:keepiq:c967a31fm10bf:ca1d90c4	no PR: lib/Attribute holds one attribute wit
 cover:hermiq:065f1631md84f:8ed5443b	no PR: lib/Kernel/Contracts/*.php holds only 121 interfaces, no executable lines to cover	session-20261113T192659-0ddb618f	2026-11-13T20:15:05Z
 cover:keepiq:c967a31fm10bf:6925f818	already done: lib/SetupCheck/*.php is 100% line-covered (12/12) by existing ShareQuarantineScanPendingTest; no PR	session-20261113T201015-b01220aa	2026-11-13T20:15:06Z
 fix:filinq:2058:e0070c28	fixed: editor delivery now passes the write gate; new head a3af2f8726dd3c0a8b4dcd4ca86d4f55fea43155, REVERIFY recorded	session-20261113T175327-6e4e7f28	2026-11-13T20:15:10Z
+cover:opencatalogi:fc83bfb1:59826f43	PR #2607: OpenCatalogiAdmin 54% to 88% lines, 6 tests; suite 5254 to 5260, same 2 inherited failures	session-20261113T195345-400acccd	2026-11-13T20:15:18Z
