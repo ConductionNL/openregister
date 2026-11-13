@@ -6831,3 +6831,4 @@ build:decidiq:followup-implementation-progress	partial: PR #2144, tasks 1-2; 3-5
 verify:integriq:3543:fa2d2bab	#3543 GREEN, #3544 GREEN, #3545 CONFLICT (l10n/nl.js, nl.json vs #3543); suite 8248, 5 inherited failures	session-20261113T202603-6c9ef72f	2026-11-13T21:01:29Z
 verify:shillinq:3023:64be0cb7	GREEN #3023 (tests only, +2 tests, no new failures)	session-20261113T205323-a7434fd6	2026-11-13T21:01:44Z
 build:opencatalogi:leaf-integrations	partial: PR #2641 - publication mail+calendar leaves, planning widget, docs, l10n, 8 tests; organization leaves left (schema is OpenRegister's shared one), e2e left	session-20261113T204539-805bb895	2026-11-13T21:02:00Z
+build:opencatalogi:dashboard-consume-or-aggregations	partial: PR #2640 — status KPIs from OR ad-hoc count aggregation (+22 tests); countBySchema/attachment/live tasks left (upstream gap / no schema / need instance)	session-20261113T204551-fafe539e	2026-11-13T21:01:57Z
