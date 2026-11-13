@@ -6069,3 +6069,4 @@ portaliq	2423	50cc9936c322395b4aa179b56d63a8cf347fe2ce	REVERIFY	worker-24	moved 
 pipelinq	3767	9ef7f34c927c4c035a1c90f86ec3cd677cff09bc	GREEN	worker-54	7195 tests vs baseline 7194 (5 inherited failures), same failure set; test-only
 portaliq	2433	7c0c09e1763e399975ee8d73f34401957522f6ae	GREEN	worker-24	phpunit 4933 run, baseline 4914 OK, 0 new failures; node specs 56/56; check:l10n-js ok
 pipelinq	3768	ae11b6f19f77e9c969f4a9d6c5e30765cf643369	GREEN	worker-52	unit 7197 tests on merge (baseline 7194, 5 failures inherited, 0 new); tests only
+portaliq	2434	bbc265edc9cd42e7be85d69cd9936441111e1c9b	GREEN	worker-24	phpunit 4933 run, baseline 4914 OK, 0 new failures; node specs 56/56; check:l10n-js ok; implements portal-identity-from-the-admin
