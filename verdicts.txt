@@ -2707,3 +2707,4 @@
 9972 7e3b440db44f84c61b8bf855ae411d842ef6a123 APPROVE prior park fixed: registrar order and wiring tests pin ConfigurationSeedService (draft service, value store, settings service); head contains main 1574bc5db5: guards incl. registrar/wiring + touched tests green (3004 tests)
 10100 a45ac6560723ba23f39e055167d959b4fcef7c82 APPROVE test docblocks only: @uses tags name existing classes; TalkLink tests 26 OK, Architecture/Rules/Controller/Contract green on merge with main
 10099 cbc55f04d4fb25c85f1a2f948e5dc84a4da1cf49 APPROVE Tests only (2 new mapper test files, 17 tests); pass on PR merged with main; Architecture, Rules, Controller, Contract suites green; no production code changed.
+9970 b5d1a6ff10f24b388a3541380a1a058472dd16f1 APPROVE prior park fixed: registrar order and wiring tests pin SettingsDraftGate (draft service, value store, IAppConfig); head contains main 1574bc5db5: guards incl. registrar/wiring + touched tests green (3272 tests)
