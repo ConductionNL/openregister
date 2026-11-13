@@ -1690,3 +1690,4 @@ portaliq	2395	d2fce6d4d67f89ee5472d53516e1a2f1ccd70517	SKIP	merge-local	GATE UNM
 portaliq	2396	fc1d055c4fedebed6671672acff4657b4257347b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2397	8db42abf4b56459f756e239802fa334b076a0589	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2463	98ba380f2f63aa26be1a364c195a0b478ccf14c6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1873	7e9e418cdde8d710c9df6907d21485273edeeef0	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
