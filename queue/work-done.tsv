@@ -5874,3 +5874,4 @@ cover:keepiq:c967a31fm00c6:34763eb4	PR #1762: Middleware already 100% stmts; mut
 cover:hermiq:065f1631me44a:d825828c	already done: lib/Service/Literacy at 190/190 lines (100%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:13:58Z
 verify:pipelinq:3768:80b4b3ed	GREEN #3768: 7197 tests, 5 inherited failures, none new	session-20261113T171137-8f22ecb0	2026-11-13T18:14:38Z
 verify:portaliq:2433:52c4b74c	GREEN 2433,2434,2436,2438,2439,2441; CONFLICT 2435,2437,2440 (register test)	session-20261113T172329-5f4feaba	2026-11-13T18:14:44Z
+verify:portaliq:2415:0653b651	8 GREEN (2415,2426,2428-2433), 2427 CONFLICT (l10n)	session-20261113T175332-5effc865	2026-11-13T18:15:22Z
