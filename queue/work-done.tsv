@@ -7153,3 +7153,4 @@ review:openregister:10391:aa853099	APPROVE #10391	session-20261113T204606-0d8f1c
 build4:openregister:platform-cloud-federation-provider	partial: PR #10433 (task 1.5 schema federatable declaration, refusal at share creation; 1.1-1.4 left)	session-20261113T212406-cc34ae8b	2026-11-13T22:24:16Z
 review:openregister:10406:9663a34c	APPROVE 10406: PDF summary block, no new exposure beyond the table; tests green	session-20261113T205337-4c32e19e	2026-11-13T22:24:16Z
 build4:openregister:tasks-progress-report	partial: PR to main with the (flow_id, created) index of 1.1; aggregates/service need DB-backed tests, routes/metrics/UI build on them	session-20261113T202603-6c9ef72f	2026-11-13T22:24:20Z
+build4:openregister:tables-bulk-jobs-and-file-search	partial: PR #10435 @self.matchedFile on file-found rows (2.4 backend); frontend 2.1-2.4 waits on nextcloud-vue 1.1, 3.x left	session-20261113T205330-0e50ee62	2026-11-13T22:24:34Z
