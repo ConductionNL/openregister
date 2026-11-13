@@ -1017,6 +1017,7 @@ Exception/FormSubmitRefusedException.php,29,Exception,Exception,Exception/FormSu
 Exception/HandoffException.php,15,Exception,Exception,Exception/HandoffException.php,18,,Kernel
 Exception/HookStoppedException.php,19,Exception,Exception,Exception/HookStoppedException.php,26,,Kernel
 Exception/InvalidAuthorizationRuleException.php,7,Exception,Exception,Exception/InvalidAuthorizationRuleException.php,0,,Kernel
+Exception/InvalidNoteParentException.php,10,Exception,Exception,Exception/InvalidNoteParentException.php,0,,Kernel
 Exception/InvalidPackDefinitionException.php,11,Exception,Exception,Exception/InvalidPackDefinitionException.php,1,,Kernel
 Exception/InvalidTransitionInputException.php,19,Exception,Exception,Exception/InvalidTransitionInputException.php,0,,Kernel
 Exception/InvalidViewAlertException.php,21,Exception,Exception,Exception/InvalidViewAlertException.php,0,,Kernel
@@ -1144,6 +1145,7 @@ Files/Service/File/Pdf/PdfMetadataSanitizer.php,148,Files,Files,Files/Service/Fi
 Files/Service/File/Pdf/PdfStructureInspector.php,82,Files,Files,Files/Service/File/Pdf/PdfStructureInspector.php,0,,Files
 Files/Service/File/Pdf/PdfTextReplacer.php,254,Files,Files,Files/Service/File/Pdf/PdfTextReplacer.php,0,,Files
 Files/Service/File/Pdf/StructureMeasurement.php,51,Files,Files,Files/Service/File/Pdf/StructureMeasurement.php,0,,Files
+Files/Service/NoteReplies.php,73,Files,Files,Files/Service/NoteReplies.php,0,,Files
 Kernel/Contracts/StructurePreservation.php,35,Kernel,Kernel,Kernel/Contracts/StructurePreservation.php,0,427,Kernel
 Files/Service/File/PlaceholderIdTranslator.php,47,Files,Files,Files/Service/File/PlaceholderIdTranslator.php,2,,Files
 Files/Service/File/PlaceholderLookup.php,20,Files,Files,Files/Service/File/PlaceholderLookup.php,0,,Files
