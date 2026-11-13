@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Export\ExportRequest;
 use OCA\OpenRegister\Service\Export\ExportTable;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Service\Export\RowsTable;
+use OCA\OpenRegister\Service\Export\XmlObjectWriter;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
@@ -375,6 +376,50 @@ class ExportService implements ObjectExporterInterface {
 
 		return json_encode($rows, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 	}//end jsonFor()
+
+	/**
+	 * Export objects of a single schema to an XML document.
+	 *
+	 * The same objects the JSON export holds, written by {@see XmlObjectWriter}:
+	 * a root `<objects>`, one `<object id="...">` per record, each property a child
+	 * element, lists as repeated children, nested objects as nested elements and
+	 * null as `xsi:nil="true"`.
+	 *
+	 * @param ObjectExportRequest $request The register context, the schema whose objects are exported (required) and the filters.
+	 *
+	 * @return string The XML document, UTF-8.
+	 *
+	 * @throws InvalidArgumentException When no schema is given (XML export is single-schema, like JSON)
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	public function exportToXml(ObjectExportRequest $request): string {
+		return $this->xmlFor(request: ExportRequest::fromContract(request: $request));
+	}//end exportToXml()
+
+	/**
+	 * Export one request's objects to an XML document; XML holds one schema only.
+	 *
+	 * @param ExportRequest $request What to export.
+	 *
+	 * @return string The XML document, UTF-8.
+	 *
+	 * @throws InvalidArgumentException When no schema is given (XML export is single-schema, like JSON)
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	public function xmlFor(ExportRequest $request): string {
+		if ($request->schema === null) {
+			throw new InvalidArgumentException('XML export requires a specific schema.');
+		}
+
+		$rows = array_map(
+			static fn (ObjectEntity $object): array => $object->jsonSerialize(),
+			$this->fetchObjectsForExport(request: $request)
+		);
+
+		return (new XmlObjectWriter())->write(rows: $rows);
+	}//end xmlFor()
 
 	/**
 	 * Export data to PDF format
