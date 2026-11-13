@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
+use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -131,16 +132,39 @@ class EntityRecognitionHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param EntityRecognitionStores   $stores   Chunk, entity and relation stores plus the DB connection.
-	 * @param EntityRecognitionBackends $backends Settings, anonymisation backend and the lazy app container.
-	 * @param LoggerInterface           $logger   Logger.
+	 * @param EntityRecognitionStores   $stores       Chunk, entity and relation stores plus the DB connection.
+	 * @param EntityRecognitionBackends $backends     Settings, anonymisation backend and the lazy app container.
+	 * @param LoggerInterface           $logger       Logger.
+	 * @param FileSettingsHandler|null  $fileSettings The organisation's detection threshold (REQ-ADI-007).
 	 */
 	public function __construct(
 		private readonly EntityRecognitionStores $stores,
 		private readonly EntityRecognitionBackends $backends,
 		private readonly LoggerInterface $logger,
+		private readonly ?FileSettingsHandler $fileSettings=null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The minimum confidence a detection needs: the caller's, else the organisation's setting.
+	 *
+	 * @param array<string, mixed> $options Processing options; `confidence_threshold` wins when given.
+	 *
+	 * @return float The threshold.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
+	 */
+	private function confidenceThreshold(array $options): float {
+		if (isset($options['confidence_threshold']) === true) {
+			return (float) $options['confidence_threshold'];
+		}
+
+		if ($this->fileSettings === null) {
+			return FileSettingsHandler::DEFAULT_CONFIDENCE_THRESHOLD;
+		}
+
+		return $this->fileSettings->confidenceThreshold();
+	}//end confidenceThreshold()
 
 	/**
 	 * Process chunks for a source and extract entities.
@@ -152,7 +176,7 @@ class EntityRecognitionHandler {
 	 * @param array $options Processing options:
 	 *                       - method: 'regex', 'presidio', 'llm', 'hybrid' (default: 'hybrid').
 	 *                       - entity_types: array of entity types to detect (default: all).
-	 *                       - confidence_threshold: minimum confidence (default: 0.5).
+	 *                       - confidence_threshold: minimum confidence (default: the anonymisation.confidenceThreshold file setting).
 	 *                       - context_window: characters around entity (default: 50).
 	 *
 	 * @return int[]
@@ -295,7 +319,7 @@ class EntityRecognitionHandler {
 	 * @param array $options Processing options:
 	 *                       - method: 'regex', 'presidio', 'llm', 'hybrid' (default: 'hybrid').
 	 *                       - entity_types: array of entity types to detect (default: all).
-	 *                       - confidence_threshold: minimum confidence (default: 0.5).
+	 *                       - confidence_threshold: minimum confidence (default: the anonymisation.confidenceThreshold file setting).
 	 *                       - context_window: characters around entity (default: 50).
 	 *
 	 * @return array Extraction results with entities_found, relations_created, and entities list.
@@ -367,7 +391,7 @@ class EntityRecognitionHandler {
 			query: new EntityDetectionQuery(
 				text: $scan->text,
 				entityTypes: $options['entity_types'] ?? null,
-				confidenceThreshold: (float)($options['confidence_threshold'] ?? 0.5)
+				confidenceThreshold: $this->confidenceThreshold(options: $options)
 			),
 			method: $scan->method
 		);

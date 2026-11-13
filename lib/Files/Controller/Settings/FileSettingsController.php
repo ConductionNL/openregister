@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
+use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\ServiceHealthProbe;
@@ -157,6 +158,8 @@ class FileSettingsController extends Controller {
 					'data' => $result,
 				]
 			);
+		} catch (ConfidenceThresholdOutOfRangeException $e) {
+			return $this->error(message: $e->getMessage(), status: 400);
 		} catch (Exception $e) {
 			return $this->error(message: $e->getMessage());
 		}//end try
