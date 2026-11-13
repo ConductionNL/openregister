@@ -1162,11 +1162,16 @@ Files/Service/File/PlaceholderIdTranslator.php,47,Files,Files,Files/Service/File
 Files/Service/File/PlaceholderLookup.php,20,Files,Files,Files/Service/File/PlaceholderLookup.php,0,,Files
 Files/Service/File/PreviewSize.php,13,Files,Files,Files/Service/File/PreviewSize.php,0,,Files
 Files/Service/File/RegisterFolderProvisioner.php,63,Files,Files,Files/Service/File/RegisterFolderProvisioner.php,0,343,Files
+Files/Service/File/SanitizationHiddenCounts.php,22,Files,Files,Files/Service/File/SanitizationHiddenCounts.php,0,,Files
 Files/Service/File/SanitizationReport.php,31,Files,Files,Files/Service/File/SanitizationReport.php,10,,Files
 Files/Service/File/SanitizationResult.php,10,Files,Files,Files/Service/File/SanitizationResult.php,3,,Files
 Files/Service/File/Sanitizer/DocxSanitizer.php,468,Files,Files,Files/Service/File/Sanitizer/DocxSanitizer.php,0,,Files
 Files/Service/File/Sanitizer/OdtSanitizer.php,197,Files,Files,Files/Service/File/Sanitizer/OdtSanitizer.php,0,,Files
+Files/Service/File/Sanitizer/OoxmlCommonParts.php,70,Files,Files,Files/Service/File/Sanitizer/OoxmlCommonParts.php,0,,Files
+Files/Service/File/Sanitizer/OoxmlPackage.php,179,Files,Files,Files/Service/File/Sanitizer/OoxmlPackage.php,0,,Files
+Files/Service/File/Sanitizer/PptxSanitizer.php,123,Files,Files,Files/Service/File/Sanitizer/PptxSanitizer.php,0,,Files
 Files/Service/File/Sanitizer/SanitizerInterface.php,9,Files,Files,Files/Service/File/Sanitizer/SanitizerInterface.php,0,,Files
+Files/Service/File/Sanitizer/XlsxSanitizer.php,261,Files,Files,Files/Service/File/Sanitizer/XlsxSanitizer.php,0,,Files
 Files/Service/File/ShareUrlBuilder.php,28,Files,Files,Files/Service/File/ShareUrlBuilder.php,0,455,Files
 Files/Service/File/TaggingHandler.php,225,Files,Files,Files/Service/File/TaggingHandler.php,0,101,Files
 Files/Service/FileSidebarService.php,198,Files,Files,Files/Service/FileSidebarService.php,0,,Files

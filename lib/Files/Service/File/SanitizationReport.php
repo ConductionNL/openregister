@@ -113,11 +113,20 @@ final class SanitizationReport implements JsonSerializable {
 	public readonly string $sentinelApplied;
 
 	/**
+	 * What a spreadsheet or presentation hid and the sanitiser took out; null
+	 * for a document format, whose report keeps its own keys only.
+	 *
+	 * @var SanitizationHiddenCounts|null
+	 */
+	public readonly ?SanitizationHiddenCounts $hidden;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SanitizationRevisionCounts  $revisions       Comment and tracked-change counts.
 	 * @param SanitizationStructureCounts $structure       Hyperlink, metadata, custom XML and field-code counts.
 	 * @param string                      $sentinelApplied The sentinel string used for scrubbing.
+	 * @param SanitizationHiddenCounts|null $hidden       Hidden sheets, rows, columns, slides and notes removed (spreadsheets and presentations only).
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
@@ -125,6 +134,7 @@ final class SanitizationReport implements JsonSerializable {
 		SanitizationRevisionCounts $revisions = new SanitizationRevisionCounts(),
 		SanitizationStructureCounts $structure = new SanitizationStructureCounts(),
 		string $sentinelApplied = '',
+		?SanitizationHiddenCounts $hidden = null,
 	) {
 		$this->commentsRemoved = $revisions->commentsRemoved;
 		$this->trackedChangesAccepted = $revisions->trackedChangesAccepted;
@@ -135,6 +145,7 @@ final class SanitizationReport implements JsonSerializable {
 		$this->customXmlPartsDropped = $structure->customXmlPartsDropped;
 		$this->fieldCodesStripped = $structure->fieldCodesStripped;
 		$this->sentinelApplied = $sentinelApplied;
+		$this->hidden = $hidden;
 	}//end __construct()
 
 	/**
@@ -155,6 +166,6 @@ final class SanitizationReport implements JsonSerializable {
 			'customXmlPartsDropped' => $this->customXmlPartsDropped,
 			'fieldCodesStripped' => $this->fieldCodesStripped,
 			'sentinelApplied' => $this->sentinelApplied,
-		];
+		] + ($this->hidden?->toArray() ?? []);
 	}//end jsonSerialize()
 }//end class
