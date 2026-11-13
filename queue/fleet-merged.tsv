@@ -1519,3 +1519,4 @@ dossiq	6296	a097f841e1c254229756bbdd81837f2f5f68e42e	MERGED	merge-local	GATE OK 
 dossiq	6297	02d23732634b8938c2fd3c745e331cbc11d04522	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6298	ce19e20e4a25a5727f25bf1f4638ca1602a0431d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6299	398fab3260cfdb65c7af81cb1108ec695b902690	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+filinq	2049	dd2c0c59f5bda8e27a697637958cbc2bd8072f83	RED	merge-local	GATE RED sbom: package-lock.json changed without sbom.cdx.json
