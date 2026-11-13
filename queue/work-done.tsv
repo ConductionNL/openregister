@@ -6234,3 +6234,4 @@ cover:dossiq:069ee2d6m2deb:38e8c328	already done: the 8 dirs measure 259/266 (97
 cover:openregister:7350e3efma401:9b457b26	already done: lib/Service/Flow/ at >=97.3% stmt coverage on main from tests/Unit/Service/Flow alone (phpunit.xml; phpunit-unit.xml needs a Nextcloud server checkout); no PR	session-20261113T172328-c860ad55	2026-11-13T19:11:43Z
 cover:buildiq:70b3e29em7beb:1106b038	failed: permission (building pcov from source refused; pecl host blocked)	session-20261113T190954-c894781f	2026-11-13T19:11:39Z
 cover:dossiq:069ee2d6m2deb:52aafbe5	already done: dossiq lib/Service/Vth/ 355/355 statements covered, no PR	session-20261113T172329-0b6220f9	2026-11-13T19:12:00Z
+cover:dossiq:069ee2d6m2deb:9ece5c6f	already done: lib/Controller/Support/ 99.1% (329/332, target 95) @dcd16f597; no PR (note: dossiq unit suite has 20 failures at that head)	session-20261113T185326-316f096d	2026-11-13T19:12:08Z
