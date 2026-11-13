@@ -43,6 +43,9 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseEdge
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
  */
 class SaveObjectsBulkInverseRelationsGoldenTest extends TestCase {
 

@@ -93,6 +93,10 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
  * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
  * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerRuntime
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerStores
+ * @uses \OCA\OpenRegister\Service\Object\CacheNameScopeSources
+ * @uses \OCA\OpenRegister\Service\Object\CachedName
  * @uses \OCA\OpenRegister\Service\Object\DraftCaller
  * @uses \OCA\OpenRegister\Service\Object\DraftSubject
  * @uses \OCA\OpenRegister\Service\Object\SafeguardBatchRun
@@ -107,6 +111,10 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk
  * @uses \OCA\OpenRegister\Service\Rbac\MaskedWrite
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class BulkWriteEventsTest extends TestCase {
 

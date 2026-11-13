@@ -62,6 +62,29 @@ use OCA\OpenRegister\Service\Flow\FlowRunFrame;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses   \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses   \OCA\OpenRegister\Service\Object\DottedParamTree
+ * @uses   \OCA\OpenRegister\Service\Object\DraftCaller
+ * @uses   \OCA\OpenRegister\Service\Object\DraftSubject
+ * @uses   \OCA\OpenRegister\Service\Object\SafeguardBatchRun
+ * @uses   \OCA\OpenRegister\Service\Object\SafeguardRejection
+ * @uses   \OCA\OpenRegister\Service\Object\SearchQueryParts
+ * @uses   \OCA\OpenRegister\Service\Object\SearchReferenceText
+ * @uses   \OCA\OpenRegister\Service\Object\SearchScopeFilters
+ * @uses   \OCA\OpenRegister\Service\Rbac\MaskedWrite
+ * @uses   \OCA\OpenRegister\Service\SearchPeriod
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowRunFrame
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  * @uses \OCA\OpenRegister\Db\SchemaCatalog
  * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
  * @uses \OCA\OpenRegister\Exception\ObjectStateMarker

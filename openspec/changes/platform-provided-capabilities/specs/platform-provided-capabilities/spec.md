@@ -120,3 +120,9 @@ Mail that OpenRegister sends to a Nextcloud user SHALL be rendered in that user'
 - **WHEN** the rule fires
 - **THEN** the mail subject and body are rendered with the Dutch catalogue
 - @e2e exclude {asserted by unit tests on the email channel in task 2.5}
+
+#### Scenario: A Dutch user resets their password
+- **GIVEN** a user whose Nextcloud language is Nederlands
+- **WHEN** the user asks for a password reset from a browser set to Dutch
+- **THEN** the reset mail is Nextcloud's own, written in Dutch, and OpenRegister sends no mail of its own
+- @e2e exclude {account mail belongs to Nextcloud core; asserted by checking that OpenRegister registers no reset or verification mail}

@@ -99,6 +99,9 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
  * @uses \OCA\OpenRegister\Service\PropertyRbacRules
  * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
  */
 class RenderObjectNestedWriteOnlyPathsTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

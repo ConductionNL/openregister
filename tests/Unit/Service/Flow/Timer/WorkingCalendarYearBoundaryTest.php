@@ -55,9 +55,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
- * @uses \OCA\OpenRegister\Service\Flow\Timer\MomentShift
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\MomentShift
  */
 class WorkingCalendarYearBoundaryTest extends TestCase {
 

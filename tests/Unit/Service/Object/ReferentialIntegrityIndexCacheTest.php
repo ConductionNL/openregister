@@ -61,6 +61,8 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
  * @uses \OCA\OpenRegister\Service\Object\IntegrityCascadeControls
  * @uses \OCA\OpenRegister\Service\Object\IntegrityRelationIndex
  * @uses \OCA\OpenRegister\Service\Object\IntegrityStorage
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ReferentialIntegrityIndexCacheTest extends TestCase {
 

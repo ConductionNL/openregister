@@ -41,11 +41,13 @@ Objects support a draft/published lifecycle for editorial workflows:
 
 ### Hash Chaining
 
-Every audit trail entry is cryptographically chained to the previous entry using SHA-256:
+Every audit trail entry is cryptographically chained to the previous entry. From the keyed-from row on, the link is an HMAC under a chain key:
 
 ```
-entry_hash = SHA-256(entry_json + previous_entry_hash)
+entry_hash = HMAC-SHA256(chain_key, previous_entry_hash + entry_json)
 ```
+
+The chain key is a tenant key held by `TenantKeyService`: it is generated on first use and stored encrypted with Nextcloud's `ICrypto`, so it is not in the audit table and a database write alone cannot recompute a link. Rows written before the chain was keyed keep their unkeyed link, `SHA-256(previous_entry_hash + entry_json)`. The repair step `KeyAuditHashChain` runs on upgrade and on install. It verifies those rows, keeps the verdict under the app config key `audit_chain_unkeyed_verdict`, and starts the keyed chain at the next row, linked onto the last unkeyed one. The keyed-from row is stored together with an HMAC of it, so moving it is detected.
 
 This tamper-evident chain allows independent verification: if any entry is modified or deleted, the chain breaks at that point. The chain can be verified via:
 
@@ -56,8 +58,10 @@ GET /apps/openregister/api/audit-trails/verify?from={entryId}&to={entryId}
 `from` and `to` are audit entry **IDs**, not timestamps, and both are optional — omit them to walk the whole trail. The endpoint is admin-only. It returns:
 
 ```json
-{ "valid": true, "entriesVerified": 309036, "brokenAt": null, "skippedNullHashes": 0 }
+{ "valid": true, "entriesVerified": 309036, "brokenAt": null, "skippedNullHashes": 0, "unkeyedEntries": 309000, "keyedFrom": 309001, "keyBoundaryIntact": true }
 ```
+
+`unkeyedEntries` counts the verified rows before `keyedFrom` that carry the older unkeyed link. A `keyBoundaryIntact` of `false` means the stored keyed-from row was altered, and the chain is then reported as not valid.
 
 `brokenAt` is the ID of the first entry whose recomputed hash disagreed with the hash stored against it; verification stops there, so `entriesVerified` counts only the entries confirmed *before* the break.
 

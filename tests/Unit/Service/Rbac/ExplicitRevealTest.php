@@ -76,8 +76,10 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  * @uses \OCA\OpenRegister\Db\SchemaCatalog
  * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
  * @uses \OCA\OpenRegister\Service\CauseFrame
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
@@ -97,6 +99,12 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
  * @uses \OCA\OpenRegister\Service\Audit\ReadableObject
  * @uses \OCA\OpenRegister\Service\Rbac\MaskedWrite
  * @uses \OCA\OpenRegister\Service\Rbac\PropertyReveal
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class ExplicitRevealTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

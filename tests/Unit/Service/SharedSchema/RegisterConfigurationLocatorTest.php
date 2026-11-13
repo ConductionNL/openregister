@@ -35,6 +35,7 @@ use Psr\Log\LoggerInterface;
  * against real configuration documents written to a temporary app directory.
  *
  * @covers \OCA\OpenRegister\Service\SharedSchema\RegisterConfigurationLocator
+ * @uses   \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Register
  */
 class RegisterConfigurationLocatorTest extends TestCase {

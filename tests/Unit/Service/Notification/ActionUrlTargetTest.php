@@ -37,6 +37,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Notifications\Service\Notification\LinkableUrl
  * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ObjectDetailLinks
  * @uses   \OCA\OpenRegister\Notifications\Service\Notification\TaskActionLinks
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
   * @uses   \OCA\OpenRegister\Db\ObjectEntity
  */
 final class ActionUrlTargetTest extends TestCase {

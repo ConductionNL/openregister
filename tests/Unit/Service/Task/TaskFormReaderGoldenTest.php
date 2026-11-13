@@ -47,6 +47,8 @@ use UnexpectedValueException;
  * @uses   \OCA\OpenRegister\Service\Form\FormDestinationValidator
  * @uses   \OCA\OpenRegister\Service\Form\FormFieldRules
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Task\TaskFormFields
+ * @uses   \OCA\OpenRegister\Service\Task\TaskFormSources
  * @uses \OCA\OpenRegister\Service\Task\TaskFormFields
  * @uses \OCA\OpenRegister\Service\Task\TaskFormSources
  */

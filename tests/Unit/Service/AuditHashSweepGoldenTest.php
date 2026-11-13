@@ -414,6 +414,9 @@ class AuditHashSweepGoldenTest extends TestCase {
 				'brokenAt' => null,
 				'skippedNullHashes' => 1,
 				'purgedTombstones' => 1,
+				'unkeyedEntries' => 1,
+				'keyedFrom' => null,
+				'keyBoundaryIntact' => true,
 				'range' => ['from' => 2, 'to' => 9],
 			],
 			$this->service->verifyChain(2, 9)
@@ -439,6 +442,9 @@ class AuditHashSweepGoldenTest extends TestCase {
 				'brokenAt' => 2,
 				'skippedNullHashes' => 0,
 				'purgedTombstones' => 0,
+				'unkeyedEntries' => 1,
+				'keyedFrom' => null,
+				'keyBoundaryIntact' => true,
 				'range' => ['from' => 2, 'to' => 5],
 			],
 			$this->service->verifyChain(null, 5)
@@ -461,6 +467,9 @@ class AuditHashSweepGoldenTest extends TestCase {
 				'brokenAt' => null,
 				'skippedNullHashes' => 0,
 				'purgedTombstones' => 0,
+				'unkeyedEntries' => 0,
+				'keyedFrom' => null,
+				'keyBoundaryIntact' => true,
 			],
 			$this->service->verifyChain()
 		);

@@ -39,12 +39,16 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\DottedParamTree
  * @uses   \OCA\OpenRegister\Service\Object\SearchQueryParts
  * @uses \OCA\OpenRegister\Service\Object\SearchScopeFilters
+ * @uses \OCA\OpenRegister\Service\Object\SearchLenses
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
  */
 class SearchQueryHandlerBuildSearchQueryGoldenTest extends TestCase {
 

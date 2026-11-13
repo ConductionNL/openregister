@@ -45,6 +45,8 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
  * @uses \OCA\OpenRegister\Service\Object\TranslationScope
  * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class SaveObjectResolvedSaveGuardsTest extends TestCase {
 

@@ -32,6 +32,7 @@ use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IUser;
 use OCP\Share\IManager;
+use OCP\Share\IAttributes;
 use OCP\Share\IShare;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -160,9 +161,43 @@ class ObjectShareReaderTest extends TestCase {
 
 		$this->assertSame(['ocinternal:1'], array_keys($found));
 		$this->assertSame('group', $found['ocinternal:1']['type']);
-		$this->assertSame(['bea'], array_values(array_unique(array_column($this->asked, 0))));
-		$this->assertNotContains(true, array_column($this->asked, 2));
+		$this->assertSame(['bea', 'openregister'], array_values(array_unique(array_column($this->asked, 0))));
+		foreach ($this->asked as [$sharer, , $reshares]) {
+			$this->assertSame($sharer === 'openregister', $reshares, 'only the folder owner is asked with re-shares');
+		}
 	}//end testThePanelReadingAsksTheNamedSharersAndSkipsFailures()
+
+	/**
+	 * The panel reading lists a grant whoever made it, but never a sharer's view of the folder.
+	 *
+	 * @return void
+	 */
+	public function testThePanelReadingListsEveryGrantButNoSharerView(): void {
+		$attributes = $this->createMock(IAttributes::class);
+		$attributes->method('getAttribute')->willReturnCallback(
+			static fn (string $scope, string $key): mixed => ($scope === 'openregister' && $key === 'sharerAccess') ? true : null
+		);
+		$view = $this->share('ocinternal:8', 'bea');
+		$view->method('getAttributes')->willReturn($attributes);
+		$view->method('getShareType')->willReturn(IShare::TYPE_USER);
+		$view->method('getSharedBy')->willReturn('openregister');
+		$view->method('getShareOwner')->willReturn('openregister');
+
+		// The same mark on a share somebody else made is not a view, so it stays listed.
+		$forged = $this->share('ocinternal:9', 'dave');
+		$forged->method('getAttributes')->willReturn($attributes);
+		$forged->method('getShareType')->willReturn(IShare::TYPE_USER);
+		$forged->method('getSharedBy')->willReturn('bea');
+		$forged->method('getShareOwner')->willReturn('openregister');
+
+		$reader = $this->readerFor(
+			fn (string $sharer, int $type, bool $reshares): array => ($sharer === 'openregister' && $type === IShare::TYPE_USER)
+				? [$this->share('ocinternal:7', 'carla'), $view, $forged]
+				: []
+		);
+
+		$this->assertSame(['ocinternal:7', 'ocinternal:9'], array_keys($reader->sharesOn(object: $this->object(), sharers: ['bea'])));
+	}//end testThePanelReadingListsEveryGrantButNoSharerView()
 
 	/**
 	 * The complete reading also asks as the folder owner with re-shares, so a colleague's share is found.

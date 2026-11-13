@@ -49,6 +49,10 @@ use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
  * @covers \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\FlowProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\PollsProvider
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Service\FlowJsonColumn
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkRowsProvider
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkTableProvider
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\LinkTableAppDescriptor

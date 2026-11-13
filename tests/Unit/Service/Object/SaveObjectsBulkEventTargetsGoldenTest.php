@@ -48,6 +48,19 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\BulkRowRules
  * @uses   \OCA\OpenRegister\Service\Object\BulkWriteEvents
+ * @uses   \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses   \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses   \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
  * @uses \OCA\OpenRegister\Db\JsonArrayColumn
  * @uses \OCA\OpenRegister\Db\SchemaCatalog
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules

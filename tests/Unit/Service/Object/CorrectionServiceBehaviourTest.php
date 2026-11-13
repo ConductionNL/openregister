@@ -53,6 +53,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
  * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
  * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions

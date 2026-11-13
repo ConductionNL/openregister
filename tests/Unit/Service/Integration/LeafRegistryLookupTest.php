@@ -36,6 +36,12 @@ use RuntimeException;
  * and a leaf whose collection throws costs only itself.
  *
  * @covers \OCA\OpenRegister\Service\Integration\LeafRegistry
+ * @uses   \OCA\OpenRegister\Event\RegisterLeafProvidersEvent
+ * @uses   \OCA\OpenRegister\Service\Integration\LeafAvailability
+ * @uses   \OCA\OpenRegister\Service\Integration\LeafBundle
+ * @uses   \OCA\OpenRegister\Service\Integration\LeafDescriptor
+ * @uses   \OCA\OpenRegister\Service\Integration\LeafIdentity
+ * @uses   \OCA\OpenRegister\Service\Integration\LeafRendering
  * @uses \OCA\OpenRegister\Event\RegisterLeafProvidersEvent
  * @uses \OCA\OpenRegister\Service\Integration\LeafAvailability
  * @uses \OCA\OpenRegister\Service\Integration\LeafBundle

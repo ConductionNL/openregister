@@ -28,6 +28,7 @@ use ReflectionParameter;
  * @uses \OCA\OpenRegister\Service\Object\QueryHandlers
  * @uses \OCA\OpenRegister\Service\Object\QueryPlatform
  * @uses \OCA\OpenRegister\Service\Object\QueryRefinements
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
  */
 class QueryHandlerCountScopeTest extends TestCase {
 	public function testACountUnderMultitenancyPassesTheActiveOrganisation(): void {

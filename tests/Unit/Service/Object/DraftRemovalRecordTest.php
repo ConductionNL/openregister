@@ -61,6 +61,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\DeletionIntegrity
  * @uses \OCA\OpenRegister\Service\Object\RemovalOptions
  * @uses \OCA\OpenRegister\Service\Object\RemovedDraft
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class DraftRemovalRecordTest extends TestCase {
 

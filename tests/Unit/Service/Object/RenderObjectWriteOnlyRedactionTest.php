@@ -96,6 +96,9 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Service\ProtectedPropertyRead
  * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
  * @uses \OCA\OpenRegister\Service\SchemaProperty
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
  */
 class RenderObjectWriteOnlyRedactionTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

@@ -47,7 +47,6 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
- * @uses \OCA\OpenRegister\Event\AbstractTaskSequenceEvent
  * @uses \OCA\OpenRegister\Service\Task\ChainPosition
  * @uses \OCA\OpenRegister\Service\Task\PositionAdvance
  * @uses \OCA\OpenRegister\Service\Task\ResolvedChain
@@ -55,6 +54,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Task\SequenceClosure
  * @uses \OCA\OpenRegister\Service\Task\TaskSequenceServices
  * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
+ * @uses \OCA\OpenRegister\Event\AbstractTaskSequenceEvent
  */
 class TaskSequenceServiceTest extends TestCase {
 

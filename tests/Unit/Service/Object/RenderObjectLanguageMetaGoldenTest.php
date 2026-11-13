@@ -74,6 +74,25 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Translation
  * @uses   \OCA\OpenRegister\Service\Object\LanguageMetaSubject
+ * @uses   \OCA\OpenRegister\Db\Register\RegisterLanguages
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\TranslationSlot
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses   \OCA\OpenRegister\Service\Object\RenderContext
+ * @uses   \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses   \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses   \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses   \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses   \OCA\OpenRegister\Service\Object\RenderPath
+ * @uses   \OCA\OpenRegister\Service\Object\RenderPreloads
+ * @uses   \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses   \OCA\OpenRegister\Service\Object\RenderRun
+ * @uses   \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses   \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses   \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Db\Register\RegisterLanguages
  * @uses \OCA\OpenRegister\Db\SchemaCatalog
  * @uses \OCA\OpenRegister\Db\TranslationSlot

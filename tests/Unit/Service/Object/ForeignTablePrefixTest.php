@@ -42,6 +42,8 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Notifications\Service\EmailService
  * @covers \OCA\OpenRegister\Service\Object\LinkedEntityEnricher
  * @uses \OCA\OpenRegister\Service\Object\LinkedEntityQuery
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Notifications\Service\EmailLinkedSchemas
  * @uses \OCA\OpenRegister\Notifications\Service\EmailMailAppReader
  */

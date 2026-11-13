@@ -55,12 +55,6 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Exception\TaskAccessDeniedException
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunContext
  * @uses \OCA\OpenRegister\Service\WriteCause
- * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
- * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
- * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
- * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
- * @uses \OCA\OpenRegister\Service\CauseFrame
- * @uses \OCA\OpenRegister\Service\Flow\FlowRunFrame
  * @uses \OCA\OpenRegister\Service\Task\FormCompletionRequest
  * @uses \OCA\OpenRegister\Service\Task\TaskAct
  * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
@@ -69,6 +63,12 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Service\Task\TaskFormSubjectWriter
  * @uses \OCA\OpenRegister\Service\Task\TaskFormSubmission
  * @uses \OCA\OpenRegister\Service\Task\TaskSubjectTransition
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunFrame
  */
 class TaskFormCompletionTest extends TestCase {
 

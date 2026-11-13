@@ -208,7 +208,7 @@ final class ObjectSharingServiceGoldenTest extends TestCase {
 		);
 
 		return new ObjectSharingService(
-			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $shares),
+			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $shares, sharerAccess: $this->createMock(\OCA\OpenRegister\Service\Rbac\SharerFolderAccess::class)),
 			records: new \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords(authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class), scopeResolver: new ObjectScopeResolver(), grantResolver: $this->createMock(ObjectGrantResolver::class), inheritedGrants: $this->createMock(InheritedGrantLister::class)),
 			context: new \OCA\OpenRegister\Service\Rbac\ObjectSharingContext(userSession: $session, groupManager: $groups, logger: new NullLogger(), auditor: $auditor),
 			grantManage: new GrantManageGuard(

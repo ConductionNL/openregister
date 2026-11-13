@@ -54,6 +54,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\LockTerms
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest
  * @uses \OCA\OpenRegister\Service\Object\LockAuthorization
  * @uses \OCA\OpenRegister\Service\Object\LockStores

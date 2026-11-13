@@ -43,6 +43,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\RunObjectLock
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep
  * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class RunLockRegistryFailureTest extends TestCase {
 

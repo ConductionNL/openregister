@@ -38,8 +38,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Db\PortalTaskDelivery
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Service\Task\TaskTemporalProjection
- * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  * @uses \OCA\OpenRegister\Service\Task\InboxListing
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class TaskInboxDeliveryStateTest extends TestCase {
 

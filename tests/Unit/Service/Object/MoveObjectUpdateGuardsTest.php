@@ -102,6 +102,35 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  *
  * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicObjectChange
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
+ * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  */
 class MoveObjectUpdateGuardsTest extends TestCase {
 

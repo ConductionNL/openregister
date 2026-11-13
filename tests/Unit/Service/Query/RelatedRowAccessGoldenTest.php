@@ -72,12 +72,12 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowField
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
  * @uses \OCA\OpenRegister\Db\MagicMapper\AliasedRows
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowApplyRun
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowBlockField
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowClauseBatch
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterTarget
- * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
  */
 class RelatedRowAccessGoldenTest extends TestCase {
 

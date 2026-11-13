@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\DeclaredRoutes;
 use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FormsControllerFactory;
 use OCA\OpenRegister\Controller\FormsController;
@@ -57,6 +58,8 @@ use OCA\OpenRegister\Tests\Unit\Architecture\ControllerSources;
  * @uses \OCA\OpenRegister\Service\Form\FormSubmission
  * @uses \OCA\OpenRegister\Service\Form\FormSubmitter
  * @uses \OCA\OpenRegister\Service\Form\FormDestination
+ * @uses \OCA\OpenRegister\Middleware\Support\ApiPathAliases
+ * @uses \OCA\OpenRegister\Middleware\Support\StandardProtocolPaths
  */
 class FormsControllerTest extends TestCase {
 
@@ -352,9 +355,8 @@ class FormsControllerTest extends TestCase {
 	 * The three routes exist, with their verbs, and point at methods that exist.
 	 */
 	public function testTheRoutesAreRegistered(): void {
-		$routes = require __DIR__ . '/../../../appinfo/routes.php';
 		$found = [];
-		foreach ($routes['routes'] as $route) {
+		foreach (DeclaredRoutes::unversioned() as $route) {
 			if (str_starts_with((string)$route['name'], 'forms#') === true) {
 				$found[$route['name']] = [$route['url'], $route['verb']];
 				$this->assertTrue(method_exists(FormsController::class, substr((string)$route['name'], 6)), (string)$route['name']);

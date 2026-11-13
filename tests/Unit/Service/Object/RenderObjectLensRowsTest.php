@@ -65,6 +65,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
  * @uses \OCA\OpenRegister\Service\Object\RenderStores
  * @uses \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class RenderObjectLensRowsTest extends TestCase {
 

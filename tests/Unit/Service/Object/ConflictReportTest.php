@@ -60,6 +60,10 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\SchemaProperty
  *
  * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+ * @uses \OCA\OpenRegister\Service\Object\ConflictRun
+ * @uses \OCA\OpenRegister\Service\Object\RefusedWrite
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 final class ConflictReportTest extends TestCase {
 

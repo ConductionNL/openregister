@@ -70,6 +70,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @uses \OCA\OpenRegister\Service\Task\TaskVtodoStatusMapping
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswerPayload
+ * @uses \OCA\OpenRegister\Service\Task\TaskCalendarProjector
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskAdapterOptions
@@ -77,10 +81,6 @@ use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskPayloadOptions
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\TransitionNotice
- * @uses \OCA\OpenRegister\Service\Task\TaskAct
- * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
- * @uses \OCA\OpenRegister\Service\Task\TaskAnswerPayload
- * @uses \OCA\OpenRegister\Service\Task\TaskCalendarProjector
  */
 final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 

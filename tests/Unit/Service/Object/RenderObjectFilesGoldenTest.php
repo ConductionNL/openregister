@@ -44,6 +44,14 @@ use ReflectionProperty;
  * @uses \OCA\OpenRegister\Service\Object\InverseObjectHooks
  * @uses \OCA\OpenRegister\Service\Object\InverseTarget
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses   \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses   \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses   \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Db\SchemaCatalog
  * @uses \OCA\OpenRegister\Service\Object\RenderFileSources
  * @uses \OCA\OpenRegister\Service\Object\RenderMappers

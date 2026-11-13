@@ -44,6 +44,15 @@ use RuntimeException;
  * the tolerated `_uri` rewrite failure, and the prefix / quote fallbacks.
  *
  * @covers \OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\SharedSchema\RowRestamp
+ * @uses   \OCA\OpenRegister\Service\SharedSchema\SplitTableColumns
+ * @uses   \OCA\OpenRegister\Service\SharedSchema\TableCopy
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\RegisterSchema
  * @uses \OCA\OpenRegister\Db\Schema

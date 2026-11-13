@@ -39,6 +39,11 @@ use Psr\Log\NullLogger;
  * Pins the statements that repoint the moved rows at the new schema id, per dialect.
  *
  * @covers \OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\SharedSchema\RowRestamp
+ * @uses   \OCA\OpenRegister\Service\SharedSchema\TableCopy
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\RegisterSchema
  * @uses \OCA\OpenRegister\Db\Schema

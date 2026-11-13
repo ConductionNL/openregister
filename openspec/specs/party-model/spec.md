@@ -1,6 +1,10 @@
 # party-model Specification
 
 ## Purpose
+TBD - created by archiving change party-roles-beyond-the-requester. Update Purpose after archive.
+
+## Requirements
+
 Parties are the people and organisations an object involves, such as a requester, a contact or a third party. This spec sets who may write a party, which identity shapes each party kind accepts, and where a party lookup reads first.
 
 ## Requirements

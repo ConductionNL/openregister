@@ -140,6 +140,9 @@ class TalkRoomFieldsParticipants {
 
 /**
  * @covers \OCA\OpenRegister\Service\TalkLink\TalkRoomFields
+ * @uses   \OCA\OpenRegister\Service\TalkLink\RoomPickerQuery
+ * @uses   \OCA\OpenRegister\Service\TalkLink\RoomPickerRun
+ * @uses   \OCA\OpenRegister\Service\TalkLink\TalkViewer
  * @uses \OCA\OpenRegister\Service\TalkLink\RoomPickerQuery
  * @uses \OCA\OpenRegister\Service\TalkLink\RoomPickerRun
  * @uses \OCA\OpenRegister\Service\TalkLink\TalkViewer

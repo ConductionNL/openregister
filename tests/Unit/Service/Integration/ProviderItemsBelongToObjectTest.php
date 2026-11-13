@@ -37,6 +37,9 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices;
 /**
  * @covers \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider
  * @covers \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\TaskLocation
+ * @uses   \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices
  * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  * @uses \OCA\OpenRegister\Kernel\Contracts\TaskLocation
  * @uses \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices

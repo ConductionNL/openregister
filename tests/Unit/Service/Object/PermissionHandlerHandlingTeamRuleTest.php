@@ -87,6 +87,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\UndeclaredPropertyConditions
  */
 class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 

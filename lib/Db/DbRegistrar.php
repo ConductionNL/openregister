@@ -80,6 +80,7 @@ final class DbRegistrar {
 		CaseItemMapperInterface::class => CaseItemMapper::class,
 		CaseTokenMapperInterface::class => CaseTokenMapper::class,
 		CollectiveLinkMapperInterface::class => CollectiveLinkMapper::class,
+		ConfigurationBindingMapperInterface::class => ConfigurationBindingMapper::class,
 		ConfigurationDeploymentMapperInterface::class => ConfigurationDeploymentMapper::class,
 		ConfigurationDraftMapperInterface::class => ConfigurationDraftMapper::class,
 		ConfigurationDraftSetMapperInterface::class => ConfigurationDraftSetMapper::class,

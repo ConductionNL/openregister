@@ -48,8 +48,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Sync\HarvestPipelineService
+ * @uses \OCA\OpenRegister\Db\LockTerms
  * @uses \OCA\OpenRegister\Db\Mapping
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
  * @uses \OCA\OpenRegister\Db\Source
  * @uses \OCA\OpenRegister\Db\SyncFailure
  * @uses \OCA\OpenRegister\Db\SyncRecord

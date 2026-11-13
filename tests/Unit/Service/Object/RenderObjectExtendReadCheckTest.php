@@ -87,6 +87,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\TranslationScope
  * @uses \OCA\OpenRegister\Service\Relation\DescribeRun
  * @uses \OCA\OpenRegister\Service\Relation\RelationValueReader
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class RenderObjectExtendReadCheckTest extends TestCase {
 	private const PARENT = '11111111-1111-4111-8111-111111111111';

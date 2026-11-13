@@ -43,6 +43,10 @@ use RuntimeException;
  * dispatch() of the messaging provider.
  *
  * @covers \OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider
+ * @uses   \OCA\OpenRegister\Exception\ProviderUnavailableException
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\OutboundMessage
+ * @uses   \OCA\OpenRegister\Service\Integration\UpstreamRequest
  * @uses \OCA\OpenRegister\Exception\ProviderUnavailableException
  * @uses \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting
  * @uses \OCA\OpenRegister\Service\Integration\Providers\OutboundMessage

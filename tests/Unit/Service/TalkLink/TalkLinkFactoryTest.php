@@ -14,6 +14,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\TalkLink\TalkLinkFactory
+ * @uses   \OCA\OpenRegister\Db\TalkLink
  * @uses \OCA\OpenRegister\Db\TalkLink
  */
 class TalkLinkFactoryTest extends TestCase {

@@ -55,6 +55,21 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
+ * @uses   \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses   \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses   \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeItem
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Db\Register\RegisterJson
  * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
  * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument

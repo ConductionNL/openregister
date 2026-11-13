@@ -54,6 +54,7 @@ use stdClass;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
  * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugBatch
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClientValue
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler
@@ -70,6 +71,9 @@ use stdClass;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class SaveObjectContainerServicesGoldenTest extends TestCase {
 

@@ -242,13 +242,21 @@ class GraphQLControllerCharacterisationTest extends TestCase {
         body { height: 100vh; margin: 0; overflow: hidden; }
         #graphiql { height: 100vh; }
     </style>
-    <link rel="stylesheet" href="https://unpkg.com/graphiql@3/graphiql.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/graphiql@3.9.0/graphiql.min.css"
+            integrity="sha384-QMux00XgRtwRLSYIY3kw2rj1ovk5AuuliAchk+HSQbqdbGFnz9GYuqIlOqxhwCE2"
+            crossorigin="anonymous" />
 </head>
 <body>
     <div id="graphiql">Loading...</div>
-    <script nonce="nonce-1" src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script nonce="nonce-1" src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script nonce="nonce-1" src="https://unpkg.com/graphiql@3/graphiql.min.js" crossorigin></script>
+    <script nonce="nonce-1" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+            integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"
+            crossorigin="anonymous"></script>
+    <script nonce="nonce-1" src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+            integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"
+            crossorigin="anonymous"></script>
+    <script nonce="nonce-1" src="https://unpkg.com/graphiql@3.9.0/graphiql.min.js"
+            integrity="sha384-8NGfVj4CVlqHajlZj+bPJT4thxPMHMJYn7DWK2CvtopLd02E7qsPHazniBYvVjOO"
+            crossorigin="anonymous"></script>
     <script nonce="nonce-1">
         const fetcher = GraphiQL.createFetcher({
             url: '{$endpoint}',
