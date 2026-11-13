@@ -5716,3 +5716,4 @@ build:portaliq:case-page-tasks-decision-dates-and-next-step	already done: built 
 cover:stackiq:9ac19b3am9d24:c2bb21fa	already done: rounds -1..-5 merged on development; the four handlers have 26 test files, the two remaining classes are logic-free carriers	session-20261113T171203-c5a044de	2026-11-13T17:51:38Z
 build:portaliq:collection-skip	already done: built in d5acb54a (#1407); only task 4 left, a learniq change outside this app	session-20261113T172324-00680177	2026-11-13T17:51:47Z
 build:portaliq:catalogue-entry-shows-costs-and-conditions	partial: PR #2418 (T01-T03: fee + conditions in catalogue, block, tests); T04 cross-repo ask, T05 e2e/live, T06 validate left	session-20261113T172328-c860ad55	2026-11-13T17:51:52Z
+build:portaliq:guardian-message-to-and-whole-day	already done: built in 6ce0d609 (#1974); T4 is a learniq task	session-20261113T172324-00680177	2026-11-13T17:52:06Z
