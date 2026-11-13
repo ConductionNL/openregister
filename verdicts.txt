@@ -3011,3 +3011,4 @@
 10293 187ad658f95bd23c2024bffe2f67425a2763e6c4 APPROVE Tests only (5 new files, 21 tests, all pass); Notifications 590 green, Architecture/Rules/Contract green; 9 Controller errors are sandbox DBAL-stub gaps unrelated to the PR
 10296 40d783e7f6dc73ee9c3a6a10ca5d8b5a74834335 APPROVE tests only: adds use lines and UsesClass/@uses metadata to 19 test files; all 19 green on the PR merged with main, no risky tests; no production code changed
 10298 02886e884d345f37280743ed886af14d12e8c1e0 APPROVE openspec tasks.md only, no code; the ticked tasks match code already on main (LeafRegistry shared-entry refusal) and LeafRegistryTest/LeafDescriptorTest pass (36)
+10294 e0b84a0df7cbff993e7719ba54aaf62d55bf068f APPROVE Tests only (2 new files under tests/Unit/Service/Dbal), no lib change. On the PR merged with main: Service/Dbal 81 tests OK, Architecture 2364 OK.
