@@ -6175,3 +6175,4 @@ shillinq	2972	baf79b9e70713d88428a242c1de2db6efcc901f6	GREEN	worker-01	build led
 shillinq	2973	44ae50454de5715a1a037d6d7133c5bf44b50b7f	GREEN	worker-01	build ledger-group-close per its change; phpunit tree 10421 vs baseline 10394, same 1 inherited clock-bound failure (PaymentWebhookIntakeCharacterisationTest), 0 new
 shillinq	2974	427617f3152b7c467cbf82dd452e54fbbbc284be	GREEN	worker-01	build public-sector-task-field-allocation; additive envelope field on the administration-scoped BBV dashboard; phpunit tree 10421 vs baseline 10394, same 1 inherited clock-bound failure (PaymentWebhookIntakeCharacterisationTest), 0 new
 shillinq	2975	66d3ac29a4fc7616a46b49a9ca5656757d02ef05	CONFLICT	worker-01	conflicts after 2972 in appinfo/info.xml and tests/fixtures/register-versions.lock.json
+shillinq	2976	e39d3257908bc68538d0d547ad07f37dc3c36a5f	CONFLICT	worker-01	conflicts after 2972 in l10n/en,nl .json/.js and tests/fixtures/register-versions.lock.json
