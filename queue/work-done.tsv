@@ -1832,3 +1832,10 @@ verify:shillinq:2851:c18d82cb	already merged: 6f4fbab6 is on development via e7b
 cover:openregister:7350e3efm0e99:60c2c265	PR opened (test/coverage-60c2c265-1): 15 legal-hold tests + @uses fix for 25 risky controller tests; lib/Controller/*.php 95.37->96.03%	session-20261113T015005-da194c88	2026-11-13T03:31:05Z
 verify:launchpad:1157:53b176f1	1 CONFLICT (add/add src/dialogs/__tests__/smallDialogs.spec.js)	session-20261113T024656-2f332446	2026-11-13T03:31:04Z
 cover:buildiq:8ca317f6mefda:js00fe026a	PR buildiq#1497: 38 specs for blockCatalogue, importEnvelope, requestRefusal, userOverrides; suite all green	session-20261113T024654-6600dc41	2026-11-13T03:31:22Z
+merge:buildiq:1467:fd0cd6be	stale	feeder	2026-11-13T03:30:25Z
+merge:buildiq:1476:84ed6f01	stale	feeder	2026-11-13T03:30:25Z
+merge:buildiq:1490:9eed6d5f	stale	feeder	2026-11-13T03:30:25Z
+merge:buildiq:1490:9eed6d5f	stale	feeder	2026-11-13T03:30:25Z
+merge:decidiq:2108:9cdaf28f	stale	feeder	2026-11-13T03:30:25Z
+verify:portaliq:2371:9f273ef9	stale	feeder	2026-11-13T03:30:25Z
+merge:humaniq:1101:a2d625e7	stale	feeder	2026-11-13T03:30:25Z
