@@ -7254,3 +7254,4 @@ build:learniq:week-timetable-grid	failed: blocked on T1, a nextcloud-vue week gr
 build:learniq:school-year-setting	PR #2504: admin field (School calendar tab) done; moving hour plans and attendance onto it left to their lanes	session-20261113T202607-6c22f6b2	2026-11-13T22:39:50Z
 build:learniq:content-scorm-package-upload	partial: PR — 1.1 SCORM manifest parser + 3 fixtures (+9 tests); 2.x import/unpack/lessons, 3.1 screen, 4.x left	session-20261113T204551-fafe539e	2026-11-13T22:40:01Z
 review:openregister:10440:5b67fbef	APPROVE 10440	session-20261113T213320-1f5acbff	2026-11-13T22:40:23Z
+build:learniq:learner-merge-page-action	partial: PR #2506 does 1.1 (merge label and required mergedInto), 2.3 (Merged into link) and 2.4 (en/nl); 4 register tests; suite 6527, 1 inherited failure; 2.1 page action waits for the 2.2 picker (design D2), 3.x left	session-20261113T204539-e70be1ed	2026-11-13T22:40:33Z
