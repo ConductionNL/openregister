@@ -5172,3 +5172,4 @@ dossiq	6288	99632e91e8e7fc78ac6fdec46deae864ee7e52d3	GREEN	worker-06	14699 tests
 dossiq	6290	65648d7d24990872dcc4c2109519e5a1ed21078a	GREEN	worker-06	14699 tests on tree, baseline 14657 with 19 failures, no new failures; tests only
 keepiq	1740	b3eb9b1ee9bbf5640c8605f11af26bd85dfa8a13	GREEN	worker-24	vitest 391 files/6299 tests, baseline 383/6244, 0 new failures; tests-only diff (8 spec files), no PHP touched
 integriq	3481	1d633f4589ffe04dfe5b01491a627d7fb69f3e9e	GREEN	worker-02	tree 3481 on development 9fafbd83: 7220 tests, baseline 7209 (2 errors inherited), new failures 0; tests-only diff
+pipelinq	3671	a07454f5dd4415eee4eb3aee93250259af945a0c	GREEN	worker-06	PHP 6425 tests, baseline 1 failure unchanged; vitest 3908/3908 pass; tests only
