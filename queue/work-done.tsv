@@ -2649,3 +2649,4 @@ cover:shillinq:05639debmd8ee:js450fec42	PRs shillinq#2872 (payment-request + con
 merge:stackiq:1693:d479245d	merge-local over 2 stackiq tasks: merged=1 red=0 fail=0 skip=3; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:06:32Z
 merge:stackiq:1706:50f98441	merge-local over 2 stackiq tasks: merged=1 red=0 fail=0 skip=3; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:06:32Z
 verify:shillinq:2869:459d50c7	2869 GREEN (tests only; vitest 1343 pass; php baseline 1 inherited failure)	session-20261113T054521-2b588c68	2026-11-13T06:06:39Z
+cover:dossiq:f8a113c5mac88:23f6b1f1	PR #6294: 7 tests for ConnectedSystemDocumentFiler; suite 14750->14757, 19 inherited	session-20261113T054519-189b2666	2026-11-13T06:07:13Z
