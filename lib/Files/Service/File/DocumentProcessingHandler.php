@@ -31,6 +31,7 @@ use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
+use OCA\OpenRegister\Service\File\ImageRedactionService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
@@ -337,12 +338,23 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 *
 	 * @return File The anonymized document file.
 	 *
+	 * A standalone image (PNG, JPEG, TIFF, WebP) never takes the text path: its
+	 * decided regions are burned into the pixels through the image seam
+	 * (REQ-AIS-004), see {@see anonymizeImage()}.
+	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
 	 */
 	public function anonymize(DocumentAnonymisationRequest $request): File {
 		$node = $request->node;
 		$this->resetRunState();
+
+		if (($node instanceof File) === true
+			&& in_array((string)$node->getMimeType(), ImageRedactionService::STANDALONE_TYPES, true) === true
+		) {
+			return $this->anonymizeImage(file: $node);
+		}
 
 		// Resolve the source file id once — the substitution placeholder
 		// format and the post-redaction audit flag both key off it.
@@ -419,10 +431,50 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// plain-text runs intentionally leave `sanitization = null` per
 		// spec `office-document-sanitization`. The log write is best-effort
 		// — a persistence failure MUST NOT mask a successful redaction.
-		$this->persistAnonymisationLog(node: $node, replacements: $replacements);
+		$this->persistAnonymisationLog(node: $node, replacements: count($replacements));
 
 		return $anonymizedFile;
 	}//end anonymize()
+
+	/**
+	 * Anonymise a standalone image: burn its decided regions into the pixels.
+	 *
+	 * The regions are the file's entity relations that carry a box and are not
+	 * marked skipAnonymization, so an OCR-located name and a detector's region go
+	 * through the same decision as a text finding. Nothing is written unless every
+	 * region was burned, and an image is refused rather than text-replaced when the
+	 * seam is not available.
+	 *
+	 * @param File $file The image.
+	 *
+	 * @throws Exception When the image seam is not available.
+	 * @throws \OCA\OpenRegister\Service\File\ImageRegionNotBurnableException When a region cannot be burned.
+	 *
+	 * @return File The `_anonymized` sibling.
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+	 */
+	private function anonymizeImage(File $file): File {
+		$images = $this->redaction->images;
+		if ($images === null) {
+			throw new Exception(
+				sprintf('%s is an image, and images can only be anonymised through the image redaction seam, which is not available.', $file->getName())
+			);
+		}
+
+		$regions = $images->decidedRegions(file: $file);
+		$anonymized = $images->redactImage(file: $file, regions: $regions);
+		$this->markStepRan(step: PipelineSteps::IMAGE_BURNER);
+
+		$fileId = $this->sourceFileId(node: $file);
+		if ($fileId > 0 && $regions !== []) {
+			$this->markAnonymized(fileId: $fileId);
+		}
+
+		$this->persistAnonymisationLog(node: $file, replacements: count($regions));
+
+		return $anonymized;
+	}//end anonymizeImage()
 
 	/**
 	 * Reset any report/residuals/placeholder-map/structure-result from a
@@ -729,13 +781,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * runs leave `sanitization = null` (spec invariant).
 	 *
 	 * @param Node $node The source file node; its id (0 when absent) keys the row.
-	 * @param array<string, string> $replacements The substitution map applied.
+	 * @param int  $replacements The number of substitutions applied, or of regions burned.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function persistAnonymisationLog(Node $node, array $replacements): void {
+	private function persistAnonymisationLog(Node $node, int $replacements): void {
 		if ($this->redaction->anonymisationLogMapper === null) {
 			return;
 		}
@@ -748,7 +800,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		$entity->setMimeType($mimeType);
 		$entity->setEngine($this->resolveEngineName(mimeType: $mimeType));
 		$entity->setStatus(AnonymisationLog::STATUS_SUCCESS);
-		$entity->setReplacements(count($replacements));
+		$entity->setReplacements($replacements);
 
 		// Every content-altering step: ran, skipped with the reason, or not-applicable (REQ-ADI-006).
 		$steps = json_encode((new PipelineSteps())->outcomes(ran: $this->stepsRan, mimeType: $mimeType));
@@ -828,6 +880,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		if ($mimeType === 'application/pdf') {
 			return 'PdfTextReplacer';
+		}
+
+		if (in_array($mimeType, ImageRedactionService::STANDALONE_TYPES, true) === true) {
+			return 'ImageBurner';
 		}
 
 		return 'TextReplacer';
