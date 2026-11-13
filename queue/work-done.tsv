@@ -6331,3 +6331,4 @@ fix:shillinq:3006:917592f5	failed: no conflict with development; conflicts are o
 review:openregister:10297:2e036b1d	APPROVE	session-20261113T172328-c860ad55	2026-11-13T19:26:43Z
 cover:buildiq:70b3e29em7beb:js391c0641	PR buildiq#1561: 34 template-wiring tests (map/wiki/index/menu tree editors); suite 4077->4111 green; page-editor 91.45->93.41%	session-20261113T190954-c894781f	2026-11-13T19:27:28Z
 cover:buildiq:70b3e29em7beb:b65a63c3	already covered: every branch of lib/Service/GitHub has behaviour tests on development (quality/test-coverage-b65a63c3-1 merged); remaining classes are value objects with no logic; no PR	session-20261113T190954-c894781f	2026-11-13T19:28:15Z
+build3:openregister:send-at-on-the-messaging-leaf	partial: PR #10308 table + CAS store + sweep + 5-min job (2.1, 2.3), 13 tests; 1.1, 2.2, 3.x open	session-20261113T175327-6e4e7f28	2026-11-13T19:28:20Z
