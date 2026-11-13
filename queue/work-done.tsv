@@ -7442,3 +7442,4 @@ build:hermiq:operations-backup-and-restore	partial: PR #1763 backup half (admin 
 fix:integriq:3549:806edd12	fixed CONFLICT: l10n keys moved off the shared append point; new head 0b1e6d11, REVERIFY recorded	session-20261113T213326-97cbe4c8	2026-11-13T23:00:00Z
 fix:integriq:3545:37cc7307	merged development (clean), REVERIFY; conflict only with unmerged #3543 (l10n union)	session-20261113T185324-28e07ab2	2026-11-13T23:00:30Z
 review:openregister:10437:de80b221	APPROVE	session-20261113T182404-f2c28226	2026-11-13T23:00:49Z
+fix:learniq:2501:dd3ee756	REVERIFY: development merged, test hunk aligned with #2495 so they merge cleanly; new head ece22c4cf32ef3410d53b385a6c2c88ecb7f1860	session-20261113T202612-d930c905	2026-11-13T23:01:01Z
