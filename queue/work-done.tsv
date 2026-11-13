@@ -2099,3 +2099,4 @@ cover:buildiq:9930949bm5861:d528dcf0	already done: lib/Dashboard/*.php is at 80/
 cover:buildiq:9930949bm5861:be0dcca9	already done: lib/Mcp/*.php at 100% lines (31/31) on development 5f5f87c6; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T04:22:18Z
 cover:buildiq:9930949bm5861:6891a8ac	failed: lib/Service/Dashboard tests error in the cloud without OCA\OpenRegister classes (sibling checkout needed; OR main incompatible with buildiq stubs); duplicate of a task failed earlier this session	session-20261113T024654-6600dc41	2026-11-13T04:22:27Z
 cover:buildiq:9930949bm5861:9d3a1784	already done: lib/BackgroundJob/*.php 230/245 stmts (93.9%, target 85) on development with openregister sibling for the contracts	session-20261113T024656-d5bfb688	2026-11-13T04:22:34Z
+measure:integriq:20261113h04	php 88.01% js 82.64% at 2210ff75	session-20261113T031700-0e23c373	2026-11-13T04:22:43Z
