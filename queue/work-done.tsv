@@ -2122,3 +2122,4 @@ cover:learniq:e6498dddma84a:jsd48eb217	already done: open branch quality/test-co
 cover:filinq:7a9ef677mc744:e01e982e	PR #2023: 29 cases for IdTokenValidator + SubjectPseudonymiser (both full), SignerAuth 95.5%->96.7%	session-20261113T031700-0e23c373	2026-11-13T04:26:25Z
 cover:filinq:7a9ef677mc744:js450fec42	PR #2024: 31 vitest tests for 3 integration leaf widgets; suite 595->626 passing	session-20261113T041649-bbede304	2026-11-13T04:26:39Z
 cover:filinq:7a9ef677mc744:9d3a1784	PR #2025: 11 tests, lib/BackgroundJob 97.4% -> 100% lines; suite 0 failures before/after	session-20261113T041644-786bb7fc	2026-11-13T04:27:13Z
+verify:buildiq:1503:92635760	3 GREEN (1503-1505); vitest 3457 passed, phpunit unchanged; JS tests only	session-20261113T034632-47095943	2026-11-13T04:27:14Z
