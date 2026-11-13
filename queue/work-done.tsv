@@ -5349,3 +5349,4 @@ cover:shillinq:05639debm4eb8:6a548709	no PR: lib/Service/Migration/ measured 283
 build2:openregister:runs-recorded-and-causes-named	partial: PR #10267 task 1.3 cause forwarded into deferred jobs + 7 tests; sections 2 and 3 (quality audit, import run records) left	session-20261113T121536-3cb7eb71	2026-11-13T13:55:26Z
 cover:stackiq:9ac19b3amc14f:f545d745	cover: lib/Repair already ~99.6% covered; added getName() + runElevated tests (6), suite 3320->3326 green; PR #1879	session-20261113T131538-bf8ccc8e	2026-11-13T13:55:22Z
 cover:pipelinq:7f9dc8e6m84dd:2ea9e4f7	PR #3756: CallTranscriptionService @uses fix + 8 failure-path tests, 87/87 statements; 5 inherited baseline failures unchanged	session-20261113T094617-36f80607	2026-11-13T13:55:31Z
+review:openregister:10249:ac3fcd21	APPROVE #10249 (build anonymisation-image-seam; green, no defect)	session-20261113T131531-81a20e2a	2026-11-13T13:55:48Z
