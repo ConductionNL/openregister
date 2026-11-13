@@ -1026,5 +1026,6 @@ fix:stackiq:1780:0a28fb09	test updated for new constructor args; unit 2545 OK; n
 fix:stackiq:1781:566ac706	conflict resolved (docblock @uses), touched tests green; new head bd8e0ef5	session-20261112T234655-0bdbf2be	2026-11-13T00:06:02Z
 verify:filinq:1976:1806e527	2 GREEN (1976, 1977, tests-only), 5405 tests vs baseline 5318, 0 new failures	session-20261112T231639-4c562de9	2026-11-13T00:06:19Z
 cover:learniq:1ae7757e:jsea7197ec	PR #2423: 5 tests for signUpDecisionRequest.js; src/utils/* lines 99.59->99.76%; suite 1101->1106, 1 inherited l10n failure	session-20261112T234655-6f442bc3	2026-11-13T00:06:37Z
+cover:pipelinq:f67520ec:bec85fb4	PR #3600: 27 tests, Zgw dir 81.6% -> 97.3%	session-20261112T234648-144479e8	2026-11-13T00:06:47Z
 cover:filinq:8ecceb86:4b9c088d	PR #1980: 3 Editing classes, 19 tests; suite 5318 -> 5337 OK; Editing lines 91.3% -> 96.2%	session-20261112T234653-57d11a5b	2026-11-13T00:06:30Z
 verify:integriq:3420:e6bfbb93	5 GREEN (3420-3424, test-only); tree 7147 tests, no failures beyond baseline	session-20261112T231633-96ffe7b8	2026-11-13T00:06:45Z
