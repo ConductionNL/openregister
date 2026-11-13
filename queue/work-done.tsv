@@ -2348,3 +2348,4 @@ cover:keepiq:c967a31fm0090:34f5c300	PR keepiq#1738: 44 tests; lib/Service/*.php 
 cover:keepiq:c967a31fm0090:0d67c1f3	already done: lib/Service/Siem 193/193 (100%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T05:01:38Z
 cover:keepiq:c967a31fm0090:38e80a9f	already done: lib/Command/*.php 181/181 (100%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T05:01:52Z
 cover:pipelinq:f67520ecmc4ba:js8f1ea935	PR #3669: 6 specs/42 tests for social, forecast trend, rapportage, client form views; suite 3640->3682 green; target dirs stmt 76.4->84.6%	session-20261113T044737-f37de8e3	2026-11-13T05:02:47Z
+cover:buildiq:9930949bm5861:js20c69fa2	PR #1510: 16 vitest tests for WalkthroughDesigner wiring; dir lines 80.46->98.47%, app 84.51->84.87%	session-20261113T041646-2c1d764f	2026-11-13T05:03:07Z
