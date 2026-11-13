@@ -14,7 +14,7 @@
   `PropertyReferenceTypeValidator`): a property may declare
   `referenceSemanticType` (absolute IRI) and optional `referenceSemanticApp`
   (string hint). Validate on schema write. (code exists, test missing: lib/Service/Integration/PropertySemanticReferenceValidator.php)
-- [ ] 2.2 Unit-test valid/invalid `referenceSemanticType`.
+- [x] 2.2 Unit-test valid/invalid `referenceSemanticType`.
 
 ## 3. Resolver (OpenRegister)
 
@@ -23,7 +23,7 @@
   throw) when no installed schema matches. (verified: lib/Service/SemanticTypeResolver.php, tests/Unit/Service/SemanticTypeResolverTest.php)
 - [x] 3.2 Deterministic tie-break: same register → `referenceSemanticApp` hint →
   first by slug; `WARN` log naming the pick when >1 candidate. (verified: lib/Service/SemanticTypeResolver.php::tieBreak, tests/Unit/Service/SemanticTypeResolverTest.php::testTieBreakPrefersConsumingRegister)
-- [ ] 3.3 Unit-test: 0 providers → null; 1 provider → it; N providers → tie-break
+- [x] 3.3 Unit-test: 0 providers → null; 1 provider → it; N providers → tie-break
   order; org/RBAC scoping honoured.
 
 ## 4. Discovery surface (OpenRegister)
