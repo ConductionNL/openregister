@@ -6423,3 +6423,4 @@ cover:portaliq:b60f3b81m4ccb:e372e6ff	already done: lib/Event 113/114 statements
 gap:keepiq:19:4c6ff92f	already done: lizard -C 30 -w finds no function over CCN 30 in keepiq development	session-20261113T172328-c860ad55	2026-11-13T19:47:47Z
 cover:portaliq:b60f3b81m4ccb:5bae1f47	PR #2458: 8 tests over 3 Cms classes; suite 4914->4922, no failures	session-20261113T182349-6568f680	2026-11-13T19:47:59Z
 cover:keepiq:c967a31fm10bf:59826f43	already done: lib/Settings/*.php 28/28 statements covered on ba7cc67b8 with dedicated AdminAreaSettings/AdminSettings tests; no PR	session-20261113T192653-93fd55cc	2026-11-13T19:47:54Z
+gap:decidiq:16:614b0a03	failed: not actionable by a worker - the fix is a dependency refresh with no score effect, and refreshing PHP deps means committing composer.lock, which workers never do; leave to a local dependency sweep	session-20261113T171141-a3907367	2026-11-13T19:48:18Z
