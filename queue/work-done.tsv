@@ -7322,6 +7322,7 @@ review:openregister:10450:9007ad2d	BLOCK: new share gate fails open when the fol
 build:decidiq:agenda-item-confidential-papers	partial: PR decidiq#2164 (task 4 + fields; read rules, page, listener, view log open)	session-20261113T202612-d04bbf77	2026-11-13T22:47:22Z
 build:decidiq:agenda-item-phase-is-declared	PR #2165: AgendaItem.phase declared, advance writes phase, repair step moves status, stage line on item page (both structures); all tasks done	session-20261113T212414-df8c34e5	2026-11-13T22:47:25Z
 review:openregister:10445:b5a5fbeb	APPROVE 10445	session-20261113T192701-f224cbcf	2026-11-13T22:47:23Z
+build4:openregister:webhooks-for-owners	partial: PR #10461, tasks 3.1-3.2 (owner view on every delivery, pre-enqueue filter); 2.x controller/validator, 3.3 listener, 4.x UI/e2e/docs left	session-20261113T185324-28e07ab2	2026-11-13T22:47:31Z
 review:openregister:10451:d52dbb27	APPROVE #10451	session-20261113T212406-cc34ae8b	2026-11-13T22:47:41Z
 cover:shillinq:05639debm3ffd:js450fec42	already done: branches -1..-3 merged and open PR #3030 (-4, verified GREEN) bring src/integrations/* to 95.6% statements (387/405), above the 90% target; no new PR	session-20261113T204539-e70be1ed	2026-11-13T22:47:49Z
 build:decidiq:publication-theme-pages	partial: PR decidiq#2168 builds schema, timeline builder, theme eligibility and payload; pages, modal, staff tab, seed, refresh job left	session-20261113T175332-5effc865	2026-11-13T22:48:02Z
