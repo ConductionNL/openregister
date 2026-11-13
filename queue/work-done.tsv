@@ -7354,3 +7354,4 @@ build:hermiq:session-entity-links	failed: change is stale against the code; its 
 build:hermiq:memory-knowledge-bases	partial: PR #1725 KnowledgeBase schema + Agent.knowledgeBaseRefs + tests; seed, upload, retrieval (needs OR vector facade) and pages left	session-20261113T213324-d7ae5543	2026-11-13T22:50:51Z
 verify:learniq:2495:1408a408	5 GREEN (2495,2498,2499,2500,2503), 4 CONFLICT (2496,2497,2501,2502), no new failures	session-20261113T204539-805bb895	2026-11-13T22:51:05Z
 build:hermiq:persistent-llm-process	partial: PR hermiq#1727 task 4 (GET on the MCP run endpoint answers 405 instead of the SPA 401); sections 0-3 wait on tool-scope-security-default and the token decision	session-20261113T212407-b2d64ec5	2026-11-13T22:51:13Z
+build:hermiq:skill-install-idempotency	PR #1730: tasks 1-4 already on development (resolver, policy, wiring, 35 tests green), ticked; 5-7 live/ops left	session-20261113T205337-4c32e19e	2026-11-13T22:51:19Z
