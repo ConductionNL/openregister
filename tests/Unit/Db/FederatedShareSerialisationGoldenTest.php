@@ -55,6 +55,7 @@ final class FederatedShareSerialisationGoldenTest extends TestCase {
 		'owner' => 'string',
 		'created' => 'datetime',
 		'updated' => 'datetime',
+		'expiresAt' => 'datetime',
 	];
 
 	/**
@@ -80,6 +81,7 @@ final class FederatedShareSerialisationGoldenTest extends TestCase {
 		'status' => null,
 		'created' => null,
 		'updated' => null,
+		'expiresAt' => null,
 	];
 
 	/**
@@ -107,6 +109,7 @@ final class FederatedShareSerialisationGoldenTest extends TestCase {
 		'status' => 'status-v',
 		'created' => '2026-01-02T03:04:05+00:00',
 		'updated' => '2026-01-02T03:04:05+00:00',
+		'expiresAt' => '2026-01-02T03:04:05+00:00',
 	];
 
 	/**
