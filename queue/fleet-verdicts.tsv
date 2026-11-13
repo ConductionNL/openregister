@@ -4902,3 +4902,4 @@ buildiq	1494	60ee2391ede562304827f2e692ca8b16184c5af9	GREEN	worker-48	php unit 2
 filinq	2012	4651cc425a568c1c55a8f9ab1c65337abddfeb1c	GREEN	worker-27	unit 5949 tests on tree, baseline 5899 with 0 failures, 0 new; tests-only additions
 filinq	2013	94e5baa5822fe027f039302149662da180ebe117	GREEN	worker-27	unit 5949 tests on tree, baseline 5899 with 0 failures, 0 new; tests-only additions
 dossiq	6253	f12f435d8994920a264e9ef43c69e208596ef189	GREEN	worker-16	phpunit 14106 (baseline 14046, 19 failures inherited); new failures 0; vitest 6323 (1 inherited: capabilityComparison closure state); tests-only additions
+dossiq	6254	729827aa720b685999e85e59e2feb67dd7768767	GREEN	worker-16	phpunit 14106 (baseline 14046, 19 failures inherited); new failures 0; vitest 6323 (1 inherited: capabilityComparison closure state); tests-only additions
