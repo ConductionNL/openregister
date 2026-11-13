@@ -11,7 +11,8 @@
             "selectielijstVersion": null,
             "destructionListRegister": null,
             "destructionListSchema": null,
-            "archivalRegister": null
+            "archivalRegister": null,
+            "destructionCopyLocation": null
         },
         "writes": []
     },
@@ -66,7 +67,8 @@
             "selectielijstVersion": null,
             "destructionListRegister": null,
             "destructionListSchema": null,
-            "archivalRegister": null
+            "archivalRegister": null,
+            "destructionCopyLocation": null
         },
         "writes": []
     },
@@ -119,7 +121,8 @@
             "selectielijstVersion": null,
             "destructionListRegister": null,
             "destructionListSchema": null,
-            "archivalRegister": null
+            "archivalRegister": null,
+            "destructionCopyLocation": null
         },
         "writes": []
     },
@@ -172,7 +175,8 @@
             "selectielijstVersion": null,
             "destructionListRegister": null,
             "destructionListSchema": null,
-            "archivalRegister": null
+            "archivalRegister": null,
+            "destructionCopyLocation": null
         },
         "writes": []
     },
@@ -225,7 +229,8 @@
             "selectielijstVersion": null,
             "destructionListRegister": null,
             "destructionListSchema": null,
-            "archivalRegister": null
+            "archivalRegister": null,
+            "destructionCopyLocation": null
         },
         "writes": []
     },
@@ -278,7 +283,8 @@
             "selectielijstVersion": null,
             "destructionListRegister": null,
             "destructionListSchema": null,
-            "archivalRegister": null
+            "archivalRegister": null,
+            "destructionCopyLocation": null
         },
         "writes": []
     },
@@ -333,7 +339,8 @@
             "selectielijstVersion": null,
             "destructionListRegister": null,
             "destructionListSchema": null,
-            "archivalRegister": null
+            "archivalRegister": null,
+            "destructionCopyLocation": null
         },
         "writes": [
             [
@@ -345,7 +352,7 @@
             [
                 "setValueString",
                 "archival",
-                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":30,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":null}",
+                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":30,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":null,\"destructionCopyLocation\":null}",
                 false
             ],
             [
@@ -368,7 +375,8 @@
             "selectielijstVersion": null,
             "destructionListRegister": null,
             "destructionListSchema": null,
-            "archivalRegister": null
+            "archivalRegister": null,
+            "destructionCopyLocation": null
         },
         "writes": [
             [
@@ -380,7 +388,7 @@
             [
                 "setValueString",
                 "archival",
-                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":30,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":null}",
+                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":30,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":null,\"destructionCopyLocation\":null}",
                 false
             ],
             [
@@ -403,7 +411,8 @@
             "selectielijstVersion": null,
             "destructionListRegister": null,
             "destructionListSchema": null,
-            "archivalRegister": null
+            "archivalRegister": null,
+            "destructionCopyLocation": null
         },
         "writes": [
             [
@@ -415,7 +424,7 @@
             [
                 "setValueString",
                 "archival",
-                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":30,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":null}",
+                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":30,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":null,\"destructionCopyLocation\":null}",
                 false
             ],
             [
@@ -438,7 +447,8 @@
             "selectielijstVersion": null,
             "destructionListRegister": null,
             "destructionListSchema": null,
-            "archivalRegister": "ar"
+            "archivalRegister": "ar",
+            "destructionCopyLocation": null
         },
         "writes": [
             [
@@ -450,7 +460,7 @@
             [
                 "setValueString",
                 "archival",
-                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":2,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":\"ar\"}",
+                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":2,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":\"ar\",\"destructionCopyLocation\":null}",
                 false
             ],
             [

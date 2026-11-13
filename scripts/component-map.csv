@@ -1789,6 +1789,7 @@ Service/Archival/ArchiveActionDateCalculator.php,258,Service,Compliance,Complian
 Service/Archival/AuditDiffRedactionTarget.php,55,Service,Compliance,Compliance/Service/Archival/AuditDiffRedactionTarget.php,0,,Compliance
 Service/Archival/ClassificationOverride.php,63,Service,Compliance,Compliance/Service/Archival/ClassificationOverride.php,0,,Compliance
 Service/Archival/DependantRetentionIndex.php,72,Service,Compliance,Compliance/Service/Archival/DependantRetentionIndex.php,0,,Compliance
+Service/Archival/DestructionCopyWriter.php,42,Service,Compliance,Compliance/Service/Archival/DestructionCopyWriter.php,0,,Compliance
 Service/Archival/DestructionListCreator.php,93,Service,Compliance,Compliance/Service/Archival/DestructionListCreator.php,1,,Compliance
 Service/Archival/DestructionListRepository.php,106,Service,Compliance,Compliance/Service/Archival/DestructionListRepository.php,3,,Compliance
 Service/Archival/DestructionReviewService.php,237,Service,Compliance,Compliance/Service/Archival/DestructionReviewService.php,0,94,Compliance

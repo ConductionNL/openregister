@@ -528,6 +528,55 @@ class DestructionListRunBehaviourTest extends TestCase {
 		$this->assertContains('[DestructionExecutionJob] Failed: locked: locked locked', $this->warnings);
 	}
 
+	/**
+	 * With a copy location configured, each object's restorable copy is
+	 * written before it is destroyed, and the audited destruction names it
+	 * (REQ-IPC-004).
+	 *
+	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md#requirement-a-destruction-writes-a-restorable-copy-first-req-ipc-004
+	 */
+	public function testTheCopyIsWrittenFirstAndTheDestructionNamesIt(): void {
+		$location = sys_get_temp_dir() . '/or-destruction-copy-' . bin2hex(random_bytes(4));
+		mkdir($location);
+		$this->listObject('approved', [['uuid' => 'a']]);
+		$this->object('a');
+
+		try {
+			$this->makeRun(settings: ['destructionCopyLocation' => $location])->execute('list-1');
+
+			$copy = $location . '/list-1/a.json';
+			$this->assertFileExists($copy);
+			$this->assertSame('a', json_decode((string) file_get_contents($copy), true)['uuid']);
+			$this->assertSame($copy, $this->audits[0][2]['copy']);
+			$this->assertSame([['7', '8', 'a', null, false, false]], $this->deleted);
+		} finally {
+			@unlink($location . '/list-1/a.json');
+			@rmdir($location . '/list-1');
+			@rmdir($location);
+		}
+	}
+
+	/**
+	 * A copy that cannot be written stops that destruction: the object is
+	 * not marked, audited or deleted, the entry counts as an error, and the
+	 * warning names the location (REQ-IPC-004).
+	 *
+	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md#requirement-a-destruction-writes-a-restorable-copy-first-req-ipc-004
+	 */
+	public function testNoCopyNoDestruction(): void {
+		$this->listObject('approved', [['uuid' => 'a']]);
+		$object = $this->object('a');
+
+		$this->makeRun(settings: ['destructionCopyLocation' => '/nonexistent/copies'])->execute('list-1');
+
+		$this->assertSame([], $this->deleted);
+		$this->assertSame([], $this->audits);
+		$this->assertSame(['archiefnominatie' => 'vernietigen'], $object->getRetention());
+		$this->assertSame(1, $this->updates[1]['skippedErrors']);
+		$this->assertSame(0, $this->updates[1]['destroyedCount']);
+		$this->assertStringContainsString('"/nonexistent/copies"', implode("\n", $this->warnings));
+	}
+
 	public function testFinalListCarriesEveryCounterAndTheDoneLine(): void {
 		$this->listObject(
 			'approved',
