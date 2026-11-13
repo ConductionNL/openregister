@@ -3648,3 +3648,4 @@ merge:filinq:2043:e8e1719f	merge-local over 4 filinq tasks: merged=6 red=0 fail=
 merge:filinq:2044:28826748	merge-local over 4 filinq tasks: merged=6 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:55:00Z
 merge:filinq:2045:0324e68d	merge-local over 4 filinq tasks: merged=6 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:55:00Z
 merge:filinq:2048:3a6b4f8c	merge-local over 4 filinq tasks: merged=6 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:55:00Z
+cover:stackiq:9ac19b3am6096:2f30e3d6	already done: GebruikBulkHandler (4 tests) and ItsmFlowGateway (10 tests) already exercise every branch incl. draft/published/gone flows, refusals, failures; no PR	session-20261113T072715-cf04db4e	2026-11-13T08:55:14Z
