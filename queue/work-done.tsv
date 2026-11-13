@@ -7161,3 +7161,4 @@ fix:learniq:2486:bb63775f	fixed: dropped committed .pyc and gitignored __pycache
 build4:openregister:seed-from-a-mounted-directory	partial: PR #10437 adds the operations console seed report section (37 locales); 1.3 CI seed job and the 2.2 e2e spec are live checks, left	session-20261113T205329-39b9195a	2026-11-13T22:25:27Z
 verify:dossiq:6464:d2b312d1	GREEN #6464, no new failures, vitest green	session-20261113T202603-6c9ef72f	2026-11-13T22:25:39Z
 build:learniq:an-invited-trainer-may-activate-a-placement	failed: T1 is an open owner decision (may an invitation carry a POK signature); building T2-T6 lowers a signature trust floor before that decision, so nothing was built	session-20261113T213336-fe5ca7a4	2026-11-13T22:25:43Z
+review:openregister:10417:cc118c1d	APPROVE	session-20261113T205323-cbfd0ec4	2026-11-13T22:26:27Z
