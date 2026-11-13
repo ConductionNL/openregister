@@ -8165,3 +8165,18 @@ verify:portaliq:2475:55352372	verify	portaliq	development	merge	prs=2475@f06702f
 merge:dossiq:6464:d2b312d1	merge	dossiq	development	development	prs=6464@a0506858be8d952910a34e957aefbdfe936f4c34	2026-11-13T22:30:20Z
 merge:pipelinq:3795:f810ec60	merge	pipelinq	development	development	prs=3795@62e20cea22a8ac842cea61d6d66be4e37e8bff3e	2026-11-13T22:30:20Z
 measure:opencatalogi:20261113h22	measure	opencatalogi	development	queue/coverage/opencatalogi.json	why=slices need per-directory coverage	2026-11-13T22:30:20Z
+review:openregister:10446:99fb57fc	review	openregister	main	10446	sha=99fb57fcea84c9a4f0d532ab1f26427b464998f9;last_approved=;title=feat(openregister): build unified-search-magic-table-storage	2026-11-13T22:35:07Z
+review:openregister:10447:0eb80a71	review	openregister	main	10447	sha=0eb80a713e7334b13087c7291c85211d27ccb14a;last_approved=;title=feat(openregister): build search-dutch-language-quality	2026-11-13T22:35:07Z
+review:openregister:10448:16ea330c	review	openregister	main	10448	sha=16ea330c8c79b03ba46249a340e4b6e9264e6949;last_approved=;title=feat(openregister): build unit-test-coverage	2026-11-13T22:35:07Z
+review:openregister:10449:9fcc31c7	review	openregister	main	10449	sha=9fcc31c74e5e1e63898252d35d2e5e4c907a1820;last_approved=;title=feat(openregister): build query-filter-through-a-reference	2026-11-13T22:35:07Z
+review:openregister:10450:9007ad2d	review	openregister	main	10450	sha=9007ad2db34611ab6798e048e3616f01b59e38a3;last_approved=;title=feat(openregister): build platform-share-provider (platform surface through the gate)	2026-11-13T22:35:07Z
+review:openregister:10451:d52dbb27	review	openregister	main	10451	sha=d52dbb27027f672d19c5f7a48a0f5de4f30160bd;last_approved=;title=feat(openregister): build redaction-release-safeguards	2026-11-13T22:35:07Z
+review:openregister:10452:ac5590ab	review	openregister	main	10452	sha=ac5590abb660386f1d77742dfaf270395e03fa85;last_approved=;title=feat(openregister): build reply-threading-by-headers	2026-11-13T22:35:07Z
+verify:learniq:2484:dd5ccbb6	verify	learniq	development	merge	prs=2484@e9288c776175e1ab9a4a07620c3270db1881308e,2490@f65b7b6d6f9022517d5e4e048bb383fe018984dc,2491@3fc7e9ce355ab96b3cf086ca165fbfd613a7675a,2492@4884fbd39dce1f80287efaab5acf817bc5deb684,2493@a30a88709bf3d951b17553cb1fda563e3d5b086b,2494@4a5ebbac106b506e613a5702d0882e74a01513fe	2026-11-13T22:35:07Z
+verify:pipelinq:3798:4ef2080f	verify	pipelinq	development	merge	prs=3798@8cdcb3b90788efea72b90354901e70e9f14b0659	2026-11-13T22:35:07Z
+verify:shillinq:3030:e8077e14	verify	shillinq	development	merge	prs=3030@a91189ffbda8957f5e6637091637db29b7060371	2026-11-13T22:35:07Z
+verify:portaliq:2476:c3774482	verify	portaliq	development	merge	prs=2476@f95cafc4a3d58d64919fa63b34a4c17b0a19716e	2026-11-13T22:35:07Z
+merge:learniq:2486:d60155e4	merge	learniq	development	development	prs=2486@fa92dc968b0e8b2bd05cfbe2a6f1d6a5d793ceca,2489@0ab04086854a13d63cca5ff700e425cd1d12bb99	2026-11-13T22:35:07Z
+merge:integriq:3557:5d03d280	merge	integriq	development	development	prs=3557@43c29a57ad3a8f00c61880d8317f1393b9398adf	2026-11-13T22:35:07Z
+merge:portaliq:2475:55352372	merge	portaliq	development	development	prs=2475@f06702f0b9a33c6fbf597c68ff19f85a6fad8da9	2026-11-13T22:35:07Z
+cover:shillinq:05639debm3ffd:js0be8c659	cover	shillinq	development	quality/test-coverage-js-0be8c659	lang=js;dirs=src/modals/*;focus=uncovered;weight=2016;coverage=85.33;target=90.0	2026-11-13T17:21:49Z
