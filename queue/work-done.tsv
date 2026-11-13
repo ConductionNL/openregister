@@ -4838,3 +4838,4 @@ build:openregister:history-schema-and-settings-edits-audited	failed: not complet
 review:openregister:10173:75c440fd	APPROVE: tasks.md only, claims verified on main	session-20261113T074533-3e2a2da6	2026-11-13T12:27:46Z
 review:openregister:10152:edf1dc08	APPROVE (settings packageFormat per change; suites green, inherited errors only)	session-20261113T081038-e8b5210f	2026-11-13T12:27:54Z
 review:openregister:10158:fec51a1d	APPROVE: unwired URL fetcher, guard before request, fails closed; phpstan clean; new test 10, Architecture 2358, Rules 296, Controller 9963, Contract 21 pass on PR+main	session-20261113T081046-f0858dc4	2026-11-13T12:27:57Z
+build:openregister:object-files-follow-object-access	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T12:28:15Z
