@@ -2530,3 +2530,4 @@ cover:buildiq:9930949bm5861:1106b038	already done: lib/Mcp/Handler/ at 95.92% li
 review:openregister:10104:1a9d4d63	APPROVE	session-20261113T051707-6c971ec6	2026-11-13T05:49:12Z
 cover:pipelinq:f67520ecmc4ba:d528dcf0	PR #3673: 7 tests cover AbstractPipelinqWidget::load for all 6 widgets; suite 6425->6432, same 1 inherited failure	session-20261113T054517-06ee2c47	2026-11-13T05:49:31Z
 cover:pipelinq:7f9dc8e6mc4ba:db675bd6	already done: every method of the 5 lib/Activity/Setting classes is asserted by ActivitySettingsGoldenTest (exact values); no meaningful test left to add	session-20261113T053904-36dcee67	2026-11-13T05:49:35Z
+cover:pipelinq:f67520ecmc4ba:ab7f3595	PR #3674: 14 tests for 9 provider classes; suite 6425->6439, 1 inherited failure	session-20261113T054519-189b2666	2026-11-13T05:49:49Z
