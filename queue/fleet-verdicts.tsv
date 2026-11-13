@@ -6470,3 +6470,4 @@ integriq	3556	c479514657eb8eb37b2d66375774fb84698c7dc2	GREEN	worker-08	unit 8228
 buildiq	1576	ba79fa5f1e17effb71dbb93173b2bf329aabeaa0	GREEN	worker-14	phpunit 2917 (baseline 2917, same 1 failure); vitest 4080/4080; test-only spec + tasks.md tick
 hermiq	1719	42c3a70eb2a0dc1be19efc69ae5d35122253c4ae	GREEN	worker-39	phpunit 4596 tests (baseline 4562, 172 inherited errors/failures), 0 new; vitest 1313 passed; build of chat-translate-a-recording, judged against its specs
 decidiq	2150	e9a296dcaebf68413f59d4eee70a9c0f2a99767d	GREEN	worker-31	unit 3923 tests run, baseline 3911 OK, 0 new failures; implements action-item-vtodo-migration per its specs
+opencatalogi	2652	a25a166fb1d718d818a710af1262f30e089c9f47	GREEN	worker-56	unit 5301 run (baseline 5254, 2 inherited failures AppIdentityTest/WooControllerTest), 0 new; vitest 811 pass; build of integration-feed-consumer-credentials, key gate per spec, admin-only management
