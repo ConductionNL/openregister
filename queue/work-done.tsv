@@ -1443,3 +1443,4 @@ cover:openregister:7350e3efm0e99:9c6bcdc5	PR openregister#10084: @uses on 58 tes
 cover:filinq:8ecceb86:34f5c300	PRs #1994 #1995: 13 classes, +169 tests, lib/Service/*.php 83.5% -> 89.8%	session-20261113T011743-bdeb8a13	2026-11-13T01:32:00Z
 cover:filinq:8ecceb86:38e80a9f	already done: lib/Command/*.php 27/27 statements covered by OfficeProbeCommandTest (7 behavioural tests); no PR	session-20261113T011743-bdeb8a13	2026-11-13T01:33:09Z
 verify:keepiq:1712:9ef015cb	GREEN x4 (1712,1713,1714,1715): tests-only, phpunit + vitest green on the tree	session-20261113T004519-b6b86685	2026-11-13T01:33:46Z
+cover:filinq:8ecceb86:65e30692	PR #1996: 8 tests for IntakeOcrQueue (other Intake classes already fully covered); suite 5499->5507 OK	session-20261113T011731-be978a55	2026-11-13T01:33:46Z
