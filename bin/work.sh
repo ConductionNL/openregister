@@ -8,7 +8,8 @@
 # a worker that dies loses its lease and the task becomes claimable again.
 #   worker_slot                 take a free worker-01..58 slot (360 min); prints the slot name; 1 = none free
 #   task_claim <worker> [app] [types]
-#                               take the oldest claimable task (by type rank, then created), of [app] first when
+#                               take the oldest claimable task (open-PR work first, then by app order, type rank
+#                               and created), of [app] first when
 #                               it has one (reuses that app's clone and vendor), else of any app; prints the row; 1 = none
 #   task_renew <id>             renew the task lease (0 = still yours)
 #   task_done <id> <result>     record the result and release the task lease
@@ -35,7 +36,9 @@ worker_slot() {
 # Open tasks as "<rank>\t<created>\t<row>", sorted; with $1=claimable also drops tasks under a live lease.
 _task_rows() {
 	local mode=${1:-open} types=${2:-}
-	awk -F'\t' -v mode="$mode" -v types=",$types," -v now="$(date -u +%s)" -v leases="$ST/leases" '
+	awk -F'\t' -v mode="$mode" -v types=",$types," -v now="$(date -u +%s)" -v leases="$ST/leases" \
+		-v order="$(grep -v '^#' "$ST/queue/app-order.txt" 2>/dev/null | tr '\n' ' ')" '
+		BEGIN { n = split(order, o, " "); for (i = 1; i <= n; i++) pos[o[i]] = i }
 		function lname(id,   s) { s = id; gsub(/[^A-Za-z0-9._-]/, "_", s); return leases "/task-" s ".lease" }
 		function live(id,   f, line, e) {
 			f = lname(id); e = 0
@@ -47,6 +50,9 @@ _task_rows() {
 		{
 			seen[$1] = 1
 			r = ($2 == "fix") ? 1 : ($2 == "review" || $2 == "measure") ? 2 : ($2 == "verify" || $2 == "merge") ? 3 : ($2 == "gap") ? 4 : ($2 == "cover") ? 5 : 9
+			# Finishing open PRs (verify, merge, review) comes first; all other work goes app by app in
+			# queue/app-order.txt order, by type rank within an app.
+			if ($2 != "verify" && $2 != "merge" && $2 != "review") r += 10 * (($3 in pos) ? pos[$3] : 90)
 			if (types != ",,") { if (index(types, "," $2 ",") == 0) next }
 			else if ($2 == "integrate") next
 			if (mode == "claimable" && live($1)) next
@@ -68,8 +74,9 @@ task_claim() {
 		tries=$((tries + 1))
 		rows=$(_task_rows claimable "$types")
 		[ -n "$rows" ] || { _st_flush; return 1; }
+		# Stay on [app] only while it has a task among the first 64, so workers do not linger on a later app.
 		if [ -n "$app" ]; then
-			prows=$(printf '%s\n' "$rows" | awk -F'\t' -v a="$app" '$5 == a')
+			prows=$(printf '%s\n' "$rows" | head -64 | awk -F'\t' -v a="$app" '$5 == a')
 			[ -n "$prows" ] && rows=$prows
 		fi
 		# Pick at random among the first ${CLAIM_WINDOW:-16} in rank order: a window narrower than the number of
