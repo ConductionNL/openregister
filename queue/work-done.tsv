@@ -3936,3 +3936,4 @@ cover:dossiq:069ee2d6m7275:3641032a	already done: lib/Service/Pipelinq 521/521 s
 verify:stackiq:1851:e93e1711	1851 GREEN: test infra only, 3133 tests, 0 new failures	session-20261113T071636-117504ad	2026-11-13T09:34:18Z
 cover:keepiq:c967a31fm1147:38e80a9f	already done: lib/Command/*.php at 100% (181/181) on development	session-20261113T073916-e9f11dfa	2026-11-13T09:34:36Z
 cover:keepiq:c967a31fm1147:f91e7417	already done: lib/Service/Connection/ at 100% (150/150) on development	session-20261113T073916-e9f11dfa	2026-11-13T09:34:46Z
+build:dossiq:documents-on-the-case	partial: PR #6369 adds the 2.2 vitest and ticks it; 3.3 left (newMenu false on case-files, needs a board call)	session-20261113T091529-c3067ba9	2026-11-13T09:34:39Z
