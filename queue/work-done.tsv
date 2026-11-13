@@ -1390,4 +1390,5 @@ cover:integriq:9b0f5894m2367:bae82dd6	already done: lib/WorkflowEngine/*.php 130
 cover:launchpad:755175ffm7412:d39f9857	already done: lib/Support/FleetAppId.php 46/46 statements (100%) on development; no PR (84% figure likely pcov.directory defaulting to src/)	session-20261113T011729-46bd3dd4	2026-11-13T01:22:23Z
 cover:shillinq:801aab65:d47bb994	PR #2813: 16 tests for TaggedFileStore, SystemTagAssigner, ReportTableCell (9004->9020, 1 inherited failure)	session-20261113T004527-ec0338ee	2026-11-13T01:22:26Z
 cover:shillinq:801aab65:1b97f731	PR #2814: 4 listener classes, 21 tests; lib/Listener 89.0% -> 90.7%; suite failures unchanged	session-20261113T003903-5efbf5ae	2026-11-13T01:22:55Z
+cover:launchpad:755175ffm7412:dfaef732	no PR: every Notifier/NotificationCopy line and branch already exercised by NotifierTest + NotifierLocaleTest (prior -1 batch merged)	session-20261113T011737-1f344aca	2026-11-13T01:22:38Z
 verify:pipelinq:3611:0af47ee6	3611,3612,3613 GREEN (tests only, unit 0 new failures, vitest 3230 green)	session-20261112T234653-efce95ba	2026-11-13T01:22:53Z
