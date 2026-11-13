@@ -6145,3 +6145,4 @@ opencatalogi	2596	4e73b518b32ea98fa4265bfaf87846400c5d2d6e	GREEN	worker-30	tree 
 opencatalogi	2597	0bad17de449dbb981d2b98719de1e80cabe10d75	GREEN	worker-30	tree 2595+2596+2597: phpunit 5284 tests, 2 failures = baseline (AppIdentityTest, WooControllerTest inventarislijst); 0 new failures; tests only
 humaniq	1120	cbe5197149c886bbdb3730e924a865238e89ff86	GREEN	worker-16	tree 1119+1120+1121: unit 4159 tests (baseline 4140, 1 skipped), 0 new failures; tests only
 integriq	3527	121481dcf334972d1d3273cdf9d48cde1d0a43d3	GREEN	worker-35	unit 8288 run on 4-PR tree (baseline 8222, E2 F2-3 inherited incl. date-bound golden sync test); vitest 157/2111 pass; tests only
+humaniq	1121	ee633bd15f5522ac3fd86f5c56c89dcf37920338	GREEN	worker-16	tree 1119+1120+1121: unit 4159 tests (baseline 4140, 1 skipped), 0 new failures; tests only
