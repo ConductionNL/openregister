@@ -4268,3 +4268,25 @@ cover:buildiq:70b3e29embf07:05630945	cover	buildiq	development	quality/test-cove
 cover:hermiq:065f1631m249e:9d3a1784	cover	hermiq	development	quality/test-coverage-9d3a1784	lang=php;dirs=lib/BackgroundJob/*.php;focus=thin;weight=1104;coverage=88.68;target=90.0	2026-11-13T07:38:20Z
 cover:hermiq:065f1631m249e:17bbac84	cover	hermiq	development	quality/test-coverage-17bbac84	lang=php;dirs=lib/TaskProcessing/*.php;focus=thin;weight=1064;coverage=88.68;target=90.0	2026-11-13T07:39:00Z
 cover:keepiq:c967a31fm1147:dfaef732	cover	keepiq	development	quality/test-coverage-dfaef732	lang=php;dirs=lib/Notification/*.php;focus=thin;weight=955;coverage=89.12;target=90.0	2026-11-13T08:07:16Z
+fix:learniq:2419:5f8478f6	fix	learniq	development	2419	sha=5f8478f65b0bdf7c3e7b6209eef0c83832e3c581;verdict=BLOCK;branch=quality/api-v1-learniq;reason=unit 6276 tests, 1 failure inherited (HigherEducationExampleSetTest), no new failures, behaviour change: drops 14 /api/v1 routes development serves (lrs statements/state/agent profile, health, metrics, cmi5 fetch, timetable ics feed), and rewrites er	2026-11-13T09:20:26Z
+verify:dossiq:6351:910198bf	verify	dossiq	development	merge	prs=6351@7c9acf60d523692e77c09d5e680f48f91e0f791f,6352@74e2a50ae99bd366cc7222a985757258a1f0b25f	2026-11-13T09:20:26Z
+verify:buildiq:1535:10bd7bd8	verify	buildiq	development	merge	prs=1535@3315eb1a88235e35288e57352f7f1f716090fb53	2026-11-13T09:20:26Z
+verify:hermiq:1679:11e43d64	verify	hermiq	development	merge	prs=1679@11f132b6c2e5073acb20e6a367fdde0b889d96db,1680@492d66bed286992fb3c8ccf72ac603e3c69ae447	2026-11-13T09:20:26Z
+verify:shillinq:2910:3191e515	verify	shillinq	development	merge	prs=2910@2029bf1785e7fda79e4931643b3397f9159a1642	2026-11-13T09:20:26Z
+verify:filinq:2049:78602b5a	verify	filinq	development	merge	prs=2049@dd2c0c59f5bda8e27a697637958cbc2bd8072f83	2026-11-13T09:20:26Z
+merge:stackiq:1863:48caa4ef	merge	stackiq	development	development	prs=1863@222faabc2fd5cc98e2bfad56b8c300d28b23183e,1864@a9af792e188eed982e281451b47304d06f9042b5	2026-11-13T09:20:26Z
+merge:dossiq:6345:d5b82413	merge	dossiq	development	development	prs=6345@6ff1998bfb9dc0a9a46b3e1a5e5a17bb0686c789,6346@db57410662bba29ad48741db1ec5b402dea16418,6347@ea0cb4572e9653e9a8525816df2fb561f0650993,6348@7c80d468c93540cfd3a1b631e564bd806b61ff7c	2026-11-13T09:20:26Z
+merge:buildiq:1526:ebabb0e8	merge	buildiq	development	development	prs=1526@2ab00cf5eec7706a83146c6418b6e3aa926ac0bd,1534@d7b0899512ac2d1d5ba2f184f8fb5ff730fb5070	2026-11-13T09:20:26Z
+merge:pipelinq:3697:d0d19b96	merge	pipelinq	development	development	prs=3697@1aed3b007eae2874af151fbaeac68b2f5d3ca26f,3698@4d89508e62cc548c69320089a31b941911d30702	2026-11-13T09:20:26Z
+gap:pipelinq:16:614b0a03	gap	pipelinq	development	16	criterion=opensourcehealth WARN;row=pipelinq;fix=Held by Activity 2 stars and Freshness 3 stars plus 1 medium-risk licence. Recommended, no score effect. Only worth a dependency refresh sweep.	2026-11-13T09:20:26Z
+cover:dossiq:069ee2d6m7275:28cccfd9	cover	dossiq	development	quality/test-coverage-28cccfd9	lang=php;dirs=lib/Repair/Support/;focus=thin;weight=2408;coverage=89.34;target=90.0	2026-08-15T08:01:07Z
+cover:dossiq:069ee2d6m7275:74111b6d	cover	dossiq	development	quality/test-coverage-74111b6d	lang=php;dirs=lib/Service/Status/;focus=thin;weight=2350;coverage=89.34;target=90.0	2026-08-15T08:02:05Z
+cover:buildiq:70b3e29embf07:34f5c300	cover	buildiq	development	quality/test-coverage-34f5c300	lang=php;dirs=lib/Service/*.php;focus=uncovered;weight=4503;coverage=88.48;target=90.0	2026-09-14T06:59:41Z
+cover:buildiq:70b3e29embf07:1106b038	cover	buildiq	development	quality/test-coverage-1106b038	lang=php;dirs=lib/Mcp/Handler/;focus=uncovered;weight=99;coverage=88.48;target=90.0	2026-09-14T07:48:02Z
+cover:hermiq:065f1631m249e:b97b9aec	cover	hermiq	development	quality/test-coverage-b97b9aec	lang=php;dirs=lib/Service/Approval/;focus=thin;weight=900;coverage=88.68;target=90.0	2026-11-13T07:46:52Z
+cover:hermiq:065f1631m249e:716923f8	cover	hermiq	development	quality/test-coverage-716923f8	lang=php;dirs=lib/Service/Credential/;focus=thin;weight=664;coverage=88.68;target=90.0	2026-11-13T07:50:48Z
+cover:hermiq:065f1631m249e:7d9a7607	cover	hermiq	development	quality/test-coverage-7d9a7607	lang=php;dirs=lib/Service/Config/,lib/Service/Translation/;focus=thin;weight=517;coverage=88.68;target=90.0	2026-11-13T07:53:15Z
+cover:shillinq:05639debmd8ee:f0c02922	cover	shillinq	development	quality/test-coverage-f0c02922	lang=php;dirs=lib/Service/External/;focus=uncovered;weight=1635;coverage=85.47;target=90.0	2026-11-13T04:22:01Z
+cover:keepiq:c967a31fm1147:2c3e981f	cover	keepiq	development	quality/test-coverage-2c3e981f	lang=php;dirs=lib/Service/ShareSync/;focus=thin;weight=931;coverage=89.12;target=90.0	2026-11-13T08:12:48Z
+cover:keepiq:c967a31fm1147:a4b15ae4	cover	keepiq	development	quality/test-coverage-a4b15ae4	lang=php;dirs=lib/Event/Audit/;focus=thin;weight=879;coverage=89.12;target=90.0	2026-11-13T08:13:40Z
+measure:openregister:20261113h08	measure	openregister	main	queue/coverage/openregister.json	why=slices need per-directory coverage	2026-11-13T09:20:26Z
