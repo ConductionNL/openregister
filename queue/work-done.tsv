@@ -6603,3 +6603,4 @@ cover:shillinq:05639debm3747:jsb80bc6aa	PR #3017: 7 tests (sync badge lifecycle,
 cover:shillinq:05639debm7b6b:87821f2f	already covered: lib/Service/Vat - every VatReturnBox branch asserted, backfill/stamper 13-15 tests each, -1 merged 2026-11-13; no PR	session-20261113T190954-c894781f	2026-11-13T20:13:41Z
 build:filinq:office-template-authoring	partial: PR filinq#2105 (tasks 1.1, 2.1, 2.2; 31 tests; suite 6443->6474 OK)	session-20261113T192704-f298034f	2026-11-13T20:13:42Z
 review:openregister:10319:195e1747	APPROVE #10319	session-20261113T185328-da819141	2026-11-13T20:14:17Z
+cover:opencatalogi:fc83bfb1:aae6d66c	already covered: all 4 lib/Exception classes executed and asserted (DirectoryUrlException 6 tests, MalformedSearchParameterException via search contract test); remaining two are empty subclasses; no PR	session-20261113T190954-c894781f	2026-11-13T20:14:23Z
