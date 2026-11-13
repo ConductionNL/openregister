@@ -1,12 +1,12 @@
 {
  "app": "keepiq",
- "commit": "2f62be103832239d6d780da9c5f8878ea00d81a4",
- "measured_at": "2026-11-13T04:20:23Z",
+ "commit": "8a5d84f3c74896e758c87e523513c8d254a56bd4",
+ "measured_at": "2026-11-13T06:29:51Z",
  "php": {
   "tool": "pcov",
-  "pct": 87.25,
+  "pct": 89.12,
   "statements": 25166,
-  "covered": 21957,
+  "covered": 22427,
   "dirs": {
    "lib/AppInfo/": [
     146,
@@ -22,7 +22,7 @@
    ],
    "lib/Backup/": [
     481,
-    454
+    474
    ],
    "lib/Command/": [
     181,
@@ -34,7 +34,7 @@
    ],
    "lib/Db/": [
     3212,
-    2079
+    2481
    ],
    "lib/Event/": [
     43,
@@ -54,7 +54,7 @@
    ],
    "lib/Listener/": [
     418,
-    395
+    411
    ],
    "lib/Mcp/": [
     139,
@@ -66,7 +66,7 @@
    ],
    "lib/Middleware/Support/": [
     59,
-    53
+    54
    ],
    "lib/Notification/": [
     396,
@@ -74,7 +74,7 @@
    ],
    "lib/Repair/": [
     1051,
-    996
+    1027
    ],
    "lib/Search/": [
     31,
@@ -119,9 +119,9 @@
   }
  },
  "js": {
-  "pct": 85.94,
+  "pct": 90.45,
   "statements": 12794,
-  "covered": 10995,
+  "covered": 11572,
   "dirs": {
    "src/": [
     170,
@@ -145,11 +145,11 @@
    ],
    "src/components/": [
     1439,
-    1242
+    1378
    ],
    "src/components/KeepiqAppNav/": [
     146,
-    116
+    124
    ],
    "src/components/application/": [
     92,
@@ -169,15 +169,15 @@
    ],
    "src/components/settings/": [
     1036,
-    885
+    940
    ],
    "src/components/share/": [
     255,
-    202
+    227
    ],
    "src/crypto/": [
     748,
-    714
+    729
    ],
    "src/cxf/": [
     189,
@@ -185,7 +185,7 @@
    ],
    "src/dialogs/": [
     1703,
-    1483
+    1522
    ],
    "src/export/": [
     155,
@@ -213,7 +213,7 @@
    ],
    "src/migration/": [
     142,
-    103
+    139
    ],
    "src/mixins/": [
     109,
@@ -221,7 +221,7 @@
    ],
    "src/modals/": [
     243,
-    226
+    243
    ],
    "src/offline/": [
     212,
@@ -253,7 +253,7 @@
    ],
    "src/store/modules/": [
     3158,
-    2617
+    2628
    ],
    "src/totp/": [
     187,
@@ -265,7 +265,7 @@
    ],
    "src/views/": [
     941,
-    642
+    877
    ],
    "src/views/flows/": [
     2,
