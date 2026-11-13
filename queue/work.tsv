@@ -5872,3 +5872,8 @@ cover:shillinq:05639debm2935:js0be8c659	cover	shillinq	development	quality/test-
 cover:shillinq:05639debm2935:jsb80bc6aa	cover	shillinq	development	quality/test-coverage-js-b80bc6aa	lang=js;dirs=src/components/BudgetBBVMapping/,src/components/budget-charts/,src/components/inventory/;focus=uncovered;weight=327;coverage=83.12;target=90.0	2026-11-13T07:07:32Z
 cover:shillinq:05639debm2935:js4829b6aa	cover	shillinq	development	quality/test-coverage-js-4829b6aa	lang=js;dirs=src/views/*;focus=uncovered;weight=240;coverage=83.12;target=90.0	2026-11-13T07:08:59Z
 cover:shillinq:05639debm2935:js450fec42	cover	shillinq	development	quality/test-coverage-js-450fec42	lang=js;dirs=src/integrations/*;focus=uncovered;weight=108;coverage=83.12;target=90.0	2026-11-13T07:11:11Z
+review:openregister:10277:cc2f0752	review	openregister	main	10277	sha=cc2f07526b599697ebecbb63463dab947c1b06ea;last_approved=;title=feat(openregister): build records-restore-with-cascade (audit groundwork)	2026-11-13T14:10:23Z
+review:openregister:10278:7ba5dae1	review	openregister	main	10278	sha=7ba5dae13b5da79ca3758de42f026e7e50641c4e;last_approved=;title=chore(openregister): repoint broken @spec anchors to canonical specs (spec-anchor-repair)	2026-11-13T14:10:23Z
+review:openregister:10279:4ae53493	review	openregister	main	10279	sha=4ae5349318a1d0e274b6ab00401826ea3cc156e7;last_approved=;title=feat(openregister): build schema-breaking-change-notice	2026-11-13T14:10:23Z
+verify:dossiq:6371:6a7bd31b	verify	dossiq	development	merge	prs=6371@cea13ccf507e61c09e3a6a0bb136b2f942cc1eb8,6422@c60a1ed91dbe4e7f437f26280de1443d10c640ed	2026-11-13T14:10:23Z
+verify:buildiq:1552:395c1fa5	verify	buildiq	development	merge	prs=1552@ba17cdd60c5b52ce1f96eab9c189327084a5b995	2026-11-13T14:10:23Z
