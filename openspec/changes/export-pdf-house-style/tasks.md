@@ -2,7 +2,7 @@
 
 ## 1. Reader
 
-- [ ] 1.1 `DocumentStyleReader` with the app check, class check, container lookup and null on any failure. Verify: `tests/Unit/Service/Export/DocumentStyleReaderTest.php` with thematiq absent, disabled, throwing, and returning a profile.
+- [x] 1.1 `DocumentStyleReader` with the app check, class check, container lookup and null on any failure. Verify: `tests/Unit/Service/Export/DocumentStyleReaderTest.php` with thematiq absent, disabled, throwing, and returning a profile.
 
 ## 2. PDF
 
