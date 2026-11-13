@@ -4192,3 +4192,4 @@ cover:portaliq:b60f3b81:dcac4701	PR portaliq#2395: @uses metadata for 12 test cl
 cover:portaliq:b60f3b81:ef511ebd	PR #2396: 7 tests for CaseTypeColumnSettings + CasesCollections, dir 98.88->100%, suite 4527->4534 OK	session-20261113T094606-b7da8c7f	2026-11-13T10:14:14Z
 verify:dossiq:6373:bb9d5df3	2 GREEN (6373, 6384), no new PHP or JS failures	session-20261113T084521-fd8a31c7	2026-11-13T10:14:17Z
 cover:portaliq:b60f3b81:deb110a3	already done: lib/Service/ExampleSite/ at 98.35% (298/303) on development; 5 lines left, above the 95% target	session-20261113T074532-3dc49c57	2026-11-13T10:14:37Z
+verify:portaliq:2388:efa31371	GREEN: #2388 refactor, behaviour-preserving extract-method (intake/reader/writer), verifyScope and refusal paths intact; tree 4532 pass vs baseline 4527, no new failures	session-20261113T091531-f9ad21ac	2026-11-13T10:14:40Z
