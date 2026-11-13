@@ -1762,3 +1762,4 @@ verify:integriq:3458:bfb583c7	4 GREEN (3458-3461), no new failures	session-20261
 cover:dossiq:6ca0231ema7d4:js0023cfc7	PR #6260: 40 vitest tests, src/dialogs lines 81.3% -> 85.6%, suite 6310 tests, 1 inherited failure	session-20261113T021703-063c80f1	2026-11-13T03:09:28Z
 cover:filinq:8ecceb86mc744:6079ce8f	PR #2012: 35 tests across 7 Wizard/SubjectErasure/Signing classes, suite 5899->5934 green	session-20261113T024656-2f332446	2026-11-13T03:09:39Z
 verify:dossiq:6244:d7238605	9 GREEN (6244-6252), tests-only, no new failures	session-20261113T024653-d22c13a3	2026-11-13T03:10:36Z
+cover:openregister:7350e3efm0e99:663e6d64	PR #10092: @uses fix for 8 risky Vocabulary tests + 5 new tests, lib/Service/Vocabulary 79.4->99.4%	session-20261113T015005-da194c88	2026-11-13T03:11:29Z
