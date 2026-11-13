@@ -1664,3 +1664,28 @@ pipelinq	3701	500bba55a846e04869780a2af577bd05cd11e592	MERGED	merge-local	GATE O
 pipelinq	3702	e9840228876bfa064d7dfb299f423e33000e4d48	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3703	6d7aa8258b59c89f112a3706ffaf0c7f193bcd7f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3704	5971767446c5f835099c97f30a5a4634f4b89605	RED	merge-local	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	2372	fbbef24780939c54f06a5034ba5c505d1fce8844	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2373	bb97388c39c057f93227cd42c789d323d300541c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2374	1bea661319a4811a4dd73c579b9f512352aec6b1	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2377	7ea1553aeb8f12b3d4560c9d26844425fd750fc5	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2376	b197ca02bb5283f629bbb91c48fd956192c7d4ab	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2378	2e83ccc2821ad1d8c485cb80ea628fd46a818072	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2379	a901ed8aabb68e912dc24764d58b1b022c70d7fa	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2380	153b35f2a95519d399aed2c542a3ffad00254b99	SKIP	merge-local	GATE UNMEASURED 153b35f2a9 does not merge cleanly onto development
+portaliq	2381	240e70a34c6a7d690df03dbd24818075f94f0a28	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2382	c66615f8ddcd48b920a8298ef297ec0b50144f02	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2383	80f33cec6d7f21f2a67ea3e19ab26526fe1d40ef	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2384	6bddb1d3558732f121d1f093e2f328db066f4d5a	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2385	606449f75ddfa729acaa54575844664e880cbf65	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2386	9cf19378e66479bb6ecc344d0d955f9fe1d854f5	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2387	a483ba0e28cd4ec39c1f5121fabc0dc90e4daef5	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2389	f4daf84e23a1b73fbdc2a9bb8f75630880252e9c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2390	01ebd908619019035c01713c4dfc3fd8447ff1ec	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2388	6952d338c43380d1a03403d4e61b9ee61c927484	RED	merge-local	GATE RED floor: module_coupling: 4.56 -> 4.52
+portaliq	2391	e2ffa3e164ef4ce03b6012c311e0015cbbd99a16	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2392	9f714938d98f436a7d7d56e62b0d358b1c73adbd	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2393	624f0fe2d2a188af2943bf2df2039b9daf454d8b	SKIP	merge-local	GATE UNMEASURED 624f0fe2d2 does not merge cleanly onto development
+portaliq	2394	e9d2afafedb7ecece5f00957c33cfc4cde367d8e	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2395	d2fce6d4d67f89ee5472d53516e1a2f1ccd70517	SKIP	merge-local	GATE UNMEASURED d2fce6d4d6 does not merge cleanly onto development
+portaliq	2396	fc1d055c4fedebed6671672acff4657b4257347b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2397	8db42abf4b56459f756e239802fa334b076a0589	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
