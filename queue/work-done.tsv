@@ -6354,3 +6354,4 @@ cover:dossiq:069ee2d6mbd37:33af3743	no PR: thinnest-looking classes (DecisionVal
 cover:stackiq:9ac19b3am9d24:407c4b68	PR #1891: ServiceFactoriesTest, 13 tests; suite 3397->3410, 0 failures	session-20261113T192700-55dce75a	2026-11-13T19:31:25Z
 cover:hermiq:065f1631md84f:dfaef732	no PR: lib/Notification already 74/74 covered; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:31:40Z
 cover:hermiq:065f1631md84f:d39f9857	no PR: lib/Support fully covered at measured commit; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:31:54Z
+cover:hermiq:065f1631md84f:d81d2d49	no PR: lib/Service/Speech already 57/57 covered; nothing thin left	session-20261113T192700-f21ebd18	2026-11-13T19:32:10Z
