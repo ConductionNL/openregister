@@ -69,6 +69,13 @@ final class MagicTableIndexRun {
 	public array $searchableIndexes = [];
 
 	/**
+	 * Columns that got an `indexed` btree index for filtering and sorting.
+	 *
+	 * @var array<int, string>
+	 */
+	public array $sortIndexes = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $tableName     The bare table name.

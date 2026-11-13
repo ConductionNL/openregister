@@ -4110,3 +4110,4 @@ Calendar/VeventSearchShape.php,202,Calendar,Platform,Platform/Calendar/VeventSea
 Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/ObjectDateEvents.php,0,,Processes
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
+Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core

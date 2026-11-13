@@ -61,6 +61,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableCreator;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexCatalogue;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumns;
 use OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns;
 use RuntimeException;
@@ -3930,11 +3931,43 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param Schema $schema The schema for index analysis
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/tasks.md#1-backend
 	 */
 	public function updateTableIndexes(string $tableName, Register $register, Schema $schema): void {
-		// For now, recreate all indexes (more complex differential updates can be added later).
+		// Create what the properties ask for, then drop the convention-named
+		// property indexes they no longer ask for (modelling-property-index-switch D-2).
 		$this->createTableIndexes(tableName: $tableName, schema: $schema);
+		$this->dropUnaskedIndexes(tableName: $tableName, schema: $schema);
 	}//end updateTableIndexes()
+
+	/**
+	 * Drop the property indexes no property flag asks for any more. A catalogue
+	 * that cannot be read leaves every index in place and never fails the sync.
+	 *
+	 * @param string $tableName The table name.
+	 * @param Schema $schema    The schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/tasks.md#1-backend
+	 */
+	private function dropUnaskedIndexes(string $tableName, Schema $schema): void {
+		$run     = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
+		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+		try {
+			$existing = (new MagicTableIndexCatalogue(db: $this->db))->names(fullTableName: $run->fullTableName, isPostgres: $isPostgres);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] Could not read the table indexes; none dropped',
+				context: ['tableName' => $tableName, 'error' => $e->getMessage()]
+			);
+			return;
+		}
+
+		$indexer->dropUnasked(run: $run, schema: $schema, existing: $existing);
+	}//end dropUnaskedIndexes()
 
 	/**
 	 * Drop table

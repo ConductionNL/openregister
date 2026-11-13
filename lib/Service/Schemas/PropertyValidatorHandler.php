@@ -525,6 +525,10 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		'groupLabel' => ['value' => 'string', 'description' => 'The member whose value labels a collapsed row. Needs repeatingGroup.'],
 		'deprecated' => ['value' => 'boolean', 'description' => 'Mark the field as on its way out.'],
 		'facetable' => ['value' => 'boolean', 'description' => 'Offer the field as a filter in search.'],
+		'indexed' => [
+			'value' => 'boolean',
+			'description' => 'Keep a database index on the field, so filtering and sorting on it stays fast without making it a facet.',
+		],
 		'facetConfig' => ['value' => 'object', 'description' => 'How the filter buckets its values.'],
 		'matchType' => ['value' => 'string', 'description' => 'How search compares a term against this field: exact, prefix, range, fuzzy or fulltext.'],
 		'inputControl' => ['value' => 'string', 'description' => 'The control a list surface should render to filter on this field.'],
