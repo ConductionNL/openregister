@@ -4,8 +4,8 @@ The behaviour is built; these tasks tie the code to the requirements and add the
 
 ## 1. Tags
 
-- [ ] 1.1 Add `@spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001` to `ObjectsController::index()`, `show()`, `create()`, `update()`, `patch()` and `destroy()` in `lib/Controller/ObjectsController.php`.
-- [ ] 1.2 Add `#REQ-RAT-002` to `handleSort()` in `src/views/search/SearchIndex.vue` and to the column chooser in `src/sidebars/search/SearchSideBar.vue` (`setSearchVisibleColumns`).
+- [x] 1.1 Add `@spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001` to `ObjectsController::index()`, `show()`, `create()`, `update()`, `patch()` and `destroy()` in `lib/Controller/ObjectsController.php`.
+- [x] 1.2 Add `#REQ-RAT-002` to `handleSort()` in `src/views/search/SearchIndex.vue` and to the column chooser in `src/sidebars/search/SearchSideBar.vue` (`setSearchVisibleColumns`).
 
 ## 2. Checks
 

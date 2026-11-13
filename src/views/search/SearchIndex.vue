@@ -405,7 +405,7 @@ export default {
 		 * @param {object} root0 The sort event payload.
 		 * @param {string} root0.key The sort column key.
 		 * @param {string} root0.order The sort order.
-		 * @spec exclude UI plumbing — sort handler delegates to the store
+		 * @spec openspec/changes/records-api-and-table-stated/specs/zoeken-filteren/spec.md#REQ-RAT-002
 		 * @return {void}
 		 */
 		handleSort({ key, order }) {
