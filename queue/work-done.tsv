@@ -5791,3 +5791,4 @@ build:portaliq:personal-action-list	PR #2432: T04 action-due mail beside the rem
 build:portaliq:resident-menu-leave-out	already done: tasks 1-4 built on development; only task 5 left, which is a learniq portal declaration (cross-repo), not portaliq code	session-20261113T172325-6eb25015	2026-11-13T18:03:20Z
 cover:pipelinq:7f9dc8e6m16db:8c6788f4	already done: lib/Service/Gdpr/ at 100% line coverage on development (68/68 stmts); no PR	session-20261113T175328-b5db3663	2026-11-13T18:03:36Z
 build:portaliq:public-site-meets-wcag-aa	failed: permission (fetching the openspec CLI via npx for T06 was refused; no PR opened)	session-20261113T171149-8b9ea523	2026-11-13T18:03:34Z
+build:portaliq:portal-public-search	failed: blocked - tasks.md requires openregister change rbac-default-authenticated first (still open on main, no task done); building anonymous search before it would widen anonymous reads	session-20261113T172325-6eb25015	2026-11-13T18:03:53Z
