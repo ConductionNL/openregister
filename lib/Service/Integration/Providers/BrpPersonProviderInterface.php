@@ -53,4 +53,33 @@ interface BrpPersonProviderInterface {
 	 * @spec openspec/changes/integration-brp-audit-metadata/tasks.md
 	 */
 	public function lookupByBsn(string $bsn): array;
+	/**
+	 * A resident's current partner and living children, minimised: per
+	 * relative an opaque reference, the display name, the relation, the birth
+	 * year and whether they live on the resident's address — never a BSN, a
+	 * full birth date or an address. Degrades as `lookupByBsn()` does.
+	 *
+	 * @param string            $bsn             The resident's BSN.
+	 * @param array<int,string> $relations       `partner` and/or `child`.
+	 * @param bool              $sameAddressOnly Drop relatives on another address.
+	 *
+	 * @return array<string,mixed> `{ results, total, meta, relativesMeta }`, or
+	 *                             `{ unavailable, cause, results, total }`.
+	 *
+	 * @spec openspec/changes/brp-family-members-lookup/specs/integration-person-lookup/spec.md#requirement-the-brp-provider-answers-a-residents-partner-and-children-minimised-req-brp-fam-001
+	 */
+	public function lookupFamily(string $bsn, array $relations=['partner', 'child'], bool $sameAddressOnly=false): array;
+
+	/**
+	 * The relative's BSN behind a reference `lookupFamily()` answered, only
+	 * when it belongs to a current relative of that same resident; else null.
+	 *
+	 * @param string $bsn       The resident's BSN.
+	 * @param string $reference The reference.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/brp-family-members-lookup/specs/integration-person-lookup/spec.md#requirement-the-brp-provider-answers-a-residents-partner-and-children-minimised-req-brp-fam-001
+	 */
+	public function resolveFamilyReference(string $bsn, string $reference): ?string;
 }//end interface

@@ -266,6 +266,37 @@ See ADR-019 (registry render/link), ADR-041 (cross-app commands via events),
 ADR-013 (first-wins collision), and ADR-066 (cross-app leaf registration — the
 render-and-read boundary).
 
+### Leaf or `IReferenceProvider`?
+
+Nextcloud ships its own cross-app read mechanism,
+`OCP\Collaboration\Reference\IReferenceProvider`. The two **coexist**; they
+answer different questions, so pick by the shape of what you are building:
+
+| You are building… | Use |
+|---|---|
+| An **object-scoped collection** of your app's own items on an Open Register object ("all of app X's notes on *this* object"), optionally with an append, and/or a tab + widget on the object | a **data-provider leaf** |
+| A **read-only rich preview** of a **single URL or text token** inside free text (Talk, Text, comments), with no Open Register object and no collection | an **`IReferenceProvider`** |
+
+- **Never** use a data-provider leaf for a stateless URL or text preview: a
+  leaf keys on a register, schema and object id and returns a collection; a
+  bare URL preview has none of those. Reviewers redirect it to an
+  `IReferenceProvider`.
+- **Never** use an `IReferenceProvider` to expose an object-scoped collection or
+  any append: `resolveReference()` returns one read-only `IReference` and the
+  contract has no write.
+
+The one overlap — rendering a **single read-only linked entity** identified by a
+URL or id — resolves by context. When it hangs off an Open Register object as
+that object's linked-entity card (a schema property with a `referenceType`), it
+is the leaf single-entity surface. When it is an inline preview of a bare URL in
+text, it is an `IReferenceProvider`. Do not implement it twice for the same
+surface. There is no adapter between the two mechanisms; a bridge that lets a
+reference also render as the leaf single-entity surface is a possible future
+option and does not exist today.
+
+See the openspec change `leaf-reference-provider-convergence` for the full
+capability comparison and rationale.
+
 ## What to read next
 
 - **[xWiki leaf](./xwiki.md)** — the worked external example (OpenConnector-backed).
