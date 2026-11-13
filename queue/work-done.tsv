@@ -5528,3 +5528,4 @@ review:openregister:10273:8479ecde	APPROVE 10273	session-20261113T114527-9a216dd
 cover:pipelinq:7f9dc8e6mcebb:60c2c265	PR #3760: MetricsController 0->12/12, 2 tests. Large dir; other controllers (NotesController etc.) have untested branches left	session-20261113T094617-36f80607	2026-11-13T14:24:08Z
 verify:larpinq:1029:578bb7c3	1029 GREEN (spec only; PHP 791 ok, vitest 495 ok)	session-20261113T074535-8a2067c2	2026-11-13T14:24:10Z
 review:openregister:10278:7ba5dae1	APPROVE: @spec-only comment changes; suites green (1 inherited Db failure)	session-20261113T124807-2640af3d	2026-11-13T14:24:49Z
+verify:portaliq:2411:0069c1e8	GREEN 2411: docs only, unit suite 4892 green	session-20261113T074527-031883a8	2026-11-13T14:25:00Z
