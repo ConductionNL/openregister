@@ -236,6 +236,7 @@ Vrij en open source onder de EUPL-licentie.
 			<!-- Reports stored objects without an organisation; writes nothing
 			     (occ openregister:adopt-organisationless-rows with apply writes). -->
 			<step>OCA\OpenRegister\Repair\AdoptOrganisationlessRows</step>
+			<step>OCA\OpenRegister\Repair\GiveFederationSharesALifetime</step>
 			<!-- The flows register must EXIST before any step reads flows.
 			     ImportFlowRegister was written, and named here zero times, so
 			     the `flows` register was never created and every flow step
@@ -527,6 +528,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
 		<!-- Read-only report: federated shares whose creator does not hold the rights the share grants. -->
 		<command>OCA\OpenRegister\Command\FederationShareRightsCommand</command>
+		<command>OCA\OpenRegister\Command\FederationSharesExpiringCommand</command>
 		<!-- Read-only report: which RBAC groups this instance declares, and whether
 		     anyone belongs to them. Provisioning guarantees a declared group EXISTS;
 		     it never adds members, so an unpopulated group still denies every

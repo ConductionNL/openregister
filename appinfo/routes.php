@@ -32,6 +32,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'federation#shares',      'url' => '/api/federation/shares',      'verb' => 'GET'],
         ['name' => 'federation#createShare', 'url' => '/api/federation/shares',      'verb' => 'POST'],
         ['name' => 'federation#revokeShare', 'url' => '/api/federation/shares/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+        ['name' => 'federation#renewShare',  'url' => '/api/federation/shares/{id}/renew', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
         // Credential broker (credential-broker-service) — owner-scoped credential
         // metadata CRUD + per-app signing-secret registration + the guarded broker

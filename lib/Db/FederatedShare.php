@@ -68,6 +68,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getExpiresAt()
+ * @method void setExpiresAt(?DateTime $expiresAt)
  */
 class FederatedShare extends Entity implements JsonSerializable {
 	use JsonFieldsTrait;
@@ -192,6 +194,13 @@ class FederatedShare extends Entity implements JsonSerializable {
 	 * @var DateTime|null
 	 */
 	protected ?DateTime $updated = null;
+
+	/**
+	 * When the share token stops being served.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $expiresAt = null;
 
 	/**
 	 * Constructor: registers field types.
