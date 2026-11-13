@@ -5091,3 +5091,4 @@ review:openregister:10222:6ec25b23	APPROVE: tests only, 132 search-sidebar jest 
 review:openregister:10201:6a3f9b3c	APPROVE: additive crypto container, suites green; component-map.csv merge conflict noted (not a block)	session-20261113T094602-d25cda2a	2026-11-13T13:11:32Z
 review:openregister:10212:01dfee0f	BLOCK: PR's own diagnostics test fails (mock stubs fetch() not fetchAssociative(), so existsBeforeFilter stays false and the error-path assertion never fires)	session-20261113T111529-f2ee6930	2026-11-13T13:11:47Z
 review:openregister:10211:77d5cedc	APPROVE	session-20261113T103904-e108be02	2026-11-13T13:12:04Z
+review:openregister:10214:addc2884	BLOCK: dictionary scheme seed runs without the trusted scope the other seeds use; suites green (DBAL-env errors in BulkAtomicSaveTest inherited)	session-20261113T124807-5f522699	2026-11-13T13:12:12Z
