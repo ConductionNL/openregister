@@ -2102,3 +2102,4 @@ cover:decidiq:a5f973bbm1dec:aae6d66c	already done: lib/Exception 18/18 statement
 cover:buildiq:9930949bm5861:9d3a1784	already done: lib/BackgroundJob/*.php 230/245 stmts (93.9%, target 85) on development with openregister sibling for the contracts	session-20261113T024656-d5bfb688	2026-11-13T04:22:34Z
 measure:integriq:20261113h04	php 88.01% js 82.64% at 2210ff75	session-20261113T031700-0e23c373	2026-11-13T04:22:43Z
 verify:integriq:3468:62f2c1a2	GREEN 3468	session-20261113T015005-030aa10a	2026-11-13T04:22:53Z
+cover:decidiq:a5f973bbm1dec:81b1241f	already done: lib/Portal/*.php 235/235 statements covered (PortalContributionProviderTest 23 tests, PortalLabelTranslator 2 test files); no PR	session-20261113T041645-1e9d4ce1	2026-11-13T04:23:12Z
