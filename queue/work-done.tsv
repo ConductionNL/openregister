@@ -3087,3 +3087,4 @@ cover:keepiq:c967a31fmb40c:f91e7417	already done: lib/Service/Connection/ at 100
 cover:keepiq:c967a31fmb40c:e372e6ff	already done: lib/Event/*.php at 100% lines (43/43) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:07:03Z
 cover:dossiq:f8a113c5m7e79:7593a315	PR #6315: 3 phpunit tests, RoleLinkService 104->112/112	session-20261113T051709-e616bf69	2026-11-13T07:07:38Z
 cover:dossiq:f8a113c5m7e79:094a3419	PR dossiq#6316: 12 gateway tests + metadata fixes on 6 tests; Email dir 1351->1714/1874 lines; same 19 inherited failures	session-20261113T051703-1b54bfba	2026-11-13T07:08:48Z
+cover:integriq:92114ab0m658d:60c2c265	PRs #3495 (8 controllers, 90 tests) and #3496 (Events, Sources, 16 tests); lib/Controller/*.php 80.3% -> 90.6% with both	session-20261113T051705-4f5ad12a	2026-11-13T07:09:58Z
