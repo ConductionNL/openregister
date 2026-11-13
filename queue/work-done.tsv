@@ -6995,3 +6995,4 @@ build4:openregister:anonymisation-discloses-itself	partial: PR #10364 builds tas
 build4:openregister:confidentiality-classification-primitive	partial: PR #10365 (annotation, validator, error-level save check, derived rule + tests; enforcement wiring 2.2-2.5 and render mirror 3.1 left)	session-20261113T210940-b751519f	2026-11-13T21:45:49Z
 review:openregister:10334:32ad9c5f	APPROVE: suites green on merge with main; phpstan finding pre-existing	session-20261113T204536-22cfbae0	2026-11-13T21:46:09Z
 build4:openregister:capability-rows-verified-a	PR openregister#10366 builds 2.1 (public anonymous form page); Playwright verification left	session-20261113T175332-5effc865	2026-11-13T21:46:23Z
+review:openregister:10335:f789c723	APPROVE 10335 (tests only; fixes a red test on main, suites green)	session-20261113T202626-976dcdac	2026-11-13T21:46:23Z
