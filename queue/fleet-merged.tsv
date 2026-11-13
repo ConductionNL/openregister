@@ -1320,3 +1320,12 @@ learniq	2451	75b6d16c0a4921bc21023939388218855fbf1cc2	MERGED	merge-local	GATE OK
 learniq	2452	b74f344792993d5fddbb35c5dc6391e88530a235	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2453	1e2e4747c68bbc4e84f2fae472e79f8910a69719	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 learniq	2454	508373f8515c4716b70b653b0e28ad22a109bb02	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1525	0e1271f47ca77e13f53dac648a451e7a2bc701c3	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1526	2ab00cf5eec7706a83146c6418b6e3aa926ac0bd	SKIP	merge-local	GATE UNMEASURED 2ab00cf5ee does not merge cleanly onto development
+buildiq	1527	4e8dfa26f031242a99953f1089984830752d3b3f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1528	98b52c496f8816b047005c4fc0f55cfbdde23d9c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1529	03dee35f9017ecc99dbe332a9682c03441c6007f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1530	20fb8e4b069c4d54091d3b3844e683afdc190cdb	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1531	80fd600d3f5485b779d89d7d5008863be12b7cae	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1532	c4123addebd16184c524812d14b99017d77e0887	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1533	3fa5c2538d89565075d742096633cd7dd37b38d9	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
