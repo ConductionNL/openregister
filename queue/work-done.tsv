@@ -3319,4 +3319,5 @@ cover:integriq:92114ab0m658d:dffb5af6	PR #3507: GroupMappingResolver edge cases 
 verify:opencatalogi:2578:9edc50c1	2578 RED (WooControllerTest::testInventarislijstRouteIsAGet sees a duplicate aliased route); 2584 GREEN	session-20261113T071636-117504ad	2026-11-13T07:55:36Z
 verify:humaniq:1103:3024df1f	humaniq #1103 #1104 GREEN (3824 tests, 0 failures)	session-20261113T051703-1b54bfba	2026-11-13T07:56:03Z
 verify:hermiq:1598:9dc31b72	1598 BLOCK (adds API contract middleware changing existing /api responses; tests green), 1673 GREEN	session-20261113T053904-36dcee67	2026-11-13T07:56:08Z
+gap:learniq:maint1:burn1	PR #2438: emitGradeEntry, processMessage and verify split into helpers, behaviour unchanged; 11 tests added first; suite 6101->6112, same inherited failure	session-20261113T051705-4f5ad12a	2026-11-13T07:56:26Z
 gap:portaliq:maint1:burn1	PR #2372: buildRequestUrl, statementLines, fieldError split (golden pinned first); node suite same 2 inherited fails	session-20261113T072706-2eaa6a81	2026-11-13T07:56:24Z
