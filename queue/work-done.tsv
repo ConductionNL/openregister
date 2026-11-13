@@ -3365,3 +3365,4 @@ verify:filinq:2048:3a6b4f8c	GREEN 2048: 6304 tests, 0 new failures	session-20261
 verify:versioniq:673:1a59f217	failed: permission	session-20261113T080549-7fd6d6c4	2026-11-13T08:08:25Z
 verify:humaniq:1105:1626832a	3 GREEN (1105,1106,1107); 3877 tests, 0 new failures	session-20261113T080549-dde3ba19	2026-11-13T08:08:44Z
 verify:larpinq:1019:f51153ef	1019 GREEN: tests-only, vitest 323 passed, php 697 ok	session-20261113T080546-98207a87	2026-11-13T08:08:55Z
+gap:larpinq:risky:burn2	already done: 0 risky tests (beStrictAboutCoverageMetadata=false in phpunit-unit.xml); PHP coverage 92.6% (3845/4152), no change needed	session-20261113T080546-98207a87	2026-11-13T08:09:48Z
