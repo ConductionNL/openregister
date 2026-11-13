@@ -2966,6 +2966,7 @@ cover:decidiq:a5f973bbmb22b:58192586	already done: pcov on development shows lib
 cover:hermiq:065f1631mfaac:jsaa3620d1	already done: CnAgentRunsWidget/ 94/101 + settings/ 130/130 = 224/231 lines (97%) on development; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:46:13Z
 cover:decidiq:a5f973bbmb22b:60c2c265	already done: lib/Controller/*.php at 94.59% (target 90) after #2116	session-20261113T061521-423d1e83	2026-11-13T06:46:04Z
 cover:integriq:92114ab0m658d:19badfa5	already done: lib/Outbound/Call/*.php at 92.12% lines (643/698) on development 4aa851de, above 90 target; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T06:46:00Z
+cover:integriq:92114ab0m658d:2b49da71	already done: lib/Adapters/Slo/*.php at 99.06% lines (736/743) on development 4aa851de; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T06:46:20Z
 cover:integriq:92114ab0m658d:4f1edf62	already done: lib/Service/Dso/*.php 737/762 (96.72%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:46:16Z
 cover:decidiq:a5f973bbmb22b:1b97f731	already done: lib/Listener/*.php at 97% lines (1176/1208) on development, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:46:25Z
 cover:filinq:7a9ef677m5ffe:5b37a982	already done: lib/Service/Suggestion at 98.9% lines (87/88) under the full unit suite on development, target 90; branch -1 exists; no PR	session-20261113T051705-4f5ad12a	2026-11-13T06:46:35Z
@@ -2977,4 +2978,7 @@ cover:hermiq:065f1631mfaac:3a63cc27	already done: lib/Service/ReportSimilarity/ 
 cover:filinq:7a9ef677m5ffe:519c54f6	no PR: lib/Service/Conversion at 1074/1105 with tests for every class; remaining lines unreachable (getContent typed string in OCP, null-manager branch guarded by callers, preg_replace/proc_open OS failures)	session-20261113T054520-0c8540f8	2026-11-13T06:47:10Z
 cover:keepiq:c967a31fmb40c:9d3a1784	already done: lib/BackgroundJob/*.php 406/407 (99.75%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:47:27Z
 cover:filinq:7a9ef677m5ffe:d528dcf0	already done: lib/Dashboard/*.php 12/12 lines (100.0%) on development 90be525f5; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:47:33Z
+cover:decidiq:a5f973bbmb22b:e372e6ff	already done: lib/Event/*.php at 100% lines (146/146) on development c0b79586; no PR	session-20261113T064517-3e632ed8	2026-11-13T06:47:37Z
 cover:keepiq:c967a31fmb40c:11ebfefd	already done: lib/Backup/*.php 474/481 (98.54%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:47:38Z
+cover:integriq:92114ab0m658d:aae6d66c	already above target: lib/Exception/*.php measures 98.18% (54/55) on development 8511b16; no PR	session-20261113T054519-3d0ac77f	2026-11-13T06:47:47Z
+cover:decidiq:a5f973bbmb22b:be0dcca9	PR decidiq#2117: McpActionItemTools relations-array scoping, 1 test, lib/Mcp/*.php 530->534/534, suite 3684->3685 OK	session-20261113T061518-90540a48	2026-11-13T06:47:53Z
