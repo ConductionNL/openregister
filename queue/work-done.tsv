@@ -2943,4 +2943,5 @@ cover:dossiq:f8a113c5mac88:39189253	PRs #6303 (34 tests) + #6304 (25 tests): lib
 cover:dossiq:f8a113c5mac88:b6fccd13	already done: lib/Service/Access/*.php 1114/1137 (97.98%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:43:27Z
 cover:shillinq:05639debmd8ee:568ec52a	PRs #2893 (7 guards, 73 tests) and #2896 (4 guards, 27 tests); suite 9142->9242 combined, 1 inherited failure	session-20261113T054521-2b588c68	2026-11-13T06:43:20Z
 cover:pipelinq:7f9dc8e6m1e6e:fdb25f89	already done: pcov on development (today) shows lib/Service/Access/RegisterAccessSync 100% lines (86/86)	session-20261113T053904-36dcee67	2026-11-13T06:43:33Z
+cover:pipelinq:7f9dc8e6m1e6e:6f346b68	already done (second time this queue sent it): lib/Sections/SettingsSection 100% lines per pcov on development; the generating measure appears not to see this dir's coverage	session-20261113T053904-36dcee67	2026-11-13T06:43:47Z
 cover:pipelinq:7f9dc8e6m1e6e:d528dcf0	already done: lib/Dashboard/*.php at 100% lines (36/36) on development, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:43:46Z
