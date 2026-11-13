@@ -6772,3 +6772,4 @@ build:opencatalogi:dataset-views-on-the-public-page	failed: depends on open-data
 build:opencatalogi:auto-publishing	partial: PR #2627 (verified tasks 1-2, tests for 3-5; DI items of 3, integration 6, spec sync 7 left)	session-20261113T185328-da819141	2026-11-13T20:52:02Z
 verify:pipelinq:3785:e3e10274	GREEN #3785: test-only, vitest 4812 pass, php baseline unchanged	session-20261113T204606-0d8f1c54	2026-11-13T20:52:04Z
 build:opencatalogi:cms-proxy-removal	failed: blocked by its own preconditions - cms-handover not built (0/9 tasks), removal needs a release cycle of live access-log evidence; building now would remove live endpoints	session-20261113T204539-805bb895	2026-11-13T20:52:16Z
+build:buildiq:apps-support-note-editor-saves	PR #1571: T01-T04 done (scoped manifest editor saves the support note, failed save keeps editor open, 7 vitest specs, en/nl); e2e T05 and post-merge T06 left; vitest 4077->4084	session-20261113T192651-cb1e4daf	2026-11-13T20:52:34Z
