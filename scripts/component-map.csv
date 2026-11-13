@@ -945,6 +945,7 @@ Event/ObjectDeletingEvent.php,4,Event,Event,Event/ObjectDeletingEvent.php,179,,K
 Event/ObjectEventSubscription.php,129,Event,Event,Event/ObjectEventSubscription.php,34,,Kernel
 Event/ObjectLockedEvent.php,14,Event,Event,Event/ObjectLockedEvent.php,6,,Kernel
 Event/ObjectRevertedEvent.php,20,Event,Event,Event/ObjectRevertedEvent.php,5,,Kernel
+Event/ObjectNoteAddedEvent.php,40,Event,Event,Event/ObjectNoteAddedEvent.php,0,,Kernel
 Event/ObjectTransitionedEvent.php,59,Event,Event,Event/ObjectTransitionedEvent.php,523,,Kernel
 Event/ObjectUnlockedEvent.php,14,Event,Event,Event/ObjectUnlockedEvent.php,6,,Kernel
 Event/ObjectUpdatedEvent.php,22,Event,Event,Event/ObjectUpdatedEvent.php,851,,Kernel
