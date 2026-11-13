@@ -2091,5 +2091,6 @@ cover:keepiq:c967a31fm88ca:2c3e981f	already done: lib/Service/ShareSync 174/174 
 verify:stackiq:1832:72315b69	4 GREEN (1832-1835), tests only, 0 new failures	session-20261113T041649-bbede304	2026-11-13T04:21:14Z
 cover:buildiq:9930949bm5861:568ec52a	already done: lib/Lifecycle/*.php at 98.8% lines (84/85) on development 5f5f87c6 (suite run with openregister@development sibling); no PR needed	session-20261113T041646-2c1d764f	2026-11-13T04:21:28Z
 cover:hermiq:065f1631m7444:js0be8c659	PR #1657: 32 vitest tests over 11 modals, src/modals/* 75.9% -> 85.4% stmts; suite green	session-20261113T024656-2f332446	2026-11-13T04:21:21Z
+cover:decidiq:a5f973bbm1dec:0f859653	PR #2109: +2 listener tests (lib/Flow already 181/182 covered); suite 3143->3145 OK	session-20261113T041645-1e9d4ce1	2026-11-13T04:21:40Z
 cover:buildiq:9930949bm5861:0d8702e3	PR buildiq#1507: +27 tests for template NamedParametersSniff; suite 2391 -> 2418, inherited 1328 errors/5 failures unchanged	session-20261113T034632-47095943	2026-11-13T04:21:32Z
 cover:buildiq:9930949bm5861:d33a91b0	already covered (duplicate of d33a91b0 handled this session): CopilotPlanValidator 21 tests, CopilotPromptBuilder unit+golden; no PR	session-20261113T024654-6600dc41	2026-11-13T04:21:55Z
