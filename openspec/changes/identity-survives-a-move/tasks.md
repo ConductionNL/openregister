@@ -8,7 +8,7 @@
 ## 2. Addresses
 
 - [x] 2.1 Resolver follows the pointer row and adds `@self.movedTo`; pointer pruned after one year. Built without a new table: the `moved` audit entry MoveObject writes names both addresses and when, so it is the pointer. `MovedObjectLookup` reads it on a miss only (no change to the read path every object takes), and `ObjectsController::show()` re-reads the object through show() at its new address, so purpose binding, RBAC and rendering of that address apply, then adds `@self.movedTo`. The one-year window is a filter on the entry's date rather than a prune. Tests: `MovedObjectLookupTest` (6), `ObjectsControllerMovedAddressTest` (2).
-- [ ] 2.2 Relation deep links rewritten on move.
+- [x] 2.2 Relation deep links rewritten on move. A relation row stores the register and schema of both of its ends, which is what its deep link and graph node are built from; those are the part of the address a move changes. `RelationAddressRewrite` points every row touching the moved uuid at the new address (source end, target end, or both for a self-link), saving only rows that change. `MoveObject` calls it after the write and the removal, so a refused or failed move never touches the rows, and a failed rewrite is logged without undoing the move (the old address still answers). Tests: `RelationAddressRewriteTest` (7), `MoveObjectTest` (+3: rewrite after the move with the target ids, none on a refusal, a failed rewrite still reports the move).
 
 ## 3. Tests
 
@@ -55,9 +55,7 @@ a date.
   design D-1 and it is why the list in the spec reads as "kept" rather than
   "migrated". Timers superseded with reason `moved` would only matter if a
   timer were bound to the schema, and none is.
-- **2.2, relation deep-link rewriting.** It belongs with the pointer: with the
-  old address answering, a stored deep link is not broken, so the rewrite is an
-  optimisation rather than a correctness fix, and doing it without the pointer
-  would be the only thing standing between a bookmark and a 404.
+- **2.2, relation deep-link rewriting**, was built in the second pass, once
+  the old address answered (2.1): see 2.2 above.
 - **3.1, the e2e, and the Newman request of 3.2.** Both need a live instance.
   This lane writes no e2e it cannot run.

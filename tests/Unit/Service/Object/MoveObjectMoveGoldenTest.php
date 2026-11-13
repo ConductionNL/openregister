@@ -128,7 +128,7 @@ class MoveObjectMoveGoldenTest extends TestCase {
 		$object->setOwner(($setup['owner'] ?? 'owner-1'));
 		$object->setObject(array_key_exists('data', $setup) === true ? $setup['data'] : ['title' => 'x', 'number' => '2026-0042']);
 
-		$service  = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects(), $this->audit(), $this->logger(), $this->createStub(IEventDispatcher::class)), $this->validator());
+		$service  = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects(), $this->audit(), $this->logger(), $this->createStub(IEventDispatcher::class)), $this->validator(), $this->createStub(\OCA\OpenRegister\Service\Object\RelationAddressRewriteInterface::class));
 		$returned = $service->perform(
 			move: new ObjectMove(
 				object: $object,
