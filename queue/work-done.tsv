@@ -3228,3 +3228,4 @@ gap:opencatalogi:cplx:burn1	already done: lizard 1.26 -C 30 on lib src at c77d69
 cover:integriq:92114ab0m658d:6dc9019f	PR #3504: KvkMutatieProvider + BRP unsubscribe tests (7); lib/Service/Registry 91.3% -> 96.2%	session-20261113T051705-4f5ad12a	2026-11-13T07:41:47Z
 cover:versioniq:1b35eed9m70ae:js06645759	PR #668: 29 vitest tests for TrustedSourcesPanel and TokensPanel actions; JS lines 74.2%->77.3%, suite 2730->2759 all passing	session-20261113T072708-ee434236	2026-11-13T07:41:57Z
 cover:filinq:7a9ef677mb01f:8ed5443b	nothing to cover: lib/Kernel/Contracts holds 123 interfaces only, 0 executable statements; no PR	session-20261113T072715-cf04db4e	2026-11-13T07:42:07Z
+cover:opencatalogi:fc83bfb1:01c8805a	already done: lib/Tool/*.php at 96.9% lines (278/287) on development c77d69df, above the 95 target; the rest are cast branches reachable only via private methods and one-line wiring	session-20261113T071636-117504ad	2026-11-13T07:42:24Z
