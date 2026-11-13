@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\LoginSecurityInterface;
 use OCA\OpenRegister\Service\UserServiceInterface;
+use OCP\Authentication\TwoFactorAuth\IRegistry;
 use OCP\IUserManager;
 use OCP\IUserSession;
 
@@ -48,6 +49,7 @@ final class UserDomain {
 		public readonly LoginSecurityInterface $securityService,
 		public readonly IUserManager $userManager,
 		public readonly IUserSession $userSession,
+		public readonly IRegistry $twoFactor,
 	) {
 	}//end __construct()
 }//end class

@@ -38,6 +38,7 @@ final class UserControllerFactory {
 		\OCP\IUserSession $userSession,
 		\Psr\Log\LoggerInterface $logger,
 		\OCP\IL10N $l10n,
+		?\OCP\Authentication\TwoFactorAuth\IRegistry $twoFactor = null,
 	): array {
 		return [
 			$request,
@@ -47,6 +48,7 @@ final class UserControllerFactory {
 					securityService: $securityService,
 					userManager: $userManager,
 					userSession: $userSession,
+					twoFactor: ($twoFactor ?? self::noSecondFactor()),
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\UserPlatform(
 					logger: $logger,
@@ -54,6 +56,28 @@ final class UserControllerFactory {
 				),
 			),
 		];
+	}
+
+	/**
+	 * A registry in which nobody has a second factor enabled.
+	 *
+	 * @return \OCP\Authentication\TwoFactorAuth\IRegistry
+	 */
+	public static function noSecondFactor(): \OCP\Authentication\TwoFactorAuth\IRegistry {
+		return new class implements \OCP\Authentication\TwoFactorAuth\IRegistry {
+			public function getProviderStates(\OCP\IUser $user): array {
+				return [];
+			}
+
+			public function enableProviderFor(\OCP\Authentication\TwoFactorAuth\IProvider $provider, \OCP\IUser $user) {
+			}
+
+			public function disableProviderFor(\OCP\Authentication\TwoFactorAuth\IProvider $provider, \OCP\IUser $user) {
+			}
+
+			public function cleanUp(string $providerId) {
+			}
+		};
 	}
 
 	/**
