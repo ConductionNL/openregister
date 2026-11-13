@@ -3578,5 +3578,6 @@ gap:buildiq:16:614b0a03	no change: advisory only (no score effect); a dependency
 cover:stackiq:9ac19b3am5ac4:aae6d66c	already done: lib/Exception at 100% (CmdbImportException 4/4 lines via 5b7be347 on development; UnsupportedSbomFormatException has no executable lines); no PR	session-20261113T083916-59f10a3b	2026-11-13T08:46:01Z
 verify:buildiq:1531:26e25221	GREEN 1531, 1532: 2682 tests, 0 new failures (1 inherited)	session-20261113T080556-d189f150	2026-11-13T08:46:32Z
 cover:integriq:92114ab0m658d:102ac6fb	PR #3514: 11 tests, executor broker lookup/refusals and masker map keys; executor 96.9%, masker 100%; suite 8043->8054, no new failures	session-20261113T081046-f0858dc4	2026-11-13T08:46:57Z
+cover:learniq:e6498dddmf689:568ec52a	already done: lib/Lifecycle/*.php at 95.9% lines (2628/2740) under the full unit suite on development, target 95; no PR	session-20261113T051705-4f5ad12a	2026-11-13T08:46:38Z
 merge:launchpad:1174:1d410467	merge-local over 2 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:46:56Z
 merge:launchpad:1175:13899a12	merge-local over 2 launchpad tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:46:56Z
