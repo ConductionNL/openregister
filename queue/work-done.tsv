@@ -3737,3 +3737,4 @@ cover:pipelinq:7f9dc8e6m916f:6925f818	already done: lib/SetupCheck at 100% (27/2
 merge:learniq:2453:aee4f3b9	merge-local over 2 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:09:22Z
 merge:learniq:2454:60467ee9	merge-local over 2 learniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T09:09:22Z
 cover:buildiq:70b3e29embf07:34763eb4	PR #1534: 5 tests for ApiContractMiddleware, 58/59->59/59 lines, suite 2659->2664 (1 inherited failure)	session-20261113T084521-fd8a31c7	2026-11-13T09:09:27Z
+build:dossiq:admin-tabs-carry-the-settings-board-blocks	PR #6347: 2.4 Shipped filter + Origin column, 2 tests; 2.2 is OpenRegister work, left	session-20261113T084523-b4140bcd	2026-11-13T09:09:43Z
