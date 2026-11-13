@@ -6292,3 +6292,4 @@ fix:shillinq:3000:1c89b1e9	no change: branch already contains development; confl
 verify:hermiq:1704:1871ae9e	GREEN 1704 (tests-only; vitest 1332 pass)	session-20261113T172329-0b6220f9	2026-11-13T19:19:41Z
 fix:shillinq:3002:6f0aa114	no change: up to date with development, clean merge; conflict only vs another tree PR; REVERIFY queued	session-20261113T185322-2911ee6d	2026-11-13T19:19:55Z
 verify:shillinq:2986:51102f19	GREEN 2986,3002; CONFLICT 3003-3008 (l10n/version/lock vs earlier tree PRs); 0 new failures	session-20261113T182349-7e3632fd	2026-11-13T19:20:22Z
+cover:decidiq:a5f973bbm5a4d:568ec52a	already done: lib/Lifecycle/*.php at 100% (256/256) on development	session-20261113T185322-2911ee6d	2026-11-13T19:20:43Z
