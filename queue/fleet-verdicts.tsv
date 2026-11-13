@@ -6443,3 +6443,4 @@ opencatalogi	2643	0d9b922c7afce4fbf47c623a48587fa907989222	CONFLICT	worker-11	co
 opencatalogi	2645	ce141d2a34af9af73d41bd6c7a57f20c9f97789c	CONFLICT	worker-11	conflicts with development plus the earlier PRs of this tree
 hermiq	1717	94f4b6bd904f3f6eec1d2178612597afd33f8668	GREEN	worker-48	unit 4573 tests vs baseline 4562 (146 errors, 26 failures inherited), no new failures; vitest 1311 passed; builds agent-authored-marking 1.1, 2.1, 3.2
 dossiq	6452	27c0eaffbdabca4713c85028291b9cad9516d25c	GREEN	worker-57	build PR, a manifest note and tasks.md only; unit 16531 on tree, 20 inherited failures as on development, no new
+decidiq	2148	e8596bad48afe132c776e2827a4283d31630995c	GREEN	worker-20	tree 2148+2149: phpunit 3949 OK (baseline 3911 OK), 0 new failures; only l10n catalogues among JS files, vitest not needed; build judged against insight-decisions-report-by-period-and-body: decidingBody listener on create/update and idempotent repair step
