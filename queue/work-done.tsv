@@ -1678,3 +1678,4 @@ cover:dossiq:6ca0231ema7d4:jsea7197ec	PR #6242: src/utils 97.36% -> 98.68% state
 cover:keepiq:d76c2121m88ca:38e80a9f	PR #1721: 14 tests, lib/Command 123/181->181/181 stmts (suite 4110->4124, 0 failures)	session-20261113T015005-81f4d5a5	2026-11-13T02:33:38Z
 cover:shillinq:801aab65:84e9293a	PR: 8 tests (Peppol order mapper, log mailer); PurchaseOrder dir 113->125/126; suite 9004->9012, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T02:33:53Z
 cover:integriq:9b0f5894md8cd:9d3a1784	PR #3459: 23 tests for 8 background jobs (6 previously untested); 7113->7136, 2 inherited errors	session-20261113T004527-ec0338ee	2026-11-13T02:34:08Z
+cover:keepiq:d76c2121m88ca:9d3a1784	PR #1722: BackgroundJob cert/trash edge paths (+9 tests); 90.9%->99.8%, no failures	session-20261113T011731-f3798045	2026-11-13T02:34:27Z
