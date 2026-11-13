@@ -5915,3 +5915,4 @@ verify:shillinq:2951:4f21461d	shillinq #2951 GREEN: PHP 0 new failures, vitest 2
 cover:launchpad:fb10c50fm2d1d:d39f9857	already covered: lib/Support/*.php 46/46 at d6a7f892; no PR	session-20261113T172334-4b3b027b	2026-11-13T18:20:09Z
 verify:keepiq:1761:bee8c39e	1761 GREEN (4862 tests, 0 failures, tests only)	session-20261113T172329-e224a4f0	2026-11-13T18:20:11Z
 cover:buildiq:70b3e29ema699:bede5e5d	PR #1555: resolveService covered, 3 tests; dirs 92.4% -> 98.5%	session-20261113T172329-5f4feaba	2026-11-13T18:20:16Z
+cover:buildiq:70b3e29ema699:d528dcf0	already above target: lib/Dashboard/*.php 80/81 lines (98.8%); only VirtualAppWidget::getIconClass constant left (getter-only; its class is styled nowhere); no PR	session-20261113T175336-e3687686	2026-11-13T18:20:23Z
