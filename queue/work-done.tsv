@@ -2505,3 +2505,4 @@ review:openregister:10102:19fe1fe3	APPROVE: test-only jest specs, green on merge
 verify:integriq:3481:92758e96	GREEN 3481 (7209->7220, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T05:44:23Z
 cover:dossiq:f8a113c5mac88:d1fb07ad	PR dossiq#6291: 2 tests, FrozenRecord dir 184/184 lines; same 19 inherited failures	session-20261113T051703-1b54bfba	2026-11-13T05:44:42Z
 cover:integriq:92114ab0m1534:0323ad91	already done: lib/Observability/Otel/ at 98.55% lines (272/276) on development 4aa851de; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T05:44:35Z
+cover:dossiq:f8a113c5mac88:1b97f731	PR dossiq#6292: 18 tests for 3 listeners (RestrictedDocumentHandler, FileRestrictionAdmit, CaseTypeRightsRows); suite 14665->14675, same 19 inherited failures	session-20261113T053904-36dcee67	2026-11-13T05:45:21Z
