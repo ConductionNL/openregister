@@ -5842,3 +5842,4 @@ cover:stackiq:9ac19b3am9d24:692f8a78	already done: lib/Service/Contactpersoon/ a
 build:portaliq:a-resident-opens-one-message	PR #2446: T01-T09 built (endpoint, projection, message page, routing, mark-read, l10n); T10/T11 live-only left	session-20261113T175332-5effc865	2026-11-13T18:09:14Z
 cover:stackiq:9ac19b3am9d24:2861e5ef	already done: lib/Examples/ at 93/93 statements; ContactpersoonServiceExampleTest asserts every path with exact outputs	session-20261113T172325-6eb25015	2026-11-13T18:09:13Z
 cover:stackiq:9ac19b3am9d24:81b1241f	already done: lib/Portal/*.php at 100% (23/23) @fb3c61bb	session-20261113T171149-8b9ea523	2026-11-13T18:09:11Z
+cover:stackiq:9ac19b3am9d24:aae6d66c	already done: lib/Exception/*.php at 100% (4/4) @fb3c61bb	session-20261113T171149-8b9ea523	2026-11-13T18:09:25Z
