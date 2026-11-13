@@ -6333,3 +6333,4 @@ filinq	2054	9a5ab51a7cee7f4867ebb52b54dc27186b119e0f	GREEN	worker-08	unit 6520 t
 filinq	2092	b63f6794deb56f40aa623e97833a692f49d2ac82	GREEN	worker-08	unit 6520 tests (baseline 6443, 0 failures), no new failures; build PR, new settings endpoints admin-only
 filinq	2097	f22bb9e2e6382b5c6899a345361d79dd31a9b1b4	GREEN	worker-08	unit 6520 tests (baseline 6443, 0 failures), no new failures; build PR judged against its openspec change
 filinq	2090	37852824e959372cea7b4fcf77c0ab0b4defc111	CONFLICT	worker-08	lib/Settings/filinq_register.json conflicts with #2054/#2092 in the tree (clean on plain development); merge development in after those land
+filinq	2091	4eeb1d0725ceef0a17d98e89099e33167d118337	CONFLICT	worker-08	lib/Settings/filinq_register.json conflicts with #2054/#2092 in the tree (clean on plain development); merge development in after those land
