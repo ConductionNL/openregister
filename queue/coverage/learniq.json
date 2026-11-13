@@ -1,0 +1,220 @@
+{
+ "app": "learniq",
+ "commit": "f6dde4cf0bad4c472faca017cff5e599719c9039",
+ "measured_at": "2026-11-13T00:02:10Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 91.31,
+  "statements": 37591,
+  "covered": 34323,
+  "dirs": {
+   "lib/AppInfo/": [
+    26,
+    26
+   ],
+   "lib/AppInfo/Registrar/": [
+    511,
+    458
+   ],
+   "lib/BackgroundJob/": [
+    726,
+    647
+   ],
+   "lib/Bpv/": [
+    0,
+    0
+   ],
+   "lib/Command/": [
+    236,
+    155
+   ],
+   "lib/Controller/": [
+    3658,
+    3258
+   ],
+   "lib/Event/": [
+    10,
+    10
+   ],
+   "lib/Exception/": [
+    18,
+    16
+   ],
+   "lib/Grading/": [
+    235,
+    227
+   ],
+   "lib/Lifecycle/": [
+    2741,
+    2586
+   ],
+   "lib/Lifecycle/Action/": [
+    146,
+    132
+   ],
+   "lib/Listener/": [
+    6069,
+    5579
+   ],
+   "lib/Mcp/": [
+    1,
+    1
+   ],
+   "lib/Middleware/": [
+    24,
+    24
+   ],
+   "lib/Plagiarism/": [
+    0,
+    0
+   ],
+   "lib/Portal/": [
+    2957,
+    2883
+   ],
+   "lib/Proctoring/": [
+    76,
+    76
+   ],
+   "lib/Repair/": [
+    1565,
+    1445
+   ],
+   "lib/Repair/Support/": [
+    52,
+    52
+   ],
+   "lib/Sections/": [
+    0,
+    0
+   ],
+   "lib/Service/": [
+    12540,
+    11300
+   ],
+   "lib/Service/Accessibility/": [
+    141,
+    1
+   ],
+   "lib/Service/Attendance/": [
+    694,
+    666
+   ],
+   "lib/Service/Calendar/": [
+    13,
+    13
+   ],
+   "lib/Service/Catalogue/": [
+    222,
+    211
+   ],
+   "lib/Service/CheckIn/": [
+    157,
+    149
+   ],
+   "lib/Service/Course/": [
+    237,
+    229
+   ],
+   "lib/Service/CoursePackage/": [
+    842,
+    709
+   ],
+   "lib/Service/CourseStore/": [
+    156,
+    90
+   ],
+   "lib/Service/Enrolment/": [
+    44,
+    44
+   ],
+   "lib/Service/Grading/": [
+    73,
+    73
+   ],
+   "lib/Service/LessonOnboarding/": [
+    726,
+    703
+   ],
+   "lib/Service/OpenMaterial/": [
+    224,
+    213
+   ],
+   "lib/Service/Portal/": [
+    1390,
+    1318
+   ],
+   "lib/Service/Programme/": [
+    59,
+    59
+   ],
+   "lib/Service/Settings/": [
+    11,
+    11
+   ],
+   "lib/Service/Signing/": [
+    136,
+    133
+   ],
+   "lib/Service/WorkGroup/": [
+    111,
+    105
+   ],
+   "lib/Settings/": [
+    0,
+    0
+   ],
+   "lib/SetupCheck/": [
+    13,
+    11
+   ],
+   "lib/Support/": [
+    75,
+    71
+   ],
+   "lib/Timetabling/": [
+    529,
+    497
+   ],
+   "lib/Timetabling/Source/": [
+    147,
+    142
+   ]
+  }
+ },
+ "js": {
+  "pct": 89.01,
+  "statements": 13690,
+  "covered": 12186,
+  "dirs": {
+   "src/": [
+    1147,
+    0
+   ],
+   "src/api/": [
+    233,
+    206
+   ],
+   "src/dialogs/": [
+    908,
+    734
+   ],
+   "src/services/": [
+    505,
+    502
+   ],
+   "src/store/": [
+    26,
+    0
+   ],
+   "src/store/modules/": [
+    196,
+    112
+   ],
+   "src/utils/": [
+    10675,
+    10632
+   ]
+  }
+ }
+}
