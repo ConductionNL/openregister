@@ -1153,3 +1153,4 @@ merge:hermiq:1583:43908e6c	merge-local over 15 hermiq tasks: merged=26 red=1 fai
 merge:hermiq:1589:0a4d481a	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:33:41Z
 merge:hermiq:1591:f93eecba	merge-local over 15 hermiq tasks: merged=26 red=1 fail=0 skip=18; already in development 47; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T00:33:49Z
 verify:stackiq:1796:d95dffc2	3 GREEN (1796, 1797, 1799); tree 2586 OK vs baseline 2539, 0 new failures	session-20261112T234653-57d11a5b	2026-11-13T00:34:02Z
+merge:thematiq:1659:e1fe07f8	stale	feeder	2026-11-13T00:30:11Z
