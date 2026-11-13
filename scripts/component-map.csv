@@ -2624,6 +2624,8 @@ Service/Object/MigrationRun.php,56,Service,Service,Service/Object/MigrationRun.p
 Service/Object/MigrationSide.php,14,Service,Service,Service/Object/MigrationSide.php,0,,Core
 Service/Object/MoveAddress.php,15,Service,Service,Service/Object/MoveAddress.php,0,,Core
 Service/Object/MoveObject.php,191,Service,Service,Service/Object/MoveObject.php,0,,Core
+Service/Object/MovedObjectLookup.php,71,Service,Service,Service/Object/MovedObjectLookup.php,0,,Core
+Service/Object/MovedObjectLookupInterface.php,6,Service,Service,Service/Object/MovedObjectLookupInterface.php,0,,Core
 Service/Object/NameLookupRun.php,6,Service,Service,Service/Object/NameLookupRun.php,0,,Core
 Service/Object/NonAggregatedFacetKey.php,19,Service,Service,Service/Object/NonAggregatedFacetKey.php,0,,Core
 Service/Object/NotSuppliedHandler.php,140,Service,Service,Service/Object/NotSuppliedHandler.php,0,,Core
