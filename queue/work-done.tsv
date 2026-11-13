@@ -2808,3 +2808,4 @@ measure:keepiq:20261113h06	php/js pct: 89.12 90.45 (commit 8a5d84f3)	session-202
 cover:shillinq:05639debmd8ee:b94a5e48	PR opened: 3 tests for LogBzkSisaUploadAdapter (only untested class in dirs); 1 inherited failure unchanged	session-20261113T051707-6c971ec6	2026-11-13T06:30:16Z
 cover:pipelinq:7f9dc8e6m1e6e:js4570fd16	already done: src/views/pos/ at 88.3% statements (755/855) on current development, above 85 target	session-20261113T044737-f37de8e3	2026-11-13T06:30:29Z
 cover:shillinq:05639debmd8ee:9d3a1784	PR shillinq#2890: 28 tests, 4 jobs (Horizon 28->92/93, TimelineRetry 170->244/244, FxRate 136->162/164, DBAFlag 157->172/174); same 1 inherited failure	session-20261113T051703-1b54bfba	2026-11-13T06:30:32Z
+cover:pipelinq:7f9dc8e6m1e6e:09cc8f24	already done: lib/Service/Cti 365/368 statements (99.2%) with pcov on development; no PR (unit suite has 1 inherited failure)	session-20261113T051710-d9c31c61	2026-11-13T06:30:38Z
