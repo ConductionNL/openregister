@@ -7438,3 +7438,4 @@ fix:integriq:3552:3abd08bb	resolved l10n conflict with 3551; new head 506cd3ae6;
 build:humaniq:setup-wizard-six-steps	partial: PR #1136 (3.2 create-administrations, 3.3 mode/language validation and mode write; 1.x/2.x need nextcloud-vue, 3.1 ships with the manifest, 3.4/4.1/5.x left)	session-20261113T212406-cc34ae8b	2026-11-13T22:59:34Z
 build:hermiq:operations-backup-and-restore	partial: PR #1763 backup half (admin settings + Back up now, per-organisation writer, nightly job, prune); left: restore tasks 3-5, Newman, live checks	session-20261113T212414-df8c34e5	2026-11-13T22:59:46Z
 fix:integriq:3549:806edd12	fixed CONFLICT: l10n keys moved off the shared append point; new head 0b1e6d11, REVERIFY recorded	session-20261113T213326-97cbe4c8	2026-11-13T23:00:00Z
+fix:integriq:3545:37cc7307	merged development (clean), REVERIFY; conflict only with unmerged #3543 (l10n union)	session-20261113T185324-28e07ab2	2026-11-13T23:00:30Z
