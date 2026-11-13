@@ -1292,3 +1292,4 @@ cover:shillinq:801aab65:f545d745	PR #2809: 30 tests over 5 repair classes, lib/R
 verify:integriq:3440:5992af93	4 GREEN (3440-3443, vitest-only), vitest 1494 OK, phpunit = baseline	session-20261112T231639-4c562de9	2026-11-13T01:03:45Z
 review:openregister:10076:2e819f39	APPROVE: tests only, 149 log-view tests green on merge with main	session-20261113T002028-bc0aa910	2026-11-13T01:04:02Z
 cover:dossiq:6ca0231e:f7dbdab3	PR #6210: 23 tests, 5 untested CaseType classes to 100% (VersionChain, VersionDiff, AlwaysAvailableActs, DerivedCaseTypeReferences, WorkflowTemplateBinding), CaseType 1135->1350/1497, suite 13455->13478, baseline 19 failures unchanged	session-20261112T233856-8f2d924b	2026-11-13T01:04:13Z
+cover:keepiq:d76c2121m70b5:js06645759	PR #1712: 8 component specs, 124 tests; src/components direct-file line coverage 70.7% -> 86.5%	session-20261113T002028-6d7c79b9	2026-11-13T01:04:42Z
