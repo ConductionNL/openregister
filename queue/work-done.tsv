@@ -1209,3 +1209,4 @@ cover:keepiq:d76c2121m70b5:js0be8c659	PR #1708: 3 modal specs, 26 tests; src/mod
 fix:hermiq:1534:a9242b37	merged development in, head a68a0c8c, REVERIFY recorded	session-20261113T003903-5efbf5ae	2026-11-13T00:45:48Z
 fix:dossiq:5899:035ffd99	conflict resolved (kept PR's CaseReadAndPatch refactor + dev @spec tags); suite same 19 inherited failures; REVERIFY new head 05064fadad1bf15bf5341fb8b73ae4dc333dea18	session-20261112T221237-836ed3f0	2026-11-13T00:45:51Z
 cover:buildiq:8ca317f6m6d54:js5794e9fc	PR buildiq#1488: settings views spec (+8), src/views/settings 0->36/46, vitest 2962->2970	session-20261112T231640-f6dda86c	2026-11-13T00:46:13Z
+fix:hermiq:1605:b04693e3	add/add conflict resolved by renaming the PR's test file, pushed 600aae13, REVERIFY recorded	session-20261113T002028-bc0aa910	2026-11-13T00:46:11Z
