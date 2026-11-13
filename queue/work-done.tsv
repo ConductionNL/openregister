@@ -5927,3 +5927,4 @@ cover:dossiq:069ee2d6m2deb:8fea83ca	already done: lib/Service/CaseType/*.php at 
 cover:shillinq:05639debm7b6b:2befd24e	already done: lib/Service/Asset 562/564 statements covered (99.6%), no PR	session-20261113T172329-0b6220f9	2026-11-13T18:21:27Z
 cover:dossiq:069ee2d6m2deb:60c2c265	PR #6431: +18 tests (BelplanController, SubstitutionController); lib/Controller 82.62->83.24%	session-20261113T172328-c860ad55	2026-11-13T18:21:40Z
 cover:dossiq:069ee2d6m2deb:e7fd1c43	already done: lib/Service/Intake/*.php at 99.7% stmt coverage on development; no PR	session-20261113T172328-c860ad55	2026-11-13T18:21:57Z
+cover:shillinq:05639debm7b6b:d76b2f72	already done: lib/Guard/*.php 1913/1933 statements covered (99.0%), no PR	session-20261113T172329-0b6220f9	2026-11-13T18:21:55Z
