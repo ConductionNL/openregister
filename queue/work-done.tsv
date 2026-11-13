@@ -6191,3 +6191,4 @@ measure:planninq:20261113h18	php/js 97.46 88.25 % @2cbac43	session-20261113T1711
 cover:decidiq:a5f973bbm5a4d:1b97f731	PR #2131: 12 tests, 4 listeners; lib/Listener/*.php 94.78%->97.76%; suite 3911->3923 green	session-20261113T182404-f2c28226	2026-11-13T19:05:23Z
 verify:hermiq:1699:db842efa	GREEN #1699, #1700 (tests only; 4590 tests, 0 failures)	session-20261113T172328-c860ad55	2026-11-13T19:05:53Z
 cover:hermiq:065f1631md84f:js0be8c659	PR #1704: 26 vitest tests over 4 modals; src/modals 90.13% -> 94.03% (open -5 adds the small dialogs)	session-20261113T175336-b2d7fc7c	2026-11-13T19:06:06Z
+review:openregister:10296:40d783e7	APPROVE (test metadata only, 19 files green)	session-20261113T171153-e1c17962	2026-11-13T19:06:08Z
