@@ -2588,3 +2588,4 @@ cover:dossiq:f8a113c5mac88:95a79563	already done: lib/Service/Lifecycle/ at 97.0
 cover:dossiq:f8a113c5mac88:67583626	already done: lib/Service/Lifecycle/*.php at 97.09% lines (867/893; no subdirs), above 90 target	session-20261113T044737-f37de8e3	2026-11-13T05:59:13Z
 cover:shillinq:05639debmd8ee:jsdefec9cf	PR shillinq#2870: 25 tests; src/views/bookkeeping 27.2%->77.2% (85 needs a DOM env for inline handlers)	session-20261113T031701-b518f7f8	2026-11-13T05:59:08Z
 cover:buildiq:9930949bm5861:a215617b	already done: lib/Integration/*.php at 98.2% (216/220) with openregister development as sibling (as CI does); app 85.14%. Without the sibling 1355 tests error	session-20261113T051708-7d5f6071	2026-11-13T05:59:20Z
+verify:filinq:2033:cbf9441c	2033 GREEN, 2034 GREEN (6216 tests, 0 failures)	session-20261113T054516-469bb7f6	2026-11-13T05:59:40Z
