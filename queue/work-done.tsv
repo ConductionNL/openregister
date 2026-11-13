@@ -3862,3 +3862,4 @@ cover:stackiq:9ac19b3am6096:js0b5eefce	already done: open PR from quality/test-c
 cover:keepiq:c967a31fm1147:2c3e981f	already done: lib/Service/ShareSync 174/174 covered	session-20261113T051709-e616bf69	2026-11-13T09:25:51Z
 build:dossiq:example-set-installs-as-written	already built (#4611); 3.1 is a live-instance check	session-20261113T084527-a728978e	2026-11-13T09:25:53Z
 build:dossiq:decision-templates-render-through-a-vendor	failed: permission (PR create refused; tasks 2.1/2.2/2.4 built and pushed on quality/build-decision-templates-render-through-a-vendor @ ea534b794c, suite 15413 tests, 19 inherited failures, none new)	session-20261113T091531-dc489d35	2026-11-13T09:26:02Z
+build:dossiq:dossiq-decisions-to-decidiq	partial: PR #6356 raises the Woo decision in decidiq (woo-decision) and fails closed; DMN retirement still waits on Q-dossiq-L6-4; suite 15401->15404, no new failures	session-20261113T081046-f0858dc4	2026-11-13T09:26:00Z
