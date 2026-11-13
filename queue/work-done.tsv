@@ -2859,6 +2859,7 @@ cover:pipelinq:7f9dc8e6m1e6e:js3f7698d2	PR #3689: 7 vitest tests, PipelineCard.v
 measure:integriq:20261113h06	php/js pct: 88.97 74.8 (commit 46d1bb08; unit suite 7280 tests, 2 errors on development)	session-20261113T034634-f20a8d77	2026-11-13T06:35:15Z
 cover:stackiq:df113dffm5ac4:2f30e3d6	already done: lib/Service/AangebodenGebruik 61/61 and lib/Service/Itsm 49/49 statements on development; no PR	session-20261113T051710-d9c31c61	2026-11-13T06:35:30Z
 cover:buildiq:9930949bmc723:1106b038	already done: lib/Mcp/Handler/ at 95.92% (775/808, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:35:32Z
+cover:stackiq:df113dffm5ac4:js3f3bfe56	already done: src/*.js 49/50 statements (98%) under vitest on development a05c3ddd; suite 2253 passed	session-20261113T061516-58aa7364	2026-11-13T06:35:49Z
 cover:buildiq:9930949bmc723:d528dcf0	already done: lib/Dashboard/*.php at 98.8% lines (80/81) under the full unit suite on development; queued 33% is stale; no PR	session-20261113T051705-4f5ad12a	2026-11-13T06:35:50Z
 cover:shillinq:05639debmd8ee:bad4accf	PR #2894: CcmRuleEngine 50->51/51 (metadata + result assertions)	session-20261113T051709-e616bf69	2026-11-13T06:35:47Z
 verify:dossiq:6301:795934dd	GREEN 6301, 6302: 14899->14934 tests, same 19 inherited failures	session-20261113T054517-06ee2c47	2026-11-13T06:35:51Z
