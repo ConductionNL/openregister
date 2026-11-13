@@ -3162,3 +3162,4 @@ cover:shillinq:05639debmd8ee:28cccfd9	already done: lib/Repair/Support 113/113 s
 measure:versioniq:20261113h06	php 92.82% (pcov, unit-only config; 1356 tests, 2 inherited failures), js 74.17% (vitest 2730 passed)	session-20261113T072708-ee434236	2026-11-13T07:30:42Z
 cover:integriq:92114ab0m658d:2820f177	PR #3500: ImapMailboxTransport 1/48->48/48, CaseReferenceDetector 25/25; 18 tests; suite 7654->7672, baseline 2 errors unchanged	session-20261113T071640-3ba6da34	2026-11-13T07:30:52Z
 verify:dossiq:6321:6a3f9251	GREEN #6321: 15177 tests, 19 baseline, 0 new	session-20261113T072715-8f8a14e9	2026-11-13T07:31:13Z
+cover:integriq:92114ab0m658d:2af01be6	no PR: lib/Intake/*.php already 471/476 lines (98.9%, target 95); left: 4 plain getters (getter-only tests not allowed) and IntakeChannelSourceResolver:116, unreachable (sourceFor only returns array configurations)	session-20261113T071640-3ba6da34	2026-11-13T07:31:35Z
