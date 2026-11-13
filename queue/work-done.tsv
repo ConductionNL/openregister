@@ -2757,3 +2757,5 @@ cover:learniq:e6498dddmf689:js0023cfc7	failed: permission (npm ci refused in thi
 cover:pipelinq:7f9dc8e6m1e6e:a215617b	already done: lib/Integration/*.php 302/302 lines (100.0%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:21:38Z
 cover:pipelinq:7f9dc8e6m1e6e:2cc09f74	already done: lib/Service/Marketing/Transport/ 330/335 lines (98.5%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:21:43Z
 cover:pipelinq:7f9dc8e6m1e6e:ab7f3595	already done: pcov on development (today) shows lib/Service/Provider at 100% lines in every class except MessageDispatchTrait 97.1% (34/35); nothing meaningful left	session-20261113T053904-36dcee67	2026-11-13T06:22:22Z
+merge:buildiq:1498:ab948ba1	merge-local over 2 buildiq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:22:34Z
+merge:buildiq:1514:88371e89	merge-local over 2 buildiq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:22:34Z
