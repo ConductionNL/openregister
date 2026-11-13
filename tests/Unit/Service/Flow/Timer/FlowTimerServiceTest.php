@@ -91,6 +91,31 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
  * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
+ * @uses \OCA\OpenRegister\Db\FlowTimer\TimerSubject
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerChange
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarRoll
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\EscalationAudience
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\EscalationNotice
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerArithmetic
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerExtension
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerStorage
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerSubjects
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\MomentShift
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\RollRule
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\RungTimeline
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\TimerDecision
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\TimerExtensionGrant
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\TimerExtensionRequest
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\TimerFiring
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\TimerSuspension
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\UnitConversion
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
+ * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
+ * @uses \OCA\OpenRegister\Service\Task\TimerOutcome
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class FlowTimerServiceTest extends TestCase {
 

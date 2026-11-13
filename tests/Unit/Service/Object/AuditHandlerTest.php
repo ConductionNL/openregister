@@ -34,6 +34,8 @@ use RuntimeException;
  * Which filters reach the audit trail mapper, and what happens when it fails.
  *
  * @covers \OCA\OpenRegister\Service\Object\AuditHandler
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class AuditHandlerTest extends TestCase {
 

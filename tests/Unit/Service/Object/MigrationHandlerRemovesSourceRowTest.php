@@ -52,6 +52,18 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Object\ObjectMove
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectMigration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\Object\MigrationMapping
+ * @uses \OCA\OpenRegister\Service\Object\MigrationStorage
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
  */
 class MigrationHandlerRemovesSourceRowTest extends TestCase {
 

@@ -360,4 +360,25 @@ class TaskNotesControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(['success' => true], $response->getData());
 	}//end testDestroyDeletesTheNamedNote()
+
+	/**
+	 * The note is matched against the task the route resolved to, not the route text.
+	 *
+	 * @return void
+	 */
+	public function testUpdateAndDestroyMatchTheNoteAgainstTheResolvedTaskUuid(): void {
+		$this->givenReadable();
+		$asked = [];
+		$this->notes->method('requireNoteOf')->willReturnCallback(
+			static function (string $objectUuid, int $noteId) use (&$asked): array {
+				$asked[] = $objectUuid;
+				return ['id' => $noteId];
+			}
+		);
+
+		$this->controller(['message' => 'rewritten'])->update(uuid: 'T-1', noteId: '7');
+		$this->controller()->destroy(uuid: 'T-1', noteId: '7');
+
+		$this->assertSame(['t-1', 't-1'], $asked);
+	}//end testUpdateAndDestroyMatchTheNoteAgainstTheResolvedTaskUuid()
 }//end class

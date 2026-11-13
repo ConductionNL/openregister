@@ -101,6 +101,20 @@ interface MagicObjectSearchInterface {
 	public function countAll(?array $_filters = null, ?Schema $schema = null, ?Register $register = null): int;
 
 	/**
+	 * Count the rows with no organisation in every table of a schema that match the filters.
+	 *
+	 * Ignores RBAC and any active organisation context.
+	 *
+	 * @param array  $filters The filters.
+	 * @param Schema $schema  The schema.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/specs/object-validation/spec.md
+	 */
+	public function countOrganisationless(array $filters, Schema $schema): int;
+
+	/**
 	 * Get simple facets.
 	 *
 	 * Routes to the correct faceting method based on query parameters.

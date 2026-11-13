@@ -39,6 +39,11 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Object\ObjectReadAccess
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class ObjectReadAccessBehaviourTest extends TestCase {
 

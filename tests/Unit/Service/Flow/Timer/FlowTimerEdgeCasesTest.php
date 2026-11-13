@@ -54,6 +54,10 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\MomentShift
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\RungTimeline
  */
 class FlowTimerEdgeCasesTest extends TestCase {
 
