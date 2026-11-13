@@ -3678,3 +3678,4 @@ cover:stackiq:9ac19b3am6096:js5794e9fc	already done: quality/test-coverage-js-57
 cover:dossiq:069ee2d6m7e79:js7de78384	no PR: src/manifest.d/ holds only JSON manifest fragments and a README on development, no JS to unit-test	session-20261113T080549-dde3ba19	2026-11-13T08:59:23Z
 merge:learniq:2441:c104aca5	merge-local over 2 learniq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:59:40Z
 merge:learniq:2448:2609eebf	merge-local over 2 learniq tasks: merged=5 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:59:40Z
+cover:launchpad:fb10c50fm911d:js979145b9	already done: src/stores/*.js at 98.68% lines (674/683) on development; no PR	session-20261113T073916-e9f11dfa	2026-11-13T09:00:23Z
