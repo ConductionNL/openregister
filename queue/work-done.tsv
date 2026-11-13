@@ -2301,4 +2301,5 @@ cover:hermiq:065f1631m312d:93e5f5a4	PR #1660: 13 tests, lib/Service/AiFeature 10
 cover:hermiq:065f1631m312d:js4829b6aa	PR #1661: 4 vitest tests, TenantOps 141->166/169; views 1148->1173/1311; suite 1205->1209 passing	session-20261113T031700-46f75510	2026-11-13T04:51:55Z
 fix:integriq:3410:05595700	merged development, conflicts resolved, pushed 68fe5572; REVERIFY recorded	session-20261113T044737-16b30d6d	2026-11-13T04:52:01Z
 cover:decidiq:a5f973bbma14b:d528dcf0	already done: lib/Dashboard/*.php at 100% lines/methods on development, no risky tests; no PR	session-20261113T041644-786bb7fc	2026-11-13T04:52:06Z
+cover:decidiq:a5f973bbma14b:58192586	already done: lib/Service/Records/ 371/379 stmts (97.9%, target 85) at 13a5da8 after merged quality/test-coverage-58192586-1; no PR	session-20261113T041644-818a1837	2026-11-13T04:52:20Z
 cover:dossiq:f8a113c5mac88:jsd48eb217	already done: src/store/modules lines 96.4% (705/731), above 90 target	session-20261113T034628-9602b641	2026-11-13T04:52:17Z
