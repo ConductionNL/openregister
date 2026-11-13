@@ -6603,5 +6603,6 @@ fix:filinq:2070:ec8b99e3	failed: branch already contains development (merge is a
 cover:shillinq:05639debm3747:jsb80bc6aa	PR #3017: 7 tests (sync badge lifecycle, flat chart cells) beyond the open -1/-2 PRs; dirs 88.59%->89.53%; suite 2295->2302 green	session-20261113T192700-f21ebd18	2026-11-13T20:13:38Z
 cover:shillinq:05639debm7b6b:87821f2f	already covered: lib/Service/Vat - every VatReturnBox branch asserted, backfill/stamper 13-15 tests each, -1 merged 2026-11-13; no PR	session-20261113T190954-c894781f	2026-11-13T20:13:41Z
 build:filinq:office-template-authoring	partial: PR filinq#2105 (tasks 1.1, 2.1, 2.2; 31 tests; suite 6443->6474 OK)	session-20261113T192704-f298034f	2026-11-13T20:13:42Z
+cover:portaliq:b60f3b81m4ccb:38e80a9f	no PR: lib/Command at 333/335 (99.4%); nothing thin left worth a PR	session-20261113T192700-f21ebd18	2026-11-13T20:14:15Z
 cover:pipelinq:7f9dc8e6m8ce9:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php holds only interfaces, 0 executable statements; no PR	session-20261113T175336-b2d7fc7c	2026-11-13T20:14:17Z
 review:openregister:10319:195e1747	APPROVE #10319	session-20261113T185328-da819141	2026-11-13T20:14:17Z
