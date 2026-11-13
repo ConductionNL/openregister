@@ -688,6 +688,8 @@
             "#1 addOrderBy(created, DESC)",
             "#1 setMaxResults(50)",
             "#1 setFirstResult(0)",
+            "#1 expr.isNull(withdrawn_at)",
+            "#1 andWhere(isNull(withdrawn_at))",
             "#1 executeQuery()"
         ]
     },
@@ -706,6 +708,8 @@
             "#1 param :p2 = public, 2",
             "#1 expr.eq(visibility, :p2, NULL)",
             "#1 andWhere(eq(visibility, :p2, NULL))",
+            "#1 expr.isNull(withdrawn_at)",
+            "#1 andWhere(isNull(withdrawn_at))",
             "#1 executeQuery()"
         ]
     },
@@ -721,6 +725,8 @@
             "#1 where(iLike(message, :p1, NULL))",
             "#1 orderBy(created, DESC)",
             "#1 setMaxResults(50)",
+            "#1 expr.isNull(withdrawn_at)",
+            "#1 andWhere(isNull(withdrawn_at))",
             "#1 executeQuery()"
         ]
     },
@@ -740,6 +746,8 @@
             "#1 param :p3 = public, 2",
             "#1 expr.eq(visibility, :p3, NULL)",
             "#1 andWhere(eq(visibility, :p3, NULL))",
+            "#1 expr.isNull(withdrawn_at)",
+            "#1 andWhere(isNull(withdrawn_at))",
             "#1 param :p4 = call, 2",
             "#1 expr.eq(kind, :p4, NULL)",
             "#1 andWhere(eq(kind, :p4, NULL))",
@@ -760,6 +768,8 @@
             "#1 where(iLike(message, :p1, NULL))",
             "#1 orderBy(created, DESC)",
             "#1 setMaxResults(1)",
+            "#1 expr.isNull(withdrawn_at)",
+            "#1 andWhere(isNull(withdrawn_at))",
             "#1 executeQuery()"
         ]
     },
@@ -775,6 +785,8 @@
             "#1 where(eq(follow_up, :p1, NULL))",
             "#1 orderBy(created, ASC)",
             "#1 setMaxResults(50)",
+            "#1 expr.isNull(withdrawn_at)",
+            "#1 andWhere(isNull(withdrawn_at))",
             "#1 executeQuery()"
         ]
     },
@@ -791,6 +803,8 @@
             "#1 param :p2 = [\"o-1\"], 102",
             "#1 expr.in(object_uuid, :p2, NULL)",
             "#1 andWhere(in(object_uuid, :p2, NULL))",
+            "#1 expr.isNull(withdrawn_at)",
+            "#1 andWhere(isNull(withdrawn_at))",
             "#1 param :p3 = call, 2",
             "#1 expr.eq(kind, :p3, NULL)",
             "#1 andWhere(eq(kind, :p3, NULL))",
