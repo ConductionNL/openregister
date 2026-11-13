@@ -65,5 +65,8 @@ final class CapabilityRegistrar {
 
 		$context->registerCapability(UrnCapability::class);
 		$context->registerCapability(IntegrationsCapability::class);
+		// PlatformCapability — versions, limits, deep link patterns and the
+		// platform integrations, with a block per claiming app (platform-capability).
+		$context->registerCapability(PlatformCapability::class);
 	}//end register()
 }//end class
