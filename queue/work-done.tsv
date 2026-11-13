@@ -6598,3 +6598,4 @@ cover:pipelinq:7f9dc8e6m8ce9:be0dcca9	already done: lib/Mcp/*.php 29/29 statemen
 build:filinq:signature-verification-portal	partial: PR #2103 (schema+seed, link service, record verify path, public api/verify/{token}, mint on completion, 29 tests; suite 6443->6472 green); left: public page, QR stamp, seal/LibreSign minting, e2e/live checks	session-20261113T195348-92cf741a	2026-11-13T20:13:17Z
 verify:pipelinq:3775:475b54c6	2 GREEN (3775, 3776): tests only, no new failures	session-20261113T175332-5effc865	2026-11-13T20:13:25Z
 cover:openregister:7350e3efma401:c34f47b5	PR #10321: 15 tests for SearchTrailStatistics (period per DB, per-session, range, empty summary); tests/Unit/Db 5578->5593, same 1 failure	session-20261113T195351-5d22eaae	2026-11-13T20:13:50Z
+build:filinq:office-template-authoring	partial: PR filinq#2105 (tasks 1.1, 2.1, 2.2; 31 tests; suite 6443->6474 OK)	session-20261113T192704-f298034f	2026-11-13T20:13:42Z
