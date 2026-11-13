@@ -5599,3 +5599,4 @@ dossiq	6358	2df92573a576ce778f9a23da389f0e763bc6ca9f	GREEN	worker-51	tree of 7 (
 dossiq	6360	2816b7b6c183e95975c8fe2704b40bc62d83afc4	GREEN	worker-51	tree of 7 (6359 excluded): php 15505 tests, 19 inherited failures, 0 new; vitest 6590, only inherited capabilityComparison failure
 dossiq	6361	8e650aa94285a76f2fd4ef43ca1466faf3b20974	GREEN	worker-51	tree of 7 (6359 excluded): php 15505 tests, 19 inherited failures, 0 new; vitest 6590, only inherited capabilityComparison failure
 dossiq	6362	b062689874901ed1932fef0fe6e6d1087867d4c0	GREEN	worker-51	tree of 7 (6359 excluded): php 15505 tests, 19 inherited failures, 0 new; vitest 6590, only inherited capabilityComparison failure
+dossiq	6363	68c48ce1b584b394c08b6069c6016f60cb85b77a	GREEN	worker-51	tree of 7 (6359 excluded): php 15505 tests, 19 inherited failures, 0 new; vitest 6590, only inherited capabilityComparison failure
