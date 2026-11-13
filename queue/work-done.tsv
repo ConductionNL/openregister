@@ -5361,3 +5361,4 @@ cover:buildiq:70b3e29ema699:b65a63c3	no PR: already done. 74/75 = 98.67% > 95 ta
 cover:dossiq:069ee2d6m2deb:ea81adeb	PR #6414: +16 tests across 7 Zgw classes (no pcov available to re-measure)	session-20261113T134541-c5b113fc	2026-11-13T13:56:29Z
 build2:openregister:stored-decision-tables	nothing to build: 1.1-1.4 on main; 1.5 is a live pass; 1.6 editor is not in openregister src (node form already offers tableRef select on the register)	session-20261113T121536-3cb7eb71	2026-11-13T13:56:38Z
 merge:stackiq:1693:e98cc4ea	merge-local over 1 stackiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:57:15Z
+review:openregister:10261:dfe611dc	APPROVE #10261 (tests-only + tasks.md; new test green, no production change)	session-20261113T131531-81a20e2a	2026-11-13T13:57:30Z
