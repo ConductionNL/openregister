@@ -3769,9 +3769,20 @@ verify:dossiq:6341:3f763da8	GREEN 6341, 6342, 6343 (php 0 new failures; vitest 1
 cover:hermiq:065f1631m249e:1b97f731	already done: lib/Listener/*.php 432/466 lines (92.7%) under the full unit suite on development, target 90; branch -1 merged; no PR	session-20261113T072713-f866e896	2026-11-13T09:14:51Z
 cover:pipelinq:7f9dc8e6m916f:js7de78384	already done: open branch -1 (manifestFragments.spec.js) brings src/manifest.d/* to 100% (53/53); no new PR	session-20261113T051705-4f5ad12a	2026-11-13T09:14:59Z
 gap:stackiq:16:614b0a03	PR #1865: npm refresh within ranges (nextcloud-vue and icons held back), SBOM regenerated; unit 2344/2344, build ok, lint unchanged	session-20261113T081038-e8b5210f	2026-11-13T09:14:56Z
+cover:dossiq:069ee2d6m7275:ea81adeb	PR #6350: 5 Zgw classes, 18 tests, lib/Service/Zgw 97.75% -> 98.79%, 19 inherited failures unchanged	session-20261113T084525-9d890807	2026-11-13T09:15:07Z
 cover:keepiq:c967a31fm1147:9d3a1784	already done: lib/BackgroundJob/*.php at 99.8% (406/407); no PR	session-20261113T080546-98207a87	2026-11-13T09:15:05Z
 cover:hermiq:065f1631m249e:17d367ab	already done: lib/Controller/Settings/ 335/335 lines (100%) under the full unit suite on development, target 90; no PR	session-20261113T072713-f866e896	2026-11-13T09:15:04Z
 cover:hermiq:065f1631m249e:js4829b6aa	PR #1677: 13 vitest tests (Runs.vue, ApprovalInbox.vue templates), suite 1205->1218 all green	session-20261113T080551-294c2aa6	2026-11-13T09:15:09Z
 cover:dossiq:069ee2d6m7e79:js3f3bfe56	PR #6349: registry.js 0->100%, App.vue 0->96%; src/* 24.6->49.6% lines; main.js bootstrap (require.context) not unit-testable, 90 target not reached	session-20261113T080549-9b0da587	2026-11-13T09:15:05Z
+cover:dossiq:069ee2d6m7e79:js2b6606f9	already done: src/views/cases statements 414/436 (95%) on development, above 90 target	session-20261113T084527-a728978e	2026-11-13T09:15:21Z
 cover:hermiq:065f1631m249e:js77cf3af4	PR hermiq#1678: 5 vitest specs, SkillRowActions 39->50/51, src/widgets 89.57->90.40%; suite 1205->1210 green	session-20261113T080549-dde3ba19	2026-11-13T09:15:17Z
 cover:pipelinq:7f9dc8e6m916f:js5794e9fc	PR #3703: 15 vitest tests, Cti*/Prospect to 100%, MailingListEmbed 92.6%; settings dir 84.5%->87.9%; suite 3893->3908 all pass	session-20261113T081046-f0858dc4	2026-11-13T09:15:28Z
+cover:dossiq:069ee2d6m7275:js5794e9fc	duplicate of js5794e9fc handled this run: PR #6348 (src/views/settings, 18 tests); no second PR	session-20261113T080551-294c2aa6	2026-11-13T09:15:46Z
+cover:hermiq:065f1631m249e:3a63cc27	PR #1679: +14 tests, ReportSimilarity 298->322/323 lines	session-20261113T081040-5e814df2	2026-11-13T09:15:33Z
+cover:keepiq:c967a31fm1147:1b97f731	already done: lib/Listener/*.php at 98.33% (411/418) on development 8a5d84f3c, above the 90% target	session-20261113T080552-2a8a5ff1	2026-11-13T09:15:43Z
+build:dossiq:advanced-holds-the-catalogue-folders	already done: tasks 1.1-1.5 on development (manifest, redirect, l10n, vitest specs); 1.6 design-system PR and 1.7 live check are not code here	session-20261113T091532-72081560	2026-11-13T09:16:37Z
+cover:shillinq:05639debmd8ee:34cd3e35	already done: lib/Service/Usage at 100% (100/100 lines, 4 classes) on development; no PR	session-20261113T083916-59f10a3b	2026-11-13T09:16:17Z
+build:dossiq:admin-data-access	already done: 1.1 on development (92-admin-data-access.json + test); 1.2/1.3 are open decisions, no code	session-20261113T091533-b7a00bc3	2026-11-13T09:16:41Z
+verify:buildiq:1534:977a2951	GREEN 1534; 2752 tests, 0 new failures	session-20261113T080549-dde3ba19	2026-11-13T09:16:50Z
+build:dossiq:admin-dead-settings-cards-removed	already done: tasks 1-3 on development (no mandate card, no placeholder); task 4 is a coordinator feature, not code	session-20261113T091529-c3067ba9	2026-11-13T09:17:04Z
+build:dossiq:case-mail-through-the-mail-account-with-rfc-8058	failed: blocked upstream - proposal says do not build until the nextcloud/mail custom-headers option lands (issue not yet filed); open tasks 1.1/1.2/1.3b/1.4 all depend on it, 1.5 is live; 1.3 already done	session-20261113T084525-9d890807	2026-11-13T09:17:14Z
