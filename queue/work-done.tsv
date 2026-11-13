@@ -5057,3 +5057,4 @@ review:openregister:10183:73088b48	APPROVE: nested required message names full p
 review:openregister:10184:6960ab19	APPROVE: tests only, green	session-20261113T081048-4978ac57	2026-11-13T13:01:21Z
 review:openregister:10196:cb4b951d	APPROVE: spec-conform connection-health kind, admin-gated; suites green, reds inherited	session-20261113T124807-caebffdf	2026-11-13T13:01:46Z
 review:openregister:10181:ea811079	APPROVE: run records added without changing outcomes; access fails closed; phpstan clean; Listener 1037, Lifecycle 548, Notifications 563, Rbac 1180, Controller 9964, Architecture 2358 etc pass on PR+main	session-20261113T081046-f0858dc4	2026-11-13T13:02:03Z
+review:openregister:10217:99472195	APPROVE (tests only, 14 jest tests pass, eslint clean)	session-20261113T104531-16da055e	2026-11-13T13:02:18Z
