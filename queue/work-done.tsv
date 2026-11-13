@@ -3815,3 +3815,4 @@ gap:planninq:risky:burn2	already done: 0 risky tests on development (894 tests, 
 cover:buildiq:70b3e29embf07:60c2c265	PR buildiq#1535: 8 tests, ExportsController 133->175/205 lines; suite 2770->2778, 1 inherited failure	session-20261113T080549-dde3ba19	2026-11-13T09:19:31Z
 verify:dossiq:6345:d5b82413	4 GREEN (6345 6346 6347 6348); no new failures	session-20261113T084523-b4140bcd	2026-11-13T09:19:42Z
 cover:dossiq:069ee2d6m7275:3ee9dda7	already done: lib/Service/Custody/*.php covers 628/629 statements (99.8%) on development 8fe8d2bc10, above target 90; no PR	session-20261113T091531-f9ad21ac	2026-11-13T09:19:55Z
+gap:opencatalogi:16:614b0a03	no change: advisory only (no score effect); a dependency refresh means committing composer.lock, which workers must not do - leave to a maintainer sweep	session-20261113T080549-dde3ba19	2026-11-13T09:19:52Z
