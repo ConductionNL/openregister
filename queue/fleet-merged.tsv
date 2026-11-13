@@ -1866,3 +1866,5 @@ planninq	1150	a07096743816d533a67b09824957439f897f49f6	MERGED	merge-local	GATE O
 planninq	1151	372f537e3bb06a33bc6ae6cf86b0e19b9d14cdbf	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3721	f846326553ca8ca0ed4c03160ec7125ca4a255c9	SKIP	merge-local	GATE UNMEASURED f846326553 does not merge cleanly onto development
 versioniq	677	4040041e4aa48804e6e535b690495842b3dedeb5	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1542	741d037cfa7d8b50ec6310b1d7ca1785b1923a7d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1544	56f466d07cc4ba7baa3565d818a32996cfa0ea09	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
