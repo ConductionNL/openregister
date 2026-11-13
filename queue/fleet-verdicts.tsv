@@ -5160,4 +5160,5 @@ dossiq	6285	cf68f5515bd0a4491061c7ded4296f8db21a5429	GREEN	worker-20	tree 14612 
 hermiq	1664	13f3deffdadd7f038a5a0b811940cb110bf74cca	GREEN	worker-06	PHP 4207 tests on tree, baseline 4185 with 172 inherited failures/errors, no new failures; vitest 1246/1246 pass; tests only
 hermiq	1665	4c77b1c2b965948d7a3725c6e6faab0741b40d6a	GREEN	worker-06	PHP 4207 tests on tree, baseline 4185 with 172 inherited failures/errors, no new failures; vitest 1246/1246 pass; tests only
 dossiq	6286	fc399495936188366a7fcfe501e87b4dd9c0cf34	GREEN	worker-20	tree 14612 tests, baseline 14577 with 19 failures, no new failures; tests only
+integriq	3479	ecff76efcdc68cf9d9b0c2a7b4641c57456c01b6	GREEN	worker-02	tree 3479 on development 9b7f2930: 7188 tests, baseline 7175 (2 errors inherited), new failures 0; tests-only diff
 dossiq	6287	c240eff18e6111462ac23f5498563c1214d6845a	GREEN	worker-20	tree 14612 tests, baseline 14577 with 19 failures, no new failures; tests only

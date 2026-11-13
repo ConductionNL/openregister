@@ -2443,3 +2443,4 @@ merge:pipelinq:3618:0ae2c3e5	merge-local over 18 pipelinq tasks: merged=76 red=0
 merge:pipelinq:3626:5055582c	merge-local over 18 pipelinq tasks: merged=76 red=0 fail=0 skip=5; already in development 3; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T05:35:23Z
 verify:hermiq:1658:76bccfd3	GREEN 1658-1665 (8 PRs, tests only; no new PHP failures vs 172 baseline; vitest 1246 pass)	session-20261113T051714-4ad50f31	2026-11-13T05:35:44Z
 verify:dossiq:6285:b3a825ec	6285,6286,6287 GREEN (tests only, no new failures)	session-20261113T051707-6c971ec6	2026-11-13T05:35:57Z
+verify:integriq:3479:aebdef25	GREEN 3479 (7175->7188, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T05:36:14Z
