@@ -6297,5 +6297,6 @@ build3:openregister:platform-share-provider	partial: PR #10301 (1.3-1.5 built, 1
 verify:shillinq:2986:51102f19	GREEN 2986,3002; CONFLICT 3003-3008 (l10n/version/lock vs earlier tree PRs); 0 new failures	session-20261113T182349-7e3632fd	2026-11-13T19:20:22Z
 cover:decidiq:a5f973bbm5a4d:568ec52a	already done: lib/Lifecycle/*.php at 100% (256/256) on development	session-20261113T185322-2911ee6d	2026-11-13T19:20:43Z
 verify:opencatalogi:2600:f07aa357	3 GREEN (2600-2602), no new failures, test-only	session-20261113T171154-27186e77	2026-11-13T19:20:41Z
+cover:buildiq:70b3e29em7beb:js0be8c659	already above target: src/modals/* 690/726 statements (95.04%, vitest v8); no PR	session-20261113T175336-e3687686	2026-11-13T19:20:53Z
 cover:decidiq:a5f973bbm5a4d:7505aeb4	already done: lib/Activity/*.php 100% (79/79) at 40e4458 (current head)	session-20261113T182349-7e3632fd	2026-11-13T19:21:02Z
 cover:decidiq:a5f973bbm5a4d:aae6d66c	already done: lib/Exception/*.php 100% (16/16) at 40e4458 (current head)	session-20261113T182349-7e3632fd	2026-11-13T19:21:20Z
