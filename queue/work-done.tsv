@@ -4200,3 +4200,6 @@ cover:decidiq:a5f973bbm1507:60c2c265	PR #2125: lib/Controller/*.php 94.59% -> 95
 verify:buildiq:1538:0c048454	1538 GREEN (tests only, vitest 3894 pass)	session-20261113T071633-17de823f	2026-11-13T10:15:41Z
 cover:decidiq:a5f973bbm1507:58192586	already done: lib/Service/Records at 97.89% (371/379) on development, above 95 target; no PR	session-20261113T083916-59f10a3b	2026-11-13T10:16:00Z
 verify:portaliq:2389:1cfdf9fe	2389 GREEN, 2390 GREEN: tests only, tree 4560 tests no failures	session-20261113T074532-3dc49c57	2026-11-13T10:16:03Z
+cover:dossiq:069ee2d6m7275:da74a02d	already done: BerichtenboxAdapter 130/136 lines (95.6%); the 6 left are the seam-missing refusal, unreachable while the autoloaded integriq test stub exists; quality/test-coverage-da74a02d-1 merged	session-20261113T084521-fd8a31c7	2026-11-13T10:16:12Z
+cover:portaliq:b60f3b81:34763eb4	PR #2397: 2 tests for middleware (CORS fail-open, scriptPrefix miss), lib/Middleware 97.71->100%, suite 4527->4529 OK	session-20261113T094606-b7da8c7f	2026-11-13T10:16:24Z
+cover:decidiq:a5f973bbm1507:81b1241f	already done: lib/Portal/*.php at 100% lines (235/235) on development after the -1 batch; no PR	session-20261113T071633-17de823f	2026-11-13T10:16:41Z
