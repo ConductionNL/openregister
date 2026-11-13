@@ -6694,3 +6694,4 @@ fix:filinq:2104:7da54a66	failed: 2097-2099 not on development yet (dev still 95d
 cover:portaliq:b60f3b81m4ccb:b994f46a	PR #2467: 3 tests on ReportThreadService and ReportTermsService guards; suite 4914 -> 4917 OK (#2466 closed: carried an unrelated commit)	session-20261113T202603-6c9ef72f	2026-11-13T20:34:15Z
 fix:filinq:2101:cab6810d	failed: 2097-2099 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:34:38Z
 fix:filinq:2090:37852824	failed: #2054/#2092 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:34:50Z
+fix:filinq:2103:deb95ab0	failed: 2097-2099 not on development yet (dev still 95d364be) - requeue after they land	session-20261113T202612-d04bbf77	2026-11-13T20:34:59Z
