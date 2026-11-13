@@ -7128,3 +7128,4 @@ build4:openregister:runs-recorded-and-causes-named	partial: PR #10423, section 2
 build4:openregister:the-organisation-projection-is-writable	already done: every openregister task is ticked on main; only 5.1 is open and it is each consuming app's migration in its own repo	session-20261113T202626-976dcdac	2026-11-13T22:18:20Z
 review:openregister:10392:d840911f	APPROVE	session-20261113T204551-fafe539e	2026-11-13T22:18:30Z
 review:openregister:10390:4f1739ad	APPROVE	session-20261113T215344-82e3aea0	2026-11-13T22:18:49Z
+review:openregister:10404:690dd38d	APPROVE: frontend per spec; full jest 8329 green	session-20261113T213325-5a151438	2026-11-13T22:18:57Z
