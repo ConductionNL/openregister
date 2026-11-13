@@ -1542,3 +1542,4 @@ verify:learniq:2431:f48ce12c	failed: permission (PR is JS-only; npm ci refused i
 cover:stackiq:8cfacb29m8db8:6f346b68	already done: lib/Sections is 1 class at 6/6 statements, every return value asserted by StackiqAdminSectionTest	session-20261113T003903-5efbf5ae	2026-11-13T02:06:02Z
 fix:shillinq:2822:bfab5d22	renamed colliding test to Iv3ReportGeneratorTotalsTest; new head b0ad862fe82866e3e92045bed9c7ce7951fd2dc5, REVERIFY recorded	session-20261113T004527-ec0338ee	2026-11-13T02:06:21Z
 fix:stackiq:1776:c4d2b1a5	fixed: protocol-path aliases + contract headers restored, route table identical to development; REVERIFY at 9689d864	session-20261113T004519-b6b86685	2026-11-13T02:06:31Z
+cover:keepiq:d76c2121m70b5:38e80a9f	already done: lib/Command/*.php 180/181 covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T02:06:51Z
