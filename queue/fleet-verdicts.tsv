@@ -6341,3 +6341,4 @@ filinq	2096	69a1c8228c4ae8db67fa987ac4a6409bb8dc83ac	CONFLICT	worker-08	lib/Sett
 filinq	2097	f22bb9e2e6382b5c6899a345361d79dd31a9b1b4	GREEN	worker-23	unit 6491 tests (baseline 6443, 0 failures), vitest 751 pass; new failures: none; additive stamp event/listener/service per change
 filinq	2098	fc7ce3c42df6b89414df284016be402d36eb0b2f	GREEN	worker-23	unit 6491 tests (baseline 6443, 0 failures), vitest 751 pass; new failures: none; four-eyes rule only tightens the review gate, as the change asks
 filinq	2099	697ea860f396fab0bca86de18aa7254eea16fc1f	GREEN	worker-23	unit 6491 tests (baseline 6443, 0 failures), vitest 751 pass; new failures: none; woo-decision contract check applies only to templates declaring it
+filinq	2100	7a4ee692702c8b39b230e42dcf44b4de74208177	CONFLICT	worker-23	conflicts with 2097-2099 in the tree (l10n/en,nl js+json); clean against development alone, needs development merged in after those land
