@@ -2901,3 +2901,4 @@ cover:buildiq:9930949bmc723:js2cb0b4ec	failed: permission (npm ci refused in thi
 cover:integriq:92114ab0m658d:js9fcd1176	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T06:39:23Z
 cover:stackiq:df113dffm5ac4:34763eb4	already done: lib/Middleware/*.php 57/57 lines (100.0%) on development a05c3ddd; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:39:27Z
 cover:stackiq:df113dffm5ac4:05630945	already done: lib/Middleware/Support/ at 91.94% (57/62, pcov on development), above 85 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:39:41Z
+cover:shillinq:05639debmd8ee:f545d745	PR #2895: 14 tests (InitializeBbvAdministration 0->147/148, StampJournalTypeOnGlTransactions 37->137/137); lib/Repair 62.3->67.7%, suite 9207->9221 (1 inherited failure)	session-20261113T041646-2c1d764f	2026-11-13T06:40:01Z
