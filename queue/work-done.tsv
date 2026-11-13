@@ -5281,3 +5281,4 @@ build2:openregister:reply-threading-by-headers	partial: PR #10255, tasks 4.1 (Em
 build2:openregister:production-observability	partial: PR #10256 readiness endpoint (/api/ready, 4 tests); other 14 items mostly served by AppHost engine but unverified per scenario, left unticked	session-20261113T103904-e108be02	2026-11-13T13:44:47Z
 merge:pipelinq:3602:ff4529ab	merge-local over 1 pipelinq tasks: merged=0 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:44:58Z
 cover:buildiq:70b3e29ema699:d39f9857	already done: lib/Support/*.php at 99.23% lines (386/389) on development, target 95; no PR	session-20261113T074535-8a2067c2	2026-11-13T13:45:14Z
+review:openregister:10244:0dd96122	APPROVE: additive catalogue metadata, RBAC unchanged, suites green	session-20261113T124802-c7d6f662	2026-11-13T13:45:16Z
