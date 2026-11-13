@@ -3372,3 +3372,4 @@ verify:stackiq:1852:fcc10789	2 GREEN (1852,1853); 3203 tests, 0 new failures	ses
 verify:dossiq:6330:0301ce6d	3 GREEN (6330,6331,6332); no new failures vs baseline	session-20261113T080551-294c2aa6	2026-11-13T08:10:42Z
 fix:larpinq:1011:4df9687a	fixed: renamed colliding test files; merges cleanly with 1010/1012/1018; new head c34753f4, REVERIFY recorded	session-20261113T080546-98207a87	2026-11-13T08:11:02Z
 verify:portaliq:2372:cdf5a15c	GREEN #2372: php 4527 green, js 2477 tests, 2 baseline, 0 new	session-20261113T072715-8f8a14e9	2026-11-13T08:11:44Z
+cover:hermiq:065f1631mfaac:05630945	PR #1675: 36 tests for Middleware/Support (StandardProtocolPaths 9->10/10, ApiPathAliases 48/50, rest unreachable); suite 4209->4245, no new failures	session-20261113T080549-20301834	2026-11-13T08:12:19Z
