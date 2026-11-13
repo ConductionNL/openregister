@@ -1827,3 +1827,4 @@ cover:stackiq:8cfacb29m8db8:e99dc6f8	PR #1823: 6 tests; Cmdb 77.9% -> 78.1%; res
 cover:stackiq:8cfacb29m8db8:81b1241f	already done: lib/Portal 23/23 statements covered by existing 22 tests; no PR	session-20261113T031701-470b4a5e	2026-11-13T03:29:40Z
 verify:pipelinq:3627:93588bb4	3627-3634 GREEN (3635 already GREEN); 0 new failures, 1 inherited	session-20261113T031704-4f12cb78	2026-11-13T03:29:41Z
 cover:integriq:9b0f5894md8cd:0f859653	PR #3464: lib/Flow/*.php 2428/2514 -> 2485/2514, 23 tests	session-20261113T015005-030aa10a	2026-11-13T03:29:56Z
+cover:filinq:8ecceb86mc744:14722ee7	PR #2019: 9 tests, AccessiblePdfRenderer 50->57/57, PhpWordIo 10->13/13, OutputLayoutResolver 30->32/33 (rest of dir in #2015); suite green	session-20261113T024656-2f332446	2026-11-13T03:30:13Z
