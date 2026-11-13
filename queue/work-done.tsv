@@ -1362,3 +1362,4 @@ merge:filinq:1986:53e375fb	merge-local over 1 filinq tasks: merged=1 red=0 fail=
 cover:dossiq:6ca0231e:e2e021bd	PR #6219: 36 tests (CaseStatusStore, CaseTypeReader, CaseResultWriter); dir already 87% before	session-20261113T004523-285a0413	2026-11-13T01:17:23Z
 cover:pipelinq:f67520ecm9d2c:js4f7d1071	PR #3615: 12 vitest tests, social+widgets stmts 74.3% -> 81.4% (SocialPerformanceView in #3603)	session-20261112T234648-144479e8	2026-11-13T01:17:44Z
 cover:shillinq:801aab65:38e80a9f	PR #2811: 4 tests over 2 commands, lib/Command/*.php 70.19%->93.27%, suite inherited 1 failure/96 risky unchanged	session-20261112T234655-599f9c9a	2026-11-13T01:17:36Z
+cover:shillinq:801aab65:aed80a0c	already done: lib/Lifecycle/Action/ at 92.9% (572/616) on development ff3e15aa9, above the 90% target; remaining gaps are single defensive lines	session-20261112T234655-599f9c9a	2026-11-13T01:18:10Z
