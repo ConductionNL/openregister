@@ -2934,5 +2934,6 @@ merge:filinq:2035:d309fa65	merge-local over 4 filinq tasks: merged=8 red=0 fail=
 merge:filinq:2037:dab70521	merge-local over 4 filinq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:42:49Z
 merge:filinq:2038:72281717	merge-local over 4 filinq tasks: merged=8 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T06:42:49Z
 cover:dossiq:f8a113c5mac88:c17c6e8e	already done: lib/Service/Kcc/*.php 774/800 (96.75%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:42:52Z
+cover:buildiq:9930949bmc723:js678e2c14	already done: src/services/manifestValidation measured at 476/478 statements (99.6%); queued 78% figure is stale	session-20261113T051707-6c971ec6	2026-11-13T06:43:00Z
 cover:dossiq:f8a113c5mac88:7593a315	already done: lib/Service/Relation/*.php 695/714 (97.34%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:43:05Z
 cover:buildiq:9930949bmc723:jsc41b6099	already done: src/mixins/* at 99.51% statements (205/206) on current development	session-20261113T044737-f37de8e3	2026-11-13T06:43:03Z
