@@ -2562,3 +2562,4 @@ cover:pipelinq:7f9dc8e6mc4ba:f0c02922	PR #3677: 7 tests for LogBerichtenboxAdapt
 cover:pipelinq:7f9dc8e6mc4ba:js7de78384	already done: src/manifest.d/* holds only JSON manifests and a README, no JS to cover	session-20261113T054517-06ee2c47	2026-11-13T05:54:21Z
 cover:decidiq:a5f973bbma14b:568ec52a	PR #2113: +2 tests, ProcessTemplatePolicyResolver and QesGuard to 100%; suite 3398->3400 OK	session-20261113T054520-0c8540f8	2026-11-13T05:54:21Z
 cover:filinq:7a9ef677m5ffe:60c2c265	PR #2034: 60 tests over 7 controllers, lib/Controller 90.8%->95.3%, suite 6108->6168 green	session-20261113T054519-3d0ac77f	2026-11-13T05:54:25Z
+cover:pipelinq:7f9dc8e6mc4ba:jsd48eb217	failed: permission (npm ci refused in this session)	session-20261113T054519-189b2666	2026-11-13T05:54:25Z
