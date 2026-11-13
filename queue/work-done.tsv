@@ -2831,3 +2831,5 @@ cover:stackiq:df113dffm5ac4:59f569b2	already done: lib/Service/Settings 1265/129
 cover:pipelinq:7f9dc8e6m1e6e:js8f1ea935	already done by open PR #3687 (GREEN, awaiting merge): views 81.52% on development -> 85.82% with it, target 85; no duplicate PR	session-20261113T054517-06ee2c47	2026-11-13T06:32:18Z
 cover:stackiq:df113dffm5ac4:jsea7197ec	PR #1842: +7 vitest tests on util guard branches; suite 2253->2260 pass; src/utils lines 99.34%->99.71%	session-20261113T054520-0c8540f8	2026-11-13T06:32:34Z
 cover:filinq:7a9ef677m5ffe:45998467	already done: lib/Service/Classification/ at 97.4% (187/192, pcov on development), above 90 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:32:30Z
+verify:learniq:2437:d4f62977	GREEN 2437 (JS tests only; 1338/1339, 1 inherited)	session-20261113T051704-8c56f5b7	2026-11-13T06:32:48Z
+cover:filinq:7a9ef677m5ffe:ec6c2450	already done: lib/Service/Extraction/ at 96.25% (154/160, pcov on development), above 90 target; no PR	session-20261113T054519-189b2666	2026-11-13T06:32:52Z
