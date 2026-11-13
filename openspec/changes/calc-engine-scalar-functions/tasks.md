@@ -16,8 +16,8 @@
 
 ## 3. Validation
 
-- [ ] 3.1 Run the evaluator test suite and confirm all new cases pass.
-- [ ] 3.2 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) on the changed evaluator file and fix any new findings.
+- [x] 3.1 Run the evaluator test suite and confirm all new cases pass.
+- [x] 3.2 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) on the changed evaluator file and fix any new findings.
 
 Acceptance criteria:
 - All seven operators dispatch from `evaluate()` and match the existing arg/null/error conventions.
