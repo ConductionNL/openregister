@@ -5216,3 +5216,4 @@ dossiq	6296	a097f841e1c254229756bbdd81837f2f5f68e42e	GREEN	worker-33	tree of 4 o
 integriq	3489	81bddb71c9ad89f62072e4a7fc9552462dd9d650	GREEN	worker-06	7292 tests on tree, baseline 7280 with 3 failures/errors, no new failures; tests only
 pipelinq	3686	2c02f45e673168e07228673a7808496842f7db08	GREEN	worker-36	phpunit 6454 run, baseline 1 failure (CrmPrivilegeRefusalGoldenTest::testGolden), 0 new; vitest 546 files/3910 tests pass; tests-only diff
 filinq	2038	e9088147e5ac3fff9ac597e269eaf775e5d330b2	GREEN	worker-52	tests only; unit 6132 run (baseline 6112 pass), 0 new failures
+integriq	3484	4dfa6fd32b58570aec221be579f2122bc9de6055	GREEN	worker-02	tree 3484+3486+3487 on development 46d1bb08: PHP 7327 tests, baseline 7280 (2 errors inherited), new failures 0; vitest 135 files / 1812 tests pass; tests-only diff
