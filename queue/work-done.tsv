@@ -2802,3 +2802,4 @@ cover:pipelinq:7f9dc8e6m1e6e:js3f3bfe56	failed: permission (npm ci refused in th
 cover:pipelinq:7f9dc8e6m1e6e:js00fe026a	already done: src/services/*.js at 98.5% statements (1959/1989) on development, above 90 target; no PR	session-20261113T051710-d9c31c61	2026-11-13T06:28:21Z
 cover:pipelinq:7f9dc8e6m1e6e:jsc41b6099	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:28:22Z
 cover:pipelinq:7f9dc8e6m1e6e:0a8f160f	already done: lib/Service/Sla/ 212/212 statements covered on development; no PR	session-20261113T061518-90540a48	2026-11-13T06:28:39Z
+cover:filinq:7a9ef677m5ffe:72b7aa42	already done: lib/Service/Validation/ at 99.1% (228/230, pcov on development), above 90 target; remaining: 1 unreachable preg-failure branch, 1 quote-truncation line; no PR	session-20261113T054519-189b2666	2026-11-13T06:28:51Z
