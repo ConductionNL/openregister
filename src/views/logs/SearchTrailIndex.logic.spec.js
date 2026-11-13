@@ -334,3 +334,29 @@ describe('display helpers', () => {
 		expect(methods.formatExecutionTime(ms)).toBe(expected)
 	})
 })
+
+describe('filters and cleanup result', () => {
+	it('stores new filters and reloads', () => {
+		const ctx = page()
+		ctx.loadSearchTrails = jest.fn()
+
+		methods.handleFiltersChanged.call(ctx, { term: 'zaak' })
+
+		expect(searchTrailStore.setSearchTrailFilters).toHaveBeenCalledWith({ term: 'zaak' })
+		expect(ctx.loadSearchTrails).toHaveBeenCalledTimes(1)
+	})
+
+	it('reports how many entries a cleanup deleted, zero when it does not say, and reloads', async () => {
+		const ctx = page()
+		ctx.loadSearchTrails = jest.fn().mockResolvedValue()
+
+		await methods.cleanedUp.call(ctx, { deletedCount: 12 })
+		await methods.cleanedUp.call(ctx, {})
+
+		expect(OC.Notification.showTemporary.mock.calls).toEqual([
+			['Cleanup completed successfully. Deleted 12 entries.', { type: 'success' }],
+			['Cleanup completed successfully. Deleted 0 entries.', { type: 'success' }],
+		])
+		expect(ctx.loadSearchTrails).toHaveBeenCalledTimes(2)
+	})
+})
