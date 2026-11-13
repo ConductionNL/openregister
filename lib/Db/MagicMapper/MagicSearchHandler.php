@@ -144,6 +144,13 @@ class MagicSearchHandler {
 	];
 
 	/**
+	 * The metadata columns a person reads as text, ordered case-insensitively.
+	 *
+	 * @var array<int, string>
+	 */
+	private const STRING_METADATA_SORT_COLUMNS = ['_name', '_description', '_summary'];
+
+	/**
 	 * The metadata columns a row sets on its entity, in the order they are set, with how
 	 * each is stored: a scalar, a datetime, the deleted marker, a float, or JSON whose
 	 * fallback is an empty array (`json`) or null (`json-or-null`).
@@ -4622,6 +4629,7 @@ class MagicSearchHandler {
 
 		$properties = $sort->schema->getProperties();
 
+		$orderApplied = false;
 		foreach ($sort->order as $field => $direction) {
 			$field = (string) $field;
 			$direction = strtoupper($direction);
@@ -4645,10 +4653,12 @@ class MagicSearchHandler {
 				// Metadata field sorting (e.g., @self.created → t._created,
 				// @self.lastUserActivity → t._last_user_activity).
 				$metadataField = '_' . $this->sanitizeColumnName(name: str_replace('@self.', '', $field));
-				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $metadataField), $direction);
+				$this->addMetadataOrder(qb: $qb, column: $metadataField, direction: $direction);
+				$orderApplied = true;
 			} elseif (in_array($field, self::SORTABLE_METADATA_COLUMNS, true) === true) {
 				// Direct metadata column reference (e.g., _created → t._created).
-				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $field), $direction);
+				$this->addMetadataOrder(qb: $qb, column: $field, direction: $direction);
+				$orderApplied = true;
 			} elseif (is_array($properties[$field] ?? null) === true
 				&& ($properties[$field]['translatable'] ?? false) === true
 			) {
@@ -4667,19 +4677,39 @@ class MagicSearchHandler {
 					),
 					$direction
 				);
+				// The raw column breaks ties between two values that lower-case
+				// alike, so the order is total and paging stable (REQ-CIO-001).
+				$qb->addOrderBy($column, $direction);
+				$orderApplied = true;
 			} elseif (($properties[$field] ?? null) !== null) {
 				// Schema property field sorting.
+				$columnName = $this->sanitizeColumnName(name: $field);
 				$qb->addOrderBy(
 					$this->buildPropertySortExpression(
 						qb: $qb,
-						columnName: $this->sanitizeColumnName(name: $field),
+						columnName: $columnName,
 						propertyConfig: $properties[$field],
 						dateTimeColumns: $sort->dateTimeColumns
 					),
 					$direction
 				);
+				// A text property is ordered lower-cased, so its raw value breaks
+				// ties for a total, stable order (REQ-CIO-001). A non-string
+				// property keeps its single native order term.
+				if ($this->isTextProperty(propertyConfig: $properties[$field]) === true) {
+					$qb->addOrderBy($qb->getColumnName($columnName, 't'), $direction);
+				}
+
+				$orderApplied = true;
 			}//end if
 		}//end foreach
+
+		// The primary key closes every explicit order, so two rows that compare
+		// equal on the requested fields still page in one stable order
+		// (REQ-CIO-001; BUG-DB-4 for the no-order case).
+		if ($orderApplied === true) {
+			$qb->addOrderBy('t._id', 'ASC');
+		}
 	}//end applySorting()
 
 	/**
@@ -4924,12 +4954,54 @@ class MagicSearchHandler {
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
 	 */
 	private function metadataSortExpression(IQueryBuilder $qb, string $column): string|IQueryFunction {
-		if (in_array($column, ['_name', '_description', '_summary'], true) === true) {
+		if (in_array($column, self::STRING_METADATA_SORT_COLUMNS, true) === true) {
 			return $qb->createFunction($this->lowerSql(expression: $qb->getColumnName($column, 't')));
 		}
 
 		return "t.{$column}";
 	}//end metadataSortExpression()
+
+	/**
+	 * Add the ORDER BY term(s) for a metadata column, in the given direction.
+	 *
+	 * A text metadata column (name, description, summary) orders by its
+	 * lower-cased value and then by its raw value, so the order is total and
+	 * paging stable; every other metadata column keeps its single native term
+	 * (REQ-CIO-001).
+	 *
+	 * @param IQueryBuilder $qb        Query builder to add the order to.
+	 * @param string        $column    The metadata column, with its leading underscore.
+	 * @param string        $direction The sort direction, ASC or DESC.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 */
+	private function addMetadataOrder(IQueryBuilder $qb, string $column, string $direction): void {
+		$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $column), $direction);
+		if (in_array($column, self::STRING_METADATA_SORT_COLUMNS, true) === true) {
+			$qb->addOrderBy($qb->getColumnName($column, 't'), $direction);
+		}
+	}//end addMetadataOrder()
+
+	/**
+	 * Whether a property is a text property: a `string` that is not a date.
+	 *
+	 * Mirrors the `$isText` test in {@see self::buildPropertySortExpression()}
+	 * so the raw-value tie-break is added for exactly the properties that order
+	 * lower-cased.
+	 *
+	 * @param mixed $propertyConfig The property's schema definition.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 */
+	private function isTextProperty(mixed $propertyConfig): bool {
+		return is_array($propertyConfig) === true
+			&& ($propertyConfig['type'] ?? 'string') === 'string'
+			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false;
+	}//end isTextProperty()
 
 	/**
 	 * Lower-case an SQL expression for ordering, on every supported database.
@@ -4990,9 +5062,7 @@ class MagicSearchHandler {
 		mixed $propertyConfig,
 		?array $dateTimeColumns = null
 	): string|IQueryFunction {
-		$isText = is_array($propertyConfig) === true
-			&& ($propertyConfig['type'] ?? 'string') === 'string'
-			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false;
+		$isText = $this->isTextProperty(propertyConfig: $propertyConfig);
 		if ($isText === true) {
 			// Text orders without regard to case, as OpenRegister's own lists
 			// do: "Leverancier accreditatie" before "Leverancier IBAN-wijziging"
