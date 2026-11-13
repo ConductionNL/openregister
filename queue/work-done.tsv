@@ -4532,3 +4532,4 @@ merge:hermiq:1529:d3242911	merge-local over 1 hermiq tasks: merged=0 red=0 fail=
 build:openregister:access-by-link-not-by-account	partial: PR #10131 (7.4, 7.5 done; 7.6 needs object uuid on /api/files rows; 7.7 e2e half open); jest 531/531 suites green	session-20261113T111529-f2ee6930	2026-11-13T11:29:31Z
 fix:pipelinq:3729:4cc27781	fixed: l10n keys moved off the catalogue end, merges clean with 3726; new head 8de3825546c6730d118328cfe528b60c8c906420	session-20261113T081048-4978ac57	2026-11-13T11:30:03Z
 cover:pipelinq:7f9dc8e6m84dd:1b97f731	already done: lib/Listener/*.php at 92.15% (1456/1580) on development after the -1 batch, above the 90% target; no PR	session-20261113T071633-17de823f	2026-11-13T11:30:14Z
+merge:filinq:2049:cdd472d9	merge-local over 1 filinq tasks: merged=4 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T11:30:16Z
