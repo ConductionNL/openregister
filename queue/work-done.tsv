@@ -6728,3 +6728,4 @@ cover:opencatalogi:fc83bfb1m976b:jsac344279	PR #2616: +39 jest tests (DirectoryS
 cover:integriq:92114ab0m0593:b89b25f9	PR integriq#3538: 7 classes, 35 tests, suite 8222->8257 no new failures	session-20261113T202612-d04bbf77	2026-11-13T20:44:59Z
 build:decidiq:audit-log-chain-tail-hash	already done/obsolete: AuditLogService::append() now writes via OR AuditTrailMapper (hash chain sealed platform-side); resolvePreviousHash()/whole-chain read on write no longer exist; no PR	session-20261113T185324-28e07ab2	2026-11-13T20:45:05Z
 build:decidiq:agenda-ai-paper-summaries	no PR: only open items are live-instance tests (Newman collection test, Playwright e2e run), not buildable in a worker	session-20261113T185324-28e07ab2	2026-11-13T20:45:27Z
+cover:opencatalogi:fc83bfb1m976b:js09173935	PR opencatalogi#2617: src/store/modules lines 6.6% -> 90.1%, 122 tests	session-20261113T175332-5effc865	2026-11-13T20:45:51Z
