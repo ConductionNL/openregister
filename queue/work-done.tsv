@@ -4038,3 +4038,4 @@ cover:dossiq:069ee2d6m7275:5ebe3eb6	already done: lib/Service/Mcp 246/246 lines 
 cover:stackiq:9ac19b3am6096:208b4d5f	already done: lib/Service/Stackiq/ 2055/2274 = 90.4% >= 90 (after #1837)	session-20261113T051703-1b54bfba	2026-11-13T09:46:48Z
 cover:shillinq:05639debm0c05:jsd337d873	failed: permission (running the app's vitest suite was refused)	session-20261113T094606-0e4b4bd0	2026-11-13T09:47:29Z
 cover:shillinq:05639debm0c05:jsdefec9cf	failed: permission (npm ci refused)	session-20261113T094610-10c05647	2026-11-13T09:47:46Z
+fix:dossiq:6355:31f38c72	BLOCK was the spec'd schema rename (change task 5); merged development, suite 0 new failures, REVERIFY 6905b960fdaa502407b79efc2291966b857b6a77	session-20261113T093920-50335e74	2026-11-13T09:47:48Z
