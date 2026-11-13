@@ -7401,3 +7401,4 @@ build:hermiq:reuse-scheduled-bias-evals	partial: PR #1752 - task 1 counterfactua
 build:humaniq:payroll-period-edge-cases	partial: PR #1123 does task 1.1 (PayPeriod for month, four-weekly and weekly ids with ISO week 53); 19 tests; suite 4140->4159 all pass; 1.2 and 2.x-5.x left	session-20261113T204539-e70be1ed	2026-11-13T22:55:24Z
 build:hermiq:tools-browser-and-computer-use	partial: PR #1754 (Task 4 backend: ComputerTarget schema, service, admin routes, tests; browser tasks need the sandbox app, 5-7 and the Vue screen left)	session-20261113T210940-b751519f	2026-11-13T22:55:41Z
 verify:filinq:2077:c1b18a45	GREEN #2077 (build per spec, +14 tests, suite green)	session-20261113T205323-a7434fd6	2026-11-13T22:55:52Z
+build:hermiq:oversight-ask-and-hold	partial: PR #1755 (task 1 schema, task 2 askPerson tool; 3 chat card, 4 unattended questions, 5 hold delivery, 6 drafts view left)	session-20261113T213325-fbdd5614	2026-11-13T22:56:03Z
