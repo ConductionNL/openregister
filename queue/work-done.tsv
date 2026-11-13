@@ -5175,3 +5175,4 @@ build2:openregister:notification-kinds-an-administrator-forces	failed: worker ru
 verify:buildiq:1543:d1915b96	GREEN: tests-only (4 controller test files, +36 tests), tree 2820 pass bar 1 inherited ExportZipGoldenTest; no production code	session-20261113T131537-142f7747	2026-11-13T13:29:49Z
 build2:openregister:object-files-follow-object-access	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:29:53Z
 review:openregister:10232:aa1ea06a	BLOCK: soft-deleted rows keep _expires and are reselected forever, starving the sweep	session-20261113T104530-961e9992	2026-11-13T13:30:04Z
+review:openregister:10219:db07bee1	APPROVE 10219: additive manage marker per D-6, suites green	session-20261113T104650-72c03e13	2026-11-13T13:30:30Z
