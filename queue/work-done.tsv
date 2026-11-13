@@ -5287,3 +5287,4 @@ merge:versioniq:677:91541efd	merge-local over 1 versioniq tasks: merged=1 red=0 
 review:openregister:10246:8d3ba979	APPROVE: tests-only, 19 Controller tests pass on merged tree, contract-accurate, metadata correct	session-20261113T094607-7b89fdae	2026-11-13T13:46:25Z
 verify:humaniq:1114:28f21767	GREEN: #1114 tests only, 3928->3961, no new failures	session-20261113T131537-72e2896e	2026-11-13T13:46:32Z
 measure:pipelinq:20261113h12	php 87.48% js 92.59%	session-20261113T094617-36f80607	2026-11-13T13:46:46Z
+cover:stackiq:9ac19b3amc14f:34f5c300	cover: 3 unit test files (ArchiMateExportService, SettingsService, SymfonyEmailService), 31 tests; suite 3320->3351 green; PRs #1876 #1877	session-20261113T131538-bf8ccc8e	2026-11-13T13:46:50Z
