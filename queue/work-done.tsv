@@ -3935,3 +3935,4 @@ build:dossiq:woo-request-scoped-access	no PR: every code task is done on develop
 cover:dossiq:069ee2d6m7275:3641032a	already done: lib/Service/Pipelinq 521/521 statements, 158 tests; earlier -1/-2 PRs merged	session-20261113T064518-860c039d	2026-11-13T09:34:19Z
 verify:stackiq:1851:e93e1711	1851 GREEN: test infra only, 3133 tests, 0 new failures	session-20261113T071636-117504ad	2026-11-13T09:34:18Z
 build:dossiq:woo-request-takes-over-from-opencatalogi	nothing to build in code: 4.4 is an e2e run (spec written, run owed to live pass), 6.1 blocked on portaliq delivery target (architect decision 179), 6.2 live check, 7.x delivery steps of the merged build	session-20261113T081055-3901e400	2026-11-13T09:34:30Z
+cover:keepiq:c967a31fm1147:38e80a9f	already done: lib/Command/*.php at 100% (181/181) on development	session-20261113T073916-e9f11dfa	2026-11-13T09:34:36Z
