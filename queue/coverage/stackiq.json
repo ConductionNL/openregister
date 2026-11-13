@@ -1,12 +1,12 @@
 {
  "app": "stackiq",
- "commit": "a05c3ddde0ce041e4c485ec1d34eb92ad3bd3a4c",
- "measured_at": "2026-11-13T06:23:49Z",
+ "commit": "2a8336ceb0a5f018f9352bf2dc4859e53465966e",
+ "measured_at": "2026-11-13T08:42:16Z",
  "php": {
   "tool": "pcov",
-  "pct": 80.21,
+  "pct": 85.28,
   "statements": 31801,
-  "covered": 25506,
+  "covered": 27119,
   "dirs": {
    "lib/AppInfo/": [
     564,
@@ -66,7 +66,7 @@
    ],
    "lib/Service/": [
     18363,
-    13451
+    15032
    ],
    "lib/Service/AangebodenGebruik/": [
     61,
@@ -78,7 +78,7 @@
    ],
    "lib/Service/Cmdb/": [
     1520,
-    1481
+    1491
    ],
    "lib/Service/Contactpersoon/": [
     205,
@@ -86,7 +86,7 @@
    ],
    "lib/Service/Federation/": [
     388,
-    362
+    384
    ],
    "lib/Service/Itsm/": [
     49,
@@ -106,5 +106,135 @@
    ]
   }
  },
- "js": null
+ "js": {
+  "pct": 88.5,
+  "statements": 8854,
+  "covered": 7836,
+  "dirs": {
+   "src/": [
+    91,
+    89
+   ],
+   "src/assets/": [
+    0,
+    0
+   ],
+   "src/components/": [
+    442,
+    440
+   ],
+   "src/components/ai/": [
+    29,
+    18
+   ],
+   "src/components/cards/": [
+    65,
+    64
+   ],
+   "src/components/cells/": [
+    8,
+    8
+   ],
+   "src/components/contracts/": [
+    115,
+    115
+   ],
+   "src/components/maintenance/": [
+    34,
+    34
+   ],
+   "src/components/organisations/": [
+    146,
+    140
+   ],
+   "src/components/portfolio/": [
+    63,
+    59
+   ],
+   "src/components/reviews/": [
+    34,
+    25
+   ],
+   "src/components/roadmap/": [
+    23,
+    22
+   ],
+   "src/components/sbom/": [
+    122,
+    119
+   ],
+   "src/components/vulnerabilities/": [
+    46,
+    45
+   ],
+   "src/composables/": [
+    37,
+    32
+   ],
+   "src/dialogs/": [
+    209,
+    207
+   ],
+   "src/dialogs/SuiteWizard/": [
+    50,
+    50
+   ],
+   "src/modals/": [
+    368,
+    362
+   ],
+   "src/modals/object/": [
+    2093,
+    1401
+   ],
+   "src/services/": [
+    32,
+    32
+   ],
+   "src/sidebars/directory/": [
+    85,
+    78
+   ],
+   "src/sidebars/search/": [
+    26,
+    20
+   ],
+   "src/store/modules/": [
+    782,
+    769
+   ],
+   "src/store/plugins/": [
+    420,
+    416
+   ],
+   "src/utils/": [
+    1099,
+    1095
+   ],
+   "src/views/": [
+    456,
+    425
+   ],
+   "src/views/cmdb/": [
+    52,
+    52
+   ],
+   "src/views/organisaties/": [
+    208,
+    203
+   ],
+   "src/views/settings/": [
+    207,
+    180
+   ],
+   "src/views/settings/sections/": [
+    1486,
+    1310
+   ],
+   "src/views/widgets/": [
+    26,
+    26
+   ]
+  }
+ }
 }
