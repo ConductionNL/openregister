@@ -1,0 +1,186 @@
+{
+ "app": "portaliq",
+ "commit": "5bad07778d98c5083af3385ac89f7ae0648f80ba",
+ "measured_at": "2026-11-13T18:05:53Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 94.91,
+  "statements": 35793,
+  "covered": 33972,
+  "dirs": {
+   "lib/AppInfo/": [
+    42,
+    36
+   ],
+   "lib/Auth/": [
+    0,
+    0
+   ],
+   "lib/BackgroundJob/": [
+    446,
+    438
+   ],
+   "lib/Command/": [
+    335,
+    333
+   ],
+   "lib/Contribution/": [
+    3642,
+    3586
+   ],
+   "lib/Controller/": [
+    6056,
+    5809
+   ],
+   "lib/Event/": [
+    114,
+    113
+   ],
+   "lib/Http/": [
+    12,
+    12
+   ],
+   "lib/Listener/": [
+    616,
+    271
+   ],
+   "lib/Middleware/": [
+    131,
+    131
+   ],
+   "lib/Middleware/Support/": [
+    59,
+    54
+   ],
+   "lib/Notification/": [
+    23,
+    22
+   ],
+   "lib/Portal/": [
+    132,
+    129
+   ],
+   "lib/Repair/": [
+    556,
+    467
+   ],
+   "lib/Sections/": [
+    5,
+    5
+   ],
+   "lib/Service/": [
+    8557,
+    8077
+   ],
+   "lib/Service/Actions/": [
+    266,
+    239
+   ],
+   "lib/Service/Assistant/": [
+    103,
+    103
+   ],
+   "lib/Service/Availability/": [
+    240,
+    234
+   ],
+   "lib/Service/Branch/": [
+    51,
+    51
+   ],
+   "lib/Service/CaseTypeColumns/": [
+    89,
+    89
+   ],
+   "lib/Service/Cms/": [
+    1037,
+    1004
+   ],
+   "lib/Service/Connection/": [
+    162,
+    162
+   ],
+   "lib/Service/ExampleResident/": [
+    287,
+    266
+   ],
+   "lib/Service/ExampleSite/": [
+    303,
+    298
+   ],
+   "lib/Service/Identity/": [
+    2869,
+    2728
+   ],
+   "lib/Service/Identity/EmailLink/": [
+    245,
+    243
+   ],
+   "lib/Service/Intake/": [
+    2671,
+    2594
+   ],
+   "lib/Service/Mail/": [
+    167,
+    165
+   ],
+   "lib/Service/Messaging/": [
+    377,
+    318
+   ],
+   "lib/Service/Notifications/": [
+    704,
+    663
+   ],
+   "lib/Service/Overview/": [
+    65,
+    65
+   ],
+   "lib/Service/Plans/": [
+    693,
+    693
+   ],
+   "lib/Service/Proposals/": [
+    250,
+    228
+   ],
+   "lib/Service/Reports/": [
+    313,
+    304
+   ],
+   "lib/Service/Session/": [
+    8,
+    8
+   ],
+   "lib/Service/Signin/": [
+    284,
+    284
+   ],
+   "lib/Service/Tasks/": [
+    92,
+    92
+   ],
+   "lib/Service/Tenancy/": [
+    230,
+    225
+   ],
+   "lib/Service/Theme/": [
+    261,
+    261
+   ],
+   "lib/Service/Traffic/": [
+    2950,
+    2855
+   ],
+   "lib/Service/Traffic/Geo/": [
+    336,
+    303
+   ],
+   "lib/Settings/": [
+    14,
+    14
+   ]
+  }
+ },
+ "js": null
+}
