@@ -2681,3 +2681,4 @@ cover:integriq:92114ab0m1534:3f68c935	already done: lib/Intake/Adapter/ 360/372 
 cover:dossiq:f8a113c5mac88:53c979ad	PR #6297: 6 tests for Dispatch and DocumentMove; suite 14758->14764, 19 inherited	session-20261113T054519-189b2666	2026-11-13T06:12:12Z
 cover:integriq:92114ab0m1534:bec85fb4	already done: lib/Service/Zgw/ 214/218 lines (98.2%) on development 46d1bb08e; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:12:13Z
 cover:filinq:7a9ef677m5ffe:4b9c088d	already done: lib/Service/Editing/*.php at 97% lines on development 265db8360; 35 left are I/O-failure/malformed-markup branches, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:12:18Z
+cover:filinq:7a9ef677m5ffe:aae6d66c	already done: lib/Exception/*.php at 100% lines (79/79) on development 265db8360, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:12:36Z
