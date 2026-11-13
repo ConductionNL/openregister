@@ -2955,4 +2955,5 @@ cover:pipelinq:7f9dc8e6m1e6e:d39f9857	already above target: lib/Support/*.php me
 cover:pipelinq:7f9dc8e6m1e6e:dfaef732	already done: lib/Notification/*.php (Notifier) at 100% lines (120/120) on development, no PR	session-20261113T054516-469bb7f6	2026-11-13T06:44:53Z
 cover:pipelinq:7f9dc8e6m1e6e:0798b7cf	already done: lib/Service/PosCart 100% lines per pcov on development; dedicated tests merged in pipelinq#3672	session-20261113T053904-36dcee67	2026-11-13T06:44:50Z
 cover:pipelinq:7f9dc8e6m1e6e:4d8f122a	already done: lib/Service/MailAddIn/ 85/86 on development; the one uncovered line (OpenMailService::uuidOf fallback) is unreachable through the typed ObjectServiceInterface::saveObject boundary; no PR	session-20261113T061518-90540a48	2026-11-13T06:45:07Z
+cover:pipelinq:7f9dc8e6m1e6e:7505aeb4	already done: lib/Activity/*.php 66/66 statements, behaviour+golden tests per class	session-20261113T061521-423d1e83	2026-11-13T06:45:01Z
 measure:filinq:20261113h06	filinq @90be525f: php 94.11%, js 93.34% (6251 PHPUnit tests OK, 718 vitest pass)	session-20261113T054520-0c8540f8	2026-11-13T06:45:05Z
