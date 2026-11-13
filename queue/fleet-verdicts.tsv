@@ -6353,3 +6353,4 @@ filinq	2084	06007f380a5648d80ba61c605aee2d2cf3ff5320	GREEN	worker-19	unit 6481 r
 filinq	2085	25d925f4d837270d1f83cbba89a0a47258cfbdc3	GREEN	worker-19	unit 6481 run (baseline 6443 green), vitest 751 green, 0 new failures; builds signing-accept-only-recipient
 filinq	2086	8d29d9b117bfea9473654b4a4cb042faf4c3793c	CONFLICT	worker-19	lib/Settings/filinq_register.json conflicts with #2085 in the tree (clean on development alone); merge development in after #2085 lands
 filinq	2087	31ab7049da6b9efae9f237e239e575679ed66f88	CONFLICT	worker-19	lib/Settings/filinq_register.json conflicts with #2085 in the tree (clean on development alone); merge development in after #2085 lands
+filinq	2088	cfd39c3538ffa7fa49420c3932e892648b7e2d2c	CONFLICT	worker-19	lib/Settings/filinq_register.json conflicts with #2085 in the tree (clean on development alone); merge development in after #2085 lands
