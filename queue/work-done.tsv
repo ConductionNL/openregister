@@ -2791,3 +2791,4 @@ cover:pipelinq:7f9dc8e6m1e6e:38e80a9f	already done: lib/Command/*.php 382/382 st
 cover:dossiq:f8a113c5mac88:e7fd1c43	PR #6302: 13 tests for CollectionCaseLinks and IntakeCaseTypes (each 96% lines); suite 14865->14878, 19 inherited	session-20261113T054519-189b2666	2026-11-13T06:27:19Z
 cover:pipelinq:7f9dc8e6m1e6e:js06645759	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:27:19Z
 cover:shillinq:05639debmd8ee:588dbc92	already done: lib/Service/External/Bunq 40/41 (97.56%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T06:27:21Z
+verify:dossiq:6300:6af14b06	6300 GREEN; 14929 tests, 0 new failures (19 inherited)	session-20261113T061521-423d1e83	2026-11-13T06:27:38Z
