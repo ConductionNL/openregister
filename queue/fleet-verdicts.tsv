@@ -5333,4 +5333,5 @@ dossiq	6314	f5190e91cec234c50520d570cc675f4ab940a19a	GREEN	worker-36	phpunit 151
 dossiq	6317	36a475e2648df17037f5b3e85851ff7fdeb46a49	GREEN	worker-37	phpunit 15144 (baseline 15141, 19 failures inherited, 0 new); vitest 6389, 1 inherited fail (capabilityComparison); tests only
 dossiq	6318	4320a6d3fe5c34ac17ed73ae8339ff1c65a19993	GREEN	worker-37	phpunit 15144 (baseline 15141, 19 failures inherited, 0 new); tests only
 integriq	3496	8455f1a08ec752fd6d2b644ac5470edc9b5715f0	GREEN	worker-12	unit 7689 run (baseline 7673); inherited 2 CallServiceTest errors + 2 JobsControllerTest failures on development too; 0 new; tests only; authored by this worker
+dossiq	6319	6b21c4e5f0d1ffb56f6b9d625c920889622ec343	GREEN	worker-34	phpunit 15156 (baseline 15149, same 19 inherited failures); tests and coverage metadata only
 shillinq	2901	65ee2920d5759c4fb9589ae10d9c1e9a0e86f65b	GREEN	worker-58	phpunit 9468 on tree vs baseline 9460, 1 inherited failure, 0 new; one new test file, tests only
