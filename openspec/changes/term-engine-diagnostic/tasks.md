@@ -7,15 +7,16 @@
       check per day. The rule NAME comes from the calendar's own
       `nonWorkingDates()`, the same map `isWorkingDay()` consults, so the
       diagnostic cannot name a rule the engine did not apply.
-- [ ] 1.1b **The roll: there is none to record.** `SlaCalculator` has no
-      roll — neither `add()` nor the arm path moves a landing off a
-      non-working day — so a requested `rollToWorkingDay` is REFUSED with
-      that as the reason rather than narrated. A diagnostic that applied a
-      roll the engine does not would print a moment the engine never
-      produces, and it would be believed precisely because it is the
-      diagnostic. Adding the roll to the engine is its own change; the
-      response reports `firesOnWorkingDay` so the reader can see the case a
-      roll would have been for.
+- [x] 1.1b The roll, narrated through the engine's own roll. When this task
+      was first written `SlaCalculator` had no roll, so a requested
+      `rollToWorkingDay` was refused rather than narrated. The engine gained
+      the roll in #3939 (`SlaCalculator::roll()`, "a term can roll off a day
+      nobody works, and say what moved it"), and `TermDiagnostic::explain()`
+      calls that same method (D-1): the response carries `roll`, `firesAt`,
+      `unrolledAt` (absent when the roll moved nothing) and `rolledBy` (the
+      rule that stopped the landing). A roll outside the vocabulary is still
+      refused, not defaulted. Covered by `TermDiagnosticTest` ("the roll is
+      NARRATED, through the engine's own roll").
 - [x] 1.2 `POST /api/flow-timers/diagnostic`, administrator only, returning
       the fire moment, the walk, the skipped days with their rules, the roll,
       the zone and each rung's instant. It takes a calendar DEFINITION rather
@@ -46,3 +47,20 @@
       the engine agrees; the intuitive answer is wrong, and the test says so
       in a comment so nobody "fixes" it.
 - [ ] 3.2 The e2e, which needs the panel from 2.1 to open.
+
+## Status, 2026-11-13
+
+**1.1b ticked:** it was done in #3939 and this file still said "refused"; see
+the task text for what the diagnostic returns and which test covers it.
+
+**2.1 and 3.2 stay open, and why.** The "Try a date" panel belongs beside the
+"Preview a year" section of `EditWorkingCalendarModal`, which already holds the
+calendar definition the endpoint takes. It needs about a dozen new prose labels
+(none of them exists as a catalogue key yet: "Try a date", the unit names, the
+walk's "counted"/"skipped", the fire moment, the roll), and openregister's
+l10n parity gate holds 36 locales to key-for-key parity, so each label must be
+translated into every one of them before the panel can land. That is a
+translation pass in its own right (`docs/l10n-workflow.md` §6.15, one language
+per commit), not something to fold into this change. The e2e (3.2) opens that
+panel and waits for it.
+

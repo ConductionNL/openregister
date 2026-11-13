@@ -4,7 +4,7 @@
 
 ## 1. Query
 
-- [ ] 1.1 `lib/Db/TaskInboxCriteria.php` gains `term`; the inbox query matches title and description per D-2. Verify: `TaskInboxServiceTest` with an accent and a case difference, and the admin narrowing of D-1.
+- [x] 1.1 `lib/Db/TaskInboxCriteria.php` gains `term`; the inbox query matches title and description per D-2. Verify: `TaskInboxServiceTest` with an accent and a case difference, and the admin narrowing of D-1.
 
 ## 2. Provider
 

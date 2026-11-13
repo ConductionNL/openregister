@@ -74,6 +74,9 @@ exports[`EditView.saveView (golden) saves the full form, answering plainError 1`
         "isDefault": false,
         "isPublic": true,
         "name": "Mine",
+        "presentation": {
+          "viewType": "table",
+        },
         "query": {
           "a": 1,
         },
@@ -122,6 +125,9 @@ exports[`EditView.saveView (golden) saves the full form, answering saved 1`] = `
         "isDefault": false,
         "isPublic": true,
         "name": "Mine",
+        "presentation": {
+          "viewType": "table",
+        },
         "query": {
           "a": 1,
         },
@@ -171,6 +177,9 @@ exports[`EditView.saveView (golden) saves the full form, answering serverError 1
         "isDefault": false,
         "isPublic": true,
         "name": "Mine",
+        "presentation": {
+          "viewType": "table",
+        },
         "query": {
           "a": 1,
         },
@@ -219,6 +228,9 @@ exports[`EditView.saveView (golden) saves the full form, answering silentError 1
         "isDefault": false,
         "isPublic": true,
         "name": "Mine",
+        "presentation": {
+          "viewType": "table",
+        },
         "query": {
           "a": 1,
         },
@@ -267,6 +279,9 @@ exports[`EditView.saveView (golden) saves the uuidOnly form, answering plainErro
         "isDefault": true,
         "isPublic": false,
         "name": "X",
+        "presentation": {
+          "viewType": "table",
+        },
         "query": {},
         "sharedUsers": [],
         "sharedWith": [],
@@ -302,6 +317,9 @@ exports[`EditView.saveView (golden) saves the uuidOnly form, answering saved 1`]
         "isDefault": true,
         "isPublic": false,
         "name": "X",
+        "presentation": {
+          "viewType": "table",
+        },
         "query": {},
         "sharedUsers": [],
         "sharedWith": [],
@@ -338,6 +356,9 @@ exports[`EditView.saveView (golden) saves the uuidOnly form, answering serverErr
         "isDefault": true,
         "isPublic": false,
         "name": "X",
+        "presentation": {
+          "viewType": "table",
+        },
         "query": {},
         "sharedUsers": [],
         "sharedWith": [],
@@ -373,6 +394,9 @@ exports[`EditView.saveView (golden) saves the uuidOnly form, answering silentErr
         "isDefault": true,
         "isPublic": false,
         "name": "X",
+        "presentation": {
+          "viewType": "table",
+        },
         "query": {},
         "sharedUsers": [],
         "sharedWith": [],

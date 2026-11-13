@@ -330,7 +330,10 @@ final class ServiceRegistrar {
 				deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
 				// Reads a located task's subject from its own table instead
 				// of searching every magic table for it.
-				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class)
+				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
+				// The per-row `can` list (record-tasks-tab D-4), asked of the
+				// same authorization service every verb's endpoint asks.
+				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
 			);
 	}//end buildTaskInboxService()
 
@@ -381,7 +384,8 @@ final class ServiceRegistrar {
 				fileService: null,
 				// Not FileService itself (that would be the cycle this
 				// factory breaks), only the means to resolve it on first use.
-				container: $container
+				container: $container,
+				documentStore: $container->get(\OCA\OpenRegister\Service\File\DocumentStore::class)
 			);
 	}//end buildFolderManagementHandler()
 
