@@ -60,6 +60,8 @@ use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\DraftListing;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PreservedListing;
+use OCA\OpenRegister\Service\Object\PreservedListLens;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -2868,7 +2870,39 @@ class AggregationRunner implements AggregationRunnerInterface {
 		}
 
 		$this->addDraftPredicate(query: $query, schema: $schema);
+		$this->addPreservedPredicate(query: $query, schema: $schema);
 	}//end addLifecyclePredicates()
+
+	/**
+	 * Add PreservedListLens's clause for the working set, as a list with no
+	 * query has it: a preserved object stays out, on a schema that offers the
+	 * regime (archiving-as-a-process-with-sign-off).
+	 *
+	 * @param NativeAggregationQuery $query  The query being built
+	 * @param Schema                 $schema The schema
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	private function addPreservedPredicate(NativeAggregationQuery $query, Schema $schema): void {
+		if ($schema->isPreservationEnabled() === false) {
+			return;
+		}
+
+		$predicate = (new PreservedListLens())->clauseFor(
+			listing: new PreservedListing(
+				mode: PreservedListLens::EXCLUDE,
+				schema: $schema,
+				platform: $query->platform,
+				columnMissing: in_array(PreservedListLens::COLUMN, $this->magicMapper->getMetadataColumnHealer()->missingFor(tableName: $query->tableName), true)
+			),
+			columnPrefix: ''
+		);
+		if ($predicate !== null) {
+			$query->where(predicate: $predicate);
+		}
+	}//end addPreservedPredicate()
 
 	/**
 	 * Add DraftListLens's clause for the mode a list with no query uses.

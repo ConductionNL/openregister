@@ -2705,6 +2705,8 @@ Service/Object/PerformanceOptimizationHandler.php,38,Service,Service,Service/Obj
 Service/Object/PermissionCheck.php,27,Service,Access,Access/Service/Object/PermissionCheck.php,0,,Core
 Service/Object/PermissionHandler.php,1872,Service,Access,Access/Service/Object/PermissionHandler.php,22,5,Core
 Service/Object/PinnedTable.php,10,Service,Service,Service/Object/PinnedTable.php,0,,Core
+Service/Object/PreservedListing.php,11,Service,Service,Service/Object/PreservedListing.php,0,,Core
+Service/Object/PreservedListLens.php,53,Service,Service,Service/Object/PreservedListLens.php,0,,Core
 Service/Object/PropertySourceLanguage.php,32,Service,Service,Service/Object/PropertySourceLanguage.php,0,,Core
 Service/Object/QueryHandler.php,447,Service,Service,Service/Object/QueryHandler.php,0,,Core
 Service/Object/ReferenceKey.php,12,Service,Service,Service/Object/ReferenceKey.php,1,488,Core
