@@ -60,6 +60,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
  * @uses   \OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform
  * @uses   \OCA\OpenRegister\Files\Service\File\DocumentRedactionServices
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
  */
 class DocumentProcessingHandlerAnonymizeGoldenTest extends TestCase {
 

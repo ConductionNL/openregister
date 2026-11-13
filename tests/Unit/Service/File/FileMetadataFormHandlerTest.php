@@ -35,6 +35,8 @@ use OCA\OpenRegister\Service\File\FileRename;
  * @uses \OCA\OpenRegister\Service\File\FileMetadataChange
  * @uses \OCA\OpenRegister\Service\File\FileRename
  * @uses   \OCA\OpenRegister\Files\Service\File\FileMetadataEdit
+ * @uses   \OCA\OpenRegister\Service\File\FileMetadataChange
+ * @uses   \OCA\OpenRegister\Service\File\FileRename
  */
 final class FileMetadataFormHandlerTest extends TestCase {
 

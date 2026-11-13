@@ -62,6 +62,10 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Files\Service\File\DocumentReplacement
  * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator
  * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderLookup
+ * @uses   \OCA\OpenRegister\Files\Db\AnonymisationLog
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
  */
 class DocumentProcessingHandlerAnonymisationLogTest extends TestCase {
 

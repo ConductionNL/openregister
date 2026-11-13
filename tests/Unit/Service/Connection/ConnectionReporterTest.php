@@ -50,6 +50,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Connection\ConnectionReporter
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  * @uses \OCA\OpenRegister\Service\Connection\ConnectionStatusReport
+ * @uses   \OCA\OpenRegister\Service\Connection\ConnectionStatusReport
  */
 class ConnectionReporterTest extends TestCase {
 

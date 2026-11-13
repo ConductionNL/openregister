@@ -53,6 +53,9 @@ use Stringable;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\File\ObjectFolderOptions
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\File\ObjectFolderOptions
  */
 final class FolderManagementHandlerFolderLookupGoldenTest extends TestCase {
 

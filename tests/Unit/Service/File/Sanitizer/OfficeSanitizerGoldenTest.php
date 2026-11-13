@@ -43,6 +43,7 @@ use ZipArchive;
  * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizationRun
  * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\OfficePartSurgery
  * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\RelsPrune
+ * @uses   \OCA\OpenRegister\Exception\SanitizationException
  */
 final class OfficeSanitizerGoldenTest extends TestCase {
 

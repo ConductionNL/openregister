@@ -62,6 +62,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\File\ObjectFileFinder
  * @uses \OCA\OpenRegister\Service\File\ObjectFileLookup
  * @uses \OCA\OpenRegister\Service\File\ExecutableContentDetector
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\File\FileSession
+ * @uses   \OCA\OpenRegister\Service\File\ObjectFileFinder
+ * @uses   \OCA\OpenRegister\Service\File\ObjectFileLookup
+ * @uses   \OCA\OpenRegister\Service\File\ExecutableContentDetector
  */
 class FileAccessGuardsGoldenTest extends TestCase {
 
