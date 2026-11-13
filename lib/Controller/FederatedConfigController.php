@@ -174,7 +174,12 @@ class FederatedConfigController extends Controller {
 	/**
 	 * Install a bundle, subject to the organisation's source allowlist.
 	 *
-	 * @return JSONResponse The install result, 404 unknown type, or 403 when the
+	 * The bundle is fetched here from the requested `repo` and `path`, and that
+	 * repo is the source the allowlist judges. A bundle or a source sent in the
+	 * request body is never trusted.
+	 *
+	 * @return JSONResponse The install result, 400 without a type, repo or path,
+	 *                      404 unknown type or unreadable bundle, or 403 when the
 	 *                      source is not allowlisted.
 	 *
 	 * @NoAdminRequired
@@ -191,23 +196,33 @@ class FederatedConfigController extends Controller {
 			return new JSONResponse(['error' => 'An install needs a type.'], Http::STATUS_BAD_REQUEST);
 		}
 
-		return $this->runInstall(type: $type);
+		$repo = trim((string)$this->request->getParam('repo', ''));
+		$path = trim((string)$this->request->getParam('path', ''));
+		if ($repo === '' || $path === '') {
+			return new JSONResponse(['error' => 'An install needs a repo and a path.'], Http::STATUS_BAD_REQUEST);
+		}
+
+		try {
+			$bundle = $this->service->fetchBundle(repo: $repo, path: $path, credentialId: $this->optionalStoredCredential());
+		} catch (Throwable $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		return $this->runInstall(type: $type, bundle: $bundle, source: $repo);
 	}//end install()
 
 	/**
-	 * Install the requested bundle of a type and map a failure to its status.
+	 * Install a fetched bundle of a type and map a failure to its status.
 	 *
-	 * @param string $type The shareable configuration type id.
+	 * @param string $type   The shareable configuration type id.
+	 * @param array  $bundle The bundle fetched from the source.
+	 * @param string $source The repo the bundle was fetched from.
 	 *
 	 * @return JSONResponse The install result, 404 unknown type, 403 trust failure, or 500.
 	 */
-	private function runInstall(string $type): JSONResponse {
+	private function runInstall(string $type, array $bundle, string $source): JSONResponse {
 		try {
-			$result = $this->service->install(
-				typeId: $type,
-				bundle: (array)$this->request->getParam('bundle', []),
-				source: trim((string)$this->request->getParam('source', ''))
-			);
+			$result = $this->service->install(typeId: $type, bundle: $bundle, source: $source);
 		} catch (UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		} catch (Throwable $e) {
@@ -421,8 +436,7 @@ class FederatedConfigController extends Controller {
 	 * broker signs the request and the caller never sees the secret. Leaving
 	 * these two ungated therefore handed anyone who may NOT install a
 	 * credentialed GitHub proxy, which is more than the install they were
-	 * refused. Orgs that have not curated `federated_config_install_groups` are
-	 * unaffected — an empty list still means "any signed-in user".
+	 * refused. With no `federated_config_install_groups` set, only admins pass.
 	 *
 	 * @return JSONResponse `{results: [...]}`, or 403 when the caller may not install.
 	 *
