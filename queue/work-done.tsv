@@ -2174,3 +2174,4 @@ verify:launchpad:1165:0a0884eb	GREEN 1165	session-20261113T015005-030aa10a	2026-
 cover:pipelinq:f67520ecmc4ba:a215617b	already done: lib/Integration/*.php (Party/Ticket/ContactMoment leaf providers) each have main + edges tests with exact assertions on every branch read (-1 merged); no thin spots left worth a PR	session-20261113T034632-47095943	2026-11-13T04:36:12Z
 cover:pipelinq:f67520ecmc4ba:0f859653	PR #3656: lib/Flow all 100%, +6 tests, suite 6223->6229 (1 inherited failure)	session-20261113T041652-f9df3e85	2026-11-13T04:36:14Z
 cover:pipelinq:f67520ecmc4ba:23d187f5	already done: lib/Service/Store 82/86 (95.35%) on development, above 90 target; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:36:44Z
+cover:pipelinq:f67520ecmc4ba:jsf8e791a8	PR #3657: 14 vitest tests, src/portal/* + components lines 57/135 -> 132/132, suite 3585/0	session-20261113T021703-063c80f1	2026-11-13T04:36:48Z
