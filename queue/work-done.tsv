@@ -3491,3 +3491,4 @@ cover:integriq:92114ab0m658d:fd0946f1	PR #3512: EndpointMessageGate 74/91->91/91
 verify:hermiq:1675:74fa3eaa	GREEN: +36 tests pass, failing set identical to development	session-20261113T051703-1b54bfba	2026-11-13T08:35:10Z
 cover:stackiq:9ac19b3am5ac4:17d367ab	already done: lib/Controller/Settings/ at 100% (74/74); no PR	session-20261113T080546-98207a87	2026-11-13T08:35:31Z
 verify:versioniq:671:042a546f	GREEN 671, 672, 673 (php 1411 vs 1356, 2 inherited; vitest 2761 green); note: composer-cloud leaves vendor-bin/phpunit empty, ran it on that dir	session-20261113T080549-20301834	2026-11-13T08:35:37Z
+review:openregister:10114:fb0951d0	APPROVE: 3 jest specs, 24 pass, eslint clean	session-20261113T080556-d189f150	2026-11-13T08:35:46Z
