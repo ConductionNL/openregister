@@ -5404,3 +5404,4 @@ cover:shillinq:05639debm4eb8:89bf3ba4	no PR: lib/Reporting/Generator/ measured 1
 merge:pipelinq:3721:4b92cd6f	merge-local over 2 pipelinq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:03:58Z
 merge:pipelinq:3602:8969c50d	merge-local over 2 pipelinq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:03:58Z
 merge:versioniq:678:99e9570c	merge-local over 1 versioniq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T14:04:48Z
+build2:openregister:records-restore-with-cascade	partial: PR #10277 — 1.1 trigger_object column + 1.2 evidence floor; 2.x/3.x left	session-20261113T091533-03405ea6	2026-11-13T14:06:16Z
