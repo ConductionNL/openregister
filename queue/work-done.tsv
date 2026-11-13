@@ -4367,3 +4367,4 @@ cover:pipelinq:7f9dc8e6m84dd:2cc09f74	already done: lib/Service/Marketing/Transp
 cover:pipelinq:7f9dc8e6m916f:60c2c265	PR #3720: 10 tests, 4 controllers to 100%, lib/Controller/*.php 90.4%->91.2%; inherited red CrmPrivilegeRefusalGoldenTest	session-20261113T074533-3e2a2da6	2026-11-13T11:01:29Z
 cover:stackiq:9ac19b3am10f3:38e80a9f	already done: lib/Command 282/282 statements, every command has dedicated tests; -1 merged	session-20261113T064518-860c039d	2026-11-13T11:01:35Z
 verify:humaniq:1111:60a8d3ea	GREEN: +36 tests, suite green	session-20261113T051703-1b54bfba	2026-11-13T11:01:41Z
+cover:stackiq:9ac19b3am10f3:59f569b2	PR stackiq#1869: 3 failure-path tests (EmailSettings, RoleGroupSettings, SettingsObjectCounts); dir already ~97.5%; suite 3273->3276 green	session-20261113T104531-16da055e	2026-11-13T11:01:53Z
