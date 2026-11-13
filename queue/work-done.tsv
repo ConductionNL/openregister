@@ -7453,3 +7453,4 @@ merge:learniq:2478:807d796d	merge3 tree of 18 learniq PRs: merged=16 red=0 fail=
 merge:filinq:2055:ef03376d	merge3 tree of 32 filinq PRs: merged=20 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-13T23:02:49Z
 merge:filinq:2054:8e823ca8	merge3 tree of 32 filinq PRs: merged=20 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-13T23:02:53Z
 merge:filinq:2058:ead9c077	merge3 tree of 32 filinq PRs: merged=20 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-13T23:02:55Z
+merge:portaliq:2284:e8554451	merge3 tree of 45 portaliq PRs: merged=28 red=0 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-13T23:03:03Z
