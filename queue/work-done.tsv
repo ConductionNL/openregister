@@ -3058,3 +3058,4 @@ cover:decidiq:a5f973bbmb22b:3d4b295b	already done: lib/Service/Settings measured
 verify:keepiq:1745:61ad9085	GREEN 1745 (tests only; vitest 6270 pass; PHP clean)	session-20261113T051714-4ad50f31	2026-11-13T07:00:56Z
 verify:pipelinq:3691:b238ba02	GREEN 3691 (JS specs only; vitest all pass)	session-20261113T031701-b518f7f8	2026-11-13T07:01:09Z
 verify:decidiq:2119:f8ee7896	2119 GREEN; 3746 tests, 0 failures	session-20261113T061521-423d1e83	2026-11-13T07:01:29Z
+cover:dossiq:f8a113c5m7e79:dee272f4	PR dossiq#6310: 33 tests in 6 files; lib/Service/Email 82.6%->90.5% lines; suite 14921->14954, same 19 inherited failures	session-20261113T053904-36dcee67	2026-11-13T07:01:56Z
