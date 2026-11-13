@@ -5001,3 +5001,4 @@ build:openregister:store-over-federated-config	failed: build tasks never target 
 build:openregister:shared-credentials-and-flows	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:15Z
 build:openregister:service-hours-and-repeating-reminders	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:21Z
 build:openregister:rights-screen-stated	partial: PR #10203 — tasks 1.1, 2.2 done (5 unit tests); 2.1 e2e and 3.1 archive left	session-20261113T123928-6bdcc9d0	2026-11-13T12:45:31Z
+build:openregister:search-dutch-language-quality	failed: build tasks never target openregister (worker rules)	session-20261113T081038-e8b5210f	2026-11-13T12:45:30Z
