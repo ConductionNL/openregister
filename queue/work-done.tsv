@@ -6670,4 +6670,5 @@ cover:dossiq:069ee2d6mbd37:eb8f684c	already done: lib/Service/Reporting 533/543 
 cover:dossiq:069ee2d6mbd37:9ece5c6f	already done: lib/Controller/Support at 334/337 stmts (99.1%) after -1/-2 merged; target 95	session-20261113T202624-e1abf1c1	2026-11-13T20:30:37Z
 cover:portaliq:b60f3b81m4ccb:3230221b	already done: every statement in lib/Service/Signin/ is covered by the unit suite on development (pcov)	session-20261113T202603-6c9ef72f	2026-11-13T20:30:47Z
 cover:dossiq:069ee2d6mbd37:67b69054	already done: lib/Service/Conversation 374/375 statements (99.7%) on development	session-20261113T175332-5effc865	2026-11-13T20:30:57Z
+verify:filinq:2058:71bac567	GREEN 2058,2061,2084,2085; CONFLICT 2086-2090 (filinq_register.json vs #2085); unit 6481 green, vitest 751 green	session-20261113T202612-d04bbf77	2026-11-13T20:31:58Z
 build:opencatalogi:dashboard	partial: PR #2609; code fixes already on development; 27/41 tasks (verification + 2 feature docs); left: live smoke tests, 5.7/6.4 conflict with deliberate admin-only hardening of listings/add, 9.2 three icon-name UNWRAPPED outside scope	session-20261113T195351-a32c6d55	2026-11-13T20:31:52Z
