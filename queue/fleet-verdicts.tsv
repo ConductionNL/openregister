@@ -5227,3 +5227,5 @@ decidiq	2098	a2a5fd1b727c733952af0290dec7a68881de0dda	GREEN	worker-13	phpunit 36
 filinq	2040	5d6287c159854b619cc2f065d99bb3c8d2e3166e	GREEN	worker-58	phpunit 6122 on 2-PR tree vs baseline 6112, 0 failures; 2 new test files, tests only
 decidiq	2116	20f29e9d3adf765f45e2465d96ae9dded49cb334	GREEN	worker-13	phpunit 3684 tests on tree (+146 from PR), baseline 3538/0 fail, 0 new; tests only
 shillinq	2873	61ee0173b7de8b2f2526137d2e7f818a0c2e196e	GREEN	worker-38	vitest 167 files/1660 tests all pass on the 9-PR tree; JS specs only, no deletions, no PHP change (phpunit baseline 1 inherited failure unaffected)
+shillinq	2874	182ebe13b40cdea10bdf2eb8f385c130466f6e5c	GREEN	worker-38	vitest 167 files/1660 tests all pass on the 9-PR tree; JS specs only, no deletions, no PHP change (phpunit baseline 1 inherited failure unaffected)
+shillinq	2875	dd219e9861331fd2606e8ee3fdcf7af69f97f49d	GREEN	worker-38	vitest 167 files/1660 tests all pass on the 9-PR tree; JS specs only, no deletions, no PHP change (phpunit baseline 1 inherited failure unaffected)
