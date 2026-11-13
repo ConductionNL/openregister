@@ -1,225 +1,18 @@
 {
  "app": "filinq",
- "commit": "1684dc33bdf362ee0289ccd2cc2b3ba872f518ce",
- "measured_at": "2026-11-13T02:22:40Z",
- "php": {
-  "tool": "pcov",
-  "pct": 87.57,
-  "statements": 34027,
-  "covered": 29799,
-  "dirs": {
-   "lib/AppInfo/": [
-    87,
-    59
-   ],
-   "lib/BackgroundJob/": [
-    458,
-    446
-   ],
-   "lib/Command/": [
-    27,
-    27
-   ],
-   "lib/Controller/": [
-    3880,
-    3303
-   ],
-   "lib/Controller/Support/": [
-    88,
-    87
-   ],
-   "lib/Dashboard/": [
-    17,
-    14
-   ],
-   "lib/Event/": [
-    168,
-    152
-   ],
-   "lib/Event/Support/": [
-    2,
-    2
-   ],
-   "lib/EventListener/": [
-    1119,
-    1073
-   ],
-   "lib/Exception/": [
-    79,
-    75
-   ],
-   "lib/Flow/": [
-    99,
-    99
-   ],
-   "lib/Kernel/": [
-    16,
-    16
-   ],
-   "lib/Kernel/Contracts/": [
-    0,
-    0
-   ],
-   "lib/Mcp/": [
-    4,
-    4
-   ],
-   "lib/Middleware/": [
-    101,
-    99
-   ],
-   "lib/Notification/": [
-    16,
-    14
-   ],
-   "lib/Portal/": [
-    181,
-    181
-   ],
-   "lib/Repair/": [
-    790,
-    758
-   ],
-   "lib/Sections/": [
-    6,
-    6
-   ],
-   "lib/Service/": [
-    15693,
-    13100
-   ],
-   "lib/Service/BulkSigning/": [
-    286,
-    265
-   ],
-   "lib/Service/Charts/": [
-    865,
-    856
-   ],
-   "lib/Service/Classification/": [
-    192,
-    176
-   ],
-   "lib/Service/Comparison/": [
-    258,
-    253
-   ],
-   "lib/Service/Contract/": [
-    290,
-    230
-   ],
-   "lib/Service/Conversion/": [
-    932,
-    807
-   ],
-   "lib/Service/Editing/": [
-    1846,
-    1775
-   ],
-   "lib/Service/EmailIngestion/": [
-    267,
-    238
-   ],
-   "lib/Service/EntitySearch/": [
-    307,
-    289
-   ],
-   "lib/Service/Extraction/": [
-    160,
-    143
-   ],
-   "lib/Service/Intake/": [
-    153,
-    150
-   ],
-   "lib/Service/LegalHold/": [
-    403,
-    361
-   ],
-   "lib/Service/Ocr/": [
-    135,
-    106
-   ],
-   "lib/Service/Office/": [
-    127,
-    125
-   ],
-   "lib/Service/Pseudonymisation/": [
-    386,
-    314
-   ],
-   "lib/Service/Publication/": [
-    337,
-    301
-   ],
-   "lib/Service/Redaction/": [
-    652,
-    554
-   ],
-   "lib/Service/Sanitization/": [
-    147,
-    109
-   ],
-   "lib/Service/SignerAuth/": [
-    483,
-    461
-   ],
-   "lib/Service/Signing/": [
-    867,
-    802
-   ],
-   "lib/Service/SigningEnvelope/": [
-    197,
-    182
-   ],
-   "lib/Service/SubjectErasure/": [
-    820,
-    783
-   ],
-   "lib/Service/Suggestion/": [
-    88,
-    83
-   ],
-   "lib/Service/Support/": [
-    23,
-    22
-   ],
-   "lib/Service/Validation/": [
-    230,
-    214
-   ],
-   "lib/Service/VeraPdf/": [
-    309,
-    291
-   ],
-   "lib/Service/Wizard/": [
-    422,
-    380
-   ],
-   "lib/Settings/": [
-    14,
-    14
-   ]
-  }
- },
+ "commit": "e1f08e30b88c6e7128cac176143bc81503fdfc44",
+ "measured_at": "2026-11-13T04:38:06Z",
+ "php": null,
  "js": {
-  "pct": 35.34,
-  "statements": 5402,
-  "covered": 1909,
+  "pct": 86.95,
+  "statements": 3095,
+  "covered": 2691,
   "dirs": {
    "src/": [
-    115,
-    0
+    114,
+    114
    ],
    "src/assets/": [
-    0,
-    0
-   ],
-   "src/assets/fonts/": [
-    0,
-    0
-   ],
-   "src/assets/icons/": [
     0,
     0
    ],
@@ -227,53 +20,33 @@
     27,
     27
    ],
-   "src/components/compare/": [
-    45,
-    0
-   ],
-   "src/components/viewers/": [
-    0,
-    0
-   ],
    "src/constants/": [
     5,
     5
    ],
-   "src/dialogs/": [
-    378,
-    0
-   ],
-   "src/entities/": [
-    0,
-    0
-   ],
    "src/integrations/": [
-    159,
-    85
+    104,
+    103
    ],
    "src/mixins/": [
     116,
     115
    ],
    "src/services/": [
-    1434,
-    988
+    1189,
+    1110
    ],
    "src/store/": [
-    118,
-    0
+    37,
+    37
    ],
    "src/store/modules/": [
-    2432,
-    647
+    1461,
+    1138
    ],
    "src/utils/": [
-    26,
+    11,
     11
-   ],
-   "src/views/": [
-    96,
-    0
    ],
    "src/views/dossier/": [
     3,
@@ -282,14 +55,6 @@
    "src/views/gallery/": [
     1,
     1
-   ],
-   "src/views/policy/": [
-    278,
-    0
-   ],
-   "src/views/settings/": [
-    142,
-    0
    ],
    "src/views/signing/": [
     27,
