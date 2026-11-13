@@ -3977,6 +3977,14 @@ Db/MagicMapper/ConditionGroup.php,78,Db,Service,Service/Db/MagicMapper/Condition
 Db/MagicMapper/ConditionGroupParser.php,253,Db,Service,Service/Db/MagicMapper/ConditionGroupParser.php,0,,Core
 Db/MagicMapper/ConditionLeaf.php,68,Db,Service,Service/Db/MagicMapper/ConditionLeaf.php,0,,Core
 Exception/ConditionGroupException.php,74,Exception,Exception,Exception/ConditionGroupException.php,0,,Kernel
+Controller/ActionRightsController.php,163,Controller,Access,Access/Controller/ActionRightsController.php,0,,Core
+Service/ActionRightsCatalogue.php,144,Service,Platform,Platform/Service/ActionRightsCatalogue.php,0,,Platform
+Service/ActionRightsCatalogueInterface.php,62,Service,Platform,Platform/Service/ActionRightsCatalogueInterface.php,0,,Platform
+Service/Flow/FlowNodeRightsGuard.php,302,Service,Flows,Flows/Service/Flow/FlowNodeRightsGuard.php,0,,Processes
+Service/Flow/FlowNodeRightsGuardInterface.php,101,Service,Flows,Flows/Service/Flow/FlowNodeRightsGuardInterface.php,0,,Processes
+Service/Flow/FlowNodeRightRefused.php,66,Service,Flows,Flows/Service/Flow/FlowNodeRightRefused.php,0,,Processes
+Service/Flow/IFlowNodeRequiresRight.php,69,Service,Flows,Flows/Service/Flow/IFlowNodeRequiresRight.php,0,,Processes
+Repair/InitializeFlowNodeRights.php,88,Repair,Platform,Platform/Repair/InitializeFlowNodeRights.php,0,,Platform
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core

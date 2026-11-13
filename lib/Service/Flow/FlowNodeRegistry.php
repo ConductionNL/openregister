@@ -291,6 +291,12 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 			// files. Published rather than duplicated in each editor,
 			// so the map has one home.
 			'aliases' => $this->aliasesFor(type: $id),
+			// The right an author needs to place this step, as the node
+			// declares it for a step with no configuration; null when it
+			// needs none. The administrator's map and the caller's `locked`
+			// are applied by FlowNodeRightsGuard, which also checks every
+			// save, so this is advice and never the control.
+			'requiresRight' => $this->requiredRightOf(node: $node),
 		];
 
 		// The node's config vocabulary, when it declares one. This is
@@ -321,6 +327,23 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 
 		return $entry;
 	}//end paletteEntry()
+
+	/**
+	 * The right a node declares for a step with no configuration, or null.
+	 *
+	 * @param IFlowNode $node The node.
+	 *
+	 * @return string|null The right.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	private function requiredRightOf(IFlowNode $node): ?string {
+		if (($node instanceof IFlowNodeRequiresRight) === false) {
+			return null;
+		}
+
+		return $node->requiredRight(config: []);
+	}//end requiredRightOf()
 
 	/**
 	 * A node's icon, or the app's own when the node's does not resolve.
