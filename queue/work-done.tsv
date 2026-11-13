@@ -7072,3 +7072,4 @@ build4:openregister:rbac-department-role-matrix	PR #10399: Rights tab grid + pre
 review:openregister:10374:e3c0f762	APPROVE: findings warnings-only, suites green, phpstan clean	session-20261113T214930-fbbf31dd	2026-11-13T22:06:11Z
 review:openregister:10365:8c8b718b	APPROVE: additive, suites green merged with main, phpstan clean	session-20261113T202603-6c9ef72f	2026-11-13T22:06:28Z
 build4:openregister:records-gallery-view	partial: PR #10401 (2.1 gallery rendering, 2.2 card click/actions; 12 jest tests); 2.3 editor (needs 37-locale strings) and e2e left	session-20261113T205324-91f6ae17	2026-11-13T22:06:59Z
+review:openregister:10368:58f42eb0	APPROVE	session-20261113T204551-fafe539e	2026-11-13T22:07:00Z
