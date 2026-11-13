@@ -5922,3 +5922,4 @@ cover:shillinq:05639debm7b6b:5fe382d1	PR #2955: 14 tests, ImportSourceReader/Imp
 cover:launchpad:fb10c50fm2d1d:882bd950	already covered: lib/Search/*.php 202/202 at d6a7f892; no PR	session-20261113T172334-4b3b027b	2026-11-13T18:20:31Z
 fix:portaliq:2435:758e2194	failed: conflict is with open #2434 (both bump the register to 0.109.0 and edit the same version asserts), not with development, which the branch already contains; re-merge development once #2434 lands	session-20261113T172329-5f4feaba	2026-11-13T18:20:53Z
 cover:keepiq:c967a31fm00c6:11ebfefd	already done: lib/Backup 2 lines uncovered of ~480 (ArchiveCipher 106/107, BackupService 81/82); branches -1..-4 exist	session-20261113T171153-e1c17962	2026-11-13T18:21:07Z
+cover:keepiq:c967a31fm00c6:1b97f731	already done: lib/Listener 7 lines uncovered of ~425 (98%); branches -1..-3 exist	session-20261113T171153-e1c17962	2026-11-13T18:21:25Z
