@@ -7003,3 +7003,4 @@ build4:openregister:content-search-index	partial: PR #10370 — 1.3 scope capabi
 review:openregister:10342:bb196129	APPROVE: Fix 1 as the change specs; target read gate kept; shipped self-named specs unchanged; suites green	session-20261113T204539-e70be1ed	2026-11-13T21:49:05Z
 build4:openregister:identity-survives-a-move	partial: PR #10371 (task 2.2 relation address rewrite on move, +10 tests); 1.2 timers cross-org and 3.1 e2e left	session-20261113T213326-97cbe4c8	2026-11-13T21:49:14Z
 build4:openregister:external-register-view-leaf	partial: PR #10372 (task 1.1 provider half: openconnector-http provider + tests); 1.2, 2.x, 3.1, widget tests left	session-20261113T205323-cbfd0ec4	2026-11-13T21:49:21Z
+review:openregister:10340:7e1545e6	APPROVE: frontend-only, change task 3.1, jest green, l10n same as main	session-20261113T212411-65b95fd9	2026-11-13T21:49:45Z
