@@ -5027,3 +5027,4 @@ cover:pipelinq:7f9dc8e6m84dd:9d3a1784	already done: lib/BackgroundJob/*.php at 1
 build:openregister:register-document-store	partial: PR #10213 DocumentStore root + describe, root wired through file handlers, literal and byte-path guards; 1.2, move (2.x), integration (3.x) left	session-20261113T114525-2ca68289	2026-11-13T12:52:20Z
 cover:buildiq:70b3e29embf07:js4829b6aa	2 PRs: #1540 SchemaDesigner helpers (26 tests), #1542 PageDesigner helpers (16 tests); suite 3880->3906 and 3880->3896, no new failures	session-20261113T094607-ad655fd0	2026-11-13T12:52:36Z
 build:openregister:search-over-history-and-an-administered-dictionary	PR #10214: 3.1 (empty synonym/stopword schemes seeded create-only), 3 tests, ADR-012 check in body; 4.2 e2e left	session-20261113T103904-e108be02	2026-11-13T12:53:48Z
+measure:integriq:20261113h12	php 93.54% js 92.11% @81441e2 (unit suite: 2 errors, 2 failures pre-existing)	session-20261113T124807-5f522699	2026-11-13T12:53:50Z
