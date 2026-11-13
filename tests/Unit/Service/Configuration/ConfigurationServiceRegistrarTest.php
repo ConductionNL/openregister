@@ -51,6 +51,7 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer',
 				'OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationBundleService',
 				'OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDraftGate',
+				'OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSeedService',
 			],
 			actual: $context->services
 		);

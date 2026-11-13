@@ -22,3 +22,4 @@ running instance, and SHALL write drafts rather than live values.
 - **GIVEN** an administrator on a fresh instance
 - **WHEN** they run the seed action
 - **THEN** the defaults exist as a draft set, ready to review and deploy
+- @e2e tests/e2e/ci/configuration-deployment.spec.ts
