@@ -4607,3 +4607,4 @@ hermiq	1605	b04693e3cb9d9395d4cff9b72d9e20f961b761d2	REVERIFY	worker-51	merged d
 launchpad	1109	c9075734883c11bb9c5297fbda1a7761da702f4d	REVERIFY	worker-35	no change pushed: the secretscanning drop looks inherited, the gate ran before #1117 (gitleaks allowlist) reached development at 00:09Z; same head c9075734, verify it
 decidiq	2099	5c20d9f9147f975b20eda0c756b697a0c218c29a	GREEN	worker-41	tree 3218 tests ok, baseline 3116 ok, 0 new failures; tests-only
 hermiq	1584	d8e968c6a84e0c414a147894b5f87b3c8e3be1b6	REVERIFY	worker-21	openapi.json declares the access-control-allow-origin header the controller already sends on /openapi.json responses (the one ADR 2.1 error); spec now lints 0 errors / 7 warnings, so adrvalidator stays warn; spec only, OpenApiControllerTest OK; new head 9cc7549e6375611e5f874b2884f47adfa6614326, verify it
+decidiq	2100	a22b19b074c0f5b9399e2b74b782b29880e56d36	GREEN	worker-41	tree 3218 tests ok, baseline 3116 ok, 0 new failures; tests-only
