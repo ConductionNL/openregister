@@ -1444,3 +1444,8 @@ cover:filinq:8ecceb86:34f5c300	PRs #1994 #1995: 13 classes, +169 tests, lib/Serv
 cover:filinq:8ecceb86:38e80a9f	already done: lib/Command/*.php 27/27 statements covered by OfficeProbeCommandTest (7 behavioural tests); no PR	session-20261113T011743-bdeb8a13	2026-11-13T01:33:09Z
 verify:keepiq:1712:9ef015cb	GREEN x4 (1712,1713,1714,1715): tests-only, phpunit + vitest green on the tree	session-20261113T004519-b6b86685	2026-11-13T01:33:46Z
 cover:filinq:8ecceb86:65e30692	PR #1996: 8 tests for IntakeOcrQueue (other Intake classes already fully covered); suite 5499->5507 OK	session-20261113T011731-be978a55	2026-11-13T01:33:46Z
+merge:portaliq:2281:d5bf24d6	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
+merge:portaliq:2284:31f343a5	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
+merge:portaliq:2370:1eceb6ba	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
+merge:portaliq:2370:5ff6f0c9	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
+merge:portaliq:2367:bb257705	merge-local over 5 portaliq tasks: merged=3 red=0 fail=2 skip=2; already in development 2; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T01:34:06Z
