@@ -3960,3 +3960,4 @@ build:dossiq:retire-cmmn-caseplanstate	partial: PR #6375 task 7.2; 3.2 gated on 
 build:dossiq:task-forms-keep-a-draft	partial: PR #6376 tasks 1,2,3,5 (draft props on TaskDetail and CaseDetail, vitest spec); 4 e2e, 6 live, 7 row left	session-20261113T091530-f20014fb	2026-11-13T09:38:48Z
 cover:keepiq:c967a31fm1147:e372e6ff	already done: lib/Event/*.php 43/43 lines across 8 event classes, each with its own tests; quality/test-coverage-e372e6ff-1 on remote	session-20261113T084521-fd8a31c7	2026-11-13T09:38:56Z
 verify:learniq:2460:79eddddc	GREEN 2460: 6383 tests, 0 new failures (1 inherited)	session-20261113T080556-d189f150	2026-11-13T09:39:05Z
+cover:dossiq:069ee2d6m7275:9cb3375b	already done: lib/Service/Redaction 294/296 lines (only two value-object constructor closers), branches -1/-2 merged	session-20261113T081046-f0858dc4	2026-11-13T09:39:15Z
