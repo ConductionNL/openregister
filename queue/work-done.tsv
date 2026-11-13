@@ -1716,3 +1716,4 @@ cover:filinq:8ecceb86mc744:js5794e9fc	PR #2008: 30 jest specs for 4 settings com
 cover:filinq:8ecceb86mc744:js3f3bfe56	PR #2009: 22 tests, src/* 0->114/115 stmts (suite 450->472 green)	session-20261113T015005-81f4d5a5	2026-11-13T02:42:00Z
 cover:filinq:8ecceb86mc744:js0023cfc7	PR #2010: 43 jest tests over 5 dialogs; src/dialogs/ 75.0% -> 87.2% stmts (jest); 15 inherited failures unchanged	session-20261113T015003-f68021a4	2026-11-13T02:42:18Z
 cover:dossiq:6ca0231ema7d4:js2b6606f9	PR #6245: 22 vitest specs (CaseConversationsPanel 42.6->90.7%, DataSubjectRequestTab 82.6->97.8%); dir 74.0->81.5% lines, same 1 inherited failure	session-20261113T021702-a5aabca2	2026-11-13T02:42:13Z
+cover:shillinq:801aab65:ebd2cb70	PR #2849: 4 tests, lib/Service/External/Cbs now 45/45 statements; suite failures unchanged (1 inherited)	session-20261113T015005-e2235eb9	2026-11-13T02:42:28Z
