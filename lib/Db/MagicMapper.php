@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\ObjectEventDeferral;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
@@ -9140,6 +9141,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * land before the save returns, and deferring would silently break that
 	 * promise. So this stays off until an instance decides it wants the trade,
 	 * via `occ config:app:set openregister defer_object_events --value=1`.
+	 * A caller that needs the side effects before the response sends
+	 * `X-OpenRegister-Effects: sync` (ObjectEventDeferral), and that request's
+	 * event is dispatched inline as without deferral.
 	 *
 	 * Returns false — meaning "dispatch it inline yourself" — whenever the
 	 * deferral cannot be set up, so a misconfiguration degrades to the current
@@ -9153,7 +9157,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
 	 */
 	private function dispatchCreatedDeferred(ObjectEntity $entity, RegisterSchema $table): bool {
-		if ($this->appConfig->getValueString('openregister', 'defer_object_events', '') !== '1') {
+		if ((new ObjectEventDeferral(appConfig: $this->appConfig, request: $this->currentRequest()))->defers() === false) {
 			return false;
 		}
 
@@ -9196,6 +9200,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}//end try
 
 	}//end dispatchCreatedDeferred()
+
+	/**
+	 * The current request, or null when this write runs outside one (a job, occ).
+	 *
+	 * @return \OCP\IRequest|null The request.
+	 */
+	private function currentRequest(): ?\OCP\IRequest {
+		try {
+			$request = $this->container->get(\OCP\IRequest::class);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		if ($request instanceof \OCP\IRequest === false) {
+			return null;
+		}
+
+		return $request;
+	}//end currentRequest()
 
 	/**
 	 * Update an existing object entity with event dispatching.

@@ -196,11 +196,17 @@ that number is read, so "done" is a measurement rather than an opinion.
 
       Still to defer: update and delete events, audit sealing, activity.
 
-- [ ] **Task 9 — specify the new consistency contract.**
+- [x] **Task 9 — specify the new consistency contract.**
       A 201 now means "persisted", not "persisted and fanned out". State it in
       the spec, and give callers who need the old guarantee a documented way to
       wait. This is the one caller-visible change in this change; it is a
       contract, not an implementation detail.
+
+      DONE: the requirement "A write response means persisted, and a caller
+      can ask to wait for its side effects" is in this change's spec, and
+      `docs/features/event-driven-architecture.md` documents it. A caller
+      waits by sending `X-OpenRegister-Effects: sync`; `ObjectEventDeferral`
+      makes the decision and has its own unit test.
 
 ## Verification
 
