@@ -6289,3 +6289,4 @@ cover:shillinq:05639debm7b6b:59477eff	already covered: lib/Service/Signing/ at 1
 review:openregister:10294:e0b84a0d	APPROVE: tests only; Dbal 81 OK, Architecture 2364 OK on PR merged with main	session-20261113T175328-b5db3663	2026-11-13T19:19:27Z
 fix:shillinq:3000:1c89b1e9	no change: branch already contains development; conflict is only with an earlier tree PR's register-versions.lock.json entry, needs a re-record after that PR lands	session-20261113T175323-e340fb07	2026-11-13T19:19:41Z
 verify:hermiq:1704:1871ae9e	GREEN 1704 (tests-only; vitest 1332 pass)	session-20261113T172329-0b6220f9	2026-11-13T19:19:41Z
+fix:shillinq:3002:6f0aa114	no change: up to date with development, clean merge; conflict only vs another tree PR; REVERIFY queued	session-20261113T185322-2911ee6d	2026-11-13T19:19:55Z
