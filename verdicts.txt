@@ -2683,3 +2683,4 @@
 10085 9093b33adc304f9a12fd9650530d3566c83c8bdf APPROVE Docblock-only @uses additions in 3 SharedSchema tests; all 9 named classes exist; SharedSchema 47 OK, Architecture/Rules/Contract green; Controller reds pre-exist on main (PR touches no Controller code).
 10086 67fb0330434a70d7141050bcc1f5268e8930c90f APPROVE Docblock/attribute coverage metadata only in 13 test files; all referenced classes exist, no test body changed; Architecture, Rules, Controller, Contract and touched dirs pass.
 10084 08a2df70c0ec179b9b82e700069243341a7a6fef APPROVE Test-only: adds @uses docblock lines to 58 test files, every named class exists; touched tests, Architecture, Rules, Controller, Contract pass merged with main.
+9936 1554e4f79ce99e49e8f9109dd3d38c6c938127ca APPROVE delta is the update of stacked #9929 plus a test use-block merge; head contains main 1574bc5db5: guards, Rbac + touched tests green; lands after #9929 (4720 tests)
