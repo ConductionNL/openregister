@@ -1674,4 +1674,5 @@ cover:shillinq:801aab65:8bdc03d4	already done: lib/Service/BbvMigration is 101/1
 cover:shillinq:801aab65:4751a52c	already done: lib/Validation 51/51 statements covered (Bsn/Iban/Photo tests, 18 methods)	session-20261113T015005-da194c88	2026-11-13T02:33:03Z
 cover:integriq:9b0f5894md8cd:34f5c300	PR #3458: 5 classes, +39 tests, lib/Service/*.php 87.46->88.12%	session-20261113T021702-a00af7e3	2026-11-13T02:33:13Z
 cover:keepiq:d76c2121m88ca:e372e6ff	already done: lib/Event/*.php 100% lines covered on development (branch -1 merged); no PR	session-20261113T015002-81190344	2026-11-13T02:33:30Z
+cover:dossiq:6ca0231ema7d4:jsea7197ec	PR #6242: src/utils 97.36% -> 98.68% statements, +39 tests	session-20261113T011743-bdeb8a13	2026-11-13T02:33:36Z
 cover:keepiq:d76c2121m88ca:38e80a9f	PR #1721: 14 tests, lib/Command 123/181->181/181 stmts (suite 4110->4124, 0 failures)	session-20261113T015005-81f4d5a5	2026-11-13T02:33:38Z
