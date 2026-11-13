@@ -1707,3 +1707,5 @@ shillinq	2927	e4e9014e842d6e3ca8a94bb2495f9a5a8a02c8df	MERGED	merge-local	GATE O
 shillinq	2928	b662a237727504a20d4824748d1cfd1989b7ae9b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 shillinq	2929	c9a02a763e10ceab8926dd0366b74988bd942b31	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 shillinq	2930	a50e12ea6aff1f48bee9eb77b7b2c2e6038f5431	SKIP	merge-local	GATE UNMEASURED floor_check.py or checker_floor.py not available
+keepiq	1753	80225848437981696cd013980c686f7322831a08	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1756	9bbd8254295f679e6f1ff3ad82a39143b0a971f2	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
