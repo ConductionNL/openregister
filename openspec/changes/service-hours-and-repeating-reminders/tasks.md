@@ -10,11 +10,13 @@
 
 - [x] 2.1 The calculator advances an hours term only inside the windows, in the calendar's zone, and measures elapsed time in the same windows so the deadline and the report cannot disagree.
 - [x] 2.2 A term computed on a day with no window moves to the next day that has one; a calendar that never opens throws rather than answering the cap's date.
-- [ ] 2.3 The term diagnostic names the calendar and the windows that produced the answer.
+- [x] 2.3 The term diagnostic names the calendar and the windows that produced the answer.
+      > 2026-11-13: `TermDiagnostic::explain()` adds `serviceHours` (the calendar's windows by weekday, `HH:MM-HH:MM`) and `serviceHoursApplied` (an hours term on a calendar that declares windows), beside the `calendar` slug and `zone` it already named. `TermDiagnosticTest` computes one 6-hour term on a 09:00-12:30 and a 09:00-17:00 calendar and reads two fire moments and two named calendars.
 
 ## 3. Reminders
 
-- [ ] 3.1 A reminder declares its anchor property, an offset, a repeat interval and a maximum number of repeats.
+- [~] 3.1 A reminder declares its anchor property, an offset, a repeat interval and a maximum number of repeats.
+      > 2026-11-13: the DECLARATION half is built: a rule's `reminder` block (`anchor`, `offset`, `repeat.interval`, `repeat.max`, `stopWhen`) is validated at schema save by `NotificationReminderValidator`, refusing with 422 an anchor that is not a declared date property (naming it), an unbounded repeat, an amount outside the timers' `{value, unit}` shape and a stop condition the scheduled filter grammar refuses (`NotificationReminderValidatorTest`). Arming and dispatching a reminder from its anchor is not built; it needs the repeat count and the stop reason in the dedupe state, which 3.2-3.4 add with it.
 - [ ] 3.2 A reminder declares a stop condition, evaluated before dispatch.
 - [ ] 3.3 A stopped reminder records why it stopped and does not re-arm.
 - [ ] 3.4 A moved anchor re-arms the reminder from the new date.
