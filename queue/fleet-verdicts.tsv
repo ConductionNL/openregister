@@ -6117,3 +6117,4 @@ dossiq	6429	60e9abe22889d075c315a2b8a973626de58b8f36	GREEN	worker-33	16570 tests
 dossiq	6430	1d48c8175a580d0688fc01dc10ddb1c8aba55647	GREEN	worker-33	16570 tests on the 3-PR tree, baseline 16530 with 20 failures, 0 new failures; tests only
 stackiq	1887	a0e8fd6bc68da8982777177f6b76120a2abdcbf6	GREEN	worker-30	phpunit 3397 tests OK (baseline same, no PHP changed); vitest 2477 passed (baseline 2471), 0 new failures; tests only
 shillinq	2953	0df8d693f10db3a3f04bcef5e0a385152343f681	GREEN	worker-39	tests + unit bootstrap constant stub only; phpunit 10394->10400, baseline 1 inherited failure (PaymentWebhookIntakeCharacterisationTest), no new failures
+dossiq	6431	9b1475ac5754de43d361792f626d012fdea1a045	GREEN	worker-33	16571 tests on the 3-PR tree, baseline 16530 with 20 failures, 0 new failures; tests only
