@@ -1406,3 +1406,4 @@ cover:openregister:7350e3efm0e99:6236636d	PR #10082: @uses metadata on 23 Flow/T
 cover:integriq:9b0f5894m2367:f831cef3	already done: lib/Expression/*.php 110/115 (95.7%) covered on development; no PR	session-20261112T221237-836ed3f0	2026-11-13T01:24:43Z
 cover:shillinq:801aab65:b12f5203	PR #2816: 6 tests for ImportPipelineService stored-batch paths (292->~360 stmts with existing); suite 9004->9010, same 1 inherited clock failure	session-20261112T234655-0bdbf2be	2026-11-13T01:24:58Z
 verify:launchpad:1147:8ee02052	1147 GREEN, 1148 GREEN (tests-only; phpunit 3579 and vitest 1520 green)	session-20261113T011801-de2bfa9d	2026-11-13T01:24:59Z
+cover:launchpad:755175ffm7412:js750ffd0f	PRs #1147 + #1155: 118 tests, src/components/admin 56.2%->85.9% lines with both; found ConfluenceImport buttons stay disabled (Boolean cast of empty string), noted in #1147	session-20261113T002025-940c220f	2026-11-13T01:25:14Z
