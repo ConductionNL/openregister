@@ -6011,3 +6011,4 @@ cover:pipelinq:7f9dc8e6m16db:be0dcca9	already done: lib/Mcp/*.php at 100% line c
 cover:learniq:e6498dddm0533:fbe5f47d	PR #2477: 14 tests for WorkGroupReader and WorkGroupMessages; suite 6402->6416, same 1 inherited failure	session-20261113T181000-9baff50f	2026-11-13T18:34:29Z
 cover:opencatalogi:fc83bfb1:81b1241f	PR opencatalogi#2596: 6 tests; lib/Portal statements 284/294 -> 294/294	session-20261113T175332-5effc865	2026-11-13T18:34:22Z
 fix:portaliq:2448:155d5216	no change: clean vs development; conflicts only with unmerged #2442, REVERIFY recorded	session-20261113T182353-86897235	2026-11-13T18:34:30Z
+cover:opencatalogi:fc83bfb1:a3bb9eeb	PR #2597: lib/Service/Portal/*.php 560->566/569 (99.5%), +10 tests; 2 inherited failures, none new	session-20261113T182359-67ad413b	2026-11-13T18:34:51Z
