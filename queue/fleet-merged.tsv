@@ -1006,3 +1006,5 @@ pipelinq	3623	d352253aa46049687f2ed2ef32ef0a3455090047	MERGED	merge-local	GATE O
 pipelinq	3624	18f9038976de115a1bb233f08c58f9e449597552	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3625	564ba049e0027c5ad449a376119f795474ad7998	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3626	125044e8fb8dfac8dd5be96715e9b49424de64f7	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6224	f0c51db6befd60e4ebaa809d4738f34b3714cd20	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
+pipelinq	3636	89fe21a66d182cc20dedccc4a05cec4c1bd01a32	MERGED	merge-local	light gate: coverage summary only, JSON parses, applies cleanly
