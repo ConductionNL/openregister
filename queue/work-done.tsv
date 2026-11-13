@@ -1759,3 +1759,4 @@ merge:thematiq:1660:4d72d239	merge-local over 2 thematiq tasks: merged=1 red=1 f
 merge:thematiq:1662:b7390a28	merge-local over 2 thematiq tasks: merged=1 red=1 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:04:21Z
 verify:filinq:2004:9eb1e5cc	8 GREEN (JS tests + coverage metadata), 0 failures	session-20261113T024656-2f332446	2026-11-13T03:05:05Z
 verify:integriq:3458:bfb583c7	4 GREEN (3458-3461), no new failures	session-20261113T015005-030aa10a	2026-11-13T03:05:52Z
+cover:dossiq:6ca0231ema7d4:js0023cfc7	PR #6260: 40 vitest tests, src/dialogs lines 81.3% -> 85.6%, suite 6310 tests, 1 inherited failure	session-20261113T021703-063c80f1	2026-11-13T03:09:28Z
