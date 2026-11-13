@@ -4573,3 +4573,4 @@ integriq	3437	5fb0e4c204062c2cf51c8f7639de78013a4d1666	GREEN	worker-15	tree of 5
 pipelinq	3600	c413638dffaa8e34515eb6b3340fc0b633bd842e	GREEN	worker-32	PHP 5801 tests on tree (baseline 5774, 1 inherited failure), vitest 3189 passed, 0 new failures; tests only
 pipelinq	3601	6fe56ac19fe6e726e1834458f759fbb8eebfa0a7	GREEN	worker-32	PHP 5801 tests on tree (baseline 5774, 1 inherited failure), vitest 3189 passed, 0 new failures; tests only
 stackiq	1783	8edbead655bc58f4401eca41a2ac45f93f2ceffd	REVERIFY	worker-18	merged origin/development in; test passed the new required roleGroupSettings ctor arg (48 errors -> 0); unit suite 2595 OK (1 inherited warning); new head 5bff9bd49aa9a702848dc1eead32358cb8c71979, verify it
+stackiq	1796	b4808add109d6dea0df15cdb4784d27869754138	GREEN	worker-45	2586 tests run on 3-PR tree, baseline 2539 OK (39 skipped), 0 new failures; xmlToArray/property-definition/bendpoint extraction refactor, behaviour unchanged
