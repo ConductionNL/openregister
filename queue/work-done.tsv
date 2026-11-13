@@ -5893,3 +5893,4 @@ cover:hermiq:065f1631me44a:f91e7417	already done: lib/Service/Connection at 98/1
 cover:hermiq:065f1631me44a:34763eb4	already done: lib/Middleware/*.php at 68/69 lines (98.6%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:17:12Z
 cover:buildiq:70b3e29ema699:390adfb9	already covered: lib/Capabilities.php (only file in lib/*.php) at 100% lines/methods; no PR	session-20261113T175336-e3687686	2026-11-13T18:17:13Z
 cover:hermiq:065f1631me44a:17d367ab	already done: lib/Controller/Settings at 335/335 lines (100%) at 7f24df30	session-20261113T172349-00278d9d	2026-11-13T18:17:36Z
+cover:pipelinq:7f9dc8e6m16db:28cccfd9	already done: lib/Repair/Support/ 95/95 statements covered at 4c67daf1	session-20261113T171137-8f22ecb0	2026-11-13T18:17:18Z
