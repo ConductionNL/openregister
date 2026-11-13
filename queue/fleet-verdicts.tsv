@@ -4555,3 +4555,4 @@ integriq	3432	574e26a8b7ac2e184e5c1645f6f017d30ed8e002	GREEN	worker-46	tree of 9
 integriq	3433	b0cda19a78965ea51d7cedb65d96e6747506a40d	GREEN	worker-46	tree of 9 tests-only PRs: 7197 tests run, baseline 7113 (2 inherited CallServiceTest errors), 0 new failures
 stackiq	1780	e9e2a627eb64d574503da5238d5533f3cf2f41c6	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; tests only; previous constructor error fixed
 stackiq	1781	bd8e0ef5f023a4b8339a4104e8b9b00e456b6989	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; tests only; conflict resolved
+stackiq	1790	aa818309297f212826e5300ee043a76890161487	GREEN	worker-24	2657 tests on tree, baseline 2539 with 0 failures, new failures 0; behaviour-preserving extraction in ArchiMateImportService (section items, import statistics), pinned by new golden tests
