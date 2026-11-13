@@ -5210,3 +5210,4 @@ build2:openregister:records-api-and-table-stated	failed: worker rules forbid bui
 build2:openregister:or-mcp-registration-event	nothing to build in openregister: open tasks are migrations in other repos (app template, hermiq, openbuild, opencatalogi, decidesk) and the cleanup that waits for them; no PR	session-20261113T104650-72c03e13	2026-11-13T13:33:26Z
 build2:openregister:records-bulk-transition	failed: worker rules forbid build tasks on openregister (build is for fleet apps only)	session-20261113T081046-f0858dc4	2026-11-13T13:33:21Z
 cover:portaliq:b60f3b81:2f89e88c	PR #2407: GeoSettings.update +5 validation tests (4842->4847)	session-20261113T131531-81a20e2a	2026-11-13T13:33:35Z
+review:openregister:10187:52bd77cf	APPROVE: test-only, 21 new tests pass, suites match main	session-20261113T124807-b8fee1f0	2026-11-13T13:34:08Z
