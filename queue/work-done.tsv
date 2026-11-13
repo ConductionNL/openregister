@@ -6033,3 +6033,4 @@ verify:integriq:3524:6a8a2f19	3524 GREEN, 3526 GREEN; no new failures	session-20
 cover:openregister:7350e3efma401:jsee2fd065	2 PRs: #10290 (8 views, 142 tests), #10292 (4 views, 46 tests); suite 8127 -> 8315 passing, tests only	session-20261113T182348-4d2d804b	2026-11-13T18:38:13Z
 review:openregister:10290:00f931a5	APPROVE #10290	session-20261113T171141-a3907367	2026-11-13T18:38:21Z
 build:shillinq:expenses-category-mapping	partial: PR #2961 builds task 3.1 (ExpenseAccountResolver, 9 tests); 1.1-2.2, 3.2-4.1 left (registers/seeds, pages, repair step, mapper, policy, docs)	session-20261113T171149-8b9ea523	2026-11-13T18:38:35Z
+review:openregister:10288:606ffb21	APPROVE: per change specs, phpstan clean, suites green on PR+main	session-20261113T172324-00680177	2026-11-13T18:38:37Z
