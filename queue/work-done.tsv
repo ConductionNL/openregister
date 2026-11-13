@@ -1949,3 +1949,4 @@ cover:shillinq:801aab65:59826f43	PR shillinq#2854: AdminSettings 6 tests, suite 
 review:openregister:10094:2a59707a	APPROVE: tests only, all targeted suites green	session-20261113T034634-857dbcc2	2026-11-13T03:56:31Z
 cover:launchpad:fb10c50fm31b6:60c2c265	PR #1163: 15 tests, Acknowledgement 87->101/108, DashboardTranslationApi 165->183/189, VisibilityPreview 57->73/73; suite green	session-20261113T024656-2f332446	2026-11-13T03:57:11Z
 cover:openregister:7350e3efm0e99:3d008003	PRs #10095 (metadata fix, Object top-level 90.86%->96.0%, risky 312->92) and #10096 (7 classes, 24 tests); 96.77% combined	session-20261113T031701-b518f7f8	2026-11-13T03:57:18Z
+cover:launchpad:fb10c50fm31b6:js4829b6aa	PR #1164: +18 vitest tests, Views.vue 274->374/537; src/views/* 61.81%->76.22%; suite 1662->1680 green	session-20261113T031701-470b4a5e	2026-11-13T03:57:26Z
