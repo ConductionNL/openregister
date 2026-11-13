@@ -5897,3 +5897,4 @@ shillinq	2932	a3fc2581893aaee0437d925709fed9b84e7a2265	REVERIFY	worker-58	merged
 shillinq	2939	ba97f1f0047083eebd35763b9561c21a8dc3ace9	GREEN	worker-37	phpunit 10295 (1 inherited failure, no PHP changed); vitest 2048 on tree all passing; tests only
 shillinq	2924	6592327ce8e932cc7eb018056b96c992e4b7cbb0	GREEN	worker-29	tests-only (+251, no deletions); tree suite 10319 vs baseline 10295, same 1 inherited failure
 shillinq	2925	94693913070f08d4a14ee949d541e4a325b0b4de	GREEN	worker-29	tests-only (3 Guard tests +401, no deletions); tree suite 10319 vs baseline 10295, same 1 inherited failure
+pipelinq	3739	6c64c80f54661efb12fa6cb34f2c90dd259d59b9	BLOCK	worker-37	phpunit 7021 on tree (baseline 7011, 1 inherited failure, 0 new); vitest 4705 OK; l10n OK; still an access change: posRefund complete no longer requires the manager group (transition authorization removed, guard lets till users complete under a configured limit); needs an owner decision
