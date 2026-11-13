@@ -108,4 +108,24 @@ class FormDefinitionResolverTest extends TestCase {
 
 		$this->assertCount(1, array_unique(array_map('serialize', $messages)));
 	}//end testEverythingElseIsTheSame404()
+
+	/**
+	 * `access: anonymous` opens a form to visitors; any other `access` closes it, whatever the audience says.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/capability-rows-verified-a/specs/form-and-journey-registry/spec.md
+	 */
+	public function testAccessDecidesTheAudience(): void {
+		$destination = ['register' => 'meldingen', 'schema' => 'melding'];
+
+		$open = $this->resolver(body: ['status' => 'published', 'access' => 'anonymous', 'audience' => 'authenticated', 'destination' => $destination]);
+		$this->assertSame('public', $open->resolve(formId: 'form-1')['audience']);
+
+		$closed = $this->resolver(body: ['status' => 'published', 'access' => 'authenticated', 'audience' => 'public', 'destination' => $destination]);
+		$this->assertSame('authenticated', $closed->resolve(formId: 'form-1')['audience']);
+
+		$empty = $this->resolver(body: ['status' => 'published', 'access' => '', 'destination' => $destination]);
+		$this->assertSame('authenticated', $empty->resolve(formId: 'form-1')['audience']);
+	}//end testAccessDecidesTheAudience()
 }//end class
