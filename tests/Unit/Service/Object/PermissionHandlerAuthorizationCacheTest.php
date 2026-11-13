@@ -51,6 +51,24 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Service\Object\InheritFromPublicSetting
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Object\ProvenanceRequest
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\ProvenanceOptions
+ * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
+ * @uses \OCA\OpenRegister\Service\Rbac\StagedDenial
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class PermissionHandlerAuthorizationCacheTest extends TestCase {
 

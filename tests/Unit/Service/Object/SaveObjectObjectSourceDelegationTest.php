@@ -41,6 +41,14 @@ use RuntimeException;
  * Object-source delegation, golden.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSourceChange
  */
 final class SaveObjectObjectSourceDelegationTest extends TestCase {
 

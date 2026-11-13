@@ -50,6 +50,14 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\RelatedObjectSet
  * @uses   \OCA\OpenRegister\Service\Object\RelationLink
  * @uses   \OCA\OpenRegister\Service\Object\RelationSource
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\DraftCaller
+ * @uses   \OCA\OpenRegister\Service\Object\DraftSubject
+ * @uses   \OCA\OpenRegister\Service\Object\RelationHandlerStores
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

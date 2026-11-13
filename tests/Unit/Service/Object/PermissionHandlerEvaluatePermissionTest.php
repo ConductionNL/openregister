@@ -72,6 +72,23 @@ use Stringable;
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses   \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses   \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses   \OCA\OpenRegister\Service\Object\InheritFromPublicSetting
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses   \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses   \OCA\OpenRegister\Service\Rbac\StagedDenial
+ * @uses   \OCA\OpenRegister\Service\Rbac\UndeclaredPropertyConditions
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Event\EvaluatedSchemaActionAccessors
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class PermissionHandlerEvaluatePermissionTest extends TestCase {
 
