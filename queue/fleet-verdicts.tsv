@@ -5996,3 +5996,4 @@ versioniq	680	93f6dbc430c064cb383c28ebc95ac10143077fcc	GREEN	worker-10	tests onl
 versioniq	681	b86d80234c194d6a44e19cc373ded5596c57de7a	GREEN	worker-10	tests only; vitest 2945/2945 on tree, 0 new failures
 shillinq	2942	b6e31e01c06c9cfe88474c1db98124888786a337	GREEN	worker-24	phpunit 10394 run, baseline 1 failure (clock-bound PaymentWebhookIntakeCharacterisationTest), 0 new; vitest 227 files/2361 passed; tests only
 shillinq	2943	c876491efbb1530ad0761a2b8345d1e59116aaac	GREEN	worker-24	phpunit 10394 run, baseline 1 failure (clock-bound), 0 new; vitest 2361 passed; tests only
+portaliq	2412	299d3b39a53d64f0b6f72a38ed83c6f2c2362336	GREEN	worker-21	unit 4915 tests (baseline 4914, 0 failures, 89 skipped), no new failures; implements T01 of case-outcome-on-the-case-page
