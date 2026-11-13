@@ -3086,3 +3086,4 @@ cover:keepiq:c967a31fmb40c:be0dcca9	already done: lib/Mcp/*.php at 100% lines (1
 cover:keepiq:c967a31fmb40c:f91e7417	already done: lib/Service/Connection/ at 100% lines (150/150) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:06:51Z
 cover:keepiq:c967a31fmb40c:e372e6ff	already done: lib/Event/*.php at 100% lines (43/43) on development 8a5d84f3; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T07:07:03Z
 cover:dossiq:f8a113c5m7e79:7593a315	PR #6315: 3 phpunit tests, RoleLinkService 104->112/112	session-20261113T051709-e616bf69	2026-11-13T07:07:38Z
+cover:dossiq:f8a113c5m7e79:094a3419	PR dossiq#6316: 12 gateway tests + metadata fixes on 6 tests; Email dir 1351->1714/1874 lines; same 19 inherited failures	session-20261113T051703-1b54bfba	2026-11-13T07:08:48Z
