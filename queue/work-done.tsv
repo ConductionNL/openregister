@@ -2247,3 +2247,4 @@ cover:filinq:7a9ef677mc744:6079ce8f	PR filinq#2032: 4 tests for SubjectErasureCe
 cover:dossiq:f8a113c5mac88:6dc9019f	already done: lib/Service/Registry 100/100 statements covered by its 38 tests (prior -1 branch merged); no PR	session-20261113T041645-1e9d4ce1	2026-11-13T04:44:49Z
 cover:filinq:7a9ef677mc744:14722ee7	already covered: lib/Service/Conversion reviewed this session (task 519c54f6): two batches merged, every class has dedicated tests; no PR	session-20261113T024654-6600dc41	2026-11-13T04:45:09Z
 cover:dossiq:f8a113c5mac88:4c817077	PR #6277: 8 tests, lib/Service/Notification 98.9% -> 100% lines; suite 19 inherited failures unchanged	session-20261113T041644-786bb7fc	2026-11-13T04:45:16Z
+verify:integriq:3469:c70aa133	3469-3473 all GREEN (tests only; 2 inherited CallServiceTest errors)	session-20261113T034628-73e45054	2026-11-13T04:45:37Z
