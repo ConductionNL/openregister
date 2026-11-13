@@ -3068,3 +3068,4 @@ cover:hermiq:065f1631mfaac:568ec52a	already done: lib/Lifecycle/*.php 22/22 stat
 cover:shillinq:05639debmd8ee:d33e6ea4	already done: lib/Service/Pivot/ at 95.14% lines (176/185) on current development, above 90 target	session-20261113T044737-f37de8e3	2026-11-13T07:02:43Z
 verify:buildiq:1519:75076ad7	1519,1520,1521 GREEN (vitest 3821 -> 3845, 0 failures; tests only)	session-20261113T034634-f20a8d77	2026-11-13T07:02:42Z
 cover:dossiq:f8a113c5m7e79:59f569b2	PR #6314: 13 tests (SchemaSlugResolver, RegisterFragmentMerger); Settings 91.3%->94.1%; suite failures unchanged (19 inherited)	session-20261113T064517-3e632ed8	2026-11-13T07:03:09Z
+cover:dossiq:f8a113c5m7e79:js5794e9fc	PR #6313: 9 vitest tests (ZgwMappingSettings 0->30/30, SubstitutionSettings 0->31/33); views/settings 65.86->69.14%, still below 90 target	session-20261113T041646-2c1d764f	2026-11-13T07:03:12Z
