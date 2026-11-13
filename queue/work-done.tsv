@@ -5214,3 +5214,4 @@ build2:openregister:notification-scheduled-filter-grammar	PR #10238: task 3.3 do
 cover:portaliq:b60f3b81:2f89e88c	PR #2407: GeoSettings.update +5 validation tests (4842->4847)	session-20261113T131531-81a20e2a	2026-11-13T13:33:35Z
 build2:openregister:modelling-field-access-editor	PR #10239: task 2.2 server slice (PropertyWriteNotAuthorizedException->403 naming props, readOnlyProperties() + @self.readOnlyProperties render); partial, UI/component/e2e tasks left	session-20261113T121557-e4ef0d76	2026-11-13T13:34:07Z
 review:openregister:10187:52bd77cf	APPROVE: test-only, 21 new tests pass, suites match main	session-20261113T124807-b8fee1f0	2026-11-13T13:34:08Z
+merge:pipelinq:3602:a98549bd	merge-local over 1 pipelinq tasks: merged=0 red=0 fail=0 skip=1; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:34:20Z
