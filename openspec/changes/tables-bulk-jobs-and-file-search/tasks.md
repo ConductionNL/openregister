@@ -12,6 +12,7 @@
 - [ ] 2.2 Turn the mass export on, through the export action as a job (`showMassExport` true, `:676`). Verify: same unit test file.
 - [ ] 2.3 `tests/e2e/ci/tables-bulk-jobs.spec.ts`: select forty, Set properties, read the preview with skips, commit, watch progress, download the outcome; select all matching and export.
 - [ ] 2.4 `searchInFiles` on; `lib/Service/Object/ContentSearchHandler.php` adds `@self.matchedFile` (name only) for a chunk-entered row (D-4), unit test beside `ContentSearchHandlerTest` asserting the name is there and no chunk text. `tests/e2e/ci/tables-search-in-files.spec.ts`: a word only in an attached text file is found with the switch on and not with it off.
+  > Backend half built: `ContentSearchHandler` sets `@self.matchedFile` (the file name only) on a row that entered through a file chunk (`ObjectEntity::setMatchedFile()`, a transient render field), proven by `tests/Unit/Service/Object/ContentSearchMatchedFileTest.php`. Left: turning `searchInFiles` on in `SearchIndex.vue` (waits on 1.1) and the e2e spec.
 
 ## 3. Close
 

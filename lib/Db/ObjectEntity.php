@@ -775,6 +775,17 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?string $viewedAt = null;
 
 	/**
+	 * The name of the attached file whose text matched a content search.
+	 *
+	 * Transient, set only on a row that entered a content search through a
+	 * file chunk. Exposed in @self as `matchedFile`; it carries the name only,
+	 * never text from the file.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $matchedFile = null;
+
+	/**
 	 * What the reader may do with this object, as `{"update": bool, "<declared action>": bool}`.
 	 *
 	 * Transient, populated by the render layer only when the request asks for
@@ -1105,6 +1116,22 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setViewedAt(?string $viewedAt): void {
 		$this->viewedAt = $viewedAt;
 	}//end setViewedAt()
+
+	/**
+	 * Write the name of the file whose text matched a content search.
+	 *
+	 * Write-only, like setViewedAt(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `matchedFile`.
+	 *
+	 * @param string|null $matchedFile The file name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/tables-bulk-jobs-and-file-search/design.md
+	 */
+	public function setMatchedFile(?string $matchedFile): void {
+		$this->matchedFile = $matchedFile;
+	}//end setMatchedFile()
 
 	/**
 	 * Write what the reader may do with this object.
@@ -1656,6 +1683,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'_clocks'                 => $this->retentionClocks,
 			'registry'                => $this->registryState,
 			'fieldRules'              => $this->fieldRules,
+			'matchedFile'             => $this->matchedFile,
 		];
 	}//end renderedFields()
 
