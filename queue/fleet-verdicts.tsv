@@ -5988,3 +5988,4 @@ dossiq	6427	128c7f2dfb4a31fc1a0956704cb887ddf633605e	GREEN	worker-10	vitest 6815
 learniq	2464	a642c90f3c9e0f408e5f90f8a34b156914f95f42	GREEN	worker-41	unit 6407 run (baseline 6402, 1 inherited failure HigherEducationExampleSetTest), 0 new failures; tests only
 pipelinq	3759	08ffd023e233856a7f9b823c58ca32c3ff3a4746	GREEN	worker-06	tests only; unit 7206 run on tree, baseline 7194 with 5 failures, 0 new failures
 pipelinq	3760	9f52ec2ffe87fcec90708091ceae52a3d22687f7	GREEN	worker-06	tests only; unit 7206 run on tree, baseline 7194 with 5 failures, 0 new failures
+pipelinq	3736	9a16156708cb5867054b5c73f11b49f2f2579410	REVERIFY	worker-55	split price-list resolver/service/controller methods; unit_complexity 3.78->3.79, floor passes, suite unchanged (1 inherited failure); new head d98a90ef3a28dae336aa1c858076fe361278208d, verify it
