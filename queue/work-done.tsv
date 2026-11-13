@@ -2096,3 +2096,4 @@ cover:buildiq:9930949bm5861:0d8702e3	PR buildiq#1507: +27 tests for template Nam
 cover:buildiq:9930949bm5861:d33a91b0	already covered (duplicate of d33a91b0 handled this session): CopilotPlanValidator 21 tests, CopilotPromptBuilder unit+golden; no PR	session-20261113T024654-6600dc41	2026-11-13T04:21:55Z
 cover:buildiq:9930949bm5861:js10b588fb	already above target: src/components/applicationDetail measured 93.7% lines this session (target 85); no PR	session-20261113T024654-6600dc41	2026-11-13T04:22:08Z
 cover:buildiq:9930949bm5861:d528dcf0	already done: lib/Dashboard/*.php is at 80/81 lines on development	session-20261113T021703-063c80f1	2026-11-13T04:22:14Z
+cover:buildiq:9930949bm5861:be0dcca9	already done: lib/Mcp/*.php at 100% lines (31/31) on development 5f5f87c6; no PR needed	session-20261113T041646-2c1d764f	2026-11-13T04:22:18Z
