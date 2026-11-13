@@ -8,8 +8,8 @@
 
 ## 2. Arithmetic and reporting
 
-- [ ] 2.1 `WorkingCalendar::fromArray()` reads and validates the zone; `isWorkingDay()` and `nonWorkingDates()` evaluate in it.
-- [ ] 2.2 `SlaCalculator` walks days at local midnight in the calendar's zone and returns UTC instants.
+- [x] 2.1 `WorkingCalendar::fromArray()` reads and validates the zone; `isWorkingDay()` and `nonWorkingDates()` evaluate in it.
+- [x] 2.2 `SlaCalculator` walks days at local midnight in the calendar's zone and returns UTC instants.
 - [ ] 2.3 `describe()` and the ledger carry the zone and the formatted local date.
 
 ## 3. Tests

@@ -234,14 +234,39 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function isWorkingDay(DateTimeInterface $moment): bool {
-		if (in_array((int)$moment->format('N'), $this->getWorkingWeekdays(), true) === false) {
+		// The date is the calendar's own: 22:30Z on a Friday is 23:30 that
+		// Friday in Amsterdam, and Friday is the day that counts.
+		$local = $this->local(moment: $moment);
+		if (in_array((int)$local->format('N'), $this->getWorkingWeekdays(), true) === false) {
 			return false;
 		}
 
-		$nonWorking = $this->nonWorkingDates(year: (int)$moment->format('Y'));
+		$nonWorking = $this->nonWorkingDates(year: (int)$local->format('Y'));
 
-		return array_key_exists($moment->format('Y-m-d'), $nonWorking) === false;
+		return array_key_exists($local->format('Y-m-d'), $nonWorking) === false;
 	}//end isWorkingDay()
+
+	/**
+	 * The same instant on the calendar's wall clock.
+	 *
+	 * A calendar that names its zone counts its days there. One that does not
+	 * keeps counting them on the moment's own clock, as before zones existed:
+	 * reading it as UTC instead would move every date given with an offset,
+	 * and a Saturday at 00:00+02:00 would become a working Friday.
+	 *
+	 * @param DateTimeInterface $moment Any instant.
+	 *
+	 * @return DateTimeImmutable The instant, on the calendar's wall clock.
+	 *
+	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
+	 */
+	public function local(DateTimeInterface $moment): DateTimeImmutable {
+		if ($this->definition->declaresTimezone() === false) {
+			return DateTimeImmutable::createFromInterface($moment);
+		}
+
+		return (new DateTimeImmutable('@'.$moment->format('U.u')))->setTimezone(new DateTimeZone($this->getTimezone()));
+	}//end local()
 
 	/**
 	 * The non-working dates of a year, computed from the rules and memoised.

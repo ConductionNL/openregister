@@ -192,6 +192,17 @@ final class WorkingCalendarDefinition {
 	}//end getTimezone()
 
 	/**
+	 * Whether the calendar names its zone, rather than falling back to UTC.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
+	 */
+	public function declaresTimezone(): bool {
+		return self::isBlank(value: ($this->raw['timezone'] ?? null)) === false;
+	}//end declaresTimezone()
+
+	/**
 	 * The hours of the day the clock runs, per weekday.
 	 *
 	 * @return ServiceHours The declared windows, empty when none are declared.
