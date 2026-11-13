@@ -1,0 +1,21 @@
+# Claim order for all non-PR work (Ruben 13 Nov: finish app by app, quality and specs)
+dossiq
+pipelinq
+openregister
+portaliq
+shillinq
+filinq
+learniq
+decidiq
+hermiq
+humaniq
+integriq
+planninq
+buildiq
+keepiq
+launchpad
+opencatalogi
+stackiq
+versioniq
+larpinq
+thematiq
