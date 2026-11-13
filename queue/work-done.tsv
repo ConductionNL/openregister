@@ -3268,4 +3268,5 @@ cover:larpinq:c4471360m4538:js5794e9fc	PR #1017: 17 vitest tests for Settings.vu
 verify:decidiq:2124:0ca284e2	GREEN decidiq#2124	session-20261113T074533-5d842142	2026-11-13T07:48:38Z
 cover:versioniq:1b35eed9:d3522ea6	PR #670: 17 tests, AuditEntryMapper and PatMapper 0->100% (adds Doctrine constant stubs to unit-only test stubs); suite 1356->1373, same 2 inherited failures	session-20261113T072708-ee434236	2026-11-13T07:48:43Z
 gap:buildiq:maint2:burn1	PR #1525: 3 units refactored (AutomationCompilerService::applySchedules, AppRepoSerializer::collectDataRegisters, TemplateSeedService::seed), tests first, suite unchanged	session-20261113T041646-2c1d764f	2026-11-13T07:48:52Z
+gap:pipelinq:maint1:burn1	PR #3693: split 3 units (Compliance transitionQueuedDeliveries, MailTransport readSourceRateLimit, AVG->DSAR mapRequest), tests first; suite 6454->6462, inherited 1F unchanged	session-20261113T064518-860c039d	2026-11-13T07:49:02Z
 cover:larpinq:c4471360:59826f43	already done: Settings/LarpinqAdmin (the only class in lib/Settings) is covered 12/12 by open PR #1011 (LarpinqAdminTest)	session-20261113T051709-e616bf69	2026-11-13T07:48:57Z
