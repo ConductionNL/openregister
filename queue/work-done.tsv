@@ -3606,3 +3606,4 @@ gap:launchpad:tcr2:burn1	PR #1181: 8 test files (6 PHPUnit, 2 vitest), 32 tests,
 fix:learniq:2419:f709e650	kept V1 route postfix (no renamed routes, assertion restored), removed .pyc; middleware change is the PR's purpose; unit 6129, 1 inherited failure; head 62ccde47	session-20261113T081043-b24589a6	2026-11-13T08:50:01Z
 merge:learniq:2436:de34a279	merge-local over 2 learniq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:50:08Z
 merge:learniq:2439:8774cedc	merge-local over 2 learniq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T08:50:08Z
+cover:stackiq:9ac19b3am6096:efa2a923	already done: lib/EventListener/*.php at 99.19% (8 lines left, pcov)	session-20261113T072715-8f8a14e9	2026-11-13T08:50:14Z
