@@ -2502,3 +2502,4 @@ verify:dossiq:6288:03b7ae9c	GREEN 6288, GREEN 6290 (tests only, no new failures 
 verify:keepiq:1740:94a397e9	1740 GREEN (vitest 6244 -> 6299, 0 failures; tests only)	session-20261113T034634-f20a8d77	2026-11-13T05:43:44Z
 cover:dossiq:f8a113c5mac88:3e42da73	already done: lib/Service/Tenant/ 97/99 lines (98.0%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:43:47Z
 review:openregister:10102:19fe1fe3	APPROVE: test-only jest specs, green on merge with main	session-20261113T051705-4f5ad12a	2026-11-13T05:44:02Z
+verify:integriq:3481:92758e96	GREEN 3481 (7209->7220, no new failures)	session-20261113T041646-2c1d764f	2026-11-13T05:44:23Z
