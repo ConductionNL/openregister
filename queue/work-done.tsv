@@ -5016,3 +5016,4 @@ build:openregister:object-archive-state	partial: PR #10206 C29.2 state-entry fre
 merge:buildiq:1526:82037892	merge-local over 1 buildiq tasks: merged=2 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T12:47:38Z
 build:openregister:openregister-legacy-quality-cleanup	failed: open tasks 3.2/3.3/4.2/4.3/5.2 are multi-PR burn-downs gated on zero violations, not one build; tasks text is stale (phpmd.baseline.xml now exists and composer phpmd uses it)	session-20261113T101609-bc51215d	2026-11-13T12:47:48Z
 review:openregister:10197:1ca18135	APPROVE (docs-only, claims checked against code)	session-20261113T121536-3cb7eb71	2026-11-13T12:48:01Z
+build:openregister:history-revert-through-the-save-path	PR #10208: revert through save path (origin revert audit row), 422 on schema refusal, fixed answers; task 3.1 e2e left	session-20261113T121557-e4ef0d76	2026-11-13T12:48:29Z
