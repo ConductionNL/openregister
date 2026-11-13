@@ -5339,3 +5339,4 @@ shillinq	2900	0a5d50edcce81ad0d86bf7e650dc319ba145c428	REVERIFY	worker-29	merged
 decidiq	2120	48e09f39306c35beddc14352d7af26a86300da26	GREEN	worker-24	phpunit 3684 tests (baseline 3684 OK), vitest 2682 passed/4 skipped, 0 new failures; deps-only override
 dossiq	6321	bc6077730537d26c28332055dc3048b293be62a8	GREEN	worker-47	15177 tests run, baseline 19 failures (sibling openregister missing), 0 new; test-only UsesClass metadata
 shillinq	2902	993c5eabd91571afd542b36df9f4bdb261537dc1	GREEN	worker-11	9491 tests run, baseline 9488 with 1 inherited failure (PaymentWebhookIntakeCharacterisationTest stripe timestamp case), 0 new failures; tests only
+dossiq	6320	7fdc5f62012f5e0ab10a8d540a1412bade174e5e	GREEN	worker-09	15185 tests run, baseline 15182 with 19 inherited failures, new failures 0; tests only
