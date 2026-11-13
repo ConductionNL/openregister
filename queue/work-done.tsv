@@ -2905,3 +2905,4 @@ cover:shillinq:05639debmd8ee:f545d745	PR #2895: 14 tests (InitializeBbvAdministr
 cover:stackiq:df113dffm5ac4:6f346b68	already done: lib/Sections/*.php at 100% (6/6, pcov on development); no PR	session-20261113T054519-189b2666	2026-11-13T06:39:58Z
 cover:buildiq:9930949bmc723:0d8702e3	PR buildiq#1518: template DeepLinkRegistrationListener + Application, 4 tests, lib/Resources/template/ 377->391/548, suite 2632->2636 (1 inherited failure)	session-20261113T061518-90540a48	2026-11-13T06:40:05Z
 cover:integriq:92114ab0m658d:jsd8a9d314	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:18Z
+cover:integriq:92114ab0m658d:js971eca14	failed: permission (npm ci refused in this session)	session-20261113T061518-90540a48	2026-11-13T06:40:23Z
