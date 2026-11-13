@@ -1419,3 +1419,4 @@ cover:filinq:8ecceb86:e372e6ff	already done: lib/Event/*.php measured 90.5% line
 cover:decidiq:13261b1bmcfc2:js450fec42	PR decidiq#2103: 11 tests, approvalChainLink/decisionLink -> 100%, src/integrations/* 97.1% (.vue leaves stubbed by suite config); vitest 2625->2636 green	session-20261112T221237-836ed3f0	2026-11-13T01:26:52Z
 cover:learniq:1ae7757em6be5:jsea7197ec	already done: src/utils at 99.6% lines on development; the one uncovered file (signUpDecisionRequest.js) is covered by the pending branch quality/test-coverage-js-ea7197ec-1 (1c65f0d8, not yet merged)	session-20261112T234655-599f9c9a	2026-11-13T01:26:48Z
 cover:decidiq:13261b1bmcfc2:js00fe026a	PR #2104: 4 service modules, 5 vitest tests; suite 2625 -> 2630; src/services lines 85.3% -> 100%	session-20261112T234653-57d11a5b	2026-11-13T01:27:03Z
+cover:filinq:8ecceb86:aae6d66c	PR #1988: +15 tests for 8 lib/Exception classes; suite 5499->5514 OK	session-20261113T011731-ba9dcd4a	2026-11-13T01:27:17Z
