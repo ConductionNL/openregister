@@ -3721,3 +3721,25 @@ cover:integriq:92114ab0m658d:921a1004	cover	integriq	development	quality/test-co
 cover:integriq:92114ab0m658d:fd3f82d2	cover	integriq	development	quality/test-coverage-fd3f82d2	lang=php;dirs=lib/Gateway/*.php;focus=thin;weight=1958;coverage=88.97;target=90.0	2026-10-14T06:12:06Z
 cover:shillinq:05639debmd8ee:ba63196d	cover	shillinq	development	quality/test-coverage-ba63196d	lang=php;dirs=lib/Enums/*.php;focus=thin;weight=203;coverage=85.47;target=90.0	2026-11-13T03:11:27Z
 measure:shillinq:20261113h06	measure	shillinq	development	queue/coverage/shillinq.json	why=slices need per-directory coverage	2026-11-13T07:45:45Z
+fix:larpinq:1011:4df9687a	fix	larpinq	development	1011	sha=4df9687afb6cd18f6b2774816b55a1d48006e5b5;verdict=CONFLICT;branch=quality/gap-tcr1-tests;reason=add/add conflict with 1010 on PlayerAttendanceServiceTest.php and SettingsLoadServiceTest.php, 1012 also adds InitializeRegisterTest.php and LarpinqAdminTest.php under the same paths	2026-11-13T07:50:20Z
+verify:stackiq:1851:e93e1711	verify	stackiq	development	merge	prs=1851@e3b9fcb0e6ae048688517fc039389b9e5099a2b1	2026-11-13T07:50:20Z
+verify:learniq:2419:6e77ebc6	verify	learniq	development	merge	prs=2419@6339bf2933eda835ac5522e585535cd86fcf1bc7	2026-11-13T07:50:20Z
+verify:dossiq:6324:10beb863	verify	dossiq	development	merge	prs=6324@9b502e2f1e143ddb7202df735a79bb50e1a07ced	2026-11-13T07:50:20Z
+verify:buildiq:1524:3dbfc44c	verify	buildiq	development	merge	prs=1524@82ce07c5670ec35b13ce956d509ce00f237674c6,1525@0e1271f47ca77e13f53dac648a451e7a2bc701c3	2026-11-13T07:50:20Z
+verify:pipelinq:3693:0f407902	verify	pipelinq	development	merge	prs=3693@55799a044e801705f2eba37ea36576bcab060810	2026-11-13T07:50:20Z
+verify:hermiq:1598:9dc31b72	verify	hermiq	development	merge	prs=1598@d97fe2d546e6338887a279b898ab88b4a73f2a51,1673@a636a706a08b58fb7880512a512c99657f5b7205	2026-11-13T07:50:20Z
+verify:integriq:3506:3a3b7fa0	verify	integriq	development	merge	prs=3506@defe990efdf0bbd439f34542a587735dde632cf6	2026-11-13T07:50:20Z
+verify:humaniq:1103:3024df1f	verify	humaniq	development	merge	prs=1103@747c3d4c7f190221092d836a5691d4f9f28b2799,1104@fedf08539f2302c48351310cbede67be3e22d3ca	2026-11-13T07:50:20Z
+verify:shillinq:2900:beca6da5	verify	shillinq	development	merge	prs=2900@d5201979daff827e96d750a1a387245c8e067f08,2907@cd4773654fe71ef753b96f20b3ab6e767ddb013b	2026-11-13T07:50:20Z
+verify:decidiq:2078:28dbe168	verify	decidiq	development	merge	prs=2078@9c92ad85d3e9164008f1fbdc45d230b535d42e6f	2026-11-13T07:50:20Z
+verify:filinq:2047:c38859b8	verify	filinq	development	merge	prs=2047@5dd9f2adb61225a56760ba8280abb468d04e6b4a	2026-11-13T07:50:20Z
+verify:opencatalogi:2578:9edc50c1	verify	opencatalogi	development	merge	prs=2578@b2cba0b6256cf411c3194f7cb59108956628cab2,2584@d1330364940ead45fba3f7cc3deb79aa133bdac3	2026-11-13T07:50:20Z
+verify:versioniq:670:32262d0c	verify	versioniq	development	merge	prs=670@efd9fb2f1defe7b9c111f2111170af2834684e14	2026-11-13T07:50:20Z
+verify:larpinq:1015:1cbab213	verify	larpinq	development	merge	prs=1015@27c0a35b57f6cea4168b379f6c30e1839dd6410b,1016@9b7761159959758a4c12e9c45862efa9f8a91561,1017@b0161448ec2e7060c61b2d7751bf5f19146cd53c,1018@141f69ae9ef05facdc795d49d36cf5f4cd309454	2026-11-13T07:50:20Z
+merge:integriq:3502:f297e7b4	merge	integriq	development	development	prs=3502@53a1150362deb727d01573cbbd7a8b45f308d544,3503@f5d367cc7322dfcd1228f50285fe5e2a204b506c	2026-11-13T07:50:20Z
+merge:decidiq:2124:0ca284e2	merge	decidiq	development	development	prs=2124@d285adf422519dd3da870189427649cc4d444537	2026-11-13T07:50:20Z
+merge:filinq:2044:28826748	merge	filinq	development	development	prs=2044@dd9720ca1532795164e854db45bee4b338b36d92	2026-11-13T07:50:20Z
+merge:versioniq:668:1342983f	merge	versioniq	development	development	prs=668@56c4ee960f7025bb22e00e4cfafe17cbb8a70dc6,669@9a2355da8d103c470aadcabe6c8df890fe609587	2026-11-13T07:50:20Z
+merge:larpinq:1008:a63cd5ff	merge	larpinq	development	development	prs=1008@de84c298a0bebd32e722af5f689250f25a0e9af9,1009@14337dc75d1660185b317b8e5cb888ae24668218,1010@7fce3b861d08610eb74931468afeeef5fe75de9a,1012@ef4abe687e638b6310d495b0a7ec7304d4e22d7a,1013@badda1abb64e2828186e668653f0dc18c0113b4b,1014@b008680cd7e8000950654e8e291ef27008dfd3dc	2026-11-13T07:50:20Z
+cover:buildiq:9930949bmc723:js39373934	cover	buildiq	development	quality/test-coverage-js-39373934	lang=js;dirs=src/components/page-editor/fields/;focus=thin;weight=1789;coverage=78.42;target=90.0	2026-09-13T19:46:14Z
+cover:integriq:92114ab0m658d:fd0946f1	cover	integriq	development	quality/test-coverage-fd0946f1	lang=php;dirs=lib/Service/MessageValidation/;focus=thin;weight=1653;coverage=88.97;target=90.0	2026-10-14T06:21:41Z
