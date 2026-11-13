@@ -45,6 +45,8 @@ use RuntimeException;
  * list() of the Talk provider.
  *
  * @covers \OCA\OpenRegister\Service\Integration\Providers\TalkProvider
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkTableProvider
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\LinkTableAppDescriptor
  * @uses   \OCA\OpenRegister\Db\TalkLink
