@@ -2702,4 +2702,5 @@ cover:integriq:92114ab0m1534:d98de5aa	PR #3490: 3 phpunit tests, IwmoIjw 221->22
 cover:dossiq:f8a113c5mac88:e56141e7	PR #6299: 19 tests (DossierUploadHandler, DossierZipExporter, DocumentCaseIds); Zaakdossier 84.82->91.69%; same 19 inherited failures	session-20261113T054517-06ee2c47	2026-11-13T06:15:11Z
 cover:pipelinq:7f9dc8e6mc4ba:be0dcca9	already done: lib/Mcp/*.php at 100% statements (29/29) on development bb7a7d06c, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:29Z
 cover:pipelinq:7f9dc8e6mc4ba:ab7f3595	already done: lib/Service/Provider/ at 99.04% statements (103/104) on development bb7a7d06c, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:44Z
+cover:pipelinq:7f9dc8e6mc4ba:23d187f5	already done: lib/Service/Store/ at 95.35% statements (82/86) on development bb7a7d06c, target 85, no PR	session-20261113T054517-06ee2c47	2026-11-13T06:15:57Z
 cover:pipelinq:7f9dc8e6mc4ba:d39f9857	already done: lib/Support/*.php 32/32 lines (100.0%) on development bb7a7d06c; no PR	session-20261113T051714-4ad50f31	2026-11-13T06:15:57Z
