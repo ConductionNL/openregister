@@ -2470,4 +2470,5 @@ cover:keepiq:c967a31fm0090:f91e7417	already done: lib/Service/Connection 2 class
 cover:hermiq:065f1631m312d:e372e6ff	PR hermiq#1667: AiOversightRecordedEvent 5 tests; lib/Event/*.php 2/8 -> 8/8 lines; suite 4185->4190, no new failures	session-20261113T051714-4ad50f31	2026-11-13T05:38:57Z
 cover:hermiq:065f1631m312d:6f346b68	already done: lib/Sections/*.php 5/5 lines (100.0%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:12Z
 cover:hermiq:065f1631m312d:d39f9857	already done: lib/Support/*.php 19/19 lines (100.0%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:17Z
+cover:pipelinq:f67520ecmc4ba:js4c63a0a9	PR #3671: 2 specs/15 tests for KeywordIntelligence and WeeklyReview; marketing views stmt 77.46->87.53%; suite 3865->3880 green	session-20261113T044737-f37de8e3	2026-11-13T05:39:23Z
 cover:hermiq:065f1631m312d:568ec52a	already done: lib/Lifecycle/*.php 22/22 lines (100.0%) on development beeb8ec1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:39:23Z
