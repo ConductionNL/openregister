@@ -16,12 +16,12 @@ Established by the merged `app-leaf-provider-registration` change. A sibling app
 registers one `IEventListener` on `RegisterLeafProvidersEvent` and calls
 `registerLeaf(LeafDescriptor, ?IntegrationProvider)`. A `data-provider` leaf's
 `IntegrationProvider` with `getStorageStrategy() === 'app-local'` exposes, keyed
-on `(register, schema, objectId)`:
+on `(register, schema, objectId)` (carried as an `ObjectRef`):
 
-- `list(register, schema, objectId, filters)` — returns a **collection** of the
+- `list(ObjectRef $ref, array $filters = [])` — returns a **collection** of the
   app's own linked items for that object, in the flat-list or
   `items / total / nextCursor` envelope shape.
-- optional `create(register, schema, objectId, ...)` — **appends** an item (the
+- optional `create(ObjectRef $ref, array $payload)` — **appends** an item (the
   canonical case: a note) to the app's own store; a read-only leaf lets it throw
   not-implemented.
 
@@ -95,6 +95,25 @@ Everything else, and the differences are structural, not cosmetic:
    under an ADR-019 parity rule enforced by gate-24. A reference is an inline
    preview in free text. Different surfaces, different discovery, different
    lifecycle.
+
+### Contract check against the merged code
+
+Checked on 2026-11-13 against `main`:
+
+- `IntegrationProvider::list(ObjectRef $ref, array $filters = [])` and
+  `create(ObjectRef $ref, array $payload)`; `ObjectRef` carries
+  `(register, schema, id)`. The interface also declares `get` / `update` /
+  `delete`; an `app-local` provider that does not support them throws
+  not-implemented, so the read + optional append shape above holds.
+- `LeafDescriptor` carries `kinds`, `surfaces`, `referenceType` (via
+  `LeafRendering`) and `requiresPermission`; `LeafRegistry::describeForCapabilities()`
+  feeds `IntegrationsCapability` under `leaves`.
+- OpenRegister already ships an `IReferenceProvider` of its own,
+  `lib/Reference/ObjectReferenceProvider.php` (plus the schema-scoped
+  `AbstractSchemaReferenceProvider`), which resolves OpenRegister object URLs
+  into Smart Picker previews in Text, Talk, Mail and Collectives. That is the
+  boundary rule already in practice: the inline preview of an object URL is a
+  reference provider, while object-scoped collections are leaves.
 
 ## The options
 
