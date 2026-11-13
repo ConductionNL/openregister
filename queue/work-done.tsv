@@ -2045,3 +2045,4 @@ cover:dossiq:6ca0231ema7d4:0c7c4f5d	already done: lib/Service/Term/*.php 483/483
 cover:hermiq:065f1631m7444:js06645759	already above target: src/components/* measures 89.2% statements (495/555) in this session's measure; no PR	session-20261113T024654-6600dc41	2026-11-13T04:13:28Z
 cover:dossiq:6ca0231ema7d4:3e42da73	already done: lib/Service/Tenant 97/99 (97.98%) on development, above target; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:13:26Z
 cover:dossiq:6ca0231ema7d4:6f346b68	already done: lib/Sections/*.php 5/5 covered on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:13:40Z
+cover:dossiq:6ca0231ema7d4:bedd4a8d	already done: lib/Service/Drafts 175/177 (98.87%) on development; no PR	session-20261113T031701-b518f7f8	2026-11-13T04:13:53Z
