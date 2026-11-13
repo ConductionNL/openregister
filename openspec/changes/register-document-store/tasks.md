@@ -28,7 +28,7 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
     `tests/Unit/Command/DocumentStoreStatusCommandTest.php::testStatusPrintsTheStore`.
   - Playwright `tests/e2e/document-store-status.spec.ts` (`@e2e file-actions::the-administrator-reads-where-documents-live`):
     the settings page shows `Open Registers`, the primary backend and "not separate".
-- [ ] 1.3 Guard the byte paths: `tests/Unit/Service/File/DocumentBytePathTest.php::testNoManagedFileIsReadByLocalPath`
+- [x] 1.3 Guard the byte paths: `tests/Unit/Service/File/DocumentBytePathTest.php::testNoManagedFileIsReadByLocalPath`
   scans `lib/` for `getLocalFile(`, `getLocalFolder(`, `'datadirectory'` and fails naming file and line, with
   `Application::registerConfigurationServices()` and `Application::buildImportHandler()` as the named exception
   (configuration cache, no documents). It passes today; prove it can fail by adding a `getLocalFile()` call in a

@@ -14,7 +14,7 @@
 
 ## 4. Follow-ups
 
-- [ ] 4.1 Enforce the cap on bulk creates (`saveObjects`), which do not dispatch `ObjectCreatingEvent` per object.
+- [x] 4.1 Enforce the cap on bulk creates (`saveObjects`), which do not dispatch `ObjectCreatingEvent` per object. `BulkObjectQuota` counts each register, schema and organisation once and admits the batch's creates in order up to the cap; the rest are refused with `object-quota-exceeded` (a failed count: `object-quota-unchecked`). Updates are known from the safeguard screen and never counted. `BulkObjectQuotaTest`, `SaveObjectsBulkQuotaTest`.
 - [ ] 4.2 hermiq moves its schedule quota onto the annotation and `status()` (hermiq lane, after this lands).
 
 ## 5. Tests
