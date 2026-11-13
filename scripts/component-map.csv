@@ -1730,6 +1730,7 @@ Service/Anonymisation/AnonymisationBackendService.php,388,Service,Compliance,Com
 Service/Anonymisation/BackendInfo.php,23,Service,Compliance,Compliance/Service/Anonymisation/BackendInfo.php,2,,Compliance
 Service/Anonymisation/BackendState.php,38,Service,Compliance,Compliance/Service/Anonymisation/BackendState.php,13,415,Compliance
 Service/Anonymisation/ProbeResult.php,41,Service,Compliance,Compliance/Service/Anonymisation/ProbeResult.php,0,,Compliance
+Service/Anonymisation/ProbeResultCache.php,64,Service,Compliance,Compliance/Service/Anonymisation/ProbeResultCache.php,0,,Compliance
 Service/AnonymousEvaluationContext.php,19,Service,Service,Service/AnonymousEvaluationContext.php,0,,Core
 Service/ApiCaller/ApiCallRecorder.php,85,Service,Platform,Platform/Service/ApiCaller/ApiCallRecorder.php,0,,Platform
 Service/ApiCaller/CallerPolicy.php,92,Service,Platform,Platform/Service/ApiCaller/CallerPolicy.php,0,,Platform
@@ -1999,16 +2000,20 @@ Service/Credential/OAuth2RegistrationFailedException.php,6,Service,Integrations,
 Service/Credential/OAuth2RelayGuard.php,57,Service,Integrations,Integrations/Service/Credential/OAuth2RelayGuard.php,0,,Integrations
 Service/Credential/OAuth2StateService.php,98,Service,Integrations,Integrations/Service/Credential/OAuth2StateService.php,0,,Integrations
 Service/Credential/OAuth2TokenSet.php,177,Service,Integrations,Integrations/Service/Credential/OAuth2TokenSet.php,0,,Integrations
+Service/Credential/OutsideVaultConnection.php,35,Service,Integrations,Integrations/Service/Credential/OutsideVaultConnection.php,0,,Integrations
+Service/Credential/OutsideVaultReader.php,87,Service,Integrations,Integrations/Service/Credential/OutsideVaultReader.php,0,,Integrations
 Service/Credential/DeclarationValidator.php,212,Service,Integrations,Integrations/Service/Credential/DeclarationValidator.php,0,,Integrations
 Service/Credential/DeclaredProviderApprovals.php,47,Service,Integrations,Integrations/Service/Credential/DeclaredProviderApprovals.php,0,,Integrations
 Service/Credential/DeclaredProviderLoader.php,101,Service,Integrations,Integrations/Service/Credential/DeclaredProviderLoader.php,0,,Integrations
 Service/Credential/DeclaredProviderResolver.php,90,Service,Integrations,Integrations/Service/Credential/DeclaredProviderResolver.php,0,,Integrations
 Service/Credential/ProviderCatalogue.php,47,Service,Integrations,Integrations/Service/Credential/ProviderCatalogue.php,5,,Integrations
+Service/Credential/VaultReference.php,25,Service,Integrations,Integrations/Service/Credential/VaultReference.php,0,,Integrations
 Service/CrossRegisterExistenceService.php,166,Service,Service,Service/CrossRegisterExistenceService.php,0,,Core
 Service/DateTimeNormalizer.php,76,Service,Service,Service/DateTimeNormalizer.php,3,,Core
 Service/Dbal/DatabaseIntrospectionService.php,393,Service,Service,Service/Dbal/DatabaseIntrospectionService.php,0,,Core
 Service/Dbal/DbalConnectionException.php,6,Service,Service,Service/Dbal/DbalConnectionException.php,0,,Core
 Service/Dbal/DbalConnectionFactory.php,116,Service,Service,Service/Dbal/DbalConnectionFactory.php,0,,Core
+Service/Dbal/ReadOnlyQueryGuard.php,124,Service,Service,Service/Dbal/ReadOnlyQueryGuard.php,0,,Core
 Service/Dbal/SqlTypeMapper.php,85,Service,Service,Service/Dbal/SqlTypeMapper.php,0,,Core
 Service/Decision/DecisionOwnedException.php,12,Service,Flows,Flows/Service/Decision/DecisionOwnedException.php,0,,Processes
 Service/Decision/DecisionOwnership.php,72,Service,Flows,Flows/Service/Decision/DecisionOwnership.php,0,,Processes
@@ -2126,6 +2131,7 @@ Service/ExampleSet/ExampleSetTasks.php,188,Service,Configuration,Configuration/S
 Service/ExampleSet/ExampleSetUserPreferences.php,96,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetUserPreferences.php,0,,Configuration
 Service/ExampleSet/ExampleSetValues.php,213,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetValues.php,0,,Configuration
 Service/ExampleSet/ExampleSetWatchers.php,76,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetWatchers.php,0,,Configuration
+Service/Export/DocumentStyleReader.php,102,Service,Configuration,Configuration/Service/Export/DocumentStyleReader.php,0,,Configuration
 Service/Export/ExportAuditRecorder.php,81,Service,Configuration,Configuration/Service/Export/ExportAuditRecorder.php,0,308,Configuration
 Service/Export/ExportGate.php,44,Service,Configuration,Configuration/Service/Export/ExportGate.php,0,402,Configuration
 Service/Export/ExportProfileService.php,181,Service,Configuration,Configuration/Service/Export/ExportProfileService.php,0,,Configuration
@@ -3230,9 +3236,12 @@ Search/,,Search,,,,,Search
 Sections/,,Sections,,,,,Platform
 Service/Aggregation/,,Service,,,,,Core
 Service/Anonymisation/,,Service,,,,,Compliance
+Service/Anonymisation/CapacityPolicy.php,,Service,,,,,Compliance
+Service/Anonymisation/CapacitySuggester.php,,Service,,,,,Compliance
 Service/ApiCaller/,,Service,,,,,Platform
 Service/ApiVersion/,,Service,,,,,Core
 Service/Archival/,,Service,,,,,Compliance
+Service/Archival/InheritedAppraisal.php,,Service,,,,,Compliance
 Service/Audit/,,Service,,,,,Compliance
 Service/Authorization/,,Service,,,,,Core
 Service/Bindings/,,Service,,,,,Integrations
@@ -3262,6 +3271,10 @@ Service/Export/,,Service,,,,,Configuration
 Service/ExternalLink/,,Service,,,,,Core
 Service/Federation/,,Service,,,,,Core
 Service/File/,,Service,,,,,Core
+Service/File/ArchiveBounds.php,,Service,,,,,Core
+Service/File/ArchiveListing.php,,Service,,,,,Core
+Service/File/ArchiveMemberEnumerator.php,,Service,,,,,Core
+Service/File/ArchiveWalk.php,,Service,,,,,Core
 Service/Flow/,,Service,,,,,Processes
 Service/Form/,,Service,,,,,Processes
 Service/Gdpr/,,Service,,,,,Compliance
@@ -3303,6 +3316,7 @@ Service/Rules/,,Service,,,,,Processes
 Service/Schema/,,Service,,,,,Core
 Service/SchemaImport/,,Service,,,,,Core
 Service/Schemas/,,Service,,,,,Core
+Service/Schemas/RetentionAnnotationValidator.php,,Service,,,,,Core
 Service/Search/,,Service,,,,,Core
 Service/Security/,,Service,,,,,Integrations
 Service/Serializer/,,Service,,,,,Core
@@ -3863,6 +3877,9 @@ Service/TranslationProjectionServiceInterface.php,,Service,,,,,Platform
 Service/TranslationSearch.php,,Service,,,,,Configuration
 Service/TranslationStatusServiceInterface.php,,Service,,,,,Platform
 Service/TranslationStores.php,,Service,,,,,Platform
+Service/Translation/GlossaryService.php,,Service,,,,,Configuration
+Service/Translation/TaskProcessingTranslationProvider.php,,Service,,,,,Configuration
+Service/Translation/TranslationOutcome.php,,Service,,,,,Configuration
 Service/UnclassifiedProcessing.php,,Service,,,,,Compliance
 Service/UrnServiceInterface.php,,Service,,,,,Core
 Service/UserDirectory.php,,Service,,,,,Integrations
@@ -3901,3 +3918,4 @@ Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance

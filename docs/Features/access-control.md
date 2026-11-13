@@ -773,6 +773,43 @@ How it behaves:
 - Like every conditional rule on a field other than `_organisation`, a caller it admits is no longer held to the organisation filter on that schema. To keep both, add `"_organisation": "$organisation"` to the same `match`.
 - Admins bypass RBAC and see every row, as with every other rule.
 
+### An app declares object access; it does not guard it
+
+When an app needs "only the people on this record may read it", it writes that rule into the schema's `authorization` block. It does not write a guard class that reads the object and decides in PHP. OpenRegister then enforces the rule on every path that reaches the data: the list (as SQL), the single-object read, the API, search, exports and MCP. An app-side guard only protects the screens that call it.
+
+The declaration is the conditional rule grammar from the section above, keyed on the action:
+
+- **Principals.** A rule names who it is for. That can be a Nextcloud group id, `authenticated` (anyone who is logged in), `public` (anyone, including anonymous callers) or a single account as `user:<uid>`. A plain string in the list grants that principal the action with no condition. Members of Nextcloud's `admin` group pass every rule.
+- **`match`.** An object field and the value it must have for the rule to admit the caller. Every key in one `match` must hold. Two rules in the same list are alternatives.
+- **Variables**, resolved for the caller at evaluation time:
+  - `$userId` (or `$user`): the caller's Nextcloud uid.
+  - `$user.groups`: the caller's group ids, for use with `$in` or `$contains`.
+  - `$organisation`: the caller's active organisation.
+  - `$now`: the current time, for date windows.
+- **`$contains`**: a list field holds the value, for example a list of assignees.
+
+Example: a record that its assignee may read and update, and that anyone in its `assignees` list may read.
+
+```json
+{
+  "authorization": {
+    "read": [
+      { "group": "authenticated", "match": { "assignee": "$userId" } },
+      { "group": "authenticated", "match": { "assignees": { "$contains": "$userId" } } }
+    ],
+    "update": [
+      { "group": "authenticated", "match": { "assignee": "$userId" } }
+    ]
+  }
+}
+```
+
+A caller who matches neither rule gets nothing back from the list, and a 404 from the single-object read. To the app, that is an ordinary empty read. The administrator bypass is the `admin` group's, enforced by OpenRegister, not app code.
+
+#### When an app still needs a guard of its own
+
+Sometimes a rule genuinely can't be expressed in this grammar. In that case the app-side guard **must** carry a comment that names the declaration it tried and says why it could not work, for example which operator or variable was missing. Without that comment, the next reader can't tell a necessary guard from a duplicate of a rule the schema could have held, and a duplicate drifts out of step with the schema the moment either one changes. A guard with such a comment is a request for a platform feature. Raise it against OpenRegister so the guard can be removed once the feature lands.
+
 ### Disabling public-group inheritance for authenticated users (`inheritFromPublic`)
 
 By default, authenticated users qualify for any rule that targets the `public`
