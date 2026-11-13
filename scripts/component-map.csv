@@ -2397,6 +2397,7 @@ Service/Gdpr/Identity/NullIdentityVerifyProvider.php,15,Service,Compliance,Compl
 Service/Gdpr/Lifecycle/DenialFinaliseGuard.php,26,Service,Compliance,Compliance/Service/Gdpr/Lifecycle/DenialFinaliseGuard.php,0,,Compliance
 Service/Gdpr/Policy/DsarPolicyPackResolver.php,99,Service,Compliance,Compliance/Service/Gdpr/Policy/DsarPolicyPackResolver.php,0,,Compliance
 Service/Gdpr/PrivacyOfficerRecipientResolver.php,49,Service,Compliance,Compliance/Service/Gdpr/PrivacyOfficerRecipientResolver.php,0,,Compliance
+Service/Gdpr/ProcessingAnnotationReader.php,137,Service,Compliance,Compliance/Service/Gdpr/ProcessingAnnotationReader.php,0,,Compliance
 Service/Gdpr/Redaction/RedactionWriteService.php,48,Service,Compliance,Compliance/Service/Gdpr/Redaction/RedactionWriteService.php,0,,Compliance
 Service/Gdpr/Regulator/NullRegulatorEscalateProvider.php,15,Service,Compliance,Compliance/Service/Gdpr/Regulator/NullRegulatorEscalateProvider.php,0,,Compliance
 Service/Gdpr/Regulator/RegulatorEscalateProvider.php,7,Service,Compliance,Compliance/Service/Gdpr/Regulator/RegulatorEscalateProvider.php,4,,Compliance
@@ -3279,6 +3280,7 @@ Service/File/ArchiveWalk.php,,Service,,,,,Core
 Service/Flow/,,Service,,,,,Processes
 Service/Form/,,Service,,,,,Processes
 Service/Gdpr/,,Service,,,,,Compliance
+Service/Gdpr/Subject/SubjectDeclaredFieldIndex.php,249,Service,Compliance,Compliance/Service/Gdpr/Subject/SubjectDeclaredFieldIndex.php,0,,Compliance
 Service/Geo/,,Service,,,,,Core
 Service/GraphQL/,,Service,,,,,Core
 Service/Handoff/,,Service,,,,,Integrations
