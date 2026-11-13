@@ -5944,3 +5944,10 @@ merge:decidiq:2121:1482f13f	merge	decidiq	development	development	prs=2121@d094c
 cover:pipelinq:7f9dc8e6m16db:a3bb9eeb	cover	pipelinq	development	quality/test-coverage-a3bb9eeb	lang=php;dirs=lib/Service/Portal/*.php;focus=thin;weight=6635;coverage=87.68;target=90.0	2026-11-13T14:16:24Z
 cover:pipelinq:7f9dc8e6m16db:8f8dca30	cover	pipelinq	development	quality/test-coverage-8f8dca30	lang=php;dirs=lib/Service/Export/*.php;focus=thin;weight=4873;coverage=87.68;target=90.0	2026-11-13T14:16:24Z
 cover:pipelinq:7f9dc8e6m16db:09cc8f24	cover	pipelinq	development	quality/test-coverage-09cc8f24	lang=php;dirs=lib/Service/Cti/;focus=thin;weight=2394;coverage=87.68;target=90.0	2026-11-13T14:26:30Z
+verify:dossiq:6424:474c57af	verify	dossiq	development	merge	prs=6424@0edd0cb288d8aad25a4a21a32cc9eb02bd64acd4	2026-11-13T17:30:28Z
+verify:pipelinq:3736:5ba55edd	verify	pipelinq	development	merge	prs=3736@d98a90ef3a28dae336aa1c858076fe361278208d,3762@46e9fa69177c879995108aaf9a52359a67694844	2026-11-13T17:30:28Z
+verify:versioniq:682:c913ecfa	verify	versioniq	development	merge	prs=682@209ba5950fc32490e94a9240f5bf305cb8559e30	2026-11-13T17:30:28Z
+merge:learniq:2436:a5f8dc9f	merge	learniq	development	development	prs=2436@c487c8c3f3268f7edce46f86878a9686ecc01d2f,2464@a642c90f3c9e0f408e5f90f8a34b156914f95f42	2026-11-13T17:30:28Z
+merge:dossiq:6423:3dd93d5b	merge	dossiq	development	development	prs=6423@bab41679c53a2bda048fdc09a09b1ccac2da4872,6427@128c7f2dfb4a31fc1a0956704cb887ddf633605e	2026-11-13T17:30:28Z
+merge:pipelinq:3759:0cbf8a01	merge	pipelinq	development	development	prs=3759@08ffd023e233856a7f9b823c58ca32c3ff3a4746,3760@9f52ec2ffe87fcec90708091ceae52a3d22687f7	2026-11-13T17:30:28Z
+cover:pipelinq:7f9dc8e6m16db:a13d1ab7	cover	pipelinq	development	quality/test-coverage-a13d1ab7	lang=php;dirs=lib/Service/WebForm/;focus=thin;weight=1854;coverage=87.68;target=90.0	2026-11-13T14:40:48Z
