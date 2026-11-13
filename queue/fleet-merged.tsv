@@ -1497,3 +1497,5 @@ learniq	2461	944129b4a3528682c327dd913d2e070d88793ec7	MERGED	merge-local	GATE OK
 buildiq	1536	c016cbe958596e3b52964082df7cb2b5e822da18	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1537	c30d072848a1a0abd6d9263ff7a48d230b5e983d	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1538	59d9088a273d7862e520adc456d2dde5c2811c2b	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1866	6e28dd160f3c928940226d4fe6f226a3ef385958	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1867	65f90f8eef081d73a56ceded02e25cbb7893c1fb	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
