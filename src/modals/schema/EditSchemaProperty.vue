@@ -1545,7 +1545,9 @@ export default {
 		},
 
 		/**
-		 * @spec exclude Modal hydration plumbing — loads existing property values into the form.
+		 * Load an existing property's values into the property form when it opens.
+		 *
+		 * @spec openspec/changes/modelling-stated-requirements/specs/entity-management-modals/spec.md#requirement-a-schemas-fields-are-built-in-a-form-req-msr-004
 		 */
 		initializeSchemaItem() {
 			if (!schemaStore.schemaPropertyKey) return
@@ -1863,7 +1865,9 @@ export default {
 		},
 
 		/**
-		 * @spec exclude Modal save plumbing — assembles the property payload and delegates to schemaStore.saveSchema.
+		 * Save the property form: assemble the property and save the schema through the schema store.
+		 *
+		 * @spec openspec/changes/modelling-stated-requirements/specs/entity-management-modals/spec.md#requirement-a-schemas-fields-are-built-in-a-form-req-msr-004
 		 */
 		addSchemaProperty() {
 			this.loading = true
