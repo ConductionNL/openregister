@@ -7174,3 +7174,4 @@ review:openregister:10416:984be222	APPROVE: digest verify job per change 2.4; su
 build4:openregister:records-draft-versions	partial: PR #10443 (2.2 versions routes + DraftService find/mayCreate); open 1.1,2.1,2.3,3-6	session-20261113T182404-f2c28226	2026-11-13T22:28:43Z
 build4:openregister:rules-compose-read-transitions-and-time	partial: PR #10444 (1.3b named conditions refused at schema save; 8 tests); 1.2b/1.5b/2.2b/2.3b/3.2b/3.3b/4.3b/5.4 left; 4.1 save-time refusal found unwired	session-20261113T205324-91f6ae17	2026-11-13T22:28:47Z
 verify:pipelinq:3795:f810ec60	GREEN: #3795 tests only, 7376 tests 0 failures	session-20261113T220418-8e6ce3df	2026-11-13T22:28:50Z
+review:openregister:10410:806dd185	APPROVE	session-20261113T212414-df8c34e5	2026-11-13T22:29:16Z
