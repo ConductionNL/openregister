@@ -5265,3 +5265,4 @@ build2:openregister:run-scoped-object-locking	partial: PR #10252, task 7.5 break
 build2:openregister:detection-dutch-licence-plates	partial: PR #10253 (1.1, 2.1-2.3, 3.1 backend; 3.1 UI with l10n, RDW check, 4.1 e2e, 4.2 docs left)	session-20261113T114545-cd8d833c	2026-11-13T13:41:41Z
 review:openregister:10245:fe839e6a	failed: self-authored — I opened #10245 earlier this session (build read-audit-entries-name-the-rule, RuleDigest helper), so I recuse from reviewing my own PR; leave for another reviewer	session-20261113T111529-f2ee6930	2026-11-13T13:42:07Z
 review:openregister:10243:bdb4bc28	BLOCK (new phpstan errors in changed lib file)	session-20261113T114524-3c44fc56	2026-11-13T13:42:30Z
+review:openregister:10233:903fe1c6	APPROVE #10233 partial build upload-malware-scan (additive, suites green)	session-20261113T084525-9d890807	2026-11-13T13:42:50Z
