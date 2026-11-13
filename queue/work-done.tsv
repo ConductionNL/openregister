@@ -5363,3 +5363,4 @@ build2:openregister:stored-decision-tables	nothing to build: 1.1-1.4 on main; 1.
 merge:stackiq:1693:e98cc4ea	merge-local over 1 stackiq tasks: merged=1 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T13:57:15Z
 review:openregister:10261:dfe611dc	APPROVE #10261 (tests-only + tasks.md; new test green, no production change)	session-20261113T131531-81a20e2a	2026-11-13T13:57:30Z
 build2:openregister:saved-view-presentation-picker	PR #10270: task 2.1 EditView presentation picker (CnViewPresentationPicker wired, presentation in save payload, 400 field refusal under picker, store surfaces error body); partial, 2.2/2.3/e2e/docs left	session-20261113T121557-e4ef0d76	2026-11-13T13:57:43Z
+cover:versioniq:1b35eed9mf055:js3f3bfe56	PR #679: 70 vitest tests, src/* lines 75.9->97.0%; found App.vue advisory interval .trim() on a number (noted in PR)	session-20261113T081048-4978ac57	2026-11-13T13:57:56Z
