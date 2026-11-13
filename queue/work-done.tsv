@@ -6136,3 +6136,4 @@ cover:hermiq:065f1631md84f:34a55f48	already done: lib/Service/Workspace/*.php at
 build:shillinq:sales-billable-rate-per-hour	partial: PR #2996 builds task 2.1 (BillableRateService, 9 tests); 1.1, 2.2-5.2 left	session-20261113T171149-8b9ea523	2026-11-13T18:59:27Z
 cover:hermiq:065f1631md84f:9d3a1784	already done: lib/BackgroundJob/*.php at 100% stmt coverage on development; no PR	session-20261113T172328-c860ad55	2026-11-13T18:59:12Z
 cover:openregister:7350e3efma401:32df05fd	PR #10296: metadata fix for 19 risky test classes; lib/Files/Service 93.94% -> 95.44%, 43 risky -> 0, tests only	session-20261113T182348-4d2d804b	2026-11-13T18:59:45Z
+verify:learniq:2478:807d796d	GREEN #2478 (tests only, no new failures; 1 inherited baseline failure)	session-20261113T185328-da819141	2026-11-13T18:59:47Z
