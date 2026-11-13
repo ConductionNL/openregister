@@ -592,3 +592,4 @@ keepiq	1699	1f4885904a5e6ea2cf39a7aabb52c04a315cf729	MERGED	merge-local	GATE OK 
 larpinq	1005	623ed4fa204e82222e9ab91f40476f7762bae59c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 filinq	1972	836eb87dc1c2503cf0bc8a2c57dbfa1471063a0c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 launchpad	1108	13cd15b9e1f1ea788c12c68c3963544022bf2bb1	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1690	f5feabc390d7e92ed8113c85039b1000e83ad400	SKIP	merge-local	GATE UNMEASURED f5feabc390 does not merge cleanly onto development
