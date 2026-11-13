@@ -4405,3 +4405,4 @@ cover:dossiq:069ee2d6m7275:f7dbdab3	PR #6404: +40 tests, lib/Service/CaseType 14
 cover:pipelinq:7f9dc8e6m84dd:197c84b8	already done: lib/Adapter/*.php at 100% on development; no PR needed	session-20261113T094606-b7da8c7f	2026-11-13T11:07:52Z
 cover:stackiq:9ac19b3am10f3:9d3a1784	already done: lib/BackgroundJob/*.php 198/198 = 100%	session-20261113T051703-1b54bfba	2026-11-13T11:07:59Z
 cover:stackiq:9ac19b3am10f3:2f30e3d6	already done: AangebodenGebruik/ + Itsm/ 110/110 = 100%	session-20261113T051703-1b54bfba	2026-11-13T11:08:11Z
+verify:pipelinq:3711:894c2015	3711 RED (readableValues.spec: accountStatus.merged unlabelled), 3712 GREEN (tests only, rebuilt without 3711)	session-20261113T044737-f37de8e3	2026-11-13T11:08:30Z
