@@ -4,7 +4,7 @@
 
 ## 1. Parse
 
-- [ ] 1.1 `lib/Service/Query/ReferenceFilterParser.php`: parse `_ref` blocks (D-1), resolve the referenced schema (D-4), refuse per D-2. Verify: `tests/Unit/Service/Query/ReferenceFilterParserTest.php` for each refusal and a valid block with an operator.
+- [x] 1.1 `lib/Service/Query/ReferenceFilterParser.php`: parse `_ref` blocks (D-1), resolve the referenced schema (D-4), refuse per D-2. Verify: `tests/Unit/Service/Query/ReferenceFilterParserTest.php` for each refusal and a valid block with an operator.
 
 ## 2. Apply
 
