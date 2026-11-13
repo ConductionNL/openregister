@@ -6065,3 +6065,4 @@ portaliq	2425	6b236062315e0c858ed2c4d795dce409b0682fc1	GREEN	worker-54	tree of 6
 pipelinq	3766	a8ead0ac7432584a056fe02368c83a8304eb0eae	GREEN	worker-56	unit 7203 tests, baseline 7194 with 5 inherited failures, new failures 0; tests only (+9 tests), not risky
 shillinq	2947	2f18835b74b6fb4e50bdc434096958f494c62740	GREEN	worker-10	tests only; unit 10414 run (baseline 10394, 1 inherited clock-bound webhook failure), 0 new
 stackiq	1885	398c4f7f6570f83c65114883cdd32f89381dceaf	GREEN	worker-37	tests only (1 test added); unit 3398 tests vs baseline 3397, 0 failures, no new warnings
+portaliq	2423	50cc9936c322395b4aa179b56d63a8cf347fe2ce	REVERIFY	worker-24	moved the 10 new l10n keys from the catalogue end to just after the first key in en/en_US/nl .js and .json, so it merges cleanly with #2419 in either order (checked both); check:l10n-js and its node test pass; new head 8eb905abb2aca81225dcf27cb418f5e5ebebebbe, verify it
