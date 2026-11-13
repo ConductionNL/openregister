@@ -1502,3 +1502,4 @@ measure:stackiq:20261113h00	stackiq@062e370 php 64.67% (pcov, needs pcov.directo
 measure:pipelinq:20261113h00	php 81.76% (47790/58451, pcov.directory set explicitly; default autodetect gave 0%), js 78.47%; 1 inherited unit failure CrmPrivilegeRefusalGoldenTest TicketWooRequestController	session-20261113T015003-d56b074c	2026-11-13T01:56:18Z
 verify:integriq:3451:7c814cf9	GREEN 3451 (tests-only, +5 tests, 0 new failures)	session-20261113T011743-bdeb8a13	2026-11-13T01:56:37Z
 verify:integriq:3448:edee7847	GREEN 3448,3449,3450; 7133 tests, only inherited CallServiceTest errors	session-20261113T013903-97d30fda	2026-11-13T01:56:52Z
+verify:launchpad:1149:4a15dcd3	7/7 GREEN (1149-1155 tests-only; phpunit 3631 OK, vitest 1557 green)	session-20261112T221237-836ed3f0	2026-11-13T01:57:21Z
