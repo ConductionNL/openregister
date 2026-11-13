@@ -1753,3 +1753,4 @@ cover:dossiq:6ca0231ema7d4:83885cb7	PR #6258: 10 tests for round-robin/least-loa
 merge:filinq:1984:d4341fee	merge-local over 3 filinq tasks: merged=19 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:02:29Z
 merge:filinq:1993:0bbff91d	merge-local over 3 filinq tasks: merged=19 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:02:29Z
 merge:filinq:2001:dc44d38e	merge-local over 3 filinq tasks: merged=19 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:02:29Z
+merge:portaliq:2284:288663d5	merge-local over 1 portaliq tasks: merged=0 red=0 fail=0 skip=0; already in development 0; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-13T03:02:46Z
