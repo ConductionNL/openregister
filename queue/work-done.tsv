@@ -2078,3 +2078,4 @@ cover:buildiq:9930949bm5861:aae6d66c	already done: lib/Exception/*.php at 100% l
 cover:shillinq:05639deb:89bf3ba4	PR opened: 11 tests for DocudeskTemplateSelection and ReportDataTrait (-1 still open for Iv3); suite 9004->9015, 1 inherited failure unchanged	session-20261113T033859-c661da78	2026-11-13T04:19:37Z
 verify:hermiq:1653:0af57e33	3 GREEN (1653-1655), tests-only	session-20261113T024653-d22c13a3	2026-11-13T04:19:42Z
 measure:decidiq:20261113h04	php 82.1% / js 95.21% (pcov, pcov.directory=lib; 28 risky)	session-20261113T041645-1e9d4ce1	2026-11-13T04:19:52Z
+cover:buildiq:9930949bmefda:js391c0641	PR buildiq#1506: 18 specs for ColumnBuilder + RegistrationFormEditor (second batch after #1503); suite green	session-20261113T024654-6600dc41	2026-11-13T04:19:58Z
