@@ -7216,6 +7216,7 @@ verify:learniq:2486:ba898332	2486 GREEN; no new failures (1 inherited)	session-2
 build:learniq:notification-quiet-hours-through-openregister	stale: src/views/LearniqNotificationSettings.vue removed in #1910; the settings dialog is now the shared library's, so the change needs rewriting against it	session-20261113T202611-3b383b96	2026-11-13T22:35:03Z
 build4:openregister:reply-threading-by-headers	partial: PR #10452 builds task 4.2 (mail header table, mapper, extraction write); remaining code tasks 1.1-1.3, 2.1-2.2, 4.4-4.6 left	session-20261113T215342-fabaa836	2026-11-13T22:34:49Z
 verify:pipelinq:3797:a2447876	GREEN: #3797 tests only, 7560 tests 0 failures	session-20261113T220418-8e6ce3df	2026-11-13T22:35:08Z
+build:learniq:compliance-attestation-locked-after-signing	partial: PR #2495 freeze listener, revoke reason guard, signedAt stamp, register 0.49.0, merge keeps signed attestations (1.1-2.2); audit pack, UI, l10n, e2e left	session-20261113T213336-fe5ca7a4	2026-11-13T22:35:14Z
 cover:shillinq:05639debm3747:js450fec42	PR #3030: 13 tests; integration panels at 100% functions (PaymentRequests 67.6->100), suite 2400->2413 passed, 1 inherited failure	session-20261113T212405-084c59f4	2026-11-13T22:35:20Z
 build:learniq:exam-sitting-overview-section	PR #2496: tasks 1.1-1.5 and 2.1 (node --test, no vitest in learniq); e2e 2.2, visual 2.3 and close-out 3.1 left	session-20261113T202607-6c22f6b2	2026-11-13T22:35:34Z
 review:openregister:10434:f6a36d5a	APPROVE #10434 (index migration; only inherited red)	session-20261113T205323-a7434fd6	2026-11-13T22:35:31Z
