@@ -233,6 +233,11 @@ class MagicSearchHandlerSearchLeafGoldenTest extends TestCase {
 		(new ReflectionProperty($probe, 'available'))->setValue($probe, $fuzzy);
 		(new ReflectionProperty(MagicSearchHandler::class, 'trgmProbe'))->setValue($handler, $probe);
 
+		// The historical comparison: accent folding unavailable on both platforms.
+		$unaccent = new \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe($this->createMock(IDBConnection::class), $this->createMock(LoggerInterface::class));
+		(new ReflectionProperty($unaccent, 'reason'))->setValue($unaccent, \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe::REASON_UNSUPPORTED);
+		(new ReflectionProperty(MagicSearchHandler::class, 'unaccentProbe'))->setValue($handler, $unaccent);
+
 		return $handler;
 	}//end handler()
 

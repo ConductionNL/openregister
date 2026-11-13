@@ -50,6 +50,13 @@ final class SearchLeafScope {
 	public ?array $existingColumns = null;
 
 	/**
+	 * The accent folding of this search, or null for the historical comparison.
+	 *
+	 * @var SearchFolding|null
+	 */
+	public ?SearchFolding $folding = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Schema $schema     Schema for determining searchable columns
