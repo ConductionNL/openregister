@@ -5907,3 +5907,4 @@ planninq	1139	c5d778ee07df39b52542d375d6e519f24875f556	GREEN	worker-57	unit 1015
 pipelinq	3736	9a16156708cb5867054b5c73f11b49f2f2579410	RED	merge-local:merge-gate	GATE RED floor: unit_complexity: 3.78 -> 3.76
 humaniq\t1112\tc7acf4435ca5fafef99f1ac9d30447d3fd974f3e\tGREEN\tworker-47\t3982 tests run, baseline 3928 (0 failures), no new failures; tests only
 humaniq\t1112\tc7acf4435ca5fafef99f1ac9d30447d3fd974f3e\tGREEN\tworker-47\t3982 tests run, baseline 3928 (0 failures), no new failures; tests only
+portaliq\t2401\t19aada71d2e2a4f3555e781b1d659b2580a2751e\tGREEN\tworker-41\ttest-only (StandardProtocolPathsTest), baseline 4842 pass, tree 4855 pass, no production change
