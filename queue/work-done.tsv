@@ -2401,3 +2401,4 @@ cover:integriq:92114ab0m1534:a0b17cde	already done: lib/Service/Synchronization/
 cover:dossiq:f8a113c5mac88:aede7575	already done: Command/Backfill/ 163/164 lines (99.4%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:28:45Z
 cover:dossiq:f8a113c5mac88:c7ef8f28	already done: Listener/Support/ 158/160 lines (98.8%) on development 0888b592d1; no PR	session-20261113T051714-4ad50f31	2026-11-13T05:28:57Z
 measure:learniq:20261113h04	php 91.09% (pcov, 6101 tests, 1 inherited failure), js 89.01% lines (c8 node --test)	session-20261113T051704-8c56f5b7	2026-11-13T05:29:01Z
+verify:dossiq:6278:fdd82e57	GREEN 6278-6282 (tests only; no new failures vs baseline)	session-20261113T031701-b518f7f8	2026-11-13T05:29:30Z
