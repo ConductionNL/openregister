@@ -6561,3 +6561,4 @@ verify:filinq:2068:b584ad87	7 GREEN (2068,2069,2071,2073-2076), 2 CONFLICT (2070
 cover:integriq:92114ab0m0593:aae6d66c	already done: lib/Exception/*.php at 54/55 98.2 lines at 81441e2b	session-20261113T172349-00278d9d	2026-11-13T20:09:52Z
 cover:integriq:92114ab0m0593:19badfa5	already done: lib/Outbound/Call/*.php at 670/698 96.0 lines at 81441e2b	session-20261113T172349-00278d9d	2026-11-13T20:09:58Z
 cover:pipelinq:7f9dc8e6m8ce9:fdb25f89	already done: lib/Service/Access at 86/86 lines (100%) at c2351f22	session-20261113T172349-00278d9d	2026-11-13T20:10:15Z
+cover:pipelinq:7f9dc8e6m8ce9:168f7791	already done: lib/Dossiq/*.php at 26/26 100.0 lines (measured this session)	session-20261113T172349-00278d9d	2026-11-13T20:10:28Z
