@@ -5443,3 +5443,4 @@ learniq	2438	958f268b62c1ebd070fe7611a358eb2a01b97113	GREEN	worker-04	unit 6116 
 keepiq	1749	00e195e8636ba3ad1c8282f262e30c7534a225f3	GREEN	worker-44	PHP unit 4564 (baseline 4564, 0 fail; no PHP touched); vitest 6259 pass on tree; refactor extracts helpers, behaviour unchanged
 keepiq	1750	3fa421f5ad57587fe2cbe03e780b2308c956485c	GREEN	worker-44	PHP unit 4564 (baseline 4564, 0 fail); vitest 6259 pass on tree; tests only
 learniq	2419	6339bf2933eda835ac5522e585535cd86fcf1bc7	REVERIFY	worker-19	merged development in: kept branch ApiPathAliases routes + openapi.json, took development OpenApiController + test, peer-review route test uses v1 postfix; unit 6129 tests, 1 failure inherited from development (HigherEducationExampleSetTest); new head f709e6508b25423d3eff9f5fc94d6e27ef0ddb8c, verify it
+portaliq	2373	bb97388c39c057f93227cd42c789d323d300541c	GREEN	worker-47	4620 tests on tree (2373+2374+2377), baseline 4527 0 failures, 0 new; tests only
