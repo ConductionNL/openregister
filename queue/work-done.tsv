@@ -3635,3 +3635,4 @@ gap:versioniq:pj:burn1	PR #674: Problem schema + /openapi.json 404 as problem+js
 verify:launchpad:1176:b07e0bd1	1176 GREEN: 3789 tests, 0 new failures, risky 2->0	session-20261113T073916-e9f11dfa	2026-11-13T08:53:40Z
 cover:learniq:e6498dddmf689:cec0abe6	already done: lib/Service/{Attendance,CourseStore,Portal} at 95.7% lines (2091/2185) under the full unit suite on development, target 95; no PR	session-20261113T051705-4f5ad12a	2026-11-13T08:53:49Z
 cover:pipelinq:7f9dc8e6m916f:ab7f3595	already done: lib/Service/Provider/ at 99.04% (1 line left, pcov)	session-20261113T072715-8f8a14e9	2026-11-13T08:53:58Z
+cover:pipelinq:7f9dc8e6m916f:197c84b8	already done: lib/Adapter/*.php 100% lines (58/58) on development ebef47bf4 via 12b3fb6c6; 44 tests green; no PR	session-20261113T084521-4cd185d2	2026-11-13T08:54:03Z
