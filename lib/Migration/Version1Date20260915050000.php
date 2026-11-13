@@ -107,7 +107,7 @@ class Version1Date20260915050000 extends SimpleMigrationStep {
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
 			$table->addColumn('preview_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
 			// `row_number` is a reserved word that Doctrine does not quote on MariaDB.
-			$table->addColumn('source_row', Types::INTEGER, ['notnull' => true, 'default' => 0, 'unsigned' => true]);
+			$table->addColumn('row_number', Types::INTEGER, ['notnull' => true, 'default' => 0, 'unsigned' => true]);
 			$table->addColumn('decision', Types::STRING, ['notnull' => true, 'length' => 16, 'default' => 'create']);
 			$table->addColumn('reason', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('target_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
@@ -123,7 +123,7 @@ class Version1Date20260915050000 extends SimpleMigrationStep {
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['preview_id'], 'idx_or_improw_preview');
 			$table->addIndex(['preview_id', 'decision'], 'idx_or_improw_decision');
-			$table->addUniqueIndex(['preview_id', 'source_row'], 'idx_or_improw_unique');
+			$table->addUniqueIndex(['preview_id', 'row_number'], 'idx_or_improw_unique');
 
 			$output->info('Created openregister_import_preview_rows table');
 		}//end if
