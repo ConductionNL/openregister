@@ -4326,3 +4326,4 @@ cover:openregister:7350e3efme1f3:js33227456	PR #10123: 4 modal mount specs, 40 t
 cover:filinq:7a9ef677mb01f:efa2a923	PR filinq#2052: 9 tests (3 registrars + 3 listener edge cases), suite 6416->6425 green	session-20261113T104531-16da055e	2026-11-13T10:54:21Z
 measure:stackiq:20261113h10	php 86.45%, js 91.96% @4cad10cf	session-20261113T104527-c302106c	2026-11-13T10:54:38Z
 verify:dossiq:6392:abc66d3f	GREEN 6392, 6393	session-20261113T081040-5e814df2	2026-11-13T10:54:52Z
+cover:openregister:7350e3efme1f3:js5794e9fc	PR #10124: 6 tests for OrganisationConfiguration (computed options/hasChanges, selectDefaultOrganisation) and RegisterDescriptors (rowKey/rowClass/stateLabel/versionLabel); dir 92.72->93.38% lines	session-20261113T084521-fd8a31c7	2026-11-13T10:55:07Z
