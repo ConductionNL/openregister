@@ -149,7 +149,6 @@ class GdprEntitiesControllerScopeGoldenTest extends TestCase {
 		});
 
 		$controller = GdprEntitiesControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(GdprEntityMapper::class),
 			$this->createMock(EntityRelationMapper::class),

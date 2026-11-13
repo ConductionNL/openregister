@@ -92,7 +92,6 @@ class DsarCaseOutcomeGoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return DsarCaseControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
 			$accessor,

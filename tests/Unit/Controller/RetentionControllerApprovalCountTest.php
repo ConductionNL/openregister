@@ -114,7 +114,6 @@ class RetentionControllerApprovalCountTest extends TestCase {
 		$this->auditMapper = $this->createMock(AuditTrailMapper::class);
 
 		return RetentionControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(RetentionService::class),
 			$this->createMock(ObjectRetentionHandler::class),

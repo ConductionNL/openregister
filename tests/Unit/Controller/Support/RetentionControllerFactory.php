@@ -18,7 +18,6 @@ final class RetentionControllerFactory {
 	/**
 	 * The constructor arguments of RetentionController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param RetentionService $retentionService Constructor argument.
 	 * @param ObjectRetentionHandler $settingsHandler Constructor argument.
@@ -34,7 +33,6 @@ final class RetentionControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\RetentionService $retentionService,
 		\OCA\OpenRegister\Service\Settings\ObjectRetentionHandler $settingsHandler,
@@ -48,7 +46,6 @@ final class RetentionControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\RetentionControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\RetentionMappers(
