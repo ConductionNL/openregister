@@ -2756,3 +2756,4 @@
 10116 c89dd0416e04979ee38f0e0a312d8c349b6fd72d APPROVE Tests only: 4 new test files, 22 files gain @uses lines. Merged with main: Service/File 1020, TextExtraction 432, Architecture, Rules, Controller, Contract pass; Webhook DNS failures are inherited from main.
 9926 4e28219f9385c28ee52e9498f064649d5b120ff3 APPROVE integrator IL4: main merge on top of d15392e0; conflicts only in component-map rows and the regenerated sigrid.components.yaml
 9939 ed42ad2c5218587c6636f85f26bbbe61e9d30cc1 APPROVE integrator IL4: main merge on top of 3ecfeeac; conflicts only in info.xml repair-step lines (main's GiveFederationSharesALifetime and this branch's WithholdRevealValuesFromRelations both kept), component-map rows and the regenerated sigrid.components.yaml
+10118 7a35c2debed99c900ab33046853d318a7f0fa1db APPROVE Tests only: 5 new test files, 17 files gain @uses lines. Merged with main: touched dirs, Architecture, Rules, Rbac 1152, Controller 9948, Contract all pass.
