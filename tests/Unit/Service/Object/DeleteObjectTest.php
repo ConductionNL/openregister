@@ -33,12 +33,14 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\DeletionOptions;
 use OCA\OpenRegister\Service\Object\RemovalOptions;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -424,6 +426,63 @@ class DeleteObjectTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$this->assertTrue($this->handler->delete($object, new RemovalOptions(permanent: true, table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5)))));
+	}
+
+	/**
+	 * A permanent delete announces the removed object, after the row is gone.
+	 */
+	public function testAPermanentDeleteAnnouncesTheDeletedObject(): void {
+		$object = $this->createObjectEntity('uuid-permanent-event', '2', '5');
+		$events = $this->createMock(IEventDispatcher::class);
+		$handler = new DeleteObject(
+			$this->objectMapper,
+			$this->cacheHandler,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
+			$this->settingsService,
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(\OCP\IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->organisationMapper, $this->logger),
+			eventDispatcher: $events
+		);
+
+		$order = [];
+		$this->objectMapper->method('deleteObjectEntity')->willReturnCallback(
+			function () use (&$order, $object) {
+				$order[] = 'row';
+				return $object;
+			}
+		);
+		$events->expects($this->once())->method('dispatchTyped')
+			->with($this->callback(fn ($event): bool => $event instanceof ObjectDeletedEvent && $event->getObject() === $object))
+			->willReturnCallback(function () use (&$order): void {
+				$order[] = 'event';
+			});
+		$this->withAuditTrailsEnabled(false);
+
+		$this->assertTrue($handler->delete($object, new RemovalOptions(permanent: true, table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5)))));
+		$this->assertSame(['row', 'event'], $order);
+	}
+
+	/**
+	 * A soft delete leaves the announcement to the mapper's update.
+	 */
+	public function testASoftDeleteDoesNotAnnounceADeletion(): void {
+		$object = $this->createObjectEntity('uuid-soft-event', '2', '5');
+		$events = $this->createMock(IEventDispatcher::class);
+		$events->expects($this->never())->method('dispatchTyped');
+		$handler = new DeleteObject(
+			$this->objectMapper,
+			$this->cacheHandler,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->logger),
+			$this->settingsService,
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(\OCP\IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->organisationMapper, $this->logger),
+			eventDispatcher: $events
+		);
+		$this->objectMapper->method('update')->willReturn($object);
+		$this->withNoUser();
+		$this->withAuditTrailsEnabled(false);
+
+		$this->assertTrue($handler->delete($object, new RemovalOptions(permanent: false, table: new RegisterSchema(register: $this->createRegister(2), schema: $this->createSchema(5)))));
 	}
 
 	/**

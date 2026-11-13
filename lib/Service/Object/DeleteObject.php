@@ -48,6 +48,7 @@ use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -134,6 +135,7 @@ class DeleteObject {
 	 * @param FileFolderServiceInterface|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param \OCA\OpenRegister\Db\RegisterMapperInterface|null $registerMapper Register mapper for register lookups
+	 * @param IEventDispatcher|null $eventDispatcher Announces a permanent delete to the object-event listeners
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 *
@@ -149,6 +151,7 @@ class DeleteObject {
 		private readonly ?FileFolderServiceInterface $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper = null,
+		private readonly ?IEventDispatcher $eventDispatcher = null,
 	) {
 		$this->auditTrailMapper = $audit->trail;
 		$this->settingsService = $settingsService;
@@ -311,6 +314,12 @@ class DeleteObject {
 			// The guards were asked in delete(), before the folder was removed.
 			dispatchEvents: false
 		);
+
+		// The mapper's deleteObjectEntity() never dispatches ObjectDeletedEvent, so listeners such as an
+		// external search-index sync only learn of a permanent delete from here.
+		if ($this->eventDispatcher !== null) {
+			(new ObjectEventGate(events: $this->eventDispatcher))->deleted(object: $objectEntity);
+		}
 
 		if ($objectEntity->isDraft() === true) {
 			(new DraftRemovalRecord(auditTrail: $this->auditTrailMapper, logger: $this->logger))->write(
