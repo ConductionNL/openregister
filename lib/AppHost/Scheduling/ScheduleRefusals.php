@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
  *
  * One instance per request: the container shares it.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleRefusals implements ScheduleRefusalReportInterface {
 	/**
@@ -65,7 +65,7 @@ class ScheduleRefusals implements ScheduleRefusalReportInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function refuse(ScheduleRelease $release, string $reason): void {
 		$this->refusals[] = $reason;
@@ -101,7 +101,7 @@ class ScheduleRefusals implements ScheduleRefusalReportInterface {
 	 *
 	 * @return array<int, string> The reasons, in order.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function all(): array {
 		return $this->refusals;

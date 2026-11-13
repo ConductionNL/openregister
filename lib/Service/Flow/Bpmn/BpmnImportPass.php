@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use DOMXPath;
  * xpath — an element's kind, its openregister extension elements, the
  * process's children — are answered here.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 class BpmnImportPass {
 
@@ -58,7 +58,7 @@ class BpmnImportPass {
 	 *
 	 * @return array<int, DOMElement> The children.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function childElements(?DOMNode $process): array {
 		$children = $this->xpath->query('./*', $process);
@@ -83,7 +83,7 @@ class BpmnImportPass {
 	 *
 	 * @return string The kind.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function kindOf(DOMElement $element): string {
 		$local = (string)$element->localName;
@@ -124,7 +124,7 @@ class BpmnImportPass {
 	 *
 	 * @return string The type.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function extensionType(DOMElement $element): string {
 		return trim($this->extensionTexts(element: $element)[BpmnVocabulary::ELEMENT_TYPE] ?? '');
@@ -137,7 +137,7 @@ class BpmnImportPass {
 	 *
 	 * @return array<string, mixed>|null The config.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function extensionConfig(DOMElement $element): ?array {
 		$text = ($this->extensionTexts(element: $element)[BpmnVocabulary::ELEMENT_CONFIG] ?? null);

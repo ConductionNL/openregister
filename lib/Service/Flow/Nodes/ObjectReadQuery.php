@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Schema;
  * The resolved register and schema, the rendered filters and the bounded cap
  * of one object read. Who the read runs as is passed beside it, never in it.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 final class ObjectReadQuery {
 	/**
@@ -40,7 +40,7 @@ final class ObjectReadQuery {
 	 * @param array<string, mixed> $filters  The rendered filters.
 	 * @param int                  $limit    The bounded result cap.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function __construct(
 		public readonly Register $register,

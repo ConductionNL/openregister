@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 /**
  * Reads and shape-checks `selfAssign` bodies.
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 final class ObjectActionSelfAssignShape {
 
@@ -48,7 +48,7 @@ final class ObjectActionSelfAssignShape {
 	 *
 	 * @return list<string> The refusals.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function refusals(string $key, array $definition): array {
 		if (isset(PermissionCatalogue::CANONICAL[$key]) === true || in_array($key, PermissionCatalogue::CONTROL_KEYS, true) === true) {
@@ -91,7 +91,7 @@ final class ObjectActionSelfAssignShape {
 	 *
 	 * @return string|null The property name.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function fieldOf(array $body): ?string {
 		$field = ($body['field'] ?? null);

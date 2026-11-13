@@ -111,7 +111,7 @@ class ObjectActionGate {
 	 *
 	 * @return bool True when the caller may run it.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function mayRun(RightCheck $check, ObjectActionDefinition $definition): bool {
 		if ($definition->selfAssignField() === null) {
@@ -185,7 +185,7 @@ class ObjectActionGate {
 	 *
 	 * @return bool True when the property is empty, or the action is not a self-assign.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function selfAssignOpen(ObjectActionDefinition $definition, ObjectEntity $object): bool {
 		$field = $definition->selfAssignField();

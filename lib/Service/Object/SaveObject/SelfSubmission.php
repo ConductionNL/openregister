@@ -27,7 +27,7 @@ use OCP\IUser;
 /**
  * One submitted `@self` block and who submits it, which decides whether a sent `@self.folder` may be bound.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class SelfSubmission {
 	/**

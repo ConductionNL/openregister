@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ class FlowRunMarkingStore implements MarkingStoreInterface {
 	 *
 	 * @return Marking The current marking.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function getMarking(object $subject): Marking {
 		// Stored as `place => tokens`. A list of place names is also accepted,
@@ -90,7 +90,7 @@ class FlowRunMarkingStore implements MarkingStoreInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function setMarking(object $subject, Marking $marking, array $context = []): void {
 		// A DELTA, never the whole value. Symfony hands over the marking it

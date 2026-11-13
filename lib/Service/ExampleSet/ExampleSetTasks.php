@@ -25,7 +25,7 @@
  * @link https://www.OpenRegister.nl
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
- * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+ * @spec openspec/specs/example-sets/spec.md
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
  */
 
@@ -147,7 +147,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	protected function refusalIn(FilledRow $row, array $context): string {
 		return $this->firstOf(
@@ -298,7 +298,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	private function waitAndClaim(Task $task, array $data): void {
 		$run  = (string) ($data['runUuid'] ?? '');

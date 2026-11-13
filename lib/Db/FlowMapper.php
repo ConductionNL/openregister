@@ -126,7 +126,7 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	 *
 	 * @return array<int, Flow> The flows.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findAllFlows(FlowSelection $selection=new FlowSelection(), ListQuery $query=new ListQuery(limit: 100, offset: 0)): array {
 		$qb = $this->db->getQueryBuilder();
@@ -171,7 +171,7 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	 *
 	 * @return integer The number of matching flows.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function countFlows(FlowSelection $selection=new FlowSelection()): int {
 		$qb = $this->db->getQueryBuilder();

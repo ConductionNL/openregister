@@ -147,7 +147,7 @@ class FlowRunRow {
 	 *
 	 * @return string The uuid.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function newUuid(): string {
 		$data = random_bytes(16);

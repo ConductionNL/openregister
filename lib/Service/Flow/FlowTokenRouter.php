@@ -254,7 +254,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array<string, true> The tags.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
 	 */
 	private function routedTags(array $items): array {
 		$tags = [];
@@ -276,7 +276,7 @@ class FlowTokenRouter {
 	 *
 	 * @return bool True when an item names the exit or one of its places.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
 	 */
 	private function exitIsTagged(array $keys, array $tags): bool {
 		return array_intersect($keys, array_keys($tags)) !== [];
@@ -305,7 +305,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array<int, mixed> The items, exit-id tags resolved to places.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
 	 */
 	public function resolveOutputTags(FlowNodeExits $exits, array $items): array {
 		return array_map(fn (mixed $item): mixed => $this->resolveItemTag(exits: $exits, item: $item), $items);
@@ -319,7 +319,7 @@ class FlowTokenRouter {
 	 *
 	 * @return mixed The member, its tag resolved when it named an exit.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
 	 */
 	private function resolveItemTag(FlowNodeExits $exits, mixed $item): mixed {
 		if (is_array($item) === false) {
@@ -342,7 +342,7 @@ class FlowTokenRouter {
 	 *
 	 * @return array<string, mixed> The item.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
 	 */
 	private function retag(array $item, array $places): array {
 		if (count($places) === 1) {

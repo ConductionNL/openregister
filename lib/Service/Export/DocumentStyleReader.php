@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/export-pdf-house-style/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -73,7 +73,7 @@ class DocumentStyleReader {
 	 *
 	 * @return array<string, mixed>|null The profile, or null.
 	 *
-	 * @spec openspec/changes/export-pdf-house-style/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function forUser(?string $uid): ?array {
 		if ($this->appManager->isEnabledForUser(appId: self::THEMATIQ_APP) === false) {
