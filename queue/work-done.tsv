@@ -11433,6 +11433,7 @@ fix:opencatalogi:2674:98c76ef7	no change: up to date with development and merges
 fix:hermiq:1736:3886cbe8	no change: branch already contains development and merges clean on it; the conflict is only with unmerged sibling #1735 (both bump the register version), resolve by merging development once #1735 lands	session-20261114T214736-dd784d82	2026-11-14T22:09:54Z
 fix:shillinq:3055:732d0b78	merged development in clean, suite green; new head 83a0d91a, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T22:09:53Z
 verify:hermiq:1739:09cad3d5	1739 CONFLICT, 1751 CONFLICT (l10n/register vs development), 1767 GREEN, 1785 BLOCK (DelegatedRun writes not locked, claim does not re-check); tree suites green	session-20261114T211804-dacad7c4	2026-11-14T22:10:10Z
+build:stackiq:connections-derived-dependencies:c2	PR #1956: task 4 panel + vitest (10), task 3 Newman requests, task 5 docs page; left: live Newman run, Playwright e2e, screenshot	session-20261114T214735-aacd1703	2026-11-14T22:10:24Z
 fix:hermiq:1791:c4f29b07	no change: branch already contains development and merges clean on it; the conflict is only with unmerged sibling #1735 (register version), resolve by merging development once #1735 lands	session-20261114T214736-dd784d82	2026-11-14T22:10:23Z
 fix:learniq:2536:0f638b8f	conflict resolved, new head a9efa89	session-20261114T204759-5dc9dba7	2026-11-14T22:10:23Z
 fix:shillinq:3077:106e652e	development merged in cleanly, new head e22c2424	session-20261114T214733-589f5bff	2026-11-14T22:10:30Z
