@@ -7023,5 +7023,9 @@ integriq	3541	e2cae68ddf2d5fa07921a9743743a06816171833	REVERIFY	worker-15	floor 
 humaniq	1030	0a2fd47c5bbae2971f1d7f58f0009e377496d9d2	GREEN	worker-36:review	minimum group setting moved to PayTransparencySettings: same key, default 5 and floor 1, app-scoped config of the same app; assertions moved, not dropped; merged with development: 4160 unit tests, 0 failures; phpstan clean; no other callers
 integriq	3472	6fb9f63f5b351f9470174bca4cda8406017b0b36	GREEN	worker-44:review	tests only (DomainAlignmentCheckerTest, OutboundSecurityCryptoFallbackTest) with real assertions; tests/Unit/Outbound 262 green; full suite 8512 with only the inherited CallServiceTest/JobsControllerTest failures of development
 humaniq	1025	6f9b0ff7e245bae839982c1790257765d05c864d	GREEN	worker-36:review	prefill source setting moved to RegisterPrefillSettings: same per-register key, trimmed, empty default, app-scoped config of the same app; assertions moved; merged with development: 4160 unit tests, 0 failures; phpstan clean
+decidiq	2165	8558e27092941ee5136b6878bf9c409815a07a00	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
 humaniq	1131	7391a99f6591ec4ee8db24c0d23b379048a40e5e	GREEN	worker-16	phpunit 4175 tests OK, baseline 4159 OK, 0 new failures; DeploymentPlan schema, listener and CAO norm per education-staff-deployment-and-count
 humaniq	1140	a1547b95c38420b53801024f6e9adf40e66effe0	GREEN	worker-16	phpunit 4175 tests OK, 0 new failures; manifest validate + parity pass; read-only TimeEntry fields and register parity test per time-entry-domain-object-ref
+decidiq	2171	cacffb605d758702aaa381eca0cf0efe5abbe077	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
+decidiq	2173	79a6146a1395dea7281bef057068901598351636	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
+decidiq	2174	8600d4bb4484ee43924b7f0d25aaf87eaa11f825	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
