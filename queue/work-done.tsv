@@ -10012,3 +10012,4 @@ fix:hermiq:1763:36a77c20	no change: already contains development; conflict is on
 verify:humaniq:1127:2a84b4e8	1127 GREEN, 1133 GREEN; 1144 and 1156 CONFLICT (l10n catalogues in tree order)	session-20261114T151932-05b02c14	2026-11-14T16:01:16Z
 fix:hermiq:1788:e29bad42	fixed: l10n keys moved mid-catalogue, clean with #1782/#1784; new head ab0f629a	session-20261114T154807-c05f4e57	2026-11-14T16:01:38Z
 fix:hermiq:1740:26c96d0f	no change: already contains development; conflict is only with unmerged #1728, resolves when it lands	session-20261114T154757-c9bf237e	2026-11-14T16:01:45Z
+fix:integriq:3595:442dd4fc	merged development in (clean), suite same as development; new head 7df20bcae, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T16:01:55Z
