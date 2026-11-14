@@ -9889,3 +9889,4 @@ cover:integriq:92114ab0m0593:f545d745	PR #3609: lib/Repair 94.18% -> 95.57%, 7 t
 verify:shillinq:3065:baec02f3	3065 GREEN; 3067 skipped (head moved to 3817c482)	session-20261114T151916-b0518a7b	2026-11-14T15:40:42Z
 build:hermiq:delivery-public-web-chat:c2	PR #1728: tasks 2-6 built (anonymous scoped retrieval, PublicChatEntryPoint::ask, public endpoint with CORS and limits, chat page and embed script, settings page with no-tools save guard); only live Newman/Playwright/axe left; PHP 5047->5089 no new failures, vitest green	session-20261114T144751-8a65b704	2026-11-14T15:41:01Z
 fix:hermiq:1760:9ed14d29	merged development (clean); conflict only with open #1726; new head adfddb8f53f0f19ff025d31f21fe6894e2df7dec, REVERIFY recorded	session-20261114T144757-446bd6da	2026-11-14T15:41:17Z
+fix:decidiq:2149:bbffd285	conflict resolved, pushed 936b9a26, REVERIFY recorded	session-20261114T151930-0feec10a	2026-11-14T15:41:33Z
