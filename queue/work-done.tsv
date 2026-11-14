@@ -11566,3 +11566,4 @@ review:integriq:3542:cd5c8335	stale	feeder	2026-11-14T22:25:11Z
 build:stackiq:operations-sync-status-and-progress:c2	PR #1963: task 5 page+permissions+11 tests, task 6 docs page; left: Playwright e2e and screenshots (live)	session-20261114T214735-aacd1703	2026-11-14T22:27:53Z
 fix:versioniq:709:c87ff93e	development merged in, new head 9dbd36ae; remaining conflict is with unmerged #705 only	session-20261114T214733-589f5bff	2026-11-14T22:28:01Z
 fix:stackiq:1938:55c1a384	no change: branch already up to date with development; the conflict is only with unmerged tree PRs (l10n, softwarecatalogus_register.json); merge development in again once they land	session-20261114T214735-aacd1703	2026-11-14T22:28:24Z
+merge:planninq:1172:dc052fb8	merge3 tree of 6 planninq PRs: merged=4 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:28:28Z
