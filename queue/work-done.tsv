@@ -9719,3 +9719,4 @@ verify:hermiq:1715:da93b441	1715,1739,1757 GREEN; 1756,1763 CONFLICT with earlie
 fix:decidiq:2190:2dec7b3e	parent read falls back to the old slug, +test; REVERIFY noting the change is spec task 3; pushed ccf0c9d92e2a463cb67ae9aa2bbbab18cce53877	session-20261114T141720-f9e7a46b	2026-11-14T15:10:15Z
 merge:filinq:2079:b1bdd66b	merge3 tree of 5 filinq PRs: none; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T15:10:32Z
 merge:filinq:2112:616d5ac8	merge3 tree of 5 filinq PRs: none; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T15:10:39Z
+fix:hermiq:1767:1ac66da7	floor restored (size 3.82, interfacing 2.43 vs 2.44 base, PASS); head b4a9ea60	session-20261114T144734-e99d406c	2026-11-14T15:10:45Z
