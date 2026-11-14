@@ -10139,3 +10139,5 @@ build:buildiq:data-index-grid-and-saved-views:c2	no code tasks left: PR #1616 ha
 cover:buildiq:70b3e29em7beb:bede5e5d	already done: lib/Service/Automation + Credential measured 65/66 lines (98.5%) on development after #-1/#-2 merged, above 95 target; no PR	session-20261114T161013-497dba57	2026-11-14T16:22:15Z
 fix:learniq:2532:aeb0f5c3	conflict resolved (register 0.51.0), pushed c0737461, REVERIFY	session-20261114T161753-3b2f3c4f	2026-11-14T16:22:15Z
 fix:integriq:3569:4c0f474d	no change needed: clean on development, conflict only with open PR 3539	session-20261114T141010-8dc8bd74	2026-11-14T16:22:23Z
+merge:shillinq:3069:d7d41c1b	stale	feeder	2026-11-14T16:21:48Z
+verify:pipelinq:3829:3fd854e9	stale	feeder	2026-11-14T16:21:48Z
