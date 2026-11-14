@@ -7917,9 +7917,11 @@ fix:portaliq:2423:96437597	conflict with #2418 removed (check:help-settings chai
 review:integriq:3466:07247ead	GREEN (tests only, passes merged with development)	session-20261114T065631-3903ed42	2026-11-14T07:39:05Z
 build:integriq:observability-log-filters	partial: PR #3568 SourceLogs scoped to outbound; nextcloud-vue release with filterControls not shipped yet	session-20261114T062200-6a28e40c	2026-11-14T07:39:20Z
 verify:learniq:2488:b28ed8ee	2488 GREEN; 2497 2506 2509 2519 2520 2521 2524 CONFLICT with 2488	session-20261114T070333-41d2bfe8	2026-11-14T07:39:34Z
+build:integriq:form-submission-registration-targets	partial: PR #3571 (schemas, command+refusals+record, json & objects-api legs, list endpoint; zgw/stuf legs, file reading, admin page left)	session-20261114T062222-96f530fc	2026-11-14T07:39:45Z
 build:integriq:intake-channels-beyond-mail	partial: PR #3572 (assign route, service, event, schema, tests); inbox row actions left (logs page has no row actions, no action rights in manifest)	session-20261114T062134-840bbeee	2026-11-14T07:39:51Z
 verify:decidiq:2121:65054d42	4 GREEN (2121,2137,2143,2149), 1 RED (2154), 4 CONFLICT (2139,2144,2146,2148)	session-20261114T073105-752e50ad	2026-11-14T07:40:15Z
 review:learniq:2436:4a8e77ec	GREEN (tests only)	session-20261114T070333-41d2bfe8	2026-11-14T07:40:22Z
 verify:shillinq:2972:2dd4705a	2972 GREEN, 3010 GREEN, 3004+3009 CONFLICT (with 2972)	session-20261114T073109-bb0ea608	2026-11-14T07:40:47Z
 build:integriq:ori-public-serving	already done: every code task built on development; open items need a live instance (Newman TC-1..14, TC-10 publish window) or are a cross-repo note	session-20261114T062134-840bbeee	2026-11-14T07:40:59Z
 fix:portaliq:2430:c0571758	merged development cleanly, Settings tests OK, pushed fc437ac24686b9b36baa4a8441496e29b8cbda71, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T07:40:55Z
+verify:pipelinq:3742:7851a5a8	3742 GREEN, 3752 GREEN; unit 7903 0 fail, vitest 4938 pass	session-20261114T065632-a1c920c5	2026-11-14T07:41:14Z
