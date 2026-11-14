@@ -9976,6 +9976,7 @@ verify:pipelinq:3818:ed8a85ce	GREEN 3818,3835	session-20261114T151938-8fa99f90	2
 build:integriq:messaging-payment-command-settlements-and-point-of-sale:c2	PR integriq#3622: Task 5 built (seed st_example0001 with 15 lines, seed test, payments docs); only live verification left	session-20261114T151801-20bb3a08	2026-11-14T15:56:36Z
 fix:hermiq:1738:441006a0	no change: head 441006a unchanged and merges clean on development; conflicts only with unmerged #1735 (flows-hand-off-and-wait), which needs one of the two landed first, then a development merge into the other	session-20261114T151758-95655a27	2026-11-14T15:56:19Z
 fix:integriq:3572:4ceacefd	merged development (clean), pushed 35bfc428; openapi.json overlap only with #3546, order it after 3546	session-20261114T154751-59b4cd56	2026-11-14T15:56:29Z
+fix:integriq:3582:a9dc2cea	stale	session-20261114T144749-57007b4b	2026-11-14T15:56:42Z
 fix:integriq:3582:a9dc2cea	stale	feeder	2026-11-14T15:55:25Z
 build:shillinq:reporting-ifrs-calculations:c3	partial: PR #3075 1.2 IAS 19 approve-and-post built (suite 11214 green); left 1.1 dual GAAP derivation, 1.4 strings+live	session-20261114T151930-0feec10a	2026-11-14T15:56:51Z
 fix:hermiq:1757:6d9e76d5	merged development (clean); conflict is with unmerged #1735; new head 52b33f1f	session-20261114T154757-c9bf237e	2026-11-14T15:56:53Z
