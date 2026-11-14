@@ -11646,3 +11646,4 @@ fix:versioniq:719:b6008a2e	unit_interfacing restored (4.21 vs base 4.14) by grou
 verify:planninq:1179:bd288274	1179 GREEN	session-20261114T221759-c6bc4865	2026-11-14T22:41:05Z
 fix:stackiq:1961:7d9fa300	conflict removed: labels moved off the catalogue end, clean against #1911; new head db31535e; REVERIFY queued	session-20261114T214930-79d5b35c	2026-11-14T22:41:12Z
 fix:humaniq:1133:a8bfed0a	conflict resolved, pushed fcad2ca7, REVERIFY	session-20261114T214735-aacd1703	2026-11-14T22:41:22Z
+fix:shillinq:3078:ccf88e69	resolved: l10n keys relocated, version aligned with #3055, merges clean after 3055; new head df173129	session-20261114T223937-a95b1403	2026-11-14T22:41:33Z
