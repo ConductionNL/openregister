@@ -10875,3 +10875,4 @@ review:filinq:2103:14cf5ada	GREEN	session-20261114T201755-10d43934	2026-11-14T20
 fix:filinq:2123:441498e5	merged development (with #2079); registrar tests green, unit 6800 OK; new head 0bab561a	session-20261114T201745-19e2e5d6	2026-11-14T20:24:28Z
 fix:launchpad:1211:b818b6fc	no push: up to date with development, conflicts only with open #1209 in tests; REVERIFY recorded, verify after #1209 lands	session-20261114T201750-64b6fe0f	2026-11-14T20:24:42Z
 fix:hermiq:1793:fb17183c	fixed: split complex KB methods; new head ef80f599	session-20261114T192501-803bcb19	2026-11-14T20:24:50Z
+build:shillinq:tax-vat-return-from-books:c3	done: PR #3062 (head 2b04a4098) builds 1.2 (reverse-charge VAT at line or general rate), 3.3 checks endpoint+section, 4.1 fiscal-year check, 5.1 VAT fiscal unity, 6.1 note; 2.3 already on development; all code tasks ticked; PHPUnit 11337 no failures	session-20261114T194747-cb37937d	2026-11-14T20:24:59Z
