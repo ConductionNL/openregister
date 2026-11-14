@@ -94,10 +94,14 @@ class AdministeredValidations {
 	/**
 	 * Constructor.
 	 *
-	 * @param NamedConditionEvaluator $evaluator The evaluator, so a validation can use a named condition.
+	 * Without an evaluator only the declaration checks work (the schema save
+	 * path, which reads declarations and evaluates nothing). Evaluating
+	 * without one refuses every validation, never passes it.
+	 *
+	 * @param NamedConditionEvaluator|null $evaluator The evaluator, so a validation can use a named condition.
 	 */
 	public function __construct(
-		private readonly NamedConditionEvaluator $evaluator,
+		private readonly ?NamedConditionEvaluator $evaluator = null,
 	) {
 	}//end __construct()
 
@@ -250,6 +254,10 @@ class AdministeredValidations {
 	 */
 	private function entryFor(array $declaration, ValidationInput $input): ?array {
 		try {
+			if ($this->evaluator === null) {
+				throw new ConditionRefusedException(conditionName: 'validation', why: 'no condition evaluator is available');
+			}
+
 			$node     = ($declaration['condition'] ?? null);
 			$violated = $this->evaluator->holds(
 				node: $node,

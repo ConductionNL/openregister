@@ -114,6 +114,13 @@
       Refused at save: no condition, an unknown severity, no message, a
       property the schema does not declare. A bare string message is accepted
       as the fallback language, so the simple case is not the awkward one.
+      (14 Nov: the refusal was found unwired. `Db/SchemaMapper/AdministeredValidationCheck`
+      now runs in `SchemaMapper`'s behaviour checks, beside `NamedConditionCheck`,
+      and refuses the save through `AdministeredValidations::refusalFor()` naming
+      the validation. `AdministeredValidations` takes its evaluator as optional
+      for this declaration-only use; evaluating without one refuses every
+      validation, never passes it. `SchemaMapperAdministeredValidationTest` (5,
+      red without the wiring), `AdministeredValidationsWithoutEvaluatorTest` (2).)
 - [x] 4.2 Verbatim, with the properties, and with EVERY refusal beside the
       first — a form that can show three problems at once should not make
       somebody save three times to find them.
