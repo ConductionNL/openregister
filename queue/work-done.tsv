@@ -8686,3 +8686,4 @@ build4:dossiq:decision-templates-render-through-a-vendor:c2	nothing left to buil
 cover:openregister:7350e3efma401:9d3a1784	PR #10472: 3 classes (SharerAccessSweepJob, ExternalGrantLapseJob, ExampleSetDailyRefreshJob) 0->100%, 16 tests; BackgroundJob suite 792->808 green; dir uncovered 109->61 (TenantUsageSyncJob needs APCu, left)	session-20261114T085646-49a39060	2026-11-14T09:32:25Z
 verify:dossiq:6487:e340fbb4	6487 6488 6489 6490 GREEN	session-20261114T085635-07e3ca9b	2026-11-14T09:32:43Z
 cover:shillinq:05639debm9818:568ec52a	PR #3042 (5 classes, 24 tests, Lifecycle 92.49->94.88%)	session-20261114T062156-e8adf8ca	2026-11-14T09:33:02Z
+cover:hermiq:065f1631mcdb5:f545d745	done: PR #1771 (Repair 88.5->97.6%, risky metadata fixed)	session-20261114T070332-b3a23612	2026-11-14T09:33:20Z
