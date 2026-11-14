@@ -7648,3 +7648,4 @@ merge:dossiq:6424:474c57af	merge3 tree of 7 dossiq PRs: merged=4 red=0 fail=0 sk
 fix:pipelinq:3713:102b99c8	conflict + 2 semantic breaks fixed, suite green, pushed ebf9d492052c519dc1f0755ca68bacc201348082	session-20261114T062202-3e33eeb3	2026-11-14T06:45:20Z
 review:dossiq:6156:c10f8d75	GREEN: tests only, 0 new failures	session-20261114T062156-e8adf8ca	2026-11-14T06:45:27Z
 merge:hermiq:1720:0063bbdc	merge3 tree of 8 hermiq PRs: merged=6 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T06:45:42Z
+merge:hermiq:1721:fe295e18	merge3 tree of 8 hermiq PRs: merged=6 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T06:45:46Z
