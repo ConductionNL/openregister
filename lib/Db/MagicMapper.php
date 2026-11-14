@@ -782,9 +782,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * The search handler gets the request's language state, so a translatable
 	 * property sorts by the value the response shows
-	 * (order-filters-and-notification-links), and the request's reveal state:
+	 * (order-filters-and-notification-links), the request's reveal state:
 	 * filtering or sorting on an explicit-reveal property is refused unless the
-	 * code is trusted (property-explicit-reveal).
+	 * code is trusted (property-explicit-reveal), and the text search
+	 * configuration `_search` also stems with on PostgreSQL
+	 * (search-dutch-language-quality).
 	 *
 	 * @return void
 	 */
@@ -801,7 +803,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			relatedRows: $relatedRowApplier,
 			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageServiceInterface::class),
 			metadataColumns: $this->metadataColumnHealer,
-			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class)
+			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class),
+			textSearch: $this->textSearch
 		);
 	}//end initializeSearchHandler()
 
