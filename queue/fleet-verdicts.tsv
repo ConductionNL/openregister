@@ -8989,3 +8989,17 @@ integriq	3596	ccfce1461772a9284cc1ee537efca7f88937b959	GREEN	worker-48	php 8970 
 decidiq	2143	1430cc3a06f1246370a93124179a171fbb021b48	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
 decidiq	2169	5f13d30a50ff2a49f1034a0be211d6dd0b6d225e	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.87 -> 3.85
 integriq	3600	36f330ac60dca71cff2d360f3f3912e6902c93cf	CONFLICT	worker-48	conflicts with development + 3574,3596
+decidiq	2146	5875281caea60332e4b1d194bb2eb0c1b63e4885	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2155	932b251cb43268565ca74da412c141a809e13234	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2162	1ab2ebcab91dfa59a84b19d991f8141707c35ee2	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2170	5a972e2e07eff781d04a099c4ca7cefedcbc8d24	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2171	c0a0d1014cda991a1607ec927e79357ae81b0012	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/profiles/municipality.json 
+decidiq	2172	1d208e5b6189fd9bccb2b735644f45ced04861bd	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2175	19e6648e17bdd1afaa754bece6585b9b902a2fd6	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2177	667519c052668bd27567d0c50cc8605307da91e6	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2188	f58a79f420aca1984d5431040e927cabddd7c1f4	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Listener/Registrar/SaveGuardSubscriptions.php 
+decidiq	2189	cdb66cba7a93bef5fb0b0354b359cebd525181c3	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml lib/Settings/profiles/municipality.json 
+decidiq	2191	3b57f7a239b3b26a3adf325f11a2cb088880afdd	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json src/manifest.json 
+decidiq	2193	03fef7f11207c7492d4a975306397dbcd79b1e66	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/Registrar/SaveGuardSubscriptions.php 
+decidiq	2194	6149ccc2e258510796b34ae501550faea5c0ae31	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2195	158130f3b08c16cbd16bba727ac257cc30bb76f6	CONFLICT	merge3	merges clean on development alone; files: tests/vitest/votingRoundPanelRequestsGolden.spec.js 
