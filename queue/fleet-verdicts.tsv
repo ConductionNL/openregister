@@ -8837,3 +8837,4 @@ learniq	2520	3a7f33845adaf7d06a5218c707c323a9b9fa1835	CONFLICT	merge3	conflicts 
 learniq	2532	aeb0f5c388c6babd88eebec20c9f7a53df496084	CONFLICT	merge3	conflicts with development; files: lib/Settings/learniq_register.json 
 learniq	2538	77a7f7666e25b7907d46eacf3a700fe32d862c44	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json 
 integriq	3588	eccc78b5d05c0364a7caab717d55fbbfabe31af1	GREEN	worker-28	tree dev+3588+3592+3595+3610: unit 8972 tests, baseline 8920 with 7 failing names (incl. SynchronizationSynchronizeEntryGoldenTest), no new failures; vitest 2171/2171
+buildiq	1608	d42aa0c4ed1e1203e8c38b853559477bd6f73918	REVERIFY	worker-15	floor restored: PageCodeGuard walk and the controller's code-change refusal split into two-parameter units, same checks and order; floor_check compare PASS (unit_interfacing 3.41, unit_complexity 3.43), PR tests 23 OK, phpstan clean; new head 9096415d3982c1f259616b84d808809e1ccb5948, verify it
