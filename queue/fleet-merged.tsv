@@ -2937,6 +2937,10 @@ buildiq	1642	48b33fadebd1f22ddf57e6a3302827bd295ebf92	MERGED	merge3	GATE OK sbom
 buildiq	1644	14839229b70c8bfdd3f8f0a0e942eccfc5663bfa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.92
 buildiq	1646	26d7fd63d22d6bba9fc7f5d2ebb6139b9ec48af2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.92
 filinq	2118	a4503a17fe5ba2c5997f2cf5ea1d81c6e3021b02	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+learniq	2493	c4fb5a2dc034229417791a496c8619a6c0597ea5	RED	merge3	GATE RED absolute floor: learniq maintainability 3.97 after merge is below its floor 3.99
+learniq	2520	5d4702be49b83567f8c6a5b8eeb17add5a27b914	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2542	e97530c8bb4f7320a82a41fe8b74a548e8270695	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2543	3d1489a43d1716ed249e8e3f0b8cd6031e308b8d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 shillinq	2959	fc4870f10022d2aff26959702df83b7b38843292	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.12
 shillinq	2976	017e9a1a04ec22c60d350c25153c644236ac7c21	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
 shillinq	3073	53ee9061ed715b5adc433197ecaaf01082d8f581	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
