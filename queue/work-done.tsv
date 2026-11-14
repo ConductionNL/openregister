@@ -11460,3 +11460,4 @@ fix:learniq:2507:cea92f10	merged development, l10n js conflict resolved by regen
 fix:learniq:2484:46d3dda4	merged development in (clean), pushed 61512d88, REVERIFY recorded	session-20261114T211800-2a24a3a9	2026-11-14T22:12:11Z
 merge:decidiq:2169:dec9f484	merge3 tree of 11 decidiq PRs: merged=3 red=4 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T22:12:49Z
 merge:decidiq:2143:b029134d	merge3 tree of 11 decidiq PRs: merged=3 red=4 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T22:12:52Z
+merge:decidiq:2206:d38c0d87	merge3 tree of 11 decidiq PRs: merged=3 red=4 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T22:12:56Z
