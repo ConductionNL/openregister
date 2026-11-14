@@ -8817,3 +8817,4 @@ review:openregister:10476:3039f2ec	APPROVE: docblock + tasks.md only; claims ver
 review:openregister:10478:4764855c	APPROVE: tests only, touched and Middleware tests green on merge with main	session-20261114T085646-49a39060	2026-11-14T10:28:05Z
 build4:openregister:app-declared-credential-providers:c2	already building: build/app-declared-credential-providers-2 (PR #10343, tasks 3.1/3.2) is open and not merged; the rest (4.3, 4.4, 5.1, 6.2) builds on it	session-20261114T075643-75a598ab	2026-11-14T10:28:37Z
 build4:openregister:record-star-follow-and-unread-on-screen:c2	partial: PR #10497 builds 2.3 (tab unread badges), +5 jest, suite 8444 green; 2.1 tooltip, 3.x, 4.x, Newman left	session-20261114T092647-8b1e7e69	2026-11-14T10:28:42Z
+build4:openregister:files-leaf-save-to-object:c2	already building: open branch build/files-leaf-save-to-object-2 (not merged into main)	session-20261114T085646-49a39060	2026-11-14T10:28:55Z
