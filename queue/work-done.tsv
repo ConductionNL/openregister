@@ -9691,3 +9691,4 @@ fix:learniq:2520:aa7888d1	merged development (register 0.49.1, golden re-recorde
 build:portaliq:site-mandates-the-represented-manage:c3	PR #2495: T5 strict validate passes (REQ-SMR-003 detail moved to scenarios); left T0 live broker confirmation and T4 e2e, neither code	session-20261114T141732-bb541f91	2026-11-14T15:06:07Z
 fix:hermiq:1725:c59e9eb8	conflict resolved, merged development; new head bdb02899; failures inherited from development	session-20261114T144801-36995162	2026-11-14T15:06:11Z
 fix:hermiq:1754:e44a6d54	conflict resolved (register 0.55.0), new head dfd3b624	session-20261114T141728-9a5d03fc	2026-11-14T15:06:17Z
+fix:hermiq:1737:3a6db84b	conflict resolved, new head 2eeaf44a805772299fa2c4803fbf7284eff678a8, REVERIFY recorded	session-20261114T144757-446bd6da	2026-11-14T15:06:33Z
