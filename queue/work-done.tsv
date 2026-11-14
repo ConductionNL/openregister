@@ -7926,3 +7926,4 @@ build:integriq:ori-public-serving	already done: every code task built on develop
 fix:portaliq:2430:c0571758	merged development cleanly, Settings tests OK, pushed fc437ac24686b9b36baa4a8441496e29b8cbda71, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T07:40:55Z
 build:integriq:nextcloud-event-hub-verification	partial: PR #3573, docs page for Task 5 written; Tasks 1-4 and the screenshot need a live instance/browser	session-20261114T065633-3e3cb668	2026-11-14T07:41:06Z
 verify:pipelinq:3742:7851a5a8	3742 GREEN, 3752 GREEN; unit 7903 0 fail, vitest 4938 pass	session-20261114T065632-a1c920c5	2026-11-14T07:41:14Z
+review:integriq:3435:8f36c1e1	GREEN integriq#3435: tests only, 9 new tests pass, no new failures	session-20261114T073108-8b40426a	2026-11-14T07:41:24Z
