@@ -949,6 +949,62 @@ class MagicSearchHandler {
 	}//end applyRelatedRowFilters()
 
 	/**
+	 * The filtered query of a facet over a field of a referenced object, grouped per value.
+	 *
+	 * `_facets[_ref][<property>][<field>]`: the same filtered query the list
+	 * runs, joined to the object `<property>` points to under that schema's own
+	 * access predicate and organisation scope, counting each queried object
+	 * once per value.
+	 *
+	 * @param array          $query    The request query, without `_facets`.
+	 * @param MagicReadTable $table    The queried table.
+	 * @param string         $property The reference property.
+	 * @param string         $field    The field of the referenced schema.
+	 *
+	 * @return IQueryBuilder|null The grouped query (`facet_value`, `doc_count`), or null to omit the facet.
+	 *
+	 * @throws InvalidArgumentException When the property or field is unusable, or the register is unknown.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	public function referenceFacetQuery(array $query, MagicReadTable $table, string $property, string $field): ?IQueryBuilder {
+		$registerId = ($table->registerId ?? $this->registerIdFromQuery(query: $query));
+		if ($registerId === null) {
+			throw new InvalidArgumentException(
+				'A facet through a reference needs to know which register to look the referenced schema up in.'
+			);
+		}
+
+		$qb       = $this->buildFilteredQuery(query: $query, table: $table);
+		$register = new Register();
+		$register->setId($registerId);
+
+		$expression = $this->relatedRows->joinReferenceForFacet(
+			target: new RelatedRowFilterTarget(
+				qb: $qb,
+				register: $register,
+				organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
+					query: $query,
+					related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
+				)
+			),
+			schema: $table->schema,
+			property: $property,
+			field: $field
+		);
+		if ($expression === null) {
+			return null;
+		}
+
+		$value = $qb->createFunction($expression);
+		$qb->selectAlias($value, 'facet_value')
+			->addSelect($qb->createFunction('COUNT(DISTINCT t._uuid) AS doc_count'))
+			->groupBy($value);
+
+		return $qb;
+	}//end referenceFacetQuery()
+
+	/**
 	 * Refuse a query carrying `_related`, `_referenced`, `_ref` or `_element` where it cannot be honoured.
 	 *
 	 * 🔴 REFUSE, DO NOT DROP. The related-row filters are written for the

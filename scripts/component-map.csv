@@ -787,6 +787,7 @@ Db/MagicMapper/RbacFilterCall.php,20,Db,Service,Service/Db/MagicMapper/RbacFilte
 Db/MagicMapper/RbacPermissionCheck.php,38,Db,Service,Service/Db/MagicMapper/RbacPermissionCheck.php,0,,Core
 Db/MagicMapper/RbacResolvers.php,14,Db,Service,Service/Db/MagicMapper/RbacResolvers.php,0,,Core
 Db/MagicMapper/RecentLensOrder.php,46,Db,Service,Service/Db/MagicMapper/RecentLensOrder.php,0,,Core
+Db/MagicMapper/ReferenceFacetConfig.php,,Db,,,,,Core
 Db/MagicMapper/RegisterSchemaFilter.php,16,Db,Service,Service/Db/MagicMapper/RegisterSchemaFilter.php,0,,Core
 Db/MagicMapper/SearchLeaf.php,36,Db,Service,Service/Db/MagicMapper/SearchLeaf.php,0,,Core
 Db/MagicMapper/SearchLeafScope.php,23,Db,Service,Service/Db/MagicMapper/SearchLeafScope.php,0,,Core

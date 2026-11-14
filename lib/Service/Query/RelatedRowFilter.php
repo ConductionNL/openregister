@@ -67,6 +67,8 @@ final class RelatedRowFilter {
 	 * @param bool                                                       $throughList Forward only: the object's property holds a
 	 *                                                                                list of uuids, and the related row matches when
 	 *                                                                                its uuid is in that list.
+	 * @param string|null                                                $register   Forward only: the register the related schema is
+	 *                                                                               read in, when it is not the queried one (id or slug).
 	 *
 	 * @return void
 	 *
@@ -78,6 +80,7 @@ final class RelatedRowFilter {
 		public readonly array $conditions,
 		public readonly string $direction = self::DIRECTION_INVERSE,
 		public readonly bool $throughList = false,
+		public readonly ?string $register = null,
 	) {
 	}//end __construct()
 }//end class

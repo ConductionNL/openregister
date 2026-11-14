@@ -168,6 +168,52 @@ final class RelatedRowExistsClause {
 	}//end render()
 
 	/**
+	 * The conditions joining one related row to the outer row, without the block's own conditions.
+	 *
+	 * The join, the soft-delete exclusion and the related schema's access
+	 * predicate, exactly as the EXISTS clause carries them, for a query that
+	 * joins the related row instead of testing for it (a facet over a
+	 * referenced field groups by the related row's value).
+	 *
+	 * @param RelatedRowFilter   $filter   The filter naming the schema, the reference and its shape.
+	 * @param RelatedRowSubquery $subquery The related table, outer alias and access predicate.
+	 *
+	 * @return array{sql: string, parameters: array<string, mixed>} The ON condition and its parameters.
+	 *
+	 * @throws InvalidArgumentException When the access predicate is missing.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	public function joinOn(RelatedRowFilter $filter, RelatedRowSubquery $subquery): array {
+		if (trim($subquery->inner->accessPredicate) === '') {
+			throw new InvalidArgumentException(
+				'A related-row join needs the access predicate for the related schema. '
+				. 'Without it rows the caller may not read would be counted.'
+			);
+		}
+
+		$clause = $this->rowConditions(filter: $filter, subquery: $subquery);
+
+		return ['sql' => implode(' AND ', $clause['where']), 'parameters' => $clause['parameters']];
+	}//end joinOn()
+
+	/**
+	 * The SQL expression of a field of the related row.
+	 *
+	 * @param RelatedRowSubquery $subquery The related table and its alias.
+	 * @param string             $field    The field.
+	 *
+	 * @return string The expression.
+	 *
+	 * @throws InvalidArgumentException When the field is not a column name.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	public function innerFieldExpression(RelatedRowSubquery $subquery, string $field): string {
+		return $this->fieldExpression(target: $subquery->target, field: $subquery->innerField(name: $field));
+	}//end innerFieldExpression()
+
+	/**
 	 * Every condition of the filter, in order, with their bindings.
 	 *
 	 * @param RelatedRowFilter   $filter   The parsed filter.
