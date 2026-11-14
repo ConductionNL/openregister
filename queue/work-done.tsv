@@ -10335,4 +10335,5 @@ verify:dossiq:6520:0171ff9c	6520 GREEN (no new failures)	session-20261114T151932
 verify:buildiq:1583:6db93958	GREEN 1583; no new failures	session-20261114T161752-4c07cde6	2026-11-14T17:04:05Z
 fix:buildiq:1645:9bc83475	CONFLICT resolved (l10n moved mid-catalogue), pushed cc74061b	session-20261114T144809-d686f759	2026-11-14T17:04:40Z
 verify:integriq:3549:52b2b1ba	3549 GREEN	session-20261114T154807-4c2c3327	2026-11-14T17:04:49Z
+build4:openregister:object-write-sub-500ms:c3	partial: PR #10568 (tasks 2+3 in part: RBAC out of schema cache key, one-column identifier queries, LOWER(slug) index); left: task 2 tenancy-after-map + bulk reads, task 3 SELECT * narrowing, tasks 4, 6, 7; 10-13 live	session-20261114T161750-16a1c558	2026-11-14T17:05:01Z
 fix:buildiq:1643:5d14674c	no change: dev already in, conflicts only with unmerged GREEN #1626 (nl.json); REVERIFY after 1626 lands	session-20261114T161752-4c07cde6	2026-11-14T17:05:02Z
