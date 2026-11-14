@@ -11755,3 +11755,4 @@ fix:versioniq:710:52c774ec	no change: branch is up to date with development and 
 fix:integriq:3592:8a35a39a	floor restored to 3.56 via scheduler interface; new head 741a0638, REVERIFY	session-20261114T221759-cd5c5678	2026-11-14T23:02:45Z
 fix:integriq:3633:90a867a5	fixed: development merged in clean, pushed 2cf69c00	session-20261114T224740-064dbb86	2026-11-14T23:02:59Z
 fix:larpinq:1045:8588a19f	merged dev, l10n block moved off the catalogue end (clean with #1041), listener-order test updated; new head fc4e9f54	session-20261114T221759-c6bc4865	2026-11-14T23:03:06Z
+build:versioniq:sources-gitlab-forge:c2	partial: PR #721 pushed 76d6224..0ffecaf: tasks 1.2 (nested gitlab paths, traversal-safe) and 2.2 (no advisory source) built with tests; left: 2.1 GitLab release normalisation, 3.1 deeplink, 4.x UI/strings/e2e, 5.x matrix; unit-only 1720 tests, only the 2 inherited golden failures	session-20261114T221800-b231235b	2026-11-14T23:03:13Z
