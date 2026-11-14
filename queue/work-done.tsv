@@ -8218,3 +8218,4 @@ fix:integriq:3598:855df76c	merged development (clean), pushed 4071b13c; remainin
 build:keepiq:health-site-security-checks	partial: PR #1782 task 1.1 (Unencrypted address category, Change to https, docs, 14 tests); left 1.2 extension warning, 2.x/3.x site directory (2.1 licence/endpoint confirmation first), Playwright	session-20261114T073109-bb0ea608	2026-11-14T08:22:43Z
 verify:integriq:3564:96380a66	GREEN 3564,3567,3601; 3600 skipped (head moved to fd8aca32)	session-20261114T070346-2d3b1362	2026-11-14T08:22:54Z
 build:buildiq:pages-qr-and-barcodes	partial: PR #1630 builds T01-T04 (editor + validation, 33 new vitest cases, 0 new failures); T05 waits on device features, T06 is the nextcloud-vue renderer	session-20261114T062200-62a0b439	2026-11-14T08:23:19Z
+fix:integriq:3593:331b9581	merged development (clean), pushed 24240782; conflict is with unlanded tree PRs	session-20261114T065626-0651b305	2026-11-14T08:23:12Z
