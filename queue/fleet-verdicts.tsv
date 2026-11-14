@@ -7652,3 +7652,4 @@ stackiq	1944	f47ecfa3a0d688f65e2936b35e795a0b0daeff83	CONFLICT	worker-42	clean o
 stackiq	1945	8ff46c8f53e53ca22b1eb33dcffa598c2590b8a2	CONFLICT	worker-42	clean on development, conflicts with earlier tree PRs in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
 stackiq	1946	f75d98b83bf5e3e748df4b02c563446204b07f97	CONFLICT	worker-42	clean on development, conflicts with earlier tree PRs in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
 launchpad	1211	f611001555167b057e28fff35f27964a56e42bf9	GREEN	worker-25	phpunit 4079 (baseline 4068, 0 failures), vitest 2212 passed; no new failures; builds record-parity-requirements REQ-SHARE-014 sharing limits, defaults keep current behaviour
+versioniq	717	e8ddf437de5c8ca2221f1fba4a8743b5c91ce58b	GREEN	worker-21	build matches its change specs; tree(717,719,720,721,724) 1698 tests, same 2 inherited, no new; vitest 2989 OK; baseline 1643 tests (tests/phpunit-unit-only.xml), 2 inherited failures; vitest 2960
