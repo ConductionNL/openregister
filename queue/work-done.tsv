@@ -11202,3 +11202,4 @@ build:launchpad:dashboards-and-who-may-see-them:c2	partial: pushed to the open P
 build:opencatalogi:capability-rows-get-requirements:c2	PR opencatalogi#2697: task 1.2 (REQ-CRR-002 PHPUnit test + spec sync); 1.1/1.3 are e2e, left	session-20261114T211750-05725ff5	2026-11-14T21:30:53Z
 merge:launchpad:1195:a5fe3692	stale	feeder	2026-11-14T21:30:24Z
 build:opencatalogi:opencatalogi-mcp-adoption:c2	nothing left to build in code: PR #2669 open and current with development; remaining are live (re-import validation, catalogue enumeration), CI and the openspec CLI run	session-20261114T201755-10d43934	2026-11-14T21:31:13Z
+build:opencatalogi:harvest-feed-intake:c2	failed: still blocked - RegisterSourceFetchersEvent, IBatchSourceFetcher and SourceService are on neither openregister main nor development (21:4x UTC); only branch build/app-harvest-fetchers-and-flow-node (e7680541) has them	session-20261114T174753-100b2a07	2026-11-14T21:31:20Z
