@@ -7898,3 +7898,4 @@ build:integriq:messaging-sms-providers-and-notifynl-mail	partial: PR #3563, task
 review:integriq:3343:cd29b4de	GREEN: refactor preserves behaviour; no new failures	session-20261114T073108-67fbeb26	2026-11-14T07:35:45Z
 build:integriq:integriq-tenant-scoping	partial: PR #3566 (ApprovalService scoped + task 4 reasons in 3 services; tasks 1-3 already built; ~100 task-4 sites left)	session-20261114T062200-6a28e40c	2026-11-14T07:36:29Z
 verify:hermiq:1726:955c8fc2	2 GREEN (1726,1758), 7 CONFLICT on hermiq_register.json; 0 new failures	session-20261114T073117-2bd2e050	2026-11-14T07:36:25Z
+review:hermiq:1492:871a590f	GREEN: behaviour-preserving move, no new failures	session-20261114T070323-628c2f37	2026-11-14T07:36:32Z
