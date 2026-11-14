@@ -8388,3 +8388,4 @@ build:stackiq:sharing-itsm-exchange	already done: built in #1205; only the Playw
 verify:buildiq:1621:d624d337	3 GREEN (1622,1624,1627), 1 RED (1629), 5 CONFLICT (1621,1623,1625,1626,1628)	session-20261114T073105-752e50ad	2026-11-14T08:44:39Z
 build:stackiq:portal-public-software-catalogue	already done: T1/T2 on development; T3 belongs to portaliq (site-software-catalogue-page)	session-20261114T075643-acecaad6	2026-11-14T08:44:59Z
 measure:stackiq:20261113h20	php 90.6% (pcov, 31808 stmts), js 94.17% (8835 stmts) at 02e576ed	session-20261114T065635-0aca43d3	2026-11-14T08:44:58Z
+build:keepiq:crypto-item-reprompt	partial: PR #1792 - backend flag, prompt and guard, web-app reveal paths, docs, strings; TOTP display, extension fill, Playwright and docs build left	session-20261114T065635-61264d14	2026-11-14T08:45:18Z
