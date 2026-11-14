@@ -10310,4 +10310,5 @@ integriq	3542	a633c1cf3eb62256e1866e0a630e7d7f939c2533	GREEN	worker-55:review	bu
 decidiq	2191	ccb126417fc32b8cbc1fb6cd430890e9d8adc60c	GREEN	worker-07	unit 4248 OK (= baseline), vitest 2803 pass/4 skipped, 0 failures; manifest/menu/l10n/newman per followup-implementation-progress
 launchpad	1210	b146f2c1b3547be5eb3d42f5cd6649c57c532a60	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.72 -> 4.68; unit_interfacing: 3.46 -> 3.43
 launchpad	1225	47177d86534cba79d0aa9bb7bc70a053bc7bf137	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.44 -> 3.40
+versioniq	701	049f1d82c67458ce29b7b00bea4a814cb20f4aa4	REVERIFY	worker-23	merged current development in (clean; l10n conflict only with sibling PRs); l10n in step; unit-only suite 1698 tests 2 failures (inherited golden tests); new head a39b4f2b9b34a74eebdadf8b4f718c8f4dbe96cb, verify it
 launchpad	1209	2cb0094a83f1eb29f6a3492fdfa4233c73eea8c3	CONFLICT	merge3	conflicts with development; files: l10n/nl.js l10n/nl.json 
