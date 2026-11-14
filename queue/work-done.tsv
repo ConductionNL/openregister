@@ -8323,3 +8323,4 @@ build:opencatalogi:woo-obligation-overview	failed: only task 1.2 open, and it mu
 review:buildiq:1526:c3de131d	GREEN: net diff tests only, all green on PR+development	session-20261114T070352-19ea7dff	2026-11-14T08:36:30Z
 review:opencatalogi:2456:c1e5453b	RED: refactor equivalent, but its new spec runs nowhere (jest load failure, outside vitest include)	session-20261114T065631-3903ed42	2026-11-14T08:36:46Z
 build:opencatalogi:woo-annual-report	failed: needs OpenRegister report generation (rapportage-bi-export: report-templates schema, POST /api/reports/generate); that change is archived with 0 of 15 tasks and no code on openregister main, and tasks.md says build after it merges	session-20261114T073108-67fbeb26	2026-11-14T08:37:01Z
+build:keepiq:crypto-recovery-kit	partial: PR #1791 (server half: storage, routes, rate limit, audit, tests); web tasks 2.1-2.3 left	session-20261114T062134-840bbeee	2026-11-14T08:37:32Z
