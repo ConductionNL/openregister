@@ -10385,3 +10385,4 @@ verify:decidiq:2170:de54d2b8	GREEN 2170 2177; 4324 OK, vitest 2762 OK	session-20
 build4:openregister:platform-share-provider:c3	failed: permission — openspec validate (2.3) via npx refused; PR #10450 head ad17acec0 unchanged; 1.1/1.2 open by design, 2.1 e2e live, 3.1 handover	session-20261114T171807-697deef1	2026-11-14T17:19:29Z
 review:openregister:10568:10437299	APPROVE: RBAC flag unused for row selection, tenancy never widened, arm order matches old preference; Architecture/Rules/Controller/Contract/SchemaMapper/migration tests pass, phpstan clean	session-20261114T134708-ba7f7741	2026-11-14T17:19:46Z
 fix:pipelinq:3835:f9170d1a	conflict resolved, new head 53c482bd, REVERIFY recorded	session-20261114T171830-19af6b65	2026-11-14T17:20:00Z
+fix:learniq:2493:11d23894	conflict resolved, merged development; new head b4d28b92	session-20261114T171822-ef880213	2026-11-14T17:20:12Z
