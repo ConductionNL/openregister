@@ -10145,6 +10145,7 @@ merge:shillinq:3069:d7d41c1b	stale	feeder	2026-11-14T16:21:48Z
 verify:pipelinq:3829:3fd854e9	stale	feeder	2026-11-14T16:21:48Z
 fix:learniq:2520:3a7f3384	conflict resolved, pushed f857df28; 1 inherited failure (he.json stale on development)	session-20261114T161815-d54ad7b4	2026-11-14T16:22:41Z
 fix:learniq:2484:8e12588d	merged development in (clean), suite same as development; new head 9e4298e45, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T16:23:06Z
+build:buildiq:pages-installable-offline-and-mobile:c2	partial: PR #1604 merged development and built T03 (offline instance setting, off by default, with tests and en/nl strings); T02, T04-T10 left (installable section, offline manifest block, worker route and runtime, sync page, library request, mobile export, docs, validate)	session-20261114T144751-8a65b704	2026-11-14T16:23:16Z
 verify:learniq:2501:2d350a95	GREEN 2501 (no new failures; PHP 6750 tests, JS 1367)	session-20261114T151803-c9b63248	2026-11-14T16:23:24Z
 build:buildiq:operate-organisation-scoped-apps:c2	partial: not started this run (worker context nearly full); still left on PR #1596 branch: T04 review of the 16 listed Application readers, T05 holder on creation, T06 collision refusal, T07 settings switch (+e2e), T08 strings/docs, T09 validate, T02 live check	session-20261114T151750-b10540e9	2026-11-14T16:23:39Z
 fix:learniq:2519:e252f190	conflict resolved (l10n keep-both), pushed 644c2a79, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T16:23:43Z
