@@ -42,6 +42,7 @@ class ServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\RegisterSlugResolver',
 				'OCA\OpenRegister\Contract\RegisterSlugResolverInterface',
 				'OCA\OpenRegister\Contract\EmailLinkReaderInterface',
+				'OCA\OpenRegister\Contract\ReplyThreadResolutionInterface',
 				'OCA\OpenRegister\Service\Credential\CredentialStore',
 				'OCA\OpenRegister\Service\Translation\TranslationProviderInterface',
 				'OCA\OpenRegister\Service\Sync\SourceFetcherRegistry',
