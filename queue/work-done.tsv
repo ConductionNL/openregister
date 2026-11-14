@@ -7861,3 +7861,4 @@ merge:opencatalogi:2631:fd57fa8c	merge3 tree of 61 opencatalogi PRs: merged=51 r
 merge:opencatalogi:2638:322cf9f3	merge3 tree of 61 opencatalogi PRs: merged=51 red=5 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:29:02Z
 merge:opencatalogi:2647:53f82b92	merge3 tree of 61 opencatalogi PRs: merged=51 red=5 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:29:05Z
 build:humaniq:reporting-standard-reports-and-builder	PR #1142: tasks 1.1 1.2 2.1 2.2 done; 2.3 (no view import in OpenRegister) and 3.1 (live/e2e) left	session-20261114T065625-baa65a50	2026-11-14T07:29:09Z
+merge:opencatalogi:2652:d4d87507	merge3 tree of 61 opencatalogi PRs: merged=51 red=5 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:29:20Z
