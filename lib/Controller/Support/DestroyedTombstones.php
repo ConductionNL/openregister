@@ -54,6 +54,8 @@ final class DestroyedTombstones {
 	 *
 	 * @param AuditTrailMapperInterface        $auditTrailMapper Reads the destruction entries.
 	 * @param DeletedObjectAuthorizerInterface $authorizer       Decides which destruction records the caller may read.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
 	 */
 	public function __construct(
 		private readonly AuditTrailMapperInterface $auditTrailMapper,

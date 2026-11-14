@@ -8,7 +8,8 @@
       > 2026-11-13: `MagicMapper::restoreObject()` (the path behind `restore` and `restoreMultiple`) sets `_updated` in the UPDATE that clears `_deleted`, and on the entity.
 - [x] 1.3 Unit tests: after a soft delete `getUpdated()` equals `deleted.deletedAt`; after a restore it is the restore time.
       > 2026-11-13: `DeleteObjectTest::testASoftDeleteMovesUpdatedToTheDeletionMoment`, `MagicMapperDeletedRestoreTest::testARestoreMovesUpdatedToTheRestoreMoment`.
-- [ ] 1.4 Integration test: object list with `@self[updated][gte]` and `_includeDeleted=true` returns an object deleted after the cut-off and not one deleted before it.
+- [x] 1.4 Integration test: object list with `@self[updated][gte]` and `_includeDeleted=true` returns an object deleted after the cut-off and not one deleted before it.
+      > 2026-11-14: `18a4` (deleted after the cut-off: returned) and `18a5` (cut-off after the deletion: left out) in `tests/integration/openregister-crud.postman_collection.json`, with `18a6`/`18a7` for the tombstones; not run here (needs a live instance).
 
 ## 2. Filters on the deleted list (REQ-SYNC-002, D-2)
 
@@ -41,6 +42,8 @@
 
 ## 5. Docs and links
 
-- [ ] 5.1 Document the sync recipe (changed-since read, deleted list, tombstones, watermark) in the API docs under `docs/`.
+- [x] 5.1 Document the sync recipe (changed-since read, deleted list, tombstones, watermark) in the API docs under `docs/`.
+      > 2026-11-14: `docs/api/incremental-sync.md`.
 - [ ] 5.2 Set `built.state` of row `int-incremental-sync` in `openspec/parity/capabilities.json` once shipped; tell planninq so its row can follow.
-- [ ] 5.3 `@spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md` on every touched method.
+- [x] 5.3 `@spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md` on every touched method.
+      > 2026-11-14: on every method this change added or changed.

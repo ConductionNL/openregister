@@ -44,6 +44,8 @@ final class DestructionQuery {
 	 * @param string|null       $actor      Only entries this user wrote; every entry when null.
 	 * @param int|null          $limit      Maximum rows; no maximum when null.
 	 * @param int               $offset     Rows to skip.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
 	 */
 	public function __construct(
 		public readonly DateTimeImmutable $since,

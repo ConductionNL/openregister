@@ -2617,6 +2617,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @param DestructionQuery $query The moment, register, schema and actor.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
 	 */
 	private function whereDestruction(IQueryBuilder $qb, DestructionQuery $query): void {
 		$since = DateTime::createFromImmutable($query->since)->setTimezone(new DateTimeZone('UTC'));
