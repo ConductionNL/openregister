@@ -11320,3 +11320,4 @@ verify:keepiq:1789:4bde5ea5	1789 GREEN, 1816 GREEN; unit 5203 vs 5186, vitest on
 build:opencatalogi:open-data-table-query-and-dictionary:c2	PR #2706: every code task built (1.4, 3.1, 3.2, 4.1, 5.1); live API/Newman/e2e checks left; phpunit 5617 (same 2 inherited fails), jest same inherited fails	session-20261114T211815-849a5f5d	2026-11-14T21:52:47Z
 fix:hermiq:1736:a4bcf7a9	conflict resolved, register 0.58.0, new head 3886cbe8	session-20261114T214733-589f5bff	2026-11-14T21:52:44Z
 build:launchpad:scheduled-exports:c3	partial: PR #1229 built tasks 3-11,17,18,21-23,25,26,33,35,37,38 (phpunit 4273/1 inherited fail, vitest 2262 pass); left 12-16,19 UI need an /api/exports entity source in nextcloud-vue (index page self-fetches OpenRegister), 27-30 e2e, 31/32/34 repo-wide gates, 36 i18n	session-20261114T211012-c469e919	2026-11-14T21:53:06Z
+fix:stackiq:1946:f75d98b8	conflict resolved, pushed c75ea65b, REVERIFY	session-20261114T214735-aacd1703	2026-11-14T21:53:01Z
