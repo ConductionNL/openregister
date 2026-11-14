@@ -2218,6 +2218,11 @@ Service/Flow/Bpmn/BpmnSchemaValidator.php,153,Service,Flows,Flows/Service/Flow/B
 Service/Flow/Bpmn/BpmnVocabulary.php,83,Service,Flows,Flows/Service/Flow/Bpmn/BpmnVocabulary.php,0,,Processes
 Service/Flow/Bpmn/FlowBpmnExporter.php,241,Service,Flows,Flows/Service/Flow/Bpmn/FlowBpmnExporter.php,0,,Processes
 Service/Flow/Bpmn/FlowBpmnImporter.php,199,Service,Flows,Flows/Service/Flow/Bpmn/FlowBpmnImporter.php,0,,Processes
+Service/Flow/CodeRun.php,26,Service,Flows,Flows/Service/Flow/CodeRun.php,0,,Processes
+Service/Flow/CodeRunAnswer.php,11,Service,Flows,Flows/Service/Flow/CodeRunAnswer.php,0,,Processes
+Service/Flow/CodeRunFailedException.php,15,Service,Flows,Flows/Service/Flow/CodeRunFailedException.php,0,,Processes
+Service/Flow/CodeRunnerClient.php,108,Service,Flows,Flows/Service/Flow/CodeRunnerClient.php,0,,Processes
+Service/Flow/CodeRunnerClientInterface.php,8,Service,Flows,Flows/Service/Flow/CodeRunnerClientInterface.php,0,,Processes
 Service/Flow/EventCatalogService.php,51,Service,Flows,Flows/Service/Flow/EventCatalogService.php,0,379,Processes
 Service/Flow/FlowAccess.php,28,Service,Flows,Flows/Service/Flow/FlowAccess.php,0,,Processes
 Service/Flow/FlowAdoptionRefused.php,17,Service,Flows,Flows/Service/Flow/FlowAdoptionRefused.php,0,,Processes
@@ -2336,6 +2341,8 @@ Service/Flow/MacroActionValidator.php,100,Service,Flows,Flows/Service/Flow/Macro
 Service/Flow/MacroRunChanges.php,50,Service,Flows,Flows/Service/Flow/MacroRunChanges.php,0,,Processes
 Service/Flow/Nodes/ActionInputsNode.php,58,Service,Flows,Flows/Service/Flow/Nodes/ActionInputsNode.php,0,,Processes
 Service/Flow/Nodes/AwaitSignalNode.php,191,Service,Flows,Flows/Service/Flow/Nodes/AwaitSignalNode.php,0,,Processes
+Service/Flow/Nodes/CodeNode.php,160,Service,Flows,Flows/Service/Flow/Nodes/CodeNode.php,0,,Processes
+Service/Flow/Nodes/CodeNodeInterface.php,6,Service,Flows,Flows/Service/Flow/Nodes/CodeNodeInterface.php,0,,Processes
 Service/Flow/Nodes/DecisionTableNode.php,284,Service,Flows,Flows/Service/Flow/Nodes/DecisionTableNode.php,0,,Processes
 Service/Flow/Nodes/EndNode.php,59,Service,Flows,Flows/Service/Flow/Nodes/EndNode.php,0,,Processes
 Service/Flow/Nodes/ExplodeNode.php,86,Service,Flows,Flows/Service/Flow/Nodes/ExplodeNode.php,0,,Processes
