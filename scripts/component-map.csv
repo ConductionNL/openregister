@@ -4254,3 +4254,4 @@ Service/Observability/SearchMetricsProvider.php,,Service,,,,,Integrations
 Service/Observability/HistogramPoints.php,,Service,,,,,Integrations
 Service/Observability/WebhookDurationMetricsProvider.php,,Service,,,,,Integrations
 Migration/Version1Date20261114190000.php,,Migration,,,,,Platform
+Service/Observability/DatabaseHealthMetricsProvider.php,,Service,,,,,Integrations

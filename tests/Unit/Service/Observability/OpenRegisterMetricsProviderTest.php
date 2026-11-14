@@ -22,12 +22,15 @@ use DateTime;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Search\Service\SearchMetricsReader;
+use OCA\OpenRegister\Service\Observability\DatabaseHealthMetricsProvider;
 use OCA\OpenRegister\Service\Observability\OpenRegisterMetricsProvider;
 use OCA\OpenRegister\Service\Observability\SearchMetricsProvider;
 use OCA\OpenRegister\Service\Observability\WebhookDurationMetricsProvider;
 use OCA\OpenRegister\Service\Observability\WebhookRetryMetricsProvider;
 use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\DB\IResult;
+use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -37,12 +40,13 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Observability\SearchMetricsProvider
  * @uses   \OCA\OpenRegister\Service\Observability\WebhookDurationMetricsProvider
  * @uses   \OCA\OpenRegister\Service\Observability\HistogramPoints
+ * @uses   \OCA\OpenRegister\Service\Observability\DatabaseHealthMetricsProvider
  * @uses   \OCA\OpenRegister\AppHost\Observability\MetricSample
  */
 final class OpenRegisterMetricsProviderTest extends TestCase {
 
 	/**
-	 * Every joined family is published once: tasks, webhook retries, search, then webhook durations.
+	 * Every joined family is published once: tasks, webhook retries, search, webhook durations, then database health.
 	 *
 	 * @return void
 	 */
@@ -57,6 +61,9 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 		$logs->expects($this->once())->method('countPendingRetries')->willReturn(5);
 		$logs->expects($this->once())->method('deliveryDurationStats')->willReturn(['timed' => 0, 'sumMs' => 0.0, 'buckets' => []]);
 
+		$db = $this->createMock(IDBConnection::class);
+		$db->expects($this->once())->method('executeQuery')->with('SELECT 1')->willReturn($this->createMock(IResult::class));
+
 		$reader = $this->createMock(SearchMetricsReader::class);
 		$reader->expects($this->once())->method('searchStats')->willReturn([]);
 		$reader->expects($this->once())->method('embeddingCounts')->willReturn(['success' => 0, 'failure' => 0]);
@@ -65,11 +72,12 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 			tasks: $tasks,
 			webhooks: new WebhookRetryMetricsProvider(logs: $logs, time: $time),
 			search: new SearchMetricsProvider(reader: $reader, logger: $this->createMock(LoggerInterface::class)),
-			durations: new WebhookDurationMetricsProvider(logs: $logs, logger: $this->createMock(LoggerInterface::class))
+			durations: new WebhookDurationMetricsProvider(logs: $logs, logger: $this->createMock(LoggerInterface::class)),
+			database: new DatabaseHealthMetricsProvider(db: $db, time: $time, logger: $this->createMock(LoggerInterface::class))
 		))->metrics();
 
 		$this->assertSame(
-			['tasks_overdue_total', 'webhook_retry_queue_depth', 'search_requests_total', 'search_duration_seconds', 'embeddings_generated_total', 'webhook_delivery_duration_seconds'],
+			['tasks_overdue_total', 'webhook_retry_queue_depth', 'search_requests_total', 'search_duration_seconds', 'embeddings_generated_total', 'webhook_delivery_duration_seconds', 'db_connection_healthy'],
 			array_map(static fn (MetricSample $m): string => $m->name, $metrics)
 		);
 		$this->assertSame($overdue, $metrics[0]);

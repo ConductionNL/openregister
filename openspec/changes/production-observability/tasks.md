@@ -91,3 +91,20 @@ it throws). `WebhookLogMapper::deliveryDurationStats()` aggregates it in one que
 `Service\Observability\WebhookDurationMetricsProvider` joins `OpenRegisterMetricsProvider`.
 Rows written before the column existed have no duration and are left out. The webhook log's
 JSON gains a trailing `durationMs` key.
+
+**Fourth pass, continued: database connection health.** `db_connection_healthy` (scenario
+"Database connection health") is published by
+`Service\Observability\DatabaseHealthMetricsProvider`: 1 when a `SELECT 1` round-trip
+succeeds within 5 seconds, 0 when it fails or is slower, with a warning logged. "Database
+Connection Monitoring" stays unticked: the health endpoint does not yet report a slow
+database as degraded, and the query-duration histogram and slow-query counter need query
+instrumentation that is not built.
+
+**Left after the fourth pass, and why.** Request counters and the request-duration
+histogram, the error counter, the APCu counter path with its flush job, and the alerting
+thresholds all need a per-request recording path (middleware plus a durable or APCu store)
+that is a design decision of its own; structured logging needs a request-id carrier through
+every log call; the search-backend and webhook health checks need new engine check types;
+cache hit/miss and import progress need instrumentation in `CacheHandler` and the import
+jobs; the dashboard widget and serverinfo section are UI/integration work. BIO2 audit items
+were not re-verified in this pass.
