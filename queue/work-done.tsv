@@ -12023,3 +12023,4 @@ fix:larpinq:1054:41befe20	no change: clean on development; tree-only conflicts w
 cover:stackiq:9ac19b3amad24:60c2c265	PR #1971: convertToUser + bulk refusals, 12 tests; lib/Controller 93.86%->97.59%; suite 3602->3614 green	session-20261114T224742-00d4fbcb	2026-11-14T23:44:56Z
 fix:thematiq:1677:ab35c3aa	merged development, l10n union resolved and rebuilt, l10n gates + vitest green; new head 5e934e94	session-20261114T223937-a95b1403	2026-11-14T23:45:01Z
 fix:larpinq:1049:ad99dd01	golden fixture updated for worlds-maps pages; vitest 548 green; new head 0b6c6360, REVERIFY recorded	session-20261114T231738-f75034a1	2026-11-14T23:45:09Z
+cover:stackiq:9ac19b3amad24:007dc1d0	PR #1972: 4 tests on CmdbImportProfile validator lookup + separator fallback (366->370/373); rest of dir is fs-failure branches; suite 3602->3606 OK	session-20261114T231806-fdb63293	2026-11-14T23:45:20Z
