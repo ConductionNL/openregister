@@ -124,6 +124,7 @@
 		"Concept": "Same spelling and meaning in Dutch: the SKOS term 'concept' is used unchanged in Dutch thesaurus language.",
 		"Markt": "The source string is already Dutch (market); a schema title in a Dutch municipal register.",
 		"Openbare verlichting": "The source string is already Dutch (public lighting); a schema title in a Dutch municipal register.",
-		"Wegen en paden": "The source string is already Dutch (roads and paths); a schema title in a Dutch municipal register."
+		"Wegen en paden": "The source string is already Dutch (roads and paths); a schema title in a Dutch municipal register.",
+		"Diagram": "The native word for a drawn diagram is spelled identically to English."
 	}
 }

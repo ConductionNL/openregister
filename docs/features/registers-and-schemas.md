@@ -69,6 +69,35 @@ Schemas can be imported from:
 | Custom JSON Schema | Upload or POST any valid JSON Schema document |
 | OAS Import | Import schema definitions from an existing OpenAPI 3.0+ specification |
 
+## Reading a register's model as a diagram
+
+The register page shows its schemas as cards by default. Choose **Diagram**
+above the cards to see the register's model instead: every schema is a box with
+its properties, and every link between two schemas is a line labelled with the
+property that makes it, `1` or `n` for one or many, and the inverse property
+when one is declared (`documenten (n) ↔ zaak`).
+
+The diagram is read from the schema definitions every time it opens, so it is
+never out of date. A link comes from a property's `$ref` (or `items.$ref` for a
+list) and from the schema's declared relations (`x-openregister-relations`).
+
+- **A box with a dashed border** is a schema in another register. When you may
+  not open that register it shows as *A schema you cannot open*, without its
+  name or properties.
+- **A broken link** (a reference to a schema that no longer exists) is drawn as
+  a dashed red box named after the reference, so it can be found and fixed
+  instead of silently disappearing.
+- **Click a box** (or focus it and press Enter) to open that schema. **Click a
+  line** to open the schema that holds the property.
+- **Drag a box** to move it. Where you put the boxes is remembered for you, per
+  register; other people keep their own layout.
+- **Download as SVG** saves the diagram as it is laid out, for documentation.
+- Below the diagram, **Links between schemas** lists the same links as a table,
+  for keyboard and screen-reader use.
+
+Above 50 schemas the boxes show their titles only, so a large register stays
+readable.
+
 ## API
 
 ### Registers
@@ -80,6 +109,7 @@ GET    /api/registers/{id}             Get a register by ID or slug
 PUT    /api/registers/{id}             Update a register
 DELETE /api/registers/{id}             Delete a register
 GET    /api/registers/{id}/export      Export register configuration as OpenAPI YAML
+GET    /api/registers/{id}/model       The register's schemas as nodes and their links as edges
 POST   /api/registers/import           Import register + schemas from OpenAPI YAML
 ```
 
