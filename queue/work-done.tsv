@@ -10448,3 +10448,4 @@ fix:hermiq:1728:fa959665	merged development, resolved l10n + register version co
 verify:learniq:2515:9ea58cce	GREEN 2515 2521; CONFLICT 2536 2541	session-20261114T134708-ba7f7741	2026-11-14T17:41:32Z
 fix:decidiq:2149:f2767637	failed: branch already contains development; conflicts only with unmerged sibling #2143 (l10n en/nl js+json); merge development in after #2143 lands	session-20261114T174106-c933f162	2026-11-14T17:41:50Z
 verify:humaniq:1125:c6dc31b9	1125 GREEN, 1129 GREEN, 1134 CONFLICT (with 1125)	session-20261114T172412-df2c66f1	2026-11-14T17:41:49Z
+fix:planninq:1165:f9724659	fixed: merged development, l10n relocated in 74 catalogues; new head d4613540	session-20261114T154807-c05f4e57	2026-11-14T17:41:56Z
