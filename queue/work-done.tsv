@@ -10867,3 +10867,4 @@ fix:hermiq:1735:61ad767f	merged development in cleanly, suite green; REVERIFY at
 fix:hermiq:1782:f0562d6f	fixed: DashboardController ctor 7->2 via DashboardPageState; new head 09cb5576	session-20261114T192501-803bcb19	2026-11-14T20:22:52Z
 verify:filinq:2119:7dfb3a5e	2119 CONFLICT (l10n/nl.json)	session-20261114T201741-909e04de	2026-11-14T20:22:58Z
 fix:filinq:2126:67391b56	merged development in (clean, #2113 already on dev); unit 6796 OK; new head 8274bd42	session-20261114T201745-19e2e5d6	2026-11-14T20:23:08Z
+review:openregister:10570:c1866a93	APPROVE #10570: behaviour as specified, no access or contract change; review suites green apart from one inherited Flow error	session-20261114T191744-89a97153	2026-11-14T20:23:18Z
