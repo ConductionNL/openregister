@@ -210,6 +210,22 @@ class FlowProgressAggregatesTest extends TestCase {
 		$this->assertTrue($this->saw('expr.in', 'run_uuid'));
 	}
 
+	public function testOpenTasksPerFlowAreCountedInstanceWideLargestFirst(): void {
+		$mapper = new TaskMapper(db: $this->connectionWith(rows: [
+			['flow_id' => 'flow-small', 'total' => '1'],
+			['flow_id' => 'flow-big', 'total' => '9'],
+		]));
+
+		$counts = $mapper->countOpenByFlow(overdueAt: new DateTime('2026-10-01'));
+
+		$this->assertSame(['flow-big' => 9, 'flow-small' => 1], $counts);
+		$this->assertTrue($this->saw('innerJoin', 'task'));
+		$this->assertTrue($this->saw('expr.eq', 'task.is_terminal'));
+		$this->assertTrue($this->saw('groupBy', 'progressrun.flow_id'));
+		$this->assertFalse($this->saw('expr.eq', 'task.organisation'), 'an operator gauge, no tenant');
+		$this->assertNotEmpty(array_filter($this->functions, static fn (string $sql): bool => str_starts_with($sql, 'COALESCE(`due_at`, `expires_at`) <')));
+	}
+
 	/**
 	 * The number of queries a report runs is fixed: 10 or 1,000 runs, the same reads.
 	 */

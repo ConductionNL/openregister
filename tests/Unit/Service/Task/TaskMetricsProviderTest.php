@@ -91,12 +91,73 @@ class TaskMetricsProviderTest extends TestCase {
 
 		$samples = (new TaskMetricsProvider(mapper: $mapper, temporal: new TaskTemporalProjection()))->metrics();
 
-		$this->assertCount(1, $samples);
+		$this->assertCount(3, $samples);
 		$this->assertInstanceOf(MetricSample::class, $samples[0]);
 		$this->assertSame('tasks_overdue_total', $samples[0]->name);
 		$this->assertSame('gauge', $samples[0]->type);
 		$this->assertSame([['labels' => [], 'value' => 17]], $samples[0]->samples);
 	}//end testTheGaugeCarriesTheMappersOverdueCount()
+
+	/**
+	 * The spec's scenario: open tasks in 120 flows give 101 series, the last `flow="other"`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-operators-can-chart-open-and-overdue-work-per-flow
+	 */
+	public function testLabelCardinalityStaysBounded(): void {
+		$open = [];
+		for ($i = 1; $i <= 120; $i++) {
+			$open['flow-' . $i] = (200 - $i);
+		}
+
+		$mapper = $this->createMock(originalClassName: TaskMapper::class);
+		$mapper->method('countOpenByFlow')->willReturnCallback(
+			static fn (?DateTime $overdueAt): array => $overdueAt === null ? $open : ['flow-120' => 3, 'flow-1' => 2, 'flow-50' => 1]
+		);
+
+		$samples = (new TaskMetricsProvider(mapper: $mapper, temporal: new TaskTemporalProjection()))->metrics();
+		[, $openByFlow, $overdueByFlow] = $samples;
+
+		$this->assertSame('tasks_open_by_flow', $openByFlow->name);
+		$this->assertSame('gauge', $openByFlow->type);
+		$this->assertCount(101, $openByFlow->samples);
+		$this->assertSame(['labels' => ['flow' => 'flow-1'], 'value' => 199], $openByFlow->samples[0]);
+		$this->assertSame(['labels' => ['flow' => 'other'], 'value' => array_sum(array_slice($open, 100))], $openByFlow->samples[100]);
+
+		// The overdue gauge charts the SAME flows, so flow-120 (beyond the cap) lands in other.
+		$this->assertSame('tasks_overdue_by_flow', $overdueByFlow->name);
+		$this->assertCount(101, $overdueByFlow->samples);
+		$this->assertSame(['labels' => ['flow' => 'flow-1'], 'value' => 2], $overdueByFlow->samples[0]);
+		$this->assertSame(['labels' => ['flow' => 'flow-2'], 'value' => 0], $overdueByFlow->samples[1]);
+		$this->assertSame(['labels' => ['flow' => 'flow-50'], 'value' => 1], $overdueByFlow->samples[49]);
+		$this->assertSame(['labels' => ['flow' => 'other'], 'value' => 3], $overdueByFlow->samples[100]);
+	}//end testLabelCardinalityStaysBounded()
+
+	/**
+	 * Under the cap every flow gets its own series and there is no `other`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-operators-can-chart-open-and-overdue-work-per-flow
+	 */
+	public function testFewFlowsHaveNoOtherSeries(): void {
+		$mapper = $this->createMock(originalClassName: TaskMapper::class);
+		$mapper->method('countOpenByFlow')->willReturnCallback(
+			static fn (?DateTime $overdueAt): array => $overdueAt === null ? ['flow-a' => 4, 'flow-b' => 1] : []
+		);
+
+		[, $openByFlow, $overdueByFlow] = (new TaskMetricsProvider(mapper: $mapper, temporal: new TaskTemporalProjection()))->metrics();
+
+		$this->assertSame(
+			[['labels' => ['flow' => 'flow-a'], 'value' => 4], ['labels' => ['flow' => 'flow-b'], 'value' => 1]],
+			$openByFlow->samples
+		);
+		$this->assertSame(
+			[['labels' => ['flow' => 'flow-a'], 'value' => 0], ['labels' => ['flow' => 'flow-b'], 'value' => 0]],
+			$overdueByFlow->samples
+		);
+	}//end testFewFlowsHaveNoOtherSeries()
 
 	/**
 	 * The clock is TaskTemporalProjection's, never one of the provider's own:

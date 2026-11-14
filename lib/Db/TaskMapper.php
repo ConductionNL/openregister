@@ -1222,6 +1222,38 @@ class TaskMapper extends QBMapper {
 	}//end countOverdueOpen()
 
 	/**
+	 * How many OPEN tasks each flow has, instance-wide, optionally only the overdue ones.
+	 *
+	 * The per-flow companion of `countOverdueOpen()`: no visibility predicate,
+	 * openness is `is_terminal = false`, overdue is `applyOverdue()`. The flow
+	 * is the one whose run raised the task; a task no run raised is in no flow.
+	 *
+	 * @param DateTime|null $overdueAt Only tasks overdue at this instant, or null for every open task.
+	 *
+	 * @return array<string, int> Open task count keyed by flow id, the largest first.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-operators-can-chart-open-and-overdue-work-per-flow
+	 */
+	public function countOpenByFlow(?DateTime $overdueAt): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('progressrun.flow_id')
+			->selectAlias($qb->func()->count('task.id'), 'total')
+			->from($this->getTableName(), 'task')
+			->innerJoin('task', self::RUNS_TABLE, 'progressrun', $qb->expr()->eq('progressrun.uuid', 'task.run_uuid'))
+			->where($qb->expr()->eq('task.is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
+		if ($overdueAt !== null) {
+			$this->applyOverdue(qb: $qb, now: $overdueAt);
+		}
+
+		$qb->groupBy('progressrun.flow_id');
+
+		$counts = $this->countsByColumn(qb: $qb, column: 'flow_id');
+		arsort($counts);
+
+		return $counts;
+	}//end countOpenByFlow()
+
+	/**
 	 * A due WINDOW, over the same effective deadline the overdue filter and
 	 * the projection use.
 	 *

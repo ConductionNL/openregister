@@ -12,7 +12,7 @@
 
 ## 3. Metrics
 
-- [ ] 3.1 `tasks_open_by_flow` and `tasks_overdue_by_flow` in `TaskMetricsProvider` with the 100-flow cap, declared in `src/manifest.json`. Verify: `TaskMetricsProviderTest` with 120 flows yields 101 series.
+- [x] 3.1 `tasks_open_by_flow` and `tasks_overdue_by_flow` in `TaskMetricsProvider` with the 100-flow cap, declared in `src/manifest.json`. Verify: `TaskMetricsProviderTest` with 120 flows yields 101 series. (Declared in the `_note` of the one provider entry: a second provider descriptor would make the engine emit every provider metric twice.)
 
 ## 4. Page, tests and docs
 
