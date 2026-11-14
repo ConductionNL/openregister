@@ -2882,3 +2882,5 @@ portaliq	2437	4fe52aadf12e8d05af3b9c7ffcad928a6ef91e59	RED	merge3	GATE RED check
 pipelinq	3818	2161a99c58f94a856d9b5ba04e9ebd72330e917c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 filinq	2126	ff1f07a22f724c52228553853290ed7893e14bfc	RED	merge3	GATE RED floor: unit_complexity: 4.48 -> 4.45
 filinq	2131	a9bd216af9e77001df2a9597c77f97000029c100	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+dossiq	6519	97d7941beb1b114b2c80805c90fac239008054a5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6520	43744eee238160ba67ceb5ee0f6a1d632279c735	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
