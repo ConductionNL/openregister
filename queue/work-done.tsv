@@ -8206,3 +8206,4 @@ verify:hermiq:1767:3f90a4bc	GREEN #1767: no new failures (phpunit 4714, vitest 1
 verify:integriq:3574:e6da0e29	3 GREEN (3594,3595,3597), 2 RED (3574 vitest mock/golden, 3599 drops a registered listener), 4 CONFLICT (3593,3596,3598,3600)	session-20261114T062156-e8adf8ca	2026-11-14T08:21:10Z
 verify:planninq:1162:3e3eed1b	1162 GREEN; 1167 CONFLICT with 1162 (l10n catalogues, ProjectSettingsSidebar.vue)	session-20261114T075638-c30fc6de	2026-11-14T08:21:27Z
 build:buildiq:apps-embed-in-other-sites	PR #1628: T01-T03, T05 and T04 section done (36 tests); T04 Playwright and T06 left	session-20261114T065635-0aca43d3	2026-11-14T08:21:33Z
+fix:integriq:3599:1568b79d	fixed: registration fixture records the new listener; pushed 4d149f50	session-20261114T065626-0651b305	2026-11-14T08:21:45Z
