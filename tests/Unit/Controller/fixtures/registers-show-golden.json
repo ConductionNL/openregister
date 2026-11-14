@@ -210,16 +210,15 @@
             ],
             [
                 "error",
-                "[RegistersController] Failed to retrieve register",
+                "[OCA\\OpenRegister\\Controller\\RegistersController] Failed to retrieve register seven: find failed",
                 {
-                    "register_id": "seven",
-                    "error_message": "find failed"
+                    "exception": "RuntimeException"
                 }
             ]
         ],
         "status": 500,
         "data": {
-            "error": "Failed to retrieve register: find failed"
+            "error": "Internal server error"
         }
     },
     "signed in": {
@@ -284,16 +283,15 @@
             ],
             [
                 "error",
-                "[RegistersController] Failed to retrieve register",
+                "[OCA\\OpenRegister\\Controller\\RegistersController] Failed to retrieve register seven: count failed",
                 {
-                    "register_id": "seven",
-                    "error_message": "count failed"
+                    "exception": "RuntimeException"
                 }
             ]
         ],
         "status": 500,
         "data": {
-            "error": "Failed to retrieve register: count failed"
+            "error": "Internal server error"
         }
     },
     "stats among others": {

@@ -44,11 +44,11 @@ describe('ExportRegister state', () => {
 		schemaStore.schemaItem = null
 	})
 
-	it('starts with Excel selected and both formats offered', () => {
+	it('starts with Excel selected and the five formats offered', () => {
 		const ctx = context()
 
 		expect(ctx.exportFormat).toBe('excel')
-		expect(ctx.exportFormats.map((format) => format.value)).toEqual(['excel', 'csv'])
+		expect(ctx.exportFormats.map((format) => format.value)).toEqual(['excel', 'csv', 'tsv', 'json', 'xml'])
 		expect(ctx.loading).toBe(false)
 		expect(ctx.error).toBeNull()
 	})
