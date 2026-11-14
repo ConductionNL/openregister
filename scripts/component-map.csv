@@ -4173,6 +4173,7 @@ Service/File/ImageRegionDetectorRegistry.php,,Service,,,,,Core
 Service/File/ImageRegionNotBurnableException.php,,Service,,,,,Core
 Service/File/OcrWordLocator.php,,Service,,,,,Core
 Service/File/OcrWords.php,,Service,,,,,Core
+Service/File/OfficeMediaBurner.php,,Service,,,,,Core
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
 Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Configuration
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
