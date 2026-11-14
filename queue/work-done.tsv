@@ -10586,3 +10586,4 @@ fix:integriq:3596:ccfce146	merged development, conflicts resolved keeping both s
 build:integriq:platform-integrations-as-code:c3	partial: PR #3634 lands the orphaned Tasks 2-3 + docs commit (634e13b4, pushed after #3591 merged) merged with development; suite 9100, baseline failures only; left Task 3 live OpenRegister test and Task 4 round-trip integration test (need an instance)	session-20261114T161750-16a1c558	2026-11-14T18:09:40Z
 fix:integriq:3617:3448ba56	merged development, resolved l10n conflicts; new head 6ff0aa85, REVERIFY recorded	session-20261114T174753-100b2a07	2026-11-14T18:09:50Z
 fix:integriq:3626:0b6ea2ad	conflict resolved, pushed d61b9b39	session-20261114T174754-e63e9f88	2026-11-14T18:10:01Z
+fix:launchpad:1206:848f687d	conflict resolved (both enum pairs kept); new head 5b45315f, REVERIFY recorded	session-20261114T174741-aa9751f9	2026-11-14T18:10:11Z
