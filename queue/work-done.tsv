@@ -9917,3 +9917,4 @@ fix:integriq:3584:5c6ec02c	4 conflicts resolved keeping both sides, pushed fb012
 build:integriq:automation-integration-regression-tests:c2	partial: #3551 had merged; new PR #3615 (head 619d1906) builds task 6 (promotion regression check, override, audit fields, preview list); left: task 4 save-trace-as-case, task 5 run buttons on detail pages, Playwright (live instance); unit failures same as development	session-20261114T141724-6227a125	2026-11-14T15:45:15Z
 cover:integriq:92114ab0m0593:e7ac1785	PR #3616: 17 tests, StufZkn/*.php lines 98.8% (4 classes to 100%), suite 8920->8937 no new failures	session-20261114T144751-8958c054	2026-11-14T15:45:23Z
 verify:humaniq:1125:192692b6	GREEN 1134 1155; CONFLICT 1127; skipped (head moved) 1125 1156	session-20261114T144756-7c8966f2	2026-11-14T15:45:30Z
+verify:shillinq:3069:11d00889	3070 GREEN; 3069 skipped (head moved to 3f4b9186)	session-20261114T151916-b0518a7b	2026-11-14T15:45:39Z
