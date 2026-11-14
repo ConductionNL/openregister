@@ -10459,3 +10459,4 @@ versioniq	714	3e04dbd12dba0066c2e035c855244a5aacd92430	GREEN	worker-23	unit-only
 versioniq	717	6b86f6b4e1c7732a07e0f1a8cdbe8a072229e204	GREEN	worker-23	unit-only 1762 tests, 2 failures = baseline (External/SelectedReleaseInstallGoldenTest, inherited); vitest 2989 pass; no new failures
 versioniq	721	5e93235b5b5a42cb100e6b533ccd156d55c4a653	GREEN	worker-23	unit-only 1762 tests, 2 failures = baseline (External/SelectedReleaseInstallGoldenTest, inherited); vitest 2989 pass; no new failures
 versioniq	727	745065b5a50c2a9717daf552af2b9b70e3c7	CONFLICT	worker-23	conflicts with the tree after 695,707,714,717,721
+larpinq	1051	de3a87c57c0a29f8df8a9cddf54d93cbd0cd8204	REVERIFY	worker-10	merged origin/development in (clean); phpunit 847 OK, vitest 548 OK; still conflicts with unmerged sibling #1050, merges clean with #1048; new head c35fd6e8711febbc7bcac335e04f3c7afe037294, verify it
