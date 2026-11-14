@@ -11990,3 +11990,4 @@ build:opencatalogi:api-says-what-it-filtered:c2	PR #2720: 3.1 AppliedFilters in 
 fix:versioniq:714:8da32088	moved its l10n keys so it no longer conflicts with #698/#707, new head bab85cc5	session-20261114T214733-589f5bff	2026-11-14T23:40:33Z
 fix:larpinq:1050:a1b099f3	no change: a1b099f3 already contains development; the l10n conflict is with unmerged #1039/#1048/#1049, merge development in after they land	session-20261114T221743-dbe5c07e	2026-11-14T23:40:39Z
 fix:shillinq:3080:b796d585	merged development in, unit green, REVERIFY new head 0a200ebaaf	session-20261114T224745-bab17644	2026-11-14T23:40:49Z
+verify:keepiq:1817:78b59407	1817 GREEN (tests only, unit 5218 OK)	session-20261114T232423-38520620	2026-11-14T23:40:57Z
