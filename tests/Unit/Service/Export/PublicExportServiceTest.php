@@ -92,13 +92,12 @@ final class PublicExportServiceTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(7);
 
-		return new ExportRequest(
+		return (new ExportRequest(
 			register: $register,
 			schema: $schema,
 			filters: ['thema' => 'milieu'],
-			currentUser: $this->createMock(IUser::class),
-			page: new ExportPage(number: $page)
-		);
+			currentUser: $this->createMock(IUser::class)
+		))->withPage(page: new ExportPage(number: $page));
 	}//end request()
 
 	/**
@@ -122,9 +121,10 @@ final class PublicExportServiceTest extends TestCase {
 
 		$result = $this->service()->export(request: $this->request(), format: 'csv');
 
-		$this->assertSame(401, $result->statusCode);
+		$this->assertSame(401, $result->statusCode());
 		$this->assertNull($result->content);
-		$this->assertSame('not-public', $result->refusal['rule']);
+		$this->assertSame(0, $result->rowCount());
+		$this->assertSame('not-public', $result->refusalBody()['rule']);
 	}//end testAPrivateSchemaIsRefusedAndRecorded()
 
 	/**
@@ -137,7 +137,7 @@ final class PublicExportServiceTest extends TestCase {
 			new ExportRefusedException(rule: 'not-public', reason: 'Exporting this schema requires an account.', statusCode: 401)
 		);
 
-		$this->assertSame(401, $this->service()->export(request: $this->request(), format: 'pdf')->statusCode);
+		$this->assertSame(401, $this->service()->export(request: $this->request(), format: 'pdf')->statusCode());
 	}//end testThePrivateRefusalComesBeforeTheFormatRefusal()
 
 	/**
@@ -151,10 +151,10 @@ final class PublicExportServiceTest extends TestCase {
 
 		$result = $this->service()->export(request: $this->request(), format: 'pdf');
 
-		$this->assertSame(406, $result->statusCode);
-		$this->assertSame('format-not-open', $result->refusal['rule']);
-		$this->assertSame(['csv', 'tsv', 'json', 'xml'], $result->refusal['formats']);
-		$this->assertStringContainsString('csv, tsv, json, xml', $result->refusal['message']);
+		$this->assertSame(406, $result->statusCode());
+		$this->assertSame('format-not-open', $result->refusalBody()['rule']);
+		$this->assertSame(['csv', 'tsv', 'json', 'xml'], $result->refusalBody()['formats']);
+		$this->assertStringContainsString('csv, tsv, json, xml', $result->refusalBody()['message']);
 	}//end testAPdfIsNotAcceptable()
 
 	/**
@@ -165,7 +165,7 @@ final class PublicExportServiceTest extends TestCase {
 	public function testExcelIsNotAcceptable(): void {
 		$this->rights->method('refusalForAnonymous')->willReturn(null);
 
-		$this->assertSame(406, $this->service()->export(request: $this->request(), format: 'excel')->statusCode);
+		$this->assertSame(406, $this->service()->export(request: $this->request(), format: 'excel')->statusCode());
 	}//end testExcelIsNotAcceptable()
 
 	/**
@@ -195,7 +195,7 @@ final class PublicExportServiceTest extends TestCase {
 
 		$result = $this->service()->export(request: $this->request(), format: 'xml');
 
-		$this->assertSame(200, $result->statusCode);
+		$this->assertSame(200, $result->statusCode());
 		$this->assertSame('<objects/>', $result->content);
 		// The rows are read as nobody, whoever the request said it was for.
 		$this->assertNull($captured->currentUser);
@@ -224,7 +224,7 @@ final class PublicExportServiceTest extends TestCase {
 
 		$result = $this->service()->export(request: $this->request(page: 3), format: 'csv');
 
-		$this->assertSame(3500, $result->rowCount);
+		$this->assertSame(3500, $result->rowCount());
 		$this->assertSame(['X-Total-Count' => '23500', 'X-Page' => '3', 'X-Pages' => '3'], $result->headers(requestUri: '/x/export?format=csv&_page=3'));
 	}//end testTheLastPageHoldsTheRestAndHasNoNextLink()
 
@@ -256,7 +256,7 @@ final class PublicExportServiceTest extends TestCase {
 
 		$result = $this->service()->export(request: $this->request(), format: 'json');
 
-		$this->assertSame(0, $result->rowCount);
+		$this->assertSame(0, $result->rowCount());
 		$this->assertSame(['X-Total-Count' => '0', 'X-Page' => '1', 'X-Pages' => '1'], $result->headers(requestUri: '/x'));
 	}//end testAnEmptySetIsOnePage()
 
@@ -270,8 +270,8 @@ final class PublicExportServiceTest extends TestCase {
 
 		$result = $this->service()->export(request: new ExportRequest(register: new Register()), format: 'csv');
 
-		$this->assertSame(401, $result->statusCode);
-		$this->assertSame('not-public', $result->refusal['rule']);
+		$this->assertSame(401, $result->statusCode());
+		$this->assertSame('not-public', $result->refusalBody()['rule']);
 	}//end testARegisterWideExportIsRefused()
 
 	/**

@@ -83,7 +83,12 @@ final class ExportServiceAnonymousPagingTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(9);
 
-		return new ExportRequest(register: $register, schema: $schema, filters: ['thema' => 'milieu', '_page' => '2'], currentUser: null, page: $page);
+		$request = new ExportRequest(register: $register, schema: $schema, filters: ['thema' => 'milieu', '_page' => '2', '@self.owner' => 'jan']);
+		if ($page === null) {
+			return $request;
+		}
+
+		return $request->withPage(page: $page);
 	}//end request()
 
 	/**
@@ -96,7 +101,7 @@ final class ExportServiceAnonymousPagingTest extends TestCase {
 			$this->callback(function (array $query): bool {
 				$this->assertSame(10000, $query['_limit']);
 				$this->assertSame(10000, $query['_offset']);
-				$this->assertSame(['register' => 3, 'schema' => 9], $query['@self']);
+				$this->assertSame(['register' => 3, 'schema' => 9, 'owner' => 'jan'], $query['@self']);
 				$this->assertSame('milieu', $query['thema']);
 				$this->assertArrayNotHasKey('_page', $query);
 				return true;
@@ -136,7 +141,7 @@ final class ExportServiceAnonymousPagingTest extends TestCase {
 			$this->callback(function (array $query): bool {
 				$this->assertArrayNotHasKey('_limit', $query);
 				$this->assertArrayNotHasKey('_offset', $query);
-				$this->assertSame(['register' => 3, 'schema' => 9], $query['@self']);
+				$this->assertSame(['register' => 3, 'schema' => 9, 'owner' => 'jan'], $query['@self']);
 				$this->assertSame('milieu', $query['thema']);
 				return true;
 			}),

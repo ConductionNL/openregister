@@ -86,27 +86,26 @@ class PublicExportService {
 	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
 	 */
 	public function export(ExportRequest $request, string $format): PublicExportResult {
-		$request = new ExportRequest(
-			register: $request->register,
-			schema: $request->schema,
-			filters: $request->filters,
-			currentUser: null,
-			page: ($request->page ?? new ExportPage())
-		);
+		// The rows are read as nobody, whoever the request was built for.
+		$request = (new ExportRequest(register: $request->register, schema: $request->schema, filters: $request->filters))
+			->withPage(page: ($request->page() ?? new ExportPage()));
 
 		$refusal = $this->refusal(request: $request, format: $format);
 		if ($refusal !== null) {
-			return $refusal;
+			$this->recordRefusal(request: $request, refused: $refusal);
+			return PublicExportResult::refused(refusal: $refusal);
 		}
 
-		$content = $this->content(request: $request, format: $format);
-		$total   = $this->exports->countExportTotal(request: $request);
-		$page    = $request->page ?? new ExportPage();
-		$rows    = max(0, min($page->size, ($total - (($page->number - 1) * $page->size))));
+		$result = new PublicExportResult(
+			refusal: null,
+			content: $this->content(request: $request, format: $format),
+			page: ($request->page() ?? new ExportPage()),
+			total: $this->exports->countExportTotal(request: $request)
+		);
 
 		$this->audit->recordCompleted(
 			profile: 'ad-hoc',
-			rowCount: $rows,
+			rowCount: $result->rowCount(),
 			format: $format,
 			valueMode: null,
 			register: $request->register?->getId(),
@@ -114,44 +113,38 @@ class PublicExportService {
 			actorId: self::ACTOR
 		);
 
-		return new PublicExportResult(statusCode: 200, refusal: null, content: $content, page: $page, total: $total, rowCount: $rows);
+		return $result;
 	}//end export()
 
 	/**
-	 * The refusal of an anonymous export, recorded on the trail, or null when it may run.
+	 * Why an anonymous export may not run, or null when it may.
 	 *
 	 * @param ExportRequest $request The export.
 	 * @param string        $format  The requested format.
 	 *
-	 * @return PublicExportResult|null The refusal, or null.
+	 * @return ExportRefusedException|null The refusal, or null.
 	 */
-	private function refusal(ExportRequest $request, string $format): ?PublicExportResult {
-		// A register-wide export has no single schema grant to read: refused.
-		$refused = new ExportRefusedException(
-			rule: 'not-public',
-			reason: 'Exporting this schema requires an account.',
-			statusCode: 401
-		);
-		if ($request->schema !== null) {
-			$refused = $this->rights->refusalForAnonymous(schema: $request->schema);
-		}
-
-		if ($refused === null && in_array($format, self::FORMATS, true) === false) {
-			$refused = new ExportRefusedException(
-				rule: 'format-not-open',
-				reason: 'Without an account an export is available as ' . implode(', ', self::FORMATS) . '.',
-				statusCode: 406,
-				context: ['formats' => self::FORMATS]
+	private function refusal(ExportRequest $request, string $format): ?ExportRefusedException {
+		if ($request->schema === null) {
+			// A register-wide export has no single schema grant to read: refused.
+			return new ExportRefusedException(
+				rule: 'not-public',
+				reason: 'Exporting this schema requires an account.',
+				statusCode: 401
 			);
 		}
 
-		if ($refused === null) {
-			return null;
+		$refused = $this->rights->refusalForAnonymous(schema: $request->schema);
+		if ($refused !== null || in_array($format, self::FORMATS, true) === true) {
+			return $refused;
 		}
 
-		$this->recordRefusal(request: $request, refused: $refused);
-
-		return PublicExportResult::refused(statusCode: $refused->getStatusCode(), body: $refused->toResponseBody());
+		return new ExportRefusedException(
+			rule: 'format-not-open',
+			reason: 'Without an account an export is available as ' . implode(', ', self::FORMATS) . '.',
+			statusCode: 406,
+			context: ['formats' => self::FORMATS]
+		);
 	}//end refusal()
 
 	/**

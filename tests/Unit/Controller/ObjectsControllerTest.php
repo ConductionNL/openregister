@@ -6979,18 +6979,16 @@ class ObjectsControllerTest extends TestCase {
 		$service = $this->createMock(\OCA\OpenRegister\Service\Export\PublicExportService::class);
 		$service->expects($this->once())->method('export')->with(
 			$this->callback(static fn (\OCA\OpenRegister\Service\Export\ExportRequest $request): bool => $request->currentUser === null
-				&& $request->page?->number === 2
+				&& $request->page()?->number === 2
 				&& ($request->filters['thema'] ?? null) === 'milieu'
 				&& isset($request->filters['_route']) === false),
 			'xml'
 		)->willReturn(
 			new \OCA\OpenRegister\Service\Export\PublicExportResult(
-				statusCode: 200,
 				refusal: null,
 				content: '<objects/>',
 				page: new \OCA\OpenRegister\Service\Export\ExportPage(number: 2),
-				total: 23500,
-				rowCount: 10000
+				total: 23500
 			)
 		);
 		$this->arrangeAnonymousExport(params: ['format' => 'xml', 'thema' => 'milieu', '_page' => '2'], service: $service);
@@ -7016,7 +7014,9 @@ class ObjectsControllerTest extends TestCase {
 	public function testAnAnonymousRefusalIsAnsweredWithItsStatus(): void {
 		$service = $this->createMock(\OCA\OpenRegister\Service\Export\PublicExportService::class);
 		$service->method('export')->willReturn(
-			\OCA\OpenRegister\Service\Export\PublicExportResult::refused(statusCode: 406, body: ['rule' => 'format-not-open'])
+			\OCA\OpenRegister\Service\Export\PublicExportResult::refused(
+				refusal: new \OCA\OpenRegister\Service\Export\ExportRefusedException(rule: 'format-not-open', reason: 'open formats only', statusCode: 406)
+			)
 		);
 		$this->arrangeAnonymousExport(params: ['format' => 'pdf'], service: $service);
 
@@ -7024,7 +7024,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
 		$this->assertSame(406, $result->getStatus());
-		$this->assertSame(['rule' => 'format-not-open'], $result->getData());
+		$this->assertSame('format-not-open', $result->getData()['rule']);
 	}
 
 	/**

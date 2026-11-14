@@ -6223,7 +6223,7 @@ class ObjectsController extends Controller {
 		// WITHOUT A SESSION the public principal exports, through its own path:
 		// the schema's grant must name `public`, only open formats are written,
 		// and one bounded page leaves per response (design D-2 to D-4).
-		if ($this->userSession->getUser() === null) {
+		if ($this->exportsAsThePublic() === true) {
 			return $this->publicExport(
 				export: new ObjectExport(
 					register: $registerEntity,
@@ -6265,6 +6265,21 @@ class ObjectsController extends Controller {
 	}//end export()
 
 	/**
+	 * Whether this export runs as the public principal.
+	 *
+	 * Not an access check: it picks which of the two export paths applies, and
+	 * each path checks its own right (the public grant for a visitor, the
+	 * caller's export right for a signed-in user).
+	 *
+	 * @return bool True when there is no signed-in user.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	private function exportsAsThePublic(): bool {
+		return ($this->userSession->getUser() === null);
+	}//end exportsAsThePublic()
+
+	/**
 	 * Export for a caller without a session: one page in an open format, or the refusal.
 	 *
 	 * @param ObjectExport $export What to export.
@@ -6293,18 +6308,11 @@ class ObjectsController extends Controller {
 			);
 		}
 
-		$result = $service->export(
-			request: new ExportRequest(
-				register: $export->register,
-				schema: $export->schema,
-				filters: $export->filters,
-				currentUser: null,
-				page: ExportPage::publicFrom(requested: ($export->filters['_page'] ?? null))
-			),
-			format: $format
-		);
+		$request = (new ExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters))
+			->withPage(page: ExportPage::publicFrom(requested: ($export->filters['_page'] ?? null)));
+		$result  = $service->export(request: $request, format: $format);
 		if ($result->content === null) {
-			return new JSONResponse(data: ($result->refusal ?? []), statusCode: $result->statusCode);
+			return new JSONResponse(data: $result->refusalBody(), statusCode: $result->statusCode());
 		}
 
 		$response = $export->download(format: $format, content: $result->content);

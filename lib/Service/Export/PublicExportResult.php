@@ -39,38 +39,72 @@ final class PublicExportResult {
 	/**
 	 * Describe the outcome.
 	 *
-	 * @param int                       $statusCode The HTTP status: 200, or the refusal's.
-	 * @param array<string, mixed>|null $refusal    The refusal body, or null when the file is served.
-	 * @param string|null               $content    The file content, or null when refused.
-	 * @param ExportPage                $page       The page that was read.
-	 * @param int                       $total      How many rows the whole selection holds.
-	 * @param int                       $rowCount   How many rows this page holds.
+	 * @param ExportRefusedException|null $refusal The refusal, or null when the file is served.
+	 * @param string|null                 $content The file content, or null when refused.
+	 * @param ExportPage                  $page    The page that was read.
+	 * @param int                         $total   How many rows the whole selection holds.
 	 *
 	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
 	 */
 	public function __construct(
-		public readonly int $statusCode,
-		public readonly ?array $refusal,
+		public readonly ?ExportRefusedException $refusal,
 		public readonly ?string $content,
-		public readonly ExportPage $page,
+		public readonly ExportPage $page = new ExportPage(),
 		public readonly int $total = 0,
-		public readonly int $rowCount = 0,
 	) {
 	}//end __construct()
 
 	/**
 	 * A refused anonymous export.
 	 *
-	 * @param int                  $statusCode The HTTP status.
-	 * @param array<string, mixed> $body       The response body.
+	 * @param ExportRefusedException $refusal The refusal.
 	 *
 	 * @return self
 	 *
 	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
 	 */
-	public static function refused(int $statusCode, array $body): self {
-		return new self(statusCode: $statusCode, refusal: $body, content: null, page: new ExportPage());
+	public static function refused(ExportRefusedException $refusal): self {
+		return new self(refusal: $refusal, content: null);
 	}//end refused()
+
+	/**
+	 * The HTTP status: 200 for a served page, else the refusal's.
+	 *
+	 * @return int
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	public function statusCode(): int {
+		return ($this->refusal?->getStatusCode() ?? 200);
+	}//end statusCode()
+
+	/**
+	 * The refusal's response body, or an empty one when the page is served.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	public function refusalBody(): array {
+		return ($this->refusal?->toResponseBody() ?? []);
+	}//end refusalBody()
+
+	/**
+	 * How many rows this page holds: a full page, or what is left on the last.
+	 *
+	 * @return int
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	public function rowCount(): int {
+		if ($this->content === null) {
+			return 0;
+		}
+
+		$before = (($this->page->number - 1) * $this->page->size);
+
+		return max(0, min($this->page->size, ($this->total - $before)));
+	}//end rowCount()
 
 	/**
 	 * How many pages the selection takes at this page size.

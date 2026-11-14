@@ -990,10 +990,11 @@ class ExportService implements ObjectExporterInterface {
 	private function fetchObjectsForExport(ExportRequest $request): array {
 		$selection = $this->exportSelection(request: $request);
 		$query     = $selection['query'];
-		if ($request->page !== null) {
+		$page      = $request->page();
+		if ($page !== null) {
 			// A bounded export (design D-4) reads one page of the same selection.
-			$query['_limit']  = $request->page->size;
-			$query['_offset'] = (($request->page->number - 1) * $request->page->size);
+			$query['_limit']  = $page->size;
+			$query['_offset'] = (($page->number - 1) * $page->size);
 		}
 
 		$search = fn (): array => $this->objectService->searchObjects(
@@ -1062,27 +1063,9 @@ class ExportService implements ObjectExporterInterface {
 			$objectFilters['schema'] = $schema->getId();
 		}
 
-		// Apply additional filters. A property filter narrows the export as it
-		// narrows the list it came from; it used to be skipped, so a filtered
-		// list exported every row the caller could read (openregister#4088).
-		// The route's own parameters and `_`-prefixed controls are not filters.
-		$propertyFilters = [];
-		foreach ($filters as $key => $value) {
-			$key = (string) $key;
-			if (str_starts_with($key, '@self.') === false) {
-				if (str_starts_with($key, '_') === false && str_starts_with($key, '@') === false
-					&& in_array($key, self::NON_FILTER_EXPORT_PARAMS, true) === false
-				) {
-					$propertyFilters[$key] = $value;
-				}
-
-				continue;
-			}
-
-			// Metadata filter - remove @self. prefix.
-			$metaField = substr($key, 6);
-			$objectFilters[$metaField] = $value;
-		}
+		[$metaFilters, $propertyFilters] = self::splitFilters(filters: $filters);
+		// A metadata filter is applied after the register and schema, as it always was.
+		$objectFilters = array_replace($objectFilters, $metaFilters);
 
 		// `_multi` may narrow an export to the organisation for anyone, but only
 		// an administrator may lift the organisation boundary with it.
@@ -1091,13 +1074,7 @@ class ExportService implements ObjectExporterInterface {
 		$multiExplicitlySet = (isset($filters['_multi']) || isset($filters['multi']))
 			&& ($isAdmin === true || self::requestedMultitenancy(filters: $filters) === true);
 
-		// `_ids` (a list or a comma-separated string) narrows the export to the
-		// selected objects; RBAC and multitenancy still apply to each.
-		$selected = implode(',', array_map('strval', (array) ($filters['_ids'] ?? [])));
-		$selectedIds = array_values(array_filter(array_map('trim', explode(',', $selected)), static fn (string $id): bool => $id !== ''));
-		if ($selectedIds === []) {
-			$selectedIds = null;
-		}
+		$selectedIds = self::selectedIds(filters: $filters);
 
 		// Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
 		// An export needs every row, so it asks for no limit: a number would be
@@ -1112,6 +1089,58 @@ class ExportService implements ObjectExporterInterface {
 
 		return ['query' => $query, 'multitenancy' => $multitenancy, 'ids' => $selectedIds];
 	}//end exportSelection()
+
+	/**
+	 * The ids an export is narrowed to, or null for no narrowing.
+	 *
+	 * `_ids` (a list or a comma-separated string) narrows the export to the
+	 * selected objects; RBAC and multitenancy still apply to each.
+	 *
+	 * @param array<string, mixed> $filters The export filters.
+	 *
+	 * @return array<int, string>|null The ids, or null.
+	 */
+	private static function selectedIds(array $filters): ?array {
+		$selected = implode(',', array_map('strval', (array) ($filters['_ids'] ?? [])));
+		$selectedIds = array_values(array_filter(array_map('trim', explode(',', $selected)), static fn (string $id): bool => $id !== ''));
+		if ($selectedIds === []) {
+			return null;
+		}
+
+		return $selectedIds;
+	}//end selectedIds()
+
+	/**
+	 * The request filters split into `@self` metadata filters and property filters.
+	 *
+	 * A property filter narrows the export as it narrows the list it came from;
+	 * it used to be skipped, so a filtered list exported every row the caller
+	 * could read (openregister#4088). The route's own parameters and
+	 * `_`-prefixed controls are not filters.
+	 *
+	 * @param array<string, mixed> $filters The export filters.
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The metadata filters (without `@self.`), and the property filters.
+	 */
+	private static function splitFilters(array $filters): array {
+		$metaFilters     = [];
+		$propertyFilters = [];
+		foreach ($filters as $key => $value) {
+			$key = (string) $key;
+			if (str_starts_with($key, '@self.') === true) {
+				$metaFilters[substr($key, 6)] = $value;
+				continue;
+			}
+
+			if (str_starts_with($key, '_') === false && str_starts_with($key, '@') === false
+				&& in_array($key, self::NON_FILTER_EXPORT_PARAMS, true) === false
+			) {
+				$propertyFilters[$key] = $value;
+			}
+		}
+
+		return [$metaFilters, $propertyFilters];
+	}//end splitFilters()
 
 	/**
 	 * The multitenancy an export's filters ask for: `_multi`, else `multi`, else on.
