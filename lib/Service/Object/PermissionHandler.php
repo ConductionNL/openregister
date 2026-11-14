@@ -52,6 +52,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityReadGate;
 use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
@@ -915,7 +916,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		if ($this->classificationRefuses(ask: $ask) === true) {
+		if ($this->classificationRefuses(ask: $ask) === true || $this->confidentialityRefuses(ask: $ask) === true) {
 			$this->lastRefusalFinal = true;
 			return false;
 		}
@@ -960,6 +961,40 @@ class PermissionHandler implements PermissionHandlerInterface {
 			caller: new ClassificationCaller(userId: $userId, groups: $this->groupsOf(userId: $userId), action: $ask->action)
 		) !== null;
 	}//end classificationRefuses()
+
+	/**
+	 * Whether the schema's confidentiality block refuses this caller a read of this object.
+	 *
+	 * The block narrows, it never grants, so its refusal is final like the
+	 * classification one. Owner and administrator pass. Only an ask about one
+	 * object is checked; the list path compiles the same conditions into its query.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-read-access-to-a-classified-object-must-require-tier-clearance-or-a-met-release-condition
+	 */
+	private function confidentialityRefuses(PermissionAsk $ask): bool {
+		if ($ask->object === null
+			|| $ask->action !== ConfidentialityReadGate::READ
+			|| ConfidentialityReadGate::declares(schema: $ask->schema) === false
+		) {
+			return false;
+		}
+
+		$userId = $this->callerId(userId: $ask->userId);
+		$gate   = new ConfidentialityReadGate(matcher: $this->rules->conditionMatcher, logger: $this->data->logger);
+
+		return $gate->refuses(
+			schema: $ask->schema,
+			action: $ask->action,
+			envelope: $ask->object->getMatchEnvelope(),
+			userId: $userId,
+			groups: $this->groupsOf(userId: $userId),
+			owner: ($ask->objectOwner ?? $ask->object->getOwner())
+		);
+	}//end confidentialityRefuses()
 
 	/**
 	 * The chain after the deny pass: the private scope, the caller, the administrator bypass, derived groups, custom verbs and the grants.
