@@ -47,6 +47,7 @@ final class ExportRequest {
 	 * @param Schema|null          $schema      The schema exported, or null for every schema of the register.
 	 * @param array<string, mixed> $filters     The request filters (`@self.*` metadata, properties, `_ids`, `_multi`).
 	 * @param IUser|null           $currentUser The user the export runs for; drives the visible columns.
+	 * @param ExportPage|null      $page        The page to read, or null for every row.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -55,6 +56,7 @@ final class ExportRequest {
 		public readonly ?Schema $schema = null,
 		public readonly array $filters = [],
 		public readonly ?IUser $currentUser = null,
+		public readonly ?ExportPage $page = null,
 	) {
 	}//end __construct()
 

@@ -988,6 +988,66 @@ class ExportService implements ObjectExporterInterface {
 	 * @return ObjectEntity[] Array of matching object entities.
 	 */
 	private function fetchObjectsForExport(ExportRequest $request): array {
+		$selection = $this->exportSelection(request: $request);
+		$query     = $selection['query'];
+		if ($request->page !== null) {
+			// A bounded export (design D-4) reads one page of the same selection.
+			$query['_limit']  = $request->page->size;
+			$query['_offset'] = (($request->page->number - 1) * $request->page->size);
+		}
+
+		$search = fn (): array => $this->objectService->searchObjects(
+			query: $query,
+			_rbac: true,
+			// Apply RBAC filtering.
+			_multitenancy: $selection['multitenancy'],
+			// Apply multi-tenancy filtering (respects explicit _multi parameter).
+			ids: $selection['ids'],
+			uses: null
+		);
+
+		if ($this->processAudit === null) {
+			return $search();
+		}
+
+		return $this->processAudit->run(run: new RevealingProcess(process: 'export', runId: Uuid::v4()->toRfc4122()), operation: $search);
+	}//end fetchObjectsForExport()
+
+	/**
+	 * How many objects the export's selection holds over all its pages.
+	 *
+	 * The same selection {@see fetchObjectsForExport()} reads, under the same
+	 * RBAC and multi-tenancy, counted rather than read, so a paged export can
+	 * say how many rows and pages there are without loading them.
+	 *
+	 * @param ExportRequest $request The register, schema, filters and user of the export.
+	 *
+	 * @return int The number of matching objects.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	public function countExportTotal(ExportRequest $request): int {
+		$selection = $this->exportSelection(request: $request);
+		$query     = $selection['query'];
+		unset($query['_limit'], $query['_offset']);
+
+		return $this->objectService->countSearchObjects(
+			query: $query,
+			_rbac: true,
+			_multitenancy: $selection['multitenancy'],
+			ids: $selection['ids'],
+			uses: null
+		);
+	}//end countExportTotal()
+
+	/**
+	 * The search an export runs: the query, the multi-tenancy flag and the selected ids.
+	 *
+	 * @param ExportRequest $request The register, schema, filters and user of the export.
+	 *
+	 * @return array{query: array<string, mixed>, multitenancy: bool, ids: array<int, string>|null}
+	 */
+	private function exportSelection(ExportRequest $request): array {
 		$register = $request->register;
 		$schema   = $request->schema;
 		$filters  = $request->filters;
@@ -1050,23 +1110,8 @@ class ExportService implements ObjectExporterInterface {
 			'_multitenancy_explicit' => $multiExplicitlySet,
 		] + $propertyFilters;
 
-		$search = fn (): array => $this->objectService->searchObjects(
-			query: $query,
-			_rbac: true,
-			// Apply RBAC filtering.
-			_multitenancy: $multitenancy,
-			// Apply multi-tenancy filtering (respects explicit _multi parameter).
-			ids: $selectedIds,
-			uses: null
-		);
-
-		if ($this->processAudit === null) {
-			return $search();
-		}
-
-		return $this->processAudit->run(run: new RevealingProcess(process: 'export', runId: Uuid::v4()->toRfc4122()), operation: $search);
-	}//end fetchObjectsForExport()
-
+		return ['query' => $query, 'multitenancy' => $multitenancy, 'ids' => $selectedIds];
+	}//end exportSelection()
 
 	/**
 	 * The multitenancy an export's filters ask for: `_multi`, else `multi`, else on.

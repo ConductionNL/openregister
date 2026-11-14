@@ -1,0 +1,497 @@
+{
+    "info": {
+        "name": "OpenRegister: public export",
+        "description": "openspec/changes/export-open-formats-and-public-download, task 2.2. An anonymous caller downloads a schema whose export grant names `public` as CSV, TSV and XML with the paging headers, is refused with 401 `not-public` on a schema readable by the public but exportable only by an editor, and with 406 for `format=pdf`. A signed-in export is not paged. `00 setup` creates a register, both schemas and one object in each as the admin; `99 teardown` deletes them.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "basic",
+        "basic": [
+            {
+                "key": "username",
+                "value": "{{username}}",
+                "type": "string"
+            },
+            {
+                "key": "password",
+                "value": "{{password}}",
+                "type": "string"
+            }
+        ]
+    },
+    "item": [
+        {
+            "name": "00 setup",
+            "item": [
+                {
+                    "name": "Create register",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is 201', () => pm.expect(pm.response.code).to.equal(201));",
+                                    "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/registers",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n \"title\": \"Public export {{run}}\",\n \"description\": \"Register for the public export Newman collection\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Create schema Besluit",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is 201', () => pm.expect(pm.response.code).to.equal(201));",
+                                    "pm.collectionVariables.set('publicSchemaId', String(pm.response.json().id));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{registerId}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n \"title\": \"Besluit {{run}}\",\n \"properties\": {\n  \"titel\": {\n   \"type\": \"string\"\n  },\n  \"thema\": {\n   \"type\": \"string\"\n  }\n },\n \"authorization\": {\n  \"read\": [\n   \"public\"\n  ],\n  \"export\": [\n   \"public\"\n  ]\n }\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Create schema Melding",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is 201', () => pm.expect(pm.response.code).to.equal(201));",
+                                    "pm.collectionVariables.set('privateSchemaId', String(pm.response.json().id));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{registerId}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n \"title\": \"Melding {{run}}\",\n \"properties\": {\n  \"titel\": {\n   \"type\": \"string\"\n  },\n  \"thema\": {\n   \"type\": \"string\"\n  }\n },\n \"authorization\": {\n  \"read\": [\n   \"public\"\n  ],\n  \"export\": [\n   \"redactie\"\n  ]\n }\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Create a public decision",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('the object is created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{publicSchemaId}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n \"titel\": \"Besluit milieu\",\n \"thema\": \"milieu\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Create a private report",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('the object is created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{privateSchemaId}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n \"titel\": \"Melding\",\n \"thema\": \"milieu\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "10 anonymous export",
+            "item": [
+                {
+                    "name": "CSV of a public schema",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+                                    "pm.test('served as CSV', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv'));",
+                                    "pm.test('holds the public decision', () => pm.expect(pm.response.text()).to.include('Besluit milieu'));",
+                                    "pm.test('X-Total-Count is sent', () => pm.expect(pm.response.headers.get('X-Total-Count')).to.equal('1'));",
+                                    "pm.test('X-Page is 1', () => pm.expect(pm.response.headers.get('X-Page')).to.equal('1'));",
+                                    "pm.test('X-Pages is 1', () => pm.expect(pm.response.headers.get('X-Pages')).to.equal('1'));",
+                                    "pm.test('no next link on the only page', () => pm.expect(pm.response.headers.has('Link')).to.equal(false));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{publicSchemaId}}/export?format=csv&thema=milieu",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    }
+                },
+                {
+                    "name": "TSV of a public schema",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+                                    "pm.test('served as TSV', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('text/tab-separated-values'));",
+                                    "pm.test('X-Total-Count is sent', () => pm.expect(pm.response.headers.get('X-Total-Count')).to.equal('1'));",
+                                    "pm.test('X-Page is 1', () => pm.expect(pm.response.headers.get('X-Page')).to.equal('1'));",
+                                    "pm.test('X-Pages is 1', () => pm.expect(pm.response.headers.get('X-Pages')).to.equal('1'));",
+                                    "pm.test('no next link on the only page', () => pm.expect(pm.response.headers.has('Link')).to.equal(false));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{publicSchemaId}}/export?format=tsv",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    }
+                },
+                {
+                    "name": "XML of a public schema",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+                                    "pm.test('served as XML', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/xml'));",
+                                    "pm.test('a document of objects', () => pm.expect(pm.response.text()).to.include('<objects'));",
+                                    "pm.test('X-Total-Count is sent', () => pm.expect(pm.response.headers.get('X-Total-Count')).to.equal('1'));",
+                                    "pm.test('X-Page is 1', () => pm.expect(pm.response.headers.get('X-Page')).to.equal('1'));",
+                                    "pm.test('X-Pages is 1', () => pm.expect(pm.response.headers.get('X-Pages')).to.equal('1'));",
+                                    "pm.test('no next link on the only page', () => pm.expect(pm.response.headers.has('Link')).to.equal(false));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{publicSchemaId}}/export?format=xml",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    }
+                },
+                {
+                    "name": "A readable but not exportable schema",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is 401', () => pm.expect(pm.response.code).to.equal(401));",
+                                    "pm.test('rule not-public', () => pm.expect(pm.response.json().rule).to.equal('not-public'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{privateSchemaId}}/export?format=csv",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    }
+                },
+                {
+                    "name": "PDF is not an open format",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is 406', () => pm.expect(pm.response.code).to.equal(406));",
+                                    "pm.test('names the open formats', () => pm.expect(pm.response.json().formats).to.eql(['csv', 'tsv', 'json', 'xml']));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{publicSchemaId}}/export?format=pdf",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "20 signed-in export",
+            "item": [
+                {
+                    "name": "A signed-in CSV export has no paging headers",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+                                    "pm.test('not paged', () => pm.expect(pm.response.headers.has('X-Page')).to.equal(false));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{publicSchemaId}}/export?format=csv"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "99 teardown",
+            "item": [
+                {
+                    "name": "Delete public schema",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{publicSchemaId}}?deleteObjects=true"
+                    }
+                },
+                {
+                    "name": "Delete private schema",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{privateSchemaId}}?deleteObjects=true"
+                    }
+                },
+                {
+                    "name": "Delete register",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}?force=true"
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080"
+        },
+        {
+            "key": "username",
+            "value": "admin"
+        },
+        {
+            "key": "password",
+            "value": "admin"
+        },
+        {
+            "key": "run",
+            "value": ""
+        },
+        {
+            "key": "registerId",
+            "value": ""
+        },
+        {
+            "key": "publicSchemaId",
+            "value": ""
+        },
+        {
+            "key": "privateSchemaId",
+            "value": ""
+        }
+    ]
+}
