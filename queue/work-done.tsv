@@ -10469,3 +10469,4 @@ fix:humaniq:1135:9114728c	development merged in, l10n resolved, new head 120d0cd
 verify:decidiq:2169:b67a6495	2169 GREEN	session-20261114T174106-c933f162	2026-11-14T17:46:46Z
 fix:planninq:1158:4d1b5b8d	fixed: unit complexity restored (floor compare PASS); new head 11b7da5e	session-20261114T154807-c05f4e57	2026-11-14T17:46:53Z
 verify:integriq:3600:528563f5	3600 GREEN, 3632 CONFLICT (seed golden test vs 3600); no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:47:06Z
+build:learniq:bpv-coach-today-and-placement-board:c3	PR #2536 (head 8ee1ab75): T3 visit proposal+trainer answer, T4 placement board, T6 mbo example set built; +14 PHP tests, +5 JS tests, suite 6768->6782 (1 inherited fail). Left: T5 Today view, waits on today-first-per-school-role (not built)	session-20261114T171822-ef880213	2026-11-14T17:47:31Z
