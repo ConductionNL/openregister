@@ -8833,3 +8833,4 @@ build2:openregister:flow-designer-parallel-paths-and-waits:c2	blocked: no openre
 verify:buildiq:1634:a9598299	1634 GREEN	session-20261114T075640-efa02b24	2026-11-14T10:32:39Z
 build2:openregister:modelling-rename-without-loss:c2	failed: not started, worker context nearly full; resume from open PR #10247 (branch build/modelling-rename-without-loss): 1.2, 2.2, 2.3, 3.x, 4.1 left	session-20261114T075640-efa02b24	2026-11-14T10:33:34Z
 build4:openregister:platform-collaboration-resources:c2	partial: PR #10501 task 3.1 (handover docs page for app lanes); 1.4 still blocked by the core provider interface (no membership hook), 2.2 audit test waits on 1.4, 2.1 e2e	session-20261114T075643-acecaad6	2026-11-14T10:33:44Z
+review:openregister:10479:d436ab8e	APPROVE	session-20261114T075644-ec2e07ac	2026-11-14T10:34:18Z
