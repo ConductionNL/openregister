@@ -4253,3 +4253,11 @@ Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+BackgroundJob/IdentifierSchemeMigrationJob.php,,BackgroundJob,,,,,Configuration
+Controller/IdentifierSchemeMigrationsController.php,,Controller,,,,,Configuration
+Db/IdentifierSchemeRun.php,,Db,,,,,Configuration
+Db/IdentifierSchemeRunMapper.php,,Db,,,,,Configuration
+Migration/Version1Date20261114180000.php,,Migration,,,,,Platform
+Service/IdentifierSchemeMigrationRunningException.php,,Service,,,,,Configuration
+Service/IdentifierSchemeMigrationService.php,,Service,,,,,Configuration
+Service/IdentifierSchemePass.php,,Service,,,,,Configuration
