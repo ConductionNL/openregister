@@ -6858,3 +6858,5 @@ humaniq	1127	bcbc1be82d73fd36f8b2fe07516a99b7eb8d1483	CONFLICT	worker-41	clean o
 humaniq	1128	8d2efc39249714ec66dbc9d6c9d6d51775f38609	GREEN	worker-41	phpunit 4182 (baseline 4159, 0 fail), node test:js 199 pass, new failures 0
 humaniq	1129	f4fd707435852417eba7b5174d02634f0d76a47f	GREEN	worker-41	phpunit 4182 (baseline 4159, 0 fail), node test:js 199 pass, new failures 0
 humaniq	1130	0e2113c2a209f2c086580e30bb2cad298fba07f1	GREEN	worker-41	phpunit 4182 (baseline 4159, 0 fail), node test:js 199 pass, new failures 0
+humaniq	1131	e8584d34c9ac0215baba882b1f25a2e8c6518250	CONFLICT	worker-41	clean on development; conflicts with tree in l10n/en.js en.json nl.js nl.json
+humaniq	1132	0fa00663becac66e1e2cfcf59081ffff1a532759	GREEN	worker-41	phpunit 4182 (baseline 4159, 0 fail), node test:js 199 pass, new failures 0
