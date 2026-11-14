@@ -11278,3 +11278,4 @@ build:opencatalogi:publications-reference-the-shared-organisation:c2	done: no co
 build:opencatalogi:publication-inspection-and-the-national-indexes:c2	PR #2668: built 1.2, 6.3, 7.4 (new head ca0b78fe); 7.3 stays blocked on harvest-feed-intake	session-20261114T211750-05725ff5	2026-11-14T21:45:29Z
 verify:decidiq:2199:d43fa5ca	GREEN 2199	session-20261114T212457-7a749dbd	2026-11-14T21:45:36Z
 build:launchpad:engagement-announcements:c2	partial: PR #1214 head 3cd2835b, tasks 1-11 built (comments/likes via ICommentsManager, follow notifier + job, widget, editor with preview, notice banners, demo seed), en+nl strings and parity rows done; left: strings for the other 34 locales, Playwright (task 12), axe check, spec copy on archive; suite 4220->4242 OK, vitest 2273 OK	session-20261114T202449-f0278d5a	2026-11-14T21:45:46Z
+verify:hermiq:1781:87e0ed7f	stale	feeder	2026-11-14T21:45:17Z
