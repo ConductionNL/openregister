@@ -11368,3 +11368,4 @@ fix:hermiq:1767:69628bfa	floor restored (3.77) by moving job logic behind a Kern
 fix:stackiq:1908:9ee44b11	fixed RED: route posture for bound AppHost generics, merged development; new head 6726be39, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T22:00:13Z
 build:stackiq:insight-assistant-answers-and-action-trail:c2	partial: not started this run (worker context nearly full); PR #1920 (task 1) merged; left: task 2 Ask panel + hermiqAvailable state, task 3 assistant actions page, task 4 history tab label, task 5 docs	session-20261114T211806-b9cd4119	2026-11-14T22:00:23Z
 review:stackiq:1706:59b724c4	GREEN	session-20261114T203357-c555025b	2026-11-14T22:00:23Z
+review:opencatalogi:2655:d76bebab	stale	feeder	2026-11-14T22:00:07Z
