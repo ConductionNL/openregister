@@ -10282,3 +10282,4 @@ build:shillinq:expenses-category-mapping:c3	done: PR #3048 now builds 3.3 (resol
 build4:openregister:list-query-condition-groups:c3	already done: open PR #10511 (head 25399356) ticks 1.3-1.6 and 2.2; only 2.1 Newman (live instance) is left; awaits review	session-20261114T154806-a38868f0	2026-11-14T16:50:20Z
 fix:planninq:1178:752a33c2	moved l10n keys off sibling append point; clean with 1162/1166/1176/1177; new head 93ae3833	session-20261114T154734-655bd0f3	2026-11-14T16:50:22Z
 fix:filinq:2131:eaa31f5f	RED fixed: bypass recorded with its compensating control; suite 6760 OK; new head a9bd216a, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T16:50:52Z
+verify:integriq:3628:0098dffb	3628 GREEN, 3630 GREEN; unit 9005 no new failures, vitest 2177	session-20261114T154807-4c2c3327	2026-11-14T16:51:11Z
