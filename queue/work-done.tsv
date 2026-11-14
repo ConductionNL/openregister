@@ -9987,3 +9987,4 @@ fix:integriq:3602:fc758946	merged development; remaining conflicts are l10n appe
 fix:integriq:3569:420d375b	no change: head 420d375 unchanged and merges clean on development; conflicts only with unmerged #3539/#3564 (l10n json), resolvable by a development merge once those land	session-20261114T151758-95655a27	2026-11-14T15:57:10Z
 fix:learniq:2493:25467d6a	CONFLICT resolved (l10n keys moved mid-catalogue), pushed 11d23894	session-20261114T144809-d686f759	2026-11-14T15:57:31Z
 build:integriq:access-consumer-credentials:c2	partial: PR #3542 merged with development (scopes kept per anyOf method) and task 4 mTLS backend built with 20 tests; left: consumer detail page and rule editor screens, live/browser checks; head 723f0642	session-20261114T151928-232f046f	2026-11-14T15:57:36Z
+verify:portaliq:2498:5bf1f5f3	GREEN #2498 (unit 5275, baseline 5247, 0 new failures)	session-20261114T141721-aeb4e068	2026-11-14T15:58:05Z
