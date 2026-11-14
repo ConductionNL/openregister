@@ -10160,6 +10160,7 @@ fix:learniq:2507:c4857461	merged development, conflicts resolved keeping both (r
 merge:humaniq:1030:f7bd7726	merge3 tree of 11 humaniq PRs: merged=7 red=2 fail=0 skip=0; conflict 1, lint 0, moved 1; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T16:24:14Z
 merge:humaniq:1153:97c9fdd2	merge3 tree of 11 humaniq PRs: merged=7 red=2 fail=0 skip=0; conflict 1, lint 0, moved 1; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T16:24:18Z
 fix:integriq:3542:723f0642	relocated l10n keys and openapi paths off the shared tail; merges clean with 3539; REVERIFY ee72f32b	session-20261114T151755-dc817df2	2026-11-14T16:24:25Z
+build4:openregister:identity-survives-a-move:c3	no code tasks left: 1.2 route exists and locks/presence/timers are keyed on the unchanged uuid (spec names no timer behaviour), refusal of locked/frozen/archived built in MoveObject::keptReason; only 3.1 e2e (live instance) remains	session-20261114T151803-c9b63248	2026-11-14T16:24:40Z
 fix:shillinq:3074:714defc1	stale	session-20261114T151802-aefa9c5e	2026-11-14T16:24:36Z
 fix:planninq:1169:1268ee2b	conflict resolved: l10n keys relocated, merges cleanly after 1158/1159/1162; REVERIFY 64a5c7efa1b0c1dd8bebd0d6737a43309cad99c6	session-20261114T161806-530176c3	2026-11-14T16:24:48Z
 fix:integriq:3602:d7d08f57	no change: already up to date with development and merges clean there; conflicts only with unmerged sibling #3592 (SettingsService*, AdminSettings.vue, SettingsServiceTest add/add); land one, then merge development into the other	session-20261114T154751-59b4cd56	2026-11-14T16:25:01Z
