@@ -11873,3 +11873,4 @@ cover:decidiq:a5f973bbmae46:be0dcca9	already done: lib/Mcp/*.php at 100% lines (
 cover:shillinq:05639debm9818:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php is 244 interfaces, 0 executable statements in the coverage report; no PR	session-20261114T231738-b43a6a63	2026-11-14T23:24:33Z
 cover:shillinq:05639debm9818:9d3a1784	already done: lib/BackgroundJob/*.php at 99.4% lines (1726/1736) on development 6e0f5bac8, target 95; earlier -1..-3 branches merged; suite 11463 tests OK	session-20261114T231755-998f7ff8	2026-11-14T23:24:42Z
 cover:integriq:92114ab0m4b3f:34f5c300	PR #3640: 27 tests, 4 classes; lib/Service/*.php 90.99 -> 91.53% (pcov), no new failures	session-20261114T224753-194bb25e	2026-11-14T23:24:55Z
+verify:pipelinq:3842:1b0854c9	GREEN 3842 (tests-only coverage metadata; 8452 tests, 0 failures, risky cleared)	session-20261114T223333-658f3be1	2026-11-14T23:24:54Z
