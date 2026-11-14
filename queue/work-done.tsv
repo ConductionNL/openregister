@@ -7997,3 +7997,4 @@ fix:learniq:2504:aaac75e9	merged development in cleanly; new head dfdefd471d3aaf
 fix:learniq:2509:62c1c223	no change: head 62c1c223 merges cleanly with development 9dd9fe0d; the l10n/nl.json conflict is with open PR #2488, resolvable here only after #2488 lands	session-20261114T073108-8b40426a	2026-11-14T07:50:38Z
 fix:decidiq:2165:8558e270	no change: merges clean with development; conflicts only with unmerged siblings 2155 and 2158 in l10n/en.js en.json nl.js nl.json (same insertion point); re-merge development after those land	session-20261114T065625-baa65a50	2026-11-14T07:51:03Z
 fix:pipelinq:3732:58e89f85	l10n keys moved off the tail; merges clean with dev and #3721; pushed 5b438a04c	session-20261114T065632-a1c920c5	2026-11-14T07:51:02Z
+review:openregister:10471:fef0602e	APPROVE (gitleaks allowlist, narrow)	session-20261114T065631-b4991134	2026-11-14T07:51:08Z
