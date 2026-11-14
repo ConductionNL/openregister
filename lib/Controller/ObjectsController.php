@@ -36,6 +36,7 @@ use OCA\OpenRegister\Controller\Support\ObjectExport;
 use OCA\OpenRegister\Controller\Support\ObjectCountScope;
 use OCA\OpenRegister\Controller\Support\ObjectDeleteRoute;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
+use OCA\OpenRegister\Controller\Support\CopyRun;
 use OCA\OpenRegister\Controller\Support\ObjectCreate;
 use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
 use OCA\OpenRegister\Controller\Support\ObjectReadOptions;
@@ -5576,8 +5577,13 @@ class ObjectsController extends Controller {
 	 * body goes through the normal create path, so every create rule and
 	 * validation applies (a refused body writes nothing). The identity, the
 	 * `@self` metadata and platform-minted properties are never copied
-	 * ({@see \OCA\OpenRegister\Service\Object\CopyPayload}). Copying links
-	 * (`include`) is not offered yet and is refused with 422 rather than
+	 * ({@see \OCA\OpenRegister\Service\Object\CopyPayload}). With `include`
+	 * the copy also takes along the source's relation rows (`relationRows`) and
+	 * a place beside the source in array references to it (`incoming`), each
+	 * under the caller's own rights and reported per link
+	 * ({@see \OCA\OpenRegister\Service\Object\CopyObject}). The create and
+	 * the links share one transaction: a refused create leaves nothing behind.
+	 * Copying files is not offered yet and is refused with 422 rather than
 	 * silently left out.
 	 *
 	 * @param string                    $register      The register.
@@ -5629,29 +5635,141 @@ class ObjectsController extends Controller {
 			schema: $resolved['schemaEntity']
 		);
 		$controls = new ObjectCreateControls(request: $this->request, caller: $this->caller());
-		$create  = new ObjectCreate(object: $body, resolved: $resolved, objectService: $objectService, controls: $controls);
-		$created = $this->createdResponse(create: $create);
+		$create   = new ObjectCreate(object: $body, resolved: $resolved, objectService: $objectService, controls: $controls);
+		$include  = $this->copyInclude();
+		if ($include === []) {
+			return $this->copyAnswer(created: $this->createdResponse(create: $create), links: []);
+		}
+
+		return $this->copyWithLinks(copy: new CopyRun(source: $source, create: $create, include: $include));
+	}//end copy()
+
+	/**
+	 * Create the copy and its links in one transaction.
+	 *
+	 * A refused create, or a failure while writing a link, rolls everything
+	 * back. A link refused for the caller's rights is reported and skipped,
+	 * not a rollback.
+	 *
+	 * @param CopyRun $copy The source, the create and the link kinds.
+	 *
+	 * @return JSONResponse 201 with `{object, links}`, or the create's refusal.
+	 *
+	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
+	 */
+	private function copyWithLinks(CopyRun $copy): JSONResponse {
+		$db = $this->container->get(\OCP\IDBConnection::class);
+		$db->beginTransaction();
+		try {
+			$created = $this->createdResponse(create: $copy->create);
+			if ($created->getStatus() !== 201) {
+				$db->rollBack();
+				return $created;
+			}
+
+			$links = $this->container->get(\OCA\OpenRegister\Service\Object\CopyObject::class)->links(
+				source: $copy->source,
+				copy: $this->createdCopy(created: $created, create: $copy->create),
+				include: $copy->include,
+				objects: $copy->create->objectService
+			);
+			$db->commit();
+		} catch (\Throwable $e) {
+			$db->rollBack();
+			$this->logger->error(
+				message: '[ObjectsController] A copy with links failed and was rolled back',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
+			);
+			return new JSONResponse(data: ['error' => 'The copy could not be made; nothing was written.'], statusCode: 500);
+		}//end try
+
+		return $this->copyAnswer(created: $created, links: $links);
+	}//end copyWithLinks()
+
+	/**
+	 * The new object behind a create answer.
+	 *
+	 * @param JSONResponse $created The 201 answer of the create.
+	 * @param ObjectCreate $create  The create.
+	 *
+	 * @return ObjectEntity The copy.
+	 *
+	 * @throws \RuntimeException When the copy cannot be read back.
+	 */
+	private function createdCopy(JSONResponse $created, ObjectCreate $create): ObjectEntity {
+		$data = (array) $created->getData();
+		$self = [];
+		if (is_array($data['@self'] ?? null) === true) {
+			$self = $data['@self'];
+		}
+
+		$uuid = (string) ($self['id'] ?? ($data['id'] ?? ''));
+		$copy = $create->objectService->find(
+			id: $uuid,
+			options: new ObjectFindOptions(register: $create->resolved['registerEntity']->getId(), schema: $create->resolved['schemaEntity']->getId()),
+			_rbac: false,
+			_multitenancy: false
+		);
+		if ($uuid === '' || $copy === null) {
+			throw new \RuntimeException('The copy could not be read back.');
+		}
+
+		return $copy;
+	}//end createdCopy()
+
+	/**
+	 * The copy's answer: the create's refusal, or 201 with the object and every link's outcome.
+	 *
+	 * @param JSONResponse                            $created The create's answer.
+	 * @param array<string, list<array<string, mixed>>> $links   The link outcomes per kind.
+	 *
+	 * @return JSONResponse
+	 */
+	private function copyAnswer(JSONResponse $created, array $links): JSONResponse {
 		if ($created->getStatus() !== 201) {
 			return $created;
 		}
 
 		return new JSONResponse(
-			data: ['object' => $created->getData(), 'links' => ['relationRows' => [], 'incoming' => [], 'files' => []]],
+			data: ['object' => $created->getData(), 'links' => array_merge(['relationRows' => [], 'incoming' => [], 'files' => []], $links)],
 			statusCode: 201
 		);
-	}//end copy()
+	}//end copyAnswer()
 
 	/**
-	 * The refusal of a copy request that asks for what a copy does not do yet.
+	 * The link kinds the request asks a copy to take along.
 	 *
-	 * @return JSONResponse|null 422 for links or an upsert key; null when the request may proceed.
+	 * @return array<int, string>
+	 */
+	private function copyInclude(): array {
+		$include = $this->request->getParam('include', []);
+		if (is_array($include) === false) {
+			return [];
+		}
+
+		return array_values(array_unique(array_filter($include, 'is_string')));
+	}//end copyInclude()
+
+	/**
+	 * The refusal of a copy request that asks for what a copy does not do.
+	 *
+	 * @return JSONResponse|null 422 for an unknown link kind, files or an upsert key; null when the request may proceed.
 	 *
 	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
 	 */
 	private function copyRequestRefusal(): ?JSONResponse {
 		$include = $this->request->getParam('include', []);
-		if (is_array($include) === true && $include !== []) {
-			return new JSONResponse(data: ['error' => 'Copying links is not available yet; copy without include.'], statusCode: 422);
+		if (is_array($include) === false) {
+			return new JSONResponse(data: ['error' => 'include must be a list of relationRows, incoming or files.'], statusCode: 422);
+		}
+
+		$unknown = \OCA\OpenRegister\Service\Object\CopyObject::unknownKinds(include: $include);
+		if ($unknown !== []) {
+			return new JSONResponse(data: ['error' => 'Unknown link kind: '.implode(', ', $unknown).'.'], statusCode: 422);
+		}
+
+		if (in_array('files', $include, true) === true) {
+			return new JSONResponse(data: ['error' => 'Copying files is not available yet; copy without files.'], statusCode: 422);
 		}
 
 		if (trim((string) $this->request->getParam('_upsertOn', '')) !== '') {
