@@ -7969,3 +7969,4 @@ merge:stackiq:1887:168bd8c5	merge3 tree of 12 stackiq PRs: merged=8 red=0 fail=0
 merge:stackiq:1891:c0606c73	merge3 tree of 12 stackiq PRs: merged=8 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:46:44Z
 merge:stackiq:1895:78a4ba9c	merge3 tree of 12 stackiq PRs: merged=8 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:46:51Z
 build:integriq:sources-per-user-oauth	partial: PR #3581, task 1 done; task 2 waits on ProblemResponse (#3556), task 3 conflicts with the no-personal-settings rule	session-20261114T065626-0651b305	2026-11-14T07:46:57Z
+build:integriq:gateway-openapi-import-and-publish	partial: PR #3582 (import preview/import + publish, 31 tests); task 2 left open (gateway prefix lost by EndpointRoutingListener), task 3 dialog not built	session-20261114T062156-16c77e6a	2026-11-14T07:47:17Z
