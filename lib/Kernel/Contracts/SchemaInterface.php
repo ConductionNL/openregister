@@ -584,6 +584,15 @@ interface SchemaInterface extends JsonSerializable {
 	public function isSearchable(): bool;
 
 	/**
+	 * Whether this schema's objects may be shared with a principal at another instance.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
+	 */
+	public function isFederatable(): bool;
+
+	/**
 	 * Set whether this schema should be searchable in SOLR
 	 *
 	 * @param bool $searchable Whether schema objects should be indexed in SOLR

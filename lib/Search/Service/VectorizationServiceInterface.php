@@ -62,6 +62,22 @@ interface VectorizationServiceInterface {
 	public function clearAllEmbeddings(): array;
 
 	/**
+	 * Generate an embedding for a text
+	 *
+	 * @param string      $text     Text to embed
+	 * @param string|null $provider Embedding provider (null = use default from settings)
+	 *
+	 * @return array Embedding data: `embedding` (float[]), `model` and `dimensions`.
+	 *
+	 * @throws \Exception If embedding generation fails
+	 *
+	 * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function generateEmbedding(string $text, ?string $provider = null): array;
+
+	/**
 	 * Get vector statistics
 	 *
 	 * Delegates to VectorEmbeddings.

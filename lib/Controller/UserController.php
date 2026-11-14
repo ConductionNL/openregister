@@ -44,11 +44,13 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\Authentication\TwoFactorAuth\IRegistry;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * UserController handles user-related API endpoints
@@ -120,6 +122,12 @@ class UserController extends Controller {
 	private readonly IL10N $l10n;
 
 	/**
+	 * Which second factors each user has enabled
+	 * @var IRegistry
+	 */
+	private readonly IRegistry $twoFactor;
+
+	/**
 	 * Builds the security-headed responses
 	 *
 	 * @var UserResponses
@@ -145,6 +153,7 @@ class UserController extends Controller {
 		$this->securityService = $services->domain->securityService;
 		$this->userManager = $services->domain->userManager;
 		$this->userSession = $services->domain->userSession;
+		$this->twoFactor = $services->domain->twoFactor;
 		$this->logger = $services->platform->logger;
 		$this->l10n = $services->platform->l10n;
 		$this->responses = new UserResponses(securityService: $this->securityService);
@@ -320,8 +329,43 @@ class UserController extends Controller {
 			return $refusal;
 		}
 
+		// A password alone never signs in a user who has a second factor:
+		// this route cannot run the factor's challenge, so it creates no
+		// session and says the factor is required (REQ-PPC-004).
+		if ($this->hasSecondFactor(user: $user) === true) {
+			return $this->responses->secured(
+				data: ['error' => 'second_factor_required', 'message' => 'A second factor is required; sign in through Nextcloud.', 'session_created' => false],
+				statusCode: 401
+			);
+		}
+
 		return $this->startSession(user: $user, attempt: $attempt);
 	}//end checkCredentials()
+
+	/**
+	 * Whether the user has any second factor enabled. When the states cannot
+	 * be read the answer is yes: a password alone must not get past a factor
+	 * because the registry failed.
+	 *
+	 * @param IUser $user The user whose password checked out.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-004
+	 */
+	private function hasSecondFactor(IUser $user): bool {
+		try {
+			$states = $this->twoFactor->getProviderStates($user);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[UserController] Second-factor states unreadable; refusing the password-only login',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error_message' => $e->getMessage()]
+			);
+			return true;
+		}
+
+		return in_array(true, $states, true);
+	}//end hasSecondFactor()
 
 	/**
 	 * Record the successful login (clears rate limits) and create the login session.

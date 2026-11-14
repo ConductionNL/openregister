@@ -62,11 +62,13 @@ class ConfigurationExplainer {
 	 * @param ConfigurationValueStore                  $store       The live values.
 	 * @param ConfigurationDeploymentMapperInterface   $deployments The append-only history.
 	 * @param ConfigurationBindingMapperInterface|null $bindings    The bundle bindings, when the instance has them.
+	 * @param ShippedDivergenceSourceInterface|null    $divergence  Where an app-shipped subject differs from its baseline.
 	 */
 	public function __construct(
 		private readonly ConfigurationValueStore $store,
 		private readonly ConfigurationDeploymentMapperInterface $deployments,
-		private readonly ?ConfigurationBindingMapperInterface $bindings = null
+		private readonly ?ConfigurationBindingMapperInterface $bindings = null,
+		private readonly ?ShippedDivergenceSourceInterface $divergence = null
 	) {
 
 	}//end __construct()
@@ -77,12 +79,15 @@ class ConfigurationExplainer {
 	 * @param string             $configKey The configuration key.
 	 * @param ConfigurationScope $scope     The register, bundle and subject to read within; none by default.
 	 *
-	 * @return array<string, mixed> The effective value, its layer, and its deployment.
+	 * @return array<string, mixed> The effective value, its layer, and its deployment; for a
+	 *                              subject's shipped baseline also `divergence`, what the
+	 *                              instance changed since the app shipped it.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
 	public function explain(string $configKey, ConfigurationScope $scope = new ConfigurationScope()): array {
-		return $this->answerFor(
+		$answer = $this->answerFor(
 			configKey: $configKey,
 			chain: $this->chainFor(
 				configKey: $configKey,
@@ -91,6 +96,17 @@ class ConfigurationExplainer {
 				subject: $scope->subject
 			)
 		);
+
+		// Local-changes-to-app-shipped-configuration D-6: the divergence is reported
+		// beside the layers, where the baseline itself is explained.
+		if ($this->divergence !== null
+			&& $configKey === ShippedDivergenceSourceInterface::BASELINE_KEY
+			&& $scope->subject !== null
+		) {
+			$answer['divergence'] = $this->divergence->forSubject(subject: $scope->subject);
+		}
+
+		return $answer;
 
 	}//end explain()
 

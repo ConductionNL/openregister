@@ -69,6 +69,26 @@ $dispatcher->addListener(ObjectCreatingEvent::class, function (ObjectCreatingEve
 
 This is the mechanism used by [Schema Hooks](workflow-automation.md) and reference validation.
 
+## When a write's listeners run
+
+By default every listener of `ObjectCreatedEvent` runs before the create returns, so a `201` means the object is saved *and* every listener has finished.
+
+An administrator can trade that for faster writes:
+
+```bash
+occ config:app:set openregister defer_object_events --value=1
+```
+
+With deferral on, the created event is handed to a background job, and a `201` means only that the object is saved. Listeners (webhooks, CloudEvents, flows, notifications) run shortly afterwards, as the user who made the write.
+
+A caller that needs the old guarantee for one request sends this header:
+
+```http
+X-OpenRegister-Effects: sync
+```
+
+That request's event is dispatched before the response, exactly as without deferral. Use it for a write whose next step depends on a listener's result, such as a synchronous flow.
+
 ## Event Payload (CloudEvents v1.0)
 
 When events are forwarded to external systems (webhooks, realtime SSE), payloads conform to CloudEvents v1.0:

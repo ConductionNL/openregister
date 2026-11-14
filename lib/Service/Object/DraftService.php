@@ -195,6 +195,44 @@ class DraftService {
 	}//end discard()
 
 	/**
+	 * One draft of an object by its key, when the caller may see it.
+	 *
+	 * @param ObjectEntity $object The object the draft belongs to.
+	 * @param Schema       $schema The object's schema.
+	 * @param string       $key    The draft key.
+	 * @param string|null  $caller The caller.
+	 *
+	 * @return DraftVersion|null The draft, or null when there is none or the caller may not see it.
+	 *
+	 * @spec openspec/changes/records-draft-versions
+	 */
+	public function find(ObjectEntity $object, Schema $schema, string $key, ?string $caller): ?DraftVersion {
+		$draft = $this->drafts->findByKey(objectUuid: (string)$object->getUuid(), key: $key);
+		if ($draft === null || $this->mayAccess(draft: $draft, object: $object, schema: $schema, caller: $caller) === false) {
+			return null;
+		}
+
+		return $draft;
+	}//end find()
+
+	/**
+	 * Whether the caller may create a draft of an object: drafting is changing,
+	 * so it needs the right to update it (content-versioning, "Write permission
+	 * required for draft creation").
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param Schema       $schema The object's schema.
+	 * @param string|null  $caller The caller.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/records-draft-versions
+	 */
+	public function mayCreate(ObjectEntity $object, Schema $schema, ?string $caller): bool {
+		return $this->mayWrite(object: $object, schema: $schema, caller: $caller);
+	}//end mayCreate()
+
+	/**
 	 * The live data with the draft's delta on top.
 	 *
 	 * @param ObjectEntity $object The live object.

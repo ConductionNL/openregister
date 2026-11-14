@@ -8,7 +8,7 @@
 ## 2. Reading and routes
 
 - [ ] 2.1 `version` parameter on `ObjectService::find()` merging the delta and adding `@self._version`. Verify: API test `GET .../{id}?version=update-1` returns merged data, `?version=main` equals no parameter.
-- [ ] 2.2 `VersionsController` routes under `/api/objects/{register}/{schema}/{id}/versions` for create, list, read, update and delete. Verify: `tests/Api/ObjectDraftsTest`.
+- [x] 2.2 `VersionsController` routes under `/api/objects/{register}/{schema}/{id}/versions` for create, list, read, update and delete. Verify: `tests/Api/ObjectDraftsTest`.
 - [ ] 2.3 `_drafts=true` adds visible draft keys to `@self.drafts` without changing the result set. Verify: API test.
 
 ## 3. Promotion
