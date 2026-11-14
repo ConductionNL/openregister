@@ -9028,3 +9028,4 @@ shillinq	3057	da7239cadb5817492c2d87f42108964301251c23	REVERIFY	worker-48	merged
 hermiq	1725	01ca65a04599b571aedc170ab54a9272114981c5	GREEN	worker-28	tree dev+1725+1779: unit 5080 tests, failures the same 190 names as on development (missing ../openregister stubs), no new failures; vitest 1482/1482
 hermiq	1779	9a950cc0c157113aa8549ef005b47fe4169dfe7e	GREEN	worker-28	tree dev+1725+1779: unit 5080 tests, failures the same 190 names as on development (missing ../openregister stubs), no new failures; vitest 1482/1482
 hermiq	1757	c5c53ee833f45f7b3fe0a3bd183382bd7dc1ff9e	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/en.json
+hermiq	1762	6f2d6587c1d018f621bb2f38a1f18c3747790563	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/en.json
