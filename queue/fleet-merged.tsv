@@ -2435,3 +2435,16 @@ planninq	1160	67464e9d1417e21a9ca496d8a751d172e4884886	RED	merge3	GATE RED floor
 planninq	1161	d560907b4d1b14f25929d5d5390f0277d0fcfc3d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 planninq	1163	900d9ac62eb1482e0b3eb0a224db6a51acef60c9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 planninq	1172	93dd66c41a9ac2d74d6891f4c4f6b0540d94b69c	RED	merge3	GATE RED floor: overall: 4.78 -> 4.76; unit_complexity: 4.84 -> 4.82; unit_interfacing: 4.70 -> 4.37
+learniq	2436	4a8e77ec865809efd971fdfd3c0e4f32379dec73	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2490	fedc6da6d9fe6b8347e18d62326589f7e95494e1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2493	cf5af58be50a78f58a4094bba696b05ea4557075	RED	merge3	GATE RED floor: unit_complexity: 4.40 -> 4.38
+learniq	2494	bcb53dec83c6e83cedeccebe7a426639834cca05	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2501	ece22c4cf32ef3410d53b385a6c2c88ecb7f1860	RED	merge3	GATE RED floor: unit_complexity: 4.40 -> 4.37
+learniq	2505	b88cf9fcfd07a873a2d9be477745bce7444e4970	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2508	6b53b781affe27d5ebacd19e1e0d5e679930bcfe	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2510	fa67f91799e55c43207aa254630b7d9a1c7919ed	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2511	d064bcdff476915bad933bf0cf8ede82899866aa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2512	1f10f5758ea2477de9e2966186a996125da227f3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2516	12d298f4e220a31cccf1a44447aede7d54a8aafd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2517	b5af3de78c01869990b15c9f5dce6cf524e01072	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2522	ba589e01bd0ebab9a0f1e7f16ea2bcdc50d2dbb6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
