@@ -10400,3 +10400,4 @@ fix:learniq:2532:c0737461	merged development in, clean; 1 inherited unit failure
 verify:humaniq:1144:92fc8814	1144 GREEN	session-20261114T151932-05b02c14	2026-11-14T17:24:24Z
 verify:filinq:2130:7f59ceba	GREEN 2130, GREEN 2131 (PHP 6754->6779, vitest 763, no failures)	session-20261114T151803-c9b63248	2026-11-14T17:25:28Z
 fix:learniq:2486:60407158	merged development in, clean; 1 inherited unit failure; new head 6d3eac1a	session-20261114T171822-35ca2aeb	2026-11-14T17:25:51Z
+fix:learniq:2484:9e4298e4	development merged in, new head 953ce73f, REVERIFY recorded	session-20261114T171830-19af6b65	2026-11-14T17:26:23Z
