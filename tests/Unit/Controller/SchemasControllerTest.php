@@ -74,6 +74,13 @@ class SchemasControllerTest extends TestCase {
 
 	private \Psr\Container\ContainerInterface&MockObject $container;
 
+	/**
+	 * The rename check the container hands out, or null for none.
+	 *
+	 * @var \OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck|null
+	 */
+	private ?\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck $renameCheck = null;
+
 	private ?\OCA\OpenRegister\Service\Form\FormDependentsCheck $formCheck = null;
 
 	private \OCA\OpenRegister\Service\SchemaDeletionService&MockObject $schemaDeletionService;
@@ -162,6 +169,10 @@ class SchemasControllerTest extends TestCase {
 
 				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheckInterface::class) {
 					return $this->formCheck;
+				}
+
+				if ($id === \OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class) {
+					return $this->renameCheck;
 				}
 
 				return null;
@@ -318,6 +329,26 @@ class SchemasControllerTest extends TestCase {
 
 		$this->assertSame(201, $result->getStatus());
 	}//end testCreateReturnsCreatedSchema()
+
+	/**
+	 * A create answers with the schema and the advisory annotations its save ignored.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function testCreateListsTheDiscardedAnnotations(): void {
+		$schema = $this->createRealSchema(1, 'Meeting');
+		$discarded = [['family' => 'aggregations', 'schema' => 'meeting', 'messages' => ['Unknown filter field "x".']]];
+		$this->request->method('getParams')->willReturn(['title' => 'Meeting']);
+		$this->schemaMapper->method('createFromArray')->willReturn($schema);
+		$this->schemaMapper->method('discardedAnnotations')->willReturn($discarded);
+
+		$result = $this->controller->create();
+
+		$this->assertSame(201, $result->getStatus());
+		$this->assertSame($discarded, $result->getData()['warnings']);
+		$this->assertSame('Meeting', $result->getData()['title']);
+		$this->assertSame(1, $result->getData()['id']);
+	}//end testCreateListsTheDiscardedAnnotations()
 
 	public function testCreateRemovesInternalParams(): void {
 		$schema = $this->createRealSchema(1, 'Test');
@@ -790,6 +821,109 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 		$this->assertArrayNotHasKey('affectedForms', $result->getData() instanceof Schema ? [] : (array)$result->getData());
 	}//end testAFailingDependentFormCheckIsLogged()
+
+	/**
+	 * A rename that leaves a published trigger watching the old name saves, and the response carries the warning.
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	public function testARenameWarnsAboutTheFlowTriggersThatWatchTheOldName(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['properties' => ['description' => ['type' => 'string']], 'acknowledgeBreaking' => true]);
+		$changeSet = new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([['property' => 'summary', 'kind' => 'renamed', 'old' => 'summary', 'new' => 'description']], 'breaking', 'major');
+		$this->schemaVersioningService->method('classify')->willReturn($changeSet);
+		$warning = ['flow' => 'flow-a', 'step' => 'start', 'field' => 'summary', 'renamedTo' => 'description', 'message' => 'Flow "flow-a" step "start" watches "summary".'];
+		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check->expects($this->once())->method('warningsFor')->with($schema, $changeSet)->willReturn([$warning]);
+		$this->renameCheck = $check;
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame('Ticket', $result->getData()['title']);
+		$this->assertSame([$warning], $result->getData()['flowWarnings']);
+	}//end testARenameWarnsAboutTheFlowTriggersThatWatchTheOldName()
+
+	/**
+	 * Without a warning the response is the schema alone, as before.
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	public function testAnUpdateWithoutFlowWarningsReturnsTheSchemaAsBefore(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check->method('warningsFor')->willReturn([]);
+		$this->renameCheck = $check;
+
+		$result = $this->controller->update(1);
+
+		// The schema's fields as before, beside an empty list of ignored annotations.
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(array_merge($schema->jsonSerialize(), ['warnings' => []]), $result->getData());
+	}//end testAnUpdateWithoutFlowWarningsReturnsTheSchemaAsBefore()
+
+	/**
+	 * An update lists the advisory annotations its save ignored, read right after the save.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function testAnUpdateListsTheDiscardedAnnotations(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$discarded = [
+			['family' => 'calculations', 'schema' => 'ticket', 'messages' => ['Unknown op.']],
+			['family' => 'quality', 'schema' => 'ticket', 'messages' => ['Bad weight.']],
+		];
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->schemaMapper->method('discardedAnnotations')->willReturn($discarded);
+		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check->method('warningsFor')->willReturn([]);
+		$this->renameCheck = $check;
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame($discarded, $result->getData()['warnings']);
+		$this->assertSame('Ticket', $result->getData()['title']);
+	}//end testAnUpdateListsTheDiscardedAnnotations()
+
+	/**
+	 * A rename check that throws is logged and never fails the save.
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	public function testAFailingRenameCheckIsLoggedAndTheSaveStands(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check->method('warningsFor')->willThrowException(new \RuntimeException('flows unreadable'));
+		$this->renameCheck = $check;
+		$warnings = [];
+		$this->logger->method('warning')->willReturnCallback(
+			static function (string|\Stringable $message, array $context = []) use (&$warnings): void {
+				$warnings[] = [(string)$message, $context];
+			}
+		);
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertContains(
+			['[SchemasController] The rename could not be checked against the flow triggers', ['schema_id' => 1, 'error' => 'flows unreadable']],
+			$warnings
+		);
+	}//end testAFailingRenameCheckIsLoggedAndTheSaveStands()
 
 	/**
 	 * Sign in a schema manager who is no administrator, for a schema with the given flag.

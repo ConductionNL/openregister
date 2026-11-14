@@ -61,6 +61,7 @@
 		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\RedactionPolicyCacheListener",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\TranslationProjectionListener",
 		"OCA\\OpenRegister\\Listener\\AssigneeFollowListener",
@@ -88,7 +89,8 @@
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
 		"OCA\\OpenRegister\\Listener\\SurveyWriteListener",
 		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
-		"OCA\\OpenRegister\\Listener\\ObjectQuotaListener"
+		"OCA\\OpenRegister\\Listener\\ObjectQuotaListener",
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
@@ -98,6 +100,7 @@
 		"OCA\\OpenRegister\\Listener\\ContentReportRemovalListener",
 		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\RedactionPolicyCacheListener",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\TranslationProjectionListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupePruneListener",
@@ -159,6 +162,7 @@
 		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\RedactionPolicyCacheListener",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\TranslationProjectionListener",
 		"OCA\\OpenRegister\\Listener\\AssigneeFollowListener",
@@ -190,7 +194,8 @@
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
 		"OCA\\OpenRegister\\Listener\\SurveyWriteListener",
 		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
-		"OCA\\OpenRegister\\Listener\\IdentityGuardListener"
+		"OCA\\OpenRegister\\Listener\\IdentityGuardListener",
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectsMergedEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyMergeListener"
@@ -198,18 +203,24 @@
 	"OCA\\OpenRegister\\Event\\RegisterCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\RegisterDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\RegisterUpdatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\SchemaCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\SchemaFlowImportListener",
@@ -221,14 +232,18 @@
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\SchemaDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Listener\\GrantableRightsInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
-		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
+		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\SchemaUpdatedEvent": [
 		"OCA\\OpenRegister\\Listener\\SchemaFlowImportListener",
@@ -243,7 +258,9 @@
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
-		"OCA\\OpenRegister\\Listener\\SchemaAuthorizationAuditListener"
+		"OCA\\OpenRegister\\Listener\\SchemaAuthorizationAuditListener",
+		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\SourceCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"

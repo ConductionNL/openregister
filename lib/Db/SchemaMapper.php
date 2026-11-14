@@ -33,11 +33,13 @@ use OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck;
 use OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields;
 use OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck;
+use OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations;
 use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\NamedConditionCheck;
 use OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
@@ -170,6 +172,13 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @var bool
 	 */
 	private bool $warnUnlinkable = false;
+
+	/**
+	 * The advisory annotations the last schema save ignored.
+	 *
+	 * @var DiscardedAnnotations|null
+	 */
+	private ?DiscardedAnnotations $discarded = null;
 
 	/**
 	 * Event dispatcher for schema events.
@@ -932,10 +941,18 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * Searches for schemas matching the given slug with optional
 	 * multi-tenancy and RBAC filtering.
 	 *
-	 * @param string $slug The slug to search for
-	 * @param ListQuery $query The page: its limit and offset
-	 * @param bool $_rbac Whether to apply RBAC permission checks (default: true)
-	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+	 * Takes the page as main's ListQuery, or as the limit and offset of the published contract, by
+	 * name or by position (an int in the second slot).
+	 *
+	 * @param string             $slug              The slug to search for
+	 * @param ListQuery|int|null $query             The page: its limit and offset; an int here is the release's positional `$limit`.
+	 * @param bool|int           $_rbac             Whether to apply RBAC permission checks (default: true); an int here is the
+	 *                                              release's positional `$offset`.
+	 * @param bool               $_multitenancy     Whether to apply multi-tenancy filtering (default: true); the release's
+	 *                                              positional `$_rbac` when the call is positional.
+	 * @param bool               $positionalTenancy The release's positional `$_multitenancy`.
+	 * @param int                $limit             The page size.
+	 * @param int                $offset            The offset.
 	 *
 	 * @return Schema[] Array of matching schemas
 	 *
@@ -945,10 +962,25 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	public function findBySlug(
 		string $slug,
-		ListQuery $query,
-		bool $_rbac = true,
+		ListQuery|int|null $query = null,
+		bool|int $_rbac = true,
 		bool $_multitenancy = true,
+		bool $positionalTenancy = true,
+		int $limit = 10,
+		int $offset = 0,
 	): array {
+		if (is_int($query) === true) {
+			$limit = $query;
+			$query = null;
+			if (is_int($_rbac) === true) {
+				$offset = $_rbac;
+			}
+
+			$_rbac         = $_multitenancy;
+			$_multitenancy = $positionalTenancy;
+		}
+
+		$query ??= new ListQuery(limit: $limit, offset: $offset);
 		$this->readTrace()->record(method: 'findBySlug');
 
 		$qb = $this->exactSlugQuery(slug: $slug);
@@ -1176,6 +1208,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return void
 	 */
 	private function cleanObject(Schema $schema): void {
+		// Each save starts its own list, so the response names this schema's faults only.
+		$this->discarded = new DiscardedAnnotations();
 		$this->prepareForSave(schema: $schema);
 		$this->checkBehaviourDeclarations(schema: $schema);
 		$this->checkDataDeclarations(schema: $schema);
@@ -1209,17 +1243,18 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return void
 	 */
 	private function checkBehaviourDeclarations(Schema $schema): void {
-		(new LifecycleAnnotationCheck(logger: $this->logger))->check(schema: $schema);
+		(new LifecycleAnnotationCheck(logger: $this->logger, discarded: $this->discarded))->check(schema: $schema);
 		(new DeclaredActionCheck(objectActions: $this->objectActions, logger: $this->logger))->check(schema: $schema);
 		(new RecordAnnotationRefusals(logger: $this->logger))->checkMdtoMapping(schema: $schema);
-		(new AdvisoryAnnotationChecks(logger: $this->logger))->checkAggregations(schema: $schema);
-		(new CalculationAnnotationCheck(logger: $this->logger))->check(schema: $schema);
+		(new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded))->checkAggregations(schema: $schema);
+		(new CalculationAnnotationCheck(logger: $this->logger, discarded: $this->discarded))->check(schema: $schema);
 		(new SubjectDeclarationRefusals())->checkConsent(schema: $schema);
 		(new RelationDeclarationCheck(
 			findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)
 		))->check(schema: $schema);
 		(new PropertyDeclarationRefusals())->checkDependentValues(schema: $schema);
 		(new ReferenceLoopCheck())->check(schema: $schema);
+		(new NamedConditionCheck())->check(schema: $schema);
 	}//end checkBehaviourDeclarations()
 
 	/**
@@ -1230,7 +1265,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return void
 	 */
 	private function checkDataDeclarations(Schema $schema): void {
-		$advisory = new AdvisoryAnnotationChecks(logger: $this->logger);
+		$advisory = new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded);
 		$records = new RecordAnnotationRefusals(logger: $this->logger);
 		$advisory->checkQuality(schema: $schema);
 		$advisory->checkDedup(schema: $schema);
@@ -1296,6 +1331,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$access->checkDepartmentMatrix(schema: $schema);
 		$access->checkRevealAudit(schema: $schema);
 		$access->checkClassification(schema: $schema);
+		$access->checkConfidentiality(schema: $schema);
 		(new PropertyDeclarationRefusals())->checkReversibility(schema: $schema);
 		(new SubjectDeclarationRefusals())->checkReview(schema: $schema);
 	}//end checkAccessDeclarations()
@@ -1543,6 +1579,20 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	public function updateEventCount(int $schemaId): int {
 		return ($this->updateEventCounts[$schemaId] ?? 0);
 	}//end updateEventCount()
+
+	/**
+	 * The advisory annotations the last schema save logged and ignored, one entry per family.
+	 *
+	 * Empty when the last save found none, or before any save. The save itself is unchanged:
+	 * an ignored advisory annotation never refuses it.
+	 *
+	 * @return list<array{family: string, schema: string, messages: list<string>}> The ignored annotations.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function discardedAnnotations(): array {
+		return $this->discarded?->all() ?? [];
+	}//end discardedAnnotations()
 
 	/**
 	 * From now on a notification url action that cannot be linked to only warns on save.

@@ -177,7 +177,9 @@
         "params": {
             "sourceMapper": "OCA\\OpenRegister\\Db\\SourceMapperInterface",
             "connectionFactory": "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
-            "logger": "Psr\\Log\\LoggerInterface"
+            "logger": "Psr\\Log\\LoggerInterface",
+            "readScope": "(other)",
+            "queryGuard": "(other)"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\TablesUuidDeriver": {
@@ -238,6 +240,20 @@
         "params": {
             "parts": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts",
             "session": "(no property)"
+        }
+    },
+    "OCA\\OpenRegister\\Service\\ObjectSource\\OpenConnectorHttpProvider": {
+        "asked": [
+            "OCA\\OpenRegister\\Service\\Integration\\ExternalIntegrationRouterInterface",
+            "OCA\\OpenRegister\\Db\\MappingMapperInterface",
+            "OCA\\OpenRegister\\Service\\MappingService",
+            "Psr\\Log\\LoggerInterface"
+        ],
+        "params": {
+            "router": "OCA\\OpenRegister\\Service\\Integration\\ExternalIntegrationRouterInterface",
+            "mappingMapper": "OCA\\OpenRegister\\Db\\MappingMapperInterface",
+            "mappingService": "OCA\\OpenRegister\\Service\\MappingService",
+            "logger": "Psr\\Log\\LoggerInterface"
         }
     }
 }

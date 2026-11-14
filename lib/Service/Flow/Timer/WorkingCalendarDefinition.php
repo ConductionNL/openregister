@@ -95,6 +95,20 @@ final class WorkingCalendarDefinition {
 	private ?ServiceHours $serviceHours = null;
 
 	/**
+	 * The periods that refuse a kind of booking without stopping a term.
+	 *
+	 * @var CalendarBlackouts|null
+	 */
+	private ?CalendarBlackouts $blackouts = null;
+
+	/**
+	 * How this calendar numbers its weeks.
+	 *
+	 * @var CalendarWeekNumbering|null
+	 */
+	private ?CalendarWeekNumbering $weekNumbering = null;
+
+	/**
 	 * The calendar's name, trimmed and non-empty.
 	 *
 	 * @var string
@@ -192,6 +206,28 @@ final class WorkingCalendarDefinition {
 	}//end getTimezone()
 
 	/**
+	 * The blackout periods.
+	 *
+	 * @return CalendarBlackouts
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function getBlackouts(): CalendarBlackouts {
+		return ($this->blackouts ?? new CalendarBlackouts(slug: $this->slug, value: null));
+	}//end getBlackouts()
+
+	/**
+	 * The declared week numbering.
+	 *
+	 * @return CalendarWeekNumbering
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function getWeekNumbering(): CalendarWeekNumbering {
+		return ($this->weekNumbering ?? new CalendarWeekNumbering(slug: $this->slug, value: null));
+	}//end getWeekNumbering()
+
+	/**
 	 * The hours of the day the clock runs, per weekday.
 	 *
 	 * @return ServiceHours The declared windows, empty when none are declared.
@@ -225,6 +261,15 @@ final class WorkingCalendarDefinition {
 		$this->hoursPerWorkingDay = $this->effectiveHours(hours: $hours);
 		$this->dayStartsAtMinute = $this->validDayStart();
 		$this->timezone = $this->validTimezone();
+		// Validated here, so a malformed declaration is refused on save (422)
+		// rather than on the first booking; built only when declared.
+		if (($this->raw['blackouts'] ?? null) !== null) {
+			$this->blackouts = new CalendarBlackouts(slug: $this->slug, value: $this->raw['blackouts']);
+		}
+
+		if (($this->raw['firstWeekOfYear'] ?? null) !== null) {
+			$this->weekNumbering = new CalendarWeekNumbering(slug: $this->slug, value: $this->raw['firstWeekOfYear']);
+		}
 	}//end validate()
 
 	/**

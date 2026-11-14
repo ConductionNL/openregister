@@ -179,6 +179,11 @@ GET  /api/objects/{id}/available-actions   List actions allowed from the current
 POST /api/objects/{id}/transition          Apply a named action ({ "action": "<name>" })
 ```
 
+To move many objects through one action at once, start a bulk job with the
+`openregister:transition` action; each object goes through the same engine
+call and reports its own outcome. See
+[Bulk Jobs](../api/bulk-operations.md#change-status-openregistertransition).
+
 ### Static mode (`transitions`)
 
 `transitions` is a fixed `action → { from: [states], to: state }` map compared

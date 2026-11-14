@@ -76,10 +76,14 @@ class ShareCreationRightsChainTest extends TestCase {
 	/** @var array<string, mixed>|null */
 	private ?array $stored = null;
 
-	private function schema(int $id, ?array $authorization): Schema {
+	private function schema(int $id, ?array $authorization, bool $federatable = false): Schema {
 		$schema = new Schema();
 		$schema->setId($id);
 		$schema->setAuthorization($authorization);
+		if ($federatable === true) {
+			$schema->setConfiguration(['federatable' => true]);
+		}
+
 		return $schema;
 	}
 
@@ -103,7 +107,8 @@ class ShareCreationRightsChainTest extends TestCase {
 			static fn (IUser $asked): array => ($asked->getUID() === $uid ? $groups : [])
 		);
 
-		$schemaA = $this->schema(id: 1, authorization: ['read' => ['staff'], 'manage' => ['managers-a']]);
+		// Register a's zaak declares itself federatable; register b's declares nothing.
+		$schemaA = $this->schema(id: 1, authorization: ['read' => ['staff'], 'manage' => ['managers-a']], federatable: true);
 		$schemaB = $this->schema(id: 2, authorization: ['read' => ['staff']]);
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('findInIds')->willReturnCallback(
@@ -193,6 +198,26 @@ class ShareCreationRightsChainTest extends TestCase {
 
 		$this->assertSame('mira', $this->stored['owner']);
 		$this->assertSame('org-a', $this->stored['organisation']);
+	}
+
+	public function testAnAdministratorCannotShareASchemaThatDeclaresNothing(): void {
+		$service = $this->service(uid: 'root', groups: [], admin: true);
+
+		try {
+			$service->createOutgoingShare(params: ['scope' => 'schema', 'register' => 'b', 'schema' => 'zaak', 'permissions' => 'read']);
+			$this->fail('a share of an undeclared schema was not refused');
+		} catch (NotAuthorizedException $e) {
+			$this->assertSame('This schema does not allow its objects to be shared with another instance', $e->getMessage());
+			$this->assertNull($this->stored);
+		}
+	}
+
+	public function testAnAdministratorSharesASchemaThatDeclaresItself(): void {
+		$service = $this->service(uid: 'root', groups: [], admin: true);
+
+		$service->createOutgoingShare(params: ['scope' => 'object', 'register' => 'a', 'schema' => 'zaak', 'objectUri' => 'zaak-1', 'permissions' => 'read-write']);
+
+		$this->assertSame('root', $this->stored['owner']);
 	}
 
 	public function testAManagerOfTheSameSlugInAnotherRegisterIsRefused(): void {

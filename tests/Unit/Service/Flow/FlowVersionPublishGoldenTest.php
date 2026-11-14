@@ -248,4 +248,29 @@ final class FlowVersionPublishGoldenTest extends TestCase {
 
 		$this->assertSame([], $this->tx);
 	}
+
+	public function testTheReleaseFormOfPublishRecordsThePublisher(): void {
+		$this->flows->method('update')->willReturnArgument(0);
+		foreach ([
+			fn (Flow $flow) => $this->service()->publish(flow: $flow, publishedBy: 'alice'),
+			fn (Flow $flow) => $this->service()->publish($flow, 'alice'),
+		] as $publish) {
+			$version = $publish($this->flow(old: $this->oneStep(), head: $this->twoSteps()));
+
+			$this->assertSame('alice', $version->getPublishedBy());
+			$this->assertSame('1.1.0', $version->getSemver());
+		}
+	}
+
+	public function testTheReleaseFormOfPublishPassesTheBump(): void {
+		$flow = $this->flow(old: $this->twoSteps(), head: $this->oneStep());
+		$this->logger->expects($this->once())->method('error');
+
+		try {
+			$this->service()->publish($flow, 'alice', 'minor');
+			$this->fail('A minor bump over a removal must be refused in the release form too.');
+		} catch (UnexpectedValueException $refused) {
+			$this->assertSame(['begin', 'rollBack'], $this->tx);
+		}
+	}
 }

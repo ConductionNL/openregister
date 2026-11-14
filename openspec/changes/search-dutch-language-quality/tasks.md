@@ -10,10 +10,11 @@
 
 ## 2. Matched passage (REQ-SDL-002, row 6.33, D5)
 
-- [ ] 2.1 `lib/Service/Search/SnippetBuilder.php` for property and content hits, with the safety conditions (anonymised copy, verdict `clean`, published, readable; no write-only or encrypted property). Verify: `tests/Unit/Service/Search/SnippetSafetyTest.php::testAContentHitOnAnOriginalHasNoSnippet`, `testAnUnpublishedCopyHasNoSnippet`, `testALeakingVerdictHasNoSnippet`, `testAWriteOnlyPropertyIsNeverQuoted`, `testMarksAreTheOnlyHtml`, `testAPropertyHitIsQuoted`.
+- [x] 2.1 `lib/Service/Search/SnippetBuilder.php` for property and content hits, with the safety conditions (anonymised copy, verdict `clean`, published, readable; no write-only or encrypted property). Verify: `tests/Unit/Service/Search/SnippetSafetyTest.php::testAContentHitOnAnOriginalHasNoSnippet`, `testAnUnpublishedCopyHasNoSnippet`, `testALeakingVerdictHasNoSnippet`, `testAWriteOnlyPropertyIsNeverQuoted`, `testMarksAreTheOnlyHtml`, `testAPropertyHitIsQuoted`.
+  - Built with `ContentSnippetSource` carrying the four facts a content hit is judged on (anonymised copy, verdict, published, readable). The passage is the window fallback (first match, 300 characters, escaped, `<mark>` only); `ts_headline` on PostgreSQL comes with 1.2. Not wired yet: 2.2 is what calls it.
 - [ ] 2.2 Wire `_snippet=true` into `searchObjectsPaginated` (reserved parameter, never a filter) and the unified search provider `lib/Search/ObjectsProvider.php` subline. Verify: `tests/Unit/Service/Object/SearchSnippetWiringTest.php::testSnippetIsOnlyAddedWhenAsked` through `ObjectService::searchObjectsPaginated()`, and the existing ZKN-CONTENT-003 tests still pass unchanged without `_snippet`.
 - [ ] 2.3 Through the caller: `tests/e2e/ci/search-snippet.spec.ts` publishes an object with an anonymised attachment, searches with `_snippet=true` through the API and sees the marked passage from the anonymised copy, and sees none for a search that matches only the original.
-- [ ] 2.4 Until `redaction-release-safeguards` has landed, no file carries a verdict, so content snippets are never produced. Verify: `SnippetSafetyTest::testWithoutAVerdictNoContentSnippet`; the PR body says so if this change lands first.
+- [x] 2.4 Until `redaction-release-safeguards` has landed, no file carries a verdict, so content snippets are never produced. Verify: `SnippetSafetyTest::testWithoutAVerdictNoContentSnippet`; the PR body says so if this change lands first.
 
 ## 3. Cross-app
 

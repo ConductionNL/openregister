@@ -238,4 +238,32 @@ final class DraftServiceTest extends TestCase {
 		$this->assertSame('kees', $json['createdBy']);
 		$this->assertSame(['status', 'note'], $json['changedFields']);
 	}
+
+	/**
+	 * A draft is found by key only for someone who may see it (records-draft-versions 2.2).
+	 */
+	public function testFindAnswersADraftOnlyToSomeoneWhoMaySeeIt(): void {
+		$this->writers('editor');
+		$theirs = $this->draft('status-update', 'kees');
+		$this->drafts->method('findByKey')->willReturnCallback(
+			fn (string $objectUuid, string $key): ?DraftVersion => ($objectUuid === '9a1e0f3c-5d6b-4c7a-8e9f-0a1b2c3d4e5f' && $key === 'status-update') ? $theirs : null
+		);
+
+		$this->assertSame($theirs, $this->service->find($this->object, $this->schema, 'status-update', 'kees'));
+		$this->assertSame($theirs, $this->service->find($this->object, $this->schema, 'status-update', 'editor'));
+		$this->assertNull($this->service->find($this->object, $this->schema, 'status-update', 'reader'));
+		$this->assertNull($this->service->find($this->object, $this->schema, 'status-update', null));
+		$this->assertNull($this->service->find($this->object, $this->schema, 'other', 'editor'));
+	}
+
+	/**
+	 * Creating a draft needs the right to change the object.
+	 */
+	public function testOnlyAWriterMayCreateADraft(): void {
+		$this->writers('editor');
+
+		$this->assertTrue($this->service->mayCreate($this->object, $this->schema, 'editor'));
+		$this->assertFalse($this->service->mayCreate($this->object, $this->schema, 'reader'));
+		$this->assertFalse($this->service->mayCreate($this->object, $this->schema, null));
+	}
 }

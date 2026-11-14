@@ -6,7 +6,7 @@
 
 ## 2. On the list
 
-- [ ] 2.1 Call the finder in `RetentionService::createDestructionList()` and store `linkConflicts`, `linkConflictsTruncated` per entry and `linkConflictCount` per list. Verify: `tests/Unit/Service/RetentionServiceLinkConflictsTest.php`; a list with no conflicts carries empty arrays and a count of 0.
+- [x] 2.1 Call the finder in `RetentionService::createDestructionList()` and store `linkConflicts`, `linkConflictsTruncated` per entry and `linkConflictCount` per list. Verify: `tests/Unit/Service/RetentionServiceLinkConflictsTest.php`; a list with no conflicts carries empty arrays and a count of 0.
 - [ ] 2.2 Recompute conflicts for the returned entries in `GET /api/archival/destruction-lists/{id}` and `GET /api/archival/reviews/pending`, with `linkConflictsCheckedAt`, without saving. Verify: `tests/Unit/Controller/ArchivalControllerLinkConflictsTest.php` asserts a conflict that appeared after creation is shown and the stored list is unchanged.
 
 ## 3. Decision and approval
