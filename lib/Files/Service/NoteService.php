@@ -32,10 +32,12 @@ use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
+use OCA\OpenRegister\Event\ObjectNoteAddedEvent;
 use OCA\OpenRegister\Exception\NoteLockedException;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentsNotFoundException;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
@@ -108,6 +110,7 @@ class NoteService implements NoteServiceInterface {
 	 * @param TimelineVisibilityServiceInterface $visibility      Normalises the internal/public flag
 	 * @param NoteVersionService                 $versions        Keeps and reads what a note said before
 	 * @param NoteLockService|null               $lock            The lock rules of a note; built from these collaborators when omitted
+	 * @param IEventDispatcher|null              $events          Announces a saved note (ObjectNoteAddedEvent); none is announced without it
 	 *
 	 * @return void
 	 */
@@ -117,6 +120,7 @@ class NoteService implements NoteServiceInterface {
 		private readonly TimelineVisibilityServiceInterface $visibility,
 		private readonly NoteVersionService $versions,
 		private readonly ?NoteLockService $lock = null,
+		private readonly ?IEventDispatcher $events = null,
 	) {
 		$this->lockService = ($lock ?? new NoteLockService(commentsManager: $commentsManager, accounts: $accounts));
 	}//end __construct()
@@ -295,6 +299,7 @@ class NoteService implements NoteServiceInterface {
 	 * @return array<string, mixed> The created note.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/design.md
 	 */
 	public function postNote(NoteDraft $draft, NoteAuthor $author): array {
 		if (trim($author->type) === '' || trim($author->id) === '') {
@@ -312,6 +317,17 @@ class NoteService implements NoteServiceInterface {
 		$comment->setVerb('comment');
 		$this->applyVisibility(comment: $comment, visibility: $visibility);
 		$this->commentsManager->save($comment);
+
+		// After the save, so a listener never sees a note that is not stored.
+		$this->events?->dispatchTyped(
+			new ObjectNoteAddedEvent(
+				objectUuid: $draft->objectUuid,
+				noteId: (string) $comment->getId(),
+				actorType: trim($author->type),
+				actorId: trim($author->id),
+				visibility: $this->readVisibility(comment: $comment)
+			)
+		);
 
 		return $this->commentToArray(comment: $comment);
 	}//end postNote()
