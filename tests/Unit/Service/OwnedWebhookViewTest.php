@@ -36,7 +36,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\MappingService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCA\OpenRegister\Service\OwnedWebhookView;
 use OCA\OpenRegister\Service\WebhookDelivery;
@@ -130,7 +130,7 @@ final class OwnedWebhookViewTest extends TestCase {
 			$read->setObject(self::ownersRead());
 		}
 
-		$objects = $this->createMock(ObjectService::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$current = null;
 		$objects->method('runAs')->willReturnCallback(
 			static function (IUser $user, callable $operation) use (&$current) {
@@ -153,7 +153,7 @@ final class OwnedWebhookViewTest extends TestCase {
 			}
 		);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(ObjectService::class)->willReturn($objects);
+		$container->method('get')->with(ObjectOperationsInterface::class)->willReturn($objects);
 
 		return new OwnedWebhookView(users: $users, actionAuth: $auth, webhooks: $this->webhooks, container: $container, logger: new NullLogger());
 	}//end view()

@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -85,7 +86,7 @@ class OwnedWebhookView {
 	 * @param IUserManager                  $users      Looks the owner up.
 	 * @param OpenRegisterActionAuthService $actionAuth The action-rights matrix.
 	 * @param WebhookMapperInterface        $webhooks   Disables a webhook whose owner may no longer own it.
-	 * @param ContainerInterface            $container  Resolves ObjectService lazily, out of WebhookService's construction.
+	 * @param ContainerInterface            $container  Resolves the object operations lazily, out of WebhookService's construction.
 	 * @param LoggerInterface               $logger     Logger.
 	 */
 	public function __construct(
@@ -211,7 +212,7 @@ class OwnedWebhookView {
 		}
 
 		try {
-			$objects = $this->container->get(ObjectService::class);
+			$objects = $this->container->get(ObjectOperationsInterface::class);
 			$read    = $objects->runAs(
 				$owner,
 				static fn () => $objects->find(
