@@ -6785,3 +6785,4 @@ dossiq	6462	8cc82b015ae15553de5132490b7ff13ebb9e3965	CONFLICT	merge3	conflicts w
 dossiq	6464	a0506858be8d952910a34e957aefbdfe936f4c34	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 dossiq	6465	02c58b7ff20128eb56c6074052d5ad88e100c07a	CONFLICT	merge3	conflicts with development; files: lib/Service/DeadlineReportingService.php 
 dossiq	6156	c10f8d750edafbc7d555971cc50a90edb5f5579c	GREEN	worker-58:review	tests only (2 routing test files); unit 16861 on PR+development vs 16850 baseline, 0 new failures (inherited set identical); Routing 104 OK
+pipelinq	3713	102b99c87bb4a3eab6d9a470c5833413314a50c8	REVERIFY	worker-33	merged development in (l10n both sides); added recordSubmission() to development's new TouchpointServiceInterface and touchpoint.clientId to PartyReferences::CLIENT; phpstan clean, full unit suite 7595 tests green; new head ebf9d492052c519dc1f0755ca68bacc201348082, verify it
