@@ -439,6 +439,8 @@ final class EntityEditAuditor {
 
 		$row = new AuditTrail();
 		$row->setUuid(Uuid::v4()->toRfc4122());
+		// REQ-HSA-011: configuration history, read apart from record history.
+		$row->setCategory(AuditCategory::ADMINISTRATIVE);
 		$row->setUser($user?->getUID() ?? 'system');
 		$row->setUserName($user?->getDisplayName() ?? 'System');
 		$row->setOrganisationId($this->organisationOf(entity: $entity));

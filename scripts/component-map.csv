@@ -4249,3 +4249,6 @@ Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Service/Audit/AuditCategory.php,,Service,,,,,Compliance
+Service/Audit/AdministrativeRetention.php,,Service,,,,,Compliance
+Migration/Version1Date20261114230000.php,,Migration,,,,,Platform

@@ -53,6 +53,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Service\Audit\AuditCategory;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -306,6 +307,8 @@ class SettingsChangeAuditor {
 		$row = new AuditTrail();
 		$row->setUuid(Uuid::v4()->toRfc4122());
 		$row->setAction($action);
+		// REQ-HSA-011: configuration history, read apart from record history.
+		$row->setCategory(AuditCategory::ADMINISTRATIVE);
 		$row->setUser($userId);
 		$row->setUserName($userName);
 		$row->setChanged($changed);

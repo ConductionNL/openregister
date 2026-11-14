@@ -32,6 +32,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Audit\AuditCategory;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
@@ -343,6 +344,8 @@ class AuditTrailController extends Controller {
 			// The scoped list's cursor is where a walk resumes, not a column.
 			'cursor',
 			'_cursor',
+			// Validated and set by index() itself (REQ-HSA-011).
+			'category',
 		];
 
 		return array_filter(
@@ -389,6 +392,31 @@ class AuditTrailController extends Controller {
 	}//end pageFilters()
 
 	/**
+	 * The category the list is asked for: `domain` unless the request names
+	 * `administrative`; null for any other value (REQ-HSA-011).
+	 *
+	 * Only index() reads it, and index() is administrator-only, so the
+	 * administrative rows never reach anyone else through this list. The
+	 * export keeps exporting whatever its filters select.
+	 *
+	 * @return string|null The category, or null when the request names an unknown one.
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
+	 */
+	private function requestedCategory(): ?string {
+		$asked = $this->request->getParam('category');
+		if ($asked === null || $asked === '') {
+			return AuditCategory::DOMAIN;
+		}
+
+		if (AuditCategory::isCategory(value: $asked) === false) {
+			return null;
+		}
+
+		return $asked;
+	}//end requestedCategory()
+
+	/**
 	 * One keyset page of the instance-wide audit trail.
 	 *
 	 * @return JSONResponse The rows, newest first, and the cursor of the next page.
@@ -402,7 +430,10 @@ class AuditTrailController extends Controller {
 
 		try {
 			$page = $this->auditPage->page(
-				query: $this->auditPage->query(filters: $this->pageFilters(), search: ($params['search'] ?? $params['_search'] ?? null)),
+				query: $this->auditPage->query(
+					filters: ($this->pageFilters() + ['category' => $this->requestedCategory()]),
+					search: ($params['search'] ?? $params['_search'] ?? null)
+				),
 				limit: $limit,
 				cursor: $cursor
 			);
@@ -439,6 +470,15 @@ class AuditTrailController extends Controller {
 			return $denial;
 		}
 
+		// REQ-HSA-011: one category at a time, record history unless asked.
+		$category = $this->requestedCategory();
+		if ($category === null) {
+			return new JSONResponse(
+				data: ['error' => 'category must be "' . AuditCategory::DOMAIN . '" or "' . AuditCategory::ADMINISTRATIVE . '"'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
 		// The audit page asks by cursor: keyset paging over the six filters,
 		// no count of the table. Asked without a cursor the list answers as
 		// it always has, so existing callers keep their shape.
@@ -448,6 +488,7 @@ class AuditTrailController extends Controller {
 
 		// Extract common parameters.
 		$params = $this->extractRequestParameters();
+		$params['filters']['category'] = $category;
 
 		// Get logs from service. An explicit-reveal value reads masked for an
 		// administrator too (property-explicit-reveal).

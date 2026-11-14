@@ -74,6 +74,7 @@ final class AuditTrailFieldTypes {
 		'flowStep' => 'integer',
 		'purpose' => 'string',
 		'consumer' => 'string',
+		'category' => 'string',
 	];
 
 	/**
