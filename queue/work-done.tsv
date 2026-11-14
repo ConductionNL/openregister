@@ -8855,3 +8855,4 @@ build4:openregister:federated-config-sharing:c2	PR #10510: admin trust settings 
 build3:openregister:api-client-libraries:c2	already building: PR #10314 (build/api-client-libraries) is still open with 1.1, 1.2 and the docs draft; 1.3/4.x wait on a library release, 2.x/3.x are new repositories	session-20261114T085635-07e3ca9b	2026-11-14T10:38:40Z
 review:openregister:10501:03dc07c5	APPROVE: docs only, checked against lib	session-20261114T102637-6688951e	2026-11-14T10:38:55Z
 review:openregister:10489:f689b3f0	APPROVE	session-20261114T085638-f8a2ea52	2026-11-14T10:39:06Z
+build4:openregister:list-query-condition-groups:c2	partial: PR #10511 tasks 1.3,1.4,1.5,1.6,2.2 (refused _where no longer swallowed into count 0/empty page; listQuery.where capability; OAS+docs); 2.1 Newman left	session-20261114T092645-afb9b140	2026-11-14T10:39:10Z
