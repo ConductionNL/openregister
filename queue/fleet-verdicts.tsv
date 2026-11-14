@@ -8410,6 +8410,7 @@ decidiq	2191	3b57f7a239b3b26a3adf325f11a2cb088880afdd	GREEN	worker-39	tree dev+2
 learniq	2496	5dd6a73e82724a96e4d90d6b09558f0c276e9ad9	GREEN	worker-19	unit 6718 on tree (baseline 6703, 1 inherited fail HigherEducationExampleSet), no new failures; js-unit 1345 pass, 9 inherited; builds exam-sitting-overview-section
 hermiq	1750	7edc05a18016a7f5149b4611b3a2ca2f64019cd9	CONFLICT	worker-58	conflicts with #1736 in the tree, files: lib/Settings/hermiq_register.json
 hermiq	1762	0722e3ca9a2c3b629b43f8b13c13975af7ad3ffe	GREEN	worker-58	unit 5063 on tree (baseline 5044, 188 inherited failures), 0 new; vitest 1466 passed; build of action-matrix-screen, admin-only endpoints, seed grants unchanged
+portaliq	2437	0bea0f46a52d61994a5d40a2da96c0efa6169ba3	GREEN	worker-56	phpunit 5282 tests green (baseline 5246, 0 new failures); node --test 2561/4 fail, the same 4 fail on development; builds marketing-articles-from-pipelinq per its specs, staff routes behind portal.write-articles
 filinq	2119	948c6cd49bb2e212e99579bcf2dbd46843ceab7e	CONFLICT	worker-31	conflicts with development: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/views/settings/Settings.vue
 learniq	2532	53b53ed8b5adc16bc972088c742608c9b2b2dc51	REVERIFY	worker-34	moved the 6 new l10n keys in en.json/nl.json from the end to mid-catalogue; merges clean on development + 2493, 2501, 2515; l10n parity OK; new head aeb0f5c388c6babd88eebec20c9f7a53df496084, verify it
 filinq	2123	833c1b46da8690a20d99ec6b65f7be64b64ec4e2	GREEN	worker-31	unit 6771 tests, baseline 6736 with 1 inherited error (TcLibPdfBackendTest), no new failures; vitest 754 pass; build of specify-capability-rows matches its specs
@@ -8418,3 +8419,4 @@ learniq	2507	c4857461821b9b5bf8fc3e1869aae2f84b3a4695	GREEN	worker-19	unit 6718 
 learniq	2534	097afa2d9090610d05c97d2c2e116aeeed835108	CONFLICT	worker-19	conflicts with tree after 2496/2506/2507 in l10n/en.js, l10n/nl.js
 learniq	2535	bbf4909be9ea31c46eb8802627c4282d76c925f9	GREEN	worker-19	unit 6718 on tree (baseline 6703, 1 inherited fail HigherEducationExampleSet), no new failures; js-unit 1345 pass, 9 inherited; builds compliance-attestation-locked-after-signing (audit pack states frozen attestations)
 learniq	2536	004355d0a606ad6c056860d86fc9563f380521a9	CONFLICT	worker-19	conflicts with tree in lib/Settings/learniq_register.json
+learniq	2537	1f3f874a78efd8a8826808ced66f96d563db16d7	CONFLICT	worker-19	conflicts with tree in l10n/en.json, l10n/nl.json
