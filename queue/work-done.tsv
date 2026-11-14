@@ -10956,3 +10956,4 @@ build:shillinq:tax-digipoort-filing:c3	partial: PR #3051 head 34ab1459a, built 1
 fix:learniq:2484:1447aa91	merged development in clean; new head 46d3dda4fce3b7908948145a8638b1aefc595c47	session-20261114T201752-7e06b161	2026-11-14T20:37:50Z
 verify:filinq:2119:eb06869c	2119 GREEN (phpunit 6765, vitest 763, jest 562, 0 new failures); 2121 CONFLICT with development	session-20261114T194805-954d5649	2026-11-14T20:38:07Z
 merge:integriq:3592:9ac64448	merge3 tree of 3 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T20:38:21Z
+fix:integriq:3631:b0b558d8	fixed: conflict resolved keeping both sides; no failures beyond development's 7; new head 30fbce0b	session-20261114T173956-74ab8962	2026-11-14T20:38:27Z
