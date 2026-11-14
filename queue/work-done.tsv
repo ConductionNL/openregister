@@ -9740,3 +9740,4 @@ verify:learniq:2519:11147282	GREEN 2519; 2538 skipped (head moved)	session-20261
 fix:learniq:2537:1f3f874a	no change: clean on development; tree-only l10n conflict; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T15:14:28Z
 fix:learniq:2536:004355d0	no change: clean on development; tree-only register conflict; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T15:14:53Z
 fix:decidiq:2170:99fc9258	conflict with #2143 resolved by relocating l10n strings; new head 5a972e2e; REVERIFY recorded	session-20261114T144816-cf37407b	2026-11-14T15:15:15Z
+build:hermiq:verify-row-scenarios:c2	done: PR hermiq#1784 (1.1 Mark action + Misuse label; all tasks ticked; vitest 1463 pass)	session-20261114T144734-e99d406c	2026-11-14T15:15:20Z
