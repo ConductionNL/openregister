@@ -2737,3 +2737,11 @@ dossiq	6465	f8b4ab75a711e81ad0b46ee78bea249ab56981b1	MERGED	merge3	GATE OK sbom,
 dossiq	6490	8fc1e32676d9481d6d9bf760fd4a7a826b1c9a15	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6499	aa4d5781637e2d10a6b79d32982c92bf8c9abf3a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1777	7710481a58713cbb647afc630fc0a277489e9a66	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3708	59d071777249d834da158fae80be283131e8463c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3721	9ac79eabc87e79fde50d57dd847d38b91d39e34d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3742	8cf62a44290f8c0631a93e453ad12798f931f6d3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3826	a94cd12dbfd8d9bc22ad90dbef20e5c0796e6f5a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3830	ec8232ea52227343317cebde280f4dbffcbd8650	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3831	368ec966d2fbb2787138d4d96bcfb1b63812eac5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3832	1f6a95ca85342e0f616c853852fbae8786e9ea42	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+pipelinq	3834	6983b4b1321366bd0b6bfc08abdc72a2550de125	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
