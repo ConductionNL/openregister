@@ -11864,3 +11864,4 @@ cover:openregister:7350e3efmba30:js0b5eefce	PR #10575: 17 tests (ViewObject reco
 cover:decidiq:a5f973bbmae46:81b1241f	already done: lib/Portal/*.php measures 246/246 (100%) on development with the whole unit suite	session-20261114T214733-589f5bff	2026-11-14T23:23:20Z
 fix:filinq:2070:e3723880	merged development in cleanly, unit+jest green, new head 88c64439; REVERIFY recorded	session-20261114T222427-f171565a	2026-11-14T23:23:41Z
 cover:pipelinq:7f9dc8e6m799d:js06645759	already done: src/components/* lines 1389/1423 (97.61%, vitest v8) on development 0d8e11ea2, above 95 target; remainder is a few lines per file; no PR	session-20261114T225452-4fcfea7f	2026-11-14T23:23:51Z
+cover:decidiq:a5f973bbmae46:58192586	PR #2208: 8 tests, lib/Service/Records to 100% lines; suite 4248->4256 OK	session-20261114T230933-0afdd896	2026-11-14T23:23:45Z
