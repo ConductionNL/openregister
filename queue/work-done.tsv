@@ -10339,3 +10339,4 @@ build4:openregister:object-write-sub-500ms:c3	partial: PR #10568 (tasks 2+3 in p
 fix:buildiq:1643:5d14674c	no change: dev already in, conflicts only with unmerged GREEN #1626 (nl.json); REVERIFY after 1626 lands	session-20261114T161752-4c07cde6	2026-11-14T17:05:02Z
 fix:decidiq:2177:667519c0	fixed: merged development, l10n moved; unit 4304 OK; new head b68a5de6	session-20261114T154807-c05f4e57	2026-11-14T17:05:26Z
 build4:openregister:incremental-sync-for-api-consumers:c3	built: PR #10490 now has tombstones (group 3), 1.4 Newman, docs 5.1, @spec 5.3; only 5.2 (post-ship parity row) left	session-20261114T161806-530176c3	2026-11-14T17:05:41Z
+fix:buildiq:1630:d47a3654	no change: dev already in, conflicts only with unmerged GREEN #1626 (nl l10n); REVERIFY after 1626 lands	session-20261114T161752-4c07cde6	2026-11-14T17:05:35Z
