@@ -8359,3 +8359,7 @@ shillinq	2975	12f8c569964b3cf28b0497789a3ea32958696b1f	CONFLICT	merge3	conflicts
 shillinq	2991	44f9551ba872fc81d0116fa7a7b0ec48d43ccdc9	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
 shillinq	3057	2ba4b36560fbd27f73fabef7b3aeccd6c4963d81	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 shillinq	3059	50043d179ea704d66e9c323e56f09d69dd48e543	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+filinq	2069	4243443d7476553095e3a44eafd13dd8cfd9a513	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+filinq	2070	cc02ae1201069f52a0c048cfd4c73d73070291ea	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_register.json 
+filinq	2074	3af255108c29276c9198586717ca47e7994053b7	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+filinq	2100	0b6e06330697749d64699f91f4b56638e4f95984	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/views/settings/Settings.vue tests/jest/golden/settings-page.json 
