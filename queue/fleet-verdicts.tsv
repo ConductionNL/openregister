@@ -8000,3 +8000,4 @@ buildiq	1631	308971ea93d01b84743fa579a930b8e09ec66c94	CONFLICT	merge3	merges cle
 buildiq	1632	a746e5ea97d30ac540a85acbe684e3aa3debbebf	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/composables/useManifestValidator.js 
 shillinq	2972	a45e4b84e4eb62ecaf203d6fda0d8c48bf2c6a8c	REVERIFY	worker-33	merged development in: l10n en/nl kept both sides' keys (js rebuilt from json), register-versions lock keeps development's 20261113190000 record and records the merged versions under a new app version 0.5.7-unstable.20261114130000; lock guard, AppInfo tests, l10n checks green; new head c133a9da0f018b477cd7a122835df69aa83ceec2, verify it
 portaliq	2444	fc4cf85f6732ff700c30c3ccc157079ee6189cc3	CONFLICT	worker-12	conflicts with development plus 2440
+portaliq	2492	f079c8c389914d2e3c58a419d033767352ead401	CONFLICT	worker-12	conflicts with development plus 2440
