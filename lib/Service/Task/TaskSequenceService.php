@@ -238,6 +238,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 		return self::stepText(sequence: $sequence, position: $position)
 			+ self::routing(position: $position)
 			+ self::anchorFields(sequence: $sequence)
+			+ self::formOf(position: $position)
 			+ [
 				'templateSnapshot' => $position->snapshot,
 				'sequenceUuid' => $sequence->getUuid(),
@@ -246,6 +247,30 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 				'nodeId' => $sequence->getNodeId(),
 			];
 	}//end positionTaskData()
+
+	/**
+	 * The form a position task presents, when its position declares one.
+	 *
+	 * The compiled position already carries the form in record shape
+	 * ({@see ApprovalPositionForm}); the task gets it under `metadata.form`,
+	 * where `TaskService::import()` refuses one that cannot be rendered and
+	 * the completion path reads it. Copied, not referenced: an open task keeps
+	 * the form it was opened with when the chain changes later.
+	 *
+	 * @param ChainPosition $position The position as frozen onto its task.
+	 *
+	 * @return array<string, mixed> `['metadata' => ['form' => ...]]`, or nothing.
+	 *
+	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
+	 */
+	private static function formOf(ChainPosition $position): array {
+		$form = ($position->snapshot['form'] ?? null);
+		if (is_array($form) === false || $form === []) {
+			return [];
+		}
+
+		return ['metadata' => ['form' => $form]];
+	}//end formOf()
 
 	/**
 	 * A position task's title and description.

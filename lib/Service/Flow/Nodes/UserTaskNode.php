@@ -75,6 +75,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCP\IL10N;
@@ -146,6 +147,16 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	private readonly IURLGenerator $urls;
 
 	/**
+	 * The registry that says which performer types this instance understands,
+	 * offered to the editor on every `principal` field. Null in a wiring
+	 * without one: the field then declares no list, and the editor offers what
+	 * it can search by itself.
+	 *
+	 * @var PrincipalResolverRegistry|null
+	 */
+	private readonly ?PrincipalResolverRegistry $principals;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param UserTaskServices     $services     The task bridge, form reader and
@@ -168,6 +179,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		$this->bridge     = $services->bridge;
 		$this->timers     = $services->timers;
 		$this->subjects   = $hooks->subjects;
+		$this->principals = $hooks->principals;
 		$this->l10n       = $presentation->l10n;
 		$this->urls       = $presentation->urls;
 		$this->config     = new UserTaskConfig(l10n: $this->l10n, forms: $services->forms);
@@ -724,11 +736,11 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			// person OR a group and could only ever say one of them, so
 			// authors typed a committee's name into a box labelled for a
 			// user and nothing recorded which they meant.
-			$this->field(field: new NodeFormField(
+			$this->principalField(field: new NodeFormField(
 				key: 'assignee', label: $this->l10n->t('Assign directly to'), type: 'principal', help: $this->l10n->t(
 				'A person, a group, or an agent. The task is created active for them; leave empty to offer it to a pool instead.'
 			))),
-			$this->field(field: new NodeFormField(key: 'candidates', label: $this->l10n->t('Candidates'), type: 'principal', help: $this->l10n->t(
+			$this->principalField(field: new NodeFormField(key: 'candidates', label: $this->l10n->t('Candidates'), type: 'principal', help: $this->l10n->t(
 				'Anybody who may claim the task. People and groups may be mixed.'
 			))),
 			$this->field(field: new NodeFormField(key: 'prompt', label: $this->l10n->t('Prompt for an agent'), type: 'textarea', help: $this->l10n->t(
@@ -736,6 +748,32 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			))),
 		];
 	}//end whoFields()
+
+	/**
+	 * One performer field, carrying the types this instance can resolve.
+	 *
+	 * 🔑 THE LIST IS DECLARED BY THE SERVER, NOT KNOWN BY THE EDITOR. A type an
+	 * app contributes — a position, a function, a case role — exists only
+	 * where that app is installed, so the editor must be told which ones to
+	 * offer rather than carry a list of its own. The list is a hint for
+	 * drawing the field; what is VALID is still decided by the registry when
+	 * the step is saved.
+	 *
+	 * @param NodeFormField $field The field, declared with type `principal`.
+	 *
+	 * @return array<string, mixed> The field description, with `principalTypes`
+	 *                              when a registry is wired.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-user-task-node/spec.md
+	 */
+	private function principalField(NodeFormField $field): array {
+		$described = $this->field(field: $field);
+		if ($this->principals !== null) {
+			$described['principalTypes'] = $this->principals->types();
+		}
+
+		return $described;
+	}//end principalField()
 
 	/**
 	 * The candidate fields kept for flows written before Candidates existed.
@@ -746,15 +784,15 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 */
 	private function legacyCandidateFields(): array {
 		return [
-			$this->field(field: new NodeFormField(
+			$this->principalField(field: new NodeFormField(
 				key: 'candidateUsers', label: $this->l10n->t('Candidate users'), type: 'principal', help: $this->l10n->t(
 				'Kept for flows written before Candidates existed. Any of them may claim the task.'
 			))),
-			$this->field(field: new NodeFormField(
+			$this->principalField(field: new NodeFormField(
 				key: 'candidateGroups', label: $this->l10n->t('Candidate groups'), type: 'principal', help: $this->l10n->t(
 				'Kept for flows written before Candidates existed. Any member may claim the task.'
 			))),
-			$this->field(field: new NodeFormField(
+			$this->principalField(field: new NodeFormField(
 				key: 'candidateRole', label: $this->l10n->t('Candidate role'), type: 'principal', help: $this->l10n->t(
 				'A role that resolves to a group of performers.'
 			))),
@@ -774,7 +812,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 				key: 'routingStrategy', label: $this->l10n->t('How to pick a performer'), type: 'text', help: $this->l10n->t(
 				'One of single-role, or-set, hierarchical, round-robin or least-loaded. Leave empty to let the pool claim.'
 			))),
-			$this->field(field: new NodeFormField(
+			$this->principalField(field: new NodeFormField(
 				key: 'routingFallback', label: $this->l10n->t('Fallback performer'), type: 'principal', help: $this->l10n->t(
 				'Who gets the task when the strategy finds nobody.'
 			))),

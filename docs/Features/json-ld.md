@@ -158,6 +158,63 @@ linked-data consumers resolve the contexts they find in
 published-object serializations. Unknown register/schema slugs return
 `404`.
 
+## Referencing a type another app provides
+
+A schema can point at "whichever installed schema is an Organization"
+instead of at one app's schema slug (ADR-048, cross-app semantic
+references). Two sides take part.
+
+**The provider advertises what it implements.** A schema implements the
+absolute IRIs in `configuration.implements`. Without that list it
+implements its `configuration.jsonld.type` and its schema-level
+`x-schema-org` marker, when those are absolute IRIs. An explicit
+`implements` list replaces those defaults, and only its absolute-IRI
+entries count: `["Organization", "https://schema.org/Organization"]`
+advertises `https://schema.org/Organization` only.
+
+```json
+{
+  "slug": "payee",
+  "configuration": {
+    "jsonld": { "type": "https://schema.org/Organization" }
+  }
+}
+```
+
+**The consumer declares a semantic reference on a property.**
+
+```json
+{
+  "vendor": {
+    "type": "string",
+    "referenceSemanticType": "https://schema.org/Organization",
+    "referenceSemanticApp": "shillinq"
+  }
+}
+```
+
+The property stores the UUID of the referenced object.
+`referenceSemanticApp` is a hint naming the app expected to provide the
+type, used to explain why the field is unavailable when it is not
+installed. A `referenceSemanticType` that is not an absolute IRI (a bare
+`Organization`, an empty string) is refused when the schema is saved,
+with a 422 naming the property, because no resolver could ever match it.
+
+**Resolving the reference.**
+`GET /api/schemas/resolve-by-implements?uri=https://schema.org/Organization`
+answers `{"resolved": true, "register": <id>, "registerSlug": "...",
+"schema": <id>, "schemaSlug": "..."}`, or `{"resolved": false}` (HTTP 200)
+when no installed schema of an enabled app implements the type. When
+several do, the pick is deterministic: a schema in the consuming
+register first, then by slug. A form uses
+the answer to offer a picker over the provider's objects, and shows the
+field disabled when nothing resolves, so the rest of the object stays
+editable.
+
+The write direction, handing an object over to whichever schema
+implements a kind, is described in
+[Semantic object handoff](../features/semantic-object-handoff.md).
+
 ## Scope
 
 JSON-LD support is **read-side only**:

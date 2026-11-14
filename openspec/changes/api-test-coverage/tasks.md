@@ -17,4 +17,4 @@
 - [ ] Implement: Test data setup and teardown for idempotent test runs
 - [ ] Implement: Postman test script patterns with schema validation
 - [ ] Implement: Modular collection structure aligned with API domains
-- [ ] Implement: Add API coverage commands to composer.json (code exists, test missing: composer.json)
+- [x] Implement: Add API coverage commands to composer.json (code exists; guarded by tests/Unit/ApiCoverage/ApiCoverageCommandsTest.php, which also checks every collection run-all.sh names)

@@ -169,6 +169,17 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInterface {
+
+	/**
+	 * The archival statuses (`tmlo.archiefstatus`, lower-cased) of the
+	 * preservation regime. {@see self::isPreserved()} and the list lens
+	 * (`PreservedListLens`) read the same list, so they cannot drift apart.
+	 *
+	 * @var list<string>
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	public const PRESERVED_ARCHIVAL_STATUSES = ['semi_static', 'semi_statisch', 'gearchiveerd'];
 	use JsonFieldsTrait;
 
 	/**
@@ -2255,7 +2266,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			return false;
 		}
 
-		return in_array(strtolower($status), ['semi_static', 'semi_statisch', 'gearchiveerd'], true);
+		return in_array(strtolower($status), self::PRESERVED_ARCHIVAL_STATUSES, true);
 	}//end isPreserved()
 
 	/**

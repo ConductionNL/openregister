@@ -65,6 +65,14 @@ class NestedPathFilter {
 	private const SEGMENT = '/^[A-Za-z0-9_\-]+\z/';
 
 	/**
+	 * The property types stored as a JSON object whose members a filter may name.
+	 *
+	 * A `calendar-range` is stored as `{ start, end }`, so `period.start` and
+	 * `period.end` take the same operators as a member of an `object`.
+	 */
+	private const STRUCTURED_TYPES = ['object', 'calendar-range'];
+
+	/**
 	 * Split a filter map into the filters on columns and the filters on a path inside an object property.
 	 *
 	 * @param array<string,mixed> $filters    The object filters.
@@ -295,15 +303,17 @@ class NestedPathFilter {
 	}//end descends()
 
 	/**
-	 * Whether a property is declared with type object.
+	 * Whether a property is declared with a type stored as a JSON object: object or calendar-range.
 	 *
 	 * @param array<string,mixed> $properties The schema's properties.
 	 * @param string              $name       The property.
 	 *
-	 * @return bool True for an object property.
+	 * @return bool True for an object or calendar-range property.
+	 *
+	 * @spec openspec/changes/extended-field-types-range-and-image/specs/extended-field-types/spec.md#requirement-a-calendar-range-property-holds-a-start-and-an-end-as-one-value
 	 */
 	private static function isObjectProperty(array $properties, string $name): bool {
-		return is_array($properties[$name] ?? null) === true && ($properties[$name]['type'] ?? null) === 'object';
+		return is_array($properties[$name] ?? null) === true && in_array(($properties[$name]['type'] ?? null), self::STRUCTURED_TYPES, true) === true;
 	}//end isObjectProperty()
 
 	/**

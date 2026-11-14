@@ -13,9 +13,9 @@ Spec: `specs/graphql-api/spec.md#requirement-req-apix-001-the-api-can-be-tried-f
 
 - [ ] 2.1 Register a page in `src/manifest.json`: `id: registerApi`, `route: /registers/:id/api`, `type: custom`, `component: RegisterApi`, with a `_note` naming REQ-APIX-001.
 - [ ] 2.2 `src/views/register/RegisterApi.vue`: read `/api/registers/{id}/oas` and list each schema's operations (list, read, create, update, patch, delete). "Try it" fills the path and body, runs the call as the signed-in user through `@nextcloud/axios`, and shows the status and JSON response. A link opens the GraphQL explorer from task 1.
-- [ ] 2.3 `src/services/apiSamples.js`: a pure function from an operation, its parameters and the instance URL to a curl sample (with an app password placeholder) and a `fetch` sample. `RegisterApi.vue` shows both under each operation.
+- [x] 2.3 `src/services/apiSamples.js`: a pure function from an operation, its parameters and the instance URL to a curl sample (with an app password placeholder) and a `fetch` sample. `RegisterApi.vue` shows both under each operation. Built as the pure function; `RegisterApi.vue` shows the samples once task 2.2 exists.
 - [ ] 2.4 Add an "API" action to the register screen header in `src/views/register/RegisterDetail.vue` that routes to `registerApi`.
-- [ ] 2.5 Red first: `src/services/apiSamples.spec.js` asserts the curl and fetch samples for a list and a create call.
+- [x] 2.5 Red first: `src/services/apiSamples.spec.js` asserts the curl and fetch samples for a list and a create call.
 - [ ] 2.6 Extend `tests/e2e/ci/api-explorer.spec.ts`: from the register screen open API, run the list operation on a seeded schema, see the seeded object in the response and the curl sample for the same call.
 
 ## 3. Verification

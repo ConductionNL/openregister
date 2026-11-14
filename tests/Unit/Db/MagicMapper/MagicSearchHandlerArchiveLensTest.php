@@ -40,6 +40,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
  * @uses \OCA\OpenRegister\Service\Object\DraftListLens
+ * @uses \OCA\OpenRegister\Service\Object\PreservedListLens
+ * @uses \OCA\OpenRegister\Service\Object\PreservedListing
  * @uses \OCA\OpenRegister\Db\MagicMapper\DeletedLens
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Service\OrganisationContext

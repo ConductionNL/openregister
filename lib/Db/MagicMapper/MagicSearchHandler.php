@@ -60,6 +60,8 @@ use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\LanguageServiceInterface;
 use OCA\OpenRegister\Service\Object\DraftListLens;
+use OCA\OpenRegister\Service\Object\PreservedListLens;
+use OCA\OpenRegister\Service\Object\PreservedListing;
 use OCA\OpenRegister\Service\Object\DraftListing;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
@@ -1192,8 +1194,41 @@ class MagicSearchHandler {
 			$conditions[] = $drafts;
 		}
 
+		$preserved = $this->preservedConditionSql(query: $query, schema: $schema, columns: $columns);
+		if ($preserved !== null) {
+			$conditions[] = $preserved;
+		}
+
 		return $conditions;
 	}//end lifecycleConditionsSql()
+
+	/**
+	 * The preservation predicate, or null when it puts no condition on the list.
+	 *
+	 * Spelled once in PreservedListLens for this path and applyBasicFilters().
+	 * A table without a `_tmlo` column holds no preserved row.
+	 *
+	 * @param array<string, mixed> $query   The search query.
+	 * @param Schema|null          $schema  The schema listed.
+	 * @param LifecycleColumns     $columns The table alias and the metadata columns this table lacks.
+	 *
+	 * @return string|null The predicate, without a leading AND.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	private function preservedConditionSql(array $query, ?Schema $schema, LifecycleColumns $columns): ?string {
+		$lens = new PreservedListLens();
+
+		return $lens->clauseFor(
+			listing: new PreservedListing(
+				mode: $lens->modeFor(query: $query),
+				schema: $schema,
+				platform: (string)$this->db->getDatabaseProvider(),
+				columnMissing: $columns->lacks(column: PreservedListLens::COLUMN)
+			),
+			columnPrefix: $columns->prefix
+		);
+	}//end preservedConditionSql()
 
 	/**
 	 * The metadata columns a table is known to lack after an attempt to heal it.
@@ -2724,6 +2759,7 @@ class MagicSearchHandler {
 			'_deleted',
 			'_archived',
 			DraftListLens::PARAMETER,
+			PreservedListLens::PARAMETER,
 			'_relations_contains',
 			'_multitenancy_explicit',
 			'_fuzzy',
@@ -2793,6 +2829,13 @@ class MagicSearchHandler {
 		$drafts = $this->draftConditionSql(columns: $columns, request: new DraftListRequest(query: $query, schema: $schema, owner: $owner));
 		if ($drafts !== null) {
 			$qb->andWhere($qb->createFunction($drafts));
+		}
+
+		// A preserved object leaves the working views as an archived one does,
+		// on a schema that offers the regime (archiving-as-a-process-with-sign-off).
+		$preserved = $this->preservedConditionSql(query: $query, schema: $schema, columns: $columns);
+		if ($preserved !== null) {
+			$qb->andWhere($qb->createFunction($preserved));
 		}
 
 	}//end applyBasicFilters()

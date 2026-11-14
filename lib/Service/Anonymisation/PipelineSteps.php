@@ -27,6 +27,8 @@ use OCA\OpenRegister\Files\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer;
+use OCA\OpenRegister\Service\File\ImageBurner;
+use OCA\OpenRegister\Service\File\ImageRedactionService;
 
 /**
  * Every step that changes a document's content, the class that does it, the
@@ -43,6 +45,7 @@ final class PipelineSteps {
 	public const PDF_METADATA_SANITISER = 'pdf-metadata-sanitiser';
 	public const DOCX_SANITISER = 'docx-sanitiser';
 	public const ODT_SANITISER = 'odt-sanitiser';
+	public const IMAGE_BURNER = 'image-burner';
 
 	public const OUTCOME_RAN = 'ran';
 	public const OUTCOME_SKIPPED = 'skipped';
@@ -82,6 +85,11 @@ final class PipelineSteps {
 			'label' => 'ODT sanitiser',
 			'implementedBy' => OdtSanitizer::class,
 			'mimeTypes' => [self::ODT],
+		],
+		self::IMAGE_BURNER => [
+			'label' => 'Image region burner (decided regions painted into the pixels)',
+			'implementedBy' => ImageBurner::class,
+			'mimeTypes' => ImageRedactionService::STANDALONE_TYPES,
 		],
 	];
 

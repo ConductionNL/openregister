@@ -1621,6 +1621,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#lock', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+        ['name' => 'notes#journal', 'url' => '/api/objects/{register}/{schema}/{id}/notes-journal', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
         // Timeline entries under objects: the entry as a record, with its
         // kind, its fields, the pin, the follow-up and the raw inbound

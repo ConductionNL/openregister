@@ -59,11 +59,13 @@ final class BackendInfo implements JsonSerializable {
 	 * @param string      $name       The method enum (regex/presidio/openanonymiser/llm/hybrid).
 	 * @param bool        $configured Whether the backend has usable configuration.
 	 * @param ProbeResult $probe      The latest probe: reachability, when, and its latency.
+	 * @param DetectorVersion|null $detector What the backend is built from, when reported.
 	 */
 	public function __construct(
 		public readonly string $name,
 		public readonly bool $configured,
 		ProbeResult $probe,
+		public readonly ?DetectorVersion $detector=null,
 	) {
 		$this->available = $probe->reachable;
 		$this->lastProbedAt = $probe->probedAt;
@@ -73,15 +75,20 @@ final class BackendInfo implements JsonSerializable {
 	/**
 	 * Serialise to a JSON-friendly array.
 	 *
-	 * @return array{name: string, available: bool, configured: bool, lastProbedAt: string|null, latencyMs: int|null}
+	 * @return array{name: string, available: bool, configured: bool, lastProbedAt: string|null, latencyMs: int|null, detector?: array<string, mixed>}
 	 */
 	public function jsonSerialize(): array {
-		return [
+		$info = [
 			'name' => $this->name,
 			'available' => $this->available,
 			'configured' => $this->configured,
 			'lastProbedAt' => $this->lastProbedAt,
 			'latencyMs' => $this->latencyMs,
 		];
+		if ($this->detector !== null) {
+			$info['detector'] = $this->detector->jsonSerialize();
+		}
+
+		return $info;
 	}//end jsonSerialize()
 }//end class

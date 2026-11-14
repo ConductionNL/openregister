@@ -929,6 +929,7 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 	 *                                       would answer one question and hold no state.
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
 	 */
 	private function assertDeclarations(array $property, string $path): void {
 		GeneratedIdentifierDeclaration::fromProperty(property: $property, path: $path);
@@ -938,6 +939,8 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		PropertySourceDeclaration::assert(property: $property, path: $path);
 		RequiredWhenDeclaration::fromProperty(property: $property, path: $path);
 		PropertyTitles::assert(property: $property, path: $path);
+		// Cross-app-semantic-references: a semantic type no resolver can match is refused at save.
+		SemanticReferenceDeclaration::assert(property: $property, path: $path);
 	}//end assertDeclarations()
 
 	/**

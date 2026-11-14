@@ -482,9 +482,10 @@ class CredentialController extends Controller {
 				)
 			);
 		} catch (InvalidArgumentException $invalid) {
-			// The only InvalidArgumentException a mint raises for a well-formed
-			// request is a rejected instance host, and that IS a bad request rather
-			// than a server fault: answering 500 would read as "try again later".
+			// A mint raises InvalidArgumentException for a well-formed request only
+			// when it refuses it: a rejected instance host, or an outside-vault
+			// credential with a secret or an unusable vault reference. That IS a bad
+			// request rather than a server fault: 500 would read as "try again later".
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to create credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -1052,11 +1053,22 @@ class CredentialController extends Controller {
 	 */
 	private function connectionMetadataParams(): array {
 		$metadata = [];
-		foreach (['kind', 'status', 'instanceBaseUrl', 'clientId', 'clientCredentialRef'] as $key) {
+		$keys = ['kind', 'status', 'instanceBaseUrl', 'clientId', 'clientCredentialRef', 'custody', 'vaultAuthMethod', 'vaultRoleId', 'vaultMount'];
+		foreach ($keys as $key) {
 			$value = $this->request->getParam($key);
 			if (is_string($value) === true && trim($value) !== '') {
 				$metadata[$key] = trim($value);
 			}
+		}
+
+		// Where an outside credential's secret lives (credential-outside-vault-reference).
+		$vaultRef = $this->request->getParam('vaultRef');
+		if (is_array($vaultRef) === true) {
+			$metadata['vaultRef'] = [
+				'connection' => trim((string)($vaultRef['connection'] ?? '')),
+				'path' => trim((string)($vaultRef['path'] ?? '')),
+				'key' => trim((string)($vaultRef['key'] ?? '')),
+			];
 		}
 
 		return $metadata;
