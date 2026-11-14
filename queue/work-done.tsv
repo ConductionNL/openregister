@@ -10152,3 +10152,4 @@ fix:learniq:2519:e252f190	conflict resolved (l10n keep-both), pushed 644c2a79, R
 build:integriq:connectors-sharepoint-publication-intake:c2	PR #3630: tasks 1,2 and code of 4,5 done (set, cron attach, setup dialog+intake route, deprecation, demo); left: e2e spec and live tenant checks; suite 8943 no new failures	session-20261114T154751-59b4cd56	2026-11-14T16:23:53Z
 fix:learniq:2507:c4857461	merged development, conflicts resolved keeping both (register 0.51.0, Enrolment 0.5.1); new head ba361dd553c7653eab8489660180fdc1235f9dcd	session-20261114T141738-30f539db	2026-11-14T16:24:07Z
 merge:humaniq:1030:f7bd7726	merge3 tree of 11 humaniq PRs: merged=7 red=2 fail=0 skip=0; conflict 1, lint 0, moved 1; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T16:24:14Z
+merge:humaniq:1153:97c9fdd2	merge3 tree of 11 humaniq PRs: merged=7 red=2 fail=0 skip=0; conflict 1, lint 0, moved 1; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T16:24:18Z
