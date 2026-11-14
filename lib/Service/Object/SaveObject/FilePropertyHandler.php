@@ -19,12 +19,16 @@
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\UrlFetchRefused;
+use OCA\OpenRegister\Service\File\UrlFileFetcher;
+use OCA\OpenRegister\Service\File\UrlFileSource;
+use OCA\OpenRegister\Service\File\UrlStreamOpener;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
-use OCA\OpenRegister\Service\SecurityService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -138,25 +142,6 @@ class FilePropertyHandler {
 	];
 
 	/**
-	 * Stream options for fetching a file from a URL.
-	 *
-	 * SEC-SVC-2: redirects are DISABLED — follow_location would let a public URL
-	 * 302-redirect to an internal address, defeating the point-in-time guard in
-	 * fetchFileFromUrl().
-	 *
-	 * @var array<string, array<string, mixed>>
-	 */
-	private const HTTP_FETCH_OPTIONS = [
-		'http' => [
-			// 30 second timeout.
-			'timeout' => 30,
-			'user_agent' => 'OpenRegister/1.0',
-			'follow_location' => false,
-			'max_redirects' => 0,
-		],
-	];
-
-	/**
 	 * The reader, guard, stored-file operations and configuration resolver delegated to.
 	 *
 	 * @var FilePropertyParts
@@ -164,18 +149,28 @@ class FilePropertyHandler {
 	private readonly FilePropertyParts $parts;
 
 	/**
+	 * The fetch a URL file input goes through, shared with creating a file from a URL.
+	 *
+	 * @var UrlFileFetcher
+	 */
+	private readonly UrlFileFetcher $urlFetcher;
+
+	/**
 	 * Constructor for FilePropertyHandler.
 	 *
-	 * @param LoggerInterface $logger Logger for logging operations
+	 * @param LoggerInterface      $logger      Logger for logging operations
 	 * @param ObjectFilesInterface $fileService File service for file operations
+	 * @param UrlFileFetcher|null  $urlFetcher  The shared URL fetch; the default opens real streams.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		LoggerInterface $logger,
 		private readonly ObjectFilesInterface $fileService,
+		?UrlFileFetcher $urlFetcher = null,
 	) {
 		$this->parts = new FilePropertyParts(logger: $logger, fileService: $fileService);
+		$this->urlFetcher = ($urlFetcher ?? new UrlFileFetcher(opener: new UrlStreamOpener()));
 	}//end __construct()
 
 	/**
@@ -709,30 +704,32 @@ class FilePropertyHandler {
 	}//end processFileObjectInput()
 
 	/**
-	 * Fetches file content from a URL, behind the SEC-SVC-2 anti-SSRF guard and with redirects disabled.
+	 * Fetches file content from a URL through the shared fetch: the SEC-SVC-2 anti-SSRF
+	 * guard first, no redirects, 30 seconds, and the instance's upload ceiling while reading.
+	 *
+	 * A refused address keeps its guard message; any other failed fetch is reported as
+	 * before, naming the URL.
 	 *
 	 * @param string $url The URL to fetch from.
 	 *
 	 * @return string The file content.
 	 *
-	 * @throws Exception If the URL cannot be fetched.
+	 * @throws InvalidArgumentException If the guard refuses the address.
+	 * @throws Exception                If the URL cannot be fetched.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
+	 * @spec openspec/changes/files-create-from-url/specs/file-actions/spec.md
 	 */
 	private function fetchFileFromUrl(string $url): string {
-		// SEC-SVC-2: validate the user-supplied URL against the shared anti-SSRF guard
-		// BEFORE issuing any request. This rejects non-http(s) schemes and any host that
-		// resolves to a loopback / private / reserved address (e.g. cloud metadata,
-		// localhost, RFC-1918), closing the full read-SSRF on this object-write path.
-		SecurityService::assertSafeFetchUrl($url);
+		try {
+			return $this->urlFetcher->fetch(url: $url, maxBytes: UrlFileSource::ceilingBytes());
+		} catch (UrlFetchRefused $refused) {
+			if ($refused->reason === UrlFetchRefused::REFUSED_ADDRESS) {
+				throw new InvalidArgumentException($refused->getMessage());
+			}
 
-		// SEC-SVC-2: redirects are disabled in HTTP_FETCH_OPTIONS.
-		$content = file_get_contents($url, false, stream_context_create(self::HTTP_FETCH_OPTIONS));
-		if ($content === false) {
 			throw new Exception("Unable to fetch file from URL: $url");
 		}
-
-		return $content;
 	}//end fetchFileFromUrl()
 
 	/**
