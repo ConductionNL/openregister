@@ -11271,3 +11271,4 @@ review:opencatalogi:2648:33597bb0	GREEN: matches operations-publish-rights spec;
 cover:opencatalogi:fc83bfb1md382:jsb0b70223	already done: quality/test-coverage-js-b0b70223-1 merged; src/navigation/* at 96.4% stmts (jest), above the 90 target	session-20261114T211806-b9cd4119	2026-11-14T21:44:35Z
 review:opencatalogi:2655:80535d6f	stale	session-20261114T201752-7e06b161	2026-11-14T21:44:27Z
 verify:launchpad:1212:fea86ab4	1212 GREEN; 1223 CONFLICT; 1226 RED (duplicate nl.js keys with 1212); 1229 skipped (head moved 7f327e4 -> 66aa995)	session-20261114T204759-5dc9dba7	2026-11-14T21:44:31Z
+fix:opencatalogi:2687:6e430b3e	l10n keys relocated, merges clean after 2683/2684; new head 5473354c	session-20261114T201755-10d43934	2026-11-14T21:44:53Z
