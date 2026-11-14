@@ -10542,3 +10542,4 @@ merge:integriq:3589:d1b6aaae	merge3 tree of 33 integriq PRs: merged=14 red=4 fai
 merge:integriq:3542:c7dc6c79	merge3 tree of 33 integriq PRs: merged=14 red=4 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 15	merge3-20261113T213425-c36bcd5f	2026-11-14T18:02:00Z
 merge:integriq:3574:4657a61d	merge3 tree of 33 integriq PRs: merged=14 red=4 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 15	merge3-20261113T213425-c36bcd5f	2026-11-14T18:02:03Z
 verify:keepiq:1784:97310010	1784 GREEN, 1786 CONFLICT (l10n vs 1784)	session-20261114T165414-28281f96	2026-11-14T18:02:09Z
+fix:launchpad:1210:256d3e09	conflict resolved (migration renumbered, l10n combined); new head 360cba65, REVERIFY recorded	session-20261114T174741-aa9751f9	2026-11-14T18:02:25Z
