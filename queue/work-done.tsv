@@ -10383,3 +10383,166 @@ fix:shillinq:3048:a958ce7c	merged dev + #2991, version/lock sequenced after #299
 merge:planninq:1158:89f3a911	merge3 tree of 8 planninq PRs: merged=3 red=3 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T17:18:02Z
 merge:planninq:1158:c200be19	merge3 tree of 8 planninq PRs: merged=3 red=3 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T17:18:06Z
 merge:planninq:1162:3918e010	merge3 tree of 8 planninq PRs: merged=3 red=3 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T17:18:17Z
+verify:decidiq:2170:de54d2b8	GREEN 2170 2177; 4324 OK, vitest 2762 OK	session-20261114T154807-c05f4e57	2026-11-14T17:19:05Z
+build4:openregister:platform-share-provider:c3	failed: permission — openspec validate (2.3) via npx refused; PR #10450 head ad17acec0 unchanged; 1.1/1.2 open by design, 2.1 e2e live, 3.1 handover	session-20261114T171807-697deef1	2026-11-14T17:19:29Z
+review:openregister:10568:10437299	APPROVE: RBAC flag unused for row selection, tenancy never widened, arm order matches old preference; Architecture/Rules/Controller/Contract/SchemaMapper/migration tests pass, phpstan clean	session-20261114T134708-ba7f7741	2026-11-14T17:19:46Z
+fix:pipelinq:3835:f9170d1a	conflict resolved, new head 53c482bd, REVERIFY recorded	session-20261114T171830-19af6b65	2026-11-14T17:20:00Z
+fix:learniq:2493:11d23894	conflict resolved, merged development; new head b4d28b92	session-20261114T171822-ef880213	2026-11-14T17:20:12Z
+merge:decidiq:2149:6f1ca6f0	merge3 tree of 1 decidiq PRs: none; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T17:20:29Z
+merge:buildiq:1612:33eda861	merge3 tree of 9 buildiq PRs: merged=6 red=3 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T17:21:53Z
+merge:buildiq:1583:5ceed3e4	merge3 tree of 9 buildiq PRs: merged=6 red=3 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T17:21:57Z
+build:openregister:calendar-time-zone:c3	partial: PR #10154 head 598afed8 adds 2.3 ledger (time_zone column + local dates on timer events, 3 tests), main merged; left 1.3 calendar migration from default_timezone + its 3.1 test, 1.1 required flag (needs 1.3, contradicts UTC default)	session-20261114T151803-c9b63248	2026-11-14T17:22:01Z
+verify:pipelinq:3829:5ab01d7b	GREEN 3829; no new failures (myWorkPage vitest red inherited)	session-20261114T161752-4c07cde6	2026-11-14T17:22:05Z
+fix:learniq:2531:09479452	merged development in clean; unit suite only inherited failure; new head 4185b758, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T17:22:18Z
+verify:pipelinq:3818:f40fe232	CONFLICT (src/manifest.json, tests/vitest/simpleTicketPage.spec.js)	session-20261114T171830-19af6b65	2026-11-14T17:22:29Z
+fix:learniq:2520:f857df28	merged dev, strings off the tail, clean vs #2484; unit only inherited failure; new head eb56a06d	session-20261114T154807-4c2c3327	2026-11-14T17:22:39Z
+fix:decidiq:2195:158130f3	fixed: merged development, duplicate meetingBodyId import resolved; vitest 2757 OK; new head 9120311a	session-20261114T154807-c05f4e57	2026-11-14T17:22:50Z
+verify:buildiq:1622:5af6c7c6	1622, 1644 GREEN	session-20261114T151932-05b02c14	2026-11-14T17:23:05Z
+fix:learniq:2532:c0737461	merged development in, clean; 1 inherited unit failure; new head 2772c58e	session-20261114T171822-35ca2aeb	2026-11-14T17:23:12Z
+verify:humaniq:1144:92fc8814	1144 GREEN	session-20261114T151932-05b02c14	2026-11-14T17:24:24Z
+verify:filinq:2130:7f59ceba	GREEN 2130, GREEN 2131 (PHP 6754->6779, vitest 763, no failures)	session-20261114T151803-c9b63248	2026-11-14T17:25:28Z
+fix:learniq:2486:60407158	merged development in, clean; 1 inherited unit failure; new head 6d3eac1a	session-20261114T171822-35ca2aeb	2026-11-14T17:25:51Z
+fix:learniq:2484:9e4298e4	development merged in, new head 953ce73f, REVERIFY recorded	session-20261114T171830-19af6b65	2026-11-14T17:26:23Z
+build:decidiq:configurable-types-domain-model:c3	partial: nothing changed on PR #2186; 1.24 waits on nextcloud-vue, 3.4 on a schedule export, 5.3/5.4 on humaniq; 3.5 (counted migration of BodyParticipation onto GovernanceBodyComposition, UI included) is left for a fresh session	session-20261114T151803-c9b63248	2026-11-14T17:26:35Z
+fix:learniq:2507:ba361dd5	fixed the BLOCK: Enrolment withdrawn label back to Withdrawn, the assessor assignment reads No longer assigned; new head 4e19f9e6, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T17:27:04Z
+build4:openregister:send-at-on-the-messaging-leaf:c3	done (code): smtp-mail seed in integriq PR #3632 (+2 tests, catalog digests), task 1.1 ticked on openregister PR #10534 (ffb41105); left 3.1 e2e and 3.2 Newman (live instance)	session-20261114T161750-16a1c558	2026-11-14T17:27:16Z
+fix:decidiq:2189:cdb66cba	development merged clean, new head 4d141d0a, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T17:27:14Z
+fix:humaniq:1123:a6b9adfa	floor restored (unit_interfacing 3.61 vs 3.62, PASS), suite OK, new head 29c65f19, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:28:04Z
+verify:pipelinq:3835:b202ec0d	GREEN 3835; no new failures	session-20261114T161752-4c07cde6	2026-11-14T17:28:16Z
+fix:integriq:3600:78585a56	l10n tail conflict resolved keep-both, pushed 60d4c594, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T17:28:28Z
+build4:openregister:unit-test-coverage:c3	partial: PR #10527 + exception tests (6 classes, 19 tests); umbrella tasks (Service/Controller/Db/Event/BackgroundJob coverage, gate, CI) still open	session-20261114T161806-530176c3	2026-11-14T17:28:58Z
+verify:decidiq:2172:18d37379	GREEN 2172 (PHP 4280, vitest 2754, no failures)	session-20261114T151803-c9b63248	2026-11-14T17:29:17Z
+fix:decidiq:2194:6149ccc2	l10n conflicts resolved, new head 29f06411, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T17:30:21Z
+build:filinq:document-sanitization:c3	partial: built 3.4 sanitize flag on single+batch anonymise (FinalArtifactSanitizer after conversion/summary/records, tenant default filinq.sanitization.default, warning-not-error; PDFs answer pdf_sanitizer_unavailable until openregister#10561 lands) on filinq#2126 head ff1f07a22, +21 tests, suite 6756->6777 green; left 3.5/4.2 seal half, blocked on document-waarmerk-certification (unbuilt)	session-20261114T171756-4d62172c	2026-11-14T17:30:45Z
+fix:decidiq:2143:1430cc3a	fixed: unit interfacing restored (floor compare PASS); new head e788a8f9	session-20261114T154807-c05f4e57	2026-11-14T17:31:40Z
+fix:humaniq:1129:5162c296	floor restored (unit_size 4.49, unit_interfacing 3.61, PASS), suite OK, new head 3a589896, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:32:20Z
+fix:decidiq:2162:1ab2ebca	merged development in, clean; checks green; new head 75db4256adf95429053233069853075d1d759e3d, REVERIFY recorded	session-20261114T171756-4d62172c	2026-11-14T17:32:38Z
+verify:learniq:2520:7d8192ee	2520 GREEN, 2531 GREEN, 2532 CONFLICT (register json vs 2520), 2536 GREEN; no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:32:56Z
+fix:learniq:2515:b47ed90a	REVERIFY f8a88742	session-20261114T134708-ba7f7741	2026-11-14T17:33:08Z
+verify:decidiq:2195:cd81ac60	GREEN 2195; 4232 OK, vitest 2757 OK	session-20261114T154807-c05f4e57	2026-11-14T17:33:15Z
+build:learniq:learner-list-and-page-follow-the-boards:c3	partial: PR #2541 builds the pupil page endpoint (T3 header+next step, T4 people, T1 todayState there; 25 tests); left T1 list read model, T2 columns/views, T3/T4 manifest header and side column, T5 guardian conversation (no portaliq client), T6 strings and example data	session-20261114T171821-a80c28c5	2026-11-14T17:33:42Z
+build:decidiq:termijnagenda:c3	partial: PR #2203 (new; #2157 was merged) builds tasks 4 board+reschedule dialog, 5 realise/lapse dialogs, 6 overdue KPI (D6 client-side), 22 vitest tests, suite green. Left: task 1 owner rule only warned (OR accepts the save), task 7 e2e	session-20261114T172412-df2c66f1	2026-11-14T17:34:13Z
+fix:pipelinq:3818:44c090e1	merged development, resolved manifest/test conflict; new head 2161a99c, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T17:34:09Z
+fix:humaniq:1125:01e77231	conflict resolved (l10n), new head a44e6b58, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:34:24Z
+fix:learniq:2521:34c33485	floor restored (overall 4.35, size 4.14, complexity 4.38, interfacing 3.13); pushed 5a578a1e, REVERIFY recorded	session-20261114T171832-d4fb04b0	2026-11-14T17:34:40Z
+build4:openregister:platform-cloud-federation-provider:c3	partial: PR #10531 head d3b986cd: 1.1 outbound OCM send, 1.2 two-sided lifecycle (accept/decline endpoints, notifications), 1.5 register judged per schema, crosses param wired; left 1.3 remote principal in the permission layer, e2e, validate, dossiq hand-over; suite only main's inherited fails	session-20261114T161742-d79a1d0e	2026-11-14T17:35:06Z
+fix:hermiq:1767:a6510da2	merged development, resolved l10n conflict; new head 7d75ca77, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T17:35:13Z
+build:decidiq:the-decision-as-a-walked-process:c3	partial: PR #2204 builds 7.2 (remedy clause stamped when taken, listener + 9 tests) and lands the 7.3 tick; suite 4232->4241 green; left 1.1-1.3 (no spec for open work items / non-grant states), 2.2-2.3, 3.2-3.3, 4.2-4.4 (own change per reachability-scope), groups 6, 8-11 deferred	session-20261114T161750-16a1c558	2026-11-14T17:35:20Z
+fix:decidiq:2149:936b9a26	fixed: merged development, register 0.16.0 with both lines; new head f2767637	session-20261114T154807-c05f4e57	2026-11-14T17:35:30Z
+fix:humaniq:1134:57f484fd	conflict resolved (l10n, golden), new head 6ff842b4, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:36:03Z
+verify:decidiq:2171:0d7b8b59	2171 GREEN (unit 4249 vs baseline 4232, vitest green); 2175 CONFLICT after 2171 (municipality.json, UserSettings.vue)	session-20261114T171756-4d62172c	2026-11-14T17:36:24Z
+build:learniq:compliance-assign-from-hr-roles:c3	PR #2542: 4.1 built (out-of-scope list on compliance page, HR card on learner page); all code tasks done; left 5.1 (integriq issue, not a code task), 6.x live/release	session-20261114T171830-19af6b65	2026-11-14T17:36:32Z
+fix:hermiq:1749:df82486d	resolved l10n conflict (json union + l10n:build); no new failures; new head 495bf269, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T17:36:55Z
+verify:humaniq:1123:bc177029	1123 GREEN; 1145, 1156 CONFLICT (generated manifest files in tree order)	session-20261114T151932-05b02c14	2026-11-14T17:37:23Z
+verify:decidiq:2189:f986e58e	2 GREEN (2189, 2194); phpunit 4257/0 fail, vitest 2764 pass	session-20261114T161750-16a1c558	2026-11-14T17:37:34Z
+build:openregister:expired-object-sweep:c3	done: PR #10232 pushed 3ad5136, all code tasks ticked; 3.1 live Db test (7 tests green on local NC34+pg) found and fixed _expires never written by single-object saves and trashed rows re-swept	session-20261114T171008-ae51009d	2026-11-14T17:37:53Z
+verify:learniq:2484:a66edf48	GREEN 2484 2507; CONFLICT 2486	session-20261114T134708-ba7f7741	2026-11-14T17:37:51Z
+verify:decidiq:2146:78367c80	GREEN 2146 (phpunit 4232 = baseline, vitest 2787 pass)	session-20261114T172412-df2c66f1	2026-11-14T17:38:05Z
+fix:learniq:2532:2772c58e	failed: branch already contains development; conflict is only with unmerged #2520, nothing to resolve against the base	session-20261114T134708-ba7f7741	2026-11-14T17:38:16Z
+verify:learniq:2493:ba6bff8b	2493 GREEN; no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:38:17Z
+fix:decidiq:2169:5f13d30a	fixed: unit complexity restored (floor compare PASS); new head e056e57f	session-20261114T154807-c05f4e57	2026-11-14T17:38:40Z
+build:hermiq:tools-deep-research-report:c3	partial: PR #1790 Task 5 slice ResearchGate (stop, kill switch, budget before each model call, +5 tests, no new failures; dev has 164E/26F inherited); left Task 1 runner/job, 2 gathering, rest of 5, 6 chat: blocked on Handoff schema from flows-hand-off-and-wait (unmerged branch)	session-20261114T161752-4c07cde6	2026-11-14T17:38:53Z
+fix:hermiq:1782:97af9742	resolved l10n conflict (json union + l10n:build); no new failures; new head cc36a720, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T17:38:52Z
+build4:openregister:platform-user-migrator:c3	PR #10524: tasks 1.2 (recents + own notification preferences/overrides) and 2.3 (strict validate) done, 10 tests added (21->31); left 2.1 e2e (live instances), 3.1 (note to another lane, not code); suite no new failures	session-20261114T165414-28281f96	2026-11-14T17:40:23Z
+verify:decidiq:2143:11c25ba6	GREEN 2143, 2204; RED 2202 (6 register/ori tests); CONFLICT 2149, 2162, 2203; tree without 2202: phpunit 4272/0, vitest 2750 pass	session-20261114T161750-16a1c558	2026-11-14T17:40:39Z
+build4:openregister:generated-identifier:c3	pushed to PR #10516 (build/generated-identifier-3, head 55444343): merged main in; C41.5 scheme migration job with progress + old value kept as foreign id, C41.6 second migration refused naming the running one, C41.7 tests (+25 tests); unit suite 70 failures all inherited from main; left C41.8 hand-over (not code)	session-20261114T161744-497aae45	2026-11-14T17:40:52Z
+fix:hermiq:1728:fa959665	merged development, resolved l10n + register version conflict (0.57.0); new head 4b9a20c3, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T17:41:02Z
+verify:learniq:2515:9ea58cce	GREEN 2515 2521; CONFLICT 2536 2541	session-20261114T134708-ba7f7741	2026-11-14T17:41:32Z
+fix:decidiq:2149:f2767637	failed: branch already contains development; conflicts only with unmerged sibling #2143 (l10n en/nl js+json); merge development in after #2143 lands	session-20261114T174106-c933f162	2026-11-14T17:41:50Z
+verify:humaniq:1125:c6dc31b9	1125 GREEN, 1129 GREEN, 1134 CONFLICT (with 1125)	session-20261114T172412-df2c66f1	2026-11-14T17:41:49Z
+build:hermiq:schedules-onto-engine-triggers:c3	partial: no code this pass. 2.2 is built in hermiq (#1734, merged) but waits on openregister #10563 (trigger-schedule timezone key), not yet on main; 2.1/2.3/2.4 need ownerless timers, and FlowTimerService is internal (not in lib/Contract), so a new OpenRegister contract has to be designed first; 3.2/3.3 follow from those	session-20261114T161750-16a1c558	2026-11-14T17:41:57Z
+fix:planninq:1165:f9724659	fixed: merged development, l10n relocated in 74 catalogues; new head d4613540	session-20261114T154807-c05f4e57	2026-11-14T17:41:56Z
+verify:learniq:2484:f7878465	GREEN 2484 2507; CONFLICT 2486 2536 2542	session-20261114T134708-ba7f7741	2026-11-14T17:42:20Z
+build:humaniq:setup-wizard-six-steps:c3	failed: blocked: PR #1136 is merged; every remaining code task (1.x, 2.1-2.6, 3.1) needs CnSetupWizard summaryHint/summaryEditable/repeatable, absent from nextcloud-vue 2.180.0 (latest) and that repo is outside this worker's scope; 5.x e2e/live	session-20261114T172412-df2c66f1	2026-11-14T17:42:42Z
+verify:shillinq:3048:d2250188	GREEN 3048	session-20261114T161742-d79a1d0e	2026-11-14T17:42:43Z
+fix:decidiq:2175:84afe008	failed: branch already contains development; conflicts only with unmerged sibling #2171 (municipality.json, UserSettings.vue); merge development in after #2171 lands	session-20261114T174106-c933f162	2026-11-14T17:42:52Z
+fix:hermiq:1715:dc6ec4b3	conflict resolved (register v0.57.0, l10n merged); new head 47d76c7c	session-20261114T161744-497aae45	2026-11-14T17:43:06Z
+fix:hermiq:1788:ab0f629a	failed: permission (local ADR ruleset lint run refused; the adrvalidator pass->warn needs the new openapi.json paths checked against the ADR 2.x rules, likely missing API-Version response headers as pipelinq#3826)	session-20261114T173956-74ab8962	2026-11-14T17:43:35Z
+fix:hermiq:1785:64469ed7	conflict resolved, new head d1b639b5, REVERIFY recorded	session-20261114T165414-28281f96	2026-11-14T17:43:54Z
+fix:humaniq:1133:9d19d31d	floors restored (floor_check PASS), suite OK, new head 0e7cf4b6, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:44:02Z
+verify:hermiq:1749:da1a1234	GREEN 1749,1790; CONFLICT 1782 (l10n vs tree); no new failures	session-20261114T161752-4c07cde6	2026-11-14T17:44:20Z
+fix:humaniq:1127:3d944fbe	conflict resolved, new head b191da1c, REVERIFY recorded	session-20261114T161742-d79a1d0e	2026-11-14T17:45:03Z
+verify:hermiq:1767:b21992ae	GREEN 1767	session-20261114T161744-497aae45	2026-11-14T17:45:13Z
+fix:humaniq:1145:76bf5e50	conflict resolved, new head b05d3c3d, REVERIFY recorded	session-20261114T172412-df2c66f1	2026-11-14T17:45:46Z
+fix:humaniq:1156:2729d0bd	conflict resolved (generated manifest baseline), new head 833152c1, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:45:54Z
+fix:humaniq:1134:6ff842b4	no change: branch already contains development and merges clean onto it; it conflicts only with the still-open #1125 (payroll calculation, pack, l10n), so it needs a merge of development after #1125 lands	session-20261114T151932-05b02c14	2026-11-14T17:46:24Z
+verify:portaliq:2500:4216ab5a	GREEN 2500	session-20261114T134708-ba7f7741	2026-11-14T17:46:24Z
+fix:humaniq:1135:9114728c	development merged in, l10n resolved, new head 120d0cde, REVERIFY recorded	session-20261114T161742-d79a1d0e	2026-11-14T17:46:34Z
+verify:decidiq:2169:b67a6495	2169 GREEN	session-20261114T174106-c933f162	2026-11-14T17:46:46Z
+fix:planninq:1158:4d1b5b8d	fixed: unit complexity restored (floor compare PASS); new head 11b7da5e	session-20261114T154807-c05f4e57	2026-11-14T17:46:53Z
+verify:integriq:3600:528563f5	3600 GREEN, 3632 CONFLICT (seed golden test vs 3600); no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:47:06Z
+build:learniq:bpv-coach-today-and-placement-board:c3	PR #2536 (head 8ee1ab75): T3 visit proposal+trainer answer, T4 placement board, T6 mbo example set built; +14 PHP tests, +5 JS tests, suite 6768->6782 (1 inherited fail). Left: T5 Today view, waits on today-first-per-school-role (not built)	session-20261114T171822-ef880213	2026-11-14T17:47:31Z
+fix:decidiq:2162:75db4256	nothing to fix: branch already contains development (head unchanged 75db4256); it conflicts only with earlier unmerged PRs of the tree, verify again once those land	session-20261114T161742-d79a1d0e	2026-11-14T17:47:22Z
+fix:hermiq:1735:dfc8010c	conflict resolved (register version 0.58.0 + schema union, l10n), pushed 61ad767f, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T17:47:28Z
+fix:hermiq:1739:6d69e90e	floor restored (unit_complexity 4.53), new head bc2bf993, REVERIFY recorded	session-20261114T165414-28281f96	2026-11-14T17:47:35Z
+fix:decidiq:2203:1a9ceed2	failed: branch already contains development; conflicts only with unmerged siblings #2143/#2149/#2162 (l10n en/nl, termijnagenda manifest); merge development in after they land	session-20261114T174106-c933f162	2026-11-14T17:47:44Z
+verify:humaniq:1127:4030a7ef	1127, 1133 GREEN	session-20261114T151932-05b02c14	2026-11-14T17:47:47Z
+build:integriq:connectors-hr-staff-sync:c3	failed: tasks 1-4 still blocked, developer.untis.com is not in the cloud network allowlist (DNS refused) and design D2 requires pinned endpoints; task 5 and engine parts already on development, both build branches merged	session-20261114T171822-35ca2aeb	2026-11-14T17:48:40Z
+fix:portaliq:2437:692916ba	REVERIFY 4fe52aad	session-20261114T134708-ba7f7741	2026-11-14T17:48:44Z
+verify:decidiq:2202:3a62e78d	GREEN 2202	session-20261114T161742-d79a1d0e	2026-11-14T17:49:04Z
+verify:portaliq:2500:2041ffeb	skipped 2500: head moved to cf59f800	session-20261114T134708-ba7f7741	2026-11-14T17:49:09Z
+verify:planninq:1165:9d023db3	GREEN 1165; 1038 OK, vitest 3262 OK	session-20261114T154807-c05f4e57	2026-11-14T17:49:12Z
+fix:hermiq:1787:17ffbfda	fixed: conflict resolved keeping both sides, unit 5170 + vitest 1496 green; new head d0f18c15	session-20261114T173956-74ab8962	2026-11-14T17:49:26Z
+fix:keepiq:1784:ee1c9e8e	merged development, resolved l10n conflicts; new head e19809e2, REVERIFY recorded	session-20261114T174753-100b2a07	2026-11-14T17:49:49Z
+fix:keepiq:1786:6e617a96	conflict resolved, merged development; new head cda0c18e, REVERIFY recorded	session-20261114T174751-7b84989f	2026-11-14T17:50:02Z
+build:decidiq:publication-theme-pages:c3	built task 1 (theme pages, Add to theme modal/tabs, seed theme) and task 2 (timeline endpoint + tab, publish tab) in decidiq#2205 head f80ac253; all code tasks ticked, only the Playwright test is left; phpunit 4232->4239, vitest green	session-20261114T171756-4d62172c	2026-11-14T17:50:33Z
+fix:hermiq:1736:7da99d85	merged development, register 0.57.0, new head 15f7baa1, REVERIFY recorded	session-20261114T165414-28281f96	2026-11-14T17:50:31Z
+fix:hermiq:1782:cc36a720	fixed: l10n strings moved off the catalogue end, merges cleanly with #1749; new head f0562d6f	session-20261114T173956-74ab8962	2026-11-14T17:50:48Z
+build:hermiq:personal-preferences:c3	PR #1792: built 1.1-1.3, 2.1, 2.2, 2.4 (all code tasks); left 3.1 e2e (needs live Nextcloud); PHP 5147 tests, same 190 inherited failures as development, vitest all green	session-20261114T171830-19af6b65	2026-11-14T17:51:17Z
+verify:filinq:2126:321f27ff	GREEN 2126	session-20261114T161742-d79a1d0e	2026-11-14T17:51:18Z
+build:keepiq:extension-passkey-enrolment:c2	done: no code task left; PR #1776 merged into development; 0.2/0.3 (store ids, live browser ceremonies) and 4.2 (manual live test) need a human, 4.1 is the pre-push check of already-landed code	session-20261114T173956-74ab8962	2026-11-14T17:51:25Z
+verify:hermiq:1715:565afba9	GREEN 1715; CONFLICT 1728, 1785; skipped 1791, 1792 (head moved)	session-20261114T161750-16a1c558	2026-11-14T17:51:32Z
+fix:keepiq:1789:57b0a1bf	merged development, l10n conflict resolved keeping both; new head e905bf11; parity red inherited from development	session-20261114T174756-fe199e72	2026-11-14T17:51:43Z
+fix:buildiq:1624:0e334f6f	relative floor restored (overall 4.29, interfacing 3.43 vs 3.44, PASS); suite inherited-only; new head cc9050a1, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:51:50Z
+fix:planninq:1171:75d4a18f	fixed: merged development (l10n, store, TaskDetail); new head 6e9f4ac2	session-20261114T154807-c05f4e57	2026-11-14T17:52:11Z
+fix:planninq:1159:b7c86685	floor restored (unit_complexity 4.84 PASS); new head fc0531dd, REVERIFY recorded	session-20261114T174741-aa9751f9	2026-11-14T17:52:22Z
+build:keepiq:portability-cxp-cross-provider-transfer:c2	partial: nothing buildable left in PR #1787: 1.1 needs the published CXP test vectors (external), 2.1's code is in and only its Playwright run is left, 3.2 archives after those	session-20261114T151932-05b02c14	2026-11-14T17:52:39Z
+build:hermiq:memory-knowledge-bases:c3	partial: PR #1793 (quality/build-memory-knowledge-bases-2) builds Task 3 retrieval scoped to knowledge bases, Task 4 hermiq-side facade probe, Task 5 person-scoped read (+15 tests, no new failures); left: Task 1 seed, Task 2 upload, Task 5 sharing notice, Task 6 pages, OpenRegister facade file scope + indexStatus (vector-rag), verification	session-20261114T161744-497aae45	2026-11-14T17:53:00Z
+fix:keepiq:1790:8cf69245	fixed: merged development, l10n conflict resolved keeping both sides; new head 2097db1d (test:l10n red inherited from development: 7 passkey keys)	session-20261114T173956-74ab8962	2026-11-14T17:52:56Z
+measure:integriq:20261114h16	php 94.71% (pcov), js 95.29% at 19aa4d64	session-20261114T171822-ef880213	2026-11-14T17:53:06Z
+cover:keepiq:c967a31fm10bf:8ed5443b	nothing to cover: all 89 files in lib/Kernel/Contracts are interfaces with no method bodies, so there is no behaviour a unit test can exercise	session-20261114T151932-05b02c14	2026-11-14T17:53:15Z
+build4:openregister:query-filter-through-a-reference:c3	pushed 9b925ba3f to PR #10528: 2.1 another register, 2.2 facets via _facets[_ref], 2.3 noted (Solr removed); left 2.1 CI integration, 3.1 Newman (live), 3.3 validate+matrix; suite 61948, no new failures	session-20261114T171807-697deef1	2026-11-14T17:53:27Z
+fix:buildiq:1625:04a5e4fe	checker floor restored (renamed OBJECT_ID_TOKEN false positive); new head 706c4494	session-20261114T174106-c933f162	2026-11-14T17:53:41Z
+fix:keepiq:1791:a0a825d5	merged development, new head bb4f5f10, REVERIFY recorded	session-20261114T165414-28281f96	2026-11-14T17:54:16Z
+fix:planninq:1166:eb8a0d7e	floor restored (PASS), new head 5fa61e8e, REVERIFY recorded	session-20261114T172412-df2c66f1	2026-11-14T17:54:26Z
+verify:planninq:1158:74ad759a	GREEN 1158 (phpunit 1046 OK, vitest 3270 passed)	session-20261114T174741-aa9751f9	2026-11-14T17:54:38Z
+fix:launchpad:1197:e61de66b	fixed office-tiles stability marker, new head 21a4f902; remaining /analytics/me failure is inherited from development	session-20261114T171830-19af6b65	2026-11-14T17:54:45Z
+build:decidiq:ori-adoption:c3	partial: PR decidiq#2202 built 2.1 importer, 2.2 occ command, 3.1 mapper, 3.2 feeds, 1.1 import tag (4267 unit green); left 4.1 seed (source data in procest, unreachable) and live acceptance of all tasks/5.1	session-20261114T161806-530176c3	2026-11-14T17:55:15Z
+verify:learniq:2484:1e6ac179	GREEN 2484,2507,2515,2541; CONFLICT 2486,2521,2542; 2536 skipped (head moved); 0 new test failures	session-20261114T174740-5118fc4f	2026-11-14T17:55:29Z
+fix:learniq:2541:4c511e4f	conflict fixed: route moved apart from #2521, stray .pyc change reverted; new head 6a283faba, REVERIFY recorded	session-20261114T171807-697deef1	2026-11-14T17:55:37Z
+verify:pipelinq:3818:4fc3dd45	3818 GREEN; no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:55:47Z
+cover:keepiq:c967a31fm10bf:60c2c265	already done: lib/Controller/*.php measures 98.87% line coverage on development (4148 statements, 47 missed; target 95), no tests needed	session-20261114T161750-16a1c558	2026-11-14T17:56:06Z
+fix:keepiq:1793:2ffa6e1a	resolved l10n conflict (union), rebuilt js, tests green; new head 813952b02f96211c4897e0644ea2d66021a4bb7c, REVERIFY recorded	session-20261114T171756-4d62172c	2026-11-14T17:56:20Z
+build4:openregister:an-app-declares-object-access-rather-than-guarding-it:c3	PR #10512 head 3030083: 5.1+5.3 done (ObjectAccessContractTest 14 tests, validator reason on issue path), main merged in, suite no new failures; left 5.2 e2e, 6.1 dossiq guard migration (~110 call sites, team/inheritance rules not expressible by D-1), 6.2 consuming apps	session-20261114T171812-31ca6c88	2026-11-14T17:57:01Z
+build:portaliq:portal-identity-from-the-admin:c4	partial: PR #2500 (1.2 pickers; 3.1 server half: register fields, OrganisationTypeOptions over OR ConceptRepository, save listener; 3.2 Van-line labels and DCTERMS.creator; suite 5247->5264 green). Left: 3.1 form picker (settings-form widget cannot list one scheme's concepts, needs a choices source in the library), TOOI organisation-type scheme uri to confirm (configurable), 3.2 footer line (wordi	session-20261114T171832-d4fb04b0	2026-11-14T17:57:00Z
+build:hermiq:models-prompt-and-answer-cache:c3	partial: #1753 was merged; new PR #1791 (head f0bebb6) builds tasks 2, 3 (Runs page cache line), 4 (schema+agent setting+form), 5 (exact cache, fromCache) and the purge job of 7; left task 6 (similarity layer: OpenRegister has no vector facade yet), task 7 thumbs-down hook, Clear cached answers endpoint, Chat.vue note + Ask the model again; Playwright/Newman/live checks	session-20261114T171008-ae51009d	2026-11-14T17:57:11Z
+fix:buildiq:1621:72ff5a22	fixed: unit_interfacing floor restored, pushed 504a7501	session-20261114T174754-e63e9f88	2026-11-14T17:57:12Z
+verify:portaliq:2437:7e632716	2437 GREEN, 2500 CONFLICT	session-20261114T174741-aa9751f9	2026-11-14T17:57:30Z
+fix:launchpad:1209:9f0cd9a3	conflict resolved, new head 2cb0094a, REVERIFY recorded	session-20261114T172412-df2c66f1	2026-11-14T17:57:37Z
+build:keepiq:crypto-item-reprompt:c2	partial: PR #1792 head 0912bdc4: TOTP code displays now behind the re-prompt (2.2 code done); left 3.1 extension fill (browser-extension WXT project), Playwright flow and docs build; vitest 6432 green	session-20261114T161742-d79a1d0e	2026-11-14T17:57:56Z
+fix:launchpad:1214:8ef09a0e	resolved info.xml/AdminSettingKey conflicts, openapi stability markers added; unit green; new head 4cafc2d4	session-20261114T171822-35ca2aeb	2026-11-14T17:58:01Z
+fix:launchpad:1219:be8c0012	conflict resolved (l10n + PlacementService), import op marked internal; new head da16c5df	session-20261114T171830-19af6b65	2026-11-14T17:58:27Z
+cover:keepiq:c967a31fm10bf:d3522ea6	PR #1797: 5 Db classes, 17 tests, suite 4998->5015 green	session-20261114T134708-ba7f7741	2026-11-14T17:58:38Z
+verify:decidiq:2205:3516e00d	2205 GREEN	session-20261114T161806-530176c3	2026-11-14T17:58:35Z
+build:hermiq:store-through-federated-config:c3	partial: openregister#10562 +7018334d builds G1 (optional appId/actingUserId on publish/discover/fetchBundle, every brokered call names them, default unchanged), +5 tests, Config 156->161, Architecture/Contract green; left G2-G4 in openregister, then hermiq 3.1/3.3/3.4 (hermiq#1736 holds 3.2)	session-20261114T161752-4c07cde6	2026-11-14T17:59:08Z
+verify:humaniq:1135:61370a4b	GREEN 1135, 1145, 1156; tree 4262 tests 0 failures (baseline 4233)	session-20261114T171812-31ca6c88	2026-11-14T17:59:41Z
+fix:hermiq:1728:4b9a20c3	no change: dev already in, conflicts only with unmerged GREEN #1749 (openapi.json); REVERIFY after it lands	session-20261114T161752-4c07cde6	2026-11-14T17:59:53Z
+fix:learniq:2486:6d3eac1a	conflict resolved (l10n block moved, .gitignore aligned); new head 6ae0a045	session-20261114T174740-5118fc4f	2026-11-14T18:00:02Z
+fix:launchpad:1216:7193b918	resolved 4-file conflict with development, unit green; new head 2d1a07b7	session-20261114T171822-35ca2aeb	2026-11-14T18:00:10Z
+verify:decidiq:2202:4338db13	2202 GREEN (self-built; mechanical checks only)	session-20261114T161806-530176c3	2026-11-14T18:00:21Z
+fix:learniq:2542:f59bed9f	l10n keys moved mid-catalogue; merges clean onto dev+#2507+#2484; pushed 8b1768c4, REVERIFY recorded	session-20261114T171832-d4fb04b0	2026-11-14T18:00:31Z
+build:humaniq:record-history-on-every-detail-page:c3	no code task left on PR #1128 (head 3d540460): record name in the sentence needs a design decision (OpenRegister audit entries carry no name; resolving it from the browser writes read entries), 4.1 e2e for 4 browser scenarios and 4.2 need a live instance	session-20261114T171812-31ca6c88	2026-11-14T18:00:41Z
+fix:launchpad:1211:f6110015	conflict resolved (both settings pairs kept); new head b818b6fc, REVERIFY recorded	session-20261114T174741-aa9751f9	2026-11-14T18:00:37Z
+fix:launchpad:1205:3d06446c	floor restored (PASS), new head c1333564, REVERIFY recorded	session-20261114T172412-df2c66f1	2026-11-14T18:00:55Z
+build:hermiq:tools-code-sandbox:c3	PR #1794: every code task built (Task 1 ExApp with 20 tests, Task 2 hosted dispatch via integriq, Task 3 runCode + AI feature gate, Task 4 code-step node, Task 5 admin section + redacted trace); left only live/container/Newman/Playwright tests and verification	session-20261114T171821-a80c28c5	2026-11-14T18:01:22Z
+fix:keepiq:1792:6fa60397	stale	session-20261114T161750-16a1c558	2026-11-14T18:01:29Z
+merge:integriq:3546:e1e6959f	merge3 tree of 33 integriq PRs: merged=14 red=4 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 15	merge3-20261113T213425-c36bcd5f	2026-11-14T18:01:35Z
+merge:integriq:3619:e90321d2	merge3 tree of 33 integriq PRs: merged=14 red=4 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 15	merge3-20261113T213425-c36bcd5f	2026-11-14T18:01:38Z
+merge:integriq:3539:f265cf39	merge3 tree of 33 integriq PRs: merged=14 red=4 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 15	merge3-20261113T213425-c36bcd5f	2026-11-14T18:01:41Z
+merge:integriq:3588:0978bab6	merge3 tree of 33 integriq PRs: merged=14 red=4 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 15	merge3-20261113T213425-c36bcd5f	2026-11-14T18:01:45Z
+merge:integriq:3589:d1b6aaae	merge3 tree of 33 integriq PRs: merged=14 red=4 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 15	merge3-20261113T213425-c36bcd5f	2026-11-14T18:01:57Z
+merge:integriq:3542:c7dc6c79	merge3 tree of 33 integriq PRs: merged=14 red=4 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 15	merge3-20261113T213425-c36bcd5f	2026-11-14T18:02:00Z
+verify:keepiq:1784:97310010	1784 GREEN, 1786 CONFLICT (l10n vs 1784)	session-20261114T165414-28281f96	2026-11-14T18:02:09Z
+fix:launchpad:1210:256d3e09	conflict resolved (migration renumbered, l10n combined); new head 360cba65, REVERIFY recorded	session-20261114T174741-aa9751f9	2026-11-14T18:02:25Z
+fix:integriq:3610:558feb74	l10n tail conflict resolved keep-both, pushed 6a95ff61, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T18:02:33Z
+verify:learniq:2541:52bd80ce	GREEN 2541@6a283fab; 0 new failures	session-20261114T174740-5118fc4f	2026-11-14T18:02:47Z
