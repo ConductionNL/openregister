@@ -9159,4 +9159,5 @@ buildiq	1621	72ff5a22e09f4fdb94d6e705b2e039cbb29c6511	RED	merge3:merge-gate	GATE
 buildiq	1624	0e334f6fbc199ebb47f933485ecb5504bb256c8e	RED	merge3:merge-gate	GATE RED absolute floor: buildiq maintainability 3.88 after merge is below its floor 3.91
 buildiq	1625	04a5e4fe063ed3c67d9deafe10a0ade754a65b26	RED	merge3:merge-gate	GATE RED checker floor: owaspsecurecoding: pass -> warn; owaspsecurecoding stars: 5 -> 3; score: 100 -> 96
 buildiq	1583	d8660734e83e88653bc8dcf0369466fa11ef4f92	REVERIFY	merge3	head moved since the verdict (was f3ae307edfff4e5e9fe6eb1119cdf730c2df4eff, 640edaa8:GREEN,f3ae307e:GREEN); verify the new head
+pipelinq	3818	44c090e10e54f168f23bb31742042e651b619d2e	CONFLICT	worker-41	baseline 8418 tests OK; merge into development conflicts in src/manifest.json tests/vitest/simpleTicketPage.spec.js
 learniq	2531	09479452a5afaed6b4d6bcb80083cd5bccc706c9	REVERIFY	worker-32	merged origin/development in (clean, register json valid); unit 6763 tests, 1 failure HigherEducationExampleSetTest inherited from development; new head 4185b758f553340c9a7c1e16ff9356f6d7f75653, verify it
