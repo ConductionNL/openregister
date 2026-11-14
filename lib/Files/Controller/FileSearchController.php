@@ -27,6 +27,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextSearchedMarker;
 use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
@@ -78,6 +79,13 @@ class FileSearchController extends Controller {
 	private readonly FileReadScope $readScope;
 
 	/**
+	 * Marks every file hit with whether its content was text-searched.
+	 *
+	 * @var TextSearchedMarker
+	 */
+	private readonly TextSearchedMarker $textSearched;
+
+	/**
 	 * Constructor
 	 *
 	 * @param IRequest                     $request  Request object
@@ -92,6 +100,7 @@ class FileSearchController extends Controller {
 		$this->chunkMapper = $services->chunkMapper;
 		$this->readScope = $services->readScope;
 		$this->logger = $services->logger;
+		$this->textSearched = new TextSearchedMarker(chunkMapper: $services->chunkMapper);
 	}//end __construct()
 
 	/**
@@ -111,6 +120,7 @@ class FileSearchController extends Controller {
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#4.1
+	 * @spec openspec/changes/large-file-handling/tasks.md#task-1-3
 	 */
 	public function semanticSearch(): JSONResponse {
 		try {
@@ -132,9 +142,13 @@ class FileSearchController extends Controller {
 			// `entityType` key was silently ignored (or#277).
 			// A chunk carries the file's text, so only files the caller can
 			// open in Nextcloud are returned (openregister#4097).
-			$results = $this->readScope->readableResults(
-				results: $this->vectorService->semanticSearch(
-					request: new SemanticSearchRequest(query: $query, limit: $limit, filters: ['entity_type' => 'file'])
+			// Every file hit says whether its content was read (REQ-LFH-001):
+			// a file above the extraction ceiling is found by name only.
+			$results = $this->textSearched->mark(
+				results: $this->readScope->readableResults(
+					results: $this->vectorService->semanticSearch(
+						request: new SemanticSearchRequest(query: $query, limit: $limit, filters: ['entity_type' => 'file'])
+					)
 				)
 			);
 
@@ -181,6 +195,7 @@ class FileSearchController extends Controller {
 	 * @return JSONResponse JSON response with hybrid search results or error
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#4.2
+	 * @spec openspec/changes/large-file-handling/tasks.md#task-1-3
 	 */
 	public function hybridSearch(): JSONResponse {
 		try {
@@ -219,7 +234,9 @@ class FileSearchController extends Controller {
 				)
 			);
 
-			$results = $this->readScope->readableResults(results: ($serviceResponse['results'] ?? []));
+			$results = $this->textSearched->mark(
+				results: $this->readScope->readableResults(results: ($serviceResponse['results'] ?? []))
+			);
 
 			return new JSONResponse(
 				data: [

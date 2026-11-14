@@ -4249,3 +4249,4 @@ Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configurat
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Repair/MigrateTextExtractionCeiling.php,,Repair,,,,,Files
+Files/Service/TextExtraction/TextSearchedMarker.php,,Files,,,,,Files

@@ -66,6 +66,7 @@ use ZipArchive;
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\ArchiveContainers
  * @covers \OCA\OpenRegister\Files\Service\TextExtractionService
  * @covers \OCA\OpenRegister\Files\Service\FileSidebarService
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextSearchedMarker
  * @uses   \OCA\OpenRegister\Service\File\ArchiveMemberEnumerator
  * @uses   \OCA\OpenRegister\Service\File\ArchiveListing
  * @uses   \OCA\OpenRegister\Service\File\ArchiveWalk
