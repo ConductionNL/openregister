@@ -8158,3 +8158,4 @@ filinq	2070	bf70c5588c1fbd4afb9fdcd1ed99f89d9ebf8335	REVERIFY	worker-31	merged d
 filinq	2067	c801773a9ca0137128829b1d5273c01a1c53de2c	GREEN	worker-01	unit 6722 (baseline 6695, 0 failures before and after, 0 new failures); jest CaseSystemDeliverySettings 7/7; php -l clean; build of generate-store-in-case-system, admin-only routes (AuthorizedAdminSetting + isAdmin), behaviour as its specs ask
 filinq	2085	40b58a67cdf7c10630bff040d5aa5d873d7033c3	CONFLICT	worker-01	conflicts on top of development+2067: l10n en/nl, filinq_register.json
 filinq	2089	f10c1eaaf5bc31141767006595c82c2101a64425	CONFLICT	worker-01	conflicts on top of development+2067: l10n en/nl, filinq_register.json, openapi.json
+filinq	2093	282560c20d706ec16d98282e71e2ce8231175f8f	CONFLICT	worker-01	conflicts on top of development+2067: l10n en/nl, mock register, filinq_register.json, openapi.json
