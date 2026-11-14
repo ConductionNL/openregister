@@ -2972,3 +2972,6 @@ hermiq	1782	09cb5576e64141eae0ab3518ad8680e9d0bf748c	MERGED	merge3	GATE OK sbom,
 hermiq	1793	ef80f599c0b539dbe09ab8376bcf93fe22cd897e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 shillinq	2991	47756ee7bddb7a0a7db8668eda690a3bdef34340	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 shillinq	3069	71d3c09e624976e5e85566397eefea9aaf539dda	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
+learniq	2493	d5717bf0dd4f237e02456a7983fa30ae81e27e82	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2541	b1472267b8b9596ae7a571f09291b972972d4ace	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2544	eab2300dc8912a3ba19c32e619ccea540c2eab20	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
