@@ -12065,3 +12065,4 @@ review:filinq:2106:3c54d4a0	GREEN: spec-conform; unit 6792 OK	session-20261114T2
 review:filinq:2096:603fca94	GREEN: unit 6810/6810 (baseline 6765), phpstan clean	session-20261114T234941-bc8686af	2026-11-14T23:53:38Z
 verify:portaliq:2498:a27eacfc	GREEN 2498: unit 5868 green (baseline 5840), node checks pass	session-20261114T234938-86f69098	2026-11-14T23:53:54Z
 review:decidiq:2178:b9927684	GREEN: unit 4419 ok, phpstan ok, vitest ok; eslint style nits in one new cell	session-20261114T234944-ee1416bc	2026-11-14T23:54:02Z
+verify:larpinq:1039:f74a40b6	GREEN 1039,1051,1061; CONFLICT 1049 (l10n vs 1039/1051, clean on development alone); 1053 skipped (head moved); unit 868 OK, vitest 556	session-20261114T225452-4fcfea7f	2026-11-14T23:54:16Z
