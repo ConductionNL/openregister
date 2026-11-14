@@ -169,9 +169,12 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * Prevents redundant DB queries when the same register is looked up
 	 * multiple times within one request.
 	 *
-	 * @var array<string, Register>
+	 * Keyed on identifier and the multi-tenancy flag only; the same map
+	 * SchemaMapper uses, see RequestIdentityMap.
+	 *
+	 * @var RequestIdentityMap
 	 */
-	private array $findCache = [];
+	private RequestIdentityMap $findCache;
 
 	/**
 	 * Constructor
@@ -219,6 +222,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		$this->userSession = $tenancy->userSession;
 		$this->groupManager = $tenancy->groupManager;
 		$this->appConfig = $appConfig;
+		$this->findCache = new RequestIdentityMap();
 	}//end __construct()
 
 	/**
@@ -243,19 +247,23 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): Register {
-		// Request-scoped cache, keyed by identifier and both flags.
-		$cacheSuffix = $this->findCacheSuffix(_rbac: $_rbac, _multitenancy: $_multitenancy);
-		$cacheKey = strtolower((string)$id) . $cacheSuffix;
-		if (isset($this->findCache[$cacheKey]) === true) {
-			return $this->findCache[$cacheKey];
+		// Request-scoped cache, keyed by identifier and the multi-tenancy flag.
+		// The RBAC flag is not part of the key: it does not change the row loaded.
+		$cached = $this->findCache->get(identifier: $id, multitenancy: $_multitenancy);
+		if ($cached instanceof Register) {
+			return $cached;
 		}
 
 		$register = $this->findFiltered(
 			lookup: new RegisterLookup(id: $id, rbac: $_rbac, multitenancy: $_multitenancy)
 		);
 
-		$this->findCache[$cacheKey] = $register;
-		$this->cacheRegisterByIdentifiers(register: $register, cacheSuffix: $cacheSuffix);
+		// BUG-DB-10: a null uuid or slug is skipped by the map.
+		$this->findCache->remember(
+			entity: $register,
+			multitenancy: $_multitenancy,
+			identifiers: [$id, $register->getId(), $register->getUuid(), $register->getSlug()]
+		);
 
 		return $register;
 	}//end find()
@@ -351,47 +359,6 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	}//end findFiltered()
 
 	/**
-	 * The find-cache key suffix for a pair of filter flags, such as `:1:0`.
-	 *
-	 * @param bool $_rbac         Whether RBAC applies.
-	 * @param bool $_multitenancy Whether multitenancy applies.
-	 *
-	 * @return string The suffix.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the cache key.
-	 *
-	 * @spec openspec/specs/register-slug-resolution/spec.md
-	 */
-	private function findCacheSuffix(bool $_rbac, bool $_multitenancy): string {
-		return ':' . (int)$_rbac . ':' . (int)$_multitenancy;
-	}//end findCacheSuffix()
-
-	/**
-	 * Cache a found register under its id, uuid and slug, so a later lookup by
-	 * any of them is answered without a query.
-	 *
-	 * @param Register $register    The found register.
-	 * @param string   $cacheSuffix The flag suffix of the lookup.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/register-slug-resolution/spec.md
-	 */
-	private function cacheRegisterByIdentifiers(Register $register, string $cacheSuffix): void {
-		$this->findCache[(string)$register->getId() . $cacheSuffix] = $register;
-
-		// BUG-DB-10: guard against a null uuid before strtolower().
-		$registerUuid = $register->getUuid();
-		if ($registerUuid !== null) {
-			$this->findCache[strtolower($registerUuid) . $cacheSuffix] = $register;
-		}
-
-		if ($register->getSlug() !== null) {
-			$this->findCache[strtolower($register->getSlug()) . $cacheSuffix] = $register;
-		}
-	}//end cacheRegisterByIdentifiers()
-
-	/**
 	 * A query for the register whose uuid, slug (case-insensitive) or, for a
 	 * numeric identifier, id matches. The id comparison is left out for a
 	 * non-numeric identifier because PostgreSQL types it strictly.
@@ -484,13 +451,8 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * @return void
 	 */
 	public function clearFindCache(int $registerId): void {
-		// Find every cache key whose value points at this register ID and unset.
-		foreach (array_keys($this->findCache) as $key) {
-			$cached = $this->findCache[$key];
-			if ($cached instanceof Register && $cached->getId() === $registerId) {
-				unset($this->findCache[$key]);
-			}
-		}
+		// Drop every key that points at this register.
+		$this->findCache->forget(entityId: $registerId);
 	}//end clearFindCache()
 
 	/**

@@ -2,9 +2,9 @@
     "'7' rbac false mt false": {
         "found": 7,
         "cacheKeys": [
-            "7:0:0",
-            "uuid-seven:0:0",
-            "seven-slug:0:0"
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -30,9 +30,9 @@
     "'7' rbac true mt false": {
         "found": 7,
         "cacheKeys": [
-            "7:1:0",
-            "uuid-seven:1:0",
-            "seven-slug:1:0"
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -58,9 +58,9 @@
     "'7' rbac false mt true": {
         "found": 7,
         "cacheKeys": [
-            "7:0:1",
-            "uuid-seven:0:1",
-            "seven-slug:0:1"
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
@@ -99,9 +99,9 @@
     "'7' rbac true mt true": {
         "found": 7,
         "cacheKeys": [
-            "7:1:1",
-            "uuid-seven:1:1",
-            "seven-slug:1:1"
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
@@ -140,9 +140,9 @@
     "7 rbac false mt false": {
         "found": 7,
         "cacheKeys": [
-            "7:0:0",
-            "uuid-seven:0:0",
-            "seven-slug:0:0"
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -168,9 +168,9 @@
     "7 rbac true mt false": {
         "found": 7,
         "cacheKeys": [
-            "7:1:0",
-            "uuid-seven:1:0",
-            "seven-slug:1:0"
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -196,9 +196,9 @@
     "7 rbac false mt true": {
         "found": 7,
         "cacheKeys": [
-            "7:0:1",
-            "uuid-seven:0:1",
-            "seven-slug:0:1"
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
@@ -237,9 +237,9 @@
     "7 rbac true mt true": {
         "found": 7,
         "cacheKeys": [
-            "7:1:1",
-            "uuid-seven:1:1",
-            "seven-slug:1:1"
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
@@ -278,9 +278,9 @@
     "'Seven-Slug' rbac false mt false": {
         "found": 7,
         "cacheKeys": [
-            "seven-slug:0:0",
-            "7:0:0",
-            "uuid-seven:0:0"
+            "seven-slug:0",
+            "7:0",
+            "uuid-seven:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -303,9 +303,9 @@
     "'Seven-Slug' rbac true mt false": {
         "found": 7,
         "cacheKeys": [
-            "seven-slug:1:0",
-            "7:1:0",
-            "uuid-seven:1:0"
+            "seven-slug:0",
+            "7:0",
+            "uuid-seven:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -328,9 +328,9 @@
     "'Seven-Slug' rbac false mt true": {
         "found": 7,
         "cacheKeys": [
-            "seven-slug:0:1",
-            "7:0:1",
-            "uuid-seven:0:1"
+            "seven-slug:1",
+            "7:1",
+            "uuid-seven:1"
         ],
         "queries": [
             "#1 select(*)",
@@ -366,9 +366,9 @@
     "'Seven-Slug' rbac true mt true": {
         "found": 7,
         "cacheKeys": [
-            "seven-slug:1:1",
-            "7:1:1",
-            "uuid-seven:1:1"
+            "seven-slug:1",
+            "7:1",
+            "uuid-seven:1"
         ],
         "queries": [
             "#1 select(*)",
@@ -404,9 +404,9 @@
     "'uuid-seven' rbac false mt false": {
         "found": 7,
         "cacheKeys": [
-            "uuid-seven:0:0",
-            "7:0:0",
-            "seven-slug:0:0"
+            "uuid-seven:0",
+            "7:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -429,9 +429,9 @@
     "'uuid-seven' rbac true mt false": {
         "found": 7,
         "cacheKeys": [
-            "uuid-seven:1:0",
-            "7:1:0",
-            "seven-slug:1:0"
+            "uuid-seven:0",
+            "7:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -454,9 +454,9 @@
     "'uuid-seven' rbac false mt true": {
         "found": 7,
         "cacheKeys": [
-            "uuid-seven:0:1",
-            "7:0:1",
-            "seven-slug:0:1"
+            "uuid-seven:1",
+            "7:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
@@ -492,9 +492,9 @@
     "'uuid-seven' rbac true mt true": {
         "found": 7,
         "cacheKeys": [
-            "uuid-seven:1:1",
-            "7:1:1",
-            "seven-slug:1:1"
+            "uuid-seven:1",
+            "7:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
@@ -530,10 +530,10 @@
     "'7abc' rbac false mt false": {
         "found": 7,
         "cacheKeys": [
-            "7abc:0:0",
-            "7:0:0",
-            "uuid-seven:0:0",
-            "seven-slug:0:0"
+            "7abc:0",
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -556,10 +556,10 @@
     "'7abc' rbac true mt false": {
         "found": 7,
         "cacheKeys": [
-            "7abc:1:0",
-            "7:1:0",
-            "uuid-seven:1:0",
-            "seven-slug:1:0"
+            "7abc:0",
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -582,10 +582,10 @@
     "'7abc' rbac false mt true": {
         "found": 7,
         "cacheKeys": [
-            "7abc:0:1",
-            "7:0:1",
-            "uuid-seven:0:1",
-            "seven-slug:0:1"
+            "7abc:1",
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
@@ -621,10 +621,10 @@
     "'7abc' rbac true mt true": {
         "found": 7,
         "cacheKeys": [
-            "7abc:1:1",
-            "7:1:1",
-            "uuid-seven:1:1",
-            "seven-slug:1:1"
+            "7abc:1",
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
@@ -742,9 +742,9 @@
     "ambiguous slug": {
         "found": 7,
         "cacheKeys": [
-            "seven-slug:0:0",
-            "7:0:0",
-            "uuid-seven:0:0"
+            "seven-slug:0",
+            "7:0",
+            "uuid-seven:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -789,7 +789,7 @@
     "null slug and uuid": {
         "found": 7,
         "cacheKeys": [
-            "7:0:0"
+            "7:0"
         ],
         "queries": [
             "#1 select(*)",
