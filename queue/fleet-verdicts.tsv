@@ -6709,3 +6709,4 @@ learniq	2518	6f169224fb68e4b47062a891d6ea45001308f260	CONFLICT	worker-14	merge c
 learniq	2519	f2bafc43c1313b5c6a602e0fdff1f459cba3b640	CONFLICT	worker-14	merge conflict with development + earlier tree PRs
 hermiq	1763	015ce782f4c687813bc4c90beb39c93efa7f34be	CONFLICT	worker-17	conflicts with #1762 in l10n/en.js en.json nl.js nl.json
 hermiq	1764	ac84444207631949e9399bab78705940ce89dcc3	CONFLICT	worker-17	conflicts with #1762 in l10n/en.js en.json nl.js nl.json
+hermiq	1761	40e7cd0784a297b2c0d92d71e85b84afa74e0b33	RED	worker-17	phpunit 4665 tests, baseline 172 inherited; new failure ToolInvocationLogTest::testTheDegradedLogListsTheSchedulesRuns (degradedRow now emits callId, test expectation not updated)
