@@ -237,4 +237,39 @@ class DeletedControllerSyncFilterTest extends TestCase {
 
 		$this->assertSame(404, $response->getStatus());
 	}
+
+	/**
+	 * REQ-SYNC-004 / task 4.2: a write committed while the list read runs is at or after the watermark.
+	 *
+	 * The listing stub writes an object mid-query and then keeps the query
+	 * running past the next second, so a watermark taken after the query
+	 * instead of before it would land later than that write.
+	 */
+	public function testTheWatermarkIsNotLaterThanAWriteDuringTheRead(): void {
+		$written = null;
+		$this->objects = $this->createMock(MagicMapper::class);
+		$this->objects->method('findDeletedAcrossAllMagicTables')->willReturnCallback(
+			static function () use (&$written): array {
+				$written = new DateTimeImmutable('now');
+				usleep(1100000);
+				return [];
+			}
+		);
+		$this->objects->method('countDeletedAcrossAllMagicTables')->willReturn(0);
+
+		$response = $this->controller()->index();
+
+		$watermark = $response->getData()['syncWatermark'];
+		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', $watermark);
+		$this->assertLessThanOrEqual($written->getTimestamp(), (new DateTimeImmutable($watermark))->getTimestamp());
+	}
+
+	public function testARefusalCarriesNoWatermark(): void {
+		$this->params = ['deletedSince' => 'yesterday'];
+
+		$response = $this->controller()->index();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertArrayNotHasKey('syncWatermark', $response->getData());
+	}
 }
