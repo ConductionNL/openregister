@@ -7795,3 +7795,5 @@ pipelinq	3830	c7d405c94f0918ad0cdb180933c763869803dcb5	REVERIFY	worker-33	merged
 decidiq	2148	7350b5a6b5ca673939aa570b8ba3827cdde8fcf2	RED	merge3:merge-gate	GATE RED floor: duplication: 3.82 -> 3.80; unit_complexity: 3.89 -> 3.87
 decidiq	2149	c82a792a1a602f97f413b3002b9c629897ff3666	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.89 -> 3.86; unit_interfacing: 3.33 -> 3.31
 pipelinq	3831	cd981132d7790e59379bd2a232b316a7c9858295	REVERIFY	worker-28	merged development in; structureProfile.spec.js counts both sides' additions (53 entries, 107 pages); vitest 5037/5038 (myWorkPage.spec.js red on plain development too), PHP 8344 OK; new head 368ec966d2fbb2787138d4d96bcfb1b63812eac5, verify it
+portaliq	2415	4f70e4023a105abc5da184ee16e44db10f7f37cc	RED	merge3:merge-gate	GATE RED floor: duplication: 4.30 -> 4.28
+portaliq	2432	81aa6171072aa8c21b105408a5148dd7321c3a3c	RED	merge3:merge-gate	GATE RED floor: duplication: 4.30 -> 4.28
