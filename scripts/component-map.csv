@@ -4136,3 +4136,6 @@ Service/Translation/TranslationProviderResolver.php,,Service,,,,,Configuration
 Repair/ImportTranslationGlossaryRegister.php,,Repair,,,,,Platform
 Service/Task/ApprovalPositionForm.php,156,Service,Flows,Flows/Service/Task/ApprovalPositionForm.php,0,,Processes
 Service/Task/ApprovalPositionFormGuard.php,200,Service,Flows,Flows/Service/Task/ApprovalPositionFormGuard.php,0,,Processes
+Service/Anonymisation/DetectorVersion.php,69,Service,Compliance,Compliance/Service/Anonymisation/DetectorVersion.php,0,,Compliance
+Service/Anonymisation/DetectorVersionHistory.php,51,Service,Compliance,Compliance/Service/Anonymisation/DetectorVersionHistory.php,0,,Compliance
+Service/Anonymisation/DetectorVersionReader.php,49,Service,Compliance,Compliance/Service/Anonymisation/DetectorVersionReader.php,0,,Compliance
