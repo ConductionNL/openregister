@@ -3435,7 +3435,13 @@ Service/Merge/,,Service,,,,,Core
 Service/MigrationPack/,,Service,,,,,Configuration
 Service/Notification/,,Service,,,,,Configuration
 Service/Oas/,,Service,,,,,Core
+Service/Oas/NlGovConformance.php,69,Service,Service,Service/Oas/NlGovConformance.php,0,,Core
+Service/Oas/NlGovDateTimeRules.php,226,Service,Service,Service/Oas/NlGovDateTimeRules.php,0,,Core
+Service/Oas/NlGovDocumentInfoRules.php,208,Service,Service,Service/Oas/NlGovDocumentInfoRules.php,0,,Core
 Service/Oas/NlGovDocumentRules.php,245,Service,Service,Service/Oas/NlGovDocumentRules.php,0,,Core
+Service/Oas/NlGovErrorRules.php,212,Service,Service,Service/Oas/NlGovErrorRules.php,0,,Core
+Service/Oas/NlGovFindings.php,115,Service,Service,Service/Oas/NlGovFindings.php,0,,Core
+Service/Oas/NlGovMarker.php,117,Service,Service,Service/Oas/NlGovMarker.php,0,,Core
 Service/Oas/NlGovRuleCatalogue.php,201,Service,Service,Service/Oas/NlGovRuleCatalogue.php,0,,Core
 Service/Object/,,Service,,,,,Core
 Service/ObjectAction/,,Service,,,,,Processes
