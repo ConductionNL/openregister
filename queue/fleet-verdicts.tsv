@@ -7618,3 +7618,4 @@ versioniq	708	7a7b264d8436ce7c512dd2d011401038423d3f76	GREEN	worker-55	tree dev+
 versioniq	709	c87ff93eeac4b699b443527adc54d2e6552453e3	CONFLICT	worker-55	conflicts with tree (dev+702..708) in lib/BackgroundJob/AutoUpdateJob.php, changed by 705
 keepiq	1784	ee1c9e8ea153c0cec0dc079181ba82c84a1963d5	GREEN	worker-28	phpunit 4975 tests, baseline OK, no new failures; vitest 6432 passed; implements vault-item-clone-preview-and-print (clone, attachment preview), frontend only
 stackiq	1922	9a7623c70e702c706afdade5b1759cf91492b21c	CONFLICT	worker-42	clean on development, conflicts with earlier tree PRs in l10n/en.js l10n/en.json lib/Settings/softwarecatalogus_register.json src/manifest.d/usages.json
+stackiq	1923	832b22b3c204458e5adc02a70151f0da22f5d946	GREEN	worker-42	tree dev 8ca7c057 + 1916..1923: phpunit 3494 tests, baseline 3446 with 0 failures, 0 new; vitest 2532 passed; build capability-requirements-from-the-matrix matches its specs
