@@ -1,21 +1,25 @@
 <?php
 
 /**
- * Add the mandate columns to the task and task-audit tables.
+ * OpenRegister Migration Version1Date20261113120000
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * Creates the automation run records table.
+ *
  * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://www.OpenRegister.app
+ * @version GIT: <git-id>
  *
- * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-human-tasks/spec.md
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/automation-run-records/design.md
  */
 
 declare(strict_types=1);
@@ -29,47 +33,56 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * tasks-delegation-and-substitution 1.1: `required_mandate` and
- * `mandate_evidence` on `openregister_tasks`, and `mandate_evidence` on
- * `openregister_task_audit`. All nullable, so existing rows are unaffected.
+ * Create `openregister_automation_records` (D-1).
+ *
+ * @spec openspec/changes/automation-run-records/design.md
  */
 class Version1Date20261113120000 extends SimpleMigrationStep {
 
-	public const TASKS = 'openregister_tasks';
-
-	public const AUDIT = 'openregister_task_audit';
-
 	/**
-	 * Add the nullable columns when their tables and columns are not already there.
+	 * Change the database schema.
 	 *
-	 * @param IOutput  $output        The migration output.
-	 * @param Closure  $schemaClosure The schema accessor.
-	 * @param array    $options       The migration options.
+	 * @param IOutput                 $output        Output for the migration process.
+	 * @param Closure                 $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options       Migration options.
 	 *
-	 * @return ISchemaWrapper The schema, handed back so the shared snapshot is kept.
+	 * @return ISchemaWrapper|null The changed schema.
 	 *
-	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-human-tasks/spec.md
+	 * @spec openspec/changes/automation-run-records/design.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
+
 		$schema = $schemaClosure();
 
-		if ($schema->hasTable(self::TASKS) === true) {
-			$tasks = $schema->getTable(self::TASKS);
-			if ($tasks->hasColumn('required_mandate') === false) {
-				$tasks->addColumn('required_mandate', Types::STRING, ['notnull' => false, 'length' => 128]);
-			}
-
-			if ($tasks->hasColumn('mandate_evidence') === false) {
-				$tasks->addColumn('mandate_evidence', Types::JSON, ['notnull' => false]);
-			}
+		if ($schema->hasTable('openregister_automation_records') === true) {
+			return $schema;
 		}
 
-		if ($schema->hasTable(self::AUDIT) === true) {
-			$audit = $schema->getTable(self::AUDIT);
-			if ($audit->hasColumn('mandate_evidence') === false) {
-				$audit->addColumn('mandate_evidence', Types::JSON, ['notnull' => false]);
-			}
-		}
+		$table = $schema->createTable('openregister_automation_records');
+		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+		$table->addColumn('kind', Types::STRING, ['notnull' => true, 'length' => 32]);
+		$table->addColumn('automation_key', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
+		$table->addColumn('name', Types::STRING, ['notnull' => true, 'length' => 191, 'default' => '']);
+		$table->addColumn('transition', Types::STRING, ['notnull' => false, 'length' => 191]);
+		$table->addColumn('schema_id', Types::STRING, ['notnull' => false, 'length' => 64]);
+		$table->addColumn('register_id', Types::STRING, ['notnull' => false, 'length' => 64]);
+		$table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 64]);
+		$table->addColumn('event_id', Types::STRING, ['notnull' => false, 'length' => 64]);
+		$table->addColumn('outcome', Types::STRING, ['notnull' => true, 'length' => 16]);
+		$table->addColumn('reason', Types::STRING, ['notnull' => false, 'length' => 64]);
+		$table->addColumn('channels', Types::TEXT, ['notnull' => false]);
+		$table->addColumn('message', Types::TEXT, ['notnull' => false]);
+		$table->addColumn('recorded_at', Types::DATETIME, ['notnull' => true]);
+
+		$table->setPrimaryKey(['id']);
+		$table->addIndex(['automation_key', 'recorded_at'], 'idx_or_autrec_key_at');
+		$table->addIndex(['object_uuid'], 'idx_or_autrec_object');
+		$table->addIndex(['recorded_at'], 'idx_or_autrec_at');
+
+		$output->info('Created openregister_automation_records table');
 
 		return $schema;
 	}//end changeSchema()

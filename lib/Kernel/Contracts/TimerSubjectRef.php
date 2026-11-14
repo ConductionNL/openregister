@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Kernel\Contracts;
 /**
  * The subject a timer is bound to: its type (object, task, case plan item) and uuid.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
  */
 final class TimerSubjectRef {
 

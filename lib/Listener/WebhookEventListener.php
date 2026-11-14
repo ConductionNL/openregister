@@ -166,10 +166,16 @@ class WebhookEventListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md#requirement-trigger-flow-and-rule-resolution-must-filter-at-query-time
 	 */
 	public function handle(Event $event): void {
 		$eventClass = get_class($event);
+
+		// No webhook for this event: return before the entity is serialised.
+		if ($this->webhookService->hasWebhooksFor(eventName: $eventClass) === false) {
+			return;
+		}
+
 		$payload = $this->extractPayload(event: $event);
 
 		if ($payload === null) {

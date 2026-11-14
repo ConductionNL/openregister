@@ -217,7 +217,7 @@ class TriggerNodesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheObjectTriggerNamesItsVocabulary(): void {
-		$this->assertSame(['event', 'register', 'schema', 'scope'], $this->object->configKeys());
+		$this->assertSame(['event', 'register', 'schema', 'scope', 'transition', 'changedFields'], $this->object->configKeys());
 
 	}//end testTheObjectTriggerNamesItsVocabulary()
 

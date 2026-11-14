@@ -3517,6 +3517,367 @@
             }
         }
     },
+    "update breaking acknowledged queues the notice": {
+        "calls": [
+            {
+                "method": "schemaMapper.find",
+                "args": [
+                    3,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "versioning.classify",
+                "args": [
+                    {
+                        "schema": {
+                            "id": 3,
+                            "uuid": "schema-uuid-3",
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 3",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": {
+                                "old": {
+                                    "type": "string"
+                                }
+                            },
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        }
+                    },
+                    {
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    []
+                ]
+            },
+            {
+                "method": "versioning.enforceGate",
+                "args": [
+                    {
+                        "classification": "breaking",
+                        "bump": "major",
+                        "changes": [
+                            {
+                                "property": "name",
+                                "kind": "removed"
+                            }
+                        ]
+                    },
+                    true,
+                    3
+                ]
+            },
+            {
+                "method": "versioning.nextVersion",
+                "args": [
+                    {
+                        "schema": {
+                            "id": 3,
+                            "uuid": "schema-uuid-3",
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 3",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": {
+                                "old": {
+                                    "type": "string"
+                                }
+                            },
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        }
+                    },
+                    {
+                        "classification": "breaking",
+                        "bump": "major",
+                        "changes": [
+                            {
+                                "property": "name",
+                                "kind": "removed"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "method": "container.get",
+                "args": [
+                    "FormDependentsCheck"
+                ]
+            },
+            {
+                "method": "forms.assess",
+                "args": [
+                    {
+                        "schema": {
+                            "id": 3,
+                            "uuid": "schema-uuid-3",
+                            "uri": null,
+                            "slug": null,
+                            "title": "Schema 3",
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [
+                                "name"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                }
+                            },
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "container.get",
+                "args": [
+                    "FormDependentsCheck"
+                ]
+            },
+            {
+                "method": "forms.claim",
+                "args": [
+                    3
+                ]
+            },
+            {
+                "method": "schemaMapper.updateFromArray",
+                "args": [
+                    3,
+                    {
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "version": "2.0.0"
+                    }
+                ]
+            },
+            {
+                "method": "versioning.recordChangelog",
+                "args": [
+                    3,
+                    "2.0.0",
+                    {
+                        "classification": "breaking",
+                        "bump": "major",
+                        "changes": [
+                            {
+                                "property": "name",
+                                "kind": "removed"
+                            }
+                        ]
+                    },
+                    true,
+                    null
+                ]
+            },
+            {
+                "method": "changeNotices.queue",
+                "args": [
+                    77,
+                    "Field toelichting is removed, use omschrijving"
+                ]
+            },
+            {
+                "method": "schemaCache.invalidate",
+                "args": [
+                    3
+                ]
+            },
+            {
+                "method": "facetResults.cleared",
+                "args": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "schema": {
+                "id": 3,
+                "uuid": "schema-uuid-3",
+                "uri": null,
+                "slug": null,
+                "title": "Stored",
+                "description": null,
+                "version": "2.0.0",
+                "summary": null,
+                "icon": null,
+                "required": [],
+                "properties": {
+                    "old": {
+                        "type": "string"
+                    }
+                },
+                "archive": [],
+                "source": null,
+                "hardValidation": true,
+                "immutable": false,
+                "appendOnly": false,
+                "searchable": true,
+                "smartPickerEnabled": false,
+                "updated": null,
+                "created": null,
+                "maxDepth": 0,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "sharedWith": [],
+                "deleted": null,
+                "configuration": null,
+                "exportable": false,
+                "allOf": null,
+                "oneOf": null,
+                "anyOf": null,
+                "facets": null,
+                "hooks": null,
+                "_mail": null,
+                "_contacts": null,
+                "_notes": null,
+                "_todos": null,
+                "_calendar": null,
+                "_talk": null,
+                "_deck": null,
+                "draft": null
+            }
+        }
+    },
+    "update breaking change notice too long": {
+        "calls": [
+            {
+                "method": "schemaMapper.find",
+                "args": [
+                    3,
+                    [],
+                    true,
+                    true
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "changeNotice may be at most 500 characters."
+        }
+    },
     "update breaking refused": {
         "calls": [
             {
@@ -3611,6 +3972,12 @@
                     false,
                     3
                 ]
+            },
+            {
+                "method": "changeNotices.reach",
+                "args": [
+                    3
+                ]
             }
         ],
         "status": 409,
@@ -3623,7 +3990,24 @@
                     "kind": "removed"
                 }
             ],
-            "invalidCount": 4
+            "invalidCount": 4,
+            "affectedCallers": {
+                "recorded": true,
+                "count": 2,
+                "top": [
+                    {
+                        "principal": "leverancier-a",
+                        "calls": 40,
+                        "lastSeen": "2026-10-01T08:00:00+00:00"
+                    },
+                    {
+                        "principal": "leverancier-b",
+                        "calls": 3,
+                        "lastSeen": "2026-10-20T08:00:00+00:00"
+                    }
+                ]
+            },
+            "followers": 1
         }
     },
     "update definition bumps version": {

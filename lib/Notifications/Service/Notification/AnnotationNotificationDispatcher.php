@@ -31,7 +31,9 @@ use Closure;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Db\AutomationRecord;
 use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
+use OCA\OpenRegister\Service\AutomationRecordWriter;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Notifications\Db\HistoryDelivery;
 use OCA\OpenRegister\Notifications\Db\HistoryEntry;
@@ -360,10 +362,72 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				context: $event->context,
 				subjectKey: $subjectKey
 			);
-			$this->fireRule(firing: $firing, trigger: $event->trigger);
+			$this->fireAndRecord(firing: $firing, trigger: $event->trigger);
 		}
 
 	}//end fireRules()
+
+	/**
+	 * Fire one rule and leave its automation run record: one per evaluation,
+	 * aggregated per channel, skipped with the gate that stopped it. A rule
+	 * whose trigger or organisation gate does not match was not evaluated and
+	 * leaves none. An error is recorded as `failed` and still thrown.
+	 *
+	 * @param RuleFiring $firing  The rule and the event.
+	 * @param string     $trigger The trigger.
+	 *
+	 * @return void
+	 *
+	 * @throws \Throwable Whatever the dispatch throws, after recording it.
+	 *
+	 * @spec openspec/changes/automation-run-records/specs/notificatie-engine/spec.md
+	 */
+	private function fireAndRecord(RuleFiring $firing, string $trigger): void {
+		try {
+			$this->fireRule(firing: $firing, trigger: $trigger);
+		} catch (\Throwable $e) {
+			$this->recordRun(firing: $firing, failure: $e->getMessage());
+			throw $e;
+		}
+
+		if ($firing->eventId !== '' || $firing->tally->reason() === NotificationRunTally::REASON_DUPLICATE) {
+			$this->recordRun(firing: $firing);
+		}
+	}//end fireAndRecord()
+
+	/**
+	 * Write the automation run record of one evaluation. Recipients are counted, never named.
+	 *
+	 * @param RuleFiring  $firing  The evaluated rule.
+	 * @param string|null $failure The error that stopped it, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/automation-run-records/specs/notificatie-engine/spec.md
+	 */
+	private function recordRun(RuleFiring $firing, ?string $failure = null): void {
+		if ($this->ledger->runRecords === null) {
+			return;
+		}
+
+		$record = AutomationRecordWriter::draft(
+			kind: AutomationRecord::KIND_NOTIFICATION,
+			key: ($firing->spec['key'] ?? null),
+			name: $firing->ruleId,
+			object: $firing->object
+		);
+		$record->setEventId(self::storedId(value: $firing->eventId));
+		$record->setOutcome($firing->tally->outcome());
+		$record->setReason($firing->tally->reason());
+		if ($failure !== null) {
+			$record->setOutcome(NotificationRunTally::FAILED);
+			$record->setReason(null);
+			$record->setMessage($failure);
+		}
+
+		$record->setChannels((string)json_encode($firing->tally->counts()));
+		$this->ledger->runRecords->write($record);
+	}//end recordRun()
 
 	/**
 	 * Run one rule through its gates and channels.
@@ -390,11 +454,15 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		// bail: a rule addressed only to them resolves no account at all.
 		$addressesReached  = $this->dispatchToParties(firing: $firing);
 		$addressesReached += $this->dispatchToAddresses(firing: $firing);
+		for ($reached = 0; $reached < $addressesReached; $reached++) {
+			$firing->tally->delivery(channel: 'address', delivered: true);
+		}
 
 		if (count($firing->recipients) === 0) {
 			// Only when the parties path reached nobody either: a rule
 			// addressed to parties has no account recipients by design.
 			if ($addressesReached === 0) {
+				$firing->tally->skip(reason: NotificationRunTally::REASON_NO_RECIPIENTS);
 				$this->reachRecorder->reachedNobody(
 					ruleId: $firing->ruleId,
 					objectUuid: (string)($firing->object->getUuid() ?? '')
@@ -471,6 +539,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$this->logger->info(
 			sprintf('[AnnotationNotificationDispatcher] deduplicated rule="%s" key="%s"', $firing->ruleId, $key)
 		);
+		$firing->tally->skip(reason: NotificationRunTally::REASON_DUPLICATE);
 		return false;
 
 	}//end idempotencyAllows()
@@ -620,6 +689,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	private function deliverToRecipient(RuleFiring $firing, RecipientDelivery $delivery): void {
 		if ($this->gates->throttle->rateAllows(firing: $firing, recipient: $delivery->uid) === false) {
 			$delivery->status = 'rate-limited';
+			$firing->tally->held(gate: NotificationRunTally::REASON_RATE_LIMIT);
 			$this->recordSkippedDelivery(firing: $firing, delivery: $delivery);
 			return;
 		}
@@ -628,17 +698,20 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		if ($this->gates->throttle->coalesceAllows(firing: $firing, recipient: $delivery->uid) === false) {
 			$delivery->status = 'coalesced';
+			$firing->tally->held(gate: 'coalesced');
 			$this->recordSkippedDelivery(firing: $firing, delivery: $delivery);
 			return;
 		}
 
 		if ($this->applyPreference(firing: $firing, delivery: $delivery) === false) {
 			$delivery->status = 'preference-off';
+			$firing->tally->held(gate: 'preference');
 			$this->recordSkippedDelivery(firing: $firing, delivery: $delivery);
 			return;
 		}
 
 		if ($this->deliveryWindowOrDigestSuppresses(firing: $firing, delivery: $delivery) === true) {
+			$firing->tally->held(gate: NotificationRunTally::REASON_QUIET_HOURS);
 			return;
 		}
 
@@ -726,7 +799,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				// The shared channel units, the same classes the flow messaging
 				// service invokes; the declarative path stays best-effort, so
 				// their outcomes are not escalated here.
-				$this->ncSender()->notify(
+				$outcome = $this->ncSender()->notify(
 					notice: new InAppNotice(
 						uid: $delivery->uid,
 						object: $firing->object,
@@ -745,10 +818,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 					)
 				);
 			} elseif ($channel === 'email') {
-				$this->emailSender()->send(uid: $delivery->uid, subject: $subject, body: $subject);
+				$outcome = $this->emailSender()->send(uid: $delivery->uid, subject: $subject, body: $subject);
 			} else {
 				$this->emitActivity(origin: $origin, record: $record);
+				$outcome = NcNotificationSender::OUTCOME_DISPATCHED;
 			}
+
+			$firing->tally->delivery(channel: $channel, delivered: $outcome === NcNotificationSender::OUTCOME_DISPATCHED);
 
 			$this->recordHistory(origin: $origin, record: $record);
 		}//end foreach

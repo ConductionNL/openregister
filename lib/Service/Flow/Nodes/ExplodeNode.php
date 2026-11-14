@@ -52,7 +52,7 @@ use UnexpectedValueException;
 /**
  * Turns an array field into one item per element.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys,
 	IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowSideEffectFree
@@ -62,7 +62,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return string The id.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getId(): string {
 		return 'openregister.explode';
@@ -73,7 +73,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getDisplayName(): string {
 		return $this->l10n->t('Explode');
@@ -84,7 +84,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t('Turn a list on the item into one item per entry, so later steps act on each.');
@@ -95,7 +95,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return string The icon URL.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getIcon(): string {
 		return $this->urls->imagePath('openregister', 'app-dark.svg');
@@ -106,7 +106,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['path', 'as', 'keepRecord'];
@@ -152,7 +152,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When no path is named.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['path'] ?? '')) === '') {
@@ -181,7 +181,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When the path holds a scalar.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function execute(FlowNodeCall $call): array {
 		$items = $call->items;
@@ -207,7 +207,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *   constructor every node uses; injecting a factory for it would add a
 	 *   dependency to describe a shape.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function explode(array $items, array $config): array {
 		$out = [];
@@ -231,7 +231,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When the path holds a scalar.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function recordsFrom(array $json, array $config): array {
 		$under = (string)($config['as'] ?? 'item');
@@ -260,7 +260,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When the path holds something other than a list.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function listAt(array $json, string $path): array {
 		$list = $this->valueAt(json: $json, path: $path);
@@ -286,7 +286,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return mixed The value, or null.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function valueAt(array $json, string $path) {
 		$value = $json;

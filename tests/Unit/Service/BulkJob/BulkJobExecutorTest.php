@@ -31,6 +31,7 @@ namespace Unit\Service\BulkJob;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
 use OCA\OpenRegister\BulkAction\BulkStep;
+use OCA\OpenRegister\BulkAction\StepBulkActionInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
@@ -207,7 +208,7 @@ final class BulkJobExecutorTest extends TestCase {
 	}
 
 	private function action(array $guards = [], ?BulkActionResult $result = null, ?array &$calls = null): BulkActionInterface {
-		$action = $this->createMock(BulkActionInterface::class);
+		$action = $this->createMock(StepBulkActionInterface::class);
 		$action->method('getId')->willReturn('openregister:set-properties');
 		$action->method('getGuards')->willReturn($guards);
 		$action->method('requiresJustification')->willReturn(false);

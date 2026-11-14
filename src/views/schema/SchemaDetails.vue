@@ -127,6 +127,13 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 					<Gavel :size="16" />
 					{{ t('openregister', 'Rules') }}
 				</button>
+				<button
+					class="tabButton"
+					:class="[{ active: activeTab === 'rights' }]"
+					@click="activeTab = 'rights'">
+					<ShieldAccount :size="16" />
+					{{ t('openregister', 'Rights') }}
+				</button>
 			</div>
 
 			<!-- Calendar Provider Tab -->
@@ -142,6 +149,11 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 			<!-- Rules Tab: everything that runs on a save, in the order it runs -->
 			<SchemaRulesTab
 				v-if="activeTab === 'rules'"
+				:schema="schemaStore.schemaItem" />
+
+			<!-- Rights Tab: the department by role matrix and its per-user preview -->
+			<SchemaRightsTab
+				v-if="activeTab === 'rights'"
 				:schema="schemaStore.schemaItem" />
 
 			<!-- Dashboard Tab (original content) -->
@@ -240,12 +252,14 @@ import FileDocumentEditOutline from 'vue-material-design-icons/FileDocumentEditO
 import Gavel from 'vue-material-design-icons/Gavel.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
+import ShieldAccount from 'vue-material-design-icons/ShieldAccount.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import SchemaDraftBar from '../../components/schema/SchemaDraftBar.vue'
 import DetailChartGrid from '../register/DetailChartGrid.vue'
 import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
 import CalendarProviderTab from './CalendarProviderTab.vue'
+import SchemaRightsTab from './SchemaRightsTab.vue'
 import SchemaRulesTab from './SchemaRulesTab.vue'
 import {
 	auditTrailChartOptions,
@@ -274,9 +288,11 @@ export default {
 		ChartBox,
 		Cog,
 		Gavel,
+		ShieldAccount,
 		CalendarProviderTab,
 		SchemaWorkflowTab,
 		SchemaRulesTab,
+		SchemaRightsTab,
 		SchemaDraftBar,
 	},
 
@@ -354,7 +370,7 @@ export default {
 		 * Open the schema editor, publishing directly or saving to the draft.
 		 *
 		 * @param {boolean} asDraft - True to save the edit as the schema's draft
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		openEditor(asDraft) {
 			schemaStore.setDraftMode(asDraft)
@@ -391,7 +407,7 @@ export default {
 		 * Set the active property for editing
 		 *
 		 * @param {string|null} key - The key to process
-		 * @spec exclude UI plumbing — toggles active-property selection state
+		 * @spec openspec/changes/modelling-stated-requirements/specs/entity-management-modals/spec.md#requirement-a-schemas-fields-are-built-in-a-form-req-msr-004
 		 * @return {void}
 		 */
 		setActiveProperty(key) {

@@ -127,7 +127,9 @@
                 "event",
                 "register",
                 "schema",
-                "scope"
+                "scope",
+                "transition",
+                "changedFields"
             ]
         },
         "configForm": {
@@ -161,23 +163,23 @@
         "validate": {
             "empty": {
                 "threw": "InvalidArgumentException",
-                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted, object.transitioned"
             },
             "next-null": {
                 "threw": "InvalidArgumentException",
-                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted, object.transitioned"
             },
             "next-good": {
                 "threw": "InvalidArgumentException",
-                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted, object.transitioned"
             },
             "next-bad": {
                 "threw": "InvalidArgumentException",
-                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted, object.transitioned"
             },
             "event-unknown": {
                 "threw": "InvalidArgumentException",
-                "message": "Unknown trigger event \"object.moved\". The engine fires: object.created, object.updated, object.deleted."
+                "message": "Unknown trigger event \"object.moved\". The engine fires: object.created, object.updated, object.deleted, object.transitioned."
             },
             "no-register": {
                 "threw": "InvalidArgumentException",
@@ -199,19 +201,19 @@
             },
             "cron-short": {
                 "threw": "InvalidArgumentException",
-                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted, object.transitioned"
             },
             "cron-no-runas": {
                 "threw": "InvalidArgumentException",
-                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted, object.transitioned"
             },
             "cron-unknown-user": {
                 "threw": "InvalidArgumentException",
-                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted, object.transitioned"
             },
             "cron-good": {
                 "threw": "InvalidArgumentException",
-                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted"
+                "message": "An object trigger must name an \"event\" — one of: object.created, object.updated, object.deleted, object.transitioned"
             }
         },
         "execute": [
@@ -224,7 +226,8 @@
         "events": [
             "object.created",
             "object.updated",
-            "object.deleted"
+            "object.deleted",
+            "object.transitioned"
         ]
     },
     {

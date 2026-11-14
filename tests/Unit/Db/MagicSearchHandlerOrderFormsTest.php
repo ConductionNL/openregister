@@ -61,13 +61,13 @@ class MagicSearchHandlerOrderFormsTest extends TestCase {
 	 */
 	public static function forms(): array {
 		return [
-			'a map' => [['title' => 'desc'], ['LOWER(CAST("t"."title" AS TEXT)) DESC']],
-			'a map as JSON' => ['{"title":"desc"}', ['LOWER(CAST("t"."title" AS TEXT)) DESC']],
-			'a list of names' => [['title'], ['LOWER(CAST("t"."title" AS TEXT)) ASC']],
-			'the list GraphQL sends' => ['[{"field":"title","direction":"DESC"}]', ['LOWER(CAST("t"."title" AS TEXT)) DESC']],
-			'one name' => ['title', ['LOWER(CAST("t"."title" AS TEXT)) ASC']],
-			'a list for a direction' => [['title' => ['desc']], ['LOWER(CAST("t"."title" AS TEXT)) ASC']],
-			'a digit-only property' => [[7 => 'desc'], ['LOWER(CAST("t"."7" AS TEXT)) DESC']],
+			'a map' => [['title' => 'desc'], ['LOWER(CAST("t"."title" AS TEXT)) DESC', '"t"."title" DESC', 't._id ASC']],
+			'a map as JSON' => ['{"title":"desc"}', ['LOWER(CAST("t"."title" AS TEXT)) DESC', '"t"."title" DESC', 't._id ASC']],
+			'a list of names' => [['title'], ['LOWER(CAST("t"."title" AS TEXT)) ASC', '"t"."title" ASC', 't._id ASC']],
+			'the list GraphQL sends' => ['[{"field":"title","direction":"DESC"}]', ['LOWER(CAST("t"."title" AS TEXT)) DESC', '"t"."title" DESC', 't._id ASC']],
+			'one name' => ['title', ['LOWER(CAST("t"."title" AS TEXT)) ASC', '"t"."title" ASC', 't._id ASC']],
+			'a list for a direction' => [['title' => ['desc']], ['LOWER(CAST("t"."title" AS TEXT)) ASC', '"t"."title" ASC', 't._id ASC']],
+			'a digit-only property' => [[7 => 'desc'], ['LOWER(CAST("t"."7" AS TEXT)) DESC', '"t"."7" DESC', 't._id ASC']],
 			'nothing usable keeps the stable default' => [[5], ['t._id ASC']],
 		];
 	}//end forms()

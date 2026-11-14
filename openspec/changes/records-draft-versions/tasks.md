@@ -3,12 +3,12 @@
 ## 1. Draft store
 
 - [ ] 1.1 `ObjectDraft` entity, mapper and migration for `openregister_object_drafts` (key rules from the spec: `main` reserved, lowercase and hyphens). Verify: mapper test on PostgreSQL and MariaDB, and 422 for key `main`.
-- [ ] 1.2 `DraftService` create, update (delta only), list, discard, with the spec's visibility rule. Verify: `DraftServiceTest` including a read-only user who cannot see another user's draft.
+- [x] 1.2 `DraftService` create, update (delta only), list, discard, with the spec's visibility rule. Verify: `DraftServiceTest` including a read-only user who cannot see another user's draft.
 
 ## 2. Reading and routes
 
 - [ ] 2.1 `version` parameter on `ObjectService::find()` merging the delta and adding `@self._version`. Verify: API test `GET .../{id}?version=update-1` returns merged data, `?version=main` equals no parameter.
-- [ ] 2.2 `VersionsController` routes under `/api/objects/{register}/{schema}/{id}/versions` for create, list, read, update and delete. Verify: `tests/Api/ObjectDraftsTest`.
+- [x] 2.2 `VersionsController` routes under `/api/objects/{register}/{schema}/{id}/versions` for create, list, read, update and delete. Verify: `tests/Api/ObjectDraftsTest`.
 - [ ] 2.3 `_drafts=true` adds visible draft keys to `@self.drafts` without changing the result set. Verify: API test.
 
 ## 3. Promotion

@@ -42,6 +42,12 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EmlParser
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\OoxmlPackage
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\WordTextReader
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\AddressListSplitter
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlBody
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlHeaderParser
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure
  */
 class TextExtractionFixturesTest extends TestCase {
 

@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 /**
  * The alias the rows carry, the CRUD action they are filtered for and their bare magic table.
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 final class AliasedRows {
 
@@ -36,7 +36,7 @@ final class AliasedRows {
 	 * @param string      $action    The CRUD action being filtered.
 	 * @param string|null $tableName The bare magic table of the aliased rows; a `_status` column it lacks is left out of the draft predicate.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
 		public readonly string $alias,

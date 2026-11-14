@@ -48,6 +48,18 @@ final class MagicTableIndexer {
 	private const INDEXED_METADATA_FIELDS = ['created', 'updated', 'name', 'slug', 'uri', 'last_user_activity'];
 
 	/**
+	 * The suffix of the btree index a property asks for with `indexed`.
+	 */
+	public const SORT_SUFFIX = 'sort_idx';
+
+	/**
+	 * The per-property index kinds a sync may drop again: the ones that follow
+	 * the `indexed`, `facetable` and relation flags. Array GIN and trigram
+	 * indexes follow the column type and `searchable`, and are left alone.
+	 */
+	private const DROPPABLE_SUFFIXES = ['sort_idx', 'facet_idx', 'rel_idx', 'lower_idx'];
+
+	/**
 	 * Build the indexer.
 	 *
 	 * @param IDBConnection    $db     The connection.
@@ -76,6 +88,7 @@ final class MagicTableIndexer {
 			$this->createBaseIndexes(run: $run);
 			$this->createPlatformIndexes(run: $run);
 			$this->createSchemaIndexes(run: $run, schema: $schema);
+			$run->identityIndex = (new MagicTableIdentityIndex(db: $this->db, logger: $this->logger))->create(run: $run, schema: $schema);
 			$this->logCreated(run: $run);
 		} catch (Exception $e) {
 			$this->logger->warning(
@@ -93,16 +106,18 @@ final class MagicTableIndexer {
 	 * @return void
 	 */
 	private function logCreated(MagicTableIndexRun $run): void {
-		$this->logger->debug(
-			message: '[MagicMapper] Created table indexes',
-			context: [
-				'tableName' => $run->tableName,
-				'baseIndexCount' => 5 + count(self::INDEXED_METADATA_FIELDS),
-				'relationIndexes' => $run->relationIndexes,
-				'facetIndexes' => $run->facetIndexes,
-				'searchableIndexes' => $run->searchableIndexes,
-			]
-		);
+		$context = [
+			'tableName' => $run->tableName,
+			'baseIndexCount' => 5 + count(self::INDEXED_METADATA_FIELDS),
+			'relationIndexes' => $run->relationIndexes,
+			'facetIndexes' => $run->facetIndexes,
+			'searchableIndexes' => $run->searchableIndexes,
+		];
+		if ($run->identityIndex !== null) {
+			$context['identityIndex'] = $run->identityIndex;
+		}
+
+		$this->logger->debug(message: '[MagicMapper] Created table indexes', context: $context);
 	}//end logCreated()
 
 	/**
@@ -183,6 +198,12 @@ final class MagicTableIndexer {
 
 		$this->db->executeStatement("CREATE INDEX IF NOT EXISTS {$table}_relations_gin_idx ON {$full} USING GIN (_relations)");
 		$this->db->executeStatement("CREATE INDEX IF NOT EXISTS {$table}_live_owner_idx ON {$full} (_owner) WHERE _deleted IS NULL");
+
+		// The name column orders case-insensitively (MagicSearchHandler::addMetadataOrder),
+		// so a lower() expression index keeps that order indexable (REQ-CIO-001).
+		$this->db->executeStatement(
+			"CREATE INDEX IF NOT EXISTS {$table}_name_lower_idx ON {$full} (LOWER(CAST(_name AS TEXT)))"
+		);
 
 		if ($this->trgm->available() === true) {
 			$this->createNameTrigramIndex(run: $run);
@@ -282,10 +303,67 @@ final class MagicTableIndexer {
 			$run->facetIndexes[] = $run->column;
 		}
 
+		// `indexed` asks for the same btree index without the facet; a facet's
+		// index already serves it, so a property that is both gets one index
+		// (modelling-property-index-switch D-1).
+		if ($this->wantsSortIndex(propertyConfig: $propertyConfig) === true
+			&& $this->tryCreateColumnIndex(run: $run, suffix: self::SORT_SUFFIX) === true
+		) {
+			$run->sortIndexes[] = $run->column;
+		}
+
 		if (($propertyConfig['searchable'] ?? false) === true && $this->trgm->available() === true) {
 			$this->createSearchableIndex(run: $run);
 		}
+
+		$this->createLowerOrderingIndex(run: $run, propertyConfig: $propertyConfig);
 	}//end createOptInIndexes()
+
+	/**
+	 * Create a `lower()` expression index for an indexed text column on PostgreSQL.
+	 *
+	 * A text property orders case-insensitively
+	 * (MagicSearchHandler::buildPropertySortExpression), so a string column that
+	 * already carries an index (because it is facetable or searchable) gets a
+	 * matching `lower()` btree index, keeping that order indexable. MySQL/MariaDB
+	 * get none: the task scopes the expression index to PostgreSQL (REQ-CIO-001).
+	 *
+	 * @param MagicTableIndexRun $run            The index-creation pass, positioned on the property's column.
+	 * @param array              $propertyConfig The property definition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 */
+	private function createLowerOrderingIndex(MagicTableIndexRun $run, array $propertyConfig): void {
+		if ($this->wantsLowerIndex(run: $run, propertyConfig: $propertyConfig) === false) {
+			return;
+		}
+
+		try {
+			$this->db->executeStatement(
+				"CREATE INDEX IF NOT EXISTS {$run->columnIndexName(suffix: 'lower_idx')} ON {$run->fullTableName} "
+				. "(LOWER(CAST({$run->quotedColumn} AS TEXT)))"
+			);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: '[MagicMapper] Skipped lower() ordering index',
+				context: ['tableName' => $run->tableName, 'column' => $run->column, 'error' => $e->getMessage()]
+			);
+		}
+	}//end createLowerOrderingIndex()
+
+	/**
+	 * Whether a property is a text property: a `string` that is not a date.
+	 *
+	 * @param array $propertyConfig The property definition.
+	 *
+	 * @return bool
+	 */
+	private function isTextProperty(array $propertyConfig): bool {
+		return ($propertyConfig['type'] ?? 'string') === 'string'
+			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false;
+	}//end isTextProperty()
 
 	/**
 	 * Whether a property is a single object reference that relates objects.
@@ -348,6 +426,227 @@ final class MagicTableIndexer {
 			return false;
 		}
 	}//end tryCreateColumnIndex()
+
+	/**
+	 * Whether a property asks for the `indexed` btree index of its own: it is
+	 * indexed and not a facet, whose index already serves it.
+	 *
+	 * @param array $propertyConfig The property definition.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/tasks.md#1-backend
+	 */
+	private function wantsSortIndex(array $propertyConfig): bool {
+		return ($propertyConfig['indexed'] ?? false) === true && ($propertyConfig['facetable'] ?? false) !== true;
+	}//end wantsSortIndex()
+
+	/**
+	 * Whether a text column on PostgreSQL carries an index whose order the
+	 * `lower()` index keeps: facetable, indexed, or searchable with pg_trgm.
+	 *
+	 * @param MagicTableIndexRun $run            The pass, which knows the platform.
+	 * @param array              $propertyConfig The property definition.
+	 *
+	 * @return bool
+	 */
+	private function wantsLowerIndex(MagicTableIndexRun $run, array $propertyConfig): bool {
+		if ($run->isPostgres === false || $this->isTextProperty(propertyConfig: $propertyConfig) === false) {
+			return false;
+		}
+
+		return ($propertyConfig['facetable'] ?? false) === true
+			|| ($propertyConfig['indexed'] ?? false) === true
+			|| (($propertyConfig['searchable'] ?? false) === true && $this->trgm->available() === true);
+	}//end wantsLowerIndex()
+
+	/**
+	 * Drop the convention-named property indexes no property flag asks for
+	 * any more (modelling-property-index-switch D-2). Only an index named
+	 * `{table}_{column}_{kind}` for a column of this schema and a droppable
+	 * kind is touched; a hand-made index, a base index and an index on a
+	 * column the schema no longer has all stay. A failed drop is logged and
+	 * the pass goes on. An identity index the schema's identity no longer
+	 * asks for is dropped the same way (modelling-composite-identity).
+	 *
+	 * @param MagicTableIndexRun $run      The pass, on the table.
+	 * @param Schema             $schema   The schema whose properties ask for indexes.
+	 * @param array<int, string> $existing The index names on the table.
+	 *
+	 * @return array<int, string> The names dropped.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/tasks.md#1-backend
+	 */
+	public function dropUnasked(MagicTableIndexRun $run, Schema $schema, array $existing): array {
+		$run->isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+		$dropped = [];
+		$identity = new MagicTableIdentityIndex(db: $this->db, logger: $this->logger);
+		$names = array_merge(
+			$this->unasked(run: $run, schema: $schema, existing: $existing),
+			$identity->stale(tableName: $run->tableName, schema: $schema, existing: $existing)
+		);
+		foreach ($names as $name) {
+			$sql = "DROP INDEX {$name} ON {$run->fullTableName}";
+			if ($run->isPostgres === true) {
+				$sql = "DROP INDEX IF EXISTS {$name}";
+			}
+
+			try {
+				$this->db->executeStatement($sql);
+				$dropped[] = $name;
+			} catch (Exception $e) {
+				$this->logger->warning(
+					message: '[MagicMapper] Could not drop an index no property asks for',
+					context: ['tableName' => $run->tableName, 'index' => $name, 'error' => $e->getMessage()]
+				);
+			}
+		}
+
+		return $dropped;
+	}//end dropUnasked()
+
+	/**
+	 * The property flag each convention-named index kind serves, and its kind.
+	 *
+	 * @var array<string, array{kind: string, flag: string|null}>
+	 */
+	private const DESCRIBED_SUFFIXES = [
+		'rel_idx' => ['kind' => 'btree', 'flag' => 'relation'],
+		'arr_gin_idx' => ['kind' => 'gin', 'flag' => 'relation'],
+		'facet_idx' => ['kind' => 'btree', 'flag' => 'facetable'],
+		self::SORT_SUFFIX => ['kind' => 'btree', 'flag' => 'indexed'],
+		'lower_idx' => ['kind' => 'btree', 'flag' => null],
+		'trgm_idx' => ['kind' => 'trigram', 'flag' => 'searchable'],
+	];
+
+	/**
+	 * Every index on the table, with the property and flag that asked for it
+	 * (modelling-property-index-switch D-4).
+	 *
+	 * A convention-named index on a column of this schema names its property,
+	 * column, kind and flag. Any other index (a base index, a hand-made one, or
+	 * one on a column the schema no longer has) is listed with kind `other`
+	 * and no property or flag, so the list shows everything the table carries.
+	 *
+	 * @param MagicTableIndexRun $run      The pass, on the table.
+	 * @param Schema             $schema   The schema whose properties ask for indexes.
+	 * @param array<int, string> $existing The index names on the table.
+	 *
+	 * @return array<int, array{name: string, property: string|null, column: string|null, kind: string, flag: string|null}> By name.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-a-property-can-ask-for-an-index-without-being-a-facet
+	 */
+	public function describe(MagicTableIndexRun $run, Schema $schema, array $existing): array {
+		$known = [];
+		foreach ($schema->getProperties() as $propertyName => $propertyConfig) {
+			if (is_array($propertyConfig) === false) {
+				continue;
+			}
+
+			$run->column = $this->sanitizeColumnName(name: (string)$propertyName);
+			foreach (self::DESCRIBED_SUFFIXES as $suffix => $described) {
+				$known[$run->columnIndexName(suffix: $suffix)] = [
+					'property' => (string)$propertyName,
+					'column' => $run->column,
+					'kind' => $described['kind'],
+					'flag' => ($described['flag'] ?? self::lowerIndexFlag(propertyConfig: $propertyConfig)),
+				];
+			}
+		}
+
+		$indexes = [];
+		foreach (array_values(array_unique($existing)) as $name) {
+			$indexes[] = ['name' => $name] + ($known[$name] ?? ['property' => null, 'column' => null, 'kind' => 'other', 'flag' => null]);
+		}
+
+		usort($indexes, static fn (array $one, array $two): int => strcmp($one['name'], $two['name']));
+
+		return $indexes;
+	}//end describe()
+
+	/**
+	 * The flag a `lower()` index serves: the first of facetable, indexed and searchable the property sets.
+	 *
+	 * @param array $propertyConfig The property definition.
+	 *
+	 * @return string|null The flag, or null when none is set any more.
+	 */
+	private static function lowerIndexFlag(array $propertyConfig): ?string {
+		foreach (['facetable', 'indexed', 'searchable'] as $flag) {
+			if (($propertyConfig[$flag] ?? false) === true) {
+				return $flag;
+			}
+		}
+
+		return null;
+	}//end lowerIndexFlag()
+
+	/**
+	 * The existing convention-named property indexes no property asks for.
+	 *
+	 * @param MagicTableIndexRun $run      The pass, on the table.
+	 * @param Schema             $schema   The schema.
+	 * @param array<int, string> $existing The index names on the table.
+	 *
+	 * @return array<int, string> The names to drop.
+	 */
+	private function unasked(MagicTableIndexRun $run, Schema $schema, array $existing): array {
+		$candidates = [];
+		$wanted     = [];
+		foreach ($schema->getProperties() as $propertyName => $propertyConfig) {
+			if (is_array($propertyConfig) === false) {
+				continue;
+			}
+
+			$run->column = $this->sanitizeColumnName(name: (string)$propertyName);
+			foreach (self::DROPPABLE_SUFFIXES as $suffix) {
+				$candidates[] = $run->columnIndexName(suffix: $suffix);
+			}
+
+			$wanted = array_merge($wanted, $this->askedFor(run: $run, propertyConfig: $propertyConfig));
+		}
+
+		// `{table}_name_lower_idx` is a base index of every PostgreSQL table.
+		$base = ["{$run->tableName}_name_lower_idx"];
+
+		return array_values(
+			array_filter(
+				$existing,
+				static fn (string $name): bool => in_array($name, $candidates, true) === true
+					&& in_array($name, $wanted, true) === false
+					&& in_array($name, $base, true) === false
+			)
+		);
+	}//end unasked()
+
+	/**
+	 * The convention-named indexes one property asks for, by its flags.
+	 *
+	 * @param MagicTableIndexRun $run            The pass, positioned on the property's column.
+	 * @param array              $propertyConfig The property definition.
+	 *
+	 * @return array<int, string> The index names.
+	 */
+	private function askedFor(MagicTableIndexRun $run, array $propertyConfig): array {
+		$asked = [];
+		if ($this->isSingleRelation(propertyConfig: $propertyConfig) === true) {
+			$asked[] = $run->columnIndexName(suffix: 'rel_idx');
+		}
+
+		if (($propertyConfig['facetable'] ?? false) === true) {
+			$asked[] = $run->columnIndexName(suffix: 'facet_idx');
+		}
+
+		if ($this->wantsSortIndex(propertyConfig: $propertyConfig) === true) {
+			$asked[] = $run->columnIndexName(suffix: self::SORT_SUFFIX);
+		}
+
+		if ($this->wantsLowerIndex(run: $run, propertyConfig: $propertyConfig) === true) {
+			$asked[] = $run->columnIndexName(suffix: 'lower_idx');
+		}
+
+		return $asked;
+	}//end askedFor()
 
 	/**
 	 * Create the pg_trgm GIN index of a `searchable` property column.

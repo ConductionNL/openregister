@@ -136,4 +136,11 @@ final class BulkSaveRun {
 	 * @var integer
 	 */
 	public int $chunkIndex = 0;
+
+	/**
+	 * Uuids of rows that update a stored object, as the safeguard screen found them; null when it did not run.
+	 *
+	 * @var array<string, bool>|null
+	 */
+	public ?array $storedUuids = null;
 }//end class

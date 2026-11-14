@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
  * and ZIP archive creation for object files.
  */
 class FilePublishingHandlerTest extends TestCase {
+	use PassThroughDigestsTrait;
 	/** @var FilePublishingHandler */
 	private FilePublishingHandler $handler;
 
@@ -93,7 +94,8 @@ class FilePublishingHandlerTest extends TestCase {
 			$this->objectEntityMapper,
 			$this->fileMapper,
 			$this->logger,
-			$this->container
+			$this->container,
+			$this->passThroughDigests()
 		);
 
 		// Most tests need the file service
@@ -122,7 +124,8 @@ class FilePublishingHandlerTest extends TestCase {
 			$this->objectEntityMapper,
 			$this->fileMapper,
 			$this->logger,
-			$this->container
+			$this->container,
+			$this->passThroughDigests()
 		);
 
 		// Should not throw

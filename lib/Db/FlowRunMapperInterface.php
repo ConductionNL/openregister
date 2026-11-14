@@ -60,7 +60,7 @@ interface FlowRunMapperInterface {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such run exists.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function findByUuid(string $uuid): FlowRun;
 
@@ -128,9 +128,9 @@ interface FlowRunMapperInterface {
 	 *
 	 * @return array<int, FlowRun> The runs.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	public function findAllRuns(FlowRunListing $listing, FlowRunViewer $viewer): array;
 
@@ -148,7 +148,7 @@ interface FlowRunMapperInterface {
 	 *
 	 * @return array<string, array{lastRun: array<string, mixed>|null, runsSince: int}> Keyed by flow id.
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	public function summarizeByFlow(FlowActivityWindow $window, FlowRunViewer $viewer): array;
 
@@ -160,7 +160,7 @@ interface FlowRunMapperInterface {
 	 *
 	 * @return array<string, int> Run count keyed by flow id; flows without runs are absent.
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	public function countSinceByFlow(FlowActivityWindow $window, FlowRunViewer $viewer): array;
 
@@ -176,7 +176,7 @@ interface FlowRunMapperInterface {
 	 *
 	 * @return array<int, FlowRun> At most one run per flow.
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	public function latestRunsByFlow(array $flowIds, FlowRunViewer $viewer): array;
 
@@ -265,7 +265,7 @@ interface FlowRunMapperInterface {
 	 *
 	 * @return boolean Whether a running row was updated.
 	 *
-	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 * @spec openspec/specs/flow-stale-runs/spec.md
 	 */
 	public function touch(string $uuid, DateTime $when): bool;
 
@@ -326,7 +326,7 @@ interface FlowRunMapperInterface {
 	 *
 	 * @return array<int, FlowRun> The non-terminal runs.
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
 	public function findActive(FlowRunSubjectScope $scope, int $limit = 25): array;
@@ -400,7 +400,7 @@ interface FlowRunMapperInterface {
 	 *
 	 * @return integer The number of non-terminal runs.
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
 	public function countActive(?string $organisation = null, ?string $subject = null): int;
@@ -456,7 +456,7 @@ interface FlowRunMapperInterface {
 	 *
 	 * @return array<int, FlowRun> The due runs.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function findDue(DateTime $now, int $limit = 25): array;
 
@@ -480,7 +480,7 @@ interface FlowRunMapperInterface {
 	 *
 	 * @return array<int, FlowRun> The abandoned runs.
 	 *
-	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 * @spec openspec/specs/flow-stale-runs/spec.md
 	 */
 	public function findStale(DateTime $before, int $limit = 25): array;
 
@@ -615,7 +615,7 @@ interface FlowRunMapperInterface {
 	 *
 	 * @return integer The number of runs deleted.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function pruneBefore(DateTime $before): int;
 

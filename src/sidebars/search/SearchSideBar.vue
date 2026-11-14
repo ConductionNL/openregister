@@ -518,6 +518,7 @@ import {
 	viewsStore,
 } from '../../store/store.js'
 import { scopeListLoader } from '../scopeListLoader.js'
+import { rememberedSearchColumns, rememberSearchColumns } from './searchColumnMemory.js'
 
 /**
  * The state every instance of this component starts from.
@@ -1062,10 +1063,12 @@ export default {
 		 * CnIndexSidebar @columns-change: persist visible columns.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @spec openspec/changes/records-api-and-table-stated/specs/zoeken-filteren/spec.md#REQ-RAT-002
 		 * @param {Array<string>} columns
 		 */
 		onColumnsChange(columns) {
 			objectStore.setSearchVisibleColumns(columns)
+			rememberSearchColumns(objectStore.searchParams?.schema, columns)
 		},
 
 		/**
@@ -1288,6 +1291,11 @@ export default {
 				if (schema) schemaStore.setSchemaItem(schema)
 			} else {
 				schemaStore.setSchemaItem(null)
+			}
+			// The columns are the user's choice FOR THIS SCHEMA: switching to
+			// another schema shows the columns picked there, or its defaults.
+			if (String(schemaId ?? '') !== String(objectStore.searchParams?.schema ?? '')) {
+				objectStore.setSearchVisibleColumns(rememberedSearchColumns(schemaId))
 			}
 			objectStore.setSearchParams({
 				register: registerId,

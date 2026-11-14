@@ -43,4 +43,16 @@ interface ContextChatSubmissionListenerInterface {
 	 * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-published-objects-are-submitted-to-context-chat
 	 */
 	public function submitIfEligible(ObjectEntity $object, ?Schema $schema = null): bool;
+
+	/**
+	 * Remove an object's content from Context Chat when its schema is opted in.
+	 *
+	 * @param ObjectEntity $object The removed object; its uuid and schema are read.
+	 * @param Schema|null  $schema Optional pre-resolved schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-published-objects-are-submitted-to-context-chat
+	 */
+	public function remove(ObjectEntity $object, ?Schema $schema = null): void;
 }//end interface

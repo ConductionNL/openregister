@@ -52,7 +52,7 @@ interface AnonymiserRequestInterface {
 	 *
 	 * @throws AnalyzeRequestRejectedException When the ExApp answers 4xx: it was reached and refused the request.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function requestOpenAnonymiser(AnonymiserCall $call): ?array;
 }//end interface

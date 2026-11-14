@@ -40,7 +40,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+ * @spec openspec/specs/flow-stale-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -134,7 +134,7 @@ class FlowRunGuard {
 	 *
 	 * @throws FlowRunExpired When the run has exhausted its runtime budget.
 	 *
-	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 * @spec openspec/specs/flow-stale-runs/spec.md
 	 */
 	public function checkpoint(string $where = ''): void {
 		if ($this->expired() === true) {
@@ -194,7 +194,7 @@ class FlowRunGuard {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 * @spec openspec/specs/flow-stale-runs/spec.md
 	 */
 	public function beat(): void {
 		$now = time();
