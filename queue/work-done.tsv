@@ -11192,3 +11192,4 @@ build:launchpad:widget-calculated-fields:c2	partial: PR launchpad#1203 head 2603
 verify:filinq:2123:d7d9fff5	GREEN: 2123 (phpunit 6808 OK, vitest 770 OK)	session-20261114T211815-849a5f5d	2026-11-14T21:28:58Z
 review:decidiq:2143:f51a1774	GREEN: matches change spec; unit 4270 ok, vitest ok	session-20261114T212457-7a749dbd	2026-11-14T21:29:06Z
 fix:keepiq:1792:5b788ad3	moved reprompt l10n keys mid-catalogue in 74 files; merges clean with #1790 and #1786; unit 5192 OK; new head cda47c3e, REVERIFY recorded	session-20261114T204759-2444e6ca	2026-11-14T21:29:43Z
+build:opencatalogi:dashboard-consume-or-aggregations:c2	already done: PR #2640 merged into development; remaining tasks need a design decision (no attachment schema; cross-schema groupBy not in OR aggregation contract) or a live instance; no code task buildable	session-20261114T211808-5e900938	2026-11-14T21:29:55Z
