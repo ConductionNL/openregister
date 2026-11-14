@@ -10432,3 +10432,4 @@ verify:decidiq:2171:0d7b8b59	2171 GREEN (unit 4249 vs baseline 4232, vitest gree
 build:learniq:compliance-assign-from-hr-roles:c3	PR #2542: 4.1 built (out-of-scope list on compliance page, HR card on learner page); all code tasks done; left 5.1 (integriq issue, not a code task), 6.x live/release	session-20261114T171830-19af6b65	2026-11-14T17:36:32Z
 fix:hermiq:1749:df82486d	resolved l10n conflict (json union + l10n:build); no new failures; new head 495bf269, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T17:36:55Z
 verify:humaniq:1123:bc177029	1123 GREEN; 1145, 1156 CONFLICT (generated manifest files in tree order)	session-20261114T151932-05b02c14	2026-11-14T17:37:23Z
+verify:decidiq:2189:f986e58e	2 GREEN (2189, 2194); phpunit 4257/0 fail, vitest 2764 pass	session-20261114T161750-16a1c558	2026-11-14T17:37:34Z
