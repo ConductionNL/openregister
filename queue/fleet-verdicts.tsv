@@ -10263,5 +10263,6 @@ decidiq	2188	cd0af4022fa5f36fa907425c496ad48776577552	GREEN	worker-26	phpunit 43
 decidiq	2189	9db1906ee298ab726374467d139771ee65803b76	CONFLICT	worker-26	conflict in lib/Settings/profiles/municipality.json after 2172,2178,2188
 decidiq	2202	0cea5e8c781ca6a4e97a6e05ec64d51f5843af60	CONFLICT	worker-26	conflict in lib/Service/ContractBindings.php after 2172,2178,2188
 decidiq	2207	4431f53a0387b2e6fda4b7a74b5cdf819986a814	GREEN	worker-26	phpunit 4356 tests green (baseline 4248), vitest 2838 pass; build PR, test edits only count new entries
+integriq	3564	e75c7913950e8ab8bb5f54ed4030ba4330d05e5e	GREEN	worker-55	phpunit 9143 tests on development+PR, baseline 9084 with 2 errors 5 failures inherited, no new failures; vitest 2258 passed; builds gateway-api-design-rules-check as its specs ask
 stackiq	1954	e74406a91d6e063eaaa8e4eb6fd01c14761f94b3	GREEN	worker-15	unit 3630 tests 0 failures (baseline development 3602, 1 failure CmdbExportImportServiceTest inherited); vitest 2578, 1 failure facets.spec FACET_DIMENSIONS inherited from development; no new failures; implements insight-exports-and-custom-reports per its specs
 stackiq	1956	5e21700ec3c47e32ad2e88f449a204df304de2ba	CONFLICT	worker-15	conflicts after #1937/#1954 in l10n/en,nl .js/.json
