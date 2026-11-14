@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
@@ -529,7 +530,10 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @param FlowTimer $timer The timer.
 	 * @param DateTimeInterface|null $now The clock.
 	 *
-	 * @return array{overdue: bool, remaining: float, unit: string, overdueBy: float|null, fireAt: string|null, state: string} The derivation.
+	 * @return array{
+	 *     overdue: bool, remaining: float, unit: string, overdueBy: float|null, fireAt: string|null, state: string,
+	 *     unrolledAt: string|null, rolledBy: mixed, timeZone: string, fireAtLocal: string|null, unrolledAtLocal: string|null
+	 * } The derivation.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
 	 */
@@ -552,8 +556,34 @@ class FlowTimerService implements FlowTimerControlInterface {
 			// defend.
 			'unrolledAt' => $timer->getUnrolledAt()?->format('c'),
 			'rolledBy' => $timer->getRolledBy(),
+			// The instants stay UTC; beside them the date as the organisation
+			// reads it, in the calendar's zone and naming it (calendar-time-zone
+			// 2.3), so a handler is not left converting a statutory deadline.
+			'timeZone' => $scope->calendar->getTimezone(),
+			'fireAtLocal' => $this->localDate(moment: $timer->getFireAt(), zone: $scope->calendar->getTimezone()),
+			'unrolledAtLocal' => $this->localDate(moment: $timer->getUnrolledAt(), zone: $scope->calendar->getTimezone()),
 		];
 	}//end describe()
+
+	/**
+	 * An instant as a local date in a zone, naming the zone: `2027-06-30 23:59 Europe/Amsterdam`.
+	 *
+	 * @param DateTimeInterface|null $moment The instant, or null.
+	 * @param string                 $zone   The IANA zone.
+	 *
+	 * @return string|null The local date, or null when there is no instant.
+	 *
+	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
+	 */
+	private function localDate(?DateTimeInterface $moment, string $zone): ?string {
+		if ($moment === null) {
+			return null;
+		}
+
+		$local = (new DateTimeImmutable('@'.$moment->format('U')))->setTimezone(new DateTimeZone($zone));
+
+		return $local->format('Y-m-d H:i').' '.$zone;
+	}//end localDate()
 
 	/**
 	 * How far an armed timer is past its fire moment, or null when it is not.

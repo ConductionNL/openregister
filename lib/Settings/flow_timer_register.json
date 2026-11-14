@@ -3,7 +3,7 @@
   "info": {
     "title": "Flow Timers",
     "description": "Configuration data for the business-timer store (flow-business-timers): named working calendars whose non-working dates are COMPUTED from rules so they never expire, and escalation ladders whose rungs are editable data rather than a compiled-in constant (ADR-001, ADR-031). Materialised by the SeedFlowTimerRegister repair step; OpenRegister does not self-import its own register JSON at boot (ADR-037).",
-    "version": "1.4.0"
+    "version": "1.4.1"
   },
   "x-openregister": {
     "type": "core",
@@ -46,7 +46,7 @@
       "working-calendar": {
         "slug": "working-calendar",
         "title": "Working calendar",
-        "version": "1.3.0",
+        "version": "1.3.1",
         "published": "2026-09-01T00:00:00+00:00",
         "summary": "Which weekdays work, which hours of the day they are open, and which dates are closed.",
         "description": "A named working calendar resolved by the business-timer store in the order: the calendar named on the timer, the calendar configured for the subject's organisation, the seeded national default. Non-working dates are computed from rules of kind fixed, easter or observedShift, so the calendar does not expire; enumerated exceptions may accompany rules but a calendar consisting only of enumerated dates is refused. A calendar with no rules at all keeps no holidays, which is an answer rather than an omission: an organisation that works every weekday of the year says so this way. hoursPerWorkingDay is required because without it hours and businessDays are not commensurable, and it is derived from serviceHours when those are declared.",
@@ -114,7 +114,8 @@
             "title": "Time zone",
             "type": "string",
             "description": "The zone the organisation counts its days in, as an IANA name such as Europe/Amsterdam. A calendar date becomes a moment only once somebody says where midnight is, and it is the organisation's zone rather than the viewer's: a display preference must not move a statutory deadline. Defaults to UTC.",
-            "default": "UTC"
+            "default": "UTC",
+            "format": "time-zone"
           },
           "serviceHours": {
             "title": "Service hours",
@@ -532,6 +533,7 @@
           5
         ],
         "hoursPerWorkingDay": 7,
+        "timezone": "Europe/Amsterdam",
         "rules": [
           {
             "kind": "fixed",

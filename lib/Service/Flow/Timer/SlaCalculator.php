@@ -252,7 +252,9 @@ final class SlaCalculator implements SlaCalculatorInterface {
 			return -$this->measureSpan(span: new CalendarSpan(from: $span->to, to: $span->from, calendar: $span->calendar), unit: $unit);
 		}
 
-		return $this->sumPerDay(span: $span, perDay: fn (DateTimeImmutable $cursor): float => $this->workingFraction(span: $span, cursor: $cursor))
+		$local = self::localSpan(span: $span);
+
+		return $this->sumPerDay(span: $local, perDay: fn (DateTimeImmutable $cursor): float => $this->workingFraction(span: $local, cursor: $cursor))
 			?? throw $this->walkLimit(subject: $span->describe(what: 'business days'));
 	}//end measureSpan()
 
@@ -297,9 +299,26 @@ final class SlaCalculator implements SlaCalculatorInterface {
 			return $this->hoursClock->frame(calendar: $span->calendar, windows: $windows)->elapsed(from: $span->from, to: $span->to);
 		}
 
-		return $this->sumPerDay(span: $span, perDay: fn (DateTimeImmutable $cursor): float => $this->workingHours(span: $span, cursor: $cursor))
+		$local = self::localSpan(span: $span);
+
+		return $this->sumPerDay(span: $local, perDay: fn (DateTimeImmutable $cursor): float => $this->workingHours(span: $local, cursor: $cursor))
 			?? throw $this->walkLimit(subject: $span->describe(what: 'working hours'));
 	}//end elapsedBusinessHours()
+
+	/**
+	 * The span on the calendar's wall clock, so its days start at local midnight.
+	 *
+	 * @param CalendarSpan $span The span.
+	 *
+	 * @return CalendarSpan The same instants in the calendar's zone.
+	 */
+	private static function localSpan(CalendarSpan $span): CalendarSpan {
+		return new CalendarSpan(
+			from: $span->calendar->local(moment: $span->from),
+			to: $span->calendar->local(moment: $span->to),
+			calendar: $span->calendar
+		);
+	}//end localSpan()
 
 	/**
 	 * Convert an amount between units, through hours as the pivot: one business
@@ -403,8 +422,26 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 * @throws FlowTimerValidationException Without a calendar, or when the walk exceeds its bound.
 	 */
 	private function walk(SlaAddition $addition, ?WalkCollector $collector): DateTimeImmutable {
-		$addition->calendar();
-		$cursor = $addition->start;
+		// Days are walked at the calendar's local midnights, and the landing
+		// is answered on the caller's own clock: the same instant either way.
+		$cursor = $addition->calendar()->local(moment: $addition->start);
+		$landing = $this->walkFrom(addition: $addition, cursor: $cursor, collector: $collector);
+
+		return $landing->setTimezone($addition->start->getTimezone());
+	}//end walk()
+
+	/**
+	 * Walk the days from a cursor on the calendar's wall clock.
+	 *
+	 * @param SlaAddition        $addition  The request.
+	 * @param DateTimeImmutable  $cursor    The start, in the calendar's zone.
+	 * @param WalkCollector|null $collector Records the walk when a diagnostic is asking.
+	 *
+	 * @return DateTimeImmutable The landing instant, in the calendar's zone.
+	 *
+	 * @throws FlowTimerValidationException When the walk exceeds its bound.
+	 */
+	private function walkFrom(SlaAddition $addition, DateTimeImmutable $cursor, ?WalkCollector $collector): DateTimeImmutable {
 		$remaining = $addition->amount();
 		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
 			$next = $this->boundary(addition: $addition, cursor: $cursor);
@@ -421,7 +458,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 		}
 
 		throw $this->walkLimit(subject: $addition->describe());
-	}//end walk()
+	}//end walkFrom()
 
 	/**
 	 * The edge of the cursor's day in the walk's direction: the next midnight

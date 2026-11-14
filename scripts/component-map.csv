@@ -1219,6 +1219,7 @@ Files/Service/UploadService.php,104,Files,Files,Files/Service/UploadService.php,
 Formats/BsnFormat.php,40,Formats,Formats,Formats/BsnFormat.php,2,,Kernel
 Formats/CalendarRangeValue.php,60,Formats,Formats,Formats/CalendarRangeValue.php,0,,Kernel
 Formats/CronFormat.php,78,Formats,Formats,Formats/CronFormat.php,0,,Kernel
+Formats/TimeZoneFormat.php,61,Formats,Formats,Formats/TimeZoneFormat.php,0,,Kernel
 Formats/ExtendedFieldTypeValidator.php,93,Formats,Formats,Formats/ExtendedFieldTypeValidator.php,0,,Kernel
 Formats/ImageUrlValue.php,55,Formats,Formats,Formats/ImageUrlValue.php,0,,Kernel
 Formats/Iso8601DateTimeFormat.php,18,Formats,Formats,Formats/Iso8601DateTimeFormat.php,0,,Kernel
