@@ -10351,3 +10351,4 @@ merge:dossiq:6518:b5f67994	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 sk
 verify:decidiq:2155:69ee3a82	GREEN 2155 2188 2191; 4242 OK, vitest 2750 OK	session-20261114T154807-c05f4e57	2026-11-14T17:09:45Z
 build4:openregister:records-tree-view:c3	PR #10532: 2.1 built (RecordsTreeView over CnTreeView, lazy one-level branches, remembered open branches, hidden-parent note, 4 new strings in all 36 locales), jest 8461 green; left: 2.2 arrow keys and 2.3 are nextcloud-vue changes, e2e live	session-20261114T151802-24eee21b	2026-11-14T17:09:38Z
 merge:learniq:2521:315d275f	merge3 tree of 8 learniq PRs: merged=2 red=2 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T17:10:08Z
+merge:learniq:2515:a4f93e00	merge3 tree of 8 learniq PRs: merged=2 red=2 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T17:10:21Z
