@@ -11624,3 +11624,4 @@ verify:versioniq:700:235b5da7	700,709,710 GREEN; 718,722 CONFLICT with tree; uni
 fix:learniq:2544:51f18170	fixed: incidental .pyc change reverted; new head c238e05c, REVERIFY recorded	session-20261114T221709-8b871792	2026-11-14T22:37:20Z
 fix:versioniq:685:0a9c1956	fixed: spec expects new osvApiBase field; vitest 2975 green; head 7f027ce2	session-20261114T221801-9a21d394	2026-11-14T22:37:31Z
 verify:shillinq:3065:d5992bab	3065 GREEN (no new failures; no-rate change asked for by design D4)	session-20261114T171821-a80c28c5	2026-11-14T22:37:45Z
+fix:versioniq:723:b706884d	merged development (clean), pushed 48fa454, REVERIFY	session-20261114T221743-dbe5c07e	2026-11-14T22:37:51Z
