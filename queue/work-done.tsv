@@ -8404,3 +8404,4 @@ build:stackiq:the-review-moderation-overlay-names-the-wrong-schema	already done:
 build:stackiq:architecture-views-to-office-documents	partial: PR #1910 — Task 1 SVG renderer with 5 tests; Tasks 2/4/5 wait on architecture-views-editor, Task 3 on filinq's document contract	session-20261114T073105-27c9d15e	2026-11-14T08:46:25Z
 merge:hermiq:1729:25446213	stale	feeder	2026-11-14T08:45:24Z
 merge:opencatalogi:2597:34a6413e	stale	feeder	2026-11-14T08:45:24Z
+build:stackiq:architecture-reference-component-coverage	partial: PR #1911 (task 6 overlap in portfolio report; 5, 7 docs page, Playwright left)	session-20261114T075648-394d8174	2026-11-14T08:46:39Z
