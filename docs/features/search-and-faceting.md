@@ -241,6 +241,21 @@ Apps declare their result URLs, icons, and display names via the boot-time
 deep-link registry (`DeepLinkRegistrationEvent`); the registry's optional
 `displayName` is what labels an app's unified-search results.
 
+### Tasks in the search bar
+
+A second provider, **Tasks** (`openregister_flow_tasks`), lists the flow tasks
+the searcher would see in their own task inbox: assigned to them, offered to one
+of their groups, or watched by them. It runs the inbox query itself, so it never
+shows a task the inbox would not; an administrator is searched like anyone
+else, not over the whole instance's work. Every word of the term must occur in
+the task's title or description, case insensitively; open tasks come before
+finished ones, ten per page.
+
+Each result shows the task title and a subline with the state (or "Overdue"),
+the due date and the subject's title when the searcher may read the subject. It
+opens OpenRegister's task page, or the subject app's own task view when that
+app registered a task route in the [deep link registry](deep-link-registry.md#task-routes).
+
 ## The administered dictionary
 
 A search can be taught what a citizen's word means here. Two things are

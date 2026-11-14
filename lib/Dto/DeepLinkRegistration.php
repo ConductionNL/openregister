@@ -44,10 +44,15 @@ class DeepLinkRegistration {
 	 * @param string|null $displayName Optional human-readable label for the
 	 *                                 owning app, used to label unified-search
 	 *                                 results (defaults to null → app id)
+	 * @param string|null $taskUrlTemplate Optional route of the app's own task view
+	 *                                     for tasks about an object of this schema,
+	 *                                     with {uuid} (the task), {objectUuid},
+	 *                                     {register} and {schema} placeholders
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/deep-link-registry/spec.md
+	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-2.1
 	 */
 	public function __construct(
 		public readonly string $appId,
@@ -56,8 +61,41 @@ class DeepLinkRegistration {
 		public readonly string $urlTemplate,
 		public readonly string $icon = '',
 		public readonly ?string $displayName = null,
+		public readonly ?string $taskUrlTemplate = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The app's own route for a task about an object of this schema, or null when it registered none.
+	 *
+	 * Placeholders: {uuid} and {taskUuid} are the task, {objectUuid} its subject,
+	 * {register} and {schema} the subject's register and schema ids. Each value
+	 * is URL-encoded.
+	 *
+	 * @param array<string, mixed> $taskData A task row (uuid, objectUuid, registerId, schemaId).
+	 *
+	 * @return string|null The URL, or null.
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
+	 */
+	public function resolveTaskUrl(array $taskData): ?string {
+		if ($this->taskUrlTemplate === null || trim($this->taskUrlTemplate) === '') {
+			return null;
+		}
+
+		$taskUuid = rawurlencode((string)($taskData['uuid'] ?? ''));
+
+		return strtr(
+			$this->taskUrlTemplate,
+			[
+				'{uuid}' => $taskUuid,
+				'{taskUuid}' => $taskUuid,
+				'{objectUuid}' => rawurlencode((string)($taskData['objectUuid'] ?? '')),
+				'{register}' => rawurlencode((string)($taskData['registerId'] ?? '')),
+				'{schema}' => rawurlencode((string)($taskData['schemaId'] ?? '')),
+			]
+		);
+	}//end resolveTaskUrl()
 
 	/**
 	 * Resolve the URL template by replacing placeholders with object data.
