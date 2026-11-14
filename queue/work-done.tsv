@@ -8027,5 +8027,6 @@ fix:integriq:3561:0213ee8c	merged development (clean), pushed a24572ec; conflict
 build:planninq:case-link-editing	partial: PR #1162 - case picker, badge and task field built with 21 vitest tests and 37 catalogues; e2e checks and openspec validate left	session-20261114T065635-61264d14	2026-11-14T07:54:42Z
 fix:humaniq:1143:67a2f379	no change: head 67a2f379 merges cleanly with development; l10n conflict is with open #1142, fixable here only once #1142 lands	session-20261114T073108-8b40426a	2026-11-14T07:54:51Z
 fix:learniq:2516:140091fc	l10n conflict with #2493 removed by moving keys off the tail; REVERIFY recorded, new head 12d298f4	session-20261114T070323-628c2f37	2026-11-14T07:54:50Z
+fix:decidiq:2181:8d99980f	failed: merges clean on development; conflict is only with unmerged #2178 on the same lines of RegisterAuthorizationTest (shared staff-written list and its count), cannot be separated; after #2178 lands merge development in and union the lists (count 51)	session-20261114T065631-b4991134	2026-11-14T07:55:05Z
 fix:integriq:3546:42cf9463	merged development (clean), pushed 0b8d072d; conflict is with unlanded #3539	session-20261114T065626-0651b305	2026-11-14T07:55:06Z
 fix:learniq:2521:0e48166e	test line aligned with #2488, merges clean, 2 inherited failures only, pushed 524f7f54, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:55:25Z
