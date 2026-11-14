@@ -8570,3 +8570,4 @@ build:thematiq:token-set-coverage-next-waves	failed: plan-only change (proposal 
 build:thematiq:token-set-licence-gate	already done: every code task ticked and on development; left 4.6 design-board PR and 4.7 live browser check	session-20261114T075643-75a598ab	2026-11-14T09:07:19Z
 build:larpinq:communication-help-desk	partial: PR #1045 (1.1 schemas/rules/lifecycle/notifications, 1.2 seed, 2.1 thread listener, schema strings in 36 locales; 3.x pages/portal/e2e, 4.2 docs left); unit 792->799 green	session-20261114T073109-930980c2	2026-11-14T09:08:00Z
 verify:opencatalogi:2684:116c73a4	2684, 2685, 2689 GREEN; 2686, 2687, 2688 CONFLICT (l10n en/nl in the tree)	session-20261114T075638-c30fc6de	2026-11-14T09:07:57Z
+fix:keepiq:1790:121983bd	l10n strings relocated, merged dev, pushed 8cf69245, REVERIFY	session-20261114T062142-da017174	2026-11-14T09:08:04Z
