@@ -9559,3 +9559,4 @@ build:learniq:bpv-hours-per-day:c2	PR #2537: T2 writeHourDay, T3 form fields + r
 fix:decidiq:2168:89b4e6ca	conflict resolved, new head 39f054e9, REVERIFY recorded	session-20261114T141728-9a5d03fc	2026-11-14T14:43:34Z
 fix:decidiq:2149:c82a792a	floor restored, floor_check PASS, new head 04365462, REVERIFY recorded	session-20261114T134701-ae8ce354	2026-11-14T14:43:42Z
 fix:shillinq:2972:11951c7e	conflict resolved, new head e24273baa	session-20261114T141737-e9e54940	2026-11-14T14:43:52Z
+build:learniq:school-documents-on-the-portal:c2	failed: still blocked by depends_on report-card-pdf-to-guardians, whose code tasks (1.1, 1.2, 2.1-2.3) are on the unmerged branch quality/build-report-card-pdf-to-guardians (f19a370b9), not on development; T2/T3 report rows need its attached PDFs, T4 needs filinq render, T5 a per-certificate PDF and a portal download action. Rebuild once that branch has landed	session-20261114T134647-508a6ed0	2026-11-14T14:44:03Z
