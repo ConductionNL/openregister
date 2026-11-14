@@ -4,7 +4,7 @@ Kind: code. Size M. Row: portaliq `int-address-lookup`.
 
 ## 1. Schema
 
-- [ ] 1.1 Normalise `postcode`, `huisnummer`, `huisletter`, `huisnummertoevoeging` in `lib/Settings/bag_register.json` (patterns and types of design D2) and declare the composite index of D3. Normalise the mock seed to match. Verify: re-import shows no `PARTIAL IMPORT` line; `tests/Db/BagIndexTest.php` asserts the index exists on the magic table.
+- [x] 1.1 Normalise `postcode`, `huisnummer`, `huisletter`, `huisnummertoevoeging` in `lib/Settings/bag_register.json` (patterns and types of design D2) and declare the composite index of D3. Normalise the mock seed to match. Verify: re-import shows no `PARTIAL IMPORT` line; `tests/Db/BagIndexTest.php` asserts the index exists on the magic table. (Built as the schema annotation `x-openregister-indexes`, made by `MagicTableIndexer`; covered by `tests/Unit/Db/MagicMapper/MagicTableCompositeIndexTest.php`. The live re-import and the DB-level index check still need an instance.)
 
 ## 2. Loader
 

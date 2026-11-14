@@ -83,6 +83,13 @@ final class MagicTableIndexRun {
 	public ?string $identityIndex = null;
 
 	/**
+	 * Composite indexes created, as `column+column`.
+	 *
+	 * @var array<int, string>
+	 */
+	public array $compositeIndexes = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $tableName     The bare table name.

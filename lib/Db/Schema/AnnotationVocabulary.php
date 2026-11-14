@@ -239,6 +239,11 @@ final class AnnotationVocabulary {
 		// The columns a list surface shows and the fields it searches on, so an
 		// object type is as usable as a case list with no page of its own.
 		Schema::LIST_ANNOTATION,
+		// Lists of properties the magic table indexes together, such as
+		// postcode with house number. Read by MagicTableIndexer. Absent from
+		// this list it would be dropped on save and the index never made, so
+		// the lookup it backs would scan the whole table without a word.
+		Schema::INDEXES_ANNOTATION,
 		// The reference properties a record collects map features from, each
 		// feature naming the relation it arrived through.
 		Schema::GEO_INHERITANCE_ANNOTATION,
