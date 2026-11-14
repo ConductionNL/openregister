@@ -10581,3 +10581,6 @@ learniq	2507	b815725295bb7a86f6958c22d91916dfc723bbe2	RED	merge3:merge-gate	GATE
 learniq	2521	33d6a10d4aa16d12fb49fbc159c992a382a2a5bc	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 integriq	3639	e46772691b83900efe3492faf4f968767c898fa1	GREEN	worker-52	tests only; php 9178 tests on tree, baseline 9162 with 2 errors 4 failures, no new failures
 filinq	2102	898cbd6ba1970f7cb2efbd8b1aa23175e56908e0	REVERIFY	worker-45	merged development in: en/nl l10n json conflicts kept both sides' keys, .js regenerated (l10n:build); unit suite 6774 tests, 0 failures; still conflicts with unmerged #2103 in filinq_register.json (version/description line); new head 1985bdd5c6efaa65bf0faa5d9ac4f2374beb1b46, verify it
+learniq	2484	61512d885a3e82da3f39f48e8e3bfb45231ca260	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2486	f0544ac9b797c7925644e7571820803aeeeb4235	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2513	2bcbcc6d2ccd517e7f04fc3684d4412403862fc2	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json 
