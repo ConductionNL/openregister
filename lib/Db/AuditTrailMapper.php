@@ -623,6 +623,44 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findTrail()
 
 	/**
+	 * Find all audit trails with filters and sorting.
+	 *
+	 * The released signature, kept for apps written against it; it answers
+	 * exactly what {@see findTrail()} answers for the same listing.
+	 *
+	 * @param int|null    $limit   The limit of the results, null for all.
+	 * @param int|null    $offset  The offset of the results.
+	 * @param array|null  $filters The filters to apply.
+	 * @param array|null  $sort    The sort to apply.
+	 * @param string|null $search  Optional search term to filter by ext fields.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @deprecated Use findTrail() with a ListQuery.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function findAll(
+		?int $limit=null,
+		?int $offset=null,
+		?array $filters=[],
+		?array $sort=['created' => 'DESC'],
+		?string $search=null,
+	): array {
+		return $this->findTrail(
+			query: new ListQuery(
+				limit: ($limit ?? ListQuery::UNBOUNDED),
+				offset: $offset,
+				filters: ($filters ?? []),
+				sort: ($sort ?? []),
+				search: $search
+			)
+		);
+	}//end findAll()
+
+	/**
 	 * Add the search on the changed field, when a search term is provided.
 	 *
 	 * @param IQueryBuilder $qb     The query being built.
@@ -2179,6 +2217,38 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	public function actionChartData(AuditStatisticsScope $scope): array {
 		return $this->actionStatistics()->actionChart(scope: $scope);
 	}//end actionChartData()
+
+	/**
+	 * Get chart data for audit trail actions over time.
+	 *
+	 * The released signature, kept for apps written against it.
+	 *
+	 * @param DateTime|null $from       Start date for the chart data.
+	 * @param DateTime|null $till       End date for the chart data.
+	 * @param int|null      $registerId Optional register ID to filter by.
+	 * @param int|null      $schemaId   Optional schema ID to filter by.
+	 *
+	 * @return ((int[]|string)[]|(int|string))[][]
+	 *
+	 * @psalm-return array{labels: list<array-key>,
+	 *     series: list<array{data: list<int>, name: string}>}
+	 *
+	 * @deprecated Use actionChartData() with an AuditStatisticsScope.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function getActionChartData(
+		?DateTime $from=null,
+		?DateTime $till=null,
+		?int $registerId=null,
+		?int $schemaId=null,
+	): array {
+		$scope       = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
+		$scope->from = $from;
+		$scope->till = $till;
+
+		return $this->actionChartData(scope: $scope);
+	}//end getActionChartData()
 
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
