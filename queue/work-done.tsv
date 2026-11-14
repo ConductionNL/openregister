@@ -11745,3 +11745,4 @@ verify:versioniq:691:2b07b74f	701,705,725 GREEN; 726,728,729 CONFLICT; 691,694,7
 verify:versioniq:695:c25e76c1	695,707,714,717,721 GREEN; 727 CONFLICT; 698,703,706 skipped (heads moved); unit 1762/2 inherited, vitest 2989	session-20261114T211012-c469e919	2026-11-14T23:01:40Z
 fix:integriq:3615:71e6a096	floor restored (module_coupling 5.04), new head f8ce5455	session-20261114T224736-f9da4a35	2026-11-14T23:01:46Z
 build:versioniq:releases-minimum-age:c2	partial: pushed to PR #707 (head edd40e93): 2.1 planner + exception store, 12 tests, unit-only 1723 with only the 2 inherited golden failures; left: 2.2 job wiring + security note, 2.3 plan store/job, 3.1 API, 3.2-3.3 page and strings, 3.4 e2e, 4.1 close	session-20261114T214930-79d5b35c	2026-11-14T23:02:02Z
+merge:versioniq:700:d95efeab	stale	feeder	2026-11-14T23:00:12Z
