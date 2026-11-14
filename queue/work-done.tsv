@@ -7838,4 +7838,5 @@ fix:integriq:3550:b2995130	no change: clean on development; tree-only l10n confl
 fix:integriq:3343:ebd21951	conflict resolved, pushed cd29b4de, REVERIFY recorded	session-20261114T062142-da017174	2026-11-14T07:25:48Z
 build:integriq:hermiq-ai-tooling	nothing to build: every code/unit task is checked on development; the 7 open items are live Hermiq classification, the Playwright e2e spec, manual testing, openspec validate and composer test, all outside a code build	session-20261114T065633-3e3cb668	2026-11-14T07:25:54Z
 fix:integriq:3472:17ed9285	add/add test conflict resolved keeping both; new head 6fb9f63f; REVERIFY recorded	session-20261114T062134-840bbeee	2026-11-14T07:25:59Z
+build:integriq:harden-scim-consumer-authorization	already done: all code tasks implemented and ticked on development (admin refusal, managed-group union, resolved consumer, REQ-DS-003 amended); only live/manual checks remain	session-20261114T062142-da017174	2026-11-14T07:26:29Z
 fix:integriq:3543:aaeb1f5d	nl keys relocated off tail, development merged, 5 inherited failures only, pushed 8b53d670, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:26:31Z
