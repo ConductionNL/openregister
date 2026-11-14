@@ -8949,3 +8949,4 @@ merge:pipelinq:3713:fcf4b005	merge3 tree of 31 pipelinq PRs: merged=21 red=1 fai
 review:openregister:10518:3a0255f5	stale	session-20261114T114435-d7b47cb4	2026-11-14T11:45:29Z
 fix:pipelinq:3830:eed4b553	conflict resolved (l10n both sides kept), pushed c7d405c9, REVERIFY	session-20261114T114634-73dcd983	2026-11-14T11:48:09Z
 fix:pipelinq:3721:6013120e	merged development, l10n conflicts resolved; new head 9ac79eab, REVERIFY recorded	session-20261114T114647-2bec20c6	2026-11-14T11:48:25Z
+fix:pipelinq:3742:64271ebc	conflict resolved (l10n, both sides kept); new head 8cf62a44	session-20261114T114625-63eafe85	2026-11-14T11:48:35Z
