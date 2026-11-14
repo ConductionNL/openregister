@@ -8092,3 +8092,4 @@ shillinq	2975	a74bb305d61265bf01084dd0f5eb1b1b68137d4c	GREEN	worker-38	phpunit 1
 shillinq	2991	44f9551ba872fc81d0116fa7a7b0ec48d43ccdc9	GREEN	worker-35	unit 11110 tests on the tree (baseline 11050, 0 failures), vitest 2738 pass + 1 inherited (dunningNextRun), new failures none; build sales-invoice-sending, access checked per administration
 shillinq	2993	92931e59425a497a6a9b8f57db47b47920c7c9e3	CONFLICT	worker-35	conflicts with the tree (dev+2991) in appinfo/info.xml, l10n and/or register-versions.lock.json; merges cleanly on development
 shillinq	2997	f0edde1c215ed4448355300d1147ab400bf1bdb9	CONFLICT	worker-35	conflicts with the tree (dev+2991) in appinfo/info.xml, l10n and/or register-versions.lock.json; merges cleanly on development
+shillinq	3000	690067c0917067dc92ee7659054d580ffbd69220	CONFLICT	worker-35	conflicts with the tree (dev+2991) in appinfo/info.xml, l10n and/or register-versions.lock.json; merges cleanly on development
