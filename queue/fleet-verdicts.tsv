@@ -8003,3 +8003,6 @@ portaliq	2444	fc4cf85f6732ff700c30c3ccc157079ee6189cc3	CONFLICT	worker-12	confli
 portaliq	2492	f079c8c389914d2e3c58a419d033767352ead401	CONFLICT	worker-12	conflicts with development plus 2440
 shillinq	2959	ee38037af37e951c41d7869d66f935c250f3b119	REVERIFY	worker-29	not reproducible: vendor nextcloud/ocp v35.0.1 declares IAppManager::isEnabledForAnyone (the verify run's vendor was missing it); merged development in, full unit 11061 OK incl. FinancialDocumentActions/Authoring; new head 5eee35355bbb70f91514e6687961bdcdff829c7b, verify it
 thematiq	1677	ab35c3aac470b7123623874506a56c665afef70d	CONFLICT	merge3	merges clean on development alone; files: l10n/be.js l10n/be.json l10n/bg.js l10n/bg.json l10n/bs.js l10n/bs.json l10n/ca.js l10n/ca.json l10n/cs.js l10n/cs.json l10n/da.js l10n/da.json l10n/de.js l10n/de.json l10n/el.js l10n/el.json l10n/en.
+portaliq	2434	456e79cc0621c6cdc315f3cedb5212ba0a53f7ee	GREEN	worker-16	phpunit tree 5204 OK (baseline 5187 OK), node specs 50 pass; implements portal-identity-from-the-admin REQ-PIA-001/002 as specced
+portaliq	2442	5eed416859fd825a4014afb0c45f19b55f6ddf02	GREEN	worker-16	phpunit tree 5204 OK (baseline 5187 OK), node specs 50 pass, eslint 0 errors; shared-plans plan templates admin as specced
+portaliq	2450	6dde0dc32d6881bce36480a99577151cde752ff1	CONFLICT	worker-16	conflicts with development+2434+2442 tree
