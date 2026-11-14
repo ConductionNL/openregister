@@ -12,7 +12,14 @@ import Dialogs from './Dialogs.vue'
 
 jest.mock('../store/store.js', () => {
 	const { reactive } = require('vue')
-	return { navigationStore: reactive({ dialog: null }) }
+	return {
+		navigationStore: reactive({
+			dialog: null,
+			transferData: null,
+			setDialog: jest.fn(),
+			clearTransferData: jest.fn(),
+		}),
+	}
 })
 jest.mock('@nextcloud/l10n', () => ({ translate: (app, text) => text }))
 jest.mock('../modals/application/DeleteApplication.vue', () => ({
@@ -30,6 +37,12 @@ jest.mock('../modals/logs/AuditTrailDetails.vue', () => ({
 jest.mock('../modals/logs/ClearAuditTrails.vue', () => ({
 	name: 'ClearAuditTrails',
 	template: '<i class="ClearAuditTrails" />',
+}))
+jest.mock('./i18n/BulkTranslateDialog.vue', () => ({
+	name: 'BulkTranslateDialog',
+	props: ['open', 'uuid', 'languages'],
+	emits: ['translated', 'close'],
+	template: '<i class="BulkTranslateDialog" />',
 }))
 jest.mock('../modals/logs/DeleteAuditTrail.vue', () => ({
 	name: 'DeleteAuditTrail',
@@ -54,5 +67,33 @@ describe('Dialogs', () => {
 		navigationStore.dialog = 'other'
 		await nextTick()
 		expect(wrapper.find('.DeleteApplication').exists()).toBe(false)
+	})
+
+	it('mounts the Translate dialog with what the object page handed it, and passes the answer back', async () => {
+		const onTranslated = jest.fn()
+		navigationStore.dialog = 'bulkTranslate'
+		navigationStore.transferData = { uuid: 'uuid-1', languages: ['nl', 'en'], onTranslated }
+		const wrapper = mount(Dialogs)
+		await nextTick()
+
+		const dialog = wrapper.findComponent({ name: 'BulkTranslateDialog' })
+		expect(dialog.props()).toEqual({ open: true, uuid: 'uuid-1', languages: ['nl', 'en'] })
+		const answer = { to: 'en', translated: { title: 'Permit' }, skipped: {} }
+		dialog.vm.$emit('translated', answer)
+		await nextTick()
+		expect(onTranslated).toHaveBeenCalledWith(answer)
+
+		dialog.vm.$emit('close')
+		expect(navigationStore.setDialog).toHaveBeenCalledWith(false)
+		expect(navigationStore.clearTransferData).toHaveBeenCalled()
+	})
+
+	it('does not mount the Translate dialog without a record to translate', async () => {
+		navigationStore.dialog = 'bulkTranslate'
+		navigationStore.transferData = null
+		const wrapper = mount(Dialogs)
+		await nextTick()
+
+		expect(wrapper.find('.BulkTranslateDialog').exists()).toBe(false)
 	})
 })
