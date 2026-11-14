@@ -54,5 +54,15 @@ final class AccessListenerRegistrar {
 			\OCP\User\Events\BeforeUserDeletedEvent::class,
 			\OCA\OpenRegister\Listener\SharerViewsEndWithUserListener::class
 		);
+
+		// A removed or disabled person's owned webhooks are disabled, kept for review.
+		$context->registerEventListener(
+			\OCP\User\Events\BeforeUserDeletedEvent::class,
+			\OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class
+		);
+		$context->registerEventListener(
+			\OCP\User\Events\UserChangedEvent::class,
+			\OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class
+		);
 	}//end register()
 }//end class

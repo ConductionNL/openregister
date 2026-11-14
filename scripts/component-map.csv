@@ -4250,3 +4250,4 @@ Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Controller/Support/WebhookOwnership.php,,Controller,,,,,Core
 Service/Webhook/OwnedWebhookValidator.php,,Service,,,,,Core
+Listener/OwnedWebhooksEndWithOwnerListener.php,,Listener,,,,,Processes

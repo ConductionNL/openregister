@@ -270,6 +270,34 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	}//end findOwnedBy()
 
 	/**
+	 * Disable every webhook one user owns, in every organisation.
+	 *
+	 * Used when the owner is deleted or disabled: no session of theirs is
+	 * active then, so this is not scoped to an organisation. The webhooks are
+	 * kept, so an administrator can review them. An empty user id owns nothing.
+	 *
+	 * @param string $uid The owner's user id.
+	 *
+	 * @return int How many webhooks were disabled.
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-delivers-only-what-its-owner-may-read
+	 */
+	public function disableOwnedBy(string $uid): int {
+		if (trim($uid) === '' || $this->tableExists() === false) {
+			return 0;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('enabled', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL))
+			->set('updated', $qb->createNamedParameter(new DateTime(), IQueryBuilder::PARAM_DATE))
+			->where($qb->expr()->eq('owner', $qb->createNamedParameter($uid)))
+			->andWhere($qb->expr()->eq('enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
+
+		return $qb->executeStatement();
+	}//end disableOwnedBy()
+
+	/**
 	 * Find all enabled webhooks WITHOUT organisation filtering
 	 *
 	 * Tenant-agnostic variant of findEnabled() used exclusively to compute

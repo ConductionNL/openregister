@@ -69,6 +69,17 @@ interface WebhookMapperInterface {
 	public function findOwnedBy(string $uid): array;
 
 	/**
+	 * Disable every webhook one user owns, in every organisation.
+	 *
+	 * @param string $uid The owner's user id
+	 *
+	 * @return int How many webhooks were disabled
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-delivers-only-what-its-owner-may-read
+	 */
+	public function disableOwnedBy(string $uid): int;
+
+	/**
 	 * Delete a webhook
 	 *
 	 * @param Entity $entity Webhook entity to delete
