@@ -11617,3 +11617,4 @@ fix:hermiq:1751:5340b3de	strings moved off the tail, new head 803e144; a 3-line 
 review:decidiq:2143:03e7b689	GREEN: per change specs, suites green	session-20261114T214735-aacd1703	2026-11-14T22:36:05Z
 fix:learniq:2547:a6615a23	fixed: l10n keys relocated so #2547 merges beside #2507/#2521; new head b382fbfd, REVERIFY recorded	session-20261114T221709-8b871792	2026-11-14T22:36:11Z
 fix:stackiq:1933:96e3bd2b	no change: branch already contains development and merges clean; it conflicts only with unmerged #1918/#1926/#1937 in l10n/en.js and en.json (end-of-catalogue appends), resolve whichever lands later	session-20261114T202449-f0278d5a	2026-11-14T22:36:34Z
+build:stackiq:landscape-change-entry-type:c2	PR #1939: Change type dialog + panel, en/nl, docs page, dev merged (register 2.6.0, module 0.3.14), routes renamed for the access check; left: Playwright, Services row action (no slot), screenshot	session-20261114T214740-6d7e97c9	2026-11-14T22:36:25Z
