@@ -8344,3 +8344,4 @@ pipelinq	3821	547ce3a39010816573d785333019d456eb9182c1	GREEN	worker-58	unit 8400
 shillinq	3063	02b19218febcc3b6fe72eee1b884fbbdbca04282	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.91 -> 2.89
 pipelinq	3836	b5fa5c079a7cbbe73eb44b434358524f68e59533	GREEN	worker-58	unit 8400 run on tree (baseline 8388 OK, 2 skipped), 0 new failures; build of data-portability-full-export attached files per REQ-DPE-002
 filinq	2078	2a556ec0324013c8689cafa7bad4f72d3451c0fa	GREEN	worker-07	phpunit 6737 OK (baseline 6695 OK, 6 skipped), vitest 786/786 pass, 0 new failures; implements generate-draft-and-attended-edit per its specs
+decidiq	2169	d6a0067ec1d6b3f291bedc78cbadce8e9e01cad9	REVERIFY	worker-03	narrowed runEffect/save to 2 params, floor_check PASS (unit_interfacing 3.34 -> 3.33); unit 4010 OK; new head f8b6638b00bea76e1b06e6f186584cccd183d047, verify it
