@@ -12075,3 +12075,4 @@ build:decidiq:termijnagenda:c4	done: PR #2203 head 0b06187d adds PlannedAgendaIt
 verify:portaliq:2500:aec7803c	2500 GREEN (unit 5921 green, baseline 5840); 2508 CONFLICT on register version tests	session-20261114T234938-86f69098	2026-11-14T23:55:57Z
 verify:filinq:2113:7a633dc7	2 GREEN (2113,2123), 3 CONFLICT (2114,2121,2126 on filinq_register.json in tree); suite 6816 green	session-20261114T234941-93e81b84	2026-11-14T23:56:07Z
 verify:decidiq:2188:86d66dfe	3 GREEN (2188,2199,2210); unit 4455 ok, vitest ok	session-20261114T234944-ee1416bc	2026-11-14T23:56:25Z
+verify:larpinq:1050:eb04f1a2	GREEN 1053; CONFLICT 1054,1056 (settings/mock register vs 1053, clean on development alone); 1050 skipped (head moved); unit 848 OK, vitest 548	session-20261114T225452-4fcfea7f	2026-11-14T23:56:35Z
