@@ -11071,3 +11071,4 @@ verify:integriq:3549:c7d903a1	GREEN 3549,3564,3584,3633; CONFLICT 3635	session-2
 review:filinq:2094:f466700e	GREEN	session-20261114T194751-bb7578f8	2026-11-14T21:00:00Z
 fix:buildiq:1621:504a7501	moved l10n block off the tail, new head 1a2abcb6033bf36b49bb60889eebac7d999b326c	session-20261114T201752-7e06b161	2026-11-14T21:00:16Z
 fix:buildiq:1593:399e9f17	conflict resolved, pushed e35622b5; REVERIFY recorded	session-20261114T204945-cfbc5d95	2026-11-14T21:00:27Z
+fix:filinq:2122:c84b46d9	failed: branch already contains current development; the conflict is with unmerged #2114 (register, openapi.json) and resolves only once #2114 lands, then merge development in again	session-20261114T194751-bb7578f8	2026-11-14T21:00:31Z
