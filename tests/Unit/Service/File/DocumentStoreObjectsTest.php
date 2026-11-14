@@ -23,7 +23,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\File\DocumentReferenceMap;
 use OCA\OpenRegister\Service\File\DocumentStoreObjects;
@@ -65,7 +65,7 @@ class DocumentStoreObjectsTest extends TestCase {
 			'bijlagen' => ['type' => 'array', 'items' => ['type' => 'file']],
 			'titel' => ['type' => 'string'],
 		]);
-		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->expects($this->once())->method('find')->with(8, [], false, false)->willReturn($schema);
 
 		$withFile = self::object(uuid: 'a', folder: '11', data: ['besluit' => 101, 'bijlagen' => ['102', 999], 'titel' => '101']);

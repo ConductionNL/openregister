@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use OCA\OpenRegister\Db\DocumentMove;
 use OCA\OpenRegister\Db\DocumentMoveMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\File\DocumentCopyRun;
 use OCA\OpenRegister\Service\File\DocumentMoveOutcome;
 use OCA\OpenRegister\Service\File\DocumentReferenceMap;
@@ -132,7 +132,7 @@ trait DocumentStoreMoveFixtureTrait {
 		$rootFolder = $this->createMock(IRootFolder::class);
 		$rootFolder->method('getUserFolder')->with('openregister')->willReturn($this->home);
 
-		$registers = $this->createMock(RegisterMapper::class);
+		$registers = $this->createMock(RegisterMapperInterface::class);
 		$registers->method('findAll')->willReturnCallback(fn () => $this->registers);
 
 		$versions = $this->createMock(DocumentVersions::class);

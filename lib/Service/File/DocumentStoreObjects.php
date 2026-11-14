@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\WholeTableRows;
 
 /**
@@ -52,7 +52,7 @@ class DocumentStoreObjects {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper          $schemaMapper The register's schemas.
+	 * @param SchemaMapperInterface $schemaMapper The register's schemas.
 	 * @param WholeTableRows        $rows         Every row of a schema's table, in system context.
 	 * @param MagicMapperInterface  $objects      Stores the rewritten object.
 	 * @param AuditTrailMapper      $auditTrails  Records the rewrite.
@@ -61,7 +61,7 @@ class DocumentStoreObjects {
 	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly WholeTableRows $rows,
 		private readonly MagicMapperInterface $objects,
 		private readonly AuditTrailMapper $auditTrails,

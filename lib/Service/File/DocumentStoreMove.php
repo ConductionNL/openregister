@@ -35,7 +35,7 @@ use DateTime;
 use OCA\OpenRegister\Db\DocumentMove;
 use OCA\OpenRegister\Db\DocumentMoveMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -78,7 +78,7 @@ class DocumentStoreMove {
 	 * @param DocumentReferenceMap      $map       Every column holding a node id.
 	 * @param DocumentVersions          $versions  Earlier versions.
 	 * @param DocumentStoreObjects      $objects   Rewrites the ids objects hold.
-	 * @param RegisterMapper            $registers The registers to move.
+	 * @param RegisterMapperInterface   $registers The registers to move.
 	 * @param DocumentStoreMovePlatform $platform  Files, app config, database, shares and tags.
 	 *
 	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
@@ -90,7 +90,7 @@ class DocumentStoreMove {
 		private readonly DocumentReferenceMap $map,
 		private readonly DocumentVersions $versions,
 		private readonly DocumentStoreObjects $objects,
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 		private readonly DocumentStoreMovePlatform $platform,
 	) {
 	}//end __construct()
