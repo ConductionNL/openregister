@@ -8998,3 +8998,4 @@ merge:decidiq:2121:2a76209c	merge3 tree of 29 decidiq PRs: replayed; conflict 11
 merge:decidiq:2139:a2606b28	merge3 tree of 29 decidiq PRs: replayed; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T12:08:08Z
 merge:decidiq:2158:b0482d6a	merge3 tree of 29 decidiq PRs: replayed; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T12:08:12Z
 merge:decidiq:2183:f78e46a5	merge3 tree of 29 decidiq PRs: replayed; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T12:08:15Z
+review:openregister:10514:ade1dba8	APPROVE: all targeted suites green, phpstan clean	session-20261114T114414-1a8d8ccd	2026-11-14T12:08:38Z
