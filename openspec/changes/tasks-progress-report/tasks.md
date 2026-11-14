@@ -2,13 +2,13 @@
 
 ## 1. Aggregates
 
-- [ ] 1.1 (index built: Version1Date20261113220000 `or_flowrun_flow_created_idx`; the aggregates are not) Migration adding `(flow_id, created)` on `openregister_flow_runs`; grouped aggregate methods on `FlowRunMapper`, `FlowRunStepMapper` and `TaskMapper` reusing `applyOverdue()`. Verify: mapper tests asserting counts on seeded rows and a constant query count for 10 and 1,000 runs.
-- [ ] 1.2 `FlowProgressService` composing D-1, including `durationUnknown` for pruned steps and node display names. Verify: `tests/Unit/Service/Flow/FlowProgressServiceTest.php`.
+- [x] 1.1 (index: Version1Date20261113220000 `or_flowrun_flow_created_idx`; aggregates: `FlowRunMapper::countByStatusInWindow()`/`completedRunStartsInWindow()`, `FlowRunStepMapper::aggregatesByNode()`/`lastFinishedByRun()`, `TaskMapper::countInboxByNode()`/`countInboxByFlow()`/`finishedByNodeInWindow()`; tests/Unit/Db/FlowProgressAggregatesTest.php, mocked query builder, no DB) Migration adding `(flow_id, created)` on `openregister_flow_runs`; grouped aggregate methods on `FlowRunMapper`, `FlowRunStepMapper` and `TaskMapper` reusing `applyOverdue()`. Verify: mapper tests asserting counts on seeded rows and a constant query count for 10 and 1,000 runs.
+- [x] 1.2 `FlowProgressService` composing D-1, including `durationUnknown` for pruned steps and node display names. Verify: `tests/Unit/Service/Flow/FlowProgressServiceTest.php`.
 
 ## 2. API
 
 - [ ] 2.1 `GET /api/flows/{id}/progress` and `GET /api/flows/progress` with the same organisation-scoped access as `GET /api/flows/{id}` and window validation. Verify: controller tests for 200 for a non-admin organisation member, 404 for another organisation's flow, 401 without a session, 400 for a 400-day window.
-- [ ] 2.2 `flow` and `node` filters on `TaskInboxCriteria` and `GET /api/flow-tasks`, and `tasksHref` on each step. Verify: `TaskInboxServiceTest` and a mapper test for the join.
+- [x] 2.2 `flow` and `node` filters on `TaskInboxCriteria` and `GET /api/flow-tasks`, and `tasksHref` on each step. Verify: `TaskInboxServiceTest` and a mapper test for the join.
 
 ## 3. Metrics
 

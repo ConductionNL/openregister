@@ -52,11 +52,19 @@ final class TaskInboxAnchor {
 	 *                                    are listed too. An object or run anchor
 	 *                                    lists them regardless: the case shows what
 	 *                                    waits and on what.
+	 * @param string|null $flowId         Restrict to tasks the runs of this flow raised.
+	 *                                    A filter, not an anchor: scope, visibility
+	 *                                    and the blocked and external rules still apply.
+	 * @param string|null $nodeId         Restrict to tasks of this flow node.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-person-sees-the-report-on-the-flow
 	 */
 	public function __construct(
 		public readonly ?string $objectUuid = null,
 		public readonly ?string $runUuid = null,
 		public readonly bool $includeBlocked = false,
+		public readonly ?string $flowId = null,
+		public readonly ?string $nodeId = null,
 	) {
 	}//end __construct()
 }//end class
