@@ -8618,3 +8618,4 @@ humaniq	1142	4a3cccf915537eaf2c07484d75bad50d31f48d19	CONFLICT	worker-01	merges 
 humaniq	1144	c4f3b613733ef7e9e6cea1f8ba371d7512d5a83a	GREEN	worker-01	unit 4210 tests on tree (1135,1137,1144), baseline 4184 with 1 failure ListExportDeclarationTest, new failures 0
 humaniq	1145	6e47a4174a486aad84f9e7c048e487c529a34c11	CONFLICT	worker-01	merges clean on development alone, files: l10n/en.json l10n/nl.json 
 humaniq	1148	6e604dadb0725789e4f38e973566b2ae19e34f63	CONFLICT	worker-01	merges clean on development alone, files: l10n/en.json l10n/nl.json 
+integriq	3569	85f5f4b5d2459ab21976919bf9463212b0e42bf5	REVERIFY	worker-45	merged development in (90 commits; conflict in CatalogRegistryService categories kept both sides, golden hashes refreshed); unit 8934 tests, 7 failures/errors identical to plain development (inherited); new head 420d375badd299779fc2db0af3f1db39b07b1b35, verify it
