@@ -11727,3 +11727,4 @@ merge:keepiq:1790:5263ab3c	merge3 tree of 5 keepiq PRs: merged=2 red=0 fail=0 sk
 merge:keepiq:1793:05964d3a	merge3 tree of 5 keepiq PRs: merged=2 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T22:57:56Z
 build:stackiq:organisations-role-mapping-and-access-review:c2	PR #1946 updated: tasks 1 (Vue), 3, 5, 6 built (unit 3675 OK, vitest only inherited facets failure); left: access.review permission needs operations-sync-status-and-progress, Playwright/screenshots need live	session-20261114T222427-f171565a	2026-11-14T22:58:03Z
 verify:versioniq:690:6eb3b7a4	690 GREEN, 712 GREEN; skipped (head moved): 691 692 694 699 703 706 718	session-20261114T221756-d9538cf9	2026-11-14T22:58:16Z
+verify:stackiq:1924:b400b408	1924 GREEN; 1946 skipped: head moved to 5f9d3840	session-20261114T224756-971efe57	2026-11-14T22:58:24Z
