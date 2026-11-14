@@ -10581,3 +10581,4 @@ verify:hermiq:1791:e63e369e	1791 GREEN (no new failures, vitest green); 1794 ski
 verify:learniq:2486:823ec596	#2486 GREEN (PHP 6776 no new, JS same as dev); #2542 CONFLICT with #2486 in l10n/en.json, nl.json	session-20261114T171807-697deef1	2026-11-14T18:08:15Z
 build:launchpad:map-support:c2	done: map save validation built on PR #1199 (MapWidgetValidator, 25 tests), head 09f167a1; frontend tasks superseded by the library widget, e2e left	session-20261114T174741-aa9751f9	2026-11-14T18:08:42Z
 build4:openregister:operate-load-shedding:c3	partial: PR #10493 now has 2.3, 2.4, 3.1, 4.1 and 5.1 (head 6754cedf); left 4.2 (console + admin settings UI, strings in 37 locales) and 5.2 (e2e)	session-20261114T161753-3b2f3c4f	2026-11-14T18:08:57Z
+fix:integriq:3596:ccfce146	merged development, conflicts resolved keeping both sides, no new failures; new head caba846	session-20261114T171008-ae51009d	2026-11-14T18:09:26Z
