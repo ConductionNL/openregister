@@ -8276,3 +8276,4 @@ fix:opencatalogi:2456:4134001d	conflict resolved, new head c1e5453b, REVERIFY re
 build:opencatalogi:publication-schedule-guards	failed: blocked on publication-lifecycle-on-or (0/19 tasks, not on development)	session-20261114T062202-3e33eeb3	2026-11-14T08:30:57Z
 build:keepiq:platform-properties	PR #1789: tasks 1.1-1.2-1.3-2.1 done (theme colour fallback, no-bare-hex stylelint rule, nl coverage gate + 7 nl strings); 3.1 archive left	session-20261114T080916-9b1d69d6	2026-11-14T08:31:10Z
 fix:opencatalogi:2624:aeff7fbe	merged development, kept development's auth mock in 2 dialog specs; jest dialogs green; new head a9266eb7	session-20261114T075638-c30fc6de	2026-11-14T08:31:08Z
+cover:opencatalogi:fc83bfb1m976b:js5e878140	PR #2659: DeleteAttachmentDialog spec (0->76% lines), CaseTypeResync and RetentionDecision specs fixed to load (0->85%); jest 999->1011 passing, 2 fewer suites failing to load	session-20261114T070332-b3a23612	2026-11-14T08:31:26Z
