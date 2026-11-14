@@ -452,6 +452,31 @@
 						<AppTab
 							v-if="objectStore.auditTrails"
 							:title="t('openregister', 'Audit Trails')">
+							<!--
+								The flow runs that changed this object
+								(flow-object-attribution), from its audit rows. A
+								pruned run is still listed by its identifiers.
+							-->
+							<section
+								v-if="flowRuns.length"
+								class="objectFlowRuns"
+								data-testid="object-flow-runs">
+								<h3>{{ t('openregister', 'Runs') }}</h3>
+								<ul>
+									<li v-for="flowRun in flowRuns" :key="flowRun.run">
+										<router-link
+											:to="{ name: 'flow-run-detail', params: { uuid: flowRun.run } }">
+											{{ t('openregister', 'Run {id}', { id: flowRun.run.slice(0, 8) }) }}
+										</router-link>
+										<span
+											v-if="flowRun.nodes.length"
+											class="objectFlowRuns__nodes">{{ flowRun.nodes.join(' › ') }}</span>
+										<span
+											v-if="flowRun.lastAt"
+											class="objectFlowRuns__when">{{ new Date(flowRun.lastAt).toLocaleString() }}</span>
+									</li>
+								</ul>
+							</section>
 							<div v-if="objectStore.auditTrails?.results?.length">
 								<NcListItem
 									v-for="(auditTrail, key) in objectStore
@@ -569,6 +594,7 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
+import { flowRunsOf } from './objectFlowRuns.js'
 import { followProps, recordAddress, sendReadState } from './recordFollow.js'
 
 /**
@@ -730,6 +756,17 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The flow runs that changed this object, from its loaded audit rows.
+		 *
+		 * @return {Array<object>} The runs, newest first.
+		 *
+		 * @spec openspec/changes/flow-object-attribution/tasks.md#7-frontend
+		 */
+		flowRuns() {
+			return flowRunsOf(objectStore.auditTrails?.results)
+		},
+
 		/**
 		 * The Follow toggle's props from the record's `@self`, or null when
 		 * the record has no address (design D-1, D-6).
@@ -1410,6 +1447,27 @@ h4 {
 </style>
 
 <style scoped>
+.objectFlowRuns {
+	margin-bottom: 16px;
+}
+
+.objectFlowRuns ul {
+	list-style: none;
+	padding: 0;
+}
+
+.objectFlowRuns li {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 4px 0;
+}
+
+.objectFlowRuns__nodes,
+.objectFlowRuns__when {
+	color: var(--color-text-maxcontrast);
+}
+
 .fileLabelsContainer {
 	display: inline-flex;
 	gap: 3px;

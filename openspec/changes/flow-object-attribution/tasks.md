@@ -45,7 +45,7 @@
 
 ## 7. Frontend
 
-- [ ] 7.1 Show both directions — the objects a run touched on the run detail (grouped by node, joined to the existing step history) and the runs that touched an object in its sidebar; verify a step that touched nothing still renders with its status and timing, and a pruned run renders its recorded identifiers instead of failing
+- [x] 7.1 Show both directions — the objects a run touched on the run detail (grouped by node, joined to the existing step history) and the runs that touched an object in its sidebar; verify a step that touched nothing still renders with its status and timing, and a pruned run renders its recorded identifiers instead of failing (done: the run detail's "Changed by this run" lists the objects per node from `GET /api/flow-runs/{uuid}/objects` beside the step history, which renders every step with its status and timing whether it touched anything; the object's Audit Trails tab lists the runs that changed it, newest first with the nodes in step order, from the attribution on its own audit rows, so a pruned run is listed by its recorded identifiers and links to the run page instead of failing: src/views/object/objectFlowRuns.js, src/views/object/ObjectDetails.vue, src/views/object/objectFlowRuns.spec.js)
 
 ## 8. Quality
 
