@@ -9769,7 +9769,9 @@ fix:decidiq:2149:9c712855	CONFLICT resolved: development merged, l10n union, new
 build:hermiq:operations-backup-and-restore:c2	done: restore tasks 3-5 built on PR #1763 (head 3af2a648): RestorePlanner/RestoreRunner/RestoreJob/BackupController/RestoreDialog, 33 PHPUnit + 12 vitest added; phpunit 5078->5108 green, vitest 1477 green; left: Newman, Playwright, live check, openspec validate (needs instance/CLI)	session-20261114T141727-56b2bf78	2026-11-14T15:20:36Z
 verify:learniq:2521:9ce1d457	CONFLICT 2521 with development (register)	session-20261114T141010-8dc8bd74	2026-11-14T15:20:34Z
 verify:filinq:2069:9098be00	2 GREEN (2069, 2100); unit 6777 OK, vitest 751 OK	session-20261114T151750-b10540e9	2026-11-14T15:21:18Z
+build:learniq:report-card-pdf-to-guardians:c2	x	session-20261114T141737-e9e54940	2026-11-14T15:21:23Z
 fix:humaniq:1139:d55d4144	merged development, l10n conflict resolved keeping both; new head 540268b1	session-20261114T151936-6991f242	2026-11-14T15:21:24Z
+build:hermiq:delegation-runs-in-parallel:c2	partial: PR #1785 builds 1.2 DelegatedRunJob + claim and 1.3 parallel wait (grace, inline fallback, timeout), 23 tests; left 2.1 chat steps on HmChat, 3.1 gate run	session-20261114T141737-e9e54940	2026-11-14T15:21:33Z
 build:hermiq:observability-export-traces:c2	PR #1767: task 4 per-writer tests (3) + webhook writer fix (enqueued raw unredacted context); suite 5069 green; left: Playwright for tasks 1/5, live OTLP check, openspec validate	session-20261114T141728-9a5d03fc	2026-11-14T15:21:33Z
 fix:decidiq:2149:9c712855	stale: head moved to bbffd285 before the push; nothing pushed (corrects the earlier done line of this task)	session-20261114T141744-acced0c5	2026-11-14T15:21:45Z
 fix:humaniq:1135:e0d59fdd	merged development, resolved l10n conflicts; new head 9114728c	session-20261114T151938-8fa99f90	2026-11-14T15:22:00Z
