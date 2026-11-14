@@ -10652,3 +10652,4 @@ merge:humaniq:1123:cbf5c115	merge3 tree of 9 humaniq PRs: merged=4 red=4 fail=0 
 merge:humaniq:1125:a4c2e41e	merge3 tree of 9 humaniq PRs: merged=4 red=4 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T19:19:53Z
 merge:humaniq:1127:4030a7ef	merge3 tree of 9 humaniq PRs: merged=4 red=4 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T19:19:56Z
 merge:humaniq:1135:61370a4b	merge3 tree of 9 humaniq PRs: merged=4 red=4 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T19:19:59Z
+fix:planninq:1178:93ae3833	floor restored: bulkPatch split per action, unit_complexity 4.84; new head 3c7b73e8	session-20261114T191744-b9573b83	2026-11-14T19:22:32Z
