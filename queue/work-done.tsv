@@ -9653,3 +9653,4 @@ cover:hermiq:065f1631mcdb5:d414aa0d	no PR: lib/Repair/Migration and lib/Repair/S
 build:decidiq:decision-outcome-reaches-the-subscriber:c2	done: decidiq PR #2196 (task 3, register 0.15.2) and openregister PR #10560 (task 2, webhook.urlField); left only the live end-to-end check	session-20261114T134654-82ca2be5	2026-11-14T14:59:31Z
 fix:hermiq:1757:c0e6cda2	floor restored (unit_size 3.79, unit_complexity 4.55, PASS); new head 6877198f5, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T14:59:43Z
 verify:shillinq:2997:438ec8cf	2997 GREEN; 3007 CONFLICT after 2997	session-20261114T141737-e9e54940	2026-11-14T14:59:58Z
+fix:learniq:2519:f19a370b	merged development, re-recorded portal golden; new head e252f190	session-20261114T141010-8dc8bd74	2026-11-14T15:00:17Z
