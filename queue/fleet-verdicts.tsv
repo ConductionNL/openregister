@@ -8906,3 +8906,4 @@ hermiq	1735	62b18a2470884cdddc84aa07e80393bedeba062a	CONFLICT	merge3	merges clea
 hermiq	1736	ff4bd9c2b2471dd65a362385a787af15ff3dee6b	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
 hermiq	1750	647eadd55e033188fdc6776f07e1c2cd3354a7f2	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
 hermiq	1762	0722e3ca9a2c3b629b43f8b13c13975af7ad3ffe	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json 
+portaliq	2437	692916ba87185635732c6ec6ba264cbb2858b504	CONFLICT	worker-20	merge into origin/development conflicts; baseline 5247 tests OK
