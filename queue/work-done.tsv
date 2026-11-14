@@ -11581,3 +11581,4 @@ fix:stackiq:1956:5e21700e	no change: branch already up to date with development;
 fix:buildiq:1622:278bce40	maintainability restored to 3.91, new head 02120619	session-20261114T221817-a815ec70	2026-11-14T22:29:25Z
 review:integriq:3549:931cf8b2	3549 GREEN	session-20261114T214733-d4130db7	2026-11-14T22:29:48Z
 fix:versioniq:722:af7f3acf	openapi.json restored + regenerated-equivalent, merged development; new head 1be4fab6b869c26ff970fe97364df1261b6fefca; 2 golden failures inherited from development	session-20261114T211012-c469e919	2026-11-14T22:30:08Z
+fix:versioniq:700:c430025c	floors: narrowed params and split long methods in the 2 new classes, new head ef6e3f31	session-20261114T214733-589f5bff	2026-11-14T22:30:16Z
