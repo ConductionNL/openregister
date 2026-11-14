@@ -2912,3 +2912,10 @@ shillinq	2991	b7472331869926b992f4b40456836e022bf3c677	RED	merge3	GATE RED floor
 shillinq	3057	aed2743be4c0140eca5cfc605f2ac0248e5a4279	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.14
 shillinq	3059	121845803d6706cf380cdfd4ec0135fe05ae71d3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.12
 shillinq	3070	7bb50b7e137bbf139d078b4602cbeae3d2ace29a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.12
+decidiq	2143	e788a8f9ca62636c4878dd69b1095052b8d21ff0	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	2146	2fa34e42a108c5f404d4b7693b3ea3e80d0ff4fa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
+decidiq	2155	0645aee8729405883c82dcd37a0c2bc4852daac4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
+decidiq	2169	e056e57f206d90ae393635c3e4f1b81aba84c468	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+decidiq	2172	8177a02796428137fd3d3e3f76a2909c94d2f372	RED	merge3	GATE RED floor: unit_complexity: 3.87 -> 3.83; unit_interfacing: 3.34 -> 3.32
+decidiq	2202	1c0744eb092b6b3a2eb82fca9bfcd7a865ccb039	RED	merge3	GATE RED floor: unit_complexity: 3.87 -> 3.84
+decidiq	2204	265057396c1b6cd08ecf57cfbc2bdae6556b11dc	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
