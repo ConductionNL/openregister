@@ -8690,3 +8690,4 @@ integriq	3564	a5801983df6db04f23c711efc67dcbd08cf02081	GREEN	worker-45	unit 9031
 integriq	3569	420d375badd299779fc2db0af3f1db39b07b1b35	CONFLICT	worker-45	conflicts in tree after 3539/3564 (l10n en.json, nl.json); clean on plain development
 integriq	3574	0eb15981b800e3c8d69eae1a8504b1e6d38f64d2	CONFLICT	worker-45	conflicts in tree with earlier PRs (l10n en.json, nl.json); clean on plain development
 integriq	3578	a22ce949ab7ece323f6a86e90532f974460d34a1	GREEN	worker-45	unit 9031 on tree (baseline 8920, 6 inherited failures/errors), new failures 0 (SynchronizationSynchronizeEntryGoldenTest is timing-flaky on plain development too); builds gateway-a2a-agent-card, a2a proxied through the same source path
+integriq	3592	295118e8dbdd05b38507db8022621f197d123911	CONFLICT	worker-45	conflicts in tree with earlier PRs (l10n en.json, nl.json, openapi.json); clean on plain development
