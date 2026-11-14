@@ -8277,3 +8277,4 @@ build:keepiq:vault-duplicate-finder	PR #1790: 1.1, 1.2, 2.2, 3.1 built; 2.1 left
 build:opencatalogi:publication-schedule-guards	failed: blocked on publication-lifecycle-on-or (0/19 tasks, not on development)	session-20261114T062202-3e33eeb3	2026-11-14T08:30:57Z
 build:keepiq:platform-properties	PR #1789: tasks 1.1-1.2-1.3-2.1 done (theme colour fallback, no-bare-hex stylelint rule, nl coverage gate + 7 nl strings); 3.1 archive left	session-20261114T080916-9b1d69d6	2026-11-14T08:31:10Z
 fix:opencatalogi:2624:aeff7fbe	merged development, kept development's auth mock in 2 dialog specs; jest dialogs green; new head a9266eb7	session-20261114T075638-c30fc6de	2026-11-14T08:31:08Z
+measure:opencatalogi:20261113h22	php 96.55% (pcov, 17612 stmts), js 77.3% at 7a6b9706	session-20261114T073109-bb0ea608	2026-11-14T08:31:22Z
