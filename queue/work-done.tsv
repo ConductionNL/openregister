@@ -8008,4 +8008,5 @@ fix:decidiq:2174:8600d4bb	no change: merges clean on current development; confli
 fix:learniq:2520:35126bf9	no change: head 35126bf9 merges cleanly with development 9dd9fe0d; l10n conflict is with #2488 (GREEN, awaiting merge lane), fixable here once it lands	session-20261114T073108-8b40426a	2026-11-14T07:52:04Z
 fix:decidiq:2173:79a6146a	no change: merges clean on current development; conflict is only with earlier tree PRs, verify after they land	session-20261114T062156-16c77e6a	2026-11-14T07:52:17Z
 fix:decidiq:2144:23ff7aff	moved subscription entry so it no longer conflicts with #2143, pushed 30d02148	session-20261114T065631-b4991134	2026-11-14T07:52:16Z
+build:integriq:peppol-readable-payloads-and-scoped-consumer	partial: PR #3588; task 3 built (inbound fetch, store, announce), tasks 1-2 already on development, task 4 docs+strings; live/Newman/seed/verification left; suite 0 new failures	session-20261114T070333-41d2bfe8	2026-11-14T07:52:31Z
 build:planninq:projects-wiki	partial: PR #1160, section 1 (wikiPage schema, parent guard, schema count) done; frontend sections 2-4 open; suite 1034->1047 green	session-20261114T070346-2d3b1362	2026-11-14T07:52:27Z
