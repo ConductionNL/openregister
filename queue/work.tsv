@@ -8697,3 +8697,5 @@ merge:learniq:2516:863cf63e	merge	learniq	development	development	prs=2516@12d29
 merge:buildiq:1587:a93e4a28	merge	buildiq	development	development	prs=1587@2e8a6d5f0b47700615d99a60ad38b5573b7a96b0	2026-11-14T08:20:28Z
 merge:pipelinq:3732:091fca3e	merge	pipelinq	development	development	prs=3732@5b438a04c42988d152117df78b1c5affc4238e7f	2026-11-14T08:20:28Z
 merge:planninq:1172:7115da36	merge	planninq	development	development	prs=1172@93dd66c41a9ac2d74d6891f4c4f6b0540d94b69c	2026-11-14T08:20:28Z
+fix:learniq:2486:fa92dc96	fix	learniq	development	2486	sha=fa92dc968b0e8b2bd05cfbe2a6f1d6a5d793ceca;verdict=CONFLICT;branch=quality/build-absence-reports-seen-and-ended;reason=merges clean on development alone, files: 	2026-11-14T08:02:43Z
+fix:learniq:2490:f65b7b6d	fix	learniq	development	2490	sha=f65b7b6d6f9022517d5e4e048bb383fe018984dc;verdict=CONFLICT;branch=quality/build-attendance-flag-report-actions;reason=conflicts with development, files: l10n/nl.json scripts/example-sets/__pycache__/example_set.cpython-311.pyc 	2026-11-14T08:02:43Z
