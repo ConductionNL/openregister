@@ -7006,3 +7006,8 @@ integriq	3551	a7b3ae533ada5f5f63e2e5b0240d52b01b9c7731	REVERIFY	worker-52	moved 
 integriq	3472	17ed9285e12378bb2e64fc2f7698c98eebf66780	REVERIFY	worker-26	merged development in; add/add conflict on OutboundSecurityCryptoTest: kept development's file, branch's test moved to OutboundSecurityCryptoFallbackTest; tests/Unit/Outbound 262 OK; full suite 8512 tests, 2 errors + 3 failures identical to development; new head 6fb9f63f5b351f9470174bca4cda8406017b0b36, verify it
 integriq	3343	ebd21951a0b504432e6a4687571acdd083d6ed36	REVERIFY	worker-11	merged development in; CallServiceTest kept both sides' new tests; unit 8494 with only development's 5 failures; new head cd29b4de72eecc12fe7abae56cf8b5f67df2529d, verify it
 integriq	3550	b299513010b1702e08431366b20aa2c7a7f12486	REVERIFY	worker-01	merges cleanly with current origin/development, nothing to change on the branch; the l10n conflict is only with unmerged #3546 (both append keys at the end of en/nl json); head unchanged b299513010b1702e08431366b20aa2c7a7f12486, verify it after #3546 lands or as a one-PR tree
+opencatalogi	2636	bdb2b3b93b1a7f22028dffa83c229e37cd44a8b9	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.87 -> 4.82
+opencatalogi	2639	426466c7d52811e75bae91aea12b472f99376fda	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.87 -> 4.81
+opencatalogi	2647	622cf6e6cbf567d6cef6004084c743f585b2ceed	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.68 -> 4.66
+opencatalogi	2648	cd875eb3c4155b97cf455db230bdc7caaec59af5	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.87 -> 4.82
+opencatalogi	2652	a25a166fb1d718d818a710af1262f30e089c9f47	RED	merge3:merge-gate	GATE RED floor: overall: 4.89 -> 4.87; unit_interfacing: 4.87 -> 4.75
