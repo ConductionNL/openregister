@@ -8012,3 +8012,4 @@ build:integriq:peppol-readable-payloads-and-scoped-consumer	partial: PR #3588; t
 build:planninq:projects-wiki	partial: PR #1160, section 1 (wikiPage schema, parent guard, schema count) done; frontend sections 2-4 open; suite 1034->1047 green	session-20261114T070346-2d3b1362	2026-11-14T07:52:27Z
 verify:hermiq:1767:b2651b80	RED 1767: vitest admin-root.spec.js section list not updated for the new AdminRoot section	session-20261114T073105-27c9d15e	2026-11-14T07:52:43Z
 build:integriq:platform-connector-extension-kit	partial: PR #3589 tasks 1-3 + occ command; Store cards, templates, kit (task 5) left	session-20261114T062200-6a28e40c	2026-11-14T07:52:51Z
+build:integriq:outbound-sender-identity-and-deliverability	PR #3590: tasks 11.1, 11.2 built (review hold, release/withdraw, Held messages page); 10.1 is dossiq's half, left open	session-20261114T065631-3903ed42	2026-11-14T07:53:06Z
