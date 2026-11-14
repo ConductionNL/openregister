@@ -10647,3 +10647,4 @@ build4:openregister:search-file-text-and-vector-facade:c3	done: no code tasks le
 verify:keepiq:1801:d15a6f99	GREEN 1801, 1802 (tests only; vitest 6565 passed, phpunit 4998 OK)	session-20261114T185843-7b9a6259	2026-11-14T19:18:49Z
 verify:planninq:1160:e4508cb0	both CONFLICT with development (1160 l10n/register/spec; 1169 routes.php); baseline 1067/0	session-20261114T191744-b9573b83	2026-11-14T19:19:18Z
 build4:openregister:classification-clearance-on-an-object:c4	partial: no code task buildable now; PR #10548 open, merges clean with main; 5.2 is e2e; 6.1-6.2 (dossiq guard removal + config migration) must wait until #10548 merges, else dossiq loses list enforcement	session-20261114T191727-68650a56	2026-11-14T19:19:33Z
+merge:humaniq:1144:92fc8814	merge3 tree of 9 humaniq PRs: merged=4 red=4 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T19:19:43Z
