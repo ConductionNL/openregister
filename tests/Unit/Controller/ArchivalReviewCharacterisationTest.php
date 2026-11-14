@@ -243,7 +243,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertSame(
-			['error' => '"approve" is not a review answer; the answers are destroy, retain, transfer'],
+			['error' => '"approve" is not a review answer; the answers are destroy, retain, transfer, anonymise'],
 			$response->getData()
 		);
 	}

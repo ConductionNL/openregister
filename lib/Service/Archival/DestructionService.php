@@ -69,14 +69,17 @@ class DestructionService implements DestructionServiceInterface {
 	 * Taken from DestructionReviewService's own constants, not copied as
 	 * literals: the writer of the value and the reader of it must not be able to
 	 * drift apart, because the cost of drifting is destroying a record somebody
-	 * said to keep. The third answer, `destroy`, is the one that leaves the
-	 * entry where it is. Same namespace, so no import is needed.
+	 * said to keep. `anonymise` withholds too: an anonymised record stays, so
+	 * destroying it would be the opposite of the answer. `destroy` is the one
+	 * answer that leaves the entry where it is. Same namespace, so no import is
+	 * needed.
 	 *
 	 * @var string[]
 	 */
 	private const WITHHOLDING_DECISIONS = [
 		DestructionReviewService::ANSWER_RETAIN,
 		DestructionReviewService::ANSWER_TRANSFER,
+		DestructionReviewService::ANSWER_ANONYMISE,
 	];
 
 	/**

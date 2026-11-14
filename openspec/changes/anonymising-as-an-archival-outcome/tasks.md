@@ -4,7 +4,8 @@
 
 - [x] 1.1 `anonymiseren` joins the archival action vocabulary and its validator. (verified: lib/Service/Archival/Appraisal.php, lib/Service/Archival/ArchivalDeclarationReader.php, tests/Unit/Service/Archival/AnonymisationTest.php, tests/Unit/Service/Archival/ArchivalDeclarationReaderActionTest.php)
 - [ ] 1.2 The nomination deriver can produce it, and a destruction list can carry it.
-- [ ] 1.3 A reviewer may answer an entry with it, recorded like the other three answers.
+- [x] 1.3 A reviewer may answer an entry with it, recorded like the other three answers. (verified: lib/Service/Archival/DestructionReviewServiceInterface.php `ANSWER_ANONYMISE`, lib/Service/Archival/ReviewOutcomeService.php, lib/Service/Archival/DestructionService.php, tests/Unit/Service/Archival/DestructionReviewServiceTest.php, ReviewOutcomeServiceTest.php, DestructionWithholdingTest.php)
+  - `anonymise` is the fourth review answer: it lands in the list's one decision history with reviewer, moment and reason, changes nothing on the record at answer time (like `destroy`), hands nothing to a transfer list, and withholds the entry from destruction (`uitgezonderd`, the reviewer's reason quoted), so an approved list never destroys a record somebody said to anonymise. Carrying the anonymisation out for such an entry is the wiring of 1.2/3.2, not done here.
 
 ## 2. The profile
 

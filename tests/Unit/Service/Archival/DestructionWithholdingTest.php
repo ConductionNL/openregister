@@ -191,4 +191,25 @@ class DestructionWithholdingTest extends TestCase {
 		$this->assertSame(['undecided'], $this->uuidsOf($result['objects']));
 		$this->assertSame([], ($result['excludedObjects'] ?? []));
 	}//end testAnEntryWithNoDecisionIsStillDestroyed()
+
+	public function testAnEntryAnsweredWithAnonymiseIsNeverDestroyed(): void {
+		$list = $this->listWithDecisions();
+		$list['objects'] = [
+			['uuid' => 'anonymise-me', 'decision' => DestructionReviewService::ANSWER_ANONYMISE, 'decidedBy' => 'els'],
+			['uuid' => 'destroy-me', 'decision' => 'destroy'],
+		];
+		$list['decisions'] = [
+			['entry' => 'anonymise-me', 'answer' => DestructionReviewService::ANSWER_ANONYMISE, 'reason' => 'Keep the statistics, drop the person.'],
+		];
+
+		$result = $this->service->approveList(destructionList: $list, request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
+
+		$this->assertSame(['destroy-me'], $this->uuidsOf($result['objects']));
+		$this->assertSame(['anonymise-me'], $this->uuidsOf($result['excludedObjects']));
+		$this->assertSame('uitgezonderd', $result['excludedObjects'][0]['status']);
+		$this->assertSame(
+			'Review decision "anonymise" by els: Keep the statistics, drop the person.',
+			$result['excludedObjects'][0]['exclusionReason']
+		);
+	}//end testAnEntryAnsweredWithAnonymiseIsNeverDestroyed()
 }//end class
