@@ -9198,3 +9198,4 @@ decidiq	2175	84afe008aba96ab7b47f73879b66f3394a0a3d4d	CONFLICT	worker-06	merges 
 hermiq	1749	df82486d0dbc2ba96c2a96806b3855e4ad723788	REVERIFY	worker-32	merged origin/development in, l10n json 3-way unioned and .js regenerated (test:l10n, check:l10n-js OK); unit 5144 tests, failures identical to development (164E/26F inherited); new head 495bf26935a9475d794809785f39e0aca058c533, verify it
 humaniq	1123	29c65f1917aa31296929e39f30d7c1fec9e278de	GREEN	worker-38	unit 4256 tests on dev+1123, 0 failures; builds payroll-period-edge-cases (period validation now accepts four-weekly and weekly ids per the administration's pay frequency; monthly unchanged)
 humaniq	1145	76bf5e509db8c7beb7c5f49ae11234648d7966a1	CONFLICT	worker-38	src/manifest.effective.json and the manifest baseline conflict with #1123 in tree order
+humaniq	1156	2729d0bd938d3565c4033eaeeae40b9759e1e91a	CONFLICT	worker-38	tests/fixtures/manifest-baseline/pages.json conflicts in tree order
