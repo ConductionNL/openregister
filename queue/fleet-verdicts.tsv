@@ -6923,3 +6923,4 @@ portaliq	2432	81aa6171072aa8c21b105408a5148dd7321c3a3c	GREEN	worker-36	phpunit 5
 portaliq	2434	4d1b114444b3af9c190d895ef10d779fec265b3a	GREEN	worker-36	phpunit 5080 tests on tree, baseline 5049 with 0 failures, new failures 0; node specs proposal-queue-widget/page-public-on-purpose/example-site/site-shell-blocks pass
 portaliq	2433	6cd14d914da71f008a5de2c654d654cd0c38fb74	CONFLICT	worker-36	conflicts in tree after 2415/2427, files: package.json (check:specs list)
 portaliq	2442	53aae5806dc6517e6b473d490af6870f7bef3e54	CONFLICT	worker-36	conflicts in tree, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json package.json
+portaliq	2443	d5298d5e0b49602b4eb0997e2ed08699802945fa	CONFLICT	worker-36	conflicts in tree after 2434, files: tests/Unit/Settings/PortaliqRegisterConfigTest.php tests/example-site.spec.mjs (register version)
