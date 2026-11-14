@@ -11794,3 +11794,4 @@ verify:stackiq:1946:c951cbb8	1946 GREEN; 1966 skipped (head moved to 0000ed25 af
 cover:pipelinq:7f9dc8e6m799d:e0a30dd2	already done: lib/Service/Payment/*.php 623/633 lines (98.4%, pcov, dir tests only) on development; rest are value-object constructors run via PosPaymentService and transport error edges; no PR	session-20261114T225452-4fcfea7f	2026-11-14T23:09:29Z
 fix:keepiq:1791:cd6b33cf	merged development, openapi.json regenerated; unit green; new head 8a173b56	session-20261114T224920-352ef0eb	2026-11-14T23:09:27Z
 cover:pipelinq:7f9dc8e6m799d:e78626a8	already done: lib/Service/Marketing/*.php at 99.6% statements on development (target 95)	session-20261114T224740-064dbb86	2026-11-14T23:09:56Z
+cover:pipelinq:7f9dc8e6m799d:8f2b650b	already done: lib/Service/Competitor/*.php 634/643 lines (98.6%, pcov) on development, above 95 target; no PR	session-20261114T225452-4fcfea7f	2026-11-14T23:10:28Z
