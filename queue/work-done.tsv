@@ -10214,3 +10214,4 @@ verify:filinq:2069:35e67715	GREEN 2069; RED 2131 (SchemaAuthorizationCoverageTes
 fix:learniq:2519:644c2a79	no change: branch already contains development and is clean vs it; conflict was only with unmerged tree PRs 2486/2506, re-verify after they land	session-20261114T161815-d54ad7b4	2026-11-14T16:34:38Z
 fix:buildiq:1593:fbd23e44	merged development, resolved nl l10n conflict; new head 399e9f17, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T16:35:01Z
 fix:learniq:2538:bb7460d5	no change: branch already contains development and is clean vs it; conflict was only with unmerged tree PRs, re-verify after they land	session-20261114T161815-d54ad7b4	2026-11-14T16:35:11Z
+build:buildiq:data-external-database-sources:c2	partial: PR #1639, T02, T03 built (+their en/nl strings); T06-T12 left (T06 needs OpenRegister source lookup and stubs; T07-T09 follow T06/T10)	session-20261114T154820-5269035e	2026-11-14T16:35:19Z
