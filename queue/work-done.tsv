@@ -11379,3 +11379,4 @@ verify:opencatalogi:2665:5d7c0db7	GREEN 2665,2673,2708,2709,2710; CONFLICT 2674,
 cover:stackiq:9ac19b3amad24:34f5c300	PRs #1951 (ContractBindings, ServiceRegistrar, 13 risky tests fixed; lib/Service 83.8->86.2%) and #1952 (ModerationService failures); 3602->3612 tests	session-20261114T214735-aacd1703	2026-11-14T22:01:48Z
 review:opencatalogi:2652:50d4611a	GREEN	session-20261114T201755-10d43934	2026-11-14T22:02:18Z
 review:portaliq:2443:f562b574	GREEN (example-site pin red inherited)	session-20261114T212457-7a749dbd	2026-11-14T22:02:27Z
+fix:opencatalogi:2668:ca0b78fe	fixed: test container given the new record view; new head 1f117b1c, REVERIFY recorded	session-20261114T211754-5182f374	2026-11-14T22:02:46Z
