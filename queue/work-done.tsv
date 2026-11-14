@@ -11518,7 +11518,18 @@ fix:decidiq:2202:3a275a04	floor restored to 3.78, new head 0cea5e8c781ca6a4e97a6
 verify:hermiq:1750:352dc629	1750 GREEN; 1760 and 1795 skipped (head moved)	session-20261114T221709-8b871792	2026-11-14T22:20:51Z
 fix:stackiq:1945:6fb762aa	no change: branch already contains origin/development and merges cleanly; the conflict is only with unmerged sibling PRs #1911/#1928 (l10n catalogues) in the verify tree - verify #1945 after or before them as its own tree	session-20261114T213415-b858b4ba	2026-11-14T22:20:55Z
 verify:learniq:2513:a7f170d2	2513 GREEN; 2523, 2536 CONFLICT after 2513	session-20261114T211800-2a24a3a9	2026-11-14T22:21:11Z
+fix:stackiq:1933:ecd2e6a0	no change: branch already contains origin/development and merges cleanly; it conflicts only with unmerged sibling PRs #1906-#1930 (l10n catalogues) in the verify tree - verify it as its own tree	session-20261114T213415-b858b4ba	2026-11-14T22:21:27Z
 fix:buildiq:1652:ef6d7d01	development merged in, new head b3c39fa0	session-20261114T221817-a815ec70	2026-11-14T22:21:32Z
 fix:decidiq:2191:4d6f144b	clean on development; conflict is with a sibling PR; merged development, new head ccb1264	session-20261114T204759-5dc9dba7	2026-11-14T22:21:42Z
 fix:stackiq:1943:1cd381e0	no change: branch already contains development (dbebfae7), no conflict vs development; the tree conflict is with sibling PRs and needs reverify after they land	session-20261114T220941-bdf809d3	2026-11-14T22:21:49Z
+fix:learniq:2536:a9efa896	failed: up to date with development; conflicts only with unmerged #2513 (routes, l10n, ContractBindings, portal goldens), resolve after #2513 lands	session-20261114T211800-2a24a3a9	2026-11-14T22:21:48Z
 verify:hermiq:1760:f27f6d1e	#1760 GREEN; #1795 skipped (head moved to a4cac7c2)	session-20261114T211808-5e900938	2026-11-14T22:21:49Z
+fix:buildiq:1613:9a9eb9cb	merged development, l10n conflicts resolved; new head 755c76ad, REVERIFY	session-20261114T221756-d9538cf9	2026-11-14T22:22:10Z
+fix:hermiq:1781:65071efe	failed: merges clean on development; the conflict is only with unmerged #1735 (both edit l10n and the register version), so it resolves by merging development in once #1735 lands (or verify #1781 in a tree without #1735)	session-20261114T211808-5e900938	2026-11-14T22:22:20Z
+build:filinq:diwoo-documentsoort-to-opencatalogi:c2	blocked: opencatalogi development (a137132) still has no documentsoort on the publication schema; it arrives with opencatalogi #2655 (diwoo-metadata-on-the-publication), still open and being pushed to	session-20261114T201752-7e06b161	2026-11-14T22:22:17Z
+fix:hermiq:1785:5ceb085f	DelegatedRun writes locked to admin, pushed 85359cade75cd578ce8d9a34cb1a51d6c33f3736, REVERIFY recorded	session-20261114T214740-6d7e97c9	2026-11-14T22:22:20Z
+fix:learniq:2523:6236bc6d	failed: up to date with development; conflicts only with unmerged #2513 (l10n, ParentSitePages, PortalContributionProvider, po profile), resolve after #2513 lands	session-20261114T211800-2a24a3a9	2026-11-14T22:22:33Z
+build:stackiq:architecture-reference-component-coverage:c2	done on PR #1911 (head e2ffb824): task 5 coverage map, task 7 docs+nl; left: Playwright tests and screenshots only	session-20261114T214742-7aa14b57	2026-11-14T22:22:51Z
+fix:shillinq:3065:e857eb23	conflict resolved, pushed 376d3093, REVERIFY recorded	session-20261114T221743-dbe5c07e	2026-11-14T22:22:57Z
+verify:humaniq:1133:3d61b99e	1156 GREEN, 1133 CONFLICT (l10n)	session-20261114T221804-88b39b17	2026-11-14T22:23:04Z
+verify:shillinq:3055:1362fd88	3055 GREEN; 3077 3078 CONFLICT after 3055 (clean on development alone)	session-20261114T171821-a80c28c5	2026-11-14T22:23:16Z
