@@ -51,7 +51,7 @@ they are.
 | --- | --- |
 | `relationRows` | Each relation row of the source (manual links to objects and external links) is re-created with the copy as its source. Provenance rows (split, derive) and prose rows are not copied, because they describe the source, not the copy. A row to an object the caller cannot read is skipped. |
 | `incoming` | Every object whose **array** reference holds the source gets the copy added beside it. Each such object is read and updated under the caller's own rights. A single-valued reference is left alone: pointing it at the copy would take it away from the source. |
-| `files` | Not available yet; asking for it is refused with 422. |
+| `files` | Every file attached to the source is copied to the copy's folder, after the copy and its other links are committed (the file system is not transactional). Each file is reported `copied`, or `failed` with a reason; a failed file does not undo the copy. |
 
 An unknown kind is refused with 422.
 
@@ -70,7 +70,7 @@ create is refused, or a link step fails unexpectedly, nothing is written
   "links": {
     "relationRows": [{ "id": "…", "title": "Conduction", "outcome": "copied", "reason": null }],
     "incoming": [{ "id": "…", "title": "Basis", "outcome": "skipped", "reason": "You may not update this object." }],
-    "files": []
+    "files": [{ "id": "812", "title": "besluit.pdf", "outcome": "copied", "reason": null }]
   }
 }
 ```
@@ -78,5 +78,5 @@ create is refused, or a link step fails unexpectedly, nothing is written
 ## Related files
 
 - `lib/Controller/ObjectsController.php` (`copy()`, `move()`)
-- `lib/Service/Object/CopyPayload.php`, `lib/Service/Object/CopyObject.php`
+- `lib/Service/Object/CopyPayload.php`, `lib/Service/Object/CopyObject.php`, `lib/Service/Object/CopyFiles.php`
 - `lib/Service/Object/MoveObject.php`

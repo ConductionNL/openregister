@@ -5649,7 +5649,8 @@ class ObjectsController extends Controller {
 	 *
 	 * A refused create, or a failure while writing a link, rolls everything
 	 * back. A link refused for the caller's rights is reported and skipped,
-	 * not a rollback.
+	 * not a rollback. Files are copied after the commit, each reported on its
+	 * own (design D-2).
 	 *
 	 * @param CopyRun $copy The source, the create and the link kinds.
 	 *
@@ -5667,9 +5668,10 @@ class ObjectsController extends Controller {
 				return $created;
 			}
 
-			$links = $this->container->get(\OCA\OpenRegister\Service\Object\CopyObject::class)->links(
+			$copied = $this->createdCopy(created: $created, create: $copy->create);
+			$links  = $this->container->get(\OCA\OpenRegister\Service\Object\CopyObject::class)->links(
 				source: $copy->source,
-				copy: $this->createdCopy(created: $created, create: $copy->create),
+				copy: $copied,
 				include: $copy->include,
 				objects: $copy->create->objectService
 			);
@@ -5682,6 +5684,12 @@ class ObjectsController extends Controller {
 			);
 			return new JSONResponse(data: ['error' => 'The copy could not be made; nothing was written.'], statusCode: 500);
 		}//end try
+
+		// Design D-2: files after the commit, each reported on its own; a
+		// failed file does not undo the committed copy.
+		if (in_array('files', $copy->include, true) === true) {
+			$links['files'] = $this->container->get(\OCA\OpenRegister\Service\Object\CopyFiles::class)->copy(source: $copy->source, copy: $copied);
+		}
 
 		return $this->copyAnswer(created: $created, links: $links);
 	}//end copyWithLinks()
@@ -5753,7 +5761,7 @@ class ObjectsController extends Controller {
 	/**
 	 * The refusal of a copy request that asks for what a copy does not do.
 	 *
-	 * @return JSONResponse|null 422 for an unknown link kind, files or an upsert key; null when the request may proceed.
+	 * @return JSONResponse|null 422 for an unknown link kind or an upsert key; null when the request may proceed.
 	 *
 	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
 	 */
@@ -5766,10 +5774,6 @@ class ObjectsController extends Controller {
 		$unknown = \OCA\OpenRegister\Service\Object\CopyObject::unknownKinds(include: $include);
 		if ($unknown !== []) {
 			return new JSONResponse(data: ['error' => 'Unknown link kind: '.implode(', ', $unknown).'.'], statusCode: 422);
-		}
-
-		if (in_array('files', $include, true) === true) {
-			return new JSONResponse(data: ['error' => 'Copying files is not available yet; copy without files.'], statusCode: 422);
 		}
 
 		if (trim((string) $this->request->getParam('_upsertOn', '')) !== '') {

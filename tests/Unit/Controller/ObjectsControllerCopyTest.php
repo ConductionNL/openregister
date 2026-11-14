@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\CopyObject;
+use OCA\OpenRegister\Service\Object\CopyFiles;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
@@ -47,6 +48,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @uses   \OCA\OpenRegister\Service\Object\CopyPayload
  * @uses   \OCA\OpenRegister\Service\Object\CopyObject
+ * @uses   \OCA\OpenRegister\Service\Object\CopyFiles
  * @uses   \OCA\OpenRegister\Controller\Support\CopyRun
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
@@ -121,19 +123,17 @@ class ObjectsControllerCopyTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testFilesUnknownKindsAndUpsertsAreRefusedNotIgnored(): void {
-		$files   = $this->controller(params: ['include' => ['relationRows', 'files']], rights: ['create'])->copy('1', '10', 'u-1', $this->objectService);
+	public function testUnknownKindsAndUpsertsAreRefusedNotIgnored(): void {
 		$unknown = $this->controller(params: ['include' => ['notes']], rights: ['create'])->copy('1', '10', 'u-1', $this->objectService);
 		$scalar  = $this->controller(params: ['include' => 'relationRows'], rights: ['create'])->copy('1', '10', 'u-1', $this->objectService);
 		$upsert  = $this->controller(params: ['_upsertOn' => 'naam'], rights: ['create'])->copy('1', '10', 'u-1', $this->objectService);
 
-		$this->assertSame(422, $files->getStatus());
 		$this->assertSame(422, $unknown->getStatus());
 		$this->assertSame(['error' => 'Unknown link kind: notes.'], $unknown->getData());
 		$this->assertSame(422, $scalar->getStatus());
 		$this->assertSame(422, $upsert->getStatus());
 		$this->assertSame([], $this->saved);
-	}//end testFilesUnknownKindsAndUpsertsAreRefusedNotIgnored()
+	}//end testUnknownKindsAndUpsertsAreRefusedNotIgnored()
 
 	/**
 	 * With include the links are copied onto the new object inside one committed transaction.
@@ -161,6 +161,45 @@ class ObjectsControllerCopyTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testFilesAreCopiedAfterTheCommitAndReportedEach(): void {
+		$files      = [['id' => '11', 'title' => 'besluit.pdf', 'outcome' => 'copied', 'reason' => null], ['id' => '12', 'title' => 'bijlage.docx', 'outcome' => 'failed', 'reason' => 'The file could not be copied.']];
+		$controller = $this->controller(params: ['include' => ['relationRows', 'files']], rights: ['create']);
+		$this->copyFiles->expects($this->once())->method('copy')->with(
+			$this->callback(static fn (ObjectEntity $source): bool => $source->getUuid() === 'u-1'),
+			$this->callback(static fn (ObjectEntity $copy): bool => $copy->getUuid() === 'u-2')
+		)->willReturnCallback(
+			function () use ($files): array {
+				// Files are copied once the copy and its links are committed.
+				$this->assertSame(['begin', 'commit'], $this->transaction);
+				return $files;
+			}
+		);
+
+		$response = $controller->copy('1', '10', 'u-1', $this->objectService);
+
+		$this->assertSame(201, $response->getStatus());
+		$this->assertSame(['relationRows' => [], 'incoming' => [], 'files' => $files], $response->getData()['links']);
+	}//end testFilesAreCopiedAfterTheCommitAndReportedEach()
+
+	public function testWithoutFilesInIncludeNoFileIsCopied(): void {
+		$controller = $this->controller(params: ['include' => ['relationRows']], rights: ['create']);
+		$this->copyFiles->expects($this->never())->method('copy');
+
+		$response = $controller->copy('1', '10', 'u-1', $this->objectService);
+
+		$this->assertSame([], $response->getData()['links']['files']);
+	}//end testWithoutFilesInIncludeNoFileIsCopied()
+
+	public function testARefusedCreateWithFilesCopiesNoFile(): void {
+		$controller = $this->controller(params: ['include' => ['files']], rights: ['create'], saveFails: true);
+		$this->copyFiles->expects($this->never())->method('copy');
+
+		$response = $controller->copy('1', '10', 'u-1', $this->objectService);
+
+		$this->assertNotSame(201, $response->getStatus());
+		$this->assertSame(['begin', 'rollBack'], $this->transaction);
+	}//end testARefusedCreateWithFilesCopiesNoFile()
+
 	public function testARefusedCreateWithLinksRollsBack(): void {
 		$controller = $this->controller(params: ['include' => ['incoming']], rights: ['create'], saveFails: true);
 		$this->copyObject->expects($this->never())->method('links');
@@ -223,6 +262,8 @@ class ObjectsControllerCopyTest extends TestCase {
 	 * @var CopyObject&MockObject
 	 */
 	private CopyObject&MockObject $copyObject;
+
+	private CopyFiles&MockObject $copyFiles;
 
 	/**
 	 * The transaction calls made, in order.
@@ -307,6 +348,7 @@ class ObjectsControllerCopyTest extends TestCase {
 		);
 		$this->copyObject = $this->createMock(CopyObject::class);
 		$this->copyObject->method('links')->willReturn($links);
+		$this->copyFiles = $this->createMock(CopyFiles::class);
 		$this->transaction = [];
 		$db = $this->createMock(IDBConnection::class);
 		foreach (['beginTransaction' => 'begin', 'commit' => 'commit', 'rollBack' => 'rollBack'] as $method => $label) {
@@ -323,6 +365,7 @@ class ObjectsControllerCopyTest extends TestCase {
 			fn (string $id): object => match ($id) {
 				IDBConnection::class => $db,
 				CopyObject::class => $this->copyObject,
+				CopyFiles::class => $this->copyFiles,
 				default => $permissions,
 			}
 		);
