@@ -9560,3 +9560,4 @@ fix:decidiq:2168:89b4e6ca	conflict resolved, new head 39f054e9, REVERIFY recorde
 fix:decidiq:2149:c82a792a	floor restored, floor_check PASS, new head 04365462, REVERIFY recorded	session-20261114T134701-ae8ce354	2026-11-14T14:43:42Z
 build:learniq:employer-substitutes-a-colleague:c2	partial: PR learniq#2509 +T3 (portal rule enrolment.substituted tells the replaced participant; substitute enrolled like any participant), en.json keys for substituteUntil; left T4 (portaliq row dialog lacks declared fields/options, case-actions-row-inputs-and-conditions T03), T5 e2e; suite 1 inherited failure before/after	session-20261114T141744-acced0c5	2026-11-14T14:43:54Z
 fix:shillinq:2972:11951c7e	conflict resolved, new head e24273baa	session-20261114T141737-e9e54940	2026-11-14T14:43:52Z
+fix:shillinq:3003:1d3df490	development merged in, app version moved, pushed e9b31d7d	session-20261114T124625-07e62ccf	2026-11-14T14:44:03Z
