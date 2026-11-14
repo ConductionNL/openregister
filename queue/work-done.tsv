@@ -11936,3 +11936,4 @@ fix:filinq:2123:dceb01e3	merged development (has #2119): registrar tests green, 
 measure:keepiq:20261114h22	php 93.72% (pcov, 5213 tests), js 93.44% (vitest, 3 inherited failures) at 4b38ea0c	session-20261114T214736-dd784d82	2026-11-14T23:33:37Z
 verify:dossiq:6527:923af8af	6527 GREEN	session-20261114T221743-dbe5c07e	2026-11-14T23:33:35Z
 review:openregister:10575:5c1e4d18	APPROVE: tests-only, 598 src/modals/object tests pass on PR+main, eslint clean	session-20261114T224742-00d4fbcb	2026-11-14T23:33:45Z
+fix:dossiq:6522:e59951e8	obsolete: #6522 closed, superseded by #6528 (StufRegisterAccessTest only, cut from development)	session-20261114T221743-dbe5c07e	2026-11-14T23:34:08Z
