@@ -9529,4 +9529,5 @@ build:learniq:compliance-attestation-locked-after-signing:c2	PR #2535: tasks 3.1
 fix:portaliq:2443:4da2e8a4	no change: branch up to date with development; conflict only with unmerged #2440, resolve after it lands	session-20261114T141738-30f539db	2026-11-14T14:37:48Z
 verify:filinq:2105:43315379	2105 GREEN; 2107/2120/2121/2122/2123 CONFLICT after 2105; 2114 skipped (head moved)	session-20261114T134708-0947487e	2026-11-14T14:38:03Z
 verify:shillinq:2997:db45dc25	2997 CONFLICT, 3007 CONFLICT (both vs plain development: info.xml, l10n, register lock; 2997 also routes.php); baseline unit 5057 green	session-20261114T131654-c068f436	2026-11-14T14:38:38Z
+verify:learniq:2484:4c92f0b4	2484, 2521, 2523 GREEN (unit 6741, only the inherited failure); 2501 skipped (head moved); 2493, 2507, 2524 CONFLICT	session-20261114T124625-07e62ccf	2026-11-14T14:39:06Z
 fix:shillinq:3050:1bdb43ad	conflict resolved, merged development; new head b62151d4	session-20261114T141727-56b2bf78	2026-11-14T14:39:09Z
