@@ -9545,3 +9545,4 @@ verify:filinq:2078:8535fb07	GREEN 2112, 2118; CONFLICT 2078, 2116, 2119, 2120; s
 verify:pipelinq:3833:3ec03f21	3833 GREEN; 3835 CONFLICT	session-20261114T141740-2e5638b3	2026-11-14T14:41:17Z
 fix:shillinq:2976:b29fc602	conflict resolved, new head e4c7b8aa, REVERIFY recorded	session-20261114T141728-9a5d03fc	2026-11-14T14:41:25Z
 build:pipelinq:data-portability-full-export:c3	done: pipelinq PR #3836 (2.2/2.5 attached files via OR ObjectFileReaderInterface, unit 8392 0 fail), openregister PR #10559 (new published contract); left 3.3 live pass	session-20261114T141721-aeb4e068	2026-11-14T14:41:40Z
+fix:decidiq:2177:7078a1ab	merged development (kept both listeners); unit 4209 OK; new head 822a4db5	session-20261114T134708-0947487e	2026-11-14T14:41:39Z
