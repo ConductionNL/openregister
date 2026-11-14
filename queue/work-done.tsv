@@ -10105,3 +10105,4 @@ fix:buildiq:1617:eca3f854	REVERIFY: dev merged, l10n resolved; still overlaps op
 fix:integriq:3618:e9d117fd	no change needed: already contains development, conflict only with other open PRs	session-20261114T141010-8dc8bd74	2026-11-14T16:16:34Z
 fix:buildiq:1631:308971ea	merged development, moved 6 l10n keys mid-catalogue; new head d05a201d07	session-20261114T154820-5269035e	2026-11-14T16:16:44Z
 build:buildiq:pages-widget-grid-drag-and-resize:c2	already done: code task 1 merged in #1591; tasks 2-3 are Playwright e2e needing a live instance and task 4 is archive after them; no code left	session-20261114T151801-20bb3a08	2026-11-14T16:16:53Z
+fix:filinq:2126:1432867f	merged development, head 9eb18073, REVERIFY; remaining #2079 conflict is the register version header only	session-20261114T151802-24eee21b	2026-11-14T16:16:55Z
