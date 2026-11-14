@@ -9333,3 +9333,4 @@ build:filinq:llm-entity-detection-provider:c2	partial: PR #2119 builds 3.2 repor
 fix:shillinq:2963:f71e199c	conflict resolved, new head e233feba, REVERIFY recorded	session-20261114T134701-ae8ce354	2026-11-14T14:02:22Z
 fix:shillinq:3000:690067c0	no change: head 690067c already contains development and merges cleanly; conflict is only with unmerged #2991, resolve after 2991 lands	session-20261114T134701-ae8ce354	2026-11-14T14:03:02Z
 fix:shillinq:3008:e46cf667	no change: head e46cf66 already contains development and merges cleanly; conflict is only with unmerged #2991, resolve after 2991 lands	session-20261114T134701-ae8ce354	2026-11-14T14:03:31Z
+verify:filinq:2074:0d40c9fa	2074,2112,2114,2115 GREEN; 2105,2113 CONFLICT; 2116 skipped (head moved)	session-20261114T134703-00d8a302	2026-11-14T14:03:50Z
