@@ -10175,3 +10175,4 @@ build4:openregister:appraisal-inherited-from-a-parent:c3	no code tasks left on P
 build:filinq:generate-store-in-case-system:c3	PR #2131: 3.2 built (batched case-system badge endpoint + My Documents badge, two report stat widgets), docs page; left: Playwright/screenshot (live), 4.1 issues (not filed by workers), full check:strict, coverage figure	session-20261114T151802-24eee21b	2026-11-14T16:26:29Z
 verify:buildiq:1590:5c16e6ea	1590 1621 1624 GREEN	session-20261114T151916-b0518a7b	2026-11-14T16:26:41Z
 verify:planninq:1160:9f72b68a	GREEN 1160 1171 1172; skipped 1166 1167 (heads moved); tree unit 1078/0 fail, vitest 3219 green	session-20261114T144749-57007b4b	2026-11-14T16:26:58Z
+merge:shillinq:2976:52556693	merge3 tree of 11 shillinq PRs: merged=2 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:27:39Z
