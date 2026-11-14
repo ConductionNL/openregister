@@ -12080,4 +12080,5 @@ verify:larpinq:1050:eb04f1a2	GREEN 1053; CONFLICT 1054,1056 (settings/mock regis
 review:filinq:2079:eb1a5b1d	GREEN: spec-conformant, 6860 unit + 767 vitest OK	session-20261114T234952-566b7ef5	2026-11-14T23:56:47Z
 build:decidiq:meeting-pack-board-book:c4	no code tasks left: tasks 1-8 ticked on PR #2199 (68646faa, verified GREEN); task 9 e2e/newman needs a live instance	session-20261114T234944-ee1416bc	2026-11-14T23:57:02Z
 fix:hermiq:1754:8f57a36c	merged development (AdminRoot conflict resolved), l10n moved mid-catalogue; new head 2a87aaa9	session-20261114T224738-9571d712	2026-11-14T23:56:58Z
+build:thematiq:rows-without-a-requirement:c2	PR #1680: tasks 3.1-3.3 (approved font library: BundledFontLibrary, FontService assign/unassign, admin endpoints + UI, 19 tests) and 4.1 (archived, specs merged, matrix rows repointed, typ-org-font-library built); no code tasks left	session-20261114T224920-352ef0eb	2026-11-14T23:57:09Z
 verify:larpinq:1051:aba6cb6d	1060 GREEN; 1051 skipped: head moved e02d02f9 -> 77585fbd	session-20261114T231755-998f7ff8	2026-11-14T23:57:06Z
