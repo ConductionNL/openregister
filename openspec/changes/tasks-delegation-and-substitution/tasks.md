@@ -8,12 +8,12 @@
 ## 2. Delegation check
 
 - [x] 2.1 `TaskMandateGuard::assertHolds()` with the three cases of D-2 and evidence from `ProvenanceResolver`. Verify: `tests/Unit/Service/Task/TaskMandateGuardTest.php` with a holder, a non-holder, a custom verb decided by a stubbed vote, a missing subject and a throwing check (all fail closed).
-- [ ] 2.2 Call the guard in `TaskService::delegate()`, store the evidence, audit it; map `TaskMandateRefusedException` to 422 in `TaskController`. Verify: `TaskServiceTest` delegate cases; `POST /api/flow-tasks/{uuid}/delegate` to a non-holder answers 422 naming the verb.
+- [x] 2.2 Call the guard in `TaskService::delegate()`, store the evidence, audit it; map `TaskMandateRefusedException` to 422 in `TaskController`. Verify: `TaskServiceTest` delegate cases; `POST /api/flow-tasks/{uuid}/delegate` to a non-holder answers 422 naming the verb.
 
 ## 3. Substitution
 
-- [ ] 3.1 `TaskSubstitution::routeIfAbsent()` reading the Nextcloud absence and applying D-4 and D-6. Verify: `tests/Unit/Service/Task/TaskSubstitutionTest.php` for absent with replacement, absent without, absence not in effect, feature disabled, stand-in without mandate.
-- [ ] 3.2 Call it on create, import, assign, reassign, offer routing and claim fallback; drop absent members in `TaskPerformerResolver`. Verify: `TaskServiceTest` and `TaskPerformerResolverTest` cases.
+- [x] 3.1 `TaskSubstitution::routeIfAbsent()` reading the Nextcloud absence and applying D-4 and D-6. Verify: `tests/Unit/Service/Task/TaskSubstitutionTest.php` for absent with replacement, absent without, absence not in effect, feature disabled, stand-in without mandate.
+- [x] 3.2 Call it on create, import, assign, reassign, offer routing and claim fallback; drop absent members in `TaskPerformerResolver`. Verify: `TaskServiceTest` and `TaskPerformerResolverTest` cases.
 - [ ] 3.3 Listener for `OutOfOfficeStartedEvent` and `OutOfOfficeEndedEvent` queuing `TaskSubstitutionJob`, bounded to 200 per run with a watermark; the return rule of D-5. Verify: `TaskSubstitutionJobTest` for start, end with an untouched task, end with a touched task, and 450 tasks over three runs.
 - [ ] 3.4 `assigneeAbsent` and `absentUntil` on the inbox row. Verify: `TaskInboxServiceTest`.
 

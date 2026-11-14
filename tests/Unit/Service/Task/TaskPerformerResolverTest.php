@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
+use OCA\OpenRegister\Service\Task\TaskSubstitution;
 use OCP\IGroupManager;
 use OCP\IGroup;
 use OCP\IUser;
@@ -241,4 +242,61 @@ class TaskPerformerResolverTest extends TestCase {
 
 		$this->assertSame(expected: ['anna'], actual: $resolver->expandPool(task: $task));
 	}//end testANonStringCandidateGroupExpandsToNobody()
+
+	/**
+	 * A substitution that says these people are away.
+	 *
+	 * @param array<int, string> $away The absent uids.
+	 *
+	 * @return TaskSubstitution The substitution.
+	 */
+	private function away(array $away): TaskSubstitution {
+		$substitution = $this->createMock(TaskSubstitution::class);
+		$substitution->method('isAbsent')->willReturnCallback(static fn (string $uid): bool => in_array($uid, $away, true));
+
+		return $substitution;
+	}//end away()
+
+	/**
+	 * Routing does not pick an absent member while a present one is in the pool.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-goes-to-the-stand-in-of-an-absent-assignee
+	 */
+	public function testAbsentMembersAreSkippedWhileSomebodyIsPresent(): void {
+		$mapper = $this->createMock(TaskMapper::class);
+		$resolver = new TaskPerformerResolver(tasks: $mapper, groupManager: null, substitution: $this->away(away: ['carla', 'first-line']));
+
+		$task = new Task();
+		$task->setCandidateUsers(['anna', 'bert', 'carla']);
+		$task->setRoutingStrategy('least-loaded');
+		$mapper->method('countOpenAssigned')->willReturn(['anna' => 4, 'bert' => 3]);
+
+		// carla holds nothing but is away; bert is the emptiest present plate.
+		$this->assertSame('bert', $resolver->resolveAssignee(task: $task));
+
+		$tiers = new Task();
+		$tiers->setCandidateUsers(['first-line', 'second-line']);
+		$tiers->setRoutingStrategy('hierarchical');
+		$this->assertSame('second-line', $resolver->resolveAssignee(task: $tiers));
+	}//end testAbsentMembersAreSkippedWhileSomebodyIsPresent()
+
+	/**
+	 * When everybody is away the pool stands, so somebody's stand-in gets it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-goes-to-the-stand-in-of-an-absent-assignee
+	 */
+	public function testAPoolOfAbsentMembersStands(): void {
+		$mapper = $this->createMock(TaskMapper::class);
+		$resolver = new TaskPerformerResolver(tasks: $mapper, groupManager: null, substitution: $this->away(away: ['first-line', 'second-line']));
+
+		$task = new Task();
+		$task->setCandidateUsers(['first-line', 'second-line']);
+		$task->setRoutingStrategy('hierarchical');
+
+		$this->assertSame('first-line', $resolver->resolveAssignee(task: $task));
+	}//end testAPoolOfAbsentMembersStands()
 }//end class

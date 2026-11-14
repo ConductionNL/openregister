@@ -49,6 +49,7 @@ use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
+use OCA\OpenRegister\Exception\TaskMandateRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
@@ -126,12 +127,24 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *                                              object service to ask, so a
 	 *                                              missing collaborator denies
 	 *                                              rather than admits.
+	 * @param TaskMandateGuard|null $mandates Refuses a delegation to someone
+	 *                                        without the task's mandate.
+	 *                                        Absent, a guard without
+	 *                                        collaborators is used, which
+	 *                                        refuses every delegation that
+	 *                                        has something to check.
+	 * @param TaskSubstitution|null $substitution Routes a task assigned to an
+	 *                                            absent person to their
+	 *                                            stand-in. Absent, nobody is
+	 *                                            substituted.
 	 */
 	public function __construct(
 		private readonly TaskAuthorizationService $authorization,
 		private readonly TaskLifecycleServices $services,
 		private readonly ?TaskSequenceDecisionGuard $sequenceGuard = null,
 		private readonly ?TaskSubjectAccessGuard $subjects = null,
+		private readonly ?TaskMandateGuard $mandates = null,
+		private readonly ?TaskSubstitution $substitution = null,
 	) {
 
 	}//end __construct()
@@ -148,6 +161,14 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @var array{assignee: string|null, state: string|null, actor: string|null}|null
 	 */
 	private ?array $pending = null;
+
+	/**
+	 * Audit actions that hand a task to somebody else: after one of these, a
+	 * substitution is no longer the reason the task sits where it sits.
+	 *
+	 * @var array<int, string>
+	 */
+	private const REASSIGNING_ACTIONS = ['assign', 'reassign', 'delegate', 'claim', 'unclaim', 'offer', TaskSubstitution::ACTION_RETURN];
 
 	/**
 	 * Create a task.
@@ -305,8 +326,14 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		$this->refuseUnrenderableForm(task: $task);
 		(new TaskBlockerGuard(tasks: $this->services->tables->tasks))->assertDeclarable(task: $task, mayRead: $import->mayReadBlocker);
 		$act = $this->authorizedCreation(task: $task, actor: $import->actor);
+		$substitution = $this->substituted(task: $task);
 
-		return $this->transactional(mutation: fn (): Task => $this->audited(task: $this->inserted(task: $task, data: $data), act: $act));
+		return $this->transactional(
+			mutation: fn (): Task => $this->withSubstitution(
+				task: $this->audited(task: $this->inserted(task: $task, data: $data), act: $act),
+				substitution: $substitution
+			)
+		);
 	}//end importTask()
 
 	/**
@@ -471,12 +498,13 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	private function reroute(Task $task, ?string $actor): Task {
 		$act = new TaskAct(verb: 'offer', actor: $actor, state: $this->route(task: $task));
 		$this->applyState(task: $task, act: $act);
+		$substitution = $this->substituted(task: $task);
 
 		$persisted = $this->persistOpen(task: $task);
 		$this->rewriteCandidateIndex(task: $persisted);
 		$this->appendAudit(task: $persisted, act: $act);
 
-		return $persisted;
+		return $this->withSubstitution(task: $persisted, substitution: $substitution);
 	}//end reroute()
 
 	/**
@@ -639,6 +667,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 				$task->setAssignee(null);
 				$task->setOnBehalfOf(null);
 				$task->setMandate(null);
+				$task->setMandateEvidence(null);
 
 				return $this->settle(task: $task, act: $act);
 			}
@@ -690,14 +719,24 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @return Task The delegated task.
 	 *
+	 * @throws TaskMandateRefusedException When the delegate does not hold the
+	 *                                     task's mandate; nothing is changed.
+	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-delegate-must-hold-the-tasks-mandate
 	 */
 	public function delegate(TaskActorRef $ref, TaskDelegation $delegation): Task {
 		$act = new TaskAct(verb: 'delegate', actor: $ref->actor, reason: $delegation->mandate, state: Task::STATE_ACTIVE);
 		$task = $this->openTaskFor(act: $act, uuid: $ref->uuid);
 		$this->refuseBlankDelegation(delegation: $delegation);
 
-		return $this->transactional(mutation: fn (): Task => $this->settle(task: $this->handedOver(task: $task, delegation: $delegation), act: $act));
+		// The delegate must hold what the task requires, BEFORE anything is
+		// written: a refused delegation leaves the task and its audit as they were.
+		$evidence = ($this->mandates ?? new TaskMandateGuard())->assertHolds(task: $task, uid: trim($delegation->delegate));
+
+		return $this->transactional(
+			mutation: fn (): Task => $this->settle(task: $this->handedOver(task: $task, delegation: $delegation, evidence: $evidence), act: $act)
+		);
 	}//end delegate()
 
 	/**
@@ -723,13 +762,15 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @param Task $task The task.
 	 * @param TaskDelegation $delegation The delegate and mandate.
+	 * @param array|null $evidence What the system confirmed the delegate holds.
 	 *
 	 * @return Task The same task, handed over.
 	 */
-	private function handedOver(Task $task, TaskDelegation $delegation): Task {
+	private function handedOver(Task $task, TaskDelegation $delegation, ?array $evidence = null): Task {
 		$task->setOnBehalfOf($task->getOnBehalfOf() ?? $task->getAssignee());
 		$task->setAssignee($delegation->delegate);
 		$task->setMandate($delegation->mandate);
+		$task->setMandateEvidence($evidence);
 
 		return $task;
 	}//end handedOver()
@@ -1475,10 +1516,161 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		$task = $this->openTaskFor(act: $act, uuid: $assignment->uuid);
 		$this->refuseBlank(value: $assignment->assignee, message: 'An assignment requires a non-empty assignee.');
 
-		$assigned = fn (): Task => $this->assignedTo(task: $task, assignee: $assignment->assignee);
-
-		return $this->transactional(mutation: fn (): Task => $this->settle(task: $assigned(), act: $act));
+		return $this->transactional(mutation: fn (): Task => $this->assignedAndSubstituted(task: $task, assignee: $assignment->assignee, act: $act));
 	}//end assignInternal()
+
+	/**
+	 * Assign, hand the task to the assignee's stand-in when they are away,
+	 * persist, and audit both.
+	 *
+	 * @param Task    $task     The task.
+	 * @param string  $assignee The new assignee.
+	 * @param TaskAct $act      The assign or reassign act.
+	 *
+	 * @return Task The persisted task.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-goes-to-the-stand-in-of-an-absent-assignee
+	 */
+	private function assignedAndSubstituted(Task $task, string $assignee, TaskAct $act): Task {
+		$substitution = $this->substituted(task: $this->assignedTo(task: $task, assignee: $assignee));
+
+		return $this->withSubstitution(task: $this->settle(task: $task, act: $act), substitution: $substitution);
+	}//end assignedAndSubstituted()
+
+	/**
+	 * Route a task to its assignee's stand-in when the assignee is away.
+	 *
+	 * @param Task $task The task, its assignee just set.
+	 *
+	 * @return TaskAct|null The substitution to audit, or null.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-goes-to-the-stand-in-of-an-absent-assignee
+	 */
+	private function substituted(Task $task): ?TaskAct {
+		if ($this->substitution === null || trim((string)$task->getAssignee()) === '') {
+			return null;
+		}
+
+		return $this->substitution->routeIfAbsent(task: $task);
+	}//end substituted()
+
+	/**
+	 * Audit a substitution decided for a persisted task, if there was one.
+	 *
+	 * @param Task         $task         The persisted task.
+	 * @param TaskAct|null $substitution The substitution, or null.
+	 *
+	 * @return Task The same task.
+	 */
+	private function withSubstitution(Task $task, ?TaskAct $substitution): Task {
+		if ($substitution !== null) {
+			$this->appendAudit(task: $task, act: $substitution);
+		}
+
+		return $task;
+	}//end withSubstitution()
+
+	/**
+	 * Send an open task to its assignee's stand-in, for an absence that began
+	 * after the task was assigned. The system acts; nobody's rights are asked.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return Task|null The task when a substitution was decided (or refused), null when nothing happened.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-goes-to-the-stand-in-of-an-absent-assignee
+	 */
+	public function substituteForAbsence(string $uuid): ?Task {
+		$task = $this->services->tables->tasks->findByUuid(uuid: $uuid);
+		if ($task->isInTerminalState() === true || $task->getOnBehalfOf() !== null) {
+			// Closed, or already handled for somebody: a delegated task is not
+			// the absent person's to hand on.
+			return null;
+		}
+
+		$substitution = $this->substituted(task: $task);
+		if ($substitution === null) {
+			return null;
+		}
+
+		if ($substitution->verb !== TaskSubstitution::ACTION_SUBSTITUTE) {
+			return $this->transactional(mutation: fn (): Task => $this->audited(task: $task, act: $substitution));
+		}
+
+		return $this->transactional(mutation: fn (): Task => $this->persistAudited(task: $task, act: $substitution));
+	}//end substituteForAbsence()
+
+	/**
+	 * Give a substituted task back to the person it was substituted for, when
+	 * the stand-in has not acted on it since.
+	 *
+	 * Returns only a task whose LAST substitution was for this absence, so a
+	 * later delegation or reassignment is never undone, and only when no
+	 * audit entry after that substitution names the stand-in as actor:
+	 * taking half-done work away is worse than leaving it.
+	 *
+	 * @param string $uuid      The task uuid.
+	 * @param string $absenceId The absence that ended.
+	 *
+	 * @return Task|null The returned task, or null when it stays.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-untouched-tasks-return-when-the-absence-ends
+	 */
+	public function returnFromStandIn(string $uuid, string $absenceId): ?Task {
+		$task = $this->services->tables->tasks->findByUuid(uuid: $uuid);
+		$absent = trim((string)$task->getOnBehalfOf());
+		$standIn = trim((string)$task->getAssignee());
+		if ($task->isInTerminalState() === true || $absent === '' || $standIn === '') {
+			return null;
+		}
+
+		$actor = TaskSubstitution::ACTOR_PREFIX . $absenceId;
+		$entries = $this->services->tables->audits->findForTask(taskId: (int)$task->getId());
+		if ($this->untouchedSince(entries: $entries, actor: $actor, standIn: $standIn) === false) {
+			return null;
+		}
+
+		$task->setAssignee($absent);
+		$task->setOnBehalfOf(null);
+		$task->setMandateEvidence(null);
+		$act = new TaskAct(
+			verb: TaskSubstitution::ACTION_RETURN,
+			actor: $actor,
+			reason: sprintf("The absence of '%s' ended; '%s' had not acted on the task.", $absent, $standIn)
+		);
+
+		return $this->transactional(mutation: fn (): Task => $this->persistAudited(task: $task, act: $act));
+	}//end returnFromStandIn()
+
+	/**
+	 * Whether the task's last move was this absence's substitution and the
+	 * stand-in has not acted since.
+	 *
+	 * @param array<int, TaskAudit> $entries The audit trail, oldest first.
+	 * @param string                $actor   The absence actor.
+	 * @param string                $standIn The stand-in.
+	 *
+	 * @return bool True when it may go back.
+	 */
+	private function untouchedSince(array $entries, string $actor, string $standIn): bool {
+		$found = false;
+		foreach ($entries as $entry) {
+			if ($entry->getAuthorized() === false) {
+				continue;
+			}
+
+			if ($entry->getAction() === TaskSubstitution::ACTION_SUBSTITUTE) {
+				$found = ($entry->getActor() === $actor);
+				continue;
+			}
+
+			if ($found === true && ($entry->getActor() === $standIn || in_array($entry->getAction(), self::REASSIGNING_ACTIONS, true) === true)) {
+				$found = false;
+			}
+		}
+
+		return $found;
+	}//end untouchedSince()
 
 	/**
 	 * Make an identity the task's own performer, ending any delegation.
@@ -1492,6 +1684,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		$task->setAssignee($assignee);
 		$task->setOnBehalfOf(null);
 		$task->setMandate(null);
+		$task->setMandateEvidence(null);
 
 		return $task;
 	}//end assignedTo()
@@ -1890,6 +2083,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 		$entry->setPerformerType($task->getPerformerType());
 		$entry->setOnBehalfOf($task->getOnBehalfOf());
 		$entry->setMandate($task->getMandate());
+		$entry->setMandateEvidence($task->getMandateEvidence());
 		$entry->setReason($act->reason);
 
 		return $entry;

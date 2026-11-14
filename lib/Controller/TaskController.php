@@ -60,6 +60,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
+use OCA\OpenRegister\Exception\TaskMandateRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
@@ -815,6 +816,10 @@ class TaskController extends Controller {
 			// objects exist. This catch sits ABOVE the write refusal because
 			// both are about the subject and only this one is about access.
 			return new JSONResponse(['error' => $missing->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (TaskMandateRefusedException $refused) {
+			// The delegate does not hold what the task requires. 422 naming
+			// the verb and the person, nothing about the subject or the rule.
+			return new JSONResponse(['error' => $refused->getMessage()], Http::STATUS_UNPROCESSABLE_ENTITY);
 		} catch (TaskSubjectWriteRefusedException $refused) {
 			// The payload passed the form and the SUBJECT refused it, on the
 			// ordinary save path: not malformed, not completed.

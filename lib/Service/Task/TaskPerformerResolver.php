@@ -57,10 +57,15 @@ class TaskPerformerResolver {
 	 *                                         roles expand to NOBODY — which
 	 *                                         leaves tasks pooled, the safe
 	 *                                         direction.
+	 * @param TaskSubstitution|null $substitution Says who is away, so routing
+	 *                                            skips them while a present
+	 *                                            member is in the pool. Absent,
+	 *                                            nobody is away.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
 		private readonly ?IGroupManager $groupManager = null,
+		private readonly ?TaskSubstitution $substitution = null,
 	) {
 
 	}//end __construct()
@@ -77,7 +82,7 @@ class TaskPerformerResolver {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function resolveAssignee(Task $task): ?string {
-		$pool = $this->expandPool(task: $task);
+		$pool = $this->present(pool: $this->expandPool(task: $task));
 		$chosen = $this->choose(strategy: trim((string)$task->getRoutingStrategy()), pool: $pool);
 		if ($chosen !== null) {
 			return $chosen;
@@ -91,6 +96,32 @@ class TaskPerformerResolver {
 
 		return null;
 	}//end resolveAssignee()
+
+	/**
+	 * The pool without its absent members, while somebody present remains.
+	 *
+	 * When everybody is away the pool stands as it was: the pick then goes
+	 * to whoever stands in for the chosen member, which beats leaving the
+	 * task with nobody.
+	 *
+	 * @param array<int, string> $pool The expanded candidate uids.
+	 *
+	 * @return array<int, string> The members routing may pick from.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-goes-to-the-stand-in-of-an-absent-assignee
+	 */
+	private function present(array $pool): array {
+		if ($this->substitution === null || $pool === []) {
+			return $pool;
+		}
+
+		$present = array_values(array_filter($pool, fn (string $uid): bool => $this->substitution->isAbsent(uid: $uid) === false));
+		if ($present === []) {
+			return $pool;
+		}
+
+		return $present;
+	}//end present()
 
 	/**
 	 * Pick a member of the pool under one routing strategy.
