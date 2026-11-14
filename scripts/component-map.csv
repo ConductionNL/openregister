@@ -117,6 +117,7 @@ BackgroundJob/NameCacheWarmupJob.php,61,BackgroundJob,Configuration,Configuratio
 BackgroundJob/OAuth2TokenRefreshJob.php,82,BackgroundJob,Integrations,Integrations/BackgroundJob/OAuth2TokenRefreshJob.php,0,,Integrations
 BackgroundJob/ObjectCleanupJob.php,62,BackgroundJob,Service,Service/BackgroundJob/ObjectCleanupJob.php,0,,Core
 BackgroundJob/ObjectTextExtractionJob.php,16,BackgroundJob,Flows,Flows/BackgroundJob/ObjectTextExtractionJob.php,0,,Processes
+BackgroundJob/OneUseJobKeySweepJob.php,23,BackgroundJob,Configuration,Configuration/BackgroundJob/OneUseJobKeySweepJob.php,0,,Configuration
 BackgroundJob/ProcessingLogRetentionJob.php,86,BackgroundJob,Compliance,Compliance/BackgroundJob/ProcessingLogRetentionJob.php,0,,Compliance
 BackgroundJob/RecomputeTimersForCalendarJob.php,85,BackgroundJob,Work,Work/BackgroundJob/RecomputeTimersForCalendarJob.php,0,,Processes
 BackgroundJob/RecordedQueuedJob.php,38,BackgroundJob,Configuration,Configuration/BackgroundJob/RecordedQueuedJob.php,0,413,Configuration
@@ -147,10 +148,13 @@ BulkAction/AbstractPropertyWriteAction.php,73,BulkAction,Flows,Flows/BulkAction/
 BulkAction/ApplyRuleAction.php,121,BulkAction,Flows,Flows/BulkAction/ApplyRuleAction.php,0,,Processes
 BulkAction/AssignAction.php,45,BulkAction,Flows,Flows/BulkAction/AssignAction.php,0,,Processes
 BulkAction/BulkActionInterface.php,15,BulkAction,Flows,Flows/BulkAction/BulkActionInterface.php,16,489,Processes
+BulkAction/BulkActionInvoker.php,,BulkAction,,,,,Processes
 BulkAction/BulkActionResult.php,32,BulkAction,Flows,Flows/BulkAction/BulkActionResult.php,46,459,Processes
+BulkAction/LegacyBulkActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/ExportWholeSetAction.php,158,BulkAction,Configuration,Configuration/BulkAction/ExportWholeSetAction.php,0,173,Configuration
 BulkAction/RestorePriorValuesAction.php,163,BulkAction,Flows,Flows/BulkAction/RestorePriorValuesAction.php,0,,Processes
 BulkAction/ReversibleBulkActionInterface.php,10,BulkAction,Flows,Flows/BulkAction/ReversibleBulkActionInterface.php,0,,Processes
+BulkAction/StepBulkActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/RunActionAction.php,83,BulkAction,Flows,Flows/BulkAction/RunActionAction.php,0,,Processes
 BulkAction/SetPropertiesAction.php,40,BulkAction,Flows,Flows/BulkAction/SetPropertiesAction.php,0,,Processes
 BulkAction/TransitionAction.php,102,BulkAction,Flows,Flows/BulkAction/TransitionAction.php,0,,Processes
@@ -161,6 +165,7 @@ Capabilities/CapabilityRegistrar.php,23,Capabilities,Platform,Platform/Capabilit
 Capabilities/IntegrationsCapability.php,80,Capabilities,Platform,Platform/Capabilities/IntegrationsCapability.php,0,,Platform
 Capabilities/PlatformCapability.php,,Capabilities,,,,,Platform
 Capabilities/PlatformIntegrations.php,,Capabilities,,,,,Platform
+Capabilities/SearchScopesCapability.php,,Capabilities,,,,,Platform
 Capabilities/UrnCapability.php,35,Capabilities,Platform,Platform/Capabilities/UrnCapability.php,0,,Platform
 Collaboration/ObjectResourceProvider.php,,Collaboration,,,,,Platform
 Command/AdoptLeafOrganisationsCommand.php,312,Command,Access,Access/Command/AdoptLeafOrganisationsCommand.php,0,,Core
@@ -194,6 +199,7 @@ Command/RematerialiseCalculationsCommand.php,262,Command,Flows,Flows/Command/Rem
 Command/RematerialiseRun.php,53,Command,Flows,Flows/Command/RematerialiseRun.php,0,,Processes
 Command/ResetSchemaToShippedCommand.php,85,Command,Configuration,Configuration/Command/ResetSchemaToShippedCommand.php,0,,Configuration
 Command/ResolverListCommand.php,41,Command,Service,Service/Command/ResolverListCommand.php,0,,Core
+Command/DocumentStoreStatusCommand.php,102,Command,Service,Service/Command/DocumentStoreStatusCommand.php,0,,Core
 Command/RollbackApprovalMigrationCommand.php,112,Command,Configuration,Configuration/Command/RollbackApprovalMigrationCommand.php,0,,Configuration
 Command/RotateTenantKeyCommand.php,58,Command,Configuration,Configuration/Command/RotateTenantKeyCommand.php,0,,Configuration
 Command/TablesSyncCommand.php,70,Command,Integrations,Integrations/Command/TablesSyncCommand.php,0,,Integrations
@@ -593,6 +599,7 @@ Controller/VerwerkingsactiviteitenController.php,333,Controller,Compliance,Compl
 Controller/VocabularyController.php,240,Controller,Service,Service/Controller/VocabularyController.php,0,,Core
 Controller/WebhooksController.php,909,Controller,Integrations,Integrations/Controller/WebhooksController.php,0,,Integrations
 Controller/WellKnownController.php,55,Controller,Integrations,Integrations/Controller/WellKnownController.php,0,,Integrations
+Controller/WhoamiController.php,95,Controller,Access,Access/Controller/WhoamiController.php,0,,Core
 Controller/WorkingCalendarController.php,79,Controller,Flows,Flows/Controller/WorkingCalendarController.php,0,,Processes
 Controller/XwikiLinksController.php,140,Controller,Integrations,Integrations/Controller/XwikiLinksController.php,0,,Integrations
 Dashboard/IntegrationDashboardWidget.php,40,Dashboard,Flows,Flows/Dashboard/IntegrationDashboardWidget.php,0,,Platform
@@ -741,6 +748,7 @@ Db/LikeOperator.php,62,Db,Service,Service/Db/LikeOperator.php,0,,Core
 Db/LinkColumn.php,33,Db,Integrations,Integrations/Db/LinkColumn.php,0,,Integrations
 Db/MagicMapper.php,6709,Db,Service,Service/Db/MagicMapper.php,54,1,Core
 Db/MagicMapper/ArrayElementFilter.php,58,Db,Service,Service/Db/MagicMapper/ArrayElementFilter.php,0,,Core
+Db/MagicMapper/DeletedFilter.php,54,Db,Service,Service/Db/MagicMapper/DeletedFilter.php,0,,Core
 Db/MagicMapper/DeletedLens.php,33,Db,Service,Service/Db/MagicMapper/DeletedLens.php,0,,Core
 Db/MagicMapper/FacetLabelLookup.php,31,Db,Service,Service/Db/MagicMapper/FacetLabelLookup.php,0,,Core
 Db/MagicMapper/MagicBulkHandler.php,457,Db,Service,Service/Db/MagicMapper/MagicBulkHandler.php,0,,Core
@@ -771,6 +779,7 @@ Db/MagicMapper/MagicUnionArm.php,30,Db,Service,Service/Db/MagicMapper/MagicUnion
 Db/MagicMapper/MagicUpsertChunkRun.php,78,Db,Service,Service/Db/MagicMapper/MagicUpsertChunkRun.php,0,,Core
 Db/MagicMapper/MultiSchemaSearch.php,32,Db,Service,Service/Db/MagicMapper/MultiSchemaSearch.php,0,,Core
 Db/MagicMapper/NestedPathFilter.php,154,Db,Service,Service/Db/MagicMapper/NestedPathFilter.php,0,,Core
+Db/MagicMapper/ObjectEventDeferral.php,27,Db,Service,Service/Db/MagicMapper/ObjectEventDeferral.php,0,,Core
 Db/MagicMapper/ObjectFieldFilter.php,16,Db,Service,Service/Db/MagicMapper/ObjectFieldFilter.php,0,,Core
 Db/MagicMapper/OrganisationScopeCondition.php,40,Db,Service,Service/Db/MagicMapper/OrganisationScopeCondition.php,0,,Core
 Db/MagicMapper/OrganisationScopeMembership.php,19,Db,Service,Service/Db/MagicMapper/OrganisationScopeMembership.php,0,,Core
@@ -945,6 +954,7 @@ Event/ObjectDeletingEvent.php,4,Event,Event,Event/ObjectDeletingEvent.php,179,,K
 Event/ObjectEventSubscription.php,129,Event,Event,Event/ObjectEventSubscription.php,34,,Kernel
 Event/ObjectLockedEvent.php,14,Event,Event,Event/ObjectLockedEvent.php,6,,Kernel
 Event/ObjectRevertedEvent.php,20,Event,Event,Event/ObjectRevertedEvent.php,5,,Kernel
+Event/ObjectNoteAddedEvent.php,40,Event,Event,Event/ObjectNoteAddedEvent.php,0,,Kernel
 Event/ObjectTransitionedEvent.php,59,Event,Event,Event/ObjectTransitionedEvent.php,523,,Kernel
 Event/ObjectUnlockedEvent.php,14,Event,Event,Event/ObjectUnlockedEvent.php,6,,Kernel
 Event/ObjectUpdatedEvent.php,22,Event,Event,Event/ObjectUpdatedEvent.php,851,,Kernel
@@ -1117,6 +1127,8 @@ Files/Db/EntityRelationMapperInterface.php,28,Files,Files,Files/Db/EntityRelatio
 Files/Db/File.php,66,Files,Files,Files/Db/File.php,0,336,Files
 Files/Db/FileMapper.php,562,Files,Files,Files/Db/FileMapper.php,21,15,Files
 Files/Db/FileMapperInterface.php,34,Files,Files,Files/Db/FileMapperInterface.php,0,,Files
+Files/Db/MailHeader.php,60,Files,Files,Files/Db/MailHeader.php,0,,Files
+Files/Db/MailHeaderMapper.php,42,Files,Files,Files/Db/MailHeaderMapper.php,0,,Files
 Files/Db/NoteVersion.php,42,Files,Files,Files/Db/NoteVersion.php,0,,Files
 Files/Db/NoteVersionMapper.php,74,Files,Files,Files/Db/NoteVersionMapper.php,0,,Files
 Files/Db/RegisterFolderRecorder.php,37,Files,Files,Files/Db/RegisterFolderRecorder.php,0,,Files
@@ -1172,6 +1184,7 @@ Files/Service/File/TaggingHandler.php,225,Files,Files,Files/Service/File/Tagging
 Files/Service/FileSidebarService.php,198,Files,Files,Files/Service/FileSidebarService.php,0,,Files
 Files/Service/Integration/AttachTargetFilter.php,75,Files,Files,Files/Service/Integration/AttachTargetFilter.php,0,,Files
 Files/Service/Integration/TalkChatExporter.php,46,Files,Files,Files/Service/Integration/TalkChatExporter.php,0,,Files
+Files/Service/NoteJournalExporter.php,57,Files,Files,Files/Service/NoteJournalExporter.php,0,,Files
 Files/Service/NoteLockService.php,62,Files,Files,Files/Service/NoteLockService.php,0,,Files
 Files/Service/NoteService.php,248,Files,Files,Files/Service/NoteService.php,2,88,Files
 Files/Service/NoteVersionService.php,124,Files,Files,Files/Service/NoteVersionService.php,0,,Files
@@ -1185,6 +1198,7 @@ Files/Service/TextExtraction/DocumentStyleMap.php,129,Files,Files,Files/Service/
 Files/Service/TextExtraction/EmlAttachment.php,25,Files,Files,Files/Service/TextExtraction/EmlAttachment.php,1,,Files
 Files/Service/TextExtraction/EmlBody.php,17,Files,Files,Files/Service/TextExtraction/EmlBody.php,1,,Files
 Files/Service/TextExtraction/EmlParser.php,359,Files,Files,Files/Service/TextExtraction/EmlParser.php,0,,Files
+Files/Service/TextExtraction/ExtractionCeiling.php,,Files,,,,,Files
 Files/Service/TextExtraction/EmlStructure.php,19,Files,Files,Files/Service/TextExtraction/EmlStructure.php,3,,Files
 Files/Service/TextExtraction/EntityRecognitionHandler.php,742,Files,Files,Files/Service/TextExtraction/EntityRecognitionHandler.php,0,,Files
 Files/Service/TextExtraction/ObjectHandler.php,172,Files,Files,Files/Service/TextExtraction/ObjectHandler.php,0,,Files
@@ -1251,6 +1265,7 @@ Listener/AggregationCacheInvalidationListener.php,51,Listener,Flows,Flows/Listen
 Listener/AnnotationNotificationListener.php,116,Listener,Flows,Flows/Listener/AnnotationNotificationListener.php,0,,Processes
 Listener/ApprovalChainAdvanceListener.php,61,Listener,Flows,Flows/Listener/ApprovalChainAdvanceListener.php,0,,Processes
 Listener/ApprovalChainGateListener.php,213,Listener,Flows,Flows/Listener/ApprovalChainGateListener.php,0,,Processes
+Listener/ChangeGateListener.php,227,Listener,Flows,Flows/Listener/ChangeGateListener.php,0,,Processes
 Listener/ArchivalNominationListener.php,51,Listener,Compliance,Compliance/Listener/ArchivalNominationListener.php,0,374,Compliance
 Listener/AssigneeFollowListener.php,88,Listener,Flows,Flows/Listener/AssigneeFollowListener.php,0,,Processes
 Listener/AssigneeFollowRun.php,,Listener,,,,,Processes
@@ -1270,6 +1285,7 @@ Listener/ConsentEnvelopeOnSaveListener.php,199,Listener,Flows,Flows/Listener/Con
 Listener/ContentReportRemovalListener.php,50,Listener,Compliance,Compliance/Listener/ContentReportRemovalListener.php,0,376,Compliance
 Listener/DecisionTableValidationListener.php,126,Listener,Flows,Flows/Listener/DecisionTableValidationListener.php,0,,Processes
 Listener/DependentValueListener.php,95,Listener,Flows,Flows/Listener/DependentValueListener.php,0,,Processes
+Listener/EntityEditAuditListener.php,,Listener,,,,,Compliance
 Listener/FacetCacheInvalidationListener.php,23,Listener,Service,Service/Listener/FacetCacheInvalidationListener.php,0,397,Core
 Listener/FileChangeListener.php,159,Listener,Flows,Flows/Listener/FileChangeListener.php,0,,Processes
 Listener/FilesSidebarListener.php,17,Listener,Flows,Flows/Listener/FilesSidebarListener.php,0,,Processes
@@ -1527,6 +1543,7 @@ Notifications/Service/Notification/NotificationPreferenceServiceInterface.php,8,
 Notifications/Service/Notification/NotificationRecipientResolver.php,327,Notifications,Notifications,Notifications/Service/Notification/NotificationRecipientResolver.php,0,65,Notifications
 Notifications/Service/Notification/NotificationRecipientResolverInterface.php,13,Notifications,Notifications,Notifications/Service/Notification/NotificationRecipientResolverInterface.php,0,,Notifications
 Notifications/Service/Notification/NotificationRecipientValidator.php,196,Notifications,Notifications,Notifications/Service/Notification/NotificationRecipientValidator.php,0,,Notifications
+Notifications/Service/Notification/NotificationReminderValidator.php,254,Notifications,Notifications,Notifications/Service/Notification/NotificationReminderValidator.php,0,,Notifications
 Notifications/Service/Notification/NotificationRuleContext.php,11,Notifications,Notifications,Notifications/Service/Notification/NotificationRuleContext.php,0,,Notifications
 Notifications/Service/Notification/NotificationRuleDispatcherInterface.php,9,Notifications,Notifications,Notifications/Service/Notification/NotificationRuleDispatcherInterface.php,0,,Notifications
 Notifications/Service/Notification/NotificationSchemaFacts.php,22,Notifications,Notifications,Notifications/Service/Notification/NotificationSchemaFacts.php,0,,Notifications
@@ -1667,6 +1684,7 @@ Search/ObjectsProvider.php,340,Search,Platform,Platform/Search/ObjectsProvider.p
 Search/SearchProviderRegistrar.php,10,Search,Platform,Platform/Search/SearchProviderRegistrar.php,0,,Search
 Search/SearchRegistrar.php,50,Search,Search,Search/SearchRegistrar.php,0,,Search
 Search/SearchScopes.php,94,Search,Platform,Platform/Search/SearchScopes.php,0,,Search
+Search/SearchScopeCatalog.php,,Search,,,,,Search
 Search/Service/ActivityWindow.php,11,Search,Search,Search/Service/ActivityWindow.php,0,,Search
 Search/Service/Aggregation/AggregationAnnotationValidator.php,233,Search,Search,Search/Service/Aggregation/AggregationAnnotationValidator.php,0,91,Search
 Search/Service/Aggregation/AggregationCache.php,156,Search,Search,Search/Service/Aggregation/AggregationCache.php,0,175,Search
@@ -1675,6 +1693,7 @@ Search/Service/Aggregation/AggregationJoinAnnotationValidator.php,140,Search,Sea
 Search/Service/Aggregation/AggregationMetricsAnnotationValidator.php,103,Search,Search,Search/Service/Aggregation/AggregationMetricsAnnotationValidator.php,0,,Search
 Search/Service/Aggregation/AggregationQuery.php,267,Search,Search,Search/Service/Aggregation/AggregationQuery.php,22,81,Search
 Search/Service/Aggregation/AggregationSpecEntry.php,10,Search,Search,Search/Service/Aggregation/AggregationSpecEntry.php,0,,Search
+Search/Service/Aggregation/CrossSchemaTarget.php,25,Search,Search,Search/Service/Aggregation/CrossSchemaTarget.php,0,,Search
 Search/Service/Aggregation/MetricEntrySite.php,17,Search,Search,Search/Service/Aggregation/MetricEntrySite.php,0,,Search
 Search/Service/Aggregation/MetricsDeclaration.php,14,Search,Search,Search/Service/Aggregation/MetricsDeclaration.php,0,,Search
 Search/Service/Aggregation/ThresholdEvaluationService.php,131,Search,Search,Search/Service/Aggregation/ThresholdEvaluationService.php,0,,Search
@@ -1789,7 +1808,9 @@ Service/Archival/ArchiveActionDateCalculator.php,258,Service,Compliance,Complian
 Service/Archival/AuditDiffRedactionTarget.php,55,Service,Compliance,Compliance/Service/Archival/AuditDiffRedactionTarget.php,0,,Compliance
 Service/Archival/ClassificationOverride.php,63,Service,Compliance,Compliance/Service/Archival/ClassificationOverride.php,0,,Compliance
 Service/Archival/DependantRetentionIndex.php,72,Service,Compliance,Compliance/Service/Archival/DependantRetentionIndex.php,0,,Compliance
+Service/Archival/DestructionCopyWriter.php,42,Service,Compliance,Compliance/Service/Archival/DestructionCopyWriter.php,0,,Compliance
 Service/Archival/DestructionListCreator.php,93,Service,Compliance,Compliance/Service/Archival/DestructionListCreator.php,1,,Compliance
+Service/Archival/DestructionListLinkConflicts.php,101,Service,Compliance,Compliance/Service/Archival/DestructionListLinkConflicts.php,0,,Compliance
 Service/Archival/DestructionListRepository.php,106,Service,Compliance,Compliance/Service/Archival/DestructionListRepository.php,3,,Compliance
 Service/Archival/DestructionReviewService.php,237,Service,Compliance,Compliance/Service/Archival/DestructionReviewService.php,0,94,Compliance
 Service/Archival/DestructionService.php,321,Service,Compliance,Compliance/Service/Archival/DestructionService.php,0,,Compliance
@@ -1817,6 +1838,7 @@ Service/Audit/AuditSink.php,152,Service,Compliance,Compliance/Service/Audit/Audi
 Service/Audit/AuditSinkStatus.php,74,Service,Compliance,Compliance/Service/Audit/AuditSinkStatus.php,0,,Compliance
 Service/Audit/AuditTrailPageService.php,46,Service,Compliance,Compliance/Service/Audit/AuditTrailPageService.php,0,,Compliance
 Service/Audit/ContentReportService.php,143,Service,Compliance,Compliance/Service/Audit/ContentReportService.php,0,,Compliance
+Service/Audit/EntityEditAuditor.php,468,Service,Compliance,Compliance/Service/Audit/EntityEditAuditor.php,0,,Compliance
 Service/Audit/HistoryEntryRedactor.php,146,Service,Service,Service/Audit/HistoryEntryRedactor.php,0,,Compliance
 Service/Audit/ObjectHistoryForReaders.php,139,Service,Service,Service/Audit/ObjectHistoryForReaders.php,0,204,Compliance
 Service/Audit/OrganisationContextAttribution.php,16,Service,Compliance,Compliance/Service/Audit/OrganisationContextAttribution.php,0,,Compliance
@@ -1921,6 +1943,8 @@ Service/Chat/ChatProxyHandler.php,143,Service,Platform,Platform/Service/Chat/Cha
 Service/CollectiveLinkService.php,330,Service,Integrations,Integrations/Service/CollectiveLinkService.php,0,,Integrations
 Service/ComparableInstants.php,28,Service,Access,Access/Service/ComparableInstants.php,0,,Core
 Service/ConditionMatcher.php,222,Service,Access,Access/Service/ConditionMatcher.php,14,102,Core
+Service/Confidentiality/ConfidentialityAnnotationValidator.php,182,Service,Access,Access/Service/Confidentiality/ConfidentialityAnnotationValidator.php,0,,Core
+Service/Confidentiality/ConfidentialityRule.php,369,Service,Access,Access/Service/Confidentiality/ConfidentialityRule.php,0,,Core
 Service/Config/BundleCrossingGuard.php,36,Service,Configuration,Configuration/Service/Config/BundleCrossingGuard.php,0,,Configuration
 Service/Config/BundleSigner.php,94,Service,Integrations,Integrations/Service/Config/BundleSigner.php,0,,Configuration
 Service/Config/FederatedConfigAccess.php,41,Service,Configuration,Configuration/Service/Config/FederatedConfigAccess.php,0,,Configuration
@@ -2026,6 +2050,7 @@ Service/Credential/OAuth2RegistrationFailedException.php,6,Service,Integrations,
 Service/Credential/OAuth2RelayGuard.php,57,Service,Integrations,Integrations/Service/Credential/OAuth2RelayGuard.php,0,,Integrations
 Service/Credential/OAuth2StateService.php,98,Service,Integrations,Integrations/Service/Credential/OAuth2StateService.php,0,,Integrations
 Service/Credential/OAuth2TokenSet.php,177,Service,Integrations,Integrations/Service/Credential/OAuth2TokenSet.php,0,,Integrations
+Service/Credential/OutsideCustody.php,139,Service,Integrations,Integrations/Service/Credential/OutsideCustody.php,0,,Integrations
 Service/Credential/OutsideVaultConnection.php,35,Service,Integrations,Integrations/Service/Credential/OutsideVaultConnection.php,0,,Integrations
 Service/Credential/OutsideVaultReader.php,87,Service,Integrations,Integrations/Service/Credential/OutsideVaultReader.php,0,,Integrations
 Service/Credential/DeclarationValidator.php,212,Service,Integrations,Integrations/Service/Credential/DeclarationValidator.php,0,,Integrations
@@ -2039,7 +2064,10 @@ Service/DateTimeNormalizer.php,76,Service,Service,Service/DateTimeNormalizer.php
 Service/Dbal/DatabaseIntrospectionService.php,393,Service,Service,Service/Dbal/DatabaseIntrospectionService.php,0,,Core
 Service/Dbal/DbalConnectionException.php,6,Service,Service,Service/Dbal/DbalConnectionException.php,0,,Core
 Service/Dbal/DbalConnectionFactory.php,116,Service,Service,Service/Dbal/DbalConnectionFactory.php,0,,Core
+Service/Dbal/QueryPreviewException.php,50,Service,Service,Service/Dbal/QueryPreviewException.php,0,,Core
+Service/Dbal/QueryPreviewService.php,191,Service,Service,Service/Dbal/QueryPreviewService.php,0,,Core
 Service/Dbal/ReadOnlyQueryGuard.php,124,Service,Service,Service/Dbal/ReadOnlyQueryGuard.php,0,,Core
+Service/Dbal/ReadOnlyReadScope.php,198,Service,Service,Service/Dbal/ReadOnlyReadScope.php,0,,Core
 Service/Dbal/SqlTypeMapper.php,85,Service,Service,Service/Dbal/SqlTypeMapper.php,0,,Core
 Service/Decision/DecisionOwnedException.php,12,Service,Flows,Flows/Service/Decision/DecisionOwnedException.php,0,,Processes
 Service/Decision/DecisionOwnership.php,72,Service,Flows,Flows/Service/Decision/DecisionOwnership.php,0,,Processes
@@ -2157,6 +2185,12 @@ Service/ExampleSet/ExampleSetTasks.php,188,Service,Configuration,Configuration/S
 Service/ExampleSet/ExampleSetUserPreferences.php,96,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetUserPreferences.php,0,,Configuration
 Service/ExampleSet/ExampleSetValues.php,213,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetValues.php,0,,Configuration
 Service/ExampleSet/ExampleSetWatchers.php,76,Service,Configuration,Configuration/Service/ExampleSet/ExampleSetWatchers.php,0,,Configuration
+Service/Exchange/BrokeredKeyRecord.php,12,Service,Configuration,Configuration/Service/Exchange/BrokeredKeyRecord.php,0,,Configuration
+Service/Exchange/BrokeredKeys.php,90,Service,Configuration,Configuration/Service/Exchange/BrokeredKeys.php,0,,Configuration
+Service/Exchange/ExportKeyCreated.php,14,Service,Configuration,Configuration/Service/Exchange/ExportKeyCreated.php,0,,Configuration
+Service/Exchange/ExportKeyException.php,10,Service,Configuration,Configuration/Service/Exchange/ExportKeyException.php,0,,Configuration
+Service/Exchange/ExportKeyService.php,120,Service,Configuration,Configuration/Service/Exchange/ExportKeyService.php,0,,Configuration
+Service/Exchange/OneUseJobKey.php,77,Service,Configuration,Configuration/Service/Exchange/OneUseJobKey.php,0,,Configuration
 Service/Export/DocumentStyleReader.php,102,Service,Configuration,Configuration/Service/Export/DocumentStyleReader.php,0,,Configuration
 Service/Exchange/EncryptedSetException.php,10,Service,Configuration,Configuration/Service/Exchange/EncryptedSetException.php,0,,Configuration
 Service/Exchange/EncryptedSetHeader.php,77,Service,Configuration,Configuration/Service/Exchange/EncryptedSetHeader.php,0,,Configuration
@@ -2172,10 +2206,12 @@ Service/Export/ExportRightService.php,98,Service,Configuration,Configuration/Ser
 Service/Export/ExportRunRecorder.php,147,Service,Configuration,Configuration/Service/Export/ExportRunRecorder.php,0,182,Configuration
 Service/Export/ExportValueRenderer.php,78,Service,Configuration,Configuration/Service/Export/ExportValueRenderer.php,0,,Configuration
 Service/Export/Odt/HtmlToOdt.php,103,Service,Configuration,Configuration/Service/Export/Odt/HtmlToOdt.php,0,,Configuration
+Service/Export/Odt/OdtHouseStyle.php,72,Service,Configuration,Configuration/Service/Export/Odt/OdtHouseStyle.php,0,,Configuration
 Service/Export/Odt/OdtTableBuilder.php,93,Service,Configuration,Configuration/Service/Export/Odt/OdtTableBuilder.php,0,,Configuration
 Service/Export/Odt/OdtWriter.php,125,Service,Configuration,Configuration/Service/Export/Odt/OdtWriter.php,0,224,Configuration
 Service/Export/Odt/VisibleText.php,22,Service,Configuration,Configuration/Service/Export/Odt/VisibleText.php,0,,Configuration
 Service/Export/RowsPdfSection.php,60,Service,Configuration,Configuration/Service/Export/RowsPdfSection.php,0,,Configuration
+Service/Export/XmlObjectWriter.php,268,Service,Configuration,Configuration/Service/Export/XmlObjectWriter.php,0,,Configuration
 Service/ExportService.php,696,Service,Configuration,Configuration/Service/ExportService.php,1,,Configuration
 Service/ExternalLink/ExternalLinkAnnotationValidator.php,119,Service,Service,Service/ExternalLink/ExternalLinkAnnotationValidator.php,0,,Core
 Service/ExternalLink/ExternalLinkResolver.php,130,Service,Integrations,Integrations/Service/ExternalLink/ExternalLinkResolver.php,0,218,Core
@@ -2192,6 +2228,7 @@ Service/File/CreateFileHandler.php,146,Service,Service,Service/File/CreateFileHa
 Service/File/DeleteFileHandler.php,71,Service,Service,Service/File/DeleteFileHandler.php,0,329,Core
 Service/File/ExecutableContentDetector.php,141,Service,Service,Service/File/ExecutableContentDetector.php,0,202,Core
 Service/File/FileBatchHandler.php,102,Service,Service,Service/File/FileBatchHandler.php,0,274,Core
+Service/File/FileChecksum.php,,Service,,,,,Core
 Service/File/FileFormattingHandler.php,346,Service,Service,Service/File/FileFormattingHandler.php,0,61,Core
 Service/File/FileLockHandler.php,162,Service,Service,Service/File/FileLockHandler.php,0,166,Core
 Service/File/FilePreviewHandler.php,39,Service,Service,Service/File/FilePreviewHandler.php,0,386,Core
@@ -2201,6 +2238,7 @@ Service/File/FileValidationHandler.php,183,Service,Service,Service/File/FileVali
 Service/File/FileVersioningHandler.php,139,Service,Service,Service/File/FileVersioningHandler.php,0,201,Core
 Service/File/FolderManagementHandler.php,636,Service,Service,Service/File/FolderManagementHandler.php,0,31,Core
 Service/File/MalwareScanGate.php,226,Service,Service,Service/File/MalwareScanGate.php,0,,Core
+Service/File/MalwareScanState.php,121,Service,Service,Service/File/MalwareScanState.php,0,,Core
 Service/File/MalwareScanRefusal.php,47,Service,Service,Service/File/MalwareScanRefusal.php,0,,Core
 Service/File/ManagedFileOwnerLookup.php,33,Service,Service,Service/File/ManagedFileOwnerLookup.php,0,434,Core
 Service/File/ObjectFileFinder.php,135,Service,Service,Service/File/ObjectFileFinder.php,0,,Core
@@ -2306,6 +2344,7 @@ Service/Flow/FlowTokenRouter.php,166,Service,Flows,Flows/Service/Flow/FlowTokenR
 Service/Flow/FlowTriggerDerivation.php,133,Service,Flows,Flows/Service/Flow/FlowTriggerDerivation.php,0,,Processes
 Service/Flow/FlowTriggerFieldsCheck.php,145,Service,Flows,Flows/Service/Flow/FlowTriggerFieldsCheck.php,0,,Processes
 Service/Flow/FlowTriggerFilter.php,156,Service,Flows,Flows/Service/Flow/FlowTriggerFilter.php,0,,Processes
+Service/Flow/FlowTriggerRenameCheck.php,214,Service,Flows,Flows/Service/Flow/FlowTriggerRenameCheck.php,0,,Processes
 Service/Flow/FlowTriggerIndex.php,112,Service,Flows,Flows/Service/Flow/FlowTriggerIndex.php,0,,Processes
 Service/Flow/FlowTriggerService.php,96,Service,Flows,Flows/Service/Flow/FlowTriggerService.php,0,,Processes
 Service/Flow/FlowTriggerSlugs.php,54,Service,Flows,Flows/Service/Flow/FlowTriggerSlugs.php,0,,Processes
@@ -2381,8 +2420,11 @@ Service/Flow/Principal/UserPrincipalResolver.php,18,Service,Flows,Flows/Service/
 Service/Flow/RegisterFlowNodesEvent.php,14,Service,Service,Service/Flow/RegisterFlowNodesEvent.php,62,,Processes
 Service/Flow/RegisterFlowOversightEvent.php,14,Service,Service,Service/Flow/RegisterFlowOversightEvent.php,7,,Processes
 Service/Flow/RegistryStepDispatcher.php,91,Service,Flows,Flows/Service/Flow/RegistryStepDispatcher.php,0,,Processes
+Service/Flow/Timer/CalendarBlackoutRefusal.php,22,Service,Flows,Flows/Service/Flow/Timer/CalendarBlackoutRefusal.php,0,,Processes
+Service/Flow/Timer/CalendarBlackouts.php,74,Service,Flows,Flows/Service/Flow/Timer/CalendarBlackouts.php,0,,Processes
 Service/Flow/Timer/CalendarDependency.php,35,Service,Work,Work/Service/Flow/Timer/CalendarDependency.php,0,,Processes
 Service/Flow/Timer/CalendarRecompute.php,126,Service,Work,Work/Service/Flow/Timer/CalendarRecompute.php,0,,Processes
+Service/Flow/Timer/CalendarWeekNumbering.php,57,Service,Flows,Flows/Service/Flow/Timer/CalendarWeekNumbering.php,0,,Processes
 Service/Flow/Timer/EscalationLadderService.php,275,Service,Flows,Flows/Service/Flow/Timer/EscalationLadderService.php,0,,Processes
 Service/Flow/Timer/FlowTimerDefinitionStore.php,101,Service,Flows,Flows/Service/Flow/Timer/FlowTimerDefinitionStore.php,0,,Processes
 Service/Flow/Timer/FlowTimerLedgerEntry.php,42,Service,Flows,Flows/Service/Flow/Timer/FlowTimerLedgerEntry.php,0,,Processes
@@ -2507,12 +2549,14 @@ Service/Integration/IntegrationRegistry.php,118,Service,Integrations,Integration
 Service/Integration/LeafBundle.php,29,Service,Integrations,Integrations/Service/Integration/LeafBundle.php,0,454,Integrations
 Service/Integration/LeafDescriptor.php,98,Service,Integrations,Integrations/Service/Integration/LeafDescriptor.php,180,299,Integrations
 Service/Integration/LeafRegistry.php,172,Service,Integrations,Integrations/Service/Integration/LeafRegistry.php,0,147,Integrations
+Service/Integration/LeafRenderModeParity.php,42,Service,Integrations,Integrations/Service/Integration/LeafRenderModeParity.php,0,,Integrations
 Service/Integration/PaginatedResult.php,48,Service,Integrations,Integrations/Service/Integration/PaginatedResult.php,0,,Integrations
 Service/Integration/PropertyReferenceTypeValidator.php,65,Service,Integrations,Integrations/Service/Integration/PropertyReferenceTypeValidator.php,0,,Integrations
 Service/Integration/PropertySemanticReferenceValidator.php,68,Service,Integrations,Integrations/Service/Integration/PropertySemanticReferenceValidator.php,0,,Integrations
 Service/Integration/Providers/ActivityProvider.php,121,Service,Integrations,Integrations/Service/Integration/Providers/ActivityProvider.php,0,,Integrations
 Service/Integration/Providers/AnalyticsProvider.php,61,Service,Integrations,Integrations/Service/Integration/Providers/AnalyticsProvider.php,0,,Integrations
 Service/Integration/Providers/BookmarksProvider.php,49,Service,Integrations,Integrations/Service/Integration/Providers/BookmarksProvider.php,0,,Integrations
+Service/Integration/Providers/BrpMockRegister.php,138,Service,Work,Work/Service/Integration/Providers/BrpMockRegister.php,0,,Integrations
 Service/Integration/Providers/BrpPersonProvider.php,187,Service,Work,Work/Service/Integration/Providers/BrpPersonProvider.php,3,,Integrations
 Service/Integration/Providers/CalendarProvider.php,73,Service,Integrations,Integrations/Service/Integration/Providers/CalendarProvider.php,0,,Integrations
 Service/Integration/Providers/CollectivesProvider.php,67,Service,Integrations,Integrations/Service/Integration/Providers/CollectivesProvider.php,0,,Integrations
@@ -2606,6 +2650,8 @@ Service/Merge/ReferenceRelinkPlan.php,71,Service,Flows,Flows/Service/Merge/Refer
 Service/Merge/ReferenceRelinker.php,228,Service,Flows,Flows/Service/Merge/ReferenceRelinker.php,0,,Core
 Service/Merge/ReferenceWriterInterface.php,43,Service,Flows,Flows/Service/Merge/ReferenceWriterInterface.php,0,,Core
 Service/Merge/ReferencingObject.php,45,Service,Flows,Flows/Service/Merge/ReferencingObject.php,0,,Core
+Service/Merge/RelationIndexReferenceFinder.php,92,Service,Flows,Flows/Service/Merge/RelationIndexReferenceFinder.php,0,,Core
+Service/Merge/SavePathReferenceWriter.php,95,Service,Flows,Flows/Service/Merge/SavePathReferenceWriter.php,0,,Core
 Service/MigrationPack/MappingEngine.php,173,Service,Configuration,Configuration/Service/MigrationPack/MappingEngine.php,1,,Configuration
 Service/MigrationPack/MigrationPackErrorResponder.php,101,Service,Configuration,Configuration/Service/MigrationPack/MigrationPackErrorResponder.php,0,,Configuration
 Service/MigrationPack/MigrationPackImportResult.php,11,Service,Configuration,Configuration/Service/MigrationPack/MigrationPackImportResult.php,0,,Configuration
@@ -2681,6 +2727,7 @@ Service/Object/MigrationRun.php,56,Service,Service,Service/Object/MigrationRun.p
 Service/Object/MigrationSide.php,14,Service,Service,Service/Object/MigrationSide.php,0,,Core
 Service/Object/MoveAddress.php,15,Service,Service,Service/Object/MoveAddress.php,0,,Core
 Service/Object/MoveObject.php,191,Service,Service,Service/Object/MoveObject.php,0,,Core
+Service/Object/CopyPayload.php,,Service,,,,,Core
 Service/Object/DraftService.php,133,Service,Service,Service/Object/DraftService.php,0,,Core
 Service/Object/MovedObjectLookup.php,71,Service,Service,Service/Object/MovedObjectLookup.php,0,,Core
 Service/Object/MovedObjectLookupInterface.php,6,Service,Service,Service/Object/MovedObjectLookupInterface.php,0,,Core
@@ -2705,6 +2752,8 @@ Service/Object/PerformanceOptimizationHandler.php,38,Service,Service,Service/Obj
 Service/Object/PermissionCheck.php,27,Service,Access,Access/Service/Object/PermissionCheck.php,0,,Core
 Service/Object/PermissionHandler.php,1872,Service,Access,Access/Service/Object/PermissionHandler.php,22,5,Core
 Service/Object/PinnedTable.php,10,Service,Service,Service/Object/PinnedTable.php,0,,Core
+Service/Object/PreservedListing.php,11,Service,Service,Service/Object/PreservedListing.php,0,,Core
+Service/Object/PreservedListLens.php,53,Service,Service,Service/Object/PreservedListLens.php,0,,Core
 Service/Object/PropertySourceLanguage.php,32,Service,Service,Service/Object/PropertySourceLanguage.php,0,,Core
 Service/Object/QueryHandler.php,447,Service,Service,Service/Object/QueryHandler.php,0,,Core
 Service/Object/ReferenceKey.php,12,Service,Service,Service/Object/ReferenceKey.php,1,488,Core
@@ -2729,6 +2778,7 @@ Service/Object/RunLockRegistry.php,130,Service,Service,Service/Object/RunLockReg
 Service/Object/SaveObject.php,3491,Service,Service,Service/Object/SaveObject.php,0,2,Core
 Service/Object/SaveObject/BulkObjectSlugs.php,156,Service,Service,Service/Object/SaveObject/BulkObjectSlugs.php,0,,Core
 Service/Object/SaveObject/CascadeRun.php,12,Service,Service,Service/Object/SaveObject/CascadeRun.php,0,,Core
+Service/Object/SaveObject/ClassificationFloorGuard.php,131,Service,Service,Service/Object/SaveObject/ClassificationFloorGuard.php,0,,Core
 Service/Object/SaveObject/ComputedFieldHandler.php,427,Service,Service,Service/Object/SaveObject/ComputedFieldHandler.php,0,,Core
 Service/Object/SaveObject/DefaultValueContext.php,6,Service,Service,Service/Object/SaveObject/DefaultValueContext.php,0,,Core
 Service/Object/SaveObject/FilePropertyHandler.php,795,Service,Service,Service/Object/SaveObject/FilePropertyHandler.php,0,,Core
@@ -2820,7 +2870,9 @@ Service/ObjectSource/DbalStatement.php,20,Service,Service,Service/ObjectSource/D
 Service/ObjectSource/DbalWriteException.php,32,Service,Service,Service/ObjectSource/DbalWriteException.php,0,437,Core
 Service/ObjectSource/DeckObjectSourceProvider.php,126,Service,Service,Service/ObjectSource/DeckObjectSourceProvider.php,0,,Core
 Service/ObjectSource/DefensiveGetters.php,24,Service,Service,Service/ObjectSource/DefensiveGetters.php,0,,Core
+Service/ObjectSource/ConfiguredSourceUpstream.php,125,Service,Service,Service/ObjectSource/ConfiguredSourceUpstream.php,0,,Core
 Service/ObjectSource/FederatedObjectSourceProvider.php,94,Service,Service,Service/ObjectSource/FederatedObjectSourceProvider.php,0,,Core
+Service/ObjectSource/OpenConnectorHttpProvider.php,290,Service,Service,Service/ObjectSource/OpenConnectorHttpProvider.php,0,,Core
 Service/ObjectSource/FilesObjectSourceProvider.php,115,Service,Service,Service/ObjectSource/FilesObjectSourceProvider.php,0,,Core
 Service/ObjectSource/GroupObjectSourceProvider.php,100,Service,Service,Service/ObjectSource/GroupObjectSourceProvider.php,0,,Core
 Service/ObjectSource/InstalledAppCheck.php,13,Service,Service,Service/ObjectSource/InstalledAppCheck.php,0,,Core
@@ -2840,6 +2892,8 @@ Service/ObjectSource/ViewObjectSourceProvider.php,130,Service,Service,Service/Ob
 Service/ObjectSource/WritableObjectSourceProvider.php,11,Service,Service,Service/ObjectSource/WritableObjectSourceProvider.php,0,,Core
 Service/ObjectSourceRead.php,14,Service,Service,Service/ObjectSourceRead.php,0,,Core
 Service/ObjectTranslationRequest.php,14,Service,Flows,Flows/Service/ObjectTranslationRequest.php,0,,Processes
+Service/Observability/OpenRegisterMetricsProvider.php,12,Service,Platform,Platform/Service/Observability/OpenRegisterMetricsProvider.php,0,,Integrations
+Service/Observability/WebhookRetryMetricsProvider.php,20,Service,Platform,Platform/Service/Observability/WebhookRetryMetricsProvider.php,0,,Integrations
 Service/OpenProjectLinkService.php,287,Service,Integrations,Integrations/Service/OpenProjectLinkService.php,0,,Integrations
 Service/OpenRegisterActionAuthService.php,15,Service,Platform,Platform/Service/OpenRegisterActionAuthService.php,0,476,Platform
 Service/Operations/ConsistencyCheckService.php,150,Service,Configuration,Configuration/Service/Operations/ConsistencyCheckService.php,0,,Configuration
@@ -2885,6 +2939,7 @@ Service/PropertyAccessRequest.php,30,Service,Flows,Flows/Service/PropertyAccessR
 Service/PropertyRbacHandler.php,375,Service,Flows,Flows/Service/PropertyRbacHandler.php,6,53,Processes
 Service/Quality/DedupAnnotationValidator.php,87,Service,Service,Service/Quality/DedupAnnotationValidator.php,0,,Core
 Service/Quality/QualityAnnotationValidator.php,80,Service,Service,Service/Quality/QualityAnnotationValidator.php,0,,Core
+Service/Quality/QualityAuditEvaluator.php,329,Service,Compliance,Compliance/Service/Quality/QualityAuditEvaluator.php,0,,Core
 Service/Quality/QualityScorer.php,153,Service,Compliance,Compliance/Service/Quality/QualityScorer.php,0,,Core
 Service/Quality/QualityStatisticsService.php,221,Service,Compliance,Compliance/Service/Quality/QualityStatisticsService.php,0,,Core
 Service/Quality/UniqueHintChecker.php,100,Service,Service,Service/Quality/UniqueHintChecker.php,0,,Core
@@ -2901,8 +2956,10 @@ Service/Rbac/AdminGate.php,31,Service,Access,Access/Service/Rbac/AdminGate.php,0
 Service/Rbac/AggregateVisibility.php,76,Service,Access,Access/Service/Rbac/AggregateVisibility.php,0,322,Core
 Service/Rbac/AnonymousEnvelope.php,39,Service,Platform,Platform/Service/Rbac/AnonymousEnvelope.php,0,,Core
 Service/Rbac/AuthorizationDenyValidator.php,123,Service,Service,Service/Rbac/AuthorizationDenyValidator.php,0,,Core
+Service/Rbac/ClassificationCaller.php,43,Service,Access,Access/Service/Rbac/ClassificationCaller.php,0,,Core
 Service/Rbac/ClassificationDeclarationValidator.php,230,Service,Access,Access/Service/Rbac/ClassificationDeclarationValidator.php,0,,Core
 Service/Rbac/ClassificationLimits.php,126,Service,Access,Access/Service/Rbac/ClassificationLimits.php,0,,Core
+Service/Rbac/ClassificationReadGate.php,152,Service,Access,Access/Service/Rbac/ClassificationReadGate.php,0,,Core
 Service/Rbac/ClassificationScale.php,219,Service,Access,Access/Service/Rbac/ClassificationScale.php,0,,Core
 Service/Rbac/ClearanceResolver.php,97,Service,Access,Access/Service/Rbac/ClearanceResolver.php,0,,Core
 Service/Rbac/CrossOrganisationMarkerChange.php,46,Service,Access,Access/Service/Rbac/CrossOrganisationMarkerChange.php,0,393,Core
@@ -2972,6 +3029,7 @@ Service/Rbac/TokenGrant.php,109,Service,Access,Access/Service/Rbac/TokenGrant.ph
 Service/Rbac/TokenGrantNarrower.php,102,Service,Access,Access/Service/Rbac/TokenGrantNarrower.php,0,,Core
 Service/Rbac/TokenGrantSource.php,38,Service,Access,Access/Service/Rbac/TokenGrantSource.php,2,432,Core
 Service/Rbac/TokenGrantValidator.php,80,Service,Access,Access/Service/Rbac/TokenGrantValidator.php,0,,Core
+Service/Rbac/UndecidablePosture.php,30,Service,Access,Access/Service/Rbac/UndecidablePosture.php,0,,Core
 Service/Rbac/UnknownRuleKeyFindings.php,91,Service,Service,Service/Rbac/UnknownRuleKeyFindings.php,0,,Core
 Service/Rbac/ViewShareListValidator.php,68,Service,Access,Access/Service/Rbac/ViewShareListValidator.php,0,,Core
 Service/Rbac/ViewShareResolver.php,148,Service,Access,Access/Service/Rbac/ViewShareResolver.php,0,187,Core
@@ -3076,6 +3134,7 @@ Service/Schemas/ExtendingFormDeclaration.php,200,Service,Service,Service/Schemas
 Service/Schemas/FacetResultCacheClearer.php,33,Service,Service,Service/Schemas/FacetResultCacheClearer.php,0,,Core
 Service/Schemas/GeneratedIdentifierDeclaration.php,214,Service,Service,Service/Schemas/GeneratedIdentifierDeclaration.php,0,,Core
 Service/Schemas/GeneratedIdentifierException.php,18,Service,Service,Service/Schemas/GeneratedIdentifierException.php,0,,Core
+Service/Schemas/RandomSequenceCode.php,82,Service,Service,Service/Schemas/RandomSequenceCode.php,0,,Core
 Service/Schemas/PropertySourceDeclaration.php,109,Service,Service,Service/Schemas/PropertySourceDeclaration.php,0,,Core
 Service/Schemas/PropertyTitles.php,80,Service,Service,Service/Schemas/PropertyTitles.php,0,,Core
 Service/Schemas/PropertySourceException.php,5,Service,Service,Service/Schemas/PropertySourceException.php,0,,Core
@@ -3092,9 +3151,12 @@ Service/Schemas/SchemaCacheHandler.php,334,Service,Service,Service/Schemas/Schem
 Service/Schemas/ScopedPropertyDeclaration.php,60,Service,Service,Service/Schemas/ScopedPropertyDeclaration.php,0,351,Core
 Service/Schemas/ScopedPropertyException.php,5,Service,Service,Service/Schemas/ScopedPropertyException.php,0,,Core
 Service/Schemas/ScopedPropertyGovernance.php,158,Service,Service,Service/Schemas/ScopedPropertyGovernance.php,0,,Core
+Service/Schemas/SemanticReferenceDeclaration.php,36,Service,Service,Service/Schemas/SemanticReferenceDeclaration.php,0,,Core
+Service/Schemas/SemanticReferenceException.php,5,Service,Service,Service/Schemas/SemanticReferenceException.php,0,,Core
 Service/Schemas/SemanticRoleHandler.php,120,Service,Service,Service/Schemas/SemanticRoleHandler.php,0,238,Core
 Service/Schemas/UniqueConstraintEvaluator.php,131,Service,Service,Service/Schemas/UniqueConstraintEvaluator.php,0,217,Core
 Service/ScriptManifestLoader.php,48,Service,Flows,Flows/Service/ScriptManifestLoader.php,0,,Processes
+Service/Search/ContentSnippetSource.php,14,Service,Service,Service/Search/ContentSnippetSource.php,0,,Core
 Service/Search/DictionaryExpansion.php,41,Service,Service,Service/Search/DictionaryExpansion.php,0,,Core
 Service/Search/HistoryNarrowing.php,48,Service,Service,Service/Search/HistoryNarrowing.php,0,,Core
 Service/Search/HistoryPredicate.php,115,Service,Service,Service/Search/HistoryPredicate.php,0,,Core
@@ -3106,6 +3168,9 @@ Service/Search/SearchDictionaryProvider.php,188,Service,Service,Service/Search/S
 Service/Search/SearchTermNode.php,86,Service,Service,Service/Search/SearchTermNode.php,0,,Core
 Service/Search/SearchTermParser.php,251,Service,Service,Service/Search/SearchTermParser.php,0,,Core
 Service/Search/SearchTermSqlCompiler.php,22,Service,Service,Service/Search/SearchTermSqlCompiler.php,0,,Core
+Service/Search/SnippetBuilder.php,107,Service,Service,Service/Search/SnippetBuilder.php,0,,Core
+Service/Search/VectorResultFilter.php,135,Service,Service,Service/Search/VectorResultFilter.php,0,,Core
+Service/Search/VectorSearchFacade.php,81,Service,Service,Service/Search/VectorSearchFacade.php,0,,Core
 Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchTrailService.php,0,38,Compliance
 Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Integrations
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
@@ -3142,6 +3207,7 @@ Service/ShippedBaseline/DescriptorParts.php,72,Service,Configuration,Configurati
 Service/ShippedBaseline/DivergenceComparator.php,88,Service,Configuration,Configuration/Service/ShippedBaseline/DivergenceComparator.php,1,,Configuration
 Service/ShippedBaseline/GuardedAnnotations.php,180,Service,Configuration,Configuration/Service/ShippedBaseline/GuardedAnnotations.php,0,,Configuration
 Service/ShippedBaseline/GuardedDescriptorMerge.php,175,Service,Configuration,Configuration/Service/ShippedBaseline/GuardedDescriptorMerge.php,1,,Configuration
+Service/ShippedBaseline/LiveDescriptor.php,14,Service,Service,Service/ShippedBaseline/LiveDescriptor.php,0,,Configuration
 Service/ShippedBaseline/ShippedAuthorizationDecision.php,28,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedAuthorizationDecision.php,0,,Configuration
 Service/ShippedBaseline/ShippedBaselineResetService.php,145,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedBaselineResetService.php,0,,Configuration
 Service/ShippedBaseline/ShippedBaselineStore.php,76,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedBaselineStore.php,2,,Configuration
@@ -3202,6 +3268,10 @@ Service/TranslationProjectionService.php,183,Service,Configuration,Configuration
 Service/TranslationStatusService.php,143,Service,Configuration,Configuration/Service/TranslationStatusService.php,0,200,Configuration
 Service/UrnService.php,214,Service,Service,Service/UrnService.php,0,106,Core
 Service/UserLinkWriter.php,50,Service,Integrations,Integrations/Service/UserLinkWriter.php,0,,Integrations
+Service/UserMigration/ImportReport.php,20,Service,Service,Service/UserMigration/ImportReport.php,0,,Core
+Service/UserMigration/PersonalStateMigrator.php,177,Service,Service,Service/UserMigration/PersonalStateMigrator.php,0,,Core
+Service/UserMigration/PersonalStateReader.php,40,Service,Service,Service/UserMigration/PersonalStateReader.php,0,,Core
+Service/UserMigration/RegisterReferences.php,39,Service,Service,Service/UserMigration/RegisterReferences.php,0,,Core
 Service/UserService.php,864,Service,Access,Access/Service/UserService.php,0,,Core
 Service/Vectorization/Strategies/FileVectorizationStrategy.php,86,Service,Access,Access/Service/Vectorization/Strategies/FileVectorizationStrategy.php,0,,Core
 Service/Vectorization/Strategies/ObjectVectorizationStrategy.php,179,Service,Access,Access/Service/Vectorization/Strategies/ObjectVectorizationStrategy.php,0,,Core
@@ -3308,6 +3378,7 @@ Service/Aggregation/,,Service,,,,,Core
 Service/Anonymisation/,,Service,,,,,Compliance
 Service/Anonymisation/CapacityPolicy.php,,Service,,,,,Compliance
 Service/Anonymisation/CapacitySuggester.php,,Service,,,,,Compliance
+Service/Anonymisation/OfficialsSource.php,,Service,,,,,Compliance
 Service/ApiCaller/,,Service,,,,,Platform
 Service/ApiVersion/,,Service,,,,,Core
 Service/Archival/,,Service,,,,,Compliance
@@ -3325,6 +3396,7 @@ Service/Chat/,,Service,,,,,Platform
 Service/Config/,,Service,,,,,Configuration
 Service/Configuration/,,Service,,,,,Configuration
 Service/ConfigurationDeployment/,,Service,,,,,Configuration
+Service/ConfigurationDeployment/ShippedDivergenceSourceInterface.php,,Service,,,,,Configuration
 Service/Connection/,,Service,,,,,Integrations
 Service/Consent/,,Service,,,,,Core
 Service/Consumer/,,Service,,,,,Integrations
@@ -3345,8 +3417,10 @@ Service/File/ArchiveBounds.php,,Service,,,,,Core
 Service/File/ArchiveListing.php,,Service,,,,,Core
 Service/File/ArchiveMemberEnumerator.php,,Service,,,,,Core
 Service/File/ArchiveWalk.php,,Service,,,,,Core
+Service/File/FetchedFile.php,,Service,,,,,Core
 Service/File/UrlFetchRefused.php,,Service,,,,,Core
 Service/File/UrlFileFetcher.php,,Service,,,,,Core
+Service/File/UrlFileSource.php,,Service,,,,,Core
 Service/File/UrlStreamOpener.php,,Service,,,,,Core
 Service/Flow/,,Service,,,,,Processes
 Service/Form/,,Service,,,,,Processes
@@ -3368,6 +3442,8 @@ Service/Merge/,,Service,,,,,Core
 Service/MigrationPack/,,Service,,,,,Configuration
 Service/Notification/,,Service,,,,,Configuration
 Service/Oas/,,Service,,,,,Core
+Service/Oas/NlGovDocumentRules.php,245,Service,Service,Service/Oas/NlGovDocumentRules.php,0,,Core
+Service/Oas/NlGovRuleCatalogue.php,201,Service,Service,Service/Oas/NlGovRuleCatalogue.php,0,,Core
 Service/Object/,,Service,,,,,Core
 Service/ObjectAction/,,Service,,,,,Processes
 Service/ObjectSource/,,Service,,,,,Core
@@ -3398,6 +3474,7 @@ Service/Settings/,,Service,,,,,Configuration
 Service/SharedSchema/,,Service,,,,,Configuration
 Service/Sharing/,,Service,,,,,Core
 Service/ShippedBaseline/,,Service,,,,,Configuration
+Service/ShippedBaseline/ShippedDivergenceReport.php,60,Service,Service,Service/ShippedBaseline/ShippedDivergenceReport.php,0,,Configuration
 Service/Survey/,,Service,,,,,Processes
 Service/Survivorship/,,Service,,,,,Core
 Service/Sync/,,Service,,,,,Integrations
@@ -3963,6 +4040,7 @@ Service/UserLinkRequest.php,,Service,,,,,Integrations
 Service/User/AccountPropertyChange.php,,Service,,,,,Core
 Service/User/ActivityPeriod.php,,Service,,,,,Core
 Service/User/ActivityQuery.php,,Service,,,,,Core
+Service/User/ApiTokenAuditRow.php,,Service,,,,,Core
 Service/User/ApiTokenRequest.php,,Service,,,,,Core
 Service/User/AvatarUpload.php,,Service,,,,,Core
 Service/User/PasswordChange.php,,Service,,,,,Core
@@ -3994,6 +4072,7 @@ Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Listener/RecordTypeAuditListener.php,,Listener,,,,,Compliance
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
 Db/SchemaMapper/IdentityDeclarationCheck.php,,Db,,,,,Core
 Listener/IdentityGuardListener.php,,Listener,,,,,Core
@@ -4029,6 +4108,9 @@ Db/MagicMapper/SearchFolding.php,234,Db,Service,Service/Db/MagicMapper/SearchFol
 Db/MagicMapper/MagicUnaccentProbe.php,160,Db,Service,Service/Db/MagicMapper/MagicUnaccentProbe.php,0,,Core
 Migration/Version1Date20261113140000.php,122,Migration,,,,,Platform
 Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
+Migration/Version1Date20261113200000.php,30,Migration,,,,,Platform
+Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
+Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core
@@ -4054,6 +4136,7 @@ Notifications/Service/Notification/NotificationRunTally.php,,Notifications,,,,,N
 Controller/AutomationRecordsController.php,,Controller,,,,,Processes
 BackgroundJob/AutomationRecordRetentionJob.php,,BackgroundJob,,,,,Processes
 Service/Flow/FlowErrorPolicy.php,,Service,,,,,Processes
+Service/Flow/FlowStepRetry.php,,Service,,,,,Processes
 Service/Lifecycle/GraphMoveCatalogue.php,402,Service,Flows,Flows/Service/Lifecycle/GraphMoveCatalogue.php,0,,Processes
 Service/Lifecycle/LifecycleGraphMovesValidator.php,314,Service,Flows,Flows/Service/Lifecycle/LifecycleGraphMovesValidator.php,0,,Processes
 Service/Import/BaseColumn.php,27,Service,Configuration,Configuration/Service/Import/BaseColumn.php,0,,Configuration
@@ -4094,6 +4177,7 @@ Service/File/ImageRegionDetectorRegistry.php,,Service,,,,,Core
 Service/File/ImageRegionNotBurnableException.php,,Service,,,,,Core
 Service/File/OcrWordLocator.php,,Service,,,,,Core
 Service/File/OcrWords.php,,Service,,,,,Core
+Service/File/OfficeMediaBurner.php,,Service,,,,,Core
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
 Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Configuration
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
@@ -4113,8 +4197,56 @@ Calendar/DeclaredDateCalendars.php,184,Calendar,Platform,Platform/Calendar/Decla
 Calendar/ObjectDateCalendar.php,54,Calendar,Platform,Platform/Calendar/ObjectDateCalendar.php,0,,Integrations
 Calendar/ObjectDateCalendarScope.php,14,Calendar,Platform,Platform/Calendar/ObjectDateCalendarScope.php,0,,Integrations
 Calendar/VeventSearchShape.php,202,Calendar,Platform,Platform/Calendar/VeventSearchShape.php,0,,Integrations
+Controller/ScheduledMessagesController.php,113,Controller,Integrations,Integrations/Controller/ScheduledMessagesController.php,0,,Integrations
 Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/ObjectDateEvents.php,0,,Processes
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
 Repair/RepairSharedPrincipalLists.php,,Repair,,,,,Platform
+Service/RedactionPolicy/ObjectTermRuleSource.php,,Service,,,,,Configuration
+Listener/RedactionPolicyCacheListener.php,,Listener,,,,,Configuration
+Exception/UnknownMaskFormException.php,30,Exception,Exception,Exception/UnknownMaskFormException.php,0,,Kernel
+Files/Service/File/MaskForm.php,208,Files,Files,Files/Service/File/MaskForm.php,0,,Files
+Files/Service/File/PlaceholderText.php,113,Files,Files,Files/Service/File/PlaceholderText.php,0,,Files
+Command/RetentionDryRunCommand.php,,Command,,,,,Compliance
+Service/Archival/DestructionDryRun.php,,Service,,,,,Compliance
+Service/Translation/DetailedTranslationProviderInterface.php,,Service,,,,,Configuration
+Service/Translation/TranslationProviderResolver.php,,Service,,,,,Configuration
+Repair/ImportTranslationGlossaryRegister.php,,Repair,,,,,Platform
+Service/Task/ApprovalPositionForm.php,156,Service,Flows,Flows/Service/Task/ApprovalPositionForm.php,0,,Processes
+Service/Task/ApprovalPositionFormGuard.php,200,Service,Flows,Flows/Service/Task/ApprovalPositionFormGuard.php,0,,Processes
+Service/Anonymisation/DetectorVersion.php,69,Service,Compliance,Compliance/Service/Anonymisation/DetectorVersion.php,0,,Compliance
+Service/Anonymisation/DetectorVersionHistory.php,51,Service,Compliance,Compliance/Service/Anonymisation/DetectorVersionHistory.php,0,,Compliance
+Service/Anonymisation/DetectorVersionReader.php,49,Service,Compliance,Compliance/Service/Anonymisation/DetectorVersionReader.php,0,,Compliance
+Service/Object/RelationAddressRewrite.php,42,Service,Service,Service/Object/RelationAddressRewrite.php,0,,Core
+Service/Object/RelationAddressRewriteInterface.php,6,Service,Service,Service/Object/RelationAddressRewriteInterface.php,0,,Core
+Files/Service/TextExtraction/ArchiveExtraction.php,146,Files,Files,Files/Service/TextExtraction/ArchiveExtraction.php,0,,Files
+Files/Service/TextExtraction/ArchiveTextExtractor.php,271,Files,Files,Files/Service/TextExtraction/ArchiveTextExtractor.php,0,,Files
+Files/Service/TextExtraction/ArchiveContainers.php,134,Files,Files,Files/Service/TextExtraction/ArchiveContainers.php,0,,Files
+Service/Flow/FlowStateDelta.php,,Service,,,,,Processes
+Db/MagicMapper/MagicTableIdentityIndex.php,169,Db,Service,Service/Db/MagicMapper/MagicTableIdentityIndex.php,0,,Core
+Middleware/ConditionGroupMiddleware.php,17,Middleware,Platform,Platform/Middleware/ConditionGroupMiddleware.php,0,,Platform
+Db/TextSignature.php,,Db,,,,,Core
+Db/TextSignatureMapper.php,,Db,,,,,Core
+Migration/Version1Date20261113200000.php,,Migration,,,,,Platform
+Search/Service/Quality/TextGroupFinder.php,,Search,,,,,Search
+Search/Service/Quality/TextGroups.php,,Search,,,,,Search
+Service/Quality/TextSignature.php,,Service,,,,,Core
+BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Core
+Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
+Controller/ObjectCollectionsController.php,,Controller,,,,,Core
+Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Core
+Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core
+Service/Import/RecordImport/ConfirmedMapping.php,,Service,,,,,Core
+Service/Import/RecordImport/RecordFileReader.php,,Service,,,,,Core
+Service/Import/RecordImport/RecordImportRequest.php,,Service,,,,,Core
+Service/Import/RecordImport/RecordImportService.php,,Service,,,,,Core
+Service/Import/RecordImport/RowRangeFilter.php,,Service,,,,,Core
+Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
+Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
+Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
+Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Core
+Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
+Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
+Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration

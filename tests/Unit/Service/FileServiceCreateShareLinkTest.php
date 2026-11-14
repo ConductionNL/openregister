@@ -110,4 +110,19 @@ class FileServiceCreateShareLinkTest extends TestCase {
 
 		$this->assertSame('File not found at a/b.txt', $service->createShareLink(new ShareLinkRequest('/a/b.txt/')));
 	}//end testTheFileIsLookedUpWithTheUserFolder()
+
+	public function testThePublishedPathFormLooksUpTheSameFile(): void {
+		$service = $this->service();
+		$this->folders->expects($this->exactly(3))
+			->method('getOpenRegisterUserFolder')
+			->willReturn($this->createMock(Folder::class));
+		$this->rootFolder->expects($this->exactly(3))
+			->method('get')
+			->with('a/b.txt')
+			->willThrowException(new NotFoundException());
+
+		$this->assertSame('File not found at a/b.txt', $service->createShareLink('/a/b.txt/'));
+		$this->assertSame('File not found at a/b.txt', $service->createShareLink(path: '/a/b.txt/', shareType: 3));
+		$this->assertSame('File not found at a/b.txt', $service->createShareLink(request: new ShareLinkRequest('/a/b.txt/')));
+	}//end testThePublishedPathFormLooksUpTheSameFile()
 }//end class

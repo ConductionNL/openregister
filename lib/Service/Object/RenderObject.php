@@ -2368,6 +2368,12 @@ class RenderObject implements RenderObjectInterface {
 
 		$run->entity->setObject($run->data);
 		$this->applyRenderMarkers(run: $run);
+		(new RecordAnnotations(logger: $this->runtime->logger))->attachConfidentiality(
+			entity: $run->entity,
+			schema: $run->schema,
+			stored: $unprojectedData,
+			now: new \DateTimeImmutable()
+		);
 
 		return $run->entity;
 	}//end finishRender()
@@ -3257,6 +3263,7 @@ class RenderObject implements RenderObjectInterface {
 		$annotations->attachDecision(entity: $run->entity);
 		$this->applyRetentionClocks(entity: $run->entity);
 		$annotations->attachExternalLinks(entity: $run->entity, schema: $run->schema);
+		$annotations->attachKey(entity: $run->entity, schema: $run->schema);
 	}//end applyRenderMarkers()
 
 	/**

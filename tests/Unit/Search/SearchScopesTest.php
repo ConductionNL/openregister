@@ -127,6 +127,57 @@ final class SearchScopesTest extends TestCase {
 	}
 
 	/**
+	 * 🔴 An app scope keeps the schemas that app claims, and only those.
+	 *
+	 * It used to be parsed and then ignored by the narrowing, so `app:dossiq`
+	 * answered every app's rows.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
+	 */
+	public function testAnAppScopeKeepsTheSchemasThatAppClaims(): void {
+		$schemas = [
+			['id' => 1, 'slug' => 'case', 'register' => 'zaken', 'apps' => ['dossiq']],
+			['id' => 2, 'slug' => 'contact', 'register' => 'zaken', 'apps' => ['pipelinq', 'dossiq']],
+			['id' => 3, 'slug' => 'invoice', 'register' => 'finance', 'apps' => ['shillinq']],
+			['id' => 4, 'slug' => 'note', 'register' => 'zaken'],
+		];
+
+		self::assertSame([1, 2], SearchScopes::parse('app:dossiq')->narrowSchemas($schemas));
+		self::assertSame([3], SearchScopes::parse('app:SHILLINQ')->narrowSchemas($schemas), 'tokens are lower-cased');
+		self::assertSame([2, 3], SearchScopes::parse('app:pipelinq,schema:invoice')->narrowSchemas($schemas), 'an app chip ORs with a schema chip');
+	}
+
+	/**
+	 * 🔴 An app that claims nothing keeps nothing, rather than widening to every schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
+	 */
+	public function testAnAppThatClaimsNothingKeepsNothing(): void {
+		self::assertSame([], SearchScopes::parse('app:nosuchapp')->narrowSchemas(self::SCHEMAS));
+	}
+
+	/**
+	 * A slug stored with capitals is still named by the lower-cased token.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
+	 */
+	public function testAStoredSlugWithCapitalsIsStillNamed(): void {
+		$schemas = [
+			['id' => 7, 'slug' => 'Case', 'register' => 'Dossiq'],
+			['id' => 8, 'slug' => 'contact', 'register' => 'other'],
+		];
+
+		self::assertSame([7], SearchScopes::parse('schema:case')->narrowSchemas($schemas));
+		self::assertSame([7], SearchScopes::parse('register:dossiq')->narrowSchemas($schemas));
+	}
+
+	/**
 	 * 🔴 `files` is a kind, not a place: it narrows no schema.
 	 *
 	 * @return void

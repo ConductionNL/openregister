@@ -47,6 +47,21 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
  */
 class NlPatternSet implements JurisdictionPatternSet {
 	/**
+	 * The version of these patterns. Raise it whenever a pattern, a confidence
+	 * or the false-positive guard changes, and set CHANGED_AT to that day.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-every-detection-backend-reports-what-it-is-built-from-req-adi-001
+	 */
+	public const VERSION = '1.0.0';
+
+	/**
+	 * The day these patterns last changed (ISO 8601 date).
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-detector-says-when-it-last-changed-req-adi-004
+	 */
+	public const CHANGED_AT = '2026-11-13';
+
+	/**
 	 * A BSN candidate: nine digits, plain or grouped 4-2-3 or 3-2-4, standing
 	 * alone as a token. Not preceded by a letter, digit, dot or hyphen, and not
 	 * followed by a letter, digit or hyphen, or by a dot or comma and a digit,

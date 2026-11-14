@@ -93,6 +93,8 @@ Measured against `main` on 2026-11-13. Since this change was written, the fix ha
 | Flow `ObjectReadNode` / `ObjectWriteNode` | (a) scoped | `findBySlugInIds()` against the register's schemas first. |
 | `ImportHandler` (configuration import) | (a) scoped | Matches an existing schema by slug only among the register's schemas. |
 | `occ openregister:backfill-object-slugs` | (a) scoped | |
+| `ObjectsController::moveEnds()` (move to another register and schema) | was (b), now scoped | Both registers are resolved first; each schema slug goes through `findBySlugInIds()` against its own register's schemas, falling back to `find()` for ids, uuids and slugs the register does not carry (`schemaInRegister()`). `ObjectsControllerSchemaSlugScopeTest` fails on the old code, naming schema 22 instead of 36. |
+| `ObjectsController::mergeAccessRefusal()` (rights check of a merge) | was (b), now scoped | Same helper, with the route's register. |
 
 ### The request cache (Decision 4)
 

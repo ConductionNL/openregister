@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -47,7 +48,9 @@ use UnexpectedValueException;
 /**
  * Reshapes each item's record.
  */
-class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree,
+	IFlowNodeConfigForm
+{
 
 	/**
 	 * The config keys of which at least one must be non-empty.
@@ -106,6 +109,33 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	public function configKeys(): array {
 		return ['set', 'compute', 'rename', 'remove', 'keepOnlySet'];
 	}//end configKeys()
+
+	/**
+	 * The one scalar key of an edit-fields step.
+	 *
+	 * `set`, `compute`, `rename` and `remove` are keyed by the author's own
+	 * field paths, a shape the field vocabulary cannot describe: they stay in
+	 * the JSON pane, and the help says so.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'keepOnlySet',
+				'label' => $this->l10n->t('Keep only the fields this step sets'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t(
+					'Start each item empty, so it leaves with only the fields under "set" and "compute". The fields themselves are edited '
+						. 'in the JSON pane: "set" takes values with {{path}} placeholders filled in from the item, "compute" takes flow expressions '
+						. '(JSONLogic), "rename" maps old names to new, and "remove" lists the fields to drop.'
+				),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a configuration that would do nothing.

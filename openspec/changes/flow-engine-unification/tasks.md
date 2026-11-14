@@ -18,6 +18,7 @@
 
 ## Phase 3 — Remove the old engines
 - [ ] 3.1 Delete `FlowActionService`, `FlowActionListener`, `EventCatalogListener`'s dispatch into it, `WorkflowEngine/RunFlowOperation`.
+  `FlowActionService`, `FlowActionListener` and `EventCatalogListener` are gone from `lib/`. `WorkflowEngine/RunFlowOperation` remains: it now resolves a native flow by name and queues its run (`RunFlowOperationFlows`), so deleting it removes the Nextcloud Flow operation administrators can select; that is a product decision, not a cleanup.
 - [ ] 3.2 Delete `CnEditFlowsModal` + its OpenBuild wiring; ensure `CnFlowCanvas`/`CnFlowCanvasModal` on `codeberg/feat/vue-3` are not merged to `beta`.
 - [ ] 3.3 Delete hermiq `Service/Graph/GraphExecutor`, `Controller/GraphController`, `Flow/HermiqFlowResolver` + listener, `AgentFlow`/`AgentFlowRun` schemas. Keep `HermiqAgentNode`, `HermiqWorkloadNode`, `HermiqFlowNodeListener`.
 - [ ] 3.4 Port GraphExecutor's advances into the engine as ENGINE-WIDE but OPTIONAL behaviour (admin default + nullable per-flow override, mirroring retention):
@@ -25,7 +26,7 @@
   - [x] 3.4b `RegisterFlowOversightEvent` + `IFlowOversightCheck`: apps contribute checks the way they contribute nodes. The engine hardcodes none. (verified: lib/Service/Flow/FlowOversightRegistry.php, tests/Unit/Service/Flow/FlowOversightRegistryTest.php)
   - [x] 3.4c Oversight gate consulted before each hop. `flow_oversight_enabled` default **on** (a safety rail that defaults off protects only the flows someone configured). A veto STOPS the run with its reason; a check that throws refuses rather than failing open. (verified: lib/Service/Flow/FlowEngine.php, tests/Unit/Service/Flow/FlowEngineOversightTest.php)
   - [ ] 3.4d hermiq's kill-switch and budget become registered checks, not engine branches.
-  - [ ] 3.4e State-delta trace onto the step row's `output`.
+  - [x] 3.4e State-delta trace onto the step row's `output`.
 - [ ] 3.5 Retire the `visual-flow-builder` change and `flow_register.json` + `ImportFlowRegister`.
 
 ## Phase 4 — `x-openregister-flows` redefinition
@@ -40,7 +41,7 @@
 - [ ] 5.5 Run/trace panel reads step rows, so a past run is inspectable per node.
 
 ## Phase 6 — Consumers
-- [ ] 6.1 OpenRegister: `/flows` + `/flows/:id` pages, menu entry, no app filter.
+- [x] 6.1 OpenRegister: `/flows` + `/flows/:id` pages, menu entry, no app filter. (verified: `src/manifest.json` page `flows` is an index over the named source `flows` with no app filter and an `app` column, page `flowDetail` at `/flows/:id` is the shared `flow` page type, menu entry `Flows`)
 - [x] 6.2 OpenConnector: `/flows` + `/flows/:id` pages, menu entry, `app=openconnector`. Live-verified 2026-08-16: list + detail (shared CnFlowDetail canvas), real run against openwoo.zaaksysteme.net, hard-reload survives the router-history-mode conversion. Left the pre-existing openconnector-native `flow`/`steps[]` backend running unmigrated — see openconnector#1255.
 - [ ] 6.3 hermiq: `/graphs` → `/flows` on the shared components, `app=hermiq`, old route kept as alias.
 - [x] 6.4 OpenBuild: "Edit flows…" opens `CnFlowEditModal`. Live-verified 2026-08-16: button gated on an app selection, modal opens the shared canvas scoped to the selected app.

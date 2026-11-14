@@ -80,4 +80,17 @@ interface DeepLinkRegistryServiceInterface extends DeepLinkResolverInterface {
 	 */
 	public function resolveAppId(int $registerId, int $schemaId): ?string;
 
+	/**
+	 * The owning app's own route for a task about an object of this register and schema.
+	 *
+	 * @param int                  $registerId The subject's register id.
+	 * @param int                  $schemaId   The subject's schema id.
+	 * @param array<string, mixed> $taskData   The task row (uuid, objectUuid, registerId, schemaId).
+	 *
+	 * @return string|null The URL, or null when no app registered a task route for the pair.
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
+	 */
+	public function resolveTaskUrl(int $registerId, int $schemaId, array $taskData): ?string;
+
 }//end interface

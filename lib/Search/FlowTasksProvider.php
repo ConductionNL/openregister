@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskInboxFilter;
 use OCA\OpenRegister\Db\TaskInboxOrder;
 use OCA\OpenRegister\Db\TaskInboxSelection;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCP\IDateTimeFormatter;
@@ -42,6 +43,7 @@ use OCP\Search\IFilteringProvider;
 use OCP\Search\ISearchQuery;
 use OCP\Search\SearchResult;
 use OCP\Search\SearchResultEntry;
+use Throwable;
 
 /**
  * The flow tasks a user would see in their inbox, matched on title and description.
@@ -69,6 +71,7 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @param IL10N                     $l10n          Translations.
 	 * @param IURLGenerator             $urlGenerator  The task page link and icon.
 	 * @param IDateTimeFormatter        $dateFormatter The due date in the user's format.
+	 * @param DeepLinkRegistryServiceInterface|null $deepLinks  The subject app's own task route, when it registered one (design D-3).
 	 */
 	public function __construct(
 		private readonly TaskInboxServiceInterface $inbox,
@@ -76,6 +79,7 @@ class FlowTasksProvider implements IFilteringProvider {
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IDateTimeFormatter $dateFormatter,
+		private readonly ?DeepLinkRegistryServiceInterface $deepLinks = null,
 	) {
 	}//end __construct()
 
@@ -224,13 +228,44 @@ class FlowTasksProvider implements IFilteringProvider {
 			'',
 			$title,
 			$this->subline(row: $row),
-			$this->urlGenerator->linkToRoute('openregister.task.open', ['uuid' => $uuid]),
+			$this->link(row: $row, uuid: $uuid),
 			'icon-checkmark'
 		);
 		$entry->addAttribute('uuid', $uuid);
 
 		return $entry;
 	}//end entry()
+
+	/**
+	 * The subject app's own task route when it registered one, else OpenRegister's task page (design D-3).
+	 *
+	 * A registry that cannot answer falls back to the task page: the link only
+	 * decides where the task opens, and the task page checks access itself.
+	 *
+	 * @param array<string, mixed> $row  An inbox row.
+	 * @param string               $uuid The task uuid.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
+	 */
+	private function link(array $row, string $uuid): string {
+		$registerId = $row['registerId'] ?? null;
+		$schemaId   = $row['schemaId'] ?? null;
+		if ($this->deepLinks !== null && is_numeric($registerId) === true && is_numeric($schemaId) === true) {
+			try {
+				$url = $this->deepLinks->resolveTaskUrl(registerId: (int) $registerId, schemaId: (int) $schemaId, taskData: $row);
+			} catch (Throwable) {
+				$url = null;
+			}
+
+			if ($url !== null && $url !== '') {
+				return $url;
+			}
+		}
+
+		return $this->urlGenerator->linkToRoute('openregister.task.open', ['uuid' => $uuid]);
+	}//end link()
 
 	/**
 	 * `{state} · due {date} · {subject title}` (design D-4); overdue says so in the state word.

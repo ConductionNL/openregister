@@ -87,9 +87,21 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * @throws Exception When no user, or the event is not on that calendar.
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
 	 */
 	public function linkLocatedEvent(LinkTarget $target, CalendarEventKey $key): CalendarLink {
 		$user = $this->requireUser();
+
+		// Linking is idempotent: the same object, event and calendar return the
+		// row that is already there (REQ-CAL-INB-003).
+		$existing = $this->linkMapper->findLink(
+			objectUuid: $target->objectUuid,
+			eventUid: $key->eventUid,
+			calendarUri: $key->calendarUri
+		);
+		if ($existing !== null) {
+			return $existing;
+		}
 
 		// Locate the VEVENT on the named calendar so we can cache summary/dtstart/etc.
 		$located = $this->locateEventOnCalendar(userId: $user->getUID(), key: $key);
@@ -168,6 +180,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * @throws Exception When no user, or the event could not be created.
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
 	 */
 	public function createLinkedEvent(LinkTarget $target, array $eventData): CalendarLink {
 		$user = $this->requireUser();
@@ -196,8 +209,40 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		$this->stampLinkedBy(link: $link, uid: $user->getUID());
 		$link->setTaggedWithXor(true);
 
+		// A row for this object, event and calendar may already exist (another
+		// writer linked it first): return it instead of a second row (REQ-CAL-INB-003).
+		$existing = $this->linkMapper->findLink(
+			objectUuid: $target->objectUuid,
+			eventUid: (string)$link->getEventUid(),
+			calendarUri: (string)$link->getCalendarUri()
+		);
+		if ($existing !== null) {
+			return $existing;
+		}
+
 		return $this->linkMapper->insert(entity: $link);
 	}//end createLinkedEvent()
+
+	/**
+	 * The link rows attached to a VEVENT, and so the objects it belongs to.
+	 *
+	 * Scoped to one calendar when `$calendarUri` is given, so a UID reused on
+	 * another calendar does not match.
+	 *
+	 * @param string      $eventUid    The VEVENT UID.
+	 * @param string|null $calendarUri The calendar URI, or null for every calendar.
+	 *
+	 * @return CalendarLink[] The link rows, oldest first; empty for a blank UID.
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-reverse-event-to-objects-lookup-req-cal-inb-002
+	 */
+	public function getObjectsForEvent(string $eventUid, ?string $calendarUri=null): array {
+		if (trim($eventUid) === '') {
+			return [];
+		}
+
+		return $this->linkMapper->findByEventUid(eventUid: $eventUid, calendarUri: $calendarUri);
+	}//end getObjectsForEvent()
 
 	/**
 	 * Copy the uid, uri, summary, dates and location of a created event onto its link row.
