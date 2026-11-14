@@ -23,9 +23,11 @@
 >   audit trail, which is the one structure in this app that cannot be
 >   corrected afterwards. It deserves a change of its own rather than the tail
 >   of one.
-> - **3.2, the reassignment gate.** The verb now exists and is grantable; the
->   path it gates is dossiq's `CaseAccessGuard`-shaped coordinator check, not
->   openregister's, so the consuming half moves with it.
+> - **3.2, the reassignment gate**: delivered in the second pass for
+>   openregister's own path, `ObjectOwnershipService::assign`. dossiq's
+>   `CaseAccessGuard`-shaped coordinator check is dossiq's to move.
+> - **Since then**: `party-roles-beyond-the-requester` has been archived, so
+>   the slot of 1.x exists now; the grant on it is still to be built.
 
 ## 1. A grant to a slot
 
@@ -44,7 +46,7 @@
 ## 3. The assign verb
 
 - [x] 3.1 `assign` enters the governed verb vocabulary and the published catalogue.
-- [ ] 3.2 The reassignment path is gated on `assign`, not on the administrator check.
+- [x] 3.2 The reassignment path is gated on `assign`, not on the administrator check. (`ObjectOwnershipService::assign`: an administrator still may; anybody else only where the record's cascaded authorization block declares `assign` and admits them, and on every child of a cascade. An undeclared `assign` stays with administrators, so an upgrade grants nobody a new right. The bulk `reassign` stays an administrator action. dossiq's own coordinator check moves with dossiq.)
 - [x] 3.3 `assign` is grantable without `update`, and holding `update` does not imply it.
 
 ## 4. Break glass
@@ -63,7 +65,7 @@
 ## 6. Tests
 
 - [ ] 6.1 Unit tests for the slot resolution, the empty slot, the occupant change and the relationship period.
-- [ ] 6.2 Unit tests for `assign` granted alone and for the reassignment refusal without it.
+- [x] 6.2 Unit tests for `assign` granted alone and for the reassignment refusal without it. (tests/Unit/Service/Rbac/ObjectOwnershipAssignVerbTest.php)
 - [ ] 6.3 Unit tests with a clock fixture for the break-glass expiry and the extension limit.
 - [x] 6.4 Unit tests for the not-inheritable grant against the ancestor resolution.
 - [ ] 6.5 An e2e over break glass taken with a reason, used, and expired.
