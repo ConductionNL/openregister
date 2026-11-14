@@ -9079,3 +9079,4 @@ review:openregister:10536:25a54a88	10536 APPROVE	session-20261114T121619-c3deae2
 build4:openregister:api-test-coverage:c3	partial: no code-only work left; all 17 unchecked tasks are Newman/live-instance suites (live pass), earlier branches merged, no PR	session-20261114T121627-23b97246	2026-11-14T12:38:50Z
 review:openregister:10544:70a280a5	10544 APPROVE (tasks.md only)	session-20261114T121619-c3deae2c	2026-11-14T12:39:04Z
 build4:openregister:near-duplicate-documents-by-text:c2	PR #10536: built 1.2, 2.2, 3.1, 4.1 (16 tests); left 2.3 newman, 3.2 e2e, V.* (live/CI)	session-20261114T114632-df20a06a	2026-11-14T12:40:21Z
+merge:launchpad:1190:7a8a1f51	merge3 tree of 25 launchpad PRs: merged=11 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:40:34Z
