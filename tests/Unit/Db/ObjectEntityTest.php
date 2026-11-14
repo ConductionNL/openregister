@@ -7,6 +7,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SoftDeletion;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -475,14 +476,14 @@ class ObjectEntityTest extends TestCase {
 	// --- delete ---
 
 	public function testDeleteReturnsEntity(): void {
-		$result = $this->entity->delete($this->mockUserSession(), 'test reason');
+		$result = $this->entity->softDelete($this->mockUserSession(), new SoftDeletion('test reason'));
 		$this->assertSame($this->entity, $result);
 	}
 
 	public function testDeleteThrowsWithNoUser(): void {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No user logged in');
-		$this->entity->delete($this->mockNoUserSession());
+		$this->entity->softDelete($this->mockNoUserSession());
 	}
 
 	// --- lastLog ---

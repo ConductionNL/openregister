@@ -128,7 +128,7 @@ final class ObjectEntityLockTermsTest extends TestCase {
 	 */
 	public function testSoftDeleteMatchesDelete(): void {
 		foreach ([['gone', 365], [null, 0], [null, null], ['x', 30]] as [$reason, $days]) {
-			$old = (new ObjectEntity())->delete($this->sessionFor('alice'), $reason, $days)->getDeleted();
+			$old = (new ObjectEntity())->softDelete($this->sessionFor('alice'), new SoftDeletion($reason, $days))->getDeleted();
 			$new = (new ObjectEntity())->softDelete($this->sessionFor('alice'), new SoftDeletion($reason, $days))->getDeleted();
 			$this->assertSame(array_keys($old), array_keys($new));
 			$this->assertSame([$old['deletedBy'], $old['deletedReason'], $old['retentionPeriod']], [$new['deletedBy'], $new['deletedReason'], $new['retentionPeriod']]);

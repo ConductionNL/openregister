@@ -92,6 +92,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SoftDeletion;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -382,7 +383,7 @@ class BasicCrudTest extends TestCase {
 		$this->assertTrue($initialDeleted === [] || $initialDeleted === null);
 
 		// Perform soft delete.
-		$object->delete($mockUserSession, 'Testing soft deletion', 30);
+		$object->softDelete($mockUserSession, new SoftDeletion('Testing soft deletion', 30));
 
 		$deletedData = $object->getDeleted();
 		$this->assertNotNull($deletedData);
