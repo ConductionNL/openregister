@@ -12091,3 +12091,4 @@ review:learniq:2486:a242580e	GREEN: per spec, no new failures (6868 tests), phps
 build4:openregister:history-schema-and-settings-edits-audited:c4	partial: PR #10515 head 83da7162: 3.1 Changes tab/section, 6.1 category column+backfill, 6.2 category read filter, 6.3 administrative retention built; left 5.2 door test+Newman, live/e2e 1.3, 4.2, 6.4, V.4 gates	session-20261114T224751-87da8a15	2026-11-14T23:58:35Z
 review:shillinq:3000:7a353f6d	GREEN: per change specs, unit 11486/0 new failures, phpstan clean	session-20261114T234944-eb1b5f87	2026-11-14T23:58:34Z
 merge:larpinq:1041:95a58113	stale	feeder	2026-11-14T23:55:38Z
+fix:shillinq:2977:dcb02193	fixed: SPDX headers on 2 specs; new head b5f66d62	session-20261114T234948-b89aaae1	2026-11-14T23:58:56Z
