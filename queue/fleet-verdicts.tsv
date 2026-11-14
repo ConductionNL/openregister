@@ -9627,3 +9627,4 @@ hermiq	1726	901a6f77bd6a03b55d31f666fa3248bbcd9465a8	REVERIFY	worker-45	merged d
 keepiq	1789	e905bf117ffd7ee7a789d7531abc325c7ded5643	CONFLICT	worker-03	conflicts with development alone; files: l10n/nl.js l10n/nl.json
 keepiq	1790	2097db1d2ce845dfdf2c60a16fa527240f477157	CONFLICT	worker-03	conflicts with development alone; files: l10n/en.js l10n/en.json
 shillinq	3048	10a5df9db0886965f9b5b0b71bb178d81cfd8c1a	GREEN	worker-09	phpunit 11485 ok (baseline 11299 ok), vitest 2769 ok + 1 inherited failure (dunningNextRun, red on development), no new failures; also carries #2991 (sales-invoice-sending)
+shillinq	3055	5be550bbb3e23d98cdb54d8a5d6ec032a3e380d0	CONFLICT	worker-09	does not merge on development+3048: appinfo/info.xml tests/fixtures/register-versions.lock.json
