@@ -8956,3 +8956,4 @@ integriq	3564	c37760b6d64f16ccaf3e3d9a81ebbbb91bb379af	GREEN	worker-48	php 9035 
 integriq	3630	472a4c5e4f9ba426a9ec5315bb5b7bd3ce3e0d69	CONFLICT	worker-48	conflicts with development + 3542,3564
 integriq	3593	13184c4fc0871a5d3ae0b0c9a84d1db8f24d4a85	GREEN	worker-09	phpunit unit 8985 tests on 2-PR tree, baseline 8920 with 7 inherited failures, new failures 0; vitest 165 files 2177 tests green
 integriq	3631	b0b558d83e2f38ea4f662bf52fc6714038987f6e	GREEN	worker-09	phpunit unit 8985 tests on 2-PR tree, baseline 8920 with 7 inherited failures, new failures 0; vitest 165 files 2177 tests green
+integriq	3613	0ea6aa0c6c1738ef9db836dd96a9656c5aae5e09	REVERIFY	worker-28	no change: merges clean onto current development (2f5d98237); the l10n conflict is with other open PRs of the tree only; head unchanged 0ea6aa0c6c1738ef9db836dd96a9656c5aae5e09, verify it on its own
