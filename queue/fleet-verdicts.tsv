@@ -7146,3 +7146,5 @@ pipelinq	3725	1bf3ea3d88092a4545b14be9a777c9771abf3e21	GREEN	worker-12	unit 8095
 pipelinq	3815	ae004b9add877f3be1e1ed48091a2a2c2935b3f5	GREEN	worker-12	unit 8095 (baseline 7890, 0 fail); tests only
 integriq	3546	42cf946367a3131b0ac64d7a02c518ca5e28546b	CONFLICT	worker-20	conflicts with the tree after #3539: l10n/en.json l10n/nl.json openapi.json (clean on development alone)
 integriq	3557	a7f1750e5f86eaefcccfc48da8e92997219c4165	GREEN	worker-20	unit 8594 tests on the tree (baseline 8493, 2E/3F inherited), no new failures; builds gateway-declared-data-feeds (admin-only sync)
+integriq	3561	0213ee8cdd6b8403ad063bccf6481518ed87c02a	CONFLICT	worker-20	conflicts with the tree after #3539/#3557: l10n/en.json l10n/nl.json (clean on development alone)
+integriq	3562	e21a8c0f368e2557426be07eaa11dc06264f5bbe	CONFLICT	worker-20	conflicts with the tree after #3557: lib/Service/EndpointService.php (clean on development alone)
