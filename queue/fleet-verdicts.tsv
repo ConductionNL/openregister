@@ -7982,3 +7982,4 @@ portaliq	2415	ce2309c659229f7564a138b715676e3e7ad93e7e	GREEN	worker-48	unit 5211
 portaliq	2449	aff4b8ab8816adc7d78b8cbd166d57d26aff38c1	GREEN	worker-48	unit 5211 on tree, baseline 5187 green, new failures 0; node specs proposal-queue-widget, site-news-event pass
 portaliq	2490	b014d53eee9cf7763cf17639fccbb7cc0cc25bc4	GREEN	worker-48	unit 5211 on tree, baseline 5187 green, new failures 0; node specs proposal-queue-widget, site-news-event pass
 portaliq	2491	4a730b50894407e51be9582c5cb941bff78d7ad8	GREEN	worker-48	unit 5211 on tree, baseline 5187 green, new failures 0; node specs proposal-queue-widget, site-news-event pass
+portaliq	2492	2f4977f912901947c35fbe684822be603b67f902	CONFLICT	worker-48	merge conflict on development + 2415,2449,2490,2491
