@@ -549,6 +549,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResetSchemaToShippedCommand</command>
 		<command>OCA\OpenRegister\Command\DocumentStoreStatusCommand</command>
+		<command>OCA\OpenRegister\Command\DocumentStoreMoveCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
 		<command>OCA\OpenRegister\Command\AdoptOrganisationlessRowsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillObjectSlugsCommand</command>

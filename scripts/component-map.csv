@@ -4156,6 +4156,7 @@ Service/Connection/ConnectionReportKind.php,,Service,,,,,Integrations
 Service/Object/SaveObjects/BulkObjectQuota.php,,Service,,,,,Core
 Service/Object/SaveObjects/BulkQuotaTally.php,,Service,,,,,Core
 Service/Query/ReferenceFilterParser.php,,Service,,,,,Core
+Service/File/DocumentReferenceMap.php,246,Service,Service,Service/File/DocumentReferenceMap.php,0,,Core
 Service/File/DocumentStore.php,219,Service,Service,Service/File/DocumentStore.php,0,,Core
 Repair/ImportRedactionPolicyRegister.php,14,Repair,Platform,Platform/Repair/ImportRedactionPolicyRegister.php,0,,Platform
 Service/RedactionPolicy/PolicyIndex.php,47,Service,Configuration,Configuration/Service/RedactionPolicy/PolicyIndex.php,0,,Configuration
@@ -4244,6 +4245,19 @@ Service/Import/RecordImport/RowRangeFilter.php,,Service,,,,,Core
 Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
+Db/DocumentMove.php,156,Db,,,,,Core
+Db/DocumentMoveMapper.php,119,Db,,,,,Core
+Migration/Version1Date20261114100000.php,89,Migration,,,,,Platform
+Service/File/DocumentStoreMoveGuard.php,132,Service,Service,Service/File/DocumentStoreMoveGuard.php,0,,Core
+Service/File/DocumentStoreMoving.php,54,Service,Service,Service/File/DocumentStoreMoving.php,0,,Core
+Service/File/DocumentStoreMove.php,1005,Service,Service,Service/File/DocumentStoreMove.php,0,,Core
+Service/File/DocumentCopyRun.php,114,Service,Service,Service/File/DocumentCopyRun.php,0,,Core
+Service/File/DocumentMoveOutcome.php,143,Service,Service,Service/File/DocumentMoveOutcome.php,0,,Core
+Service/File/DocumentStoreMoveOptions.php,60,Service,Service,Service/File/DocumentStoreMoveOptions.php,0,,Core
+Service/File/DocumentStoreMovePlatform.php,57,Service,Service,Service/File/DocumentStoreMovePlatform.php,0,,Core
+Service/File/DocumentStoreObjects.php,193,Service,Service,Service/File/DocumentStoreObjects.php,0,,Core
+Service/File/DocumentVersions.php,162,Service,Service,Service/File/DocumentVersions.php,0,,Core
+Command/DocumentStoreMoveCommand.php,231,Command,Service,Service/Command/DocumentStoreMoveCommand.php,0,,Core
 Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Core
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
