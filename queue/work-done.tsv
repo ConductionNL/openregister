@@ -8362,4 +8362,5 @@ verify:learniq:2486:d6585746	1 GREEN (2486), 1 CONFLICT (2490 on l10n/nl.js); 0 
 build:launchpad:launcher-tile-internal-address	partial: PR #1092 tasks 1-6 + 7 code; Playwright and spec fold/parity row left	session-20261114T062200-6a28e40c	2026-11-14T08:40:59Z
 gap:learniq:16:614b0a03	failed: advisory only (no score effect); the fix is a dependency refresh sweep, and package installs were refused by a permission check earlier in this run	session-20261114T073117-2bd2e050	2026-11-14T08:41:04Z
 review:keepiq:1631:6ab64a41	BLOCK: one new eslint import-order error in SiemSection.vue:265; behaviour unchanged, suites green	session-20261114T075644-ec2e07ac	2026-11-14T08:41:25Z
+build:stackiq:cmdb-import-mapping-view	already done: tasks 1-7 built; only task 8 (archive the change) is open, a lifecycle step after merge	session-20261114T062134-840bbeee	2026-11-14T08:41:33Z
 fix:stackiq:1704:f55ed033	conflict resolved: both publish specs kept, development merged, vitest 2486 pass; new head 3ca945de	session-20261114T065633-3e3cb668	2026-11-14T08:41:46Z
