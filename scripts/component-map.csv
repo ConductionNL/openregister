@@ -4152,3 +4152,5 @@ Service/Task/ApprovalPositionFormGuard.php,200,Service,Flows,Flows/Service/Task/
 Service/Anonymisation/DetectorVersion.php,69,Service,Compliance,Compliance/Service/Anonymisation/DetectorVersion.php,0,,Compliance
 Service/Anonymisation/DetectorVersionHistory.php,51,Service,Compliance,Compliance/Service/Anonymisation/DetectorVersionHistory.php,0,,Compliance
 Service/Anonymisation/DetectorVersionReader.php,49,Service,Compliance,Compliance/Service/Anonymisation/DetectorVersionReader.php,0,,Compliance
+Service/Object/RelationAddressRewrite.php,42,Service,Service,Service/Object/RelationAddressRewrite.php,0,,Core
+Service/Object/RelationAddressRewriteInterface.php,6,Service,Service,Service/Object/RelationAddressRewriteInterface.php,0,,Core
