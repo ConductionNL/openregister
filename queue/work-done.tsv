@@ -7815,3 +7815,4 @@ fix:humaniq:1135:31e8c61f	merged development cleanly (suite green); remaining l1
 fix:hermiq:1740:c24fd1d2	CONFLICT with development resolved (register -> 0.54.0, l10n), pushed 58e98963; no new failures	session-20261114T065631-3903ed42	2026-11-14T07:22:09Z
 fix:hermiq:1715:84dfb14c	l10n + register version conflict resolved (bumped to 0.54.0), checks green, pushed d9f59cc52c1e8e02d80b09a0d561a795fa1fd2a1	session-20261114T062202-3e33eeb3	2026-11-14T07:22:18Z
 fix:humaniq:1030:4e04b394	conflict resolved, new head 0a2fd47c, REVERIFY queued	session-20261114T070341-dde19dba	2026-11-14T07:22:36Z
+fix:hermiq:1760:cb934e17	register conflict resolved (0.54.0), pushed 7cc54c6b0bda2cfb9d638b94b524408a662d87b7; REVERIFY	session-20261114T062222-96f530fc	2026-11-14T07:22:50Z
