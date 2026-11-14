@@ -10656,3 +10656,4 @@ fix:planninq:1178:93ae3833	floor restored: bulkPatch split per action, unit_comp
 verify:learniq:2542:ae32d345	GREEN 2542; no new failures	session-20261114T191730-4ad9612d	2026-11-14T19:22:40Z
 merge:shillinq:2976:76af4434	merge3 tree of 8 shillinq PRs: merged=3 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:23:59Z
 merge:shillinq:2991:7867c5cb	merge3 tree of 8 shillinq PRs: merged=3 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:24:02Z
+merge:shillinq:3057:2c57f181	merge3 tree of 8 shillinq PRs: merged=3 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:24:05Z
