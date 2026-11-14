@@ -11055,4 +11055,5 @@ fix:buildiq:1608:9907d8e5	merged development cleanly; new head 78af9a24, REVERIF
 fix:integriq:3634:fc69f0f0	fixed: module_coupling restored 5.04, abs 3.56; new head 8688e02b, REVERIFY recorded	session-20261114T203931-14af5319	2026-11-14T20:55:54Z
 fix:buildiq:1620:2ef94dee	l10n conflicts resolved, new head c5ef8423; REVERIFY	session-20261114T201750-64b6fe0f	2026-11-14T20:56:13Z
 fix:keepiq:1786:884c2051	merged development (l10n union), updated EventRegistrarsTest for the new flow trigger listeners; unit 5199 OK; new head e7b22f05, REVERIFY recorded	session-20261114T204759-2444e6ca	2026-11-14T20:57:04Z
+build:buildiq:capability-requirements-backfill:c3	partial: PR #1647 builds T02 (REQ-BQCV-002 scenario test, no gap); T01, T03-T04, T06-T20, T22-T30 left (context full), T31 needs the openspec CLI	session-20261114T173956-74ab8962	2026-11-14T20:57:16Z
 fix:integriq:3592:70be0200	floor restored: unit_size 3.557, pushed 8a35a39a, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T20:57:19Z
