@@ -9580,3 +9580,4 @@ fix:learniq:2507:0316c337	conflicts resolved, merges clean with development and 
 fix:decidiq:2175:30ead605	floor restored by refactor, new head 3c163832	session-20261114T141728-9a5d03fc	2026-11-14T14:46:49Z
 fix:filinq:2114:e4621a50	failed: merges cleanly with development (head e4621a50 unchanged); conflicts only with open #2079 (l10n en/nl, register), which must land first, then merge development in again	session-20261114T141721-aeb4e068	2026-11-14T14:47:08Z
 fix:shillinq:3007:a5a3a09c	conflict resolved, new head f7e43c4d	session-20261114T141737-e9e54940	2026-11-14T14:47:18Z
+fix:shillinq:2997:6cf1addf	merged development, resolved 7-file conflict; new head 89216b68	session-20261114T141010-8dc8bd74	2026-11-14T14:47:25Z
