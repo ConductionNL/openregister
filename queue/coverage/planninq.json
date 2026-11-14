@@ -1,7 +1,7 @@
 {
  "app": "planninq",
- "commit": "2cbac43bf2d4eecd160908bd8f7362c217c285fd",
- "measured_at": "2026-11-13T19:05:18Z",
+ "commit": "cec12484d37f5c5151fa610acee535625eb3fdd7",
+ "measured_at": "2026-11-14T07:45:44Z",
  "php": {
   "tool": "pcov",
   "pct": 97.46,
@@ -79,9 +79,9 @@
   }
  },
  "js": {
-  "pct": 88.25,
+  "pct": 93.99,
   "statements": 2962,
-  "covered": 2614,
+  "covered": 2784,
   "dirs": {
    "src/api/": [
     73,
@@ -97,7 +97,7 @@
    ],
    "src/store/": [
     646,
-    352
+    522
    ],
    "src/store/modules/": [
     76,
