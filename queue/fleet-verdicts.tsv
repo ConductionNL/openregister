@@ -7595,3 +7595,4 @@ launchpad	1219	be8c001218b1e1c51f1d280faaccf718f58bfd2f	GREEN	worker-31	build of
 stackiq	1919	2f7bbbeb8ddac6bb28d990a3f774b787b7f5de4c	GREEN	worker-42	tree dev 8ca7c057 + 1916..1923: phpunit 3494 tests, baseline 3446 with 0 failures, 0 new; vitest 2532 passed; build contracts-expiry-warning-fires matches its specs
 stackiq	1920	ae4972747b606a2e0c8569989dec95e25592d32b	GREEN	worker-42	tree dev 8ca7c057 + 1916..1923: phpunit 3494 tests, baseline 3446 with 0 failures, 0 new; vitest 2532 passed; build insight-assistant matches its specs (POST /api/ask NoAdminRequired, rate limited, reads with RBAC)
 larpinq	1036	3e79d24a762bdf8bda043544729ab6dd94a473a4	GREEN	worker-35	phpunit unit tree 812 OK (baseline 792 OK), vitest 511 passed (baseline 506), no new failures; steward access matches change D3
+larpinq	1037	922d4ae2e112b0030387cae852ea958091a4b847	GREEN	worker-35	phpunit unit tree 812 OK (baseline 792 OK), vitest 511 passed (baseline 506), no new failures
