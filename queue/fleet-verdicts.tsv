@@ -10234,3 +10234,4 @@ opencatalogi	2679	99be708e82abc72c0d8d3e32216b019f464c1cae	REVERIFY	merge3	verdi
 opencatalogi	2655	cd5c3cea4aee976cc1eeafd1e27ddffca23a56a3	REVERIFY	merge3	head moved since the verdict (was a38229836109726f1d907b831623d56380e65c2c, 36ec34ca:REVERIFY,a3822983:GREEN); verify the new head
 decidiq	2189	d54fa2289e2eb3b59dd2fedbbfb0ec076afc3829	REVERIFY	worker-51	merged origin/development in (clean; municipality.json objectCount + meeting appended, JSON valid); new head 9db1906ee298ab726374467d139771ee65803b76, verify it
 shillinq	3051	98b5bfe797b9f82b0d7a700cf5e7d03f724296b0	REVERIFY	worker-58	merged origin/development in (clean, l10n json/js valid, test:l10n and parity OK); new head 2f5d4cd88a0e33564f8b495a5783dd2df19e345d, verify it
+stackiq	1957	4de74d07773eda437814ed327495a3d2831d71c0	GREEN	worker-07	unit 3602 OK (= baseline); vitest 2582 pass/1 fail (baseline 2572/1, inherited facets.spec); 0 new failures; tests only
