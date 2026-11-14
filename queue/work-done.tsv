@@ -8458,3 +8458,4 @@ build:stackiq:security-baseline-classification	partial: PR #1937 (tasks 1-2 done
 verify:launchpad:1208:5e651df7	1208, 1209 GREEN; 1210, 1211 CONFLICT with #1209	session-20261114T065633-3e3cb668	2026-11-14T08:52:59Z
 verify:opencatalogi:2662:87f7d0cf	8 GREEN (2662-2664, 2666-2670), 2665 CONFLICT in tree (PublicationsControllerTest with #2664, clean alone); unit 5470 vs 5485 (MCP provider tests removed per change), same 2 inherited failures; vitest 1039 green	session-20261114T082640-d9af913e	2026-11-14T08:53:02Z
 verify:stackiq:1899:021ea7d7	7 GREEN (1899,1901-1905,1907), 1906 CONFLICT with 1899; no new failures	session-20261114T075648-394d8174	2026-11-14T08:53:31Z
+verify:launchpad:1212:58fa3834	GREEN 1212,1213,1215,1216 (phpunit 4068->4103 0 fail, vitest 2265 pass); CONFLICT 1214,1217,1218,1219	session-20261114T075643-75a598ab	2026-11-14T08:53:52Z
