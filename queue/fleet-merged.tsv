@@ -2782,3 +2782,4 @@ decidiq	2186	90997bb6478279894b5855e4bc2a26e38874174c	RED	merge3	GATE RED checke
 decidiq	2186	90997bb6478279894b5855e4bc2a26e38874174c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
 portaliq	2437	0bea0f46a52d61994a5d40a2da96c0efa6169ba3	RED	merge3	GATE RED checker floor: testcoderatio: pass -> warn; testcoderatio stars: 4 -> 3
 portaliq	2495	0563a50f0c9e7c60aea88f1816beaf5dc09c4ab8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.81 holds at 3.81
+dossiq	6385	db74d1b0be23a8e02e760af441f90e532c96bbf8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
