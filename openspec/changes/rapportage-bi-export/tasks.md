@@ -8,7 +8,7 @@
       `{results: [{<groupField>: ..., <metric>: ...}], total, metric, field}`, reads `groupBy=@self.created`, fills every
       bucket of an `interval` series (0 for count and sum, labelled `2026-01`; the last twelve buckets without `from`/`to`)
       and filters rows with `having[<metric>][gt|gte|lt|lte|eq|ne]=<n>` after aggregating; RBAC stays in the runner.
-      Pinned in `AggregationControllerReportTest` and `AggregateReportEnvelopeTest`.
+      Pinned in `AggregationControllerReportTest`, `AggregateReportEnvelopeTest` and `AggregateReportPeriodsTest`.
 - [ ] Implement: The system MUST support configurable report templates
 - [ ] Implement: The system MUST support scheduled report generation
 - [x] Implement: The system MUST support export in CSV, Excel, PDF, and ODS formats
@@ -20,7 +20,12 @@
       "Page n / N" in the footer; pinned in `ExportServicePdfTest::testBuildPdfSectionSummarisesTheStatusAndTheFilters`.
 - [ ] Implement: The system MUST provide chart data API endpoints for frontend visualization
 - [ ] Implement: The system MUST support cross-register reporting
-- [ ] Implement: The system MUST support date range filtering and period-over-period comparison
+- [x] Implement: The system MUST support date range filtering and period-over-period comparison
+      DONE: `from`/`to` on `/api/objects/{register}/{schema}/aggregate` narrow a categorical report to `_created` in
+      that range (a date-only `to` covers the whole day); `trend=true` on an `interval` series gives each bucket
+      `previous<Metric>` and its percentage `change` (null for the first). `GET /api/reports/compare` runs one metric
+      over `period1.from/to` and `period2.from/to` and returns both with their labels (`Q1 2026`) and
+      `change: {absolute, percentage}`. Pinned in `AggregationControllerReportTest` and `AggregateReportPeriodsTest`.
 - [ ] Implement: The system MUST support custom calculated metrics
 - [ ] Implement: Reports and exports MUST enforce RBAC permissions
 - [ ] Implement: The system MUST support report caching for performance

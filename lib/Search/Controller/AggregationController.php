@@ -49,6 +49,7 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportEnvelope;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportPeriods;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
@@ -73,6 +74,12 @@ use RuntimeException;
  * instead of passing it, which would let the validator police one schema's
  * property list while the aggregate ran over another's, and that is exactly
  * the mismatch `timeseries()` resolves the schema up front to avoid.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Already over the limit
+ * before the reporting actions (rapportage-bi-export) joined; `report()` and
+ * `compare()` share `resolveFilter()`, the metric parsing and the runner
+ * refusals with their siblings, and a second controller would have to copy
+ * that private request grammar rather than read the same one.
  */
 class AggregationController extends Controller {
 	/**
@@ -694,7 +701,8 @@ class AggregationController extends Controller {
 		}
 
 		$interval = $this->request->getParam('interval');
-		if (is_string($interval) === true && $interval !== '') {
+		$isSeries = (is_string($interval) === true && $interval !== '');
+		if ($isSeries === true) {
 			$result = $this->reportSeries(run: $run, groupFields: $groupFields, entries: $entries, interval: $interval);
 		} else {
 			$result = $this->reportGroups(run: $run, groupFields: $groupFields, metrics: $metrics);
@@ -705,6 +713,10 @@ class AggregationController extends Controller {
 		}
 
 		$rows = AggregateReportEnvelope::rows(groups: ($result['groups'] ?? []), groupFields: $groupFields, metrics: $entries);
+		if ($isSeries === true && $this->isTrue(value: $this->request->getParam('trend')) === true) {
+			$names = AggregateReportEnvelope::metricNames(metrics: $entries);
+			$rows = AggregateReportPeriods::withTrend(rows: $rows, column: (string)reset($names));
+		}
 
 		return $this->withCacheHeader(
 			result: [
@@ -770,6 +782,11 @@ class AggregationController extends Controller {
 		$primary = $this->primaryMetric(metrics: $metrics);
 
 		try {
+			$run->filter = $this->withCreatedRange(
+				filter: $run->filter,
+				from: (string)$this->request->getParam('from', ''),
+				to: (string)$this->request->getParam('to', '')
+			);
 			$query = AggregationQuery::create(
 				metric: $primary['metric'],
 				field: $primary['field'],
@@ -809,7 +826,7 @@ class AggregationController extends Controller {
 			'to' => (string)$this->request->getParam('to', ''),
 		];
 		if ($range['from'] === '' && $range['to'] === '') {
-			$range = AggregateReportEnvelope::defaultRange(gap: $gap, now: new DateTimeImmutable('now'));
+			$range = AggregateReportPeriods::defaultRange(gap: $gap, now: new DateTimeImmutable('now'));
 		}
 
 		try {
@@ -838,14 +855,14 @@ class AggregationController extends Controller {
 			return $result;
 		}
 
-		$groups = AggregateReportEnvelope::fillGaps(
+		$groups = AggregateReportPeriods::fillGaps(
 			groups: ($result['groups'] ?? []),
 			gap: $gap,
 			range: $range,
 			metric: $entries[0]['metric']
 		);
 		foreach ($groups as $index => $group) {
-			$groups[$index]['key'] = AggregateReportEnvelope::label(key: (string)($group['key'] ?? ''), gap: $gap);
+			$groups[$index]['key'] = AggregateReportPeriods::label(key: (string)($group['key'] ?? ''), gap: $gap);
 		}
 
 		$result['groups'] = $groups;
@@ -870,4 +887,150 @@ class AggregationController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
 	}//end runReport()
+
+	/**
+	 * The filter narrowed to objects created in `from`..`to`, both inclusive;
+	 * a `_created` condition the caller already sent is kept beside it.
+	 *
+	 * @param array<string, mixed> $filter The resolved filter map.
+	 * @param string               $from   The range start, or ''.
+	 * @param string               $to     The range end, or ''.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws InvalidArgumentException When a bound does not parse.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-date-range-filtering-and-period-over-period-comparison
+	 */
+	private function withCreatedRange(array $filter, string $from, string $to): array {
+		$range = AggregateReportPeriods::createdRange(from: $from, to: $to);
+		if ($range === []) {
+			return $filter;
+		}
+
+		$existing = ($filter['_created'] ?? []);
+		if (is_array($existing) === false) {
+			$existing = ['eq' => $existing];
+		}
+
+		$filter['_created'] = array_merge($existing, $range);
+
+		return $filter;
+	}//end withCreatedRange()
+
+	/**
+	 * Whether a request flag is set: `true`, `1`, `yes` or `on`.
+	 *
+	 * @param mixed $value The raw param.
+	 *
+	 * @return bool
+	 */
+	private function isTrue(mixed $value): bool {
+		if (is_bool($value) === true) {
+			return $value;
+		}
+
+		return in_array(strtolower(trim((string)$value)), ['true', '1', 'yes', 'on'], true);
+	}//end isTrue()
+
+	/**
+	 * Period-over-period comparison: `GET /api/reports/compare`.
+	 *
+	 * Reads `register`, `schema`, one `metric` (default count) with its
+	 * `field`, the filters object search reads, and two created-date ranges
+	 * as `period1.from`, `period1.to`, `period2.from`, `period2.to` (PHP
+	 * reads the dots as underscores; `period1[from]` works too). Each period
+	 * is its own aggregation, with RBAC and multi-tenancy applied by the
+	 * runner as for any other.
+	 *
+	 * @return JSONResponse `{period1: {label, from, to, <metric>}, period2: {...}, change: {absolute, percentage}, metric, field}`;
+	 *                      400, 403 or 404 when refused.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-date-range-filtering-and-period-over-period-comparison
+	 */
+	public function compare(): JSONResponse {
+		$register = trim((string)$this->request->getParam('register', ''));
+		$schema = trim((string)$this->request->getParam('schema', ''));
+		$periods = [];
+		foreach (['period1', 'period2'] as $name) {
+			$periods[$name] = $this->periodParam(name: $name);
+		}
+
+		if ($register === '' || $schema === '' || in_array(null, $periods, true) === true) {
+			return new JSONResponse(
+				['error' => '`register`, `schema`, `period1.from`, `period1.to`, `period2.from` and `period2.to` are required'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$entries = $this->reportEntries(metrics: null);
+		$names = AggregateReportEnvelope::metricNames(metrics: $entries);
+		$column = (string)reset($names);
+		$run = new AggregationRun(register: $register, schema: $schema);
+		try {
+			$filter = $this->resolveFilter(run: $run, action: 'compare');
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		$out = [];
+		foreach ($periods as $name => $period) {
+			try {
+				$query = AggregationQuery::create(
+					metric: $entries[0]['metric'],
+					field: $entries[0]['field'],
+					filter: $this->withCreatedRange(filter: $filter, from: $period['from'], to: $period['to'])
+				);
+			} catch (InvalidArgumentException $e) {
+				return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+			}
+
+			$result = $this->runReport(run: $run, query: $query);
+			if ($result instanceof JSONResponse) {
+				return $result;
+			}
+
+			$out[$name] = [
+				'label' => AggregateReportPeriods::periodLabel(from: $period['from'], to: $period['to']),
+				'from' => $period['from'],
+				'to' => $period['to'],
+				$column => ($result['value'] ?? null),
+			];
+		}//end foreach
+
+		$out['change'] = AggregateReportPeriods::change(current: $out['period1'][$column], previous: $out['period2'][$column]);
+		$out['metric'] = $entries[0]['metric'];
+		$out['field'] = $this->reportField(entries: $entries);
+
+		return new JSONResponse($out);
+	}//end compare()
+
+	/**
+	 * One period's bounds from `<name>_from`/`<name>_to` or `<name>[from]`/`<name>[to]`.
+	 *
+	 * @param string $name `period1` or `period2`.
+	 *
+	 * @return array{from: string, to: string}|null Null when a bound is missing.
+	 */
+	private function periodParam(string $name): ?array {
+		$nested = $this->request->getParam($name);
+		$bounds = [];
+		foreach (['from', 'to'] as $bound) {
+			$value = $this->request->getParam($name . '_' . $bound);
+			if (is_array($nested) === true && isset($nested[$bound]) === true) {
+				$value = $nested[$bound];
+			}
+
+			if (is_string($value) === false || trim($value) === '') {
+				return null;
+			}
+
+			$bounds[$bound] = trim($value);
+		}
+
+		return $bounds;
+	}//end periodParam()
 }//end class

@@ -1264,6 +1264,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // The reporting aggregation (rapportage-bi-export): literal, so before objects#show.
         ['name' => 'aggregation#report', 'url' => '/api/objects/{register}/{schema}/aggregate', 'verb' => 'GET'],
+        // Period-over-period comparison of one metric (rapportage-bi-export).
+        ['name' => 'aggregation#compare', 'url' => '/api/reports/compare', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
         // Address an object by its schema's declared identity. BEFORE objects#show for the same reason.

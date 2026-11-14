@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search\Service\Aggregation;
 
-use DateTimeImmutable;
-use DateTimeZone;
 use InvalidArgumentException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportEnvelope;
 use PHPUnit\Framework\TestCase;
@@ -90,96 +88,6 @@ class AggregateReportEnvelopeTest extends TestCase {
 		$this->assertSame('_updated', AggregateReportEnvelope::column(field: '@self.updated'));
 		$this->assertSame('status', AggregateReportEnvelope::column(field: 'status'));
 	}//end testSelfFieldsMapToTheirColumns()
-
-	public function testMissingMonthsAreFilledWithZeroInTimeOrder(): void {
-		$filled = AggregateReportEnvelope::fillGaps(
-			groups: [
-				['key' => '2026-03-01T00:00:00Z', 'value' => 4],
-				['key' => '2026-01-01T00:00:00Z', 'value' => 2],
-			],
-			gap: 'month',
-			range: ['from' => '2026-01-01T00:00:00Z', 'to' => '2026-04-01T00:00:00Z'],
-			metric: 'count'
-		);
-
-		$this->assertSame(
-			[
-				['key' => '2026-01-01T00:00:00Z', 'value' => 2],
-				['key' => '2026-02-01T00:00:00Z', 'value' => 0],
-				['key' => '2026-03-01T00:00:00Z', 'value' => 4],
-			],
-			$filled
-		);
-	}//end testMissingMonthsAreFilledWithZeroInTimeOrder()
-
-	public function testAnEmptyAverageBucketIsNull(): void {
-		$filled = AggregateReportEnvelope::fillGaps(
-			groups: [],
-			gap: 'day',
-			range: ['from' => '2026-01-01T12:00:00Z', 'to' => '2026-01-03T00:00:00Z'],
-			metric: 'avg'
-		);
-
-		$this->assertSame(
-			[['key' => '2026-01-01T00:00:00Z', 'value' => null], ['key' => '2026-01-02T00:00:00Z', 'value' => null]],
-			$filled
-		);
-	}//end testAnEmptyAverageBucketIsNull()
-
-	public function testABucketOutsideTheComputedStartsIsKept(): void {
-		$filled = AggregateReportEnvelope::fillGaps(
-			groups: [['key' => 'odd', 'value' => 1]],
-			gap: 'year',
-			range: ['from' => '2025-01-01T00:00:00Z', 'to' => '2026-01-01T00:00:00Z'],
-			metric: 'count'
-		);
-
-		$this->assertSame([['key' => '2025-01-01T00:00:00Z', 'value' => 0], ['key' => 'odd', 'value' => 1]], $filled);
-	}//end testABucketOutsideTheComputedStartsIsKept()
-
-	public function testATooWideRangeIsNotFilled(): void {
-		$groups = [['key' => '2026-01-01T00:00:00Z', 'value' => 1]];
-
-		$this->assertSame(
-			$groups,
-			AggregateReportEnvelope::fillGaps(
-				groups: $groups,
-				gap: 'minute',
-				range: ['from' => '2026-01-01T00:00:00Z', 'to' => '2026-01-02T00:00:00Z'],
-				metric: 'count'
-			)
-		);
-	}//end testATooWideRangeIsNotFilled()
-
-	public function testWeeksStartOnMonday(): void {
-		$filled = AggregateReportEnvelope::fillGaps(
-			groups: [],
-			gap: 'week',
-			range: ['from' => '2026-01-07T00:00:00Z', 'to' => '2026-01-13T00:00:00Z'],
-			metric: 'count'
-		);
-
-		$this->assertSame(['2026-01-05T00:00:00Z', '2026-01-12T00:00:00Z'], array_column($filled, 'key'));
-	}//end testWeeksStartOnMonday()
-
-	public function testLabelsAreIso8601PerInterval(): void {
-		$this->assertSame('2026-01', AggregateReportEnvelope::label(key: '2026-01-01T00:00:00Z', gap: 'month'));
-		$this->assertSame('2026-01-05', AggregateReportEnvelope::label(key: '2026-01-05T00:00:00Z', gap: 'day'));
-		$this->assertSame('2026-W02', AggregateReportEnvelope::label(key: '2026-01-05T00:00:00Z', gap: 'week'));
-		$this->assertSame('2026-Q3', AggregateReportEnvelope::label(key: '2026-07-01T00:00:00Z', gap: 'quarter'));
-		$this->assertSame('2026', AggregateReportEnvelope::label(key: '2026-01-01T00:00:00Z', gap: 'year'));
-		$this->assertSame('2026-01-05T09:00', AggregateReportEnvelope::label(key: '2026-01-05T09:00:00Z', gap: 'hour'));
-		$this->assertSame('not-a-date', AggregateReportEnvelope::label(key: 'not-a-date', gap: 'month'));
-	}//end testLabelsAreIso8601PerInterval()
-
-	public function testTheDefaultRangeIsTheLastTwelveMonths(): void {
-		$range = AggregateReportEnvelope::defaultRange(
-			gap: 'month',
-			now: new DateTimeImmutable('2026-11-14T10:30:00', new DateTimeZone('UTC'))
-		);
-
-		$this->assertSame(['from' => '2025-12-01T00:00:00Z', 'to' => '2026-12-01T00:00:00Z'], $range);
-	}//end testTheDefaultRangeIsTheLastTwelveMonths()
 
 	public function testHavingKeepsOnlyTheRowsEveryConditionHoldsFor(): void {
 		$having = AggregateReportEnvelope::parseHaving(raw: ['count' => ['gt' => '10', 'lte' => '50']], columns: ['count']);

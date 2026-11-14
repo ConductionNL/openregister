@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Search\Controller\AggregationController
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregateReportEnvelope
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregateReportPeriods
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
  * @uses   \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices
  * @uses   \OCA\OpenRegister\Search\Controller\Support\AggregationRun
@@ -255,4 +256,103 @@ class AggregationControllerReportTest extends TestCase {
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertSame(['error' => '`interval` MUST be one of ...'], $response->getData());
 	}//end testAnInvalidSeriesIsA400()
+	public function testFromAndToNarrowACategoricalReportToTheCreatedRange(): void {
+		$this->stubParams(['groupBy' => 'status', 'from' => '2026-01-01', 'to' => '2026-03-31']);
+		$captured = null;
+		$this->runner->method('runAdhocByRef')->willReturnCallback(
+			function (string $reg, string $sch, AggregationQuery $query) use (&$captured) {
+				$captured = $query;
+				return ['groups' => []];
+			}
+		);
+
+		$this->makeController()->report('r', 's');
+
+		$this->assertSame(['gte' => '2026-01-01', 'lt' => '2026-04-01'], $captured->filter['_created']);
+	}//end testFromAndToNarrowACategoricalReportToTheCreatedRange()
+
+	public function testAnUnparseableRangeIsA400(): void {
+		$this->stubParams(['groupBy' => 'status', 'from' => 'soon']);
+		$this->runner->expects($this->never())->method('runAdhocByRef');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->makeController()->report('r', 's')->getStatus());
+	}//end testAnUnparseableRangeIsA400()
+
+	public function testTrendAddsThePreviousMonthToASeries(): void {
+		$this->stubParams(
+			['groupBy' => '@self.created', 'interval' => 'month', 'from' => '2026-01-01', 'to' => '2026-03-01', 'trend' => 'true']
+		);
+		$this->runner->method('findSchema')->willReturn($this->createMock(Schema::class));
+		$this->validator->method('validate')->willReturn(AggregationQuery::create(metric: 'count'));
+		$this->runner->method('runAdhocByRef')->willReturn(
+			['groups' => [['key' => '2026-01-01T00:00:00Z', 'value' => 4], ['key' => '2026-02-01T00:00:00Z', 'value' => 6]]]
+		);
+
+		$data = $this->makeController()->report('r', 's')->getData();
+
+		$this->assertSame(
+			[
+				['@self.created' => '2026-01', 'count' => 4, 'previousCount' => null, 'change' => null],
+				['@self.created' => '2026-02', 'count' => 6, 'previousCount' => 4, 'change' => 50.0],
+			],
+			$data['results']
+		);
+	}//end testTrendAddsThePreviousMonthToASeries()
+
+	public function testCompareRunsEachPeriodAndReportsTheChange(): void {
+		$this->stubParams(
+			[
+				'register' => 'zaken',
+				'schema' => 'meldingen',
+				'metric' => 'count',
+				'period1_from' => '2026-01-01',
+				'period1_to' => '2026-03-31',
+				'period2' => ['from' => '2025-01-01', 'to' => '2025-03-31'],
+			]
+		);
+		$filters = [];
+		$this->runner->expects($this->exactly(2))->method('runAdhocByRef')->willReturnCallback(
+			function (string $reg, string $sch, AggregationQuery $query) use (&$filters) {
+				$filters[] = $query->filter['_created'];
+				return ['value' => count($filters) === 1 ? 450 : 380];
+			}
+		);
+
+		$data = $this->makeController()->compare()->getData();
+
+		$this->assertSame(
+			[['gte' => '2026-01-01', 'lt' => '2026-04-01'], ['gte' => '2025-01-01', 'lt' => '2025-04-01']],
+			$filters
+		);
+		$this->assertSame(
+			[
+				'period1' => ['label' => 'Q1 2026', 'from' => '2026-01-01', 'to' => '2026-03-31', 'count' => 450],
+				'period2' => ['label' => 'Q1 2025', 'from' => '2025-01-01', 'to' => '2025-03-31', 'count' => 380],
+				'change' => ['absolute' => 70, 'percentage' => 18.42],
+				'metric' => 'count',
+				'field' => null,
+			],
+			$data
+		);
+	}//end testCompareRunsEachPeriodAndReportsTheChange()
+
+	public function testCompareNeedsBothPeriods(): void {
+		$this->stubParams(['register' => 'zaken', 'schema' => 'meldingen', 'period1_from' => '2026-01-01', 'period1_to' => '2026-03-31']);
+		$this->runner->expects($this->never())->method('runAdhocByRef');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->makeController()->compare()->getStatus());
+	}//end testCompareNeedsBothPeriods()
+
+	public function testCompareRefusedForOnePeriodIsA403(): void {
+		$this->stubParams(
+			[
+				'register' => 'r', 'schema' => 's',
+				'period1_from' => '2026-01-01', 'period1_to' => '2026-01-31',
+				'period2_from' => '2025-01-01', 'period2_to' => '2025-01-31',
+			]
+		);
+		$this->runner->method('runAdhocByRef')->willThrowException(new NotAuthorizedException('no access'));
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->makeController()->compare()->getStatus());
+	}//end testCompareRefusedForOnePeriodIsA403()
 }//end class
