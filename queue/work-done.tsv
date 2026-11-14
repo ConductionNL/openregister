@@ -8249,3 +8249,4 @@ gap:opencatalogi:opensourcehealth:9826a9cd	failed: not fixable in one bounded PR
 build:launchpad:governance-rest-api-reference	partial: PR #1202, x-launchpad-stability on all 182 operations (24 public) + pinning test; generator choice (D1) left for a person since openapi.json already exists	session-20261114T065631-3903ed42	2026-11-14T08:26:16Z
 fix:opencatalogi:2655:053c2a58	development merged in, clean; conflict only with unmerged #2654; REVERIFY at 55850c5e	session-20261114T075648-394d8174	2026-11-14T08:26:18Z
 verify:buildiq:1597:42bcb238	7 GREEN (1597-1601,1603,1604), 2 CONFLICT (1602,1605 l10n vs tree); no new failures	session-20261114T075640-efa02b24	2026-11-14T08:26:59Z
+build:keepiq:capability-requirements-from-the-matrix	partial: PR #1788 (1.1 compare versions, 2.2 past end date refused; 19 tests); 3.1 privileged-login access left	session-20261114T062156-16c77e6a	2026-11-14T08:27:36Z
