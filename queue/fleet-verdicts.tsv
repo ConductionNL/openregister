@@ -9063,3 +9063,4 @@ integriq	3564	a5801983df6db04f23c711efc67dcbd08cf02081	REVERIFY	merge3	verdict s
 shillinq	3057	61e7233a07910ef2c53786c04afdb09df75793b0	CONFLICT	worker-27	conflicts with tree (after 2976) in l10n/en.js en.json nl.js nl.json; clean vs development
 shillinq	3059	121845803d6706cf380cdfd4ec0135fe05ae71d3	GREEN	worker-27	tree 2976+3059+3070: unit 11287 tests OK (baseline 11222 OK); vitest 2742, 1 fail dunningNextRun.spec.js also red on development
 shillinq	3067	0f4f123e40e2a88185e96805121467a7969b3b6a	CONFLICT	worker-27	conflicts with tree (after 2976+3059) in appinfo/info.xml tests/fixtures/register-versions.lock.json; clean vs development
+shillinq	3070	7bb50b7e137bbf139d078b4602cbeae3d2ace29a	GREEN	worker-27	tree 2976+3059+3070: unit 11287 tests OK (baseline 11222 OK); vitest 2742, 1 fail dunningNextRun.spec.js also red on development
