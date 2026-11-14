@@ -3382,3 +3382,4 @@
 2026-11-14T09:39:27Z integrator-20261111T115842-a749432d MERGED-TREE 4097985ea1: 21 PRs in one push, main now 4097985ea1 = tested tree
 2026-11-14T09:57:34Z integrator-20261111T115842-a749432d GREEN tree a32db83860 on dev 4097985ea1 prs 22 front=ok: Tests: 61751, Assertions: 215328, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
 2026-11-14T09:59:21Z integrator-20261111T115842-a749432d MERGED-TREE a32db83860: 22 PRs in one push, main now a32db83860 = tested tree
+2026-11-14T10:10:20Z integrator-20261111T115842-a749432d RED tree c1fcda5bf9 prs 20 front=ok: Tests: 61938, Assertions: 216384, Errors: 3, Failures: 5, Warnings: 1, Deprecations: 4, PH; first failures: OCA\OpenRegister\Tests\Unit\Architecture\HubClassesAreReachedThroughInterfacesTest::testAtMostTenFilesNameTheC;OCA\OpenRegister\Tests\Unit\Service\Anonymisation\PipelineStepReportTest::testEveryRegisteredStepHasAReportEnt
