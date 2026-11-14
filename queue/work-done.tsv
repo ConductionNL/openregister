@@ -10240,3 +10240,4 @@ build4:dossiq:method-decomposition:c4	partial: PR dossiq#6519 slice 8m (ZtcCross
 build:buildiq:openbuild-mcp-adoption:c2	done: pushed to PR buildiq#1624 (new head 0e334f6f): copilot-panel plan review UI + 7 vitest; only the live import check (task 4 test) left	session-20261114T151004-fa188a10	2026-11-14T16:39:05Z
 fix:hermiq:1762:0722e3ca	merged development (nl tail conflict), head 6f2d6587, REVERIFY	session-20261114T151802-24eee21b	2026-11-14T16:39:16Z
 fix:buildiq:1618:53cd30c6	nothing to fix: branch already contains development and merges clean on it; the conflict is only with other PRs of that verify tree (l10n), head unchanged 53cd30c6	session-20261114T151004-fa188a10	2026-11-14T16:39:35Z
+fix:integriq:3630:472a4c5e	l10n strings moved off shared tail; new head 0ab3bc4c	session-20261114T161744-497aae45	2026-11-14T16:39:40Z
