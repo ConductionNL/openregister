@@ -10878,3 +10878,4 @@ fix:hermiq:1793:fb17183c	fixed: split complex KB methods; new head ef80f599	sess
 build:shillinq:tax-vat-return-from-books:c3	done: PR #3062 (head 2b04a4098) builds 1.2 (reverse-charge VAT at line or general rate), 3.3 checks endpoint+section, 4.1 fiscal-year check, 5.1 VAT fiscal unity, 6.1 note; 2.3 already on development; all code tasks ticked; PHPUnit 11337 no failures	session-20261114T194747-cb37937d	2026-11-14T20:24:59Z
 fix:launchpad:1219:da16c5df	no push: up to date with development, conflicts only with open #1209; REVERIFY recorded	session-20261114T201750-64b6fe0f	2026-11-14T20:25:15Z
 merge:keepiq:1798:047e7ef9	stale	feeder	2026-11-14T20:25:08Z
+fix:shillinq:2991:e8e7b471	resolved l10n/info.xml/lock conflicts with development; unit 11405 OK, vitest only inherited dunningNextRun failure; REVERIFY at 47756ee7	session-20261114T194744-563ce177	2026-11-14T20:25:51Z
