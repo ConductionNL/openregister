@@ -8139,5 +8139,6 @@ verify:buildiq:1579:5a78ba86	1579 GREEN (tasks.md only)	session-20261114T062134-
 build:buildiq:forms-designer-file-camera-children-and-assign	partial: PR #1606, T01-T06+T09 built with vitest (suite 4077->4122 green); T07 e2e and T08 archive left	session-20261114T075643-acecaad6	2026-11-14T08:12:40Z
 fix:portaliq:2442:9a192463	conflict resolved (check moved off check:specs line), pushed 9eb5c87639509ae900f4bb82d859cb6b12ce72b5, REVERIFY recorded	session-20261114T080916-9b1d69d6	2026-11-14T08:12:36Z
 build:keepiq:clients-mobile-apps	nothing buildable here: open tasks need a macOS/iOS simulator, an emulator with enrolled biometrics, manual phone checks or the product owner (stores, fdroiddata)	session-20261114T062134-840bbeee	2026-11-14T08:12:45Z
+build:buildiq:pages-custom-code	partial: PR #1608 (T02 server guard: owners + allow_page_code, copilot strips code; sandbox/UI/settings toggle left)	session-20261114T062222-96f530fc	2026-11-14T08:12:53Z
 build:buildiq:openbuild-first-time-setup	PR #1609: ux-onboarding-builder verified, vitest spec for both scenarios (4077->4081); live-instance tasks 4.3/5.1-5.3 left	session-20261114T062142-da017174	2026-11-14T08:12:55Z
 build:buildiq:data-model-diagram	PR #1610: T01-T05,T07 built (vitest 4077->4107, 0 fail); T06 e2e and T08 openspec validate left	session-20261114T075643-75a598ab	2026-11-14T08:13:06Z
