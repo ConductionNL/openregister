@@ -9122,3 +9122,4 @@ review:openregister:10545:f341dcba	APPROVE	session-20261114T121616-766bd91a	2026
 fix:portaliq:2433:ca20ec2f	conflict resolved, pushed a1b48896	session-20261114T124625-07e62ccf	2026-11-14T12:52:27Z
 build:portaliq:site-honest-without-javascript:c2	partial: PR portaliq#2489 builds 1.1 (noscript notice + plainUrl, unit test, suite 5188 green); left 2.1 2.2 2.4 2.5 3.1-3.4 4.x 5.x, session context nearly full	session-20261114T114634-73dcd983	2026-11-14T12:53:12Z
 build:portaliq:portal-controller-http-test-coverage:c2	no code tasks left: PR #2429 branch has every code task ticked; 4.1-4.4 are Playwright e2e needing a live instance	session-20261114T124625-07e62ccf	2026-11-14T12:53:09Z
+merge:opencatalogi:2624:aeccfe61	merge3 tree of 34 opencatalogi PRs: merged=18 red=6 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:53:32Z
