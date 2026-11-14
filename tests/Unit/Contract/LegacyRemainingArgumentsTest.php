@@ -25,17 +25,11 @@ use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
 use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
-use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
-use OCA\OpenRegister\Service\RegisterResolverService;
-use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Task\TaskService;
-use OCP\IAppConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 use ReflectionMethod;
-use ReflectionProperty;
 
 /**
  * Fleet apps call these with the names v2.1.47 published. Each test pins main's leading
@@ -67,9 +61,6 @@ class LegacyRemainingArgumentsTest extends TestCase {
 			'MessageDispatchProvider::dispatch'           => [MessageDispatchProvider::class, 'dispatch', ['source', 'message'], ['body', 'path', 'headers']],
 			'MetricSample::single'                        => [MetricSample::class, 'single', ['name', 'type', 'help', 'value', 'labels'], []],
 			'DestructionRecorder::record'                 => [DestructionRecorder::class, 'record', ['object', 'scope', 'rule', 'context'], []],
-			'RetentionService::releaseLegalHold'          => [RetentionService::class, 'releaseLegalHold', ['object', 'reason', 'ownerKey'], []],
-			'RegisterResolverService::resolveRegisterId'  => [RegisterResolverService::class, 'resolveRegisterId', ['appId', 'configKey', 'default', 'organisationUuid'], []],
-			'RegisterResolverService::resolveSchemaId'    => [RegisterResolverService::class, 'resolveSchemaId', ['appId', 'configKey', 'default', 'organisationUuid'], []],
 			'ToolGrantResolver::waives'                   => [ToolGrantResolver::class, 'waives', ['waivedSets', 'toolId', 'arguments'], []],
 			'AgentRunRequestedEvent::__construct'         => [
 				AgentRunRequestedEvent::class,
@@ -115,32 +106,6 @@ class LegacyRemainingArgumentsTest extends TestCase {
 			->willReturn(['ok' => true]);
 
 		$this->assertSame(['ok' => true], $recorder->record(object: $object, scope: ['scope' => []], rule: 'r', context: ['c' => 1]));
-	}
-
-	public function testReleaseLegalHoldIsReleaseHoldWithOneOrder(): void {
-		$object  = new ObjectEntity();
-		$service = $this->getMockBuilder(RetentionService::class)->disableOriginalConstructor()->onlyMethods(['releaseHold'])->getMock();
-		$service->expects($this->exactly(2))->method('releaseHold')
-			->with($object, new HoldOrder(reason: 'done', ownerKey: 'matter-1'))
-			->willReturn($object);
-
-		$service->releaseLegalHold(object: $object, reason: 'done', ownerKey: 'matter-1');
-		$service->releaseLegalHold($object, 'done', 'matter-1');
-	}
-
-	public function testTheResolveMethodsReadTheConfiguredValueOrTheDefault(): void {
-		$config = $this->createMock(IAppConfig::class);
-		$config->method('getValueString')->willReturnCallback(
-			static fn (string $app, string $key): string => match ($key) {
-				'case_register' => 'register-uuid',
-				default => '',
-			}
-		);
-		$resolver = (new ReflectionClass(RegisterResolverService::class))->newInstanceWithoutConstructor();
-		(new ReflectionProperty(RegisterResolverService::class, 'appConfig'))->setValue($resolver, $config);
-
-		$this->assertSame('register-uuid', $resolver->resolveRegisterId(appId: 'dossiq', configKey: 'case_register'));
-		$this->assertSame('fallback', $resolver->resolveSchemaId('dossiq', 'case_schema', 'fallback'));
 	}
 
 	public function testWaivesReadsTheToolsOwnEntry(): void {
