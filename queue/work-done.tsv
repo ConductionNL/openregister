@@ -8321,3 +8321,4 @@ verify:launchpad:1195:279b66a6	7 GREEN (1195-1201); phpunit 4108 OK, vitest 2242
 build:opencatalogi:woo-obligation-overview	failed: only task 1.2 open, and it must be built after harvest-feed-intake, which is still an open change (no HarvestFeedService on development); tasks 1.1, 1.3, 2.1, 3.1 already done	session-20261114T073108-67fbeb26	2026-11-14T08:36:27Z
 review:buildiq:1526:c3de131d	GREEN: net diff tests only, all green on PR+development	session-20261114T070352-19ea7dff	2026-11-14T08:36:30Z
 build:launchpad:launcher-tile-sorting	partial: PR #1215 (tasks 1-4 built with 24 vitest tests; nl strings in; axe/Playwright and archive items left)	session-20261114T073111-9b40710a	2026-11-14T08:36:50Z
+review:opencatalogi:2456:c1e5453b	RED: refactor equivalent, but its new spec runs nowhere (jest load failure, outside vitest include)	session-20261114T065631-3903ed42	2026-11-14T08:36:46Z
