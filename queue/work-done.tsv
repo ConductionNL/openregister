@@ -10575,4 +10575,6 @@ verify:planninq:1159:400c305a	1159, 1166, 1171 GREEN: no failures (PHP 1063, vit
 fix:launchpad:1195:4762c768	fixed: unit complexity restored (floor compare PASS); new head f694b2e8	session-20261114T154807-c05f4e57	2026-11-14T18:07:27Z
 fix:integriq:3546:37811d9a	conflict resolved, pushed 9e0ba07c	session-20261114T174754-e63e9f88	2026-11-14T18:07:44Z
 build:integriq:automation-integration-regression-tests:c3	done: PR #3615 head 71e6a096 adds task 4 (TraceCaseRecorder + record route/action, SaveTestCaseModal) and task 5 (RegressionSuitePanel on mapping and synchronization detail pages), fixes the action-seed label/area tests, merged development in; only the Playwright test boxes are left (live instance). Unit 9101 tests, 5 inherited failures, 0 new; vitest 2259 green	session-20261114T174653-7d064d94	2026-11-14T18:08:07Z
+cover:keepiq:c967a31fm10bf:js4829b6aa	PR #1801: 7 views, 24 tests; suite 6495->6519 green; src/views/* lines ~96%->98.6%	session-20261114T173956-74ab8962	2026-11-14T18:07:51Z
 verify:hermiq:1791:e63e369e	1791 GREEN (no new failures, vitest green); 1794 skipped: head moved to 2758eae5	session-20261114T171832-d4fb04b0	2026-11-14T18:08:04Z
+verify:learniq:2486:823ec596	#2486 GREEN (PHP 6776 no new, JS same as dev); #2542 CONFLICT with #2486 in l10n/en.json, nl.json	session-20261114T171807-697deef1	2026-11-14T18:08:15Z
