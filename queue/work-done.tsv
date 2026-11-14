@@ -9168,3 +9168,4 @@ review:openregister:10539:e5d4c2aa	BLOCK 10539: architecture test red (yaml not 
 merge:hermiq:1767:3f90a4bc	merge3 tree of 47 hermiq PRs: merged=29 red=2 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T13:01:22Z
 merge:hermiq:1725:bf837af3	merge3 tree of 47 hermiq PRs: merged=29 red=2 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T13:01:30Z
 merge:hermiq:1769:db1001da	merge3 tree of 47 hermiq PRs: merged=29 red=2 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T13:01:33Z
+merge:hermiq:1774:9272e9f2	merge3 tree of 47 hermiq PRs: merged=29 red=2 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T13:01:36Z
