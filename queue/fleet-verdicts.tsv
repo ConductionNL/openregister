@@ -10330,3 +10330,4 @@ hermiq	1795	a4cac7c25d0216ee17d020d655206ff0eb532905	REVERIFY	worker-52	branch a
 versioniq	709	9dbd36aeeaa9ad1c7d29e5998ec19666c07d4afe	GREEN	worker-23	unit-only 1749 tests, 2 failures = baseline (External/SelectedReleaseInstallGoldenTest, inherited); vitest 2962 pass; no new failures
 versioniq	710	3ab6b5e29faf4309453c36fbb0a748a397a57728	GREEN	worker-23	unit-only 1749 tests, 2 failures = baseline (External/SelectedReleaseInstallGoldenTest, inherited); vitest 2962 pass; no new failures
 versioniq	685	0a9c195645934316546829afa80d0d261a3a5d95	REVERIFY	worker-42	merged development in, added osvApiBase to InstanceSettingsPanel.failures.spec.ts fixture and expected PUT; vitest 2975 green; new head 7f027ce272fc47f60b584d2c78788216f5288533, verify it
+versioniq	718	c00665905d8a4ebcf7bc36765200ddcdaa9a6022	CONFLICT	worker-23	conflicts with the tree after 700,709,710
