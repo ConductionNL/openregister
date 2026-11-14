@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Capabilities;
 
 use OCA\OpenRegister\Search\SearchScopeCatalog;
+use OCA\OpenRegister\Search\SearchScopes;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\Capabilities\ICapability;
 use OCP\Capabilities\IInitialStateExcludedCapability;
@@ -153,11 +154,18 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 			}
 		}//end foreach
 
-		return array_merge(
+		$offered = array_merge(
 			self::sorted(scopes: $found['app']),
 			self::sorted(scopes: $found['register']),
 			self::sorted(scopes: $found['schema'])
 		);
+
+		// `files` keeps only file hits, so it is offered once there is something readable to keep them from.
+		if ($offered !== []) {
+			$offered[] = ['id' => SearchScopes::FILES, 'type' => SearchScopes::FILES, 'value' => SearchScopes::FILES, 'label' => SearchScopes::FILES];
+		}
+
+		return $offered;
 	}//end availableScopes()
 
 	/**
