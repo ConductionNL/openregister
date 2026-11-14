@@ -64,14 +64,20 @@ final class RelatedRowFilter {
 	 *                                                                               on the related row (inverse) or the object (forward).
 	 * @param array<int, array{field: string, operator: string, value: mixed}> $conditions The row conditions.
 	 * @param string                                                     $direction  DIRECTION_INVERSE or DIRECTION_FORWARD.
+	 * @param bool                                                       $throughList Forward only: the object's property holds a
+	 *                                                                                list of uuids, and the related row matches when
+	 *                                                                                its uuid is in that list.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
 		public readonly string $schema,
 		public readonly string $foreignKey,
 		public readonly array $conditions,
 		public readonly string $direction = self::DIRECTION_INVERSE,
+		public readonly bool $throughList = false,
 	) {
 	}//end __construct()
 }//end class

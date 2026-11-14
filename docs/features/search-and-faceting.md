@@ -70,6 +70,9 @@ GET /api/objects/{register}/aanvragen?_ref[aanvrager][woonplaats][in][]=Zuiddrec
 - The operators are `eq` (the default), `ne`, `gt`, `gte`, `lt`, `lte` and `in`.
 - Several fields in one block must hold on the same referenced object. A second
   block with a suffix, `_ref[aanvrager:2][...]`, asks for an independent one.
+- A property holding a list of references (`betrokkenen`) is filtered through
+  the list: the object matches when at least one referenced object in its list
+  satisfies the whole block.
 - Only referenced objects the caller may read count: the referenced schema's
   own access rules and organisation boundary apply inside the filter, so a
   hidden object never makes a row match.
@@ -77,8 +80,8 @@ GET /api/objects/{register}/aanvragen?_ref[aanvrager][woonplaats][in][]=Zuiddrec
   objects.
 - Refused with HTTP 400, naming the part: an unknown property, a property that
   is not a reference, a field the referenced schema lacks, an unknown operator,
-  a chain through a second reference, a property holding a list of references
-  (not supported yet), and `_ref` on a search across several schemas.
+  a chain through a second reference, and `_ref` on a search across several
+  schemas.
 
 **Direction.** `_ref` follows a reference *out* of the queried object (where
 this object points). `_related[<schema>][<property>]` runs the other way: it

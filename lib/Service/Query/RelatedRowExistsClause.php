@@ -514,6 +514,8 @@ final class RelatedRowExistsClause {
 	 *
 	 * Inverse (`_related`): the related row's property holds the object's uuid.
 	 * Forward (`_referenced`): the object's property holds the related row's uuid.
+	 * Forward through a list (`_ref` on a list property): the object's property
+	 * holds a JSON list of uuids, and the related row's uuid is in it.
 	 *
 	 * @param RelatedRowFilter   $filter   The parsed filter.
 	 * @param RelatedRowSubquery $subquery The engine, the storage shape, and the aliases of the object row and the related row.
@@ -525,6 +527,14 @@ final class RelatedRowExistsClause {
 	private function joinCondition(RelatedRowFilter $filter, RelatedRowSubquery $subquery): string {
 		$target = $subquery->target;
 		$uuid   = $this->metadataColumn(storage: $target->storage, name: 'uuid');
+
+		if ($filter->direction === RelatedRowFilter::DIRECTION_FORWARD && $filter->throughList === true) {
+			return $this->listContains(
+				target: $target,
+				outerField: $subquery->outerField(name: $filter->foreignKey),
+				innerUuid: $subquery->inner->alias . '.' . $uuid
+			);
+		}
 
 		if ($filter->direction === RelatedRowFilter::DIRECTION_FORWARD) {
 			return sprintf(
@@ -542,6 +552,69 @@ final class RelatedRowExistsClause {
 			$uuid
 		);
 	}//end joinCondition()
+
+	/**
+	 * Whether the object's JSON list holds the related row's uuid, in the engine's own spelling.
+	 *
+	 * Postgres: jsonb containment of a one-element array, which matches a list
+	 * holding the uuid as one of its strings. MariaDB: `JSON_CONTAINS` with the
+	 * uuid quoted as a JSON string. A list in a magic-table column is read from
+	 * that JSON column; a list in the objects table from the `object` document.
+	 * A NULL or non-list value contains nothing, so its object does not match.
+	 *
+	 * @param RelatedRowSqlTarget $target     The engine and storage shape.
+	 * @param RelatedRowField     $outerField The object's list property.
+	 * @param string              $innerUuid  The related row's uuid column, with its alias.
+	 *
+	 * @return string The join condition.
+	 *
+	 * @throws InvalidArgumentException When the engine or storage is unknown.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	private function listContains(RelatedRowSqlTarget $target, RelatedRowField $outerField, string $innerUuid): string {
+		$list = $this->listExpression(target: $target, field: $outerField);
+		if ($target->engine === self::ENGINE_POSTGRES) {
+			return sprintf('CAST(%s AS jsonb) @> jsonb_build_array(%s)', $list, $innerUuid);
+		}
+
+		if ($target->engine === self::ENGINE_MARIADB) {
+			return sprintf('JSON_CONTAINS(%s, JSON_QUOTE(%s))', $list, $innerUuid);
+		}
+
+		throw new InvalidArgumentException(
+			sprintf('No related-row SQL for engine \'%s\'.', $target->engine)
+		);
+	}//end listContains()
+
+	/**
+	 * A list property as JSON (not text), in whichever storage holds it.
+	 *
+	 * @param RelatedRowSqlTarget $target The engine and storage shape.
+	 * @param RelatedRowField     $field  The row's alias and the property name.
+	 *
+	 * @return string The SQL expression, yielding JSON.
+	 *
+	 * @throws InvalidArgumentException When the storage or engine is unknown.
+	 */
+	private function listExpression(RelatedRowSqlTarget $target, RelatedRowField $field): string {
+		if ($target->storage === self::STORAGE_COLUMNS) {
+			return $this->fieldExpression(target: $target, field: $field);
+		}
+
+		if ($target->storage !== self::STORAGE_JSON) {
+			throw new InvalidArgumentException(
+				sprintf('No related-row SQL for storage \'%s\'.', $target->storage)
+			);
+		}
+
+		$safe = str_replace("'", "''", $field->name);
+		if ($target->engine === self::ENGINE_POSTGRES) {
+			return sprintf("%s.object -> '%s'", $field->alias, $safe);
+		}
+
+		return sprintf("JSON_EXTRACT(%s.object, '$.%s')", $field->alias, str_replace('\\', '\\\\', $safe));
+	}//end listExpression()
 
 	/**
 	 * Quote a column name, refusing anything that is not one.
