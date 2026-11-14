@@ -8613,3 +8613,4 @@ humaniq	1135	9114728c712827c9ba2f0d31a4437d7dbc650bfb	GREEN	worker-01	unit 4210 
 learniq	2521	dfce19c9ebb6278fee500757fc5dfc339131b5ab	REVERIFY	worker-58	merged development in; register version conflict resolved keeping the branch's 0.51.0 (above development's 0.50.0), no schema version collisions; unit 6763, 1 failure (HigherEducationExampleSetTest) inherited from development; new head 34c33485a9bb30531e0afef5d1730ca32e358cd8, verify it
 humaniq	1137	b1c9fdb7bb91d1677052b6af170244fd116eed76	GREEN	worker-01	unit 4210 tests on tree (1135,1137,1144), baseline 4184 with 1 failure ListExportDeclarationTest, new failures 0
 humaniq	1139	540268b156b75fb5e69f413e62c8d176763c4f6f	CONFLICT	worker-01	merges clean on development alone, files: l10n/en.js l10n/nl.js 
+humaniq	1142	4a3cccf915537eaf2c07484d75bad50d31f48d19	CONFLICT	worker-01	merges clean on development alone, files: l10n/en.json l10n/nl.json lib/Settings/register.d/hr-leave.json 
