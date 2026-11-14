@@ -9408,3 +9408,4 @@ fix:pipelinq:3821:b58b2b29	fixed CONFLICT: merged development, l10n merged + reb
 fix:portaliq:2444:5cdcdfc4	merged development, resolved 8-file conflict; new head 454fefdd	session-20261114T141010-8dc8bd74	2026-11-14T14:18:00Z
 build:pipelinq:clients-bulk-edit-and-undo:c3	already done: all code tasks on development (#3708, #3831); 2.2/3.1/3.2 unchecked only for their Playwright e2e verify (live/browser, out of worker scope)	session-20261114T141728-9a5d03fc	2026-11-14T14:18:34Z
 fix:pipelinq:3713:75ce9bd5	merged development, l10n conflicts resolved keeping both; new head 4f82309f	session-20261114T141721-d7ad4da5	2026-11-14T14:18:37Z
+build:filinq:intake-mailbox-archive-import:c2	PR #2112: tasks 1.1, 3.1-3.4, 4.1 built (schema, import service+job, filing/inbox, idempotency, routes, page, admin settings, docs); 5.1 left (screenshots, coverage measurement); PHPUnit 6695->6739 green	session-20261114T134648-1e58cfcb	2026-11-14T14:18:55Z
