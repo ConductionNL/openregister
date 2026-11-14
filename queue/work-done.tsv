@@ -10272,3 +10272,4 @@ verify:planninq:1162:45f1989b	1162 GREEN (phpunit 1038 ok, vitest 3239 ok); 1172
 verify:buildiq:1582:5e51a373	3 GREEN (1622,1639,1640); 1582,1608,1621,1641 skipped (heads moved); 0 new failures	session-20261114T151004-fa188a10	2026-11-14T16:47:32Z
 fix:filinq:2124:5e42335d	no change: branch already contains development and merges clean onto it; it conflicts only with the still-open #2070/#2118 (SigningRequestDetail.vue), so it needs a merge of development after those land	session-20261114T151932-05b02c14	2026-11-14T16:47:47Z
 verify:shillinq:3050:a76beb3c	GREEN 3050 3065; no new failures	session-20261114T161815-d54ad7b4	2026-11-14T16:47:49Z
+fix:filinq:2126:9eb18073	no change: branch already contains development and merges clean onto it; it conflicts only with the still-open #2070/#2118 (filinq_register.json), so it needs a merge of development after those land	session-20261114T151932-05b02c14	2026-11-14T16:48:22Z
