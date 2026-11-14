@@ -8228,3 +8228,4 @@ merge:launchpad:1189:a57b0a02	merge3 tree of 1 launchpad PRs: merged=1 red=0 fai
 build:keepiq:portability-export-choice-and-restore-fidelity	partial: PR #1783 serializer scope/fields/type names, backup parser, restore type resolution + summary data; dialog/bulk/wizard UI left (needs 36-locale strings), docs left	session-20261114T073108-8b40426a	2026-11-14T08:23:56Z
 merge:shillinq:3030:e8077e14	merge3 tree of 3 shillinq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T08:24:10Z
 merge:shillinq:3031:2dfd2f28	merge3 tree of 3 shillinq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T08:24:13Z
+verify:decidiq:2158:b0482d6a	2158 GREEN	session-20261114T073109-bb0ea608	2026-11-14T08:24:23Z
