@@ -11662,3 +11662,4 @@ fix:versioniq:722:1be4fab6	no change: branch already contains development; it co
 verify:integriq:3589:908a815f	3589 GREEN, 3600 RED (catalogue golden digest)	session-20261114T214733-d4130db7	2026-11-14T22:43:32Z
 fix:versioniq:721:26d19829	floor restored (unit_complexity 4.60); new head 5e93235b	session-20261114T214742-7aa14b57	2026-11-14T22:43:53Z
 fix:versioniq:714:6d93c5ca	conflict resolved (InstallerService refusal chain, finalizer golden test), new head 3e04dbd1; REVERIFY queued	session-20261114T214930-79d5b35c	2026-11-14T22:44:11Z
+fix:versioniq:707:19102464	floor restored (PASS), new head f78fb56e; REVERIFY recorded	session-20261114T221800-b231235b	2026-11-14T22:44:34Z
