@@ -10209,3 +10209,4 @@ fix:hermiq:1736:ff4bd9c2	merged development, register to v0.56.0, head 7da99d85,
 fix:integriq:3601:be3e4259	no change needed: already contains development, conflict only with open PRs 3589/3596	session-20261114T141010-8dc8bd74	2026-11-14T16:33:24Z
 review:openregister:10567:c76faebb	APPROVE	session-20261114T161753-3b2f3c4f	2026-11-14T16:33:35Z
 verify:learniq:2484:8e0b460b	GREEN 2484; BLOCK 2507 (enrolment label changed unasked); CONFLICT 2520 2532 with tree	session-20261114T161815-d54ad7b4	2026-11-14T16:33:51Z
+fix:hermiq:1750:647eadd5	merged development, register to v0.57.0, head e321ec0c, REVERIFY	session-20261114T151802-24eee21b	2026-11-14T16:34:08Z
