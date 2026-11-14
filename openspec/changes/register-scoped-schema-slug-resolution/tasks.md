@@ -12,9 +12,9 @@ Acceptance criteria
 
 ## 2. Audit every slug-resolving path
 
-- [ ] 2.1 Enumerate every call site that resolves a schema by slug (`SchemaMapper::find()` callers plus any direct slug query) and record each in a table in design.md.
-- [ ] 2.2 Classify each: (a) already register-scoped, (b) holds a register but does not use it, (c) genuinely has no register available.
-- [ ] 2.3 For every (c), add an inline comment stating WHY it stays global. A path left global without a stated reason is indistinguishable from one that was missed — which is the bug this change exists to remove.
+- [x] 2.1 Enumerate every call site that resolves a schema by slug (`SchemaMapper::find()` callers plus any direct slug query) and record each in a table in design.md.
+- [x] 2.2 Classify each: (a) already register-scoped, (b) holds a register but does not use it, (c) genuinely has no register available.
+- [x] 2.3 For every (c), add an inline comment stating WHY it stays global. A path left global without a stated reason is indistinguishable from one that was missed — which is the bug this change exists to remove. (2.1–2.3: the full table is in design.md, "Audit (task 2)"; every (c) path has its comment.)
 
 Acceptance criteria
 - The table lists every path with its disposition; no path is unclassified.
@@ -22,7 +22,7 @@ Acceptance criteria
 
 ## 3. Fix the class-(b) paths
 
-- [ ] 3.1 Route each class-(b) caller through `SchemaMapper::findBySlugInIds()` against the register's schema set, falling back to `find()` — the pattern `ObjectService::setSchema()` already establishes. Do NOT change `find()` itself or its signature.
+- [ ] 3.1 Route each class-(b) caller through `SchemaMapper::findBySlugInIds()` against the register's schema set, falling back to `find()` — the pattern `ObjectService::setSchema()` already establishes. Do NOT change `find()` itself or its signature. (In progress: 15 path groups are fixed through `SchemaRefInRegister`; 9 remain open and are listed with their reason in design.md, "Still class (b): open".)
 - [x] 3.2 Verify the `findCache` key composition includes the register context on the scoped path (or that the scoped path bypasses the cache). Task 1.2 is the check. (The scoped path bypasses the cache; see design.md.)
 - [x] 3.3 Confirm behaviour is unchanged for numeric ids and uuids — `findBySlugInIds()` returns null for those and must fall through cleanly. (`SchemaMapperScopedSlugTest` pins the null fall-through; `SchemasControllerShowRegisterScopeTest` pins numeric ids inside and outside a register.)
 
@@ -43,7 +43,7 @@ Acceptance criteria
 ## 5. Quality and hand-off
 
 - [ ] 5.1 `composer check:strict` clean (PHPCS, PHPMD, Psalm, PHPStan); fix any pre-existing issues touched.
-- [ ] 5.2 Note in the PR that hermiq's `agent-core` widget sizing workaround can be revisited once this ships — it exists solely because of this bug.
+- [x] 5.2 Note in the PR that hermiq's `agent-core` widget sizing workaround can be revisited once this ships — it exists solely because of this bug. (In the PR body.)
 - [ ] 5.3 Tell the hermiq chain this is merged AND released. `session-schema-declaration` lives in another repository, so Hydra's supervisor cannot gate it on this issue; the ordering is a human gate.
 
 Acceptance criteria
