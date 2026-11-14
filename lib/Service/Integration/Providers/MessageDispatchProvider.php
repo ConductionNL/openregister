@@ -81,6 +81,13 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	public const SOURCE_ID = 'whatsapp-cloud-api';
 
 	/**
+	 * The seeded source the e-mail channel sends through (send-at-on-the-messaging-leaf D-4).
+	 *
+	 * @var string
+	 */
+	public const EMAIL_SOURCE = 'smtp-mail';
+
+	/**
 	 * NC app that must be installed for this integration to function (it
 	 * carries the messaging sources + credentials).
 	 *
@@ -106,6 +113,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 		'twilio-sms',
 		'whatsapp-cloud-api',
 		'whatsapp-bsp',
+		self::EMAIL_SOURCE,
 	];
 
 	/**
@@ -262,8 +270,9 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 		}
 
 		$options = ['body' => $message->body, 'headers' => $this->withJsonAccept(headers: $message->headers)];
+		$result  = $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $message->path, options: $options));
 
-		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $message->path, options: $options));
+		return $this->withMessageId(result: $result, headers: $message->headers);
 	}//end dispatch()
 
 	/**
@@ -322,6 +331,29 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 
 		return ['status' => 'sent', 'source' => $this->targetSource, 'response' => $response];
 	}//end send()
+
+	/**
+	 * A sent message answers with the Message-ID it left with, so the caller (and
+	 * the scheduled sweep) can record the handle a reply is threaded by. A
+	 * message without one, or one that did not leave, answers as it did.
+	 *
+	 * @param array<string,mixed>  $result  The dispatch result.
+	 * @param array<string,string> $headers The headers the message left with.
+	 *
+	 * @return array<string,mixed> The result, with `messageId` when the message carried one and was sent.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-e-mail-is-a-channel-of-the-dispatch-leaf
+	 */
+	private function withMessageId(array $result, array $headers): array {
+		$messageId = trim((string)($headers[MessageIdMinter::HEADER] ?? ''));
+		if ($messageId === '' || ($result['status'] ?? null) !== 'sent') {
+			return $result;
+		}
+
+		$result['messageId'] = $messageId;
+
+		return $result;
+	}//end withMessageId()
 
 	/**
 	 * The caller's headers with `Accept: application/json` added when the

@@ -1014,6 +1014,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // @spec openspec/specs/integration-message-dispatch/spec.md#requirement-outbound-messaging-send-endpoints
         ['name' => 'messageDispatch#smsSend',            'url' => '/api/integrations/sms/send',               'verb' => 'POST'],
         ['name' => 'messageDispatch#whatsappSend',       'url' => '/api/integrations/whatsapp/send',          'verb' => 'POST'],
+        ['name' => 'messageDispatch#emailSend',          'url' => '/api/integrations/email/send',             'verb' => 'POST'],
         // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
         // admin gate). The specific `/cospend/new` (create + link) route
         // MUST precede the wildcard `/cospend/{entryId}` unlink route, and
