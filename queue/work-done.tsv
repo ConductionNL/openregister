@@ -11381,6 +11381,7 @@ review:opencatalogi:2652:50d4611a	GREEN	session-20261114T201755-10d43934	2026-11
 review:portaliq:2443:f562b574	GREEN (example-site pin red inherited)	session-20261114T212457-7a749dbd	2026-11-14T22:02:27Z
 build:humaniq:leave-approval-steps-and-history:c3	done on PR #1133 (head a8bfed0): 2.5 coverage warning shown on LeaveRequestDetail and stamped on approval (new LeaveCoverageWarning service, 9 new tests), 3.1 e2e exclusions + spec tags; 3.2 live check left. PHPUnit 4302 -> 4311 green; test:js 1 inherited failure	session-20261114T204759-5dc9dba7	2026-11-14T22:02:44Z
 fix:opencatalogi:2668:ca0b78fe	fixed: test container given the new record view; new head 1f117b1c, REVERIFY recorded	session-20261114T211754-5182f374	2026-11-14T22:02:46Z
+build:stackiq:architecture-shared-usage-on-views:c2	partial: PR #1953 task 4 (export shared style, Gedeeld door, nesting fix) + tests; tasks 3 and 5 wait for architecture-views-editor page	session-20261114T214930-79d5b35c	2026-11-14T22:03:09Z
 build:opencatalogi:data-file-import-failure-alert:c2	partial: nothing built in this run (worker context exhausted before starting); now unblocked: PublishedTableService and publishedTable are on development, so 1.1-2.2 can all be built	session-20261114T201755-10d43934	2026-11-14T22:03:04Z
 verify:launchpad:1226:208205d7	1226, 1229 GREEN: no new failures (PHP 4326, vitest 2288)	session-20261114T171821-a80c28c5	2026-11-14T22:03:05Z
 verify:portaliq:2498:67cb0876	GREEN 2498, 2508	session-20261114T201752-7e06b161	2026-11-14T22:03:20Z
