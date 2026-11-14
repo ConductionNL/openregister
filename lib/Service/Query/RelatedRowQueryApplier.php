@@ -297,40 +297,40 @@ class RelatedRowQueryApplier {
 
 		$parser  = new ReferenceFilterParser(resolveSchema: fn (string $name): ?Schema => $this->findSchema(name: $name));
 		$filters = $parser->parse(query: $query, schema: $schema);
-		foreach ($filters as $filter) {
-			$this->refuseListReference(schema: $schema, property: $filter->foreignKey);
-		}
-
-		return $filters;
+		return array_map(
+			fn (RelatedRowFilter $filter): RelatedRowFilter => $this->throughListWhenItIsOne(schema: $schema, filter: $filter),
+			$filters
+		);
 	}//end referenceFiltersIn()
 
 	/**
-	 * Refuse a `_ref` block on a property that holds a list of references.
+	 * The filter, joining through the list when its property holds a list of references.
 	 *
-	 * The forward clause joins by equality on one uuid. Run against a list
-	 * column it would match nothing (or fail on the column type), answering a
-	 * narrow question with a wrong set, so the block is refused until the
-	 * clause joins through the list.
+	 * A property holding one uuid joins by equality; a property holding a list
+	 * joins by JSON containment, so the object matches when ANY referenced
+	 * object in its list satisfies every condition of the block.
 	 *
-	 * @param Schema $schema   The schema being queried.
-	 * @param string $property The reference property.
+	 * @param Schema           $schema The schema being queried.
+	 * @param RelatedRowFilter $filter The forward filter of one `_ref` block.
 	 *
-	 * @return void
+	 * @return RelatedRowFilter
 	 *
-	 * @throws InvalidArgumentException When the property holds a list.
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
-	private function refuseListReference(Schema $schema, string $property): void {
-		$config = (($schema->getProperties() ?? [])[$property] ?? []);
-		if (is_array($config) === true && ($config['type'] ?? null) === 'array') {
-			throw new InvalidArgumentException(
-				sprintf(
-					'%s[%s]: filtering through a list of references is not supported yet; only a property holding one reference can be filtered through.',
-					ReferenceFilterParser::KEY,
-					$property
-				)
-			);
+	private function throughListWhenItIsOne(Schema $schema, RelatedRowFilter $filter): RelatedRowFilter {
+		$config = (($schema->getProperties() ?? [])[$filter->foreignKey] ?? []);
+		if (is_array($config) === false || ($config['type'] ?? null) !== 'array') {
+			return $filter;
 		}
-	}//end refuseListReference()
+
+		return new RelatedRowFilter(
+			schema: $filter->schema,
+			foreignKey: $filter->foreignKey,
+			conditions: $filter->conditions,
+			direction: $filter->direction,
+			throughList: true
+		);
+	}//end throughListWhenItIsOne()
 
 	/**
 	 * The schema a reference property's `$ref` names (slug, id or uuid), or null when none.

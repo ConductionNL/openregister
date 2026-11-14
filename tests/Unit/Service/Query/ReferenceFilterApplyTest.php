@@ -321,31 +321,32 @@ class ReferenceFilterApplyTest extends TestCase {
 	}//end testAnUnreadableRefBlockIsRefusedNotDropped()
 
 	/**
-	 * A property holding a list of references is refused, not answered with an equality join that matches nothing.
+	 * A property holding a list of references joins through the list: the request
+	 * matches when one person in its list satisfies the block, under that person
+	 * schema's own access predicate.
 	 *
 	 * @return void
 	 */
-	public function testAListReferenceIsRefused(): void {
+	public function testAListReferenceJoinsThroughTheList(): void {
 		$request = $this->request();
 		$request->setProperties(['betrokkenen' => ['type' => 'array', 'items' => ['type' => 'string', '$ref' => 'person']]]);
 		$log = [];
 
-		try {
-			$this->loggingApplier(log: $log, bySlug: ['person' => [$this->person()]], tables: [], byId: $this->person())->apply(
-				target: $this->target(log: $log),
-				query: ['_ref' => ['betrokkenen' => ['woonplaats' => 'Z']]],
-				schema: $request
-			);
-			$this->fail('A list reference was applied.');
-		} catch (InvalidArgumentException $e) {
-			$this->assertSame(
-				'_ref[betrokkenen]: filtering through a list of references is not supported yet; only a property holding one reference can be filtered through.',
-				$e->getMessage()
-			);
-		}
+		$applied = $this->loggingApplier(log: $log, bySlug: ['person' => [$this->person()]], tables: [], byId: $this->person())->apply(
+			target: $this->target(log: $log),
+			query: ['_ref' => ['betrokkenen' => ['woonplaats' => 'Zuiddrecht']]],
+			schema: $request
+		);
 
-		$this->assertNotContains('andWhere', $log);
-	}//end testAListReferenceIsRefused()
+		$this->assertSame(1, $applied);
+		$this->assertContains(
+			'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_12 rel0 WHERE JSON_CONTAINS(t."betrokkenen", JSON_QUOTE(rel0._uuid))'
+			. " AND rel0._deleted IS NULL AND ((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.\"woonplaats\" = :rel0_c0)",
+			$log
+		);
+		$this->assertContains('rbac rel0 read openregister_table_1_12', $log);
+		$this->assertSame('andWhere', end($log));
+	}//end testAListReferenceJoinsThroughTheList()
 
 	/**
 	 * A uuid `$ref` is found by uuid when it is neither a slug nor an id.
