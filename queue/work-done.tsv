@@ -11747,3 +11747,4 @@ verify:versioniq:695:c25e76c1	695,707,714,717,721 GREEN; 727 CONFLICT; 698,703,7
 fix:integriq:3615:71e6a096	floor restored (module_coupling 5.04), new head f8ce5455	session-20261114T224736-f9da4a35	2026-11-14T23:01:46Z
 merge:versioniq:700:d95efeab	stale	feeder	2026-11-14T23:00:12Z
 fix:larpinq:1051:de3a87c5	merged development, green; REVERIFY c35fd6e8 (still conflicts with unmerged #1050)	session-20261114T224756-971efe57	2026-11-14T23:02:05Z
+fix:integriq:3628:3039ae5d	fixed: unit_complexity floor (sendMessage 23->9, sendEmail 11->8, readStatusCallback 13->4); suite fails inherited; new head 626c2e6f	session-20261114T225452-4fcfea7f	2026-11-14T23:02:16Z
