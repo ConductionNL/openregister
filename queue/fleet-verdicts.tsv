@@ -7338,3 +7338,4 @@ keepiq	1631	b88267e065a281bd8637bf013e2c84a7b3804548	REVERIFY	worker-20	merged d
 integriq	3584	5c6ec02c65edb352d5bcdce0523a2c16f24d6254	GREEN	worker-58	php unit 8525 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2157 passed
 integriq	3588	f2c639eeed04d9c0ec0a8bd70f534148e8f1aae1	GREEN	worker-58	php unit 8525 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2157 passed
 opencatalogi	2624	aeff7fbe7b70bfd560c16d85df2bd3ece408958a	REVERIFY	worker-03	merged development; both sides added an @nextcloud/auth mock to CopyObjectDialog/DeleteObjectDialog specs, kept development's; jest src/dialogs 116/116; new head a9266eb7542d04aa272aa1caaebb2f51beab5a58, verify it
+keepiq	1777	b0bac635029bc075f87c073f2ae1aa6584e83b09	GREEN	worker-07	polyfills moved to devDependencies + sbom; phpunit 4974 (baseline 4974, 0 fail), vitest 6414/0 fail on tree; no new failures
