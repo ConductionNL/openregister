@@ -9777,3 +9777,4 @@ fix:portaliq:2284:f2a7c870	not reproduced: floor PASS on head (4.32 vs base 4.32
 fix:humaniq:1133:ad80d02e	conflict resolved (l10n), pushed 673531b8, REVERIFY recorded	session-20261114T151930-0feec10a	2026-11-14T15:22:19Z
 fix:filinq:2079:4296198b	conflict resolved, merged development, unit green; new head afd77651	session-20261114T151004-fa188a10	2026-11-14T15:22:28Z
 verify:filinq:2126:2d0a403e	CONFLICT 2126 (l10n en/nl, filinq_register.json)	session-20261114T151750-b10540e9	2026-11-14T15:22:41Z
+verify:portaliq:2495:4121effd	GREEN 2495 (docs-only; unit 5247 OK, no new failures)	session-20261114T151801-20bb3a08	2026-11-14T15:22:50Z
