@@ -11294,7 +11294,9 @@ review:opencatalogi:2655:bd2bce67	stale	session-20261114T214719-cd72efa7	2026-11
 merge:hermiq:1736:988495f0	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T21:48:13Z
 merge:hermiq:1715:364d15f3	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T21:48:17Z
 merge:hermiq:1735:6c4391c0	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T21:48:20Z
+merge:hermiq:1791:64b8e546	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T21:48:23Z
 verify:keepiq:1792:e76e77e3	1792 GREEN (phpunit 5192 ok; vitest 3 inherited failures); 1816 skipped (head moved to 6bce7859)	session-20261114T194805-be886caa	2026-11-14T21:48:25Z
+merge:hermiq:1792:77e32ff7	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T21:48:34Z
 cover:opencatalogi:fc83bfb1md382:js17dfdc2e	PRs #2717 (32 new tests + 12 broken jest suites revived, src/modals/object jest lines 25.6->71.2%) and #2718 (13 tests, UploadObject 27->56%, LockObject 65->68%); tests only	session-20261114T211801-f16dd26d	2026-11-14T21:48:50Z
 cover:opencatalogi:fc83bfb1md382:js0023cfc7	failed: src/dialogs/Dialogs.vue (both <script setup> and <script>) does not compile under the jest vue transform (SyntaxError: import outside a module); configuredObjects.js already 100%; covering Dialogs.vue needs a jest transform config change or splitting the SFC, outside a tests-only task	session-20261114T201741-909e04de	2026-11-14T21:48:38Z
 verify:launchpad:1206:9ecdf737	1206 GREEN, 1214 GREEN; 1229 skipped (head moved 06f0b1b -> 66aa995)	session-20261114T204759-5dc9dba7	2026-11-14T21:48:48Z
@@ -11493,7 +11495,11 @@ fix:stackiq:1927:3920fdf6	no change: branch already up to date with development;
 fix:decidiq:2178:37197bc0	merged development (clean), l10n off tail, new head 24b4be0ce9783ae7473305f184d73174083bfad8	session-20261114T201752-7e06b161	2026-11-14T22:16:40Z
 fix:stackiq:1922:73725d96	no change: branch already up to date with development; it only conflicts in l10n en/nl with #1911, unmerged; merge development in again once #1911 lands	session-20261114T214735-aacd1703	2026-11-14T22:16:49Z
 fix:decidiq:2188:b774355c	clean on development; conflict is with a sibling PR in the tree (SaveGuardSubscriptions.php); merged development, new head cd0af40	session-20261114T204759-5dc9dba7	2026-11-14T22:16:48Z
+merge:buildiq:1613:a8834c9a	merge3 tree of 11 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T22:17:05Z
+merge:buildiq:1582:c05d6f32	merge3 tree of 11 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T22:17:14Z
 build:integriq:events-async-api-products:c3	partial: no change in this session (worker context nearly full); PR #3617 head 51d9a2ba unchanged; left: API-key consumers on the channel and AsyncAPI routes, task 5 validation against the AsyncAPI 3.0 JSON schema (fixture can come from the @asyncapi/specs npm package), live Newman/Playwright checks	session-20261114T211801-f16dd26d	2026-11-14T22:17:06Z
+merge:buildiq:1647:d901fbb7	merge3 tree of 11 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T22:17:24Z
+merge:buildiq:1648:79cfcf72	merge3 tree of 11 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T22:17:36Z
 build:hermiq:memory-knowledge-bases:c4	PR #1795: tasks 1,2,5,6 built (+27 tests, suite 5180->5201 OK, vitest green); left: Newman, Playwright, openspec validate, live check (need an instance)	session-20261114T214740-6d7e97c9	2026-11-14T22:17:32Z
 fix:hermiq:1751:316c998a	conflicts resolved (register bumped to 0.58.0, l10n both sides), new head 5340b3de	session-20261114T211808-5e900938	2026-11-14T22:17:32Z
 fix:stackiq:1942:7d2c0d3f	no change: branch already holds development dbebfae7; conflicts only with unmerged #1911/#1928 (adjacent l10n appends; module detail widgets and layout id 11). After they land merge development: union l10n, keep md-apis as layout 11 gridY 28, md-quality as 12 gridY 32 plus its headerActions	session-20261114T214930-79d5b35c	2026-11-14T22:17:40Z
@@ -11536,6 +11542,7 @@ fix:shillinq:3065:e857eb23	conflict resolved, pushed 376d3093, REVERIFY recorded
 verify:humaniq:1133:3d61b99e	1156 GREEN, 1133 CONFLICT (l10n)	session-20261114T221804-88b39b17	2026-11-14T22:23:04Z
 verify:shillinq:3055:1362fd88	3055 GREEN; 3077 3078 CONFLICT after 3055 (clean on development alone)	session-20261114T171821-a80c28c5	2026-11-14T22:23:16Z
 review:learniq:2484:61512d88	GREEN: implements change specs; 1 inherited failure	session-20261114T221801-9a21d394	2026-11-14T22:23:30Z
+build:integriq:access-consumer-credentials:c3	partial: pushed cd5c8335 + follow-up to PR #3542: consumer credentials panel (list, generate shown once with copy, pin certificate, revoke; +13 vitest), rule editor anyOf + mTLS (+6 vitest), tasks 2-5 Implement ticked, vitest 2182 green; left Playwright/Newman/live checks (tasks 1-5 Test, verification)	session-20261114T161750-16a1c558	2026-11-14T22:23:48Z
 fix:buildiq:1641:5816876b	inherited: development itself is rated 3.85 in its committed .maintainability-floor.json (commit 92c43771), below the 3.91 floor; the PR does not change that file and the estimator is not available to this worker to show a drop from the PR	session-20261114T211808-5e900938	2026-11-14T22:23:56Z
 verify:decidiq:2172:35122b20	2172,2178,2188,2207 GREEN; 2189,2202 CONFLICT	session-20261114T204759-5dc9dba7	2026-11-14T22:24:08Z
 review:shillinq:2997:7b590930	GREEN: suite OK merged with development	session-20261114T211810-b8f5dc24	2026-11-14T22:24:14Z
@@ -11554,3 +11561,19 @@ fix:stackiq:1946:c75ea65b	no change: branch already contains development; confli
 review:integriq:3542:cd5c8335	stale	session-20261114T221759-cd5c5678	2026-11-14T22:26:21Z
 fix:shillinq:3062:cbb6114b	merged development (clean), new head 1eafaacd22c1d16ca5ab111eeeb9816f2f4b9564; suite 11501/0 fail; tree conflict is with sibling PRs version/lock/l10n	session-20261114T211012-c469e919	2026-11-14T22:26:54Z
 verify:learniq:2507:edb22a18	2507 GREEN, 2521 GREEN, 2544 and 2547 CONFLICT in this tree; 0 new failures	session-20261114T214736-dd784d82	2026-11-14T22:26:54Z
+fix:shillinq:2977:56133b60	regenerated scoped pages, pushed dcb02193, REVERIFY; dunningNextRun vitest red is inherited from development	session-20261114T221743-dbe5c07e	2026-11-14T22:27:01Z
+fix:versioniq:718:d08cc176	development merged in cleanly, new head c0066590	session-20261114T214733-589f5bff	2026-11-14T22:27:12Z
+review:integriq:3542:cd5c8335	stale	feeder	2026-11-14T22:25:11Z
+build:stackiq:operations-sync-status-and-progress:c2	PR #1963: task 5 page+permissions+11 tests, task 6 docs page; left: Playwright e2e and screenshots (live)	session-20261114T214735-aacd1703	2026-11-14T22:27:53Z
+fix:versioniq:709:c87ff93e	development merged in, new head 9dbd36ae; remaining conflict is with unmerged #705 only	session-20261114T214733-589f5bff	2026-11-14T22:28:01Z
+build:stackiq:landscape-application-components:c2	PR #1933: demo seed (2 components, +1 test) and docs page added; left: Playwright test and docs screenshot (need an instance)	session-20261114T214740-6d7e97c9	2026-11-14T22:28:20Z
+fix:stackiq:1938:55c1a384	no change: branch already up to date with development; the conflict is only with unmerged tree PRs (l10n, softwarecatalogus_register.json); merge development in again once they land	session-20261114T214735-aacd1703	2026-11-14T22:28:24Z
+merge:planninq:1172:dc052fb8	merge3 tree of 6 planninq PRs: merged=4 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:28:28Z
+merge:planninq:1179:11810379	merge3 tree of 6 planninq PRs: merged=4 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:28:32Z
+merge:planninq:1171:180164ee	merge3 tree of 6 planninq PRs: merged=4 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:28:35Z
+merge:planninq:1160:f637f413	merge3 tree of 6 planninq PRs: merged=4 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:28:38Z
+fix:buildiq:1648:0d30354d	floor restored (refactor of rule decision/record units), new head 9ffd7d0a, REVERIFY	session-20261114T221756-d9538cf9	2026-11-14T22:28:41Z
+verify:stackiq:1958:c7ba5e7a	1958 GREEN, 1959 GREEN, 1960 CONFLICT (l10n); no new failures	session-20261114T214719-cd72efa7	2026-11-14T22:28:57Z
+fix:versioniq:710:0f065f4b	merged development (clean), suites at baseline; new head 3ab6b5e2, REVERIFY recorded	session-20261114T214736-dd784d82	2026-11-14T22:29:15Z
+fix:stackiq:1956:5e21700e	no change: branch already up to date with development; it only conflicts in l10n with unmerged #1937/#1954; merge development in again once they land	session-20261114T214735-aacd1703	2026-11-14T22:29:22Z
+fix:buildiq:1622:278bce40	maintainability restored to 3.91, new head 02120619	session-20261114T221817-a815ec70	2026-11-14T22:29:25Z
