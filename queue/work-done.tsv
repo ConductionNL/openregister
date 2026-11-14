@@ -8223,3 +8223,4 @@ fix:integriq:3596:0a5a8f4f	no change: merges cleanly with current development (3
 build:launchpad:drill-down-cross-widget-filter	partial: PR #1195; tasks 1-3 and 18-20 (filter bus, hierarchy, URL state + specs); dashboard UI, register, telemetry, e2e left	session-20261114T070333-41d2bfe8	2026-11-14T08:23:29Z
 verify:integriq:3602:34c788e3	3602 GREEN; 0 new failures	session-20261114T065631-b4991134	2026-11-14T08:23:31Z
 merge:launchpad:1189:a57b0a02	merge3 tree of 1 launchpad PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T08:23:42Z
+build:keepiq:portability-export-choice-and-restore-fidelity	partial: PR #1783 serializer scope/fields/type names, backup parser, restore type resolution + summary data; dialog/bulk/wizard UI left (needs 36-locale strings), docs left	session-20261114T073108-8b40426a	2026-11-14T08:23:56Z
