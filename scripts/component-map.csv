@@ -4249,3 +4249,5 @@ Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configurat
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Migration/Version1Date20261114100000.php,,Migration,,,,,Platform
+BackgroundJob/BackfillEmailLinkMessageIdJob.php,,BackgroundJob,,,,,Notifications
+Notifications/Service/EmailLinkMessageIdBackfill.php,,Notifications,,,,,Notifications

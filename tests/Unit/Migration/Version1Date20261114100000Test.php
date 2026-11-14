@@ -12,7 +12,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
+use OCA\OpenRegister\BackgroundJob\BackfillEmailLinkMessageIdJob;
 use OCA\OpenRegister\Migration\Version1Date20261114100000;
+use OCP\BackgroundJob\IJobList;
 use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
@@ -52,8 +54,15 @@ class Version1Date20261114100000Test extends TestCase {
 		$this->assertSame($schema, $this->migrate(schema: $schema));
 	}
 
+	public function testTheBackfillIsQueuedOnceAfterTheSchemaChange(): void {
+		$jobs = $this->createMock(IJobList::class);
+		$jobs->expects($this->once())->method('add')->with(BackfillEmailLinkMessageIdJob::class);
+
+		(new Version1Date20261114100000($jobs))->postSchemaChange($this->createMock(IOutput::class), static fn () => $this->createMock(ISchemaWrapper::class), []);
+	}
+
 	private function migrate(ISchemaWrapper $schema): ?ISchemaWrapper {
-		return (new Version1Date20261114100000())->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []);
+		return (new Version1Date20261114100000($this->createMock(IJobList::class)))->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []);
 	}
 
 	private function schema(bool $hasTable, mixed $table): ISchemaWrapper {

@@ -2,8 +2,10 @@
 
 ## 1. Data
 
-- [ ] 1.1 Migration: `rfc_message_id` and `direction` on `openregister_email_links`, indexed on `rfc_message_id`. `rfc_message_id` is built; `direction` comes with 1.3.
-- [ ] 1.2 Read the header at link time (built, in `EmailService` and `EmailLinkService`); `BackfillEmailLinkMessageIdJob` one-shot with a kill switch.
+- [x] 1.1 Migration: `rfc_message_id` and `direction` on `openregister_email_links`, indexed on `rfc_message_id`. `rfc_message_id` is built; `direction` comes with 1.3.
+      > 2026-11-14: `Version1Date20261114100000` adds `direction`. A link made from a Mail message is `inbound`; `details.direction` reads the metadata first, then the column.
+- [x] 1.2 Read the header at link time (built, in `EmailService` and `EmailLinkService`); `BackfillEmailLinkMessageIdJob` one-shot with a kill switch.
+      > 2026-11-14: the migration queues `BackfillEmailLinkMessageIdJob` once; `EmailLinkMessageIdBackfill` walks the links without an id by id and reads `mail_messages.message_id`. App config `backfill_email_link_message_id = no` skips it.
 - [ ] 1.3 Outbound link written by the dispatch leaf's e-mail channel when `object` is bound.
 
 ## 2. Resolve
