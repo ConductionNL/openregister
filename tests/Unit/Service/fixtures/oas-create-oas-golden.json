@@ -342,6 +342,16 @@
                                 "example": "search term"
                             },
                             {
+                                "name": "_where",
+                                "in": "query",
+                                "required": false,
+                                "description": "A condition tree as JSON: a group {\"type\": \"AND\"|\"OR\", \"children\": [...]} whose children are groups or leaves {\"field\", \"operator\", \"value\"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or encrypted property, is refused with 400 and the JSON path of the node.",
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "example": "{\"type\":\"OR\",\"children\":[{\"field\":\"place\",\"operator\":\"eq\",\"value\":\"Zuiddrecht\"},{\"field\":\"industry\",\"operator\":\"isnull\",\"value\":true}]}"
+                            },
+                            {
                                 "name": "title",
                                 "in": "query",
                                 "required": false,
@@ -1047,6 +1057,16 @@
                                 "example": "search term"
                             },
                             {
+                                "name": "_where",
+                                "in": "query",
+                                "required": false,
+                                "description": "A condition tree as JSON: a group {\"type\": \"AND\"|\"OR\", \"children\": [...]} whose children are groups or leaves {\"field\", \"operator\", \"value\"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or encrypted property, is refused with 400 and the JSON path of the node.",
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "example": "{\"type\":\"OR\",\"children\":[{\"field\":\"place\",\"operator\":\"eq\",\"value\":\"Zuiddrecht\"},{\"field\":\"industry\",\"operator\":\"isnull\",\"value\":true}]}"
+                            },
+                            {
                                 "name": "naam",
                                 "in": "query",
                                 "required": false,
@@ -1699,6 +1719,16 @@
                                     "type": "string"
                                 },
                                 "example": "search term"
+                            },
+                            {
+                                "name": "_where",
+                                "in": "query",
+                                "required": false,
+                                "description": "A condition tree as JSON: a group {\"type\": \"AND\"|\"OR\", \"children\": [...]} whose children are groups or leaves {\"field\", \"operator\", \"value\"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or encrypted property, is refused with 400 and the JSON path of the node.",
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "example": "{\"type\":\"OR\",\"children\":[{\"field\":\"place\",\"operator\":\"eq\",\"value\":\"Zuiddrecht\"},{\"field\":\"industry\",\"operator\":\"isnull\",\"value\":true}]}"
                             },
                             {
                                 "name": "naam",
@@ -2392,6 +2422,16 @@
                                 "example": "search term"
                             },
                             {
+                                "name": "_where",
+                                "in": "query",
+                                "required": false,
+                                "description": "A condition tree as JSON: a group {\"type\": \"AND\"|\"OR\", \"children\": [...]} whose children are groups or leaves {\"field\", \"operator\", \"value\"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or encrypted property, is refused with 400 and the JSON path of the node.",
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "example": "{\"type\":\"OR\",\"children\":[{\"field\":\"place\",\"operator\":\"eq\",\"value\":\"Zuiddrecht\"},{\"field\":\"industry\",\"operator\":\"isnull\",\"value\":true}]}"
+                            },
+                            {
                                 "name": "x",
                                 "in": "query",
                                 "required": false,
@@ -3074,6 +3114,13 @@
                 "rule": "/core/query-keys-camel-case"
             },
             {
+                "path": "paths./objects/zaken/zaak.get.parameters.4",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_where\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
                 "path": "paths./objects/zaken/zaak.post.parameters.0",
                 "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
                 "code": "nlgov_rule",
@@ -3181,6 +3228,13 @@
             {
                 "path": "paths./objects/zaken/klant.get.parameters.3",
                 "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.get.parameters.4",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_where\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
                 "code": "nlgov_rule",
                 "severity": "warning",
                 "rule": "/core/query-keys-camel-case"
@@ -3298,6 +3352,13 @@
                 "rule": "/core/query-keys-camel-case"
             },
             {
+                "path": "paths./objects/klanten/klant.get.parameters.4",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_where\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
                 "path": "paths./objects/klanten/klant.post.parameters.0",
                 "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
                 "code": "nlgov_rule",
@@ -3405,6 +3466,13 @@
             {
                 "path": "paths./objects/klanten/untitled.get.parameters.3",
                 "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.get.parameters.4",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_where\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
                 "code": "nlgov_rule",
                 "severity": "warning",
                 "rule": "/core/query-keys-camel-case"
@@ -3832,6 +3900,16 @@
                                     "type": "string"
                                 },
                                 "example": "search term"
+                            },
+                            {
+                                "name": "_where",
+                                "in": "query",
+                                "required": false,
+                                "description": "A condition tree as JSON: a group {\"type\": \"AND\"|\"OR\", \"children\": [...]} whose children are groups or leaves {\"field\", \"operator\", \"value\"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or encrypted property, is refused with 400 and the JSON path of the node.",
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "example": "{\"type\":\"OR\",\"children\":[{\"field\":\"place\",\"operator\":\"eq\",\"value\":\"Zuiddrecht\"},{\"field\":\"industry\",\"operator\":\"isnull\",\"value\":true}]}"
                             },
                             {
                                 "name": "title",
@@ -4539,6 +4617,16 @@
                                 "example": "search term"
                             },
                             {
+                                "name": "_where",
+                                "in": "query",
+                                "required": false,
+                                "description": "A condition tree as JSON: a group {\"type\": \"AND\"|\"OR\", \"children\": [...]} whose children are groups or leaves {\"field\", \"operator\", \"value\"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or encrypted property, is refused with 400 and the JSON path of the node.",
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "example": "{\"type\":\"OR\",\"children\":[{\"field\":\"place\",\"operator\":\"eq\",\"value\":\"Zuiddrecht\"},{\"field\":\"industry\",\"operator\":\"isnull\",\"value\":true}]}"
+                            },
+                            {
                                 "name": "naam",
                                 "in": "query",
                                 "required": false,
@@ -5194,6 +5282,13 @@
                 "rule": "/core/query-keys-camel-case"
             },
             {
+                "path": "paths./objects/zaken/zaak.get.parameters.4",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_where\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
                 "path": "paths./objects/zaken/zaak.post.parameters.0",
                 "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
                 "code": "nlgov_rule",
@@ -5301,6 +5396,13 @@
             {
                 "path": "paths./objects/zaken/klant.get.parameters.3",
                 "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.get.parameters.4",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_where\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
                 "code": "nlgov_rule",
                 "severity": "warning",
                 "rule": "/core/query-keys-camel-case"
@@ -5691,6 +5793,16 @@
                                     "type": "string"
                                 },
                                 "example": "search term"
+                            },
+                            {
+                                "name": "_where",
+                                "in": "query",
+                                "required": false,
+                                "description": "A condition tree as JSON: a group {\"type\": \"AND\"|\"OR\", \"children\": [...]} whose children are groups or leaves {\"field\", \"operator\", \"value\"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or encrypted property, is refused with 400 and the JSON path of the node.",
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "example": "{\"type\":\"OR\",\"children\":[{\"field\":\"place\",\"operator\":\"eq\",\"value\":\"Zuiddrecht\"},{\"field\":\"industry\",\"operator\":\"isnull\",\"value\":true}]}"
                             },
                             {
                                 "name": "naam",
@@ -6384,6 +6496,16 @@
                                 "example": "search term"
                             },
                             {
+                                "name": "_where",
+                                "in": "query",
+                                "required": false,
+                                "description": "A condition tree as JSON: a group {\"type\": \"AND\"|\"OR\", \"children\": [...]} whose children are groups or leaves {\"field\", \"operator\", \"value\"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or encrypted property, is refused with 400 and the JSON path of the node.",
+                                "schema": {
+                                    "type": "string"
+                                },
+                                "example": "{\"type\":\"OR\",\"children\":[{\"field\":\"place\",\"operator\":\"eq\",\"value\":\"Zuiddrecht\"},{\"field\":\"industry\",\"operator\":\"isnull\",\"value\":true}]}"
+                            },
+                            {
                                 "name": "x",
                                 "in": "query",
                                 "required": false,
@@ -7066,6 +7188,13 @@
                 "rule": "/core/query-keys-camel-case"
             },
             {
+                "path": "paths./objects/klanten/klant.get.parameters.4",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_where\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
                 "path": "paths./objects/klanten/klant.post.parameters.0",
                 "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
                 "code": "nlgov_rule",
@@ -7173,6 +7302,13 @@
             {
                 "path": "paths./objects/klanten/untitled.get.parameters.3",
                 "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.get.parameters.4",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_where\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
                 "code": "nlgov_rule",
                 "severity": "warning",
                 "rule": "/core/query-keys-camel-case"
