@@ -36,7 +36,9 @@ const KEY_URL = '/gen/apps/openregister/api/federated-config/public-key'
  */
 function section(state = {}) {
 	const vm = { ...FederatedTrustConfiguration.data(), ...state }
-	for (const [name, method] of Object.entries(FederatedTrustConfiguration.methods)) {
+	for (const [name, method] of Object.entries(
+		FederatedTrustConfiguration.methods,
+	)) {
 		vm[name] = method.bind(vm)
 	}
 	vm.t = (app, text) => text
@@ -67,11 +69,13 @@ beforeEach(() => {
 
 describe('FederatedTrustConfiguration', () => {
 	it('shows the trust configuration and the public key', async () => {
-		axios.get.mockImplementation((url) => Promise.resolve(
-			url === TRUST_URL
-				? { data: serverTrust({ allowUnverifiedBundles: 'true' }) }
-				: { data: { publicKey: 'cHVi' } },
-		))
+		axios.get.mockImplementation((url) =>
+			Promise.resolve(
+				url === TRUST_URL
+					? { data: serverTrust({ allowUnverifiedBundles: 'true' }) }
+					: { data: { publicKey: 'cHVi' } },
+			),
+		)
 		const vm = section()
 
 		await vm.load()
@@ -133,11 +137,15 @@ describe('FederatedTrustConfiguration', () => {
 		vm.apply(serverTrust({ allowUnverifiedBundles: 'true' }))
 		vm.trust.allowUnverifiedBundles = false
 
-		expect(vm.changes()).toEqual([{ field: 'allowUnverifiedBundles', value: '' }])
+		expect(vm.changes()).toEqual([
+			{ field: 'allowUnverifiedBundles', value: '' },
+		])
 	})
 
 	it('saves the changes and shows what the server holds afterwards', async () => {
-		axios.put.mockResolvedValue({ data: serverTrust({ trustedKeys: 'a2V5MQ==,a2V5Mg==' }) })
+		axios.put.mockResolvedValue({
+			data: serverTrust({ trustedKeys: 'a2V5MQ==,a2V5Mg==' }),
+		})
 		const vm = section()
 		vm.apply(serverTrust())
 		vm.trust.trustedKeys = 'a2V5MQ==, a2V5Mg=='
@@ -145,7 +153,10 @@ describe('FederatedTrustConfiguration', () => {
 		await vm.save()
 
 		expect(axios.put).toHaveBeenCalledTimes(1)
-		expect(axios.put).toHaveBeenCalledWith(TRUST_URL, { field: 'trustedKeys', value: 'a2V5MQ==,a2V5Mg==' })
+		expect(axios.put).toHaveBeenCalledWith(TRUST_URL, {
+			field: 'trustedKeys',
+			value: 'a2V5MQ==,a2V5Mg==',
+		})
 		expect(vm.trust.trustedKeys).toBe('a2V5MQ==,a2V5Mg==')
 		expect(vm.changes()).toEqual([])
 		expect(showSuccess).toHaveBeenCalledWith('Trust settings saved')
@@ -169,7 +180,10 @@ describe('FederatedTrustConfiguration', () => {
 
 	it('copies the public key', async () => {
 		const writeText = jest.fn().mockResolvedValue()
-		Object.defineProperty(global.navigator, 'clipboard', { value: { writeText }, configurable: true })
+		Object.defineProperty(global.navigator, 'clipboard', {
+			value: { writeText },
+			configurable: true,
+		})
 		const vm = section({ publicKey: 'cHVi' })
 
 		await vm.copyPublicKey()

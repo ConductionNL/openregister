@@ -70,10 +70,7 @@
 			</p>
 		</div>
 
-		<NcButton
-			variant="primary"
-			:disabled="loading || saving"
-			@click="save">
+		<NcButton variant="primary" :disabled="loading || saving" @click="save">
 			<template #icon>
 				<NcLoadingIcon v-if="saving" :size="20" />
 				<Save v-else :size="20" />
@@ -190,13 +187,21 @@ export default {
 			this.loading = true
 			try {
 				const [trust, key] = await Promise.all([
-					axios.get(generateUrl('/apps/openregister/api/federated-config/trust')),
-					axios.get(generateUrl('/apps/openregister/api/federated-config/public-key')),
+					axios.get(
+						generateUrl('/apps/openregister/api/federated-config/trust'),
+					),
+					axios.get(
+						generateUrl(
+							'/apps/openregister/api/federated-config/public-key',
+						),
+					),
 				])
 				this.apply(trust.data)
 				this.publicKey = key.data?.publicKey || ''
 			} catch {
-				showError(this.t('openregister', 'Could not load the trust settings'))
+				showError(
+					this.t('openregister', 'Could not load the trust settings'),
+				)
 			} finally {
 				this.loading = false
 			}
@@ -240,7 +245,10 @@ export default {
 			}
 			const allow = this.trust.allowUnverifiedBundles === true
 			if (this.saved === null || allow !== this.saved.allowUnverifiedBundles) {
-				updates.push({ field: 'allowUnverifiedBundles', value: allow ? 'true' : '' })
+				updates.push({
+					field: 'allowUnverifiedBundles',
+					value: allow ? 'true' : '',
+				})
 			}
 			return updates
 		},
@@ -267,7 +275,9 @@ export default {
 				}
 				showSuccess(this.t('openregister', 'Trust settings saved'))
 			} catch {
-				showError(this.t('openregister', 'Could not save the trust settings'))
+				showError(
+					this.t('openregister', 'Could not save the trust settings'),
+				)
 			} finally {
 				this.saving = false
 			}
