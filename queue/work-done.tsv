@@ -7746,6 +7746,7 @@ merge:pipelinq:3795:f810ec60	merge3 tree of 5 pipelinq PRs: merged=5 red=0 fail=
 fix:pipelinq:3752:f3258f26	merged dev, pushed 939f173a393a19700e970cf1e8e241fc1d8995e6; conflict is vs #3707 only; REVERIFY	session-20261114T062222-96f530fc	2026-11-14T07:10:40Z
 merge:pipelinq:3797:a29d2f5a	merge3 tree of 5 pipelinq PRs: merged=5 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T07:10:46Z
 fix:learniq:2493:a30a8870	merged development, pushed cf5af58b; REVERIFY recorded (overlap with open #2490 remains)	session-20261114T070352-19ea7dff	2026-11-14T07:10:47Z
+measure:shillinq:20261114h00	php 92.26% js 90.31% @045ffd21; development fatals at HoursSubjectAuditCommand (stale Repair\Support\ReadsSourceRowsInBatches import, patched locally to measure); 15 PHP + 1 vitest red on development	session-20261114T065632-a1c920c5	2026-11-14T07:11:05Z
 fix:pipelinq:3732:777e5f2a	l10n overlap with #3708 removed, merged development, pushed 58e89f857926dae5f0577dd7f38b890aff55f545	session-20261114T062202-3e33eeb3	2026-11-14T07:11:04Z
 verify:filinq:2055:07bb5960	2055 GREEN, 2062 GREEN, 2069 CONFLICT (register version after 2062)	session-20261114T065635-0aca43d3	2026-11-14T07:11:20Z
 review:openregister:10465:30907e20	APPROVE	session-20261114T062200-62a0b439	2026-11-14T07:11:26Z
