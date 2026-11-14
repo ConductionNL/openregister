@@ -10187,3 +10187,5 @@ opencatalogi	2717	341f4c5602eba241863d18d74fd962356c21c948	GREEN	worker-33	tree 
 opencatalogi	2718	a9140d9ddc3d682c5947b55c5e491b4b78f32a44	GREEN	worker-33	tree on development with #2671 #2688 #2716 #2717 #2718 #2719: unit 5651 tests, baseline 5599 with 2 failures (AppIdentityTest, WooControllerTest inventarislijst), no new failures; vitest 1083/1083; jest 335/335 on 24 touched specs; tests only
 opencatalogi	2719	3710b27607b29020c64b56cbaff5c063ffb45cbc	GREEN	worker-33	tree on development with #2671 #2688 #2716 #2717 #2718 #2719: unit 5651 tests, baseline 5599 with 2 failures (AppIdentityTest, WooControllerTest inventarislijst), no new failures; vitest 1083/1083; jest 335/335 on 24 touched specs; tests only
 stackiq	1942	7d2c0d3f7c687acb0e1883d507e2793d4d176e41	CONFLICT	worker-08	conflicts in tree after #1911/#1928 (l10n/en,nl .js/.json, src/manifest.json)
+stackiq	1944	25fa2c20ed0031ac0278d3a787cffa3eca2f16bc	CONFLICT	worker-08	conflicts in tree after #1911/#1928 (l10n/en,nl .js/.json)
+stackiq	1945	6fb762aa974dd423d2dbf7928f22680a6ea9174d	CONFLICT	worker-08	conflicts in tree after #1911/#1928 (l10n/en,nl .js/.json)
