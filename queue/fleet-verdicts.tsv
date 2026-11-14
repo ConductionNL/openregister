@@ -10381,3 +10381,11 @@ integriq	3612	b5b2780e101251c6012d88963009cbbde107e72c	RED	merge3:merge-gate	GAT
 integriq	3615	71e6a096933f8c3817a1037a7b80429df1a7b92c	RED	merge3:merge-gate	GATE RED floor: module_coupling: 5.03 -> 5.00
 integriq	3617	51d9a2baaebe30ec3caaa026d9f19f877e4e3590	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.89 -> 3.87
 integriq	3628	3039ae5d46935b5d44c03c3757cee5df6f856b02	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.89 -> 3.86
+integriq	3542	2128a8ec1cbd18b3fd6c62d28c6fb3eaf7a46c0f	REVERIFY	merge3	verdict sha is not the head: head is cd5c83352e5f6d5f2f4b47ff1185d43637b210ea
+integriq	3549	d85e6b223c817a47d72f9e250d97948026d6ea10	REVERIFY	merge3	verdict sha is not the head: head is 931cf8b207dcfd23729430d2fb38c92645a71870
+integriq	3564	d712cf14bb47d721128efa245e719f37c2339375	REVERIFY	merge3	verdict sha is not the head: head is e75c7913950e8ab8bb5f54ed4030ba4330d05e5e
+integriq	3593	b76109f880f6242f51702c1d7933928692bf8c06	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Service/ServiceBindingsFactoriesTest.php 
+integriq	3595	07e2a23686f1889ef90284c53ecb5af67d38c282	CONFLICT	merge3	merges clean on development alone; files: docs/features/README.md lib/EventListener/EventListenerBindings.php tests/fixtures/application-registration-order.json 
+integriq	3630	9980914500767dff664e46ee0750d0ae46425fc3	CONFLICT	merge3	merges clean on development alone; files: src/modals/v2/ModalHost.vue tests/vitest/modalHostEvents.spec.js 
+integriq	3631	0f8a82af89e4a76c857b625da5dd1570a670beb8	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js lib/Service/EndpointService.php 
+integriq	3633	90a867a5b221ea9285ddb5531b3a7bfa16136b5d	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js lib/Service/EndpointService.php src/modals/v2/SourceFormFields.vue 
