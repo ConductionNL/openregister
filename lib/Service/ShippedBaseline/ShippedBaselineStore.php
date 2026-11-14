@@ -73,6 +73,17 @@ class ShippedBaselineStore {
 	public const KEY_REGISTER = 'register.shippedBaseline';
 
 	/**
+	 * The configuration key a schema's kept-local conflicts live under, beside its baseline.
+	 *
+	 * Each conflict is `{path, shipped, live}`: the definition the app shipped
+	 * and the one the instance kept, so an administrator can still take the
+	 * shipped one after the upgrade that reported it.
+	 *
+	 * @var string
+	 */
+	public const KEY_SCHEMA_CONFLICTS = 'schema.shippedConflicts';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ConfigurationValueStore $values The layered value store from #3808.
@@ -211,6 +222,40 @@ class ShippedBaselineStore {
 	public function schemaSubject(string $slug): string {
 		return ('schema:' . $slug);
 	}//end schemaSubject()
+
+	/**
+	 * The conflicts an import kept local for a schema, with the release that reported them, or null.
+	 *
+	 * @param string $slug The schema slug.
+	 *
+	 * @return array{definition: array<string, mixed>, app: string, appVersion: string, recordedAt: string}|null
+	 *         The record; its definition holds `conflicts`.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function readConflicts(string $slug): ?array {
+		return $this->read(subject: $this->schemaSubject(slug: $slug), configKey: self::KEY_SCHEMA_CONFLICTS);
+	}//end readConflicts()
+
+	/**
+	 * Record the conflicts an import kept local for a schema, replacing what was recorded before.
+	 *
+	 * @param string            $slug      The schema slug.
+	 * @param ShippedDefinition $conflicts `{conflicts: list}` and the release that reported them.
+	 *
+	 * @return bool Whether it was recorded.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function recordConflicts(string $slug, ShippedDefinition $conflicts): bool {
+		$address = new ConfigurationAddress(
+			layer: ConfigurationLayer::SUBJECT,
+			layerRef: $this->schemaSubject(slug: $slug),
+			configKey: self::KEY_SCHEMA_CONFLICTS
+		);
+
+		return $this->recordAt(address: $address, shipped: $conflicts);
+	}//end recordConflicts()
 
 	/**
 	 * Record what an app shipped for a register, under the register key.

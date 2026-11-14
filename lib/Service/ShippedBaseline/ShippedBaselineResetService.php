@@ -147,7 +147,7 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 		$slug = (string)($schema->getSlug() ?? '');
 		$result = $this->guard->resetToBaseline(slug: $slug, live: $this->live(schema: $schema), path: $path, record: false);
 		if ($result['applied'] === true) {
-			$this->writePart(schema: $schema, leaf: new LeafReset(segments: explode(DescriptorParts::SEPARATOR, $path), to: $result['to']));
+			(new SchemaPartWriter())->write(schema: $schema, leaf: new LeafReset(segments: explode(DescriptorParts::SEPARATOR, $path), to: $result['to']));
 			$this->schemas->update($schema);
 
 			$this->guard->recordPartReset(slug: $slug, reset: new PartReset(path: $path, from: $result['from'], to: $result['to']));
@@ -215,62 +215,6 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 	private function live(Schema $schema): array {
 		return LiveDescriptor::of(schema: $schema);
 	}//end live()
-
-	/**
-	 * Replace or remove one leaf, leaving every sibling as it was stored.
-	 *
-	 * @param mixed     $tree The stored part the leaf's segments start in.
-	 * @param LeafReset $leaf The segments below the tree and the shipped value.
-	 *
-	 * @return mixed The part with the leaf replaced, or removed when it was never shipped.
-	 */
-	private function withLeaf(mixed $tree, LeafReset $leaf): mixed {
-		if ($leaf->segments === [] && $leaf->removes() === true) {
-			return [];
-		}
-
-		if ($leaf->segments === []) {
-			return $leaf->to;
-		}
-
-		if (is_array($tree) === false) {
-			$tree = [];
-		}
-
-		$key = $leaf->segments[0];
-		if (count($leaf->segments) === 1 && $leaf->removes() === true) {
-			unset($tree[$key]);
-			return $tree;
-		}
-
-		$tree[$key] = $this->withLeaf(tree: ($tree[$key] ?? []), leaf: $leaf->below());
-		return $tree;
-	}//end withLeaf()
-
-	/**
-	 * Set the top-level part a leaf reset falls in on the schema, with the leaf reset.
-	 *
-	 * @param Schema    $schema The schema, as stored.
-	 * @param LeafReset $leaf   The full path, top-level part first, and the shipped value.
-	 *
-	 * @return void
-	 */
-	private function writePart(Schema $schema, LeafReset $leaf): void {
-		$top = $leaf->segments[0];
-		$value = $this->withLeaf(tree: $this->live(schema: $schema)[$top], leaf: $leaf->below());
-		if (is_array($value) === false) {
-			$value = [];
-		}
-
-		match ($top) {
-			'properties' => $schema->setProperties($value),
-			'required' => $schema->setRequired($value),
-			GuardedAnnotations::PART => $schema->setConfiguration(
-				(new GuardedAnnotations())->intoStored(configuration: $schema->getConfiguration(), guarded: $value)
-			),
-			default => $schema->setAuthorization($value),
-		};
-	}//end writePart()
 
 	/**
 	 * The preview's shape.

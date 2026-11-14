@@ -61,8 +61,17 @@
       part is a conflict, not a deletion.
 - [x] 3.3 `decisions` is a path list, per part, and each one writes a
       `configuration.conflict.decided` row on the trail.
-- [ ] 3.3b The surface an administrator takes that decision on. The service
+- [x] 3.3b The surface an administrator takes that decision on. The service
       accepts the decisions; nothing yet offers them.
+      > third pass: a guarded import now records its kept-local conflicts, each
+      > with both definitions, beside the baseline (`schema.shippedConflicts`),
+      > so the shipped definition is still there when somebody decides.
+      > `GET /api/schemas/{id}/shipped-baseline/conflicts` lists them and
+      > `POST /api/schemas/{id}/shipped-baseline/conflicts/accept` (`path`)
+      > takes the shipped definition for one part (`ShippedConflictService`,
+      > admin only): it writes only that leaf, moves the baseline at that path,
+      > drops the conflict and writes `configuration.conflict.decided` with the
+      > actor and both definitions. It refuses without a session. No UI page yet.
 - [x] 3.4 The guard has no throw in it, and `ImportHandler` treats an
       unresolvable guard as "import as before" rather than as a failure.
 
