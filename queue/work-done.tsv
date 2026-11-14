@@ -11775,3 +11775,4 @@ build4:openregister:notes-leaf-rich-text-lock-export:c4	failed: nothing left bui
 fix:larpinq:1054:8782b7bc	map entries moved off the end, clean with #1050; new head 41befe20	session-20261114T221759-c6bc4865	2026-11-14T23:05:25Z
 verify:humaniq:1133:f03c44fc	GREEN humaniq#1133 (phpunit 4376 OK)	session-20261114T224738-9571d712	2026-11-14T23:05:51Z
 build:learniq:attendance-warns-before-the-threshold:c4	done: T4 built (po Finn/Ryan, mbo Sem at 14), PR #2548; all code tasks ticked	session-20261114T224753-194bb25e	2026-11-14T23:06:08Z
+fix:larpinq:1039:726a2623	unit_complexity restored (4.88 vs 4.87) by splitting three methods; merged development; new head 7b286ddee5d0f6c1861115d440505c5929d72503	session-20261114T211012-c469e919	2026-11-14T23:06:06Z
