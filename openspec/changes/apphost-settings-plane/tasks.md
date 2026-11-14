@@ -16,6 +16,7 @@
 - [ ] 3.2 Adopt HandlesApiExceptionsTrait in OR controllers (wave 1: the 20 highest-traffic)
   - Started: `MappingsController` (show, create, update, destroy) answers through `handleApiException()`; typed failures keep their status and message, anything else is a generic 500 with the detail in the server log.
   - `RegistersController` (show, create, destroy, schemas, the import soft delete) answers its generic failures through `handleApiException()` too: the public `show` no longer returns the exception message, and a constraint failure on delete is a 409. Its 400 answers (export, import, template) are unchanged. The other 18 controllers of wave 1 remain.
+  - `SchemasController` (destroy, related, stats, indexes) answers its remaining generic failures through `handleApiException()`: an unknown schema on delete is now a 404 and a constraint failure a 409, while an untyped failure stays the generic 500. Its earlier typed catches (archival 403, attached-objects 409, the 404s) are unchanged. The other 17 controllers of wave 1 remain.
 - [ ] 3.3 Reference consumer PR in one leaf app (petstore — scaffold origin) deleting its SettingsService/PreferencesController copies
 
 ## 4. Verification
