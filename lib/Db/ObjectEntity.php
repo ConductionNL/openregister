@@ -169,6 +169,17 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInterface {
+
+	/**
+	 * The archival statuses (`tmlo.archiefstatus`, lower-cased) of the
+	 * preservation regime. {@see self::isPreserved()} and the list lens
+	 * (`PreservedListLens`) read the same list, so they cannot drift apart.
+	 *
+	 * @var list<string>
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	public const PRESERVED_ARCHIVAL_STATUSES = ['semi_static', 'semi_statisch', 'gearchiveerd'];
 	use JsonFieldsTrait;
 
 	/**
@@ -700,6 +711,32 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $fieldRules = null;
 
 	/**
+	 * The object's key under its schema's declared identity
+	 * (`modelling-composite-identity`): the identity values joined in
+	 * declared order, such as `0363:Z-2026-0042`.
+	 *
+	 * Transient property populated by the render layer. Not persisted: the
+	 * identity is declared on the SCHEMA. Exposed in @self as `key`, and
+	 * omitted for a schema without an identity or an object missing one of
+	 * its values.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $identityKey = null;
+
+	/**
+	 * The object's resolved classification (`confidentiality-classification-primitive`):
+	 * tier, ground, releaseAt and released.
+	 *
+	 * Transient property populated by the render layer. Not persisted: the
+	 * classification is declared on the SCHEMA. Exposed in @self as
+	 * `confidentiality`, and omitted for a schema without the annotation.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $confidentiality = null;
+
+	/**
 	 * Whether the current user follows this object (`object-watchers`).
 	 *
 	 * Transient property populated by the render layer from
@@ -773,6 +810,17 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var string|null
 	 */
 	protected ?string $viewedAt = null;
+
+	/**
+	 * How many children the reader may list under this object.
+	 *
+	 * Transient, set only on a `_childCount=true` page of a schema that
+	 * declares `x-openregister-hierarchy` (records-tree-view). Exposed in @self
+	 * as `childCount`, and absent on every other read.
+	 *
+	 * @var int|null
+	 */
+	protected ?int $childCount = null;
 
 	/**
 	 * What the reader may do with this object, as `{"update": bool, "<declared action>": bool}`.
@@ -1008,6 +1056,58 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setFieldRules()
 
 	/**
+	 * Get the object's key under its schema's identity, when set by the render layer.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function getIdentityKey(): ?string {
+		return $this->identityKey;
+	}//end getIdentityKey()
+
+	/**
+	 * Write the object's key under its schema's identity.
+	 *
+	 * Surfaced in the @self envelope as `key` by getObjectArray().
+	 *
+	 * @param string|null $key The identity values joined in declared order.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function setIdentityKey(?string $key): void {
+		$this->identityKey = $key;
+	}//end setIdentityKey()
+
+	/**
+	 * Get the object's resolved classification, when set by the render layer.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md
+	 */
+	public function getConfidentiality(): ?array {
+		return $this->confidentiality;
+	}//end getConfidentiality()
+
+	/**
+	 * Write the object's resolved classification.
+	 *
+	 * Surfaced in the @self envelope as `confidentiality` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $confidentiality The tier, ground, releaseAt and released.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md
+	 */
+	public function setConfidentiality(?array $confidentiality): void {
+		$this->confidentiality = $confidentiality;
+	}//end setConfidentiality()
+
+	/**
 	 * Write the current user's follow marker.
 	 *
 	 * Write-only on purpose: `mergeTransientRenderFields()` reads the property
@@ -1105,6 +1205,22 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setViewedAt(?string $viewedAt): void {
 		$this->viewedAt = $viewedAt;
 	}//end setViewedAt()
+
+	/**
+	 * Write how many children the reader may list under this object.
+	 *
+	 * Write-only, like setViewedAt(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `childCount`.
+	 *
+	 * @param int|null $childCount The number of readable children.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-the-tree-loads-one-level-at-a-time-with-child-counts
+	 */
+	public function setChildCount(?int $childCount): void {
+		$this->childCount = $childCount;
+	}//end setChildCount()
 
 	/**
 	 * Write what the reader may do with this object.
@@ -1611,6 +1727,11 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//   that never requested one.
 		// - fieldRules: what the object's lifecycle state hides, freezes and
 		//   demands for this reader, absent when the schema declares none.
+		// - key: the identity values joined in declared order, absent when the
+		//   schema declares no identity (`modelling-composite-identity`).
+		// - confidentiality: the resolved tier, ground, releaseAt and released,
+		//   absent when the schema declares no confidentiality annotation
+		//   (`confidentiality-classification-primitive`).
 		// - watching, watcherCount: the reader's own follow state and the size
 		//   of the audience (`object-watchers`).
 		// - unread: whether the reader has seen this object since it last
@@ -1656,6 +1777,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'_clocks'                 => $this->retentionClocks,
 			'registry'                => $this->registryState,
 			'fieldRules'              => $this->fieldRules,
+			'key'                     => $this->identityKey,
+			'confidentiality'         => $this->confidentiality,
 		];
 	}//end renderedFields()
 
@@ -1672,6 +1795,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'watchNotify'             => $this->watchNotify,
 			'favourite'               => $this->watching,
 			'viewedAt'                => $this->viewedAt,
+			'childCount'              => $this->childCount,
 			'can'                     => $this->can,
 		];
 	}//end readerFields()
@@ -2228,6 +2352,35 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function isArchived(): bool {
 		return $this->archived !== null && $this->archived !== [];
 	}//end isArchived()
+
+	/**
+	 * Whether this object is in the preservation (statisch) regime.
+	 *
+	 * The preservation regime is the Dutch `semi_statisch` archival state: a
+	 * dossier whose business use has ended and that the Archiefwet clock now
+	 * governs. It is DISTINCT from the archive state {@see self::isArchived()}
+	 * gives a finished object: an object can be archived, preserved, both or
+	 * neither, and the two are reported separately (REQ-APS-006). A preserved
+	 * object refuses content writes and leaves the working views while staying
+	 * readable and keeping its references resolvable; the write guard reads this
+	 * only when its schema offers the regime.
+	 *
+	 * Read off the TMLO archival metadata, where the archival pipeline keeps the
+	 * state, rather than a marker of its own, because the state is the archival
+	 * fact and a second copy would drift from it.
+	 *
+	 * @return bool True when the object's archival status is a preservation (semi-static) state.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	public function isPreserved(): bool {
+		$status = ($this->getTmlo() ?? [])['archiefstatus'] ?? null;
+		if (is_string($status) === false) {
+			return false;
+		}
+
+		return in_array(strtolower($status), self::PRESERVED_ARCHIVAL_STATUSES, true);
+	}//end isPreserved()
 
 	/**
 	 * Whether this object has been frozen.

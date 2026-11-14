@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
+use OCA\OpenRegister\Service\Rbac\UndecidablePosture;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -679,6 +680,7 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 			'deny' => ['read' => ['ingehuurd']],
 			DepartmentMatrixCompiler::KEY => ['read' => ['behandelaars' => 'afdeling']],
 			ExplicitReveal::KEY => ExplicitReveal::EXPLICIT,
+			UndecidablePosture::KEY => UndecidablePosture::OPEN,
 		];
 
 		foreach (PermissionCatalogue::CONTROL_KEYS as $key) {

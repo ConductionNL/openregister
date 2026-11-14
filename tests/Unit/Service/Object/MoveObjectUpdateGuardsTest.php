@@ -236,7 +236,7 @@ class MoveObjectUpdateGuardsTest extends TestCase {
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willReturn($valid);
 
-		return new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $this->createMock(AuditTrailMapper::class), new NullLogger(), $events), validator: $validator);
+		return new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $this->createMock(AuditTrailMapper::class), new NullLogger(), $events), validator: $validator, relations: $this->createStub(\OCA\OpenRegister\Service\Object\RelationAddressRewriteInterface::class));
 	}//end mover()
 
 	/**

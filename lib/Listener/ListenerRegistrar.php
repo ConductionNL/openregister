@@ -100,6 +100,7 @@ final class ListenerRegistrar {
 		self::registerSideEffectListeners(context: $context);
 		self::registerDeliveryListeners(context: $context);
 		self::registerAuditListeners(context: $context);
+		self::registerAutomationRecordListeners(context: $context);
 		self::registerDraftListeners(context: $context);
 	}//end register()
 
@@ -117,6 +118,21 @@ final class ListenerRegistrar {
 	 */
 	private static function registerAuditListeners(IRegistrationContext $context): void {
 		$context->registerEventListener(SchemaUpdatedEvent::class, SchemaAuthorizationAuditListener::class);
+		foreach (array_keys(RecordTypeAuditListener::ACTIONS) as $event) {
+			$context->registerEventListener($event, RecordTypeAuditListener::class);
+		}
+		// Every schema and register create, update and delete, whichever door
+		// it came through (history-schema-and-settings-edits-audited).
+		foreach ([
+			SchemaCreatedEvent::class,
+			SchemaUpdatedEvent::class,
+			SchemaDeletedEvent::class,
+			RegisterCreatedEvent::class,
+			RegisterUpdatedEvent::class,
+			RegisterDeletedEvent::class,
+		] as $entityEvent) {
+			$context->registerEventListener($entityEvent, EntityEditAuditListener::class);
+		}
 	}//end registerAuditListeners()
 
 	/**
@@ -348,7 +364,7 @@ final class ListenerRegistrar {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	private static function registerPublishListener(IRegistrationContext $context): void {
 		$publish = \OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener::class;
@@ -553,6 +569,17 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatingEvent::class, DependentValueListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, DependentValueListener::class);
 
+		// A conditionally required property (modelling-required-when-enforced):
+		// the form shows and checks the rule, this refuses a client that skips
+		// the form, on the same two events and for the same reason.
+		$context->registerEventListener(ObjectCreatingEvent::class, RequiredWhenListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, RequiredWhenListener::class);
+
+		// The survey rules (survey-object): fixed anonymity, the version raised
+		// by an edit with answers, required answers, no respondent where promised.
+		$context->registerEventListener(ObjectCreatingEvent::class, SurveyWriteListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, SurveyWriteListener::class);
+
 		// ... and the delete half: a value the product defines, or one that
 		// objects still hold, is refused with its count. Closing the validity
 		// window is the operation that is always safe.
@@ -573,10 +600,24 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatingEvent::class, UniqueConstraintListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, UniqueConstraintListener::class);
 
+		// A schema's identity values do not change once an object exists:
+		// outside software addresses the record by them. Only the audited
+		// schema migration path rewrites them.
+		$context->registerEventListener(ObjectUpdatingEvent::class, IdentityGuardListener::class);
+
 		// A schema may cap how many of its objects one organisation holds
 		// (`x-openregister-quota.perOrganisation`); a create past it is
 		// refused with the count and the cap. Updates never count.
 		$context->registerEventListener(ObjectCreatingEvent::class, ObjectQuotaListener::class);
+
+		// Change gates (records-change-held-for-approval): a write touching a
+		// property a chain's `gate.change` names is stored as a pending change
+		// and stopped, so the record stays as it was until a second person
+		// approves. Registered after the validation, constraint and quota
+		// guards, so only a write those would accept is held, and after the
+		// transition gate, so a refused transition is never also held.
+		$context->registerEventListener(ObjectCreatingEvent::class, ChangeGateListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, ChangeGateListener::class);
 
 		// Reverse-FK source-change listener — when a source object (declared via
 		// a master schema's x-openregister-survivorship sourceLink.reverseFk)
@@ -718,6 +759,11 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
 
+		// The redaction policy index follows its termRule, detectionPattern and redactionProfile objects.
+		$context->registerEventListener(ObjectCreatedEvent::class, RedactionPolicyCacheListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, RedactionPolicyCacheListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, RedactionPolicyCacheListener::class);
+
 		// Facet freshness on every object write: bumps the counter for the written
 		// object's (register, schema) scope so the next facet read cannot serve a
 		// bucket list computed before the write (openregister#3560).
@@ -761,6 +807,10 @@ final class ListenerRegistrar {
 		// final gets its archiefnominatie and archiefactiedatum derived and
 		// written, with the rule that produced each.
 		$context->registerEventListener(ObjectTransitionedEvent::class, ArchivalNominationListener::class);
+
+		// A state that declares `freezesObject: true` freezes the object on entry,
+		// so a closed phase's data stops changing without anybody clicking Freeze.
+		$context->registerEventListener(ObjectTransitionedEvent::class, StateEntryFreezeListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
 	}//end registerProjectionAndHandoffListeners()
@@ -925,4 +975,20 @@ final class ListenerRegistrar {
 		$context->registerEventListener($removed, ReadStatePruneListener::class);
 		$context->registerEventListener($removed, NotificationDedupePruneListener::class);
 	}//end registerDraftListeners()
+
+	/**
+	 * Automation run records: a transition's action outcomes are held on the
+	 * pre-save event and written once its save has resolved. Registered after
+	 * every other object listener (only the draft listeners follow), so every
+	 * listener before it keeps its place.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/automation-run-records/specs/object-lifecycle/spec.md#requirement-every-lifecycle-action-reached-leaves-an-outcome-record
+	 */
+	private static function registerAutomationRecordListeners(IRegistrationContext $context): void {
+		$context->registerEventListener(ObjectUpdatedEvent::class, LifecycleActionRecordListener::class);
+	}//end registerAutomationRecordListeners()
 }//end class

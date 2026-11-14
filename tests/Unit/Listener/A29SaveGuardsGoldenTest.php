@@ -84,6 +84,8 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
  * @uses \OCA\OpenRegister\Service\Rules\RuleTrace
  * @uses \OCA\OpenRegister\Db\SchemaCatalog
  * @uses \OCA\OpenRegister\Listener\Support\EventSchemaLookup
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class A29SaveGuardsGoldenTest extends TestCase {
 

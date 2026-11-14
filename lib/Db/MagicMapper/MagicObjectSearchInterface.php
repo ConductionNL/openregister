@@ -82,7 +82,7 @@ interface MagicObjectSearchInterface {
 	 * @return array<string, mixed>
 	 *
 	 *
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function searchObjectsPaginated(
 		array $searchQuery = [], array $countQuery = [], ?string $_activeOrgUuid = null, bool $_rbac = true, bool $_multitenancy = true,

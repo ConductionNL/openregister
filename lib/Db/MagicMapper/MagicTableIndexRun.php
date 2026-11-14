@@ -69,6 +69,20 @@ final class MagicTableIndexRun {
 	public array $searchableIndexes = [];
 
 	/**
+	 * Columns that got an `indexed` btree index for filtering and sorting.
+	 *
+	 * @var array<int, string>
+	 */
+	public array $sortIndexes = [];
+
+	/**
+	 * The identity index the pass made, if any (modelling-composite-identity).
+	 *
+	 * @var string|null
+	 */
+	public ?string $identityIndex = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $tableName     The bare table name.

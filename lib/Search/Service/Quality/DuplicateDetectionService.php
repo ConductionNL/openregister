@@ -90,6 +90,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * @param DedupScoringSources $sources Schema and register lookup and the similarity primitives.
 	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param TextGroupFinder $textGroups Groups files by their text signatures.
 	 *
 	 * @return void
 	 *
@@ -100,6 +101,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 		DedupScoringSources $sources,
 		private readonly DismissedPairStore $dismissals,
 		private readonly LoggerInterface $logger,
+		private readonly TextGroupFinder $textGroups,
 	) {
 		$this->ruleResolver = self::ruleResolverOver(sources: $sources);
 		$this->comparator = new PayloadComparator(similarity: $sources->similarity);
@@ -118,6 +120,25 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 		);
 	}//end ruleResolverOver()
 
+
+	/**
+	 * Group files whose text is near-identical, by their stored MinHash signatures.
+	 *
+	 * @param list<int>  $fileIds   The files, already limited to those the caller may read.
+	 * @param float|null $threshold The threshold (0.5 to 1), or null for the setting.
+	 *
+	 * @return array{
+	 *     groups: list<array{representative: int, members: list<array{fileId: int, similarity: float, identicalText: bool}>}>,
+	 *     notCompared: list<array{fileId: int, reason: string}>
+	 * } The groups and the files not compared.
+	 *
+	 * @throws \InvalidArgumentException When the threshold lies outside 0.5 to 1.
+	 *
+	 * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-near-identical-documents-are-grouped-by-their-text-req-ndt-002
+	 */
+	public function findTextGroups(array $fileIds, ?float $threshold=null): array {
+		return $this->textGroups->find(fileIds: $fileIds, threshold: $threshold);
+	}//end findTextGroups()
 
 	/**
 	 * Find duplicate-candidate pairs within a register/schema.

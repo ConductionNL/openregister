@@ -150,7 +150,7 @@ interface FlowRunServiceInterface {
 	 *                         and "the person named it may no longer act as them"
 	 *                         want opposite fixes.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 */
 	public function queueRun(string $flowId, FlowRunQueueOptions $options): FlowRun;
@@ -187,7 +187,7 @@ interface FlowRunServiceInterface {
 	 *
 	 * @return FlowRun|null The new queued run, or null when the source is not terminal.
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	public function retry(FlowRun $run): ?FlowRun;
 
@@ -253,7 +253,7 @@ interface FlowRunServiceInterface {
 	 *
 	 * @return FlowRun The updated run.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowToken::fromArray is a stateless
 	 * rehydrator for a value object; injecting a factory to call it would add a
@@ -315,7 +315,7 @@ interface FlowRunServiceInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The well-formed items.
 	 *
-	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 * @spec openspec/specs/flow-partial-run/spec.md
 	 */
 	public function seedItemsFrom(mixed $value): array;
 }//end interface

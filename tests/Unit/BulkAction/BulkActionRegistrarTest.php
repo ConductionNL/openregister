@@ -46,10 +46,11 @@ class BulkActionRegistrarTest extends TestCase {
 
 		BulkActionRegistrar::register($context);
 
-		$this->assertCount(5, $aliases);
+		$this->assertCount(6, $aliases);
 		$this->assertSame(AssignAction::class, $aliases[AssignActionInterface::class]);
 		$this->assertSame(SetPropertiesAction::class, $aliases[SetPropertiesActionInterface::class]);
 		$this->assertSame(RestorePriorValuesAction::class, $aliases[RestorePriorValuesActionInterface::class]);
+		$this->assertSame(\OCA\OpenRegister\BulkAction\TransitionAction::class, $aliases[\OCA\OpenRegister\BulkAction\TransitionActionInterface::class]);
 		$this->assertSame(BulkActionRegistrar::BINDINGS, $aliases);
 	}
 }

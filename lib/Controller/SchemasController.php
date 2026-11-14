@@ -35,6 +35,12 @@ use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\GrantExceedsGranterException;
+use OCA\OpenRegister\Service\Authorization\AddedGrants;
+use OCA\OpenRegister\Service\Authorization\GrantCeiling;
+use OCA\OpenRegister\Service\Authorization\GrantedRight;
+use OCA\OpenRegister\Db\SchemaChangelog;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -54,6 +60,7 @@ use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
+use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolverInterface;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
@@ -63,7 +70,9 @@ use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCA\OpenRegister\Service\Schema\IncomingDefinition;
+use OCA\OpenRegister\Service\Schema\SchemaChangeNoticeService;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
+use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaImport\GgmUpload;
@@ -78,6 +87,7 @@ use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\SemanticTypeResolverInterface;
+use OCA\OpenRegister\Service\Task\ApprovalPositionFormGuard;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -1155,7 +1165,11 @@ class SchemasController extends Controller {
 			// Drop the cached copy so a follow-up read in this worker sees the new schema.
 			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
 
-			return new JSONResponse(data: $schema, statusCode: 201);
+			// Advisory annotations the save ignored ride along; the save itself stands.
+			return new JSONResponse(
+				data: array_merge($schema->jsonSerialize(), ['warnings' => $this->schemaMapper->discardedAnnotations()]),
+				statusCode: 201
+			);
 		} catch (Exception $e) {
 			return $this->schemaWriteErrorResponse(
 				e: $e,
@@ -1215,8 +1229,41 @@ class SchemasController extends Controller {
 	private function validateSchemaBody(array $data): ?JSONResponse {
 		return $this->validateJsonLdMapping(data: $data)
 			?? $this->validateSemanticRoles(data: $data)
-			?? $this->validateReferenceFilterOperands(data: $data);
+			?? $this->validateReferenceFilterOperands(data: $data)
+			?? $this->validateApprovalPositionForms(data: $data);
 	}//end validateSchemaBody()
+
+	/**
+	 * Refuse an approval chain position whose form no approver could fill in.
+	 *
+	 * Same rule and reasons as a flow step's form; each refusal names the
+	 * chain, the position, the field and why. A body without position forms
+	 * never reaches the guard.
+	 *
+	 * @param array<string, mixed> $data The incoming schema payload.
+	 *
+	 * @return JSONResponse|null A 422 naming each refusal, or null when there is nothing to refuse.
+	 *
+	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
+	 */
+	private function validateApprovalPositionForms(array $data): ?JSONResponse {
+		if (ApprovalPositionFormGuard::declaresForms(data: $data) === false) {
+			return null;
+		}
+
+		$errors = $this->container->get(ApprovalPositionFormGuard::class)->violations(data: $data);
+		if ($errors === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => $errors[0],
+				'errors' => $errors,
+			],
+			statusCode: 422
+		);
+	}//end validateApprovalPositionForms()
 
 	/**
 	 * Resolve the register a new schema is created in.
@@ -1450,7 +1497,7 @@ class SchemasController extends Controller {
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
-	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function update(int $id): JSONResponse {
 		$data = $this->withoutInternalParams(data: $this->request->getParams());
@@ -1458,7 +1505,7 @@ class SchemasController extends Controller {
 		// `?draft=true` holds the edit beside the published definition instead
 		// of applying it (modelling-schema-draft).
 		$asDraft = $this->isTrue(value: ($data['draft'] ?? null));
-		unset($data['draft'], $data['acknowledgeBreaking'], $data['renames']);
+		unset($data['draft'], $data['acknowledgeBreaking'], $data['renames'], $data['changeNotice']);
 		if ($asDraft === true) {
 			return $this->saveDraft(id: $id, data: $data);
 		}
@@ -1562,7 +1609,7 @@ class SchemasController extends Controller {
 	 *     array<never, never>>|JSONResponse<422, array{error: string,
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
-	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	private function applyUpdate(int $id, array $data): JSONResponse {
 		// Immutable fields are dropped to prevent tampering.
@@ -1624,7 +1671,8 @@ class SchemasController extends Controller {
 	private function updateBodyRefusal(Schema $existing, array $data): ?JSONResponse {
 		return ($this->orphanCleanupRefusal(schema: $existing, document: $data)
 			?? $this->validateSchemaBody(data: $data)
-			?? $this->crossOrganisationRefusal(old: $existing->getAuthorization(), document: $data));
+			?? $this->crossOrganisationRefusal(old: $existing->getAuthorization(), document: $data)
+			?? $this->grantCeilingRefusal(existing: $existing, document: $data));
 	}//end updateBodyRefusal()
 
 	/**
@@ -1675,6 +1723,62 @@ class SchemasController extends Controller {
 	}//end writeUpdateWithForms()
 
 	/**
+	 * Who a breaking change to the schema would reach; empty when that cannot be told.
+	 *
+	 * @param Schema $schema The stored schema
+	 *
+	 * @return array<string, mixed> `affectedCallers` and `followers`, or nothing
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-the-breaking-change-gate-shows-who-will-be-affected
+	 */
+	private function changeReach(Schema $schema): array {
+		try {
+			return $this->changeNotices()->reach(schema: $schema);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemasController] The reach of a breaking change could not be read',
+				context: ['schema_id' => $schema->getId(), 'error' => $e->getMessage()]
+			);
+
+			return [];
+		}
+	}//end changeReach()
+
+	/**
+	 * Queue the notice of an applied, acknowledged breaking change; a failure never fails the save.
+	 *
+	 * @param SchemaChangelog|null $entry  The changelog entry, or null when nothing was recorded
+	 * @param array<string, mixed> $update The update: changeSet, acknowledged, changeNotice
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-an-acknowledged-breaking-change-tells-the-people-who-build-on-the-schema
+	 */
+	private function queueChangeNotice(?SchemaChangelog $entry, array $update): void {
+		if ($entry === null || $update['acknowledged'] !== true || $update['changeSet']->isBreaking() === false) {
+			return;
+		}
+
+		try {
+			$this->changeNotices()->queue(entry: $entry, note: ($update['changeNotice'] ?? null));
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[SchemasController] The breaking-change notice could not be queued',
+				context: ['changelog_id' => $entry->getId(), 'error' => $e->getMessage()]
+			);
+		}
+	}//end queueChangeNotice()
+
+	/**
+	 * The breaking-change notice service.
+	 *
+	 * @return SchemaChangeNoticeService The service
+	 */
+	private function changeNotices(): SchemaChangeNoticeService {
+		return $this->container->get(SchemaChangeNoticeService::class);
+	}//end changeNotices()
+
+	/**
 	 * Classify a definition change and apply the schema versioning gate.
 	 *
 	 * Only runs when the update carries properties or required. An unacknowledged
@@ -1690,6 +1794,12 @@ class SchemasController extends Controller {
 		$update['changeSet'] = null;
 		$update['acknowledged'] = ($this->request->getParam('acknowledgeBreaking') === true
 			|| $this->request->getParam('acknowledgeBreaking') === 'true');
+		try {
+			$update['changeNotice'] = SchemaChangeNoticeService::note(note: $this->request->getParam('changeNotice'));
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		}
+
 		$data = $update['data'];
 		if (isset($data['properties']) === false && isset($data['required']) === false) {
 			return $update;
@@ -1717,7 +1827,7 @@ class SchemasController extends Controller {
 				record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: $update['acknowledged'])
 			);
 		} catch (BreakingSchemaChangeException $e) {
-			return new JSONResponse(data: $e->toResponse(), statusCode: 409);
+			return new JSONResponse(data: $e->withReach(reach: $this->changeReach(schema: $existing))->toResponse(), statusCode: 409);
 		}
 
 		if (isset($data['version']) === false && $changeSet->hasChanges() === true) {
@@ -1804,12 +1914,17 @@ class SchemasController extends Controller {
 	 */
 	private function writeSchemaUpdate(array $update): JSONResponse {
 		$updatedSchema = $this->schemaMapper->updateFromArray(id: $update['id'], object: $update['data']);
+		// Read before anything else saves a schema: the list belongs to this save.
+		$warnings = $this->schemaMapper->discardedAnnotations();
 
+		$flowWarnings = [];
 		if ($update['changeSet'] !== null) {
-			$this->schemaVersioningService->recordChange(
+			$entry = $this->schemaVersioningService->recordChange(
 				schemaId: $updatedSchema->getId(),
 				record: new SchemaChangeRecord(changeSet: $update['changeSet'], acknowledged: $update['acknowledged'], version: $updatedSchema->getVersion())
 			);
+			$this->queueChangeNotice(entry: $entry, update: $update);
+			$flowWarnings = $this->flowRenameWarnings(schema: $updatedSchema, changeSet: $update['changeSet']);
 		}
 
 		if (isset($update['data']['authorization']) === true) {
@@ -1821,17 +1936,54 @@ class SchemasController extends Controller {
 		$this->schemaCacheService->invalidate(schemaId: $updatedSchema->getId());
 		$this->facetResults->clearAll();
 
+		// A rename that leaves a published trigger watching the old name is a
+		// warning beside the saved schema, never a refusal.
+		// The advisory annotations the save ignored are always listed, empty when none.
+		$extra = ['warnings' => $warnings];
+		if ($flowWarnings !== []) {
+			$extra['flowWarnings'] = $flowWarnings;
+		}
+
 		if ($update['forms'] !== null && $update['forms']['affected'] !== []) {
 			return new JSONResponse(
 				data: array_merge(
 					$updatedSchema->jsonSerialize(),
-					['affectedForms' => $this->formDependentsCheck()?->apply(assessment: $update['forms']) ?? []]
+					['affectedForms' => $this->formDependentsCheck()?->apply(assessment: $update['forms']) ?? []],
+					$extra
 				)
 			);
 		}
 
-		return new JSONResponse(data: $updatedSchema);
+		return new JSONResponse(data: array_merge($updatedSchema->jsonSerialize(), $extra));
 	}//end writeSchemaUpdate()
+
+	/**
+	 * The published flow triggers a declared rename leaves watching the old name; a failure never fails the save.
+	 *
+	 * @param Schema          $schema    The updated schema
+	 * @param SchemaChangeSet $changeSet The classified update
+	 *
+	 * @return list<array{flow: string, step: string, field: string, renamedTo: string, message: string}>
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	private function flowRenameWarnings(Schema $schema, SchemaChangeSet $changeSet): array {
+		try {
+			$check = $this->container->get(FlowTriggerRenameCheck::class);
+			if ($check instanceof FlowTriggerRenameCheck === false) {
+				return [];
+			}
+
+			return $check->warningsFor(schema: $schema, changeSet: $changeSet);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemasController] The rename could not be checked against the flow triggers',
+				context: ['schema_id' => $schema->getId(), 'error' => $e->getMessage()]
+			);
+
+			return [];
+		}
+	}//end flowRenameWarnings()
 
 	/**
 	 * Audit-log a change to a schema's authorization block; a failing audit never breaks the update.
@@ -1885,7 +2037,7 @@ class SchemasController extends Controller {
 	 *
 	 * @return JSONResponse The schema with its draft, or an error
 	 *
-	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	private function saveDraft(int $id, array $data): JSONResponse {
 		$schema = $this->manageableSchema(id: $id);
@@ -1914,7 +2066,7 @@ class SchemasController extends Controller {
 	 *
 	 * @return JSONResponse The updated schema, 409 when there is no draft, or the update's error
 	 *
-	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function publishDraft(int $id): JSONResponse {
 		$schema = $this->manageableSchema(id: $id);
@@ -1933,19 +2085,32 @@ class SchemasController extends Controller {
 	/**
 	 * Clear the draft of a schema the publish wrote; any other response passes through.
 	 *
+	 * The answer keeps what the update listed beside the schema (warnings, flow warnings,
+	 * affected forms) and carries the warnings of the save that cleared the draft.
+	 *
 	 * @param JSONResponse $response The response of applying the draft.
 	 *
 	 * @return JSONResponse The stored schema without its draft, or the response as given.
 	 */
 	private function withDraftCleared(JSONResponse $response): JSONResponse {
-		$published = $response->getData();
-		if ($response->getStatus() !== Http::STATUS_OK || $published instanceof Schema === false) {
+		$data = $response->getData();
+		if ($data instanceof Schema === true) {
+			$data = $data->jsonSerialize();
+		}
+
+		if ($response->getStatus() !== Http::STATUS_OK || is_array($data) === false || isset($data['id']) === false) {
 			return $response;
 		}
 
+		// The update answers with the schema's fields beside its warnings, so the
+		// stored schema is read back by id rather than taken from the body.
+		$published = $this->schemaMapper->find(id: (int)$data['id']);
 		$published->setDraft(null);
+		$stored = $this->schemaMapper->update(entity: $published);
 
-		return new JSONResponse(data: $this->schemaMapper->update(entity: $published));
+		return new JSONResponse(
+			data: array_merge($data, $stored->jsonSerialize(), ['warnings' => $this->schemaMapper->discardedAnnotations()])
+		);
 	}//end withDraftCleared()
 
 	/**
@@ -1959,7 +2124,7 @@ class SchemasController extends Controller {
 	 *
 	 * @return JSONResponse The schema without a draft, or an error
 	 *
-	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function discardDraft(int $id): JSONResponse {
 		$schema = $this->manageableSchema(id: $id);
@@ -2395,7 +2560,8 @@ class SchemasController extends Controller {
 	}//end uploadedDocument()
 
 	/**
-	 * Why an uploaded document is refused: a cross-organisation grant, an unbounded external grant, or orphan cleanup.
+	 * Why an uploaded document is refused: a cross-organisation grant, an unbounded external grant, orphan cleanup,
+	 * or, over an existing schema, a grant beyond the uploader's own rights.
 	 *
 	 * @param Schema               $schema   The schema the upload writes.
 	 * @param array<string, mixed> $document The uploaded document, authorization as stored.
@@ -2404,9 +2570,15 @@ class SchemasController extends Controller {
 	 */
 	private function uploadRefusal(Schema $schema, array $document): ?JSONResponse {
 		$old = $schema->getAuthorization();
-		return ($this->crossOrganisationRefusal(old: $old, document: $document)
+		$refusal = ($this->crossOrganisationRefusal(old: $old, document: $document)
 			?? $this->externalGrantRefusal(data: $document)
 			?? $this->orphanCleanupRefusal(schema: $schema, document: $document));
+		if ($refusal !== null || $schema->getId() === null) {
+			// A new schema has no stored rights to hold a grant against; schema create is not judged here yet.
+			return $refusal;
+		}
+
+		return $this->grantCeilingRefusal(existing: $schema, document: $document);
 	}//end uploadRefusal()
 
 	/**
@@ -2487,6 +2659,49 @@ class SchemasController extends Controller {
 			statusCode: Http::STATUS_FORBIDDEN
 		);
 	}//end crossOrganisationRefusal()
+
+	/**
+	 * Refuse an authorization edit that gives an action the editor does not hold.
+	 *
+	 * Only what the edit adds is judged, against the schema as stored, so a
+	 * manager can still save a schema whose block already names rights they
+	 * lack. Nothing is stored on refusal.
+	 *
+	 * @param Schema               $existing The schema as stored.
+	 * @param array<string, mixed> $document The incoming schema, authorization as stored.
+	 *
+	 * @return JSONResponse|null A 403 naming every excess right, or null when the write may go on.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	private function grantCeilingRefusal(Schema $existing, array $document): ?JSONResponse {
+		if (array_key_exists('authorization', $document) === false) {
+			return null;
+		}
+
+		$grants = array_map(
+			static fn (string $action): GrantedRight => new GrantedRight(schema: $existing, action: $action),
+			(new AddedGrants())->between(old: $existing->getAuthorization(), new: $document['authorization'])
+		);
+		if ($grants === [] || $this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		$granter = $this->container->get(\OCP\IUserSession::class)->getUser();
+		$ceiling = $this->container->get(GrantCeiling::class);
+		try {
+			if ($granter === null || $ceiling instanceof GrantCeiling === false) {
+				// Nobody to hold the rights, or no check to ask: refused, never stored on a guess.
+				throw new GrantExceedsGranterException(excess: array_map(static fn (GrantedRight $grant): array => $grant->named(), $grants));
+			}
+
+			$ceiling->assertWithin(granter: $granter, grants: $grants);
+		} catch (GrantExceedsGranterException $refusal) {
+			return new JSONResponse(data: $refusal->body(), statusCode: Http::STATUS_FORBIDDEN);
+		}
+
+		return null;
+	}//end grantCeilingRefusal()
 
 	/**
 	 * Refuse a schema write by a non-administrator that sets or changes `orphanCleanup`.
@@ -2816,6 +3031,49 @@ class SchemasController extends Controller {
 			return $this->errorResponse(e: $e);
 		}//end try
 	}//end stats()
+
+	/**
+	 * The indexes on the schema's magic tables, with the property flag that asked for each.
+	 *
+	 * One entry per register that carries the schema and has a table for it:
+	 * the register id and the indexes as the database catalogue lists them
+	 * (modelling-property-index-switch D-4).
+	 *
+	 * @param int|string $id The schema ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Read-only index names of a shared schema *definition*'s storage table,
+	 * the same posture as stats(); exposes no object contents and no per-user data. No IDOR vector.
+	 *
+	 * @return JSONResponse `{results: [{register, indexes: [{name, property, column, kind, flag}]}]}`, 404 for an unknown schema
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-a-property-can-ask-for-an-index-without-being-a-facet
+	 */
+	public function indexes(int|string $id): JSONResponse {
+		try {
+			// Metadata-read bypass, as stats(): the schema definition is a catalogue read.
+			$schema  = $this->schemaMapper->find($id, _multitenancy: false);
+			$results = [];
+			foreach ($this->registerMapper->getAllRegisterIdsWithSchema(schemaId: (int)$schema->getId()) as $registerId) {
+				$register  = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+				$results[] = [
+					'register' => (int)$register->getId(),
+					'indexes' => $this->objectEntityMapper->tableIndexes(register: $register, schema: $schema),
+				];
+			}
+
+			return new JSONResponse(data: ['results' => $results]);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+		} catch (Exception $e) {
+			return $this->errorResponse(e: $e);
+		}//end try
+	}//end indexes()
 
 	/**
 	 * Explore schema properties to discover new properties in objects

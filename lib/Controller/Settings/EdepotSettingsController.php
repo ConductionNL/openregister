@@ -406,7 +406,7 @@ class EdepotSettingsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function reportTest(bool $passed, string $transport): void {
 		if ($passed === true) {

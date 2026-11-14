@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/file-actions/tasks.md
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);

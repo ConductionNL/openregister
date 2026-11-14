@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+ * @spec openspec/specs/flow-preflight/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Flow;
  * the node will never read. A node only sees the keys it looks for; the ones
  * it does not look for are invisible to it BY CONSTRUCTION.
  *
- * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+ * @spec openspec/specs/flow-preflight/spec.md
  */
 class FlowPreflightStep {
 
@@ -81,7 +81,7 @@ class FlowPreflightStep {
 	 *
 	 * @return mixed The `config` value, or an empty array when absent.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function config(): mixed {
 		return ($this->entry['config'] ?? []);
@@ -93,7 +93,7 @@ class FlowPreflightStep {
 	 *
 	 * @return string The app id, or an empty string when the type is not namespaced.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function app(): string {
 		$separator = strpos($this->type, '.');
@@ -112,7 +112,7 @@ class FlowPreflightStep {
 	 *
 	 * @return array<string, string> The finding.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function finding(string $reason, ?string $detail=null): array {
 		$finding = [
@@ -141,7 +141,7 @@ class FlowPreflightStep {
 	 *
 	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function dialectFindings(array $known): array {
 		$strays = $this->strayKeys(config: $this->config(), known: $known);
@@ -164,7 +164,7 @@ class FlowPreflightStep {
 	 *
 	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function onErrorReport(bool $misplaced): array {
 		$report = self::NO_FINDINGS;
@@ -184,7 +184,7 @@ class FlowPreflightStep {
 	 *
 	 * @return string `warnings` when it is the default anyway, else `blocking`.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function onErrorSeverity(string $detail): string {
 		if ($detail === self::DEFAULT_ONERROR) {
@@ -202,7 +202,7 @@ class FlowPreflightStep {
 	 *
 	 * @return array{unknown: array<int, string>, onError: bool}
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function strayKeys(array $config, array $known): array {
 		$keys = array_map(static fn ($key): string => (string)$key, array_keys($config));
@@ -223,7 +223,7 @@ class FlowPreflightStep {
 	 *
 	 * @return boolean True when nothing will ever read the key.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function isUnreadKey(string $key, array $known): bool {
 		return (str_starts_with($key, IFlowNodeConfigKeys::ANNOTATION_PREFIX) === false

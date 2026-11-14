@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Task;
  * `transition:<action>`), and the trigger: the timer identity recorded as
  * actor and why, recorded on the audit.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
  */
 final class TimerOutcome {
 
@@ -35,7 +35,7 @@ final class TimerOutcome {
 	 * @param string      $outcome `skip`, `error`, `dead_letter` or `transition:<action>`.
 	 * @param TaskTrigger $trigger The timer identity recorded as actor (`flow-timer:<uuid>`), and why.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
 	public function __construct(
 		public readonly string $outcome,

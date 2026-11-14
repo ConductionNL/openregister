@@ -18,7 +18,7 @@ use PHPUnit\Framework\TestCase;
 class SearchProviderRegistrarTest extends TestCase {
 
 	/**
-	 * register() registers the objects provider and the timeline entries provider, and no service.
+	 * register() registers the objects provider and the flow tasks provider, and no service.
 	 *
 	 * @return void
 	 */
@@ -37,6 +37,7 @@ class SearchProviderRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				'OCA\OpenRegister\Search\ObjectsProvider',
+				'OCA\OpenRegister\Search\FlowTasksProvider',
 			],
 			actual: $registered
 		);

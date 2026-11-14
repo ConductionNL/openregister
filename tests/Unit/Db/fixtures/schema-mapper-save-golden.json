@@ -1281,7 +1281,7 @@
         "logs": [
             [
                 "warning",
-                "[OpenRegister.SchemaMapper] Ignored 1 unknown x-openregister-archival key(s) on schema \"golden-schema\": x-openregister-archival contains unknown key \"bogus\". Allowed: retention, aggregationLevel, useRestriction, temporalCoverage, category, categoryProperty, action.",
+                "[OpenRegister.SchemaMapper] Ignored 1 unknown x-openregister-archival key(s) on schema \"golden-schema\": x-openregister-archival contains unknown key \"bogus\". Allowed: retention, aggregationLevel, useRestriction, temporalCoverage, category, categoryProperty, action, parties.",
                 []
             ]
         ],

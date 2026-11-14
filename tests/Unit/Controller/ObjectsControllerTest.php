@@ -5578,6 +5578,66 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $result->getHeaders()['Content-Type']);
 	}
 
+	/**
+	 * ODS carries the same sheet the Excel export builds, written as an
+	 * OpenDocument spreadsheet.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md
+	 */
+	public function testExportReturnsOdsWithTheSameSheetAsExcel(): void {
+		$this->grantExport();
+		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$registerEntity->method('getSlug')->willReturn('zaken');
+
+		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$schemaEntity->method('getSlug')->willReturn('meldingen');
+
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+			if ($key === 'format') {
+				return 'ods';
+			}
+			return $default;
+		});
+
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+		$spreadsheet->getActiveSheet()->setTitle('meldingen');
+		$spreadsheet->getActiveSheet()->fromArray([['id', 'status', '_toegewezen_aan'], ['m-1', 'nieuw', 'Jan'], ['m-2', 'afgehandeld', 'Piet']]);
+		$this->exportService->expects($this->once())->method('exportToExcel')->willReturn($spreadsheet);
+
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=zaken_meldingen_\d{4}-\d{2}-\d{2}_\d{6}\.ods$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/vnd.oasis.opendocument.spreadsheet', $result->getHeaders()['Content-Type']);
+
+		// The bytes are a real OpenDocument spreadsheet holding the same rows.
+		$path = tempnam(sys_get_temp_dir(), 'ods');
+		file_put_contents($path, $result->render());
+		$read = (new \PhpOffice\PhpSpreadsheet\Reader\Ods())->load($path);
+		unlink($path);
+		$this->assertSame(
+			[['id', 'status', '_toegewezen_aan'], ['m-1', 'nieuw', 'Jan'], ['m-2', 'afgehandeld', 'Piet']],
+			$read->getActiveSheet()->toArray()
+		);
+		$this->assertSame('meldingen', $read->getActiveSheet()->getTitle());
+	}
+
 	// =========================================================================
 	// export() — Register/Schema with null slugs uses fallback names
 	// =========================================================================
@@ -6772,6 +6832,63 @@ class ObjectsControllerTest extends TestCase {
 		$this->exportService->method('exportToJson')->willReturn('[]');
 
 		$this->assertSame('[]', $this->controller->export('1', '2', $this->objectService)->render());
+	}
+
+	/**
+	 * An XML export answers an `.xml` file as application/xml and records the
+	 * number of `<object>` records it served.
+	 *
+	 * @return void
+	 */
+	public function testAnXmlExportIsRecordedWithItsRowCountAndNamedXml(): void {
+		// The controller swallows a recorder failure (it costs the row, never the
+		// export), so an assertion inside the callback could never fail the test.
+		// Capture what was recorded and assert after the call.
+		$recorded = null;
+		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
+		$runs->expects($this->once())->method('record')->willReturnCallback(
+			function (...$args) use (&$recorded) {
+				$recorded = $args[1];
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+		$this->grantExport(true, $runs);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn(new \OCA\OpenRegister\Db\Register());
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'format') ? 'xml' : $default
+		);
+		// A nested property named `object` must not count as a record.
+		$xml = (new \OCA\OpenRegister\Service\Export\XmlObjectWriter())->write(
+			[['@self' => ['id' => 'a'], 'object' => ['x' => 1]], ['@self' => ['id' => 'b']]]
+		);
+		$this->exportService->expects($this->once())->method('exportToXml')->willReturn($xml);
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertSame($xml, $result->render());
+		$this->assertSame('application/xml; charset=utf-8', $result->getHeaders()['Content-Type']);
+		$this->assertStringEndsWith('.xml', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('xml', $recorded->format);
+		$this->assertSame(2, $recorded->rowCount, 'a nested property named object is not a record');
+	}
+
+	/**
+	 * An XML export runs as the signed-in caller, like the JSON export.
+	 *
+	 * @return void
+	 */
+	public function testAnXmlExportRunsAsTheSignedInCaller(): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->arrangeRecordedExport(format: 'xml');
+		$this->exportService->expects($this->once())->method('exportToXml')->with(
+			$this->callback(static fn (ObjectExportRequest $request): bool => $request->currentUser === $user)
+		)->willReturn('<?xml version="1.0" encoding="UTF-8"?><objects/>');
+
+		$this->controller->export('1', '2', $this->objectService);
 	}
 
 	/**

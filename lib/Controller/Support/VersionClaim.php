@@ -30,7 +30,7 @@ use OCP\IRequest;
 /**
  * The version of an object a request says it read.
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+ * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
  */
 final class VersionClaim {
 	/**
@@ -40,7 +40,7 @@ final class VersionClaim {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	public function __construct(
 		private readonly IRequest $request,
@@ -55,7 +55,7 @@ final class VersionClaim {
 	 *
 	 * @return string|null The claimed version.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	public function version(): ?string {
 		$expected = (string)$this->request->getParam('_expectedUpdated');

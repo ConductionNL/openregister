@@ -20,6 +20,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use InvalidArgumentException;
 use Doctrine\DBAL\Connection;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
@@ -29,6 +30,8 @@ use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
+use OCA\OpenRegister\Service\Dbal\QueryPreviewException;
+use OCA\OpenRegister\Service\Dbal\QueryPreviewService;
 use OCA\OpenRegister\Service\Sync\HarvestRun;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCP\AppFramework\Controller;
@@ -502,6 +505,58 @@ class SourcesController extends Controller {
 
 		return new JSONResponse(data: ['success' => true]);
 	}//end probe()
+
+	/**
+	 * Preview a query for a query-backed schema on a `type: database` source.
+	 *
+	 * Runs the statement guard, then reads at most 50 rows of the query as a
+	 * derived table inside a read-only transaction with a statement timeout.
+	 * Answers `{columns: [{name, type}], rows}`; a refused statement is a 400
+	 * naming the rule, and a database error a 502 with a fixed sentence and
+	 * the error class only, never the database's message.
+	 *
+	 * @param int $id The database source id.
+	 *
+	 * @return JSONResponse The preview, or 400/403/404/422/502/503.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
+	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),
+	 *   which applies the active-organisation filter and 404s on a foreign
+	 *   tenant's id. The response never contains the credential value.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function queryPreview(int $id): JSONResponse {
+		$source = $this->databaseSource(id: $id);
+		if ($source instanceof JSONResponse) {
+			return $source;
+		}
+
+		$query = $this->request->getParam('query', '');
+		if (is_string($query) === false) {
+			$query = '';
+		}
+
+		$preview = ($this->services->domain->queryPreview ?? new QueryPreviewService(connectionFactory: $this->services->domain->connectionFactory));
+		try {
+			return new JSONResponse(data: $preview->preview(source: $source, query: $query));
+		} catch (InvalidArgumentException $exception) {
+			return $this->fail(message: $exception->getMessage(), status: 400);
+		} catch (DbalConnectionException $exception) {
+			return $this->fail(message: $this->l10n->t('Could not connect to the database source'), status: 503);
+		} catch (QueryPreviewException $exception) {
+			$this->session->logger->warning(
+				'[SourcesController] query preview refused by the database: ' . $exception->errorClass,
+				['exception' => $exception->getPrevious()]
+			);
+			return new JSONResponse(
+				data: ['error' => $this->l10n->t('The database refused the query.'), 'errorClass' => $exception->errorClass],
+				statusCode: 502
+			);
+		}//end try
+	}//end queryPreview()
 
 	/**
 	 * Introspect a `type: database` source into a virtual register + schemas.

@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.2.0-dev.1</version>
+    <version>2.2.0-dev.2</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -132,7 +132,9 @@ Vrij en open source onder de EUPL-licentie.
 
 	<background-jobs>
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\PublishedDigestVerifyJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FormUploadPurgeJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledMessageSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExampleSetDailyRefreshJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SharerAccessSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob</job>
@@ -155,8 +157,10 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\AutomationRecordRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\RuleRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\OneUseJobKeySweepJob</job>
 		<!--
 			Deletes the files of expired export runs and keeps the rows. An
 			expiry no job reads is a label, not a rule: this is what makes a
@@ -202,6 +206,7 @@ Vrij en open source onder de EUPL-licentie.
 			stored and never acted on.
 		-->
 		<job>OCA\OpenRegister\BackgroundJob\DraftExpiryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SeedDirectoryJob</job>
 	</background-jobs>
 
 	<repair-steps>
@@ -284,6 +289,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedFlowRunTriggerSubject</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
+			<step>OCA\OpenRegister\Repair\InitializeFlowNodeRights</step>
 			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
@@ -300,6 +306,9 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDecisionTableRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportRedactionPolicyRegister</step>
+			<!-- The glossary and style guides AI translation follows (ai-translation-with-a-glossary). -->
+			<step>OCA\OpenRegister\Repair\ImportTranslationGlossaryRegister</step>
 			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
 			     objects in the `flows` register — and every subsystem reads the
 			     table. Measured with controls: the same definition fires and
@@ -445,6 +454,10 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ProtectStoredSecrets</step>
 			<!-- A schema stored before saves refused reference loops keeps its loop: name it. -->
 			<step>OCA\OpenRegister\Repair\ReportReferenceLoopSchemas</step>
+			<!-- LAST: the operator's seed directory (config.php
+			     openregister.seed_directory) imports once every register the
+			     app ships exists, so a seed file may use them. -->
+			<step>OCA\OpenRegister\Repair\SeedFromDirectory</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
@@ -489,6 +502,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedFlowRunTriggerSubject</step>
 			<step>OCA\OpenRegister\Repair\BackfillFlowTriggerIndex</step>
 			<step>OCA\OpenRegister\Repair\InitializeFlowActions</step>
+			<step>OCA\OpenRegister\Repair\InitializeFlowNodeRights</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
@@ -504,6 +518,9 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDecisionTableRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportRedactionPolicyRegister</step>
+			<!-- The glossary and style guides AI translation follows (ai-translation-with-a-glossary). -->
+			<step>OCA\OpenRegister\Repair\ImportTranslationGlossaryRegister</step>
 			<!-- ONE STORE PER FLOW. Flows lived in two places — this table and
 			     objects in the `flows` register — and every subsystem reads the
 			     table. Measured with controls: the same definition fires and
@@ -521,6 +538,10 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\KeyAuditHashChain</step>
 			<!-- Sets the run-once flag on a fresh install (see post-migration). -->
 			<step>OCA\OpenRegister\Repair\OpenSpecialRightsToEveryone</step>
+			<!-- LAST: the operator's seed directory (config.php
+			     openregister.seed_directory) imports once every register the
+			     app ships exists, so a seed file may use them. -->
+			<step>OCA\OpenRegister\Repair\SeedFromDirectory</step>
 		</install>
 	</repair-steps>
 
@@ -531,6 +552,7 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResetSchemaToShippedCommand</command>
+		<command>OCA\OpenRegister\Command\DocumentStoreStatusCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
 		<command>OCA\OpenRegister\Command\AdoptOrganisationlessRowsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillObjectSlugsCommand</command>
@@ -580,6 +602,7 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Read-only: how many drafts the daily draft cleanup would remove per
 		     schema. For a look before the first run after an upgrade (decision 228). -->
 		<command>OCA\OpenRegister\Command\DraftsExpiredCommand</command>
+		<command>OCA\OpenRegister\Command\RetentionDryRunCommand</command>
 		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->
 		<command>OCA\OpenRegister\Notifications\Command\GenerateVapidKeys</command>
 		<!-- Reconcile the `tables` virtual register with the Nextcloud Tables app. -->
@@ -591,6 +614,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\ExampleSetInstallCommand</command>
 		<command>OCA\OpenRegister\Command\ExampleSetRemoveCommand</command>
 		<command>OCA\OpenRegister\Command\ExampleSetListCommand</command>
+		<command>OCA\OpenRegister\Command\SeedImportCommand</command>
 		<command>OCA\OpenRegister\Command\RotateTenantKeyCommand</command>
 	</commands>
 

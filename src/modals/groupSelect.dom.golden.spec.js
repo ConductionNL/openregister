@@ -25,6 +25,8 @@ jest.mock('@nextcloud/dialogs', () => ({
 	showSuccess: jest.fn(),
 }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
+jest.mock('@conduction/nextcloud-vue', () => ({ CnViewPresentationPicker: mockIcon('CnViewPresentationPicker').default }))
+jest.mock('vue-material-design-icons/ViewDashboardOutline.vue', () => mockIcon('ViewDashboardOutline'))
 jest.mock('@nextcloud/vue', () => mockLibrary())
 jest.mock('vue', () => ({
 	...jest.requireActual('vue'),

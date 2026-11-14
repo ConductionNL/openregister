@@ -49,6 +49,31 @@ When `ObjectsProvider` (the unified search provider) generates a result URL for 
 | `{register}` | Register slug |
 | `{schema}` | Schema slug |
 
+### Task Routes
+
+A registration may also name the app's own task view with `taskUrlTemplate`.
+When Nextcloud's search bar finds a flow task whose subject is an object of the
+claimed register and schema, the result opens that route instead of
+OpenRegister's task page (`/apps/openregister/flow-tasks/{uuid}`). Without a
+task route the task page stays the link.
+
+```php
+$event->register(
+    appId: 'dossiq',
+    registerSlug: 'zaken-register',
+    schemaSlug: 'zaken',
+    urlTemplate: '/apps/dossiq/#/cases/{uuid}',
+    taskUrlTemplate: '/apps/dossiq/#/cases/{objectUuid}/tasks/{uuid}'
+);
+```
+
+| Variable | Resolves to |
+|----------|-------------|
+| `{uuid}`, `{taskUuid}` | Task UUID |
+| `{objectUuid}` | The task's subject object UUID |
+| `{register}` | The subject's register id |
+| `{schema}` | The subject's schema id |
+
 ### Icon Resolution
 
 The icon is used in unified search results. If no icon is specified in the registration, the consuming app's default icon is used. Falls back to OpenRegister's icon if the app ID is not recognized by Nextcloud's icon system.

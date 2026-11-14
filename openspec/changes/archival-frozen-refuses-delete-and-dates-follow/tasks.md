@@ -2,7 +2,7 @@
 
 ## 1. Frozen guard
 
-- [ ] 1.1 `FrozenObjectDeleteGuardListener` on `ObjectDeletingEvent`, registered beside the other delete guards. Verify: `tests/Unit/Listener/FrozenObjectDeleteGuardListenerTest.php` with a real `ObjectDeletingEvent` for a frozen and an unfrozen object, and a cascade meeting a frozen child.
+- [x] 1.1 `FrozenObjectDeleteGuardListener` on `ObjectDeletingEvent`, registered beside the other delete guards. Verify: `tests/Unit/Listener/FrozenObjectDeleteGuardListenerTest.php` with a real `ObjectDeletingEvent` for a frozen and an unfrozen object, and a cascade meeting a frozen child.
 
 ## 2. Dates
 

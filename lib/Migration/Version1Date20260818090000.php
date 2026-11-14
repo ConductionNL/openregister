@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ use OCP\Migration\SimpleMigrationStep;
  * a THIRD spelling matching neither the entity's write path nor its read
  * path, silently breaking on whichever one it landed farthest from.
  *
- * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class Version1Date20260818090000 extends SimpleMigrationStep {
 	/**
@@ -66,7 +66,7 @@ class Version1Date20260818090000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The modified schema, or null when unchanged.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*

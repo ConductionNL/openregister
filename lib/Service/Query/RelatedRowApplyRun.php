@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
  * organisation scope per related table, the SQL engine, and how many clauses
  * were applied so far. Built by RelatedRowQueryApplier::apply and never handed out.
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 final class RelatedRowApplyRun {
 

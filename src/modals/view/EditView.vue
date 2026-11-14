@@ -65,6 +65,21 @@
 
 					<AppTab>
 						<template #title>
+							<ViewDashboardOutline :size="16" />
+							<span>{{ t('openregister', 'Presentation') }}</span>
+						</template>
+						<div class="form-editor">
+							<CnViewPresentationPicker
+								:schema="viewSchema"
+								:value="viewData.presentation"
+								:errors="presentationErrors"
+								:disabled="loading"
+								@input="onPresentationInput" />
+						</div>
+					</AppTab>
+
+					<AppTab>
+						<template #title>
 							<ShareVariant :size="16" />
 							<span>{{ t('openregister', 'Share') }}</span>
 						</template>
@@ -167,6 +182,7 @@
 </template>
 
 <script>
+import { CnViewPresentationPicker } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import {
 	NcButton,
@@ -180,11 +196,34 @@ import Close from 'vue-material-design-icons/Close.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import ShareVariant from 'vue-material-design-icons/ShareVariant.vue'
+import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
 import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
-import { viewsStore } from '../../store/store.js'
+import { objectStore, viewsStore } from '../../store/store.js'
+
+/**
+ * The presentation refusal, keyed by the picker path it names.
+ *
+ * A view save refuses an unrenderable presentation (REQ-VIEW-PRES-01) with a
+ * message that names its path — `kanban.groupByField`, `calendar.dateField`
+ * or `calendar.endDateField`. The picker shows the message under that field.
+ *
+ * @param {string} message The server's refusal message.
+ * @return {object} A map of picker path to message, empty when none matches.
+ * @spec openspec/changes/saved-view-presentation-picker/specs/saved-search-views/spec.md#requirement-the-view-editor-sets-a-views-presentation-req-view-pres-06
+ */
+function presentationErrorsFrom(message) {
+	const paths = ['kanban.groupByField', 'calendar.dateField', 'calendar.endDateField']
+	const errors = {}
+	for (const path of paths) {
+		if (typeof message === 'string' && message.includes(path)) {
+			errors[path] = message
+		}
+	}
+	return errors
+}
 
 /**
  * Ask Nextcloud for the users matching a search.
@@ -206,6 +245,7 @@ function fetchUsersMatching(searchQuery) {
 export default {
 	name: 'EditView',
 	components: {
+		CnViewPresentationPicker,
 		GroupSelect,
 		NcDialog,
 		NcTextField,
@@ -217,6 +257,7 @@ export default {
 		AppTab,
 		Cog,
 		ShareVariant,
+		ViewDashboardOutline,
 		Close,
 		ContentSave,
 	},
@@ -237,10 +278,26 @@ export default {
 			loadingUsers: false,
 			success: false,
 			error: null,
+			presentationErrors: {},
 			viewData: emptyViewData(),
 
 			...emptySharing(),
 		}
+	},
+
+	computed: {
+		/**
+		 * The JSON schema the view is edited against — the schema the Tables
+		 * page is filtered to — which decides what each presentation role
+		 * offers. Null when no schema is active; the picker then offers Table
+		 * only.
+		 *
+		 * @return {object|null} The schema with its `properties`.
+		 * @spec openspec/changes/saved-view-presentation-picker/specs/saved-search-views/spec.md#requirement-the-view-editor-sets-a-views-presentation-req-view-pres-06
+		 */
+		viewSchema() {
+			return objectStore.searchSchema || null
+		},
 	},
 
 	watch: {
@@ -274,6 +331,18 @@ export default {
 
 	methods: {
 		t,
+		/**
+		 * Record the chosen presentation and clear a refusal shown on it.
+		 *
+		 * @param {object} presentation The presentation the picker emits.
+		 * @return {void}
+		 * @spec openspec/changes/saved-view-presentation-picker/specs/saved-search-views/spec.md#requirement-the-view-editor-sets-a-views-presentation-req-view-pres-06
+		 */
+		onPresentationInput(presentation) {
+			this.viewData.presentation = presentation
+			this.presentationErrors = {}
+		},
+
 		/**
 		 * Search for Nextcloud groups with debouncing
 		 *
@@ -375,6 +444,7 @@ export default {
 
 			this.loading = true
 			this.error = null
+			this.presentationErrors = {}
 
 			try {
 				await this.persistView()
@@ -414,6 +484,7 @@ export default {
 				isPublic: this.viewData.isPublic,
 				isDefault: this.viewData.isDefault,
 				query: this.viewData.query,
+				presentation: this.viewData.presentation || { viewType: 'table' },
 				sharedWith,
 				sharedUsers: this.selectedUsers.map((u) => u.id),
 			}
@@ -445,10 +516,13 @@ export default {
 		 */
 		showSaveFailure(error) {
 			console.error('Error updating view:', error)
-			this.error =
-				error.response?.data?.error
+			const message =
+				error.body?.error
+				|| error.response?.data?.error
 				|| error.message
 				|| this.t('openregister', 'Failed to update view')
+			this.error = message
+			this.presentationErrors = presentationErrorsFrom(message)
 		},
 
 		/**
@@ -476,6 +550,7 @@ function emptyViewData() {
 		isPublic: false,
 		isDefault: false,
 		query: {},
+		presentation: { viewType: 'table' },
 	}
 }
 
@@ -509,6 +584,7 @@ function viewFormData(view) {
 		isPublic: view.isPublic || false,
 		isDefault: view.isDefault || false,
 		query: view.query || view.configuration || {},
+		presentation: view.presentation || { viewType: 'table' },
 	}
 }
 

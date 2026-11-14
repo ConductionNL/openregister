@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 /**
  * A stored object and the two versions that disagree about it.
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+ * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
  */
 final class VersionMismatch {
 	/**
@@ -40,7 +40,7 @@ final class VersionMismatch {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	public function __construct(
 		public readonly ObjectEntity $stored,

@@ -19,7 +19,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
+use OCA\OpenRegister\Service\File\MalwareScanGate;
+use OCA\OpenRegister\Service\File\MalwareScanState;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
+use OCA\OpenRegister\Exception\UnknownMaskFormException;
+use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\ServiceHealthProbe;
@@ -27,6 +31,7 @@ use Exception;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Service\File\DocumentStore;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -95,6 +100,20 @@ class FileSettingsController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * Where the documents live; null leaves `documentStore` out of the file settings.
+	 *
+	 * @var DocumentStore|null
+	 */
+	private readonly ?DocumentStore $documentStore;
+
+	/**
+	 * Whether uploads can be scanned for malware; null leaves the state out.
+	 *
+	 * @var MalwareScanState|null
+	 */
+	private readonly ?MalwareScanState $malwareScanState;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                       $request  The request.
@@ -108,10 +127,15 @@ class FileSettingsController extends Controller {
 		$this->container = $services->container;
 		$this->settingsService = $services->settingsService;
 		$this->logger = $services->logger;
+		$this->documentStore = $services->documentStore;
+		$this->malwareScanState = $services->malwareScanState;
 	}//end __construct()
 
 	/**
 	 * Get File Management settings
+	 *
+	 * The settings carry `documentStore`: where the managed documents live. It is
+	 * read from the storage on each call and never stored with the settings.
 	 *
 	 * @NoCSRFRequired
 	 *
@@ -120,15 +144,48 @@ class FileSettingsController extends Controller {
 	 * @psalm-return JSONResponse<200|500, array, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
 	 */
 	public function getFileSettings(): JSONResponse {
 		try {
 			$data = $this->settingsService->getFileSettingsOnly();
+			if ($this->documentStore !== null) {
+				$data['documentStore'] = $this->describeDocumentStore();
+			}
+
+			if ($this->malwareScanState !== null) {
+				// Whether uploads can be scanned for malware (upload-malware-scan REQ-UMS-001).
+				$data[MalwareScanGate::METADATA_KEY] = $this->malwareScanState->state();
+			}
+
 			return new JSONResponse(data: $data);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
 	}//end getFileSettings()
+
+	/**
+	 * Where the documents live, or null when the storage cannot be read.
+	 *
+	 * A store that cannot be described does not keep the rest of the file
+	 * settings from loading; the reason is logged.
+	 *
+	 * @return array<string, mixed>|null The description, or null.
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function describeDocumentStore(): ?array {
+		try {
+			return $this->documentStore?->describe();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[FileSettingsController] The document store cannot be described: {error}',
+				context: ['error' => $e->getMessage()]
+			);
+
+			return null;
+		}
+	}//end describeDocumentStore()
 
 	/**
 	 * Update File Management settings
@@ -159,6 +216,10 @@ class FileSettingsController extends Controller {
 				]
 			);
 		} catch (ConfidenceThresholdOutOfRangeException $e) {
+			return $this->error(message: $e->getMessage(), status: 400);
+		} catch (UnknownPatternSetException $e) {
+			return $this->error(message: $e->getMessage(), status: 400);
+		} catch (UnknownMaskFormException $e) {
 			return $this->error(message: $e->getMessage(), status: 400);
 		} catch (Exception $e) {
 			return $this->error(message: $e->getMessage());

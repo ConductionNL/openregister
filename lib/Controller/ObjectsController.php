@@ -79,6 +79,7 @@ use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Listener\ChangeGateListener;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
@@ -103,6 +104,7 @@ use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\MoveAddress;
+use OCA\OpenRegister\Service\Object\ObjectKeyResolver;
 use OCA\OpenRegister\Service\Object\ObjectMove;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
@@ -122,6 +124,7 @@ use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Search\HistoryPredicateInterface;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
@@ -142,6 +145,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use PhpOffice\PhpSpreadsheet\Writer\Ods;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
@@ -292,7 +296,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return ObjectVersionGuard The guard for this request.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function versionGuard(): ObjectVersionGuard {
 		return new ObjectVersionGuard(
@@ -1210,6 +1214,7 @@ class ObjectsController extends Controller {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
@@ -2991,6 +2996,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
@@ -3015,6 +3021,180 @@ class ObjectsController extends Controller {
 
 		return $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services));
 	}//end show()
+
+	/**
+	 * Show the object a schema's identity points at: `GET .../by-key?<property>=<value>&...`.
+	 *
+	 * Resolves the identity values to one uuid and hands it to show(), so RBAC,
+	 * multitenancy, read logging and rendering stay in the one path they live in.
+	 *
+	 * @param string                       $register      The register slug or identifier.
+	 * @param string                       $schema        The schema slug or identifier.
+	 * @param ObjectHandlerAccessInterface $objectService The object service.
+	 * @param ObjectKeyResolver            $keys          Resolves the identity values.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The object, or 400, 404 or 409.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	#[UserRateLimit(limit: 600, period: 60)]
+	#[AnonRateLimit(limit: 120, period: 60)]
+	public function showByKey(string $register, string $schema, ObjectHandlerAccessInterface $objectService, ObjectKeyResolver $keys): JSONResponse {
+		$id = $this->idByKey(path: [$register, $schema], objectService: $objectService, keys: $keys);
+		if ($id instanceof JSONResponse) {
+			return $id;
+		}
+
+		return $this->show(id: $id, register: $register, schema: $schema, objectService: $objectService);
+	}//end showByKey()
+
+	/**
+	 * Replace the object a schema's identity points at: `PUT .../by-key?...`.
+	 *
+	 * @param string                    $register      The register slug or identifier.
+	 * @param string                    $schema        The schema slug or identifier.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 * @param ObjectKeyResolver         $keys          Resolves the identity values.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The updated object, or 400, 404 or 409.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function updateByKey(string $register, string $schema, ObjectOperationsInterface $objectService, ObjectKeyResolver $keys): JSONResponse {
+		$id = $this->idByKey(path: [$register, $schema], objectService: $objectService, keys: $keys);
+		if ($id instanceof JSONResponse) {
+			return $id;
+		}
+
+		return $this->update(register: $register, schema: $schema, id: $id, objectService: $objectService);
+	}//end updateByKey()
+
+	/**
+	 * Patch the object a schema's identity points at: `PATCH .../by-key?...`.
+	 *
+	 * @param string                    $register      The register slug or identifier.
+	 * @param string                    $schema        The schema slug or identifier.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 * @param ObjectKeyResolver         $keys          Resolves the identity values.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The patched object, or 400, 404 or 409.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function patchByKey(string $register, string $schema, ObjectOperationsInterface $objectService, ObjectKeyResolver $keys): JSONResponse {
+		$id = $this->idByKey(path: [$register, $schema], objectService: $objectService, keys: $keys);
+		if ($id instanceof JSONResponse) {
+			return $id;
+		}
+
+		return $this->patch(register: $register, schema: $schema, id: $id, objectService: $objectService);
+	}//end patchByKey()
+
+	/**
+	 * Delete the object a schema's identity points at: `DELETE .../by-key?...`.
+	 *
+	 * @param string                       $register      The register slug or identifier.
+	 * @param string                       $schema        The schema slug or identifier.
+	 * @param ObjectHandlerAccessInterface $objectService The object service.
+	 * @param ObjectKeyResolver            $keys          Resolves the identity values.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The deletion's answer, or 400, 404 or 409.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	#[UserRateLimit(limit: 300, period: 60)]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function destroyByKey(string $register, string $schema, ObjectHandlerAccessInterface $objectService, ObjectKeyResolver $keys): JSONResponse {
+		$id = $this->idByKey(path: [$register, $schema], objectService: $objectService, keys: $keys);
+		if ($id instanceof JSONResponse) {
+			return $id;
+		}
+
+		return $this->destroy(id: $id, register: $register, schema: $schema, objectService: $objectService);
+	}//end destroyByKey()
+
+	/**
+	 * The uuid the request's identity values point at, or the answer that says why there is none.
+	 *
+	 * The values are read from the query string only, so a PUT or PATCH body
+	 * cannot steer which object it writes to. A schema without an identity and
+	 * a key no readable object carries are both 404; a missing value is 400;
+	 * two matches (data from before the identity) are 409 with both uuids.
+	 *
+	 * @param array{0:string,1:string}  $path          The register and schema from the path.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 * @param ObjectKeyResolver         $keys          Resolves the identity values.
+	 *
+	 * @return string|JSONResponse The uuid, or the refusal.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	private function idByKey(array $path, ObjectOperationsInterface $objectService, ObjectKeyResolver $keys): string|JSONResponse {
+		try {
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $path[0], schema: $path[1]), objectService: $objectService);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		$identity = $keys->identityOf(schema: $resolved['schemaEntity']);
+		if ($identity === null) {
+			return new JSONResponse(data: ['message' => 'This schema declares no identity, so its objects have no key.'], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		$values = $this->keyQuery();
+		$missing = $keys->missing(identity: $identity, values: $values);
+		if ($missing !== []) {
+			return new JSONResponse(
+				data: ['message' => 'The key needs a value for: ' . implode(', ', $missing) . '.', 'missing' => $missing],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$uuids = $keys->resolve(register: $resolved['registerEntity'], schema: $resolved['schemaEntity'], values: $values);
+
+		return match (count($uuids)) {
+			0 => new JSONResponse(data: ['message' => 'No object has this key.'], statusCode: Http::STATUS_NOT_FOUND),
+			1 => $uuids[0],
+			default => new JSONResponse(
+				data: ['message' => 'More than one object has this key.', 'objects' => $uuids],
+				statusCode: Http::STATUS_CONFLICT
+			),
+		};
+	}//end idByKey()
+
+	/**
+	 * The request's query-string parameters.
+	 *
+	 * @return array<string,mixed> The parameters.
+	 */
+	private function keyQuery(): array {
+		$query = [];
+		parse_str((string)parse_url($this->request->getRequestUri(), PHP_URL_QUERY), $query);
+
+		return $query;
+	}//end keyQuery()
 
 	/**
 	 * What show() asks of the request's object service.
@@ -3451,6 +3631,7 @@ class ObjectsController extends Controller {
 	 * logged-in API caller — including bulk imports/integrations and this
 	 * app's own CI test suite — was capped at the same 30 requests/minute
 	 * meant only for anonymous abuse prevention.
+	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
@@ -3468,6 +3649,92 @@ class ObjectsController extends Controller {
 
 		return ($this->upsertRefusal(create: $create) ?? $this->createdResponse(create: $create));
 	}//end create()
+
+	/**
+	 * Whether a sample record would be accepted by this schema, without saving it.
+	 *
+	 * The body is the sample. With an `id` query parameter the sample is checked
+	 * as an update of that object, which needs `update` on it; without, as a
+	 * create, which needs `create` on the schema. The rights are asked because
+	 * a verdict can reveal whether a unique value exists. Answers 200 with
+	 * `{valid, errors: [{property, message, rule}]}` for a well-formed request,
+	 * and never writes.
+	 *
+	 * @param string                    $register      The register slug or identifier.
+	 * @param string                    $schema        The schema slug or identifier.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The verdict, or 403/404 when it may not be asked.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 300, period: 60)]
+	public function validateSample(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
+		try {
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
+
+		$id = $this->request->getParam('id');
+		if (is_string($id) === false || $id === '') {
+			$id = null;
+		}
+
+		$refusal = $this->sampleRefusal(
+			ref: new ObjectRef(register: $register, schema: $schema, id: (string)$id),
+			schemaEntity: $resolved['schemaEntity'],
+			update: $id !== null
+		);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$sample = $this->submittableBody(object: $this->request->getParams());
+		unset($sample['id']);
+		if ($objectService instanceof ObjectServiceInterface === false) {
+			return new JSONResponse(data: ['message' => 'Validation is not available.'], statusCode: 500);
+		}
+
+		$verdict = $objectService->validateObject(object: $sample, register: $resolved['register'], schema: $resolved['schema'], id: $id);
+		return new JSONResponse(data: $verdict->jsonSerialize());
+	}//end validateSample()
+
+	/**
+	 * Why the caller may not ask for a verdict on this sample, or null when they may.
+	 *
+	 * @param ObjectRef $ref          The register, schema and, on an update, the object.
+	 * @param mixed     $schemaEntity The resolved schema.
+	 * @param bool      $update       Whether the sample updates an object.
+	 *
+	 * @return JSONResponse|null 404 for an object the caller cannot read, 403 without the right, or null.
+	 *
+	 * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+	 */
+	private function sampleRefusal(ObjectRef $ref, mixed $schemaEntity, bool $update): ?JSONResponse {
+		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		if ($update === false) {
+			if ($permissions->hasPermission(schema: $schemaEntity, action: 'create') === true) {
+				return null;
+			}
+
+			return new JSONResponse(data: ['message' => 'You may not create objects in this schema.'], statusCode: 403);
+		}
+
+		$object = $this->presenceObjectOrRefusal(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		if ($permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $object->getOwner(), object: $object) === true) {
+			return null;
+		}
+
+		return new JSONResponse(data: ['message' => 'You may not update this object.'], statusCode: 403);
+	}//end sampleRefusal()
 
 	/**
 	 * The request body, after the webhooks that may validate, transform or enrich it.
@@ -3533,7 +3800,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function upsertRefusal(ObjectCreate $create): ?JSONResponse {
 		if ($create->controls->upsertOn === '') {
@@ -3577,7 +3844,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return array{object: ObjectEntity, created: bool} The saved object.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function savedObject(ObjectCreate $create): array {
 		$create->objectService->clearCreatedSubObjects();
@@ -3645,12 +3912,46 @@ class ObjectsController extends Controller {
 			$e instanceof AppendOnlyException => new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED),
 			$e instanceof TranslationTargetConflictException => new JSONResponse(data: $e->toErrorBody(), statusCode: 400),
 			$e instanceof ValidationException, $e instanceof CustomValidationException => $objectService->handleValidationException(exception: $e),
+			$e instanceof HookStoppedException && self::heldChangeAnswer(exception: $e) !== null => self::heldChangeAnswer(exception: $e),
 			$e instanceof HookStoppedException => new JSONResponse(data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()], statusCode: 422),
 			$e instanceof LockedException => $this->lockedResponse(exception: $e),
 			$e instanceof FolderAccessDeniedException => $this->folderAccessDeniedResponse(exception: $e),
 			default => null,
 		};
 	}//end writeRefusal()
+
+	/**
+	 * The answer to a write a change gate held: 202 with the pending change's
+	 * key, or 409 while a pending change of the same gate is still open. Any
+	 * other hook refusal is not a held change and answers as before.
+	 *
+	 * @param HookStoppedException $exception The refusal.
+	 *
+	 * @return JSONResponse|null The answer, or null when the refusal is not a held change.
+	 *
+	 * @spec openspec/changes/records-change-held-for-approval/specs/approval-workflow/spec.md#requirement-an-approval-chain-can-hold-a-change-until-it-is-approved
+	 */
+	private static function heldChangeAnswer(HookStoppedException $exception): ?JSONResponse {
+		$errors = $exception->getErrors();
+		$code   = ($errors['code'] ?? null);
+		if ($code === ChangeGateListener::CODE_PENDING) {
+			return new JSONResponse(
+				data: [
+					'message' => $exception->getMessage(),
+					'pendingChange' => (string)($errors['pendingChange'] ?? ''),
+					'object' => (string)($errors['object'] ?? ''),
+					'chain' => (string)($errors['chain'] ?? ''),
+				],
+				statusCode: Http::STATUS_ACCEPTED
+			);
+		}
+
+		if ($code === ChangeGateListener::CODE_OPEN) {
+			return new JSONResponse(data: ['error' => $exception->getMessage(), 'errors' => $errors], statusCode: Http::STATUS_CONFLICT);
+		}
+
+		return null;
+	}//end heldChangeAnswer()
 
 	/**
 	 * Why an `_upsertOn` request cannot proceed, or null when it can.
@@ -3664,7 +3965,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function upsertPreconditionRefusal(bool $failIfExists, array $resolved): ?JSONResponse {
 		if ($this->userSession->getUser() === null) {
@@ -3826,6 +4127,7 @@ class ObjectsController extends Controller {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
@@ -3936,7 +4238,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function preWriteRefusal(ObjectUpdate $update, ObjectEntity $existing): ?JSONResponse {
 		if ($update->target->holds(object: $existing) === false) {
@@ -4069,6 +4371,7 @@ class ObjectsController extends Controller {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
@@ -4113,7 +4416,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse The object, or the refusal.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function patchedResponse(ObjectUpdate $patch): JSONResponse {
 		$existing = $this->findReadableForPatch(patch: $patch);
@@ -4156,7 +4459,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	private function versionRefusal(ObjectUpdate $patch, ObjectEntity $existing): ?JSONResponse {
 		$this->noteClientSuppliedCause(object: $existing);
@@ -4314,6 +4617,7 @@ class ObjectsController extends Controller {
 	 * @PublicPage
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
@@ -5297,6 +5601,102 @@ class ObjectsController extends Controller {
 	}//end move()
 
 	/**
+	 * Copy an object: a new object, with a new uuid, from the source's fields and the overrides.
+	 *
+	 * 🔴 A COPY IS A NEW IDENTITY, NOT A MOVE. It starts its own audit trail,
+	 * versions, files and notes; {@see move()} is the act that keeps them.
+	 *
+	 * The source is read under the caller's own permissions (404 when it
+	 * cannot be read), the caller needs `create` on the schema (403), and the
+	 * body goes through the normal create path, so every create rule and
+	 * validation applies (a refused body writes nothing). The identity, the
+	 * `@self` metadata and platform-minted properties are never copied
+	 * ({@see \OCA\OpenRegister\Service\Object\CopyPayload}). Copying links
+	 * (`include`) is not offered yet and is refused with 422 rather than
+	 * silently left out.
+	 *
+	 * @param string                    $register      The register.
+	 * @param string                    $schema        The schema.
+	 * @param string                    $id            The object to copy.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse 201 with `{object, links}`, or a 4xx naming what stood in the way.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
+	 */
+	#[NoAdminRequired]
+	public function copy(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$refusal = $this->copyRequestRefusal();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$source = $this->presenceObjectOrRefusal(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+		if ($source instanceof JSONResponse) {
+			return $source;
+		}
+
+		try {
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
+
+		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		if ($permissions->hasPermission(schema: $resolved['schemaEntity'], action: 'create') === false) {
+			return new JSONResponse(data: ['error' => 'You may not create objects in this schema.'], statusCode: 403);
+		}
+
+		$overrides = $this->request->getParam('overrides', []);
+		if (is_array($overrides) === false) {
+			$overrides = [];
+		}
+
+		$body = (new \OCA\OpenRegister\Service\Object\CopyPayload())->of(
+			source: $source->getObject(),
+			overrides: $overrides,
+			schema: $resolved['schemaEntity']
+		);
+		$controls = new ObjectCreateControls(request: $this->request, caller: $this->caller());
+		$create  = new ObjectCreate(object: $body, resolved: $resolved, objectService: $objectService, controls: $controls);
+		$created = $this->createdResponse(create: $create);
+		if ($created->getStatus() !== 201) {
+			return $created;
+		}
+
+		return new JSONResponse(
+			data: ['object' => $created->getData(), 'links' => ['relationRows' => [], 'incoming' => [], 'files' => []]],
+			statusCode: 201
+		);
+	}//end copy()
+
+	/**
+	 * The refusal of a copy request that asks for what a copy does not do yet.
+	 *
+	 * @return JSONResponse|null 422 for links or an upsert key; null when the request may proceed.
+	 *
+	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
+	 */
+	private function copyRequestRefusal(): ?JSONResponse {
+		$include = $this->request->getParam('include', []);
+		if (is_array($include) === true && $include !== []) {
+			return new JSONResponse(data: ['error' => 'Copying links is not available yet; copy without include.'], statusCode: 422);
+		}
+
+		if (trim((string) $this->request->getParam('_upsertOn', '')) !== '') {
+			return new JSONResponse(data: ['error' => 'A copy always creates a new object; it cannot upsert.'], statusCode: 422);
+		}
+
+		return null;
+	}//end copyRequestRefusal()
+
+	/**
 	 * Move an object to the register and schema the request names.
 	 *
 	 * @param ObjectEntity $object The object.
@@ -5349,16 +5749,65 @@ class ObjectsController extends Controller {
 	 */
 	private function moveEnds(array $source, array $target): array|null {
 		$registers = $this->services->store->registerMapper;
-		$schemas = $this->services->store->schemaMapper;
 		try {
+			$fromRegister = $registers->find($source[0]);
+			$toRegister = $registers->find($target[0]);
 			return [
-				'from' => ['register' => $registers->find($source[0]), 'schema' => $schemas->find($source[1])],
-				'to' => ['register' => $registers->find($target[0]), 'schema' => $schemas->find($target[1])],
+				'from' => ['register' => $fromRegister, 'schema' => $this->schemaInRegister(schemaRef: $source[1], register: $fromRegister)],
+				'to' => ['register' => $toRegister, 'schema' => $this->schemaInRegister(schemaRef: $target[1], register: $toRegister)],
 			];
 		} catch (\Throwable $e) {
 			return null;
 		}
 	}//end moveEnds()
+
+	/**
+	 * A schema reference resolved inside the register the caller named.
+	 *
+	 * A slug is looked up among the register's own schemas first: the global
+	 * `find()` matches `LOWER(slug)` across every register and returns whichever
+	 * row its tie-break orders first, so a generic slug such as `agent` landed in
+	 * another app's register. A numeric id or a uuid is no slug and goes straight
+	 * to `find()`, as does a slug the register does not carry (the pattern of
+	 * `ObjectService::setSchema()`, class (b) of register-scoped-schema-slug-resolution).
+	 *
+	 * @param string|int    $schemaRef The schema's id, uuid or slug.
+	 * @param Register|null $register  The register the caller named, when known.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema does not exist.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function schemaInRegister(string|int $schemaRef, ?Register $register): Schema {
+		$schemas = $this->services->store->schemaMapper;
+		if ($register !== null && is_string($schemaRef) === true && is_numeric($schemaRef) === false) {
+			$scoped = $schemas->findBySlugInIds(slug: $schemaRef, schemaIds: ($register->getSchemas() ?? []));
+			if ($scoped !== null) {
+				return $scoped;
+			}
+		}
+
+		return $schemas->find($schemaRef);
+	}//end schemaInRegister()
+
+	/**
+	 * The register a reference names, or null when it cannot be read.
+	 *
+	 * @param string|int $registerRef The register's id, uuid or slug.
+	 *
+	 * @return Register|null The register.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function registerOrNull(string|int $registerRef): ?Register {
+		try {
+			return $this->services->store->registerMapper->find($registerRef);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end registerOrNull()
 
 	/**
 	 * The answer to a move that ran.
@@ -5785,7 +6234,9 @@ class ObjectsController extends Controller {
 			'csv' => $this->csvExport(export: $export),
 			'tsv' => $this->tsvExport(export: $export),
 			'json' => $this->jsonExport(export: $export),
+			'xml' => $this->xmlExport(export: $export),
 			'pdf' => $this->pdfExport(export: $export),
+			'ods' => $this->odsExport(export: $export),
 			default => $this->excelExport(export: $export),
 		};
 	}//end export()
@@ -5908,6 +6359,25 @@ class ObjectsController extends Controller {
 	}//end jsonExport()
 
 	/**
+	 * Export as XML.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	private function xmlExport(ObjectExport $export): DataDownloadResponse {
+		$content = $this->services->transfer->exportService->exportToXml(
+			request: $this->callerExportRequest(export: $export),
+		);
+
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'xml', rowCount: self::countXmlExportRows(xml: $content)));
+
+		return $export->download(format: 'xml', content: $content);
+	}//end xmlExport()
+
+	/**
 	 * Export as PDF; an export over the row limit or without an office server is refused.
 	 *
 	 * @param ObjectExport $export The export.
@@ -5994,6 +6464,35 @@ class ObjectsController extends Controller {
 
 		return $export->download(format: 'excel', content: $content);
 	}//end excelExport()
+
+	/**
+	 * Export as ODS (OpenDocument spreadsheet).
+	 *
+	 * The same spreadsheet the Excel export builds, so the headers, the
+	 * relation names and the RBAC filtering are identical; only the writer
+	 * differs.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md
+	 */
+	private function odsExport(ObjectExport $export): DataDownloadResponse {
+		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
+			request: $this->callerExportRequest(export: $export),
+		);
+
+		$writer = new Ods($spreadsheet);
+		ob_start();
+		$writer->save('php://output');
+		$content = ob_get_clean();
+
+		$rowCount = $this->countSpreadsheetExportRows(spreadsheet: $spreadsheet);
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'ods', rowCount: $rowCount));
+
+		return $export->download(format: 'ods', content: $content);
+	}//end odsExport()
 
 	/**
 	 * The refusal for this caller's export, or null when they may take it.
@@ -6211,6 +6710,35 @@ class ObjectsController extends Controller {
 	}//end countJsonExportRows()
 
 	/**
+	 * The number of `<object>` records directly under the root of an exported XML document.
+	 *
+	 * @param string $xml The document.
+	 *
+	 * @return int The record count, 0 when the document cannot be read.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	private static function countXmlExportRows(string $xml): int {
+		$previous = libxml_use_internal_errors(true);
+		$reader = new \XMLReader();
+		$count = 0;
+		if ($reader->XML($xml) === true) {
+			while ($reader->read() === true) {
+				if ($reader->nodeType === \XMLReader::ELEMENT && $reader->depth === 1 && $reader->name === 'object') {
+					$count++;
+				}
+			}
+
+			$reader->close();
+		}
+
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous);
+
+		return $count;
+	}//end countXmlExportRows()
+
+	/**
 	 * Sum the data rows across every sheet of an exported spreadsheet.
 	 *
 	 * @param \PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet The spreadsheet.
@@ -6316,7 +6844,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
 
-		$schemaEntity = $this->services->store->schemaMapper->find($source->schema);
+		$schemaEntity = $this->schemaInRegister(schemaRef: $source->schema, register: $this->registerOrNull(registerRef: $source->register));
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
 		$mayDeleteSource = $permissions->hasPermission(

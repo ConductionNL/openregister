@@ -154,7 +154,7 @@ final class ConceptRepositoryShapeAndCacheTest extends TestCase {
 
 		$this->assertNull(actual: $repository->scheme(schemeUri: 'https://x/s'));
 		$this->assertSame(expected: [], actual: $repository->conceptsOf(schemeUri: 'https://x/s'));
-		$this->assertCount(expectedCount: 1, haystack: $this->queries, message: 'The cached miss is not read again');
+		$this->assertCount(expectedCount: 2, haystack: $this->queries, message: 'The uri read, its slug fallback, and the cached miss is not read again');
 	}//end testAFailingReadAnswersNothing()
 
 	/**
@@ -166,7 +166,13 @@ final class ConceptRepositoryShapeAndCacheTest extends TestCase {
 		$repository = $this->repository(results: [[]]);
 
 		$this->assertSame(expected: [], actual: $repository->conceptsOf(schemeUri: 'https://x/none'));
-		$this->assertSame(expected: [['uri' => 'https://x/none', '@self' => ['register' => 7, 'schema' => 8], '_limit' => 1]], actual: $this->queries);
+		$this->assertSame(
+			expected: [
+				['uri' => 'https://x/none', '@self' => ['register' => 7, 'schema' => 8], '_limit' => 1],
+				['@self' => ['slug' => 'https://x/none', 'register' => 7, 'schema' => 8], '_limit' => 1],
+			],
+			actual: $this->queries
+		);
 	}//end testConceptsOfAnUnknownSchemeAreEmpty()
 
 	/**

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Files\Service\File;
 /**
  * Where the file goes, its name and its bytes.
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class FolderUpload {
 	/**
@@ -35,7 +35,7 @@ final class FolderUpload {
 	 * @param string           $name    The file's name: one segment.
 	 * @param resource|string  $content The file's bytes, or a readable stream.
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectFolderPath $folder,

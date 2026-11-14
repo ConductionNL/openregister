@@ -44,7 +44,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+ * @spec openspec/specs/objects-crud/spec.md
  */
 
 declare(strict_types=1);
@@ -62,7 +62,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+ * @spec openspec/specs/objects-crud/spec.md
  */
 class ConflictReport implements ConflictReportInterface {
 
@@ -95,7 +95,7 @@ class ConflictReport implements ConflictReportInterface {
 	 *
 	 * @return array<string, mixed> The 409 body.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	public function build(RefusedWrite $write, array $intervening): array {
 		$run = new ConflictRun(
@@ -116,7 +116,7 @@ class ConflictReport implements ConflictReportInterface {
 	 *
 	 * @return array<string, mixed> The 409 body.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	private function body(ConflictRun $run, array $cause): array {
 		$conflicts = $this->conflictsOf(run: $run);
@@ -138,7 +138,7 @@ class ConflictReport implements ConflictReportInterface {
 	 *
 	 * @return array<string, array> The conflicts
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function conflictsOf(ConflictRun $run): array {
 		$current         = $run->current;
@@ -169,7 +169,7 @@ class ConflictReport implements ConflictReportInterface {
 	 *
 	 * @return string The message
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private static function messageFor(array $conflicts): string {
 		if ($conflicts === []) {
@@ -191,7 +191,7 @@ class ConflictReport implements ConflictReportInterface {
 	 *
 	 * @return array{changedBy: string|null, changedAt: string|null} The cause
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function causeOf(?AuditTrail $entry): array {
 		if ($entry === null) {
@@ -212,7 +212,7 @@ class ConflictReport implements ConflictReportInterface {
 	 *
 	 * @return array<string, mixed> The readings, or the withheld marker.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-the-conflict-body-discloses-no-more-than-a-read-would-req-cso-002
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-the-conflict-body-discloses-no-more-than-a-read-would-req-cso-002
 	 */
 	private function readingsFor(ConflictRun $run, string $property): array {
 		if ($this->properties->canReadProperty(property: new SchemaProperty(schema: $run->schema, name: $property), request: new PropertyAccessRequest(object: $run->current)) === false) {
@@ -234,7 +234,7 @@ class ConflictReport implements ConflictReportInterface {
 	 *
 	 * @return array<string, mixed> The readings.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	private static function readings(ConflictRun $run, string $property): array {
 		return [
@@ -256,7 +256,7 @@ class ConflictReport implements ConflictReportInterface {
 	 *
 	 * @return array<string, mixed> Property to the value the caller read.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	private function changedByOthers(array $intervening): array {
 		$was = [];

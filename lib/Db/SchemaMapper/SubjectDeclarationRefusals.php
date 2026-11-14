@@ -77,7 +77,7 @@ final class SubjectDeclarationRefusals {
 	 *
 	 * @throws ReviewDeclarationException When the declaration is unsound.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function checkReview(Schema $schema): void {
 		$errors = SchemaDeclarationValidators::review()->validate(configuration: ($schema->getConfiguration() ?? []));

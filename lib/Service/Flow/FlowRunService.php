@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -188,7 +188,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @phpstan-assert-if-true !null $streams->claims
 	 * @phpstan-assert-if-true !null $streams->commit
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function hasStreamParts(FlowRunStreamStores $streams): bool {
 		return $streams->streamMapper !== null && $streams->claims !== null && $streams->commit !== null;
@@ -201,7 +201,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return int|null The cap.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function streamCap(array $flow): ?int {
 		$limits = (array)($flow['limits'] ?? []);
@@ -549,7 +549,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return FlowRunGuard The guard for this walk.
 	 *
-	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 * @spec openspec/specs/flow-stale-runs/spec.md
 	 */
 	private function guardFor(FlowRun $run, array $flow): FlowRunGuard {
 		return new FlowRunGuard(
@@ -579,7 +579,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return integer The budget in seconds, or 0 for unlimited.
 	 *
-	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 * @spec openspec/specs/flow-stale-runs/spec.md
 	 */
 	private function runtimeBudgetSeconds(array $flow): int {
 		$limits = (array)($flow['limits'] ?? []);
@@ -617,7 +617,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @throws FlowUnattributed     When nothing names the identity the run would execute as.
 	 * @throws DelegationRefused    When the trigger asserts a delegation that is no longer live.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 */
 	public function queueRun(string $flowId, FlowRunQueueOptions $options): FlowRun {
@@ -778,7 +778,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return FlowRun|null The new queued run, or null when the source is not terminal.
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	public function retry(FlowRun $run): ?FlowRun {
 		if ($run->isTerminal() === false) {
@@ -889,7 +889,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function warnOnConflicts(FlowRun $run, array $keys): void {
 		if ($keys === []) {
@@ -911,7 +911,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return array<int, int|string> The conflicting keys, in payload order.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function conflictingKeys(array $waiting, array $payload): array {
 		$conflicts = [];
@@ -935,7 +935,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return FlowRun The updated run.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowToken::fromArray is a stateless
 	 * rehydrator for a value object; injecting a factory to call it would add a
@@ -970,7 +970,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return FlowRun The persisted run.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function walk(FlowRunPass $pass, FlowRunOrigin $origin): FlowRun {
 		$run = $pass->run;
@@ -1017,7 +1017,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return FlowRun The failed run.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function failWalk(FlowRun $run, Throwable $error): FlowRun {
 		if ($error instanceof FlowRunExpired) {
@@ -1433,7 +1433,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * is a pure function on value shapes; a factory to call it would add a
 	 * dependency to say the same thing.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function refreshSubjectItems(FlowRun $run, object $subject): void {
 		$subjectUuid = trim((string)$run->getSubjectUuid());
@@ -1495,7 +1495,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return FlowRun The updated run.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 
 
@@ -1573,7 +1573,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped holder of writeOnly inputs.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	private function persistResult(FlowRun $run, array $result): FlowRun {
@@ -1745,7 +1745,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return string|null The key, or null when no slot carries one.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function firstCorrelationKey(mixed $byNode): ?string {
 		if (is_array($byNode) === false) {
@@ -1769,7 +1769,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @return string The key, or '' when the slot carries none.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function slotCorrelationKey(mixed $slot): string {
 		if (is_array($slot) === false) {
@@ -1845,7 +1845,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Moved here with the call from FlowTestRunController:
 	 * FlowItems::normalise is a pure value-normaliser with no state to inject.
 	 *
-	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 * @spec openspec/specs/flow-partial-run/spec.md
 	 */
 	public function seedItemsFrom(mixed $value): array {
 		return FlowItems::normalise(value: $value);

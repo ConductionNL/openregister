@@ -355,7 +355,7 @@ class FileTextController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function anonymizeFile(int $fileId): JSONResponse {
 		if ($this->hasFileAccess(fileId: $fileId) === false) {

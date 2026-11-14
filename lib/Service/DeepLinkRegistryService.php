@@ -138,7 +138,8 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 			schemaSlug: $registration->schemaSlug,
 			urlTemplate: $registration->urlTemplate,
 			icon: $this->effectiveIcon(appId: $registration->appId, icon: ''),
-			displayName: $registration->displayName
+			displayName: $registration->displayName,
+			taskUrlTemplate: $registration->taskUrlTemplate
 		);
 	}//end withEffectiveIcon()
 
@@ -287,6 +288,25 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	}//end resolveUrl()
 
 	/**
+	 * The owning app's own route for a task about an object of this register and schema.
+	 *
+	 * Null when no app claimed the pair or the app that did registered no task route;
+	 * the caller then links OpenRegister's task page.
+	 *
+	 * @param int                  $registerId The subject's register id.
+	 * @param int                  $schemaId   The subject's schema id.
+	 * @param array<string, mixed> $taskData   The task row (uuid, objectUuid, registerId, schemaId).
+	 *
+	 * @return string|null The URL, or null.
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
+	 */
+	public function resolveTaskUrl(int $registerId, int $schemaId, array $taskData): ?string {
+		$registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
+		return $registration?->resolveTaskUrl(taskData: $taskData);
+	}//end resolveTaskUrl()
+
+	/**
 	 * Get the icon for a registered deep link, or null if no registration.
 	 *
 	 * @param int $registerId The register database ID
@@ -329,6 +349,40 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 
 		return $registration->appId;
 	}//end resolveDisplayName()
+
+	/**
+	 * Every registration, one per claimed (register, schema) combination.
+	 *
+	 * Like resolve(), a process that never booted OpenRegister asks the apps
+	 * for their registrations first.
+	 *
+	 * @return array<int,DeepLinkRegistration> The registrations, in the order they were added.
+	 *
+	 * @spec openspec/changes/platform-comments-entity/tasks.md#task-1.1
+	 */
+	public function registrations(): array {
+		if (empty(self::$registrations) === true) {
+			$this->requestRegistrations();
+		}
+
+		return array_values(self::$registrations);
+
+	}//end registrations()
+
+	/**
+	 * The app that claimed a register and schema.
+	 *
+	 * @param int $registerId The register's id.
+	 * @param int $schemaId   The schema's id.
+	 *
+	 * @return string|null The claiming app's id, or null when no app claimed the pair.
+	 *
+	 * @spec openspec/changes/platform-comments-entity/tasks.md#task-1.2
+	 */
+	public function resolveAppId(int $registerId, int $schemaId): ?string {
+		return $this->resolve(registerId: $registerId, schemaId: $schemaId)?->appId;
+
+	}//end resolveAppId()
 
 	/**
 	 * Ask the apps for their deep links, once per process.

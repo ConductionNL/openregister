@@ -455,7 +455,7 @@ class TaskController extends Controller {
 
 		return new JSONResponse(
 			array_merge(
-				$this->inbox->enrich(task: $task),
+				$this->inbox->enrich(task: $task, caller: $this->uid()),
 				$this->forms->describe(task: $task)
 			)
 		);

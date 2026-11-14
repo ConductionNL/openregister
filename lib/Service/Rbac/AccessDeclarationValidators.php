@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Db\Schema;
 use OCP\EventDispatcher\IEventDispatcher;
 
 /**
@@ -86,4 +87,20 @@ final class AccessDeclarationValidators {
 	public static function hierarchy(): HierarchyAnnotationValidatorInterface {
 		return new HierarchyAnnotationValidator();
 	}//end hierarchy()
+
+	/**
+	 * The parent property a schema's hierarchy names, or null when it declares none.
+	 *
+	 * Read by the same reader access inheritance uses, so the tree presentation
+	 * of a saved view and access inheritance agree on one declaration.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return string|null The parent property, or null without a hierarchy.
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+	 */
+	public static function hierarchyParentOf(Schema $schema): ?string {
+		return HierarchyGrantExpander::parentPropertyOf(schema: $schema);
+	}//end hierarchyParentOf()
 }//end class

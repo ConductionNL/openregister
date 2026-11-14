@@ -56,6 +56,27 @@ interface CalendarLinkMapperInterface {
 	public function findByObjectAndEvent(string $objectUuid, string $eventUid): CalendarLink;
 
 	/**
+	 * The link rows attached to a VEVENT, oldest first, scoped to one calendar when given.
+	 *
+	 * @param string      $eventUid    The VEVENT UID.
+	 * @param string|null $calendarUri The calendar URI, or null for every calendar.
+	 *
+	 * @return CalendarLink[] The matching rows.
+	 */
+	public function findByEventUid(string $eventUid, ?string $calendarUri=null): array;
+
+	/**
+	 * The oldest link row for an object, event and calendar, or null when there is none.
+	 *
+	 * @param string $objectUuid  The object UUID.
+	 * @param string $eventUid    The VEVENT UID.
+	 * @param string $calendarUri The calendar URI.
+	 *
+	 * @return CalendarLink|null The row.
+	 */
+	public function findLink(string $objectUuid, string $eventUid, string $calendarUri): ?CalendarLink;
+
+	/**
 	 * Find calendar links by object UUID.
 	 *
 	 * @param string $objectUuid The object UUID.

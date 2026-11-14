@@ -59,4 +59,38 @@ interface DeepLinkRegistryServiceInterface extends DeepLinkResolverInterface {
 	 */
 	public function requestRegistrations(?IEventDispatcher $dispatcher = null): void;
 
+	/**
+	 * Every registration, one per claimed (register, schema) combination.
+	 *
+	 * @return array<int,DeepLinkRegistration> The registrations, in the order they were added.
+	 *
+	 * @spec openspec/changes/platform-comments-entity/tasks.md#task-1.1
+	 */
+	public function registrations(): array;
+
+	/**
+	 * The app that claimed a register and schema.
+	 *
+	 * @param int $registerId The register's id.
+	 * @param int $schemaId   The schema's id.
+	 *
+	 * @return string|null The claiming app's id, or null when no app claimed the pair.
+	 *
+	 * @spec openspec/changes/platform-comments-entity/tasks.md#task-1.2
+	 */
+	public function resolveAppId(int $registerId, int $schemaId): ?string;
+
+	/**
+	 * The owning app's own route for a task about an object of this register and schema.
+	 *
+	 * @param int                  $registerId The subject's register id.
+	 * @param int                  $schemaId   The subject's schema id.
+	 * @param array<string, mixed> $taskData   The task row (uuid, objectUuid, registerId, schemaId).
+	 *
+	 * @return string|null The URL, or null when no app registered a task route for the pair.
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
+	 */
+	public function resolveTaskUrl(int $registerId, int $schemaId, array $taskData): ?string;
+
 }//end interface

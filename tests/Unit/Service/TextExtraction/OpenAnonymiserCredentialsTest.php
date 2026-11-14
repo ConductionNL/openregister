@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
+use OCA\OpenRegister\Service\Anonymisation\TextDisclosureRecorder;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
@@ -61,6 +62,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\OpenAnonymiserTransport
+ * @uses \OCA\OpenRegister\Service\Anonymisation\TextDisclosureSource
  */
 class OpenAnonymiserCredentialsTest extends TestCase {
 	use GuzzleClientServiceTrait;
@@ -208,7 +210,7 @@ class OpenAnonymiserCredentialsTest extends TestCase {
 				entityRelationMapper: $this->createMock(EntityRelationMapper::class),
 				db: $this->createMock(IDBConnection::class)
 			),
-			backends: new EntityRecognitionBackends(settingsService: $settings, anonymisationBackendService: $backend, clientService: $this->guzzleClientService()),
+			backends: new EntityRecognitionBackends(settingsService: $settings, anonymisationBackendService: $backend, clientService: $this->guzzleClientService(), disclosureRecorder: $this->createMock(TextDisclosureRecorder::class)),
 			logger: $logger
 		);
 

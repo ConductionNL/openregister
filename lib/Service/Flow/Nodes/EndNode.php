@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+ * @spec openspec/specs/flow-logic/spec.md
  */
 
 declare(strict_types=1);
@@ -90,7 +90,7 @@ class EndNode extends LogicNodeBase implements IFlowNode, EndNodeInterface,
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		// `next` overrides the manual trigger's hint for the run that reached

@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 /**
  * One paginated object search: the page query, the count query and the ids and relation both must match.
  *
- * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+ * @spec openspec/specs/unified-search-provider/spec.md
  */
 final class MagicPaginatedSearch {
 
@@ -33,7 +33,7 @@ final class MagicPaginatedSearch {
 	 * @param ?array  $ids         The ids or uuids the objects must have, or null for any.
 	 * @param ?string $uses        A value that must be present in the relations, or null for any.
 	 *
-	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function __construct(
 		public readonly array $searchQuery,

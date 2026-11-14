@@ -203,6 +203,7 @@ class RulesController extends Controller {
 			[
 				'schema' => (string)($entity->getSlug() ?? ''),
 				'rules' => $this->inventory->inventory(schema: $entity, options: new RuleInventoryOptions(idleDays: $window, scope: $scope)),
+				'conditions' => $this->inventory->namedConditions(schema: $entity),
 			]
 		);
 
