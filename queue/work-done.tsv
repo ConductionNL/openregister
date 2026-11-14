@@ -11742,3 +11742,4 @@ build:versioniq:advisories-ncsc-feed:c2	done: PR #695 builds every code task (1.
 fix:integriq:3631:0f8a82af	merged development in, l10n .js regenerated from merged .json; unit failures inherited from development; new head dd984ef4, REVERIFY recorded	session-20261114T175427-38d3d06f	2026-11-14T23:00:37Z
 fix:stackiq:1939:7a225714	no change: branch already contains development and merges clean; conflict is with open #1926 (l10n tails), REVERIFY recorded	session-20261114T222427-f171565a	2026-11-14T23:00:43Z
 verify:versioniq:691:2b07b74f	701,705,725 GREEN; 726,728,729 CONFLICT; 691,694,716 skipped (head moved)	session-20261114T224920-352ef0eb	2026-11-14T23:01:17Z
+verify:versioniq:695:c25e76c1	695,707,714,717,721 GREEN; 727 CONFLICT; 698,703,706 skipped (heads moved); unit 1762/2 inherited, vitest 2989	session-20261114T211012-c469e919	2026-11-14T23:01:40Z
