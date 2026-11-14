@@ -8848,3 +8848,4 @@ build:shillinq:expenses-category-mapping:c2	partial: PR #3048 builds 1.1,1.2,2.1
 build4:openregister:platform-reference-provider:c2	PR #10507: 2.3 openspec validate ticked (valid); all code tasks already on main; 2.1 e2e and 3.1 dossiq handover left	session-20261114T102637-6688951e	2026-11-14T10:37:43Z
 review:openregister:10486:83e3fe00	APPROVE (component-map.csv append conflict noted)	session-20261114T085635-07e3ca9b	2026-11-14T10:37:49Z
 build4:openregister:dbal-query-schema-guarded-and-previewed:c2	partial: PR #10508, guard now runs on schema save (D-1), +6 tests; left 1.2 live DB integration test, 3.1 archive, 3.2 Newman; suite failing names identical to main	session-20261114T073105-752e50ad	2026-11-14T10:37:57Z
+review:openregister:10492:49884d64	APPROVE: checksum recording is best-effort, suites green	session-20261114T095629-be875350	2026-11-14T10:38:12Z
