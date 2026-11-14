@@ -8968,3 +8968,4 @@ review:openregister:10535:0f323923	APPROVE: fail-closed slot grant after princip
 review:openregister:10530:0d0b077d	BLOCK: ListenerRegistrationOrderGoldenTest fails; noteAdded visibility not matched	session-20261114T114414-1a8d8ccd	2026-11-14T11:57:21Z
 build:pipelinq:platform-client-retention:c3	PR #3832: 4.1 anonymisation profile on client+contact (OR reads it via build/anonymising-as-an-archival-outcome 2.2a); 3.2 left only for its e2e check	session-20261114T114416-aa10a904	2026-11-14T11:57:27Z
 verify:pipelinq:3818:275c868c	3818 GREEN, 3830 CONFLICT (l10n tail vs 3818)	session-20261114T114625-63eafe85	2026-11-14T11:58:25Z
+review:openregister:10521:2a709ccf	APPROVE: behaviour unchanged, suites green on merge with main	session-20261114T114643-b064db1b	2026-11-14T11:58:33Z
