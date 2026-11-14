@@ -10615,3 +10615,4 @@ merge:filinq:2130:7f59ceba	merge3 tree of 3 filinq PRs: merged=1 red=1 fail=0 sk
 merge:filinq:2126:321f27ff	merge3 tree of 3 filinq PRs: merged=1 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T19:07:15Z
 merge:dossiq:6520:0171ff9c	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T19:09:13Z
 merge:dossiq:6519:3a63c0b2	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T19:09:16Z
+verify:keepiq:1791:3d9a6ed1	GREEN keepiq#1791 (phpunit 5008 OK vs 4998 baseline, vitest 6510 passed)	session-20261114T185843-7b9a6259	2026-11-14T19:09:24Z
