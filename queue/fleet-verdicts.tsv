@@ -9507,3 +9507,4 @@ planninq	1178	3c7b73e8ca14fd90976e83e402ec201379e56535	GREEN	worker-09	phpunit 1
 filinq	2118	17b69a70e2add5d767380fa92f9b9085ad2f9d19	REVERIFY	worker-34	merged development in, kept both sides' l10n keys (en/nl js+json), test:l10n OK; new head a4503a17fe5ba2c5997f2cf5ea1d81c6e3021b02, verify it
 integriq	3592	70be0200dd77aca2fac76f59d3fffc01f09bdc9e	GREEN	worker-10	phpunit 9137 on tree (baseline 9084, 2E+5F inherited), vitest 2254 pass; new failures: none; implements platform-admin-defaults (removed SQL rebase tests are spec-requested)
 integriq	3595	7d624dc8ce92826b30bb0d6259d4fd40c1b894b7	GREEN	worker-10	phpunit 9137 on tree (baseline 9084, 2E+5F inherited), vitest 2254 pass; new failures: none; implements sources-route-distance-and-rdw-lookup
+integriq	3632	b8b6d7add35658f7a1a83ce7390e83d15a273c75	CONFLICT	worker-10	merge conflict on development+3592+3595
