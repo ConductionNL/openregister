@@ -9360,3 +9360,4 @@ launchpad	1195	4762c768a403e025fa4716193da9e1e9253e4b66	REVERIFY	worker-25	maint
 planninq	1159	fc0531ddf109692998b779202366fc0631b11e0f	GREEN	worker-32	unit 1063 tests on the 3-PR tree, baseline 1038 green, no failures; vitest 3305 pass; build of tasks-dates
 planninq	1166	5fa61e8e0ef1376130dea7e87564f54eb18cab9a	GREEN	worker-32	unit 1063 tests on the 3-PR tree, baseline 1038 green, no failures; vitest 3305 pass; build of projects-templates-shared-workflow (workflow schema added)
 planninq	1171	6e9f4ac2e51d2e152758d6a09e48c2982a2742e4	GREEN	worker-32	unit 1063 tests on the 3-PR tree, baseline 1038 green, no failures; vitest 3305 pass; build of tasks-move-between-projects (cleanup listener keeps the refused-delete guard)
+filinq	2079	6c42e26ff3536b707485a5a4d65eb294e6832979	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.49 -> 4.47; unit_interfacing: 2.85 -> 2.83
