@@ -4250,3 +4250,11 @@ Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Repair/MigrateTextExtractionCeiling.php,,Repair,,,,,Files
 Files/Service/TextExtraction/TextSearchedMarker.php,,Files,,,,,Files
+Db/UploadSession.php,,Db,,,,,Files
+Db/UploadSessionMapper.php,,Db,,,,,Files
+Migration/Version1Date20261114180000.php,,Migration,,,,,Platform
+Exception/UploadPartSizeOutOfRangeException.php,,Exception,,,,,Files
+Service/File/ChunkedUploadService.php,,Service,,,,,Files
+Controller/ChunkedUploadController.php,,Controller,,,,,Files
+Files/Controller/Support/ChunkedUploadControllerServices.php,,Files,,,,,Files
+Files/Controller/Support/RawRequestBody.php,,Files,,,,,Files

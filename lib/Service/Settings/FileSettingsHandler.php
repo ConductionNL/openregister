@@ -30,6 +30,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
+use OCA\OpenRegister\Exception\UploadPartSizeOutOfRangeException;
 use OCA\OpenRegister\Files\Service\File\MaskForm;
 use OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
@@ -115,6 +116,41 @@ class FileSettingsHandler {
 	public const LEGACY_CEILING_KEYS = ['maxFileSizeMB', 'maxFileSize'];
 
 	/**
+	 * The file settings key holding the upload-in-parts settings.
+	 *
+	 * @var string
+	 */
+	public const UPLOAD_KEY = 'upload';
+
+	/**
+	 * The default part size of an upload in parts: 10 MiB.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_PART_SIZE = 10485760;
+
+	/**
+	 * The smallest part size an organisation may set: 1 MiB.
+	 *
+	 * @var int
+	 */
+	public const MIN_PART_SIZE = 1048576;
+
+	/**
+	 * The largest part size an organisation may set: 100 MiB.
+	 *
+	 * @var int
+	 */
+	public const MAX_PART_SIZE = 104857600;
+
+	/**
+	 * How long an unfinished upload session lives after its last part, as an ISO 8601 duration.
+	 *
+	 * @var string
+	 */
+	public const DEFAULT_SESSION_TTL = 'PT24H';
+
+	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
 	 *
 	 * The enabled file types are LLPhant-friendly: native PHP support plus common
@@ -157,6 +193,7 @@ class FileSettingsHandler {
 			'officialsSource' => null,
 		],
 		ArchiveBounds::SETTINGS_KEY => ArchiveBounds::DEFAULTS,
+		self::UPLOAD_KEY => ['partSizeBytes' => self::DEFAULT_PART_SIZE, 'sessionTtl' => self::DEFAULT_SESSION_TTL],
 	];
 
 	/**
@@ -232,6 +269,7 @@ class FileSettingsHandler {
 		// The extraction ceiling always reads as bytes, and an install the repair
 		// step has not reached yet states the ceiling its legacy key held.
 		$fileSettings = self::withCeiling(fileSettings: $fileSettings, source: $fileSettings);
+		$fileSettings[self::UPLOAD_KEY] = self::readableUpload(stored: ($fileSettings[self::UPLOAD_KEY] ?? null));
 
 		unset($fileSettings[self::OPENANONYMISER_CREDENTIAL_FIELD]);
 		$fileSettings[self::ANONYMISATION_KEY] = $this->readableAnonymisation(stored: ($fileSettings[self::ANONYMISATION_KEY] ?? null));
@@ -272,6 +310,112 @@ class FileSettingsHandler {
 
 		return $fileSettings;
 	}//end withCeiling()
+
+	/**
+	 * The upload-in-parts settings, from the stored file settings: the part size
+	 * and the session lifetime, each its default when nothing usable is stored.
+	 *
+	 * @return array{partSizeBytes: int, sessionTtl: string}
+	 *
+	 * @spec openspec/changes/large-file-handling/tasks.md#task-2-3
+	 */
+	public function uploadSettings(): array {
+		$settings = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		if (is_array($settings) === false) {
+			return self::readableUpload(stored: null);
+		}
+
+		return self::readableUpload(stored: ($settings[self::UPLOAD_KEY] ?? null));
+	}//end uploadSettings()
+
+	/**
+	 * The upload settings as a read returns them: a stored part size within the
+	 * bounds and a stored duration that parses, else the defaults.
+	 *
+	 * @param mixed $stored The stored upload settings.
+	 *
+	 * @return array{partSizeBytes: int, sessionTtl: string}
+	 */
+	private static function readableUpload(mixed $stored): array {
+		$settings = ['partSizeBytes' => self::DEFAULT_PART_SIZE, 'sessionTtl' => self::DEFAULT_SESSION_TTL];
+		if (is_array($stored) === false) {
+			return $settings;
+		}
+
+		$partSize = self::partSizeOrNull(value: ($stored['partSizeBytes'] ?? null));
+		if ($partSize !== null) {
+			$settings['partSizeBytes'] = $partSize;
+		}
+
+		if (self::isDuration(value: ($stored['sessionTtl'] ?? null)) === true) {
+			$settings['sessionTtl'] = (string) $stored['sessionTtl'];
+		}
+
+		return $settings;
+	}//end readableUpload()
+
+	/**
+	 * The upload settings to store; a part size outside 1 MiB to 100 MiB is refused.
+	 *
+	 * @param mixed $submitted The submitted upload settings.
+	 *
+	 * @return array{partSizeBytes: int, sessionTtl: string}
+	 *
+	 * @throws UploadPartSizeOutOfRangeException When the part size is outside the bounds.
+	 *
+	 * @spec openspec/changes/large-file-handling/tasks.md#task-2-3
+	 */
+	private static function submittedUpload(mixed $submitted): array {
+		if (is_array($submitted) === true
+			&& array_key_exists('partSizeBytes', $submitted) === true
+			&& self::partSizeOrNull(value: $submitted['partSizeBytes']) === null
+		) {
+			throw new UploadPartSizeOutOfRangeException(
+				message: sprintf('upload.partSizeBytes must be a whole number of bytes between %d and %d.', self::MIN_PART_SIZE, self::MAX_PART_SIZE)
+			);
+		}
+
+		return self::readableUpload(stored: $submitted);
+	}//end submittedUpload()
+
+	/**
+	 * A part size within the bounds, or null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return int|null
+	 */
+	private static function partSizeOrNull(mixed $value): ?int {
+		if (is_string($value) === true && ctype_digit($value) === true) {
+			$value = (int) $value;
+		}
+
+		if (is_int($value) === false || $value < self::MIN_PART_SIZE || $value > self::MAX_PART_SIZE) {
+			return null;
+		}
+
+		return $value;
+	}//end partSizeOrNull()
+
+	/**
+	 * Whether a value is an ISO 8601 duration DateInterval reads.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private static function isDuration(mixed $value): bool {
+		if (is_string($value) === false || $value === '') {
+			return false;
+		}
+
+		try {
+			new \DateInterval($value);
+			return true;
+		} catch (Exception) {
+			return false;
+		}
+	}//end isDuration()
 
 	/**
 	 * A batch size between 1 and 500.
@@ -326,6 +470,9 @@ class FileSettingsHandler {
 		} catch (UnknownMaskFormException $e) {
 			// A refused mask form, answered as 400 naming the entity type.
 			throw $e;
+		} catch (UploadPartSizeOutOfRangeException $e) {
+			// A refused part size, answered as 400 naming the bounds.
+			throw $e;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
 		}//end try
@@ -371,6 +518,7 @@ class FileSettingsHandler {
 		$fileConfig['batchSize'] = $this->boundedBatchSize(batchSize: $fileConfig['batchSize']);
 		$fileConfig[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileConfig)->toArray();
 		$fileConfig = self::withCeiling(fileSettings: $fileConfig, source: $fileData);
+		$fileConfig[self::UPLOAD_KEY] = self::submittedUpload(submitted: ($fileData[self::UPLOAD_KEY] ?? null));
 		$fileConfig['openAnonymiserUsername'] = trim((string) $fileConfig['openAnonymiserUsername']);
 		$fileConfig[ReviewPolicy::SETTINGS_KEY] = $this->reviewDefault(fileData: $fileData);
 		$fileConfig[self::ANONYMISATION_KEY] = $this->submittedAnonymisation(fileData: $fileData);
