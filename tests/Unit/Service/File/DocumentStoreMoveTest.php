@@ -301,6 +301,18 @@ class DocumentStoreMoveTest extends TestCase {
 		$this->assertArrayNotHasKey(DocumentStoreMove::MOVED_FROM_KEY, $this->config);
 	}//end testPurgeDeletesAFullyMappedTree()
 
+	public function testAFolderTheMoveDidNotMakeInTheTargetIsRefused(): void {
+		$this->state[3]['children'] = [$this->fakeFolder(id: 400, path: '/openregister/files/New store/Woo', storageId: 'local::/mnt/store/')];
+		$this->objects->expects($this->never())->method('rewrite');
+
+		$outcome = $this->move()->move(options: $this->options())['outcomes'][0];
+
+		$this->assertSame(DocumentMoveOutcome::REFUSED, $outcome->state);
+		$this->assertStringContainsString('the target already holds a folder "Woo" this installation did not copy there', $outcome->refusals[0]);
+		$this->assertSame([], $this->rows, 'Nothing is written into the foreign folder.');
+		$this->assertSame([], $this->state[400]['children']);
+	}//end testAFolderTheMoveDidNotMakeInTheTargetIsRefused()
+
 	public function testUploadsAreHeldOffWhileTheRegisterMoves(): void {
 		$seen = [];
 		$this->objects->method('rewrite')->willReturnCallback(function () use (&$seen): int {

@@ -228,6 +228,17 @@ class DocumentStoreMove {
 			allowWithoutVersions: $withoutVersions,
 			outcome: $outcome,
 		);
+		if ($this->isForeign(source: $source, target: $target, run: $run) === true) {
+			$outcome->refuse(
+				reason: sprintf(
+					'%s: the target already holds a folder "%s" this installation did not copy there; it may hold another installation\'s documents.',
+					$source->getPath(),
+					$source->getName()
+				)
+			);
+			return $copy;
+		}
+
 		$this->copyFolder(folder: $source, parent: $target, run: $run);
 
 		return ['moved' => $run->moved, 'kinds' => $run->kinds, 'pairs' => $run->pairs, 'withoutVersions' => $run->withoutVersions];
@@ -419,6 +430,24 @@ class DocumentStoreMove {
 
 		return $target;
 	}//end targetRoot()
+
+	/**
+	 * Whether the target holds a folder of the register's name that no earlier run of this move made.
+	 *
+	 * @param Folder          $source The register's folder.
+	 * @param Folder          $target The target root.
+	 * @param DocumentCopyRun $run    The register's run.
+	 *
+	 * @return bool
+	 */
+	private function isForeign(Folder $source, Folder $target, DocumentCopyRun $run): bool {
+		if ($target->nodeExists($source->getName()) === false) {
+			return false;
+		}
+
+		$row = ($run->rows[DocumentCopyRun::key(kind: DocumentMove::KIND_FOLDER, oldId: (int)$source->getId())] ?? null);
+		return $row === null || (int)$row->getNewId() !== (int)$target->get($source->getName())->getId();
+	}//end isForeign()
 
 	/**
 	 * Copy one folder into a parent and walk its children.
