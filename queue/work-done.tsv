@@ -7635,3 +7635,4 @@ review:openregister:10460:55020ec3	APPROVE 10460: within change specs, suites gr
 fix:pipelinq:3725:77b357a7	conflict resolved (l10n, both sides kept), pushed eec84aa023cf2eb42d944fe3887e1a637e7d30f3, REVERIFY recorded	session-20261114T062202-3e33eeb3	2026-11-14T06:41:29Z
 fix:dossiq:6204:b8a99051	conflict resolved, new head d2fc826c, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T06:41:36Z
 fix:dossiq:6135:d3c81d9d	conflict resolved, pushed e8ff0590, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T06:41:51Z
+fix:pipelinq:3726:73dd707c	conflict resolved (imports + l10n), pushed b2988e37d8e2cd6fc33439b6156b9b8ffa7677c2, REVERIFY recorded	session-20261114T062202-3e33eeb3	2026-11-14T06:42:31Z
