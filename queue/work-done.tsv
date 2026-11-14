@@ -9054,3 +9054,4 @@ fix:dossiq:6385:5bf6b3af	conflict resolved, merged development; 19 unit failures
 verify:dossiq:6499:cb5648a8	6499 GREEN (16927 tests, no new failures beyond 19 baseline)	session-20261114T121619-c3deae2c	2026-11-14T12:28:19Z
 merge:shillinq:2930:0a676383	merge3 tree of 22 shillinq PRs: merged=16 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T12:28:51Z
 merge:shillinq:2819:8e6a71c1	merge3 tree of 22 shillinq PRs: merged=16 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T12:28:55Z
+merge:shillinq:3041:ca355027	merge3 tree of 22 shillinq PRs: merged=16 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T12:28:59Z
