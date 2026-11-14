@@ -166,4 +166,26 @@ class DestructionRecorder {
 			previous: $error
 		);
 	}//end unrecordable()
+
+	/**
+	 * Record one destruction, by separate arguments.
+	 *
+	 * The published call; recordDestruction() takes the same as one RecordDestructionCommand.
+	 *
+	 * @param ObjectEntity         $object  The object about to be destroyed.
+	 * @param array<string, mixed> $scope   The scope report from DestructionScopeService.
+	 * @param string               $rule    The rule the act ran under, e.g. `destroy-right-granted`.
+	 * @param array<string, mixed> $context Anything else worth keeping, such as the window it ran after.
+	 *
+	 * @return array<string, mixed> The record as it was written.
+	 *
+	 * @throws DestructionRefusedException When the record cannot be written.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function record(ObjectEntity $object, array $scope, string $rule, array $context = []): array {
+		return $this->recordDestruction(
+			command: new RecordDestructionCommand(object: $object, scope: $scope, rule: $rule, context: $context)
+		);
+	}//end record()
 }//end class

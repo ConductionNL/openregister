@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use InvalidArgumentException;
 use DateTime;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
@@ -27,6 +28,7 @@ use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RelationDecisionUpdate;
+use OCP\IUser;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
@@ -725,17 +727,41 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * timestamp, the subject (table + row id), and only the fields that
 	 * actually changed.
 	 *
-	 * @param DecisionMetadataEdit $edit The pre-loaded relation row (callers handle find/404), the
-	 *                                   whitelist keys with new values and the optional explicit acting
-	 *                                   user; without one it falls back to the session user, and without
-	 *                                   a session user the audit entry records the actor as 'system'.
+	 * Takes main's DecisionMetadataEdit, or the release's relation, fields and acting user, by name or
+	 * by position (a relation in the first slot); an edit wins.
+	 *
+	 * @param DecisionMetadataEdit|EntityRelation|null $edit       The pre-loaded relation row (callers handle find/404), the fields and the acting
+	 *                                                             user; a relation here is the release's positional `$relation`.
+	 * @param array|null                               $fields     The decision fields to change.
+	 * @param IUser|null                               $actingUser The user making the change.
+	 * @param EntityRelation|null                      $relation   The pre-loaded relation row.
 	 *
 	 * @return EntityRelation The (possibly unchanged) row.
 	 *
 	 * @throws CustomValidationException When a whitelist or shape violation
 	 *                                   is detected.
+	 *
+	 * @throws InvalidArgumentException When neither an edit nor a relation and fields is given.
 	 */
-	public function updateDecisionMetadata(DecisionMetadataEdit $edit): EntityRelation {
+	public function updateDecisionMetadata(
+		DecisionMetadataEdit|EntityRelation|null $edit = null,
+		array|null $fields = null,
+		IUser|null $actingUser = null,
+		EntityRelation|null $relation = null,
+	): EntityRelation {
+		if ($edit instanceof EntityRelation) {
+			$relation ??= $edit;
+			$edit       = null;
+		}
+
+		if ($edit === null) {
+			if ($relation === null || $fields === null) {
+				throw new InvalidArgumentException('updateDecisionMetadata() needs a relation and fields, or a DecisionMetadataEdit.');
+			}
+
+			$edit = new DecisionMetadataEdit(relation: $relation, fields: $fields, actingUser: $actingUser);
+		}
+
 		self::assertDecisionFieldsValid(fields: $edit->fields);
 		$changedFields = self::applyDecisionChanges(relation: $edit->relation, fields: $edit->fields);
 		if (count($changedFields) === 0) {

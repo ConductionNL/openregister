@@ -121,14 +121,57 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	 * and `Entity`'s camelCase<->snake_case conversion only applies to
 	 * property access, never to a query builder's raw column literal.
 	 *
-	 * @param FlowSelection $selection Which flows: owning app id, OpenBuild virtual-app slug, organisation uuid and enabled state.
-	 * @param ListQuery     $query     The page size and offset.
+	 * Takes main's FlowSelection and ListQuery, or the release's separate filters and page, by name
+	 * or by position (strings in the first two slots); separate arguments, when given, win.
+	 *
+	 * @param FlowSelection|string|null $selection       Which flows: owning app id, OpenBuild virtual-app slug, organisation uuid and enabled
+	 *                                                   state; a string here is the release's positional `$app`.
+	 * @param ListQuery|string|null     $query           The page size and offset; a string here is the release's positional `$applicationSlug`.
+	 * @param string|null               $organisation    Only flows of this organisation.
+	 * @param bool|null                 $enabled         Only enabled (true) or disabled (false) flows.
+	 * @param int                       $limit           The page size.
+	 * @param int                       $offset          The offset.
+	 * @param string|null               $app             Only flows of this app.
+	 * @param string|null               $applicationSlug Only flows of this OpenBuild virtual app.
 	 *
 	 * @return array<int, Flow> The flows.
 	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity) The release's positional form is told apart by type.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The release's flag.
+	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function findAllFlows(FlowSelection $selection=new FlowSelection(), ListQuery $query=new ListQuery(limit: 100, offset: 0)): array {
+	public function findAllFlows(
+		FlowSelection|string|null $selection = new FlowSelection(),
+		ListQuery|string|null $query = new ListQuery(limit: 100, offset: 0),
+		string|null $organisation = null,
+		bool|null $enabled = null,
+		int $limit = 100,
+		int $offset = 0,
+		string|null $app = null,
+		string|null $applicationSlug = null,
+	): array {
+		if (is_string($selection) === true || $selection === null) {
+			$app       ??= $selection;
+			$selection   = null;
+		}
+
+		if (is_string($query) === true || $query === null) {
+			$applicationSlug ??= $query;
+			$query             = null;
+		}
+
+		if ($selection === null || [$organisation, $enabled, $app, $applicationSlug] !== [null, null, null, null]) {
+			$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation, enabled: $enabled);
+		}
+
+		if ($query === null || [$limit, $offset] !== [100, 0]) {
+			$query = new ListQuery(limit: $limit, offset: $offset);
+		}
+
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
