@@ -11554,3 +11554,4 @@ fix:stackiq:1946:c75ea65b	no change: branch already contains development; confli
 review:integriq:3542:cd5c8335	stale	session-20261114T221759-cd5c5678	2026-11-14T22:26:21Z
 verify:learniq:2507:edb22a18	2507 GREEN, 2521 GREEN, 2544 and 2547 CONFLICT in this tree; 0 new failures	session-20261114T214736-dd784d82	2026-11-14T22:26:54Z
 fix:shillinq:2977:56133b60	regenerated scoped pages, pushed dcb02193, REVERIFY; dunningNextRun vitest red is inherited from development	session-20261114T221743-dbe5c07e	2026-11-14T22:27:01Z
+fix:versioniq:718:d08cc176	development merged in cleanly, new head c0066590	session-20261114T214733-589f5bff	2026-11-14T22:27:12Z
