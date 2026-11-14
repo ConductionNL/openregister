@@ -9689,3 +9689,4 @@ verify:learniq:2497:024ae3b6	GREEN 2497; CONFLICT 2513 (tree only, l10n); 2538 s
 fix:hermiq:1753:89b097a4	conflict resolved, new head 8683a088, no new failures	session-20261114T144751-8958c054	2026-11-14T15:05:50Z
 fix:learniq:2520:aa7888d1	merged development (register 0.49.1, golden re-recorded); 1 inherited failure (he.json example set, red on development); new head 3a7f33845adaf7d06a5218c707c323a9b9fa1835	session-20261114T134654-82ca2be5	2026-11-14T15:05:57Z
 fix:hermiq:1725:c59e9eb8	conflict resolved, merged development; new head bdb02899; failures inherited from development	session-20261114T144801-36995162	2026-11-14T15:06:11Z
+fix:decidiq:2187:cfc69b33	no change: head cfc69b33 merges clean on current development; the ObjectListenerRegistrar.php conflict is only with unmerged #2169/#2173/#2177 and needs a development merge after they land	session-20261114T141737-e9e54940	2026-11-14T15:06:19Z
