@@ -3,6 +3,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TransitionNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\TransitionNodeInterface"
@@ -28,6 +29,23 @@
                 "action",
                 "data",
                 "object"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "action",
+                    "label": "Transition",
+                    "type": "text",
+                    "help": "The lifecycle action to run, such as \"submit\". Placeholders such as {{action}} are filled in from each item. The action's inputs are edited in the JSON pane as \"data\".",
+                    "required": true
+                },
+                {
+                    "key": "object",
+                    "label": "Object",
+                    "type": "text",
+                    "help": "Which object to move. Leave empty to move the item's own object; placeholders such as {{uuid}} are filled in from each item."
+                }
             ]
         },
         "validate": {
@@ -92,6 +110,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\LinkObjectNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\LinkObjectNodeInterface"
@@ -119,6 +138,36 @@
                 "data",
                 "relation",
                 "handoff"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "register",
+                    "label": "Register",
+                    "type": "select",
+                    "help": "Create mode: the register the new object is created in. Name a register and schema, or a handoff, not both.",
+                    "optionsFrom": "/apps/openregister/api/registers"
+                },
+                {
+                    "key": "schema",
+                    "label": "Schema",
+                    "type": "select",
+                    "help": "Create mode: the schema of the new object. Its properties are edited in the JSON pane as \"data\"; placeholders such as {{uuid}} are filled in from each item.",
+                    "optionsFrom": "/apps/openregister/api/schemas"
+                },
+                {
+                    "key": "relation",
+                    "label": "Link through property",
+                    "type": "text",
+                    "help": "Create mode: the property of the item's object that receives the new object's uuid. Leave empty to create without linking."
+                },
+                {
+                    "key": "handoff",
+                    "label": "Handoff",
+                    "type": "text",
+                    "help": "Handoff mode: the key of a handoff the item's schema declares. A handoff whose app is not installed fails the step."
+                }
             ]
         },
         "validate": {
@@ -178,6 +227,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ObjectReadNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ObjectReadNodeInterface"
@@ -206,6 +256,44 @@
                 "fanOut",
                 "limit",
                 "output"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "register",
+                    "label": "Register",
+                    "type": "select",
+                    "help": "The register the objects are read from.",
+                    "required": true,
+                    "optionsFrom": "/apps/openregister/api/registers"
+                },
+                {
+                    "key": "schema",
+                    "label": "Schema",
+                    "type": "select",
+                    "help": "The schema of the objects to read. The filters are edited in the JSON pane as property/value pairs; placeholders such as {{uuid}} are filled in from each item, and one that comes out empty fails the step.",
+                    "required": true,
+                    "optionsFrom": "/apps/openregister/api/schemas"
+                },
+                {
+                    "key": "fanOut",
+                    "label": "One item per object",
+                    "type": "boolean",
+                    "help": "Emit each object as its own item, so the next steps act on every one. Off, the matches land as one list on the item."
+                },
+                {
+                    "key": "limit",
+                    "label": "At most this many objects",
+                    "type": "number",
+                    "help": "Defaults to 100, and is capped at 1000."
+                },
+                {
+                    "key": "output",
+                    "label": "Put the list under",
+                    "type": "text",
+                    "help": "Without \"One item per object\": the item field the list lands in. Defaults to \"objects\"."
+                }
             ]
         },
         "validate": {
@@ -471,6 +559,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\LoopNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\LoopNodeInterface"
@@ -494,6 +583,17 @@
         "configKeys": {
             "returned": [
                 "batchSize"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "batchSize",
+                    "label": "Batch size",
+                    "type": "number",
+                    "help": "How many items each batch carries under \"items\". The next step runs once per batch instead of once per item.",
+                    "required": true
+                }
             ]
         },
         "validate": {

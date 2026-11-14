@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -47,7 +48,9 @@ use UnexpectedValueException;
 /**
  * Tags each item with the output branch it should go to.
  */
-class RouterNode extends LogicNodeBase implements IFlowNode, RouterNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class RouterNode extends LogicNodeBase implements IFlowNode, RouterNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree,
+	IFlowNodeConfigForm
+{
 	/**
 	 * The step type.
 	 *
@@ -100,6 +103,31 @@ class RouterNode extends LogicNodeBase implements IFlowNode, RouterNodeInterface
 	public function configKeys(): array {
 		return ['rules', 'default'];
 	}//end configKeys()
+
+	/**
+	 * The fallback output of a route step; the rules stay in the JSON pane.
+	 *
+	 * `rules` is a list of `{condition, output}` pairs, a keyed structure the
+	 * field vocabulary cannot describe, so it is edited in the JSON pane.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'default',
+				'label' => $this->l10n->t('Fallback output'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'The output an item takes when no rule matches; leave empty to drop such items. The rules themselves are edited in the '
+						. 'JSON pane: a list of {"condition": <flow expression (JSONLogic)>, "output": <output name>}, tried in order.'
+				),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a router with no rules — it would route nothing.

@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
@@ -48,7 +49,9 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
  */
-class ActionInputsNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, ActionInputsNodeInterface {
+class ActionInputsNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, ActionInputsNodeInterface,
+	IFlowNodeConfigForm
+{
 
 	/**
 	 * The step type.
@@ -111,6 +114,23 @@ class ActionInputsNode extends LogicNodeBase implements IFlowNode, IFlowNodeConf
 	public function configKeys(): array {
 		return [];
 	}//end configKeys()
+
+	/**
+	 * An action-inputs step takes no configuration, and says so.
+	 *
+	 * An empty form, not an absent one: the editor shows "this node takes no
+	 * configuration" instead of a JSON pane over keys nothing reads.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		// The step's configKeys() is empty: the step reads the action's inputs from the run,
+		// not from its own configuration.
+		return [];
+	}//end configForm()
 
 	/**
 	 * Nothing to validate.
