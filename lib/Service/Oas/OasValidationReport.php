@@ -67,9 +67,14 @@ final class OasValidationReport implements OasValidationReportInterface {
 	public const CODE_RELATIVE_SERVER_URL = 'relative_server_url';
 
 	/**
+	 * A finding of an NLGov API Design Rule; the issue's `rule` names which.
+	 */
+	public const CODE_NLGOV_RULE = 'nlgov_rule';
+
+	/**
 	 * Issues collected during validation.
 	 *
-	 * @var list<array{path: string, message: string, code: string, severity: string}>
+	 * @var list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	private array $issues = [];
 
@@ -84,12 +89,17 @@ final class OasValidationReport implements OasValidationReportInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
 	public function add(OasIssue $issue, string $severity): void {
-		$this->issues[] = [
+		$entry = [
 			'path' => $issue->path,
 			'message' => $issue->message,
 			'code' => $issue->code,
 			'severity' => $severity,
 		];
+		if ($issue->rule !== null) {
+			$entry['rule'] = $issue->rule;
+		}
+
+		$this->issues[] = $entry;
 	}//end add()
 
 	/**
@@ -134,7 +144,7 @@ final class OasValidationReport implements OasValidationReportInterface {
 	/**
 	 * Returns every issue regardless of severity.
 	 *
-	 * @return list<array{path: string, message: string, code: string, severity: string}>
+	 * @return list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	public function getIssues(): array {
 		return $this->issues;
@@ -143,7 +153,7 @@ final class OasValidationReport implements OasValidationReportInterface {
 	/**
 	 * Returns only the error-severity issues.
 	 *
-	 * @return list<array{path: string, message: string, code: string, severity: string}>
+	 * @return list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	public function getErrors(): array {
 		return $this->filterBySeverity(severity: self::SEVERITY_ERROR);
@@ -152,7 +162,7 @@ final class OasValidationReport implements OasValidationReportInterface {
 	/**
 	 * Returns only the warning-severity issues.
 	 *
-	 * @return list<array{path: string, message: string, code: string, severity: string}>
+	 * @return list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	public function getWarnings(): array {
 		return $this->filterBySeverity(severity: self::SEVERITY_WARNING);
@@ -161,7 +171,7 @@ final class OasValidationReport implements OasValidationReportInterface {
 	/**
 	 * Returns only the auto-corrected issues.
 	 *
-	 * @return list<array{path: string, message: string, code: string, severity: string}>
+	 * @return list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	public function getAutoCorrections(): array {
 		return $this->filterBySeverity(severity: self::SEVERITY_AUTO_CORRECTED);
@@ -239,7 +249,7 @@ final class OasValidationReport implements OasValidationReportInterface {
 	 *
 	 * @param string $severity One of the SEVERITY_* constants.
 	 *
-	 * @return list<array{path: string, message: string, code: string, severity: string}>
+	 * @return list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	private function filterBySeverity(string $severity): array {
 		return array_values(

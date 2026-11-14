@@ -113,6 +113,7 @@ describe('ConfigurationCard imported', () => {
 			'Edit',
 			'Export',
 			'Update Published',
+			'Publish Configuration to GitLab',
 			'Delete',
 		])
 	})
@@ -138,6 +139,21 @@ describe('ConfigurationCard imported', () => {
 			expect.objectContaining({ id: 3 }),
 		)
 		expect(navigationStore.setModal).toHaveBeenCalledWith('publishConfiguration')
+	})
+
+	it('publishes a local configuration to GitLab through its own dialog', () => {
+		const wrapper = mountCard({ id: 3, title: 'L', sourceType: 'manual' })
+		const label = Object.keys(actions(wrapper)).find((name) => name.includes('Publish Configuration to GitLab'))
+		actions(wrapper)[label].run()
+		expect(configurationStore.setConfigurationItem).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 3 }),
+		)
+		expect(navigationStore.setModal).toHaveBeenCalledWith('publishConfigurationGitLab')
+	})
+
+	it('offers no GitLab publish for an external configuration', () => {
+		const wrapper = mountCard({ id: 2, title: 'Ext', sourceType: 'github', syncEnabled: true, localVersion: '1', remoteVersion: '1' })
+		expect(Object.keys(actions(wrapper)).some((name) => name.includes('GitLab'))).toBe(false)
 	})
 
 	it('marks an external configuration and its sync state', () => {

@@ -3257,6 +3257,7 @@ class RenderObject implements RenderObjectInterface {
 		$annotations->attachDecision(entity: $run->entity);
 		$this->applyRetentionClocks(entity: $run->entity);
 		$annotations->attachExternalLinks(entity: $run->entity, schema: $run->schema);
+		$annotations->attachKey(entity: $run->entity, schema: $run->schema);
 	}//end applyRenderMarkers()
 
 	/**

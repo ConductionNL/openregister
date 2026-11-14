@@ -16,6 +16,7 @@ use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\ICallFlowNode;
 use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use PHPUnit\Framework\TestCase;
 
@@ -37,7 +38,7 @@ class RegistryStepDispatcherResumeTest extends TestCase {
 	 * @return IFlowNode The stub.
 	 */
 	private function node(callable $onExecute): IFlowNode {
-		$node = $this->createMock(IFlowNode::class);
+		$node = $this->createMock(ICallFlowNode::class);
 		$node->method('execute')->willReturnCallback(
 			static fn (FlowNodeCall $call): array => $onExecute($call->items, $call->config, $call->context)
 		);

@@ -391,7 +391,7 @@ export default {
 		 * Set the active property for editing
 		 *
 		 * @param {string|null} key - The key to process
-		 * @spec exclude UI plumbing — toggles active-property selection state
+		 * @spec openspec/changes/modelling-stated-requirements/specs/entity-management-modals/spec.md#requirement-a-schemas-fields-are-built-in-a-form-req-msr-004
 		 * @return {void}
 		 */
 		setActiveProperty(key) {
