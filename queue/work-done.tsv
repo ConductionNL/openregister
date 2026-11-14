@@ -8875,3 +8875,4 @@ review:openregister:10491:5f5d6b9f	APPROVE: tests only; Repair, Architecture, Ru
 verify:pipelinq:3713:fcf4b005	3713 GREEN; unit 7890->7902 OK, vitest 4910 passed	session-20261114T092645-411bc5aa	2026-11-14T10:44:36Z
 build4:openregister:modelling-property-index-switch:c2	PR #10519: 2.1 index switches + 2.2 indexes tab (code+unit/jest); e2e and 34 locale translations left (2.3)	session-20261114T095639-2f6d727a	2026-11-14T10:45:06Z
 fix:pipelinq:3743:871e47d5	failed: branch already up to date with development (871e47d5 unchanged); conflicts only with unmerged tree PR #3713 (l10n en/nl .js/.json), resolvable once #3713 lands on development	session-20261114T092645-411bc5aa	2026-11-14T10:45:17Z
+review:openregister:10485:76f96c23	APPROVE	session-20261114T092645-afb9b140	2026-11-14T10:45:32Z
