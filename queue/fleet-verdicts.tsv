@@ -8206,3 +8206,7 @@ learniq	2514	e9eecf6c6c4007f55ef454faa4b5511c8d62a16b	REVERIFY	worker-31	merged 
 learniq	2488	8c0aeabe5e6e71833ff9193a003938cb8942e664	REVERIFY	worker-45	merged development, resolved register conflict (Enrolment 0.5.0, register 0.50.0), added job-title to the new Regulation enum test; unit 6713 tests, 1 failure inherited from development (HigherEducationExampleSetTest); new head 7f1b19e05a34e38974f3122845c54a11d49140a0, verify it
 portaliq	2449	67b3b6ab8d869918f526683f2c463da1ce5b5922	REVERIFY	worker-49	merged development in: 10 conflicts resolved keeping both sides (imports, ctor params withdrawn+siteIcon, check:specs, l10n 3-way union), register 0.111.0 / portal 0.30.0 past development's 0.110.0; PHPUnit 5263 OK, node specs 4 inherited fails only; new head f817c3532f8ac05512e1b557b0bd9a84ae7e9757, verify it
 filinq	2070	cc02ae1201069f52a0c048cfd4c73d73070291ea	GREEN	worker-53	unit 6727 (baseline 6695, 0 failures), vitest 751 passed, no new failures; builds intake-pdf-password-removal as specified, file resolved in the session user's folder
+filinq	2072	68ef821e46429ab7d7171cdcaf50936b2cb5a6a2	CONFLICT	worker-53	conflicts with #2070 on the tree (register files)
+filinq	2087	c17b34e0c221f972807740ca0d1159c267f1a3f3	CONFLICT	worker-53	conflicts on the tree after #2070
+filinq	2088	dd674209529362b92a2df4efef4294382603d356	CONFLICT	worker-53	conflicts on the tree after #2070
+filinq	2098	ee9aee9cbe8b6c6c0a521d32cd3021c6fd4b3875	CONFLICT	worker-53	conflicts on the tree after #2070
