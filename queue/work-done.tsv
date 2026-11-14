@@ -11520,3 +11520,4 @@ fix:stackiq:1945:6fb762aa	no change: branch already contains origin/development 
 verify:learniq:2513:a7f170d2	2513 GREEN; 2523, 2536 CONFLICT after 2513	session-20261114T211800-2a24a3a9	2026-11-14T22:21:11Z
 fix:buildiq:1652:ef6d7d01	development merged in, new head b3c39fa0	session-20261114T221817-a815ec70	2026-11-14T22:21:32Z
 fix:decidiq:2191:4d6f144b	clean on development; conflict is with a sibling PR; merged development, new head ccb1264	session-20261114T204759-5dc9dba7	2026-11-14T22:21:42Z
+fix:learniq:2536:a9efa896	failed: up to date with development; conflicts only with unmerged #2513 (routes, l10n, ContractBindings, portal goldens), resolve after #2513 lands	session-20261114T211800-2a24a3a9	2026-11-14T22:21:48Z
