@@ -11251,3 +11251,4 @@ build:humaniq:self-service-mobile:c3	partial: PR #1149 unchanged (head 2fbe6934)
 review:opencatalogi:2655:cd5c3cea	stale: head moved to 80535d6f	session-20261114T204802-89dfe85e	2026-11-14T21:41:19Z
 verify:buildiq:1621:19e3b5dd	1621 GREEN, 1651 GREEN; 1649 skipped (head moved to 64e6ca03)	session-20261114T204750-c1efccdb	2026-11-14T21:41:59Z
 merge:portaliq:2444:a39fe8e6	merge3 tree of 6 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T21:42:14Z
+merge:portaliq:2498:e821cc80	merge3 tree of 6 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T21:42:18Z
