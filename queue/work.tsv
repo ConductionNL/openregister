@@ -9628,3 +9628,12 @@ review:openregister:10489:f689b3f0	review	openregister	main	10489	sha=f689b3f07f
 review:openregister:10490:92e99c4b	review	openregister	main	10490	sha=92e99c4bf094656b3f687b209b951736e101dd81;last_approved=;title=feat(openregister): build incremental-sync-for-api-consumers	2026-11-14T10:20:27Z
 merge:dossiq:6459:aef672b2	merge	dossiq	development	development	prs=6459@6d6b896bd133b1b0711e3be0561e3b76567d992a	2026-11-14T10:20:27Z
 merge:pipelinq:3830:ca98ebb0	merge	pipelinq	development	development	prs=3830@eed4b55311a70a28dc7ecb87e59c02721d1f1cb5	2026-11-14T10:20:27Z
+review:openregister:10490:49eab21c	review	openregister	main	10490	sha=49eab21c88ef16cc4b2c79dff05ba08f9624d874;last_approved=;title=feat(openregister): build incremental-sync-for-api-consumers	2026-11-14T10:25:21Z
+review:openregister:10491:5f5d6b9f	review	openregister	main	10491	sha=5f5d6b9f168edf8d2997a38f649aadf14c5807df;last_approved=;title=feat(openregister): build flow-object-attribution	2026-11-14T10:25:21Z
+review:openregister:10492:49884d64	review	openregister	main	10492	sha=49884d64c116f553c6f2e9d3a20610ba70e02cac;last_approved=;title=feat(openregister): build capability-rows-stated-requirements	2026-11-14T10:25:21Z
+review:openregister:10493:4449539d	review	openregister	main	10493	sha=4449539d8de33dd69e44d318860b0ff39d95cdda;last_approved=;title=feat(openregister): build operate-load-shedding	2026-11-14T10:25:21Z
+review:openregister:10494:a75ee390	review	openregister	main	10494	sha=a75ee390809da26935348016c1505527864f9022;last_approved=;title=feat(openregister): build anonymisation-discloses-itself	2026-11-14T10:25:21Z
+review:openregister:10495:e2ea184b	review	openregister	main	10495	sha=e2ea184b0d5a01bb5458b4a902ac2003f684e7ae;last_approved=;title=feat(openregister): build object-event-sync-async-split	2026-11-14T10:25:21Z
+verify:pipelinq:3713:fcf4b005	verify	pipelinq	development	merge	prs=3713@61678b3913763579be384e50794c927d6d38b2c3	2026-11-14T10:25:21Z
+merge:pipelinq:3707:789655b8	merge	pipelinq	development	development	prs=3707@153dff0e7076d9a6976fbeec6a000b2c589dcb50	2026-11-14T10:25:21Z
+merge:keepiq:1794:1e2c35ed	merge	keepiq	development	development	prs=1794@69bd0d786cea715865e932ad95c9a7f58936c50b	2026-11-14T10:25:21Z
