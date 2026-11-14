@@ -2879,3 +2879,4 @@ shillinq	3074	dac382bad7003ab69e20421ba3e402e6858f40db	MERGED	merge3	GATE OK sbo
 shillinq	3075	d4610beea277313c58f452fc167fa67569f2820f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.14
 filinq	2123	890c7dc26ef8ef35ef44fc952586c0ea0545e352	RED	merge3	GATE RED floor: overall: 4.35 -> 4.33; unit_complexity: 4.48 -> 4.40
 portaliq	2437	4fe52aadf12e8d05af3b9c7ffcad928a6ef91e59	RED	merge3	GATE RED checker floor: testcoderatio: pass -> warn; testcoderatio stars: 4 -> 3
+pipelinq	3818	2161a99c58f94a856d9b5ba04e9ebd72330e917c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
