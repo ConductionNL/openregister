@@ -336,6 +336,28 @@ class OasService implements OasServiceInterface {
 	];
 
 	/**
+	 * The condition tree of a collection operation: AND/OR groups of the same
+	 * filters the flat query parameters take, as URL-encoded JSON. A reserved
+	 * parameter, never a property filter.
+	 *
+	 * @var array<string, mixed>
+	 *
+	 * @spec openspec/changes/list-query-condition-groups/specs/zoeken-filteren/spec.md
+	 */
+	private const WHERE_QUERY_PARAMETER = [
+		'name' => '_where',
+		'in' => 'query',
+		'required' => false,
+		'description' => 'A condition tree as JSON: a group {"type": "AND"|"OR", "children": [...]} whose children are groups or '
+			. 'leaves {"field", "operator", "value"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, '
+			. 'notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or '
+			. 'encrypted property, is refused with 400 and the JSON path of the node.',
+		'schema' => ['type' => 'string'],
+		'example' => '{"type":"OR","children":[{"field":"place","operator":"eq","value":"Zuiddrecht"},'
+			. '{"field":"industry","operator":"isnull","value":true}]}',
+	];
+
+	/**
 	 * What the RBAC declarations mean for the document.
 	 *
 	 * @var OasRbacAnnotator
@@ -1114,7 +1136,7 @@ class OasService implements OasServiceInterface {
 			return self::COMMON_QUERY_PARAMETERS;
 		}
 
-		$parameters = [...self::COMMON_QUERY_PARAMETERS, self::SEARCH_QUERY_PARAMETER];
+		$parameters = [...self::COMMON_QUERY_PARAMETERS, self::SEARCH_QUERY_PARAMETER, self::WHERE_QUERY_PARAMETER];
 		if ($schema === null) {
 			return $parameters;
 		}

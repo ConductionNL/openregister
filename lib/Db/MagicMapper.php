@@ -1438,9 +1438,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			);
 
 			return $count;
-		} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
+		} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
 			// Fail loud (design intent): never degrade a filter on an encrypted
-			// property to a silent count of 0.
+			// property, or a refused `_where` tree, to a silent count of 0.
 			throw $e;
 		} catch (Exception $e) {
 			$this->logger->error(
@@ -10447,8 +10447,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					register: $register,
 					schema: $schema
 				);
-			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
-				// Fail loud (design intent): a filter on an encrypted property must
+			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
+				// Fail loud (design intent): a filter on an encrypted property, or a
+				// refused `_where` tree (answered 400 with its node path), must
 				// reach the caller as a clear error, never a swallowed warning that
 				// degrades into an empty/zero result.
 				throw $e;
@@ -10645,9 +10646,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					register: $register,
 					schema: $schema
 				);
-			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
+			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
 				// Fail loud (design intent): never degrade a filter on an encrypted
-				// property to a silent count of 0.
+				// property, or a refused `_where` tree, to a silent count of 0.
 				throw $e;
 			} catch (\Exception $e) {
 				$this->logger->warning(
@@ -11282,9 +11283,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				register: $register,
 				schema: $schema
 			);
-		} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
+		} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
 			// Fail loud: never silently drop a schema from the total because its
-			// count hit an encrypted-field filter.
+			// count hit an encrypted-field filter or a refused `_where` tree.
 			throw $e;
 		} catch (\Exception $e) {
 			$this->logger->warning(
