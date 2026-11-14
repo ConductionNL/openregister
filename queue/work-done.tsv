@@ -10839,3 +10839,4 @@ verify:shillinq:3048:d0a8b351	3048 GREEN, 3055 CONFLICT, 3069 GREEN, 3078 GREEN	
 build:launchpad:embedded-analytics:c2	partial: PR #1225 builds task 3 (JWT signing RS256/ES256, kid, rotation), task 2 exceptions, task 31 in part (12 tests, suite 4136->4148, 1 inherited failure); left tasks 1, 2 mappers, 4, 6, 7 wiring, 9-30, 32-40 (worker context full)	session-20261114T191727-68650a56	2026-11-14T20:18:04Z
 fix:decidiq:2194:ea9b8658	l10n conflict resolved (keys moved off the catalogue start), merges with siblings; new head 17b2a973b9	session-20261114T194935-f789346b	2026-11-14T20:18:36Z
 merge:filinq:2069:bf3c9d37	merge3 tree of 2 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 1; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T20:18:52Z
+review:filinq:2085:27ce4a24	stale	session-20261114T201754-5ed288ac	2026-11-14T20:18:46Z
