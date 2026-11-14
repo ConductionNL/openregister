@@ -9158,3 +9158,4 @@ pipelinq	3829	53db97a2a57d9b2787f93d77e5619ebe0a00d334	GREEN	worker-51	phpunit 8
 buildiq	1621	72ff5a22e09f4fdb94d6e705b2e039cbb29c6511	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.41 -> 3.39
 buildiq	1624	0e334f6fbc199ebb47f933485ecb5504bb256c8e	RED	merge3:merge-gate	GATE RED absolute floor: buildiq maintainability 3.88 after merge is below its floor 3.91
 buildiq	1625	04a5e4fe063ed3c67d9deafe10a0ade754a65b26	RED	merge3:merge-gate	GATE RED checker floor: owaspsecurecoding: pass -> warn; owaspsecurecoding stars: 5 -> 3; score: 100 -> 96
+buildiq	1583	d8660734e83e88653bc8dcf0369466fa11ef4f92	REVERIFY	merge3	head moved since the verdict (was f3ae307edfff4e5e9fe6eb1119cdf730c2df4eff, 640edaa8:GREEN,f3ae307e:GREEN); verify the new head
