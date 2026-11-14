@@ -7662,3 +7662,4 @@ versioniq	723	b706884d8402acd571b02be23a7cf03f1fe411e4	CONFLICT	worker-21	clean 
 versioniq	724	51a01f6bdc21e813a6626c466b7a6a237a21e641	GREEN	worker-21	build matches its change specs; tree(717,719,720,721,724) 1698 tests, same 2 inherited, no new; vitest 2989 OK; baseline 1643 tests (tests/phpunit-unit-only.xml), 2 inherited failures; vitest 2960
 versioniq	725	bcf2a49601908906ff4c034cd2196467a8aaed2f	CONFLICT	worker-21	clean on development; conflicts with tree in appinfo/info.xml and src/App.vue
 versioniq	725	bcf2a49601908906ff4c034cd2196467a8aaed2f	GREEN	worker-13	php unit 1726 on tree (baseline 1643, 2 inherited golden failures, no new); vitest 2985 OK; build advisories-per-app-detail per its specs
+versioniq	726	7825fc291bdffb285bcf9c89bf4407c9fd791a85	GREEN	worker-13	php unit 1726 on tree (baseline 1643, 2 inherited golden failures, no new); vitest 2985 OK; build install-force-incompatible per its specs, force-enable admin + password confirmed
