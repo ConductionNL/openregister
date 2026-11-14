@@ -1,32 +1,32 @@
 {
  "app": "integriq",
- "commit": "81441e2bad4e4e0b4e76154295ff8bc242131182",
- "measured_at": "2026-11-13T18:57:29Z",
+ "commit": "b36e19bcdeefc41c117bd0f31492d532d45714c3",
+ "measured_at": "2026-11-14T15:42:43Z",
  "php": {
   "tool": "pcov",
-  "pct": 93.54,
-  "statements": 64342,
-  "covered": 60184,
+  "pct": 94.65,
+  "statements": 67366,
+  "covered": 63763,
   "dirs": {
    "lib/Adapters/": [
-    151,
-    129
+    181,
+    160
    ],
    "lib/Adapters/Berichtenbox/": [
     393,
     389
    ],
    "lib/Adapters/Digikoppeling/": [
-    315,
-    313
+    525,
+    489
    ],
    "lib/Adapters/LearningMaterial/": [
     418,
-    413
+    417
    ],
    "lib/Adapters/Lvs/": [
-    28,
-    28
+    40,
+    40
    ],
    "lib/Adapters/Oso/": [
     26,
@@ -41,16 +41,20 @@
     2
    ],
    "lib/Adapters/Roster/": [
-    2,
-    2
+    21,
+    21
    ],
    "lib/Adapters/Slo/": [
     743,
     736
    ],
+   "lib/Adapters/Support/": [
+    44,
+    43
+   ],
    "lib/Adapters/Swv/": [
-    8,
-    8
+    26,
+    26
    ],
    "lib/Adapters/UwlrEduV/": [
     28,
@@ -69,12 +73,12 @@
     10
    ],
    "lib/Auth/Idp/": [
-    591,
-    583
+    627,
+    617
    ],
    "lib/BackgroundJob/": [
-    907,
-    901
+    918,
+    912
    ],
    "lib/BackgroundJob/ExchangeRate/": [
     144,
@@ -85,8 +89,8 @@
     64
    ],
    "lib/Broker/": [
-    112,
-    97
+    145,
+    129
    ],
    "lib/Broker/Transport/": [
     244,
@@ -96,13 +100,17 @@
     901,
     901
    ],
+   "lib/Command/Integration/": [
+    163,
+    155
+   ],
    "lib/Connectors/": [
     276,
     272
    ],
    "lib/Controller/": [
-    6383,
-    5925
+    6584,
+    6264
    ],
    "lib/Db/": [
     187,
@@ -110,19 +118,19 @@
    ],
    "lib/Directory/": [
     600,
-    594
+    600
    ],
    "lib/Event/": [
-    424,
-    408
+    478,
+    470
    ],
    "lib/EventListener/": [
-    1377,
-    1240
+    1432,
+    1295
    ],
    "lib/Exception/": [
-    55,
-    54
+    56,
+    55
    ],
    "lib/Expression/": [
     115,
@@ -144,9 +152,13 @@
     78,
     73
    ],
+   "lib/Http/": [
+    54,
+    52
+   ],
    "lib/Intake/": [
-    436,
-    431
+    527,
+    508
    ],
    "lib/Intake/Adapter/": [
     372,
@@ -190,7 +202,7 @@
    ],
    "lib/Outbound/Identity/": [
     1250,
-    1194
+    1226
    ],
    "lib/PropertySource/": [
     257,
@@ -205,8 +217,8 @@
     229
    ],
    "lib/Repair/": [
-    1271,
-    1174
+    1288,
+    1219
    ],
    "lib/Rule/": [
     121,
@@ -221,8 +233,8 @@
     7
    ],
    "lib/Service/": [
-    22731,
-    20278
+    23187,
+    21074
    ],
    "lib/Service/Adapter/": [
     48,
@@ -233,8 +245,8 @@
     75
    ],
    "lib/Service/Adapter/DocumentCms/": [
-    57,
-    51
+    101,
+    95
    ],
    "lib/Service/Adapter/EndpointWorkspace/": [
     73,
@@ -253,8 +265,8 @@
     12
    ],
    "lib/Service/Call/": [
-    4,
-    4
+    5,
+    5
    ],
    "lib/Service/Cardfeed/": [
     70,
@@ -273,8 +285,8 @@
     361
    ],
    "lib/Service/Consumer/": [
-    158,
-    151
+    354,
+    326
    ],
    "lib/Service/Datasource/": [
     107,
@@ -290,11 +302,15 @@
    ],
    "lib/Service/Dso/": [
     762,
-    737
+    759
+   ],
+   "lib/Service/Endpoint/": [
+    149,
+    136
    ],
    "lib/Service/Event/": [
-    32,
-    32
+    80,
+    77
    ],
    "lib/Service/Exchange/": [
     968,
@@ -310,11 +326,11 @@
    ],
    "lib/Service/Helper/": [
     308,
-    299
+    300
    ],
    "lib/Service/Intake/": [
-    332,
-    327
+    341,
+    336
    ],
    "lib/Service/Integration/": [
     136,
@@ -328,13 +344,17 @@
     166,
     166
    ],
+   "lib/Service/Jwks/": [
+    110,
+    107
+   ],
    "lib/Service/Kiss/": [
-    551,
-    428
+    658,
+    639
    ],
    "lib/Service/Lti/": [
-    1344,
-    1298
+    1252,
+    1221
    ],
    "lib/Service/Mail/": [
     692,
@@ -353,12 +373,12 @@
     364
    ],
    "lib/Service/Mtls/": [
-    166,
-    148
+    194,
+    176
    ],
    "lib/Service/Objecten/": [
     700,
-    679
+    699
    ],
    "lib/Service/OpenFormulieren/": [
     93,
@@ -377,8 +397,8 @@
     189
    ],
    "lib/Service/Payment/": [
-    118,
-    117
+    267,
+    265
    ],
    "lib/Service/Peppol/": [
     78,
@@ -400,9 +420,17 @@
     116,
     116
    ],
+   "lib/Service/Registration/": [
+    274,
+    249
+   ],
    "lib/Service/Registry/": [
     289,
     278
+   ],
+   "lib/Service/Regression/": [
+    32,
+    32
    ],
    "lib/Service/Rod/": [
     182,
@@ -416,13 +444,17 @@
     1045,
     1021
    ],
+   "lib/Service/ServiceFetch/": [
+    235,
+    216
+   ],
    "lib/Service/Sms/": [
-    214,
-    211
+    424,
+    404
    ],
    "lib/Service/Stuf/": [
-    116,
-    112
+    135,
+    131
    ],
    "lib/Service/StufZkn/": [
     1950,
@@ -499,13 +531,17 @@
   }
  },
  "js": {
-  "pct": 92.11,
-  "statements": 6734,
-  "covered": 6203,
+  "pct": 89.78,
+  "statements": 7204,
+  "covered": 6468,
   "dirs": {
    "src/": [
-    44,
+    95,
     44
+   ],
+   "src/assets/": [
+    0,
+    0
    ],
    "src/components/": [
     270,
@@ -535,6 +571,10 @@
     51,
     51
    ],
+   "src/manifest.d/": [
+    38,
+    0
+   ],
    "src/mixins/": [
     263,
     263
@@ -552,7 +592,7 @@
     28
    ],
    "src/modals/Endpoint/": [
-    1,
+    41,
     1
    ],
    "src/modals/EventDelivery/": [
@@ -572,7 +612,7 @@
     73
    ],
    "src/modals/Rule/": [
-    77,
+    239,
     77
    ],
    "src/modals/Subscription/": [
@@ -585,7 +625,7 @@
    ],
    "src/modals/v2/": [
     1483,
-    1233
+    1390
    ],
    "src/store/": [
     31,
@@ -596,7 +636,7 @@
     124
    ],
    "src/views/Approvals/": [
-    75,
+    96,
     68
    ],
    "src/views/EventDelivery/": [
@@ -604,16 +644,32 @@
     36
    ],
    "src/views/ExecutionTrace/": [
-    19,
+    71,
     19
+   ],
+   "src/views/Flow/": [
+    1,
+    0
    ],
    "src/views/Migration/": [
     42,
     40
    ],
+   "src/views/NotificatiesAbonnement/": [
+    38,
+    0
+   ],
+   "src/views/Operations/": [
+    21,
+    0
+   ],
+   "src/views/RecipientOptOuts/": [
+    24,
+    0
+   ],
    "src/views/Rule/": [
     445,
-    401
+    435
    ],
    "src/views/Rule/actionForms/": [
     421,
@@ -621,11 +677,11 @@
    ],
    "src/views/Synchronization/": [
     896,
-    822
+    875
    ],
    "src/views/admin/": [
-    512,
-    490
+    534,
+    511
    ],
    "src/views/wrappers/": [
     219,
