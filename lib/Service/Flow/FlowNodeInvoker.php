@@ -38,6 +38,8 @@ final class FlowNodeInvoker {
 	 * Constructor
 	 *
 	 * @param ImplementationForm $form Tells the two forms apart.
+	 *
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function __construct(
 		private readonly ImplementationForm $form=new ImplementationForm(),
@@ -53,6 +55,8 @@ final class FlowNodeInvoker {
 	 * @return array The output items.
 	 *
 	 * @throws RuntimeException When the node declares no execute().
+	 *
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function execute(IFlowNode $node, FlowNodeCall $call): array {
 		if ($node instanceof ICallFlowNode) {

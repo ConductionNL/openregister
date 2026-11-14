@@ -38,6 +38,8 @@ final class BulkActionInvoker {
 	 * Constructor
 	 *
 	 * @param ImplementationForm $form Tells the two forms apart.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function __construct(
 		private readonly ImplementationForm $form=new ImplementationForm(),
@@ -53,6 +55,8 @@ final class BulkActionInvoker {
 	 * @return BulkActionResult What happened, or what would happen.
 	 *
 	 * @throws RuntimeException When the action declares no apply().
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function apply(BulkActionInterface $action, BulkStep $step): BulkActionResult {
 		if ($action instanceof StepBulkActionInterface) {

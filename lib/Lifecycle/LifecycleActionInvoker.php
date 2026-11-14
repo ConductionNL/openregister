@@ -38,6 +38,8 @@ final class LifecycleActionInvoker {
 	 * Constructor
 	 *
 	 * @param ImplementationForm $form Tells the two forms apart.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ImplementationForm $form=new ImplementationForm(),
@@ -53,6 +55,8 @@ final class LifecycleActionInvoker {
 	 * @return array<string, mixed> The object payload the handler returned.
 	 *
 	 * @throws RuntimeException When the handler declares no execute().
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function execute(LifecycleActionInterface $action, LifecycleActionContext $context): array {
 		if ($action instanceof ContextLifecycleActionInterface) {

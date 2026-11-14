@@ -40,6 +40,8 @@ interface StepBulkActionInterface extends BulkActionInterface {
 	 * @param BulkStep $step The object, the job's parameters, rehearsal or commit, and the actor.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function apply(BulkStep $step): BulkActionResult;
 }//end interface

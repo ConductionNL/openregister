@@ -60,6 +60,8 @@ final class ImplementationForm {
 	 * @param class-string $parameterClass The parameter object's class.
 	 *
 	 * @return bool True for the parameter-object form.
+	 *
+	 * @spec exclude Compatibility plumbing for extension-point signatures, not a capability of its own
 	 */
 	public function takesObject(object $implementer, string $method, string $parameterClass): bool {
 		$key = $implementer::class.'::'.$method.'('.$parameterClass.')';

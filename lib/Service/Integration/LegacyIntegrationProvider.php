@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Integration;
  *
  * @deprecated Implement RefIntegrationProvider.
  *
- * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-1
+ * @spec openspec/specs/integration-registry/spec.md
  */
 interface LegacyIntegrationProvider extends IntegrationProvider {
 	/**
@@ -41,6 +41,8 @@ interface LegacyIntegrationProvider extends IntegrationProvider {
 	 * @param array<string,mixed> $filters  Optional list filters.
 	 *
 	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters=[]): array;
 
@@ -53,6 +55,8 @@ interface LegacyIntegrationProvider extends IntegrationProvider {
 	 * @param string $entityId Linked-thing id.
 	 *
 	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function get(string $register, string $schema, string $objectId, string $entityId): array;
 
@@ -65,6 +69,8 @@ interface LegacyIntegrationProvider extends IntegrationProvider {
 	 * @param array<string,mixed> $payload  New linked-thing fields.
 	 *
 	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array;
 
@@ -78,6 +84,8 @@ interface LegacyIntegrationProvider extends IntegrationProvider {
 	 * @param array<string,mixed> $payload  Update payload.
 	 *
 	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array;
 
@@ -90,6 +98,8 @@ interface LegacyIntegrationProvider extends IntegrationProvider {
 	 * @param string $entityId Linked-thing id.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void;
 }//end interface

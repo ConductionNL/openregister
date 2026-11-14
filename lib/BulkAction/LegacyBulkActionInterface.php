@@ -44,6 +44,8 @@ interface LegacyBulkActionInterface extends BulkActionInterface {
 	 * @param IUser|null           $actor      The user the job runs as.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor=null): BulkActionResult;
 }//end interface

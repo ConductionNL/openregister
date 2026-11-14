@@ -35,7 +35,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
  * where the current form takes one ObjectRef; the remaining arguments are
  * the same in both.
  *
- * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-1
+ * @spec openspec/specs/integration-registry/spec.md
  */
 final class IntegrationProviderInvoker {
 
@@ -43,6 +43,8 @@ final class IntegrationProviderInvoker {
 	 * Constructor
 	 *
 	 * @param ImplementationForm $form Tells the two forms apart.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function __construct(
 		private readonly ImplementationForm $form=new ImplementationForm(),
@@ -59,6 +61,8 @@ final class IntegrationProviderInvoker {
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @throws NotImplementedException When the provider declares no list().
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function list(IntegrationProvider $provider, ObjectRef $ref, array $filters=[]): array {
 		return $this->call(provider: $provider, operation: 'list', ref: $ref, arguments: [$filters]);
@@ -74,6 +78,8 @@ final class IntegrationProviderInvoker {
 	 * @return array<string,mixed>
 	 *
 	 * @throws NotImplementedException When the provider declares no get().
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function get(IntegrationProvider $provider, ObjectRef $ref, string $entityId): array {
 		return $this->call(provider: $provider, operation: 'get', ref: $ref, arguments: [$entityId]);
@@ -89,6 +95,8 @@ final class IntegrationProviderInvoker {
 	 * @return array<string,mixed>
 	 *
 	 * @throws NotImplementedException When the provider declares no create().
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function create(IntegrationProvider $provider, ObjectRef $ref, array $payload): array {
 		return $this->call(provider: $provider, operation: 'create', ref: $ref, arguments: [$payload]);
@@ -105,6 +113,8 @@ final class IntegrationProviderInvoker {
 	 * @return array<string,mixed>
 	 *
 	 * @throws NotImplementedException When the provider declares no update().
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function update(IntegrationProvider $provider, ObjectRef $ref, string $entityId, array $payload): array {
 		return $this->call(provider: $provider, operation: 'update', ref: $ref, arguments: [$entityId, $payload]);
@@ -120,6 +130,8 @@ final class IntegrationProviderInvoker {
 	 * @return void
 	 *
 	 * @throws NotImplementedException When the provider declares no delete().
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function delete(IntegrationProvider $provider, ObjectRef $ref, string $entityId): void {
 		$this->call(provider: $provider, operation: 'delete', ref: $ref, arguments: [$entityId]);

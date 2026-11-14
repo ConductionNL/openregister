@@ -29,7 +29,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 /**
  * An integration provider in the parameter-object form.
  *
- * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-1
+ * @spec openspec/specs/integration-registry/spec.md
  */
 interface RefIntegrationProvider extends IntegrationProvider {
 	/**

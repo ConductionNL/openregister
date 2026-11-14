@@ -109,6 +109,8 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * @param string $operation The operation, as the message names it: `get`, `create`, `update` or `delete`.
 	 *
 	 * @return NotImplementedException
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	protected function unsupported(string $operation): NotImplementedException {
 		return new NotImplementedException(
