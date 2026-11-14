@@ -10706,3 +10706,4 @@ larpinq	1056	641d4f010fe2b690fd4928ccbacec198633df311	CONFLICT	worker-15	merges 
 filinq	2114	789d94cb7d3c13b23694020b1069fb863077a413	CONFLICT	worker-19	conflicts in tree (after 2113,2123) on lib/Settings/filinq_register.json; clean on plain development
 filinq	2121	3c3c358f2faa1c38d7303f789ad9a4efff53cf67	CONFLICT	worker-19	conflicts in tree on lib/Settings/filinq_register.json; clean on plain development
 filinq	2123	65d916d0072db231070fb22bd3e8b85db36e6eee	GREEN	worker-19	unit 6816 tests (baseline 6765, 6 skipped), vitest 770 pass, 0 new failures; builds specify-capability-rows, new routes authenticated
+filinq	2126	5e6533ee71489d563587aaedfbd24555ef720dab	CONFLICT	worker-19	conflicts in tree on l10n/en,nl (.js/.json) and filinq_register.json; clean on plain development
