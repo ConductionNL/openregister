@@ -8738,5 +8738,6 @@ build:dossiq:vth-cases-run-end-to-end:c2	no code tasks left: PR #6385 has 1.1-3.
 cover:buildiq:70b3e29em7beb:js0023cfc7	PR #1634: src/dialogs/* 91.9% -> 95.0% lines, +21 tests in 5 specs, tests only	session-20261114T073117-2bd2e050	2026-11-14T09:57:20Z
 fix:pipelinq:3819:1d027909	REVERIFY: l10n keys moved mid-catalogue, merges with 3818; new head 8d6e5ca82ed74a763de50a6e0d2cf2ed2c884b4a	session-20261114T085638-f8a2ea52	2026-11-14T09:57:48Z
 verify:pipelinq:3821:d0cf91bf	3 GREEN	session-20261114T075640-efa02b24	2026-11-14T09:58:11Z
+build:pipelinq:my-work-roadmap:c2	already building: the first pass PR #3726 (block 1, MyWorkController and WorklistService changes the later blocks build on) is not merged yet; continue after it lands	session-20261114T075644-ec2e07ac	2026-11-14T09:58:23Z
 verify:shillinq:3041:a6275c56	3041 3042 3043 GREEN; php 10812 OK, vitest 1 inherited failure	session-20261114T092658-4bf01f0f	2026-11-14T09:58:24Z
 verify:decidiq:2183:f78e46a5	3 GREEN (2183,2184,2185); unit 4027->4050, no new failures	session-20261114T095640-f8608005	2026-11-14T09:58:37Z
