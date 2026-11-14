@@ -4248,3 +4248,6 @@ Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Service/Export/ExportPage.php,,Service,,,,,Configuration
+Service/Export/PublicExportResult.php,,Service,,,,,Configuration
+Service/Export/PublicExportService.php,,Service,,,,,Configuration
