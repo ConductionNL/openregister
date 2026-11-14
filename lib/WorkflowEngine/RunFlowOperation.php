@@ -12,10 +12,10 @@
  * object.
  *
  * This is deliberately distinct from the always-on
- * {@see \OCA\OpenRegister\Listener\FlowActionListener}, which runs every flow
- * whose trigger matches unconditionally. Routing a flow through Nextcloud Flow
- * gates it behind the engine's check system, so the two systems compose rather
- * than duplicate.
+ * {@see \OCA\OpenRegister\Service\Flow\FlowTriggerService}, which queues a
+ * run of every flow whose trigger matches, unconditionally. Routing a flow through Nextcloud
+ * Flow gates it behind the engine's check system, so the two systems compose
+ * rather than duplicate.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
