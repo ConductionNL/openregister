@@ -9992,3 +9992,4 @@ build:integriq:gateway-federated-api-discovery:c2	blocked: PR #3569 gained demo 
 build:integriq:connectors-lti-platform-launch:c2	no code task left: every Implement is ticked on PR #3545 (head c193927); validate-register PASS; the 3 open items are e2e/reference-tool/live tests, left unchecked	session-20261114T151758-95655a27	2026-11-14T15:58:02Z
 verify:portaliq:2498:5bf1f5f3	GREEN #2498 (unit 5275, baseline 5247, 0 new failures)	session-20261114T141721-aeb4e068	2026-11-14T15:58:05Z
 verify:humaniq:1125:484df94f	1125 GREEN; 1139/1142/1145/1148 CONFLICT (with #1125 in tree order, clean on development alone); 1156 skipped (head moved)	session-20261114T151932-05b02c14	2026-11-14T15:58:41Z
+fix:shillinq:2959:74a7dfd4	RED not reproducible with current vendor; merged development, 11214 OK, new head 4e16db47	session-20261114T154733-94bb2e01	2026-11-14T15:58:48Z
