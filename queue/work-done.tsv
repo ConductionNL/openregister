@@ -10971,3 +10971,4 @@ review:shillinq:2991:47756ee7	GREEN	session-20261114T202449-f0278d5a	2026-11-14T
 verify:portaliq:2508:54db6ef9	2508 GREEN; phpunit 5766 ok	session-20261114T194743-e736657e	2026-11-14T20:40:26Z
 build:learniq:enrolment-sync-classes-from-student-administration:c3	partial: still no code task buildable in learniq: 3.1 sync line needs a library aggregate key and an integriq-held failure reason, 4.1 is an integriq issue (workers may not open issues), 5.x live/release; PR #2524 head 593b6b37 is current	session-20261114T191744-b9573b83	2026-11-14T20:40:40Z
 verify:filinq:2122:b93dd2f4	2122 skipped (head moved); 2123 BLOCK: edited legacy templates lose their published version	session-20261114T201750-64b6fe0f	2026-11-14T20:40:37Z
+review:filinq:2088:6252fec2	GREEN: phpunit 6775 OK, phpstan clean, parity gate passes on PR merged with development	session-20261114T194805-954d5649	2026-11-14T20:40:44Z
