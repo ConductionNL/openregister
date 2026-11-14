@@ -2851,3 +2851,21 @@ buildiq	1625	04a5e4fe063ed3c67d9deafe10a0ade754a65b26	RED	merge3	GATE RED checke
 buildiq	1631	d05a201d07b0e89f01bb7a6750d9ff8af8c65ade	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 buildiq	1639	00436432feddf925da01ea1ca0d24a266c8157b0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.92
 buildiq	1640	1d914a307bee0f8f60b7b499057799f93dd4a4f5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.92
+integriq	3542	ee72f32bc9f17f90f07e70db7a490de89e280c93	RED	merge3	GATE RED floor: unit_complexity: 3.90 -> 3.84
+integriq	3578	a22ce949ab7ece323f6a86e90532f974460d34a1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3584	fb0129bd7ac6d92851882f443171ecc3a6a3d754	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3588	eccc78b5d05c0364a7caab717d55fbbfabe31af1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3589	d0bb474f960b41ba047f128dfbf8c789a380f2db	RED	merge3	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3607	206b2ebbfd3dfda0f6a227ef90f43b18d29324bc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3609	22cb7f9fb7da86f350d1494b11dbf486ff256507	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3611	0ef55c6168d96e3b4e452e12b72a9d7361e8b6a8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3612	50b7eb4630177b9d6406215163e6792f5a00879b	RED	merge3	GATE RED floor: unit_complexity: 3.90 -> 3.88
+integriq	3614	c5e3e1ef9d5a1290277bc12e271a60ad85dc798f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3616	ae80010db9e41128d7b5cac64012a54d84e48e13	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3619	432fff9022a282f769e85cd303cbb36c061f5871	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3620	f9fa080b61a7ef06f34810f456798c24dbb23ae2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3621	1f6f968f349cac6b7912893275f81ef72a171138	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3623	a9bc234c5cadeaa63ab6906431bc65b972f7f723	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3624	4585f9f580587384238578ba4ee0a99a7872c7d9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3627	ff0fbf0fe8a86ea1a0837c2848df4ec20b304a1b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3629	57732eae7e7aeb18b456d5bca76a33dcfd82d102	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
