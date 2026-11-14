@@ -7933,3 +7933,4 @@ verify:pipelinq:3742:7851a5a8	3742 GREEN, 3752 GREEN; unit 7903 0 fail, vitest 4
 review:integriq:3435:8f36c1e1	GREEN integriq#3435: tests only, 9 new tests pass, no new failures	session-20261114T073108-8b40426a	2026-11-14T07:41:24Z
 verify:pipelinq:3721:2e049327	3721 GREEN, 3732 CONFLICT (l10n vs 3721), 3812 GREEN, 3813 GREEN	session-20261114T070352-19ea7dff	2026-11-14T07:41:47Z
 build:integriq:mapping-formats-and-lookups	partial: PR #3574, task 1 and task 2 implementation done; 3-5 and e2e open; no new failures	session-20261114T065626-0651b305	2026-11-14T07:42:03Z
+build:integriq:platform-properties	already done: tasks 1.1-2.1 ticked and true on development (info.xml, capabilities.json); only 2.2 post-merge archive left, no code to build	session-20261114T073108-8b40426a	2026-11-14T07:42:13Z
