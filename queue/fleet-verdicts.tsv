@@ -8836,3 +8836,4 @@ learniq	2519	e252f190bae171a45c71870e78e1219108b75640	CONFLICT	merge3	conflicts 
 learniq	2520	3a7f33845adaf7d06a5218c707c323a9b9fa1835	CONFLICT	merge3	conflicts with development; files: l10n/en.json l10n/nl.json lib/Settings/learniq_register.json 
 learniq	2532	aeb0f5c388c6babd88eebec20c9f7a53df496084	CONFLICT	merge3	conflicts with development; files: lib/Settings/learniq_register.json 
 learniq	2538	77a7f7666e25b7907d46eacf3a700fe32d862c44	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json 
+integriq	3588	eccc78b5d05c0364a7caab717d55fbbfabe31af1	GREEN	worker-28	tree dev+3588+3592+3595+3610: unit 8972 tests, baseline 8920 with 7 failing names (incl. SynchronizationSynchronizeEntryGoldenTest), no new failures; vitest 2171/2171
