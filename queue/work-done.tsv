@@ -9483,3 +9483,4 @@ merge:shillinq:2972:3aeca5c8	merge3 tree of 10 shillinq PRs: merged=7 red=0 fail
 merge:shillinq:2987:563fcc88	merge3 tree of 10 shillinq PRs: merged=7 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T14:30:33Z
 verify:dossiq:6511:3b8f4d94	3 GREEN (6511, 6512, 6513); 6513 l10n overlap resolved by the repo's l10n merge driver; no new failures	session-20261114T134643-47800317	2026-11-14T14:30:52Z
 build:filinq:office-template-authoring:c2	every code task built on PR filinq#2105 (1.2, 2.3-2.7, 3.1, 4.1-4.3, 5.3; unit 6726->6793 OK); left 5.1 coverage measurement, 5.2 e2e, 5.4 docs (live instance)	session-20261114T134708-0947487e	2026-11-14T14:31:01Z
+fix:decidiq:2143:c2d391b1	conflict resolved, new head 6a89bc03, REVERIFY recorded	session-20261114T134701-ae8ce354	2026-11-14T14:31:00Z
