@@ -855,6 +855,8 @@ Db/SearchTrailMapper.php,570,Db,Compliance,Compliance/Db/SearchTrailMapper.php,0
 Db/SelectByColumnTrait.php,22,Db,Integrations,Integrations/Db/SelectByColumnTrait.php,0,,Integrations
 Db/Sequence.php,26,Db,Configuration,Configuration/Db/Sequence.php,0,,Configuration
 Db/SequenceMapper.php,44,Db,Configuration,Configuration/Db/SequenceMapper.php,0,,Configuration
+Db/ForeignIdentifier.php,,Db,,,,,Configuration
+Db/ForeignIdentifierMapper.php,,Db,,,,,Configuration
 Db/SlugIdLookupTrait.php,51,Db,Db,Db/SlugIdLookupTrait.php,0,,Core
 Db/Source.php,157,Db,Integrations,Integrations/Db/Source.php,0,142,Integrations
 Db/SourceMapper.php,143,Db,Integrations,Integrations/Db/SourceMapper.php,0,184,Integrations
@@ -3159,6 +3161,8 @@ Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
 Service/SemanticTypeResolver.php,210,Service,Service,Service/SemanticTypeResolver.php,2,107,Core
 Service/SequenceService.php,107,Service,Configuration,Configuration/Service/SequenceService.php,1,259,Configuration
+Service/ForeignIdentifierConflictException.php,,Service,,,,,Configuration
+Service/ForeignIdentifierRegistry.php,,Service,,,,,Configuration
 Service/Serializer/RegisterSerializer.php,110,Service,Service,Service/Serializer/RegisterSerializer.php,0,,Core
 Service/ServiceRegistrar.php,209,Service,Access,Access/Service/ServiceRegistrar.php,0,,Core
 Service/Settings/CacheSettingsHandler.php,414,Service,Configuration,Configuration/Service/Settings/CacheSettingsHandler.php,0,,Configuration
@@ -4092,6 +4096,7 @@ Migration/Version1Date20261113140000.php,122,Migration,,,,,Platform
 Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
+Migration/Version1Date20261114100000.php,,Migration,,,,,Platform
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core

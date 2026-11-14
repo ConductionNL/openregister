@@ -23,7 +23,7 @@
 ## Discovery cluster 41
 
 - [x] C41.1 A random sequence kind with a declared length and alphabet, under the existing allocation lock (D-C41-1). (`kind: random`, `length`, `alphabet` on the annotation; the counter number is shown through a keyed permutation, `RandomSequenceCode`, keyed by the instance secret and the sequence name, so uniqueness is the counter's own. Unit tests: `RandomSequenceCodeTest`, `GeneratedIdentifierRandomDeclarationTest`, `GeneratedIdentifierRandomTest`.)
-- [ ] C41.2 Foreign identifiers on an object, each naming its issuer, indexed and exactly resolvable (D-C41-2).
+- [x] C41.2 Foreign identifiers on an object, each naming its issuer, indexed and exactly resolvable (D-C41-2). (`openregister_foreign_ids`, unique on issuer and value and indexed by object, `Version1Date20261114100000`; `ForeignIdentifierMapper`; `ForeignIdentifierRegistry::record()`, `resolve()` and `forObject()`, a concurrent duplicate decided by the unique index. Unit tests: `ForeignIdentifierRegistryTest`, `ForeignIdentifierMapperGoldenTest`, `Version1Date20261114100000Test`.)
 - [x] C41.3 A second generated identifier beside the first, with its own sequence and format.
 - [x] C41.4 Reserved values and patterns that no sequence issues.
 - [ ] C41.5 A scheme change as a background job with progress, keeping each previous value as a foreign identifier of this instance (D-C41-3).
