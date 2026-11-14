@@ -7226,3 +7226,4 @@ integriq	3582	770cf7a9990adde39b8b731acb2f6c1a8d95b4d6	CONFLICT	worker-58	confli
 integriq	3584	f4e22d303309cbb9175eab5e786b47fc47345bd9	CONFLICT	worker-58	conflicts with development+earlier tree PRs
 integriq	3585	54c3167e0ab8f4bc25cc5b8edda74ac4d7568c6e	CONFLICT	worker-58	conflicts with development+earlier tree PRs
 versioniq	685	0d04ca1a7a5372c23fcb6d9f990ef32e81ac5e47	RED	merge3:merge-gate	GATE RED floor: overall: 4.92 -> 4.87; duplication: 5.14 -> 5.09; unit_size: 4.73 -> 4.70; unit_complexity: 4.58 -> 4.49; unit_interfacing: 4.08 -> 3.88
+versioniq	686	3f4bd26e4fa747fda9ffd2fa195731faa550fa26	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/Api/ReportStores.php lib/Service/Settings/InstanceSettings.php src/App.appCard.spec.ts src/App.vue src/components/InstanceS
