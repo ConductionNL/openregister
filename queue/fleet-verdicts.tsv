@@ -9598,3 +9598,4 @@ launchpad	1214	4cafc2d4c3fc8bc300acba48d71a93ea3f05dfd8	CONFLICT	worker-24	confl
 launchpad	1216	2d1a07b7315b0cc7951d46902a8085c457a831ba	CONFLICT	worker-24	conflicts in the tree after #1209 (AdminSettingKey/AdminSettings*/l10n); merges clean on development alone
 launchpad	1219	da16c5dfecd1f4e40902aa5c9b009ae6af38ac60	CONFLICT	worker-24	conflicts in the tree after #1209 (AdminSettingKey/AdminSettings*/l10n); merges clean on development alone
 shillinq	3051	d7281fadf105011c2d9a524db93c9a6f8b327221	CONFLICT	worker-45	conflicts with development in l10n/en.js, l10n/en.json, l10n/nl.js, l10n/nl.json, lib/Guard/GuardRegistrar.php
+shillinq	3062	bcacd253984d1a655fc4d67a73245269ad00c368	RED	worker-45	merged with development: OpenApiDocumentTest::testTheDocumentMatchesTheRoutes and VATReturnServiceTest::testAReverseChargedPurchaseDeclaresItsBaseInTheBoxOfItsTariff fail; both pass on development and with #3078 alone
