@@ -11880,5 +11880,6 @@ cover:shillinq:05639debm9818:ca9bcd40	already done: lib/Lifecycle/Action/*.php a
 cover:portaliq:b60f3b81m4ccb:e7fd1c43	PR #2517: 16 tests over DestinationSubmit and PortalFamilyMembers, Intake 98.12% -> 98.63% (pcov)	session-20261114T224754-e4a2fcab	2026-11-14T23:25:01Z
 cover:integriq:92114ab0m4b3f:60c2c265	already done: lib/Controller/*.php measured 95.20% (6350/6670 stmts, full suite, pcov) at development 531865634, above target 95.0; branches -1..-6 merged	session-20261114T224736-f9da4a35	2026-11-14T23:25:02Z
 cover:pipelinq:7f9dc8e6m799d:60c2c265	PR #3846: 8 controllers, 57 tests, lib/Controller 91.91% -> 93.81% (suite 8452 -> 8509, risky unchanged 32); left for 95%: Portal, Template, Setup, Store, BlastWebhook controllers	session-20261114T221801-9a21d394	2026-11-14T23:25:38Z
+fix:integriq:3633:2cf69c00	no change: merges clean on development (531865634); the conflict is only with unmerged PRs earlier in the tree; merge development again once they land	session-20261114T224736-f9da4a35	2026-11-14T23:25:40Z
 cover:shillinq:05639debm9818:89bf3ba4	already done: lib/Reporting/Generator/*.php at 99.9% lines (1529/1531) on development 6e0f5bac8, target 95	session-20261114T231755-998f7ff8	2026-11-14T23:25:39Z
 verify:dossiq:6524:530fa8c5	6524, 6525, 6526 GREEN (tests only, no new failures)	session-20261114T231754-82b5ae61	2026-11-14T23:25:39Z
