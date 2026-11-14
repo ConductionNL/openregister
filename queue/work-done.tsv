@@ -12004,3 +12004,4 @@ cover:stackiq:9ac19b3amad24:f545d745	already done: lib/Repair/*.php 1328/1340 li
 fix:versioniq:719:f21b6e25	no longer conflicts with #698/#707, new head 8d1c90cb; overlaps #700 (openapi.json) and #718 (App.vue tab) remain	session-20261114T214733-589f5bff	2026-11-14T23:42:20Z
 fix:versioniq:699:6a44c2e6	conflicts resolved, pushed ccc8c628, REVERIFY	session-20261114T231756-01da210e	2026-11-14T23:42:33Z
 measure:buildiq:20261114h22	php 90.88% (pcov, 3192 tests, 1 inherited failure), js 95.84% at 165fc0e3c	session-20261114T231755-998f7ff8	2026-11-14T23:42:49Z
+fix:larpinq:1053:887c3dda	l10n conflict with #1041 removed; code conflict with #1045 remains until it lands; new head 6dc8ba7a4cde49a6db41130581984dad580b5f96	session-20261114T221759-cd5c5678	2026-11-14T23:42:50Z
