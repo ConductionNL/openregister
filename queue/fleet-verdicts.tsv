@@ -7632,3 +7632,4 @@ stackiq	1933	d891c4e13ec170fdd53de4577c9a7682561cc081	GREEN	worker-40	php unit 3
 stackiq	1934	c5b06d1ebdb8fc3b797e3e37df96cf466b900af8	GREEN	worker-40	php unit 3499 tests on the tree (development baseline 3446, 0 failures); vitest 2514 passed; new failures: none; controller changes are docblocks only
 stackiq	1935	4e7186a499fbfaf9b20fb7ebd9619b696089dd40	GREEN	worker-40	php unit 3499 tests on the tree (development baseline 3446, 0 failures); vitest 2514 passed; new failures: none
 larpinq	1040	31b8e84dc84e72e93b8532ad2bba4d20cddd0041	GREEN	worker-02	tree development e18afcba+1040+1041+1044+1046+1048: PHPUnit 821 OK (baseline 792 OK), vitest 524 OK, no new failures; builds larpinq-adopt-or-abstractions per its change (frontend only)
+stackiq	1936	8192cf13e7595a1e139f17c6c181f4fad730d02f	GREEN	worker-40	php unit 3499 tests on the tree (development baseline 3446, 0 failures); vitest 2514 passed; new failures: none; new routes check usage ownership
