@@ -11832,3 +11832,4 @@ measure:dossiq:20261114h22	php 92.52% (pcov, 17379 tests, 19 failures), js 94.9%
 cover:portaliq:b60f3b81m4ccb:62d4ff69	PR #2516: ConfirmedAddressJoin refusal/lock/race tests (4 tests, 65 assertions); suite 5803->5807 OK	session-20261114T221804-88b39b17	2026-11-14T23:19:35Z
 verify:integriq:3596:c9f6ced5	GREEN #3596, GREEN #3638; no new failures	session-20261114T224736-f9da4a35	2026-11-14T23:19:38Z
 cover:portaliq:b60f3b81m4ccb:7a286478	already covered by PR #2516 (same lib/Service/Identity gap, 94.91 -> target 95.0; ConfirmedAddressJoin had no tests)	session-20261114T221804-88b39b17	2026-11-14T23:19:57Z
+cover:dossiq:069ee2d6mbd37:8b886c00	PR #6525: 39 tests over 7 People classes (RequesterProjection new); suite 17379->17418, 19 inherited failures unchanged	session-20261114T230933-0afdd896	2026-11-14T23:19:51Z
