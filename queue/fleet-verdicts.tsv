@@ -7441,3 +7441,4 @@ launchpad	1218	1286fcd0409e4b8257f70267f16aafa55da48901	CONFLICT	worker-10	confl
 launchpad	1219	caea0c0bcb6eda1284553c1f4fc21ec6fd5fe4b5	CONFLICT	worker-10	conflicts with the tree (after 1212,1213,1215,1216): l10n/nl.js l10n/nl.json
 opencatalogi	2639	bf46a41b1da5be5bf45b44ccd8f3d3b874960e9d	GREEN	worker-15	tree 5606 tests vs baseline 5485 (2 failures on development, none new); vitest 1034/1034; 2659 jest specs 12/12
 opencatalogi	2647	6c8c836ead4756db2af78ca4e652df10a13e2ad6	GREEN	worker-15	tree 5606 tests vs baseline 5485 (2 failures on development, none new); vitest 1034/1034; 2659 jest specs 12/12
+stackiq	1899	ba019ecee7ad047ffac8c53aaa8048f40fdceacb	GREEN	worker-40	php unit 3473 tests 0 failures (development baseline 3446, 0 failures); vitest 2492 passed; new failures: none; adds _limit ceiling to unbounded scans as the change asks
