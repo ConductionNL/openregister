@@ -7685,3 +7685,4 @@ review:openregister:10464:412d9d9a	APPROVE: contract compat restore, no access w
 fix:portaliq:2418:bb1fde7d	conflict resolved, merged development, test adapted to resolver constructor; unit suite green; pushed 0caaeae7	session-20261114T065635-61264d14	2026-11-14T06:58:55Z
 fix:portaliq:2419:cfe4c335	conflict resolved (l10n both sides kept), pushed 684f8a07, REVERIFY recorded	session-20261114T065635-0aca43d3	2026-11-14T06:59:01Z
 fix:pipelinq:3736:1ee73020	conflict resolved: l10n keys moved clear of #3713, development merged; new head d5e2a851	session-20261114T065633-3e3cb668	2026-11-14T06:59:18Z
+fix:portaliq:2380:153b35f2	merged development, resolved 7 test-metadata conflicts; new head cf44bd74d31b56015b4e10af16011432ba996d6f	session-20261114T065625-baa65a50	2026-11-14T06:59:34Z
