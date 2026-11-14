@@ -580,6 +580,232 @@ function magicTableSyncMessage(data, schema) {
 }
 
 /**
+ * Fetch a schema and turn it into the update to send back.
+ *
+ * @param {string} url The schema's API url
+ * @return {Promise<object>} The schema update
+ */
+async function fetchSchemaUpdate(url) {
+	const fetchResponse = await axios.get(url, {
+		headers: { Accept: 'application/json' },
+	})
+	return schemaUpdate(fetchResponse.data)
+}
+
+/**
+ * The notice for a schema whose configuration was updated.
+ *
+ * @param {object} schema The schema
+ * @return {string} The notice
+ */
+function configurationUpdatedText(schema) {
+	return t(
+		'openregister',
+		'Schema configuration updated successfully for {schema}',
+		{ schema: schema.title },
+	)
+}
+
+/**
+ * Log and show a failed schema configuration update.
+ *
+ * @param {object} schema The schema
+ * @param {Error} error What went wrong
+ * @return {void}
+ */
+function reportConfigurationFailure(schema, error) {
+	console.error('Error updating schema configuration:', error)
+	showError(
+		t(
+			'openregister',
+			'Failed to update schema configuration for {schema}: {error}',
+			schemaFailure(schema, error),
+		),
+	)
+}
+
+/**
+ * The notice for a finished validation, with its counts.
+ *
+ * @param {object} schema The schema
+ * @param {object} stats The validation statistics
+ * @return {string} The notice
+ */
+function validationStatsText(schema, stats) {
+	return t(
+		'openregister',
+		'Validation completed for {schema}: {processed} processed, {updated} updated, {failed} failed',
+		{
+			schema: schema.title,
+			processed: stats.processed,
+			updated: stats.updated,
+			failed: stats.failed,
+		},
+	)
+}
+
+/**
+ * Log and show a failed validation.
+ *
+ * @param {object} schema The schema
+ * @param {Error} error What went wrong
+ * @return {void}
+ */
+function reportValidationFailure(schema, error) {
+	console.error('Error validating schema objects:', error)
+	showError(
+		t(
+			'openregister',
+			'Failed to validate {schema}: {error}',
+			schemaFailure(schema, error),
+		),
+	)
+}
+
+/**
+ * Log and show a failed magic table sync.
+ *
+ * @param {object} schema The schema
+ * @param {Error} error What went wrong
+ * @return {void}
+ */
+function reportSyncFailure(schema, error) {
+	console.error('Error syncing magic table:', error)
+	showError(
+		t(
+			'openregister',
+			'Failed to sync magic table for {schema}: {error}',
+			schemaFailure(schema, error),
+		),
+	)
+}
+
+/**
+ * The notice for a validation that finished without statistics.
+ *
+ * @param {object} schema The schema
+ * @return {string} The notice
+ */
+function validationDoneText(schema) {
+	return t('openregister', 'Validation completed for {schema}', {
+		schema: schema.title,
+	})
+}
+
+/**
+ * The notice for a validation that starts.
+ *
+ * @param {object} schema The schema
+ * @return {string} The notice
+ */
+function validationStartText(schema) {
+	return t('openregister', 'Starting validation for {schema}...', {
+		schema: schema.title,
+	})
+}
+
+/**
+ * The configuration that manages a register, if any.
+ *
+ * @param {number|string} id The register id
+ * @return {object|null} The configuration
+ */
+function configurationOfRegister(id) {
+	return (
+		configurationStore.configurationList.find(
+			(config) => config.registers && config.registers.includes(id),
+		) || null
+	)
+}
+
+/**
+ * The configuration that manages a schema, if any; a configuration lists its
+ * schemas as objects with an id.
+ *
+ * @param {number|string} id The schema id
+ * @return {object|null} The configuration
+ */
+function configurationOfSchema(id) {
+	return (
+		configurationStore.configurationList.find(
+			(config) => config.schemas && config.schemas.some((s) => s.id === id),
+		) || null
+	)
+}
+
+/**
+ * The notice for a schema being removed.
+ *
+ * @param {object} schema The schema
+ * @return {string} The notice
+ */
+function removingText(schema) {
+	return t('openregister', 'Removing schema {schema}...', {
+		schema: schema.title,
+	})
+}
+
+/**
+ * The notice for a removed schema.
+ *
+ * @param {object} schema The schema
+ * @return {string} The notice
+ */
+function removedText(schema) {
+	return t('openregister', 'Schema {schema} removed successfully', {
+		schema: schema.title,
+	})
+}
+
+/**
+ * Log and show a failed schema removal.
+ *
+ * @param {object} schema The schema
+ * @param {Error} error What went wrong
+ * @return {void}
+ */
+function reportRemovalFailure(schema, error) {
+	console.error('Error removing schema:', error)
+	showError(
+		t(
+			'openregister',
+			'Failed to remove schema {schema}: {error}',
+			schemaFailure(schema, error),
+		),
+	)
+}
+
+/**
+ * Why a schema that still holds objects cannot be removed.
+ *
+ * @param {object} schema The schema
+ * @param {number} count Its objects
+ * @return {string} The message
+ */
+function notEmptyText(schema, count) {
+	return t(
+		'openregister',
+		'Cannot remove schema {schema} because it contains {count} objects',
+		{ schema: schema.title, count },
+	)
+}
+
+/**
+ * The question confirming a schema's removal from a register.
+ *
+ * @param {object} schema The schema
+ * @param {object} register The register
+ * @return {string} The question
+ */
+function removalQuestion(schema, register) {
+	return t(
+		'openregister',
+		'Are you sure you want to remove the schema "{schema}" from register "{register}"? This action cannot be undone.',
+		{ schema: schema.title, register: register.title },
+	)
+}
+
+/**
  * The fields of a stored schema that a storage change writes back.
  *
  * @param {object} current The stored schema
@@ -839,22 +1065,9 @@ export default {
 		managingConfiguration() {
 			if (!this.item || !this.item.id) return null
 			if (this.type === 'register') {
-				return (
-					configurationStore.configurationList.find(
-						(config) =>
-							config.registers
-							&& config.registers.includes(this.item.id),
-					) || null
-				)
+				return configurationOfRegister(this.item.id)
 			}
-			// Schema: config.schemas is an array of objects with .id
-			return (
-				configurationStore.configurationList.find(
-					(config) =>
-						config.schemas
-						&& config.schemas.some((s) => s.id === this.item.id),
-				) || null
-			)
+			return configurationOfSchema(this.item.id)
 		},
 
 		/**
@@ -1102,14 +1315,7 @@ export default {
 				const response = await axios.post(url, {}, { headers: JSON_HEADERS })
 				showSuccess(magicTableSyncMessage(response.data, schema))
 			} catch (error) {
-				console.error('Error syncing magic table:', error)
-				showError(
-					t(
-						'openregister',
-						'Failed to sync magic table for {schema}: {error}',
-						schemaFailure(schema, error),
-					),
-				)
+				reportSyncFailure(schema, error)
 			}
 		},
 
@@ -1121,30 +1327,14 @@ export default {
 		async setSchemaConfiguration(schema, configurationType) {
 			const url = apiUrl(`schemas/${schema.id}`)
 			try {
-				const fetchResponse = await axios.get(url, {
-					headers: { Accept: 'application/json' },
-				})
-				const updatedSchema = schemaUpdate(fetchResponse.data)
+				const updatedSchema = await fetchSchemaUpdate(url)
 				convertStorage(updatedSchema, configurationType)
 				showSuccess(conversionNotice(schema, configurationType))
 				await axios.put(url, updatedSchema, { headers: JSON_HEADERS })
-				showSuccess(
-					t(
-						'openregister',
-						'Schema configuration updated successfully for {schema}',
-						{ schema: schema.title },
-					),
-				)
+				showSuccess(configurationUpdatedText(schema))
 				this.$emit('refresh')
 			} catch (error) {
-				console.error('Error updating schema configuration:', error)
-				showError(
-					t(
-						'openregister',
-						'Failed to update schema configuration for {schema}: {error}',
-						schemaFailure(schema, error),
-					),
-				)
+				reportConfigurationFailure(schema, error)
 			}
 		},
 
@@ -1155,11 +1345,7 @@ export default {
 		async validateSchemaObjects(schema) {
 			const url = apiUrl('objects/validate')
 			try {
-				showSuccess(
-					t('openregister', 'Starting validation for {schema}...', {
-						schema: schema.title,
-					}),
-				)
+				showSuccess(validationStartText(schema))
 				const response = await axios.post(
 					url,
 					{ register: this.item.id, schema: schema.id },
@@ -1167,14 +1353,7 @@ export default {
 				)
 				this.reportValidation(response.data, schema)
 			} catch (error) {
-				console.error('Error validating schema objects:', error)
-				showError(
-					t(
-						'openregister',
-						'Failed to validate {schema}: {error}',
-						schemaFailure(schema, error),
-					),
-				)
+				reportValidationFailure(schema, error)
 			}
 		},
 
@@ -1187,26 +1366,11 @@ export default {
 		 */
 		reportValidation(data, schema) {
 			if (!data || !data.success) {
-				showSuccess(
-					t('openregister', 'Validation completed for {schema}', {
-						schema: schema.title,
-					}),
-				)
+				showSuccess(validationDoneText(schema))
 				return
 			}
 			const stats = data.statistics
-			showSuccess(
-				t(
-					'openregister',
-					'Validation completed for {schema}: {processed} processed, {updated} updated, {failed} failed',
-					{
-						schema: schema.title,
-						processed: stats.processed,
-						updated: stats.updated,
-						failed: stats.failed,
-					},
-				),
-			)
+			showSuccess(validationStatsText(schema, stats))
 			if (stats.errors && stats.errors.length > 0) {
 				console.warn('Validation errors:', stats.errors)
 			}
@@ -1295,27 +1459,12 @@ export default {
 			}
 			const url = apiUrl(`schemas/${schema.id}`)
 			try {
-				showSuccess(
-					t('openregister', 'Removing schema {schema}...', {
-						schema: schema.title,
-					}),
-				)
+				showSuccess(removingText(schema))
 				await axios.delete(url, { headers: { Accept: 'application/json' } })
-				showSuccess(
-					t('openregister', 'Schema {schema} removed successfully', {
-						schema: schema.title,
-					}),
-				)
+				showSuccess(removedText(schema))
 				this.$emit('refresh')
 			} catch (error) {
-				console.error('Error removing schema:', error)
-				showError(
-					t(
-						'openregister',
-						'Failed to remove schema {schema}: {error}',
-						schemaFailure(schema, error),
-					),
-				)
+				reportRemovalFailure(schema, error)
 			}
 		},
 
@@ -1330,22 +1479,10 @@ export default {
 		mayRemoveSchema(schema) {
 			const count = this.getSchemaObjectCount(schema)
 			if (count > 0) {
-				showError(
-					t(
-						'openregister',
-						'Cannot remove schema {schema} because it contains {count} objects',
-						{ schema: schema.title, count },
-					),
-				)
+				showError(notEmptyText(schema, count))
 				return false
 			}
-			return confirm(
-				t(
-					'openregister',
-					'Are you sure you want to remove the schema "{schema}" from register "{register}"? This action cannot be undone.',
-					{ schema: schema.title, register: this.item.title },
-				),
-			)
+			return confirm(removalQuestion(schema, this.item))
 		},
 	},
 }
