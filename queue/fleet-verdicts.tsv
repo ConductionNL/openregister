@@ -10711,3 +10711,4 @@ filinq	2126	5e6533ee71489d563587aaedfbd24555ef720dab	CONFLICT	worker-19	conflict
 portaliq	2508	04d531aee06be019ac0c895d72944884dbb201bc	CONFLICT	worker-49	conflicts with #2500 on top of development: tests/example-site.spec.mjs and tests/Unit/Settings/PortaliqRegisterConfigTest.php (register version assertions)
 larpinq	1053	e06c2e6d56a337b0f91019db10fe823a4fc44bea	GREEN	worker-15	builds players-care-details-and-erasure; app-authority reads only feed game-master-only care records; unit 848 OK (baseline 832 OK), vitest 548 pass
 decidiq	2188	6507a1b94afa99131ae6def2cda418c66e8675e5	GREEN	worker-32	unit 4455 on tree, baseline 4377 green, no new failures; vitest 2834 pass; build agenda-item-confidential-papers per spec
+decidiq	2199	68646faa2457838725c278873a7f023a7aa39dd6	GREEN	worker-32	unit 4455 on tree, baseline 4377 green, no new failures; vitest 2834 pass; build meeting-pack-board-book, compile chair/secretary gated, status participant gated
