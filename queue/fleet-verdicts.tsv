@@ -10472,3 +10472,5 @@ keepiq	1790	5c0dced9415c6f4243adb6bd0f6ecb83731e6bf9	REVERIFY	worker-13	merged d
 larpinq	1041	912b882a58e4592788d487f084542b45073830a2	REVERIFY	worker-36	merged development in, info.xml keeps both install repair steps; unit 845 OK (20 skipped); new head 4ea3e47661b3270916a9506fe9035edcbfc5bee7, verify it
 integriq	3593	b138cdd2b5f61d0d2fb616e18929d1ffd9b66d3e	GREEN	worker-55	phpunit 9237 run (baseline 9162 with 7 inherited failures/errors), vitest 2312 pass; no new failures; builds sources-sftp-adapter, admin-only routes
 integriq	3546	46dc8e548b2f37e59cb49523d4d6e747ffea5ba8	GREEN	worker-15:review	builds connectors-endpoint-workspace-adapters as specced (REQ-EWC-008): admin-only endpoint, brokered vendor calls, no access weakened; suite on PR+development 9176 tests, 7 fails all also on development
+integriq	3600	fe2007241658254ad37c4039587872bf9f9add14	CONFLICT	worker-55	merge conflict on development + 3593
+integriq	3636	9153285de91b788ff2261d9308562db41afc9589	GREEN	worker-55	phpunit 9237 run (baseline 9162 with 7 inherited failures/errors), vitest 2312 pass; no new failures; self-skipping integration test + tasks.md only
