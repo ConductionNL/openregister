@@ -10391,3 +10391,4 @@ merge:buildiq:1612:33eda861	merge3 tree of 9 buildiq PRs: merged=6 red=3 fail=0 
 merge:buildiq:1583:5ceed3e4	merge3 tree of 9 buildiq PRs: merged=6 red=3 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T17:21:57Z
 build:openregister:calendar-time-zone:c3	partial: PR #10154 head 598afed8 adds 2.3 ledger (time_zone column + local dates on timer events, 3 tests), main merged; left 1.3 calendar migration from default_timezone + its 3.1 test, 1.1 required flag (needs 1.3, contradicts UTC default)	session-20261114T151803-c9b63248	2026-11-14T17:22:01Z
 verify:pipelinq:3829:5ab01d7b	GREEN 3829; no new failures (myWorkPage vitest red inherited)	session-20261114T161752-4c07cde6	2026-11-14T17:22:05Z
+fix:learniq:2531:09479452	merged development in clean; unit suite only inherited failure; new head 4185b758, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T17:22:18Z
