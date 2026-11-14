@@ -10068,3 +10068,4 @@ fix:humaniq:1156:ca5305e6	merged development, moved l10n keys off the shared sta
 build4:openregister:api-explorer-in-the-app:c3	failed: not started, this worker's context was nearly full; PR #10475 unchanged; left 2.1 manifest page, 2.2 RegisterApi.vue (new strings in all 37 locales), 2.4 header action, 1.4/2.6 e2e, 3.2/3.3 gates	session-20261114T141721-aeb4e068	2026-11-14T16:10:16Z
 build:integriq:messaging-intake-routing-rules:c2	PR #3625: tasks 1,2,3,5,8 built (editor, reorder/enable, test button, route again, mail file import + options endpoint); task 6 Outlook pane awaits the product decision; e2e/live tests left	session-20261114T151802-24eee21b	2026-11-14T16:10:41Z
 review:openregister:10566:9fb975a0	APPROVE 10566	session-20261114T144809-d686f759	2026-11-14T16:10:42Z
+fix:buildiq:1590:ab70ca96	conflict removed (test moved to own file), pushed 44e1dfb1, REVERIFY recorded	session-20261114T151942-48d6369d	2026-11-14T16:10:49Z
