@@ -9071,3 +9071,4 @@ integriq	3600	36f330ac60dca71cff2d360f3f3912e6902c93cf	REVERIFY	worker-57	merged
 buildiq	1626	9c88d3df66d9ed0d82587deafdf33d424a3f3de1	GREEN	worker-51	phpunit 3150 tests, baseline 3126 with 1 failure (ExportZipGoldenTest), no new failures; vitest 4489 green; builds screen-overrides-as-a-patch-with-fall-through as specified
 buildiq	1630	d47a3654ed6fa1bf501d87d6bec4e20a0872fb78	CONFLICT	worker-51	merges clean on development alone, conflicts with the tree (1626,1641,1642) in: l10n/nl.js l10n/nl.json
 buildiq	1641	2a563552d9b93b253ebbc5b378cf992d119e679c	GREEN	worker-51	phpunit 3150 tests, baseline 3126 with 1 failure (ExportZipGoldenTest), no new failures; vitest 4489 green; builds rules-evaluation-for-other-apps as specified (callableBy gate, refusals fail closed)
+buildiq	1642	48b33fadebd1f22ddf57e6a3302827bd295ebf92	GREEN	worker-51	phpunit 3150 tests, baseline 3126 with 1 failure (ExportZipGoldenTest), no new failures; vitest 4489 green; tests only
