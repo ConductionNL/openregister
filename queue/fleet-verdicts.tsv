@@ -8827,3 +8827,12 @@ planninq	1159	b7c86685b93e00fd2a9068fee34ffeef20327226	GREEN	worker-38	tree dev+
 planninq	1162	9ad30c89501f3dc502bdd902f8a88e0a0f4c102a	GREEN	worker-38	tree dev+1158+1159+1162: phpunit 1046 OK, vitest 3269 pass, 0 failures (no baseline failures); builds case-link-editing
 planninq	1169	1268ee2b3412634abc210fcf92b1706e31e75ab3	CONFLICT	worker-38	l10n catalogues of every locale conflict with #1158/#1159/#1162 in tree order
 integriq	3596	be7f832475973073cb19c8e7cfd	CONFLICT	worker-02	correction of the previous 3596 row: the CONFLICT (vs development + 3539, lib/Service/CallService.php) was found on head be7f8324...; the head moved to 831eea2f8d0a9a1aa88a69d7d0777692d07284cd while recording, which was not verified
+learniq	2484	8e12588d9dcefa9c52b7712c3c32bf30cc918e5f	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2486	646bdf9b9d1e06489cea2a8473cabbf5d4679ed9	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2497	dcf3a162713903f8df6f4f0609b960f4d0b93032	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js 
+learniq	2506	4c1fb89bee7a97c8d744193ce985164aa35b68be	CONFLICT	merge3	conflicts with development; files: lib/Settings/learniq_register.json 
+learniq	2507	c4857461821b9b5bf8fc3e1869aae2f84b3a4695	CONFLICT	merge3	conflicts with development; files: l10n/en.json lib/Settings/learniq_register.json 
+learniq	2519	e252f190bae171a45c71870e78e1219108b75640	CONFLICT	merge3	conflicts with development; files: l10n/en.json l10n/nl.json 
+learniq	2520	3a7f33845adaf7d06a5218c707c323a9b9fa1835	CONFLICT	merge3	conflicts with development; files: l10n/en.json l10n/nl.json lib/Settings/learniq_register.json 
+learniq	2532	aeb0f5c388c6babd88eebec20c9f7a53df496084	CONFLICT	merge3	conflicts with development; files: lib/Settings/learniq_register.json 
+learniq	2538	77a7f7666e25b7907d46eacf3a700fe32d862c44	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json 
