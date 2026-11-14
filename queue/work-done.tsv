@@ -10133,3 +10133,4 @@ build:buildiq:data-field-types-and-choice-lists:c2	done: PR #1615, T07 validated
 fix:filinq:2119:8d9239c1	conflict resolved, new head 5a16fc08, REVERIFY recorded	session-20261114T161742-d79a1d0e	2026-11-14T16:21:08Z
 fix:learniq:2486:646bdf9b	merged development, resolved l10n conflict; new head 60407158, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T16:21:18Z
 fix:filinq:2118:258663ae	merged development, nl.js regenerated from nl.json; new head 17b69a70, REVERIFY	session-20261114T154755-0f1a24cf	2026-11-14T16:21:39Z
+build:planninq:projects-templates-shared-workflow:c2	partial: PR #1166 now also builds 1.4, 2.1, 2.2 and the backend of 2.3 (workflow schema, column sync listener, delete guard, occ resync; 1059 tests green); left: frontend 1.1 chip/KPI, 1.3 dialogs, 2.3 admin section, 2.4 estimates, 2.5 picker	session-20261114T144749-57007b4b	2026-11-14T16:21:44Z
