@@ -7614,3 +7614,4 @@ merge:decidiq:2130:f6711133	merge3 tree of 6 decidiq PRs: merged=6 red=0 fail=0 
 verify:learniq:2484:f77764ae	learniq: 3 GREEN (2484,2522,2523), 4 CONFLICT (2519-2521,2524); 0 new failures	session-20261114T062200-62a0b439	2026-11-14T06:34:49Z
 fix:dossiq:6156:a0456a1d	conflict resolved, pushed c10f8d750edafbc7d555971cc50a90edb5f5579c, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T06:34:56Z
 fix:dossiq:6349:6b24d3d0	conflict resolved, new head d1c7c172, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T06:35:42Z
+verify:integriq:3545:caf40d3f	3545,3552 GREEN; 3549 CONFLICT	session-20261114T062142-da017174	2026-11-14T06:35:56Z
