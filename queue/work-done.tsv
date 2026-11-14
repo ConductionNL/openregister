@@ -8813,3 +8813,4 @@ verify:pipelinq:3707:65fa614f	2 GREEN (3707, 3831), 2 CONFLICT (3743, 3829 vs tr
 merge:pipelinq:3713:8c4e003d	stale	feeder	2026-11-14T10:25:21Z
 review:openregister:10490:92e99c4b	stale	feeder	2026-11-14T10:25:21Z
 build4:openregister:calendar-leaf-inbound:c2	PR #10496 (build/calendar-leaf-inbound-3): migration dedup+unique index, inbound listeners, registration, backfill default-on; all code tasks ticked; check:strict task left; unit suite no new failures (27 inherited)	session-20261114T092638-09421111	2026-11-14T10:26:20Z
+review:openregister:10476:3039f2ec	APPROVE: docblock + tasks.md only; claims verified; Architecture/Rules/Controller/Contract and RunFlowOperationTest pass merged with main	session-20261114T075643-75a598ab	2026-11-14T10:27:43Z
