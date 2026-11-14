@@ -8696,3 +8696,4 @@ cover:dossiq:069ee2d6mbd37:js4f2a605a	PR #6496: 5 tests, caseType dir 96.6%+ (Fi
 build:pipelinq:clients-reversible-merge:c2	partial: PR pipelinq#3817 builds 2.3 (card kept + noted on merge, cleared on reversal), suite 7890->7899 green; 3.1/3.2 left: screens.md puts merge/undo in OpenRegister, needs decision	session-20261114T092653-85dbda6f	2026-11-14T09:37:48Z
 verify:pipelinq:3816:1da33ba2	3816 GREEN	session-20261114T075640-efa02b24	2026-11-14T09:38:36Z
 cover:hermiq:065f1631mcdb5:34f5c300	PRs #1773 #1774: 72 tests over 12 lib/Service classes; lib/Service/*.php 89.59% -> ~93.7% combined; no new failures (baseline 146E/26F inherited)	session-20261114T092638-09421111	2026-11-14T09:39:50Z
+cover:hermiq:065f1631mcdb5:60c2c265	PRs #1775 #1776: 102 tests over 10 controllers; lib/Controller 89.4% -> 96.8%; suite 4696 OK -> 4798 OK	session-20261114T092645-afb9b140	2026-11-14T09:40:05Z
