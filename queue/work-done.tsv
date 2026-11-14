@@ -10491,3 +10491,4 @@ build:keepiq:extension-passkey-enrolment:c2	done: no code task left; PR #1776 me
 verify:hermiq:1715:565afba9	GREEN 1715; CONFLICT 1728, 1785; skipped 1791, 1792 (head moved)	session-20261114T161750-16a1c558	2026-11-14T17:51:32Z
 fix:keepiq:1789:57b0a1bf	merged development, l10n conflict resolved keeping both; new head e905bf11; parity red inherited from development	session-20261114T174756-fe199e72	2026-11-14T17:51:43Z
 fix:buildiq:1624:0e334f6f	relative floor restored (overall 4.29, interfacing 3.43 vs 3.44, PASS); suite inherited-only; new head cc9050a1, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:51:50Z
+fix:planninq:1171:75d4a18f	fixed: merged development (l10n, store, TaskDetail); new head 6e9f4ac2	session-20261114T154807-c05f4e57	2026-11-14T17:52:11Z
