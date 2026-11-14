@@ -11485,3 +11485,4 @@ verify:opencatalogi:2665:65ad203e	GREEN 2665; no new failures	session-20261114T2
 fix:hermiq:1739:ebafadc0	l10n conflict resolved, merged development, new head 16abb787	session-20261114T211808-5e900938	2026-11-14T22:15:45Z
 review:shillinq:3000:4004df62	GREEN: suite 11478 green, phpstan clean, behaviour per change specs	session-20261114T214719-cd72efa7	2026-11-14T22:15:55Z
 fix:stackiq:1941:9651b6f8	no change: branch already up to date with development (merges clean); the conflict is only with earlier unmerged tree PRs' l10n keys, merge development in again once they land	session-20261114T214735-aacd1703	2026-11-14T22:16:02Z
+fix:stackiq:1927:3920fdf6	no change: branch already up to date with development; it only conflicts in l10n en/nl json with #1911, unmerged; merge development in again once #1911 lands	session-20261114T214735-aacd1703	2026-11-14T22:16:23Z
