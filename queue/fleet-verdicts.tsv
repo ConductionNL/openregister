@@ -8075,3 +8075,4 @@ portaliq	2430	90762148bdc47deb766bdc7c460935f8ca5fa882	REVERIFY	worker-01	exampl
 decidiq	2169	d6a0067ec1d6b3f291bedc78cbadce8e9e01cad9	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.34 -> 3.32
 decidiq	2175	30ead60504c2129cb93d3174e224f045f34a6056	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.88
 portaliq	2430	1d196c09c2bffe9dd3f80aca234321970942aa0d	GREEN	worker-18	unit 5205 tests 0 failures (baseline 5187, 0 failures); node specs: 1 inherited failure in form-binding-settings-page (red on development too); implements its openspec change
+portaliq	2443	50fdf0f84d19ab2e88cc514ff1491df850e4500f	CONFLICT	worker-18	conflicts after #2430 in PortalIntakeController.php, portaliq_register.json, PortalIntakeControllerTest, PortaliqRegisterConfigTest, example-site.spec.mjs
