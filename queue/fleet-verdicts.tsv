@@ -9845,3 +9845,4 @@ integriq	3546	38ea402acc796451c6b58b1b7c0525a6fb16de96	GREEN	worker-01	unit 9156
 integriq	3631	30fbce0b409da46860d8d46d47899632144a7b79	REVERIFY	worker-07	merged PR 3542 head in (kept both trailing EndpointService ctor params, both l10n insertions); unit 9161 tests, no new failures vs baseline; now merges with 3574/3617; new head 0f8a82af89e4a76c857b625da5dd1570a670beb8, verify it
 integriq	3612	b5b2780e101251c6012d88963009cbbde107e72c	GREEN	worker-01	unit 9156 on tree (baseline dev 6dc4a06e: same 7 inherited fails), vitest 2256 OK, no new failures
 integriq	3630	9980914500767dff664e46ee0750d0ae46425fc3	GREEN	worker-01	unit 9156 on tree (baseline dev 6dc4a06e: same 7 inherited fails), vitest 2256 OK, no new failures
+integriq	3634	8688e02b4065bdc69ee6e2508eb49624b78e266f	GREEN	worker-01	unit 9156 on tree (baseline dev 6dc4a06e: same 7 inherited fails), vitest 2256 OK, no new failures
