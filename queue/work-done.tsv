@@ -12003,3 +12003,4 @@ cover:stackiq:9ac19b3amad24:9d3a1784	PR #1968: JobRegistrar (5 tests), lib/Backg
 cover:stackiq:9ac19b3amad24:f545d745	already done: lib/Repair/*.php 1328/1340 lines (99.1%, pcov, full unit suite) on development dbebfae7, above 95 target; no PR	session-20261114T225452-4fcfea7f	2026-11-14T23:41:59Z
 fix:versioniq:719:f21b6e25	no longer conflicts with #698/#707, new head 8d1c90cb; overlaps #700 (openapi.json) and #718 (App.vue tab) remain	session-20261114T214733-589f5bff	2026-11-14T23:42:20Z
 build:larpinq:events-post-event-survey:c2	done: PR #1051 builds 2.2, 3.1, 4.1, 4.2, 4.3 and fixes the attendance stamp wiping the record; left: Forms manual check and Playwright (live instance); phpunit 855, vitest 551 green	session-20261114T224756-971efe57	2026-11-14T23:42:36Z
+fix:versioniq:699:6a44c2e6	conflicts resolved, pushed ccc8c628, REVERIFY	session-20261114T231756-01da210e	2026-11-14T23:42:33Z
