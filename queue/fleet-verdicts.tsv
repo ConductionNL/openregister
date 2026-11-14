@@ -9601,3 +9601,5 @@ buildiq	1582	1ce7e42cbf7905c88be148f2393c9c5f7279ba82	RED	merge3:merge-gate	GATE
 buildiq	1622	1a0a84e3388b842cfcfb20a493935cda75f61f2d	RED	merge3:merge-gate	GATE RED absolute floor: buildiq maintainability 3.90 after merge is below its floor 3.91
 buildiq	1624	cc9050a1cd7c4f61a7507c9a2154735e2fcc4832	RED	merge3:merge-gate	GATE RED absolute floor: buildiq maintainability 3.89 after merge is below its floor 3.91
 buildiq	1641	2a563552d9b93b253ebbc5b378cf992d119e679c	RED	merge3:merge-gate	GATE RED absolute floor: buildiq maintainability 3.87 after merge is below its floor 3.91
+shillinq	3051	d7281fadf105011c2d9a524db93c9a6f8b327221	CONFLICT	worker-45	conflicts with development in l10n/en.js, l10n/en.json, l10n/nl.js, l10n/nl.json, lib/Guard/GuardRegistrar.php
+shillinq	3062	bcacd253984d1a655fc4d67a73245269ad00c368	RED	worker-45	merged with development: OpenApiDocumentTest::testTheDocumentMatchesTheRoutes and VATReturnServiceTest::testAReverseChargedPurchaseDeclaresItsBaseInTheBoxOfItsTariff fail; both pass on development and with #3078 alone
