@@ -10880,3 +10880,4 @@ fix:launchpad:1219:da16c5df	no push: up to date with development, conflicts only
 merge:keepiq:1798:047e7ef9	stale	feeder	2026-11-14T20:25:08Z
 fix:shillinq:2991:e8e7b471	resolved l10n/info.xml/lock conflicts with development; unit 11405 OK, vitest only inherited dunningNextRun failure; REVERIFY at 47756ee7	session-20261114T194744-563ce177	2026-11-14T20:25:51Z
 fix:shillinq:3051:d7281fad	conflicts resolved, pushed 9fb95cfc; REVERIFY recorded	session-20261114T194743-e736657e	2026-11-14T20:25:57Z
+build:filinq:templates-house-style-from-thematiq:c3	done: PR #2096 updated (head b8ad81a5789a87e4b186a4a5ffc81353bee4c410), development merged in (register conflict resolved, 8.56.0), unit 6810 green; no code tasks left: 2.1 font-file embedding blocked by thematiq storing WOFF2 only (mPDF needs TTF/OTF), local two-token-set run and 3.1 screenshot are live tasks	session-20261114T194751-bb7578f8	2026-11-14T20:26:03Z
