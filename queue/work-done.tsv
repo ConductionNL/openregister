@@ -9895,4 +9895,5 @@ fix:hermiq:1758:2fa884c5	failed: conflict is with open PR #1725 (both bump the h
 fix:decidiq:2173:1ef930fb	no change: merges clean on development; conflicts only with unmerged #2171 (l10n), resolve after #2171 lands	session-20261114T151930-0feec10a	2026-11-14T15:42:00Z
 fix:hermiq:1763:3af2a648	merged development (clean); conflict only with open #1726; new head 36a77c20f63e10ab109b4a9f18105bb92108a107, REVERIFY recorded	session-20261114T144757-446bd6da	2026-11-14T15:42:13Z
 fix:decidiq:2199:45b675c6	no change: merges clean on current development; conflicts only with earlier unmerged PRs in the tree (l10n)	session-20261114T151930-0feec10a	2026-11-14T15:42:26Z
+cover:integriq:92114ab0m0593:d0ed39e1	PR #3611: +31 tests (SharePointOnlineAdapter lookups, StufZknClient exchange refusals); dirs 93.5% -> 97.4%	session-20261114T151755-dc817df2	2026-11-14T15:42:25Z
 verify:integriq:3549:6d83665f	GREEN 3549 (8930 tests, 0 new failures)	session-20261114T151801-20bb3a08	2026-11-14T15:42:28Z
