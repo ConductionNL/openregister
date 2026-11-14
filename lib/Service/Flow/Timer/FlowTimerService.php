@@ -1031,9 +1031,29 @@ class FlowTimerService implements FlowTimerControlInterface {
 		// later is reading the ledger.
 		$event->setUnrolledAt($timer->getUnrolledAt());
 		$event->setRolledBy($timer->getRolledBy());
+		$event->setTimeZone($this->ledgerZone(timer: $timer));
 		$event->setCreated($this->mutable(value: $entry->moment));
 		$this->storage->events->insert($event);
 	}//end record()
+
+	/**
+	 * The zone of the calendar a timer counts in, for its ledger row, or null
+	 * when the calendar cannot be resolved: the row is still written, since
+	 * the history matters more than its local dates (calendar-time-zone 2.3).
+	 *
+	 * @param FlowTimer $timer The timer.
+	 *
+	 * @return string|null The IANA zone.
+	 *
+	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
+	 */
+	private function ledgerZone(FlowTimer $timer): ?string {
+		try {
+			return $this->scope(timer: $timer)->calendar->getTimezone();
+		} catch (Throwable) {
+			return null;
+		}
+	}//end ledgerZone()
 
 	/**
 	 * Run a mutation in one transaction.

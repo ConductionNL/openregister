@@ -12,8 +12,8 @@
 
 - [x] 2.1 `WorkingCalendar::fromArray()` reads and validates the zone; `isWorkingDay()` and `nonWorkingDates()` evaluate in it.
 - [x] 2.2 `SlaCalculator` walks days at local midnight in the calendar's zone and returns UTC instants.
-- [ ] 2.3 `describe()` and the ledger carry the zone and the formatted local date.
-  > 14 Nov, `describe()` done: `FlowTimerService::describe()` adds `timeZone`, `fireAtLocal` and `unrolledAtLocal` (`2027-06-30 23:59 Europe/Amsterdam`) beside the UTC instants. `FlowTimerDescribeTimeZoneTest` (2, the spec scenario included). The ledger (timer events) is not touched yet.
+- [x] 2.3 `describe()` and the ledger carry the zone and the formatted local date.
+  > 14 Nov, `describe()` done: `FlowTimerService::describe()` adds `timeZone`, `fireAtLocal` and `unrolledAtLocal` (`2027-06-30 23:59 Europe/Amsterdam`) beside the UTC instants. `FlowTimerDescribeTimeZoneTest` (2, the spec scenario included). Ledger done the same day: every `openregister_flow_timer_events` row stores `time_zone` (migration `Version1Date20261114180000`), the calendar's zone when the row was written, and its JSON adds `priorFireAtLocal`, `newFireAtLocal` and `unrolledAtLocal`; a calendar that cannot be resolved still gets its row, without a zone. `FlowTimerLedgerTimeZoneTest` (3).
 
 ## 3. Tests
 
