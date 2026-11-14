@@ -11366,3 +11366,4 @@ fix:stackiq:1938:2b97ffe5	fixed CONFLICT: development merged in (register + l10n
 fix:stackiq:1924:075129a2	failed: the conflict is in lib/Settings/softwarecatalogus_register.json; workers may not touch Softwarecatalogus, so this is left for a person or the local lane	session-20261114T194805-be886caa	2026-11-14T21:58:37Z
 merge:learniq:2513:54cdc769	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:58:43Z
 merge:learniq:2523:d0e66148	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:59:06Z
+verify:opencatalogi:2665:8d708939	2672/2679/2686/2695/2707 GREEN, 2682 CONFLICT; 2665/2673/2696 skipped (heads moved); payload ended in a truncated sha for 2707 (matched by prefix), so any PRs after it were not in the row	session-20261114T191742-bf93c040	2026-11-14T21:59:05Z
