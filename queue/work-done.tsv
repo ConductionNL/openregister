@@ -10958,3 +10958,4 @@ verify:filinq:2119:eb06869c	2119 GREEN (phpunit 6765, vitest 763, jest 562, 0 ne
 merge:integriq:3592:9ac64448	merge3 tree of 3 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T20:38:21Z
 fix:integriq:3631:b0b558d8	fixed: conflict resolved keeping both sides; no failures beyond development's 7; new head 30fbce0b	session-20261114T173956-74ab8962	2026-11-14T20:38:27Z
 review:filinq:2095:3fec27e5	GREEN: spec-driven, admin-only; phpunit 6786 OK, jest 537 OK	session-20261114T194745-243de12d	2026-11-14T20:38:34Z
+fix:humaniq:1133:0e7cf4b6	SPDX header position fixed; REVERIFY at 5c864a84ca469623869034a2241fd0ca96d20adc	session-20261114T194740-7cca8afd	2026-11-14T20:38:41Z
