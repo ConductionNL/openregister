@@ -25,6 +25,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\EntityChangesPage;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\RegisterAccessAudit;
 use OCA\OpenRegister\Controller\Support\RegisterDownloads;
@@ -478,6 +479,31 @@ class RegistersController extends Controller {
 			return new JSONResponse(data: ['error' => 'Failed to retrieve register: ' . $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end show()
+
+	/**
+	 * The register's edit history: its register.created, register.updated and
+	 * register.deleted audit rows, newest first, with `_page` and `_limit`
+	 * (default 20, at most 100).
+	 *
+	 * Administrator only, by carrying no `NoAdminRequired`, as `GET /api/audit-trails`.
+	 *
+	 * @param int $id The register id.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/audit-trail-immutable/spec.md#requirement-administrators-read-an-entitys-change-history
+	 */
+	public function changes(int $id): JSONResponse {
+		$page = (new EntityChangesPage(auditTrails: $this->auditTrailMapper))->read(
+			kind: 'register',
+			id: $id,
+			params: $this->request->getParams()
+		);
+
+		return new JSONResponse(data: $page);
+	}//end changes()
 
 	/**
 	 * Answer with one register, when the caller may read it.

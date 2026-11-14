@@ -8,7 +8,7 @@
 
 ## 2. Read endpoints
 
-- [ ] 2.1 Add `SchemasController::changes()` and `RegistersController::changes()` with routes `GET /api/schemas/{id}/changes` and `GET /api/registers/{id}/changes`, administrator-only, paginated with a maximum `_limit` of 100. Verify: `tests/Unit/Controller/EntityChangesEndpointTest.php`; a Newman request asserts 200 for an administrator and 403 for a non-administrator; hydra gates route-auth and no-admin-idor pass.
+- [x] 2.1 Add `SchemasController::changes()` and `RegistersController::changes()` with routes `GET /api/schemas/{id}/changes` and `GET /api/registers/{id}/changes`, administrator-only, paginated with a maximum `_limit` of 100. Verify: `tests/Unit/Controller/EntityChangesEndpointTest.php`; a Newman request asserts 200 for an administrator and 403 for a non-administrator; hydra gates route-auth and no-admin-idor pass.
 
 ## 3. Pages
 

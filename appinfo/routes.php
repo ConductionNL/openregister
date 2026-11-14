@@ -1749,6 +1749,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'schemas#discardDraft', 'url' => '/api/schemas/{id}/draft', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#related', 'url' => '/api/schemas/{id}/related', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'schemas#changes', 'url' => '/api/schemas/{id}/changes', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'registers#changes', 'url' => '/api/registers/{id}/changes', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         // The list surface a schema declares: columns and search fields, so a
         // generic surface renders any object type without a page of its own.
         [
