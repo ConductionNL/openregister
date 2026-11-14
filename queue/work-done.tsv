@@ -10409,3 +10409,4 @@ fix:humaniq:1123:a6b9adfa	floor restored (unit_interfacing 3.61 vs 3.62, PASS), 
 verify:pipelinq:3835:b202ec0d	GREEN 3835; no new failures	session-20261114T161752-4c07cde6	2026-11-14T17:28:16Z
 fix:integriq:3600:78585a56	l10n tail conflict resolved keep-both, pushed 60d4c594, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T17:28:28Z
 build4:openregister:unit-test-coverage:c3	partial: PR #10527 + exception tests (6 classes, 19 tests); umbrella tasks (Service/Controller/Db/Event/BackgroundJob coverage, gate, CI) still open	session-20261114T161806-530176c3	2026-11-14T17:28:58Z
+verify:decidiq:2172:18d37379	GREEN 2172 (PHP 4280, vitest 2754, no failures)	session-20261114T151803-c9b63248	2026-11-14T17:29:17Z
