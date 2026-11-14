@@ -11141,3 +11141,4 @@ fix:opencatalogi:2650:76e9e835	conflict resolved (l10n keys from both sides), pu
 fix:opencatalogi:2674:e2355d01	conflict resolved (l10n), pushed 7e238ef8, REVERIFY recorded	session-20261114T211800-2a24a3a9	2026-11-14T21:20:56Z
 fix:opencatalogi:2680:2f800fe4	conflict resolved, new head 5c8f25a1	session-20261114T201755-10d43934	2026-11-14T21:21:11Z
 fix:opencatalogi:2687:f9bcf3c4	conflict resolved, merged development, new head 6e430b3e; 2 unit failures inherited from development	session-20261114T211808-5e900938	2026-11-14T21:21:19Z
+fix:opencatalogi:2685:b09d48cf	merged development, resolved PHP+l10n conflicts; new head 607939f5, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T21:21:27Z
