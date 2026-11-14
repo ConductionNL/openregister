@@ -7709,3 +7709,4 @@ hermiq	1769	137f85502b8719b5eaa41fed45ae2e18a41395f7	GREEN	worker-52	unit 4702 t
 hermiq	1770	d7e0757149e738455004cbb843f8b30db44b8e4b	GREEN	worker-52	unit 4702 tests on tree; baseline 146E/26F inherited (sibling openregister classes); 0 new failures; vitest 1446/1446 pass; tests-only diff
 hermiq	1771	77a76fb773ecba40b6eb1f8ec0fd7ec4da49ebb5	GREEN	worker-52	unit 4702 tests on tree; baseline 146E/26F inherited (sibling openregister classes); 0 new failures; vitest 1446/1446 pass; tests-only diff
 hermiq	1772	3baeb29fd8711b3ce663cf5d3f1c5396d609900b	GREEN	worker-52	unit 4702 tests on tree; baseline 146E/26F inherited (sibling openregister classes); 0 new failures; vitest 1446/1446 pass; tests-only diff
+pipelinq	3817	e5888744a0ede3e64b00767fe0bd20a592458f0e	GREEN	worker-04	unit 7899 run, baseline 7890 ok, 0 new failures; implements clients-reversible-merge 2.3
