@@ -7183,3 +7183,4 @@ hermiq	1728	71ac65736fee2a5805927d20321be3caef9ce772	REVERIFY	worker-32	merges c
 planninq	1156	b11fa6b9f5c4ba83f964d06a4aa55525d037317a	GREEN	worker-53	PHP 1040 vs 1034 baseline, 0 failures; vitest 3206/3206 vs 3198; admin page onto CnAdminSettingsShell per change
 planninq	1157	e8b353abf0fb2483f7fb5dcaf80f6ecc5a682846	GREEN	worker-53	PHP 1040 vs 1034 baseline, 0 failures; vitest 3206/3206 vs 3198; task.linkedFiles reference per change
 planninq	1158	a8f8e28e3bbd079a3b1d739963a117ecdc6b681b	GREEN	worker-53	PHP 1040 vs 1034 baseline, 0 failures; vitest 3206/3206 vs 3198; idempotent repair copies hours to humaniq TimeEntry, deletes nothing
+integriq	3571	0fca0e1189a7f5d0fa450bccfc307722666e95b0	GREEN	worker-15	tree 8558 tests vs baseline 8473 (2 errors/3 failures on development); no new failures; vitest 2157/2157
