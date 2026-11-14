@@ -8187,3 +8187,4 @@ portaliq	2440	95a6ddd5d1fde7d8c922475e6265b362fab6850f	REVERIFY	worker-14	merged
 filinq	2095	6e10cdbc01182bccf11f321b50c3a7d2187a7d5f	CONFLICT	worker-01	conflicts on top of development+2072+2098: mock register, filinq_register.json
 filinq	2099	2529cfcb0dad4e34702730a36a0ecf588ee4823d	CONFLICT	worker-01	conflicts on top of development+2072+2098: filinq_register.json
 filinq	2102	1a9333c7d7ef8ab9d7c40863ab4defee24b53cb6	CONFLICT	worker-01	conflicts on top of development+2072+2098: SettingsService.php, filinq_register.json, Settings.vue
+dossiq	6385	11c3b49f325b6970f5da78af20f2bd3177ec98dc	REVERIFY	worker-20	merged development in, resolved simpleCasePage.spec.js action counts (43 placed, Case 28: both sides' added acts); vitest 7066 pass, 1 inherited; new head 0de8a79923d7951731d8e91f41d3a4da6038de97, verify it
