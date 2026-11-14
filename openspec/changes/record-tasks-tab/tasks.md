@@ -4,7 +4,9 @@
 
 ## 1. Cross-repo prerequisite
 
-- [ ] 1.1 nextcloud-vue: `CnTasksTab` gains `source: "flow-tasks"` (design D-1, D-2, D-4), on top of `cn-tasks-entity-source`. Bump `@conduction/nextcloud-vue` to that release.
+- [x] 1.1 nextcloud-vue: `CnTasksTab` gains `source: "flow-tasks"` (design D-1, D-2, D-4), on top of `cn-tasks-entity-source`. Bump `@conduction/nextcloud-vue` to that release.
+
+  - Already released: `@conduction/nextcloud-vue` 2.180.0, which `package.json` already requires (`^2.180.0`), ships `CnTasksTab` with `source: 'flow-tasks'` (rendered by `CnFlowTasksPanel`) and `buildFlowTaskBody` sending the flat keys of D-2. No bump needed.
 
 ## 1b. Backend: the per-row `can` list
 
@@ -15,10 +17,15 @@
 
 ## 2. Record page
 
-- [ ] 2.1 `src/views/object/ObjectDetails.vue`: a Tasks tab with `CnTasksTab source="flow-tasks"` and the record's register, schema and uuid; badge with the open count; empty state pointing to the Integrations tab for personal reminders (D-3). Verify: `ObjectDetails.spec.js` renders the tab with the flow-task source and a create body with the flat keys of design D-2.
+- [x] 2.1 `src/views/object/ObjectDetails.vue`: a Tasks tab with `CnTasksTab source="flow-tasks"` and the record's register, schema and uuid; badge with the open count; empty state pointing to the Integrations tab for personal reminders (D-3). Verify: `ObjectDetails.spec.js` renders the tab with the flow-task source and a create body with the flat keys of design D-2.
+  - Built: a Tasks tab on `ObjectDetails.vue` (shown once the record's register, schema and uuid are known) with `CnTasksTab source="flow-tasks"`. The library tab owns the list, the create form, the per-row `can` verbs and the empty state pointing at the Integrations tab.
+  - Badge: the tab panel only mounts when opened, so the page asks `GET /api/flow-tasks?objectUuid=…&scope=all&isTerminal=false&limit=1` and shows `total` (the server decides which states are terminal); the tab's own `count` event refreshes it after a change. A failed count shows no badge rather than a wrong one.
+  - Verify: `src/views/object/ObjectDetails.tasks.spec.js` (6) — the tab's source and record props, and the create body those props produce through the library's real `buildFlowTaskBody` (user and group), the badge, the count request.
 - [ ] 2.2 `tests/e2e/ci/record-tasks-tab.spec.ts`: create a task for another user with a due date, see it on the tab and in that user's `/flow-tasks` inbox; complete it as the assignee; a non-assignee sees no Complete.
 
 ## 3. Close
 
-- [ ] 3.1 `docs/`: "Put a task on a record".
+- [x] 3.1 `docs/`: "Put a task on a record".
+  - Built: `docs/features/record-tasks.md`, linked from `docs/features/flows.md`.
 - [ ] 3.2 `@spec` tags; `openspec validate record-tasks-tab --strict`; set row `rec-tasks` to built once 2.2 passes.
+  - `@spec` tags are on the new methods. Left open: `openspec validate` is not installed in this environment, and the row moves to built only once 2.2 passes.

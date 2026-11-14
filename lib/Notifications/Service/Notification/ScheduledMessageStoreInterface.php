@@ -67,4 +67,38 @@ interface ScheduledMessageStoreInterface {
 	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-the-scheduled-sweep-is-bounded-and-sends-once
 	 */
 	public function record(string $id, array $fields): void;
+
+	/**
+	 * Store a composed message as pending and answer its id.
+	 *
+	 * @param array<string, mixed> $message channel, source, path, body, headers, objectUuid, author, sendAt.
+	 *
+	 * @return string The new row id.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
+	 */
+	public function insert(array $message): string;
+
+	/**
+	 * The messages bound to one object, newest first.
+	 *
+	 * @param string $objectUuid The object.
+	 * @param int    $limit      The most rows to return.
+	 *
+	 * @return array<int, array<string, mixed>> The rows, in the policy's shape plus channel, objectUuid and author.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
+	 */
+	public function forObject(string $objectUuid, int $limit): array;
+
+	/**
+	 * One message by id, or null.
+	 *
+	 * @param string $id The row id.
+	 *
+	 * @return array<string, mixed>|null The row, or null when there is none.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
+	 */
+	public function find(string $id): ?array;
 }//end interface

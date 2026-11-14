@@ -13,7 +13,8 @@
 - [ ] Implement: Test All BackgroundJob, Command, Cron, and Listener Classes
 - [ ] Implement: Test All Exception and Format Classes
 - [ ] Implement: Test Organisation Service Multi-Tenancy Paths
-- [ ] Implement: Test Webhook Service Delivery and Retry Logic
+- [x] Implement: Test Webhook Service Delivery and Retry Logic
+  - Done: `WebhookServiceTest` (delivery, retry scheduling, logging) and `WebhookInterceptionFastPathTest` resolve hosts through a fixed offline address guard instead of DNS, so their delivery paths run and assert on every machine; before, 14 + 3 of them failed without DNS.
 - [ ] Implement: Test Import and Export Service Handlers
 - [ ] Implement: CI Integration with composer check:strict
 - [ ] Implement: Test Naming Convention and File Organization
