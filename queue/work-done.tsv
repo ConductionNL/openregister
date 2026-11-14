@@ -8671,3 +8671,4 @@ cover:decidiq:a5f973bbmae46:34f5c300	PR #2184: 15 tests for MotionAmendmentServi
 verify:thematiq:1675:a2116713	3 GREEN (1675-1677); phpunit tree 2866 tests (baseline 2858), 1 failure inherited from development; vitest 1559 passed (baseline 1557); no new failures	session-20261114T075643-acecaad6	2026-11-14T09:29:14Z
 verify:larpinq:1056:92bc43bd	GREEN 1056	session-20261114T065631-b4991134	2026-11-14T09:29:23Z
 cover:decidiq:a5f973bbmae46:38e80a9f	PR #2185: +4 tests on MigrateActionItems (exit code from counted failures, logged skips, --user no-op, name/option); unit 4027->4031, 0 fail	session-20261114T075643-75a598ab	2026-11-14T09:29:30Z
+cover:hermiq:065f1631mcdb5:311dae84	stale: lib/Service/Eval already 100% (12/12) via EvalRunService tests; value objects only	session-20261114T070332-b3a23612	2026-11-14T09:29:41Z
