@@ -3186,3 +3186,4 @@
 10463 2a65b3e07ccfbdf218a3d485336201466cbf477f APPROVE integrator IL5 review: publiccode.yml only; adds the Common Ground layer data (NL.vng.commonground.layer plus a supports entry); YAML parses; the tree's checker floor checks the publiccode criterion
 10463 2a65b3e07ccfbdf218a3d485336201466cbf477f APPROVE metadata only: publiccode.yml gains supports + NL.vng.commonground.layer; valid YAML, no duplicate keys, no code or behaviour change
 10459 39c1dc0355388cdaee09c4564b12e419977f8d04 APPROVE tests and task ticks only, no lib change; ticked tasks verified present on main; new tests and Architecture/Rules/Controller/Contract suites green on merge with main
+10460 55020ec38b3e89a906ffb264dde9b0c0fe0ae47c APPROVE Adds reminder-block validation at schema save and service-hours fields to the term diagnostic, as the change specs ask; existing keys unchanged. Architecture/Rules/Controller/Contract/Notification/Flow suites green, phpstan clean.
