@@ -9690,3 +9690,4 @@ shillinq	3062	2b04a4098fcf4fa8da482a7bebba9be5832c6a30	CONFLICT	worker-03	confli
 hermiq	1749	a51b87f192e6edb58f677a624658dcca38def5b4	CONFLICT	worker-07	conflicts after 1715+1739 in lib/Controller/SessionController.php (1715 also edits it); not tested
 hermiq	1785	0120299df303954953323ff4cf7a0e40dafa71df	CONFLICT	worker-07	conflicts after 1715+1739 in lib/Settings/hermiq_register.json; not tested
 hermiq	1787	806628bc6a899a520a563e35a7b525460ff7b643	CONFLICT	worker-07	conflicts after 1715+1739 in lib/Settings/hermiq_register.json; not tested
+humaniq	1145	b05d3c3dddeb423605be9200575ffaa3cef27bcf	REVERIFY	worker-41	floors: the five new 3-4 parameter units take two (PensionBase::of earnings array, service helpers), no behaviour change; unit 4246 OK, phpcs/phpstan clean; new head 0310b8ea98dbd5d1c1e5396abae95adf55ee59e5, verify it
