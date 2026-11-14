@@ -9249,3 +9249,4 @@ merge:integriq:3546:5b88c795	merge3 tree of 52 integriq PRs: merged=32 red=2 fai
 merge:integriq:3562:8bcfe4b2	merge3 tree of 52 integriq PRs: merged=32 red=2 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-14T13:22:35Z
 merge:integriq:3564:c01548f6	merge3 tree of 52 integriq PRs: merged=32 red=2 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-14T13:22:38Z
 merge:integriq:3584:53bdf3c3	merge3 tree of 52 integriq PRs: merged=32 red=2 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-14T13:22:41Z
+merge:integriq:3582:b3326072	merge3 tree of 52 integriq PRs: merged=32 red=2 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-14T13:22:44Z
