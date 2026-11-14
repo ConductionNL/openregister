@@ -7610,3 +7610,4 @@ fix:dossiq:6195:40dfe694	conflict resolved, pushed df5d8db1b79a66b6ec905727cd117
 verify:hermiq:1729:46a9af48	8 GREEN; 1735 RED (Handoff /result missing type in register)	session-20261114T062156-16c77e6a	2026-11-14T06:34:00Z
 review:openregister:10461:aa2216e3	APPROVE: owner view fails closed, admin path unchanged; suites green, webhook DNS reds inherited	session-20261114T062222-96f530fc	2026-11-14T06:34:08Z
 merge:decidiq:2151:091cacde	merge3 tree of 6 decidiq PRs: merged=6 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T06:34:16Z
+merge:decidiq:2130:f6711133	merge3 tree of 6 decidiq PRs: merged=6 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T06:34:19Z
