@@ -8909,3 +8909,4 @@ hermiq	1762	0722e3ca9a2c3b629b43f8b13c13975af7ad3ffe	CONFLICT	merge3	merges clea
 integriq	3589	d0bb474f960b41ba047f128dfbf8c789a380f2db	GREEN	worker-48	php 8957 tests (baseline 8920, 7 inherited failures), vitest 2218 pass; new failures 0; build matches platform-connector-extension-kit
 integriq	3596	831eea2f8d0a9a1aa88a69d7d0777692d07284cd	GREEN	worker-48	php 8957 tests (baseline 8920, 7 inherited failures), vitest 2218 pass; new failures 0; build matches sources-outbound-rate-limit-pacing
 integriq	3601	be3e4259ac257c0fa3cd07f418850dd15d366231	CONFLICT	worker-48	conflicts with development + 3589,3596
+buildiq	1590	44e1dfb1649056331777a7f603953640733918ad	GREEN	worker-50	phpunit 3184 (baseline 3126, 1 inherited ExportZipGoldenTest) 0 new failures; vitest 4471/4471; builds lifecycle-release-test-gate as specified
