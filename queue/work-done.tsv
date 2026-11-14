@@ -7728,3 +7728,4 @@ fix:shillinq:2986:6f8ebc0f	12-file conflict resolved onto Kernel interfaces, pus
 fix:filinq:2106:666af67d	conflicts resolved, suite green, pushed 58464bdf, REVERIFY recorded	session-20261114T065635-0aca43d3	2026-11-14T07:07:50Z
 fix:filinq:2071:ac224634	conflict resolved, development merged, suite green; new head 7810b3d1	session-20261114T070333-41d2bfe8	2026-11-14T07:07:57Z
 fix:learniq:2504:2527d77c	conflict resolved (union of en/nl keys), new head aaac75e9; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T07:08:07Z
+fix:filinq:2098:fc7ce3c4	conflict resolved (l10n, both sides kept), pushed cde3e349, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:08:33Z
