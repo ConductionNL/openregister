@@ -16,6 +16,7 @@ Extended file operations for register objects beyond basic CRUD. Provides versio
 - **Advisory Locking with TTL** -- Lock a file to signal editing intent. Locks are advisory (not enforced at filesystem level) and expire after a configurable TTL. Unlock explicitly or let TTL expire.
 - **Batch Operations** -- Perform publish, depublish, or delete on multiple files in a single request. Returns HTTP 207 Multi-Status with per-file results.
 - **Thumbnail Preview** -- Generate and serve thumbnail previews for supported file types. Returns a stream response for direct embedding.
+- **Create from a URL** -- `POST .../files` accepts `source: {url}` in place of `content`; the server fetches the bytes itself. See [Creating a file from a URL](#creating-a-file-from-a-url).
 - **Download Audit** -- All file downloads (via `downloadById`) are tracked for compliance and audit trail purposes.
 - **Label Management** -- Attach, update, or remove classification labels on files (`updateLabels`). Supports arbitrary key-value label sets.
 - **Permission-based Access** -- File access is authorized by Nextcloud node permissions, not ownership: read permission to list/view, write permission to update, delete permission to delete. Objects may link files owned by any user (including files reached via a share); a file is not force-transferred to the OpenRegister system user when the current user already has write access. Ownership follows the containing folder's owner.
@@ -28,7 +29,7 @@ All endpoints are scoped under `/api/objects/{register}/{schema}/{id}/files` unl
 |--------|-----|------------|-------------|------------------|
 | GET | `.../files` | `files#index` | List files for an object | Yes |
 | GET | `.../files/{fileId}` | `files#show` | Get single file metadata | Yes |
-| POST | `.../files` | `files#create` | Upload file (JSON body) | Yes |
+| POST | `.../files` | `files#create` | Upload file (JSON body: `content`, or `source.url` to fetch it) | Yes |
 | POST | `.../files/save` | `files#save` | Save file content | Yes |
 | POST | `.../files-multipart` (legacy alias `.../filesMultipart`) | `files#createMultipart` | Upload via multipart form | Yes |
 | PUT | `.../files/{fileId}` | `files#update` | Update file metadata | Yes |
@@ -47,6 +48,23 @@ All endpoints are scoped under `/api/objects/{register}/{schema}/{id}/files` unl
 | POST | `.../files/batch` | `files#batch` | Batch publish/depublish/delete | No (method only) |
 | GET | `.../files/{fileId}/preview` | `files#preview` | Get file thumbnail preview | No (method only) |
 | PUT | `.../files/{fileId}/labels` | `files#updateLabels` | Update file labels | No (method only) |
+
+## Creating a file from a URL
+
+`POST /api/objects/{register}/{schema}/{id}/files` takes either `content` or `source`, never both:
+
+```json
+{"name": "besluit.pdf", "source": {"url": "https://example.org/besluit.pdf"}, "share": false, "tags": ["woo"]}
+```
+
+- The object-level access check runs first, exactly as for a content upload; a caller who may not add files gets 403 or 404 and nothing is fetched.
+- The server fetches the URL itself: only http(s) to a public address, no redirects, a 30 second timeout, and the instance's upload ceiling (the lower of PHP's `upload_max_filesize` and `post_max_size`) enforced while reading.
+- The fetched bytes pass the same upload checks as uploaded content, and are stored as they came (never read as base64).
+- The created file carries where it came from: `metadata.sourceUrl`, `metadata.fetchedAt` (ISO 8601, UTC) and `metadata.sha256` in the response, kept on the file in Nextcloud's file metadata, and a `file.fetched` row on the object's audit trail.
+- Both `content` and `source`, or neither: 400. A `source` without a URL: 400.
+- A fetch that produces no file answers 422 `{error, reason}`, and nothing is written. `reason` is one of `refused-address`, `timeout`, `status` (anything outside 2xx, a redirect included), `too-large`, `empty`.
+
+A plain string in `content` stays content: a URL there is never fetched. Linking a document by reference without copying it is opencatalogi's publish-by-reference, not this endpoint.
 
 ## Implementation Status
 
