@@ -44,6 +44,7 @@ use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Import\ConflictPolicyNames;
+use OCA\OpenRegister\Service\Import\ImportFailedRowsCsv;
 use OCA\OpenRegister\Service\Import\ImportPreviewRefusedException;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
@@ -51,6 +52,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\BackgroundJob\IJobList;
 use OCP\IGroupManager;
@@ -269,19 +271,56 @@ class ImportPreviewController extends Controller {
 			);
 		}
 
-		return $this->runPreview(
-			params: [
-				'register' => $register,
-				'schema' => $this->request->getParam('schema'),
-				'filePath' => ($uploadedFile['tmp_name'] ?? ''),
-				'sourceName' => ($uploadedFile['name'] ?? ''),
-				'format' => $this->request->getParam('format'),
-				'policy' => $this->request->getParam('policy'),
-				'matchKey' => $this->request->getParam('matchKey'),
-				'packSlug' => $this->request->getParam('mapping'),
-			]
-		);
+		$causeRun = $this->retriedRun();
+		if ($causeRun instanceof JSONResponse) {
+			return $causeRun;
+		}
+
+		$params = [
+			'register' => $register,
+			'schema' => $this->request->getParam('schema'),
+			'filePath' => ($uploadedFile['tmp_name'] ?? ''),
+			'sourceName' => ($uploadedFile['name'] ?? ''),
+			'format' => $this->request->getParam('format'),
+			'policy' => $this->request->getParam('policy'),
+			'matchKey' => $this->request->getParam('matchKey'),
+			'packSlug' => $this->request->getParam('mapping'),
+		];
+		if ($causeRun !== null) {
+			$params['causeRun'] = $causeRun;
+		}
+
+		return $this->runPreview(params: $params);
 	}//end create()
+
+	/**
+	 * The uuid of the run a retry names through `retryOf`, which the caller must be able to read.
+	 *
+	 * A retry is a new run naming the original as its cause (D-6). The cause
+	 * is never taken from the request as a uuid: the request names a run by
+	 * id, and only a run the caller may read is accepted.
+	 *
+	 * @return string|null|JSONResponse The original's uuid, null for a first load, or the refusal.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md#requirement-the-failed-rows-of-an-import-are-exportable-and-retryable-req-rcn-006
+	 */
+	private function retriedRun(): string|null|JSONResponse {
+		$retryOf = $this->request->getParam('retryOf');
+		if ($retryOf === null || $retryOf === '') {
+			return null;
+		}
+
+		if (is_numeric($retryOf) === false) {
+			return new JSONResponse(data: ['error' => 'retryOf names an import run by its id'], statusCode: 400);
+		}
+
+		$original = $this->ownedPreview(id: (int)$retryOf);
+		if ($original instanceof JSONResponse) {
+			return $original;
+		}
+
+		return $original->getUuid();
+	}//end retriedRun()
 
 	/**
 	 * Build the preview now, or stage it and queue it when the request asks for async.
@@ -362,9 +401,46 @@ class ImportPreviewController extends Controller {
 			data: [
 				'results' => $rows,
 				'total' => $preview->getTotal(),
+				'pruned' => $preview->getRowsPrunedAt() !== null,
 			]
 		);
 	}//end rows()
+
+	/**
+	 * The failed rows of a run as CSV, in the shape they were submitted.
+	 *
+	 * Skipped, refused and failed rows, so they can be corrected and loaded
+	 * again as a retry. A run whose row detail was pruned answers 410 and says
+	 * so, rather than an empty file that reads as a run with no failures.
+	 *
+	 * @param int $id The run id.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The CSV, or the refusal.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md#requirement-the-failed-rows-of-an-import-are-exportable-and-retryable-req-rcn-006
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function failed(int $id): DataDownloadResponse|JSONResponse {
+		$preview = $this->ownedPreview(id: $id);
+
+		if ($preview instanceof JSONResponse) {
+			return $preview;
+		}
+
+		if ($preview->getRowsPrunedAt() !== null) {
+			return new JSONResponse(
+				data: ['error' => 'The row detail of this import run was pruned by the retention pass', 'pruned' => true],
+				statusCode: 410
+			);
+		}
+
+		return new DataDownloadResponse(
+			(new ImportFailedRowsCsv(rowMapper: $this->rowMapper))->render(run: $preview),
+			'import-'.(string)$preview->getUuid().'-failed.csv',
+			'text/csv'
+		);
+	}//end failed()
 
 	/**
 	 * Apply the decisions a preview made.
