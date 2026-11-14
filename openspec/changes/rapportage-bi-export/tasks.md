@@ -1,10 +1,14 @@
 # Tasks: Rapportage en BI Export
 
-- [ ] Implement: The system MUST provide a general-purpose aggregation API
-      PARTIAL: the API exists as `GET /api/objects/aggregations/{register}/{schema}/value|grouped|timeseries` (count, sum, avg,
-      min, max, groupBy, filters, `metrics[...]` lists). Added the spec's short spelling `metric=count,sum,avg&field=bedrag`
-      (count takes no field); pinned in `AggregationControllerValueGroupedTest`. Left: `having`, zero-filled months, the
-      `{register}/{schema}/aggregate` path and the `results`/`total` envelope.
+- [x] Implement: The system MUST provide a general-purpose aggregation API
+      DONE: the API exists as `GET /api/objects/aggregations/{register}/{schema}/value|grouped|timeseries` (count, sum, avg,
+      min, max, groupBy, filters, `metrics[...]` lists), with the spec's short spelling `metric=count,sum,avg&field=bedrag`
+      (count takes no field); pinned in `AggregationControllerValueGroupedTest`. The spec's own path
+      `GET /api/objects/{register}/{schema}/aggregate` (`AggregationController::report()`) answers
+      `{results: [{<groupField>: ..., <metric>: ...}], total, metric, field}`, reads `groupBy=@self.created`, fills every
+      bucket of an `interval` series (0 for count and sum, labelled `2026-01`; the last twelve buckets without `from`/`to`)
+      and filters rows with `having[<metric>][gt|gte|lt|lte|eq|ne]=<n>` after aggregating; RBAC stays in the runner.
+      Pinned in `AggregationControllerReportTest` and `AggregateReportEnvelopeTest`.
 - [ ] Implement: The system MUST support configurable report templates
 - [ ] Implement: The system MUST support scheduled report generation
 - [x] Implement: The system MUST support export in CSV, Excel, PDF, and ODS formats

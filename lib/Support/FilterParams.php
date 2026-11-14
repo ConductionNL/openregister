@@ -127,6 +127,7 @@ final class FilterParams {
 		'value'      => ['filter', 'metric', 'field', 'metrics'],
 		'grouped'    => ['filter', 'metric', 'field', 'metrics', 'groupBy', 'sort', 'limit'],
 		'timeseries' => ['filter', 'field', 'interval', 'from', 'to', 'metric', 'metricField', 'cumulative'],
+		'report'     => ['filter', 'metric', 'field', 'metrics', 'groupBy', 'sort', 'limit', 'interval', 'from', 'to', 'having'],
 	];
 
 	/**

@@ -45,8 +45,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportEnvelope;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
@@ -640,4 +642,232 @@ class AggregationController extends Controller {
 			'cumulative' => $this->request->getParam('cumulative', false),
 		];
 	}//end timeseriesInput()
+
+	/**
+	 * The reporting aggregation: `GET /api/objects/{register}/{schema}/aggregate`.
+	 *
+	 * One endpoint for the reporting spec's spelling of the ad-hoc
+	 * aggregations: `groupBy` (a property, several, or `@self.created` /
+	 * `@self.updated`), `metric` (one, or `count,sum,avg` with one `field`),
+	 * `metrics[...]`, `interval` with `from`/`to` (the last twelve buckets
+	 * when neither is sent), `having[<metric>][<op>]=<n>` and the filters
+	 * object search reads. A time series carries every bucket of its range,
+	 * an empty one as 0, labelled `2026-01` for a month.
+	 *
+	 * Returns `{results: [{<groupField>: ..., <metric>: ...}], total, metric,
+	 * field, backend, cached}`; `total` is the summed count before `having`
+	 * (or the row count without a count metric). The runner applies RBAC and
+	 * multi-tenancy before it aggregates, exactly as for `grouped`.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema   Schema reference.
+	 *
+	 * @return JSONResponse The report envelope with an `X-OR-Cache` header; 400, 403 or 404 when refused.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-provide-a-general-purpose-aggregation-api
+	 */
+	public function report(string $register, string $schema): JSONResponse {
+		$groupFields = $this->parseGroupByParam();
+		if (count($groupFields) === 0) {
+			return new JSONResponse(['error' => 'groupBy is required'], Http::STATUS_BAD_REQUEST);
+		}
+
+		$metrics = $this->parseMetricsParam();
+		$entries = $this->reportEntries(metrics: $metrics);
+		try {
+			$having = AggregateReportEnvelope::parseHaving(
+				raw: $this->request->getParam('having'),
+				columns: array_values(AggregateReportEnvelope::metricNames(metrics: $entries))
+			);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		$run = new AggregationRun(register: $register, schema: $schema);
+		try {
+			$run->filter = $this->resolveFilter(run: $run, action: 'report');
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		$interval = $this->request->getParam('interval');
+		if (is_string($interval) === true && $interval !== '') {
+			$result = $this->reportSeries(run: $run, groupFields: $groupFields, entries: $entries, interval: $interval);
+		} else {
+			$result = $this->reportGroups(run: $run, groupFields: $groupFields, metrics: $metrics);
+		}
+
+		if ($result instanceof JSONResponse) {
+			return $result;
+		}
+
+		$rows = AggregateReportEnvelope::rows(groups: ($result['groups'] ?? []), groupFields: $groupFields, metrics: $entries);
+
+		return $this->withCacheHeader(
+			result: [
+				'results' => AggregateReportEnvelope::applyHaving(rows: $rows, having: $having),
+				'total' => AggregateReportEnvelope::total(rows: $rows),
+				'metric' => implode(',', array_column($entries, 'metric')),
+				'field' => $this->reportField(entries: $entries),
+				'backend' => ($result['backend'] ?? null),
+				'cached' => ($result['cached'] ?? false),
+			]
+		);
+	}//end report()
+
+	/**
+	 * The report's metric entries: the parsed list, else the one
+	 * `metric`/`field` pair (count taking no field).
+	 *
+	 * @param array<int, array{metric: string, field: mixed}>|null $metrics The parsed list, or null.
+	 *
+	 * @return array<int, array{metric: string, field: mixed}>
+	 */
+	private function reportEntries(?array $metrics): array {
+		if ($metrics !== null) {
+			return $metrics;
+		}
+
+		$primary = $this->primaryMetric(metrics: null);
+		if ($primary['metric'] === AggregationQuery::METRIC_COUNT) {
+			$primary['field'] = null;
+		}
+
+		return [$primary];
+	}//end reportEntries()
+
+	/**
+	 * The field the report's metrics run over, null when only count runs.
+	 *
+	 * @param array<int, array{metric: string, field: mixed}> $entries The metric entries.
+	 *
+	 * @return string|null
+	 */
+	private function reportField(array $entries): ?string {
+		foreach ($entries as $entry) {
+			if (is_string($entry['field']) === true && $entry['field'] !== '') {
+				return $entry['field'];
+			}
+		}
+
+		return null;
+	}//end reportField()
+
+	/**
+	 * Run a categorical report, as `grouped` runs it.
+	 *
+	 * @param AggregationRun                                       $run         The references and the filter.
+	 * @param array<int, string>                                   $groupFields The group fields as the caller wrote them.
+	 * @param array<int, array{metric: string, field: mixed}>|null $metrics     The parsed metrics list, or null.
+	 *
+	 * @return array<string, mixed>|JSONResponse The runner's envelope, or the refusal.
+	 */
+	private function reportGroups(AggregationRun $run, array $groupFields, ?array $metrics): array|JSONResponse {
+		$columns = array_map(static fn (string $field): string => AggregateReportEnvelope::column(field: $field), $groupFields);
+		$primary = $this->primaryMetric(metrics: $metrics);
+
+		try {
+			$query = AggregationQuery::create(
+				metric: $primary['metric'],
+				field: $primary['field'],
+				filter: $run->filter,
+				groupBy: $this->groupSpec(groupFields: $columns),
+				metrics: $metrics
+			);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->runReport(run: $run, query: $query);
+	}//end reportGroups()
+
+	/**
+	 * Run a time-series report: one date field, one metric, every bucket of
+	 * the range present and labelled.
+	 *
+	 * @param AggregationRun                                  $run         The references and the filter.
+	 * @param array<int, string>                              $groupFields The group fields; exactly one, a date.
+	 * @param array<int, array{metric: string, field: mixed}> $entries     The metric entries; exactly one.
+	 * @param string                                          $interval    The bucket width as sent.
+	 *
+	 * @return array<string, mixed>|JSONResponse The runner's envelope with filled, labelled buckets, or the refusal.
+	 */
+	private function reportSeries(AggregationRun $run, array $groupFields, array $entries, string $interval): array|JSONResponse {
+		if (count($groupFields) > 1 || count($entries) > 1) {
+			return new JSONResponse(
+				['error' => 'a time series takes one date field in `groupBy` and one metric'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$gap = strtolower($interval);
+		$range = [
+			'from' => (string)$this->request->getParam('from', ''),
+			'to' => (string)$this->request->getParam('to', ''),
+		];
+		if ($range['from'] === '' && $range['to'] === '') {
+			$range = AggregateReportEnvelope::defaultRange(gap: $gap, now: new DateTimeImmutable('now'));
+		}
+
+		try {
+			$schemaEntity = $this->services->runner->findSchema(schemaRef: $run->schema, registerRef: $run->register);
+			$query = $this->services->validator->validate(
+				input: [
+					'field' => AggregateReportEnvelope::column(field: $groupFields[0]),
+					'interval' => $interval,
+					'from' => $range['from'],
+					'to' => $range['to'],
+					'metric' => $entries[0]['metric'],
+					'metricField' => $entries[0]['field'],
+					'filter' => $run->filter,
+					'cumulative' => false,
+				],
+				schema: $schemaEntity
+			);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		$result = $this->runReport(run: $run, query: $query);
+		if ($result instanceof JSONResponse) {
+			return $result;
+		}
+
+		$groups = AggregateReportEnvelope::fillGaps(
+			groups: ($result['groups'] ?? []),
+			gap: $gap,
+			range: $range,
+			metric: $entries[0]['metric']
+		);
+		foreach ($groups as $index => $group) {
+			$groups[$index]['key'] = AggregateReportEnvelope::label(key: (string)($group['key'] ?? ''), gap: $gap);
+		}
+
+		$result['groups'] = $groups;
+
+		return $result;
+	}//end reportSeries()
+
+	/**
+	 * Run a report query; the runner decides access.
+	 *
+	 * @param AggregationRun   $run   The references.
+	 * @param AggregationQuery $query The validated query.
+	 *
+	 * @return array<string, mixed>|JSONResponse The runner's envelope, 403 when refused, 404 when unknown.
+	 */
+	private function runReport(AggregationRun $run, AggregationQuery $query): array|JSONResponse {
+		try {
+			return $this->services->runner->runAdhocByRef(registerRef: $run->register, schemaRef: $run->schema, query: $query);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+	}//end runReport()
 }//end class
