@@ -10126,3 +10126,4 @@ fix:buildiq:1583:1d68d4b1	RED floor fixed: unit_interfacing 3.42 vs base 3.41, p
 fix:learniq:2538:77a7f766	merged development, resolved l10n conflict; new head bb7460d5, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T16:20:26Z
 build:pipelinq:services-and-resources-at-a-glance:c3	done: PR #3829 4.1 example data via demo seed (@week placeholder, 7 services, 7 resources, 24 bookings) + openapi docs for figures endpoints; all code tasks ticked; suite 7904 tests 0 failures	session-20261114T161013-497dba57	2026-11-14T16:20:43Z
 verify:humaniq:1145:c964df9a	GREEN 1145; CONFLICT 1156 (manifest-baseline pages.json)	session-20261114T151750-b10540e9	2026-11-14T16:20:43Z
+fix:learniq:2497:dcf3a162	conflict resolved, new head c85c5913	session-20261114T154806-a38868f0	2026-11-14T16:20:50Z
