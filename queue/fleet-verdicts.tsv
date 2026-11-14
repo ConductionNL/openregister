@@ -9186,3 +9186,4 @@ learniq	2520	eb56a06d586ad0869e2703ec0267bc42bc0f7ea6	GREEN	worker-29	unit 6785 
 learniq	2531	4185b758f553340c9a7c1e16ff9356f6d7f75653	GREEN	worker-29	unit 6785 tests vs baseline 6754, 1 inherited failure (HigherEducationExampleSetTest), 0 new; js 1367, 9 inherited, 0 new
 learniq	2532	2772c58e19949ae707acc898bd7fec7a06f7bd6a	CONFLICT	worker-29	conflicts with #2520 in lib/Settings/learniq_register.json (merges clean on development alone)
 learniq	2536	4b170189c09b1d68efa6b840839384a345755605	GREEN	worker-29	unit 6785 tests vs baseline 6754, 1 inherited failure (HigherEducationExampleSetTest), 0 new; js 1367, 9 inherited, 0 new
+decidiq	2195	9120311a2279733f2bc86f0b3704c7738c83ea2f	GREEN	worker-25	one-PR tree: PHP unit 4232 OK (development 4232 OK), vitest 2757 OK; builds capability-rows-get-requirements, the removed assertion is a widget count raised for its block
