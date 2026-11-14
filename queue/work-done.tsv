@@ -9583,3 +9583,4 @@ fix:shillinq:3007:a5a3a09c	conflict resolved, new head f7e43c4d	session-20261114
 fix:shillinq:2997:6cf1addf	merged development, resolved 7-file conflict; new head 89216b68	session-20261114T141010-8dc8bd74	2026-11-14T14:47:25Z
 fix:learniq:2496:1358154d	REVERIFY: l10n keys moved off the tail; clean on dev and dev+2486+2488; new head 5dd6a73e8	session-20261114T134652-7dff5131	2026-11-14T14:47:35Z
 build:decidiq:agenda-item-confidential-papers:c2	partial: PR #2188 built task 3 listener + task 2 Stukken badge; left task 1 read rules (needs body on item + OR evaluator test), task 2 Lezers toevoegen/Besloten punt, task 5 view log (belongs in OpenRegister file serving)	session-20261114T141720-f9e7a46b	2026-11-14T14:47:58Z
+verify:learniq:2493:749e1397	GREEN 2493,2501,2515; CONFLICT 2519,2520,2532; skipped (head moved) 2497,2521,2523	session-20261114T141721-d7ad4da5	2026-11-14T14:49:06Z
