@@ -7520,3 +7520,4 @@ stackiq	1911	3d9e84f8481be30f832638de74a190b397f65b8a	GREEN	worker-18	unit 3485 
 stackiq	1912	8ec0b91d406060dcfab23508f274dd6c180ba685	CONFLICT	worker-18	conflicts in tree with #1908 (lib/AppInfo/Application.php); clean on plain development
 stackiq	1913	f201efbda2f3649b389b7a3a9d83073c63984b23	GREEN	worker-18	unit 3485 tests on tree (8 PRs), no failures (baseline 3446, none); vitest 2496 pass; tasks.md only
 stackiq	1914	b0dd2e42b690cf2de3eaa8095f590227eeabc646	GREEN	worker-18	unit 3485 tests on tree (8 PRs), no failures (baseline 3446, none); vitest 2496 pass; additive JS utils with tests
+stackiq	1915	5f597b22c5c2dde8034d603384b50297ea826ba9	GREEN	worker-18	unit 3485 tests on tree (8 PRs), no failures (baseline 3446, none); vitest 2496 pass; scenario schemas, demo data and derivation
