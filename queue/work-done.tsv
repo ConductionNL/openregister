@@ -11919,4 +11919,5 @@ cover:shillinq:05639debm9818:1b97f731	already done: lib/Listener/*.php at 95.6% 
 verify:integriq:3639:55cd2dff	3639 GREEN (tests only, no new failures)	session-20261114T224753-194bb25e	2026-11-14T23:30:53Z
 fix:versioniq:726:d1f35455	no change: branch already contains development; conflicts only with open sibling PRs #700 (InstallCollaborators.php) and #734 (AppStoreSource.php + 2 golden fixtures); merge development in after those land	session-20261114T221759-cd5c5678	2026-11-14T23:30:58Z
 verify:decidiq:2208:92fbaf9f	GREEN: #2208 tests only, 4377 -> 4385 OK	session-20261114T214733-589f5bff	2026-11-14T23:31:00Z
+fix:versioniq:711:9d778e23	no change: branch already contains development; conflicts only with open sibling PR #695 (InstanceSettingsFields.php, InstanceSettings.php); merge development in after #695 lands	session-20261114T221759-cd5c5678	2026-11-14T23:31:36Z
 verify:keepiq:1793:8d1e42ff	GREEN #1793 (php 5213 ok, vitest 3 inherited fails)	session-20261114T231756-01da210e	2026-11-14T23:31:36Z
