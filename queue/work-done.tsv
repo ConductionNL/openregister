@@ -10043,3 +10043,4 @@ fix:humaniq:1148:3bc5cb16	failed: branch already contains development and merges
 fix:planninq:1159:3ba42b87	conflicts resolved (TaskDetail.vue both sides, l10n), new head b7c86685, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T16:05:36Z
 build:integriq:messaging-sms-providers-and-notifynl-mail:c2	done: PR #3628 (tasks 5-7; #3563 had 1-4,8); e2e and live sends left; 68 new tests, no new failures	session-20261114T151750-b10540e9	2026-11-14T16:05:47Z
 verify:hermiq:1767:72e7b8b4	1767 GREEN, 1784 GREEN	session-20261114T154757-c9bf237e	2026-11-14T16:06:05Z
+build:planninq:tasks-dates:c2	failed: permission (npx openspec validate was refused); note: PR #1159 already has every code task built, only Playwright/mount checks and openspec validate remain	session-20261114T144749-57007b4b	2026-11-14T16:06:13Z
