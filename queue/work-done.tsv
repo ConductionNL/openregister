@@ -9422,3 +9422,4 @@ fix:filinq:2106:c30c20ab	no change: #2106 is clean on development; its conflict 
 fix:portaliq:2442:5eed4168	conflict resolved, new head d378be76	session-20261114T141737-e9e54940	2026-11-14T14:20:24Z
 verify:portaliq:2430:899a8de4	2 GREEN (2430,2433), 2 CONFLICT (2489,2494); suite 5246 ok, baseline 5228	session-20261114T141737-2ab246b3	2026-11-14T14:21:01Z
 fix:shillinq:2976:7513bd9c	l10n conflict with #2963 removed (keys moved to catalogue end); REVERIFY recorded, new head b29fc602b8b9b344cd3aee25345c2b45a7cf077d	session-20261114T131642-b20146b1	2026-11-14T14:21:08Z
+verify:pipelinq:3835:03a4780d	3835 BLOCK: removes /api/articles routes still called by frontend (tasks 1.2/4.1 open); suite 8398 OK	session-20261114T141720-f9e7a46b	2026-11-14T14:21:37Z
