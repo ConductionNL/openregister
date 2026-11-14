@@ -10226,3 +10226,4 @@ buildiq	1648	0d30354dd00b8a5b59870d598d2246b49455f09a	RED	merge3:merge-gate	GATE
 buildiq	1613	9a9eb9cb0bd5d71a6cf2dd6166cd8cb713ad5305	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json 
 buildiq	1650	2ada49a17004615851e3b6989c2552295c183725	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js src/components/page-editor/fields/fieldTypes.js 
 buildiq	1652	ef6d7d01284bbad75463c6d8f66231de9fd23ef4	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1751	316c998af8821b8b9c7f26e666936f447801241b	REVERIFY	worker-33	merged development in; register: both sides were 0.57.0 for different changes, now 0.58.0 with both descriptions; nl keys of both sides kept, .js rebuilt; tests/Unit/Settings 55 tests, 2 errors need an OpenRegister checkout; new head 5340b3de69728be69e06a0c7b9c343128e3af434, verify it
