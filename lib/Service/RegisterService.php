@@ -394,6 +394,8 @@ class RegisterService implements RegisterServiceInterface {
 		$schemas = [];
 		foreach ($schemaIds as $schemaId) {
 			try {
+				// Stays global: the id IS the register's own entry for the schema, so there is no id set to narrow a
+				// legacy slug entry against.
 				$schemas[] = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
 			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 				// Orphan IDs cannot contribute to stats; skip silently.

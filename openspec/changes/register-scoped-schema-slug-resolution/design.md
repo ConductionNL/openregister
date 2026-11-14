@@ -68,7 +68,7 @@ The ambiguity that remains when `?register=` is absent must be logged at debug l
 
 ### Declarative-vs-imperative decision (ADR-031)
 
-Not applicable. This change introduces no lifecycle, aggregation, derived field, notification, relation, or widget behaviour — it corrects an existing lookup inside the data-access layer. No `x-openregister-*` declaration is appropriate and no new service class is added.
+Not applicable. This change introduces no lifecycle, aggregation, derived field, notification, relation, or widget behaviour — it corrects an existing lookup inside the data-access layer. No `x-openregister-*` declaration is appropriate. One small lookup class is added, `SchemaRefInRegister`: it is the existing `setSchema()` pattern made reusable so that each fixed caller applies it the same way, not a new mechanism.
 
 ### Seed Data (ADR-001)
 
@@ -80,9 +80,11 @@ No new schema is introduced, so no seed objects are required. The regression tes
 - **Decision 3 leaves a known-imperfect path.** `GET /api/schemas/{id}` without `?register=` still guesses. That is a deliberate, documented deferral, not an oversight — and it is now logged rather than silent.
 - **This is the foundation repository.** Every app resolves schemas. The regression test failing before the fix is the minimum bar for believing the change does anything; a test written after the fix, that passes immediately, would prove only that it does not crash.
 
-## Audit so far (task 2, partial)
+## Audit (task 2)
 
-Measured against `main` on 2026-11-13. Since this change was written, the fix has largely landed through other changes: there is a shared resolver for a `{register}` + `{schema}` pair, and the main request paths go through it or through `findBySlugInIds()`. The table lists the paths verified so far. It is **not** the complete enumeration task 2.1 asks for: `SchemaMapper::find()` has about 200 call sites in about 130 files, and the rest are not classified yet.
+Measured against `main` on 2026-11-14. `SchemaMapper::find()` has 206 call sites in 130 files. Every one was traced to where its argument comes from, and the direct slug queries (`findBySlug()`) were added. Each slug-capable path is classified as (a) already register-scoped, (b) holds a register but did not use it, or (c) genuinely has no register. A (c) path carries an inline comment at the lookup saying why it stays global (task 2.3).
+
+### Verified in earlier passes
 
 | Path | Disposition | Notes |
 | --- | --- | --- |
@@ -95,6 +97,62 @@ Measured against `main` on 2026-11-13. Since this change was written, the fix ha
 | `occ openregister:backfill-object-slugs` | (a) scoped | |
 | `ObjectsController::moveEnds()` (move to another register and schema) | was (b), now scoped | Both registers are resolved first; each schema slug goes through `findBySlugInIds()` against its own register's schemas, falling back to `find()` for ids, uuids and slugs the register does not carry (`schemaInRegister()`). `ObjectsControllerSchemaSlugScopeTest` fails on the old code, naming schema 22 instead of 36. |
 | `ObjectsController::mergeAccessRefusal()` (rights check of a merge) | was (b), now scoped | Same helper, with the route's register. |
+
+### Fixed in this pass (task 3.1)
+
+All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the `setSchema()` pattern as one lookup: `findBySlugInIds()` against the register's schemas first, then `find()` for ids, uuids and slugs the register does not carry.
+
+| Path | Disposition | Register used |
+| --- | --- | --- |
+| `ViewService::viewSchema()` (presentation validation) | was (b), now scoped | The view query's first register. |
+| `ViewPresentationService::openKanbanGrouping()` | was (b), now scoped | The board's register, the one `setSchema()` resolves in. |
+| `occ openregister:rematerialise-calculations` | was (b), now scoped | The register argument read on the line before. |
+| `SchemaScopedProvider::resolveSchemaId()` (search and reference providers) | was (b), now scoped | The provider's register, read once and shared with the id lookup. |
+| `ObjectMetricSource::buildBaseQuery()` | was (b), now scoped | The descriptor's register when it names one; a missing register still fails after the schema. |
+| `RegistersController` export of one schema table, import template, CSV import, JSON import | was (b), now scoped | The route's register. |
+| `ScopesController::resolveSchemas()`, `PermissionReportScope::schemas()` | was (b), now scoped | The register filter, when it narrows to exactly one register. |
+| `LogService::findObjectInScope()` | was (b), now scoped | The register read on the line before. |
+| `TasksProvider::createTaskFor()` | was (b), now scoped | The object's register. |
+| `MagicMapper::searchObjects()` / `countObjects()` single-table path | was (b), now scoped | The register resolved on the line before; the slug is passed uncast on purpose. |
+| `MagicMapper::findBulkSchema()` (bulk save) | was (b), now scoped | The bulk save's register. |
+| `ImportService` multi-sheet spreadsheet import | was (b), now scoped | The register imported into. |
+| `TablesSchemaSyncService::findSchemaBySlug()` | was (b), now scoped | The `tables` register. |
+| `ImportHandler` object configuration, listed objects, seed objects, seed passes, seed references | was (b), now scoped | The configuration's register, the object's `@self.register`, the pass's target register, the seed object's register. |
+| `ObjectsController::crossTablePairs()` (cross-table search) | was (b), now scoped | Each register pairs with its own schema for a shared slug. |
+
+### Still class (b): open
+
+| Path | Disposition | Why it is not done here |
+| --- | --- | --- |
+| `SchemaManageGate::mayManageNamed()` (mixed-schema bulk rights) and `SaveLookups::schemaIdBySlug()` (the save) | (b), open | Must change together: scoping the rights check alone would check a different schema than the save writes. A follow-up. |
+| `RegisterResolverService::findSchema()` (app-config pair) | (b), open | The scoped lookup bypasses the tenant filter, so the explicit-organisation check has to be carried over first. |
+| `SourceRecordResolver::lookupSchemaId()` (survivorship) | (b), open | Also memoised in a static keyed by the bare slug; the key needs the register first. |
+| `TranslationController::resolveSchema()` | (b), open | The object's register is one read away, but the controller has no register reader. |
+| `UtilityHandler::normalizeEntity()` (migration sides) | (b), open | Each side carries its register; the helper resolves one reference alone. |
+| `FacetHandler::schemasMatching()` | (b), open | The query's `@self.register` is there; no register reader is injected. |
+| `SearchQueryHandler::schemaOrNull()` | (b), open | `buildSearchQuery()` holds the register but passes only the schema down. |
+| `AggregationRunner::loadSchema()` | (b) for `resolveCrossTarget()`, (c) for joins and the no-register `findSchema()` | `$run->register` is held on the cross-schema path. |
+| `RelatedRowQueryApplier::findSchema()` | (b), open | Reached after an ambiguous slug; the filter target's register is not passed down. |
+
+### Class (a) and (c)
+
+| Path | Disposition | Reason |
+| --- | --- | --- |
+| `GET /api/schemas/{id}` without `?register=`, `/related`, `/indexes`, `/list-presentation` | (c) | Schema-level routes; no register in the request (Decision 3). |
+| MCP `SchemasToolProvider` get/update/delete, agent `SchemaTool` get/update/delete | (c) | The tool inputs carry no register. |
+| `ImportHandler::owningAppOfSlug()`, `resolveSchemaGlobally()` | (c) | The app-scoped and legacy import fallbacks, reached only without register schema ids. |
+| `ReferenceFilterOperandGuard::propertiesOf()` | (c) | Schema-body validation; a schema is not owned by a register. |
+| `ScopesController::matrixPreview()`, `RulesController::resolveSchema()` | (c) | Their routes name only the schema. |
+| `ValidateObject::resolveSchema()` (JSON-schema `$ref` loader) | (c) | The loader is handed only the URI. |
+| `ObjectService::findSchemaGlobally()` | (c) | Reached only when no register is set. |
+| `ManifestService` current-user schema (`findBySlug`) | (c) | A manifest names no register. |
+| `RelatedRowQueryApplier::resolveSchema()` (`findBySlug`) | (c), refuses | Two schemas answering one slug is refused as ambiguous rather than guessed. |
+| `RegisterSerializer::findSchemaCached()`, `RegisterService::resolveSchemasForStats()`, `TablesSchemaSyncService::findUnscopedSchema()` | (c) | The reference IS the register's own schema-list entry; there is no id set to narrow a legacy slug entry against. |
+| `BackfillObjectSlugsCommand`, `ImportHandler::noteSlugOutsideRegisterScope()`, `RegisterScopedSchemaResolver::uniquelyIdentifiedSchema()` | (a) | Scoped first, a log-only probe, and an id/uuid-only branch. |
+
+### Never a slug
+
+About 150 of the call sites never see a slug. They pass a stored id or uuid: `$object->getSchema()`, a `schema_id` column, an `(int)` cast, a typed `int` parameter, or an id taken from a register's own schema list. They are not slug-resolving paths. They sit in the mappers (`MagicMapper` table and union reads, `AuditTrailMapper`, `RegisterMapper`), the listeners, background jobs and repair steps, the archival, retention and deletion services, RBAC ownership and lock checks, notifications, files and the int-routed controller actions (`SchemasController` update, destroy, download, stats; `SchemaImportController`, `SchemaMigrationController`, `RetentionController`).
 
 ### The request cache (Decision 4)
 

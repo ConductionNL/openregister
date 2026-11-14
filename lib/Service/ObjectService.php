@@ -1240,6 +1240,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // already provides request-scoped caching (findCache) and supports
         // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug).
         try {
+            // Stays global: reached only when no register is set; with one, resolveSchemaRef() scopes the slug
+            // first.
             return $this->schemaMapper->find(
                 id: $schemaRef,
                 _rbac: false,

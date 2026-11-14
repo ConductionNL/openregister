@@ -28,11 +28,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibilityInterface;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\AppFramework\Db\Entity;
@@ -60,6 +62,7 @@ class ViewPresentationService {
 	 * @param PropertyRbacHandlerInterface|null $propertyRbac Judges whether the caller may group on a governed property.
 	 *                                               Nullable and last so no construction site shifts; absent, a
 	 *                                               governed grouping property is refused, which is safe
+	 * @param RegisterMapperInterface|null $registerMapper Reads the board's register for a register-scoped schema slug.
 	 *
 	 * @return void
 	 */
@@ -72,6 +75,9 @@ class ViewPresentationService {
 		// and then a GOVERNED grouping property is refused, which is the safe
 		// direction.
 		private readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
+		// Also last and nullable: reads the board's register so its schema
+		// slug resolves inside it. Absent, the lookup is the global one.
+		private readonly ?RegisterMapperInterface $registerMapper = null,
 	) {
 	}//end __construct()
 
@@ -164,7 +170,10 @@ class ViewPresentationService {
 			throw new InvalidArgumentException('Kanban view requires a register and schema in its query');
 		}
 
-		$schema = $this->schemaMapper->find($schemaRef);
+		// The board's own register first: the same register setSchema() below
+		// resolves the slug in, so the grouping and the cards name one schema.
+		$schema = (new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper))
+			->find(schemaRef: $schemaRef, register: $registerRef);
 		$this->assertMayGroupOn(schema: $schema, groupByField: $groupByField);
 
 		// Set register/schema context BEFORE any object-query call (including
