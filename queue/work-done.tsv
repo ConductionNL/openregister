@@ -11324,3 +11324,4 @@ fix:stackiq:1946:f75d98b8	conflict resolved, pushed c75ea65b, REVERIFY	session-2
 fix:stackiq:1945:8ff46c8f	conflict resolved (l10n union); pushed 6fb762aa, REVERIFY recorded	session-20261114T203357-c555025b	2026-11-14T21:53:29Z
 fix:stackiq:1706:dcde9ef2	conflict resolved, pushed 59b724c4, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T21:53:38Z
 merge:opencatalogi:2650:a52c2be5	stale	feeder	2026-11-14T21:50:13Z
+build:opencatalogi:integration-feed-consumer-credentials:c2	partial: PR #2652 head 50d4611a (development merged in) — built 3.2 Feed consumers section (admin-only, lazy, list/add/generate-once/revoke/disable, instance accounts) + 4.1 docs and 9 strings in all locales, +5 jest tests; PHPUnit 5654 same 2 inherited reds, jest same failing suites, vitest 1073; left 3.1 (read rule on shared OOAPI schemas needs a design decision) and the e2e spec (live)	session-20261114T191742-bf93c040	2026-11-14T21:53:50Z
