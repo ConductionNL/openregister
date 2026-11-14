@@ -11858,3 +11858,4 @@ merge:filinq:2114:36bf3579	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 s
 merge:filinq:2094:d7d13ed9	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:22:52Z
 merge:filinq:2079:32e6604b	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:22:55Z
 merge:filinq:2123:d7d9fff5	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:22:58Z
+cover:openregister:7350e3efmba30:js7af948c9	PR #10574: 6 DOM tests for the EditSchemaProperty computed-value section (1046->1052 pass); remaining gap in these dirs is mostly compiler helper output, 95% not reachable with behaviour tests	session-20261114T231738-b43a6a63	2026-11-14T23:23:16Z
