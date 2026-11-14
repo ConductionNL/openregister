@@ -2365,3 +2365,21 @@ pipelinq	3825	2f61abf97f7861d42d91b46ce12e93968ff75f14	MERGED	merge3	GATE OK sbo
 pipelinq	3826	f843cb02c08fb3f6eb87abd8e14139c0cd12ce60	RED	merge3	GATE RED checker floor: adrvalidator: warn -> fail
 pipelinq	3827	4f94733508a2f7385fa1ef53b1708903ab9bd910	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 pipelinq	3828	0f8c8cc2d68947f4db6edfcdf0660f948dbc125e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2121	6dfad7c2666363b8bce2b05558699c9d8751c189	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2137	3e19195251053f9a67e5d9a72987f1b46f1166b9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2139	ed201473ad16eb6ce4dc27a639dba82ad493b6e1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2144	30d02148ab0e469d09e9162d6827685c91458c6e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2148	7350b5a6b5ca673939aa570b8ba3827cdde8fcf2	RED	merge3	GATE RED floor: duplication: 3.82 -> 3.80; unit_complexity: 3.89 -> 3.87
+decidiq	2149	c82a792a1a602f97f413b3002b9c629897ff3666	RED	merge3	GATE RED floor: unit_complexity: 3.89 -> 3.86; unit_interfacing: 3.33 -> 3.31
+decidiq	2158	68d22a7ac7daeb012993c28564d2b0fd3f743ed4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2159	9b4e5dd8348f455e12c20781e447acdb16aeb9e8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2160	26c3d35bf4954d0935e80a79381b6b455d35bd4a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2161	78b178c981df173cc4eea8b38731781b28310d1c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2163	d5bf6e73f2ae7bfb7f1f86d4b89740bd1c78d189	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2164	d924a5dc074edfa3f7c6820ce353a1cfb4762e12	SKIP	merge3	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /home/rubenlinde/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd }, not the pinned 4.0.5
+decidiq	2166	40f36f767f750bd83a463f757ecabedd24a08e94	SKIP	merge3	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /home/rubenlinde/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd }, not the pinned 4.0.5
+decidiq	2167	9cf33dc3ff5dc12df452df3cb753081e0cef9498	SKIP	merge3	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /home/rubenlinde/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd }, not the pinned 4.0.5
+decidiq	2169	d6a0067ec1d6b3f291bedc78cbadce8e9e01cad9	SKIP	merge3	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /home/rubenlinde/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd }, not the pinned 4.0.5
+decidiq	2175	30ead60504c2129cb93d3174e224f045f34a6056	SKIP	merge3	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /home/rubenlinde/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd }, not the pinned 4.0.5
+decidiq	2183	bbf91e1cfa0902ace0fa12e8e8091e14d1d1a91c	SKIP	merge3	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /home/rubenlinde/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd }, not the pinned 4.0.5
+decidiq	2185	ca52b5c98bd3b5af11c8c55ac09cc9cbc3c46989	SKIP	merge3	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /home/rubenlinde/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd }, not the pinned 4.0.5
