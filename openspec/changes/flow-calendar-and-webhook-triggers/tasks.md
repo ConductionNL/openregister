@@ -2,10 +2,10 @@
 
 ## 1. Calendar trigger
 
-- [ ] 1.1 `TriggerCalendarNode` (`openregister.trigger-calendar`) registered through `RegisterFlowNodesEvent`, with config validation for register, schema, date property, offset, `workingCalendar` and `runAs`. Verify: unit tests for each refused config.
+- [x] 1.1 `TriggerCalendarNode` (`openregister.trigger-calendar`) registered through `RegisterFlowNodesEvent`, with config validation for register, schema, date property, offset, `workingCalendar` and `runAs`. Verify: unit tests for each refused config.
 - [ ] 1.2 A due-moment index per trigger and record, written on object create, update and delete, so a changed date moves the moment and a cleared date or a deleted record removes it. Verify: unit tests for move, clear and delete.
 - [ ] 1.3 A background job that queues a run for every moment that has come due, once per record and date value, through `FlowRunService::queue()`. Verify: clock-controlled test that a moment fires once and only once.
-- [ ] 1.4 Offsets counted on the working calendar when one is named, through the flow-business-timers calculator. Verify: test across a weekend and a holiday.
+- [x] 1.4 Offsets counted on the working calendar when one is named, through the flow-business-timers calculator. Verify: test across a weekend and a holiday.
 - [ ] 1.5 Enabling a trigger records the moment it was enabled; moments before it are skipped and counted on the flow. Verify: test with three past and one future record.
 
 ## 2. Incoming-webhook trigger
