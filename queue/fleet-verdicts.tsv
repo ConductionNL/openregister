@@ -9675,3 +9675,4 @@ humaniq	1125	a44e6b58d61ba2f214250618d75d5232c8ec9580	REVERIFY	worker-41	floors:
 integriq	3622	85e683d9fd7b309720ab13edc52f7c966a75a7c3	GREEN	worker-49	unit 9164 on tree, 4 failures all inherited (baseline 9084 with 7 failures: CallServiceTest x2, JobsControllerTest x2 also on development), vitest 2276 OK, new failures none; implements messaging-payment-command-settlements-and-point-of-sale (seed + test)
 integriq	3546	9e0ba07c641b39acf35cee7a011576a9a5e95525	CONFLICT	worker-49	does not merge on the verified tree (development + earlier PRs in tree order)
 integriq	3574	67ece58a674829e7418f3776edd552d1650d1869	CONFLICT	worker-49	does not merge on the verified tree (development + earlier PRs in tree order)
+integriq	3617	6ff0aa8564d1f6d67d2d68ba6f36dcf47679860b	CONFLICT	worker-49	does not merge on the verified tree (development + earlier PRs in tree order)
