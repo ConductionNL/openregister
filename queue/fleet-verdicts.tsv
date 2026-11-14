@@ -7514,3 +7514,4 @@ opencatalogi	2675	75dd2782987c2335977997663a67a6b5ad06a6c0	GREEN	worker-15	tree 
 opencatalogi	2676	b4a5739bc4c42ac84137c36fd324bb24416a4fab	GREEN	worker-15	tree 5583 tests vs baseline 5485 (2 failures on development, none new); vitest 1034/1034
 opencatalogi	2677	fecc3eb0fdc7e2246258c94db533312f32d510fe	GREEN	worker-15	tree 5583 tests vs baseline 5485 (2 failures on development, none new); vitest 1034/1034
 opencatalogi	2678	c98dd334841a23d3e544c7ad36caba90080e3d7e	CONFLICT	worker-15	conflicts with development + 2670-2677 in tree order; clean on development alone
+stackiq	1909	a4d170ee8019773cf60f7d430b746c3d0e290073	GREEN	worker-18	unit 3485 tests on tree (8 PRs), no failures (baseline 3446, none); vitest 2496 pass; org export scope now the portfolio rule (member, admin, ambtenaar) exactly as REQ-CER-003 asks
