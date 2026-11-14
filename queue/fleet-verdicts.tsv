@@ -10459,3 +10459,4 @@ versioniq	714	3e04dbd12dba0066c2e035c855244a5aacd92430	GREEN	worker-23	unit-only
 versioniq	717	6b86f6b4e1c7732a07e0f1a8cdbe8a072229e204	GREEN	worker-23	unit-only 1762 tests, 2 failures = baseline (External/SelectedReleaseInstallGoldenTest, inherited); vitest 2989 pass; no new failures
 versioniq	721	5e93235b5b5a42cb100e6b533ccd156d55c4a653	GREEN	worker-23	unit-only 1762 tests, 2 failures = baseline (External/SelectedReleaseInstallGoldenTest, inherited); vitest 2989 pass; no new failures
 versioniq	727	745065b5a50c2a9717daf552af2b9b70e3c7	CONFLICT	worker-23	conflicts with the tree after 695,707,714,717,721
+integriq	3628	3039ae5d46935b5d44c03c3757cee5df6f856b02	REVERIFY	worker-15	unit_complexity floor: split sendMessage (cc 23->9), NotifyNL sendEmail (11->8), CM.com readStatusCallback (13->4) into helpers, behaviour unchanged; suite 9146, 6 fails all inherited from development; new head 626c2e6f59943208459fd06bcbb64652dd68f1b6, verify it
