@@ -11942,3 +11942,4 @@ fix:decidiq:2199:fe3a4fc8	conflict resolved (l10n both sides kept), unit 4404 OK
 cover:shillinq:05639debm9818:ef05df2f	PR #3084: 107 tests for NationalExtraTailChecks + NationalReportingTailChecks; lib/Standards/Checks 93.6% -> ~95.4%; suite 11568 OK	session-20261114T231755-998f7ff8	2026-11-14T23:34:30Z
 measure:versioniq:20261114h22	php 98.24% (pcov), js 97.27%	session-20261114T221759-cd5c5678	2026-11-14T23:34:35Z
 fix:decidiq:2178:24b4be0c	conflict resolved, new head b9927684	session-20261114T214733-589f5bff	2026-11-14T23:34:42Z
+cover:hermiq:065f1631mcdb5:0f859653	failed: no pcov/xdebug installable here (no apt package, no pecl) to locate the uncovered lines; every lib/Flow class already has behaviour tests (11 files), so the thin 4% cannot be targeted by reading - needs a worker with a coverage driver	session-20261114T222427-f171565a	2026-11-14T23:34:57Z
