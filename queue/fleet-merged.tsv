@@ -2970,3 +2970,5 @@ hermiq	1739	efdf5808e8b0592d93d95fa5e869d549ef393851	SKIP	merge3	GATE UNMEASURED
 hermiq	1767	69628bfa7e3249300984c45a5f519fc59c745036	RED	merge3	GATE RED absolute floor: hermiq maintainability 3.73 after merge is below its floor 3.77
 hermiq	1782	09cb5576e64141eae0ab3518ad8680e9d0bf748c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 hermiq	1793	ef80f599c0b539dbe09ab8376bcf93fe22cd897e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+shillinq	2991	47756ee7bddb7a0a7db8668eda690a3bdef34340	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+shillinq	3069	71d3c09e624976e5e85566397eefea9aaf539dda	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09

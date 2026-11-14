@@ -11289,6 +11289,7 @@ build:opencatalogi:published-file-carries-its-facts:c2	partial: PR #2672 head c3
 fix:opencatalogi:2695:a0a2b92e	moved l10n keys so it merges beside 2683/2684; new head 39e0ce81, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T21:46:51Z
 build:opencatalogi:search-cors-on-every-public-endpoint:c2	no code task left: PR #2686 has every code task; 3.2's field is built and only its e2e (tests/e2e/cors-allowlist.spec.ts, live run) remains	session-20261114T211750-05725ff5	2026-11-14T21:47:20Z
 fix:launchpad:1223:60f58983	no conflict: branch already contains development dc36afff; REVERIFY recorded with the unchanged head	session-20261114T202449-f0278d5a	2026-11-14T21:47:18Z
+verify:launchpad:1229:4d1f3bec	GREEN 1229 (1 inherited failure)	session-20261114T212457-7a749dbd	2026-11-14T21:47:36Z
 review:opencatalogi:2655:bd2bce67	stale	session-20261114T214719-cd72efa7	2026-11-14T21:48:12Z
 merge:hermiq:1736:988495f0	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T21:48:13Z
 merge:hermiq:1715:364d15f3	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T21:48:17Z
@@ -11296,3 +11297,25 @@ merge:hermiq:1735:6c4391c0	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 sk
 merge:hermiq:1791:64b8e546	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T21:48:23Z
 verify:keepiq:1792:e76e77e3	1792 GREEN (phpunit 5192 ok; vitest 3 inherited failures); 1816 skipped (head moved to 6bce7859)	session-20261114T194805-be886caa	2026-11-14T21:48:25Z
 merge:hermiq:1792:77e32ff7	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T21:48:34Z
+cover:opencatalogi:fc83bfb1md382:js17dfdc2e	PRs #2717 (32 new tests + 12 broken jest suites revived, src/modals/object jest lines 25.6->71.2%) and #2718 (13 tests, UploadObject 27->56%, LockObject 65->68%); tests only	session-20261114T211801-f16dd26d	2026-11-14T21:48:50Z
+cover:opencatalogi:fc83bfb1md382:js0023cfc7	failed: src/dialogs/Dialogs.vue (both <script setup> and <script>) does not compile under the jest vue transform (SyntaxError: import outside a module); configuredObjects.js already 100%; covering Dialogs.vue needs a jest transform config change or splitting the SFC, outside a tests-only task	session-20261114T201741-909e04de	2026-11-14T21:48:38Z
+verify:launchpad:1206:9ecdf737	1206 GREEN, 1214 GREEN; 1229 skipped (head moved 06f0b1b -> 66aa995)	session-20261114T204759-5dc9dba7	2026-11-14T21:48:48Z
+build:opencatalogi:publication-plain-language-and-translation:c2	partial: PR #2682 head e154925a adds 2.2 draft-and-accept widget (code); left 1.4/2.2 e2e, 4.1 gated on D10; maintainability floor red from earlier commits (PlainSummaryCheck::check cc10 and others), needs a fix pass	session-20261114T211810-b8f5dc24	2026-11-14T21:49:07Z
+cover:opencatalogi:fc83bfb1md382:js4e53a5c1	already covered: organization.ts/mock/index at 100% under vitest; the only uncovered file is the Jest spec organization.spec.ts, which coverage.include=src/** counts as source; no PR	session-20261114T211750-05725ff5	2026-11-14T21:48:56Z
+verify:buildiq:1620:3b1fb887	1620 GREEN; 1649 CONFLICT with 1620 (l10n/en.js, en.json)	session-20261114T204750-c1efccdb	2026-11-14T21:49:17Z
+build:opencatalogi:woo-review-surface:c2	partial: nothing new built this run (worker context nearly full before starting); PR #2678 still open with 3.1/3.2; left 1.1-1.4, 2.1-2.2, 3.3, 4.1 and checks 5.x, 3.4 live	session-20261114T201741-909e04de	2026-11-14T21:49:34Z
+review:opencatalogi:2643:bb55d371	RED: 3 CatalogModalForm snapshot tests fail (new hasDcat field, snapshots not updated); PHP suite clean beyond development's 2 failures; no access weakening	session-20261114T204747-26056883	2026-11-14T21:49:44Z
+fix:hermiq:1792:2d3f556e	conflict resolved, new head 11c3a878	session-20261114T214733-589f5bff	2026-11-14T21:49:58Z
+verify:opencatalogi:2671:148b0046	GREEN 2701-2707; 2671 and 2696 skipped (heads moved)	session-20261114T201752-7e06b161	2026-11-14T21:50:36Z
+verify:hermiq:1750:9a4e68e8	CONFLICT: #1750 conflicts with development in ContextRetrievalHandler	session-20261114T214740-6d7e97c9	2026-11-14T21:50:47Z
+verify:filinq:2132:a60290f8	GREEN 2132: 6771 tests, 0 new failures	session-20261114T214735-aacd1703	2026-11-14T21:51:00Z
+fix:shillinq:dummy	x	session-20261114T194805-be886caa	2026-11-14T21:51:11Z
+fix:opencatalogi:2701:493cd752	failed: interaction, not a defect here; #2697's test testAnUnknownCatalogueListsNothing expects the old empty list, catalogs CAT-002 (built in #2701) requires 404; branch merged with development green apart from inherited WooControllerTest	session-20261114T194805-be886caa	2026-11-14T21:51:14Z
+build:opencatalogi:woo-metadata-suggestions:c2	partial: PR #2674 ticks 2.1 (service + 7 tests pass); left 2.2 listener+job (needs schema slug, origin and catalogue organisation lookups and a metadata_suggestion_schema key in SettingsService), 3.1, 4.1, 5.1, 6.1 code; 4.2/6.2 e2e; 6.4/6.5 gated on D10	session-20261114T211750-05725ff5	2026-11-14T21:51:22Z
+fix:portaliq:2443:b5fa534f	merged development in, resolved l10n + register version conflicts; new head f562b574, REVERIFY	session-20261114T204750-c1efccdb	2026-11-14T21:51:22Z
+fix:portaliq:2498:694d2dce	merged development, conflicts resolved keeping both sides; new head b8d95863	session-20261114T212457-7a749dbd	2026-11-14T21:51:28Z
+verify:opencatalogi:2665:90e45c67	GREEN 2665,2677,2687,2688; RED 2668,2671; CONFLICT 2696; 2672,2682 skipped (head moved)	session-20261114T203357-c555025b	2026-11-14T21:51:38Z
+review:decidiq:2149:b733293a	GREEN: decidiq#2149 matches its change specs; unit 4294 OK, vitest 2813 pass, phpstan clean	session-20261114T214742-7aa14b57	2026-11-14T21:51:45Z
+verify:hermiq:1781:b8bda1f3	CONFLICT: #1781 conflicts with development in hermiq_register.json	session-20261114T214740-6d7e97c9	2026-11-14T21:52:03Z
+fix:launchpad:1226:b0a0aa85	fixed duplicate nl.js keys vs #1212, pushed 2e6e68db, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T21:52:21Z
+verify:keepiq:1789:4bde5ea5	1789 GREEN, 1816 GREEN; unit 5203 vs 5186, vitest only the 3 inherited reds	session-20261114T204759-2444e6ca	2026-11-14T21:52:34Z
