@@ -11044,3 +11044,4 @@ verify:shillinq:3078:aab14c1a	3078 CONFLICT (appinfo/info.xml)	session-20261114T
 build:integriq:form-submission-registration-targets:c3	partial: PR #3620 head 7ef3ce13 merged development, built the ZGW leg (case, BSN/KvK initiator, zaakeigenschappen, resume; 13 tests); left: task 2 file reading, ZGW and StUF-ZDS files, StUF-ZDS KvK initiator, kenmerk lookup, task 8 admin page+modal, live tests	session-20261114T194740-7cca8afd	2026-11-14T20:54:11Z
 verify:filinq:2114:2e5bc8ee	2114 GREEN; 2122 CONFLICT (register, openapi.json after #2114)	session-20261114T194751-bb7578f8	2026-11-14T20:54:08Z
 fix:planninq:1169:b5cc9522	floor restored, new head ad389bd3; REVERIFY	session-20261114T201750-64b6fe0f	2026-11-14T20:54:18Z
+fix:buildiq:1641:2a563552	not reproduced: maintainability holds after merge (against-floor and compare PASS); merged development, new head 5816876b, REVERIFY recorded	session-20261114T173956-74ab8962	2026-11-14T20:54:37Z
