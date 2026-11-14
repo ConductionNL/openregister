@@ -7958,3 +7958,4 @@ verify:filinq:2071:daa28eb0	3 GREEN (2071,2074,2078), 4 CONFLICT (2085,2098,2099
 build:integriq:sources-sftp-adapter-watched-folder	failed: depends on sources-sftp-adapter tasks 1-4, none built on development (tasks.md: build after they merge)	session-20261114T065635-0aca43d3	2026-11-14T07:45:08Z
 fix:filinq:2069:9a3aac40	no change: merges clean on current development; conflict is only with unmerged #2062 (both rewrite info.description head in filinq_register.json at 8.54.0); whichever lands second needs a 8.55.0 bump + combined description	session-20261114T073105-752e50ad	2026-11-14T07:45:24Z
 build:integriq:outbound-call-log-investigation-window-page-and-allowlist	partial: PR #3579 (Task 5 allowlist + scan test; SupplierSourceCall stops persisting bodies; Task 6 UI left)	session-20261114T062222-96f530fc	2026-11-14T07:45:28Z
+measure:planninq:20261113h20	php 97.46% (pcov), js 93.99% at cec12484	session-20261114T070346-2d3b1362	2026-11-14T07:45:56Z
