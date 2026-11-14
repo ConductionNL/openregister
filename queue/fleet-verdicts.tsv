@@ -9588,3 +9588,4 @@ hermiq	1767	7d75ca77587ddf63f6a1b008bb93eba5751ad260	REVERIFY	worker-58	merged d
 portaliq	2444	0778a65a5d855b374fdfd951c627f2f88236755e	REVERIFY	worker-33	merged current development in (clean; conflict was with another tree PR), unit 5720 tests 0 failures; new head c94c78816f8e0c5496a23df08c11937dd20dcee3, verify it
 portaliq	2500	ba7c86b7326529629ea81d8649613daee311dccb	REVERIFY	worker-41	merged development in (clean, no conflicts left); unit 5801 OK, full phpstan clean; new head e811794dd3508e692d83429de89d13a01765ffd5, verify it
 filinq	2113	4f1d9b5d7940a2c15b8923847e175f24b8a09ad8	GREEN	worker-22	unit 6768 OK (baseline 6760 OK), no new failures; builds hermiq-ai-tooling attribution per its spec (optional trailing via parameters, initiatedVia not settable from request data)
+filinq	2126	67391b56f36f3d627911215b77490fe734f2a1e1	CONFLICT	worker-22	lib/Settings/filinq_register.json conflicts when merged after #2113; merges clean on development alone
