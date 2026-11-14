@@ -8132,3 +8132,4 @@ fix:planninq:1162:59563d43	merged development in (clean), tests green; new head 
 verify:decidiq:2139:a296d241	GREEN 2139,2144,2148; CONFLICT 2158	session-20261114T070346-2d3b1362	2026-11-14T08:11:02Z
 build:buildiq:openbuild-nc-color-variables	PR #1603: ux-dark-mode test added (page surfaces clean); 5.2 visual check left	session-20261114T070323-628c2f37	2026-11-14T08:11:07Z
 verify:integriq:3562:808c666a	GREEN 3562 3585 3591 3592; CONFLICT 3587 3588 3589 3590 3593 (with tree, clean on development)	session-20261114T073109-bb0ea608	2026-11-14T08:11:31Z
+build:integriq:observability-opentelemetry-export-errors-and-app-spans	PR #3602: tasks 6-9 built, 40 tests, suite no new failures; e2e left	session-20261114T070909-be4543e0	2026-11-14T08:12:02Z
