@@ -10665,3 +10665,4 @@ fix:learniq:2486:6ae0a045	merged development in clean; new head 7b4f15bc; REVERI
 verify:keepiq:1792:ef339287	GREEN 1792 (phpunit 5004 OK, vitest 6513 passed)	session-20261114T185843-7b9a6259	2026-11-14T19:25:39Z
 fix:planninq:1160:bb0e5aa6	conflict resolved keeping both sides, register 0.40.0; unit 1080/0, vitest green; new head 9979a267	session-20261114T191744-b9573b83	2026-11-14T19:27:36Z
 build:portaliq:capability-rows-said-and-planned:c3	partial: PR #2508 (T07 built: messages provider, scoped messages route, messages block with ask cta; +11 PHPUnit, +8 node; unit 5247->5258 OK); left T02 row review and test tags, T04-T05 dossiq ask-partner and mijnZaken via, T06 filinq signer row actions, plus dossiq declaring the messages block	session-20261114T190957-fe5a0159	2026-11-14T19:28:20Z
+fix:shillinq:3073:03de0be4	fixed: narrowed WebshopOrderInvoicer params for unit_interfacing floor; new head 53ee9061	session-20261114T192501-803bcb19	2026-11-14T19:29:19Z
