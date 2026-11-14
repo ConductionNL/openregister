@@ -150,7 +150,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *
 	 * Prevents redundant DB queries when the same schema is looked up
 	 * multiple times within one request (e.g. controller → service → render).
-	 * Keys are composed of identifier + RBAC + multitenancy flags.
+	 * Keys are composed of identifier + the multitenancy flag. The RBAC flag is
+	 * not part of the key: find() loads the same row whatever it says, so
+	 * keying on it only doubled the misses.
 	 *
 	 * @var array<string, Schema>
 	 */
@@ -338,6 +340,15 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->findCache[$lookup->cacheKey()] = $schema;
 		$this->cacheSchemaByIdentifiers(schema: $schema, cacheSuffix: $lookup->cacheSuffix());
 
+		// A row found by its own primary key under the organisation filter is the
+		// row an unfiltered lookup of that id resolves to too (an exact id always
+		// wins), so that lookup needs no read of its own. Not the other way round:
+		// an unfiltered hit says nothing about the caller's organisation.
+		if ($lookup->multitenancy === true && is_numeric($lookup->id) === true && (int)$lookup->id === $schema->getId()) {
+			$unfiltered = new SchemaLookup(id: $lookup->id, rbac: $lookup->rbac, multitenancy: false);
+			$this->findCache[$unfiltered->cacheKey()] ??= $schema;
+		}
+
 		return $schema;
 	}//end loadAndCache()
 
@@ -347,13 +358,72 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * Two rows, not one: enough to KNOW the identifier was ambiguous, which a
 	 * capped single-row fetch can never tell you.
 	 *
+	 * One column per query, in the order find() always preferred: an exact id
+	 * for a numeric identifier, then the uuid, then the slug. A disjunction
+	 * over three columns cannot use the index on any of them, so the old single
+	 * query scanned the whole schema table on every miss of the request map;
+	 * each arm here can use its own index (the slug arm the `LOWER(slug)`
+	 * expression index of Version1Date20261114170000).
+	 *
 	 * @param SchemaLookup $lookup The lookup.
 	 *
 	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
 	 */
 	private function identifierRows(SchemaLookup $lookup): array {
-		$qb = $this->buildFindByIdentifierQuery(id: $lookup->id);
-		$this->filterByOrganisation(qb: $qb, multitenancy: $lookup->multitenancy);
+		foreach (self::identifierArms(id: $lookup->id) as $arm) {
+			$rows = $this->armRows(arm: $arm, id: $lookup->id, multitenancy: $lookup->multitenancy);
+			if ($rows !== []) {
+				return $rows;
+			}
+		}
+
+		return [];
+	}//end identifierRows()
+
+	/**
+	 * The columns an identifier is matched against, in preference order.
+	 *
+	 * The id column only for a numeric identifier: PostgreSQL types it strictly.
+	 *
+	 * @param int|string $id The identifier.
+	 *
+	 * @return array<int, string> `id`, `uuid` and `slug`, the ones that apply.
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	public static function identifierArms(string|int $id): array {
+		if (is_numeric($id) === true) {
+			return ['id', 'uuid', 'slug'];
+		}
+
+		return ['uuid', 'slug'];
+	}//end identifierArms()
+
+	/**
+	 * The visible rows whose one column matches the identifier, at most two, owned rows first.
+	 *
+	 * @param string     $arm          `id`, `uuid` or `slug`.
+	 * @param int|string $id           The identifier.
+	 * @param bool       $multitenancy Whether the organisation filter applies.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function armRows(string $arm, string|int $id, bool $multitenancy): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas');
+
+		$qb->where(match ($arm) {
+			'id' => $qb->expr()->eq('id', $qb->createNamedParameter(value: (int)$id, type: IQueryBuilder::PARAM_INT)),
+			'uuid' => $qb->expr()->eq('uuid', $qb->createNamedParameter(value: (string)$id, type: IQueryBuilder::PARAM_STR)),
+			default => $this->slugEquals(qb: $qb, slug: (string)$id),
+		});
+		$this->orderOwnedRowsFirst(qb: $qb);
+		$this->filterByOrganisation(qb: $qb, multitenancy: $multitenancy);
 		$qb->setMaxResults(2);
 
 		$result = $qb->executeQuery();
@@ -361,7 +431,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$result->closeCursor();
 
 		return $rows;
-	}//end identifierRows()
+	}//end armRows()
 
 	/**
 	 * Limit a schema query to the active organisation, schemas without one included.

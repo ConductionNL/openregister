@@ -124,6 +124,17 @@ that number is read, so "done" is a measurement rather than an opinion.
       *visibility of the result*, not *which row is loaded* — apply them after
       the map, never as part of its key). Target: ≤ 5 schema reads per create.
 
+      PARTLY BUILT (2026-11-14): the RBAC flag is out of `find()`'s cache key —
+      `find()` never used it to choose a row, so both RBAC settings now share
+      one entry. A schema found by its own primary key under the organisation
+      filter also answers the unfiltered lookup of that id. Still open: the
+      multitenancy flag is still in the key, because applying the organisation
+      filter to a cached value means re-implementing the trait's scope in PHP,
+      and the bulk and slug-scoped reads (`findMultipleOptimized`,
+      `findBySlugInIds`, `findInIds`) do not go through the map yet (they
+      return uncomposed rows, so sharing the map would change their values).
+      The ≤ 5 reads target is a live measurement.
+
 - [ ] **Task 3 — make the miss path cheap.**
       Only for reads that genuinely miss the map:
       - stop `SELECT *` where only metadata is needed — the `properties` blob
@@ -134,6 +145,14 @@ that number is read, so "done" is a measurement rather than an opinion.
       - split the three-way `uuid OR LOWER(slug) OR id` disjunction into the
         one arm the caller actually has — a disjunction over three columns
         cannot use an index on any of them.
+
+      PARTLY BUILT (2026-11-14): `find()` now queries one column per
+      statement — id (numeric identifiers only), then uuid, then slug —
+      stopping at the first hit, and `Version1Date20261114170000` creates
+      `idx_schemas_lower_slug ON (LOWER(slug))` on PostgreSQL and SQLite.
+      Still open: narrowing `SELECT *` needs the read-trace histogram to say
+      which callers want metadata only, and `findInIds()` keeps the combined
+      query.
 
 - [ ] **Task 4 — cross-request cache.**
       APCu layer keyed on `schema.id + schema.updated`, so a cold worker does

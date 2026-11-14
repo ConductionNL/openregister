@@ -108,11 +108,14 @@ class SchemaMapperFindGoldenTest extends TestCase {
 			$outcome['queries'] = $this->queryLog;
 			$outcome['logs'] = $this->logs;
 
-			// A second lookup by every cached key must be answered without a query.
+			// A second lookup by every cached key, under either RBAC setting, must
+			// be answered without a query: the key carries the identifier and the
+			// multitenancy flag only.
 			$this->queryLog = [];
 			foreach (array_keys($cache) as $key) {
-				[$cachedId, $r, $m] = explode(':', $key);
-				$mapper->find($cachedId, [], $r === '1', $m === '1');
+				[$cachedId, $m] = explode(':', $key);
+				$mapper->find($cachedId, [], true, $m === '1');
+				$mapper->find($cachedId, [], false, $m === '1');
 			}
 
 			$outcome['queriesOnCacheHit'] = count($this->queryLog);

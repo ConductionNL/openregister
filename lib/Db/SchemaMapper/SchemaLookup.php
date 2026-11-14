@@ -45,12 +45,15 @@ final class SchemaLookup {
 	/**
 	 * The part of a cache key that the flags decide.
 	 *
+	 * Only the organisation filter changes which row a lookup loads; the RBAC
+	 * flag does not, so it is left out and both RBAC settings share one entry.
+	 *
 	 * @return string
 	 *
-	 * @spec exclude schema read plumbing of SchemaMapper, not a capability of its own
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
 	 */
 	public function cacheSuffix(): string {
-		return ':' . (int)$this->rbac . ':' . (int)$this->multitenancy;
+		return ':' . (int)$this->multitenancy;
 	}//end cacheSuffix()
 
 	/**
