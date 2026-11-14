@@ -8116,3 +8116,4 @@ shillinq	3063	02b19218febcc3b6fe72eee1b884fbbdbca04282	GREEN	worker-11	PHP 11078
 shillinq	3064	0cade1527ef105a80543a2f958c4a957ab92be6f	CONFLICT	worker-11	conflicts with #3003 in the tree (appinfo/info.xml, tests/fixtures/register-versions.lock.json); clean on development alone
 filinq	2070	bf70c5588c1fbd4afb9fdcd1ed99f89d9ebf8335	CONFLICT	worker-23	conflicts with development in l10n/en.*, l10n/nl.*, lib/Settings/filinq_register.json
 filinq	2086	a06548019d5a22f2bc943af00dc9e6225690fc0a	GREEN	worker-23	unit 6731 OK (baseline 6695 OK), vitest 751 OK, no new failures; builds intake-base-registry-enrichment as specified, decision route gated by write access
+filinq	2089	66d407ec6dcdc82ff953e8649e168a37266a1efd	CONFLICT	worker-23	clean on development, conflicts with #2086 (earlier in tree order); merge development in once #2086 lands
