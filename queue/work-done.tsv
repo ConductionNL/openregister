@@ -10810,3 +10810,4 @@ build:planninq:projects-templates-shared-workflow:c3	PR #1179: built 1.1 chip+te
 fix:hermiq:1792:0a6a9064	fixed: conflict with #1735/#1782 removed by relocating additions; new head 0d15ce6a	session-20261114T192501-803bcb19	2026-11-14T20:13:14Z
 verify:launchpad:1209:f0b5c2a6	GREEN #1209; CONFLICT #1211 #1214 #1216 #1219 (with #1209 in the tree, each clean on development alone)	session-20261114T191727-68650a56	2026-11-14T20:13:40Z
 verify:shillinq:3051:0d9bad44	3051 CONFLICT, 3062 RED, 3078 GREEN	session-20261114T185851-d4a7f75f	2026-11-14T20:14:14Z
+build4:openregister:redaction-release-safeguards:c3	PR openregister#10451 head 85bfd3099b: built 4.1 metadata masking, 5.1-5.3 custody of the original (setting, endpoint, daily retention job), 2.4 code part (admin switch, 37 locales); fixed a migration returning null; full unit suite 77 inherited failures only. Left: 2.4 e2e, 5.2 Newman, V items (live/process)	session-20261114T191744-89a97153	2026-11-14T20:14:34Z
