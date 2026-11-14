@@ -8363,3 +8363,4 @@ gap:learniq:16:614b0a03	failed: advisory only (no score effect); the fix is a de
 review:keepiq:1631:6ab64a41	BLOCK: one new eslint import-order error in SiemSection.vue:265; behaviour unchanged, suites green	session-20261114T075644-ec2e07ac	2026-11-14T08:41:25Z
 build:stackiq:cmdb-import-mapping-view	already done: tasks 1-7 built; only task 8 (archive the change) is open, a lifecycle step after merge	session-20261114T062134-840bbeee	2026-11-14T08:41:33Z
 fix:stackiq:1704:f55ed033	conflict resolved: both publish specs kept, development merged, vitest 2486 pass; new head 3ca945de	session-20261114T065633-3e3cb668	2026-11-14T08:41:46Z
+fix:stackiq:1813:8e311d81	merged development in, add/add spec conflict resolved by keeping both (PR's cases in gemmaPlateRender.cases.spec.js); new head 3d2273e7, REVERIFY recorded	session-20261114T075643-75a598ab	2026-11-14T08:42:04Z
