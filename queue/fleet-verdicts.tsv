@@ -9072,3 +9072,5 @@ buildiq	1626	9c88d3df66d9ed0d82587deafdf33d424a3f3de1	GREEN	worker-51	phpunit 31
 buildiq	1630	d47a3654ed6fa1bf501d87d6bec4e20a0872fb78	CONFLICT	worker-51	merges clean on development alone, conflicts with the tree (1626,1641,1642) in: l10n/nl.js l10n/nl.json
 decidiq	2155	932b251cb43268565ca74da412c141a809e13234	REVERIFY	worker-25	merged development; moved the one new en/nl key from the end to mid catalogue (json + regenerated js), so the tree merge with #2149 is clean; same values; new head 0645aee8729405883c82dcd37a0c2bc4852daac4, verify it
 buildiq	1641	2a563552d9b93b253ebbc5b378cf992d119e679c	GREEN	worker-51	phpunit 3150 tests, baseline 3126 with 1 failure (ExportZipGoldenTest), no new failures; vitest 4489 green; builds rules-evaluation-for-other-apps as specified (callableBy gate, refusals fail closed)
+buildiq	1642	48b33fadebd1f22ddf57e6a3302827bd295ebf92	GREEN	worker-51	phpunit 3150 tests, baseline 3126 with 1 failure (ExportZipGoldenTest), no new failures; vitest 4489 green; tests only
+buildiq	1643	5d14674ceb93199648ec70e2d8be9b542f28e67f	CONFLICT	worker-51	merges clean on development alone, conflicts with the tree in: l10n/nl.json
