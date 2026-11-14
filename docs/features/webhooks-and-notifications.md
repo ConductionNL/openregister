@@ -128,6 +128,7 @@ Rules live on the schema under `configuration['x-openregister-notifications']`. 
 | `transition` | Object transitioned via the lifecycle state machine. Optional `trigger.action` filters to a specific action. |
 | `scheduled` | Periodic. Requires `trigger.intervalSec >= 60`. The 60s `ScheduledNotificationJob` iterates the schema, optionally narrowed by `trigger.filter` (flat equality, relative-date and inequality operators — see below), and dispatches **at most once per object per dedup fingerprint** until the watched fields change (see *Scheduled trigger filters & per-object dedup* below). |
 | `threshold` | Aggregation crossed a threshold. Requires `trigger.aggregation` (declared on the same schema), `trigger.op` ∈ `[gt, gte, lt, lte, eq, ne]`, and `trigger.value`. `AggregationThresholdListener` re-runs the aggregation on object-write events and dispatches once per below→above transition. |
+| `noteAdded` | A note was added to an object of the schema, by a user or through an access link. Optional `trigger.visibility` ∈ `[public, internal]` narrows to notes of that visibility; any other key is refused when the schema is saved. Templates can use `{{note.author}}` (the user's display name, or the link's label) and `{{note.excerpt}}` (the note as plain text, at most 140 characters). A delivery never reaches the note's author, and every recipient must be able to read the object: a recipient without read receives nothing. The trigger reaches accounts only, not parties or referenced addresses. |
 
 #### Recipient kinds
 
@@ -140,6 +141,46 @@ Rules live on the schema under `configuration['x-openregister-notifications']`. 
 | `object-acl` | ACL holders of the object for the configured `recipient.permission` ∈ `[read, manage]`. |
 | `expression` | Arbitrary resolver class (DI tag in `recipient.resolver`). Must implement `RecipientResolverInterface::resolve(ObjectEntity $object, array $context): string[]`. |
 | `watchers` | Whoever follows the object. Spelled `{"watchers": true}`, with no `kind`; anything but boolean true is refused when the schema is saved. Resolved at dispatch time, so a watcher who has lost read on the object receives nothing and is dropped from the list. |
+| `referrers` | The people behind the objects that point at this one. `recipient.register`, `recipient.schema` and `recipient.property` name where the referring objects live and which of their properties points back; optional `recipient.of` names a property of this object, and the referring objects are then those pointing at what it points to (at most 10). `recipient.recipients` is a nested block of any other kind (not `referrers`), resolved against each referring object. At most 200 referring objects are used; a rule that stops there records `referrers-truncated` with the count in its delivery history. Everyone reached must be able to read the triggering object, and placeholders render from the triggering object only. |
+
+Two rules from the fleet show both:
+
+```json
+{
+  "x-openregister-notifications": {
+    "new-comment": {
+      "trigger": { "type": "noteAdded", "visibility": "public" },
+      "recipients": [{ "watchers": true }],
+      "channels": ["nc-notification"],
+      "subject": "{{note.author}} commented on {{title}}: {{note.excerpt}}"
+    }
+  }
+}
+```
+
+A planninq task schema: whoever watches a task hears about a new public comment on it, except the person who wrote it.
+
+```json
+{
+  "x-openregister-notifications": {
+    "module-version-published": {
+      "trigger": { "type": "created" },
+      "recipients": [{
+        "kind": "referrers",
+        "of": "module",
+        "register": "softwarecatalogus",
+        "schema": "usage",
+        "property": "module",
+        "recipients": [{ "kind": "object-acl", "permission": "read" }]
+      }],
+      "channels": ["nc-notification"],
+      "subject": "A new version of {{module}} is available"
+    }
+  }
+}
+```
+
+A stackiq `moduleVersion` schema: when a supplier publishes a new version, the people who can read each `usage` of that module (the organisations using it) are told.
 
 ### Clearing, snoozing and archiving
 

@@ -18,7 +18,8 @@
 ## 3. Tests and docs
 
 - [ ] 3.1 Add `tests/e2e/ci/notify-new-note.spec.ts`: declare a `noteAdded` rule to watchers, watch a task as a second user, add a note as a third user, and assert the second user's notification and none for the author; then a `referrers` rule over a usage schema and a new version object.
-- [ ] 3.2 Document the trigger and the kind in the notification docs under `docs/features/`, with the stackiq and planninq rules as examples.
+- [x] 3.2 Document the trigger and the kind in the notification docs under `docs/features/`, with the stackiq and planninq rules as examples.
+      > 2026-11-14: `docs/features/webhooks-and-notifications.md`: the `noteAdded` trigger row, the `referrers` kind row, and the planninq and stackiq rules as examples.
 
 Acceptance:
 
