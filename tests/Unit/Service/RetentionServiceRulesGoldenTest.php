@@ -435,6 +435,8 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 			'no retention'          => [null, 'u-1', [], 'not_nominated_for_destruction'],
 			'retain'                => [['archiefnominatie' => 'bewaren'] + $due, 'u-1', [], 'not_nominated_for_destruction'],
 			'english destroy'       => [['archiefnominatie' => 'destroy'] + $due, 'u-1', [], null],
+			'anonymise is no destroy' => [['archiefnominatie' => 'anonymiseren'] + $due, 'u-1', [], 'not_nominated_for_destruction'],
+			'english anonymise'     => [['archiefnominatie' => 'anonymise'] + $due, 'u-1', [], 'not_nominated_for_destruction'],
 			'semi static'           => [$due + ['archiefstatus' => 'semi_statisch'], 'u-1', [], 'record_not_live'],
 			'transferred'           => [$due + ['archiefstatus' => 'overgebracht'], 'u-1', [], 'record_not_live'],
 			'blank state is live'   => [$due + ['archiefstatus' => '  '], 'u-1', [], null],

@@ -1788,6 +1788,7 @@ Service/AppRegisterImportRunner.php,134,Service,Configuration,Configuration/Serv
 Service/ApplicationService.php,91,Service,Configuration,Configuration/Service/ApplicationService.php,0,,Configuration
 Service/ApprovalChainAnnotationInstaller.php,128,Service,Flows,Flows/Service/ApprovalChainAnnotationInstaller.php,9,,Processes
 Service/Archival/ActionDateFollower.php,56,Service,Compliance,Compliance/Service/Archival/ActionDateFollower.php,0,,Compliance
+Service/Archival/AnonymisationCandidates.php,70,Service,Compliance,Compliance/Service/Archival/AnonymisationCandidates.php,0,,Compliance
 Service/Archival/AnonymisationPlan.php,18,Service,Compliance,Compliance/Service/Archival/AnonymisationPlan.php,0,,Compliance
 Service/Archival/AnonymisationPlanner.php,101,Service,Compliance,Compliance/Service/Archival/AnonymisationPlanner.php,0,,Compliance
 Service/Archival/AnonymisationProfile.php,24,Service,Compliance,Compliance/Service/Archival/AnonymisationProfile.php,0,,Compliance

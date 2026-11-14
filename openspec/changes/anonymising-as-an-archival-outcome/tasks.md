@@ -12,7 +12,7 @@
 - [x] 2.1 An anonymisation profile on the schema: per property, remove, fixed value, stable pseudonym or generalise. (verified: lib/Service/Archival/AnonymisationProfile.php, lib/Service/Archival/AnonymisationService.php, tests/Unit/Service/Archival/AnonymisationTest.php)
 - [x] 2.2 Schema save refuses a profile naming a property the schema does not declare. (built: RecordAnnotationRefusals::checkAnonymisationProfile wired into SchemaMapper::checkDataDeclarations, via AnonymisationPlanner::refusals; AnonymisationProfileSaveTest)
 - [x] 2.2a The profile is also read from `archive.anonymisation` (design D-6), and a profile in both places is refused at save. (built: checkAnonymisationProfile reads both x-openregister-archival.anonymisation and Schema::getArchive()['anonymisation'], refuses a double declaration naming both; AnonymisationProfileSaveTest covers the archive-block profile and the double declaration)
-- [ ] 2.3 An outcome or result type names the archival action, so the choice is configuration.
+- [x] 2.3 An outcome or result type names the archival action, so the choice is configuration. (built: a result type's `anonymiseren` already normalises to `anonymise` through `Appraisal::CANONICAL`; lib/Service/Archival/AnonymisationCandidates.php turns a due, live record nominated `anonymise` (any spelling) into the sweep's candidate, reads the profile from `x-openregister-archival` or `archive`, carries the hold and an earlier marker so the run refuses them, and never takes a destroy nomination; tests/Unit/Service/Archival/AnonymisationCandidatesTest.php, including a sweep over the derived candidates)
 
 ## 3. The act
 
