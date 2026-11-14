@@ -39,7 +39,7 @@
 
 ## 7. Sources page (D-14)
 
-- [ ] 7.1 `src/modals/source/` edit modal: type select fed by `GET /api/sources/types` (`NcSelect` with `inputLabel`), `schedule` and `runAs` fields, `runAs` prefilled with the current admin visibly and editable.
+- [x] 7.1 `src/modals/source/` edit modal: type select fed by `GET /api/sources/types` (`NcSelect` with `inputLabel`), `schedule` and `runAs` fields, `runAs` prefilled with the current admin visibly and editable.
 
 ## 8. Tests and docs
 
