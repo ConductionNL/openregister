@@ -51,3 +51,20 @@ under OpenRegister's alias and the manifest keeps one `provider` entry. A retry 
 but not yet picked up by `WebhookRetryJob` is not counted, because the log has no "retried"
 marker. "Webhook Delivery Monitoring" stays unticked: the delivery-duration histogram is not
 built.
+
+**Third pass, 2026-11-14: scraper access to the metrics endpoint.** Scenarios "Metrics
+endpoint requires admin authentication by default", "Metrics endpoint supports token-based
+authentication for scrapers" and "IP-restricted unauthenticated access" are built.
+`GenericMetricsController::index()` is now `#[PublicPage]` and asks
+`AppHost\Observability\MetricsAccessGuard` instead of relying on Nextcloud's admin check:
+an admin session is served; a request with `Authorization: Bearer <token>` is served when the
+token equals the app's `metrics_api_token` app config value and refused with 403 otherwise
+(throttled like a failed login, and never rescued by the address check); a caller whose
+address lies in one of the comma-separated ranges of `metrics_allowed_ips` is served, any
+other address 403. With neither configured the endpoint stays admin-only: 403 for a
+non-admin session, 401 anonymously. Unreadable config or unparsable ranges count as not
+configured, so a failure refuses. Leaf apps get the same posture with their own config.
+Both values are set with `occ config:app:set <app> metrics_api_token --value=...`; an admin
+settings field for them is not built. "Prometheus Metrics Endpoint" stays unticked: the
+counters/histograms/richer labels named in its requirement text are covered by the other
+items, which remain open.
