@@ -7951,5 +7951,6 @@ review:openregister:10468:937acef1	APPROVE: compat adapters and dual-form invoke
 build:integriq:brp-relations-read:r1	partial: PR #3577 ticks the paired dossiq task (landed in dossiq brp-client-retired); live pass left open	session-20261114T065635-61264d14	2026-11-14T07:43:45Z
 verify:shillinq:2959:927fdeac	GREEN 2959 2974 2976 2996; CONFLICT 2982 2986 2993 2995 3009; 0 new failures; development fatals on a stale trait import in HoursSubjectAuditCommand	session-20261114T065625-baa65a50	2026-11-14T07:43:40Z
 review:openregister:10469:e97553e3	APPROVE: additive compat, all target suites green on merge with main	session-20261114T070346-2d3b1362	2026-11-14T07:43:50Z
+build:integriq:statutory-gateways-and-frameworks	failed: both open tasks are gated - CORV/GGK mock sources wait on the statutory endpoints being known, ZGW call-site routing waits on an external Zaken adapter that does not exist yet; nothing buildable	session-20261114T065635-61264d14	2026-11-14T07:44:26Z
 build:integriq:gateway-a2a-agent-card	PR #3578: a2a endpoint target with agent card rewriting, 9 tests, suite unchanged	session-20261114T065635-0aca43d3	2026-11-14T07:44:14Z
 verify:filinq:2071:daa28eb0	3 GREEN (2071,2074,2078), 4 CONFLICT (2085,2098,2099,2106)	session-20261114T073105-752e50ad	2026-11-14T07:44:34Z
