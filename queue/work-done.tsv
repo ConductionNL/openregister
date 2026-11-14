@@ -8594,3 +8594,4 @@ verify:launchpad:1214:2a8623bd	1214 GREEN, 1217 CONFLICT (info.xml version with 
 build:larpinq:players-care-details-and-erasure	partial: PR #1053 (1.1 and 2.1 built and tested; DSR scope, Newman, seed, destruction run, EventDetail page, 34 locales, docs left)	session-20261114T073111-9b40710a	2026-11-14T09:11:43Z
 verify:stackiq:1924:78034885	GREEN 1924,1925,1926,1929,1932; CONFLICT 1927,1928,1930,1931	session-20261114T070323-628c2f37	2026-11-14T09:11:27Z
 fix:keepiq:1792:f38e33f6	migration renamed to Version001021, merges clean after #1791, PHP 4981 OK, pushed 6fa60397, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T09:12:08Z
+build:thematiq:authoring-save-edits-as-a-new-theme	built: PR #1671; leftover values now saved as overrides of the new theme and listed, Dutch board labels; rest already shipped in 76efc80f0; vitest 1559 green	session-20261114T075640-614c8df8	2026-11-14T09:12:17Z
