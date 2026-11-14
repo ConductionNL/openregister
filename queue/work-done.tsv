@@ -8171,3 +8171,4 @@ fix:integriq:3585:54c3167e	no change: merges clean on current development; remai
 build:buildiq:form-dutch-field-formats	partial: PR #1620, T01 and validator half of T04 done; save-listener wiring, T02/T03/T05 open	session-20261114T065626-0651b305	2026-11-14T08:16:01Z
 build:launchpad:cleanup-category-boolean-getter-name	failed: blocked, proposal.md and tasks.md say awaiting a human decision (spec-first rename not approved); nothing built	session-20261114T070341-dde19dba	2026-11-14T08:16:18Z
 gap:keepiq:owaspsecurecoding:0285910d	PR #1779: favicon.js type-icon object literal (false-positive secret) turned into a Map of pairs; vitest 6414 pass	session-20261114T062142-da017174	2026-11-14T08:16:23Z
+fix:integriq:3561:a24572ec	no change: branch already contains development and merges clean; the conflict is only with earlier tree PRs not yet on development (#3539/#3557), so it resolves once they land	session-20261114T065626-0651b305	2026-11-14T08:16:47Z
