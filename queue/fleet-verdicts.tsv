@@ -6699,3 +6699,4 @@ learniq	2511	e21040805d815cb5c4ecca834efe62ebac0ced97	CONFLICT	worker-14	merge c
 hermiq	1751	01fab7ceda5ff32f14a7f5be6be4a7e40cf47ce6	CONFLICT	worker-58	conflicts with development+earlier tree PRs (1745-1750)
 learniq	2510	fa67f91799e55c43207aa254630b7d9a1c7919ed	GREEN	worker-26	6575 unit tests baseline (1 inherited fail HigherEducationExampleSetTest he.json out of date); tree of 2503,2505,2508,2510: 6594 tests, same 1 failure, no new failures
 learniq	2511	e21040805d815cb5c4ecca834efe62ebac0ced97	CONFLICT	worker-26	conflicts with development in l10n/en.json, l10n/nl.json; not tested
+learniq	2512	1f10f5758ea2477de9e2966186a996125da227f3	GREEN	worker-14	unit 6605 tests on 5-PR tree, baseline 6575 w/ 1 inherited failure (HigherEducationExampleSetTest), 0 new; no JS touched
