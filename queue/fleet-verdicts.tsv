@@ -7913,3 +7913,4 @@ humaniq	1142	00f242d8ece14754dce53d024d410cc6bbd4896f	CONFLICT	merge3	merges cle
 humaniq	1144	7dd68965c17893b318ec804648f506436b494f3f	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/register.d/hr-leave.json lib/Settings/register.d/hr-onboarding.json 
 humaniq	1145	098b771da3907cff295f001fb21c6febe8ea564a	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 humaniq	1148	0dbbf502a0f3f781d78b23d9870e3a7feea98817	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+portaliq	2430	fc437ac24686b9b36baa4a8441496e29b8cbda71	REVERIFY	worker-01	merged development in; both sides claimed portalFormBinding 0.6.0/register 0.109.0, moved availability to 0.7.0/0.110.0, test conflict resolved keeping both; unit 5197 OK; new head 9bb36ef821e8e718820f30f0a68656e2730b232b, verify it
