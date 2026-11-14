@@ -11903,3 +11903,4 @@ fix:filinq:2121:d3173078	merged development, l10n union resolved, gates OK, suit
 merge:decidiq:2172:1303234e	merge3 tree of 11 decidiq PRs: merged=4 red=0 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T23:28:17Z
 fix:filinq:2114:c9e0c441	merged development in clean, unit 6816 OK, new head 789d94cb	session-20261114T232423-38520620	2026-11-14T23:28:22Z
 merge:decidiq:2191:7492824d	merge3 tree of 11 decidiq PRs: merged=4 red=0 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T23:28:28Z
+merge:decidiq:2143:13d61dfe	merge3 tree of 11 decidiq PRs: merged=4 red=0 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T23:28:40Z
