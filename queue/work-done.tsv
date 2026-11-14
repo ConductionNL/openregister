@@ -8529,3 +8529,4 @@ review:opencatalogi:2456:dc12f0da	GREEN	session-20261114T065626-0651b305	2026-11
 build:versioniq:install-manual-upload	partial: PR #715 with 1.1 (upload inspect route + UploadedArchive) and 2.3 (allow-unsigned setting); 1.2, 2.1, 2.2, 3.x left; phpunit 1643->1662 (2 inherited), vitest green	session-20261114T075638-c30fc6de	2026-11-14T09:02:30Z
 verify:keepiq:1793:c59ba7fe	1793 GREEN	session-20261114T070329-a050d62b	2026-11-14T09:02:47Z
 fix:opencatalogi:2665:34754ce1	no change: merges cleanly with current development; conflict only with unmerged #2664 (PublicationsControllerTest), resolve after it lands	session-20261114T075638-c30fc6de	2026-11-14T09:03:08Z
+verify:learniq:2494:595ea3c0	2494 GREEN	session-20261114T065635-0aca43d3	2026-11-14T09:03:13Z
