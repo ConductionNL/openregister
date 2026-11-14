@@ -11396,3 +11396,4 @@ fix:opencatalogi:2682:e154925a	failed: conflicts only with unmerged #2672, #2686
 review:opencatalogi:2655:05b49194	stale	session-20261114T201752-7e06b161	2026-11-14T22:04:12Z
 fix:opencatalogi:2671:19095782	stale	session-20261114T211754-5182f374	2026-11-14T22:04:44Z
 fix:shillinq:3000:5625ba51	conflict resolved, new head 4004df626e1b846c7829deea406155dcdccfe488; suite 11478/0 fail	session-20261114T211012-c469e919	2026-11-14T22:05:00Z
+build:opencatalogi:woo-document-assessment-screen:c2	all code tasks done: PR #2688 (redaction page 4.1, Redact action 2.3) + openregister PR #10573 (GET /api/entity-relations?fileId=); left e2e/live 5.1,5.3,5.4	session-20261114T214719-cd72efa7	2026-11-14T22:05:08Z
