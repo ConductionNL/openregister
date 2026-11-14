@@ -7684,3 +7684,4 @@ keepiq	1792	6fa603979fa7084585210ec3ba74c6e9e265a0f2	CONFLICT	worker-35	conflict
 larpinq	1048	c6276ffe5f6d09819449da01522854818e4f376d	GREEN	worker-24	php 813 (base 792, 0 failures), vitest 506 pass; owner/game-master sheet access as the change specifies
 larpinq	1049	3b90a2cbb3d5c6af836669e61e0ca14cfb6bfef4	RED	worker-24	vitest tests/vitest/effectiveManifest.golden.spec.js: 'has the menu the inline pipeline built' and 'has the pages the inline pipeline built, in the same order' fail with this PR alone on development (pass on base); golden needs re-recording; php suite clean
 larpinq	1050	fcc12a2345d9652427d343a17b96511dabf794b2	GREEN	worker-24	php 813 (base 792, 0 failures), vitest 506 pass
+larpinq	1051	de3a87c57c0a29f8df8a9cddf54d93cbd0cd8204	CONFLICT	worker-24	conflicts with the tree (development + 1048, 1050)
