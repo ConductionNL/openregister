@@ -194,6 +194,59 @@ Each object selected for e-Depot transfer generates MDTO-compliant XML:
 
 The XML is validated against the MDTO XSD schema before inclusion in any SIP package.
 
+### Which MDTO elements the export carries
+
+The export writes MDTO-XML 1.0.1. The tables follow the order of the XSD. An
+optional element is written only when the record or its schema supplies a value;
+the export never writes an empty element.
+
+**`informatieobject`**
+
+| Element | In the export | Where the value comes from |
+|---|---|---|
+| `identificatie` | Always | The object's UUID, with the organisation as the source |
+| `naam` | Always | The object's name |
+| `aggregatieniveau` | When declared | `x-openregister-archival.aggregationLevel` (Archief, Serie, Dossier, Archiefstuk) |
+| `classificatie` | When known | The record's classification |
+| `trefwoord` | Left out | |
+| `omschrijving` | When known | The record's description |
+| `raadpleeglocatie` | Left out | |
+| `dekkingInTijd` | When declared and set on the record | `x-openregister-archival.temporalCoverage`, naming the properties that hold the start and end |
+| `dekkingInRuimte` | Left out | |
+| `taal` | Left out | |
+| `event` | When there is history | The record's events, with the responsible actor when it is known |
+| `waardering` | Always (required) | The archiefnominatie: Blijvend te bewaren, Tijdelijk te bewaren, or Nader te bepalen |
+| `bewaartermijn` | When known | The retention period and the disposal date |
+| `informatiecategorie` | When known | The selectielijst category |
+| `isOnderdeelVan` | Left out | Containment between records is not exported yet |
+| `bevatOnderdeel` | Left out | Containment between records is not exported yet |
+| `heeftRepresentatie` | One per file | The files packaged with the record |
+| `aanvullendeMetagegevens` | Left out | |
+| `gerelateerdInformatieobject` | Left out | |
+| `archiefvormer` | Always (required) | The organisation name in the OpenRegister settings |
+| `betrokkene` | When declared and set on the record | `x-openregister-archival.parties`, naming the properties that hold a party; the property name is the relation type |
+| `activiteit` | Left out | |
+| `beperkingGebruik` | Always (required) | The declared `useRestriction`, else an active legal hold (type Overig), else "Nader te bepalen" |
+
+**`bestand`** (one document per file)
+
+| Element | In the export | Where the value comes from |
+|---|---|---|
+| `identificatie` | Always | The file's id |
+| `naam` | Always | The file name |
+| `omvang` | Always | The size in bytes |
+| `bestandsformaat` | Always | The PRONOM format |
+| `checksum` | Always | Algorithm, value and the date it was computed |
+| `URLBestand` | Left out | Files travel inside the SIP package |
+| `isRepresentatieVan` | Always | The record the file belongs to |
+
+The export refuses a record without a UUID, a name, an appraisal or a
+retention period, and an instance without an organisation identifier. It writes
+no document with a missing required value. The one required element with a
+default is `beperkingGebruik`: when nothing is declared and no legal hold is
+active, it carries "Nader te bepalen" and the transfer logs a warning for that
+record, so an archivist can see which records still need a use restriction.
+
 ### SIP Package Assembly
 
 Objects approved for transfer are packaged into SIP (Submission Information Package) archives per OAIS (ISO 14721):

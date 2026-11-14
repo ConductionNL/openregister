@@ -2,8 +2,9 @@
 
 ## 1. Schema and marker
 
-- [ ] Add a migration creating the partial index `idx_audit_unsealed` on
+- [x] Add a migration creating the partial index `idx_audit_unsealed` on
       `oc_openregister_audit_trails (id) WHERE hash IS NULL OR hash = ''`
+      - built as `WHERE hash IS NULL`, the predicate the sweep (`getEarliestUnsealedId`, `countUnsealed`) uses; PostgreSQL and SQLite only (Version1Date20261113210000)
       - the backlog cursor currently degrades to a pkey scan + filter (784 ms / 2,000 ids)
       - the index shrinks as the backlog drains, so the cursor speeds up over time
 - [ ] Persist a hash-chain cutover marker in the same migration (app config,

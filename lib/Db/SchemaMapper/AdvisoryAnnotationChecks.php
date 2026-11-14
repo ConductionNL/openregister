@@ -63,7 +63,11 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-aggregations');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: SearchAnnotationValidators::aggregation()->validate($annotation->shape()),
+				// The slug and title let the validator tell a `schema` key naming
+				// this schema from one naming a related schema.
+				errors: SearchAnnotationValidators::aggregation()->validate(
+					array_merge($annotation->shape(), ['slug' => $schema->getSlug(), 'title' => $schema->getTitle()])
+				),
 				text: $annotation->label() . ' is invalid and was ignored (aggregation not registered)'
 			);
 		}

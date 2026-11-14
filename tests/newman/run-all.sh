@@ -121,6 +121,7 @@ DOMAIN_ORDER=(
     "duplicate-merge"
     "upsert-on-key"
     "draft-activation"
+    "anonymisation-disclosures"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -220,6 +221,8 @@ declare -A DOMAIN_COLLECTIONS=(
     # 422 with findings, 409, 404), and OCSMiddleware turns a 403 from an
     # OCSController into a 200 that no unit test of the controller can see.
     [draft-activation]="$REPO_ROOT/tests/integration/openregister-draft-activation.postman_collection.json"
+    # REQ-ADI-005/006: file disclosures (reader 200, non-reader 403) and the admin pipeline report.
+    [anonymisation-disclosures]="$REPO_ROOT/tests/newman/openregister-anonymisation-disclosures.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

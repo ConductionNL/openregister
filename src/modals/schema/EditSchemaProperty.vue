@@ -70,10 +70,10 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					inputLabel="Properties Type" />
 
 				<NcSelect
-					v-bind="formatOptions"
+					v-bind="propertyFormatOptions"
 					v-model="properties.format"
 					inputLabel="Properties Format"
-					:disabled="properties.type !== 'string'" />
+					:disabled="formatDisabled" />
 			</div>
 			<!-- TYPE : OBJECT -->
 			<div
@@ -892,6 +892,7 @@ import {
 	emptyFacetConfig,
 	emptyPropertyDefinition,
 	formatSelect,
+	hasFormatChoice,
 	itemsTypeSelect,
 	propertyTypeSelect,
 	semanticRoleOptions,
@@ -1028,6 +1029,27 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The format choices of the edited property: geometry formats for an
+		 * object, string formats otherwise.
+		 *
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+		 * @return {object}
+		 */
+		propertyFormatOptions() {
+			return formatSelect(this.properties.type)
+		},
+
+		/**
+		 * Whether the edited property's type has no format to choose.
+		 *
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+		 * @return {boolean}
+		 */
+		formatDisabled() {
+			return !hasFormatChoice(this.properties.type)
+		},
+
 		/**
 		 * The selected storage form of a coded value.
 		 *

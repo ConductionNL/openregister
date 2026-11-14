@@ -6054,6 +6054,7 @@ class ObjectsController extends Controller {
 			'csv' => $this->csvExport(export: $export),
 			'tsv' => $this->tsvExport(export: $export),
 			'json' => $this->jsonExport(export: $export),
+			'xml' => $this->xmlExport(export: $export),
 			'pdf' => $this->pdfExport(export: $export),
 			'ods' => $this->odsExport(export: $export),
 			default => $this->excelExport(export: $export),
@@ -6176,6 +6177,25 @@ class ObjectsController extends Controller {
 
 		return $export->download(format: 'json', content: $content);
 	}//end jsonExport()
+
+	/**
+	 * Export as XML.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	private function xmlExport(ObjectExport $export): DataDownloadResponse {
+		$content = $this->services->transfer->exportService->exportToXml(
+			request: $this->callerExportRequest(export: $export),
+		);
+
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'xml', rowCount: self::countXmlExportRows(xml: $content)));
+
+		return $export->download(format: 'xml', content: $content);
+	}//end xmlExport()
 
 	/**
 	 * Export as PDF; an export over the row limit or without an office server is refused.
@@ -6508,6 +6528,35 @@ class ObjectsController extends Controller {
 
 		return count($decoded);
 	}//end countJsonExportRows()
+
+	/**
+	 * The number of `<object>` records directly under the root of an exported XML document.
+	 *
+	 * @param string $xml The document.
+	 *
+	 * @return int The record count, 0 when the document cannot be read.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	private static function countXmlExportRows(string $xml): int {
+		$previous = libxml_use_internal_errors(true);
+		$reader = new \XMLReader();
+		$count = 0;
+		if ($reader->XML($xml) === true) {
+			while ($reader->read() === true) {
+				if ($reader->nodeType === \XMLReader::ELEMENT && $reader->depth === 1 && $reader->name === 'object') {
+					$count++;
+				}
+			}
+
+			$reader->close();
+		}
+
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous);
+
+		return $count;
+	}//end countXmlExportRows()
 
 	/**
 	 * Sum the data rows across every sheet of an exported spreadsheet.

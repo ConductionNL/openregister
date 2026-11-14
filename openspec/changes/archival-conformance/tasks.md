@@ -10,4 +10,4 @@ The findings marked DONE or RESOLVED in proposal.md are built. These tasks are w
 
 ## 2. Docs
 
-- [ ] 2.1 `docs/` states which MDTO elements the export carries and which it leaves out.
+- [x] 2.1 `docs/` states which MDTO elements the export carries and which it leaves out. Built in `docs/features/archiving.md`, "Which MDTO elements the export carries"; it lists `isOnderdeelVan` and `bevatOnderdeel` as left out until 1.3 is built.

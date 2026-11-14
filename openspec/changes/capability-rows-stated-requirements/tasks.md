@@ -7,7 +7,8 @@
 
 ## 2. URN after a move
 
-- [ ] 2.1 Keep the URN a record was given, and resolve it after the record moves to another register or schema. Verify: a `UrnService` unit test that moves a record and resolves its old URN.
+- [x] 2.1 Keep the URN a record was given, and resolve it after the record moves to another register or schema. Verify: a `UrnService` unit test that moves a record and resolves its old URN.
+      > 2026-11-13: `UrnService::resolveUrl()` follows the record's `moved` audit entries (the pointer `MoveObject` writes): when one left from the address the URN names, the URN answers the target of the newest entry, so a record moved twice answers where it lives now. The URN itself and the uuid do not change. `tests/Unit/Service/UrnServiceMoveTest.php` (5 tests).
 
 ## 3. File checksum
 

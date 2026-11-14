@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
+use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
@@ -162,6 +163,8 @@ class FileSettingsController extends Controller {
 		} catch (ConfidenceThresholdOutOfRangeException $e) {
 			return $this->error(message: $e->getMessage(), status: 400);
 		} catch (UnknownPatternSetException $e) {
+			return $this->error(message: $e->getMessage(), status: 400);
+		} catch (UnknownMaskFormException $e) {
 			return $this->error(message: $e->getMessage(), status: 400);
 		} catch (Exception $e) {
 			return $this->error(message: $e->getMessage());

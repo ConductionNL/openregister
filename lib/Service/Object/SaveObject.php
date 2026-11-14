@@ -97,6 +97,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass;
 use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents;
+use OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame;
@@ -2480,6 +2481,7 @@ class SaveObject implements SaveObjectInterface {
 
 		$this->normalizeCallTranslations(call: $call);
 		$this->guardPropertyAuthorization(call: $call);
+		$this->guardClassificationFloor(call: $call);
 
 		$existingObject = $this->existingObjectForSave(call: $call);
 		if ($existingObject !== null) {
@@ -2543,6 +2545,35 @@ class SaveObject implements SaveObjectInterface {
 			$this->refuseUnauthorizedProperties(call: $call);
 		}
 	}//end guardPropertyAuthorization()
+
+	/**
+	 * Refuse a save that sets a classification below the object's declared floor.
+	 *
+	 * Runs whatever the RBAC flag: the floor is a property of the record, not of
+	 * the caller, so a system write may not lower it either.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException When the label ranks below the floor.
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-a-write-may-raise-a-classification-and-not-lower-it-below-its-floor
+	 */
+	private function guardClassificationFloor(ObjectSaveCall $call): void {
+		// The mapper is reached only when a floor sits behind a reference, so a
+		// schema without one never touches it.
+		$guard = new ClassificationFloorGuard(
+			referencedData: function (string $reference): ?array {
+				try {
+					return $this->unifiedObjectMapper->find(identifier: $reference, _rbac: false, _multitenancy: false)->getObject();
+				} catch (\Throwable) {
+					return null;
+				}
+			}
+		);
+		$guard->refuseBelowFloor(schema: $call->schema, data: $call->data);
+	}//end guardClassificationFloor()
 
 	/**
 	 * Refuse a save that modifies properties the caller may not write.
