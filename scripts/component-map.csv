@@ -3975,6 +3975,7 @@ Service/UserLinkRequest.php,,Service,,,,,Integrations
 Service/User/AccountPropertyChange.php,,Service,,,,,Core
 Service/User/ActivityPeriod.php,,Service,,,,,Core
 Service/User/ActivityQuery.php,,Service,,,,,Core
+Service/User/ApiTokenAuditRow.php,,Service,,,,,Core
 Service/User/ApiTokenRequest.php,,Service,,,,,Core
 Service/User/AvatarUpload.php,,Service,,,,,Core
 Service/User/PasswordChange.php,,Service,,,,,Core
@@ -4006,6 +4007,7 @@ Db/HydrationKey.php,,Db,,,,,Core
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Listener/RecordTypeAuditListener.php,,Listener,,,,,Compliance
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
 Db/SchemaMapper/IdentityDeclarationCheck.php,,Db,,,,,Core
 Listener/IdentityGuardListener.php,,Listener,,,,,Core
