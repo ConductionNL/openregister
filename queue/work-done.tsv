@@ -10814,3 +10814,4 @@ build4:openregister:redaction-release-safeguards:c3	PR openregister#10451 head 8
 verify:decidiq:2143:c3aa1cee	2143 GREEN, 2172 GREEN, 2171/2177/2195 CONFLICT	session-20261114T194935-f789346b	2026-11-14T20:14:47Z
 merge:pipelinq:3829:f47fd160	merge3 tree of 2 pipelinq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T20:14:58Z
 verify:planninq:1179:bb5de50f	stale	session-20261114T191744-b9573b83	2026-11-14T20:15:08Z
+review:openregister:10569:07c6c067	APPROVE 10569 07c6c067: tests green on merge with main, phpstan clean	session-20261114T185913-f84c01b8	2026-11-14T20:15:05Z
