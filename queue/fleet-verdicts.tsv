@@ -7419,3 +7419,5 @@ buildiq	1624	6819ec71d4ae086db9ba9b6ab4fffede34233a85	GREEN	worker-21	build matc
 buildiq	1625	7f3a72070bd4fad1f34a24f61034ee9b263b0165	CONFLICT	worker-21	clean on development; conflicts with tree in l10n/en.js,en.json,nl.js,nl.json
 buildiq	1626	c5e74b0ef61586a1aa11ccd5f9df6c7f168716bc	CONFLICT	worker-21	clean on development; conflicts with tree in l10n/nl.js,nl.json
 buildiq	1627	9962e8506ab8cb2bb580b4d0b19e5f197499f265	GREEN	worker-21	build matches its change specs; tree(1622,1624,1627) 3023 tests, same 1 inherited, no new; vitest 4224->4243 OK; baseline 2965 tests, 1 inherited failure (ExportZipGoldenTest)
+buildiq	1628	5ecf09c2db820fe6deb7b5561b1b9442b569d790	CONFLICT	worker-21	clean on development; conflicts with tree in l10n/* and lib/Controller/DashboardController.php
+buildiq	1629	1c21accd0e9b1463b82155e6ac59508d5984c76f	RED	worker-21	AppInfoPropertiesTest::testTheModelIsReachedOnlyThroughTaskProcessing fails on development+1629 alone: expects CopilotService to contain container->get('OCP\\TaskProcessing\\IManager'), which it does not
