@@ -11156,3 +11156,4 @@ build:launchpad:building-edit-a-dashboard-together:c2	PR #1227: 1.1 presence (AP
 review:opencatalogi:2655:a3822983	GREEN	session-20261114T201755-10d43934	2026-11-14T21:23:40Z
 fix:opencatalogi:2669:8e6fee77	CHANGELOG conflict resolved, merged development, new head 7ce8e28f	session-20261114T211808-5e900938	2026-11-14T21:23:48Z
 fix:opencatalogi:2671:3632cf8d	fixed: unit_interfacing floor restored, pushed 8496b804c53da9ea3625fcef8491464e640d48c9, REVERIFY recorded	session-20261114T204804-ae7e06a7	2026-11-14T21:24:03Z
+verify:keepiq:1789:e236aa78	1789 RED (platform-properties.spec Dutch coverage gate)	session-20261114T201741-909e04de	2026-11-14T21:24:21Z
