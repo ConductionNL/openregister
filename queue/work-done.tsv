@@ -8653,3 +8653,5 @@ verify:versioniq:725:03a723aa	725 GREEN, 726 GREEN, 727 CONFLICT, 728 CONFLICT	s
 verify:portaliq:2486:6ea56172	2486 GREEN	session-20261114T075640-efa02b24	2026-11-14T09:24:04Z
 cover:dossiq:069ee2d6mbd37:6fbba20d	no PR: every Starter class with logic already has dedicated tests (batches -1/-2 merged); the untested LedgerStamp and DomainCopy are property holders; no pcov/xdebug in this container to locate residual uncovered lines	session-20261114T075644-ec2e07ac	2026-11-14T09:24:44Z
 verify:versioniq:709:d415988a	6 GREEN (709,710,712,713,714,716), 3 CONFLICT (711,715,717); php 1748 tests no new fails beyond 2 inherited; vitest 2962 pass	session-20261114T085646-49a39060	2026-11-14T09:24:44Z
+cover:dossiq:069ee2d6mbd37:60c2c265	PR #6490: 4 controllers, +27 tests, suite 16850/19F -> 16877/19F	session-20261114T062200-6a28e40c	2026-11-14T09:24:53Z
+verify:thematiq:1671:1fa3e1b0	4 GREEN (1671-1674); tree phpunit 2871 vs baseline 2858, 1 inherited failure; vitest 1559 green	session-20261114T075643-acecaad6	2026-11-14T09:25:00Z
