@@ -108,6 +108,12 @@
 				</NcButton>
 			</form>
 
+			<LinkJourneyForm
+				v-if="may('edit') && body.link.journey"
+				:anchor="anchor"
+				:password="password"
+				@saved="open" />
+
 			<form
 				v-if="may('upload')"
 				class="access-link-page__upload"
@@ -144,6 +150,7 @@ import {
 	NcPasswordField,
 	NcTextArea,
 } from '@nextcloud/vue'
+import LinkJourneyForm from '../../components/access-links/LinkJourneyForm.vue'
 import { refusalMessage } from '../../components/access-links/refusalMessage.js'
 import {
 	fileAsBase64,
@@ -162,6 +169,7 @@ import {
 export default {
 	name: 'AccessLinkPage',
 	components: {
+		LinkJourneyForm,
 		NcButton,
 		NcEmptyContent,
 		NcLoadingIcon,

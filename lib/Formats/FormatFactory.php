@@ -54,6 +54,8 @@ final class FormatFactory {
 			'cron'      => new CronFormat(),
 			'user'      => new UserFormat(userManager: $userManager, planned: $planned),
 			'date-time' => new Iso8601DateTimeFormat(),
+			'website'   => new WebsiteFormat(),
+			'nl-phone'  => new NlPhoneFormat(),
 		];
 	}//end customStringFormats()
 

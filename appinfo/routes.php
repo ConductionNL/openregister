@@ -1144,6 +1144,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'verb' => 'POST',
             'requirements' => ['anchor' => '[A-Za-z0-9]+'],
         ],
+        // An `edit` link's journey: prefilled read and the change of its record.
+        ['name' => 'accessLinkJourney#show', 'url' => '/api/public/links/{anchor}/journey', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
+        ['name' => 'accessLinkJourney#submit', 'url' => '/api/public/links/{anchor}/journey', 'verb' => 'POST', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
         // The page a holder lands on (#4061): renders what the link opens for a
         // person, reading the holder endpoints above; it decides nothing itself.
         ['name' => 'accessLinkPage#show', 'url' => '/links/{anchor}', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
@@ -1261,6 +1264,11 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],
         ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
         ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
+        // Journey runs (or-form-and-journey-registry): public and throttled; a saved run is the filer's or the resume token's draft.
+        ['name' => 'journeyRun#start', 'url' => '/api/journeys/{journeyId}/runs', 'verb' => 'POST'],
+        ['name' => 'journeyRun#answer', 'url' => '/api/journeys/{journeyId}/runs/answer', 'verb' => 'POST'],
+        ['name' => 'journeyRun#save', 'url' => '/api/journeys/{journeyId}/runs/save', 'verb' => 'POST'],
+        ['name' => 'journeyRun#resume', 'url' => '/api/journeys/{journeyId}/runs/resume', 'verb' => 'GET'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.

@@ -535,6 +535,12 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatingEvent::class, DecisionTableValidationListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, DecisionTableValidationListener::class);
 
+		// A journey is judged when its author saves it: access is required and
+		// never inferred, steps and next rules must be well-formed, and each
+		// write's mapping must fit its target schema.
+		$context->registerEventListener(ObjectCreatingEvent::class, JourneyValidationListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, JourneyValidationListener::class);
+
 		// ... and the other half: a calendar an armed or suspended timer names
 		// cannot be deleted, because the resolver refuses an unknown name
 		// rather than downgrading to weekdays.
