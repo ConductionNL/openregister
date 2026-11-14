@@ -9124,3 +9124,4 @@ build:portaliq:site-honest-without-javascript:c2	partial: PR portaliq#2489 build
 build:portaliq:portal-controller-http-test-coverage:c2	no code tasks left: PR #2429 branch has every code task ticked; 4.1-4.4 are Playwright e2e needing a live instance	session-20261114T124625-07e62ccf	2026-11-14T12:53:09Z
 merge:opencatalogi:2624:aeccfe61	merge3 tree of 34 opencatalogi PRs: merged=18 red=6 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:53:32Z
 merge:opencatalogi:2636:d2e74011	merge3 tree of 34 opencatalogi PRs: merged=18 red=6 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:53:36Z
+merge:opencatalogi:2662:8f6fd3ca	merge3 tree of 34 opencatalogi PRs: merged=18 red=6 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:53:39Z
