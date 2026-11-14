@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapperInterface;
+use OCA\OpenRegister\Files\Db\AnonymisationLog;
+use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Service\File\AnonymiqRegionDetector;
@@ -36,6 +38,7 @@ use OCA\OpenRegister\Service\File\ImageRegion;
 use OCA\OpenRegister\Service\File\ImageRegionDetectorRegistry;
 use OCA\OpenRegister\Service\File\ImageRegionNotBurnableException;
 use OCA\OpenRegister\Service\File\OcrWordLocator;
+use OCA\OpenRegister\Service\File\OfficeMediaBurner;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -45,6 +48,8 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\File\ImageRedactionService
  * @covers \OCA\OpenRegister\Service\File\ImageBurner
+ * @covers \OCA\OpenRegister\Service\File\OfficeMediaBurner
+ * @uses   \OCA\OpenRegister\Files\Db\AnonymisationLog
  * @uses   \OCA\OpenRegister\Service\File\ImageDetection
  * @uses   \OCA\OpenRegister\Service\File\ImageRegion
  * @uses   \OCA\OpenRegister\Service\File\ImageRegionDetectorRegistry
@@ -67,6 +72,16 @@ final class ImageRedactionServiceTest extends TestCase {
 
 	private AnonymiqRegionDetector&MockObject $anonymiq;
 
+	/**
+	 * Where detection runs are recorded.
+	 *
+	 * @var AnonymisationLogMapper&MockObject
+	 */
+	private AnonymisationLogMapper&MockObject $runs;
+
+	/** @var list<AnonymisationLog> Detection runs recorded on the log. */
+	private array $recorded = [];
+
 	/** @var array<string, string> Files written next to the source, by name. */
 	private array $written = [];
 
@@ -76,6 +91,13 @@ final class ImageRedactionServiceTest extends TestCase {
 		$this->entities = $this->createMock(GdprEntityMapperInterface::class);
 		$this->anonymiq = $this->createMock(AnonymiqRegionDetector::class);
 		$this->anonymiq->method('name')->willReturn('anonymiq');
+		$this->runs = $this->createMock(AnonymisationLogMapper::class);
+		$this->runs->method('insert')->willReturnCallback(
+			function (AnonymisationLog $run): AnonymisationLog {
+				$this->recorded[] = $run;
+				return $run;
+			}
+		);
 	}//end setUp()
 
 	private function service(): ImageRedactionService {
@@ -85,9 +107,55 @@ final class ImageRedactionServiceTest extends TestCase {
 			$this->entities,
 			new ImageRegionDetectorRegistry($this->anonymiq),
 			new OcrWordLocator(),
-			new ImageBurner()
+			new ImageBurner(),
+			$this->runs
 		);
 	}//end service()
+
+	/**
+	 * An office archive holding the given parts.
+	 *
+	 * @param array<string, string> $parts The part bytes by name, in archive order.
+	 *
+	 * @return string The archive bytes.
+	 */
+	private static function archive(array $parts): string {
+		$path = (string)tempnam(sys_get_temp_dir(), 'or-test-');
+		$zip = new \ZipArchive();
+		$zip->open($path, \ZipArchive::OVERWRITE);
+		foreach ($parts as $name => $bytes) {
+			$zip->addFromString($name, $bytes);
+		}
+
+		$zip->close();
+		$bytes = (string)file_get_contents($path);
+		unlink($path);
+
+		return $bytes;
+	}//end archive()
+
+	/**
+	 * The parts of an office archive.
+	 *
+	 * @param string $bytes The archive bytes.
+	 *
+	 * @return array<string, string> The part bytes by name.
+	 */
+	private static function parts(string $bytes): array {
+		$path = (string)tempnam(sys_get_temp_dir(), 'or-test-');
+		file_put_contents($path, $bytes);
+		$zip = new \ZipArchive();
+		$zip->open($path);
+		$parts = [];
+		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$parts[(string)$zip->getNameIndex($i)] = (string)$zip->getFromIndex($i);
+		}
+
+		$zip->close();
+		unlink($path);
+
+		return $parts;
+	}//end parts()
 
 	/**
 	 * A file whose parent records what is written next to it.
@@ -241,7 +309,40 @@ final class ImageRedactionServiceTest extends TestCase {
 		$this->assertTrue($detection->detected);
 		$this->assertSame(['anonymiq' => ['status' => 'not-installed', 'reason' => 'not-installed']], $detection->detectors);
 		$this->assertSame('not-run', $detection->toArray()['objectDetection']);
+
+		$this->assertCount(1, $this->recorded, 'The detection run is recorded on the anonymisation log.');
+		$run = $this->recorded[0];
+		$this->assertSame('ImageDetection', $run->getEngine());
+		$this->assertSame('success', $run->getStatus());
+		$step = $run->getStepsArray()['image-detection'];
+		$this->assertSame('not-run', $step['objectDetection']);
+		$this->assertSame(['anonymiq' => ['status' => 'not-installed', 'reason' => 'not-installed']], $step['detectors']);
 	}//end testAnAbsentDetectorIsRecordedAsNotRun()
+
+	public function testAnImageThatCouldNotBeDetectedIsRecordedAsAFailedRunNotAsClean(): void {
+		$this->ocrWords(null);
+
+		$this->service()->detectImage($this->file('scan.png', 'image/png'));
+
+		$this->assertCount(1, $this->recorded);
+		$this->assertSame('failure', $this->recorded[0]->getStatus());
+		$this->assertSame(ImageRedactionService::NO_OCR, $this->recorded[0]->getReason());
+		$this->assertSame('skipped', $this->recorded[0]->getStepsArray()['image-detection']['outcome']);
+	}//end testAnImageThatCouldNotBeDetectedIsRecordedAsAFailedRunNotAsClean()
+
+	public function testARanDetectorIsRecordedWithItsRegions(): void {
+		$this->ocrWords(self::janJansen());
+		$this->relations->method('findEntitiesForFile')->willReturn([]);
+		$this->anonymiq->method('isInstalled')->willReturn(true);
+		$this->anonymiq->method('detect')->willThrowException(new RuntimeException('ExApp timed out'));
+
+		$this->service()->detectImage($this->file('photo.png', 'image/png'));
+
+		$step = $this->recorded[0]->getStepsArray()['image-detection'];
+		$this->assertSame(['anonymiq' => ['status' => 'failed', 'reason' => 'ExApp timed out']], $step['detectors']);
+		$this->assertSame('not-run', $step['objectDetection']);
+		$this->assertSame(0, $step['regions']);
+	}//end testARanDetectorIsRecordedWithItsRegions()
 
 	public function testADetectorRegionIsStoredWithPageBoxAndSource(): void {
 		$this->ocrWords(self::janJansen());
@@ -410,6 +511,86 @@ final class ImageRedactionServiceTest extends TestCase {
 
 		$this->assertSame([], $this->written);
 	}//end testATypeThatCannotBeBurnedYetIsRefusedWithoutOutput()
+
+	public function testAnImageInsideADocxIsBurned(): void {
+		$first = self::gradient(40, 40, 'png');
+		$second = self::gradient(80, 80, 'png');
+		$document = '<w:document>Jan Jansen</w:document>';
+		$docx = self::archive(['word/document.xml' => $document, 'word/media/image1.png' => $first, 'word/media/image2.png' => $second]);
+		$region = new ImageRegion(2, ['x' => 0.25, 'y' => 0.25, 'w' => 0.5, 'h' => 0.5], 'SIGNATURE', 0.9, 'anonymiq 1');
+
+		$this->service()->redactImage(
+			$this->file('letter.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', $docx),
+			[$region]
+		);
+
+		$parts = self::parts($this->written['letter_anonymized.docx']);
+		$this->assertSame([0], self::colours($parts['word/media/image2.png'], 20, 20, 59, 59), 'The addressed image is filled in its pixels.');
+		$this->assertNotContains(0, self::colours($parts['word/media/image2.png'], 0, 0, 19, 19));
+		$this->assertSame($first, $parts['word/media/image1.png'], 'Another image is left as it was.');
+		$this->assertSame($document, $parts['word/document.xml'], 'The text part is not touched by the image seam.');
+	}//end testAnImageInsideADocxIsBurned()
+
+	public function testAnImageInsideAnOdtIsBurned(): void {
+		$odt = self::archive(
+			[
+				'mimetype' => 'application/vnd.oasis.opendocument.text',
+				'content.xml' => '<office/>',
+				'Pictures/photo.jpg' => self::gradient(64, 64, 'jpeg'),
+			]
+		);
+		$region = new ImageRegion(1, ['x' => 0.0, 'y' => 0.0, 'w' => 0.5, 'h' => 0.5], 'FACE', 0.9, 'anonymiq 1');
+
+		$this->service()->redactImage($this->file('note.odt', 'application/vnd.oasis.opendocument.text', $odt), [$region]);
+
+		$parts = self::parts($this->written['note_anonymized.odt']);
+		$this->assertCount(1, self::colours($parts['Pictures/photo.jpg'], 0, 0, 31, 31));
+		$this->assertSame('application/vnd.oasis.opendocument.text', $parts['mimetype']);
+	}//end testAnImageInsideAnOdtIsBurned()
+
+	public function testARegionAddressingNoImageOfTheDocumentLeavesNoOutput(): void {
+		$docx = self::archive(['word/document.xml' => '<w:document/>', 'word/media/image1.png' => self::gradient(10, 10, 'png')]);
+		$region = new ImageRegion(2, ['x' => 0.1, 'y' => 0.1, 'w' => 0.1, 'h' => 0.1], 'FACE', 0.9, 'anonymiq 1');
+
+		try {
+			$this->service()->redactImage($this->file('a.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', $docx), [$region]);
+			$this->fail('A region beyond the last image must be refused.');
+		} catch (ImageRegionNotBurnableException $e) {
+			$this->assertStringContainsString('the document has 1 images', $e->getMessage());
+		}
+
+		$this->assertSame([], $this->written);
+	}//end testARegionAddressingNoImageOfTheDocumentLeavesNoOutput()
+
+	public function testAMediaFormatThatCannotBeBurnedLeavesNoOutput(): void {
+		$docx = self::archive(['word/document.xml' => '<w:document/>', 'word/media/image1.emf' => 'EMF bytes']);
+		$region = new ImageRegion(1, ['x' => 0.1, 'y' => 0.1, 'w' => 0.1, 'h' => 0.1], 'FACE', 0.9, 'anonymiq 1');
+
+		try {
+			$this->service()->redactImage($this->file('a.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', $docx), [$region]);
+			$this->fail('An EMF image must be refused.');
+		} catch (ImageRegionNotBurnableException $e) {
+			$this->assertStringContainsString('word/media/image1.emf is in a format that cannot be burned', $e->getMessage());
+		}
+
+		$this->assertSame([], $this->written);
+	}//end testAMediaFormatThatCannotBeBurnedLeavesNoOutput()
+
+	public function testACorruptDocumentLeavesNoOutput(): void {
+		$this->expectException(ImageRegionNotBurnableException::class);
+		$this->expectExceptionMessage('not a readable archive');
+
+		$this->service()->redactImage($this->file('a.odt', 'application/vnd.oasis.opendocument.text', 'not a zip'), []);
+	}//end testACorruptDocumentLeavesNoOutput()
+
+	public function testTheMediaPartsAreListedInArchiveOrder(): void {
+		$docx = self::archive(['word/document.xml' => 'x', 'word/media/b.png' => 'b', 'word/media/a.png' => 'a', 'word/styles.xml' => 'y']);
+
+		$burner = new OfficeMediaBurner(new ImageBurner());
+		$parts = $burner->mediaParts($docx, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'a.docx');
+
+		$this->assertSame(['word/media/b.png', 'word/media/a.png'], $parts);
+	}//end testTheMediaPartsAreListedInArchiveOrder()
 
 	public function testAnExistingSiblingIsOverwritten(): void {
 		$sibling = $this->createMock(File::class);
