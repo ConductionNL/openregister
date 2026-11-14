@@ -8652,3 +8652,4 @@ cover:dossiq:069ee2d6mbd37:9d3a1784	PR #6488: 14 tests for PaymentStateProjectio
 verify:versioniq:725:03a723aa	725 GREEN, 726 GREEN, 727 CONFLICT, 728 CONFLICT	session-20261114T070909-be4543e0	2026-11-14T09:23:28Z
 verify:portaliq:2486:6ea56172	2486 GREEN	session-20261114T075640-efa02b24	2026-11-14T09:24:04Z
 verify:versioniq:709:d415988a	6 GREEN (709,710,712,713,714,716), 3 CONFLICT (711,715,717); php 1748 tests no new fails beyond 2 inherited; vitest 2962 pass	session-20261114T085646-49a39060	2026-11-14T09:24:44Z
+cover:dossiq:069ee2d6mbd37:60c2c265	PR #6490: 4 controllers, +27 tests, suite 16850/19F -> 16877/19F	session-20261114T062200-6a28e40c	2026-11-14T09:24:53Z
