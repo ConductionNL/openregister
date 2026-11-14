@@ -11652,3 +11652,4 @@ fix:versioniq:717:e8ddf437	merged development in (clean), unit-only 1697 tests w
 build:buildiq:operate-organisation-scoped-apps:c3	failed: permission (openspec CLI install refused, T09 not run); pushed to PR #1596 head e5795e30: T04 controller doors + coverage split, T05, T06, T07 (unit; e2e left), T08; left T02 live check, T04 remaining readers, T07 e2e, T09	session-20261114T221817-a815ec70	2026-11-14T22:41:47Z
 verify:buildiq:1622:df861555	#1622 GREEN, #1648 GREEN	session-20261114T211808-5e900938	2026-11-14T22:41:53Z
 fix:shillinq:3062:1eafaacd	l10n keys moved off the catalogue end; stacks clean on 3051; new head eafe1f44, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T22:42:12Z
+fix:launchpad:1209:2cb0094a	conflict resolved, pushed 9d0c1bf3, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T22:42:41Z
