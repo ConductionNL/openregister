@@ -11910,3 +11910,79 @@ merge:learniq:2507:b47f3806	merge3 tree of 7 learniq PRs: merged=2 red=2 fail=0 
 merge:learniq:2544:457dce2f	merge3 tree of 7 learniq PRs: merged=2 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T23:29:53Z
 verify:versioniq:700:4041a55a	700,733 GREEN; 734 CONFLICT with 700 (AuditEntryMapper.php)	session-20261114T221759-cd5c5678	2026-11-14T23:29:51Z
 fix:filinq:2094:f466700e	merged development in clean, unit ok (Tests: 6792, Assertions: 24750, Skipped: 6.), new head 80494522	session-20261114T232423-38520620	2026-11-14T23:29:54Z
+verify:pipelinq:3843:c6362d1b	3843,3844,3845 GREEN (tests only); phpunit 8563/0 fail	session-20261114T211012-c469e919	2026-11-14T23:30:12Z
+cover:dossiq:069ee2d6mbd37:4e459503	correction: CaseDefinition exists on development; nothing to do because quality/test-coverage-4e459503-1 and -2 are already merged into development	worker-36	2026-11-15T00:00:00Z
+fix:filinq:2113:4f1d9b5d	fixed: conflict resolved keeping both sides, pushed 45e6b64f	session-20261114T224740-064dbb86	2026-11-14T23:30:15Z
+cover:decidiq:a5f973bbmae46:60c2c265	PR #2210: 42 tests, 8 controllers to 100%; lib/Controller 3085->3176/3228 lines; suite 4285->4327 OK	session-20261114T230933-0afdd896	2026-11-14T23:30:36Z
+fix:filinq:2085:a1832379	conflict resolved (both sides' constants kept), suites green; new head 432c7b61	session-20261114T221801-9a21d394	2026-11-14T23:30:38Z
+fix:filinq:2069:fa29e9b5	merged development (with #2119), suite green, new head 2b2b094e	session-20261114T224736-f9da4a35	2026-11-14T23:30:45Z
+review:openregister:10574:bc6f2770	APPROVE: tests-only spec, 74 EditSchemaProperty tests pass on PR+main, eslint clean	session-20261114T224742-00d4fbcb	2026-11-14T23:30:50Z
+cover:shillinq:05639debm9818:1b97f731	already done: lib/Listener/*.php at 95.6% (2820/2950) on development with the full unit suite (11463 tests OK); earlier -1..-3 merged; no PR	session-20261114T231738-b43a6a63	2026-11-14T23:30:53Z
+verify:integriq:3639:55cd2dff	3639 GREEN (tests only, no new failures)	session-20261114T224753-194bb25e	2026-11-14T23:30:53Z
+fix:versioniq:726:d1f35455	no change: branch already contains development; conflicts only with open sibling PRs #700 (InstallCollaborators.php) and #734 (AppStoreSource.php + 2 golden fixtures); merge development in after those land	session-20261114T221759-cd5c5678	2026-11-14T23:30:58Z
+verify:decidiq:2208:92fbaf9f	GREEN: #2208 tests only, 4377 -> 4385 OK	session-20261114T214733-589f5bff	2026-11-14T23:31:00Z
+fix:versioniq:711:9d778e23	no change: branch already contains development; conflicts only with open sibling PR #695 (InstanceSettingsFields.php, InstanceSettings.php); merge development in after #695 lands	session-20261114T221759-cd5c5678	2026-11-14T23:31:36Z
+verify:keepiq:1793:8d1e42ff	GREEN #1793 (php 5213 ok, vitest 3 inherited fails)	session-20261114T231756-01da210e	2026-11-14T23:31:36Z
+cover:keepiq:c967a31fm10bf:34763eb4	PR #1818: MiddlewareRegistrar own-test coverage 0 -> 100% (+2 tests, 5213 -> 5215 green); rest of lib/Middleware already 100%	session-20261114T223937-a95b1403	2026-11-14T23:31:53Z
+fix:filinq:2079:5988e906	merged development, resolved l10n conflicts; new head eb1a5b1d1a0caf2f7fdfe4f893176edc2d994d52	session-20261114T231754-82b5ae61	2026-11-14T23:31:53Z
+verify:portaliq:2517:92cab8f9	GREEN 2517	session-20261114T224740-064dbb86	2026-11-14T23:32:06Z
+fix:portaliq:2500:c274a629	merged development (conflicts resolved, register 0.115.0/portal 0.32.0), unit 5921 green; new head 3fa95f369, REVERIFY recorded	session-20261114T223333-658f3be1	2026-11-14T23:32:28Z
+fix:portaliq:2444:6d4286d3	conflict resolved by merging development; new head 14f7dd01	session-20261114T224754-e4a2fcab	2026-11-14T23:32:35Z
+fix:decidiq:2188:cd0af402	conflict resolved, new head 6507a1b9	session-20261114T214733-589f5bff	2026-11-14T23:32:41Z
+cover:hermiq:065f1631mcdb5:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php is 124 interfaces, 0 executable statements (coverage json [0,0]); no PR	session-20261114T231754-82b5ae61	2026-11-14T23:32:50Z
+review:filinq:2070:88c64439	GREEN: access checks intact, unit 6786 OK, touched jest/vitest OK	session-20261114T225452-4fcfea7f	2026-11-14T23:32:50Z
+cover:shillinq:05639debm9818:b2e6293a	PR #3082: 6 classes, +443 tests, Standards/Checks 91.7%->97.3%, suite 11463->11906 green	session-20261114T231738-f75034a1	2026-11-14T23:33:06Z
+cover:keepiq:c967a31fm10bf:f545d745	already done: lib/Repair at 98.57% lines (1036/1051) on development; remaining lines are getName() getters and unreachable openssl/json_encode false branches, no PR	session-20261114T231756-01da210e	2026-11-14T23:32:57Z
+verify:portaliq:2516:2e4ea330	GREEN 2516	session-20261114T224740-064dbb86	2026-11-14T23:33:04Z
+verify:larpinq:1060:d84369f6	stale	session-20261114T224756-971efe57	2026-11-14T23:32:58Z
+fix:filinq:2123:dceb01e3	merged development (has #2119): registrar tests green, unit 6808 OK, new head 65d916d0; REVERIFY recorded	session-20261114T222427-f171565a	2026-11-14T23:33:21Z
+measure:keepiq:20261114h22	php 93.72% (pcov, 5213 tests), js 93.44% (vitest, 3 inherited failures) at 4b38ea0c	session-20261114T214736-dd784d82	2026-11-14T23:33:37Z
+verify:dossiq:6527:923af8af	6527 GREEN	session-20261114T221743-dbe5c07e	2026-11-14T23:33:35Z
+cover:shillinq:05639debm9818:d76b2f72	PR #3083: 3 tests (GuardContractRegistrar, KiaSchalenLookup, BcfSubmissionGuard); lib/Guard/*.php had only 24 uncovered statements left; suite 11463->11466, 0 failures	session-20261114T224920-352ef0eb	2026-11-14T23:33:44Z
+review:openregister:10575:5c1e4d18	APPROVE: tests-only, 598 src/modals/object tests pass on PR+main, eslint clean	session-20261114T224742-00d4fbcb	2026-11-14T23:33:45Z
+fix:dossiq:6522:e59951e8	obsolete: #6522 closed, superseded by #6528 (StufRegisterAccessTest only, cut from development)	session-20261114T221743-dbe5c07e	2026-11-14T23:34:08Z
+fix:decidiq:2199:fe3a4fc8	conflict resolved (l10n both sides kept), unit 4404 OK; new head 68646faa, REVERIFY recorded	session-20261114T230933-0afdd896	2026-11-14T23:34:25Z
+cover:shillinq:05639debm9818:ef05df2f	PR #3084: 107 tests for NationalExtraTailChecks + NationalReportingTailChecks; lib/Standards/Checks 93.6% -> ~95.4%; suite 11568 OK	session-20261114T231755-998f7ff8	2026-11-14T23:34:30Z
+measure:versioniq:20261114h22	php 98.24% (pcov), js 97.27%	session-20261114T221759-cd5c5678	2026-11-14T23:34:35Z
+fix:decidiq:2178:24b4be0c	conflict resolved, new head b9927684	session-20261114T214733-589f5bff	2026-11-14T23:34:42Z
+fix:versioniq:716:73f4cacd	no change: branch already contains development; conflicts only with open sibling PRs #698/#707 (ApiController.php and 3 tests); merge development in after they land	session-20261114T221759-cd5c5678	2026-11-14T23:34:57Z
+cover:hermiq:065f1631mcdb5:0f859653	failed: no pcov/xdebug installable here (no apt package, no pecl) to locate the uncovered lines; every lib/Flow class already has behaviour tests (11 files), so the thin 4% cannot be targeted by reading - needs a worker with a coverage driver	session-20261114T222427-f171565a	2026-11-14T23:34:57Z
+cover:hermiq:065f1631mcdb5:1191da39	already done: lib/Service/WebResearch/ at 97.6% line coverage on development (target 95), quality/test-coverage-1191da39-1 exists	session-20261114T221743-dbe5c07e	2026-11-14T23:35:09Z
+fix:decidiq:2149:b733293a	l10n conflict resolved (union of keys, js rebuilt), suites green; new head 08dbad8e	session-20261114T221801-9a21d394	2026-11-14T23:35:07Z
+fix:portaliq:2498:b8d95863	merged development (l10n union, js regenerated), unit 5868 green; new head b177669a0, REVERIFY recorded	session-20261114T223333-658f3be1	2026-11-14T23:35:16Z
+build:launchpad:mcp-tool-surface:c4	failed: not started; this worker reached its context limit right after claiming it, so it is handed back untouched (PR #1222 unchanged at d08fb11f) for another worker	session-20261114T221801-9a21d394	2026-11-14T23:35:28Z
+verify:integriq:3640:46ba2b24	3640 GREEN (tests only, no new failures)	session-20261114T224753-194bb25e	2026-11-14T23:35:25Z
+fix:decidiq:2191:ccb12641	merged development, manifest/spec conflicts resolved keeping both blocks; vitest 2825 pass; new head a2e14c6c	session-20261114T225452-4fcfea7f	2026-11-14T23:35:33Z
+fix:dossiq:6523:ebc2a65d	conflict resolved, pushed 2cc454b5, REVERIFY	session-20261114T231756-01da210e	2026-11-14T23:35:47Z
+cover:hermiq:065f1631mcdb5:be0dcca9	already done: lib/Mcp/*.php at 98.8% line coverage on development (target 95), quality/test-coverage-be0dcca9-1 exists	session-20261114T221743-dbe5c07e	2026-11-14T23:36:11Z
+verify:shillinq:3078:314170b1	3078 GREEN: phpunit 11510 OK, vitest 1 inherited failure, no new failures	session-20261114T231806-fdb63293	2026-11-14T23:36:08Z
+measure:hermiq:20261114h22	php 95.87% (pcov, 5180 tests), js 95.79% (vitest 1509) at b48ad14b	session-20261114T214736-dd784d82	2026-11-14T23:36:23Z
+fix:learniq:2486:f0544ac9	merged development (clean); unit only inherited HigherEducationExampleSetTest red; new head a242580e	session-20261114T223937-a95b1403	2026-11-14T23:36:22Z
+fix:decidiq:2187:baca4928	conflict resolved; new head f2114bea, REVERIFY recorded	session-20261114T230933-0afdd896	2026-11-14T23:36:32Z
+cover:hermiq:065f1631mcdb5:93e5f5a4	already done: lib/Service/AiFeature/*.php at 99.8% line coverage on development b48ad14b (target 95), quality/test-coverage-93e5f5a4-1 exists	session-20261114T221743-dbe5c07e	2026-11-14T23:36:40Z
+fix:learniq:2513:2bcbcc6d	merged development (clean), new head 0c700c9ac0ac01939c55ecbc56b8c217cd758e97; 1 inherited failure	session-20261114T211012-c469e919	2026-11-14T23:36:53Z
+build4:openregister:detection-knows-the-person:c4	partial: 3.1-3.3 built on PR #10499 (branch build/detection-knows-the-person-3, head 7c096e6415, main merged in); unit suite no failures beyond baseline; left: 2.3 confirm control in the file entity list (UI, 37-locale strings, e2e), V gates	session-20261114T224745-bab17644	2026-11-14T23:37:04Z
+verify:shillinq:3081:c5e84291	#3081 GREEN (tests only; vitest 1 inherited failure, phpunit OK)	session-20261114T231738-b43a6a63	2026-11-14T23:37:11Z
+merge:shillinq:2995:9f197f52	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:37:22Z
+cover:hermiq:065f1631mcdb5:7927b05b	PR #1796: ProviderCallFailedException 27 tests, risky metadata fixed; Llm dir 97.33%->99.30%; suite 5178->5205, same inherited failures	session-20261114T224742-00d4fbcb	2026-11-14T23:37:38Z
+merge:shillinq:2997:65f23206	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:37:30Z
+merge:shillinq:2991:98bb7eb7	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:37:43Z
+cover:hermiq:065f1631mcdb5:b2c9296a	already done: lib/Service/Engine/ is 95.44% covered on development b48ad14b (pcov), above the 95% target	session-20261114T214736-dd784d82	2026-11-14T23:37:49Z
+fix:decidiq:2207:4431f53a	conflict resolved by merging development; new head a418f794	session-20261114T224754-e4a2fcab	2026-11-14T23:37:46Z
+cover:stackiq:9ac19b3amad24:692f8a78	already done: lib/Service/Contactpersoon/ measures 100% statements (205/205) on development; no PR	session-20261114T211012-c469e919	2026-11-14T23:38:11Z
+merge:shillinq:3048:2e5ba200	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:38:05Z
+cover:hermiq:065f1631mcdb5:66a28494	PR #1797: 3 classes, +11 tests, Engine 95.4%->96.5%, suite 5180->5191 green	session-20261114T231738-f75034a1	2026-11-14T23:38:24Z
+merge:shillinq:2977:84d0488b	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:38:13Z
+cover:stackiq:9ac19b3amad24:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php holds 56 interfaces with no method bodies (no executable statements); no PR	session-20261114T224742-00d4fbcb	2026-11-14T23:38:30Z
+cover:buildiq:70b3e29em7beb:13d51e6a	PR #1653: 9 tests for VersionMergeRequest, VersionBranchRefused, VersionSchemaWriter, VersionState::stemOf; Branch 90.09% -> 95.05%; suite 3192 -> 3201, 1 inherited failure unchanged	session-20261114T214733-589f5bff	2026-11-14T23:38:31Z
+merge:shillinq:3062:16ca8421	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:38:27Z
+cover:planninq:e1c9866dm4f63:jsea7197ec	PR #1181: 12 tests userNames/forgeUrl, src/utils lines 98.72->99.12%, suite 3388->3400 green	session-20261114T231756-01da210e	2026-11-14T23:38:55Z
+cover:hermiq:065f1631mcdb5:a42697be	PR #1798: 15 tests (AllowedModels, DraftModel, AppAssistantChoice, 3 exceptions, StartFields, AgentCatalog); Agent dir lines ~99.6% -> 100%; suite 5180->5195 OK	session-20261114T233346-3552728d	2026-11-14T23:39:06Z
+build:launchpad:openregister-leaf-integrations:c3	failed: blocked by design, not code: tasks 4-8 need the talk tab on an OpenRegister object, and OR's integration endpoints (ObjectIntegrationsController::guardObjectAccess) authorize by OR register RBAC on that object, while dashboards live in launchpad's own table and REQ-LEAF-003/D3 require access to follow PermissionService::canViewDashboard with no parallel ACL. Needs a spec decision (move das	session-20261114T224920-352ef0eb	2026-11-14T23:38:55Z
+verify:versioniq:694:5a4cdf16	694,724,733 GREEN; 718,722,723,727,728 CONFLICT on tree (clean on development); 700 skipped (head moved)	session-20261114T221759-cd5c5678	2026-11-14T23:39:03Z
+cover:stackiq:9ac19b3amad24:920e1694	already done: GebruikBulkHandler, ItsmFlowGateway, OwnershipMap all at 100% line coverage on development dbebfae7; no PR	session-20261114T231738-f75034a1	2026-11-14T23:39:35Z
+cover:buildiq:70b3e29em7beb:6891a8ac	already done: lib/Service/Dashboard/ measures 141/141 (100%) on development 165fc0e3 with the whole unit suite	session-20261114T214733-589f5bff	2026-11-14T23:39:26Z
+build:portaliq:resident-identity-in-forms:c4	partial: pushed to PR #2443 head ffe30c97 (T04 server core: awaiting-cosign hold, PortalCosign sign/refuse/same-subject/lapse, CosignDeadlineJob, register 0.115.0, 12 tests), left T04 submit hold in PortalIntakeController, form-cosign-invite mail + submitter mail on refusal/lapse, /mede-ondertekenen routes and pages, waiting line on confirmation and Mijn zaken, T08 Playwright, T09 live	session-20261114T224740-064dbb86	2026-11-14T23:39:40Z
+fix:learniq:2484:61512d88	merged development (clean); unit only inherited HigherEducationExampleSetTest red; new head 109cbc95	session-20261114T223937-a95b1403	2026-11-14T23:39:49Z
+fix:versioniq:709:45a2d42c	no change: clean on development; tree-only conflict with #692 (both append a command in info.xml), REVERIFY at same head	session-20261114T231756-01da210e	2026-11-14T23:40:09Z
+build:opencatalogi:api-says-what-it-filtered:c2	PR #2720: 3.1 AppliedFilters in both OpenAPI docs + parity test, 3.2 integrator doc; 4.1 gated on D10 skipped; 5.2/5.3 CI tooling not run; suite 5600, same 2 inherited failures	session-20261114T225452-4fcfea7f	2026-11-14T23:40:03Z
