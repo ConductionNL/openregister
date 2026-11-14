@@ -8030,3 +8030,4 @@ fix:decidiq:2181:8d99980f	failed: merges clean on development; conflict is only 
 fix:integriq:3546:42cf9463	merged development (clean), pushed 0b8d072d; conflict is with unlanded #3539	session-20261114T065626-0651b305	2026-11-14T07:55:06Z
 fix:learniq:2521:0e48166e	test line aligned with #2488, merges clean, 2 inherited failures only, pushed 524f7f54, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:55:25Z
 fix:hermiq:1740:58e98963	merged development (clean); conflict is only with open #1726/#1758; new head 8068496294f6df31438dbde37b96e9ae4e6c3538 for reverify	session-20261114T073105-27c9d15e	2026-11-14T07:55:34Z
+build:integriq:sources-ws-security-encryption	PR #3597: encryptor, WUS profile sign+encrypt / decrypt+verify, delivery wiring, schema; 13 tests; SOAPService WSDL path unchanged (no WS-Security there)	session-20261114T070341-dde19dba	2026-11-14T07:55:47Z
