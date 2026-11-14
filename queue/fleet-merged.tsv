@@ -2302,3 +2302,44 @@ versioniq	682	209ba5950fc32490e94a9240f5bf305cb8559e30	MERGED	merge3	GATE OK sbo
 versioniq	683	a69d0a432bfaad12c5613d95e170cff8135e3b76	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 versioniq	684	ca37f6c9de576b27d0091bc460f60d418be43b01	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 versioniq	685	0d04ca1a7a5372c23fcb6d9f990ef32e81ac5e47	RED	merge3	GATE RED floor: overall: 4.92 -> 4.87; duplication: 5.14 -> 5.09; unit_size: 4.73 -> 4.70; unit_complexity: 4.58 -> 4.49; unit_interfacing: 4.08 -> 3.88
+keepiq	1748	67c606188142f7cbf7e6d781d68916966c252f6c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1754	57f8bde30e1bc2b56cc544ea73eb64a43c0d799e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1755	60514b4d7364e71ce09e2533f5277eec242d13b2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1758	bad14ff36344732b2334bb2eb79612f04cd586f8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1759	7f940f662eef8291ed4fba6143fe7eebc594c4ff	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1760	135564d217a7edf4eb8a524db38051632f2dc62e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1761	27bb4b668bd2b6b6ce8d2c14e90aa36c053d0176	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1762	4a71aa2b8bc08eceb987a0c75de102a271f0b64c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1763	3e29d6cdf33f4d84e4e3c2c63eeab75a51a624ad	SKIP	merge3	GATE UNMEASURED floor_check.py or checker_floor.py not available
+keepiq	1764	0d24aa534c1d77f030b5af9c78ae243bd4dd6789	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1765	82f3934464652febe5744065e8b3d4c014b5a9a9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1766	29392dd8d5e961a6523799c57be9ddc3bf6affcd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2489	0ab04086854a13d63cca5ff700e425cd1d12bb99	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2491	3fc7e9ce355ab96b3cf086ca165fbfd613a7675a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2492	4884fbd39dce1f80287efaab5acf817bc5deb684	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2494	4a5ebbac106b506e613a5702d0882e74a01513fe	RED	merge3	GATE RED floor: unit_complexity: 4.40 -> 4.37
+learniq	2495	3920ab23f86e1bca9bfe1dc5d9a072d8a2a229cb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2498	6e6db722c49b00084eb994b24c4eacdd4643a034	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2499	847973e56fd9fc5e9e8acf4a1565d361ecaffd79	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2500	e0c0e415bfa6ef9b8533328c29013a635e1d5dd7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2503	f37b4ede90bc97079b5845a8fa5ac390a22ae0a6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+shillinq	2971	c6fdd59368b22090a32c0748effe73484e2ff28f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+shillinq	3030	a91189ffbda8957f5e6637091637db29b7060371	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+shillinq	3031	d270505f2fc1d33aa5d70a23e50b8e4aa92444bf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+launchpad	1189	a9e9b073962a3f7d7607039e2d06a34e25fc326d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1552	ba17cdd60c5b52ce1f96eab9c189327084a5b995	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1553	060512f439e3da307671c03a30e692013d754f25	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1555	d8d971d3e1ce939b78f1b8adc203bfd14dbf8e45	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1556	f53788ab6e779f7522ecf5eda040bb3f3d529bf2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1557	72678ec4dd71f10d1f96f6b77ffe1661ae55c4c8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1558	bbb34aa76ebdafc0a09365269b40e4f13fdaa3f8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1559	1179f9307d906faaa24f1864ae2eef5384a6f526	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1560	62e96c456e45c0a6a5e1d2be6a932fb7c0308746	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1561	0c39b37fba2382aa4a500037e87b9baa2e8952d8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1571	02ced9c3433b0f82906cc224a7fab45f20ff05ad	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1572	d57d19b4c384d71748280c003e464ecf1ebc09a7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1575	7927c03024902806b1b5b880b160f75bc2ea4429	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1576	ba79fa5f1e17effb71dbb93173b2bf329aabeaa0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1763	3e29d6cdf33f4d84e4e3c2c63eeab75a51a624ad	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1729	d0839e358d22108732ec6189ccbe485d82a257f8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2597	0bad17de449dbb981d2b98719de1e80cabe10d75	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold

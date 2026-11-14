@@ -1,19 +1,19 @@
 {
  "app": "stackiq",
- "commit": "fb3c61bb07202fb76b350a2244eb18dd23d402c8",
- "measured_at": "2026-11-13T17:16:41Z",
+ "commit": "02e576edd9f36f6b6094c29c5b66298a8975cf00",
+ "measured_at": "2026-11-14T08:44:10Z",
  "php": {
   "tool": "pcov",
-  "pct": 88.76,
-  "statements": 31757,
-  "covered": 28186,
+  "pct": 90.6,
+  "statements": 31808,
+  "covered": 28818,
   "dirs": {
    "lib/AppInfo/": [
-    564,
+    46,
     0
    ],
    "lib/BackgroundJob/": [
-    198,
+    244,
     198
    ],
    "lib/Command/": [
@@ -21,7 +21,7 @@
     282
    ],
    "lib/Controller/": [
-    3839,
+    3859,
     3754
    ],
    "lib/Controller/Settings/": [
@@ -33,7 +33,7 @@
     12
    ],
    "lib/EventListener/": [
-    982,
+    999,
     974
    ],
    "lib/Examples/": [
@@ -43,6 +43,14 @@
    "lib/Exception/": [
     4,
     4
+   ],
+   "lib/Kernel/": [
+    10,
+    10
+   ],
+   "lib/Kernel/Contracts/": [
+    0,
+    0
    ],
    "lib/Middleware/": [
     57,
@@ -65,8 +73,8 @@
     6
    ],
    "lib/Service/": [
-    18342,
-    15498
+    18395,
+    15696
    ],
    "lib/Service/AangebodenGebruik/": [
     61,
@@ -74,7 +82,7 @@
    ],
    "lib/Service/ArchiMate/": [
     204,
-    202
+    203
    ],
    "lib/Service/Cmdb/": [
     1520,
@@ -92,6 +100,10 @@
     49,
     49
    ],
+   "lib/Service/Registration/": [
+    423,
+    423
+   ],
    "lib/Service/Settings/": [
     1273,
     1270
@@ -107,9 +119,9 @@
   }
  },
  "js": {
-  "pct": 92.89,
+  "pct": 94.17,
   "statements": 8835,
-  "covered": 8207,
+  "covered": 8320,
   "dirs": {
    "src/": [
     91,
@@ -185,7 +197,7 @@
    ],
    "src/modals/object/": [
     2074,
-    1634
+    1731
    ],
    "src/services/": [
     32,
@@ -225,7 +237,7 @@
    ],
    "src/views/settings/": [
     207,
-    190
+    206
    ],
    "src/views/settings/sections/": [
     1486,
