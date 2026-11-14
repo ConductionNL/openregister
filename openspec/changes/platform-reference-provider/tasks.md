@@ -7,7 +7,7 @@
 - [x] 1.5 The smart picker offers objects over the same declaration.
 - [ ] 2.1 `tests/e2e/ci/platform-reference-provider.spec.ts`: an object URL in a conversation renders a card for a reader and a bare link for a non-reader.
 - [x] 2.2 Unit tests: URL parsing, the access branch, the declared and undeclared card shapes.
-- [ ] 2.3 `openspec validate platform-reference-provider --strict`.
+- [x] 2.3 `openspec validate platform-reference-provider --strict`.
 - [ ] 3.1 Hand over to the dossiq lane: declare the card per schema, register no provider.
 
 ## Build notes
@@ -32,5 +32,7 @@
   wins, and an object leaving the card's properties empty gets exactly the entry it got before.
   `SearchResultDeclarations::cardFor()` shares one schema load with `forSchema()`.
   Tests: `SearchResultCardTest` (5).
-- 2.2 is this build (16 cases). 2.1 (Playwright) and 2.3 (`openspec validate`) need a live
-  instance and the openspec CLI, so they are left unchecked, and 3.1 is dossiq's lane.
+- 2.2 is this build (16 cases). 2.1 (Playwright) needs a live instance, so it is left
+  unchecked, and 3.1 is dossiq's lane (declaring cards on dossiq's schemas, in dossiq).
+- 2.3 (third pass, 2026-11-14): `openspec validate platform-reference-provider --strict`
+  with the openspec CLI 2.0.0 reports the change valid.
