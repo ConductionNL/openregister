@@ -6859,3 +6859,4 @@ humaniq	1128	8d2efc39249714ec66dbc9d6c9d6d51775f38609	GREEN	worker-41	phpunit 41
 humaniq	1129	f4fd707435852417eba7b5174d02634f0d76a47f	GREEN	worker-41	phpunit 4182 (baseline 4159, 0 fail), node test:js 199 pass, new failures 0
 humaniq	1130	0e2113c2a209f2c086580e30bb2cad298fba07f1	GREEN	worker-41	phpunit 4182 (baseline 4159, 0 fail), node test:js 199 pass, new failures 0
 portaliq	2432	a871a990a0971470770acfcad63626107a361f4c	REVERIFY	worker-44	merged development in; development moved TEMPLATES to MailTemplateRendererInterface, the branch's action-due template added there; unit suite 5056 tests no failures, phpstan clean; new head 81aa6171072aa8c21b105408a5148dd7321c3a3c, verify it
+humaniq	1131	e8584d34c9ac0215baba882b1f25a2e8c6518250	CONFLICT	worker-41	clean on development; conflicts with tree in l10n/en.js en.json nl.js nl.json
