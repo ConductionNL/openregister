@@ -4121,3 +4121,9 @@ Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/Obje
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
+Service/Anonymisation/RedactionIrreversibilityVerifier.php,116,Service,Compliance,Compliance/Service/Anonymisation/RedactionIrreversibilityVerifier.php,0,,Compliance
+Service/Anonymisation/RedactionLeakRoute.php,30,Service,Compliance,Compliance/Service/Anonymisation/RedactionLeakRoute.php,0,,Compliance
+Service/Anonymisation/RedactionOutputMode.php,41,Service,Compliance,Compliance/Service/Anonymisation/RedactionOutputMode.php,0,,Compliance
+Service/Anonymisation/RedactionPackageRouteReader.php,98,Service,Compliance,Compliance/Service/Anonymisation/RedactionPackageRouteReader.php,0,,Compliance
+Service/Anonymisation/RedactionPdfRouteReader.php,91,Service,Compliance,Compliance/Service/Anonymisation/RedactionPdfRouteReader.php,0,,Compliance
+Service/Anonymisation/RedactionRegionCutter.php,29,Service,Compliance,Compliance/Service/Anonymisation/RedactionRegionCutter.php,0,,Compliance
