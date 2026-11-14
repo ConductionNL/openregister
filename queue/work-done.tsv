@@ -10333,3 +10333,4 @@ verify:integriq:3600:cd84c7be	3600 CONFLICT with current development on l10n tai
 fix:decidiq:2170:5a972e2e	fixed: merged development, l10n moved, unit 4252 OK; new head cc4d4813	session-20261114T154807-c05f4e57	2026-11-14T17:03:33Z
 verify:dossiq:6520:0171ff9c	6520 GREEN (no new failures)	session-20261114T151932-05b02c14	2026-11-14T17:03:57Z
 verify:buildiq:1583:6db93958	GREEN 1583; no new failures	session-20261114T161752-4c07cde6	2026-11-14T17:04:05Z
+fix:buildiq:1645:9bc83475	CONFLICT resolved (l10n moved mid-catalogue), pushed cc74061b	session-20261114T144809-d686f759	2026-11-14T17:04:40Z
