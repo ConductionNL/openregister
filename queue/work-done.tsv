@@ -10022,3 +10022,4 @@ fix:integriq:3588:3b34e85d	merged development; moved l10n keys off sibling appen
 fix:hermiq:1785:82bc6704	merged development (clean); conflict is with unmerged #1782; new head 64469ed7	session-20261114T154757-c9bf237e	2026-11-14T16:02:42Z
 verify:shillinq:3072:f0411a42	3072 GREEN, 3073 GREEN (11218 OK); 3074 skipped: head moved to 714defc1	session-20261114T154733-94bb2e01	2026-11-14T16:03:06Z
 fix:portaliq:2493:1cf3c736	no change: merges clean with development; package.json conflict is only with another unmerged PR in the tree, resolve after it lands	session-20261114T141738-30f539db	2026-11-14T16:03:10Z
+build:planninq:task-attachments-from-files:c2	no code tasks left on PR #1157: 1.1 owes only the live Playwright check, 2.1 openspec validate	session-20261114T151803-c9b63248	2026-11-14T16:03:10Z
