@@ -10383,3 +10383,4 @@ fix:shillinq:3048:a958ce7c	merged dev + #2991, version/lock sequenced after #299
 merge:planninq:1158:89f3a911	merge3 tree of 8 planninq PRs: merged=3 red=3 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T17:18:02Z
 verify:decidiq:2170:de54d2b8	GREEN 2170 2177; 4324 OK, vitest 2762 OK	session-20261114T154807-c05f4e57	2026-11-14T17:19:05Z
 build4:openregister:platform-share-provider:c3	failed: permission — openspec validate (2.3) via npx refused; PR #10450 head ad17acec0 unchanged; 1.1/1.2 open by design, 2.1 e2e live, 3.1 handover	session-20261114T171807-697deef1	2026-11-14T17:19:29Z
+review:openregister:10568:10437299	APPROVE: RBAC flag unused for row selection, tenancy never widened, arm order matches old preference; Architecture/Rules/Controller/Contract/SchemaMapper/migration tests pass, phpstan clean	session-20261114T134708-ba7f7741	2026-11-14T17:19:46Z
