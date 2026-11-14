@@ -24,9 +24,9 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RecordImportController;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Import\RecordImport\ColumnMapper;
 use OCA\OpenRegister\Service\Import\RecordImport\FailedRowExport;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordFileReader;
@@ -174,14 +174,14 @@ class RecordImportControllerTest extends TestCase {
 	}
 
 	public function testAnUnknownRegisterOrSchemaIs404(): void {
-		$registers = $this->createMock(RegisterMapper::class);
+		$registers = $this->createMock(RegisterMapperInterface::class);
 		$registers->method('find')->willThrowException(new DoesNotExistException('gone'));
 
 		$controller = new RecordImportController(
 			'openregister',
 			$this->request(file: $this->upload(self::CSV, 'people.csv')),
 			$registers,
-			$this->createMock(SchemaMapper::class),
+			$this->createMock(SchemaMapperInterface::class),
 			new RecordFileReader(),
 			new ColumnMapper(),
 			$this->importer,
@@ -203,9 +203,9 @@ class RecordImportControllerTest extends TestCase {
 	}
 
 	private function controller(IRequest $request): RecordImportController {
-		$registers = $this->createMock(RegisterMapper::class);
+		$registers = $this->createMock(RegisterMapperInterface::class);
 		$registers->method('find')->with('5')->willReturn($this->register);
-		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->method('find')->with('7')->willReturn($this->schema);
 
 		return new RecordImportController(

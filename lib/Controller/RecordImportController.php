@@ -29,9 +29,9 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Import\RecordImport\ColumnMapper;
 use OCA\OpenRegister\Service\Import\RecordImport\FailedRowExport;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordFileReader;
@@ -60,22 +60,22 @@ class RecordImportController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string              $appName   The app id.
-	 * @param IRequest            $request   The request.
-	 * @param RegisterMapper      $registers Finds the target register.
-	 * @param SchemaMapper        $schemas   Finds the target schema.
-	 * @param RecordFileReader    $reader    Reads the file's columns.
-	 * @param ColumnMapper        $mapper    Proposes and confirms the column mapping.
-	 * @param RecordImportService $importer  Writes the rows.
-	 * @param FailedRowExport     $failures  Exports the failed rows.
+	 * @param string                  $appName   The app id.
+	 * @param IRequest                $request   The request.
+	 * @param RegisterMapperInterface $registers Finds the target register.
+	 * @param SchemaMapperInterface   $schemas   Finds the target schema.
+	 * @param RecordFileReader        $reader    Reads the file's columns.
+	 * @param ColumnMapper            $mapper    Proposes and confirms the column mapping.
+	 * @param RecordImportService     $importer  Writes the rows.
+	 * @param FailedRowExport         $failures  Exports the failed rows.
 	 *
 	 * @spec openspec/changes/widget-record-import/specs/widget-record-import/spec.md
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly RecordFileReader $reader,
 		private readonly ColumnMapper $mapper,
 		private readonly RecordImportService $importer,
