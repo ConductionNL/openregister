@@ -7821,3 +7821,4 @@ dossiq	6324	657667ea629ed8b7de0e54a92ac48a98faf2f909	CONFLICT	merge3	conflicts w
 dossiq	6385	5bf6b3afe181d49c4d0074fe33964d5518352a1f	CONFLICT	merge3	conflicts with development; files: lib/Settings/AdminSettings.php 
 dossiq	6499	fb5dfa20fb2a4f82d33efed191f82702f18453ef	CONFLICT	merge3	conflicts with development; files: lib/Service/Custody/CaseTransferConsentGate.php 
 dossiq	6465	f8b4ab75a711e81ad0b46ee78bea249ab56981b1	REVERIFY	merge3	head moved since the verdict (was 6c904cd4df6eac23202b024f21c1fa9c0a9a114d, 45d3490d:CONFLICT,45d3490d:REVERIFY); verify the new head
+pipelinq	3752	d375909c53d67247106ff0747340c64e457ff217	REVERIFY	worker-33	build continuation pushed: tasks 1.3 (locked records skipped by client risk run and label rename, Util/LockedRecord + tests) and 3.1 (guard already in OpenRegister); unit 8350 0 failures; new head 51dd9688f600231124d25f1ed5abd75db9187eb1, verify it
