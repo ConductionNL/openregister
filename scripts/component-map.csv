@@ -1745,6 +1745,7 @@ Search/Service/Search/PropertySearchProfile.php,111,Search,Search,Search/Service
 Search/Service/Search/SearchIndexMaintenance.php,344,Search,Search,Search/Service/Search/SearchIndexMaintenance.php,0,,Search
 Search/Service/Search/SearchIndexRowCounts.php,23,Search,Search,Search/Service/Search/SearchIndexRowCounts.php,0,,Search
 Search/Service/SizeTally.php,16,Search,Search,Search/Service/SizeTally.php,0,,Search
+Search/Service/Vectorization/Handlers/BreakerGuardedEmbeddingGenerator.php,40,Search,Search,Search/Service/Vectorization/Handlers/BreakerGuardedEmbeddingGenerator.php,0,,Search
 Search/Service/Vectorization/Handlers/EmbeddingGeneratorHandler.php,170,Search,Search,Search/Service/Vectorization/Handlers/EmbeddingGeneratorHandler.php,0,,Search
 Search/Service/Vectorization/Handlers/PgVectorPlatform.php,57,Search,Search,Search/Service/Vectorization/Handlers/PgVectorPlatform.php,0,,Search
 Search/Service/Vectorization/Handlers/VectorSearchHandler.php,439,Search,Search,Search/Service/Vectorization/Handlers/VectorSearchHandler.php,0,,Search

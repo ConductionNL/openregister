@@ -44,6 +44,8 @@ use LLPhant\OllamaConfig;
 use LLPhant\OpenAIConfig;
 use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
+use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Mcp\Tool\StreamingToolInstanceWrapper;
 use Psr\Log\LoggerInterface;
@@ -88,6 +90,7 @@ class ResponseGenerationHandler {
 	 * @param SettingsServiceInterface $settingsService Settings service for LLM config.
 	 * @param ToolManagementHandler $toolHandler Tool management handler.
 	 * @param LoggerInterface $logger Logger.
+	 * @param BreakerRegistry|null $breakers The dependency breakers; null leaves the provider unguarded.
 	 *
 	 * @return void
 	 *
@@ -97,6 +100,7 @@ class ResponseGenerationHandler {
 		private readonly SettingsServiceInterface $settingsService,
 		private readonly ToolManagementHandler $toolHandler,
 		private readonly LoggerInterface $logger,
+		private readonly ?BreakerRegistry $breakers = null,
 	) {
 	}//end __construct()
 
@@ -177,6 +181,9 @@ class ResponseGenerationHandler {
 				request: $this->chatRequest(run: $run),
 				timings: ['start' => $run->startTime, 'tools' => $run->toolsTime]
 			);
+		} catch (DependencyUnavailableException $e) {
+			// An open `llm` breaker: left as is, so the middleware answers 503.
+			throw $e;
 		} catch (Exception $e) {
 			throw $this->generationFailure(run: $run, error: $e);
 		}
@@ -574,7 +581,33 @@ class ResponseGenerationHandler {
 	 *
 	 * Ollama runs through OllamaChat; OpenAI and the OpenAI-compatible Fireworks
 	 * API run through OpenAIChat (OpenAIChat::__construct() type-errors when
-	 * given an OllamaConfig).
+	 * given an OllamaConfig). While the `llm` breaker is open no chat client is
+	 * built and nothing is sent: the call is refused at once (design D-3).
+	 *
+	 * @param array $request Provider, config, message history, tools, functions and channel.
+	 *
+	 * @return array{response: string, chat: OpenAIChat|OllamaChat} The response and the chat client used.
+	 *
+	 * @throws Exception When the API call fails.
+	 * @throws DependencyUnavailableException While the `llm` breaker is open.
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	private function runChat(array $request): array {
+		$breaker = $this->breakers?->breaker();
+		if ($breaker === null) {
+			return $this->chatWith(request: $request);
+		}
+
+		return $breaker->call(
+			key: BreakerRegistry::llmKey(),
+			call: fn (): array => $this->chatWith(request: $request)
+		);
+	}//end runChat()
+
+	/**
+	 * Build the provider's chat client and invoke it.
 	 *
 	 * @param array $request Provider, config, message history, tools, functions and channel.
 	 *
@@ -582,16 +615,16 @@ class ResponseGenerationHandler {
 	 *
 	 * @throws Exception When the API call fails.
 	 *
-	 * @spec openspec/specs/chat-ai/spec.md
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
-	private function runChat(array $request): array {
+	private function chatWith(array $request): array {
 		$chat = match ($request['provider']) {
 			'ollama' => new OllamaChat($request['config']),
 			default => new OpenAIChat($request['config']),
 		};
 
 		return ['response' => $this->invokeChatWithTools(chat: $chat, request: $request), 'chat' => $chat];
-	}//end runChat()
+	}//end chatWith()
 
 	/**
 	 * Register the request's functions as tools on the chat client and invoke it.

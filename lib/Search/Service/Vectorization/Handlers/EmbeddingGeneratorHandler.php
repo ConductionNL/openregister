@@ -32,6 +32,7 @@ use LLPhant\Embeddings\EmbeddingGenerator\OpenAI\OpenAI3SmallEmbeddingGenerator;
 use LLPhant\Embeddings\EmbeddingGenerator\OpenAI\OpenAIADA002EmbeddingGenerator;
 use LLPhant\OllamaConfig;
 use LLPhant\OpenAIConfig;
+use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -67,10 +68,12 @@ class EmbeddingGeneratorHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param LoggerInterface $logger PSR-3 logger
+	 * @param LoggerInterface      $logger   PSR-3 logger
+	 * @param BreakerRegistry|null $breakers The dependency breakers; null leaves the provider unguarded.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
+		private readonly ?BreakerRegistry $breakers = null,
 	) {
 	}//end __construct()
 
@@ -97,7 +100,12 @@ class EmbeddingGeneratorHandler {
 			$this->logCreated(config: $config, generator: $this->generatorCache[$cacheKey]);
 		}
 
-		return $this->generatorCache[$cacheKey];
+		if ($this->breakers === null) {
+			return $this->generatorCache[$cacheKey];
+		}
+
+		// Every embedding call goes through the `llm` breaker (operate-load-shedding D-3).
+		return new BreakerGuardedEmbeddingGenerator(inner: $this->generatorCache[$cacheKey], breaker: $this->breakers->breaker());
 	}//end getGenerator()
 
 	/**
