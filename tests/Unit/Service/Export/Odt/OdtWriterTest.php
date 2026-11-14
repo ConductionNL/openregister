@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Export\Odt;
 use DOMDocument;
 use DOMXPath;
 use OCA\OpenRegister\Service\Export\Odt\OdtHouseStyle;
+use OCA\OpenRegister\Service\Export\Odt\OdtLogo;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Service\Export\RowsTable;
@@ -34,6 +35,8 @@ use ZipArchive;
  * @uses \OCA\OpenRegister\Service\Export\Odt\HtmlToOdt
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtTableBuilder
  * @uses \OCA\OpenRegister\Service\Export\Odt\VisibleText
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtLogo
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtHouseStyle
  */
 class OdtWriterTest extends TestCase {
 
@@ -263,6 +266,54 @@ class OdtWriterTest extends TestCase {
 		$this->assertSame(1, $styles->query('//style:master-page/style:footer/text:p')->length);
 		$this->assertSame('#ffffff', $this->xpath(part: 'content.xml')->evaluate('string(//style:style[@style:name="OR_HeadCell"]/style:text-properties/@fo:color)'));
 	}//end testColoursOnlyKeepThePlainFooter()
+
+	/**
+	 * A house-style logo is embedded in the package and drawn in the header of every page.
+	 *
+	 * @return void
+	 */
+	public function testALogoIsEmbeddedAndDrawnInThePageHeader(): void {
+		require_once __DIR__ . '/OdtLogoTest.php';
+		$bytes = OdtLogoTest::png(width: 300, height: 150);
+		$style = new OdtHouseStyle(logo: OdtLogo::fromBytes(bytes: $bytes));
+
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: '<p>Tekst</p>', landscape: true, houseStyle: $style));
+
+		$this->assertSame($bytes, $this->parts['Pictures/logo.png']);
+		$this->assertSame('mimetype', $this->names[0]);
+		$manifest = new DOMDocument();
+		$manifest->loadXML($this->parts['META-INF/manifest.xml']);
+		$entries = [];
+		foreach ($manifest->getElementsByTagNameNS('urn:oasis:names:tc:opendocument:xmlns:manifest:1.0', 'file-entry') as $entry) {
+			$entries[$entry->getAttributeNS('urn:oasis:names:tc:opendocument:xmlns:manifest:1.0', 'full-path')]
+				= $entry->getAttributeNS('urn:oasis:names:tc:opendocument:xmlns:manifest:1.0', 'media-type');
+		}
+
+		$this->assertSame('image/png', $entries['Pictures/logo.png']);
+
+		$styles = $this->xpath(part: 'styles.xml');
+		$styles->registerNamespace('draw', 'urn:oasis:names:tc:opendocument:xmlns:drawing:1.0');
+		$styles->registerNamespace('xlink', 'http://www.w3.org/1999/xlink');
+		$styles->registerNamespace('svg', 'urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0');
+		$this->assertSame('Pictures/logo.png', $styles->evaluate('string(//style:master-page/style:header/text:p/draw:frame/draw:image/@xlink:href)'));
+		$this->assertSame('3.000cm', $styles->evaluate('string(//style:master-page/style:header//draw:frame/@svg:width)'));
+		$this->assertSame('1.500cm', $styles->evaluate('string(//style:master-page/style:header//draw:frame/@svg:height)'));
+		$this->assertSame(1, $styles->query('//style:page-layout/style:header-style')->length);
+		$this->assertSame(1, $styles->query('//style:master-page/style:footer/text:p')->length);
+	}//end testALogoIsEmbeddedAndDrawnInThePageHeader()
+
+	/**
+	 * Without a logo there is no header and no picture.
+	 *
+	 * @return void
+	 */
+	public function testWithoutALogoThereIsNoHeaderOrPicture(): void {
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: '<p>Tekst</p>', landscape: true, houseStyle: new OdtHouseStyle(footerLines: ['Regel'])));
+
+		$this->assertSame(['META-INF/manifest.xml', 'content.xml', 'meta.xml', 'mimetype', 'styles.xml'], $this->sortedNames());
+		$this->assertSame(0, $this->xpath(part: 'styles.xml')->query('//style:header | //style:header-style')->length);
+		$this->assertStringNotContainsString('xmlns:draw', $this->parts['styles.xml']);
+	}//end testWithoutALogoThereIsNoHeaderOrPicture()
 
 	/**
 	 * Entry names, sorted.
