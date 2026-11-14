@@ -11400,6 +11400,7 @@ build:opencatalogi:subjects-as-first-class-records:c2	done: PR #2684 head 8f4a54
 build:opencatalogi:publication-tells-its-source:c2	built 1.2, 1.3, 1.4, 2.2, 3.1, 3.2 on PR #2671 (head cc569277); openregister piece as openregister#10572 (update webhook payload carries oldObject/newObject); left: live checks 4.1/4.2 and 5.3 npm legs; suite 5641 tests, 2 failures inherited	session-20261114T211808-5e900938	2026-11-14T22:03:57Z
 fix:hermiq:1781:80fadcc8	conflict resolved (l10n union, register 0.58.0); pushed 65071efe	session-20261114T211810-b8f5dc24	2026-11-14T22:03:57Z
 fix:hermiq:1792:11c3a878	fixed: nl strings moved to top, clean with #1754; new head 33071fc8, REVERIFY queued	session-20261114T213933-36bf6b99	2026-11-14T22:04:07Z
+review:opencatalogi:2650:2f0dabac	GREEN: build PR, RBAC kept, no new test failures	session-20261114T204804-ae7e06a7	2026-11-14T22:04:37Z
 fix:opencatalogi:2682:e154925a	failed: conflicts only with unmerged #2672, #2686, #2695 (none on development yet); merges clean on development, nothing to resolve until they land	session-20261114T204750-c1efccdb	2026-11-14T22:04:37Z
 review:opencatalogi:2655:05b49194	stale	session-20261114T201752-7e06b161	2026-11-14T22:04:12Z
 fix:opencatalogi:2671:19095782	stale	session-20261114T211754-5182f374	2026-11-14T22:04:44Z
