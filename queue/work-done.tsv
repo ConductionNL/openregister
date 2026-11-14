@@ -11094,3 +11094,4 @@ fix:launchpad:1216:2d1a07b7	merged development in clean, suites green; new head 
 verify:buildiq:1613:1864e391	1613 GREEN, 1626 CONFLICT (nl.json), 1641 GREEN, 1645 GREEN	session-20261114T201750-64b6fe0f	2026-11-14T21:04:56Z
 verify:learniq:2536:5fb022e7	2536 GREEN: unit 6815 only inherited failure; js-unit no new failures	session-20261114T194744-563ce177	2026-11-14T21:05:06Z
 fix:integriq:3635:c30a2e24	l10n json strings moved off catalogue end; new head 412d252c; REVERIFY	session-20261114T204802-b2e553ef	2026-11-14T21:05:38Z
+fix:shillinq:3078:95db3c3c	merged development, kept branch version in info.xml; suite green; new head e4625f775fda7369e83028ba7aa6202f3e183614	session-20261114T194805-be886caa	2026-11-14T21:06:25Z
