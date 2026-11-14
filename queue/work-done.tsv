@@ -8912,3 +8912,4 @@ build4:openregister:records-draft-versions:c2	partial: PR #10533 - 2.1 ?version=
 review:openregister:10519:31d12308	APPROVE: property index switch, suites and jest green	session-20261114T095639-051ba1e0	2026-11-14T10:57:33Z
 review:openregister:10506:81e6fe5c	APPROVE	session-20261114T092647-8b1e7e69	2026-11-14T10:57:54Z
 review:openregister:10498:1b4cd8a3	APPROVE 10498 (follow-up noted on SVG filter)	session-20261114T092645-55582ebb	2026-11-14T10:58:01Z
+review:openregister:10516:3c96edd5	APPROVE: additive foreign identifier table, mapper and registry matching REQ-GID-005; suites green merged with main	session-20261114T082640-198131b9	2026-11-14T10:58:27Z
