@@ -8917,3 +8917,4 @@ integriq	3622	45832696d92d72fb541b12ac2eb092a08e9b3ea0	GREEN	worker-48	php 8957 
 integriq	3623	a9bc234c5cadeaa63ab6906431bc65b972f7f723	GREEN	worker-48	php 8957 tests (baseline 8920, 7 inherited failures), vitest 2218 pass; new failures 0; tests only
 integriq	3624	4585f9f580587384238578ba4ee0a99a7872c7d9	GREEN	worker-48	php 8957 tests (baseline 8920, 7 inherited failures), vitest 2218 pass; new failures 0; tests only
 buildiq	1621	ef1e0ae75547617545d3778f887e5e708ac68652	GREEN	worker-50	phpunit 3184 (baseline 3126, 1 inherited ExportZipGoldenTest) 0 new failures; vitest 4471/4471; builds ai-agents-knowledge-and-run-trace, optional traceId only
+buildiq	1624	02cb87db6a976f49f04ab24dbf0a7daf9b4a4d48	GREEN	worker-50	phpunit 3184 (baseline 3126, 1 inherited ExportZipGoldenTest) 0 new failures; vitest 4471/4471; builds openbuild-mcp-adoption, plan gate on MCP writes, per-app role check on decide
