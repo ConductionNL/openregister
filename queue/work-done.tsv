@@ -9707,3 +9707,4 @@ merge:portaliq:2440:661dad5b	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=
 merge:portaliq:2284:47ded3a7	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T15:07:52Z
 verify:decidiq:2143:2a8cdde4	2143 GREEN; 2154 RED (seed count on top of 2143), 2168 RED (pinned version tests); 2146 CONFLICT dev; 2148 2170 2174 2177 2181 CONFLICT after 2143	session-20261114T141720-f9e7a46b	2026-11-14T15:07:59Z
 merge:pipelinq:3833:9ae29a13	merge3 tree of 4 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T15:08:07Z
+verify:filinq:2070:ff4fbe39	2070 GREEN; 2074 CONFLICT after 2070 (l10n)	session-20261114T141738-30f539db	2026-11-14T15:08:18Z
