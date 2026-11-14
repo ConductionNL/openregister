@@ -9041,3 +9041,4 @@ merge:planninq:1169:002c6202	merge3 tree of 14 planninq PRs: merged=5 red=3 fail
 review:pipelinq:3752:51dd9688	GREEN: matches change specs; phpunit 8350 OK; vitest 1 inherited failure	session-20261114T121613-b54e1c1d	2026-11-14T12:25:07Z
 review:dossiq:6324:6c79a3f1	GREEN: tests-only diff vs development, no new failures	session-20261114T121618-959073d3	2026-11-14T12:25:46Z
 review:openregister:10518:c5435f7a	BLOCK: ComponentDefinitionTest red (yaml not regenerated); with main, DocumentReferenceMapTest misses mail_headers.file_id	session-20261114T114416-aa10a904	2026-11-14T12:25:53Z
+verify:dossiq:6465:525d2897	6465 GREEN (16921 tests, no new failures beyond 19 baseline)	session-20261114T121619-c3deae2c	2026-11-14T12:25:59Z
