@@ -7803,3 +7803,4 @@ portaliq	2430	fc437ac24686b9b36baa4a8441496e29b8cbda71	CONFLICT	merge3	merges cl
 portaliq	2433	ca20ec2f1d419a458a537ebbe99f0d73699c8bc4	CONFLICT	merge3	merges clean on development alone; files: package.json 
 portaliq	2434	4d1b114444b3af9c190d895ef10d779fec265b3a	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Settings/PortaliqRegisterConfigTest.php tests/example-site.spec.mjs 
 portaliq	2442	9eb5c87639509ae900f4bb82d859cb6b12ce72b5	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3713	75ce9bd5f1a83af10f2999487633edaba358213e	GREEN	worker-33:review	implements marketing-campaign-on-client as specced (first/last touch, touchpoints list, enquiry campaign values trimmed+capped, best effort after the stored submit); merged with development: unit 8356 0 failures, phpstan clean, touched vitest + manifest specs pass
