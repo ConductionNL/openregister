@@ -30,7 +30,8 @@
       and rewrites only those whose `sharedUsers`/`sharedGroups` differ from what
       `sharedWith` derives (`Service/Sharing/SharePrincipalRepair`). Flows are not
       walked yet: flow sharing (group 6) is not enabled, so no flow path derives them.
-- [ ] 3.8 Wire `SharePrincipalDeriver::apply()` into the object write path so it cannot be bypassed — it exists and is tested, but nothing calls it yet (lands with the share APIs in groups 5 and 6)
+- [x] 3.8 Wire `SharePrincipalDeriver::apply()` into the object write path so it cannot be bypassed — it exists and is tested, but nothing calls it yet (lands with the share APIs in groups 5 and 6)
+      > Wired at the table (2026-11-14): `MagicSharePrincipals` recomputes `sharedUsers` / `sharedGroups` in `MagicMapper::prepareObjectDataForTable()` (single writes) and `bulkUpsert()` (bulk, import), before encryption, for every schema declaring all three properties; other schemas pass through untouched. Fails closed: no resolvable deriver refuses the write. The flow share APIs (group 6) still need this only for their own response shape. Unit: `MagicSharePrincipalsTest` (10).
 
 ## 4. Credential sharing (broker guard chain)
 

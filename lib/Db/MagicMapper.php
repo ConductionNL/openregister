@@ -57,6 +57,7 @@ use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
 use OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption;
+use OCA\OpenRegister\Db\MagicMapper\MagicSharePrincipals;
 use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
 use OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
@@ -3316,6 +3317,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// An encrypted property is written only as an envelope, whichever path
 		// got here (see MagicFlaggedEncryption).
+		// A share list's derived principal lists are recomputed, whichever path
+		// got here (see MagicSharePrincipals); before encryption, on plaintext.
+		$data = (new MagicSharePrincipals(container: $this->container))->forObject(data: $data, schema: $schema);
 		$data = (new MagicFlaggedEncryption(container: $this->container))->forObject(data: $data, schema: $schema);
 
 		$rowMetadata = new MagicRowMetadata(container: $this->container);
@@ -7934,7 +7938,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// The bulk path never went through SaveObject's encryption step. An
 		// encrypted property used to have no column, so bulk dropped its value;
 		// now that it has one, encrypt here so it can only ever hold an envelope.
-		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $command->objects, schema: $schema);
+		// Nor through the share endpoints: recompute the derived principal lists here too.
+		$objects = (new MagicSharePrincipals(container: $this->container))->forRows(objects: $command->objects, schema: $schema);
+		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $objects, schema: $schema);
 
 		try {
 			return $this->bulkHandler->upsert(
