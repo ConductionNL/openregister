@@ -11171,3 +11171,4 @@ measure:opencatalogi:20261114h10	php 95.64%, js 16.97% @a1371322	session-2026111
 verify:learniq:2523:d0e66148	2523 GREEN (6821 tests, only the inherited failure; JS only development's failures)	session-20261114T204747-26056883	2026-11-14T21:26:17Z
 build:opencatalogi:leaf-integrations:c2	partial: not started in this run (worker context nearly full); PR #2641 is merged into development; three Implement/Test task blocks in tasks.md are still unchecked (organization leaves on OpenRegister's shared schema, Task 3 browser tests), resume from development	session-20261114T194744-563ce177	2026-11-14T21:26:29Z
 fix:opencatalogi:2659:6f775731	conflict resolved; new head c29f7ef6e91d97435bfb25b98fe48de87bd0c61c, REVERIFY	session-20261114T201741-909e04de	2026-11-14T21:26:25Z
+verify:buildiq:1648:10850ba6	1648 GREEN, 1650 GREEN, 1651 CONFLICT (stubs vs 1648), 1652 GREEN; 1649 skipped (head moved)	session-20261114T191742-bf93c040	2026-11-14T21:26:46Z
