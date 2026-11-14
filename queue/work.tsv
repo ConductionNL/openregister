@@ -11665,3 +11665,13 @@ merge:integriq:3546:f32f04c4	merge	integriq	development	development	prs=3546@38e
 merge:filinq:2079:32e6604b	merge	filinq	development	development	prs=2079@5988e906c5a9ddfcbe0a166321cac165e44de8e0	2026-11-14T21:05:22Z
 merge:keepiq:1791:ca3e768f	merge	keepiq	development	development	prs=1791@cd6b33cf6b8e55790a2b8a8b453d267472b3bd94,1798@0dec26815b252fe4ee42dfc6d9ee9f1d2a5337fa	2026-11-14T21:05:22Z
 merge:planninq:1167:efe18643	merge	planninq	development	development	prs=1167@d6c4dc18a6d114b7e0652ee500612c49357de6b0,1169@ad389bd3451b7bef7e6d236a84eb0baa7504d0a4	2026-11-14T21:05:22Z
+verify:learniq:2513:2d18b6cc	verify	learniq	development	merge	prs=2513@e4c306545c2ccfea38171ea452a29768920b1467,2521@b2c3e036c640fdd0e9ec333888c6143c9724ef1a	2026-11-14T21:10:21Z
+verify:buildiq:1624:fc979bfd	verify	buildiq	development	merge	prs=1624@f4e7c1bd61625c049c067b2972fd4d0c45198ffb,1648@30be10d631171bb5f1deee7702ee267e8e410440,1649@b7af56b67e1d0812d439ec00c0f62ab84ab97169	2026-11-14T21:10:21Z
+verify:integriq:3635:76370912	verify	integriq	development	merge	prs=3635@412d252c6ba3bdbe4b7db6b5b830323941a88cd0	2026-11-14T21:10:21Z
+verify:shillinq:3078:bdbfab98	verify	shillinq	development	merge	prs=3078@e4625f775fda7369e83028ba7aa6202f3e183614	2026-11-14T21:10:21Z
+verify:decidiq:2190:c3a88d64	verify	decidiq	development	merge	prs=2190@af8316ad00ec7e76dd3668b2149d15715ab4ac67	2026-11-14T21:10:21Z
+verify:keepiq:1789:e236aa78	verify	keepiq	development	merge	prs=1789@c8b160f521ea8b4d4b00db5435473b5b363190dd	2026-11-14T21:10:21Z
+verify:launchpad:1210:5b711955	verify	launchpad	development	merge	prs=1210@0fb948aad1a131f5b1765d92c3c71c0352ef1bab,1226@325ce50b3479477f9742c20ff55fce5a0e6de1c8,1227@b0d1c0efe31a3f9bc5070f7dff8e3c1d31fe0479	2026-11-14T21:10:21Z
+merge:integriq:3592:7088891f	merge	integriq	development	development	prs=3592@8a35a39acd0b2e2fec5ba98acc475f15fe8604dd,3595@07e2a23686f1889ef90284c53ecb5af67d38c282	2026-11-14T21:10:21Z
+merge:launchpad:1212:11462701	merge	launchpad	development	development	prs=1212@57c5a6538dc81b3b71995cead31a18529fe4eb63	2026-11-14T21:10:21Z
+build:hermiq:models-several-models-per-turn:c3	build	hermiq	development	models-several-models-per-turn	change=models-several-models-per-turn;open=11;cont=c3;prev=build:hermiq:models-several-models-per-turn:c2;left=partial: PR hermiq#1781, task 1 (fallback chain on the model policy) and task 2's invokeChat test done, tasks 3-7 and verification left, suite failures identical to development (164E/26F inherited)	2026-11-14T21:10:21Z
