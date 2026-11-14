@@ -10670,3 +10670,4 @@ merge:decidiq:2155:69ee3a82	merge3 tree of 16 decidiq PRs: merged=2 red=5 fail=0
 merge:decidiq:2170:de54d2b8	merge3 tree of 16 decidiq PRs: merged=2 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T19:30:17Z
 merge:decidiq:2172:18d37379	merge3 tree of 16 decidiq PRs: merged=2 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T19:30:20Z
 build:portaliq:operate-portals-per-organisation:c3	partial: pushed to PR #2440 head 1f256935 (T03 repair step, T07 New portal dialog + admin route, T12 x-admin-only on adminGroups via nextcloud-vue#2152), left T12 staff list narrowing (needs live check), T05/T14/T09 live; phpunit 5293/0	session-20261114T185851-d4a7f75f	2026-11-14T19:30:27Z
+merge:decidiq:2195:cd81ac60	merge3 tree of 16 decidiq PRs: merged=2 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T19:30:23Z
