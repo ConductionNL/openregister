@@ -12,6 +12,7 @@
 - [ ] Implement: Test All Event Classes via DataProvider Grouping (~39 source files)
 - [ ] Implement: Test All BackgroundJob, Command, Cron, and Listener Classes
 - [ ] Implement: Test All Exception and Format Classes
+  - Progress: `DatabaseErrorChainTest`, `FlowSignalRefusedTest`, `GrantExceedsGranterExceptionTest`, `MigrationPackRequestExceptionTest` (with its abstract parent), `TextDisclosureNotRecordedExceptionTest`, `ChunkMatcherExceptionTest`: the exceptions with logic that no test covered directly. Every Format class already has a test. Still open: many exceptions are exercised only through their callers' tests, not by a test of their own.
 - [x] Implement: Test Organisation Service Multi-Tenancy Paths
   - Done: `OrganisationServiceMembershipTest` covers joining (membership added, the cached organisation list dropped; another user must exist; a missing organisation keeps the cache) and leaving (the last organisation refused, the active organisation cleared only when it is the one left, removing another user skipping the last-organisation guard). The cache expiry and default-organisation fallback scenarios were already covered by `ActiveOrganisationCachingTest` and `DefaultOrganisationManagementTest`.
 - [x] Implement: Test Webhook Service Delivery and Retry Logic
