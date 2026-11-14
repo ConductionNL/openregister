@@ -10993,3 +10993,5 @@ fix:portaliq:2440:c822fe02	conflict resolved, pushed 05103dba; REVERIFY recorded
 review:shillinq:2997:ee7b7248	GREEN: unit 11411 OK, vitest only inherited failure; specced	session-20261114T194744-563ce177	2026-11-14T20:43:58Z
 fix:keepiq:1791:16a86af2	REVERIFY cd6b33cf	session-20261114T134708-ba7f7741	2026-11-14T20:44:06Z
 build:integriq:portal-idp-broker-config:c3	partial: PR integriq#3635 (head ffc03af3) carries tasks 2+4 (98c11b2a, unmerged after #3583) and task 7 (registration audience, assurance mapping, polymorphic/hmac pseudonymisation; superseded config reads removed), 7 tests, suite 9097->9102 same inherited failures; left 1 (SAML lib needs composer.lock), 5, 6, 8, 9, 10, 13, 12 (live)	session-20261114T191744-89a97153	2026-11-14T20:44:29Z
+merge:launchpad:1203:2d28a434	merge3 tree of 8 launchpad PRs: merged=4 red=4 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T20:44:24Z
+merge:launchpad:1205:ead5b82e	merge3 tree of 8 launchpad PRs: merged=4 red=4 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T20:44:27Z
