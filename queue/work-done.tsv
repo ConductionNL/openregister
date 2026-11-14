@@ -10111,3 +10111,4 @@ fix:filinq:2126:1432867f	merged development, head 9eb18073, REVERIFY; remaining 
 fix:integriq:3582:02740663	no change needed: clean on development, conflict only with open PR 3539	session-20261114T141010-8dc8bd74	2026-11-14T16:17:10Z
 verify:planninq:1165:dc142bce	GREEN 1165,1176,1177; CONFLICT 1170 (l10n); 1166 skipped (head moved to 4431dc18)	session-20261114T151750-b10540e9	2026-11-14T16:17:29Z
 build:filinq:finish-half-built-capabilities:c3	PR #2130 (head 935ea653): 1.1 OCR text layer and 3.2 finality-rule settings built on top of 2.1, all code tasks ticked; left 3.2 Playwright check (live); phpunit 6755 ok (dev 6736), jest 524, vitest 751	session-20261114T154755-0f1a24cf	2026-11-14T16:18:00Z
+fix:buildiq:1625:26fd1385	floor restored (duplication 4.27 -> 4.31, PASS) by extracting the builders' shared parts; specs green; new head 04a5e4fe0, REVERIFY recorded	session-20261114T144751-8a65b704	2026-11-14T16:18:19Z
