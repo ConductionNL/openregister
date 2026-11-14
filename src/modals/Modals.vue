@@ -13,6 +13,7 @@ import { navigationStore } from '../store/store.js'
 	<ImportConfiguration />
 	<ExportConfiguration />
 	<PublishConfiguration />
+	<PublishToGitlab />
 	<ExploreSchema v-if="navigationStore.dialog === 'exploreSchema'" />
 	<DeleteSchema />
 	<EditSchema v-if="navigationStore.modal === 'editSchema'" />
@@ -65,6 +66,7 @@ import RestoreMultiple from './deleted/RestoreMultiple.vue'
 import DeleteEndpoint from './endpoint/DeleteEndpoint.vue'
 import EditEndpoint from './endpoint/EditEndpoint.vue'
 import UploadFiles from './file/UploadFiles.vue'
+import PublishToGitlab from './gitlab/PublishToGitlab.vue'
 import CopyObject from './object/CopyObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
 import DownloadObject from './object/DownloadObject.vue'
@@ -109,6 +111,7 @@ export default {
 		ImportConfiguration,
 		ExportConfiguration,
 		PublishConfiguration,
+		PublishToGitlab,
 		EditSchema,
 		ExploreSchema,
 		DeleteSchema,

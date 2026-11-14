@@ -63,6 +63,8 @@ class OAuth2NoTokenLeakTest extends TestCase {
 		'clientCredentialRef',
 		'clientId',
 		'createdAt',
+		// credential-outside-vault-reference: where an outside secret lives, never the secret.
+		'custody',
 		'expiresAt',
 		'instanceBaseUrl',
 		'kind',
@@ -78,6 +80,13 @@ class OAuth2NoTokenLeakTest extends TestCase {
 		'sharedUsers',
 		'sharedWith',
 		'status',
+		// credential-outside-vault-reference: a reference ({connection, path, key}) and the
+		// connection's login method, role id and mount. The role id is not a secret; the
+		// AppRole secret id is the connection's own secret, held in the custody leaf.
+		'vaultAuthMethod',
+		'vaultMount',
+		'vaultRef',
+		'vaultRoleId',
 	];
 
 	public function testTheCredentialSchemaDeclaresNoPlaceATokenCouldBeStored(): void {

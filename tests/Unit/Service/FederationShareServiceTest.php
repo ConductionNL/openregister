@@ -182,6 +182,20 @@ class FederationShareServiceTest extends TestCase {
 	}//end testASharePastTheCallersRightsIsRefusedAndNotStored()
 
 	/**
+	 * A share of a schema that does not declare itself federatable is refused and not stored.
+	 *
+	 * @return void
+	 */
+	public function testAShareOfAnUndeclaredSchemaIsRefusedAndNotStored(): void {
+		$this->grantor->method('federationRefusal')->willReturn('This schema does not allow its objects to be shared with another instance');
+		$this->shareMapper->expects($this->never())->method('createFromArray');
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->expectExceptionMessage('This schema does not allow its objects to be shared with another instance');
+		$this->service->createOutgoingShare(['scope' => 'object', 'register' => 'zaken', 'schema' => 'zaak', 'objectUri' => 'zaak-1', 'permissions' => 'read']);
+	}//end testAShareOfAnUndeclaredSchemaIsRefusedAndNotStored()
+
+	/**
 	 * The grantor judges exactly the share that would be stored.
 	 *
 	 * @return void

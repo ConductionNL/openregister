@@ -27,6 +27,10 @@ exports[`route sidebars golden audit: applies the route query empty 1`] = `
         "label": "Delete",
         "value": "delete",
       },
+      {
+        "label": "Reveal",
+        "value": "property.revealed",
+      },
     ],
     "activeTab": "filters-tab",
     "createCount": 0,
@@ -72,6 +76,10 @@ exports[`route sidebars golden audit: applies the route query emptyStrings 1`] =
       {
         "label": "Delete",
         "value": "delete",
+      },
+      {
+        "label": "Reveal",
+        "value": "property.revealed",
       },
     ],
     "activeTab": "filters-tab",
@@ -134,6 +142,10 @@ exports[`route sidebars golden audit: applies the route query full 1`] = `
       {
         "label": "Delete",
         "value": "delete",
+      },
+      {
+        "label": "Reveal",
+        "value": "property.revealed",
       },
     ],
     "activeTab": "filters-tab",
@@ -198,6 +210,10 @@ exports[`route sidebars golden audit: applies the route query unknownIds 1`] = `
       {
         "label": "Delete",
         "value": "delete",
+      },
+      {
+        "label": "Reveal",
+        "value": "property.revealed",
       },
     ],
     "activeTab": "filters-tab",

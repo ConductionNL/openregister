@@ -76,7 +76,8 @@ async function loadListContext(register, schema) {
 }
 
 /**
- * The API URL of the object a deep link names.
+ * The API URL of the object a deep link names, with `@self.can` extended so
+ * the Follow toggle knows whether the user may manage followers (D-6).
  *
  * @param {{register: string, schema: string, id: string}} params The route params
  * @return {string} The URL
@@ -84,6 +85,7 @@ async function loadListContext(register, schema) {
 function linkedObjectUrl(params) {
 	const { register, schema, id } = params
 	return `/index.php/apps/openregister/api/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}/${encodeURIComponent(id)}`
+		+ '?_extend=@self.can'
 }
 
 /**
