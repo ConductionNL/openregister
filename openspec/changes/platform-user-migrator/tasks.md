@@ -17,5 +17,6 @@
 - [ ] 2.1 `tests/e2e/ci/platform-user-migrator.spec.ts`: export a user with views and watches, import into a second instance, check both.
 - [x] 2.2 Unit tests: the absence of objects and secrets in the export, the import report for an unrestorable view.
   - `tests/Unit/Service/UserMigration/` (PersonalStateMigratorTest, RegisterReferencesTest, PersonalStateReaderTest).
-- [ ] 2.3 `openspec validate platform-user-migrator --strict`.
+- [x] 2.3 `openspec validate platform-user-migrator --strict`.
+  - Passes (`--type change --strict`, OpenSpec 2.0.0).
 - [ ] 3.1 Tell the dossiq lane that C-access-and-privacy-56, moving a leaver's work to a colleague, is its own act and is not this.
