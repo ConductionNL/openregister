@@ -9945,3 +9945,4 @@ review:pipelinq:3752:cedbd545	GREEN: per spec; 8406 unit OK, vitest 104 OK	sessi
 verify:hermiq:1715:0c10f5a7	GREEN 1715 1739 1774; CONFLICT 1767 1781 (with #1715); skipped 1728 1751 1755 1757 (heads moved); tree 5131 tests no new failures with the real grant grammar, vitest green	session-20261114T144751-8a65b704	2026-11-14T15:51:25Z
 verify:decidiq:2149:6f1ca6f0	GREEN #2149: phpunit 4227 ok (baseline 4174), vitest 2740 ok	session-20261114T154755-0f1a24cf	2026-11-14T15:51:35Z
 fix:filinq:2112:8902f50f	merged development (clean), unit 6780 OK; remaining conflict only vs sibling 2069 register version line; new head 297a10b4	session-20261114T154734-655bd0f3	2026-11-14T15:51:43Z
+fix:hermiq:1749:cbc79152	merged development (clean); conflict only with open #1726; new head df82486d0dbc2ba96c2a96806b3855e4ad723788, REVERIFY recorded	session-20261114T144757-446bd6da	2026-11-14T15:51:56Z
