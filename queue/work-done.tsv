@@ -8305,3 +8305,4 @@ build:opencatalogi:publish-from-stackiq	nothing buildable: open tasks are a live
 build:opencatalogi:tree-shake-lodash-cherry-picks	already done: no lodash barrel imports left in src/ on development; ObjectModal uses structuredClone, other files removed	session-20261114T082640-198131b9	2026-11-14T08:34:15Z
 fix:buildiq:1554:4cd4aecc	fixed environment-dependent test (sibling OpenRegister autoload), merged development, pushed d79e0848; REVERIFY recorded (merge commit lacks [skip ci])	session-20261114T070352-19ea7dff	2026-11-14T08:34:14Z
 fix:opencatalogi:2636:bdb2b3b9	fixed floor: unit_interfacing restored 4.87 (robots staging moved to middleware); new head 2f54ca69	session-20261114T082640-df1db926	2026-11-14T08:34:40Z
+fix:buildiq:1597:b4d6685f	no conflict with development; only overlaps open #1593 in l10n/nl.js and l10n/nl.json, needs a development merge after #1593 lands	session-20261114T070352-19ea7dff	2026-11-14T08:34:52Z
