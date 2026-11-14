@@ -99,6 +99,28 @@ class FederatedStoreCatalog {
 	}//end slugFor()
 
 	/**
+	 * The declared type ids an installed app registers, in declaration order.
+	 *
+	 * A manifest may declare a type that an optional app owns, such as
+	 * `nldesign.theme`, which only exists while the app that registers it is
+	 * enabled. Such a type must not be offered while nothing owns it.
+	 *
+	 * @param array<int, string> $typeIds The declared type ids.
+	 *
+	 * @return array<int, string> The ids the registry holds.
+	 *
+	 * @spec openspec/changes/federated-config-sharing
+	 */
+	public function ownedTypes(array $typeIds): array {
+		return array_values(
+			array_filter(
+				$typeIds,
+				fn (string $typeId): bool => $this->registry->get(id: $typeId) !== null
+			)
+		);
+	}//end ownedTypes()
+
+	/**
 	 * Browse every declared type's published configuration.
 	 *
 	 * @param StoreDescriptor $descriptor The calling app's store parameters.

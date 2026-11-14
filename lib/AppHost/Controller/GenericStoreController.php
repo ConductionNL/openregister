@@ -214,7 +214,7 @@ class GenericStoreController extends Controller {
 
 	/**
 	 * The filter kinds a search answers with: the app's declared kinds, or a
-	 * federated store's declared type ids when it names no kinds of its own.
+	 * federated store's offered type ids when it names no kinds of its own.
 	 *
 	 * @param StoreManifest $store The declared store block.
 	 *
@@ -222,11 +222,41 @@ class GenericStoreController extends Controller {
 	 */
 	private function searchKinds(StoreManifest $store): array {
 		if ($store->kinds === [] && $store->isFederated() === true) {
-			return $store->declaredTypes();
+			return $this->offeredTypes(store: $store);
 		}
 
 		return $store->kinds;
 	}//end searchKinds()
+
+	/**
+	 * The declared type ids this store offers: those an installed app owns.
+	 *
+	 * A type an optional app registers (`nldesign.theme`) is left out while
+	 * that app is disabled, so its chip does not appear and no search walks
+	 * it. When the store owns none of its declared types the declared list is
+	 * kept, so the store stays on the configuration path and the catalogue
+	 * still names the manifest error, rather than silently falling back to
+	 * the objects API.
+	 *
+	 * @param StoreManifest $store The declared store block.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/federated-config-sharing
+	 */
+	private function offeredTypes(StoreManifest $store): array {
+		$declared = $store->declaredTypes();
+		if ($declared === []) {
+			return [];
+		}
+
+		$owned = $this->services->sources->catalog->ownedTypes(typeIds: $declared);
+		if ($owned === []) {
+			return $declared;
+		}
+
+		return $owned;
+	}//end offeredTypes()
 
 	/**
 	 * Install one store item into this instance.
@@ -545,7 +575,7 @@ class GenericStoreController extends Controller {
 			schema: $store->schema,
 			defaultRegister: $store->register,
 			cardFields: $store->cardFields,
-			types: $store->declaredTypes(),
+			types: $this->offeredTypes(store: $store),
 			publishFields: $store->publishFields,
 			publishGroups: $store->publishGroups
 		);

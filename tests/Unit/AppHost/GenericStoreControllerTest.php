@@ -125,7 +125,7 @@ class GenericStoreControllerTest extends TestCase {
 		$this->installer = $this->getMockBuilder(GenericStoreInstaller::class)
 			->disableOriginalConstructor()->onlyMethods(['install'])->getMock();
 		$this->catalog = $this->getMockBuilder(FederatedStoreCatalog::class)
-			->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install'])->getMock();
+			->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install', 'ownedTypes'])->getMock();
 		$this->gitHubSource = $this->getMockBuilder(GitHubStoreSource::class)
 			->disableOriginalConstructor()->onlyMethods(['search', 'sourceId'])->getMock();
 		$this->actionAuthorizer = $this->getMockBuilder(StoreActionAuthorizer::class)
@@ -369,6 +369,77 @@ class GenericStoreControllerTest extends TestCase {
 			$response->getData()['kinds']
 		);
 	}//end testFederatedKindsFallBackToTheDeclaredTypes()
+
+	/**
+	 * A declared type no installed app owns is neither a filter nor searched.
+	 *
+	 * `nldesign.theme` is registered by an optional app; while that app is
+	 * disabled the registry does not hold it, so the page must not offer it.
+	 *
+	 * @return void
+	 */
+	public function testAnUnownedDeclaredTypeIsNotOffered(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn(
+			StoreManifest::fromManifest(
+				appId: 'openregister',
+				manifest: ['store' => ['types' => ['openregister.configset', 'nldesign.theme']]]
+			)
+		);
+		$this->catalog->method('ownedTypes')
+			->with(['openregister.configset', 'nldesign.theme'])
+			->willReturn(['openregister.configset']);
+		$searched = null;
+		$this->catalog->expects($this->once())
+			->method('search')
+			->willReturnCallback(function ($descriptor) use (&$searched) {
+				$searched = $descriptor->types;
+				return ['outcome' => 'ok', 'cards' => []];
+			});
+
+		$response = $this->controller(appId: 'openregister')->search();
+
+		$this->assertSame(['openregister.configset'], $response->getData()['kinds']);
+		$this->assertSame(['openregister.configset'], $searched);
+	}//end testAnUnownedDeclaredTypeIsNotOffered()
+
+	/**
+	 * An owned optional type is offered beside the others.
+	 *
+	 * @return void
+	 */
+	public function testAnOwnedOptionalTypeIsOffered(): void {
+		$this->signIn();
+		$declared = ['openregister.configset', 'openregister.flows', 'nldesign.theme'];
+		$this->manifestLoader->method('loadStore')->willReturn(
+			StoreManifest::fromManifest(appId: 'openregister', manifest: ['store' => ['types' => $declared]])
+		);
+		$this->catalog->method('ownedTypes')->willReturn($declared);
+		$this->catalog->method('search')->willReturn(['outcome' => 'ok', 'cards' => []]);
+
+		$response = $this->controller(appId: 'openregister')->search();
+
+		$this->assertSame($declared, $response->getData()['kinds']);
+	}//end testAnOwnedOptionalTypeIsOffered()
+
+	/**
+	 * A store that owns none of its declared types keeps them, so it stays on
+	 * the configuration path rather than falling back to the objects API.
+	 *
+	 * @return void
+	 */
+	public function testAStoreOwningNoDeclaredTypeKeepsTheConfigurationPath(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn($this->federatedStore());
+		$this->catalog->method('ownedTypes')->willReturn([]);
+		$this->storeService->expects($this->never())->method('search');
+		$this->catalog->expects($this->once())->method('search')
+			->willReturn(['outcome' => 'ok', 'cards' => []]);
+
+		$response = $this->controller(appId: 'decidiq')->search();
+
+		$this->assertSame(['openregister.configset', 'openregister.flows'], $response->getData()['kinds']);
+	}//end testAStoreOwningNoDeclaredTypeKeepsTheConfigurationPath()
 
 	/**
 	 * A federated install runs through the catalogue, not the object installer.
