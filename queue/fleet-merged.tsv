@@ -2789,3 +2789,6 @@ pipelinq	3836	b5fa5c079a7cbbe73eb44b434358524f68e59533	MERGED	merge3	GATE OK sbo
 filinq	2069	cf4d49bb13c446fdd3a6a29dc691ddd33683bcde	RED	merge3	GATE RED floor: unit_interfacing: 2.85 -> 2.83
 filinq	2074	f1017b40caade2ebaf8931e56ea57edba212d522	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
 filinq	2100	ce0850d0b356833d079a2683b1e4efe1042c1f4f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+learniq	2496	5dd6a73e82724a96e4d90d6b09558f0c276e9ad9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2504	30bff46d01a3c9d919fff7940ddc6a526d20a3fc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2535	bbf4909be9ea31c46eb8802627c4282d76c925f9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99

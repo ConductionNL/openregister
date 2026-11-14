@@ -10006,8 +10006,10 @@ fix:hermiq:1767:96c447ea	merged development (clean); l10n conflict is with unmer
 merge:dossiq:6385:dc4aa4da	merge3 tree of 1 dossiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T16:00:34Z
 merge:portaliq:2437:a7c54eab	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T16:00:42Z
 merge:portaliq:2495:4121effd	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T16:00:45Z
+merge:portaliq:2440:d1126e64	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T16:00:48Z
 fix:hermiq:1787:e097a79d	merged development (clean); conflict is with unmerged #1782; new head 17ffbfda	session-20261114T154757-c9bf237e	2026-11-14T16:00:50Z
 fix:integriq:3610:08e7571d	merged development (clean), pushed 558feb74, REVERIFY recorded; tree conflict is with other open PRs	session-20261114T144749-57007b4b	2026-11-14T16:00:59Z
+merge:portaliq:2493:2ce001aa	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T16:01:05Z
 fix:hermiq:1763:36a77c20	no change: already contains development; conflict is only with unmerged #1728/#1753, resolves when they land	session-20261114T154757-c9bf237e	2026-11-14T16:01:13Z
 verify:humaniq:1127:2a84b4e8	1127 GREEN, 1133 GREEN; 1144 and 1156 CONFLICT (l10n catalogues in tree order)	session-20261114T151932-05b02c14	2026-11-14T16:01:16Z
 fix:hermiq:1788:e29bad42	fixed: l10n keys moved mid-catalogue, clean with #1782/#1784; new head ab0f629a	session-20261114T154807-c05f4e57	2026-11-14T16:01:38Z
@@ -10068,6 +10070,7 @@ build:pipelinq:reports-compare-periods-and-scheduled-delivery:c3	partial: pushed
 fix:humaniq:1156:ca5305e6	merged development, moved l10n keys off the shared start; clean with #1127/#1133; new head 2729d0bd	session-20261114T151936-6991f242	2026-11-14T16:10:09Z
 build4:openregister:api-explorer-in-the-app:c3	failed: not started, this worker's context was nearly full; PR #10475 unchanged; left 2.1 manifest page, 2.2 RegisterApi.vue (new strings in all 37 locales), 2.4 header action, 1.4/2.6 e2e, 3.2/3.3 gates	session-20261114T141721-aeb4e068	2026-11-14T16:10:16Z
 merge:filinq:2078:fb73f409	merge3 tree of 10 filinq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T16:10:39Z
+build:integriq:messaging-intake-routing-rules:c2	PR #3625: tasks 1,2,3,5,8 built (editor, reorder/enable, test button, route again, mail file import + options endpoint); task 6 Outlook pane awaits the product decision; e2e/live tests left	session-20261114T151802-24eee21b	2026-11-14T16:10:41Z
 review:openregister:10566:9fb975a0	APPROVE 10566	session-20261114T144809-d686f759	2026-11-14T16:10:42Z
 build:pipelinq:kcc-agent-panel:c2	failed: not buildable: the change itself declares implementation out of scope (plan only, 'not to be built now'); needs a follow-up implementation change, and integriq kcc-cti-adapter CallEvent is still unbuilt	session-20261114T161013-497dba57	2026-11-14T16:10:49Z
 fix:buildiq:1590:ab70ca96	conflict removed (test moved to own file), pushed 44e1dfb1, REVERIFY recorded	session-20261114T151942-48d6369d	2026-11-14T16:10:49Z
@@ -10079,3 +10082,50 @@ merge:filinq:2105:df149391	merge3 tree of 10 filinq PRs: merged=2 red=1 fail=0 s
 verify:planninq:1158:524d7154	1158, 1159, 1162 GREEN; 1169 CONFLICT (l10n in tree order)	session-20261114T151932-05b02c14	2026-11-14T16:11:35Z
 fix:planninq:1160:67464e9d	interfacing: constructor 7->6 params, refusal 3->2; unit 1047 green; new head 7c51623a	session-20261114T154807-4c2c3327	2026-11-14T16:11:42Z
 merge:filinq:2069:03d5ae83	merge3 tree of 10 filinq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T16:11:47Z
+verify:learniq:2493:36e78f2c	GREEN #2493	session-20261114T154806-a38868f0	2026-11-14T16:11:56Z
+fix:humaniq:1144:c0dbe84a	merged development, moved l10n keys off the shared tail; clean with #1127/#1133 and 5 others; new head 0a397e55	session-20261114T151936-6991f242	2026-11-14T16:12:07Z
+fix:buildiq:1624:6819ec71	merged development; named test gone, AddWidgetHandlerTest green; only failure ExportZipGoldenTest inherited from development; new head 02cb87db6a	session-20261114T154820-5269035e	2026-11-14T16:12:25Z
+merge:learniq:2486:71368bc8	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:11Z
+merge:learniq:2496:54397277	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:15Z
+merge:learniq:2497:a946fa9e	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:18Z
+merge:learniq:2519:4a590c2b	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:21Z
+merge:learniq:2520:5f6881c0	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:25Z
+merge:learniq:2484:b5de1e71	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:28Z
+fix:buildiq:1608:d42aa0c4	floor restored (unit_interfacing 3.39 -> 3.41) by splitting the new helpers into 2-parameter units; floor PASS, PR tests green; new head 9096415d3, REVERIFY recorded	session-20261114T144751-8a65b704	2026-11-14T16:13:35Z
+verify:integriq:3564:838f1ae2	GREEN 3588 3592 3595 3610; CONFLICT 3564 3600 (development, openapi.json), 3602 3613 (tree only); 3596 skipped (head moved)	session-20261114T141010-8dc8bd74	2026-11-14T16:14:10Z
+verify:humaniq:1134:d09c3b89	GREEN #1134 (4231 tests, no new failures)	session-20261114T151936-6991f242	2026-11-14T16:14:17Z
+fix:buildiq:1613:9a07faa2	RED fixed: seeded form folded into dev's client-intake, pushed e2715f69	session-20261114T144809-d686f759	2026-11-14T16:14:27Z
+verify:hermiq:1757:075e9621	1757 RED (vitest AgentRunOperationsWidget run error test); 1785 1787 1788 GREEN	session-20261114T154807-c05f4e57	2026-11-14T16:14:45Z
+fix:filinq:2123:833c1b46	merged development (l10n tail conflicts, both sides kept), head 890c7dc2, REVERIFY	session-20261114T151802-24eee21b	2026-11-14T16:14:58Z
+fix:planninq:1172:93dd66c4	floor restored (interfacing 4.71, complexity 4.85, overall 4.80); new head bfc1c86f	session-20261114T151750-b10540e9	2026-11-14T16:15:07Z
+fix:buildiq:1614:9a7e263b	merged development, moved 11 l10n keys mid-catalogue; new head dd8560470e	session-20261114T154820-5269035e	2026-11-14T16:15:25Z
+fix:filinq:2112:297a10b4	failed: tree conflict is only with unmerged #2079 on filinq_register.json info.version/description (this 8.56.0, #2079 8.57.0, development 8.55.0); after #2079 lands, merge development and bump to 8.58.0 with both lines in the description. Clean on development; nothing pushed	session-20261114T154807-c05f4e57	2026-11-14T16:15:30Z
+fix:integriq:3572:35bfc428	no change needed: already contains development, conflict only with open PR 3539	session-20261114T141010-8dc8bd74	2026-11-14T16:15:43Z
+build:planninq:tasks-move-between-projects:c2	done (code): PR #1171 head 75d4a18f adds the card-menu move (2.2) and column move/copy to another project (3.1: ColumnMoveDialog, store actions, 10 strings x37), vitest 3208->3219; left: Playwright e2e for 2.2/3.1, openspec validate	session-20261114T151803-c9b63248	2026-11-14T16:15:51Z
+build:planninq:project-data-export:c2	PR #1167: tasks 5.1 (strict validate passes) and 5.2 done, development merged in; all code tasks ticked; left 2.2 newman, 4.3 e2e, 5.3 archive (live/archive only); unit 1069 OK, vitest 3221 green; head f3b3b20b	session-20261114T154807-4c2c3327	2026-11-14T16:15:48Z
+build:planninq:tasks-search-and-bulk:c2	PR #1178: 1.2/1.3 board and backlog search, 2.1 selection, 2.3 bulk bar, 3.1 strings in all 37 locales; 8 vitest tests (3226 pass); left Playwright runs and openspec validate	session-20261114T134708-ba7f7741	2026-11-14T16:15:59Z
+build:shillinq:mcp-action-tool-surface:c3	partial: PR #3069 adds vat_return.*, dunning.*, requisition.*, payment_run.*, bank_statement.import, bank_reconciliation.resolve, invoice.*, recurring_invoice.generate with parity tests and OpenRegister hash-chained audit (openregister PR #10567); suite 11203 -> 11306 OK; left: receipt.book, expense_claim.approve, hours.book (no service path to delegate to yet), live checks	session-20261114T151802-aefa9c5e	2026-11-14T16:16:04Z
+verify:learniq:2531:e08cb2be	GREEN #2531	session-20261114T154806-a38868f0	2026-11-14T16:15:57Z
+fix:filinq:2105:2929a64c	failed: tree conflict on filinq_register.json is a version race with GREEN #2079 (this 8.56.0, #2079 8.57.0 over development 8.55.0), l10n with another tree PR; after #2079 lands merge development and bump to 8.58.0. Clean on development; nothing pushed	session-20261114T154807-c05f4e57	2026-11-14T16:16:07Z
+fix:buildiq:1617:eca3f854	REVERIFY: dev merged, l10n resolved; still overlaps open #1612 in src; head 1c506804	session-20261114T151801-20bb3a08	2026-11-14T16:16:04Z
+build:buildiq:logic-automation-actions-that-run:c2	partial: PR buildiq#1584 (head f5f49027) adds AutomationFlowBuilder (D1-D6, 9 tests); left: wire into compile/apply/remove (FlowService save, Application.flows, provenanceflowUuid), T04-T12	session-20261114T151942-48d6369d	2026-11-14T16:16:29Z
+fix:integriq:3618:e9d117fd	no change needed: already contains development, conflict only with other open PRs	session-20261114T141010-8dc8bd74	2026-11-14T16:16:34Z
+fix:buildiq:1631:308971ea	merged development, moved 6 l10n keys mid-catalogue; new head d05a201d07	session-20261114T154820-5269035e	2026-11-14T16:16:44Z
+build:buildiq:pages-widget-grid-drag-and-resize:c2	already done: code task 1 merged in #1591; tasks 2-3 are Playwright e2e needing a live instance and task 4 is archive after them; no code left	session-20261114T151801-20bb3a08	2026-11-14T16:16:53Z
+fix:filinq:2126:1432867f	merged development, head 9eb18073, REVERIFY; remaining #2079 conflict is the register version header only	session-20261114T151802-24eee21b	2026-11-14T16:16:55Z
+fix:integriq:3582:02740663	no change needed: clean on development, conflict only with open PR 3539	session-20261114T141010-8dc8bd74	2026-11-14T16:17:10Z
+verify:planninq:1165:dc142bce	GREEN 1165,1176,1177; CONFLICT 1170 (l10n); 1166 skipped (head moved to 4431dc18)	session-20261114T151750-b10540e9	2026-11-14T16:17:29Z
+build:filinq:finish-half-built-capabilities:c3	PR #2130 (head 935ea653): 1.1 OCR text layer and 3.2 finality-rule settings built on top of 2.1, all code tasks ticked; left 3.2 Playwright check (live); phpunit 6755 ok (dev 6736), jest 524, vitest 751	session-20261114T154755-0f1a24cf	2026-11-14T16:18:00Z
+fix:buildiq:1625:26fd1385	floor restored (duplication 4.27 -> 4.31, PASS) by extracting the builders' shared parts; specs green; new head 04a5e4fe0, REVERIFY recorded	session-20261114T144751-8a65b704	2026-11-14T16:18:19Z
+build:pipelinq:contact-moments-call-review:c3	done: PR #3818 head e0545685 builds 1.5, 2.2, 2.3, 2.4 (Call tab, Call reviews pages, review page with Agree endpoint, My Work card, scorecard admin + transcription switch); all code tasks ticked, live/Playwright checks left; phpunit 8417/0 fail, vitest 5114/1 inherited (myWorkPage bar layout)	session-20261114T154740-5b01f6fa	2026-11-14T16:18:39Z
+fix:filinq:2078:2a556ec0	fixed: merged development, register 8.56.0/generatedDocument 1.8.0, unit 6796 OK; new head 515468bf	session-20261114T154807-c05f4e57	2026-11-14T16:18:48Z
+build:shillinq:tax-vat-position-and-suppletie:c3	PR #3074: 1.3, 2.1, 2.2, 2.3, 3.1 built; 22 PHP + 7 vitest tests, suite 11203->11225, 0 new failures; left 3.2 e2e (live)	session-20261114T151916-b0518a7b	2026-11-14T16:18:58Z
+fix:filinq:2124:803f8a87	merged dev (Settings.vue/golden/l10n both sides); unit 6811, vitest 759, jest 543 green; new head 5e42335d	session-20261114T154807-4c2c3327	2026-11-14T16:18:58Z
+fix:filinq:2070:af678887	conflict resolved (l10n, both sides kept); new head cd488491	session-20261114T161744-497aae45	2026-11-14T16:19:09Z
+build4:dossiq:woo-review-triage:c4	already done: every code task merged on development (PRs up to quality/build-woo-review-triage-4); left only non-code: 5.1 viewer hook waits on Q-dossiq-L8-1 (no paged viewer/pdf.js), Newman 6.1/6.2, 6.4 live, 7.1 e2e run	session-20261114T161755-35790eb3	2026-11-14T16:19:14Z
+fix:portaliq:2437:0bea0f46	tests added, test code ratio 99.29% -> 100.04%; new head 692916ba87185635732c6ec6ba264cbb2858b504	session-20261114T141738-30f539db	2026-11-14T16:19:20Z
+fix:buildiq:1618:08874393	merged development, l10n both sides kept; vitest 4480 ok, phpunit 1 inherited failure; new head 53cd30c6	session-20261114T154734-655bd0f3	2026-11-14T16:19:34Z
+fix:learniq:2506:4c1fb89b	conflict resolved (schema version 0.4.1), pushed 958cde6a, REVERIFY	session-20261114T161753-3b2f3c4f	2026-11-14T16:19:51Z
+fix:buildiq:1612:40bed07f	conflicts resolved, vitest 4504 OK, new head edf581e6	session-20261114T154733-94bb2e01	2026-11-14T16:20:01Z
+fix:buildiq:1583:1d68d4b1	RED floor fixed: unit_interfacing 3.42 vs base 3.41, pushed 640edaa8	session-20261114T144809-d686f759	2026-11-14T16:20:08Z
+fix:learniq:2538:77a7f766	merged development, resolved l10n conflict; new head bb7460d5, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T16:20:26Z
