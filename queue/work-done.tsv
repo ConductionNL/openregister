@@ -8163,3 +8163,4 @@ build:buildiq:pages-action-buttons	PR #1618: T01-T06 built (typed action editor,
 verify:dossiq:6484:5357a2b0	already merged on development (d79b3c07)	session-20261114T070346-2d3b1362	2026-11-14T08:15:23Z
 build:launchpad:competitor-parity-2026-09	nothing to build: kind umbrella; 1.1 is the separate change dashboards-and-who-may-see-them (build that), 2.x/3.x are coordination tasks, no code	session-20261114T070341-dde19dba	2026-11-14T08:15:33Z
 verify:planninq:1169:b835558b	1169 RED (Jira CSV fixture gitignored, 2 test errors); 1170 GREEN; 1171 CONFLICT (l10n vs 1170)	session-20261114T073111-9b40710a	2026-11-14T08:15:56Z
+build:buildiq:form-dutch-field-formats	partial: PR #1620, T01 and validator half of T04 done; save-listener wiring, T02/T03/T05 open	session-20261114T065626-0651b305	2026-11-14T08:16:01Z
