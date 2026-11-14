@@ -7604,3 +7604,4 @@ stackiq	1929	400412c44ec49d136ec6a4fd4fbac0456c9d99bb	GREEN	worker-20	unit 3483 
 stackiq	1930	1dc72b4bd293ea8a15358bb47d750700251c5e3a	CONFLICT	worker-20	conflicts in tree with #1924 #1926 (l10n/*, lib/Settings/softwarecatalogus_register.json), clean on plain development
 stackiq	1931	08b0b836e957dd7a63e78b167f32f3ccf6bfe2d2	CONFLICT	worker-20	conflicts in tree with #1924 (lib/Settings/softwarecatalogus_register.json), clean on plain development
 stackiq	1932	027b031e41bf2e7e4510c3bb5c59174c3c197865	GREEN	worker-20	unit 3483 OK (baseline 3446 OK), vitest 2502 OK, no new failures
+versioniq	685	0a9c195645934316546829afa80d0d261a3a5d95	RED	worker-55	vitest InstanceSettingsPanel.failures.spec.ts > InstanceSettingsPanel saving > sends every field as a string, an emptied limit as empty: the PUT now carries osvApiBase, which this spec does not expect (fails with 685 alone on development); phpunit no new failures
