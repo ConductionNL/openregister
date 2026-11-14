@@ -10253,3 +10253,5 @@ shillinq	3077	e22c24245b3f60a6851ae071b51c73683825a437	CONFLICT	worker-32	merges
 shillinq	3078	ccf88e69dd4a5fe4151b4934c541389199c7f9e8	CONFLICT	worker-32	merges clean on development alone, conflicts after 3055 in: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
 decidiq	2172	c322af3724c9d55581041be7d0e9c161e3ead769	GREEN	worker-26	phpunit 4356 tests green (baseline 4248), vitest 2838 pass; build PR, test edits only count new entries
 decidiq	2178	24b4be0ce9783ae7473305f184d73174083bfad8	GREEN	worker-26	phpunit 4356 tests green (baseline 4248), vitest 2838 pass; build PR, test edits only count new entries
+decidiq	2188	cd0af4022fa5f36fa907425c496ad48776577552	GREEN	worker-26	phpunit 4356 tests green (baseline 4248), vitest 2838 pass; build PR, test edits only count new entries
+decidiq	2189	9db1906ee298ab726374467d139771ee65803b76	CONFLICT	worker-26	conflict in lib/Settings/profiles/municipality.json after 2172,2178,2188
