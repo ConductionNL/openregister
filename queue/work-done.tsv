@@ -11042,4 +11042,6 @@ fix:planninq:1167:b566c981	fixed floor: refactor restores unit_size/complexity/i
 review:filinq:2079:ed7eba72	stale	session-20261114T191742-bf93c040	2026-11-14T20:53:41Z
 fix:buildiq:1626:9c88d3df	resolved nl l10n conflict keeping both; new head cac162dc, REVERIFY	session-20261114T204750-c1efccdb	2026-11-14T20:53:41Z
 verify:shillinq:3078:aab14c1a	3078 CONFLICT (appinfo/info.xml)	session-20261114T194805-be886caa	2026-11-14T20:53:55Z
+build:integriq:form-submission-registration-targets:c3	partial: PR #3620 head 7ef3ce13 merged development, built the ZGW leg (case, BSN/KvK initiator, zaakeigenschappen, resume; 13 tests); left: task 2 file reading, ZGW and StUF-ZDS files, StUF-ZDS KvK initiator, kenmerk lookup, task 8 admin page+modal, live tests	session-20261114T194740-7cca8afd	2026-11-14T20:54:11Z
 verify:filinq:2114:2e5bc8ee	2114 GREEN; 2122 CONFLICT (register, openapi.json after #2114)	session-20261114T194751-bb7578f8	2026-11-14T20:54:08Z
+fix:planninq:1169:b5cc9522	floor restored, new head ad389bd3; REVERIFY	session-20261114T201750-64b6fe0f	2026-11-14T20:54:18Z
