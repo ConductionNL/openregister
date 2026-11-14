@@ -6,7 +6,8 @@
   > 14 Nov, partly: `working-calendar-admin` already ships the property as `timezone`, optional, default `UTC`. It now carries `format: time-zone` (schema 1.3.1, register 1.4.1), and `example-organisation` is seeded with `Europe/Amsterdam` (`nl-national` already was). Left for the owner: making it REQUIRED contradicts the merged UTC default, and needs 1.3 first; the key stays `timezone`, the name the code reads.
 - [x] 1.2 `lib/Formats/TimeZoneFormat.php` validating through `DateTimeZone` (ADR-008).
   > 14 Nov: accepts exactly `DateTimeZone::listIdentifiers()`, the rule `WorkingCalendarDefinition` applies when it reads a calendar, so an offset or an abbreviation is refused at save as it is at read. Registered as `time-zone` in `FormatFactory::customStringFormats()`. `TimeZoneFormatTest` (3).
-- [ ] 1.3 Migration filling existing calendars from `default_timezone`, fallback `UTC` with a warning.
+- [x] 1.3 Migration filling existing calendars from `default_timezone`, fallback `UTC` with a warning.
+  > 14 Nov: `FillCalendarTimeZones`, a post-migration repair step after `SeedFlowTimerRegister`, writes the instance's `default_timezone` onto every `working-calendar` whose `timezone` is missing or blank; an unset or non-IANA `default_timezone` gives `UTC` with a warning on the output and in the log. A calendar that names a zone is never written; one that cannot be written is logged and the rest still get theirs. `FillCalendarTimeZonesTest` (8, the Amsterdam upgrade scenario included).
 
 ## 2. Arithmetic and reporting
 
@@ -17,4 +18,5 @@
 
 ## 3. Tests
 
-- [ ] 3.1 Unit tests: the 23:30 Friday case, a DST boundary inside a walk, an unknown zone refused, the migration.
+- [x] 3.1 Unit tests: the 23:30 Friday case, a DST boundary inside a walk, an unknown zone refused, the migration.
+  > 14 Nov: `SlaCalculatorTimeZoneTest` (the 23:30 Friday anchor lands Monday 23:30 Amsterdam; a business-day walk across the end of summer time keeps 10:00 local; an instant that is Monday in Amsterdam and Sunday in UTC lands differently on a UTC copy of the calendar), the unknown zone in `WorkingCalendarZoneTest::testAZoneThatDoesNotResolveIsRefused` and `TimeZoneFormatTest`, the migration in `FillCalendarTimeZonesTest`.
