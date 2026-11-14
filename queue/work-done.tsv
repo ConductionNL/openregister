@@ -8674,3 +8674,4 @@ cover:decidiq:a5f973bbmae46:38e80a9f	PR #2185: +4 tests on MigrateActionItems (e
 cover:hermiq:065f1631mcdb5:311dae84	stale: lib/Service/Eval already 100% (12/12) via EvalRunService tests; value objects only	session-20261114T070332-b3a23612	2026-11-14T09:29:41Z
 verify:versioniq:729:0ff059da	729 GREEN	session-20261114T075640-efa02b24	2026-11-14T09:29:48Z
 fix:larpinq:1043:b1b57382	failed: merges cleanly with development; the conflict is only with unmerged #1041 (adjacent l10n keys); land #1041 first, then merge development into this branch	session-20261114T065631-b4991134	2026-11-14T09:30:08Z
+fix:larpinq:1042:72685514	failed: merges cleanly with development; conflicts only with unmerged #1041 (l10n) and #1040 (userLanguage.js); land those first, then merge development into this branch	session-20261114T065631-b4991134	2026-11-14T09:30:30Z
