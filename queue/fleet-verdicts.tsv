@@ -7030,3 +7030,5 @@ decidiq	2171	cacffb605d758702aaa381eca0cf0efe5abbe077	CONFLICT	worker-58	conflic
 decidiq	2173	79a6146a1395dea7281bef057068901598351636	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
 decidiq	2174	8600d4bb4484ee43924b7f0d25aaf87eaa11f825	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
 decidiq	2178	cb54bcf167945f8cb1c648f1e870e7a4872edbe9	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
+humaniq	1135	e0d59fddfa85610c518b84e6375d0c9b8e720939	GREEN	worker-36	phpunit 4162 tests on tree, baseline 4159 with 0 failures, new failures 0; no JS beyond catalogues
+humaniq	1137	80108332bd9f45248a62f87e1ed34974d4c39687	GREEN	worker-36	phpunit 4162 tests on tree, baseline 4159 with 0 failures, new failures 0; no JS beyond catalogues
