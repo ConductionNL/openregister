@@ -11493,3 +11493,4 @@ fix:stackiq:1927:3920fdf6	no change: branch already up to date with development;
 fix:decidiq:2178:37197bc0	merged development (clean), l10n off tail, new head 24b4be0ce9783ae7473305f184d73174083bfad8	session-20261114T201752-7e06b161	2026-11-14T22:16:40Z
 fix:decidiq:2188:b774355c	clean on development; conflict is with a sibling PR in the tree (SaveGuardSubscriptions.php); merged development, new head cd0af40	session-20261114T204759-5dc9dba7	2026-11-14T22:16:48Z
 merge:buildiq:1613:a8834c9a	merge3 tree of 11 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T22:17:05Z
+merge:buildiq:1582:c05d6f32	merge3 tree of 11 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T22:17:14Z
