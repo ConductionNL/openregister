@@ -8208,3 +8208,5 @@ portaliq	2449	67b3b6ab8d869918f526683f2c463da1ce5b5922	REVERIFY	worker-49	merged
 filinq	2070	cc02ae1201069f52a0c048cfd4c73d73070291ea	GREEN	worker-53	unit 6727 (baseline 6695, 0 failures), vitest 751 passed, no new failures; builds intake-pdf-password-removal as specified, file resolved in the session user's folder
 filinq	2072	68ef821e46429ab7d7171cdcaf50936b2cb5a6a2	CONFLICT	worker-53	conflicts with #2070 on the tree (register files)
 filinq	2087	c17b34e0c221f972807740ca0d1159c267f1a3f3	CONFLICT	worker-53	conflicts on the tree after #2070
+filinq	2088	dd674209529362b92a2df4efef4294382603d356	CONFLICT	worker-53	conflicts on the tree after #2070
+filinq	2098	ee9aee9cbe8b6c6c0a521d32cd3021c6fd4b3875	CONFLICT	worker-53	conflicts on the tree after #2070
