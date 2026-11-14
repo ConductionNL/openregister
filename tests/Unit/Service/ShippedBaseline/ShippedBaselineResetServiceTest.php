@@ -65,6 +65,13 @@ class ShippedBaselineResetServiceTest extends TestCase {
 	private array $written = [];
 
 	/**
+	 * The annotations the baseline holds, null for a baseline recorded before they were guarded.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private ?array $baselineConfiguration = null;
+
+	/**
 	 * The stored schema: the shipped read rule is missing, and an enum carries a
 	 * local order that a normalising write would sort.
 	 *
@@ -103,14 +110,15 @@ class ShippedBaselineResetServiceTest extends TestCase {
 		$store->method('schemaSubject')->willReturnCallback(
 			static fn (string $slug): string => ('schema:' . $slug)
 		);
+		$configuration = $this->baselineConfiguration;
 		$store->method('read')->willReturnCallback(
-			static function (string $subject): ?array {
+			static function (string $subject) use ($configuration): ?array {
 				if ($subject !== 'schema:learner-profile') {
 					return null;
 				}
 
 				return [
-					'definition' => [
+					'definition' => array_filter(['configuration' => $configuration]) + [
 						'properties' => [
 							'level' => ['type' => 'string', 'enum' => ['junior', 'medior', 'senior'], 'title' => 'Level'],
 						],
@@ -317,7 +325,7 @@ class ShippedBaselineResetServiceTest extends TestCase {
 		$this->assertSame(
 			[
 				'applicable' => false,
-				'reason' => '"title" is not a part the shipped baseline keeps; it starts with one of: properties, required, authorization',
+				'reason' => '"title" is not a part the shipped baseline keeps; it starts with one of: properties, required, authorization, configuration',
 				'schema' => 'learner-profile',
 				'schemaId' => 329,
 				'path' => 'title',
@@ -362,4 +370,20 @@ class ShippedBaselineResetServiceTest extends TestCase {
 		$this->assertCount(2, $this->written);
 		$this->assertSame(['schema' => 'learner-profile', 'path' => 'properties.level.local', 'from' => 'x', 'to' => null], $this->rows[0]->getChanged());
 	}//end testALocallyAddedPartIsRemovedAndEachTopLevelPartIsWrittenToItsField()
+
+	/**
+	 * Resetting an annotation writes it back into the configuration and keeps the maintained keys.
+	 *
+	 * @return void
+	 */
+	public function testResettingAnAnnotationKeepsTheMaintainedConfiguration(): void {
+		$this->baselineConfiguration = ['x-openregister-quota' => ['perOrganisation' => 5]];
+		$schema = $this->storedSchema();
+		$schema->setConfiguration(['objectNameField' => 'title', 'x-openregister-quota' => ['perOrganisation' => 9]]);
+
+		$result = $this->service(schema: $schema, actor: $this->admin())->reset(schema: 'learner-profile', path: 'configuration.x-openregister-quota.perOrganisation');
+
+		$this->assertTrue($result['applied'], $result['reason']);
+		$this->assertSame(['objectNameField' => 'title', 'x-openregister-quota' => ['perOrganisation' => 5]], $schema->getConfiguration());
+	}//end testResettingAnAnnotationKeepsTheMaintainedConfiguration()
 }//end class

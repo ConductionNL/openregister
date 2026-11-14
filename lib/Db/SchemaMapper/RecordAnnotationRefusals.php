@@ -26,7 +26,11 @@ use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
 use OCA\OpenRegister\Service\Archival\AnonymisationPlanner;
 use OCA\OpenRegister\Service\Archival\AnonymisationProfile;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidatorInterface;
+use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
+use OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator;
+use OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration;
+use OCA\OpenRegister\Service\Search\SearchResultDeclaration;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use Psr\Log\LoggerInterface;
 
@@ -177,6 +181,31 @@ final class RecordAnnotationRefusals {
 	}//end checkArchival()
 
 	/**
+	 * Refuse an `x-openregister-retention` declaration that names a property the
+	 * schema lacks, or one that holds no reference.
+	 *
+	 * It throws rather than warns: a declaration that follows nothing holds no
+	 * record back, and the first anyone would learn of it is a destroyed record
+	 * whose parent was meant to be kept.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the declaration cannot be followed.
+	 *
+	 * @spec openspec/changes/appraisal-inherited-from-a-parent/specs/archivering-vernietiging/spec.md
+	 */
+	public function checkRetention(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: InheritedAppraisal::ANNOTATION);
+		if ($annotation->isWritten() === true) {
+			$annotation->faults()->refuseWith(
+				messages: (new RetentionAnnotationValidator())->validate(annotation: $annotation->value(), properties: ($schema->getProperties() ?? []))
+			);
+		}
+	}//end checkRetention()
+
+	/**
 	 * Refuse a broken `x-openregister-external-links` declaration at save.
 	 *
 	 * This one throws rather than warns, and the reason is the feature's own
@@ -249,4 +278,51 @@ final class RecordAnnotationRefusals {
 			$annotation->faults()->refuseWith(messages: SchemaDeclarationValidators::externalLinks()->validate($annotation->shape()));
 		}
 	}//end checkExternalLinks()
+
+	/**
+	 * Refuse a save whose `x-openregister-card` names a property this schema does not have.
+	 *
+	 * A card that names a property that is not there would render an empty row
+	 * in a chat window, where nobody can see why.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the card names something the schema does not have.
+	 *
+	 * @spec openspec/changes/platform-reference-provider/specs/schema-scoped-reference-providers/spec.md#requirement-a-schema-declares-what-its-reference-card-shows-req-prp-002
+	 */
+	public function checkReferenceCard(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: ReferenceCardDeclaration::ANNOTATION);
+		$annotation->faults()->refuseWith(
+			messages: ReferenceCardDeclaration::faults(
+				block: $annotation->value(),
+				properties: ($schema->getProperties() ?? [])
+			)
+		);
+	}//end checkReferenceCard()
+	/**
+	 * Refuse a save whose `x-openregister-search-result` names a property this schema does not have.
+	 *
+	 * A declared title that is not there would leave every result of the
+	 * schema on the derived title while the schema says otherwise.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the declaration names something the schema does not have.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-schema-declares-its-result-title-subline-and-ordering-date-req-psp-002
+	 */
+	public function checkSearchResult(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: SearchResultDeclaration::ANNOTATION);
+		$annotation->faults()->refuseWith(
+			messages: SearchResultDeclaration::faults(
+				block: $annotation->value(),
+				properties: ($schema->getProperties() ?? [])
+			)
+		);
+	}//end checkSearchResult()
 }//end class

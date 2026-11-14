@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-source-providers/tasks.md
+ * @spec openspec/specs/object-source-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 /**
  * A federated schema's peer: its objects base URL (null when unconfigured) and the local binding.
  *
- * @spec openspec/changes/object-source-providers/tasks.md
+ * @spec openspec/specs/object-source-providers/spec.md
  */
 final class FederatedPeer {
 	/**

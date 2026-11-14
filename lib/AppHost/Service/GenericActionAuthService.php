@@ -256,6 +256,31 @@ class GenericActionAuthService {
 	}//end setMatrix()
 
 	/**
+	 * Add the actions the matrix lacks, never touching an entry it already has.
+	 *
+	 * An entry already stored may be an administrator's narrowing, so only keys
+	 * absent from the stored matrix are written.
+	 *
+	 * @param array<string, array<int, string>> $actions Groups per action to add when absent.
+	 *
+	 * @return array<int, string> The actions that were added.
+	 *
+	 * @throws \JsonException When the matrix cannot be encoded.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-the-action-rights-are-administered-and-published
+	 */
+	public function addMissing(array $actions): array {
+		$existing = $this->getMatrix();
+		$missing  = array_diff_key($actions, $existing);
+		if ($missing === []) {
+			return [];
+		}
+
+		$this->setMatrix(array_merge($existing, $missing));
+		return array_map('strval', array_keys($missing));
+	}//end addMissing()
+
+	/**
 	 * List all action keys currently in the matrix.
 	 *
 	 * @return array<int, string>

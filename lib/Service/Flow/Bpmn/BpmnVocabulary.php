@@ -30,7 +30,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Flow\Bpmn;
 /**
  * The closed mapping between flow node types and BPMN elements.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 final class BpmnVocabulary {
 
@@ -174,7 +174,7 @@ final class BpmnVocabulary {
 	 *
 	 * @return string The element.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function elementFor(string $nodeType): string {
 		return (self::EXPORT[$nodeType] ?? self::FALLBACK);
@@ -187,7 +187,7 @@ final class BpmnVocabulary {
 	 *
 	 * @return array{verdict: string, type: string, note: string} The reading.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function readingFor(string $element): array {
 		return $this->tableReading(element: $element) ?? $this->untabledReading(element: $element);

@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCP\EventDispatcher\Event;
 /**
  * Carries the timer, the transition raised and its addressees.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
  */
 class FlowTimerFiredEvent extends Event {
 
@@ -76,7 +76,7 @@ class FlowTimerFiredEvent extends Event {
 	 *
 	 * @return FlowTimer The timer.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getTimer(): FlowTimer {
 		return $this->timer;
@@ -87,7 +87,7 @@ class FlowTimerFiredEvent extends Event {
 	 *
 	 * @return string `rung` or `expiry`.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getKind(): string {
 		return $this->firing->kind;
@@ -98,7 +98,7 @@ class FlowTimerFiredEvent extends Event {
 	 *
 	 * @return string The transition.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getTransition(): string {
 		return $this->firing->transition;
@@ -109,7 +109,7 @@ class FlowTimerFiredEvent extends Event {
 	 *
 	 * @return string|null The key.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getRungKey(): ?string {
 		return $this->firing->rungKey;
@@ -120,7 +120,7 @@ class FlowTimerFiredEvent extends Event {
 	 *
 	 * @return array<int, array{type: string, id: string, role: string}> The recipients.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getRecipients(): array {
 		return $this->notice->recipients;
@@ -131,7 +131,7 @@ class FlowTimerFiredEvent extends Event {
 	 *
 	 * @return string|null The priority.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getPriority(): ?string {
 		return $this->notice->priority;
@@ -142,7 +142,7 @@ class FlowTimerFiredEvent extends Event {
 	 *
 	 * @return string|null The message identity.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getMessage(): ?string {
 		return $this->notice->message;

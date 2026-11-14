@@ -68,6 +68,7 @@ exports[`ObjectDetails requests golden starts from the store pages, or the first
   "liveKey": "",
   "livePendingKey": "",
   "liveUnwatch": null,
+  "openTaskCount": null,
   "pagination": {
     "auditTrails": {
       "currentPage": 5,
@@ -82,6 +83,7 @@ exports[`ObjectDetails requests golden starts from the store pages, or the first
       "limit": 200,
     },
   },
+  "readMarkedFor": null,
   "relationsLoading": false,
 }
 `;

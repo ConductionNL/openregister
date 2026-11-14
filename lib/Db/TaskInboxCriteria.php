@@ -174,6 +174,14 @@ final class TaskInboxCriteria {
 	public readonly ?string $kind;
 
 	/**
+	 * Words every listed task's title or description must hold, case
+	 * insensitively; null for no text filter.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $term;
+
+	/**
 	 * Whether tasks whose blocker is still open are listed.
 	 *
 	 * @var bool
@@ -217,6 +225,7 @@ final class TaskInboxCriteria {
 		$this->sort = $order->sort;
 		$this->sortDescending = $order->sortDescending;
 		$this->kind = $selection->filter->kind;
+		$this->term = $selection->filter->term;
 		$this->includeBlocked = $selection->anchor->includeBlocked;
 		$this->openFirst = $order->openFirst;
 

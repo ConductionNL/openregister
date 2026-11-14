@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\File\ObjectFileLookup
  */
 class FilePublishingHandlerGoldenTest extends TestCase {
+	use PassThroughDigestsTrait;
 
 	/**
 	 * Calls recorded during one case.
@@ -199,7 +200,7 @@ class FilePublishingHandlerGoldenTest extends TestCase {
 			return ['deleted_shares' => $share['deleted'], 'file_id' => $fileId];
 		});
 
-		$handler = new FilePublishingHandler($this->createMock(MagicMapper::class), $fileMapper, $logger, $container);
+		$handler = new FilePublishingHandler($this->createMock(MagicMapper::class), $fileMapper, $logger, $container, $this->passThroughDigests());
 		$handler->setFileService($this->fileService(folderKind: $folderKind));
 		return $handler;
 	}//end handler()

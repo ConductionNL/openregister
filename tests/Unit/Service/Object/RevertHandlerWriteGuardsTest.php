@@ -22,8 +22,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
-use OCA\OpenRegister\Service\SettingsServiceInterface;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -32,9 +30,12 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Event\ObjectRevertedEvent;
+use OCA\OpenRegister\Service\Object\ObjectUpdateOptions;
 use OCA\OpenRegister\Service\Object\RevertHandler;
+use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\StoredObjectUpdate;
 use OCA\OpenRegister\Service\Object\ValidateObject;
-use OCA\OpenRegister\Service\SettingsService;
 use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -43,7 +44,6 @@ use Psr\Container\ContainerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RevertHandler
- * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
@@ -59,6 +59,8 @@ use Psr\Container\ContainerInterface;
  * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  * @uses \OCA\OpenRegister\Service\Object\RevertPoint
  * @uses \OCA\OpenRegister\Service\Object\RevertStores
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses \OCA\OpenRegister\Service\Object\StoredObjectUpdate
  */
 final class RevertHandlerWriteGuardsTest extends TestCase {
 
@@ -70,7 +72,14 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 	private ValidateObject&MockObject $validator;
 
-	private SettingsService&MockObject $settings;
+	private SaveObject&MockObject $save;
+
+	/**
+	 * The update the save path was handed, and its options.
+	 *
+	 * @var list<array{0: StoredObjectUpdate, 1: ObjectUpdateOptions}>
+	 */
+	private array $saved = [];
 
 	private IEventDispatcher&MockObject $events;
 
@@ -121,8 +130,16 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->audit->method('revertObjectWith')->willReturn($this->reverted);
 
 		$this->validator = $this->createMock(ValidateObject::class);
-		$this->settings = $this->createMock(SettingsService::class);
-		$this->settings->method('getRetentionSettingsOnly')->willReturn(['auditTrailsEnabled' => true]);
+		$this->save = $this->createMock(SaveObject::class);
+		$this->save->method('updateObject')->willReturnCallback(
+			function (StoredObjectUpdate $update, ObjectUpdateOptions $options): ObjectEntity {
+				$this->saved[] = [$update, $options];
+				$written = clone $update->existingObject;
+				$written->setObject($update->data);
+
+				return $written;
+			}
+		);
 		$this->events = $this->createMock(IEventDispatcher::class);
 	}//end setUp()
 
@@ -141,7 +158,6 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			fn (string $id) => match ($id) {
 				'userId' => 'alice',
-				SettingsServiceInterface::class => $this->settings,
 				default => throw new \RuntimeException('unexpected service ' . $id),
 			}
 		);
@@ -151,6 +167,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 				auditTrailMapper: $this->audit,
 				objectEntityMapper: $this->magic,
 				validateHandler: $this->validator,
+				saveObject: $this->save,
 			),
 			container: $container,
 			eventDispatcher: $this->events,
@@ -168,23 +185,54 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	}//end valid()
 
 	/**
-	 * A successful revert leaves a `revert` row that names the old and the new state.
+	 * A revert is written as an update of the save path with origin `revert`,
+	 * of the stored object with the restored data, never by the mapper directly;
+	 * the reverted event follows the write.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
 	 */
-	public function testRevertWritesARevertAuditRow(): void {
+	public function testRevertIsWrittenThroughTheSavePathAsARevert(): void {
 		$this->validator->method('validateObject')->willReturn($this->valid());
-		$this->magic->method('update')->willReturnArgument(0);
-
-		$this->audit->expects($this->once())
-			->method('createAuditTrail')
-			->with($this->current, $this->reverted, 'revert')
-			->willReturn(new AuditTrail());
+		$this->magic->expects($this->never())->method('update');
+		$this->audit->expects($this->never())->method('createAuditTrail');
+		$this->events->expects($this->once())->method('dispatchTyped')->with(
+			$this->callback(fn ($event): bool => $event instanceof ObjectRevertedEvent && $event->getRevertPoint() === '1.0.1' && count($this->saved) === 1)
+		);
 
 		$saved = $this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 
-		$this->assertSame($this->reverted, $saved);
-	}//end testRevertWritesARevertAuditRow()
+		$this->assertCount(1, $this->saved);
+		[$update, $options] = $this->saved[0];
+		$this->assertSame($this->current, $update->existingObject);
+		$this->assertSame($this->register, $update->register);
+		$this->assertSame($this->schema, $update->schema);
+		$this->assertSame('then', $update->data['title']);
+		$this->assertSame('revert', $options->origin);
+		$this->assertSame(['revertedTo' => '1.0.1', 'revertedToVersion' => '1.0.1'], $options->marks);
+		$this->assertNotSame($this->current, $options->oldObject);
+		$this->assertSame('now', $options->oldObject->getObject()['title']);
+		$this->assertFalse($options->silent);
+		$this->assertSame('then', $saved->getObject()['title']);
+	}//end testRevertIsWrittenThroughTheSavePathAsARevert()
+
+	/**
+	 * A revert to a point in time or an audit trail entry names that point, and no version.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	public function testARevertToATimeOrAnEntryNamesThatPoint(): void {
+		$this->validator->method('validateObject')->willReturn($this->valid());
+
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: new \DateTime('2026-10-01T12:00:00+00:00')));
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: 42));
+
+		$this->assertSame(['revertedTo' => '2026-10-01T12:00:00+00:00'], $this->saved[0][1]->marks);
+		$this->assertSame(['revertedTo' => '42'], $this->saved[1][1]->marks);
+	}//end testARevertToATimeOrAnEntryNamesThatPoint()
 
 	/**
 	 * The audit trail is handed the object the revert checked, not the URL id to look up again.
@@ -193,7 +241,6 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	 */
 	public function testTheTrailIsHandedTheCheckedObject(): void {
 		$this->validator->method('validateObject')->willReturn($this->valid());
-		$this->magic->method('update')->willReturnArgument(0);
 		$this->audit->expects($this->once())->method('revertObjectWith')->with($this->identicalTo($this->current), $this->equalTo(new RevertOptions('1.0.1', false)));
 
 		$this->handler()->revert(register: '5', schema: '7', id: '11', point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
@@ -225,22 +272,6 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	}//end testAnUntypedRevertPointIsRefused()
 
 	/**
-	 * With audit trails switched off, the revert writes no row, as a save does not.
-	 *
-	 * @return void
-	 */
-	public function testRevertHonoursAuditTrailsDisabled(): void {
-		$this->settings = $this->createMock(SettingsService::class);
-		$this->settings->method('getRetentionSettingsOnly')->willReturn(['auditTrailsEnabled' => false]);
-		$this->validator->method('validateObject')->willReturn($this->valid());
-		$this->magic->method('update')->willReturnArgument(0);
-
-		$this->audit->expects($this->never())->method('createAuditTrail');
-
-		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
-	}//end testRevertHonoursAuditTrailsDisabled()
-
-	/**
 	 * A frozen object refuses a revert as it refuses every other write, and nothing is written.
 	 *
 	 * @return void
@@ -248,9 +279,8 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	public function testFrozenObjectRefusesRevert(): void {
 		$this->current->setFrozen(['by' => 'bob', 'at' => '2026-09-01T00:00:00+00:00']);
 
-		$this->magic->expects($this->never())->method('update');
+		$this->save->expects($this->never())->method('updateObject');
 		$this->audit->expects($this->never())->method('revertObjectWith');
-		$this->audit->expects($this->never())->method('createAuditTrail');
 
 		$this->expectException(ObjectStateWriteException::class);
 
@@ -267,9 +297,8 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	public function testArchivedObjectRefusesRevert(): void {
 		$this->current->setArchived(['by' => 'anna', 'at' => '2026-09-12T00:00:00+00:00', 'reason' => 'closed']);
 
-		$this->magic->expects($this->never())->method('update');
+		$this->save->expects($this->never())->method('updateObject');
 		$this->audit->expects($this->never())->method('revertObjectWith');
-		$this->audit->expects($this->never())->method('createAuditTrail');
 
 		try {
 			$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
@@ -288,7 +317,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->mayUpdate = false;
 		$this->current->setLocked(['user' => 'bob', 'expiration' => (new \DateTime('+1 hour'))->format('c')]);
 
-		$this->magic->expects($this->never())->method('update');
+		$this->save->expects($this->never())->method('updateObject');
 		$this->audit->expects($this->never())->method('revertObjectWith');
 
 		$this->expectException(\OCA\OpenRegister\Exception\NotAuthorizedException::class);
@@ -306,7 +335,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->current->setLocked(['user' => 'bob', 'expiration' => (new \DateTime('+1 hour'))->format('c')]);
 		$this->current->setFrozen(['by' => 'bob', 'at' => '2026-09-01T00:00:00+00:00']);
 
-		$this->magic->expects($this->never())->method('update');
+		$this->save->expects($this->never())->method('updateObject');
 		$this->audit->expects($this->never())->method('revertObjectWith');
 
 		$this->expectException(\OCA\OpenRegister\Exception\LockedException::class);
@@ -323,10 +352,11 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	public function testTheCallersOwnLockAllowsRevert(): void {
 		$this->current->setLocked(['user' => 'alice', 'expiration' => (new \DateTime('+1 hour'))->format('c')]);
 		$this->validator->method('validateObject')->willReturn($this->valid());
-		$this->magic->expects($this->once())->method('update')
-			->with($this->reverted, $this->register, $this->schema)->willReturnArgument(0);
 
-		$this->assertSame($this->reverted, $this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1')));
+		$saved = $this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
+
+		$this->assertCount(1, $this->saved);
+		$this->assertSame('then', $saved->getObject()['title']);
 	}//end testTheCallersOwnLockAllowsRevert()
 
 	/**
@@ -343,13 +373,45 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 			->willReturn($invalid);
 		$this->validator->method('generateErrorMessage')->willReturn('title is no longer allowed');
 
+		$this->save->expects($this->never())->method('updateObject');
 		$this->magic->expects($this->never())->method('update');
-		$this->audit->expects($this->never())->method('createAuditTrail');
 
 		$this->expectException(ValidationException::class);
 
 		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testRevertedDataIsValidatedAgainstTheCurrentSchema()
+
+	/**
+	 * A version from before the schema made a field required is not restored:
+	 * the refusal names the field and nothing is written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	public function testAVersionWithoutANowRequiredFieldIsNotRestored(): void {
+		$this->schema->setRequired(['title', 'einddatum']);
+		$this->reverted->setObject(['title' => 'then']);
+		$invalid = $this->createMock(ValidationResult::class);
+		$invalid->method('isValid')->willReturn(false);
+		$this->validator->expects($this->once())->method('validateObject')
+			->with($this->callback(static fn (array $data): bool => ($data['title'] ?? null) === 'then' && array_key_exists('einddatum', $data) === false), $this->schema)
+			->willReturn($invalid);
+		$this->validator->method('generateErrorMessage')->with($invalid)->willReturn("The required property 'einddatum' is missing");
+
+		$this->save->expects($this->never())->method('updateObject');
+		$this->magic->expects($this->never())->method('update');
+		$this->events->expects($this->never())->method('dispatchTyped');
+
+		try {
+			$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
+			$this->fail('A version the schema refuses was restored');
+		} catch (ValidationException $e) {
+			$this->assertStringContainsString('einddatum', $e->getMessage());
+		}
+
+		$this->assertSame('now', $this->current->getObject()['title']);
+	}//end testAVersionWithoutANowRequiredFieldIsNotRestored()
 
 	/**
 	 * A schema without hard validation is not validated on revert, as on save.
@@ -359,10 +421,10 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	public function testSoftValidationSchemaSkipsValidation(): void {
 		$this->schema->setHardValidation(false);
 		$this->validator->expects($this->never())->method('validateObject');
-		$this->magic->expects($this->once())->method('update')->willReturnArgument(0);
-		$this->audit->method('createAuditTrail')->willReturn(new AuditTrail());
 
 		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
+
+		$this->assertCount(1, $this->saved);
 	}//end testSoftValidationSchemaSkipsValidation()
 
 	/**
@@ -372,12 +434,10 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	 */
 	public function testRevertAcceptsRegisterAndSchemaSlugs(): void {
 		$this->validator->method('validateObject')->willReturn($this->valid());
-		$this->magic->expects($this->once())->method('update')->willReturn($this->reverted);
-		$this->audit->method('createAuditTrail')->willReturn(new AuditTrail());
 
 		$saved = $this->handler()->revert(register: 'lp-register', schema: 'lp-item', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 
-		$this->assertSame($this->reverted, $saved);
+		$this->assertSame('then', $saved->getObject()['title']);
 	}//end testRevertAcceptsRegisterAndSchemaSlugs()
 
 	/**
@@ -386,7 +446,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	 * @return void
 	 */
 	public function testRevertRefusesAnotherRegistersSlug(): void {
-		$this->magic->expects($this->never())->method('update');
+		$this->save->expects($this->never())->method('updateObject');
 
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
 

@@ -2,9 +2,9 @@
 
 ## 1. The schemas
 
-- [ ] 1.1 Add `Survey`, `SurveyQuestion`, `SurveyInvitation` and `SurveyAnswerSet` to the register fragments.
+- [x] 1.1 Add `Survey`, `SurveyQuestion`, `SurveyInvitation` and `SurveyAnswerSet` to the register fragments.
 - [ ] 1.2 Version a survey on edit once it has answers, and keep the version on each answer set.
-- [ ] 1.3 PHPUnit on the version bump and on editing a survey with no answers.
+- [x] 1.3 PHPUnit on the version bump and on editing a survey with no answers.
 
 ## 2. Answering without an account
 
@@ -15,9 +15,9 @@
 
 ## 3. The answer set
 
-- [ ] 3.1 Link the answer set to its subject object and to the survey version.
-- [ ] 3.2 Refuse a submission missing a required answer, naming the question.
-- [ ] 3.3 PHPUnit on the link and on the refusal.
+- [x] 3.1 Link the answer set to its subject object and to the survey version.
+- [x] 3.2 Refuse a submission missing a required answer, naming the question.
+- [x] 3.3 PHPUnit on the link and on the refusal.
 
 ## 4. Automation
 
@@ -28,8 +28,8 @@
 
 ## 5. Access and anonymity
 
-- [ ] 5.1 Declare anonymity at creation and refuse a later change.
-- [ ] 5.2 Hold no respondent reference on an anonymous survey's answer sets.
+- [x] 5.1 Declare anonymity at creation and refuse a later change.
+- [x] 5.2 Hold no respondent reference on an anonymous survey's answer sets.
 - [ ] 5.3 Withhold anonymous results below the configurable minimum, showing the count and the reason.
 - [ ] 5.4 Apply the survey's reader roles to answer sets.
 - [ ] 5.5 PHPUnit on the refusal, the withholding and the role check, probing with a reader who must be refused.

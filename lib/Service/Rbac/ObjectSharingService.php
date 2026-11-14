@@ -307,6 +307,11 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 			$share->setExpirationDate($terms->expiresAt);
 		}
 
+		// The platform share's own note field (platform-share-provider 1.3).
+		if ($terms->note !== null && trim($terms->note) !== '') {
+			$share->setNote($terms->note);
+		}
+
 		$created = $this->createDated(share: $share, sharedAt: $terms->sharedAt);
 
 		// The caller may re-decide access within this same request.

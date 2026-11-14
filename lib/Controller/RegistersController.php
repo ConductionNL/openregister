@@ -46,6 +46,7 @@ use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
+use OCA\OpenRegister\Service\Schemas\RegisterModelService;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\Configuration\ConfigurationCollaborators;
@@ -927,6 +928,33 @@ class RegistersController extends Controller {
 			return new JSONResponse(data: ['error' => 'Internal server error: ' . $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end schemas()
+
+	/**
+	 * The register's model: its schemas as nodes and the links between them as edges
+	 *
+	 * Read with the same checks as `registers#schemas`, from schema definitions only.
+	 *
+	 * @param int|string $id The ID, UUID, or slug of the register
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with nodes and edges, or an error
+	 *
+	 * @spec openspec/changes/modelling-schema-diagram/specs/schema-diagram/spec.md
+	 */
+	public function model(int|string $id): JSONResponse {
+		try {
+			$register = $this->registerService->find($id);
+			return new JSONResponse(data: $this->container->get(RegisterModelService::class)->model(register: $register));
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+		} catch (Exception $e) {
+			$this->logger->error(message: '[RegistersController] Register model failed', context: ['register' => $id, 'error' => $e->getMessage()]);
+			return new JSONResponse(data: ['error' => 'The register model could not be read'], statusCode: 500);
+		}//end try
+	}//end model()
 
 	/**
 	 * Export a register and its related data

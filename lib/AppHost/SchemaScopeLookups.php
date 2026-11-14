@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
 /**
  * What a schema-scoped provider needs to resolve its register and schema slugs.
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 final class SchemaScopeLookups {
 	/**
@@ -55,7 +55,7 @@ final class SchemaScopeLookups {
 	 * @param SchemaCatalogInterface $catalog The register and schema mappers.
 	 * @param LoggerInterface        $logger  Logger.
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function __construct(
 		SchemaCatalogInterface $catalog,

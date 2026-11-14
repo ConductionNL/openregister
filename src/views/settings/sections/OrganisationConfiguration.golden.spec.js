@@ -139,4 +139,50 @@ describe('OrganisationConfiguration', () => {
 		await ctx.loadStatistics()
 		expect({ stats: ctx.stats, calls: axios.get.mock.calls, logged: logged.mock.calls.map(([text]) => text) }).toMatchSnapshot()
 	})
+
+	it('lists organisation options and detects unsaved changes', () => {
+		const computed = OrganisationConfiguration.computed
+		const ctx = section({
+			organisations: ORGS,
+			selectedDefaultOrganisation: { uuid: 'o1' },
+			originalDefaultOrganisation: { uuid: 'o1' },
+			autoCreateDefault: true,
+			originalAutoCreateDefault: true,
+		})
+
+		expect(computed.organisationOptions.call(ctx)).toEqual([
+			{ uuid: 'o1', name: 'One', id: 'o1', label: 'One' },
+			{ uuid: 'o2', name: 'Two', id: 'o2', label: 'Two' },
+		])
+		expect(computed.hasChanges.call(ctx)).toBe(false)
+
+		ctx.selectedDefaultOrganisation = { uuid: 'o2' }
+		expect(computed.hasChanges.call(ctx)).toBe(true)
+
+		ctx.selectedDefaultOrganisation = { uuid: 'o1' }
+		ctx.autoCreateDefault = false
+		expect(computed.hasChanges.call(ctx)).toBe(true)
+	})
+
+	it('selects the listed default organisation and remembers it', () => {
+		const ctx = section({ organisations: ORGS })
+
+		ctx.selectDefaultOrganisation('o2')
+
+		expect(ctx.selectedDefaultOrganisation).toMatchObject({ uuid: 'o2', id: 'o2', label: 'Two' })
+		expect(ctx.originalDefaultOrganisation).toMatchObject({ uuid: 'o2', label: 'Two' })
+	})
+
+	it('selects nothing for an absent uuid, an empty list or an unknown organisation', () => {
+		const empty = section({ organisations: [] })
+		empty.selectDefaultOrganisation('o1')
+		expect(empty.selectedDefaultOrganisation).toBe(null)
+
+		const listed = section({ organisations: ORGS })
+		listed.selectDefaultOrganisation(undefined)
+		expect(listed.selectedDefaultOrganisation).toBe(null)
+
+		listed.selectDefaultOrganisation('nope')
+		expect(listed.selectedDefaultOrganisation).toBe(null)
+	})
 })

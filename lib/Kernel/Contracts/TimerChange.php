@@ -26,7 +26,7 @@ use DateTimeInterface;
  * Why, by whom and when a timer is cancelled or re-anchored: the reason and actor
  * recorded on the timer's ledger, and the clock (now when null).
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
  */
 final class TimerChange {
 

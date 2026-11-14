@@ -44,6 +44,7 @@ final class WebhookFieldTypes {
 		'secret' => 'string',
 		'enabled' => 'boolean',
 		'organisation' => 'string',
+		'owner' => 'string',
 		'filters' => 'string',
 		'retryPolicy' => 'string',
 		'maxRetries' => 'integer',

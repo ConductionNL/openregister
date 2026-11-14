@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ use OCP\IDBConnection;
 /**
  * A link share whose owner no longer holds the file stops resolving; this re-owns it.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ObjectFileShareReowner {
 
@@ -50,7 +50,7 @@ class ObjectFileShareReowner {
 	 *
 	 * @return int How many shares were re-owned.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function reown(array $fileIds, string $owner): int {
 		$count = 0;

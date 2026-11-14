@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
  */
 
 declare(strict_types=1);
@@ -60,11 +60,13 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 	 * working calendar and stops requiring `rules`: until it landed, an
 	 * administrator's opening hours were dropped by the object store because
 	 * the schema had never heard of the property, and a calendar without a
-	 * holiday list could not be saved at all.
+	 * holiday list could not be saved at all. 1.4.0 declares `blackouts` and
+	 * `firstWeekOfYear` on the working calendar, which the object store would
+	 * otherwise drop on save.
 	 *
 	 * @var string
 	 */
-	private const REGISTER_VERSION = '1.2.0';
+	private const REGISTER_VERSION = '1.4.0';
 
 	/**
 	 * Constructor.
@@ -81,7 +83,7 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getName(): string {
 		return 'Seed the flow-timers register (working calendars + escalation ladders)';
@@ -94,7 +96,7 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function run(IOutput $output): void {
 		try {

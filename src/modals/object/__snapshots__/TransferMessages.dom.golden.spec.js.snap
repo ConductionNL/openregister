@@ -1,0 +1,48 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TransferMessages markup (golden) renders both 1`] = `
+"<div class="report-section">
+  <h4>Warnings</h4>
+  <ul>
+    <li class="warning-text">careful</li>
+  </ul>
+</div>
+<div class="report-section">
+  <h4>Errors</h4>
+  <ul>
+    <li class="error-text">failed</li>
+    <li class="error-text">stopped</li>
+  </ul>
+</div>"
+`;
+
+exports[`TransferMessages markup (golden) renders emptyArrays 1`] = `
+"<!--v-if-->
+<!--v-if-->"
+`;
+
+exports[`TransferMessages markup (golden) renders errorsOnly 1`] = `
+"<!--v-if-->
+<div class="report-section">
+  <h4>Errors</h4>
+  <ul>
+    <li class="error-text">boom</li>
+  </ul>
+</div>"
+`;
+
+exports[`TransferMessages markup (golden) renders neither 1`] = `
+"<!--v-if-->
+<!--v-if-->"
+`;
+
+exports[`TransferMessages markup (golden) renders warningsOnly 1`] = `
+"<div class="report-section">
+  <h4>Warnings</h4>
+  <ul>
+    <li class="warning-text">slow</li>
+    <li class="warning-text">deprecated</li>
+  </ul>
+</div>
+<!--v-if-->"
+`;

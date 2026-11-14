@@ -47,7 +47,9 @@ use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\IConfig;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -73,12 +75,14 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * @param SequenceServiceInterface $sequences Reserves a number, atomically.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param ObjectEventGateInterface $gate Decides what a draft is held from.
+	 * @param IConfig|null $config The instance secret that keys a random sequence.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SequenceServiceInterface $sequences,
 		private readonly LoggerInterface $logger,
 		private readonly ObjectEventGateInterface $gate,
+		private readonly ?IConfig $config=null,
 	) {
 	}//end __construct()
 
@@ -203,13 +207,72 @@ class GeneratedIdentifierListener implements IEventListener {
 			return null;
 		}
 
-		$scopeKey = $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $run->now));
-		return $declaration->render(
-			sequenceValue: $this->sequences->reserveNext(new SequenceScope(registerId: 0, schemaId: 0, scopeKey: $scopeKey)),
-			moment: $run->now
+		$scope = new SequenceScope(
+			registerId: 0,
+			schemaId: 0,
+			scopeKey: $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $run->now))
 		);
 
+		return $this->firstUnreserved(declaration: $declaration, scope: $scope, moment: $run->now);
+
 	}//end numberFor()
+
+	/**
+	 * Take numbers from the counter until one renders to a value that is not reserved.
+	 *
+	 * A skipped number is spent, never handed out later, so a reserved value
+	 * stays unissued for good. A reserved pattern that matches every value would
+	 * spin forever; after MAX_RESERVED_SKIPS the issue fails and the create is refused.
+	 *
+	 * @param GeneratedIdentifierDeclarationInterface $declaration The identifier's declaration.
+	 * @param SequenceScope                           $scope       The counter to take from.
+	 * @param DateTimeImmutable                       $moment      The moment of the create.
+	 *
+	 * @return string The first unreserved value.
+	 *
+	 * @throws RuntimeException When every value tried is reserved.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-second-human-identifier-reserved-values-and-a-scheme-change-as-a-migration-req-gid-006
+	 */
+	private function firstUnreserved(GeneratedIdentifierDeclarationInterface $declaration, SequenceScope $scope, DateTimeImmutable $moment): string {
+		for ($tried = 0; $tried <= GeneratedIdentifierDeclarationInterface::MAX_RESERVED_SKIPS; $tried++) {
+			$value = $declaration->render(
+				sequenceValue: $this->sequences->reserveNext($scope),
+				moment: $moment,
+				randomKey: $this->randomKey(declaration: $declaration)
+			);
+			if ($declaration->isReserved(value: $value) === false) {
+				return $value;
+			}
+		}
+
+		throw new RuntimeException(sprintf('every value of sequence "%s" tried was reserved', $declaration->sequence()));
+	}//end firstUnreserved()
+
+	/**
+	 * The permutation key of a random sequence: the instance secret narrowed to
+	 * the sequence's name, so two sequences never share a code order.
+	 *
+	 * @param GeneratedIdentifierDeclarationInterface $declaration The identifier's declaration.
+	 *
+	 * @return string|null The key, or null for a counter.
+	 *
+	 * @throws RuntimeException When the instance has no secret to key a random sequence with.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-sequence-may-be-random-rather-than-counted-req-gid-004
+	 */
+	private function randomKey(GeneratedIdentifierDeclarationInterface $declaration): ?string {
+		if ($declaration->isRandom() === false) {
+			return null;
+		}
+
+		$secret = (string)($this->config?->getSystemValueString('secret', '') ?? '');
+		if ($secret === '') {
+			throw new RuntimeException('the instance has no secret to key a random sequence');
+		}
+
+		return hash_hmac('sha256', 'openregister-generated-identifier:'.$declaration->sequence(), $secret);
+	}//end randomKey()
 
 	/**
 	 * Refuse the write because a number could not be issued.

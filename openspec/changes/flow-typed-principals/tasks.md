@@ -13,7 +13,8 @@
 
 - [x] 2.1 `FlowRunAssignee::mayAnswer()` consults the registry instead of comparing strings. Keep the null-assignee branch exactly as it is.
 - [x] 2.2 The task service's answer guard takes the same path, so the two cannot disagree.
-- [ ] 2.3 Record the resolution at creation as evidence only. Assert in a test that the guard does **not** read it — a former member must be refused while still appearing in the record.
+- [x] 2.3 Record the resolution at creation as evidence only. Assert in a test that the guard does **not** read it — a former member must be refused while still appearing in the record.
+      > 2026-11-13: `UserTaskPerformers::resolutionEvidence()` (the references, the users they resolved to, the moment), written by `UserTaskNode::createTask()` into the task's `metadata.performersAtCreation`, which no authorization rule may read. `UserTaskResolutionEvidenceTest`: bram is still in the record after leaving the group and is refused by `FlowRunAssignee::mayAnswer()`; anna is still allowed.
 - [x] 2.4 Check every caller of `mayAnswer` for the hot-path trap: inbox listing must still predicate in the datastore, never resolve row by row.
 - [x] 2.5 Tests: a position authorises; a coincidental group name no longer authorises a `user` reference; an unassigned task is unchanged.
 
@@ -22,7 +23,8 @@
 - [x] 3.1 `UserTaskConfig` parses typed references on `assignee`, `candidates`, `routingFallback`; reads the three legacy candidate fields as typed candidates.
 - [x] 3.2 `validateConfig` refuses an unknown type, naming type and field. It does NOT resolve — D-2.
 - [x] 3.3 Task creation resolves; an empty resolution fails the step, distinguishing "no such principal" from "resolved to no users".
-- [ ] 3.4 Declare `principal` as the field type on every performer field; drop `performerType` from the form and derive the column from the reference.
+- [x] 3.4 Declare `principal` as the field type on every performer field; drop `performerType` from the form and derive the column from the reference.
+      > 2026-11-13: every performer field was already `principal`, `performerType` was already off the form and derived by `UserTaskPerformers::kindFor()`. `UserTaskPrincipalFieldsTest` now asserts it: no performer field is `text`, `performerType` is not asked.
 - [x] 3.5 Display name to "Ask a person or group"; description reviewed against the `writing` skill before it is written.
 - [x] 3.6 Tests: legacy `candidateGroups` still configures a step; an unknown type is refused at save; an empty group fails at creation and not at save.
 
@@ -38,6 +40,7 @@
 - [x] 5.1 A `principal` widget in `CnFlowNodeEditModal.vue`: multi-select, searches as you type against `/ocs/v2.php/core/autocomplete/get` with `shareTypes[]=0,1`.
 - [x] 5.2 A stored reference the current user cannot see must still SHOW, the way the existing `user` widget synthesises an unseen uid — otherwise a save silently clears a delegation.
 - [ ] 5.3 App-contributed types are offered from a server-declared option source, not from a list the editor hard-codes.
+      > 2026-11-13, server half done: every `principal` field in the catalog carries `principalTypes`, the registry's `types()` (`UserTaskNode::principalField()`, `UserTaskPrincipalFieldsTest`). Left open for the nextcloud-vue half: the widget must offer that list instead of its own.
 - [x] 5.4 `runAs` keeps the existing single-user widget.
 - [x] 5.5 jest specs seen RED first; en/nl catalogues for every new string, `writing` skill loaded first.
 

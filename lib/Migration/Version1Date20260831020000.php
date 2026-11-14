@@ -96,7 +96,7 @@ class Version1Date20260831020000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
 	 *
-	 * @spec openspec/changes/organisation-as-federated-counterparty/specs/organisation-tenancy-scope/spec.md
+	 * @spec openspec/specs/organisation-tenancy-scope/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/* @var ISchemaWrapper $schema The schema wrapper. */

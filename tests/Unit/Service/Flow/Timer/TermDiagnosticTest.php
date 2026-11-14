@@ -437,4 +437,85 @@ class TermDiagnosticTest extends TestCase {
 			)
 		);
 	}//end testARefusedSlaIsRefused()
+
+	/**
+	 * A calendar open on working weekdays within these windows.
+	 *
+	 * @param string $slug The calendar slug.
+	 * @param string $end  When the single window closes.
+	 *
+	 * @return WorkingCalendar
+	 */
+	private static function windowedCalendar(string $slug, string $end): WorkingCalendar {
+		$window = [['start' => '09:00', 'end' => $end]];
+
+		return WorkingCalendar::fromArray(
+			definition: [
+				'slug' => $slug,
+				'timezone' => 'Europe/Amsterdam',
+				'hoursPerWorkingDay' => 8,
+				'workingWeekdays' => [1, 2, 3, 4, 5],
+				'serviceHours' => [
+					'monday' => $window,
+					'tuesday' => $window,
+					'wednesday' => $window,
+					'thursday' => $window,
+					'friday' => $window,
+				],
+			]
+		);
+	}//end windowedCalendar()
+
+	/**
+	 * 🔴 The spec scenario: one 6-hour term on a counter calendar and a back-office calendar fires at different
+	 * moments, and each diagnostic names its own calendar and the windows it applied.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+	 */
+	public function testEachDiagnosticNamesTheCalendarAndTheWindowsThatDecidedIt(): void {
+		$anchor = new DateTimeImmutable('2026-06-01T09:00:00+02:00');
+		$sla = ['value' => 6, 'unit' => SlaCalculator::UNIT_HOURS];
+
+		$counter = $this->diagnostic->explain(query: new TermQuery(calendar: self::windowedCalendar('counter', '12:30'), anchor: $anchor, sla: $sla));
+		$office = $this->diagnostic->explain(query: new TermQuery(calendar: self::windowedCalendar('back-office', '17:00'), anchor: $anchor, sla: $sla));
+
+		$this->assertNotSame($counter['firesAt'], $office['firesAt']);
+		$this->assertSame('counter', $counter['calendar']);
+		$this->assertSame('back-office', $office['calendar']);
+		$this->assertSame(['09:00-12:30'], $counter['serviceHours']['monday']);
+		$this->assertSame(['09:00-17:00'], $office['serviceHours']['friday']);
+		$this->assertSame(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'], array_keys($counter['serviceHours']));
+		$this->assertTrue($counter['serviceHoursApplied']);
+		$this->assertTrue($office['serviceHoursApplied']);
+		// 3.5 hours on Monday, 2.5 on Tuesday from 09:00.
+		$this->assertSame('2026-06-02T11:30:00+02:00', $counter['firesAt']);
+		$this->assertSame('2026-06-01T15:00:00+02:00', $office['firesAt']);
+	}//end testEachDiagnosticNamesTheCalendarAndTheWindowsThatDecidedIt()
+
+	/**
+	 * A calendar without windows names none, and a day term never says windows were applied.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+	 */
+	public function testNoWindowsAreNamedWhereNoneAppliedTheTerm(): void {
+		$undeclared = $this->diagnostic->explain(
+			query: new TermQuery(calendar: $this->calendar, anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'), sla: ['value' => 6, 'unit' => SlaCalculator::UNIT_HOURS])
+		);
+		$days = $this->diagnostic->explain(
+			query: new TermQuery(
+				calendar: self::windowedCalendar('counter', '12:30'),
+				anchor: new DateTimeImmutable('2026-06-01T09:00:00+02:00'),
+				sla: ['value' => 1, 'unit' => SlaCalculator::UNIT_BUSINESS_DAYS]
+			)
+		);
+
+		$this->assertSame([], $undeclared['serviceHours']);
+		$this->assertFalse($undeclared['serviceHoursApplied']);
+		$this->assertSame(['09:00-12:30'], $days['serviceHours']['monday']);
+		$this->assertFalse($days['serviceHoursApplied']);
+	}//end testNoWindowsAreNamedWhereNoneAppliedTheTerm()
 }//end class

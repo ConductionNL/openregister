@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use DateTimeImmutable;
+use DateTimeInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\AgentRunDispatch;
 use OCA\OpenRegister\Event\AgentRunInstruction;
@@ -129,6 +131,40 @@ class UserTaskPerformers {
 		);
 
 	}//end refuseIfNobodyHoldsThem()
+
+	/**
+	 * Who the step's performers resolved to when the task was raised, as evidence.
+	 *
+	 * 🔴 EVIDENCE ONLY. It goes into the task's `metadata`, which no lifecycle,
+	 * authorization or inbox rule may read. Who may answer is decided by
+	 * resolving the reference again at answer time, so a person who has left
+	 * the group since is refused while still appearing here as one of those
+	 * asked. Reading this list to authorise would freeze a membership the
+	 * organisation has already changed.
+	 *
+	 * @param array<string, mixed> $config The node configuration.
+	 *
+	 * @return array{resolvedAt: string, principals: list<string>, users: list<string>}|null
+	 *   Null when nothing can resolve or the step names no performer.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/tasks.md
+	 */
+	public function resolutionEvidence(array $config): ?array {
+		if ($this->principals === null) {
+			return null;
+		}
+
+		$named = $this->config->performers(config: $config);
+		if ($named === []) {
+			return null;
+		}
+
+		return [
+			'resolvedAt' => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
+			'principals' => array_values(array_map(static fn ($reference): string => (string)$reference, $named)),
+			'users' => array_values(array_unique($this->principals->resolveAll(references: $named))),
+		];
+	}//end resolutionEvidence()
 
 	/**
 	 * Ask an agent performer to take its turn.

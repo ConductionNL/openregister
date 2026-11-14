@@ -90,6 +90,10 @@ class ObjectRetentionHandler implements ArchivalSettingsReaderInterface, Retenti
 		'destructionListRegister' => null,
 		'destructionListSchema' => null,
 		'archivalRegister' => null,
+		// An absolute directory outside the application where each object's
+		// restorable copy is written before it is destroyed; null writes none
+		// (import-preview-and-conflict-policy REQ-IPC-004).
+		'destructionCopyLocation' => null,
 	];
 
 	/**
@@ -309,7 +313,7 @@ class ObjectRetentionHandler implements ArchivalSettingsReaderInterface, Retenti
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	private function recordSettingsChange(?array $before, array $keys): void {
 		if ($before === null || $this->changeRecorder === null) {

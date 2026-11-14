@@ -32,6 +32,21 @@ use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
  * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class SafeguardBatchRun {
+
+	/**
+	 * Whether the rows went through the safeguard screen (it is skipped without its dependencies).
+	 *
+	 * @var bool
+	 */
+	public bool $screened = false;
+
+	/**
+	 * Uuids of the passed rows that update a stored object, for the bulk quota.
+	 *
+	 * @var array<string, bool>
+	 */
+	public array $storedUuids = [];
+
 	/**
 	 * Constructor.
 	 *

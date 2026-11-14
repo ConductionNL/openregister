@@ -37,6 +37,8 @@ use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
 use OCA\OpenRegister\Notifications\Controller\Support\NoteUpdate;
 use OCA\OpenRegister\Notifications\Controller\Support\ObjectNote;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\InvalidNoteParentException;
+use OCA\OpenRegister\Files\Service\NoteJournalExporter;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -44,6 +46,7 @@ use OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection;
 use OCA\OpenRegister\Notifications\Service\Timeline\NoteRewrite;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
@@ -72,6 +75,20 @@ class NotesController extends Controller {
 	 * @var ObjectOperationsInterface
 	 */
 	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Notes read per page when a journal is exported.
+	 *
+	 * @var int
+	 */
+	private const JOURNAL_PAGE = 100;
+
+	/**
+	 * The most notes one journal export holds.
+	 *
+	 * @var int
+	 */
+	private const JOURNAL_MAX_NOTES = 5000;
 
 	/**
 	 * The controller's injected services.
@@ -123,6 +140,96 @@ class NotesController extends Controller {
 	): JSONResponse {
 		return $this->notesAt(path: new NotePath(register: $register, schema: $schema, id: $id));
 	}//end index()
+
+	/**
+	 * Download an object's notes as a Markdown journal sheet, oldest first.
+	 *
+	 * The sheet holds exactly the notes the caller may list: the same
+	 * visibility filter as {@see index()} applies, so a caller without
+	 * `update` on the object gets the public view.
+	 *
+	 * @param string $register The register slug or identifier
+	 * @param string $schema   The schema slug or identifier
+	 * @param string $id       The ID of the object
+	 *
+	 * @return DataDownloadResponse|JSONResponse The Markdown file, or the refusal
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-an-objects-notes-export-as-a-journal-sheet
+	 */
+	public function journal(
+		string $register,
+		string $schema,
+		string $id,
+	): DataDownloadResponse|JSONResponse {
+		try {
+			$object = $this->validateObject(path: new NotePath(register: $register, schema: $schema, id: $id));
+			if ($object === null) {
+				return $this->notFound(what: 'Object');
+			}
+
+			$markdown = (new NoteJournalExporter())->markdown(
+				title: $this->journalTitle(object: $object),
+				notes: $this->everyVisibleNote(object: $object)
+			);
+		} catch (DoesNotExistException $e) {
+			return $this->notFound(what: 'Object');
+		} catch (Exception $e) {
+			return ($this->failureWith(status: 500))($e);
+		}
+
+		return new DataDownloadResponse(
+			data: $markdown,
+			filename: 'journal-' . (string)$object->getUuid() . '.md',
+			contentType: 'text/markdown; charset=utf-8'
+		);
+	}//end journal()
+
+	/**
+	 * Every note on the object the caller may list, page by page up to a cap.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<int, array<string, mixed>> The notes.
+	 */
+	private function everyVisibleNote(ObjectEntity $object): array {
+		$uuid = (string)$object->getUuid();
+		$filter = $this->services->visibility->effectiveFilter(object: $object, requested: null);
+		// The visibility filter runs after the page is read, so a short page
+		// is not the last one: the stored count bounds the walk instead.
+		$total = min($this->noteService->countNotesForObject(objectUuid: $uuid), self::JOURNAL_MAX_NOTES);
+		$notes = [];
+		for ($offset = 0; $offset < $total; $offset += self::JOURNAL_PAGE) {
+			$page = $this->noteService->listNotes(
+				query: new ObjectNotesQuery(
+					objectUuid: $uuid,
+					page: new ListQuery(limit: self::JOURNAL_PAGE, offset: $offset),
+					visibility: $filter
+				)
+			);
+			array_push($notes, ...$page);
+		}
+
+		return $notes;
+	}//end everyVisibleNote()
+
+	/**
+	 * The heading of an object's journal: its name, else its uuid.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return string
+	 */
+	private function journalTitle(ObjectEntity $object): string {
+		$name = trim((string)$object->getName());
+		if ($name !== '') {
+			return $name;
+		}
+
+		return (string)$object->getUuid();
+	}//end journalTitle()
 
 	/**
 	 * The notes on the object at a route path.
@@ -330,10 +437,65 @@ class NotesController extends Controller {
 			path: $path,
 			step: new NoteStep(
 				action: fn (ObjectEntity $object): JSONResponse => $this->destroyOn(object: $object, noteId: (int)$noteId),
-				failure: fn (Exception $e): JSONResponse => $this->failureWith(status: $this->statusFor(e: $e))($e)
+				failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
 			)
 		);
 	}//end destroyAt()
+
+	/**
+	 * Lock a note, so that nobody can edit or delete it any more.
+	 *
+	 * @param string $register The register slug or identifier
+	 * @param string $schema The schema slug or identifier
+	 * @param string $id The ID of the object
+	 * @param string $noteId The ID of the note to lock
+	 *
+	 * @return JSONResponse The locked note, or the refusal
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
+	 */
+	public function lock(
+		string $register,
+		string $schema,
+		string $id,
+		string $noteId,
+	): JSONResponse {
+		return $this->onObject(
+			path: new NotePath(register: $register, schema: $schema, id: $id),
+			step: new NoteStep(
+				action: fn (ObjectEntity $object): JSONResponse => $this->lockOn(object: $object, noteId: (int)$noteId),
+				failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
+			)
+		);
+	}//end lock()
+
+	/**
+	 * Lock one of the object's notes and record it on the object's audit trail.
+	 *
+	 * The author of the note, or someone who manages the object, may lock it.
+	 * Locking a locked note answers it unchanged and writes no second entry.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param int          $noteId The note.
+	 *
+	 * @return JSONResponse The locked note.
+	 */
+	private function lockOn(ObjectEntity $object, int $noteId): JSONResponse {
+		$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: $noteId);
+		$wasLocked = ($this->noteService->getNote(noteId: $noteId)['locked'] ?? false) === true;
+
+		$note = $this->noteService->lockNote(
+			noteId: $noteId,
+			mayManage: $this->services->visibility->mayManageObject(object: $object)
+		);
+		if ($wasLocked === false) {
+			$this->noteService->auditLock(object: $object, note: $note);
+		}
+
+		return new JSONResponse(data: $note);
+	}//end lockOn()
 
 	/**
 	 * Run an action on the object the path names, translating the shared outcomes.
@@ -477,12 +639,53 @@ class NotesController extends Controller {
 			return $refusal;
 		}
 
-		$note = $this->noteService->createNote(
-			draft: new NoteDraft(objectUuid: (string)$object->getUuid(), message: $data['message'], visibility: $this->visibilityOf(data: $data))
-		);
+		$parentId = $this->parentIdOf(data: $data);
+		$readable = null;
+		if ($parentId !== null) {
+			$readable = $this->services->visibility->effectiveFilter(object: $object, requested: null);
+		}
+
+		try {
+			$note = $this->noteService->createNote(
+				draft: new NoteDraft(
+					objectUuid: (string)$object->getUuid(),
+					message: $data['message'],
+					visibility: $this->visibilityOf(data: $data),
+					parentId: $parentId,
+					readable: $readable
+				)
+			);
+		} catch (InvalidNoteParentException $e) {
+			return new JSONResponse(data: ['error' => InvalidNoteParentException::MESSAGE], statusCode: 422);
+		}
 
 		return $this->projected(target: $target, note: $note);
 	}//end createOn()
+
+	/**
+	 * The note a new note replies to, from the request; null for a top-level note.
+	 *
+	 * Anything that is not a positive whole number names no note, and is refused
+	 * as an unknown parent rather than read as a top-level note.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 *
+	 * @return int|null The parent id; 0 for an unusable id, which no note has.
+	 *
+	 * @spec openspec/changes/notes-replies-by-parent/specs/object-interactions/spec.md#requirement-a-note-can-reply-to-another-note-on-the-same-record
+	 */
+	private function parentIdOf(array $data): ?int {
+		$raw = ($data['parentId'] ?? null);
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+
+		if (is_int($raw) === true || (is_string($raw) === true && ctype_digit($raw) === true)) {
+			return (int) $raw;
+		}
+
+		return 0;
+	}//end parentIdOf()
 
 	/**
 	 * Refuse the payload's visibility when it carries one the caller may not set.
