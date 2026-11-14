@@ -10710,3 +10710,4 @@ fix:planninq:1167:28092815	merged development, l10n union; tests green; new head
 build:learniq:content-scorm-package-upload:c3	PR learniq#2543: 2.3 Opis lesson-schema validation (4 tests), 3.1 screen text; suite 6775->6779, 1 inherited failure; left 4.1 Playwright live, 4.2 close-out	session-20261114T191730-4ad9612d	2026-11-14T19:47:56Z
 verify:planninq:1165:e53d568e	GREEN 1165@69833fe6; unit 1067/0, vitest green	session-20261114T191744-b9573b83	2026-11-14T19:48:36Z
 fix:shillinq:2976:f5ba044b	conflict resolved (l10n union), pushed 017e9a1a04ec22c60d350c25153c644236ac7c21, REVERIFY recorded	session-20261114T193415-4b507b08	2026-11-14T19:48:53Z
+merge:integriq:3628:0098dffb	merge3 tree of 6 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:49:18Z
