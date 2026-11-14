@@ -8982,3 +8982,4 @@ review:openregister:10528:c6ba2a65	APPROVE: list-reference _ref via JSON contain
 review:openregister:10526:70fb972d	APPROVE 10526	session-20261114T114629-c5ef9a76	2026-11-14T12:05:32Z
 review:openregister:10509:949c765a	APPROVE: per spec, all suites green on merge with main; generated yaml conflict only	session-20261114T114410-8ce13f7f	2026-11-14T12:05:42Z
 fix:pipelinq:3831:cd981132	conflict resolved: merged development, combined counts; new head 368ec966	session-20261114T114630-192fc047	2026-11-14T12:06:36Z
+merge:portaliq:2312:7ac2ed7f	merge3 tree of 19 portaliq PRs: replayed; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T12:06:56Z
