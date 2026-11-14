@@ -8749,3 +8749,4 @@ integriq	3574	0eb15981b800e3c8d69eae1a8504b1e6d38f64d2	REVERIFY	worker-26	merged
 portaliq	2437	0bea0f46a52d61994a5d40a2da96c0efa6169ba3	RED	merge3:merge-gate	GATE RED checker floor: testcoderatio: pass -> warn; testcoderatio stars: 4 -> 3
 hermiq	1755	c4172dcdcbebaa845adbb9e55c068dbf495df7f7	CONFLICT	worker-12	conflicts with #1749 in tree (l10n/en.js en.json nl.js nl.json); clean vs development
 hermiq	1757	52b33f1fdf0803bda6d22d9eecec3561d5c1da0d	CONFLICT	worker-12	conflicts with #1749 in tree (openapi.json); clean vs development
+hermiq	1784	59e4639166a495fb784f0164d828f8574cffa6ee	REVERIFY	worker-25	moved the 7 tool-call mark keys from the end to the start of en/nl .json and regenerated .js, so the tree merge with #1782 is clean; same keys and values; new head 7a0a5e933336b6c6d871b89e1e43aa2f5e0f11a7, verify it
