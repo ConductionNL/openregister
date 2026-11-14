@@ -7596,3 +7596,5 @@ stackiq	1919	2f7bbbeb8ddac6bb28d990a3f774b787b7f5de4c	GREEN	worker-42	tree dev 8
 stackiq	1920	ae4972747b606a2e0c8569989dec95e25592d32b	GREEN	worker-42	tree dev 8ca7c057 + 1916..1923: phpunit 3494 tests, baseline 3446 with 0 failures, 0 new; vitest 2532 passed; build insight-assistant matches its specs (POST /api/ask NoAdminRequired, rate limited, reads with RBAC)
 larpinq	1036	3e79d24a762bdf8bda043544729ab6dd94a473a4	GREEN	worker-35	phpunit unit tree 812 OK (baseline 792 OK), vitest 511 passed (baseline 506), no new failures; steward access matches change D3
 larpinq	1037	922d4ae2e112b0030387cae852ea958091a4b847	GREEN	worker-35	phpunit unit tree 812 OK (baseline 792 OK), vitest 511 passed (baseline 506), no new failures
+stackiq	1925	e0125f5f07ba45dd6d5cb54f6a950f72d99d5083	GREEN	worker-20	unit 3483 OK (baseline 3446 OK), vitest 2502 OK, no new failures
+stackiq	1926	47d3e2874a4a53ffc721bb94cb97530e5cb82b80	GREEN	worker-20	unit 3483 OK (baseline 3446 OK), vitest 2502 OK, no new failures
