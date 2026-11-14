@@ -10872,3 +10872,4 @@ fix:hermiq:1791:f0bebb66	merged development in cleanly, suite green; REVERIFY at
 review:shillinq:2995:47788041	no defect found; CONFLICT with development (appinfo/info.xml openapi.json tests/Unit/Listener/Registration/FilteredObjectListenerSubscriptionTest.php tests/fixtures/register-versions.lock.json )	session-20261114T195420-f8b91a81	2026-11-14T20:23:43Z
 build:filinq:woo-metadata-worklist:c3	done: filinq#2102 updated (head 898cbd6): development merged in (l10n + register 8.56.0 conflicts resolved), 3.1 strings/@spec/docs page built; left only live tasks: Playwright, screenshots, 3.2 coverage measurement; phpunit 6774 + jest 539 green	session-20261114T194751-bb7578f8	2026-11-14T20:24:01Z
 review:filinq:2103:14cf5ada	GREEN	session-20261114T201755-10d43934	2026-11-14T20:24:03Z
+fix:filinq:2123:441498e5	merged development (with #2079); registrar tests green, unit 6800 OK; new head 0bab561a	session-20261114T201745-19e2e5d6	2026-11-14T20:24:28Z
