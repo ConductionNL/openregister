@@ -10118,3 +10118,4 @@ fix:filinq:2124:803f8a87	merged dev (Settings.vue/golden/l10n both sides); unit 
 fix:filinq:2070:af678887	conflict resolved (l10n, both sides kept); new head cd488491	session-20261114T161744-497aae45	2026-11-14T16:19:09Z
 build4:dossiq:woo-review-triage:c4	already done: every code task merged on development (PRs up to quality/build-woo-review-triage-4); left only non-code: 5.1 viewer hook waits on Q-dossiq-L8-1 (no paged viewer/pdf.js), Newman 6.1/6.2, 6.4 live, 7.1 e2e run	session-20261114T161755-35790eb3	2026-11-14T16:19:14Z
 fix:portaliq:2437:0bea0f46	tests added, test code ratio 99.29% -> 100.04%; new head 692916ba87185635732c6ec6ba264cbb2858b504	session-20261114T141738-30f539db	2026-11-14T16:19:20Z
+fix:buildiq:1618:08874393	merged development, l10n both sides kept; vitest 4480 ok, phpunit 1 inherited failure; new head 53cd30c6	session-20261114T154734-655bd0f3	2026-11-14T16:19:34Z
