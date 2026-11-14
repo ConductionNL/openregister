@@ -9630,3 +9630,4 @@ portaliq	2444	c94c78816f8e0c5496a23df08c11937dd20dcee3	GREEN	worker-41:review	Bu
 shillinq	3048	10a5df9db0886965f9b5b0b71bb178d81cfd8c1a	GREEN	worker-09	phpunit 11485 ok (baseline 11299 ok), vitest 2769 ok + 1 inherited failure (dunningNextRun, red on development), no new failures; also carries #2991 (sales-invoice-sending)
 shillinq	3055	5be550bbb3e23d98cdb54d8a5d6ec032a3e380d0	CONFLICT	worker-09	does not merge on development+3048: appinfo/info.xml tests/fixtures/register-versions.lock.json
 shillinq	3069	71d3c09e624976e5e85566397eefea9aaf539dda	GREEN	worker-09	phpunit 11485 ok (baseline 11299 ok), vitest 2769 ok + 1 inherited failure (dunningNextRun, red on development), no new failures
+shillinq	3078	ff77ac25bf8cff836a654375024315550780299b	GREEN	worker-09	phpunit 11485 ok (baseline 11299 ok), vitest 2769 ok + 1 inherited failure (dunningNextRun, red on development), no new failures
