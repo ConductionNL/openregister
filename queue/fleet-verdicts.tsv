@@ -7140,3 +7140,4 @@ stackiq	1706	5ba0e54b3550a536789ec349d1e6b746e42ab4ee	CONFLICT	merge3	conflicts 
 stackiq	1813	8e311d81de144657f97c1cd6ce4b36e739a2a7ed	CONFLICT	merge3	conflicts with development; files: tests/vitest/gemmaPlateRender.spec.js 
 integriq	3541	659b6c67a4d438fd456ec65644fb68b5af1553cd	GREEN	worker-20	unit 8530 tests on the tree (baseline 8493, 2E/3F inherited), no new failures; builds access-oauth-and-token-validation (key-set lookup fails closed, scope check after authentication)
 integriq	3549	1db0c824ec97177583d04c82e3cea987258764b6	GREEN	worker-20	unit 8530 tests on the tree (baseline 8493, 2E/3F inherited), no new failures; builds connectors-job-board-multiposting, tests only added
+integriq	3556	42424fdd58272236dda98bbada428c809aab2605	GREEN	worker-20	unit 8530 tests on the tree (baseline 8493, 2E/3F inherited), no new failures; builds gateway-response-cache-and-problem-errors (problem+json, statuses kept)
