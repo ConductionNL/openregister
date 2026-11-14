@@ -12062,3 +12062,4 @@ build4:openregister:unit-test-coverage:c4	partial: PR #10527 head 5ad6bbd8 + lis
 verify:hermiq:1796:fac8f884	GREEN hermiq #1796-#1802 (tests only, no new failures)	session-20261114T224738-9571d712	2026-11-14T23:53:06Z
 review:filinq:2072:347356f9	GREEN: unit 6784 ok, phpstan clean	session-20261114T234953-2dec3184	2026-11-14T23:53:13Z
 review:filinq:2106:3c54d4a0	GREEN: spec-conform; unit 6792 OK	session-20261114T234948-b89aaae1	2026-11-14T23:53:26Z
+review:filinq:2096:603fca94	GREEN: unit 6810/6810 (baseline 6765), phpstan clean	session-20261114T234941-bc8686af	2026-11-14T23:53:38Z
