@@ -9667,3 +9667,4 @@ fix:learniq:2532:53b53ed8	conflict resolved: l10n keys repositioned, merges clea
 build:learniq:pupil-books-support-lessons-and-mentor-talks:c2	PR #2538: T1, T3, T4, T5 built and ticked (T2 was #2503); T6 e2e left; unit 6729 tests, 1 inherited failure	session-20261114T141732-dc478e77	2026-11-14T15:02:11Z
 fix:shillinq:3003:e9b31d7d	failed: conflict is only with unmerged #2976 (both bump info.xml version and append register-versions.lock rows at the same place); branch merges current development cleanly; resolve after #2976 lands (rebase the version to after 20261114180000 and append its lock row)	session-20261114T134643-47800317	2026-11-14T15:02:17Z
 verify:filinq:2119:0d0279c0	2123 GREEN, 2119 CONFLICT	session-20261114T144801-36995162	2026-11-14T15:02:20Z
+verify:portaliq:2437:a7c54eab	GREEN #2437	session-20261114T141732-bb541f91	2026-11-14T15:02:58Z
