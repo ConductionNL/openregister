@@ -10110,3 +10110,4 @@ build:buildiq:pages-widget-grid-drag-and-resize:c2	already done: code task 1 mer
 fix:filinq:2126:1432867f	merged development, head 9eb18073, REVERIFY; remaining #2079 conflict is the register version header only	session-20261114T151802-24eee21b	2026-11-14T16:16:55Z
 fix:integriq:3582:02740663	no change needed: clean on development, conflict only with open PR 3539	session-20261114T141010-8dc8bd74	2026-11-14T16:17:10Z
 verify:planninq:1165:dc142bce	GREEN 1165,1176,1177; CONFLICT 1170 (l10n); 1166 skipped (head moved to 4431dc18)	session-20261114T151750-b10540e9	2026-11-14T16:17:29Z
+build:filinq:finish-half-built-capabilities:c3	PR #2130 (head 935ea653): 1.1 OCR text layer and 3.2 finality-rule settings built on top of 2.1, all code tasks ticked; left 3.2 Playwright check (live); phpunit 6755 ok (dev 6736), jest 524, vitest 751	session-20261114T154755-0f1a24cf	2026-11-14T16:18:00Z
