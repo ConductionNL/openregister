@@ -12085,3 +12085,4 @@ verify:larpinq:1051:aba6cb6d	1060 GREEN; 1051 skipped: head moved e02d02f9 -> 77
 review:shillinq:2997:787ad8e7	BLOCK: weekly job not registered in info.xml; suite green	session-20261114T234948-b89aaae1	2026-11-14T23:57:33Z
 build:hermiq:tools-deep-research-report:c5	partial: not started this pass (worker context nearly full); flows-hand-off-and-wait still unbuilt on development (no Handoff schema), so Tasks 5/6 stay blocked; Task 1 runner and Task 2 gathering left	session-20261114T224738-9571d712	2026-11-14T23:57:39Z
 review:filinq:2085:432c7b61	GREEN: unit 6787 ok, vitest 772 ok	session-20261114T234953-2dec3184	2026-11-14T23:57:47Z
+review:decidiq:2149:08dbad8e	GREEN #2149: suite 4438 green, vitest 2851 pass	session-20261114T234932-1a68fd4b	2026-11-14T23:57:55Z
