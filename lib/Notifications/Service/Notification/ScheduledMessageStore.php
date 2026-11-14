@@ -133,6 +133,114 @@ class ScheduledMessageStore implements ScheduledMessageStoreInterface {
 	}//end record()
 
 	/**
+	 * Store a composed message as pending and answer its id.
+	 *
+	 * @param array<string, mixed> $message channel, source, path, body, headers, objectUuid, author, sendAt.
+	 *
+	 * @return string The new row id.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
+	 */
+	public function insert(array $message): string {
+		$now = gmdate('Y-m-d H:i:s');
+		$values = [
+			'channel' => (string)($message['channel'] ?? ''),
+			'source' => (string)($message['source'] ?? ''),
+			'path' => (string)($message['path'] ?? ''),
+			'body' => (string)json_encode(($message['body'] ?? [])),
+			'headers' => (string)json_encode(($message['headers'] ?? [])),
+			'object_uuid' => ($message['objectUuid'] ?? null),
+			'author' => ($message['author'] ?? null),
+			'send_at' => (string)($message['sendAt'] ?? ''),
+			'state' => ScheduledMessagePolicy::PENDING,
+			'attempts' => 0,
+			'created' => $now,
+			'updated' => $now,
+		];
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->insert(self::TABLE);
+		foreach ($values as $column => $value) {
+			$qb->setValue($column, $qb->createNamedParameter($value));
+		}
+
+		$qb->executeStatement();
+
+		return (string)$qb->getLastInsertId();
+	}//end insert()
+
+	/**
+	 * The messages bound to one object, newest first.
+	 *
+	 * @param string $objectUuid The object.
+	 * @param int    $limit      The most rows to return.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
+	 */
+	public function forObject(string $objectUuid, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::TABLE)
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->orderBy('id', 'DESC')
+			->setMaxResults(max(1, $limit));
+
+		$result = $qb->executeQuery();
+		$rows   = [];
+		while (($row = $result->fetch()) !== false) {
+			$rows[] = self::listedRowOf(row: $row);
+		}
+
+		$result->closeCursor();
+
+		return $rows;
+	}//end forObject()
+
+	/**
+	 * One message by id, or null.
+	 *
+	 * @param string $id The row id.
+	 *
+	 * @return array<string, mixed>|null The row, or null when there is none.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
+	 */
+	public function find(string $id): ?array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::TABLE)
+			->where($qb->expr()->eq('id', $qb->createNamedParameter((int)$id, IQueryBuilder::PARAM_INT)));
+
+		$result = $qb->executeQuery();
+		$row    = $result->fetch();
+		$result->closeCursor();
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		return self::listedRowOf(row: $row);
+	}//end find()
+
+	/**
+	 * A stored row as the list and the cancel path read it: the policy's shape
+	 * plus what it is bound to and its outcome.
+	 *
+	 * @param array<string, mixed> $row The database row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function listedRowOf(array $row): array {
+		return self::rowOf(row: $row) + [
+			'channel' => (string)($row['channel'] ?? ''),
+			'objectUuid' => (string)($row['object_uuid'] ?? ''),
+			'author' => (string)($row['author'] ?? ''),
+			'lastError' => (string)($row['last_error'] ?? ''),
+		];
+	}//end listedRowOf()
+
+	/**
 	 * Set the known fields, and `updated`, on an update.
 	 *
 	 * @param IQueryBuilder        $qb     The update.

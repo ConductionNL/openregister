@@ -61,6 +61,7 @@
 		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\RedactionPolicyCacheListener",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\TranslationProjectionListener",
 		"OCA\\OpenRegister\\Listener\\AssigneeFollowListener",
@@ -88,7 +89,8 @@
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
 		"OCA\\OpenRegister\\Listener\\SurveyWriteListener",
 		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
-		"OCA\\OpenRegister\\Listener\\ObjectQuotaListener"
+		"OCA\\OpenRegister\\Listener\\ObjectQuotaListener",
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
@@ -98,6 +100,7 @@
 		"OCA\\OpenRegister\\Listener\\ContentReportRemovalListener",
 		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\RedactionPolicyCacheListener",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\TranslationProjectionListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupePruneListener",
@@ -159,6 +162,7 @@
 		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\RedactionPolicyCacheListener",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\TranslationProjectionListener",
 		"OCA\\OpenRegister\\Listener\\AssigneeFollowListener",
@@ -190,7 +194,8 @@
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
 		"OCA\\OpenRegister\\Listener\\SurveyWriteListener",
 		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
-		"OCA\\OpenRegister\\Listener\\IdentityGuardListener"
+		"OCA\\OpenRegister\\Listener\\IdentityGuardListener",
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectsMergedEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyMergeListener"

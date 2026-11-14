@@ -8,9 +8,9 @@
 - [x] 1.2 Thread `?string $runUuid` through `ObjectEntity::lock()` and
   `unlock()`, and route both through the predicate.
   **files**: `lib/Db/ObjectEntity.php` (verified: lib/Db/ObjectEntity.php, tests/Unit/Db/ObjectEntityRunLockTest.php)
-- [ ] 1.3 Replace `SaveObjectTest`'s two `['userId' => …]` fixtures, which
+- [x] 1.3 Replace `SaveObjectTest`'s two `['userId' => …]` fixtures, which
   pin a payload shape `lock()` never wrote.
-  **files**: `tests/Unit/Service/Object/SaveObjectTest.php`
+  **files**: `tests/Unit/Service/Object/SaveObjectTest.php` (verified: `lockedEntity()` builds the locks through `ObjectEntity::lock()`)
 
 ## 2 · The write guard
 
@@ -20,14 +20,14 @@
 - [x] 2.2 Route the controller's 423 guard and `RevertHandler` through the
   same predicate.
   **files**: `lib/Controller/ObjectsController.php`, `lib/Service/Object/RevertHandler.php` (verified: lib/Controller/ObjectsController.php, lib/Service/Object/RevertHandler.php, tests/Unit/Service/Object/RevertHandlerWriteGuardsTest.php)
-- [ ] 2.3 Make the post-save auto-unlock release only the writer's own lock.
-  **files**: `lib/Controller/ObjectsController.php`
+- [x] 2.3 Make the post-save auto-unlock release only the writer's own lock.
+  **files**: `lib/Controller/ObjectsController.php` (verified: `releaseOwnLockAfterWrite()`, tests/Unit/Controller/ObjectsControllerWriteReleasesOwnLockTest.php)
 
 ## 3 · Plumbing the run identity and the process tag
 
-- [ ] 3.1 Forward `$process` and `$runUuid` through
+- [x] 3.1 Forward `$process` and `$runUuid` through
   `MagicMapper::lockObjectEntity()` / `unlockObjectEntity()`.
-  **files**: `lib/Db/MagicMapper.php` (code exists, test missing: lib/Db/MagicMapper.php)
+  **files**: `lib/Db/MagicMapper.php` (verified: lib/Db/MagicMapper.php, tests/Unit/Db/MagicMapper/MagicMapperLockAndBatchDeleteGoldenTest.php `testARunUuidIsForwardedIntoTheLock`, `testARunLockIsReleasedOnlyByItsOwnRun`)
 - [x] 3.2 Thread them through `LockHandler`, `ObjectService` and the contract.
   **files**: `lib/Service/Object/LockHandler.php`, `lib/Service/ObjectService.php`, `lib/Contract/ObjectServiceInterface.php` (verified: lib/Service/Object/LockHandler.php, tests/Unit/Service/Object/LockHandlerRunLockTest.php)
 - [x] 3.3 Make `callerMayUnlock()` run-aware and add an audited `breakLock()`.
@@ -38,8 +38,8 @@
 - [x] 4.1 `RunObjectLock` entity and `RunObjectLockMapper` with
   `findByRun()`, `releaseByRun()`, `deleteOrphans()`.
   **files**: `lib/Db/RunObjectLock.php`, `lib/Db/RunObjectLockMapper.php` (verified: lib/Db/RunObjectLock.php, lib/Db/RunObjectLockMapper.php, tests/Unit/Service/Object/RunLockRegistryTest.php)
-- [ ] 4.2 Migration creating `openregister_run_object_locks`.
-  **files**: `lib/Migration/Version1Date20260905120000.php`
+- [x] 4.2 Migration creating `openregister_run_object_locks`.
+  **files**: `lib/Migration/Version1Date20260905120000.php` (verified: tests/Unit/Migration/Version1Date20260905120000Test.php)
 
 ## 5 · The nodes
 
@@ -55,8 +55,8 @@
 - [x] 6.1 `FlowRunLockReleaseListener` on `FlowRunTerminalEvent`, idempotent,
   never rethrowing.
   **files**: `lib/Listener/FlowRunLockReleaseListener.php`, `lib/AppInfo/Application.php` (verified: lib/Listener/FlowRunLockReleaseListener.php, lib/AppInfo/Application.php, tests/Unit/Listener/FlowRunLockReleaseListenerTest.php)
-- [ ] 6.2 Sweep orphaned run locks from `FlowRunWorker`.
-  **files**: `lib/BackgroundJob/FlowRunWorker.php` (code exists, test missing: lib/BackgroundJob/FlowRunWorker.php)
+- [x] 6.2 Sweep orphaned run locks from `FlowRunWorker`.
+  **files**: `lib/BackgroundJob/FlowRunWorker.php` (verified: lib/BackgroundJob/FlowRunWorker.php `sweepOrphanedLocks()`, tests/Unit/BackgroundJob/FlowRunWorkerHousekeepingTest.php)
 
 ## 8 · The HTTP surface a client releases through
 
@@ -117,8 +117,8 @@ which is the half `@conduction/nextcloud-vue` and every app on it consume.
   **files**: `tests/Unit/Db/ObjectEntityRunLockTest.php` (verified: tests/Unit/Db/ObjectEntityRunLockTest.php)
 - [x] 7.2 Release proven separately for each of the four terminal statuses.
   **files**: `tests/Unit/Listener/FlowRunLockReleaseListenerTest.php` (verified: tests/Unit/Listener/FlowRunLockReleaseListenerTest.php)
-- [ ] 7.3 Holder gone, sweep releases; live run's lock survives.
-  **files**: `tests/Unit/Db/RunObjectLockMapperTest.php`, `tests/Unit/Listener/FlowRunLockReleaseListenerTest.php`
+- [x] 7.3 Holder gone, sweep releases; live run's lock survives.
+  **files**: `tests/Unit/Db/RunObjectLockMapperTest.php`, `tests/Unit/Listener/FlowRunLockReleaseListenerTest.php` (verified under other names: tests/Unit/Service/Object/RunLockRegistryTest.php `testTheSweepReleasesALockWhoseHolderIsGone`, `testTheSweepLeavesALiveRunsLockAlone`; tests/Unit/Db/RunObjectLockMapperBehaviourTest.php `findOrphaned`)
 - [x] 7.4 TTL backstop.)
   **files**: `tests/Unit/Db/ObjectEntityRunLockTest.php` (verified: tests/Unit/Db/ObjectEntityRunLockTest.php (testAnExpiredRunLockBlocksNobody)
 - [x] 7.5 A human write refused while a run holds the lock; the admin break

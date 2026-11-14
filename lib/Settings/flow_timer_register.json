@@ -3,7 +3,7 @@
   "info": {
     "title": "Flow Timers",
     "description": "Configuration data for the business-timer store (flow-business-timers): named working calendars whose non-working dates are COMPUTED from rules so they never expire, and escalation ladders whose rungs are editable data rather than a compiled-in constant (ADR-001, ADR-031). Materialised by the SeedFlowTimerRegister repair step; OpenRegister does not self-import its own register JSON at boot (ADR-037).",
-    "version": "1.3.0"
+    "version": "1.4.0"
   },
   "x-openregister": {
     "type": "core",
@@ -46,7 +46,7 @@
       "working-calendar": {
         "slug": "working-calendar",
         "title": "Working calendar",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "published": "2026-09-01T00:00:00+00:00",
         "summary": "Which weekdays work, which hours of the day they are open, and which dates are closed.",
         "description": "A named working calendar resolved by the business-timer store in the order: the calendar named on the timer, the calendar configured for the subject's organisation, the seeded national default. Non-working dates are computed from rules of kind fixed, easter or observedShift, so the calendar does not expire; enumerated exceptions may accompany rules but a calendar consisting only of enumerated dates is refused. A calendar with no rules at all keeps no holidays, which is an answer rather than an omission: an organisation that works every weekday of the year says so this way. hoursPerWorkingDay is required because without it hours and businessDays are not commensurable, and it is derived from serviceHours when those are declared.",
@@ -246,6 +246,58 @@
                 }
               }
             }
+          },
+          "blackouts": {
+            "title": "Blackout periods",
+            "type": "array",
+            "description": "Periods in which the calendar refuses a kind of booking, such as hearings during an election period, as {name, from, to, refuses}. A blackout is not a closure day: a term keeps running through it, and only a booking of a refused kind inside it is refused, naming the period.",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "from",
+                "to",
+                "refuses"
+              ],
+              "properties": {
+                "name": {
+                  "title": "Name",
+                  "type": "string",
+                  "description": "What the period is, shown when a booking is refused."
+                },
+                "from": {
+                  "title": "From",
+                  "type": "string",
+                  "format": "date",
+                  "description": "The first day of the period, Y-m-d, inclusive."
+                },
+                "to": {
+                  "title": "To",
+                  "type": "string",
+                  "format": "date",
+                  "description": "The last day of the period, Y-m-d, inclusive."
+                },
+                "refuses": {
+                  "title": "Refuses",
+                  "type": "array",
+                  "description": "The kinds of booking the period refuses, e.g. hearing.",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "firstWeekOfYear": {
+            "title": "First week of the year",
+            "type": "string",
+            "enum": [
+              "iso",
+              "containsJanuary1",
+              "firstFullWeek"
+            ],
+            "description": "Which week is week 1 when the system reports a week number: iso (the week holding the first Thursday), containsJanuary1 (the week holding 1 January) or firstFullWeek (the first week lying wholly in the year). Weeks start on Monday. Defaults to iso.",
+            "default": "iso"
           }
         }
       },

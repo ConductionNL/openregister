@@ -165,7 +165,7 @@ class MagicMapperUnionRoutingTest extends TestCase {
 	}//end makeContainer()
 
 	/**
-	 * A plain cross-table search keeps the UNION route; `_related`, `_referenced` and aggregations leave it.
+	 * A plain cross-table search keeps the UNION route; `_related`, `_referenced`, `_ref` and aggregations leave it.
 	 *
 	 * The raw-SQL UNION builder refuses the related-row keys, which would be an
 	 * uncaught exception on the controller routes; the sequential route builds
@@ -181,6 +181,7 @@ class MagicMapperUnionRoutingTest extends TestCase {
 		$this->assertTrue($route->invoke($mapper, ['_limit' => 10]));
 		$this->assertFalse($route->invoke($mapper, ['_related' => $related]));
 		$this->assertFalse($route->invoke($mapper, ['_referenced' => $related]));
+		$this->assertFalse($route->invoke($mapper, ['_ref' => $related]));
 		$this->assertFalse($route->invoke($mapper, ['_aggregations' => ['x']]));
 	}//end testARelatedRowFilterTakesTheSequentialRoute()
 
