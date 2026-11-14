@@ -10371,3 +10371,4 @@ merge:hermiq:1749:51cddc99	merge3 tree of 16 hermiq PRs: merged=6 red=2 fail=0 s
 merge:hermiq:1767:72e7b8b4	merge3 tree of 16 hermiq PRs: merged=6 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T17:14:03Z
 fix:decidiq:2171:c0a0d101	fixed: merged development, l10n moved; real overlaps with #2170/#2175 remain; new head 9ab2c3d3	session-20261114T154807-c05f4e57	2026-11-14T17:14:06Z
 merge:hermiq:1785:63d838e8	merge3 tree of 16 hermiq PRs: merged=6 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T17:14:16Z
+merge:hermiq:1736:ceb1e3aa	merge3 tree of 16 hermiq PRs: merged=6 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T17:14:23Z
