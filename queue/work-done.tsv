@@ -10866,3 +10866,4 @@ verify:launchpad:1195:95398afa	1195 GREEN, 1206 GREEN, 1223 skipped (head moved)
 fix:hermiq:1735:61ad767f	merged development in cleanly, suite green; REVERIFY at 9368c9eef41649b4fe9983a2f9898dc17608ab16	session-20261114T194740-7cca8afd	2026-11-14T20:22:31Z
 fix:hermiq:1782:f0562d6f	fixed: DashboardController ctor 7->2 via DashboardPageState; new head 09cb5576	session-20261114T192501-803bcb19	2026-11-14T20:22:52Z
 verify:filinq:2119:7dfb3a5e	2119 CONFLICT (l10n/nl.json)	session-20261114T201741-909e04de	2026-11-14T20:22:58Z
+fix:filinq:2126:67391b56	merged development in (clean, #2113 already on dev); unit 6796 OK; new head 8274bd42	session-20261114T201745-19e2e5d6	2026-11-14T20:23:08Z
