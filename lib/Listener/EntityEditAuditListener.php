@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+use OCA\OpenRegister\Event\OrganisationDeletedEvent;
+use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
@@ -31,7 +34,7 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
 /**
- * Hands the six schema and register events to EntityEditAuditor.
+ * Hands the schema, register and organisation events to EntityEditAuditor.
  *
  * Listening at the mapper's events covers every door that changes a schema or
  * register: controllers, updateFromArray, tool providers, imports and repair
@@ -70,6 +73,9 @@ class EntityEditAuditListener implements IEventListener {
 			$event instanceof RegisterCreatedEvent => $this->auditor->recordCreated(entity: $event->getRegister()),
 			$event instanceof RegisterUpdatedEvent => $this->auditor->recordUpdated(old: $event->getOldRegister(), new: $event->getNewRegister()),
 			$event instanceof RegisterDeletedEvent => $this->auditor->recordDeleted(entity: $event->getRegister()),
+			$event instanceof OrganisationCreatedEvent => $this->auditor->recordCreated(entity: $event->getOrganisation()),
+			$event instanceof OrganisationUpdatedEvent => $this->auditor->recordUpdated(old: $event->getOldOrganisation(), new: $event->getNewOrganisation()),
+			$event instanceof OrganisationDeletedEvent => $this->auditor->recordDeleted(entity: $event->getOrganisation()),
 			default => 0,
 		};
 	}//end handle()

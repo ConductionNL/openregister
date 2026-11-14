@@ -15,8 +15,12 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+use OCA\OpenRegister\Event\OrganisationDeletedEvent;
+use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
@@ -119,5 +123,63 @@ final class EntityEditAuditListenerTest extends TestCase {
 		);
 		$this->assertSame('import', $this->written[0]->getCause());
 		$this->assertSame('run-42', $this->written[0]->getCauseRun());
+	}
+
+	/**
+	 * A real organisation entity.
+	 *
+	 * @param string $name The organisation's name.
+	 *
+	 * @return Organisation
+	 */
+	private static function organisation(string $name): Organisation {
+		$organisation = new Organisation();
+		$organisation->setId(3);
+		$organisation->setUuid('9f1c2d3e-0000-4000-8000-000000000003');
+		$organisation->setSlug('gemeente-noord');
+		$organisation->setName($name);
+		return $organisation;
+	}
+
+	/**
+	 * Renaming an organisation writes one row, organisation.updated, with the old and new name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/tasks.md
+	 */
+	public function testAnOrganisationRenameWritesOneRow(): void {
+		$this->listener()->handle(new OrganisationUpdatedEvent(self::organisation('Gemeente Noordstad'), self::organisation('Gemeente Noord')));
+
+		$this->assertCount(1, $this->written);
+		$row = $this->written[0];
+		$this->assertSame('organisation.updated', $row->getAction());
+		$this->assertSame('9f1c2d3e-0000-4000-8000-000000000003', $row->getOrganisationId());
+		$this->assertSame('gemeente-noord', $row->getChanged()['slug']);
+		$this->assertSame([['path' => 'name', 'old' => 'Gemeente Noord', 'new' => 'Gemeente Noordstad']], $row->getChanged()['fields']);
+		$this->assertArrayNotHasKey('versionBefore', $row->getChanged());
+	}
+
+	/**
+	 * An organisation created by a repair step names that cause; an unchanged save writes nothing; a delete writes one row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/tasks.md
+	 */
+	public function testAnOrganisationCreatedByRepairNamesItsCause(): void {
+		$listener = $this->listener();
+		WriteCause::runAs(
+			new CauseFrame(cause: WriteCause::MIGRATION, run: 'repair-7'),
+			fn () => $listener->handle(new OrganisationCreatedEvent(self::organisation('Gemeente Noord')))
+		);
+		$listener->handle(new OrganisationUpdatedEvent(self::organisation('Gemeente Noord'), self::organisation('Gemeente Noord')));
+		$listener->handle(new OrganisationDeletedEvent(self::organisation('Gemeente Noord')));
+
+		$this->assertSame(['organisation.created', 'organisation.deleted'], array_map(fn (AuditTrail $row): ?string => $row->getAction(), $this->written));
+		$this->assertSame('migration', $this->written[0]->getCause());
+		$this->assertSame('repair-7', $this->written[0]->getCauseRun());
+		$this->assertSame(['slug' => 'gemeente-noord', 'title' => 'Gemeente Noord', 'version' => null, 'properties' => []], $this->written[0]->getChanged());
+		$this->assertSame(64, strlen($this->written[1]->getChanged()['sha256']));
 	}
 }

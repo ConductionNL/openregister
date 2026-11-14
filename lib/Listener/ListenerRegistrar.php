@@ -34,6 +34,9 @@ use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+use OCA\OpenRegister\Event\OrganisationDeletedEvent;
+use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
@@ -130,6 +133,9 @@ final class ListenerRegistrar {
 			RegisterCreatedEvent::class,
 			RegisterUpdatedEvent::class,
 			RegisterDeletedEvent::class,
+			OrganisationCreatedEvent::class,
+			OrganisationUpdatedEvent::class,
+			OrganisationDeletedEvent::class,
 		] as $entityEvent) {
 			$context->registerEventListener($entityEvent, EntityEditAuditListener::class);
 		}
