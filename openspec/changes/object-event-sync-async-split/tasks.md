@@ -152,8 +152,20 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
 
 ## 4. Tests
 
-- [ ] 4.1 (ContextChatSubmissionJob part done: `tests/Unit/BackgroundJob/ContextChatSubmissionJobTest.php`) Job unit tests for the six new jobs: forwarded-actor execution, stale/gone entry no-op, and — for `ContextChatSubmissionJob` — the same-uuid re-create existence check.
-- [ ] 4.2 (ContextChatSubmissionListener part done: `tests/Unit/Listener/ContextChatSubmissionDeferralTest.php`) Listener unit tests: request path enqueues instead of running heavy work; interest gates suppress the enqueue; `listenerDeferral=inline` runs the full inline path.
+- [x] 4.1 Job unit tests for the six new jobs: forwarded-actor execution, stale/gone entry no-op, and — for `ContextChatSubmissionJob` — the same-uuid re-create existence check.
+      DONE for the three jobs that exist (the other three went with 2.2, 2.3
+      and 2.5): `ObjectCleanupJobTest` (forwarded actor, gone vs re-created
+      uuid, vanished actor), `ContextChatSubmissionJobTest` (forwarded actor,
+      gone → remove, re-created uuid → submit) and `SourceRecordRecomputeJobTest`
+      (build pass 2026-11-14: recompute runs as the forwarded actor and the
+      session is restored, a vanished actor recomputes nothing, a master that
+      no longer resolves is a no-op and the next master is still re-saved).
+- [x] 4.2 Listener unit tests: request path enqueues instead of running heavy work; interest gates suppress the enqueue; `listenerDeferral=inline` runs the full inline path.
+      DONE for the three deferred listeners: `ContextChatSubmissionDeferralTest`
+      (enqueue, opted-out schema, kill switch), `ObjectCleanupListenerTest`
+      (defers, other events and uuid-less objects ignored, inline when
+      deferral is disabled) and `SourceRecordChangeListenerTest` (defers the
+      master, non-source objects ignored, inline kill switch).
 - [x] 4.3 `SourceRecordChangeListener` payload tests: re-parenting refreshes **both** masters; a bulk edit of 500 source records on one master collapses to one recompute; deleted-path master uuid resolved inline.
       DONE: `tests/Unit/Listener/SourceRecordChangeListenerPayloadTest.php`
       runs the listener against the real deferral buffer: 500 updates on one
@@ -193,9 +205,13 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
       `testNumericRegisterAndSchemaMustBothMatch`,
       `testIdTokensAreExcludedFromSlugResolution` + 6 more.
       (The earlier "NOT DONE in the pilot change" note was stale.)
-- [ ] 4b.8 Convert OpenRegister's own schema-specific listeners. NOT DONE —
-      OpenRegister's listeners are mostly not schema-specific, which is why the
-      pilot is a leaf app.
+- [ ] 4b.8 NO SUBJECT (audited 2026-11-14). Convert OpenRegister's own schema-specific listeners.
+      No object-event listener in `lib/` declares a fixed register or schema:
+      every one that reads `getSchema()`/`getRegister()` resolves its interest
+      from per-schema configuration at runtime (source-record links, retention,
+      assignee fields, auto-transitions, cache keys), which a registration-time
+      slug list cannot express. Nothing to convert; left unticked rather than
+      claimed.
 
 ### Pilot (procest) — falsifiable evidence
 
@@ -229,6 +245,13 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
 - [ ] 5.1 Hydra gate 61 (`listener-work-placement`) reports PASS on openregister with only annotated exclusions — no blanket suppression.
 - [ ] 5.2 Prove the gate can fail: add a temporary post-event listener doing inline outbound HTTP with no annotation and confirm `run-hydra-gates.sh` **exits non-zero**; a FAIL line on stdout is not sufficient evidence. Remove the probe afterwards.
 - [ ] 5.3 `composer check:strict` (phpcs/phpmd/psalm/phpstan) clean on all touched files; full `tests/Unit/Listener` + `tests/Unit/BackgroundJob` suites green.
+      PARTIAL (2026-11-14), over the 16 lib files this change touched: phpcs
+      and phpstan clean; `tests/Unit/Listener` (1128), `tests/Unit/BackgroundJob`
+      (802) and `tests/Unit/Event` (374) green. Open: phpmd reports four
+      class-size findings that predate this pass (`ObjectEventProxyListener`
+      TooManyMethods + CouplingBetweenObjects, `WebhookService` TooManyMethods,
+      `ContextChatSubmissionListener` ExcessiveClassComplexity), and psalm was
+      not run.
 - [ ] 5.4 Re-measure `mm:EVENT-DISPATCH` at n≥32 on the same instance and record before/after next to the 2026-07-30 baseline (min 42 / median 133 / p95 175 / max 206 ms).
 - [ ] 5.5 Regression-check opencatalogi and softwarecatalog object writes, specifically hook-driven workflows and source-record master recompute.
 - [x] 5.6 `openspec validate object-event-sync-async-split --strict` passes.
