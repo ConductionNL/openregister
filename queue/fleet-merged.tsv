@@ -3040,3 +3040,6 @@ learniq	2507	b815725295bb7a86f6958c22d91916dfc723bbe2	RED	merge3	GATE RED floor:
 learniq	2521	33d6a10d4aa16d12fb49fbc159c992a382a2a5bc	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 learniq	2544	c238e05cc880ce2d0127410cac5d3a6814f405c1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2547	b382fbfd567a5aed9e36befd4bcbb57769f14849	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+shillinq	2977	dcb021934e64d9e0cfbd89ae5afac7f3e66a8332	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
+shillinq	3051	2f5d4cd88a0e33564f8b495a5783dd2df19e345d	RED	merge3	GATE RED floor: unit_size: 4.44 -> 4.42; unit_complexity: 4.96 -> 4.94; unit_interfacing: 2.75 -> 2.73
+shillinq	3079	3c06f6f11901ea64c9f06769f1c53bb0fd903bb5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
