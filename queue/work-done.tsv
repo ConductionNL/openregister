@@ -8025,3 +8025,4 @@ fix:integriq:3561:0213ee8c	merged development (clean), pushed a24572ec; conflict
 fix:humaniq:1143:67a2f379	no change: head 67a2f379 merges cleanly with development; l10n conflict is with open #1142, fixable here only once #1142 lands	session-20261114T073108-8b40426a	2026-11-14T07:54:51Z
 fix:learniq:2516:140091fc	l10n conflict with #2493 removed by moving keys off the tail; REVERIFY recorded, new head 12d298f4	session-20261114T070323-628c2f37	2026-11-14T07:54:50Z
 build:integriq:sources-route-distance-and-rdw-lookup	PR #3595: tasks 1-4 built (2 events, listeners, services, 3 templates, docs), +22 tests; live ORS run, docs build, openspec validate left	session-20261114T073117-2bd2e050	2026-11-14T07:55:06Z
+fix:integriq:3546:42cf9463	merged development (clean), pushed 0b8d072d; conflict is with unlanded #3539	session-20261114T065626-0651b305	2026-11-14T07:55:06Z
