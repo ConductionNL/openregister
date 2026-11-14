@@ -1620,6 +1620,7 @@ Repair/ImportCredentialBrokerRegister.php,12,Repair,Platform,Platform/Repair/Imp
 Repair/ImportDecisionTableRegister.php,14,Repair,Platform,Platform/Repair/ImportDecisionTableRegister.php,0,,Platform
 Repair/ImportDestructionListRegister.php,14,Repair,Platform,Platform/Repair/ImportDestructionListRegister.php,0,,Platform
 Repair/ImportDismissedPairRegister.php,14,Repair,Platform,Platform/Repair/ImportDismissedPairRegister.php,0,,Platform
+Repair/ImportExternalRegisterRegister.php,70,Repair,Platform,Platform/Repair/ImportExternalRegisterRegister.php,0,,Platform
 Repair/ImportDsarRegisters.php,58,Repair,Platform,Platform/Repair/ImportDsarRegisters.php,0,,Platform
 Repair/ImportEdepotTransferRegister.php,14,Repair,Platform,Platform/Repair/ImportEdepotTransferRegister.php,0,,Platform
 Repair/ImportFlowRegister.php,12,Repair,Platform,Platform/Repair/ImportFlowRegister.php,0,,Platform
@@ -2555,6 +2556,7 @@ Service/Integration/Providers/ContactsProvider.php,57,Service,Integrations,Integ
 Service/Integration/Providers/CospendProvider.php,209,Service,Integrations,Integrations/Service/Integration/Providers/CospendProvider.php,0,,Integrations
 Service/Integration/Providers/DeckProvider.php,83,Service,Integrations,Integrations/Service/Integration/Providers/DeckProvider.php,0,,Integrations
 Service/Integration/Providers/EmailProvider.php,98,Service,Integrations,Integrations/Service/Integration/Providers/EmailProvider.php,0,,Integrations
+Service/Integration/Providers/ExternalRegisterProvider.php,184,Service,Integrations,Integrations/Service/Integration/Providers/ExternalRegisterProvider.php,0,,Integrations
 Service/Integration/Providers/FirstRowQuery.php,20,Service,Integrations,Integrations/Service/Integration/Providers/FirstRowQuery.php,0,,Integrations
 Service/Integration/Providers/FlowProvider.php,87,Service,Integrations,Integrations/Service/Integration/Providers/FlowProvider.php,0,,Integrations
 Service/Integration/Providers/FormsProvider.php,211,Service,Integrations,Integrations/Service/Integration/Providers/FormsProvider.php,0,,Integrations
@@ -3416,6 +3418,8 @@ Service/Hinge/,,Service,,,,,Core
 Service/History/,,Service,,,,,Core
 Service/Import/,,Service,,,,,Configuration
 Service/Integration/,,Service,,,,,Integrations
+Service/Integration/ExternalRegisterLookup.php,182,Service,Integrations,Integrations/Service/Integration/ExternalRegisterLookup.php,0,,Integrations
+Service/Integration/ExternalRegisterLookupInterface.php,41,Service,Integrations,Integrations/Service/Integration/ExternalRegisterLookupInterface.php,0,,Integrations
 Service/Interaction/,,Service,,,,,Processes
 Service/JsonLd/,,Service,,,,,Core
 Service/Lifecycle/,,Service,,,,,Processes
@@ -4115,6 +4119,7 @@ Service/Lifecycle/LifecycleActionRecorder.php,,Service,,,,,Processes
 Listener/LifecycleActionRecordListener.php,,Listener,,,,,Processes
 Notifications/Service/Notification/NotificationRunTally.php,,Notifications,,,,,Notifications
 Controller/AutomationRecordsController.php,,Controller,,,,,Processes
+Controller/ExternalRegisterController.php,81,Controller,Integrations,Integrations/Controller/ExternalRegisterController.php,0,,Integrations
 BackgroundJob/AutomationRecordRetentionJob.php,,BackgroundJob,,,,,Processes
 Service/Flow/FlowErrorPolicy.php,,Service,,,,,Processes
 Service/Flow/FlowStepRetry.php,,Service,,,,,Processes

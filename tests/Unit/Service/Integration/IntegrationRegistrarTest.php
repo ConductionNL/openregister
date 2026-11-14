@@ -53,6 +53,8 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\XwikiLinkService',
 				'OCA\OpenRegister\Service\Integration\Providers\KvkProvider',
 				'OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider',
+				'OCA\OpenRegister\Service\Integration\Providers\ExternalRegisterProvider',
+				'OCA\OpenRegister\Service\Integration\ExternalRegisterLookup',
 				'OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider',
 				'OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider',
 				'OCA\OpenRegister\Service\OpenProjectLinkService',
@@ -158,14 +160,14 @@ class IntegrationRegistrarTest extends TestCase {
 			}
 		);
 
-		$registry->expects($this->exactly(25))->method('addProvider')->with($provider);
+		$registry->expects($this->exactly(26))->method('addProvider')->with($provider);
 		$logger->expects($this->once())->method('warning');
 
 		IntegrationRegistrar::boot(server: $server);
 
-		$this->assertCount(expectedCount: 26, haystack: $asked);
+		$this->assertCount(expectedCount: 27, haystack: $asked);
 		$this->assertSame(expected: 'OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider', actual: $asked[0]);
-		$this->assertSame(expected: 'OCA\OpenRegister\Service\Integration\Providers\TimeProvider', actual: $asked[25]);
+		$this->assertSame(expected: 'OCA\OpenRegister\Service\Integration\Providers\TimeProvider', actual: $asked[26]);
 	}//end testBootAddsTheProvidersAndSkipsOneThatFails()
 
 	/**

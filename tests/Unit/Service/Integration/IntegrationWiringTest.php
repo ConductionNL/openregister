@@ -185,7 +185,7 @@ class IntegrationWiringTest extends TestCase {
 		$this->assertSame(FilesProvider::class, array_key_first($built));
 		$this->assertSame(TimeProvider::class, array_key_last($built));
 		$this->assertArrayNotHasKey(NotesProvider::class, $built);
-		$this->assertCount(25, $added);
+		$this->assertCount(26, $added);
 	}//end testBootAddsEveryBuiltinProviderAndDropsOneThatFailsToConstruct()
 
 	public function testAFailingProviderIsDroppedSilentlyWithoutALogger(): void {

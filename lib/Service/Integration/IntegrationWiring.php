@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\DeckProvider;
 use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkLookupInterface;
+use OCA\OpenRegister\Service\Integration\Providers\ExternalRegisterProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
@@ -72,6 +73,7 @@ final class IntegrationWiring {
 	public const BINDINGS = [
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
+		ExternalRegisterLookupInterface::class => ExternalRegisterLookup::class,
 		KvkLookupInterface::class => KvkProvider::class,
 		LeafRegistryInterface::class => LeafRegistry::class,
 		MessageDispatcherInterface::class => MessageDispatchProvider::class,
@@ -98,6 +100,8 @@ final class IntegrationWiring {
 		// @spec openspec/specs/integration-registry/spec.md (canonical spec).
 		KvkProvider::class,
 		OpenCorporatesProvider::class,
+		// @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
+		ExternalRegisterProvider::class,
 		// Leaves: NC-native, backend-shipped (wrap existing OR services).
 		// @spec openspec/specs/integration-calendar/spec.md (canonical spec).
 		CalendarProvider::class,
