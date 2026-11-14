@@ -17,6 +17,7 @@ declare(strict_types=1);
 return [
 	'accessLink#comment' => 'public-token: public share-token or anonymous flow, rate limited',
 	'accessLink#upload' => 'public-token: public share-token or anonymous flow, rate limited',
+	'accessLinkJourney#submit' => 'public-token: public share-token or anonymous flow, rate limited',
 	'credential#brokerRequest' => 'header-credential: authenticated by the signed X-Credential-Token header',
 	'federation#createObject' => 'public-token: public share-token or anonymous flow, rate limited',
 	'federation#deleteObject' => 'public-token: public share-token or anonymous flow, rate limited',

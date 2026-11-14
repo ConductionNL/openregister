@@ -1144,6 +1144,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'verb' => 'POST',
             'requirements' => ['anchor' => '[A-Za-z0-9]+'],
         ],
+        // An `edit` link's journey: prefilled read and the change of its record.
+        ['name' => 'accessLinkJourney#show', 'url' => '/api/public/links/{anchor}/journey', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
+        ['name' => 'accessLinkJourney#submit', 'url' => '/api/public/links/{anchor}/journey', 'verb' => 'POST', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
         // The page a holder lands on (#4061): renders what the link opens for a
         // person, reading the holder endpoints above; it decides nothing itself.
         ['name' => 'accessLinkPage#show', 'url' => '/links/{anchor}', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],

@@ -86,10 +86,14 @@
                         "description": "The one register and schema a submit writes into, when the form writes one object.",
                         "properties": {
                             "register": {
-                                "type": "string"
+                                "type": "string",
+                                "title": "Register",
+                                "description": "The register the submit writes into: its id, uuid or slug."
                             },
                             "schema": {
-                                "type": "string"
+                                "type": "string",
+                                "title": "Schema",
+                                "description": "The schema of the object the submit creates: its id, uuid or slug."
                             }
                         }
                     },
@@ -178,10 +182,14 @@
                             ],
                             "properties": {
                                 "id": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "title": "Step id",
+                                    "description": "Unique within the journey; next rules and resumes name the step by it."
                                 },
                                 "type": {
                                     "type": "string",
+                                    "title": "Step type",
+                                    "description": "form asks for fields, review shows the answers, confirmation ends the journey.",
                                     "enum": [
                                         "form",
                                         "review",
@@ -190,14 +198,17 @@
                                 },
                                 "form": {
                                     "type": "string",
+                                    "title": "Form",
                                     "description": "The form object whose config this step renders."
                                 },
                                 "fields": {
                                     "type": "array",
+                                    "title": "Fields",
                                     "description": "The fields this step asks for."
                                 },
                                 "next": {
                                     "type": "array",
+                                    "title": "Next step rules",
                                     "description": "Branching rules { when, step }; the first whose condition holds names the next step.",
                                     "items": {
                                         "type": "object"
@@ -205,6 +216,7 @@
                                 },
                                 "writes": {
                                     "type": "array",
+                                    "title": "Writes",
                                     "description": "The objects this step writes when answered: { register, schema, mapping, as }.",
                                     "items": {
                                         "type": "object"

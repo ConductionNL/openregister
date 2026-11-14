@@ -56,6 +56,13 @@ interface AccessLinkServiceInterface {
 	public const ACT_UPLOAD = 'accesslink.upload';
 
 	/**
+	 * The audit action written when a link changes its object through its journey.
+	 *
+	 * @var string
+	 */
+	public const ACT_EDIT = 'accesslink.edit';
+
+	/**
 	 * Every link one principal minted, with the URL each one opens.
 	 *
 	 * @param string $userId The minting principal.

@@ -4259,3 +4259,6 @@ Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Service/Sharing/LinkJourneyGuard.php,,Service,,,,,Core
 Migration/Version1Date20261114200000.php,,Migration,,,,,Platform
+Service/Form/LinkUpdateRun.php,,Service,,,,,Processes
+Controller/AccessLinkJourneyController.php,,Controller,,,,,Core
+Controller/Support/LinkJourneyGate.php,,Controller,,,,,Core
