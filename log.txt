@@ -3369,3 +3369,4 @@
 2026-11-13T23:08:57Z integrator-20261111T115842-a749432d GREEN tree b7af89cf4d on dev 736ad6bd95 prs 22 front=ok: Tests: 60962, Assertions: 210251, Errors: 3, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
 2026-11-13T23:09:42Z integrator-20261111T115842-a749432d MERGED-TREE b7af89cf4d: 22 PRs in one push, main now b7af89cf4d = tested tree
 2026-11-14T06:40:41Z integrator-20261111T115842-a749432d RED tree 0804bb351c prs 17 front=red: Tests: 61136, Assertions: 210950, Errors: 3, Failures: 6, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Docs\FlowsDocumentationTest::testEveryRegisteredNodeIsDocumented;OCA\OpenRegister\Tests\Unit\Service\Interaction\RecentLensLookupCallSitesTest::testEveryInternalFindHasADecisi;FAIL src/tests/entry-translations.spec.js
+2026-11-14T07:22:43Z integrator-20261111T115842-a749432d MERGED-TREE b056452980: 18 PRs in one push, main now b056452980 = tested tree
