@@ -10202,3 +10202,4 @@ decidiq	2178	37197bc0dc79c7ac6841b3162e6f177815309958	CONFLICT	merge3	merges cle
 decidiq	2188	b774355c5fc719de1a030868fd7ff83f485a10eb	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/Registrar/SaveGuardSubscriptions.php 
 decidiq	2189	d54fa2289e2eb3b59dd2fedbbfb0ec076afc3829	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/profiles/municipality.json 
 decidiq	2191	4d6f144bcc6304f052adc9d77f24d84379a9ec62	CONFLICT	merge3	merges clean on development alone; files: src/manifest.json tests/vitest/simpleDecisionPage.spec.js 
+shillinq	3048	10a5df9db0886965f9b5b0b71bb178d81cfd8c1a	REVERIFY	worker-43	merged development in: app version moved to 0.5.7-unstable.20261114223000 with a new lock entry after development's history, l10n both sides + rebuilt js; unit suite 11524 OK; new head 2ab1e91c810587f01f231282bce71260cd1730f5, verify it
