@@ -11767,6 +11767,7 @@ build:versioniq:install-bulk-rollback:c2	built: PR #698 all code tasks done (1.2
 fix:larpinq:1041:912b882a	conflict resolved, pushed 4ea3e476, REVERIFY	session-20261114T221743-dbe5c07e	2026-11-14T23:04:38Z
 fix:keepiq:1790:5c0dced9	merged development, l10n conflict kept both sides; new head dad455b4	session-20261114T224920-352ef0eb	2026-11-14T23:04:47Z
 review:integriq:3546:46dc8e54	GREEN: matches REQ-EWC-008, suite fails inherited	session-20261114T225452-4fcfea7f	2026-11-14T23:04:54Z
+build:versioniq:safety-rollback-backup-and-preflight:c2	partial: PR #714 (head 8da32088) now has 1.3 and 2.2 too; left 3.1-3.5 backup/restore and 4.1	session-20261114T221756-d9538cf9	2026-11-14T23:05:01Z
 verify:integriq:3593:656dec94	3593 GREEN, 3600 CONFLICT, 3636 GREEN; no new failures	session-20261114T224751-87da8a15	2026-11-14T23:05:07Z
 build4:openregister:notes-leaf-rich-text-lock-export:c4	failed: nothing left buildable in openregister; 1.1/1.2 (and 4.1's leaf half) are the notes leaf in @conduction/nextcloud-vue, outside this worker's repositories; 4.2 is e2e. PR #10506 unchanged	session-20261114T171821-a80c28c5	2026-11-14T23:05:15Z
 fix:larpinq:1054:8782b7bc	map entries moved off the end, clean with #1050; new head 41befe20	session-20261114T221759-c6bc4865	2026-11-14T23:05:25Z
