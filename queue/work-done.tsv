@@ -10529,3 +10529,4 @@ fix:learniq:2486:6d3eac1a	conflict resolved (l10n block moved, .gitignore aligne
 fix:launchpad:1216:7193b918	resolved 4-file conflict with development, unit green; new head 2d1a07b7	session-20261114T171822-35ca2aeb	2026-11-14T18:00:10Z
 verify:decidiq:2202:4338db13	2202 GREEN (self-built; mechanical checks only)	session-20261114T161806-530176c3	2026-11-14T18:00:21Z
 fix:learniq:2542:f59bed9f	l10n keys moved mid-catalogue; merges clean onto dev+#2507+#2484; pushed 8b1768c4, REVERIFY recorded	session-20261114T171832-d4fb04b0	2026-11-14T18:00:31Z
+fix:launchpad:1211:f6110015	conflict resolved (both settings pairs kept); new head b818b6fc, REVERIFY recorded	session-20261114T174741-aa9751f9	2026-11-14T18:00:37Z
