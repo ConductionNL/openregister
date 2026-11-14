@@ -10449,3 +10449,4 @@ shillinq	3080	b796d58592cc75f0b46a59c0a46a28e4cfc75002	GREEN	worker-09	phpunit 1
 stackiq	1939	7a225714c5a8137d8913669f83d476fb722316c4	REVERIFY	worker-02	no conflict with development: the branch already contains development dbebfae7 and merges clean; the conflict is with open PR #1926 (both append to the l10n en/nl js/json tails), so it needs development merged in again after #1926 lands; new head 7a225714c5a8137d8913669f83d476fb722316c4, verify it
 versioniq	705	3bbf893845d4b94eecf52e5e7ac2e838cdaf7aa6	GREEN	worker-13	unit 1743 tests (baseline 1697, 2 inherited golden failures), vitest 2981 pass; no new failures
 versioniq	725	39c040322b4e66e5c71565d744990ab0b9435f1f	GREEN	worker-13	unit 1743 tests (baseline 1697, 2 inherited golden failures), vitest 2981 pass; no new failures
+versioniq	726	d1f35455cb6c3ef29edc3819589c85d9b3064795	CONFLICT	worker-13	conflicts on tree (l10n, InstallerService.php, InstallerServiceAppListTest.php)
