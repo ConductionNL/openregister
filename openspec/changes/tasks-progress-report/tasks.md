@@ -16,7 +16,7 @@
 
 ## 4. Page, tests and docs
 
-- [ ] 4.1 `FlowProgress.vue` at `/flows/:id/progress`, registered in `src/registry.js` and `src/manifest.json`, linked from `FlowDetailSidebar.vue`; text through `t()` in en and nl. Verify: `npm run lint` and a component test rendering a step row.
+- [x] 4.1 `FlowProgress.vue` at `/flows/:id/progress`, registered in `src/registry.js` and `src/manifest.json`, linked from `FlowDetailSidebar.vue`; text through `t()` in en and nl. Verify: `npm run lint` and a component test rendering a step row. (Registered as the `flow-progress` route in `src/main.js`, beside `flow-overview` and for the same gate-69 custom-page reason, not as a manifest page. Linked from the flow overview's header: `FlowDetailSidebar.vue` renders the library's `CnFlowSidebar`, an `NcAppSidebar` with no slot for extra content, so a link there needs a slot in @conduction/nextcloud-vue first. Test: `src/views/flows/FlowProgress.spec.js`.)
 - [ ] 4.2 Add `tests/e2e/ci/flow-progress.spec.ts`: run a two-step flow three times, leave one task overdue, open the progress page and the API, follow the overdue link to the inbox.
 - [ ] 4.3 Document the report in `docs/features/`, with a screenshot of the progress page.
 

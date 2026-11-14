@@ -109,6 +109,11 @@
 							}}
 						</NcButton>
 						<NcButton
+							data-testid="flow-progress-link"
+							:to="{ name: 'flow-progress', params: { id } }">
+							{{ t('openregister', 'Workflow progress') }}
+						</NcButton>
+						<NcButton
 							variant="primary"
 							data-testid="flow-overview-editor"
 							:to="editorRoute">
