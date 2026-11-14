@@ -7929,11 +7929,14 @@ cover:pipelinq:7f9dc8e6mf8bb:34763eb4	already done: lib/Middleware/*.php is 58/5
 verify:shillinq:2972:2dd4705a	2972 GREEN, 3010 GREEN, 3004+3009 CONFLICT (with 2972)	session-20261114T073109-bb0ea608	2026-11-14T07:40:47Z
 build:integriq:ori-public-serving	already done: every code task built on development; open items need a live instance (Newman TC-1..14, TC-10 publish window) or are a cross-repo note	session-20261114T062134-840bbeee	2026-11-14T07:40:59Z
 fix:portaliq:2430:c0571758	merged development cleanly, Settings tests OK, pushed fc437ac24686b9b36baa4a8441496e29b8cbda71, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T07:40:55Z
+verify:integriq:3543:3001e881	2 GREEN (3543,3551); 0 new failures	session-20261114T073117-2bd2e050	2026-11-14T07:41:06Z
 build:integriq:nextcloud-event-hub-verification	partial: PR #3573, docs page for Task 5 written; Tasks 1-4 and the screenshot need a live instance/browser	session-20261114T065633-3e3cb668	2026-11-14T07:41:06Z
 verify:pipelinq:3742:7851a5a8	3742 GREEN, 3752 GREEN; unit 7903 0 fail, vitest 4938 pass	session-20261114T065632-a1c920c5	2026-11-14T07:41:14Z
 review:integriq:3435:8f36c1e1	GREEN integriq#3435: tests only, 9 new tests pass, no new failures	session-20261114T073108-8b40426a	2026-11-14T07:41:24Z
 verify:pipelinq:3721:2e049327	3721 GREEN, 3732 CONFLICT (l10n vs 3721), 3812 GREEN, 3813 GREEN	session-20261114T070352-19ea7dff	2026-11-14T07:41:47Z
 build:integriq:mapping-formats-and-lookups	partial: PR #3574, task 1 and task 2 implementation done; 3-5 and e2e open; no new failures	session-20261114T065626-0651b305	2026-11-14T07:42:03Z
 build:integriq:platform-properties	already done: tasks 1.1-2.1 ticked and true on development (info.xml, capabilities.json); only 2.2 post-merge archive left, no code to build	session-20261114T073108-8b40426a	2026-11-14T07:42:13Z
+build:integriq:sandboxed-tenant-scripts	failed: change is recorded but not designed (no spec delta; task 1 needs a runtime choice with a measured start-up cost, which tasks 2-3 depend on), nothing buildable in code yet	session-20261114T070332-b3a23612	2026-11-14T07:42:27Z
+build:integriq:platform-connector-set-sharing	failed: research-gated - task 1 needs Ruben's answers to the proposal's 7 open questions, tasks 2-3 are blocked on it and on OpenRegister's sharing design; nothing buildable	session-20261114T065635-61264d14	2026-11-14T07:42:30Z
 build:integriq:retire-integriq-flow-schema	failed: remaining tasks 3-4 retire the runner and flow schema, which the change's tasks.md gates on the unchecked PO sign-off and on migrated flows having run live on the engine; tasks 1-2 already landed, nothing left that may be built now	session-20261114T073109-bb0ea608	2026-11-14T07:42:23Z
 build:integriq:cloudevents-receiver	partial: PR #3575, tasks 1.1-1.3,1.5,2.1 done; 1.4 (receiver URL on pages) left; suite 8511, 5 inherited failures only	session-20261114T070329-a050d62b	2026-11-14T07:42:27Z
