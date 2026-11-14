@@ -6669,3 +6669,4 @@ hermiq	1741	dd035123e2cce781159c50399fa9d412db09d3f8	CONFLICT	worker-58	conflict
 decidiq	2174	46a18f3ef0a371ded02cd6fdcb4a3aa4fec4fd79	BLOCK	worker-11	unit 4001 baseline 0 fail; tree 2174-2177: 4068 pass; vitest 2700 pass; new route voting#recordVotes duplicates URL+verb of existing paperVote#record (POST /api/voting-rounds/{id}/recorded-votes), which matches first, so the new endpoint is unreachable and 'entries' bodies get 400
 decidiq	2175	30ead60504c2129cb93d3174e224f045f34a6056	GREEN	worker-11	unit 4001 baseline 0 fail; tree 2174-2177: 4068 pass; vitest 2700 pass; new failures none
 decidiq	2176	26e67dc64895f61b5ddd15038a271411c25dabec	GREEN	worker-11	unit 4001 baseline 0 fail; tree 2174-2177: 4068 pass; vitest 2700 pass; new failures none
+decidiq	2177	7078a1ab11459f341e6d860c6f8efa696e2817e6	GREEN	worker-11	unit 4001 baseline 0 fail; tree 2174-2177: 4068 pass; vitest 2700 pass; new failures none
