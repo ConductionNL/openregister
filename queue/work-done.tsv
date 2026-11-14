@@ -8651,3 +8651,4 @@ cover:dossiq:069ee2d6mbd37:f545d745	PR #6487: 5 Repair classes fully covered, +2
 cover:dossiq:069ee2d6mbd37:9d3a1784	PR #6488: 14 tests for PaymentStateProjectionJob branches, PauseChaseJob, OpenRegisterObjects; suite 16861, 19 inherited failures unchanged	session-20261114T075644-ec2e07ac	2026-11-14T09:23:23Z
 verify:versioniq:725:03a723aa	725 GREEN, 726 GREEN, 727 CONFLICT, 728 CONFLICT	session-20261114T070909-be4543e0	2026-11-14T09:23:28Z
 verify:portaliq:2486:6ea56172	2486 GREEN	session-20261114T075640-efa02b24	2026-11-14T09:24:04Z
+cover:dossiq:069ee2d6mbd37:1b97f731	PR #6489: 38 edge tests for 8 Listener classes; suite 16850->16888, same 19 inherited failures	session-20261114T065631-b4991134	2026-11-14T09:24:48Z
