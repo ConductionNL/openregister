@@ -9883,3 +9883,4 @@ build:integriq:nextcloud-event-hub-verification:c2	no code tasks left on PR #357
 verify:humaniq:1125:599f7425	GREEN 1125,1129,1153,1154; RED 1156; CONFLICT 1134; skip 1155 (head moved)	session-20261114T151938-8fa99f90	2026-11-14T15:39:34Z
 fix:integriq:3593:24240782	merged development, head 0b0cb9d4, REVERIFY	session-20261114T151802-24eee21b	2026-11-14T15:39:42Z
 build:hermiq:reuse-scheduled-bias-evals:c2	done: PR #1752 tasks 2-5 built (template seed + use-for-agent, EvalSchedule + hourly job + drop notification, schedule UI, factsheet + bias-eval-recency controls); Playwright/live verification left; PHP 5044->5071 no new failures (190 inherited), vitest 1469 green; head 94420b4e	session-20261114T144757-446bd6da	2026-11-14T15:40:04Z
+verify:decidiq:2171:b0679680	2171 GREEN, 2173 CONFLICT (l10n with 2171)	session-20261114T151930-0feec10a	2026-11-14T15:40:14Z
