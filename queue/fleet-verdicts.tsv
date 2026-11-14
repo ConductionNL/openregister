@@ -6796,3 +6796,4 @@ pipelinq	3694	fc16959a19bd3456fa9275f207da6e654dcae4d7	GREEN	worker-11	unit base
 dossiq	6135	e8ff0590b94ba35d7677779304c106d8ef7d6a2a	GREEN	worker-58:review	tests only: one @uses becomes @covers; AppointmentBackend 8 OK, unit 16850 with inherited 13 failing cases, 0 new
 dossiq	6309	fd3b2c3092e4d56fd43ca1618ef085d8b5041dae	GREEN	worker-17	tree of 8 phpunit 16930 tests, baseline 25 failures inherited, 0 new; vitest 6984 with 1 inherited failure (capabilityComparison, red on development)
 dossiq	6320	9dfb0cb9f172df30a8510e948a21300cda90ea94	GREEN	worker-17	tree of 8 phpunit 16930 tests, baseline 25 failures inherited, 0 new; vitest 6984 with 1 inherited failure (capabilityComparison, red on development)
+dossiq	6322	985aafe3c793b03cbbc51472c5847ba69522126c	GREEN	worker-17	tree of 8 phpunit 16930 tests, baseline 25 failures inherited, 0 new; vitest 6984 with 1 inherited failure (capabilityComparison, red on development)
