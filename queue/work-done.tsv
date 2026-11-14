@@ -10934,4 +10934,5 @@ build:filinq:specify-capability-rows:c3	partial: PR #2123 head f772703b, merged 
 fix:shillinq:2997:34673c89	conflict resolved, pushed ee7b7248, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T20:33:47Z
 fix:integriq:3625:9f95d1e6	l10n/registry insertion points moved, merges with siblings; new head 0afc45a25f	session-20261114T194935-f789346b	2026-11-14T20:34:04Z
 verify:decidiq:2194:540e0bbd	GREEN #2194 (PHP 4233 green, vitest 2801 green)	session-20261114T201754-5ed288ac	2026-11-14T20:34:23Z
+fix:hermiq:1787:806628bc	failed: only conflict is hermiq_register.json info.description, and #1715 also bumps the register to 0.57.0; not fixable until #1715 is on development, then merge development and bump 1787 to 0.58.0	session-20261114T192501-803bcb19	2026-11-14T20:34:34Z
 fix:humaniq:1144:0a397e55	interfacing refactor pushed; REVERIFY at 1aded0f35865e52ae3736c12d1342fe20c99ea2e	session-20261114T194740-7cca8afd	2026-11-14T20:34:33Z
