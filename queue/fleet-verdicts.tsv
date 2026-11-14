@@ -8512,3 +8512,5 @@ learniq	2538	b475848dd288a7586ff16d0863bc0d26adb78fa6	CONFLICT	worker-22	clean o
 decidiq	2168	59aba86fda1eb37214b0fccb954943d026a5b617	REVERIFY	worker-06	the two vitest specs pinned the exact info.xml version; they now check it is at least the bump (fail below it); vitest 2724 pass 0 fail; new head 517bc1d0af236a9431179e4b1673a9f2221294fc, verify it
 decidiq	2170	5a972e2e07eff781d04a099c4ca7cefedcbc8d24	GREEN	worker-14	unit 4242 OK on tree (baseline 4174 OK), vitest 2735 OK, no new failures; builds live-room-conference-system-link per its specs
 portaliq	2495	0563a50f0c9e7c60aea88f1816beaf5dc09c4ab8	GREEN	worker-47	unit 5247 tests OK (baseline 5247 OK, 0 failures); docs-only openspec spec/tasks change, 0 new failures
+decidiq	2172	1d208e5b6189fd9bccb2b735644f45ced04861bd	GREEN	worker-14	unit 4242 OK on tree (baseline 4174 OK), vitest 2735 OK, no new failures; builds voting-written-resolution per its specs; written rounds check the body's signatory scope
+decidiq	2173	d0e45f2dc97f0f15f448fa010c5247e481d3aac0	CONFLICT	worker-14	does not merge onto the tree after 2170,2172
