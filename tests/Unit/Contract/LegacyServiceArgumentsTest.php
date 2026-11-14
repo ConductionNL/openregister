@@ -17,6 +17,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
+use OCA\OpenRegister\Service\File\DocumentAnonymization;
+use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileTransfer;
 use OCA\OpenRegister\Service\File\FileUpload;
@@ -59,6 +62,8 @@ class LegacyServiceArgumentsTest extends TestCase {
 			'FileService::saveFile'           => [FileService::class, 'saveFile', ['objectEntity', 'fileName'], ['content', 'share', 'tags', 'upload']],
 			'FileService::createShareLink'    => [FileService::class, 'createShareLink', ['path'], ['shareType', 'permissions', 'request']],
 			'FileService::copyFile'           => [FileService::class, 'copyFile', ['sourceObject', 'fileId', 'targetObject'], []],
+			'FileService::moveFile'           => [FileService::class, 'moveFile', ['sourceObject', 'fileId', 'targetObject'], []],
+			'FileService::anonymizeDocument'  => [FileService::class, 'anonymizeDocument', ['node', 'anonymization'], ['scope', 'fileKey', 'preserveStructure', 'entities']],
 			'WebhookService::dispatchEvent'   => [WebhookService::class, 'dispatchEvent', ['eventName', 'payload'], ['_event']],
 			'FlowItems::item'                 => [FlowItems::class, 'item', ['json', 'binary'], ['fromItemIndex', 'output', 'options']],
 			'SchemaMapper::findBySlug'        => [SchemaMapper::class, 'findBySlug', ['slug', 'query', '_rbac', '_multitenancy'], ['limit', 'offset']],
@@ -141,6 +146,40 @@ class LegacyServiceArgumentsTest extends TestCase {
 			->willReturn($this->createMock(File::class));
 
 		$service->copyFile(sourceObject: $source, fileId: 7, targetObject: $target);
+	}
+
+	public function testMoveFileIsOneFileTransfer(): void {
+		$source  = new ObjectEntity();
+		$target  = new ObjectEntity();
+		$service = $this->getMockBuilder(FileService::class)->disableOriginalConstructor()->onlyMethods(['moveAttachedFile'])->getMock();
+		$service->expects($this->once())->method('moveAttachedFile')
+			->with(new FileTransfer(source: $source, fileId: 7, target: $target))
+			->willReturn($this->createMock(File::class));
+
+		$service->moveFile($source, 7, $target);
+	}
+
+	public function testAnonymizeDocumentGivesTheSameRequestInEveryForm(): void {
+		$node     = $this->createMock(File::class);
+		$requests = [];
+		$handler  = $this->createMock(DocumentProcessingHandlerInterface::class);
+		$handler->method('anonymize')->willReturnCallback(
+			static function (DocumentAnonymisationRequest $request) use (&$requests, $node): File {
+				$requests[] = $request;
+				return $node;
+			}
+		);
+		$service = $this->getMockBuilder(FileService::class)->disableOriginalConstructor()->onlyMethods([])->getMock();
+		(new ReflectionProperty(FileService::class, 'documentProcessingHandler'))->setValue($service, $handler);
+
+		$entities = [['text' => 'Jan', 'type' => 'person']];
+		$service->anonymizeDocument(node: $node, entities: $entities, scope: 'case', fileKey: 'k', preserveStructure: true);
+		$service->anonymizeDocument($node, $entities, 'case', 'k', true);
+		$service->anonymizeDocument($node, new DocumentAnonymization(entities: $entities, scope: 'case', fileKey: 'k', preserveStructure: true));
+
+		$this->assertCount(3, $requests);
+		$this->assertEquals($requests[2], $requests[0]);
+		$this->assertEquals($requests[2], $requests[1]);
 	}
 
 	public function testDispatchEventGivesTheSameEventInEveryForm(): void {

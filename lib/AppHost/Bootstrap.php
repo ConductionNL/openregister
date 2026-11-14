@@ -123,6 +123,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost;
 
+use InvalidArgumentException;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -296,7 +297,7 @@ class Bootstrap {
 		}
 
 		if ($appId === null) {
-			throw new \InvalidArgumentException('Bootstrap needs an app id or a LeafAdoption.');
+			throw new InvalidArgumentException('Bootstrap needs an app id or a LeafAdoption.');
 		}
 
 		return new LeafAdoption(appId: $appId, options: $options);

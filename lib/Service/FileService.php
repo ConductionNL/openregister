@@ -1378,6 +1378,10 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * @throws NotPermittedException If file creation fails due to permissions.
 	 * @throws Exception If file creation fails for other reasons.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The published contract's share flag.
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's value objects plus the published separate arguments.
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_schema and $_register are kept for the published contract.
+	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
 	 */
 	public function addFile(
@@ -1431,6 +1435,8 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @throws NotPermittedException If file operations fail due to permissions.
 	 * @throws Exception If file operations fail for other reasons.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The published contract's share flag.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#file-creation-and-upsert-run-a-fixed-validate-write-own-tag-pipeline
 	 *   (creates/writes a file into an object's folder with optional tags and share toggle)
@@ -1793,8 +1799,16 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * This is a convenience method that creates replacement mappings
 	 * from entity detection results and applies them to a document.
 	 *
-	 * @param Node                  $node         The file node to anonymize.
-	 * @param DocumentAnonymization $anonymization The entities, the placeholder scope and the PDF structure option.
+	 * Takes main's DocumentAnonymization, or the published entities, scope, file key and structure
+	 * option, by name or by position (an entity list in the second slot).
+	 *
+	 * @param Node                             $node              The file node to anonymize.
+	 * @param DocumentAnonymization|array|null $anonymization     The entities, the placeholder scope and the PDF structure option;
+	 *                                                            an array here is the release's positional `$entities`.
+	 * @param string                           $scope             The placeholder scope.
+	 * @param string|null                      $fileKey           The file key placeholders are numbered under.
+	 * @param bool|null                        $preserveStructure Whether to keep a PDF's structure.
+	 * @param array|null                       $entities          The detected entities.
 	 *
 	 * @throws Exception If anonymization fails.
 	 *
@@ -1802,7 +1816,27 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @spec exclude Delegation to DocumentProcessingHandler::anonymize; no facade-owned logic.
 	 */
-	public function anonymizeDocument(Node $node, DocumentAnonymization $anonymization): Node {
+	public function anonymizeDocument(
+		Node $node,
+		DocumentAnonymization|array|null $anonymization = null,
+		string $scope = 'document',
+		?string $fileKey = null,
+		?bool $preserveStructure = null,
+		?array $entities = null,
+	): Node {
+		if (is_array($anonymization) === true) {
+			$entities ??= $anonymization;
+			$anonymization = null;
+		}
+
+		if ($anonymization === null) {
+			if ($entities === null) {
+				throw new InvalidArgumentException('anonymizeDocument() needs entities or a DocumentAnonymization.');
+			}
+
+			$anonymization = new DocumentAnonymization(entities: $entities, scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure);
+		}
+
 		$options = new DocumentAnonymisationOptions(
 			scope: $anonymization->scope,
 			fileKey: $anonymization->fileKey,
@@ -2098,6 +2132,25 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
 		throw new Exception("Could not resolve a non-conflicting copy name for '{$desiredName}' after 999 attempts");
 	}//end resolveCopyTargetName()
+
+	/**
+	 * Move a file to another object, by separate arguments.
+	 *
+	 * The published call; moveAttachedFile() takes the same as one FileTransfer.
+	 *
+	 * @param ObjectEntity $sourceObject The object the file is attached to.
+	 * @param int          $fileId       The file.
+	 * @param ObjectEntity $targetObject The object to move it to.
+	 *
+	 * @return File The moved file.
+	 *
+	 * @throws Exception If the move fails.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File {
+		return $this->moveAttachedFile(transfer: new FileTransfer(source: $sourceObject, fileId: $fileId, target: $targetObject));
+	}//end moveFile()
 
 	/**
 	 * Move a file to another object (copy + delete source).
