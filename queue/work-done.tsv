@@ -9516,3 +9516,4 @@ review:pipelinq:3752:7334221b	GREEN	session-20261114T141740-2e5638b3	2026-11-14T
 build:learniq:portal-public-index:c2	PR #2532: T5 test schedule in the public index and T7 vo half built; T4 live check left; unit 6703->6705, same inherited failure	session-20261114T131642-b20146b1	2026-11-14T14:35:52Z
 fix:filinq:2087:c17b34e0	no change needed: up to date with development; conflict only vs unmerged #2070 (register json)	session-20261114T134703-00d8a302	2026-11-14T14:35:54Z
 build:learniq:report-card-pdf-to-guardians:c2	PR #2519 head f19a370b: 1.2 attach PDF (ReportCardPdfAttacher, 9 tests) and 1.3 docblocks built; left: 3.1 e2e, 3.2 matrix+archive, main spec text on archive	session-20261114T141737-e9e54940	2026-11-14T14:36:05Z
+verify:learniq:2486:a6ea93ae	GREEN 2486 2488 2513 2514 2515 2521; CONFLICT 2496 2504 (l10n, tree only); 2501 skipped (head moved)	session-20261114T141010-8dc8bd74	2026-11-14T14:36:35Z
