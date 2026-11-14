@@ -11389,3 +11389,4 @@ verify:launchpad:1226:208205d7	1226, 1229 GREEN: no new failures (PHP 4326, vite
 verify:portaliq:2498:67cb0876	GREEN 2498, 2508	session-20261114T201752-7e06b161	2026-11-14T22:03:20Z
 fix:opencatalogi:2643:bb55d371	snapshots updated for hasDcat, development merged in; new head e9586088, REVERIFY	session-20261114T204750-c1efccdb	2026-11-14T22:03:32Z
 build:opencatalogi:subjects-as-first-class-records:c2	done: PR #2684 head 8f4a54a3f, 3.1 built, 4.1 manifest + 5.1 doc halves, 6.2 gates; left: 3.2 live, 4.1 e2e, 5.1 issue links, 6.3 check:strict; suite 5639 with the 2 dev failures	session-20261114T211801-f16dd26d	2026-11-14T22:03:43Z
+fix:hermiq:1781:80fadcc8	conflict resolved (l10n union, register 0.58.0); pushed 65071efe	session-20261114T211810-b8f5dc24	2026-11-14T22:03:57Z
