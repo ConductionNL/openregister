@@ -9652,3 +9652,4 @@ fix:shillinq:3059:50043d17	conflict resolved, merged development; new head 2d5c2
 build:decidiq:decision-outcome-reaches-the-subscriber:c2	done: decidiq PR #2196 (task 3, register 0.15.2) and openregister PR #10560 (task 2, webhook.urlField); left only the live end-to-end check	session-20261114T134654-82ca2be5	2026-11-14T14:59:31Z
 fix:hermiq:1757:c0e6cda2	floor restored (unit_size 3.79, unit_complexity 4.55, PASS); new head 6877198f5, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T14:59:43Z
 build:decidiq:governing-documents-register:c2	built: PR #2177 head 1d3a5285, tasks 1-6 ticked (seal guard, cited-by, public view, current date, citations UI, in-force control); unit 4246 green, vitest 2735 green; live/browser checks left	session-20261114T141740-2e5638b3	2026-11-14T14:59:49Z
+verify:shillinq:2997:438ec8cf	2997 GREEN; 3007 CONFLICT after 2997	session-20261114T141737-e9e54940	2026-11-14T14:59:58Z
