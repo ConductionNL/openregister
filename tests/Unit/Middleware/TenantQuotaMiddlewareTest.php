@@ -7,6 +7,8 @@ use OCA\OpenRegister\Middleware\InboundCall;
 use OCA\OpenRegister\Middleware\TenantQuotaMiddleware;
 use OCA\OpenRegister\Middleware\TenantStatusException;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Utility\IControllerMethodReflector;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -152,5 +154,56 @@ class TenantQuotaMiddlewareTest extends TestCase {
 
 		$this->expectException(TenantStatusException::class);
 		$this->middleware->beforeController('TestController', 'index');
+	}
+
+	public function testARequestQuotaIsScaledByTheOrganisationsEnvironment(): void {
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$org = new class extends Organisation {
+			public int $environmentReads = 0;
+
+			public function getEnvironment(): ?string {
+				$this->environmentReads++;
+				return 'development';
+			}
+		};
+		$org->setStatus('active');
+		$org->setUuid('quota-uuid');
+		$org->setRequestQuota(1000000);
+		$this->organisationService->method('getActiveOrganisation')->willReturn($org);
+
+		// A quota far above one request: the request goes through.
+		$this->middleware->beforeController('TestController', 'index');
+
+		$this->assertSame(1, $org->environmentReads);
+	}
+
+	public function testANonJsonResponseIsReturnedUntouched(): void {
+		$org = new Organisation();
+		$org->setUuid('test-uuid');
+		$this->organisationService->expects($this->once())->method('getActiveOrganisation')->willReturn($org);
+
+		$response = new Response();
+		$response->setStatus(204);
+
+		$returned = $this->middleware->afterController('TestController', 'index', $response);
+
+		$this->assertSame($response, $returned);
+		$this->assertSame(204, $returned->getStatus());
+	}
+
+	public function testAnUnencodableJsonResponseIsReturnedUntouched(): void {
+		$org = new Organisation();
+		$org->setUuid('test-uuid');
+		$this->organisationService->expects($this->once())->method('getActiveOrganisation')->willReturn($org);
+
+		// INF cannot be JSON-encoded, so no content length can be measured.
+		$response = new JSONResponse(['value' => INF]);
+
+		$returned = $this->middleware->afterController('TestController', 'index', $response);
+
+		$this->assertSame($response, $returned);
+		$this->assertSame(['value' => INF], $returned->getData());
 	}
 }

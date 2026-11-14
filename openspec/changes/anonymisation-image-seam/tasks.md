@@ -10,13 +10,13 @@
 
 - [x] 2.1 `IImageRegionDetector` interface and registry; `AnonymiqRegionDetector` adapter calling `POST /api/v1/image/regions` through `AnonymisationBackendService::requestOpenAnonymiser()`-style AppAPI plumbing. Verify: `tests/Unit/Service/File/AnonymiqRegionDetectorTest.php::testRegionsFromTheExAppBecomeEntityRelations` with a recorded response; `testAMalformedResponseIsRecordedAsFailed`.
 - [x] 2.2 Cross-app contract: request `{image, page}`, response `{regions: [{page, box: {x, y, w, h}, entityType, confidence}], detector: {name, version}}`. Verify: `tests/Contract/AnonymiqImageRegionsContractTest.php` pins the shape; `anonymiq/object-detection-in-page-images` carries the matching test on its side.
-- [ ] 2.3 Record per detector `ran`, `not-installed` or `failed`, and `objectDetection: not-run` when none ran, on the `AnonymisationLog` run. Verify: `testAnAbsentDetectorIsRecordedAsNotRun`.
+- [x] 2.3 Record per detector `ran`, `not-installed` or `failed`, and `objectDetection: not-run` when none ran, on the `AnonymisationLog` run. Verify: `testAnAbsentDetectorIsRecordedAsNotRun`.
 
 ## 3. Burn (REQ-AIS-003)
 
 - [ ] 3.1 `redactImage()` for PNG, JPEG, TIFF and WebP with GD: opaque fill into pixels, re-encode, strip EXIF, XMP, IPTC and thumbnails. Verify: `ImageRedactionServiceTest::testARegionIsUniformFillAfterBurning` reads the pixels back; `testExifAndXmpAreGone` reads the output bytes.
 - [ ] 3.2 PDF image XObjects and image-only pages: replace the XObject stream, add no annotation. Verify: `testAnImageOnlyPdfPageIsBurnedNotOverlaid` asserts the original stream bytes are absent from the output.
-- [ ] 3.3 DOCX and ODT media: replace the affected media part. Verify: `testAnImageInsideADocxIsBurned`.
+- [x] 3.3 DOCX and ODT media: replace the affected media part. Verify: `testAnImageInsideADocxIsBurned`.
 - [x] 3.4 Refuse to write an output when a decided region could not be burned (unsupported encoding, corrupt image): the call fails naming the file and region, and no `_anonymized` sibling is left behind. Verify: `testAnUnburnableRegionLeavesNoOutput`.
 
 ## 4. Wiring (REQ-AIS-004)

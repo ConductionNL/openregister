@@ -77,6 +77,17 @@ class PolicyIndexCache {
 	}//end index()
 
 	/**
+	 * Whether an index is held, so a listener can skip work while there is nothing to drop.
+	 *
+	 * @return bool True once index() has built one and until invalidate().
+	 *
+	 * @spec openspec/changes/redaction-policy-as-data/specs/redaction-policy/spec.md#REQ-RPD-001
+	 */
+	public function isBuilt(): bool {
+		return $this->index !== null;
+	}//end isBuilt()
+
+	/**
 	 * Drop the index, so the next use reads the source again.
 	 *
 	 * @return void

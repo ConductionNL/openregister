@@ -1,6 +1,6 @@
 # Record Templates
 
-**Status**: Implemented (backend store and API). The "Save as template" and "Start from a template" dialogs are not built yet.
+**Status**: Implemented (store, API, "Save as template" and "Start from a template"). The picker in the shared nextcloud-vue create form is not built yet.
 
 ## Overview
 
@@ -60,15 +60,17 @@ POST /api/record-templates
 }
 ```
 
-## Planned interface
+## In the interface
 
-The interface half of the change (`openspec/changes/records-saved-templates`) adds:
-
-- **Save as template** on a record's menu, with a field picker. Identity, dates and relations start unticked,
-  because they belong to one record.
-- **Start from a template** in the create dialog. Values whose property no longer exists, or whose type no longer
+- **Save as template** is on each record's menu in the objects list (table and cards). The dialog lists the
+  record's fields that have a value. Identity, dates, relations and files start unticked, because they belong to one
+  record; tick what the template keeps. Give it a name, optionally a description, and choose who can use it: only you,
+  the members of one group, or everyone. Whoever it is shared with can use it, not change it, and only if they may
+  create records in the schema.
+- **Start from a template** is in the create dialog. Values whose property no longer exists, or whose type no longer
   matches, are dropped, and the dialog says which.
-- A template picker in the shared nextcloud-vue create form, so other apps get the same behaviour.
+
+Still planned: a template picker in the shared nextcloud-vue create form, so other apps get the same behaviour.
 
 ## Related Features
 

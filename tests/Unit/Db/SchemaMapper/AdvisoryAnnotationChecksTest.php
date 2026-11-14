@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
+use OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -31,6 +32,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses   \OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
@@ -111,6 +113,92 @@ final class AdvisoryAnnotationChecksTest extends TestCase {
 		self::assertStringStartsWith($prefix, $logged[0]);
 		self::assertGreaterThan(strlen($prefix), strlen($logged[0]), 'the validator messages follow');
 	}//end testAnInvalidBlockIsLoggedAndIgnored()
+
+	/**
+	 * An invalid block is also recorded for the save response, named by its family,
+	 * beside the log line (aggregation-dialect-repair, Fix 4).
+	 *
+	 * @param string       $method The check.
+	 * @param string       $key    Its annotation key.
+	 * @param string       $prefix The start of its warning.
+	 * @param array<mixed> $block  A block it rejects.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	#[DataProvider('checks')]
+	public function testAnInvalidBlockIsRecordedForTheSaveResponse(string $method, string $key, string $prefix, array $block): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects(self::once())->method('warning');
+		$discarded = new DiscardedAnnotations();
+
+		(new AdvisoryAnnotationChecks(logger: $logger, discarded: $discarded))->{$method}(self::schema([$key => $block]));
+
+		$family = ($method === 'checkHinge') ? 'hinge' : substr($key, strlen('x-openregister-'));
+		$entries = $discarded->all();
+		self::assertCount(1, $entries);
+		self::assertSame($family, $entries[0]['family']);
+		self::assertSame('zaak', $entries[0]['schema']);
+		self::assertNotEmpty($entries[0]['messages']);
+		// The response carries the messages the log line ends with.
+		self::assertStringEndsWith(implode(' ', $entries[0]['messages']), self::lastMessageOf(method: $method, key: $key, block: $block));
+	}//end testAnInvalidBlockIsRecordedForTheSaveResponse()
+
+	/**
+	 * The validator messages a check logs for a block, without the prefix.
+	 *
+	 * @param string       $method The check.
+	 * @param string       $key    Its annotation key.
+	 * @param array<mixed> $block  The block.
+	 *
+	 * @return string The logged text.
+	 */
+	private static function lastMessageOf(string $method, string $key, array $block): string {
+		$logged = '';
+		$logger = new class($logged) extends \Psr\Log\AbstractLogger {
+			/**
+			 * @param string $logged The text logged last.
+			 */
+			public function __construct(private string &$logged) {
+			}
+
+			/**
+			 * @param mixed              $level   The level.
+			 * @param string|\Stringable $message The message.
+			 * @param array<mixed>       $context The context.
+			 */
+			public function log($level, string|\Stringable $message, array $context = []): void {
+				$this->logged = (string)$message;
+			}
+		};
+		(new AdvisoryAnnotationChecks(logger: $logger))->{$method}(self::schema([$key => $block]));
+
+		return $logged;
+	}//end lastMessageOf()
+
+	/**
+	 * A valid, absent or scalar annotation records nothing.
+	 *
+	 * @param string $method The check.
+	 * @param string $key    Its annotation key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	#[DataProvider('checks')]
+	public function testNothingIsRecordedWithoutAFault(string $method, string $key): void {
+		$discarded = new DiscardedAnnotations();
+		$checks = new AdvisoryAnnotationChecks(logger: $this->createMock(LoggerInterface::class), discarded: $discarded);
+
+		$checks->{$method}(self::schema([]));
+		if ($method !== 'checkHinge') {
+			$checks->{$method}(self::schema([$key => 'not a block']));
+		}
+
+		self::assertSame([], $discarded->all());
+	}//end testNothingIsRecordedWithoutAFault()
 
 	/**
 	 * An absent or non-block annotation is not validated and logs nothing.

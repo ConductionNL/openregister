@@ -14,4 +14,5 @@
 - [ ] 2.2 Unit tests: the access branch, the opted-out schema, the audit entry.
   - The access branch and the opted-out schema: `tests/Unit/Collaboration/ObjectResourceProviderTest.php`. The audit entry waits on 1.4.
 - [x] 2.3 `openspec validate platform-collaboration-resources --strict`.
-- [ ] 3.1 Hand over to the dossiq lane: declare which schemas may join, render the collection, register no provider.
+- [x] 3.1 Hand over to the dossiq lane: declare which schemas may join, render the collection, register no provider.
+  - `docs/features/collaboration-resources.md`: the opt-in, the collections endpoint and its answer, and that a leaf app registers no provider.

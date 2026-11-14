@@ -1187,6 +1187,7 @@ final class ContractBindings {
 		...FeatureBindings::BINDINGS,
 		TrustTierResolverInterface::class => TrustTierResolver::class,
 		...MiscBindings::BINDINGS,
+		\OCA\OpenRegister\Service\RedactionPolicy\TermRuleSourceInterface::class => \OCA\OpenRegister\Service\RedactionPolicy\ObjectTermRuleSource::class,
 	];
 
 	/**

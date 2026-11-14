@@ -2229,6 +2229,7 @@ Service/File/CreateFileHandler.php,146,Service,Service,Service/File/CreateFileHa
 Service/File/DeleteFileHandler.php,71,Service,Service,Service/File/DeleteFileHandler.php,0,329,Core
 Service/File/ExecutableContentDetector.php,141,Service,Service,Service/File/ExecutableContentDetector.php,0,202,Core
 Service/File/FileBatchHandler.php,102,Service,Service,Service/File/FileBatchHandler.php,0,274,Core
+Service/File/FileChecksum.php,,Service,,,,,Core
 Service/File/FileFormattingHandler.php,346,Service,Service,Service/File/FileFormattingHandler.php,0,61,Core
 Service/File/FileLockHandler.php,162,Service,Service,Service/File/FileLockHandler.php,0,166,Core
 Service/File/FilePreviewHandler.php,39,Service,Service,Service/File/FilePreviewHandler.php,0,386,Core
@@ -2956,8 +2957,10 @@ Service/Rbac/AdminGate.php,31,Service,Access,Access/Service/Rbac/AdminGate.php,0
 Service/Rbac/AggregateVisibility.php,76,Service,Access,Access/Service/Rbac/AggregateVisibility.php,0,322,Core
 Service/Rbac/AnonymousEnvelope.php,39,Service,Platform,Platform/Service/Rbac/AnonymousEnvelope.php,0,,Core
 Service/Rbac/AuthorizationDenyValidator.php,123,Service,Service,Service/Rbac/AuthorizationDenyValidator.php,0,,Core
+Service/Rbac/ClassificationCaller.php,43,Service,Access,Access/Service/Rbac/ClassificationCaller.php,0,,Core
 Service/Rbac/ClassificationDeclarationValidator.php,230,Service,Access,Access/Service/Rbac/ClassificationDeclarationValidator.php,0,,Core
 Service/Rbac/ClassificationLimits.php,126,Service,Access,Access/Service/Rbac/ClassificationLimits.php,0,,Core
+Service/Rbac/ClassificationReadGate.php,152,Service,Access,Access/Service/Rbac/ClassificationReadGate.php,0,,Core
 Service/Rbac/ClassificationScale.php,219,Service,Access,Access/Service/Rbac/ClassificationScale.php,0,,Core
 Service/Rbac/ClearanceResolver.php,97,Service,Access,Access/Service/Rbac/ClearanceResolver.php,0,,Core
 Service/Rbac/CrossOrganisationMarkerChange.php,46,Service,Access,Access/Service/Rbac/CrossOrganisationMarkerChange.php,0,393,Core
@@ -4175,6 +4178,7 @@ Service/File/ImageRegionDetectorRegistry.php,,Service,,,,,Core
 Service/File/ImageRegionNotBurnableException.php,,Service,,,,,Core
 Service/File/OcrWordLocator.php,,Service,,,,,Core
 Service/File/OcrWords.php,,Service,,,,,Core
+Service/File/OfficeMediaBurner.php,,Service,,,,,Core
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
 Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Configuration
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
@@ -4199,6 +4203,8 @@ Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/Obje
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
+Service/RedactionPolicy/ObjectTermRuleSource.php,,Service,,,,,Configuration
+Listener/RedactionPolicyCacheListener.php,,Listener,,,,,Configuration
 Exception/UnknownMaskFormException.php,30,Exception,Exception,Exception/UnknownMaskFormException.php,0,,Kernel
 Files/Service/File/MaskForm.php,208,Files,Files,Files/Service/File/MaskForm.php,0,,Files
 Files/Service/File/PlaceholderText.php,113,Files,Files,Files/Service/File/PlaceholderText.php,0,,Files
@@ -4242,3 +4248,6 @@ Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
 Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Core
 Service/Outbound/OutboundAllowlist.php,,Service,,,,,Integrations
+Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
+Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
+Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
