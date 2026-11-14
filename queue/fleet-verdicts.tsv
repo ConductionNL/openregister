@@ -8560,3 +8560,4 @@ hermiq	1738	e197e52d4d77dc3355b328f29e6e1773e050e380	CONFLICT	worker-29	clean on
 hermiq	1749	cbc79152e520ec1a9e65d61c7eb20e444fb8890d	CONFLICT	worker-29	clean on development alone; conflicts with #1726 in this tree
 hermiq	1760	9ed14d295e9cfeae4a55c577f424406c4b3024fd	CONFLICT	worker-29	clean on development alone; conflicts with #1726 in this tree
 hermiq	1763	3af2a64821e8b1648ccadc9562dc663a9a087c84	CONFLICT	worker-29	clean on development alone; conflicts with #1726 in this tree
+hermiq	1740	95293ea1f01ba6d78a4638da3db914c8bc091885	CONFLICT	worker-29	conflicts with development: lib/Settings/hermiq_register.json
