@@ -9469,3 +9469,4 @@ build:pipelinq:marketing-articles-move-to-portaliq:c2	partial: PR #3835 builds 1
 verify:dossiq:6509:4c5f222f	6509 GREEN, 6510 GREEN; 0 new failures (13 phpunit + 1 vitest inherited)	session-20261114T141727-56b2bf78	2026-11-14T14:27:58Z
 fix:learniq:2493:cf5af58b	floor restored: unit_complexity 4.38 -> 4.40 by splitting four units; REVERIFY recorded, new head dddd85e4411bd14431cfb9d1c78f6303b798aa0b	session-20261114T114435-d7b47cb4	2026-11-14T14:28:13Z
 verify:pipelinq:3835:56161fed	stale	session-20261114T134654-82ca2be5	2026-11-14T14:28:25Z
+verify:shillinq:2963:0b6e683a	2963 GREEN; 2997, 3065 CONFLICT; 3004 skipped (head moved)	session-20261114T141740-2e5638b3	2026-11-14T14:28:48Z
