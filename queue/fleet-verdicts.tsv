@@ -7011,4 +7011,8 @@ opencatalogi	2639	426466c7d52811e75bae91aea12b472f99376fda	RED	merge3:merge-gate
 opencatalogi	2647	622cf6e6cbf567d6cef6004084c743f585b2ceed	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.68 -> 4.66
 opencatalogi	2648	cd875eb3c4155b97cf455db230bdc7caaec59af5	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.87 -> 4.82
 opencatalogi	2652	a25a166fb1d718d818a710af1262f30e089c9f47	RED	merge3:merge-gate	GATE RED floor: overall: 4.89 -> 4.87; unit_interfacing: 4.87 -> 4.75
+opencatalogi	2456	4134001d0f9258e734c57b14c7cbbb00392fe39b	CONFLICT	merge3	conflicts with development; files: eslint-suppressions.json src/modals/object/ViewObject.vue 
+opencatalogi	2624	aeff7fbe7b70bfd560c16d85df2bd3ece408958a	CONFLICT	merge3	merges clean on development alone; files: src/dialogs/generic/CopyObjectDialog.spec.js src/dialogs/generic/DeleteObjectDialog.spec.js 
+opencatalogi	2641	5de18d58d4c2579c18620a5b5cd2a1325f9497ca	CONFLICT	merge3	merges clean on development alone; files: docs/features/README.md 
+opencatalogi	2654	732c7bb8ec4f6867007751e603dc58490f0fa0c0	CONFLICT	merge3	merges clean on development alone; files: docs/features/README.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 integriq	3543	aaeb1f5d9dc1b0e4de7476e6901b446174c9e14d	REVERIFY	worker-08	merged development in (clean); its 3 nl keys moved 40 lines above the nl.json/nl.js tail so tail-appending tree PRs merge clean, nl.js regenerated (check:l10n-js ok); unit 8498: 2 errors + 3 failures, all inherited from development (CallServiceTest x2, JobsControllerTest x2, SynchronizationSynchronizeEntryGoldenTest); new head 8b53d670bb2bf39ee51435c7903a65b612918a77, verify it
