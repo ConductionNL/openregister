@@ -10065,6 +10065,7 @@ launchpad	1214	4cafc2d4c3fc8bc300acba48d71a93ea3f05dfd8	CONFLICT	worker-32	merge
 launchpad	1216	2d1a07b7315b0cc7951d46902a8085c457a831ba	CONFLICT	worker-32	merges clean on development alone, conflicts after 1209 in: lib/Controller/AdminController.php lib/Controller/PageController.php lib/Db/AdminSetting.php lib/Db/AdminSettingKey.php lib/Service/AdminSettingsService.php lib/Service/InitialStateBuilder.php src/utils/loadInitialState.js
 launchpad	1219	da16c5dfecd1f4e40902aa5c9b009ae6af38ac60	CONFLICT	worker-32	merges clean on development alone, conflicts after 1209 in: l10n/en.js l10n/en.json
 stackiq	1906	5acf605d172f78a4f74097b7926398add39fd1fb	REVERIFY	worker-34	merged development in: searchContracts keeps the branch comment and development's SearchBounds::bounded(); unit 3603 tests OK, phpstan clean; new head a7646b3c2ea326ee1e389ab171cba00e49203fb5, verify it
+hermiq	1751	ddb035423900ebac681c9f2028ebb326e34d7c21	CONFLICT	worker-22	conflicts with development in l10n/nl.js, l10n/nl.json, lib/Settings/hermiq_register.json
 learniq	2484	46d3dda4fce3b7908948145a8638b1aefc595c47	CONFLICT	merge3	merges clean on development alone; files: 
 learniq	2486	f89dc1e3b2b2f44322621430bd403e650e0f349f	CONFLICT	merge3	merges clean on development alone; files: 
 learniq	2507	cea92f10012f9194913188c0323be1be359113c1	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
@@ -10083,3 +10084,4 @@ shillinq	3062	cbb6114b17ca90b002664a679837bb11df103cd7	CONFLICT	merge3	merges cl
 shillinq	3065	e857eb2338958eebcba97fbfc59310343d8605ac	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml openapi.json tests/fixtures/register-versions.lock.json 
 shillinq	3077	106e652ef6b7c799e319e38d44ce92672fb8be42	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
 shillinq	3078	e4625f775fda7369e83028ba7aa6202f3e183614	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1754	8f57a36ce4fcab5f274c7dd299c4f9ce2ce57e4f	GREEN	worker-22	unit 5210 tests OK (baseline 5180 OK), vitest 1516 OK, no new failures; implements tools-browser-and-computer-use, admin-only routes
