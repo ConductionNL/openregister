@@ -123,7 +123,6 @@ use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Search\HistoryPredicateInterface;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
@@ -3694,10 +3693,6 @@ class ObjectsController extends Controller {
 
 		$sample = $this->submittableBody(object: $this->request->getParams());
 		unset($sample['id']);
-		if ($objectService instanceof ObjectServiceInterface === false) {
-			return new JSONResponse(data: ['message' => 'Validation is not available.'], statusCode: 500);
-		}
-
 		$verdict = $objectService->validateObject(object: $sample, register: $resolved['register'], schema: $resolved['schema'], id: $id);
 		return new JSONResponse(data: $verdict->jsonSerialize());
 	}//end validateSample()

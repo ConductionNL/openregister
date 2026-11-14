@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectValidationVerdict;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -1547,4 +1548,35 @@ interface ObjectOperationsInterface {
      *   rendering.
      */
     public function clearCurrents(): void;
+
+    /**
+     * Whether a sample record would be accepted, without saving it.
+     *
+     * Runs what a save runs before it writes: the save defaults, the declared
+     * bounds, the schema validation (when the schema validates hard, or the
+     * sample is a draft), the read-only and lens rules, and then every
+     * {@see ObjectSaveCheck} (coded values, concept shapes, dependent
+     * values). Writes nothing and dispatches no object event. With an id the
+     * sample is merged onto that stored object and checked as an update.
+     *
+     * The service's current register, schema and object are restored after,
+     * so a validate call leaves no state behind.
+     *
+     * @param array                  $object   The sample record.
+     * @param Register|string|int    $register The register (id, uuid or slug).
+     * @param Schema|string|int      $schema   The schema (id, uuid or slug).
+     * @param string|null            $id       The object the sample updates, or null for a create.
+     *
+     * @return ObjectValidationVerdict The verdict, one error per refused property.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the object to update does not exist.
+     *
+     * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+     */
+    public function validateObject(
+        array $object,
+        Register | string | int $register,
+        Schema | string | int $schema,
+        ?string $id=null
+    ): ObjectValidationVerdict;
 }//end interface

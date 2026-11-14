@@ -164,7 +164,7 @@ class LegacyArgumentNamesTest extends TestCase {
 	 */
 	public static function publishedMethods(): array {
 		$cases = [];
-		foreach ([ObjectServiceInterface::class, ObjectOperationsInterface::class, ObjectService::class] as $class) {
+		foreach ([ObjectOperationsInterface::class, ObjectService::class] as $class) {
 			foreach (self::contract() as $key => [$method, $params, $main]) {
 				$cases[$class.'::'.$key] = [$class, $method, $params, $main];
 			}
@@ -228,4 +228,47 @@ class LegacyArgumentNamesTest extends TestCase {
 			$this->assertSame($default, $parameter->getDefaultValue(), "{$class}::{$method}() \${$name} must keep its default.");
 		}
 	}//end testTheReleaseParametersAreStillThere()
+	/**
+	 * The published contract consuming apps implement in their test doubles.
+	 *
+	 * @return array<string, array{0: string, 1: array<string, mixed>}>
+	 */
+	public static function publishedContract(): array {
+		$cases = [];
+		foreach (self::contract() as $key => [$method, $params]) {
+			$cases[$key] = [$method, $params];
+		}
+
+		return $cases;
+	}//end publishedContract()
+
+	/**
+	 * ObjectServiceInterface is the release's contract exactly: the same names, order and defaults.
+	 *
+	 * hydra-gates ships this interface to every consuming app (gate 67 keeps the two
+	 * byte-identical), and their test doubles implement it. ObjectService takes main's
+	 * value-object form as well, through wider types in the same positions.
+	 *
+	 * @param string               $method The method.
+	 * @param array<string, mixed> $params The release's parameters and defaults, in order.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('publishedContract')]
+	public function testThePublishedInterfaceIsTheReleaseContract(string $method, array $params): void {
+		$parameters = (new ReflectionMethod(ObjectServiceInterface::class, $method))->getParameters();
+
+		$this->assertSame(
+			array_slice(array_keys($params), 0, count($parameters)),
+			array_map(static fn (\ReflectionParameter $p): string => $p->getName(), $parameters),
+			"ObjectServiceInterface::{$method}() must keep the release's parameters in the release's order."
+		);
+		foreach (array_slice(array_values($params), 0, count($parameters)) as $position => $default) {
+			if ($default === self::REQUIRED) {
+				continue;
+			}
+
+			$this->assertSame($default, $parameters[$position]->getDefaultValue(), "ObjectServiceInterface::{$method}() must keep its defaults.");
+		}
+	}//end testThePublishedInterfaceIsTheReleaseContract()
 }//end class
