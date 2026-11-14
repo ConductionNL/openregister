@@ -148,7 +148,7 @@ class MagicSearchHandler {
 	 *
 	 * @var array<int, string>
 	 */
-	private const STRING_METADATA_SORT_COLUMNS = ['_name', '_description', '_summary'];
+	private const STRING_METADATA_SORT_COLUMNS = MagicUnionOrder::TEXT_METADATA_COLUMNS;
 
 	/**
 	 * The metadata columns a row sets on its entity, in the order they are set, with how

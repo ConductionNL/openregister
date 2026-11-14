@@ -29,6 +29,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Translation;
 
 class IdentityTranslationProvider implements TranslationProviderInterface {
+
+	/**
+	 * The provider identifier.
+	 *
+	 * @var string
+	 */
+	public const IDENTIFIER = 'identity';
+
 	/**
 	 * Identity translation: returns the source text unchanged.
 	 *
@@ -54,6 +62,6 @@ class IdentityTranslationProvider implements TranslationProviderInterface {
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
 	public function getIdentifier(): string {
-		return 'identity';
+		return self::IDENTIFIER;
 	}//end getIdentifier()
 }//end class

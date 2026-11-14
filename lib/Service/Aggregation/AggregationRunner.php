@@ -73,6 +73,7 @@ use RuntimeException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaTarget;
 
 /**
  * Runs a named aggregation against a schema.
@@ -385,7 +386,13 @@ class AggregationRunner implements AggregationRunnerInterface {
 			throw new RuntimeException(sprintf('Aggregation "%s" is not declared on this schema.', $run->name));
 		}
 
-		return $annotation[$run->name];
+		// A `schema` key naming another schema counts that schema, as `from`
+		// does; one naming this schema stays intra-schema. The validator reads
+		// it the same way (aggregation-dialect-repair, Fix 1).
+		return (new CrossSchemaTarget())->resolve(
+			spec: $annotation[$run->name],
+			ownNames: [$run->schema->getSlug(), $run->schema->getTitle()]
+		);
 	}//end declaredSpec()
 
 	/**
