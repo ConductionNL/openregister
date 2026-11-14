@@ -100,3 +100,46 @@ export async function sendReadState(address, method, fetchFn = globalThis.fetch)
 		return false
 	}
 }
+
+/**
+ * The record page's tabs that carry an unread badge, with the
+ * `@self.unreadCounts` keys each one adds up.
+ */
+const TAB_UNREAD_KEYS = {
+	files: ['files'],
+	syncs: ['syncs'],
+	emails: ['emails', 'messages'],
+	events: ['events'],
+	contacts: ['contacts'],
+	deck: ['deck'],
+}
+
+/**
+ * The unread badge of every tab that has one, from the record's
+ * `@self.unreadCounts` (design D-1, D-3). A tab whose keys hold no positive
+ * whole count is left out, so it shows no badge; anything the server sends
+ * that is not a count is ignored.
+ *
+ * @param {object|null} item The record as the store holds it
+ * @return {{[key: string]: number}} Tab key to unread count
+ * @spec openspec/changes/record-star-follow-and-unread-on-screen/specs/object-read-state/spec.md#requirement-opening-a-records-page-marks-it-read-and-badges-its-tabs-req-ors-005
+ */
+export function unreadBadges(item) {
+	const counts = item?.['@self']?.unreadCounts
+	if (!counts || typeof counts !== 'object' || Array.isArray(counts)) {
+		return {}
+	}
+
+	const badges = {}
+	for (const [tab, keys] of Object.entries(TAB_UNREAD_KEYS)) {
+		const total = keys
+			.map((key) => counts[key])
+			.filter((count) => Number.isInteger(count) && count > 0)
+			.reduce((sum, count) => sum + count, 0)
+		if (total > 0) {
+			badges[tab] = total
+		}
+	}
+
+	return badges
+}

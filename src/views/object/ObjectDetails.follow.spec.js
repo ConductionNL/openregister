@@ -204,6 +204,20 @@ describe('ObjectDetails follow and read state', () => {
 		expect(toggle.attributes()).toMatchObject({ register: 'r', schema: 's', objectid: 'o1', watching: 'true', notify: 'false', watchercount: '2', canmanage: 'false' })
 	})
 
+	it('badges the Files tab with its unread count and leaves the others bare', () => {
+		const wrapper = view({ ...RECORD, '@self': { ...RECORD['@self'], unreadCounts: { files: 2 } } })
+		const files = wrapper.findAll('x-AppTab').find((tab) => tab.attributes('title') === 't:Files')
+		const syncs = wrapper.findAll('x-AppTab').find((tab) => tab.attributes('title') === 't:Syncs')
+
+		expect(files.find('slot-title x-NcCounterBubble').text()).toBe('2')
+		expect(files.find('slot-title').text()).toContain('t:Files')
+		expect(syncs.find('slot-title x-NcCounterBubble').exists()).toBe(false)
+	})
+
+	it('shows no tab badges when the record carries no unread counts', () => {
+		expect(view(RECORD).find('x-NcCounterBubble.tab-unread').exists()).toBe(false)
+	})
+
 	it('marks the record read once after it renders', async () => {
 		const wrapper = view(RECORD)
 		await settle()
