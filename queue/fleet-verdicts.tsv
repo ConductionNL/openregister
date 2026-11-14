@@ -7691,3 +7691,4 @@ larpinq	1054	8782b7bcb7478cc551db4b8a6ba9c45ed4c140d1	CONFLICT	worker-24	conflic
 larpinq	1055	3553b217084367d6f7078f260cc8ebae9f7a722d	CONFLICT	worker-24	conflicts with the tree (development + 1048, 1050, 1052)
 portaliq	2487	f5210664b0ea882c59d1337474c749724dab1c59	GREEN	worker-57	unit 5115 tests on tree, baseline 5092 OK (92 skipped), 0 new failures; tests only
 portaliq	2488	a8bcb8b9c2d93e99554b132bfdf3e6165a91307f	GREEN	worker-57	unit 5115 tests on tree, baseline 5092 OK (92 skipped), 0 new failures; tests only
+larpinq	1056	fbe65f9aca1e5ad8d89fad525e63d9cb8bf2f29c	GREEN	worker-24	php 814 (base 792, 0 failures), vitest 515 pass; new endpoints gated to game masters
