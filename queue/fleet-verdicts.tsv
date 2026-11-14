@@ -9609,3 +9609,4 @@ decidiq	2172	148e74e7725f5549647398286241b07c976d9f51	GREEN	worker-49	unit 4318 
 decidiq	2171	a9fe23d912171fce917fb0fdec80d6cd3ebd5321	CONFLICT	worker-49	does not merge on development+2143
 decidiq	2177	b9836c204fea0ba0a9712b759315fa792977a7d0	CONFLICT	worker-49	does not merge on development+2143+2172
 decidiq	2195	81009fc4d05837e575159da0df533c6ff336abf5	CONFLICT	worker-49	does not merge on development+2143+2172
+portaliq	2443	b48462345846bb41ec39caaf82a1a18751e5fca1	REVERIFY	worker-41	merged development in, conflicts resolved keeping both (intake controller availability + desk filling, envelope check helpers + Yivi attributes, register 0.113.0, SessionClaimsTest expects attributes); unit 5757 OK, phpstan clean; new head b5fa534f5324e1f791275805da7e154476dc1343, verify it
