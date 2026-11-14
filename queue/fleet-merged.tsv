@@ -2779,3 +2779,4 @@ learniq	2515	91ac6bf3edc1791b8e60ddde86c2cbaa88b839c9	RED	merge3	GATE RED absolu
 learniq	2530	9b36fa91bff3b8df26408a3b3146d2d7a8074aac	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2531	5736628ccf1e083842816fd9b1764a34ca0d287c	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 decidiq	2186	90997bb6478279894b5855e4bc2a26e38874174c	RED	merge3	GATE RED checker floor: adrvalidator stars: 5 -> missing; changelog stars: 5 -> missing; cicd stars: 5 -> missing; codeofconduct stars: 5 -> missing; complexity stars: 5 -> missing; contributing stars: 5 -> missing; copyrightowner stars: 5 -> missing; coverage stars: 5 -> missing; docker stars: 5 ->
+decidiq	2186	90997bb6478279894b5855e4bc2a26e38874174c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
