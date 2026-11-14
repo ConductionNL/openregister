@@ -10017,3 +10017,4 @@ fix:planninq:1169:ea298e62	l10n conflicts resolved (37 locales), new head 1268ee
 fix:hermiq:1760:adfddb8f	no change: already contains development; conflict is only with unmerged #1728/#1753, resolves when they land	session-20261114T154757-c9bf237e	2026-11-14T16:02:08Z
 fix:integriq:3592:295118e8	REVERIFY: restored l10n keys/openapi paths lost in an earlier merge; clean vs siblings; head 528681d8	session-20261114T151801-20bb3a08	2026-11-14T16:02:21Z
 review:openregister:10564:0cc44624	APPROVE	session-20261114T141738-30f539db	2026-11-14T16:02:27Z
+cover:integriq:92114ab0m6958:js7de78384	failed: nothing to cover - src/manifest.d holds only JSON manifest fragments and a README, no JS source a unit test could execute	session-20261114T134708-ba7f7741	2026-11-14T16:02:32Z
