@@ -2965,3 +2965,8 @@ launchpad	1222	8b68eeb3f425ded57606bb8c51ebcbec33489723	MERGED	merge3	GATE OK sb
 launchpad	1223	bde0c65bc53ccd454d74c1f6654ca25e761c2d29	RED	merge3	GATE RED floor: unit_interfacing: 3.44 -> 3.37
 launchpad	1224	9b93d2fae68898af1e824d933e7acca9a0532c49	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
 portaliq	2440	05103dba28dab12a7bc76241c17706e632851a19	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+hermiq	1715	6bd10d396a447141103f39d987853fde17230fff	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1739	efdf5808e8b0592d93d95fa5e869d549ef393851	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+hermiq	1767	69628bfa7e3249300984c45a5f519fc59c745036	RED	merge3	GATE RED absolute floor: hermiq maintainability 3.73 after merge is below its floor 3.77
+hermiq	1782	09cb5576e64141eae0ab3518ad8680e9d0bf748c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1793	ef80f599c0b539dbe09ab8376bcf93fe22cd897e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
