@@ -22,7 +22,8 @@
 
 ## 4. Preview
 
-- [ ] 4.1 `previewUrl` on the schema, validated as a URL template with known placeholders. Verify: schema save test.
+- [x] 4.1 `previewUrl` on the schema, validated as a URL template with known placeholders. Verify: schema save test.
+      > Declared as `configuration.previewUrl`, checked by `Db/Schema/PreviewUrlTemplate` from `ConfigurationEntryRules`: an absolute http(s) URL using only `{uuid}`, `{version}`, `{token}`; a bad template is dropped and reported like any refused key, the rest of the configuration is kept. `Schema::getPreviewUrl()` reads it back. Unit: `PreviewUrlTemplateTest` (schema save included).
 - [ ] 4.2 Access link subject type `object-draft`, read only, expiry required; public route serves the merged draft. Verify: API test that the link reads the draft, and 404 after expiry or revocation.
 
 ## 5. Interface

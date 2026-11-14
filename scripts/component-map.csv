@@ -4252,3 +4252,4 @@ Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Controller/Support/DraftKeysOnList.php,188,Controller,Controller,Controller/Support/DraftKeysOnList.php,0,,Core
 Service/Object/DraftPromoter.php,274,Service,Service,Service/Object/DraftPromoter.php,0,,Core
 Exception/DraftConflictException.php,59,Exception,Exception,Exception/DraftConflictException.php,0,,Kernel
+Db/Schema/PreviewUrlTemplate.php,142,Db,Db,Db/Schema/PreviewUrlTemplate.php,0,,Core
