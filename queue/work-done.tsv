@@ -7740,3 +7740,4 @@ fix:pipelinq:3742:9c19413d	l10n keys relocated so #3742 merges clean after #3707
 review:portaliq:2284:e29a4e8e	GREEN: behaviour-preserving refactor, suite 5051/0 failures	session-20261114T065625-baa65a50	2026-11-14T07:10:02Z
 fix:filinq:2099:697ea860	conflict resolved (resolver add/add, register, l10n), unit suite green, pushed 7b0032ea	session-20261114T065635-61264d14	2026-11-14T07:10:22Z
 merge:pipelinq:3789:2322258a	merge3 tree of 5 pipelinq PRs: merged=5 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T07:10:29Z
+merge:pipelinq:3795:f810ec60	merge3 tree of 5 pipelinq PRs: merged=5 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T07:10:34Z
