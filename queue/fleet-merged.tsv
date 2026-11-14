@@ -3045,3 +3045,6 @@ shillinq	3051	2f5d4cd88a0e33564f8b495a5783dd2df19e345d	RED	merge3	GATE RED floor
 shillinq	3079	3c06f6f11901ea64c9f06769f1c53bb0fd903bb5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
 humaniq	1133	fcad2ca7ba5cdb7979eaf1ca6780f2f39871825e	RED	merge3	GATE RED floor: unit_interfacing: 3.63 -> 3.60
 humaniq	1156	40bb5c448af5eb4652c6ba62981cb40d223fc9ee	RED	merge3	GATE RED floor: overall: 4.44 -> 4.42; unit_size: 4.48 -> 4.46; unit_complexity: 3.55 -> 3.50; unit_interfacing: 3.61 -> 3.54
+hermiq	1735	09766374a9ba9386facc8d120dcbb51db6a96b32	RED	merge3	GATE RED floor: unit_complexity: 4.52 -> 4.50
+hermiq	1767	2616658a751252857a3fe62aa274708ebf7098f5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1792	33071fc8103fd4d270cdcb4c55a4bcbd06b75ca3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
