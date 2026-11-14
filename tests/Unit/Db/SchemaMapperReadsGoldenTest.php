@@ -145,6 +145,31 @@ class SchemaMapperReadsGoldenTest extends TestCase {
 	}//end testReadsMatchGolden()
 
 	/**
+	 * findBySlug() runs the same query in main's ListQuery form and in the release's limit and offset form.
+	 */
+	public function testTheReleaseFormsOfFindBySlugRunTheSameQuery(): void {
+		$forms = [
+			static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 2, offset: 4), _multitenancy: false),
+			static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', 2, 4, true, false),
+			static fn (SchemaMapper $mapper) => $mapper->findBySlug(slug: 'seven', limit: 2, offset: 4, _multitenancy: false),
+		];
+
+		$runs = [];
+		foreach ($forms as $read) {
+			$this->queryLog = [];
+			$this->builderCount = 0;
+			$this->parameterCount = 0;
+			$this->queuedRows = [[self::ROW, self::TWIN]];
+			$outcome = $read($this->makeMapper());
+			$runs[] = ['outcome' => $this->render($outcome), 'queries' => $this->queryLog];
+		}
+
+		$this->assertNotEmpty($runs[0]['queries']);
+		$this->assertSame($runs[0], $runs[1]);
+		$this->assertSame($runs[0], $runs[2]);
+	}//end testTheReleaseFormsOfFindBySlugRunTheSameQuery()
+
+	/**
 	 * Which schema ids an outcome carries, or the scalar or map itself.
 	 */
 	private function render(mixed $outcome): mixed {
