@@ -9646,3 +9646,4 @@ build:decidiq:voting-named-paper-vote-entry:c2	done: PR #2174 task 5 entry sheet
 fix:hermiq:1739:53540a9a	conflict resolved: development merged in, tool counts set to the combined catalogue, test green; new head 693f7b98, REVERIFY recorded	session-20261114T131646-cdc565a4	2026-11-14T14:58:33Z
 fix:filinq:2074:3af25510	merged development, l10n conflict resolved keeping both; new head 228eb6732862ad2d722fc122df3833215cdef0a8	session-20261114T141738-30f539db	2026-11-14T14:58:48Z
 verify:pipelinq:3835:af86091c	3835 CONFLICT (lib/Listener/ListenerRegistrar.php)	session-20261114T144757-446bd6da	2026-11-14T14:58:59Z
+fix:hermiq:1715:d9f59cc5	merged development, l10n both sides kept, register v0.55.0; head e1d609ec	session-20261114T144734-e99d406c	2026-11-14T14:59:09Z
