@@ -10147,3 +10147,4 @@ fix:learniq:2520:3a7f3384	conflict resolved, pushed f857df28; 1 inherited failur
 fix:learniq:2484:8e12588d	merged development in (clean), suite same as development; new head 9e4298e45, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T16:23:06Z
 verify:learniq:2501:2d350a95	GREEN 2501 (no new failures; PHP 6750 tests, JS 1367)	session-20261114T151803-c9b63248	2026-11-14T16:23:24Z
 fix:learniq:2519:e252f190	conflict resolved (l10n keep-both), pushed 644c2a79, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T16:23:43Z
+build:integriq:connectors-sharepoint-publication-intake:c2	PR #3630: tasks 1,2 and code of 4,5 done (set, cron attach, setup dialog+intake route, deprecation, demo); left: e2e spec and live tenant checks; suite 8943 no new failures	session-20261114T154751-59b4cd56	2026-11-14T16:23:53Z
