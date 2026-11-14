@@ -7566,3 +7566,4 @@ stackiq	1912	7bab8b71dad1cdfbce0c5773c2245f44c7978738	REVERIFY	worker-20	moved M
 keepiq	1631	f4de0e6f0044039bd6edae619e32b6c8cd21d394	GREEN	worker-08:review	behaviour unchanged: the five copies of the honey/SIEM/audit timestamp formatters move to utils/dateTime.js with the same empty, dash and unformattable cases; no PHP or access code touched; vitest on the PR merged with development 6420 pass, eslint clean on touched files
 opencatalogi	2687	f9bcf3c46c1957053e070b8c85a96d9c3222cb1b	CONFLICT	worker-03	conflicts in the tree after #2684/#2685 in l10n/en.js en.json nl.js nl.json
 opencatalogi	2688	821d0084227c40315916f5f232f47cdc105441ae	CONFLICT	worker-03	conflicts in the tree after #2684/#2685 in l10n/en.js en.json nl.js nl.json
+larpinq	1024	f126fa16a4df511b250c251fec19c2e1ee9d27b1	GREEN	worker-27	tests only (+1 vitest spec, 19 tests pass); merged tree: vitest 66 files/525 pass, phpunit unchanged 792 OK
