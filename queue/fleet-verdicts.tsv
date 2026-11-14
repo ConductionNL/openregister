@@ -8113,3 +8113,4 @@ filinq	2113	e57462f16b5549c46921a220c6d5de1133627c90	CONFLICT	worker-38	conflict
 shillinq	3003	84036e218d227eacb2380ae5f3e5b47b6f5e5d83	GREEN	worker-11	PHP 11078 tests on tree, baseline 11050 green, no new failures; vitest 2713, 1 inherited (dunningNextRun); builds receivables-provider-payouts 2.1-2.4 as specified
 shillinq	3004	4aa69b46ed58997d04d157abea97fcd9737cd49d	CONFLICT	worker-11	conflicts with #3003 in the tree (appinfo/info.xml, l10n en/nl, tests/fixtures/register-versions.lock.json); clean on development alone
 shillinq	3063	02b19218febcc3b6fe72eee1b884fbbdbca04282	GREEN	worker-11	PHP 11078 tests on tree, baseline 11050 green, no new failures; vitest 2713, 1 inherited (dunningNextRun); builds sales-time-and-expense-billing 1.2 as specified
+shillinq	3064	0cade1527ef105a80543a2f958c4a957ab92be6f	CONFLICT	worker-11	conflicts with #3003 in the tree (appinfo/info.xml, tests/fixtures/register-versions.lock.json); clean on development alone
