@@ -8986,3 +8986,5 @@ pipelinq	3818	e0545685f93bb24461fbe107195f792c4b26ec23	CONFLICT	worker-28	confli
 pipelinq	3829	41a1c1f85f130fd4616901ba345e104d7f53b468	CONFLICT	worker-28	conflicts with plain development (3c364b6ee), files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
 integriq	3574	cfe173d8254059423a2abd5ebe9c49d4321165f0	GREEN	worker-48	php 8970 tests (baseline 8920, inherited failures incl. SynchronizationSynchronizeEntryGoldenTest which fails on plain development), vitest 2174 pass; new failures 0; build matches mapping-formats-and-lookups, XML writer moved to a util
 integriq	3596	ccfce1461772a9284cc1ee537efca7f88937b959	GREEN	worker-48	php 8970 tests (baseline 8920, inherited failures incl. SynchronizationSynchronizeEntryGoldenTest which fails on plain development), vitest 2174 pass; new failures 0; build matches sources-outbound-rate-limit-pacing
+decidiq	2143	1430cc3a06f1246370a93124179a171fbb021b48	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	2169	5f13d30a50ff2a49f1034a0be211d6dd0b6d225e	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.87 -> 3.85
