@@ -7063,3 +7063,4 @@ portaliq	2433	6cd14d914da71f008a5de2c654d654cd0c38fb74	REVERIFY	worker-58	merged
 hermiq	1740	58e98963f853f2e60079021dedf1ca41dc089796	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
 hermiq	1751	d868cafb17b2ccdca63c099c352a143d3596b95c	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
 hermiq	1755	aba4ba32a59a4243f95c371d8581ccab26a17b71	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Controller/ChatStreamController.php,lib/Settings/hermiq_register.json
+hermiq	1760	7cc54c6b0bda2cfb9d638b94b524408a662d87b7	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in appinfo/info.xml,lib/Settings/hermiq_register.json
