@@ -11062,3 +11062,4 @@ verify:integriq:3610:d5a20c0c	3610 GREEN, 3628 GREEN, 3635 skipped (head moved t
 fix:integriq:3600:7440f904	no change: branch is up to date with development and merges clean; it conflicts only with unmerged #3593 in l10n/en|nl.js|json, resolve whichever lands second	session-20261114T202449-f0278d5a	2026-11-14T20:58:05Z
 verify:portaliq:2500:72b59a5e	GREEN #2500: unit 5838 ok, node specs 159 ok, no new failures	session-20261114T204802-89dfe85e	2026-11-14T20:58:05Z
 verify:learniq:2493:2b3406da	2493 GREEN: unit 6810, only inherited failure; js-unit no new failures	session-20261114T194744-563ce177	2026-11-14T20:58:21Z
+fix:buildiq:1582:1ce7e42c	floor restored, pushed 3f74f59f; REVERIFY recorded	session-20261114T204945-cfbc5d95	2026-11-14T20:58:27Z
