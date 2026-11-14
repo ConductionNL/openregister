@@ -7409,3 +7409,4 @@ stackiq	1704	f55ed033a0d75c518f0476302f49b8bf3218d361	REVERIFY	worker-52	merged 
 stackiq	1706	5ba0e54b3550a536789ec349d1e6b746e42ab4ee	REVERIFY	worker-14	merged development in; kept both ViewObject specs (dev's now bind the component's methods, assertions unchanged; 136 viewObject tests pass), suppressions pruned; new head dcde9ef24d8288b646227ea325ca8e985111d0b7, verify it
 keepiq	1786	6e617a96165256f5b0814c3922f6c6bf6afde4a5	GREEN	worker-17	phpunit 4990 OK (baseline 4975 OK), 0 new failures; vitest 6418 pass
 keepiq	1787	a1fbe07c955e217940ca03e20a3c7d4961395d72	CONFLICT	worker-17	conflicts with #1786 in l10n/en.js en.json nl.js nl.json
+keepiq	1788	a87d4e639c2f2012ea415385ae84c5b38c535296	CONFLICT	worker-17	conflicts with #1786 in l10n/en.js en.json nl.js nl.json
