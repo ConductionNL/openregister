@@ -8549,3 +8549,4 @@ build:larpinq:registration-cancel-transfer-refund	already done in larpinq: 2.3 d
 fix:stackiq:1912:8ec0b91d	REVERIFY 7bab8b71dad1cdfbce0c5773c2245f44c7978738	session-20261114T070323-628c2f37	2026-11-14T09:05:23Z
 verify:opencatalogi:2648:4ae5e1a7	GREEN 2648 2681 2684; CONFLICT (tree, l10n) 2655 2678 2679 2680 2682 2683	session-20261114T062200-6a28e40c	2026-11-14T09:05:32Z
 review:keepiq:1631:f4de0e6f	GREEN: formatter extraction, behaviour unchanged, vitest 6420 pass	session-20261114T070329-a050d62b	2026-11-14T09:05:50Z
+build:thematiq:action-colour-token	already built: on development since 06c92322e (#1252), every code task ticked; only 6.4 (running-instance check) open	session-20261114T075640-614c8df8	2026-11-14T09:06:01Z
