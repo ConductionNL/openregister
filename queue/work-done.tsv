@@ -9559,3 +9559,4 @@ build:learniq:bpv-hours-per-day:c2	PR #2537: T2 writeHourDay, T3 form fields + r
 fix:decidiq:2168:89b4e6ca	conflict resolved, new head 39f054e9, REVERIFY recorded	session-20261114T141728-9a5d03fc	2026-11-14T14:43:34Z
 fix:decidiq:2149:c82a792a	floor restored, floor_check PASS, new head 04365462, REVERIFY recorded	session-20261114T134701-ae8ce354	2026-11-14T14:43:42Z
 build:learniq:absence-reports-seen-and-ended:c2	done: PR learniq#2486 head 646bdf9b9 builds T3 lesson hours, T4 reportRecovered + guard, T5 seen line + nl, T6 po example; T2 detail half blocked (no OpenRegister read event), T7 e2e needs live instance; suite 6711->6725, 1 inherited fail	session-20261114T134652-7dff5131	2026-11-14T14:43:57Z
+fix:shillinq:2972:11951c7e	conflict resolved, new head e24273baa	session-20261114T141737-e9e54940	2026-11-14T14:43:52Z
