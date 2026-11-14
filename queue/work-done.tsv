@@ -9383,3 +9383,4 @@ merge:hermiq:1777:f5cff830	merge3 tree of 1 hermiq PRs: merged=1 red=0 fail=0 sk
 fix:portaliq:2430:1d196c09	merged development into the branch, resolved l10n/register-version conflicts (bump to 0.111.0); new head 3e55d961, REVERIFY recorded	session-20261114T131646-6a405bc8	2026-11-14T14:12:27Z
 build:filinq:woo-metadata-worklist:c2	partial: filinq#2102 updated: 2.1 filter + column, 2.2 bulk Set metadata, 1.3 settings field, development merged in (register 8.56.0); left Playwright, 3.1 docs/screenshots, 3.2 coverage	session-20261114T121613-b54e1c1d	2026-11-14T14:12:31Z
 merge:pipelinq:3742:0a5d2ee6	merge3 tree of 13 pipelinq PRs: merged=7 red=0 fail=0 skip=1; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T14:12:55Z
+merge:pipelinq:3721:a610b144	merge3 tree of 13 pipelinq PRs: merged=7 red=0 fail=0 skip=1; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T14:12:58Z
