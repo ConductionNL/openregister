@@ -7,8 +7,8 @@
 
 ## 2. Controller
 
-- [ ] 2.1 `mayManage()` and owner scoping on all webhook routes, 404 for a hook the caller may not manage, owner and organisation set on create. Verify: `WebhooksControllerTest` for administrator, owner, holder of the right on someone else's hook (404) and a user without the right (403).
-- [ ] 2.2 `OwnedWebhookValidator` for events, register and schema scope with a read check, forbidden configuration keys and the 20-hook cap. Verify: `tests/Unit/Service/Webhook/OwnedWebhookValidatorTest.php`, each refusal names its field.
+- [x] 2.1 `mayManage()` and owner scoping on all webhook routes, 404 for a hook the caller may not manage, owner and organisation set on create. Verify: `WebhooksControllerTest` for administrator, owner, holder of the right on someone else's hook (404) and a user without the right (403).
+- [x] 2.2 `OwnedWebhookValidator` for events, register and schema scope with a read check, forbidden configuration keys and the 20-hook cap. Verify: `tests/Unit/Service/Webhook/OwnedWebhookValidatorTest.php`, each refusal names its field.
 
 ## 3. Delivery
 

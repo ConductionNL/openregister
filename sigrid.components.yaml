@@ -97,6 +97,7 @@ components:
       - ".*/lib/Service/Vectorization/Strategies/[^/]*"
       - ".*/lib/Service/View/[^/]*"
       - ".*/lib/Service/Vocabulary/[^/]*"
+      - ".*/lib/Service/Webhook/[^/]*"
   - name: Processes
     include:
       - ".*/lib/BackgroundJob/(AnnotationNotificationDispatchJob|AutoTransitionJob|AutomationRecordRetentionJob|BulkJobRunner|CasePlanTimerRearmJob|FileTextExtractionJob|FlowRunRecoveryServices|FlowRunRetentionJob|FlowRunWorker|FlowRunWorkerServices|FlowScheduleWorker|FlowTimerWorker|FormUploadPurgeJob|ObjectTextExtractionJob|RecomputeTimersForCalendarJob|RuleRunRetentionJob|ScheduledMessageSweepJob|SourceRecordRecomputeJob|TemporalCalculationSweepJob|TranslationProjectionJob)[.]php"

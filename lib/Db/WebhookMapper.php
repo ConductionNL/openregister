@@ -505,6 +505,27 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	}//end createFromArray()
 
 	/**
+	 * Create a webhook owned by a person from array.
+	 *
+	 * The owner is set from the given user id, never from the data; the
+	 * organisation is the active one, as for every webhook.
+	 *
+	 * @param array  $data  Webhook data
+	 * @param string $owner The owner's user id
+	 *
+	 * @return Webhook
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	public function createOwnedFromArray(array $data, string $owner): Webhook {
+		$webhook = new Webhook();
+		$webhook->hydrate($data);
+		$webhook->setOwner($owner);
+
+		return $this->insert(entity: $webhook);
+	}//end createOwnedFromArray()
+
+	/**
 	 * Update webhook from array
 	 *
 	 * @param int $id Webhook ID
