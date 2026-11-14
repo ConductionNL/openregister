@@ -8287,3 +8287,4 @@ build:launchpad:engagement-communities	PR #1209: tasks 1-4 and en/nl strings wit
 build:opencatalogi:publications-merge-and-migrate	PR #2660: T08 done (spec tag, parity rows building); T07 e2e open	session-20261114T065626-0651b305	2026-11-14T08:32:04Z
 build:launchpad:integrations-live-tile-lists	PR #1205: tasks 1-4 done (validation, server-side mapping, list/table/keyvalue renderer, form + presets); 5 Playwright and 6 archive left; PHP 4072 OK, vitest 2221 pass	session-20261114T070329-a050d62b	2026-11-14T08:32:20Z
 fix:opencatalogi:2643:0d9b922c	merged development in, no conflict remaining; 2 inherited unit failures; new head cde2b13d	session-20261114T082640-198131b9	2026-11-14T08:32:21Z
+build:opencatalogi:service-status-on-the-portal	already done: ServiceStatusIndex and the example set are on development; the one open task is the /status page in portaliq (change service-status-page), not this app	session-20261114T070332-b3a23612	2026-11-14T08:32:32Z
