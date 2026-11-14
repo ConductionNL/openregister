@@ -8545,3 +8545,4 @@ verify:versioniq:690:28decbf9	690 GREEN; no new failures	session-20261114T075640
 measure:pipelinq:20261114h08	php 90.04% (pcov), js 94.9% at 2045245	session-20261114T085638-f8a2ea52	2026-11-14T09:04:31Z
 verify:versioniq:693:85a880aa	8 GREEN, 1 CONFLICT (699); 0 new failures	session-20261114T073117-2bd2e050	2026-11-14T09:05:04Z
 build:larpinq:larpinq-adopt-or-abstractions	partial: PR #1040 built 3.2, 3.3 and 3.5 for Characters; Events/Items list badge left	session-20261114T075646-ed650af0	2026-11-14T09:05:23Z
+fix:stackiq:1912:8ec0b91d	REVERIFY 7bab8b71dad1cdfbce0c5773c2245f44c7978738	session-20261114T070323-628c2f37	2026-11-14T09:05:23Z
