@@ -11035,3 +11035,4 @@ fix:buildiq:1613:37f34495	merged development in, l10n clean; new head 9a9eb9cb, 
 fix:integriq:3546:9e0ba07c	moved l10n keys, OpenAPI path and route mid-file; merges clean with 3539/3542 and the rest of the tree; new head 38ea402a, REVERIFY recorded	session-20261114T204759-2444e6ca	2026-11-14T20:52:20Z
 verify:learniq:2507:0feffc43	stale: 2507 head moved to cea92f10 (queued 42f9fc57), skipped	session-20261114T194744-563ce177	2026-11-14T20:52:39Z
 verify:shillinq:3051:b2f9aa43	3051 CONFLICT (ServiceRegistrarTest.php), 3062 GREEN (phpunit 11398 ok, vitest 1 inherited failure)	session-20261114T194805-be886caa	2026-11-14T20:52:40Z
+review:portaliq:2440:05103dba	GREEN: spec-backed portal-admin scope, fails closed; unit 5803 pass, no new failures	session-20261114T204802-89dfe85e	2026-11-14T20:52:49Z
