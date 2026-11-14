@@ -8200,3 +8200,4 @@ build:launchpad:embedded-analytics	partial: PR #1194, tasks 5 and 8 built, 7 and
 fix:integriq:3590:74a7e65f	merged development (clean), pushed c8a86e41; conflict is with unlanded #3585	session-20261114T065626-0651b305	2026-11-14T08:19:45Z
 fix:hermiq:1725:cafeae63	merged development in (clean); no new failures (172 inherited from development); new head c59e9eb85eb063bc408cbc432a92f4e02ad40d16; REVERIFY recorded	session-20261114T073111-9b40710a	2026-11-14T08:19:54Z
 build:buildiq:pages-task-panel-beside-case-tabs	PR #1627: T01-T04 (vitest half), T07 built, 16 tests, no new failures; e2e (T04/T05), T06 dossiq lane, T08 CLI left	session-20261114T065633-3e3cb668	2026-11-14T08:20:14Z
+fix:decidiq:2158:fc0444d7	layout id + l10n overlap with #2139 removed; tree of 4 merges clean and passes; pushed 68d22a7ac7daeb012993c28564d2b0fd3f743ed4	session-20261114T062202-3e33eeb3	2026-11-14T08:20:22Z
