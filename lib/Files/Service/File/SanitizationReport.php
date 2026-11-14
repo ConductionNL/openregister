@@ -121,12 +121,21 @@ final class SanitizationReport implements JsonSerializable {
 	public readonly ?SanitizationHiddenCounts $hidden;
 
 	/**
+	 * The metadata fields removed because they could not be masked (name and
+	 * reason, never the value); null for a run that did not mask metadata.
+	 *
+	 * @var list<array{field: string, reason: string}>|null
+	 */
+	public readonly ?array $unmaskableFields;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SanitizationRevisionCounts  $revisions       Comment and tracked-change counts.
 	 * @param SanitizationStructureCounts $structure       Hyperlink, metadata, custom XML and field-code counts.
 	 * @param string                      $sentinelApplied The sentinel string used for scrubbing.
 	 * @param SanitizationHiddenCounts|null $hidden       Hidden sheets, rows, columns, slides and notes removed (spreadsheets and presentations only).
+	 * @param list<array{field: string, reason: string}>|null $unmaskableFields Fields removed because they could not be masked (masked runs only).
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
@@ -135,6 +144,7 @@ final class SanitizationReport implements JsonSerializable {
 		SanitizationStructureCounts $structure = new SanitizationStructureCounts(),
 		string $sentinelApplied = '',
 		?SanitizationHiddenCounts $hidden = null,
+		?array $unmaskableFields = null,
 	) {
 		$this->commentsRemoved = $revisions->commentsRemoved;
 		$this->trackedChangesAccepted = $revisions->trackedChangesAccepted;
@@ -146,12 +156,13 @@ final class SanitizationReport implements JsonSerializable {
 		$this->fieldCodesStripped = $structure->fieldCodesStripped;
 		$this->sentinelApplied = $sentinelApplied;
 		$this->hidden = $hidden;
+		$this->unmaskableFields = $unmaskableFields;
 	}//end __construct()
 
 	/**
 	 * Serialise to a stable, ordered associative array.
 	 *
-	 * @return array<string, int|string>
+	 * @return array<string, int|string|list<array{field: string, reason: string}>>
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
@@ -166,6 +177,21 @@ final class SanitizationReport implements JsonSerializable {
 			'customXmlPartsDropped' => $this->customXmlPartsDropped,
 			'fieldCodesStripped' => $this->fieldCodesStripped,
 			'sentinelApplied' => $this->sentinelApplied,
-		] + ($this->hidden?->toArray() ?? []);
+		] + ($this->hidden?->toArray() ?? []) + $this->unmaskableBlock();
 	}//end jsonSerialize()
+
+	/**
+	 * The `unmaskableFields` key of a masked run; nothing for a plain one.
+	 *
+	 * @return array<string, list<array{field: string, reason: string}>>
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	private function unmaskableBlock(): array {
+		if ($this->unmaskableFields === null) {
+			return [];
+		}
+
+		return ['unmaskableFields' => $this->unmaskableFields];
+	}//end unmaskableBlock()
 }//end class

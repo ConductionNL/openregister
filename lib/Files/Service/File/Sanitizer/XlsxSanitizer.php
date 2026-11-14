@@ -46,7 +46,7 @@ use OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts;
  *
  * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-spreadsheets-and-slides-are-sanitised-like-documents-req-rrs-003
  */
-final class XlsxSanitizer implements SanitizerInterface {
+final class XlsxSanitizer implements MetadataMaskingSanitizerInterface {
 
 	/**
 	 * The XLSX MIME type.
@@ -112,6 +112,21 @@ final class XlsxSanitizer implements SanitizerInterface {
 	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-spreadsheets-and-slides-are-sanitised-like-documents-req-rrs-003
 	 */
 	public function sanitize(string $sourcePath, string $destPath): SanitizationReport {
+		return $this->sanitizeMasked(sourcePath: $sourcePath, destPath: $destPath, mask: MetadataMask::none());
+	}//end sanitize()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param string       $sourcePath Path to the source .xlsx.
+	 * @param string       $destPath   Path to write the sanitised .xlsx.
+	 * @param MetadataMask $mask       The run's substitution map.
+	 *
+	 * @return SanitizationReport Per-category counts.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	public function sanitizeMasked(string $sourcePath, string $destPath, MetadataMask $mask): SanitizationReport {
 		$package = OoxmlPackage::read(path: $sourcePath);
 		$counts  = ['sheets' => 0, 'rows' => 0, 'columns' => 0, 'comments' => 0, 'revisions' => 0];
 
@@ -130,7 +145,7 @@ final class XlsxSanitizer implements SanitizerInterface {
 		$counts['revisions'] = count($package->names(pattern: '#^xl/revisions/revisionLog\d*\.xml$#'));
 		$this->removeWorkbookParts(package: $package, types: ['person', 'revisionHeaders', 'usernames', 'calcChain']);
 		$customXml = $this->common->removeCustomXml(package: $package);
-		$metadata  = $this->common->scrubMetadata(package: $package);
+		$metadata  = $this->common->scrubMetadata(package: $package, mask: $mask);
 		$this->emptyUnreferencedStrings(package: $package, sheets: $sheets);
 
 		$package->write(path: $destPath);
@@ -143,9 +158,10 @@ final class XlsxSanitizer implements SanitizerInterface {
 				hiddenSheetsRemoved: $counts['sheets'],
 				hiddenRowsCleared: $counts['rows'],
 				hiddenColumnsCleared: $counts['columns']
-			)
+			),
+			unmaskableFields: $mask->reported()
 		);
-	}//end sanitize()
+	}//end sanitizeMasked()
 
 	/**
 	 * Remove every hidden and very hidden sheet, with the parts only it used.

@@ -39,7 +39,7 @@ use OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts;
  *
  * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-spreadsheets-and-slides-are-sanitised-like-documents-req-rrs-003
  */
-final class PptxSanitizer implements SanitizerInterface {
+final class PptxSanitizer implements MetadataMaskingSanitizerInterface {
 
 	/**
 	 * The PPTX MIME type.
@@ -100,6 +100,21 @@ final class PptxSanitizer implements SanitizerInterface {
 	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-spreadsheets-and-slides-are-sanitised-like-documents-req-rrs-003
 	 */
 	public function sanitize(string $sourcePath, string $destPath): SanitizationReport {
+		return $this->sanitizeMasked(sourcePath: $sourcePath, destPath: $destPath, mask: MetadataMask::none());
+	}//end sanitize()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param string       $sourcePath Path to the source .pptx.
+	 * @param string       $destPath   Path to write the sanitised .pptx.
+	 * @param MetadataMask $mask       The run's substitution map.
+	 *
+	 * @return SanitizationReport Per-category counts.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	public function sanitizeMasked(string $sourcePath, string $destPath, MetadataMask $mask): SanitizationReport {
 		$package = OoxmlPackage::read(path: $sourcePath);
 
 		$hiddenSlides = $this->removeHiddenSlides(package: $package);
@@ -113,7 +128,7 @@ final class PptxSanitizer implements SanitizerInterface {
 
 		$this->removePresentationParts(package: $package, types: ['commentAuthors', 'authors']);
 		$customXml = $this->common->removeCustomXml(package: $package);
-		$metadata  = $this->common->scrubMetadata(package: $package);
+		$metadata  = $this->common->scrubMetadata(package: $package, mask: $mask);
 
 		$package->write(path: $destPath);
 
@@ -121,9 +136,10 @@ final class PptxSanitizer implements SanitizerInterface {
 			revisions: new SanitizationRevisionCounts(commentsRemoved: $comments),
 			structure: new SanitizationStructureCounts(metadataFieldsScrubbed: $metadata, customXmlPartsDropped: $customXml),
 			sentinelApplied: $this->sentinel,
-			hidden: new SanitizationHiddenCounts(hiddenSlidesRemoved: $hiddenSlides, speakerNotesRemoved: $notes)
+			hidden: new SanitizationHiddenCounts(hiddenSlidesRemoved: $hiddenSlides, speakerNotesRemoved: $notes),
+			unmaskableFields: $mask->reported()
 		);
-	}//end sanitize()
+	}//end sanitizeMasked()
 
 	/**
 	 * Remove every slide marked `show="0"`, with the parts only it used.

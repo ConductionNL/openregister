@@ -57,6 +57,8 @@ use ZipArchive;
  * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\PptxSanitizer
  * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\OoxmlPackage
  * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\OoxmlCommonParts
+ * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\OfficePartSurgery
+ * @uses   \OCA\OpenRegister\Files\Service\File\Sanitizer\MetadataMask
  * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationReport
  * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationResult
  * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationHiddenCounts
@@ -129,7 +131,7 @@ class AnonymiseSpreadsheetTest extends TestCase {
 	 * A workbook with the visible sheet `Openbaar`, the hidden sheet `berekening-intern`
 	 * and a hidden row on the visible sheet naming Piet Pietersen.
 	 */
-	private function workbook(): string {
+	private function workbook(array $extraParts = []): string {
 		$rel = static fn (string $id, string $type, string $target): string => '<Relationship Id="'.$id.'" Type="'.$type.'" Target="'.$target.'"/>';
 		$rels = static fn (string ...$items): string => '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'.implode('', $items).'</Relationships>';
 		$override = static fn (string $part): string => '<Override PartName="/'.$part.'" ContentType="application/xml"/>';
@@ -148,7 +150,7 @@ class AnonymiseSpreadsheetTest extends TestCase {
 				.'<row r="1"><c r="A1" t="s"><v>0</v></c></row><row r="2" hidden="1"><c r="A2" t="s"><v>1</v></c></row></sheetData></worksheet>',
 			'xl/worksheets/sheet2.xml' => '<?xml version="1.0"?><worksheet '.self::NS.'><sheetData><row r="1"><c r="A1" t="s"><v>2</v></c></row></sheetData></worksheet>',
 			'xl/sharedStrings.xml' => '<?xml version="1.0"?><sst '.self::NS.' count="3" uniqueCount="3"><si><t>Aanvraag van Jan Jansen</t></si><si><t>Piet Pietersen</t></si><si><t>interne berekening</t></si></sst>',
-		];
+		] + $extraParts;
 
 		$path = $this->temp(suffix: '.xlsx');
 		$zip = new ZipArchive();
@@ -181,8 +183,12 @@ class AnonymiseSpreadsheetTest extends TestCase {
 		return $parts;
 	}//end writtenParts()
 
-	public function testAHiddenSheetAndRowDoNotGoOutAndTheRunReportsThem(): void {
-		$source = $this->workbook();
+	/**
+	 * Anonymise the workbook at $source through `FileService::anonymizeDocument()`, `Jan Jansen` detected.
+	 *
+	 * @return FileService The service, for the run's verification.
+	 */
+	private function anonymise(string $source): FileService {
 
 		$parent = $this->createMock(Folder::class);
 		$parent->method('nodeExists')->willReturnCallback(fn (string $path): bool => array_key_exists($path, $this->written));
@@ -244,6 +250,12 @@ class AnonymiseSpreadsheetTest extends TestCase {
 
 		$service->anonymizeDocument(node: $node, entities: [['text' => 'Jan Jansen', 'entityType' => 'PERSON', 'key' => 'p1']]);
 
+		return $service;
+	}//end anonymise()
+
+	public function testAHiddenSheetAndRowDoNotGoOutAndTheRunReportsThem(): void {
+		$service = $this->anonymise(source: $this->workbook());
+
 		// The copy: no hidden sheet, no value in the hidden row, the visible name replaced.
 		$parts = $this->writtenParts(name: 'begroting_anonymized.xlsx');
 		$this->assertStringNotContainsString('berekening-intern', $parts['xl/workbook.xml']);
@@ -265,4 +277,28 @@ class AnonymiseSpreadsheetTest extends TestCase {
 		$this->assertSame('clean', $service->getLastVerification()['verdict']);
 		$this->assertSame('xlsx', $service->getLastVerification()['outputMode']);
 	}//end testAHiddenSheetAndRowDoNotGoOutAndTheRunReportsThem()
+
+	/**
+	 * Through the same caller, the title keeps its meaning without the name,
+	 * the creator is stripped, and a binary custom property is removed and
+	 * named in the persisted report (REQ-RRS-004).
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	public function testTheTitleIsMaskedAndAnUnmaskableFieldIsNamedInTheRun(): void {
+		$this->anonymise(source: $this->workbook(extraParts: [
+			'docProps/core.xml' => '<?xml version="1.0"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">'
+				.'<dc:creator>Jan Jansen</dc:creator><dc:title>Besluit op bezwaar Jan Jansen</dc:title></cp:coreProperties>',
+			'docProps/custom.xml' => '<?xml version="1.0"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
+				.'<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="2" name="scan-origineel"><vt:blob>SmFu</vt:blob></property></Properties>',
+		]));
+
+		$parts = $this->writtenParts(name: 'begroting_anonymized.xlsx');
+		$this->assertStringContainsString('<dc:title>Besluit op bezwaar [PERSON: p1]</dc:title>', $parts['docProps/core.xml']);
+		$this->assertStringNotContainsString('Jan Jansen', $parts['docProps/core.xml']);
+		$this->assertStringNotContainsString('scan-origineel', $parts['docProps/custom.xml']);
+
+		$report = $this->logRows[0]->getSanitizationArray();
+		$this->assertSame([['field' => 'scan-origineel', 'reason' => 'not a text value (vt:blob)']], $report['unmaskableFields']);
+	}//end testTheTitleIsMaskedAndAnUnmaskableFieldIsNamedInTheRun()
 }//end class

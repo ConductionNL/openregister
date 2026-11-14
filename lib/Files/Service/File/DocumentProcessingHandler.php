@@ -29,6 +29,7 @@ use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\MetadataMask;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
 use OCA\OpenRegister\Service\Anonymisation\RedactionIrreversibilityVerifier;
@@ -423,21 +424,24 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// Entity anonymisation runs strict: residual entity text is still
 		// written and reported back, but a PDF output that cannot be re-read
 		// for that check is refused rather than written as '_anonymized'.
-		$anonymizedFile = $this->replaceWords(
-			request: new WordReplacementRequest(
-				node: $node,
+		// Title, subject, keywords, description and text custom properties are
+		// masked with the same map as the body, not blanked (REQ-RRS-004).
+		$metadataMask   = new MetadataMask(substitutions: $replacements);
+		$anonymizedFile = $this->replaceDocument(
+			job: (new DocumentReplacement(
+				node: $this->requireFile(node: $node),
 				replacements: $replacements,
-				outputName: $anonymizedFileName,
-				strict: true,
-				preserveStructure: $request->options->preserveStructure
-			)
+				outputName: $anonymizedFileName
+			))->withPdfOptions(strict: true, preserveStructure: $request->options->preserveStructure)
+				->withMetadataMask(mask: $metadataMask)
 		);
 		$this->markStepRan(step: PipelineSteps::ANONYMISER);
 		if (($node instanceof File) === true
 			&& $this->redaction->sanitizer->isSanitizable($node->getMimeType()) === true
 		) {
 			$anonymizedFile = $this->anonymizeSanitizableDocument(
-				job: new DocumentReplacement(node: $node, replacements: $replacements, outputName: $anonymizedFileName)
+				job: (new DocumentReplacement(node: $node, replacements: $replacements, outputName: $anonymizedFileName))
+					->withMetadataMask(mask: $metadataMask)
 			);
 		}
 
@@ -1095,7 +1099,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 */
 	private function anonymizeSanitizableDocument(DocumentReplacement $job): File {
 		try {
-			$result = $this->redaction->sanitizer->sanitize($job->node->getId());
+			$result = $this->redaction->sanitizer->sanitize($job->node->getId(), $job->metadataMask());
 		} catch (SanitizationException $e) {
 			if ($e->getReason() === SanitizationException::REASON_ENCRYPTED) {
 				// Caller-correctable: cannot anonymise an encrypted document.
@@ -1443,8 +1447,9 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			);
 		}
 
-		$replacedBytes = $this->sanitizePdfMetadata(replacer: $replacer, pdfBytes: $redaction->bytes);
+		$replacedBytes = $this->sanitizePdfMetadata(replacer: $replacer, pdfBytes: $redaction->bytes, mask: $job->metadataMask());
 		$this->markStepRan(step: PipelineSteps::PDF_METADATA_SANITISER);
+		$this->reportUnmaskablePdfFields(mask: $job->metadataMask());
 
 		$this->removeExistingOutput(job: $job);
 		$newFile = $job->node->getParent()->newFile(path: $job->outputName, content: $replacedBytes);
@@ -1568,18 +1573,20 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	}//end residualEntityRecords()
 
 	/**
-	 * Strip /Info and XMP metadata from the replaced PDF bytes.
+	 * Strip /Info and XMP metadata from the replaced PDF bytes; an
+	 * anonymisation run masks the descriptive /Info fields instead.
 	 *
-	 * @param PdfTextReplacer $replacer The replacer of this run.
-	 * @param string $pdfBytes The replaced PDF bytes.
+	 * @param PdfTextReplacer   $replacer The replacer of this run.
+	 * @param string            $pdfBytes The replaced PDF bytes.
+	 * @param MetadataMask|null $mask     The anonymisation run's substitution map, or null.
 	 *
 	 * @throws PdfAnonymisationException When sanitisation fails.
 	 *
 	 * @return string The sanitised bytes.
 	 */
-	private function sanitizePdfMetadata(PdfTextReplacer $replacer, string $pdfBytes): string {
+	private function sanitizePdfMetadata(PdfTextReplacer $replacer, string $pdfBytes, ?MetadataMask $mask): string {
 		try {
-			return $replacer->sanitizeMetadata(pdfBytes: $pdfBytes);
+			return $replacer->sanitizeMetadata(pdfBytes: $pdfBytes, mask: $mask);
 		} catch (PdfAnonymisationException $e) {
 			// Sanitiser-raised (or the fail-closed guards above) — surface to the caller.
 			throw $e;
@@ -1592,4 +1599,23 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			);
 		}//end try
 	}//end sanitizePdfMetadata()
+
+	/**
+	 * Name, in the run's report, the PDF metadata fields the mask could not
+	 * mask and removed. A PDF run has no other sanitisation report, so one
+	 * is kept only when there is something to name (REQ-RRS-004).
+	 *
+	 * @param MetadataMask|null $mask The anonymisation run's substitution map, or null.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	private function reportUnmaskablePdfFields(?MetadataMask $mask): void {
+		if ($mask === null || $mask->unmaskable() === []) {
+			return;
+		}
+
+		$this->lastSanitizationReport = new SanitizationReport(unmaskableFields: $mask->unmaskable());
+	}//end reportUnmaskablePdfFields()
 }//end class

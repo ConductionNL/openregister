@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File\Sanitizer;
 
+use DOMDocument;
+
 /**
  * The package metadata and the custom XML parts, as the DOCX sanitiser
  * treats them: identity and descriptive fields replaced by the sentinel,
@@ -66,48 +68,78 @@ final class OoxmlCommonParts {
 	}//end __construct()
 
 	/**
-	 * Scrub `docProps/core.xml`, `docProps/app.xml` and `docProps/custom.xml`.
+	 * Scrub `docProps/core.xml`, `docProps/app.xml` and `docProps/custom.xml`:
+	 * identity fields to the sentinel; title, subject, keywords, description
+	 * and text custom properties masked with the run's map (or to the
+	 * sentinel when the run does not mask), other custom properties removed
+	 * and named.
 	 *
 	 * @param OoxmlPackage $package The package.
+	 * @param MetadataMask $mask    The run's substitution map.
 	 *
 	 * @return int The number of fields scrubbed.
 	 *
-	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-spreadsheets-and-slides-are-sanitised-like-documents-req-rrs-003
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
 	 */
-	public function scrubMetadata(OoxmlPackage $package): int {
-		$parts = [
+	public function scrubMetadata(OoxmlPackage $package, MetadataMask $mask): int {
+		$identity = [
 			'docProps/core.xml' => [
 				[self::NS_DC, 'creator'],
 				[self::NS_CP, 'lastModifiedBy'],
-				[self::NS_DC, 'title'],
-				[self::NS_DC, 'subject'],
-				[self::NS_CP, 'keywords'],
-				[self::NS_DC, 'description'],
 				[self::NS_CP, 'category'],
 				[self::NS_CP, 'contentStatus'],
 			],
 			'docProps/app.xml' => [[self::NS_APP, 'Company'], [self::NS_APP, 'Manager']],
 		];
+		$descriptive = [
+			[self::NS_DC, 'title'],
+			[self::NS_DC, 'subject'],
+			[self::NS_CP, 'keywords'],
+			[self::NS_DC, 'description'],
+		];
 
 		$count = 0;
-		foreach ($parts as $name => $fields) {
+		foreach ($identity as $name => $fields) {
 			$dom = $package->dom(name: $name);
 			if ($dom === null) {
 				continue;
 			}
 
 			$count += $this->surgery->scrubElements(dom: $dom, fields: $fields);
+			if ($name === 'docProps/core.xml') {
+				$count += $this->surgery->maskElements(dom: $dom, fields: $descriptive, mask: $mask);
+			}
+
 			$package->putDom(name: $name, dom: $dom);
 		}
 
 		$custom = $package->dom(name: 'docProps/custom.xml');
 		if ($custom !== null) {
-			$count += $this->surgery->scrubNodes(nodes: $custom->getElementsByTagNameNS(self::NS_CUSTOM, 'property'));
+			$count += $this->scrubCustomProperties(custom: $custom, mask: $mask);
 			$package->putDom(name: 'docProps/custom.xml', dom: $custom);
 		}
 
 		return $count;
 	}//end scrubMetadata()
+
+	/**
+	 * The custom properties: every value to the sentinel for a plain run,
+	 * masked or removed and named for a masking run.
+	 *
+	 * @param DOMDocument $custom The custom properties part.
+	 * @param MetadataMask $mask   The run's substitution map.
+	 *
+	 * @return int The number of properties changed or removed.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	private function scrubCustomProperties(DOMDocument $custom, MetadataMask $mask): int {
+		if ($mask->isActive() === true) {
+			return $this->surgery->maskOoxmlCustomProperties(dom: $custom, mask: $mask);
+		}
+
+		return $this->surgery->scrubNodes(nodes: $custom->getElementsByTagNameNS(self::NS_CUSTOM, 'property'));
+	}//end scrubCustomProperties()
 
 	/**
 	 * Remove every custom XML part, with whatever points to it.
