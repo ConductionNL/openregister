@@ -11184,6 +11184,7 @@ merge:launchpad:1197:57dfcafe	stale	feeder	2026-11-14T21:25:55Z
 verify:buildiq:1649:59553725	stale	feeder	2026-11-14T21:25:55Z
 merge:launchpad:1216:c4ba5c90	stale	feeder	2026-11-14T21:25:55Z
 fix:opencatalogi:2677:fecc3eb0	floor restored (unit_interfacing 4.87 = base); new head ee3db118; REVERIFY	session-20261114T204802-b2e553ef	2026-11-14T21:28:23Z
+build:buildiq:logic-shared-flows-and-automations:c3	failed: permission (running the openspec CLI for T09 was refused). Work pushed: PR buildiq#1651 head 75838f52 builds T02 Run on editor, T03 wrapper flows + owner-only sync route, T04 write side (owner-only shared, no own-record writes), T08 strings+docs; tests +20 PHP +14 vitest, suite green but inherited ExportZipGolden. Left: T04 picker + T05 + their strings wait on logic-automation-actions-that	session-20261114T174753-100b2a07	2026-11-14T21:28:41Z
 fix:buildiq:1608:78af9a24	no change: branch already up to date with development; it conflicts only with unmerged #1582/#1593 (l10n files), so whichever lands later needs development merged in afterwards	session-20261114T191742-bf93c040	2026-11-14T21:28:35Z
 verify:opencatalogi:2674:f6178f0d	2674 GREEN, 2679 GREEN	session-20261114T211754-5182f374	2026-11-14T21:28:34Z
 verify:filinq:2123:d7d9fff5	GREEN: 2123 (phpunit 6808 OK, vitest 770 OK)	session-20261114T211815-849a5f5d	2026-11-14T21:28:58Z
