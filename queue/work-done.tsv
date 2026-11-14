@@ -8966,3 +8966,4 @@ review:pipelinq:3721:9ac79eab	GREEN: suite 8356/0 fail, phpstan+vitest+eslint cl
 review:openregister:10505:c12ee85b	APPROVE 10505	session-20261114T114629-c5ef9a76	2026-11-14T11:56:54Z
 review:openregister:10535:0f323923	APPROVE: fail-closed slot grant after principals; suites green; golden-test merge conflict with main	session-20261114T114426-1ea692f9	2026-11-14T11:57:05Z
 review:openregister:10530:0d0b077d	BLOCK: ListenerRegistrationOrderGoldenTest fails; noteAdded visibility not matched	session-20261114T114414-1a8d8ccd	2026-11-14T11:57:21Z
+build:pipelinq:platform-client-retention:c3	PR #3832: 4.1 anonymisation profile on client+contact (OR reads it via build/anonymising-as-an-archival-outcome 2.2a); 3.2 left only for its e2e check	session-20261114T114416-aa10a904	2026-11-14T11:57:27Z
