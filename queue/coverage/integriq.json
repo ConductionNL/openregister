@@ -1,12 +1,12 @@
 {
  "app": "integriq",
- "commit": "b36e19bcdeefc41c117bd0f31492d532d45714c3",
- "measured_at": "2026-11-14T15:42:43Z",
+ "commit": "19aa4d64aa37d56720a7729ce4b5bbb9dfe84127",
+ "measured_at": "2026-11-14T17:52:42Z",
  "php": {
   "tool": "pcov",
-  "pct": 94.65,
-  "statements": 67366,
-  "covered": 63763,
+  "pct": 94.71,
+  "statements": 67743,
+  "covered": 64157,
   "dirs": {
    "lib/Adapters/": [
     181,
@@ -109,8 +109,8 @@
     272
    ],
    "lib/Controller/": [
-    6584,
-    6264
+    6600,
+    6280
    ],
    "lib/Db/": [
     187,
@@ -218,7 +218,7 @@
    ],
    "lib/Repair/": [
     1288,
-    1219
+    1231
    ],
    "lib/Rule/": [
     121,
@@ -233,8 +233,8 @@
     7
    ],
    "lib/Service/": [
-    23187,
-    21074
+    23529,
+    21409
    ],
    "lib/Service/Adapter/": [
     48,
@@ -246,7 +246,7 @@
    ],
    "lib/Service/Adapter/DocumentCms/": [
     101,
-    95
+    101
    ],
    "lib/Service/Adapter/EndpointWorkspace/": [
     73,
@@ -401,8 +401,8 @@
     265
    ],
    "lib/Service/Peppol/": [
-    78,
-    77
+    97,
+    96
    ],
    "lib/Service/Portal/": [
     50,
@@ -458,7 +458,7 @@
    ],
    "lib/Service/StufZkn/": [
     1950,
-    1904
+    1910
    ],
    "lib/Service/Subscriptions/": [
     82,
@@ -531,17 +531,13 @@
   }
  },
  "js": {
-  "pct": 89.78,
-  "statements": 7204,
-  "covered": 6468,
+  "pct": 95.29,
+  "statements": 6832,
+  "covered": 6510,
   "dirs": {
    "src/": [
-    95,
+    44,
     44
-   ],
-   "src/assets/": [
-    0,
-    0
    ],
    "src/components/": [
     270,
@@ -571,10 +567,6 @@
     51,
     51
    ],
-   "src/manifest.d/": [
-    38,
-    0
-   ],
    "src/mixins/": [
     263,
     263
@@ -592,7 +584,7 @@
     28
    ],
    "src/modals/Endpoint/": [
-    41,
+    1,
     1
    ],
    "src/modals/EventDelivery/": [
@@ -612,7 +604,7 @@
     73
    ],
    "src/modals/Rule/": [
-    239,
+    77,
     77
    ],
    "src/modals/Subscription/": [
@@ -624,8 +616,8 @@
     22
    ],
    "src/modals/v2/": [
-    1483,
-    1390
+    1560,
+    1432
    ],
    "src/store/": [
     31,
@@ -636,7 +628,7 @@
     124
    ],
    "src/views/Approvals/": [
-    96,
+    75,
     68
    ],
    "src/views/EventDelivery/": [
@@ -644,28 +636,12 @@
     36
    ],
    "src/views/ExecutionTrace/": [
-    71,
+    19,
     19
-   ],
-   "src/views/Flow/": [
-    1,
-    0
    ],
    "src/views/Migration/": [
     42,
     40
-   ],
-   "src/views/NotificatiesAbonnement/": [
-    38,
-    0
-   ],
-   "src/views/Operations/": [
-    21,
-    0
-   ],
-   "src/views/RecipientOptOuts/": [
-    24,
-    0
    ],
    "src/views/Rule/": [
     445,
@@ -680,7 +656,7 @@
     875
    ],
    "src/views/admin/": [
-    534,
+    533,
     511
    ],
    "src/views/wrappers/": [
