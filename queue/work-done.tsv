@@ -11337,6 +11337,7 @@ fix:stackiq:1939:683b674e	failed: the only conflict with development is in lib/S
 fix:stackiq:1944:f47ecfa3	conflict resolved, merged development, new head 25fa2c20; REVERIFY queued	session-20261114T214930-79d5b35c	2026-11-14T21:54:45Z
 fix:portaliq:2508:284a8b2d	merged development in, register moved to 0.113.0; new head 540d4522, REVERIFY	session-20261114T204750-c1efccdb	2026-11-14T21:55:02Z
 fix:stackiq:1922:9a7623c7	merged development, resolved register/manifest/bootstrap/l10n; new head 73725d96, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T21:55:12Z
+cover:stackiq:9ac19b3amad24:407c4b68	already done: lib/Service/Registration/ is one class, ServiceFactories, at 100% lines (425/425) and 12/12 methods with the tests merged from quality/test-coverage-407c4b68-1; nothing to add	session-20261114T194805-be886caa	2026-11-14T21:55:39Z
 fix:stackiq:1926:47d3e287	merged development, l10n keys moved mid-catalogue; merges clean with 1905/1946; unit 3611 OK; new head e764756f, REVERIFY recorded	session-20261114T204759-2444e6ca	2026-11-14T21:55:36Z
 build:opencatalogi:capability-rows-close-gaps:c2	partial: PR #2696, done 2.1 2.2 2.3 2.5 2.6 2.7 3.1; left 2.4 (OpenRegister version diff deferred, needs an OR build), 2.8 (integriq disappearance policy), 1.2 e2e and 3.2 live check	session-20261114T204804-ae7e06a7	2026-11-14T21:56:01Z
 review:opencatalogi:2655:47197313	stale	session-20261114T204750-c1efccdb	2026-11-14T21:55:42Z
