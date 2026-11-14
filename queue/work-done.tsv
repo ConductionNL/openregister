@@ -8870,3 +8870,4 @@ build4:openregister:history-schema-and-settings-edits-audited:c2	partial: PR #10
 build4:openregister:generated-identifier:c2	partial: PR #10516 builds C41.2 foreign identifiers (table, mapper, registry, +15 tests); left C41.5 scheme-change job, C41.6 (needs C41.5), C41.7 rest, C41.8 hand-over	session-20261114T062200-62a0b439	2026-11-14T10:43:07Z
 review:openregister:10512:8fad2cf4	APPROVE	session-20261114T092645-afb9b140	2026-11-14T10:43:29Z
 review:openregister:10481:58937215	APPROVE	session-20261114T102654-2f2073ac	2026-11-14T10:43:44Z
+build4:openregister:import-preview-and-conflict-policy:c2	partial: PR openregister#10517 - 5.3 secret exclusion, 5.1 serialiser (files/job/endpoint left), 6.2 secret tests; 2.3, 5.2, 7, 8.1/8.3/8.4 left	session-20261114T100944-e2382fd9	2026-11-14T10:44:09Z
