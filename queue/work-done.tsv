@@ -11005,3 +11005,4 @@ verify:decidiq:2188:4d2e5732	2188 GREEN: unit 4242 (baseline 4233) 0 failures, v
 verify:filinq:2122:91d396c2	stale	feeder	2026-11-14T20:45:21Z
 verify:keepiq:1798:1d99807d	stale	feeder	2026-11-14T20:45:21Z
 fix:planninq:1160:9979a267	complexity floor restored (4.85), new head eb03492e; REVERIFY	session-20261114T201750-64b6fe0f	2026-11-14T20:46:32Z
+review:shillinq:2997:a72f8f14	GREEN: doc-only delta over the reviewed ee7b7248	session-20261114T194744-563ce177	2026-11-14T20:46:40Z
