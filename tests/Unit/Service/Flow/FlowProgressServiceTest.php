@@ -27,8 +27,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Db\FlowRunStepMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowRunStepMapperInterface;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Flow\FlowProgressService;
@@ -51,16 +51,16 @@ use PHPUnit\Framework\TestCase;
  */
 class FlowProgressServiceTest extends TestCase {
 
-	private FlowRunMapper&MockObject $runs;
+	private FlowRunMapperInterface&MockObject $runs;
 
-	private FlowRunStepMapper&MockObject $steps;
+	private FlowRunStepMapperInterface&MockObject $steps;
 
 	private TaskMapper&MockObject $tasks;
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->runs = $this->createMock(FlowRunMapper::class);
-		$this->steps = $this->createMock(FlowRunStepMapper::class);
+		$this->runs = $this->createMock(FlowRunMapperInterface::class);
+		$this->steps = $this->createMock(FlowRunStepMapperInterface::class);
 		$this->tasks = $this->createMock(TaskMapper::class);
 	}
 

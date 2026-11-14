@@ -24,8 +24,8 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Db\FlowRunStepMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowRunStepMapperInterface;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -62,15 +62,15 @@ class FlowProgressService {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper          $runs     Run counts by status and completed run starts.
-	 * @param FlowRunStepMapper      $steps    Node executions and last finishes.
+	 * @param FlowRunMapperInterface $runs     Run counts by status and completed run starts.
+	 * @param FlowRunStepMapperInterface $steps    Node executions and last finishes.
 	 * @param TaskMapper             $tasks    Open, overdue and finished tasks.
 	 * @param TaskTemporalProjection $temporal  The one clock overdue is read against.
 	 * @param FlowProgressTaskReads  $taskReads The inbox reads task counts use.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $runs,
-		private readonly FlowRunStepMapper $steps,
+		private readonly FlowRunMapperInterface $runs,
+		private readonly FlowRunStepMapperInterface $steps,
 		private readonly TaskMapper $tasks,
 		private readonly TaskTemporalProjection $temporal,
 		private readonly FlowProgressTaskReads $taskReads = new FlowProgressTaskReads(),
