@@ -10029,3 +10029,4 @@ merge:pipelinq:3821:fe84ed8f	merge3 tree of 3 pipelinq PRs: merged=3 red=0 fail=
 merge:pipelinq:3833:c60f3044	merge3 tree of 3 pipelinq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T16:03:45Z
 fix:hermiq:1757:52b33f1f	fixed: openapi.json additions moved mid-document, clean with #1749; new head 607d7107	session-20261114T154807-c05f4e57	2026-11-14T16:03:51Z
 fix:learniq:2531:5736628c	fixed: maintainability restored to 3.99 by splitting SCORM import units; new head 09479452	session-20261114T154806-a38868f0	2026-11-14T16:04:02Z
+cover:integriq:92114ab0m6958:jsd3bb5905	PR #3627: 9 vitest tests, RuleEditorModal 77.5->96.9%, SynchronizationEditorModal 89.3->99.3%, dirs 91.99->94.68%; EditEndpoint.vue is dead (imports a missing module)	session-20261114T144757-446bd6da	2026-11-14T16:04:08Z
