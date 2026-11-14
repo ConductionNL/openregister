@@ -216,4 +216,51 @@ class ShareGrantorTest extends TestCase {
 
 		$this->assertNull($this->grantor->organisation());
 	}
+
+	/**
+	 * A grantor whose share resolves to this schema.
+	 *
+	 * @param Schema|null $schema The schema.
+	 *
+	 * @return ShareGrantor
+	 */
+	private function grantorFor(?Schema $schema): ShareGrantor {
+		$targets = $this->createMock(ShareTargets::class);
+		$targets->method('schema')->willReturn($schema);
+
+		return new ShareGrantor($this->session, $this->organisations, $this->gate, $targets);
+	}
+
+	public function testASchemaThatDeclaresNothingIsNotFederatable(): void {
+		$this->assertSame(
+			'This schema does not allow its objects to be shared with another instance',
+			$this->grantorFor(new Schema())->federationRefusal(share: $this->share('object', 'read'))
+		);
+	}
+
+	public function testASchemaThatDeclaresFalseIsNotFederatable(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['federatable' => false]);
+
+		$this->assertNotNull($this->grantorFor($schema)->federationRefusal(share: $this->share('schema', 'read')));
+	}
+
+	public function testAnUnresolvableSchemaIsNotFederatable(): void {
+		$this->assertNotNull($this->grantorFor(null)->federationRefusal(share: $this->share('query', 'read')));
+	}
+
+	public function testADeclaredSchemaIsFederatable(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['federatable' => true]);
+
+		$this->assertNull($this->grantorFor($schema)->federationRefusal(share: $this->share('object', 'read-write')));
+	}
+
+	public function testARegisterShareIsNotJudgedBySchema(): void {
+		$targets = $this->createMock(ShareTargets::class);
+		$targets->expects($this->never())->method('schema');
+		$grantor = new ShareGrantor($this->session, $this->organisations, $this->gate, $targets);
+
+		$this->assertNull($grantor->federationRefusal(share: $this->share('register', 'read')));
+	}
 }

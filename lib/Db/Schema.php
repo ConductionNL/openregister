@@ -1934,6 +1934,20 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end isSearchable()
 
 	/**
+	 * Whether this schema's objects may be shared with a principal at another instance.
+	 *
+	 * Declared as `configuration.federatable: true`; a schema that declares
+	 * nothing is not federatable.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
+	 */
+	public function isFederatable(): bool {
+		return (($this->getConfiguration() ?? [])['federatable'] ?? false) === true;
+	}//end isFederatable()
+
+	/**
 	 * Set whether this schema's objects are included in search
 	 *
 	 * @param bool $searchable Whether schema objects are included in search

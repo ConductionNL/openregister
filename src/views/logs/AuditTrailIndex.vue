@@ -71,7 +71,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 						<Plus v-if="row.action === 'create'" :size="16" />
 						<Pencil v-else-if="row.action === 'update'" :size="16" />
 						<Delete v-else-if="row.action === 'delete'" :size="16" />
-						<Eye v-else-if="row.action === 'read'" :size="16" />
+						<Eye v-else-if="row.action === 'read' || row.action === 'property.revealed'" :size="16" />
 					</template>
 				</CnStatusBadge>
 			</template>
@@ -307,12 +307,13 @@ export default {
 			isRefreshing: false,
 			// Keys are matched case-insensitively against the badge label, so
 			// namespaced actions (file.renamed, referential_integrity.*) fall
-			// through to the neutral 'default' variant.
+			// through to the neutral 'default' variant; a reveal reads like a read.
 			actionColorMap: {
 				create: 'success',
 				update: 'warning',
 				delete: 'error',
 				read: 'info',
+				'property.revealed': 'info',
 			},
 		}
 	},

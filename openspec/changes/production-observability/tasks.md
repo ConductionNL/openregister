@@ -41,3 +41,13 @@ requirements was verified against the engine (for example scraper-token and IP
 access to the metrics endpoint, request-duration histograms, and the search
 backend health check); each needs its own check before it is ticked.
 
+**Second pass, 2026-11-13: webhook retry queue depth.** `webhook_retry_queue_depth`
+(scenario "Webhook retry queue depth") is published: a gauge of failed deliveries whose
+`next_retry_at` is still ahead (`WebhookLogMapper::countPendingRetries()`). It compares with
+the clock, so it is a provider metric (`Service\Observability\WebhookRetryMetricsProvider`).
+The engine runs an app's one provider once per `provider` descriptor, so
+`Service\Observability\OpenRegisterMetricsProvider` joins it with the overdue-task gauge
+under OpenRegister's alias and the manifest keeps one `provider` entry. A retry that is due
+but not yet picked up by `WebhookRetryJob` is not counted, because the log has no "retried"
+marker. "Webhook Delivery Monitoring" stays unticked: the delivery-duration histogram is not
+built.

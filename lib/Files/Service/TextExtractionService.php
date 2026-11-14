@@ -37,7 +37,9 @@ use OCA\OpenRegister\Files\Service\TextExtraction\ArchiveExtraction;
 use OCA\OpenRegister\Files\Service\TextExtraction\ArchiveTextExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\SourceText;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
+use OCA\OpenRegister\Files\Db\MailHeader;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling;
 use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects;
@@ -200,6 +202,14 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			return;
 		}
 
+		// A file above the ceiling is never opened: it keeps its metadata chunk,
+		// so it stays findable by name, and says why it holds no text.
+		$ceiling = $this->extractionCeiling();
+		if ($ceiling->admits(size: ($ncFile['size'] ?? null)) === false) {
+			$this->persistSkippedFile(fileId: $fileId, ncFile: $ncFile, ceiling: $ceiling);
+			return;
+		}
+
 		// An archive is indexed member by member (REQ-AMS-002), or reported
 		// when its type is not opened (REQ-AMS-003).
 		$mimeType = (string)($ncFile['mimetype'] ?? '');
@@ -220,6 +230,57 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		);
 		$this->indexFilePayload(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp), entityTypes: $options->entityTypes);
 	}//end extractFile()
+
+	/**
+	 * The extraction ceiling the file settings state; the default when they cannot be read.
+	 *
+	 * @return ExtractionCeiling
+	 */
+	private function extractionCeiling(): ExtractionCeiling {
+		try {
+			return ExtractionCeiling::fromSettings(fileSettings: $this->analysis->settingsService->getFileSettingsOnly());
+		} catch (Throwable $e) {
+			$this->analysis->logger->warning(
+				message: '[TextExtractionService] File settings unreadable, using the default extraction ceiling',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return new ExtractionCeiling(maxBytes: ExtractionCeiling::DEFAULT_BYTES);
+		}
+	}//end extractionCeiling()
+
+	/**
+	 * Store only the metadata chunk of a file above the ceiling, with the status and the ceiling that applied.
+	 *
+	 * @param int                  $fileId  The Nextcloud file id.
+	 * @param array<string, mixed> $ncFile  The file row.
+	 * @param ExtractionCeiling    $ceiling The ceiling that kept it closed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/large-file-handling/specs/file-actions/spec.md#requirement-text-extraction-has-a-stated-ceiling-and-a-file-above-it-stays-findable-req-lfh-001
+	 */
+	private function persistSkippedFile(int $fileId, array $ncFile, ExtractionCeiling $ceiling): void {
+		$payload = [
+			'source_type' => 'file',
+			'source_id' => $fileId,
+			'length' => 0,
+			'method' => 'llphant',
+			'owner' => $ncFile['owner'] ?? null,
+			'organisation' => $ncFile['organisation'] ?? null,
+			'extraction_status' => ExtractionCeiling::SKIPPED_TOO_LARGE,
+			'ceiling_bytes' => $ceiling->maxBytes,
+			'metadata' => [
+				'file_path' => $ncFile['path'] ?? null, 'file_name' => $ncFile['name'] ?? null,
+				'mime_type' => $ncFile['mimetype'] ?? null, 'file_size' => $ncFile['size'] ?? null,
+			],
+		];
+		$this->persistChunksForSource(text: new SourceText(payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time())), chunks: []);
+
+		$this->analysis->logger->info(
+			message: '[TextExtractionService] File above the extraction ceiling; stored its metadata only',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'size' => $ncFile['size'] ?? null, 'ceiling' => $ceiling->maxBytes]
+		);
+	}//end persistSkippedFile()
 
 	/**
 	 * Index text a caller already extracted as the content of a file.
@@ -1057,7 +1118,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			// file, or what the caller named, such as `ocr` (#2033).
 			'extraction_method' => $payload['method'] ?? null,
 			'file_metadata' => $payload['metadata'] ?? [],
-		];
+		] + array_intersect_key($payload, array_flip(['extraction_status', 'ceiling_bytes']));
 		if (isset($payload['archive']) === true) {
 			// Member paths and what could not be read stay findable by metadata.
 			$summary['archive'] = $payload['archive'];
@@ -1667,8 +1728,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private function extractEml(\OCP\Files\File $file): ?string {
 		try {
 			$structure = $this->readers->emlParser->parse(file: $file);
+			$this->storeMailHeaders(fileId: (int)$file->getId(), headers: $structure->headers);
 			return $this->readers->emlParser->flatten(structure: $structure);
 		} catch (\OCA\OpenRegister\Exception\EmlParseException $e) {
+			// A file that no longer parses keeps no thread headers from an earlier extraction.
+			$this->storeMailHeaders(fileId: (int)$file->getId(), headers: null);
 			$sanitised = \OCA\OpenRegister\Files\Service\TextExtraction\EmlParser::sanitisePiiForLogging(message: $e->getMessage());
 			$this->analysis->logger->error(
 				message: '[TextExtractionService] EML parse failed: ' . $sanitised,
@@ -1679,6 +1743,42 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			return null;
 		}//end try
 	}//end extractEml()
+
+	/**
+	 * Store the thread headers of an `.eml` file, replacing the row an earlier extraction wrote.
+	 *
+	 * Null headers delete the file's row. A failure is logged, not thrown: the
+	 * text index must not be lost because the header row could not be written.
+	 *
+	 * @param int                       $fileId  The Nextcloud file id.
+	 * @param array<string, mixed>|null $headers The parsed headers, or null to forget the file's row.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MailHeader::fromHeaders is a named constructor.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-collected-mail-files-carry-their-thread-headers-req-rth-010
+	 */
+	private function storeMailHeaders(int $fileId, ?array $headers): void {
+		$mailHeaders = $this->sources->storage->mailHeaders;
+		if ($mailHeaders === null) {
+			return;
+		}
+
+		try {
+			if ($headers === null) {
+				$mailHeaders->deleteByFileId(fileId: $fileId);
+				return;
+			}
+
+			$mailHeaders->replaceForFile(row: MailHeader::fromHeaders(fileId: $fileId, headers: $headers));
+		} catch (Throwable $e) {
+			$this->analysis->logger->warning(
+				message: '[TextExtractionService] Could not store the mail thread headers',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'exception' => get_class($e)]
+			);
+		}
+	}//end storeMailHeaders()
 
 	/**
 	 * Public structured-parse entry point for EML files.

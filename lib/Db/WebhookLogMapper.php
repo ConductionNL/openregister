@@ -125,6 +125,36 @@ class WebhookLogMapper extends QBMapper implements WebhookLogMapperInterface {
 	}//end findFailedForRetry()
 
 	/**
+	 * How many failed deliveries are waiting for a retry that is not yet due.
+	 *
+	 * A failed delivery with retries left gets a `next_retry_at`; the retry
+	 * writes a new log row and leaves this one's `next_retry_at` in the past.
+	 * So a failed row whose retry time is still ahead is one queued retry.
+	 * A retry that is already due but not yet picked up is not counted.
+	 *
+	 * @param DateTime $now The clock instant.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/changes/production-observability
+	 */
+	public function countPendingRetries(DateTime $now): int {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select($qb->func()->count('*', 'cnt'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('success', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
+			->andWhere($qb->expr()->isNotNull('next_retry_at'))
+			->andWhere($qb->expr()->gt('next_retry_at', $qb->createNamedParameter($now, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+
+		$result = $qb->executeQuery();
+		$count  = (int) $result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countPendingRetries()
+
+	/**
 	 * Insert a new webhook log
 	 *
 	 * @param Entity $entity WebhookLog entity to insert
