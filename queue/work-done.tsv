@@ -9763,5 +9763,6 @@ fix:decidiq:2171:c22e208d	merged development, conflicts resolved keeping both si
 fix:decidiq:2168:59aba86f	fixed: version pins made at-least checks, vitest green, new head 517bc1d0, REVERIFY	session-20261114T141721-aeb4e068	2026-11-14T15:19:04Z
 verify:decidiq:2170:a5c4b2b7	GREEN 2170,2172; CONFLICT 2173,2192; skipped 2198,2199 (head moved); unit 4242 OK (baseline 4174), vitest 2735 OK	session-20261114T141724-6227a125	2026-11-14T15:19:25Z
 fix:filinq:2105:3ccf41be	merged development, conflicts resolved keeping both (schema 1.8.0, register 8.56.0); new head 2929a64c8a81ffd9acafec313ab0e61ceb37e4c8	session-20261114T141738-30f539db	2026-11-14T15:19:34Z
+build:hermiq:chat-session-search-and-bulk-delete:c2	done (code tasks): PR #1749 head cbc79152 adds frontend tasks 2+5 (search field, open at turn, selection mode + bulk bar + SessionBulkDeleteModal), 18 new vitest tests, suite 1481/1481; left: Newman, Playwright, live check	session-20261114T144812-7fefa6ba	2026-11-14T15:20:05Z
 fix:decidiq:2154:10e36967	not reproducible alone: green on branch+development; red is the objectCount 230->232 bump that #2143 makes too (lands second needs 234); no push, note recorded for the merge lane	session-20261114T144727-6763e1fc	2026-11-14T15:20:06Z
 verify:learniq:2521:9ce1d457	CONFLICT 2521 with development (register)	session-20261114T141010-8dc8bd74	2026-11-14T15:20:34Z
