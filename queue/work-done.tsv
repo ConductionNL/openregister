@@ -8923,3 +8923,4 @@ review:openregister:10497:c60ef10d	APPROVE: frontend-only tab badges, all checks
 review:openregister:10522:a71b71e6	failed: permission	session-20261114T070332-b3a23612	2026-11-14T11:01:21Z
 build:openregister:object-actions-declared-and-run:c2	failed: no in-repo code task left (5.1 in PR #10188, 5.2-5.5 other repos incl. nextcloud-vue, 6.1-6.2 e2e/Newman live)	session-20261114T070332-b3a23612	2026-11-14T11:01:49Z
 review:openregister:10520:6fc66d52	APPROVE: rbac flag unused by queries; suites green or inherited	session-20261114T095629-be875350	2026-11-14T11:02:06Z
+review:openregister:10499:c4b93065	BLOCK: merged with main the Architecture hub-class test fails (OfficialsDirectory names ObjectService, 11>10); rest matches main	session-20261114T092644-f8ff8fc9	2026-11-14T11:02:15Z
