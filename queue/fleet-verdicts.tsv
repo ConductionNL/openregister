@@ -10086,3 +10086,4 @@ shillinq	3065	e857eb2338958eebcba97fbfc59310343d8605ac	CONFLICT	merge3	conflicts
 shillinq	3077	106e652ef6b7c799e319e38d44ce92672fb8be42	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
 shillinq	3078	e4625f775fda7369e83028ba7aa6202f3e183614	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 hermiq	1754	8f57a36ce4fcab5f274c7dd299c4f9ce2ce57e4f	GREEN	worker-22	unit 5210 tests OK (baseline 5180 OK), vitest 1516 OK, no new failures; implements tools-browser-and-computer-use, admin-only routes
+hermiq	1792	11c3a878da34cfcde2db328b1309ae996a347012	CONFLICT	worker-22	clean on development alone; conflicts in l10n/nl.js, l10n/nl.json after #1754
