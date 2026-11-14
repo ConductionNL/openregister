@@ -9698,3 +9698,4 @@ build:portaliq:catalogue-entry-shows-costs-and-conditions:c3	no code left: PR #2
 fix:learniq:2509:ca90dcaa	no change: clean on development; tree-only conflict in generated l10n .js; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T15:06:47Z
 build:hermiq:models-prompt-and-answer-cache:c2	partial: pushed to PR #1753 — merged development (l10n key union), task 3 OpenAI cached_tokens read (+1 test); left task 2, Runs.vue cache line (page shows no tokens yet), tasks 4-7 (answer cache)	session-20261114T134643-47800317	2026-11-14T15:06:52Z
 fix:learniq:2523:d742d8a6	no change: clean on development; tree-only conflict; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T15:07:15Z
+merge:pipelinq:3713:751eeefd	merge3 tree of 4 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T15:07:32Z
