@@ -9406,3 +9406,4 @@ learniq	2542	8b1768c4256c3b8310aa27f3e35f0874d1085889	REVERIFY	worker-08	moved t
 hermiq	1715	47d76c7cf8852efb3d4e181065c868036fa09e0a	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.52 -> 4.46
 hermiq	1782	f0562d6f013540c84154271800e3a6102ac05d3e	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.45 -> 2.43
 hermiq	1793	fb17183cdd4dddbdb8756f87ad4fe8fb5eb3031d	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.52 -> 4.50
+pipelinq	3829	53db97a2a57d9b2787f93d77e5619ebe0a00d334	REVERIFY	worker-15	merged origin/development, resolved l10n en/nl js+json conflicts keeping both sides' keys (no duplicates, JSON valid, check:l10n-js and test:l10n pass); new head 6c4b0867a6957d37c64232981533d2022dbb3ef1, verify it
