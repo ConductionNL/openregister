@@ -9289,3 +9289,4 @@ verify:portaliq:2449:7b748fff	GREEN 2449 (unit 5222, 0 new failures)	session-202
 verify:shillinq:2966:e3e55421	GREEN 2966 2987 3053 3054; CONFLICT 2976 3055 (info.xml/register lock vs earlier tree PRs); 2993 3007 3056 skipped (head moved); phpunit 11088 OK	session-20261114T120949-9ff1ff62	2026-11-14T13:38:01Z
 review:openregister:10556:32382730	APPROVE 10556	session-20261114T114630-192fc047	2026-11-14T13:38:15Z
 verify:portaliq:2444:b63f7ccd	2444 GREEN; 2449 skipped (head moved to 67b3b6ab, verified GREEN separately); 2492 CONFLICT (register version on top of 2444)	session-20261114T124625-07e62ccf	2026-11-14T13:39:39Z
+verify:hermiq:1777:f5cff830	GREEN 1777: no new failures	session-20261114T114630-192fc047	2026-11-14T13:40:51Z
