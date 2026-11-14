@@ -10437,3 +10437,4 @@ integriq	3539	d16ba0ab4b58c6f6f1d7208f4b1c160d4cd5e4f7	REVERIFY	worker-41	adrval
 versioniq	691	8386b5aa44179b19ce106e0bfc37e384eb88c092	GREEN	worker-07	unit-only 1808 (baseline 1697, same 2 inherited golden failures), vitest 2970 pass (baseline 2960), 0 new failures; security-first auto-update per change
 versioniq	692	ea8069c974d52af4119119c1574605e9443841e3	CONFLICT	worker-07	conflicts in tree after #691: AutoUpdateJob.php, ApiController.php, AuditLogger.php, AutoUpdateStores.php
 versioniq	698	dd40a33245a34d49ff21a6e0ed2a41d2b5e79d36	CONFLICT	worker-07	conflicts in tree after #691: lib/Service/Audit/AuditLogger.php
+versioniq	703	77a60887abc04e5f5319a0b298bd16344ac8d873	CONFLICT	worker-07	conflicts in tree after #691 in l10n/en,nl .js/.json
