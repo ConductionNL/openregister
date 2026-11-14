@@ -9800,5 +9800,6 @@ verify:hermiq:1723:09fbe904	GREEN 1723,1778,1779,1780; skipped (head moved) 1726
 fix:pipelinq:3818:6ddd22c5	conflict resolved, merged development, new head 7b7e4309	session-20261114T151916-b0518a7b	2026-11-14T15:25:23Z
 fix:humaniq:1142:00f242d8	conflict resolved (l10n union), new head 4a3cccf9, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T15:25:35Z
 fix:filinq:2074:228eb673	merged development (clean), unit OK; new head f1017b40c	session-20261114T151750-b10540e9	2026-11-14T15:25:49Z
+build:decidiq:urgent-decisions-register:c2	failed: blocked: needs urgent-decision-procedure, now built on quality/build-urgent-decision-procedure-c2 (UrgencyTriggerGuard, UrgentProcedureController, UrgentRatificationService) but not merged into development and with tasks 3-8 still unchecked; requeue once that lands	session-20261114T144812-7fefa6ba	2026-11-14T15:25:54Z
 fix:pipelinq:3835:39c04790	conflict resolved, pushed f9170d1a, REVERIFY recorded	session-20261114T151942-48d6369d	2026-11-14T15:25:57Z
 fix:decidiq:2173:d0e45f2d	merged development cleanly, new head 1ef930fb, REVERIFY recorded	session-20261114T141728-9a5d03fc	2026-11-14T15:26:10Z
