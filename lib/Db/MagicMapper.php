@@ -4034,6 +4034,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end tableIndexes()
 
 	/**
+	 * Whether this instance can build a text-search (trigram) index on a property.
+	 *
+	 * @return bool True on PostgreSQL with pg_trgm installed.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-the-property-editor-offers-both-index-kinds
+	 */
+	public function canBuildTextSearchIndex(): bool {
+		return $this->hasPgTrgmExtension();
+	}//end canBuildTextSearchIndex()
+
+	/**
 	 * Drop the property indexes no property flag asks for any more. A catalogue
 	 * that cannot be read leaves every index in place and never fails the sync.
 	 *
