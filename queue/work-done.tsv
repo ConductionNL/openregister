@@ -10973,3 +10973,4 @@ build:filinq:template-library-leaf:c3	partial: pushed to PR #2088 (merged develo
 build:learniq:enrolment-sync-classes-from-student-administration:c3	partial: still no code task buildable in learniq: 3.1 sync line needs a library aggregate key and an integriq-held failure reason, 4.1 is an integriq issue (workers may not open issues), 5.x live/release; PR #2524 head 593b6b37 is current	session-20261114T191744-b9573b83	2026-11-14T20:40:40Z
 verify:filinq:2122:b93dd2f4	2122 skipped (head moved); 2123 BLOCK: edited legacy templates lose their published version	session-20261114T201750-64b6fe0f	2026-11-14T20:40:37Z
 review:filinq:2088:6252fec2	GREEN: phpunit 6775 OK, phpstan clean, parity gate passes on PR merged with development	session-20261114T194805-954d5649	2026-11-14T20:40:44Z
+fix:integriq:3617:6ff0aa85	fixed: l10n strings moved off the catalogue end, merges clean on the tree; new head 51d9a2ba	session-20261114T173956-74ab8962	2026-11-14T20:40:57Z
