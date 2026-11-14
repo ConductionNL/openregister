@@ -9611,3 +9611,6 @@ buildiq	1620	2ef94dee1f1925461fe5d11ffa3855fe26a83087	CONFLICT	merge3	conflicts 
 buildiq	1621	504a7501077e7ae8d76adbbcbdee4961869aad28	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 buildiq	1626	9c88d3df66d9ed0d82587deafdf33d424a3f3de1	CONFLICT	merge3	conflicts with development; files: l10n/nl.js l10n/nl.json 
 buildiq	1645	cc74061bc678bb72e3168b9a194f54323b51ff95	RED	merge3	unit: 3 new failures in AppRecordsImporterTest (imported 0 / failed 40, error import_failed); fails on the PR head alone too
+decidiq	2143	ff712a2d88e96c627a45521472f22bb94fcde148	GREEN	worker-49	unit 4318 OK on tree (baseline 4233 OK), vitest 2797 OK, new failures none; implements confidentiality-term-and-lapse
+decidiq	2172	148e74e7725f5549647398286241b07c976d9f51	GREEN	worker-49	unit 4318 OK on tree (baseline 4233 OK), vitest 2797 OK, new failures none; implements voting-written-resolution (written path has its own signatory-scope check)
+decidiq	2171	a9fe23d912171fce917fb0fdec80d6cd3ebd5321	CONFLICT	worker-49	does not merge on development+2143
