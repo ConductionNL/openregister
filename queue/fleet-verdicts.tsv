@@ -8589,3 +8589,4 @@ decidiq	2146	5875281caea60332e4b1d194bb2eb0c1b63e4885	GREEN	worker-45	unit 4279 
 shillinq	2991	612f317575a843479f2edba95eebc72f62760913	REVERIFY	worker-35	merged development in (clean); tree conflict is only against unmerged sibling 2972: appended l10n keys and the register-versions.lock hash, resolve by taking both on assembly; new head f7e28a5d009e7d5734a90f35ab326a48cbef9b45, verify it
 decidiq	2149	bbffd285698c4e70c42fc3b37f022660ce7a5ba8	CONFLICT	worker-45	conflicts with development itself (l10n en/nl js+json)
 decidiq	2168	517bc1d0af236a9431179e4b1673a9f2221294fc	GREEN	worker-45	unit 4279 on tree (baseline 4174 OK), vitest 2789 passed, new failures 0; builds publication-theme-pages
+decidiq	2177	667519c052668bd27567d0c50cc8605307da91e6	GREEN	worker-45	unit 4279 on tree (baseline 4174 OK), vitest 2789 passed, new failures 0; builds governing-documents-register, new endpoints check the user and read rights
