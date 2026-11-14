@@ -10073,3 +10073,4 @@ build:pipelinq:kcc-agent-panel:c2	failed: not buildable: the change itself decla
 fix:buildiq:1590:ab70ca96	conflict removed (test moved to own file), pushed 44e1dfb1, REVERIFY recorded	session-20261114T151942-48d6369d	2026-11-14T16:10:49Z
 fix:planninq:1170:b025d50e	conflict resolved keeping both sides; new head c04b52d2, REVERIFY recorded	session-20261114T151934-e3441c93	2026-11-14T16:11:07Z
 verify:planninq:1158:524d7154	1158, 1159, 1162 GREEN; 1169 CONFLICT (l10n in tree order)	session-20261114T151932-05b02c14	2026-11-14T16:11:35Z
+fix:planninq:1160:67464e9d	interfacing: constructor 7->6 params, refusal 3->2; unit 1047 green; new head 7c51623a	session-20261114T154807-4c2c3327	2026-11-14T16:11:42Z
