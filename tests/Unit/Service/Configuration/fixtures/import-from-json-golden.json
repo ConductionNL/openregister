@@ -585,7 +585,8 @@
                             "refusedByListener": false
                         }
                     ]
-                }
+                },
+                "warnings": []
             }
         }
     ],
@@ -1174,7 +1175,8 @@
                             "refusedByListener": false
                         }
                     ]
-                }
+                },
+                "warnings": []
             }
         }
     ],
@@ -1764,7 +1766,8 @@
                             "refusedByListener": false
                         }
                     ]
-                }
+                },
+                "warnings": []
             }
         }
     ],
@@ -2354,7 +2357,8 @@
                             "refusedByListener": false
                         }
                     ]
-                }
+                },
+                "warnings": []
             }
         }
     ],
@@ -2925,7 +2929,8 @@
                             "refusedByListener": false
                         }
                     ]
-                }
+                },
+                "warnings": []
             }
         }
     ],
@@ -2971,7 +2976,8 @@
                 "failed": {
                     "schemas": [],
                     "objects": []
-                }
+                },
+                "warnings": []
             }
         }
     ]
