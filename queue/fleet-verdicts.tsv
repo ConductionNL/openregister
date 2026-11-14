@@ -6694,3 +6694,4 @@ learniq	2505	b88cf9fcfd07a873a2d9be477745bce7444e4970	GREEN	worker-26	6575 unit 
 learniq	2506	ac48f1cb33d6bb85e205a94b07c01f360ddcea87	CONFLICT	worker-26	conflicts with development in l10n/en.json, l10n/nl.json; not tested
 learniq	2507	1bb4eeaa7d636fb9acfe2f2e0094ff393c7552a6	CONFLICT	worker-26	conflicts with development in l10n/en.json, l10n/nl.json; not tested
 learniq	2508	6b53b781affe27d5ebacd19e1e0d5e679930bcfe	GREEN	worker-26	6575 unit tests baseline (1 inherited fail HigherEducationExampleSetTest he.json out of date); tree of 2503,2505,2508,2510: 6594 tests, same 1 failure, no new failures
+learniq	2509	c0dcdfcdd9ec121200943aeb347265152502319d	CONFLICT	worker-26	conflicts with development in l10n/en.json, l10n/nl.json; not tested
