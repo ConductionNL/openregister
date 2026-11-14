@@ -10018,3 +10018,4 @@ launchpad	1206	c495b327605cf73b1de190c28c919c97c38faf82	GREEN	worker-26	phpunit 
 launchpad	1214	d1826091dee5d19855af1a5fcd31c2cdb545d3bf	GREEN	worker-26	phpunit 4264 tests, 0 failures, vitest 2296 pass on tree with 1206; build PR matches change specs, write endpoints guarded by action + service checks
 buildiq	1620	2a2fcb1c7efcf75cc52362ef9ee0c8ba109fa9c6	GREEN	worker-31	phpunit 3174 tests (baseline 3142, 1 inherited ExportZipGoldenTest failure), vitest 4686 pass; no new failures; build of form-dutch-field-formats as its specs ask
 buildiq	1649	64e6ca03a91171b80e25ed77b5f20c9389c5ea26	CONFLICT	worker-31	conflicts with 1620 in the tree, files: l10n/en.js l10n/en.json
+hermiq	1792	2d3f556e025d556e204520c04d51a4bc22648876	REVERIFY	worker-43	merged development in, kept run_done and session_shared subjects and both sides' nl strings (deduped 2 keys); Notification tests 25 OK, phpcs/phpstan clean; new head 11c3a878da34cfcde2db328b1309ae996a347012, verify it
