@@ -6,7 +6,8 @@
 - [x] 1.4 Explicit permission bit mapping; an unmapped bit is refused naming the bit (D-2).
 - [x] 1.5 A schema declaration opting its objects into platform sharing, defaulting to out (D-3).
 - [ ] 2.1 `tests/e2e/ci/platform-share-provider.spec.ts`: share an object, find it in shared with you, fail an update on a read share.
-- [ ] 2.2 Unit tests: one share in both lists, the refused bit, the opted-out schema.
+- [x] 2.2 Unit tests: one share in both lists, the refused bit, the opted-out schema.
+      - refused bit and opted-out schema: `PlatformShareRoutingListenerTest`, `PlatformSharePermissions` tests; one share in the object's own list: `ObjectShareReaderTest::testAShareMadeThroughThePlatformSurfaceIsListedOnce` (core's shared-with-you half is core's list, checked live in 2.1)
 - [ ] 2.3 `openspec validate platform-share-provider --strict`.
 - [ ] 3.1 Hand over to the dossiq lane: declare the shareable schemas, build no sharing surface.
 
