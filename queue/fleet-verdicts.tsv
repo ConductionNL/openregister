@@ -7951,3 +7951,4 @@ keepiq	1790	8cf6924577ebc6c2c1f23f068e8f3bedfccfb849	CONFLICT	merge3	merges clea
 keepiq	1791	a0a825d574acc00878c4bab9af78d0a48c5e4f3b	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml 
 keepiq	1793	2ffa6e1a3a3095ab58e8f9408e29edaab100ee21	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 portaliq	2433	a1b48896e4ec3511906813a3116e46adaac313be	GREEN	worker-37	unit 5202 OK on the 3-PR tree (baseline 5187 OK), 0 new failures; touched node specs 19/19; tests and check script only
+portaliq	2440	8db216bfa516428cf74b2df9eb898f78dbc71562	GREEN	worker-37	unit 5202 OK on the 3-PR tree (baseline 5187 OK), 0 new failures; touched node specs 19/19; per-portal admin scope as the change T11 asks, no fail-open
