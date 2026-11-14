@@ -11046,3 +11046,4 @@ build:integriq:form-submission-registration-targets:c3	partial: PR #3620 head 7e
 verify:filinq:2114:2e5bc8ee	2114 GREEN; 2122 CONFLICT (register, openapi.json after #2114)	session-20261114T194751-bb7578f8	2026-11-14T20:54:08Z
 fix:planninq:1169:b5cc9522	floor restored, new head ad389bd3; REVERIFY	session-20261114T201750-64b6fe0f	2026-11-14T20:54:18Z
 fix:buildiq:1641:2a563552	not reproduced: maintainability holds after merge (against-floor and compare PASS); merged development, new head 5816876b, REVERIFY recorded	session-20261114T173956-74ab8962	2026-11-14T20:54:37Z
+fix:buildiq:1645:cc74061b	fixed: importer supports both OpenRegister import contract forms; new head 02d1e9ad, REVERIFY recorded	session-20261114T174753-100b2a07	2026-11-14T20:54:52Z
