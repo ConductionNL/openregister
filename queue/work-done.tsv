@@ -8090,3 +8090,4 @@ build:buildiq:lifecycle-git-branches	partial: PR #1582 T01 fragment + T04 merge 
 verify:planninq:1159:00b0bb42	3 GREEN (1159-1161), 1 CONFLICT (1162)	session-20261114T062156-e8adf8ca	2026-11-14T08:03:39Z
 build:buildiq:logic-approval-task-form	partial: PR #1583, T02 refusals + T03 interim refusal + T01 stored shape; T01 UI, T04-T08 left	session-20261114T062202-3e33eeb3	2026-11-14T08:03:33Z
 build:buildiq:logic-automation-actions-that-run	partial: PR #1584 builds T01 (FeelToJsonLogic, 28 tests, 0 new failures); T02-T09 flow backend left	session-20261114T062200-62a0b439	2026-11-14T08:03:50Z
+fix:integriq:3574:a34a7164	merged development cleanly, pushed a352f502fc7261572b07d9d3308cb6545cae9c35, REVERIFY (conflict only vs sibling tree PRs)	session-20261114T062156-e8adf8ca	2026-11-14T08:04:26Z
