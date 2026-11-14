@@ -9574,3 +9574,4 @@ portaliq	2498	2811eefb68d1439bcc9297edc22dfe527e75e240	CONFLICT	merge3	merges cl
 portaliq	2500	ba7c86b7326529629ea81d8649613daee311dccb	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/portaliq_register.json package.json tests/Unit/Settings/PortaliqRegisterConfigTest.php 
 portaliq	2508	00941d7f63672da64eded8571302c0d9181357df	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Settings/PortaliqRegisterConfigTest.php 
 learniq	2507	51c3404779cff2de165578ab66674b656d12b3bf	GREEN	worker-24	tree 2507+2544: phpunit 6787 tests (baseline 6775, 1 inherited failure HigherEducationExampleSetTest), no new failures; additive register schemas + l10n (keys moved, none removed)
+learniq	2544	0522f150afd335143a2e4866dcb932756b20a3b8	GREEN	worker-24	tree 2507+2544: phpunit 6787 tests (baseline 6775, 1 inherited failure), no new failures; consent hold per the change's spec
