@@ -939,6 +939,10 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'flow#versionPreview', 'url' => '/api/flows/{id}/version-preview', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#draft',     'url' => '/api/flows/{id}/draft',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#deprecate', 'url' => '/api/flows/{id}/deprecate',           'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Workflow progress (tasks-progress-report). Above `/api/flows/{id}`
+        // so `progress` is never read as a flow id.
+        ['name' => 'flowProgress#index', 'url' => '/api/flows/progress',      'verb' => 'GET'],
+        ['name' => 'flowProgress#show',  'url' => '/api/flows/{id}/progress', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#index',   'url' => '/api/flows',          'verb' => 'GET'],
         ['name' => 'flow#create',  'url' => '/api/flows',          'verb' => 'POST'],
         ['name' => 'flow#show',    'url' => '/api/flows/{id}',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
