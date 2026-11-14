@@ -8208,3 +8208,4 @@ verify:planninq:1162:3e3eed1b	1162 GREEN; 1167 CONFLICT with 1162 (l10n catalogu
 build:buildiq:apps-embed-in-other-sites	PR #1628: T01-T03, T05 and T04 section done (36 tests); T04 Playwright and T06 left	session-20261114T065635-0aca43d3	2026-11-14T08:21:33Z
 fix:integriq:3599:1568b79d	fixed: registration fixture records the new listener; pushed 4d149f50	session-20261114T065626-0651b305	2026-11-14T08:21:45Z
 fix:planninq:1169:25d3e3e9	RED fixed: missing Jira CSV fixture committed (gitignore exception), suite 1047 OK; new head ea298e62	session-20261114T065633-3e3cb668	2026-11-14T08:21:56Z
+build:buildiq:platform-properties	PR #1629: all 11 tasks done, change archived and spec promoted	session-20261114T065625-baa65a50	2026-11-14T08:22:02Z
