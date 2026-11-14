@@ -9392,3 +9392,6 @@ shillinq	3065	7e8c6350577a04d792a11ef66d3e941d8dffba45	RED	merge3:merge-gate	GAT
 shillinq	3069	02821381e11a188a12d691a482eda9969cdf2aef	RED	merge3:merge-gate	GATE RED floor: overall: 4.20 -> 4.18; duplication: 3.29 -> 3.27; unit_interfacing: 2.91 -> 2.87
 shillinq	3073	03de0be4b1066fd7400be7ef5cae5fd8347bd8bd	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.91 -> 2.89
 filinq	2123	890c7dc26ef8ef35ef44fc952586c0ea0545e352	RED	merge3:merge-gate	GATE RED floor: overall: 4.35 -> 4.33; unit_complexity: 4.48 -> 4.40
+filinq	2069	4aa3130589e6a003a6724441372a1c3d1e1a03a9	RED	merge3	unit in a tree with 2079/2123: ListenerRegistrarTest size 23 vs 22, ObjectEventRegistrarTest registerEventListener called more than 10 times (each PR bumps the same registrar counts; 2069 and 2079 add the same IntakeArrivalFollowUpListener); also gate floor RED earlier
+filinq	2070	cd488491c6ef53d177b06f0b0d3fb2bed1fb67fd	CONFLICT	merge3	conflicts in tree
+filinq	2118	17b69a70e2add5d767380fa92f9b9085ad2f9d19	CONFLICT	merge3	conflicts in tree
