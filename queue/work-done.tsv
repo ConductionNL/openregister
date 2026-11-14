@@ -7909,3 +7909,4 @@ verify:integriq:3540:b6bb08d6	GREEN integriq#3540: 0 new failures (5 inherited),
 build:integriq:opt-outs-in-an-app-table-and-routing-rules-read-as-config	already done: built in #2528; only 4.1 left (retire recipient_opt_out after the copy has run on every instance), a rollout follow-up	session-20261114T062200-62a0b439	2026-11-14T07:37:35Z
 verify:hermiq:1673:eba73e7e	GREEN 1673,1674,1715; CONFLICT 1714 (with development), 1717,1719,1723,1725,1726 (with 1715)	session-20261114T073105-27c9d15e	2026-11-14T07:38:03Z
 fix:pipelinq:3726:9f496577	documented my-work/week-stats in openapi.json, suite green; REVERIFY at 86f30be74c8565f4ed7232305c282a7334d32443	session-20261114T070909-be4543e0	2026-11-14T07:38:25Z
+verify:learniq:2493:10abaf77	2493 GREEN; 2504,2507,2511,2516 CONFLICT (l10n catalogues vs #2493)	session-20261114T073111-9b40710a	2026-11-14T07:38:35Z
