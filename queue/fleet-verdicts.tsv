@@ -7921,3 +7921,9 @@ portaliq	2427	43ff8091e149a21ff147bbdde0fe11520238576a	REVERIFY	worker-29	merged
 portaliq	2284	e29a4e8e9962a4592df018ae68d55545bf5404ac	REVERIFY	worker-01	merged development in; kept development's helper structure in CitizenCase/Contribution controllers and converted the static trust calls to the instance form; unit 5189 OK, phpstan clean; new head 57d43340a4fa91fd0fcd0c14612984ab3856ca48, verify it
 dossiq	6385	11c3b49f325b6970f5da78af20f2bd3177ec98dc	GREEN	worker-23:review	builds vth-cases-run-end-to-end as its specs ask; unit 17037 tests, 19 inherited failures, 0 new; vitest 70/70; eslint+phpstan clean
 portaliq	2433	ca20ec2f1d419a458a537ebbe99f0d73699c8bc4	REVERIFY	worker-01	merged development in; package.json check:specs union of both sides; both specs pass, unit 5187 OK; new head a1b48896e4ec3511906813a3116e46adaac313be, verify it
+opencatalogi	2652	21cb083b36c3b0d697110ad47ae65c0519868e6a	RED	merge3:merge-gate	GATE RED checker floor: secretscanning: pass -> fail
+opencatalogi	2668	94f01dce604c9c427f96f2498a0f1e7e35e8bc40	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.87 -> 4.83
+opencatalogi	2671	3632cf8ddfced209a88de659375ae0023befdbdf	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.87 -> 4.85
+opencatalogi	2672	cef40fa2e3023023ca13603aaf89c7a3bbc6bed0	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.87 -> 4.83
+opencatalogi	2673	de0d1edb6b527b2daa54bb816ef26aaf0b1ac4f4	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.86 -> 4.84; module_coupling: 5.44 -> 5.41
+opencatalogi	2677	fecc3eb0fdc7e2246258c94db533312f32d510fe	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.87 -> 4.83
