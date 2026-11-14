@@ -8120,3 +8120,4 @@ filinq	2089	66d407ec6dcdc82ff953e8649e168a37266a1efd	CONFLICT	worker-23	clean on
 filinq	2093	995dbaa21ee0884ef7255a2da60e9bac04a30a56	CONFLICT	worker-23	clean on development, conflicts with #2086 (earlier in tree order); merge development in once #2086 lands
 filinq	2103	265e7f099856724afc4370666e8a63151b12b621	CONFLICT	worker-23	clean on development, conflicts with #2086 (earlier in tree order); merge development in once #2086 lands
 filinq	2106	49daac7208d9f72565219d2d2f8fbe799cea2c9e	CONFLICT	worker-23	clean on development, conflicts with #2086 (earlier in tree order); merge development in once #2086 lands
+filinq	2117	67325de6ead9a37c97199cc53cae7e4984c58835	GREEN	worker-23	unit 6731 OK (baseline 6695 OK), vitest 751 OK, no new failures; builds mcp-generation-tools 1.2 (status tool references), additive
