@@ -9036,3 +9036,4 @@ planninq	1172	fc112f09ea521ef74ece1026fd98de5dcef0a61d	CONFLICT	worker-02	does n
 buildiq	1622	c713fcfe6a278326e2349ba885c88e7368fdca43	GREEN	worker-45	unit 3135 on tree (baseline 3126, 1 inherited ExportZipGoldenTest failure), vitest 4497 passed, new failures 0; builds forms-signature-audio-and-location
 buildiq	1639	00436432feddf925da01ea1ca0d24a266c8157b0	GREEN	worker-45	unit 3135 on tree (baseline 3126, 1 inherited ExportZipGoldenTest failure), vitest 4497 passed, new failures 0; builds data-external-database-sources (frontend)
 buildiq	1640	1d914a307bee0f8f60b7b499057799f93dd4a4f5	GREEN	worker-45	unit 3135 on tree (baseline 3126, 1 inherited ExportZipGoldenTest failure), vitest 4497 passed, new failures 0; builds capability-requirements-backfill (frontend)
+shillinq	3050	03b114f2d96dd462e163fb31d3e824dcb0385397	GREEN	worker-27	tree 3050+3065: unit 11253 tests OK (baseline 11222 OK); vitest 2744, 1 fail dunningNextRun.spec.js also red on development
