@@ -35,8 +35,8 @@
 ## 5. Verify-then-rechain migration
 
 - [x] 5.1 Add the repair step (pre-verify against `AuditCanonicalV1` → persist verdict as a v1-sealed `audit.rechain.preverify` row → `rechainAll()` under v2) AND register it in `appinfo/info.xml` in the same commit; verify `occ maintenance:repair` runs it and the registration is present (verified: lib/Repair/RechainAuditTrailForFlowAttribution.php, appinfo/info.xml, tests/Unit/Repair/RechainAuditTrailForFlowAttributionTest.php)
-- [ ] 5.2 Verify the pre-check discriminates: seed a chain, tamper with one row, run the migration, and assert the persisted verdict names that row — the test must fail if the pre-check is stubbed to return valid
-- [ ] 5.3 Verify the migration's three safety properties: it refuses to start when it cannot persist its verdict, it is resumable and idempotent when interrupted mid-re-seal, and a chain containing retention tombstones re-seals with those rows carried forward as tombstones rather than reported as breaks
+- [x] 5.2 Verify the pre-check discriminates: seed a chain, tamper with one row, run the migration, and assert the persisted verdict names that row — the test must fail if the pre-check is stubbed to return valid (verified: tests/Unit/Repair/RechainAuditTrailPreVerifyTest.php seeds a real v1-sealed chain; a changed field, a foreign hash and a break past the first 500-row window are each named in the stored verdict; stubbing the hash comparison to always pass turns those three red)
+- [x] 5.3 Verify the migration's three safety properties: it refuses to start when it cannot persist its verdict, it is resumable and idempotent when interrupted mid-re-seal, and a chain containing retention tombstones re-seals with those rows carried forward as tombstones rather than reported as breaks (verified: the refusal in RechainAuditTrailForFlowAttributionTest::testItRefusesToReSealWhenTheVerdictCannotBeStored; RechainAuditTrailPreVerifyTest::testAnInterruptedReSealRunsAgainFromTheStart runs an interrupted re-seal, a completing one and a no-op third; testATombstoneIsCarriedForward pins the pre-verify half (red when the tombstone branch is removed), the re-seal half is AuditHashService::rechainAll's golden tests/Unit/Service/fixtures/audit-hash-rechain-golden.json)
 
 ## 6. Read surfaces
 
@@ -50,7 +50,7 @@
 ## 8. Quality
 
 - [ ] 8.1 Run `composer check:strict` and `npm run lint`, and fix any pre-existing findings touched by these files
-- [ ] 8.2 Mutation-check the two guards that fail silently — the `finally` pop (2.3) and the pre-verify discrimination (5.2): disable each, confirm the suite goes red, restore, confirm the source is byte-identical
+- [x] 8.2 Mutation-check the two guards that fail silently — the `finally` pop (2.3) and the pre-verify discrimination (5.2): disable each, confirm the suite goes red, restore, confirm the source is byte-identical (done 2026-11-14: removing the step pop in FlowEngine::dispatchSingleHop's finally reddens FlowEngineAttributionTest (5 of 8), removing the stream-hop pop (dispatchOnStream) reddens FlowEngineWalkGoldenTest (9 sets); stubbing the pre-verify hash comparison reddens 3 of RechainAuditTrailPreVerifyTest; each source restored and checked byte-identical by md5)
 
 **Acceptance criteria**
 
