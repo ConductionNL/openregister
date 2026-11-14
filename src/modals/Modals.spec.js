@@ -29,6 +29,7 @@ jest.mock('./object/MassDeleteObject.vue', () => ({ __esModule: true, default: {
 jest.mock('./object/MassValidateObjects.vue', () => ({ __esModule: true, default: { name: 'MassValidateObjects', template: '<i class="MassValidateObjects" />' } }))
 jest.mock('./object/MergeObject.vue', () => ({ __esModule: true, default: { name: 'MergeObject', template: '<i class="MergeObject" />' } }))
 jest.mock('./object/MigrationObject.vue', () => ({ __esModule: true, default: { name: 'MigrationObject', template: '<i class="MigrationObject" />' } }))
+jest.mock('./object/SaveRecordTemplate.vue', () => ({ __esModule: true, default: { name: 'SaveRecordTemplate', template: '<i class="SaveRecordTemplate" />' } }))
 jest.mock('./object/UploadObject.vue', () => ({ __esModule: true, default: { name: 'UploadObject', template: '<i class="UploadObject" />' } }))
 jest.mock('./object/ViewObject.vue', () => ({ __esModule: true, default: { name: 'ViewObject', template: '<i class="ViewObject" />' } }))
 jest.mock('./objectAuditTrail/ViewObjectAuditTrail.vue', () => ({ __esModule: true, default: { name: 'ViewObjectAuditTrail', template: '<i class="ViewObjectAuditTrail" />' } }))
@@ -89,6 +90,7 @@ const GATED = [
 	['MergeObject', 'modal', 'mergeObject'],
 	['MigrationObject', 'modal', 'migrationObject'],
 	['CopyObject', 'dialog', 'copyObject'],
+	['SaveRecordTemplate', 'dialog', 'saveRecordTemplate'],
 	['DownloadObject', 'modal', 'downloadObject'],
 	['UploadObject', 'modal', 'uploadObject'],
 	['ViewObjectAuditTrail', 'modal', 'viewObjectAuditTrail'],

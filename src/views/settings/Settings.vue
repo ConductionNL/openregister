@@ -65,6 +65,9 @@
 		<!-- LLM Configuration Section -->
 		<LlmConfiguration />
 
+		<!-- AI translation through Nextcloud's Task Processing -->
+		<TranslationConfiguration />
+
 		<!-- File Configuration Section -->
 		<FileConfiguration />
 
@@ -100,6 +103,7 @@ import ReadEventVisibilityConfiguration from './sections/ReadEventVisibilityConf
 import RegisterDescriptors from './sections/RegisterDescriptors.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
+import TranslationConfiguration from './sections/TranslationConfiguration.vue'
 import WorkingCalendars from './sections/WorkingCalendars.vue'
 import { useSettingsStore } from '../../store/settings.js'
 
@@ -129,6 +133,7 @@ export default {
 		LogIntegrity,
 		PushNotificationsConfiguration,
 		LlmConfiguration,
+		TranslationConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,
 		EdepotHostKeyConfiguration,
