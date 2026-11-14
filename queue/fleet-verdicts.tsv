@@ -8551,3 +8551,6 @@ hermiq	1780	8baa21399f0515095fbc3c57610a6a0a372cf921	GREEN	worker-13	PHP unit 50
 portaliq	2440	b114e2d2a8e6b3b200fa8f3c835655e83ada3aae	GREEN	worker-06	unit 5278 on the tree (baseline 5247 on development), 0 new failures; no JS unit script (PR touches l10n .js only); builds operate-portals-per-organisation: portal-admin access via adminGroups is what REQ-OPO-005 asks, PortalAdminScope fails closed
 filinq\t2074\t228eb6732862ad2d722fc122df3833215cdef0a8\tREVERIFY\tworker-53\tmerged development in (clean now; l10n appends resolved upstream), php -l/json ok, unit 6736 OK; new head f1017b40caade2ebaf8931e56ea57edba212d522, verify it
 decidiq	2173	d0e45f2dc97f0f15f448fa010c5247e481d3aac0	REVERIFY	worker-42	merged development (now clean, 2170/2172 landed); unit 4214 OK; new head 1ef930fba70034dc5681169906198a5ba12e7c1c, verify it
+learniq	2501	d58497ec9d6bf0ce6b45804a2d86c45928e53884	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.97 after merge is below its floor 3.99
+learniq	2515	91ac6bf3edc1791b8e60ddde86c2cbaa88b839c9	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2531	5736628ccf1e083842816fd9b1764a34ca0d287c	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
