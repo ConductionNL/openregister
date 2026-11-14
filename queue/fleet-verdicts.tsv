@@ -10166,3 +10166,4 @@ opencatalogi	2706	bad7090ef3f1f5575114bf2fef1705442078fdb1	REVERIFY	worker-02	no
 shillinq	3078	e4625f775fda7369e83028ba7aa6202f3e183614	REVERIFY	worker-15	merged origin/development in (clean, no conflict on development alone; tree conflict was l10n with sibling PRs); unit suite 11510 tests green; new head ccf88e69dd4a5fe4151b4934c541389199c7f9e8, verify it
 hermiq	1735	09766374a9ba9386facc8d120dcbb51db6a96b32	GREEN	worker-54	PHP unit 5244 on tree (baseline 5180, 0 failures), vitest 1539 passed, 0 new failures
 hermiq	1760	57830914d3c1fb8c0a78823edfcde6f75006e0e8	CONFLICT	worker-54	conflicts with #1735 in appinfo/info.xml and lib/Settings/hermiq_register.json
+hermiq	1781	65071efe64508005bed86210f84f94ddd400a388	CONFLICT	worker-54	conflicts with #1735 in l10n en/nl and lib/Settings/hermiq_register.json
