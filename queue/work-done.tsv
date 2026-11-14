@@ -8426,6 +8426,7 @@ review:stackiq:1706:dcde9ef2	GREEN	session-20261114T065626-0651b305	2026-11-14T0
 fix:buildiq:1616:6cdd062c	conflict resolved: l10n keys moved mid-catalogue, tree with 1613+1614 merges clean; new head ccde40f3; REVERIFY queued	session-20261114T073109-930980c2	2026-11-14T08:48:50Z
 fix:opencatalogi:2651:c5411594	no change: clean on development; tree-only src/manifest.json conflict, REVERIFY recorded	session-20261114T082640-d9af913e	2026-11-14T08:49:07Z
 fix:buildiq:1606:08b13ebd	l10n keys moved off the shared tail; clean with 1597/1602/1605; new head e22586b36080c66057524a8a5dfbd2e8c1dce2ac	session-20261114T075640-efa02b24	2026-11-14T08:49:16Z
+build:stackiq:architecture-process-mapping	PR #1921: tasks 1, 3, 4 and 2/5 implementation done (schemas+seed, pages, flow, usage lists, en/nl, doc); Playwright scenarios and screenshots left; no new PHP failures, vitest 2499 pass	session-20261114T070329-a050d62b	2026-11-14T08:49:22Z
 build:stackiq:capability-requirements-from-the-matrix	partial: PR #1923 builds Task 2 (contact conversion email from linked contact); Task 1 (wizard, e2e) and Task 3 (contract schema) left	session-20261114T082639-95045d35	2026-11-14T08:49:28Z
 build:stackiq:architecture-decision-register	PR #1922: architectureDecision schema+lifecycle+guard, pages, usage/standard lists, en/nl, docs; 15 new tests, phpunit 3446->3461 green; Playwright + screenshots left	session-20261114T075638-c30fc6de	2026-11-14T08:49:28Z
 review:stackiq:1704:3ca945de	GREEN: behaviour-preserving refactor, vitest 2486 pass	session-20261114T073117-2bd2e050	2026-11-14T08:49:26Z
@@ -8438,3 +8439,4 @@ fix:buildiq:1619:2f7f5352	merged development in, kept both describe blocks; new 
 fix:buildiq:1615:48ea2bb2	l10n keys moved off the shared tail; clean on dev+1613+1614; new head e9c07802714b18a7f782432d8870f9f1eb5dd516	session-20261114T075640-efa02b24	2026-11-14T08:50:34Z
 fix:buildiq:1607:2af29a31	no change: merges cleanly with current development; conflict only with earlier unmerged tree PRs (l10n), resolve after they land	session-20261114T075638-c30fc6de	2026-11-14T08:50:59Z
 fix:buildiq:1612:ad606b04	merged development in cleanly; new head 40bed07f1c09d081dfbd618cd1610ccb046181cf, REVERIFY recorded	session-20261114T073117-2bd2e050	2026-11-14T08:50:56Z
+fix:keepiq:1631:6ab64a41	import order fixed, dev merged, pushed f4de0e6f, REVERIFY recorded	session-20261114T080916-9b1d69d6	2026-11-14T08:51:11Z
