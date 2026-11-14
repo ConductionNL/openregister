@@ -11907,3 +11907,4 @@ merge:decidiq:2143:13d61dfe	merge3 tree of 11 decidiq PRs: merged=4 red=0 fail=0
 cover:decidiq:a5f973bbmae46:f545d745	already done: lib/Repair/*.php measures 803/803 (100%) on development 79e01508 with the whole unit suite	session-20261114T214733-589f5bff	2026-11-14T23:28:42Z
 fix:filinq:2095:3fec27e5	merged development in (clean, was behind); suites green; new head e0ebb0e0	session-20261114T221801-9a21d394	2026-11-14T23:28:47Z
 merge:decidiq:2202:451c30bc	merge3 tree of 11 decidiq PRs: merged=4 red=0 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T23:28:55Z
+fix:portaliq:2508:540d4522	conflict resolved by merging development; new head 04d531ae	session-20261114T224754-e4a2fcab	2026-11-14T23:29:07Z
