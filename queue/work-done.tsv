@@ -10361,3 +10361,4 @@ build4:openregister:grants-that-follow-a-slot-a-relation-or-a-reason:c3	partial:
 verify:shillinq:3057:2c57f181	3057 GREEN	session-20261114T154807-4c2c3327	2026-11-14T17:11:08Z
 build4:openregister:records-copy-with-links:c3	partial: PR #10525 pushed afa2c4ac (1.2 files copied after commit with per-file outcomes, CopyFiles + tests, docs, component map); left: 1.3 Newman case and 2.1 e2e need a live instance; Architecture/Controller/Contract/Rules/Object suites green	session-20261114T154733-94bb2e01	2026-11-14T17:11:51Z
 fix:decidiq:2175:19e6648e	partly fixed: merged development, l10n moved; real overlap with #2170/#2171 left for after they land; new head 84afe008	session-20261114T154807-c05f4e57	2026-11-14T17:11:51Z
+merge:humaniq:1125:72259ae2	merge3 tree of 4 humaniq PRs: merged=0 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T17:12:48Z
