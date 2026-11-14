@@ -11397,3 +11397,5 @@ review:opencatalogi:2650:2f0dabac	GREEN: build PR, RBAC kept, no new test failur
 fix:opencatalogi:2682:e154925a	failed: conflicts only with unmerged #2672, #2686, #2695 (none on development yet); merges clean on development, nothing to resolve until they land	session-20261114T204750-c1efccdb	2026-11-14T22:04:37Z
 review:opencatalogi:2655:05b49194	stale	session-20261114T201752-7e06b161	2026-11-14T22:04:12Z
 fix:opencatalogi:2671:19095782	stale	session-20261114T211754-5182f374	2026-11-14T22:04:44Z
+build:stackiq:applications-copy-with-links:c2	failed: blocked: task 2 needs a copy overrides config in @conduction/nextcloud-vue (absent in 2.74 and 3.4.0; 3.x is Vue 3), task 3 is live; PR #1905 holds task 1	session-20261114T214930-79d5b35c	2026-11-14T22:04:56Z
+fix:shillinq:3000:5625ba51	conflict resolved, new head 4004df626e1b846c7829deea406155dcdccfe488; suite 11478/0 fail	session-20261114T211012-c469e919	2026-11-14T22:05:00Z
