@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Capabilities;
 
 use OCA\OpenRegister\Service\Integration\LeafRegistryInterface;
+use OCA\OpenRegister\Service\SemanticProviderCatalogue;
 use OCP\App\IAppManager;
 
 /**
@@ -39,12 +40,14 @@ final class IntegrationsCapabilityServices {
 	 *
 	 * @param IAppManager           $appManager   App manager (installed check).
 	 * @param LeafRegistryInterface $leafRegistry Cross-app leaf catalogue (ADR-066).
+	 * @param SemanticProviderCatalogue|null $semanticProviders The cached semantic provider list; null advertises none.
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-21
 	 */
 	public function __construct(
 		public readonly IAppManager $appManager,
 		public readonly LeafRegistryInterface $leafRegistry,
+		public readonly ?SemanticProviderCatalogue $semanticProviders = null,
 	) {
 	}//end __construct()
 }//end class

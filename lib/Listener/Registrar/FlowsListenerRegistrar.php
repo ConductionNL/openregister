@@ -38,7 +38,6 @@ use OCA\OpenRegister\Listener\FlowNodeRegistrationListener;
 use OCA\OpenRegister\Listener\FlowOversightRegistrationListener;
 use OCA\OpenRegister\Listener\FlowTriggerListener;
 use OCA\OpenRegister\Listener\FrozenNodeWriteListener;
-use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
 use OCA\OpenRegister\Listener\IntegrationGlobalScriptListener;
 use OCA\OpenRegister\Listener\LeafScriptListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
@@ -225,9 +224,8 @@ final class FlowsListenerRegistrar {
 			$context->registerEventListener(\OCP\WorkflowEngine\Events\RegisterOperationsEvent::class, FlowEngineRegistrationListener::class);
 		}
 
-		// Queue-mode handoff drain on app enable: a provider may have appeared.
-		// The schema-save triggers stay in ListenerRegistrar.
-		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
+		// The queue-mode handoff drain on app enable is registered in ListenerRegistrar,
+		// next to its schema-save triggers: AppEnableEvent has listeners of more than one component.
 	}//end registerAppIntegrationListeners()
 
 	/**

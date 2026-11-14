@@ -473,6 +473,32 @@ final class SemanticTypeResolver implements SemanticTypeResolverInterface {
 	}//end isAppName()
 
 	/**
+	 * A schema's implemented semantic types, including those it inherits through `allOf`.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int, string> The absolute IRIs the schema provides.
+	 *
+	 * @spec openspec/changes/cross-app-semantic-references/tasks.md#task-4.1
+	 */
+	public function implementedTypesOf(Schema $schema): array {
+		return $this->implementedTypesWithAncestors(schema: $schema);
+	}//end implementedTypesOf()
+
+	/**
+	 * The id of the app that owns a schema (its own `application`, else its register's), or null.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return string|null The owning app id, or null when none is declared.
+	 *
+	 * @spec openspec/changes/cross-app-semantic-references/tasks.md#task-4.1
+	 */
+	public function owningAppOf(Schema $schema): ?string {
+		return $this->owningAppId(schema: $schema);
+	}//end owningAppOf()
+
+	/**
 	 * Clear the request-scoped resolve cache. Test hook.
 	 *
 	 * @return void

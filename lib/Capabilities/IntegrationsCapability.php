@@ -104,10 +104,35 @@ class IntegrationsCapability implements ICapability {
 					// registration — including the renderMode correlation — is
 					// keyed by the shared id.
 					'leaves' => $this->services->leafRegistry->describeForCapabilities(),
+					// `semanticProviders` — the installed schemas that provide a
+					// canonical semantic type (cross-app-semantic-references), so a
+					// form can bind a `referenceSemanticType` field without a
+					// round-trip. Cached per user; see SemanticProviderCatalogue.
+					'semanticProviders' => $this->semanticProviders(),
 				],
 			],
 		];
 	}//end getCapabilities()
+
+	/**
+	 * The semantic provider rows, empty when the catalogue is not wired.
+	 *
+	 * @return list<array<string, mixed>>
+	 *
+	 * @spec openspec/changes/cross-app-semantic-references/tasks.md#task-4.1
+	 */
+	private function semanticProviders(): array {
+		if ($this->services->semanticProviders === null) {
+			return [];
+		}
+
+		// The capabilities are built on every page load: a failing list must not take them down.
+		try {
+			return $this->services->semanticProviders->list();
+		} catch (\Throwable) {
+			return [];
+		}
+	}//end semanticProviders()
 
 	/**
 	 * The role-redacted descriptor of every registered provider.
