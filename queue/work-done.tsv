@@ -11714,3 +11714,4 @@ build:versioniq:autoupdate-schedules:c2	PR #716: built 3.2 schedule form, 3.3 ov
 verify:shillinq:3062:6186575a	3062 GREEN, 3078 CONFLICT (info.xml version)	session-20261114T224745-bab17644	2026-11-14T22:56:43Z
 fix:integriq:3630:99809145	CONFLICT fixed: ModalHost entries moved mid-list, merged development; new head 320ac7f7	session-20261114T224738-9571d712	2026-11-14T22:56:49Z
 build4:openregister:flow-object-attribution:c4	partial: PR #10491 7.1 done (object Audit Trails tab lists the runs that changed it; run detail already per node), pushed 77aefc25; left 8.1 (phpmd structure findings on FlowRunController/FlowRunMapper; check:strict not runnable as root here) and 1.1 live occ on MySQL/PostgreSQL	session-20261114T171821-a80c28c5	2026-11-14T22:56:54Z
+fix:integriq:3546:38ea402a	fixed: declared endpoint-workspace OpenAPI tag (adrvalidator pass->warn cause); new head 46dc8e54	session-20261114T225452-4fcfea7f	2026-11-14T22:56:59Z
