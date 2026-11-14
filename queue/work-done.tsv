@@ -8072,3 +8072,4 @@ verify:portaliq:2423:8fd85626	2423/2430/2433 GREEN, 2442 CONFLICT (package.json)
 build:buildiq:logic-script-step	failed: blocked on depends_on logic-automation-actions-that-run (0/12 tasks built); its flow backend is what T02/T04 compile into, so build that change first	session-20261114T070352-19ea7dff	2026-11-14T07:59:44Z
 fix:planninq:1153:b7626350	sbom regenerated after merging development, pushed a1ad44f2, REVERIFY recorded	session-20261114T062142-da017174	2026-11-14T08:00:06Z
 verify:integriq:3571:112129a5	8 GREEN (3571-3573, 3575-3579), 3574 CONFLICT (clean on development alone); no new failures	session-20261114T065631-3903ed42	2026-11-14T08:00:22Z
+build:buildiq:logic-email-and-webhook-triggers	failed: depends on logic-automation-actions-that-run (the flow backend every trigger compiles through), which is unbuilt (0/12 tasks, no branch); build that first	session-20261114T065632-a1c920c5	2026-11-14T08:01:00Z
