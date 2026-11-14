@@ -11842,3 +11842,4 @@ cover:dossiq:069ee2d6mbd37:b7fd3ec4	PR #6527: 15 tests for BezwaarTermijnSchedul
 verify:learniq:2548:dfff3611	2548 GREEN	session-20261114T221743-dbe5c07e	2026-11-14T23:21:21Z
 merge:filinq:2079:f382d609	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:21:40Z
 merge:filinq:2069:a541cc63	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:21:43Z
+fix:integriq:3600:fe200724	no change: merges clean on development (531865634); conflicts only with unmerged #3593 (GREEN) at the l10n catalogue tails (en/nl .json and generated .js); resolve by merging development once #3593 lands	session-20261114T224736-f9da4a35	2026-11-14T23:21:48Z
