@@ -8343,4 +8343,6 @@ shillinq	3065	59e20f973150af922603f9855f61313f0934e2b0	CONFLICT	worker-01	confli
 pipelinq	3821	547ce3a39010816573d785333019d456eb9182c1	GREEN	worker-58	unit 8400 run on tree (baseline 8388 OK, 2 skipped), 0 new failures; build of reports-compare-periods-and-scheduled-delivery matches REQ-RPD-002
 shillinq	3063	02b19218febcc3b6fe72eee1b884fbbdbca04282	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.91 -> 2.89
 pipelinq	3836	b5fa5c079a7cbbe73eb44b434358524f68e59533	GREEN	worker-58	unit 8400 run on tree (baseline 8388 OK, 2 skipped), 0 new failures; build of data-portability-full-export attached files per REQ-DPE-002
+decidiq	2155	932b251cb43268565ca74da412c141a809e13234	GREEN	worker-11	phpunit 4194 tests (baseline 4174, 0 failures), vitest 2724 passed; 0 new failures
 filinq	2078	2a556ec0324013c8689cafa7bad4f72d3451c0fa	GREEN	worker-07	phpunit 6737 OK (baseline 6695 OK, 6 skipped), vitest 786/786 pass, 0 new failures; implements generate-draft-and-attended-edit per its specs
+decidiq	2162	16f8a9d357f278a0cd906ac019eebd6da15d1502	GREEN	worker-11	phpunit 4194 tests (baseline 4174, 0 failures), vitest 2724 passed; 0 new failures
