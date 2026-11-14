@@ -11175,3 +11175,4 @@ build:opencatalogi:auto-publishing:c2	already done: PR #2627 merged into develop
 verify:buildiq:1648:10850ba6	1648 GREEN, 1650 GREEN, 1651 CONFLICT (stubs vs 1648), 1652 GREEN; 1649 skipped (head moved)	session-20261114T191742-bf93c040	2026-11-14T21:26:46Z
 verify:keepiq:1793:05964d3a	GREEN 1793	session-20261114T201754-5ed288ac	2026-11-14T21:27:02Z
 fix:opencatalogi:2683:7a142fe7	merged development, resolved Application.php+l10n conflicts; new head 5621e0b5, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T21:27:14Z
+fix:opencatalogi:2684:aff6a4b7	conflict resolved (ThemesController, both sides kept); new head a58c30ce, REVERIFY recorded	session-20261114T205512-b62019b2	2026-11-14T21:27:21Z
