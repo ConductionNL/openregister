@@ -8470,3 +8470,4 @@ filinq	2105	3ccf41be9655d0734715f638b235309785e0de95	CONFLICT	merge3	conflicts w
 filinq	2112	8e90e8285f083f093db175df59a8c5ae390f7ea5	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json openapi.json 
 filinq	2118	3335401f9db44ee7c9bdf04e3a6fbe2558c1e0c6	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 filinq	2124	e55ecf9223b0780b31103e2917fa8eaa29855798	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/views/settings/Settings.vue tests/jest/golden/settings-page.json 
+filinq	2119	948c6cd49bb2e212e99579bcf2dbd46843ceab7e	REVERIFY	worker-32	merged development in: kept both settings sections and l10n keys, rebuilt catalogues; phpunit 6736 ok, jest 550 ok, vitest 751 ok; new head 8d9239c18eecd7aa3ec7a7c83b22c97e9c3529bd, verify it
