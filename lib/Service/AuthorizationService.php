@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Service;
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCA\OpenRegister\Exception\AuthenticationException;
+use OCA\OpenRegister\Exception\TokenRateLimitExceededException;
 use OCA\OpenRegister\Service\Audit\TokenContext;
 use OCA\OpenRegister\Service\Audit\NamedIdentifier;
 use OCA\OpenRegister\Service\Audit\TokenIdentity;
@@ -29,6 +30,8 @@ use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\EndpointAllowList;
 use OCA\OpenRegister\Service\Consumer\JwtValidator;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
+use OCA\OpenRegister\Service\Rbac\TokenGrant;
+use OCA\OpenRegister\Service\Rbac\TokenGrantRateLimiter;
 use OCP\AppFramework\Http\Response;
 use OCP\ICacheFactory;
 use OCP\IGroupManager;
@@ -191,11 +194,47 @@ class AuthorizationService {
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
 	private function bindConsumerGrant(ResolvedConsumer $consumer, string $fallbackId): void {
-		$this->tokenGrantSource?->bindFromConsumer(
+		$grant = $this->tokenGrantSource?->bindFromConsumer(
 			storedAuthorization: $consumer->configuration,
 			tokenId: (string)($consumer->uuid ?? $fallbackId)
 		);
+
+		$this->refuseOverGrantLimit(grant: $grant);
 	}//end bindConsumerGrant()
+
+	/**
+	 * Count this call against the grant's own rate limit, refusing it when over.
+	 *
+	 * Counted at the moment the credential is accepted, before the request acts
+	 * as the consumer's user, so a call over the limit never runs. A grant
+	 * without a limit, or an instance without a distributed cache, counts and
+	 * refuses nothing.
+	 *
+	 * @param TokenGrant|null $grant The grant just bound, or null.
+	 *
+	 * @return void
+	 *
+	 * @throws TokenRateLimitExceededException When the call is over the grant's limit.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#scenario-one-runaway-integration-does-not-take-the-balie-down
+	 */
+	private function refuseOverGrantLimit(?TokenGrant $grant): void {
+		if ($grant === null || $grant->rateLimit === null || $this->cacheFactory === null) {
+			return;
+		}
+
+		$now     = time();
+		$outcome = (new TokenGrantRateLimiter(cacheFactory: $this->cacheFactory))->consume(grant: $grant, now: $now);
+		if ($outcome === null || $outcome['allowed'] === true) {
+			return;
+		}
+
+		throw new TokenRateLimitExceededException(
+			limit: $outcome['limit'],
+			window: TokenGrantRateLimiter::WINDOW_SECONDS,
+			retryAfter: ($outcome['resetAt'] - $now)
+		);
+	}//end refuseOverGrantLimit()
 
 	/**
 	 * Tell the audit writer which consumer's token opened this request.
