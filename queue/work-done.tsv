@@ -11748,3 +11748,4 @@ fix:integriq:3615:71e6a096	floor restored (module_coupling 5.04), new head f8ce5
 build:versioniq:inventory-upgrade-readiness:c2	done: PR #719 head f21b6e25; built 1.2 (forge info.xml ranges at tag, ForgeRangeStore/Stamper), 1.3 (PHP badge), 3.1 ReadinessPanel tab, 3.2 l10n, 4.1 matrix rows; left 2.3/3.3 e2e and archive (live instance); unit 1717->1741 (2 inherited golden failures), vitest 2968 green, floor passes	session-20261114T221801-9a21d394	2026-11-14T23:02:02Z
 merge:versioniq:700:d95efeab	stale	feeder	2026-11-14T23:00:12Z
 fix:larpinq:1051:de3a87c5	merged development, green; REVERIFY c35fd6e8 (still conflicts with unmerged #1050)	session-20261114T224756-971efe57	2026-11-14T23:02:05Z
+fix:integriq:3628:3039ae5d	fixed: unit_complexity floor (sendMessage 23->9, sendEmail 11->8, readStatusCallback 13->4); suite fails inherited; new head 626c2e6f	session-20261114T225452-4fcfea7f	2026-11-14T23:02:16Z
