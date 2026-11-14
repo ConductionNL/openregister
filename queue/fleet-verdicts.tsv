@@ -8342,3 +8342,4 @@ shillinq	3050	b62151d4c34aad6eb814644a90bef24e81e0acf9	GREEN	worker-01	unit 1119
 shillinq	3065	59e20f973150af922603f9855f61313f0934e2b0	CONFLICT	worker-01	conflicts on top of development+3050: l10n en/nl
 pipelinq	3821	547ce3a39010816573d785333019d456eb9182c1	GREEN	worker-58	unit 8400 run on tree (baseline 8388 OK, 2 skipped), 0 new failures; build of reports-compare-periods-and-scheduled-delivery matches REQ-RPD-002
 shillinq	3063	02b19218febcc3b6fe72eee1b884fbbdbca04282	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.91 -> 2.89
+pipelinq	3836	b5fa5c079a7cbbe73eb44b434358524f68e59533	GREEN	worker-58	unit 8400 run on tree (baseline 8388 OK, 2 skipped), 0 new failures; build of data-portability-full-export attached files per REQ-DPE-002
