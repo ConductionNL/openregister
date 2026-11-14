@@ -7567,3 +7567,4 @@ keepiq	1631	f4de0e6f0044039bd6edae619e32b6c8cd21d394	GREEN	worker-08:review	beha
 opencatalogi	2687	f9bcf3c46c1957053e070b8c85a96d9c3222cb1b	CONFLICT	worker-03	conflicts in the tree after #2684/#2685 in l10n/en.js en.json nl.js nl.json
 opencatalogi	2688	821d0084227c40315916f5f232f47cdc105441ae	CONFLICT	worker-03	conflicts in the tree after #2684/#2685 in l10n/en.js en.json nl.js nl.json
 stackiq	1941	e8635d30fa5e755d7306ae2a6f403d1e4861691e	GREEN	worker-53	PHP 3464 vs 3446 baseline, 0 failures; vitest 2482/2482; merge relation map keeps the five old types and adds the REQ-RRC-005 references; merged records leave facet lists per change
+stackiq	1942	1f0edb98ba7fd8e0727a8c2dcfd78027e5d47ee1	CONFLICT	worker-53	appinfo/info.xml and l10n en/nl js+json conflict with 1941 in tree; clean on development alone
