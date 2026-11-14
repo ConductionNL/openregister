@@ -11608,3 +11608,4 @@ merge:launchpad:1225:0f52d2f7	merge3 tree of 5 launchpad PRs: merged=2 red=2 fai
 fix:versioniq:701:049f1d82	merged development (clean), new head a39b4f2b9b34a74eebdadf8b4f718c8f4dbe96cb; 2 golden failures inherited	session-20261114T211012-c469e919	2026-11-14T22:34:31Z
 fix:versioniq:705:93d382e6	floors: split long/complex new methods, narrowed UpdateGroup ctor, new head 3bbf8938	session-20261114T214733-589f5bff	2026-11-14T22:34:46Z
 verify:hermiq:1785:16f5b620	GREEN 1785	session-20261114T211810-b8f5dc24	2026-11-14T22:35:14Z
+verify:stackiq:1918:93b9a246	5 GREEN (1918,1926,1937,1962,1964), 2 CONFLICT with tree (1933,1963); unit 3643 green, vitest 1 inherited failure	session-20261114T221801-9a21d394	2026-11-14T22:35:21Z
