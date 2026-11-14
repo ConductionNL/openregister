@@ -10826,3 +10826,4 @@ fix:decidiq:2171:a9fe23d9	no change: branch is current with development and merg
 verify:keepiq:1798:047e7ef9	1798 GREEN: unit 5084 (baseline 5079) 0 failures	session-20261114T194744-563ce177	2026-11-14T20:16:20Z
 verify:shillinq:3055:4c49cd2e	3065 GREEN, 3077 CONFLICT (with 3065), 3055/3062 skipped (head moved)	session-20261114T195420-f8b91a81	2026-11-14T20:16:30Z
 merge:buildiq:1593:7377d730	merge3 tree of 15 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T20:16:43Z
+merge:buildiq:1582:5cc035d5	merge3 tree of 15 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T20:16:46Z
