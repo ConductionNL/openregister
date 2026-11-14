@@ -7914,3 +7914,4 @@ verify:learniq:2493:10abaf77	2493 GREEN; 2504,2507,2511,2516 CONFLICT (l10n cata
 review:openregister:10470:c3a811f5	APPROVE (publiccode.yml metadata only)	session-20261114T065631-b4991134	2026-11-14T07:38:41Z
 fix:portaliq:2423:96437597	conflict with #2418 removed (check:help-settings chained from check:page-help); REVERIFY recorded, new head ca8637cc	session-20261114T070323-628c2f37	2026-11-14T07:38:58Z
 review:integriq:3466:07247ead	GREEN (tests only, passes merged with development)	session-20261114T065631-3903ed42	2026-11-14T07:39:05Z
+build:integriq:gateway-federated-api-discovery	partial: PR #3569 (tasks 2-3 done; task 1 partly done, it needs a multi-schema index; task 4 waits on gateway-openapi-import-and-publish)	session-20261114T070344-897ffa0f	2026-11-14T07:39:23Z
