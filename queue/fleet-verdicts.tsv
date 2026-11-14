@@ -7844,3 +7844,5 @@ planninq	1170	b025d50e52196b97b7f7756302e2c5a0de1ec0f8	CONFLICT	merge3	merges cl
 pipelinq	3752	51dd9688f600231124d25f1ed5abd75db9187eb1	GREEN	worker-03:review	implements platform-record-lock per its specs (archive config, isFinished calcs, lock/unlock actions+banner, background paths skip locked records); phpunit 8350 OK, phpstan clean, vitest 1 failure inherited from development (myWorkPage)
 dossiq	6324	6c79a3f15aa5729947b5b4155512234dbb2839f5	GREEN	worker-22:review	lib refactor already on development; remaining diff is tests only (incl. #6322 tests); 78 touched tests pass; suite 16917 tests, 19 failures all inherited from development
 dossiq	6465	f8b4ab75a711e81ad0b46ee78bea249ab56981b1	GREEN	worker-42	unit 16921 tests; baseline 16910 with 19 failures; new failures none; no JS; behaviour-preserving extraction per method-decomposition
+learniq	2493	cf5af58be50a78f58a4094bba696b05ea4557075	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.40 -> 4.38
+learniq	2501	ece22c4cf32ef3410d53b385a6c2c88ecb7f1860	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.40 -> 4.37
