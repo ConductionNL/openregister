@@ -2893,3 +2893,8 @@ learniq	2515	f8a8874234220f1fd7d319ff4688894d097bfb47	MERGED	merge3	GATE OK sbom
 learniq	2520	eb56a06d586ad0869e2703ec0267bc42bc0f7ea6	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 learniq	2531	4185b758f553340c9a7c1e16ff9356f6d7f75653	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2541	6a283faba384ab440427851957870c2890495d84	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+planninq	1158	11b7da5eac0ea92a67e1d6edeb8407a4052a85f3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.70
+planninq	1159	fc0531ddf109692998b779202366fc0631b11e0f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.70
+planninq	1166	5fa61e8e0ef1376130dea7e87564f54eb18cab9a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.72
+planninq	1171	6e9f4ac2e51d2e152758d6a09e48c2982a2742e4	RED	merge3	GATE RED floor: overall: 4.78 -> 4.75; duplication: 4.61 -> 4.55; unit_complexity: 4.83 -> 4.79; unit_interfacing: 4.71 -> 4.63; module_coupling: 3.82 -> 3.80
+planninq	1178	93ae38333c81b66f1230d253a2e16b8510e2247f	RED	merge3	GATE RED floor: unit_complexity: 4.84 -> 4.82
