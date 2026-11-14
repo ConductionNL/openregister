@@ -8285,6 +8285,7 @@ build:launchpad:scheduled-exports	partial: PR #1208 - schemas (task 1), Recurren
 measure:opencatalogi:20261113h22	php 96.55% (pcov, 17612 stmts), js 77.3% at 7a6b9706	session-20261114T073109-bb0ea608	2026-11-14T08:31:22Z
 build:opencatalogi:the-public-and-community-surface	failed: only open task 3.3 is blocked on open question Q-opencatalogi-1 (feed access check)	session-20261114T062202-3e33eeb3	2026-11-14T08:31:46Z
 fix:opencatalogi:2639:426466c7	floor restored (unit_interfacing 4.87), pushed bf46a41b	session-20261114T065631-b4991134	2026-11-14T08:31:50Z
+build:launchpad:engagement-communities	PR #1209: tasks 1-4 and en/nl strings with PHPUnit+vitest; Playwright and archive/matrix steps left	session-20261114T073108-67fbeb26	2026-11-14T08:32:04Z
 build:opencatalogi:prometheus-metrics	partial: PR opencatalogi#2661 federation reachable/unreachable gauges + docs; up/health/search-backend items are engine-owned (OpenRegister AppHost) or N/A	session-20261114T075640-efa02b24	2026-11-14T08:32:24Z
 build:launchpad:platform-dashboard-theme-and-css	partial: PR #1210 (tasks 1, 2, 5, 6 done; admin custom CSS 3/4/7 needs the css-parser composer dependency; 8 Playwright not run)	session-20261114T070344-897ffa0f	2026-11-14T08:32:11Z
 fix:buildiq:1596:41f4f3c3	no change: merges clean on current development; conflicts only with unmerged #1590 (tests/Unit/Service/RegisterFragmentMergeTest.php) and #1593 (l10n/nl.js, nl.json); resolve after those land	session-20261114T073105-752e50ad	2026-11-14T08:32:17Z
