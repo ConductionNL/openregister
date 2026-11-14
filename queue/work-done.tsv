@@ -10816,3 +10816,4 @@ merge:pipelinq:3829:f47fd160	merge3 tree of 2 pipelinq PRs: merged=2 red=0 fail=
 verify:planninq:1179:bb5de50f	stale	session-20261114T191744-b9573b83	2026-11-14T20:15:08Z
 review:openregister:10569:07c6c067	APPROVE 10569 07c6c067: tests green on merge with main, phpstan clean	session-20261114T185913-f84c01b8	2026-11-14T20:15:05Z
 build:filinq:intake-acknowledge-and-stamp:c3	partial: PR #2069 head fa29e9b5 adds 1.1 D1 seed (template ontvangstbevestiging, mail rule acknowledging+stamping, sent acknowledgement on the seeded mail document; register 8.57.0); unit 6783 OK. Left code: 2.1 store the rendered letter in outgoing post, 2.2 outbound documentRegistration answering the inbound one, 3.1 acknowledged column + Open stamped copy action, 3.2 rule form fields; 4.x docs/	session-20261114T191723-85c550b2	2026-11-14T20:15:09Z
+merge:shillinq:3000:1dd6b1fe	stale	feeder	2026-11-14T20:15:09Z
