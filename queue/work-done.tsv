@@ -11899,3 +11899,4 @@ fix:larpinq:1051:c35fd6e8	l10n block moved mid-catalogue, clean with #1041/#1045
 fix:filinq:2126:8274bd42	fixed: development merged in clean, pushed 5e6533ee	session-20261114T224740-064dbb86	2026-11-14T23:28:02Z
 fix:filinq:2121:d3173078	merged development, l10n union resolved, gates OK, suite 6774 OK; new head 3c3c358f	session-20261114T225452-4fcfea7f	2026-11-14T23:28:12Z
 fix:filinq:2114:c9e0c441	merged development in clean, unit 6816 OK, new head 789d94cb	session-20261114T232423-38520620	2026-11-14T23:28:22Z
+fix:filinq:2095:3fec27e5	merged development in (clean, was behind); suites green; new head e0ebb0e0	session-20261114T221801-9a21d394	2026-11-14T23:28:47Z
