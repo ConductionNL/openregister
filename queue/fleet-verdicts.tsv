@@ -9625,3 +9625,4 @@ hermiq	1787	d0f18c158e5d5a9587c64406005c9b1aaf3cd97f	REVERIFY	worker-08	merged d
 shillinq	3077	7c48c1ceec9aae0e672c65e2aa5557858a56b274	CONFLICT	worker-10	conflicts with #3065 in the tree (merges clean on development alone), files: appinfo/info.xml tests/fixtures/register-versions.lock.json
 keepiq	1789	e905bf117ffd7ee7a789d7531abc325c7ded5643	CONFLICT	worker-03	conflicts with development alone; files: l10n/nl.js l10n/nl.json
 keepiq	1790	2097db1d2ce845dfdf2c60a16fa527240f477157	CONFLICT	worker-03	conflicts with development alone; files: l10n/en.js l10n/en.json
+portaliq	2444	c94c78816f8e0c5496a23df08c11937dd20dcee3	GREEN	worker-41:review	Builds T07/T08/T10/T11 per spec: designer warning matches the collector's path rule, excludedPaths declared additively, detail/reply/reveal forms call existing checked endpoints; unit 5720 OK on merge with development, report-pages 11 and example-site 15 node specs pass, eslint clean
