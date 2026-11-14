@@ -2343,3 +2343,25 @@ buildiq	1576	ba79fa5f1e17effb71dbb93173b2bf329aabeaa0	MERGED	merge3	GATE OK sbom
 keepiq	1763	3e29d6cdf33f4d84e4e3c2c63eeab75a51a624ad	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1729	d0839e358d22108732ec6189ccbe485d82a257f8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 opencatalogi	2597	0bad17de449dbb981d2b98719de1e80cabe10d75	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3685	d4db9224b833076fedd5a5fb545e59c7357ec00e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3691	1321adf85723f4f6789eabc857d240702524f81d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3694	fc16959a19bd3456fa9275f207da6e654dcae4d7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3707	153dff0e7076d9a6976fbeec6a000b2c589dcb50	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3725	1bf3ea3d88092a4545b14be9a777c9771abf3e21	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3726	86f30be74c8565f4ed7232305c282a7334d32443	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3732	5b438a04c42988d152117df78b1c5affc4238e7f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3736	d5e2a85128b889961916b18e1ede7b3701cb52c2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3812	c1cd8b0da193fc5676aa6796199b1e7ec4d27d8b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3813	90202bac4dcfbd7eed2489d0236919e610d5d91a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3815	ae004b9add877f3be1e1ed48091a2a2c2935b3f5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3816	6d9144ee3ffdc09a87360c9484bbdede1b2b1ac9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3817	e5888744a0ede3e64b00767fe0bd20a592458f0e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3819	8d6e5ca82ed74a763de50a6e0d2cf2ed2c884b4a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3820	474cd9a9c6d537504071977f7a215f2d0255ff25	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3822	47bff2108fe0979fefa23784e301edf0a8827db9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3823	02bbc48257936c2c46d332fa6dfc652f6d3749af	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3824	fa28c2e4e9eb965dc77cf202c393961a2b3ee8a0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3825	2f61abf97f7861d42d91b46ce12e93968ff75f14	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3826	f843cb02c08fb3f6eb87abd8e14139c0cd12ce60	RED	merge3	GATE RED checker floor: adrvalidator: warn -> fail
+pipelinq	3827	4f94733508a2f7385fa1ef53b1708903ab9bd910	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3828	0f8c8cc2d68947f4db6edfcdf0660f948dbc125e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
