@@ -11626,3 +11626,4 @@ fix:versioniq:685:0a9c1956	fixed: spec expects new osvApiBase field; vitest 2975
 verify:shillinq:3065:d5992bab	3065 GREEN (no new failures; no-rate change asked for by design D4)	session-20261114T171821-a80c28c5	2026-11-14T22:37:45Z
 fix:versioniq:723:b706884d	merged development (clean), pushed 48fa454, REVERIFY	session-20261114T221743-dbe5c07e	2026-11-14T22:37:51Z
 fix:decidiq:2202:0cea5e8c	conflict removed (relative Ori names in ContractBindings), clean on tree; new head dbba3850	session-20261114T221759-c6bc4865	2026-11-14T22:37:59Z
+verify:decidiq:2169:884f7e40	GREEN 2169: 0 new failures	session-20261114T214735-aacd1703	2026-11-14T22:38:06Z
