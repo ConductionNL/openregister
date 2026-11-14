@@ -323,7 +323,11 @@ class ObjectIntegrationsController extends Controller {
 			integrationId: $integrationId,
 			callback: fn ($provider) => $this->listed(
 				integrationId: $integrationId,
-				rows: (new IntegrationProviderInvoker())->list($provider, new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $this->collectFilters())
+				rows: (new IntegrationProviderInvoker())->list(
+					$provider,
+					new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+					$this->collectFilters()
+				)
 			)
 		);
 	}//end index()
@@ -392,7 +396,11 @@ class ObjectIntegrationsController extends Controller {
 	public function show(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->guardObjectAccess(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatch(
 			integrationId: $integrationId,
-			callback: fn ($provider) => (new IntegrationProviderInvoker())->get($provider, new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $entityId)
+			callback: fn ($provider) => (new IntegrationProviderInvoker())->get(
+				$provider,
+				new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+				$entityId
+			)
 		);
 	}//end show()
 
@@ -471,7 +479,11 @@ class ObjectIntegrationsController extends Controller {
 	public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatchDelete(
 			integrationId: $integrationId,
-			callback: fn ($provider) => (new IntegrationProviderInvoker())->delete($provider, new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $entityId)
+			callback: fn ($provider) => (new IntegrationProviderInvoker())->delete(
+				$provider,
+				new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+				$entityId
+			)
 		);
 	}//end destroy()
 

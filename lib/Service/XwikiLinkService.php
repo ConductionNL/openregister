@@ -683,7 +683,11 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		$register = (string)(int)$link->getRegisterId();
 		$schema   = (string)(int)($link->getSchemaId() ?? 0);
 		try {
-			return (new IntegrationProviderInvoker())->get($provider, new ObjectRef(register: $register, schema: $schema, id: (string)$link->getObjectUuid()), (string)$link->getPageReference());
+			return (new IntegrationProviderInvoker())->get(
+				$provider,
+				new ObjectRef(register: $register, schema: $schema, id: (string)$link->getObjectUuid()),
+				(string)$link->getPageReference()
+			);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('XwikiLinkService::refreshLink fetch failed: ' . $e->getMessage());
 			return null;

@@ -68,6 +68,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The leaf now routes projected
  * VTODOs through the write-back gate beside its own CalDAV collaborators.
+ * @SuppressWarnings(PHPMD.TooManyMethods) getAllUserTasks, createTask and updateTask keep the
+ * released signatures that apps still call, beside the methods that replaced them.
  *
  * @spec openspec/specs/object-interactions/spec.md
  */
