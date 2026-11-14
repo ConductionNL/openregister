@@ -8146,3 +8146,4 @@ build:buildiq:data-model-diagram	PR #1610: T01-T05,T07 built (vitest 4077->4107,
 fix:planninq:1167:7d30bb1e	merged development in (clean), tests green; new head 3df6651df2909229b3cb52d288dec6679a6cb6eb; REVERIFY recorded	session-20261114T073111-9b40710a	2026-11-14T08:13:18Z
 build:keepiq:extension-passkey-enrolment	partial: PR #1776 docs task 4.3; left 0.2/0.3 (store ids, live browser ceremonies), 4.1 (code already landed), 4.2 (manual live test)	session-20261114T073109-bb0ea608	2026-11-14T08:13:30Z
 verify:buildiq:1580:e314b3bb	1580-1587 all GREEN; unit 2984 (1 inherited fail), vitest 4077 pass	session-20261114T065632-a1c920c5	2026-11-14T08:13:42Z
+build:buildiq:registration-form-builder	partial: PR #1613, 1.1 (draft owner-only + 30d retention) and 1.2 seed built, 2.2/3.1/4.1 found already done; 2.1 editor, 4.2-4.4 left	session-20261114T065631-3903ed42	2026-11-14T08:13:50Z
