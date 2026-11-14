@@ -8950,3 +8950,4 @@ integriq	3625	bd47bd4cd95090b3280bf70f2d83cf8bbe8b1bcd	GREEN	worker-28	tree dev+
 integriq	3626	0b6ea2adb278d723255596548d62d781abcc82c3	GREEN	worker-28	tree dev+3624+3625+3626+3627+3629: unit 8930 tests, failures only development's own 7 names; vitest 2245/2245
 integriq	3627	ff0fbf0fe8a86ea1a0837c2848df4ec20b304a1b	GREEN	worker-28	tree dev+3624+3625+3626+3627+3629: unit 8930 tests, failures only development's own 7 names; vitest 2245/2245
 integriq	3629	57732eae7e7aeb18b456d5bca76a33dcfd82d102	GREEN	worker-28	tree dev+3624+3625+3626+3627+3629: unit 8930 tests, failures only development's own 7 names; vitest 2245/2245
+integriq	3628	2ecd4a27eb667bd41d831d082b090470f372ebdf	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/nl.js
