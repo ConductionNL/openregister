@@ -9520,3 +9520,4 @@ verify:learniq:2486:a6ea93ae	GREEN 2486 2488 2513 2514 2515 2521; CONFLICT 2496 
 fix:decidiq:2162:2dc5d296	conflict resolved, new head 16f8a9d3, REVERIFY recorded	session-20261114T134701-ae8ce354	2026-11-14T14:36:51Z
 fix:filinq:2072:68ef821e	no change: clean on development; conflicts only with unmerged #2070; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T14:36:58Z
 build:learniq:open-learning-material:c2	PR #2533: 2.4 server-side NC withholding + free-to-paid test; left 2.3 (integriq has no download), 4.3 (no title-edit surface), 6.x verify lane	session-20261114T141731-49ccbf3f	2026-11-14T14:37:19Z
+review:portaliq:2284:f2a7c870	2284 GREEN	session-20261114T141738-30f539db	2026-11-14T14:37:16Z
