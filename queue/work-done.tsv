@@ -8572,6 +8572,7 @@ build:thematiq:token-set-coverage-next-waves	failed: plan-only change (proposal 
 build:thematiq:token-set-licence-gate	already done: every code task ticked and on development; left 4.6 design-board PR and 4.7 live browser check	session-20261114T075643-75a598ab	2026-11-14T09:07:19Z
 verify:opencatalogi:2684:116c73a4	2684, 2685, 2689 GREEN; 2686, 2687, 2688 CONFLICT (l10n en/nl in the tree)	session-20261114T075638-c30fc6de	2026-11-14T09:07:57Z
 fix:keepiq:1790:121983bd	l10n strings relocated, merged dev, pushed 8cf69245, REVERIFY	session-20261114T062142-da017174	2026-11-14T09:08:04Z
+build:larpinq:events-check-out-and-on-site-count	done: PR #1047 (3/3 tasks)	session-20261114T070333-41d2bfe8	2026-11-14T09:08:18Z
 build:versioniq:advisories-per-app-detail	PR #725: tasks 1.1-4.3 done + occ versioniq:advisories; e2e 4.4/5.1-e2e, 6.x left	session-20261114T080916-9b1d69d6	2026-11-14T09:08:14Z
 verify:buildiq:1606:f6bd1777	GREEN 1606 1612 1615 1625 1629; CONFLICT 1617 1618 (l10n)	session-20261114T065625-baa65a50	2026-11-14T09:08:41Z
 verify:larpinq:1024:9ea4387e	GREEN (tests only), vitest 525 pass	session-20261114T073117-2bd2e050	2026-11-14T09:08:47Z
