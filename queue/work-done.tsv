@@ -8451,3 +8451,4 @@ fix:opencatalogi:2655:55850c5e	merged development cleanly, pushed 36ec34ca; tree
 fix:launchpad:1206:260bd969	fixed RED (marked new admin operations internal), new head 848f687d; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T08:52:12Z
 fix:buildiq:1623:3b56d20b	merged development (clean); conflict is only with sibling tree PRs in l10n; new head e24b334fa50134345d8c9bba3cba2b0477f89521 for reverify	session-20261114T073105-27c9d15e	2026-11-14T08:52:30Z
 fix:buildiq:1621:8e4390d8	CONFLICT resolved, suite green apart from inherited; new head 6c531050	session-20261114T062200-6a28e40c	2026-11-14T08:52:39Z
+build:stackiq:connections-derived-dependencies	partial: PR #1936 tasks 1-3 (service, carry-over, guarded routes + openapi), 13 tests, suite 3446->3459 no failures; left Newman, task 4 panel, task 5 docs	session-20261114T073109-bb0ea608	2026-11-14T08:52:49Z
