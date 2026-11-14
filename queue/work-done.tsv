@@ -8845,3 +8845,4 @@ review:openregister:10504:97548855	BLOCK: property-path URL fetch gains an uploa
 review:openregister:10494:a75ee390	APPROVE: 1.3+3.1 as specified, suites green beyond inherited reds	session-20261114T102645-4d14c620	2026-11-14T10:37:24Z
 review:openregister:10484:1aba9e77	APPROVE: render mirror per spec, tests green	session-20261114T102641-d4fd3e25	2026-11-14T10:37:38Z
 build4:openregister:platform-reference-provider:c2	PR #10507: 2.3 openspec validate ticked (valid); all code tasks already on main; 2.1 e2e and 3.1 dossiq handover left	session-20261114T102637-6688951e	2026-11-14T10:37:43Z
+review:openregister:10486:83e3fe00	APPROVE (component-map.csv append conflict noted)	session-20261114T085635-07e3ca9b	2026-11-14T10:37:49Z
