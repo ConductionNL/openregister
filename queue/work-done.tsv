@@ -9094,6 +9094,12 @@ build4:openregister:classification-clearance-on-an-object:c3	partial: PR #10548 
 build4:openregister:anonymisation-image-seam:c3	failed: blocked, nothing codeable left: 3.1 TIFF needs a decoder (GD only, no imagick), 3.2/4.1 PDF XObjects need a PDF writer (only smalot/pdfparser); 4.3 e2e live. Needs a dependency decision	session-20261114T121618-959073d3	2026-11-14T12:45:36Z
 review:openregister:10542:45d597c0	APPROVE	session-20261114T114405-27c89384	2026-11-14T12:45:49Z
 merge:humaniq:1122:b7dbfdb2	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:45:59Z
+merge:humaniq:1124:ead88f8d	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:03Z
 build4:openregister:search-accent-insensitive:c2	PR #10551: 1.4, 2.1, 3.2 + folded relevance order built, +17 tests; left 3.1 e2e and live PostgreSQL/MariaDB runs; no new unit failures	session-20261114T114625-63eafe85	2026-11-14T12:46:13Z
+merge:humaniq:1136:0bca5caa	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:23Z
+merge:humaniq:1030:477af195	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:35Z
+merge:humaniq:1025:45632ee2	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:47Z
+merge:humaniq:1144:b82ee8f3	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:58Z
 build4:openregister:platform-collaboration-resources:c3	failed: nothing buildable; 1.4 needs a core hook on collection membership that the resource provider interface lacks, 2.2 audit test waits on 1.4, 2.1 is e2e	session-20261114T114625-63eafe85	2026-11-14T12:46:58Z
 build4:openregister:reply-threading-by-headers:c2	partial: PR #10539 builds 1.1-1.3, 2.1, 4.4, 4.6 (+3.1 unit part); left 4.5 sidebar section (37-locale l10n + e2e), 3.1 Newman; 2.2 n/a (by-message route gone on main)	session-20261114T114629-c5ef9a76	2026-11-14T12:47:07Z
+merge:humaniq:1148:cb90c27d	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:47:14Z
