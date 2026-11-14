@@ -11514,3 +11514,4 @@ fix:decidiq:2172:148e74e7	floor holds after merging development (unit_size 3.78)
 fix:buildiq:1650:2ada49a1	conflict resolved, new head 49084ce8	session-20261114T221817-a815ec70	2026-11-14T22:20:31Z
 build:stackiq:insight-knowledge-base	PR #1960: tasks 1-2 implemented (+docs text), 13 vitest; Playwright e2e and screenshots left	session-20261114T220941-bdf809d3	2026-11-14T22:20:38Z
 fix:decidiq:2202:3a275a04	floor restored to 3.78, new head 0cea5e8c781ca6a4e97a6e05ec64d51f5843af60	session-20261114T201752-7e06b161	2026-11-14T22:20:44Z
+verify:hermiq:1750:352dc629	1750 GREEN; 1760 and 1795 skipped (head moved)	session-20261114T221709-8b871792	2026-11-14T22:20:51Z
