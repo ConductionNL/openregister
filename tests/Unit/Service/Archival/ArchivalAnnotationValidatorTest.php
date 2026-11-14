@@ -90,6 +90,7 @@ final class ArchivalAnnotationValidatorTest extends TestCase {
 					'categoryProperty' => 'selectielijstCategorie',
 					'action' => 'bewaren',
 					'parties' => ['aanvrager'],
+					'containment' => 'onderdelen',
 				],
 			]
 		);
