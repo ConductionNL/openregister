@@ -11306,6 +11306,7 @@ review:opencatalogi:2643:bb55d371	RED: 3 CatalogModalForm snapshot tests fail (n
 fix:hermiq:1792:2d3f556e	conflict resolved, new head 11c3a878	session-20261114T214733-589f5bff	2026-11-14T21:49:58Z
 verify:opencatalogi:2671:148b0046	GREEN 2701-2707; 2671 and 2696 skipped (heads moved)	session-20261114T201752-7e06b161	2026-11-14T21:50:36Z
 verify:hermiq:1750:9a4e68e8	CONFLICT: #1750 conflicts with development in ContextRetrievalHandler	session-20261114T214740-6d7e97c9	2026-11-14T21:50:47Z
+build:opencatalogi:woo-access-boundary-hardening:c2	failed: permission (a file-writing command was refused by a safety check mid-build; nothing pushed; section 4 design started: CapabilityRights + declaration/scope listeners on the real OR events)	session-20261114T211806-b9cd4119	2026-11-14T21:50:52Z
 verify:filinq:2132:a60290f8	GREEN 2132: 6771 tests, 0 new failures	session-20261114T214735-aacd1703	2026-11-14T21:51:00Z
 fix:shillinq:dummy	x	session-20261114T194805-be886caa	2026-11-14T21:51:11Z
 fix:opencatalogi:2701:493cd752	failed: interaction, not a defect here; #2697's test testAnUnknownCatalogueListsNothing expects the old empty list, catalogs CAT-002 (built in #2701) requires 404; branch merged with development green apart from inherited WooControllerTest	session-20261114T194805-be886caa	2026-11-14T21:51:14Z
@@ -11320,4 +11321,9 @@ verify:keepiq:1789:4bde5ea5	1789 GREEN, 1816 GREEN; unit 5203 vs 5186, vitest on
 build:opencatalogi:open-data-table-query-and-dictionary:c2	PR #2706: every code task built (1.4, 3.1, 3.2, 4.1, 5.1); live API/Newman/e2e checks left; phpunit 5617 (same 2 inherited fails), jest same inherited fails	session-20261114T211815-849a5f5d	2026-11-14T21:52:47Z
 fix:hermiq:1736:a4bcf7a9	conflict resolved, register 0.58.0, new head 3886cbe8	session-20261114T214733-589f5bff	2026-11-14T21:52:44Z
 build:launchpad:scheduled-exports:c3	partial: PR #1229 built tasks 3-11,17,18,21-23,25,26,33,35,37,38 (phpunit 4273/1 inherited fail, vitest 2262 pass); left 12-16,19 UI need an /api/exports entity source in nextcloud-vue (index page self-fetches OpenRegister), 27-30 e2e, 31/32/34 repo-wide gates, 36 i18n	session-20261114T211012-c469e919	2026-11-14T21:53:06Z
+cover:opencatalogi:fc83bfb1md382:js09173935	PR #2719: 19 tests for object store registry + copyObject; store modules lines 90.1% -> 96.9% (PR body says 91.3% before, measured 90.1%); jest 1074 -> 1093, same inherited failures	session-20261114T204759-5dc9dba7	2026-11-14T21:52:56Z
 fix:stackiq:1946:f75d98b8	conflict resolved, pushed c75ea65b, REVERIFY	session-20261114T214735-aacd1703	2026-11-14T21:53:01Z
+fix:stackiq:1945:8ff46c8f	conflict resolved (l10n union); pushed 6fb762aa, REVERIFY recorded	session-20261114T203357-c555025b	2026-11-14T21:53:29Z
+fix:stackiq:1706:dcde9ef2	conflict resolved, pushed 59b724c4, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T21:53:38Z
+merge:opencatalogi:2650:a52c2be5	stale	feeder	2026-11-14T21:50:13Z
+fix:hermiq:1735:9368c9ee	conflicts resolved, pushed 299ff073, REVERIFY recorded	session-20261114T214740-6d7e97c9	2026-11-14T21:53:52Z
