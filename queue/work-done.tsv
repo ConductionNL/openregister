@@ -11170,3 +11170,4 @@ fix:opencatalogi:2673:de0d1edb	floor restored (unit_complexity 4.86, module_coup
 measure:opencatalogi:20261114h10	php 95.64%, js 16.97% @a1371322	session-20261114T211800-2a24a3a9	2026-11-14T21:26:06Z
 verify:learniq:2523:d0e66148	2523 GREEN (6821 tests, only the inherited failure; JS only development's failures)	session-20261114T204747-26056883	2026-11-14T21:26:17Z
 fix:opencatalogi:2659:6f775731	conflict resolved; new head c29f7ef6e91d97435bfb25b98fe48de87bd0c61c, REVERIFY	session-20261114T201741-909e04de	2026-11-14T21:26:25Z
+build:opencatalogi:auto-publishing:c2	already done: PR #2627 merged into development; no code task left: task 6 needs a live instance (tests/Integration), task 7 is the archive-time spec sync, task 3 DI items left by design (EventService already reads real files via lazily fetched FileMapper; listener DI would read twice)	session-20261114T211808-5e900938	2026-11-14T21:26:34Z
