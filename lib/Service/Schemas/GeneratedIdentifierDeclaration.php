@@ -67,7 +67,24 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	 *
 	 * @var array<int, string>
 	 */
-	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn', 'reserved'];
+	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn', 'reserved', 'kind', 'length', 'alphabet'];
+
+	/**
+	 * A counter shown as its number: the default kind.
+	 */
+	public const KIND_COUNTER = 'counter';
+
+	/**
+	 * A counter shown through a keyed permutation as a code of `length`
+	 * characters from `alphabet` (REQ-GID-004).
+	 */
+	public const KIND_RANDOM = 'random';
+
+	/**
+	 * The alphabet of a random code when none is declared: digits and capitals
+	 * without I and O, which read as 1 and 0.
+	 */
+	public const DEFAULT_ALPHABET = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
 	/**
 	 * A placeholder the format renders: `{seq}`, `{seq:n}`, `{year}` or `{month}`.
@@ -88,12 +105,14 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	 * @param string $format The format, with its placeholders.
 	 * @param string $resetOn When the counter restarts.
 	 * @param array<int, string> $reserved The reserved values and patterns.
+	 * @param array{alphabet: string, length: int}|null $random The code shape of a random sequence, null for a counter.
 	 */
 	private function __construct(
 		private readonly string $sequence,
 		private readonly string $format,
 		private readonly string $resetOn,
 		private readonly array $reserved = [],
+		private readonly ?array $random = null,
 	) {
 	}//end __construct()
 
@@ -145,10 +164,70 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 			throw self::unknownReset(resetOn: $resetOn, path: $path);
 		}
 
-		$declaration = new self(sequence: $sequence, format: $format, resetOn: $resetOn, reserved: self::reservedOf(raw: $raw, path: $path));
+		$declaration = new self(
+			sequence: $sequence,
+			format: $format,
+			resetOn: $resetOn,
+			reserved: self::reservedOf(raw: $raw, path: $path),
+			random: self::randomOf(raw: $raw, path: $path)
+		);
 		self::assertRenderable(declaration: $declaration, path: $path);
 		return $declaration;
 	}//end fromAnnotation()
+
+	/**
+	 * The code shape of a random sequence, or null for a counter.
+	 *
+	 * `kind` defaults to `counter`. A `random` kind needs a whole-number
+	 * `length` and may name an `alphabet` of at least two distinct characters;
+	 * the code space they span must fit RandomSequenceCode::MAX_CAPACITY.
+	 *
+	 * @param array<string, mixed> $raw  The annotation block.
+	 * @param string               $path The property's path, for the error message.
+	 *
+	 * @return array{alphabet: string, length: int}|null
+	 *
+	 * @throws GeneratedIdentifierException When the kind, length or alphabet is refused.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-sequence-may-be-random-rather-than-counted-req-gid-004
+	 */
+	private static function randomOf(array $raw, string $path): ?array {
+		$kind = ($raw['kind'] ?? self::KIND_COUNTER);
+		if ($kind === self::KIND_COUNTER) {
+			return null;
+		}
+
+		if ($kind !== self::KIND_RANDOM) {
+			$message = '%s.kind at \'%s\' must be counter or random.';
+			throw self::refusal(message: sprintf($message, self::ANNOTATION, $path), path: $path);
+		}
+
+		$length = ($raw['length'] ?? null);
+		$alphabet = ($raw['alphabet'] ?? self::DEFAULT_ALPHABET);
+		if (is_int($length) === false || is_string($alphabet) === false) {
+			$message = '%s at \'%s\' is random, so it needs a whole-number length and a text alphabet.';
+			throw self::refusal(message: sprintf($message, self::ANNOTATION, $path), path: $path);
+		}
+
+		try {
+			RandomSequenceCode::capacityOf(base: count(RandomSequenceCode::symbolsOf(alphabet: $alphabet)), length: $length);
+		} catch (\InvalidArgumentException $e) {
+			throw self::refusal(message: sprintf('%s at \'%s\': %s', self::ANNOTATION, $path, $e->getMessage()), path: $path);
+		}
+
+		return ['alphabet' => $alphabet, 'length' => $length];
+	}//end randomOf()
+
+	/**
+	 * Whether this identifier is drawn from a random sequence.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-sequence-may-be-random-rather-than-counted-req-gid-004
+	 */
+	public function isRandom(): bool {
+		return $this->random !== null;
+	}//end isRandom()
 
 	/**
 	 * The counter's name.
@@ -203,20 +282,39 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	/**
 	 * Render one value of this identifier.
 	 *
+	 * A random sequence renders `{seq}` as the code of the number, which needs
+	 * the key of the permutation.
+	 *
 	 * @param int $sequenceValue The number taken from the counter.
 	 * @param DateTimeInterface $moment The moment the object is being created.
+	 * @param string|null $randomKey The permutation key; required for a random sequence.
 	 *
 	 * @return string The rendered identifier.
 	 *
+	 * @throws \LogicException When a random sequence is rendered without a key.
+	 * @throws \OverflowException When a random sequence has issued every code it has.
+	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-sequence-may-be-random-rather-than-counted-req-gid-004
 	 */
-	public function render(int $sequenceValue, DateTimeInterface $moment): string {
+	public function render(int $sequenceValue, DateTimeInterface $moment, ?string $randomKey=null): string {
+		$number = (string)$sequenceValue;
+		$code = null;
+		if ($this->random !== null) {
+			if ($randomKey === null || $randomKey === '') {
+				throw new \LogicException('A random sequence is rendered with its key.');
+			}
+
+			$code = (new RandomSequenceCode(alphabet: $this->random['alphabet'], length: $this->random['length'], key: $randomKey))
+				->encode(number: $sequenceValue);
+		}
+
 		return (string)preg_replace_callback(
 			self::PLACEHOLDER,
 			static fn (array $match): string => match ($match[1]) {
 				'year' => $moment->format('Y'),
 				'month' => $moment->format('m'),
-				default => str_pad((string)$sequenceValue, (int)($match[2] ?? 1), '0', STR_PAD_LEFT),
+				default => $code ?? str_pad($number, (int)($match[2] ?? 1), '0', STR_PAD_LEFT),
 			},
 			$this->format
 		);
@@ -240,6 +338,12 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
 	public function parse(string $value): ?array {
+		// A random code does not read back to its number without the key, and the
+		// counter behind it is not ordered by code, so there is nothing to advance.
+		if ($this->random !== null) {
+			return null;
+		}
+
 		['pattern' => $pattern, 'groups' => $groups] = $this->readBackPattern();
 		if (preg_match('/^'.$pattern.'$/', $value, $found) !== 1) {
 			return null;

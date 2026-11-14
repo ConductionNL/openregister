@@ -3096,6 +3096,7 @@ Service/Schemas/ExtendingFormDeclaration.php,200,Service,Service,Service/Schemas
 Service/Schemas/FacetResultCacheClearer.php,33,Service,Service,Service/Schemas/FacetResultCacheClearer.php,0,,Core
 Service/Schemas/GeneratedIdentifierDeclaration.php,214,Service,Service,Service/Schemas/GeneratedIdentifierDeclaration.php,0,,Core
 Service/Schemas/GeneratedIdentifierException.php,18,Service,Service,Service/Schemas/GeneratedIdentifierException.php,0,,Core
+Service/Schemas/RandomSequenceCode.php,82,Service,Service,Service/Schemas/RandomSequenceCode.php,0,,Core
 Service/Schemas/PropertySourceDeclaration.php,109,Service,Service,Service/Schemas/PropertySourceDeclaration.php,0,,Core
 Service/Schemas/PropertyTitles.php,80,Service,Service,Service/Schemas/PropertyTitles.php,0,,Core
 Service/Schemas/PropertySourceException.php,5,Service,Service,Service/Schemas/PropertySourceException.php,0,,Core
