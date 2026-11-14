@@ -7086,3 +7086,11 @@ learniq	2504	aaac75e9d70cb703b26fb6af00bb2598c7b7c27b	CONFLICT	worker-47	conflic
 learniq	2507	2b3376a383a59b47e458847c6c88fd7620dc891b	CONFLICT	worker-47	conflicts in l10n/en.js en.json nl.js nl.json with #2493 (clean on plain development); merge development in after #2493 lands
 learniq	2511	d32aa9e41cd6048152ce00f694c2957023991c11	CONFLICT	worker-47	conflicts in l10n/en.js en.json nl.js nl.json with #2493 (clean on plain development); merge development in after #2493 lands
 learniq	2516	140091fc025107de533f7757bcff0e43491fe390	CONFLICT	worker-47	conflicts in l10n/en.js en.json nl.js nl.json with #2493 (clean on plain development); merge development in after #2493 lands
+learniq	2488	8c0aeabe5e6e71833ff9193a003938cb8942e664	GREEN	worker-16	phpunit 6585 tests, baseline 1 failure (HigherEducationExampleSetTest), 0 new; HR-fed profile fields and per-person assignment per compliance-assign-from-hr-roles
+learniq	2497	d4146da6b605e0dee6446945188615a8603bc588	CONFLICT	worker-16	conflicts with 2488 in the tree, merges clean on development alone, files: tests/Unit/Settings/OpenLearningMaterialRegisterTest.php
+learniq	2506	323a8144bfb23b12a76cfabd1792fecc3c9f8fc7	CONFLICT	worker-16	conflicts with 2488 in the tree, merges clean on development alone, files: l10n/en.json l10n/nl.json lib/Settings/learniq_register.json
+learniq	2509	62c1c223a30dd06c1615360283f857d4485840d6	CONFLICT	worker-16	conflicts with 2488 in the tree, merges clean on development alone, files: l10n/nl.json
+learniq	2519	8165d80004b17fd62110ca4a263a1d96059f293b	CONFLICT	worker-16	conflicts with 2488 in the tree, merges clean on development alone, files: l10n/en.json l10n/nl.json
+learniq	2520	35126bf97fa281cf063ec85288b5c3dd2bb77a4c	CONFLICT	worker-16	conflicts with 2488 in the tree, merges clean on development alone, files: l10n/en.json l10n/nl.json
+learniq	2521	0e48166e66cc2767e4b4860b37b68b28cc7b230e	CONFLICT	worker-16	conflicts with 2488 in the tree, merges clean on development alone, files: tests/Unit/Settings/OpenLearningMaterialRegisterTest.php
+learniq	2524	6ea031ad0bb06544268a431f1854bf4bd669be93	CONFLICT	worker-16	conflicts with 2488 in the tree, merges clean on development alone, files: l10n/en.json l10n/nl.json lib/Listener/Registrar/IntegrityListenerRegistrar.php tests/Unit/Settings/OpenLearningMaterialRegisterTest.php
