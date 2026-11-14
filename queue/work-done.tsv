@@ -9891,3 +9891,4 @@ build:hermiq:delivery-public-web-chat:c2	PR #1728: tasks 2-6 built (anonymous sc
 fix:hermiq:1760:9ed14d29	merged development (clean); conflict only with open #1726; new head adfddb8f53f0f19ff025d31f21fe6894e2df7dec, REVERIFY recorded	session-20261114T144757-446bd6da	2026-11-14T15:41:17Z
 fix:decidiq:2149:bbffd285	conflict resolved, pushed 936b9a26, REVERIFY recorded	session-20261114T151930-0feec10a	2026-11-14T15:41:33Z
 verify:shillinq:2991:6dd7194e	#2991 GREEN, #3004 CONFLICT (register-versions.lock.json after #2991), #3069 skipped (head moved to 4e12404a)	session-20261114T141721-aeb4e068	2026-11-14T15:41:47Z
+fix:hermiq:1758:2fa884c5	failed: conflict is with open PR #1725 (both bump the hermiq_register.json version/description line, 0.55.0 vs 0.56.0, and append l10n keys at the same place), not with development (branch merges dev cleanly); resolvable only after #1725 lands, then merge development in	session-20261114T144751-8a65b704	2026-11-14T15:42:05Z
