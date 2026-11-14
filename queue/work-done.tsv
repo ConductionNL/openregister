@@ -8292,3 +8292,4 @@ build:opencatalogi:service-status-on-the-portal	already done: ServiceStatusIndex
 fix:opencatalogi:2647:622cf6e6	floor restored: split long methods, floor PASS; new head 6c8c836e; REVERIFY queued	session-20261114T073109-930980c2	2026-11-14T08:32:44Z
 verify:keepiq:1776:df2f8b0d	GREEN 1776,1777,1778,1779; phpunit 4974/0 fail (baseline same), vitest 6414/0 fail	session-20261114T075644-ec2e07ac	2026-11-14T08:32:57Z
 fix:opencatalogi:2654:732c7bb8	merged development (docs table both rows), pushed 138d711b; no new failures	session-20261114T065631-3903ed42	2026-11-14T08:33:14Z
+build:opencatalogi:theme-archive-hotspot	failed: waits on its dependencies, which are not merged: openregister appraisal-inherited-from-a-parent (no inheritAppraisalFrom on development) and subjects-as-first-class-records (0/12 tasks); tasks.md says start once both are merged	session-20261114T070332-b3a23612	2026-11-14T08:33:27Z
