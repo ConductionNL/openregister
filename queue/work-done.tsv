@@ -9859,5 +9859,6 @@ fix:humaniq:1129:f4fd7074	fixed module_coupling (interview subscription out of A
 fix:integriq:3588:f2c639ee	conflict resolved (register version, features table), development merged in; failing tests inherited from development; new head 3b34e85d	session-20261114T141724-6227a125	2026-11-14T15:34:33Z
 review:openregister:10562:2c8f7cef	APPROVE	session-20261114T151916-b0518a7b	2026-11-14T15:34:39Z
 fix:integriq:3602:aef17532	development merged, l10n js regenerated, new head fc758946, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T15:34:49Z
+build:shillinq:bookings-messages-and-embedding:c3	partial: PR shillinq#3070 (1.1 backend: send recorded on the appointment, 2 tests, suite 11203->11205 green); left 1.1 failed-send display on pending confirmations page, 1.2 IMailer reminders/other mails, 1.3 SMS job, 1.4 repeat option, 1.5 widget CORS, 1.6 live; worker context nearly full	session-20261114T144816-cf37407b	2026-11-14T15:35:07Z
 fix:integriq:3601:25189bc8	REVERIFY: dev merged, golden hashes re-recorded; 7 inherited dev reds; head c5ea5100	session-20261114T151801-20bb3a08	2026-11-14T15:35:05Z
 review:humaniq:1030:fb14cdc3	GREEN #1030 (behaviour unchanged; 1 inherited failure)	session-20261114T141721-aeb4e068	2026-11-14T15:35:12Z
