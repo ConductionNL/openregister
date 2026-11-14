@@ -8714,3 +8714,4 @@ verify:hermiq:1773:7295109a	4 GREEN (1773,1774,1775,1776); 0 failures with sibli
 build4:openregister:automation-run-records:c2	nothing to build: only the live Newman pass and the buildiq notice remain (not code tasks)	session-20261114T062156-e8adf8ca	2026-11-14T09:45:50Z
 cover:shillinq:05639debm9818:46fc7c46	PR #3044: 15 tests, lib/Listener/Registration 7 classes 0->100%, suite 10752->10767 OK	session-20261114T092658-4bf01f0f	2026-11-14T09:46:25Z
 cover:shillinq:05639debm9818:60c2c265	PR #3045: 58 tests for 8 controllers; lib/Controller/*.php 97.03% -> 98.41% (target 95); suite 10752 -> 10810 OK	session-20261114T092644-f8ff8fc9	2026-11-14T09:46:24Z
+measure:openregister:20261114h08	php 95.08% (pcov, phpunit.xml Unit suite; phpunit-unit.xml needs a Nextcloud tree), js 92.5%	session-20261114T082640-df1db926	2026-11-14T09:47:22Z
