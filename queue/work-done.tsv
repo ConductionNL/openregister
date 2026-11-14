@@ -9933,3 +9933,4 @@ build:integriq:gateway-upstream-routing:c2	done: PR #3562 +0a95d0c2 - task 4 bui
 fix:humaniq:1142:4a3cccf9	merged development; sick leave no longer exportable (development privacy rule); head 5bcc930d; REVERIFY recorded	session-20261114T144756-7c8966f2	2026-11-14T15:48:29Z
 build:integriq:approvals-verification-pack:c2	nothing left to build in code: PR #3543 already merged; remaining tasks are live Newman run, Playwright e2e (tasks 3-4) and the screenshot (task 5), left unchecked	session-20261114T151802-24eee21b	2026-11-14T15:48:54Z
 verify:humaniq:1125:3d159c4d	stale	session-20261114T151936-6991f242	2026-11-14T15:49:22Z
+verify:portaliq:2493:2ce001aa	GREEN #2493 (unit 5255 OK vs baseline 5247, 0 new failures)	session-20261114T151758-95655a27	2026-11-14T15:49:35Z
