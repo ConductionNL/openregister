@@ -9656,6 +9656,7 @@ build:decidiq:governing-documents-register:c2	built: PR #2177 head 1d3a5285, tas
 verify:shillinq:2997:438ec8cf	2997 GREEN; 3007 CONFLICT after 2997	session-20261114T141737-e9e54940	2026-11-14T14:59:58Z
 fix:learniq:2519:f19a370b	merged development, re-recorded portal golden; new head e252f190	session-20261114T141010-8dc8bd74	2026-11-14T15:00:17Z
 review:hermiq:1492:c1a27c1a	GREEN: faithful refactor, no new unit failures, phpstan clean	session-20261114T144812-4140669d	2026-11-14T15:00:31Z
+cover:hermiq:065f1631mcdb5:js06645759	PR #1778: 7 vitest specs, src/components lines 95.72->97.39%, suite 1459->1466 pass	session-20261114T144751-8958c054	2026-11-14T15:00:43Z
 fix:shillinq:3065:59e20f97	conflict with #3050 removed (l10n block moved), pushed 6cbead018f926712cd87a6a8a861b08b9b9e2161, REVERIFY	session-20261114T141720-f9e7a46b	2026-11-14T15:00:42Z
 build:decidiq:leaf-integrations:c2	PR #2197: task 4 form-response import (service + occ, pending, idempotent), 15 tests, suite 4174->4189; left: widget import button (needs nc-vue action slot), live/e2e/screenshot checks	session-20261114T141728-9a5d03fc	2026-11-14T15:00:47Z
 build:decidiq:platform-microsoft-365-calendar-and-teams:c2	PR #2175 updated: all code tasks done (T3 calendar subscription section, T4 Teams widget/Planning/seeds, T5 live join, T6 en+nl strings and docs); live Newman/Playwright tests left; PHPUnit 4185/0 fail, vitest 2735/0 fail	session-20261114T144749-57007b4b	2026-11-14T15:01:11Z
@@ -9667,3 +9668,4 @@ fix:learniq:2532:53b53ed8	conflict resolved: l10n keys repositioned, merges clea
 build:learniq:pupil-books-support-lessons-and-mentor-talks:c2	PR #2538: T1, T3, T4, T5 built and ticked (T2 was #2503); T6 e2e left; unit 6729 tests, 1 inherited failure	session-20261114T141732-dc478e77	2026-11-14T15:02:11Z
 fix:shillinq:3003:e9b31d7d	failed: conflict is only with unmerged #2976 (both bump info.xml version and append register-versions.lock rows at the same place); branch merges current development cleanly; resolve after #2976 lands (rebase the version to after 20261114180000 and append its lock row)	session-20261114T134643-47800317	2026-11-14T15:02:17Z
 verify:filinq:2119:0d0279c0	2123 GREEN, 2119 CONFLICT	session-20261114T144801-36995162	2026-11-14T15:02:20Z
+verify:portaliq:2437:a7c54eab	GREEN #2437	session-20261114T141732-bb541f91	2026-11-14T15:02:58Z
