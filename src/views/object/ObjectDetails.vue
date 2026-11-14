@@ -68,6 +68,15 @@
 							Open Folder
 						</NcActionButton>
 						<NcActionButton
+							v-if="canTranslateObject"
+							closeAfterClick
+							@click="openTranslate">
+							<template #icon>
+								<Translate :size="20" />
+							</template>
+							{{ t('openregister', 'Translate') }}
+						</NcActionButton>
+						<NcActionButton
 							v-if="followToggle"
 							closeAfterClick
 							@click="markUnread">
@@ -556,6 +565,7 @@ import {
 	CnTasksTab,
 	useIntegrationRegistry,
 } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
@@ -581,6 +591,7 @@ import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
+import Translate from 'vue-material-design-icons/Translate.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import ObjectAccessLinks from '../../components/access-links/ObjectAccessLinks.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
@@ -594,6 +605,7 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
+import { canTranslate, registerLanguages, translatableProperties, withTranslations } from './objectTranslation.js'
 import { followProps, recordAddress, sendReadState } from './recordFollow.js'
 
 /**
@@ -685,6 +697,7 @@ export default {
 		DotsHorizontal,
 		EmailMarkAsUnread,
 		Pencil,
+		Translate,
 		TrashCanOutline,
 		TimelineQuestionOutline,
 		Eye,
@@ -754,10 +767,40 @@ export default {
 			readMarkedFor: null,
 			// Open flow tasks on this record, for the Tasks tab badge; null until known.
 			openTaskCount: null,
+			// The register's languages and the schema's translatable properties, for the Translate action.
+			translation: { key: '', languages: [], translatable: [] },
 		}
 	},
 
 	computed: {
+		/**
+		 * The register and schema the Translate action is judged on, as one key.
+		 *
+		 * @return {string} `<register>-<schema>`, or '' without a record.
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 */
+		translationKey() {
+			const ctx = this.relationContext
+			return ctx ? `${ctx.register}-${ctx.schema}` : ''
+		},
+
+		/**
+		 * Whether the Translate action is shown: an administrator, on a schema
+		 * with a translatable property in a register with more than one language.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 */
+		canTranslateObject() {
+			return this.translation.key !== ''
+				&& this.translation.key === this.translationKey
+				&& canTranslate({
+					isAdmin: getCurrentUser()?.isAdmin === true,
+					languages: this.translation.languages,
+					translatable: this.translation.translatable,
+				})
+		},
+
 		/**
 		 * The Follow toggle's props from the record's `@self`, or null when
 		 * the record has no address (design D-1, D-6).
@@ -842,6 +885,21 @@ export default {
 	},
 
 	watch: {
+		translationKey: {
+			/**
+			 * Read the register's languages and the schema's properties when the
+			 * record changes register or schema.
+			 *
+			 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+			 * @return {void}
+			 */
+			handler() {
+				this.loadTranslationFacts()
+			},
+
+			immediate: true,
+		},
+
 		'pagination.files.currentPage': {
 			/**
 			 * Reload files when the files page changes.
@@ -926,6 +984,81 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Read what the Translate action needs, for administrators only: the
+		 * register's languages and the schema's translatable properties. A
+		 * failed read leaves the action hidden.
+		 *
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async loadTranslationFacts() {
+			const key = this.translationKey
+			const ctx = this.relationContext
+			this.translation = { key: '', languages: [], translatable: [] }
+			if (!ctx || getCurrentUser()?.isAdmin !== true) {
+				return
+			}
+			try {
+				const [register, schema] = await Promise.all([
+					axios.get(generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(ctx.register)}`)),
+					axios.get(generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(ctx.schema)}`)),
+				])
+				if (this.translationKey === key) {
+					this.translation = {
+						key,
+						languages: registerLanguages(register.data),
+						translatable: translatableProperties(schema.data),
+					}
+				}
+			} catch {
+				// The action stays hidden; the page works without it.
+				this.translation = { key: '', languages: [], translatable: [] }
+			}
+		},
+
+		/**
+		 * Open the Translate dialog for this record.
+		 *
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 * @return {void}
+		 */
+		openTranslate() {
+			const target = this.liveTarget()
+			if (!target) {
+				return
+			}
+			navigationStore.setTransferData({
+				uuid: target.uuid,
+				languages: this.translation.languages,
+				onTranslated: (result) => this.saveTranslations(result),
+			})
+			navigationStore.setDialog('bulkTranslate')
+		},
+
+		/**
+		 * Save the translated values on the record, as the bulk-translate
+		 * contract asks the caller to, and show the saved record.
+		 *
+		 * @param {object} result The bulk-translate answer.
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async saveTranslations(result) {
+			const target = this.liveTarget()
+			const updated = withTranslations(objectStore.objectItem, result)
+			if (!target || !updated) {
+				return
+			}
+			registerLiveType(target)
+			const saved = await objectStore.saveObject(target.type, updated)
+			if (saved) {
+				objectStore.setObjectItem(saved)
+				return
+			}
+			showError(t('openregister', 'The translations could not be saved on the object.'))
+		},
+
 		/**
 		 * Mark the shown record read once its data has rendered, once per
 		 * record (design D-3). A page without a record (a failed load) sends
