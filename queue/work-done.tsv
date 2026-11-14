@@ -9470,3 +9470,4 @@ verify:dossiq:6509:4c5f222f	6509 GREEN, 6510 GREEN; 0 new failures (13 phpunit +
 fix:learniq:2493:cf5af58b	floor restored: unit_complexity 4.38 -> 4.40 by splitting four units; REVERIFY recorded, new head dddd85e4411bd14431cfb9d1c78f6303b798aa0b	session-20261114T114435-d7b47cb4	2026-11-14T14:28:13Z
 verify:pipelinq:3835:56161fed	stale	session-20261114T134654-82ca2be5	2026-11-14T14:28:25Z
 verify:shillinq:2963:0b6e683a	2963 GREEN; 2997, 3065 CONFLICT; 3004 skipped (head moved)	session-20261114T141740-2e5638b3	2026-11-14T14:28:48Z
+merge:versioniq:709:542e79fb	merge3 tree of 1 versioniq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T14:28:55Z
