@@ -9890,3 +9890,4 @@ buildiq	1582	3f74f59fbcf266b8ef63b825dbc65923eb1686a8	GREEN	worker-45	unit 3171 
 opencatalogi	2655	36ec34cad1171179adb2e91cc8b37a265157d157	REVERIFY	worker-34	merged development in, resolved l10n en/nl json conflicts keeping both sides and regenerated .js; touched tests 41 pass; new head a38229836109726f1d907b831623d56380e65c2c, verify it
 launchpad	1227	b0d1c0efe31a3f9bc5070f7dff8e3c1d31fe0479	GREEN	worker-26	phpunit 4251 tests on tree (baseline 4196, 1 inherited failure OpenApiStabilityTest), vitest 2272 pass; build PR matches change specs
 buildiq	1593	e35622b504e68d9a90bb659908502b0606784a32	GREEN	worker-45	unit 3171 tests, baseline 3142 w/ 1 failure (ExportZipGoldenTest, inherited), no new failures; vitest 4657 pass; test:l10n:parity OK
+buildiq	1608	78af9a24a6414a59194f58f13dd424a492545888	CONFLICT	worker-45	clean on development; conflicts in l10n/en.js,en.json,nl.js,nl.json with 1582+1593 in tree
