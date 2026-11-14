@@ -8845,3 +8845,4 @@ review:openregister:10504:97548855	BLOCK: property-path URL fetch gains an uploa
 review:openregister:10494:a75ee390	APPROVE: 1.3+3.1 as specified, suites green beyond inherited reds	session-20261114T102645-4d14c620	2026-11-14T10:37:24Z
 review:openregister:10484:1aba9e77	APPROVE: render mirror per spec, tests green	session-20261114T102641-d4fd3e25	2026-11-14T10:37:38Z
 build:shillinq:expenses-category-mapping:c2	partial: PR #3048 builds 1.1,1.2,2.1,2.2,3.2,3.4,4.1 (28 PHPUnit + 6 vitest tests, suite 10752->10780 OK); 3.3 (docudesk suggestion on pages) and Playwright checks left	session-20261114T092645-411bc5aa	2026-11-14T10:37:51Z
+review:openregister:10486:83e3fe00	APPROVE (component-map.csv append conflict noted)	session-20261114T085635-07e3ca9b	2026-11-14T10:37:49Z
