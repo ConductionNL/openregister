@@ -5566,6 +5566,102 @@ class ObjectsController extends Controller {
 	}//end move()
 
 	/**
+	 * Copy an object: a new object, with a new uuid, from the source's fields and the overrides.
+	 *
+	 * 🔴 A COPY IS A NEW IDENTITY, NOT A MOVE. It starts its own audit trail,
+	 * versions, files and notes; {@see move()} is the act that keeps them.
+	 *
+	 * The source is read under the caller's own permissions (404 when it
+	 * cannot be read), the caller needs `create` on the schema (403), and the
+	 * body goes through the normal create path, so every create rule and
+	 * validation applies (a refused body writes nothing). The identity, the
+	 * `@self` metadata and platform-minted properties are never copied
+	 * ({@see \OCA\OpenRegister\Service\Object\CopyPayload}). Copying links
+	 * (`include`) is not offered yet and is refused with 422 rather than
+	 * silently left out.
+	 *
+	 * @param string                    $register      The register.
+	 * @param string                    $schema        The schema.
+	 * @param string                    $id            The object to copy.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse 201 with `{object, links}`, or a 4xx naming what stood in the way.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
+	 */
+	#[NoAdminRequired]
+	public function copy(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$refusal = $this->copyRequestRefusal();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$source = $this->presenceObjectOrRefusal(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+		if ($source instanceof JSONResponse) {
+			return $source;
+		}
+
+		try {
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
+
+		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		if ($permissions->hasPermission(schema: $resolved['schemaEntity'], action: 'create') === false) {
+			return new JSONResponse(data: ['error' => 'You may not create objects in this schema.'], statusCode: 403);
+		}
+
+		$overrides = $this->request->getParam('overrides', []);
+		if (is_array($overrides) === false) {
+			$overrides = [];
+		}
+
+		$body = (new \OCA\OpenRegister\Service\Object\CopyPayload())->of(
+			source: $source->getObject(),
+			overrides: $overrides,
+			schema: $resolved['schemaEntity']
+		);
+		$controls = new ObjectCreateControls(request: $this->request, caller: $this->caller());
+		$create  = new ObjectCreate(object: $body, resolved: $resolved, objectService: $objectService, controls: $controls);
+		$created = $this->createdResponse(create: $create);
+		if ($created->getStatus() !== 201) {
+			return $created;
+		}
+
+		return new JSONResponse(
+			data: ['object' => $created->getData(), 'links' => ['relationRows' => [], 'incoming' => [], 'files' => []]],
+			statusCode: 201
+		);
+	}//end copy()
+
+	/**
+	 * The refusal of a copy request that asks for what a copy does not do yet.
+	 *
+	 * @return JSONResponse|null 422 for links or an upsert key; null when the request may proceed.
+	 *
+	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
+	 */
+	private function copyRequestRefusal(): ?JSONResponse {
+		$include = $this->request->getParam('include', []);
+		if (is_array($include) === true && $include !== []) {
+			return new JSONResponse(data: ['error' => 'Copying links is not available yet; copy without include.'], statusCode: 422);
+		}
+
+		if (trim((string) $this->request->getParam('_upsertOn', '')) !== '') {
+			return new JSONResponse(data: ['error' => 'A copy always creates a new object; it cannot upsert.'], statusCode: 422);
+		}
+
+		return null;
+	}//end copyRequestRefusal()
+
+	/**
 	 * Move an object to the register and schema the request names.
 	 *
 	 * @param ObjectEntity $object The object.
