@@ -11512,3 +11512,4 @@ review:shillinq:2995:22173937	GREEN: suite 11474 green, phpstan/eslint/manifest 
 fix:buildiq:1649:64e6ca03	merged development, l10n conflicts resolved; new head c40e299a, REVERIFY	session-20261114T221756-d9538cf9	2026-11-14T22:19:59Z
 fix:decidiq:2172:148e74e7	floor holds after merging development (unit_size 3.78); new head c322af3	session-20261114T204759-5dc9dba7	2026-11-14T22:20:20Z
 fix:buildiq:1650:2ada49a1	conflict resolved, new head 49084ce8	session-20261114T221817-a815ec70	2026-11-14T22:20:31Z
+fix:decidiq:2202:3a275a04	floor restored to 3.78, new head 0cea5e8c781ca6a4e97a6e05ec64d51f5843af60	session-20261114T201752-7e06b161	2026-11-14T22:20:44Z
