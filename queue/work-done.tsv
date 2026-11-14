@@ -9436,3 +9436,4 @@ fix:filinq:2096:f25f178a	failed: already contains development (head unchanged f2
 fix:dossiq:6385:11c3b49f	fixed CONFLICT: merged development, resolved simpleCasePage.spec.js counts; new head 0de8a7992, REVERIFY recorded	session-20261114T134643-47800317	2026-11-14T14:23:11Z
 fix:learniq:2496:fa97a105	merged development in cleanly, l10n intact, JS suite = baseline; pushed 1358154da04f0ff674b6310c4ea1be403b609960, REVERIFY recorded	session-20261114T141731-49ccbf3f	2026-11-14T14:23:28Z
 verify:shillinq:2997:07e3c214	3003 GREEN; 2997, 3004 skipped (head moved)	session-20261114T141740-2e5638b3	2026-11-14T14:23:42Z
+fix:filinq:2093:282560c2	failed: already contains development (head unchanged 282560c2); it conflicts only with open PR #2067 on the register-version and l10n lines. Re-run after #2067 lands	session-20261114T124625-07e62ccf	2026-11-14T14:23:45Z
