@@ -1,28 +1,28 @@
 {
  "app": "opencatalogi",
- "commit": "7a6b970626229ee77317e1ea8e6521f380bb4628",
- "measured_at": "2026-11-14T08:30:59Z",
+ "commit": "a1371322d53d190af455d523c801a97a75101e81",
+ "measured_at": "2026-11-14T21:25:44Z",
  "php": {
   "tool": "pcov",
-  "pct": 96.55,
-  "statements": 17612,
-  "covered": 17005,
+  "pct": 95.64,
+  "statements": 18181,
+  "covered": 17388,
   "dirs": {
    "lib/BackgroundJob/": [
-    90,
-    90
+    91,
+    91
    ],
    "lib/Command/": [
-    278,
-    275
+    481,
+    472
    ],
    "lib/Contract/": [
     11,
     10
    ],
    "lib/Controller/": [
-    3348,
-    3198
+    3369,
+    3212
    ],
    "lib/Controller/Setup/": [
     297,
@@ -53,16 +53,16 @@
     199
    ],
    "lib/Middleware/": [
-    57,
-    57
+    82,
+    64
    ],
    "lib/Middleware/Support/": [
     59,
     54
    ],
    "lib/Observability/": [
-    186,
-    186
+    212,
+    212
    ],
    "lib/Portal/": [
     294,
@@ -77,8 +77,8 @@
     6
    ],
    "lib/Service/": [
-    7916,
-    7527
+    8209,
+    7659
    ],
    "lib/Service/Broadcast/": [
     2,
@@ -102,7 +102,7 @@
    ],
    "lib/Service/Portal/": [
     569,
-    560
+    566
    ],
    "lib/Service/Publication/": [
     1116,
@@ -135,84 +135,196 @@
   }
  },
  "js": {
-  "pct": 77.3,
-  "statements": 2220,
-  "covered": 1716,
+  "pct": 16.97,
+  "statements": 11228,
+  "covered": 1905,
   "dirs": {
    "src/": [
-    50,
+    115,
     50
    ],
+   "src/components/": [
+    274,
+    0
+   ],
+   "src/components/__snapshots__/": [
+    7,
+    0
+   ],
+   "src/components/tabs/": [
+    1,
+    0
+   ],
    "src/components/widgets/": [
-    8,
+    316,
     8
    ],
+   "src/components/widgets/__snapshots__/": [
+    15,
+    0
+   ],
    "src/composables/": [
-    70,
+    89,
     70
+   ],
+   "src/css/": [
+    0,
+    0
+   ],
+   "src/dialogs/": [
+    136,
+    0
+   ],
+   "src/dialogs/__snapshots__/": [
+    35,
+    0
+   ],
+   "src/dialogs/attachment/": [
+    53,
+    0
+   ],
+   "src/dialogs/attachment/__snapshots__/": [
+    12,
+    0
+   ],
+   "src/dialogs/caseType/": [
+    55,
+    0
+   ],
+   "src/dialogs/generic/": [
+    421,
+    0
+   ],
+   "src/dialogs/generic/__snapshots__/": [
+    28,
+    0
+   ],
+   "src/dialogs/retention/": [
+    64,
+    0
    ],
    "src/entities/": [
     13,
     12
    ],
    "src/entities/attachment/": [
-    28,
+    44,
     26
    ],
    "src/entities/catalogi/": [
-    24,
+    39,
     24
    ],
    "src/entities/configuration/": [
-    6,
+    22,
     4
    ],
    "src/entities/glossary/": [
-    13,
+    29,
     13
    ],
    "src/entities/listing/": [
-    6,
+    25,
     4
    ],
    "src/entities/organization/": [
-    15,
+    48,
     15
    ],
    "src/entities/publication/": [
-    24,
+    41,
     22
    ],
    "src/entities/publicationType/": [
-    24,
+    40,
     22
    ],
    "src/entities/theme/": [
-    8,
+    28,
     6
    ],
+   "src/manifest.d/": [
+    18,
+    0
+   ],
+   "src/modals/catalog/": [
+    207,
+    0
+   ],
+   "src/modals/catalog/__snapshots__/": [
+    9,
+    0
+   ],
+   "src/modals/directory/": [
+    551,
+    0
+   ],
    "src/modals/generic/": [
-    23,
+    648,
     23
    ],
    "src/modals/object/": [
-    163,
+    1416,
     162
    ],
+   "src/modals/theme/": [
+    271,
+    0
+   ],
    "src/navigation/": [
-    19,
+    51,
     19
    ],
    "src/services/": [
-    584,
+    769,
     579
    ],
+   "src/sidebars/dashboard/": [
+    288,
+    0
+   ],
+   "src/sidebars/directory/": [
+    219,
+    0
+   ],
+   "src/sidebars/search/": [
+    222,
+    0
+   ],
+   "src/store/": [
+    4,
+    0
+   ],
    "src/store/modules/": [
-    1136,
-    651
+    2339,
+    840
+   ],
+   "src/views/catalogi/": [
+    85,
+    0
+   ],
+   "src/views/dashboard/": [
+    149,
+    0
+   ],
+   "src/views/directory/": [
+    231,
+    0
+   ],
+   "src/views/publications/": [
+    1063,
+    0
+   ],
+   "src/views/search/": [
+    15,
+    0
+   ],
+   "src/views/settings/": [
+    627,
+    0
    ],
    "src/views/widgets/": [
-    6,
+    96,
     6
    ]
   }
