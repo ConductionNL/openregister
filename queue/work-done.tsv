@@ -7898,6 +7898,7 @@ verify:decidiq:2154:d23fb1ac	4 GREEN (2154,2159,2160,2165), 1 RED (2158: two sim
 build:integriq:messaging-sms-providers-and-notifynl-mail	partial: PR #3563, tasks 1-4 and 8 done, 5-7 open; 19 new tests (PR body says 31 in error), no new failures	session-20261114T065626-0651b305	2026-11-14T07:35:35Z
 review:integriq:3343:cd29b4de	GREEN: refactor preserves behaviour; no new failures	session-20261114T073108-67fbeb26	2026-11-14T07:35:45Z
 build:integriq:messaging-intake-routing-rules	partial: PR #3565 (tasks 4, 7 and server halves of 3, 5; editor/inbox screens, task 6 and e2e left)	session-20261114T065635-0aca43d3	2026-11-14T07:35:56Z
+build:integriq:gateway-api-design-rules-check	partial: PR #3564 builds tasks 1-2 (engine + Dutch ADR 2.2.2 rule set, 39 tests, 0 new failures); tasks 3-5 wait on unbuilt gateway-openapi-import-and-publish. Note: PR body's development count should read 8493, not 8526	session-20261114T062200-62a0b439	2026-11-14T07:35:54Z
 build:integriq:integriq-tenant-scoping	partial: PR #3566 (ApprovalService scoped + task 4 reasons in 3 services; tasks 1-3 already built; ~100 task-4 sites left)	session-20261114T062200-6a28e40c	2026-11-14T07:36:29Z
 verify:hermiq:1726:955c8fc2	2 GREEN (1726,1758), 7 CONFLICT on hermiq_register.json; 0 new failures	session-20261114T073117-2bd2e050	2026-11-14T07:36:25Z
 review:hermiq:1492:871a590f	GREEN: behaviour-preserving move, no new failures	session-20261114T070323-628c2f37	2026-11-14T07:36:32Z
