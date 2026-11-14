@@ -9977,3 +9977,4 @@ fix:hermiq:1738:441006a0	no change: head 441006a unchanged and merges clean on d
 fix:integriq:3572:4ceacefd	merged development (clean), pushed 35bfc428; openapi.json overlap only with #3546, order it after 3546	session-20261114T154751-59b4cd56	2026-11-14T15:56:29Z
 fix:integriq:3582:a9dc2cea	stale	feeder	2026-11-14T15:55:25Z
 build:integriq:connectors-job-board-multiposting:c2	partial: no change; tasks 2-4 still need the boards recorded example payloads (LinkedIn answer, Indeed feed rendering, werk.nl) the design names as fixtures; task 1 is on PR #3549	session-20261114T141010-8dc8bd74	2026-11-14T15:56:48Z
+fix:hermiq:1757:6d9e76d5	merged development (clean); conflict is with unmerged #1735; new head 52b33f1f	session-20261114T154757-c9bf237e	2026-11-14T15:56:53Z
