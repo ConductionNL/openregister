@@ -134,6 +134,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
 		<job>OCA\OpenRegister\BackgroundJob\PublishedDigestVerifyJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FormUploadPurgeJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\UploadSessionCleanupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledMessageSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExampleSetDailyRefreshJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SharerAccessSweepJob</job>
