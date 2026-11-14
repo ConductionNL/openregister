@@ -11114,3 +11114,4 @@ fix:keepiq:1793:813952b0	l10n conflict resolved, clone spec updated; new head 1c
 verify:keepiq:1786:9ce5d18e	GREEN 1786	session-20261114T203357-c555025b	2026-11-14T21:13:15Z
 build:decidiq:inspreekrecht-plenair:c3	done: PR decidiq#2178 head 37197bc0 adds tasks 5-7 frontend (agenda speakers block, queue preload+outcome, moderation dialogs, deadline cell); only task 8 e2e left; vitest 2812 pass, phpunit 4275 green	session-20261114T204741-7bef6f2a	2026-11-14T21:13:44Z
 verify:integriq:3635:76370912	3635 GREEN	session-20261114T202449-f0278d5a	2026-11-14T21:13:51Z
+verify:decidiq:2178:62aa27f4	stale	session-20261114T204741-7bef6f2a	2026-11-14T21:14:08Z
