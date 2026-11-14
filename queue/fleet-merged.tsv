@@ -2302,3 +2302,15 @@ versioniq	682	209ba5950fc32490e94a9240f5bf305cb8559e30	MERGED	merge3	GATE OK sbo
 versioniq	683	a69d0a432bfaad12c5613d95e170cff8135e3b76	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 versioniq	684	ca37f6c9de576b27d0091bc460f60d418be43b01	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 versioniq	685	0d04ca1a7a5372c23fcb6d9f990ef32e81ac5e47	RED	merge3	GATE RED floor: overall: 4.92 -> 4.87; duplication: 5.14 -> 5.09; unit_size: 4.73 -> 4.70; unit_complexity: 4.58 -> 4.49; unit_interfacing: 4.08 -> 3.88
+keepiq	1748	67c606188142f7cbf7e6d781d68916966c252f6c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1754	57f8bde30e1bc2b56cc544ea73eb64a43c0d799e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1755	60514b4d7364e71ce09e2533f5277eec242d13b2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1758	bad14ff36344732b2334bb2eb79612f04cd586f8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1759	7f940f662eef8291ed4fba6143fe7eebc594c4ff	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1760	135564d217a7edf4eb8a524db38051632f2dc62e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1761	27bb4b668bd2b6b6ce8d2c14e90aa36c053d0176	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1762	4a71aa2b8bc08eceb987a0c75de102a271f0b64c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1763	3e29d6cdf33f4d84e4e3c2c63eeab75a51a624ad	SKIP	merge3	GATE UNMEASURED floor_check.py or checker_floor.py not available
+keepiq	1764	0d24aa534c1d77f030b5af9c78ae243bd4dd6789	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1765	82f3934464652febe5744065e8b3d4c014b5a9a9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1766	29392dd8d5e961a6523799c57be9ddc3bf6affcd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
