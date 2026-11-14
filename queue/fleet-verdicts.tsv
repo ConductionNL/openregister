@@ -7987,3 +7987,14 @@ buildiq	1582	3d48cc81fd33684f6901d26f3e623b264c71dc66	RED	merge3:merge-gate	GATE
 buildiq	1583	1d68d4b1ac1b146d60304964372b87ea8578031b	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.41 -> 3.39
 buildiq	1608	d42aa0c4ed1e1203e8c38b853559477bd6f73918	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.41 -> 3.39
 buildiq	1625	26fd13852458473da9ae85f4014f9d16f6a297ec	RED	merge3:merge-gate	GATE RED floor: duplication: 4.32 -> 4.27
+buildiq	1590	ab70ca96a40e2ea562c7e7ef45e7d7990dcd6995	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/RegisterFragmentMergeTest.php 
+buildiq	1593	fbd23e44fba41003f2bf3a4318b81ffabbc69c63	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json 
+buildiq	1597	b4d6685f15a88f33cd1f90edad134ba6de802e91	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1612	40bed07f1c09d081dfbd618cd1610ccb046181cf	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/builder.js src/components/page-editor/DashboardPageEditor.vue src/components/page-editor/fields/WidgetBuilder.vue src/runtimeRegistry.js src/views/B
+buildiq	1613	9a07faa20e3787d2b96b824c20bf5890a20829a9	RED	merge3	with #1580 merged: RegistrationFormFragmentTest::testABouwvergunningFormIsSeededWithTwoPhasesAndARule (4 vs 1), RegistrationFormSeedTest::testEverySeededFormPassesTheSaveRules (4 vs 3) and ::testOneTypeCarriesAFormPerAudience fail; merge development and reconcile the seeded forms
+buildiq	1614	9a7e263b9e7ecfc3ba7bda2a4a7b565925802163	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1621	6c5310504ad2a18b48988435e4c7e7ef87069c26	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1622	7c8164d3c2cfb5ee363ad4269687648ebc8eb733	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/DashboardController.php src/components/page-editor/FormPageEditor.vue src/components/page-editor/fields/FormFieldBuilder.vue src/componen
+buildiq	1624	6819ec71d4ae086db9ba9b6ab4fffede34233a85	RED	merge3	with #1608 merged: AddWidgetHandlerTest::testCodeIsLeftOutOfACopilotWidget gets isError; merge development and align the test with the handler
+buildiq	1631	308971ea93d01b84743fa579a930b8e09ec66c94	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1632	a746e5ea97d30ac540a85acbe684e3aa3debbebf	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/composables/useManifestValidator.js 
