@@ -8273,3 +8273,4 @@ learniq	2521	7c3cb66340e404fdb84702e999a52c0ab97f4cce	GREEN	worker-28	unit 6747 
 filinq	2105	3ccf41be9655d0734715f638b235309785e0de95	GREEN	worker-18	unit 6793 OK (baseline 6695 OK, 0 new failures); vitest 762 OK; implements openspec/changes/office-template-authoring
 filinq	2107	19e55eb6a06b133b3e3a1b673942584062427152	CONFLICT	worker-18	conflicts after #2105: l10n en/nl, filinq_register.json, openapi.json
 filinq	2120	261649dc22979f0fb626a6aeb7642c218a64ca07	CONFLICT	worker-18	conflicts after #2105: l10n en/nl, filinq_register.json, tests/vitest/manifestFragments.spec.js
+filinq	2121	7cda90b10a96dd93af5cd502975131a0ba9db07e	CONFLICT	worker-18	conflicts after #2105: l10n en/nl, filinq_register.json
