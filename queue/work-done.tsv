@@ -9902,3 +9902,4 @@ verify:filinq:2069:e41aab19	GREEN 2069 2100 2118; CONFLICT 2079 2112 2126	sessio
 build:integriq:brp-connection-monitor-from-pipelinq:c2	PR #3612: task 3.1 handover listener built with 19 tests; 4.1 full check:strict not run (touched-file gates green); all code tasks ticked	session-20261114T151751-5fc6ef5c	2026-11-14T15:43:02Z
 verify:hermiq:1728:28794c35	stale	session-20261114T144757-446bd6da	2026-11-14T15:43:08Z
 fix:hermiq:1753:17a75239	conflict with #1725 removed: moved this PR's 2 l10n keys away from the shared insertion point, merged development; clean against #1725 and development; new head f4cfe671, REVERIFY recorded	session-20261114T144751-8a65b704	2026-11-14T15:43:17Z
+fix:decidiq:2198:73a76b6a	no change: merges clean on current development; conflicts only with earlier unmerged PRs in the tree	session-20261114T151930-0feec10a	2026-11-14T15:43:47Z
