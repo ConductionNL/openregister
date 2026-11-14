@@ -9604,3 +9604,10 @@ buildiq	1641	2a563552d9b93b253ebbc5b378cf992d119e679c	RED	merge3:merge-gate	GATE
 shillinq	3051	d7281fadf105011c2d9a524db93c9a6f8b327221	CONFLICT	worker-45	conflicts with development in l10n/en.js, l10n/en.json, l10n/nl.js, l10n/nl.json, lib/Guard/GuardRegistrar.php
 shillinq	3062	bcacd253984d1a655fc4d67a73245269ad00c368	RED	worker-45	merged with development: OpenApiDocumentTest::testTheDocumentMatchesTheRoutes and VATReturnServiceTest::testAReverseChargedPurchaseDeclaresItsBaseInTheBoxOfItsTariff fail; both pass on development and with #3078 alone
 shillinq	3078	f67adaa35061d19fbf7b7dfcec51b5cf9c50a977	GREEN	worker-45	phpunit 11321/0 on development + #3078 (development 11299/0 earlier); builds bookings-messages-and-embedding (email through Nextcloud mailer, SMS reminder job, reminder recorded on the booking)
+buildiq	1593	399e9f17db41bfba7ffab068cb540497a47ed243	CONFLICT	merge3	conflicts with development; files: l10n/nl.js l10n/nl.json 
+buildiq	1608	9907d8e54ffe8c3aec72f3ed8009300de18f07c1	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1613	37f34495fbbb622a2d1d5761f705ff2c6c02f7cd	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json 
+buildiq	1620	2ef94dee1f1925461fe5d11ffa3855fe26a83087	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1621	504a7501077e7ae8d76adbbcbdee4961869aad28	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1626	9c88d3df66d9ed0d82587deafdf33d424a3f3de1	CONFLICT	merge3	conflicts with development; files: l10n/nl.js l10n/nl.json 
+buildiq	1645	cc74061bc678bb72e3168b9a194f54323b51ff95	RED	merge3	unit: 3 new failures in AppRecordsImporterTest (imported 0 / failed 40, error import_failed); fails on the PR head alone too
