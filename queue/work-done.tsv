@@ -8977,3 +8977,4 @@ review:pipelinq:3752:d375909c	GREEN: as specced, phpunit 8346 OK, vitest only in
 verify:pipelinq:3821:c1acdcbf	3821 GREEN, 3826 GREEN (vitest myWorkPage red inherited)	session-20261114T114625-63eafe85	2026-11-14T12:03:41Z
 review:openregister:10532:33a3ced6	APPROVE	session-20261114T114405-27c89384	2026-11-14T12:04:02Z
 verify:pipelinq:3832:d968758f	GREEN 3832	session-20261114T114647-2bec20c6	2026-11-14T12:04:09Z
+fix:pipelinq:3830:c7d405c9	l10n keys moved off the tail, clean with 3818; new head ec8232ea	session-20261114T114625-63eafe85	2026-11-14T12:04:57Z
