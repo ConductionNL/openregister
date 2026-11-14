@@ -65,11 +65,11 @@
       `@self.tokenSubject`. The narrowed block reaches `MagicRbacHandler`
       through `resolveSchemaAuthorization()`, which delegates here, so a list
       is already filtered by the narrowed verbs; the row condition is 1.1d.
-- [ ] 2.2 `actorVia` and `whoami`. `TokenGrant::toArray()` and `tokenId` are
+- [x] 2.2 `actorVia` and `whoami`. `TokenGrant::toArray()` and `tokenId` are
       the data both need; the audit writer and the whoami endpoint are the
       two callers, and neither is written yet.
       - Done, the `whoami` half: `GET /api/whoami` (`WhoamiController::show()`) answers the calling user, `actorVia` (the bound grant's token or Consumer id) and the effective grant from `TokenGrantSource`. `expired` follows `TokenGrant::isExpired()`, so a missing end date reads as expired. It answers 401 without a user and takes no id, so only the caller is ever answered. Tests: `tests/Unit/Controller/WhoamiControllerTest.php` (7).
-      - Open, the audit half: `TokenAttribution` already seals the calling token and Consumer into `resultSummary.token` and the `consumer` column. Naming that `actorVia` on every write through a granted token is not done here.
+      - Done, the audit half: `TokenAttribution::apply()`, which every audit row passes through in `AuditTrailMapper`, now also writes `resultSummary.actorVia` (inside the sealed JSON) with the bound grant's token or Consumer id whenever a grant with an id is bound to the request. The user stays the actor; an interactive session or an ungranted token gets no `actorVia` key. Tests: `tests/Unit/Service/Audit/TokenAttributionActorViaTest.php` (5).
 
 ## 3. Surfaces
 
