@@ -7927,3 +7927,13 @@ opencatalogi	2671	3632cf8ddfced209a88de659375ae0023befdbdf	RED	merge3:merge-gate
 opencatalogi	2672	cef40fa2e3023023ca13603aaf89c7a3bbc6bed0	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.87 -> 4.83
 opencatalogi	2673	de0d1edb6b527b2daa54bb816ef26aaf0b1ac4f4	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.86 -> 4.84; module_coupling: 5.44 -> 5.41
 opencatalogi	2677	fecc3eb0fdc7e2246258c94db533312f32d510fe	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.87 -> 4.83
+opencatalogi	2648	6784a19675a07b11a8e1c2dcecd1dea1f31c90dc	CONFLICT	merge3	merges clean on development alone; files: CHANGELOG.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2650	76e9e835913e99db44603c4e13a59cd35a97fa35	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2654	138d711b189124dc33efe361f0ee2d659385c957	CONFLICT	merge3	merges clean on development alone; files: docs/features/README.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2659	6f775731556a212bb181963e621f68aaa536a582	CONFLICT	merge3	merges clean on development alone; files: src/dialogs/caseType/CaseTypeResyncDialog.spec.js src/dialogs/retention/RetentionDecisionDialog.spec.js 
+opencatalogi	2669	8e6fee773a9fd3ba6ef1f7607c5c21550a603005	CONFLICT	merge3	merges clean on development alone; files: CHANGELOG.md 
+opencatalogi	2670	cbe93a236ed73e370c2c924c982efc2e4fee664b	CONFLICT	merge3	merges clean on development alone; files: lib/Controller/FederationController.php lib/Controller/PublicationsController.php 
+opencatalogi	2674	e2355d017d4d89d73933267382c420a921fa0f0a	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2678	d4e2c6f1664fe5b4efde1cd0394391fbe07aa9e6	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2684	aff6a4b73e519bc95bbd72f1391d0f8db623216a	CONFLICT	merge3	merges clean on development alone; files: lib/Controller/ThemesController.php lib/Listener/ListenerRegistrar.php tests/Unit/AppInfo/ComponentRegistrarsTest.php 
+opencatalogi	2685	b09d48cf5a4edfe6372cb9bb9f289ba76efe85af	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/SitemapDocumentMapper.php lib/Service/SitemapService.php 
