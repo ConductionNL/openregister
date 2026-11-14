@@ -8993,3 +8993,4 @@ review:pipelinq:3713:75ce9bd5	GREEN: suite 8356/0 fail, phpstan+vitest clean	ses
 merge:decidiq:2175:833d1fca	merge3 tree of 29 decidiq PRs: replayed; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T12:07:48Z
 merge:decidiq:2155:0ce23be5	merge3 tree of 29 decidiq PRs: replayed; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T12:07:53Z
 merge:decidiq:2169:a20fe6cb	merge3 tree of 29 decidiq PRs: replayed; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T12:07:57Z
+merge:decidiq:2178:700a759b	merge3 tree of 29 decidiq PRs: replayed; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T12:08:01Z
