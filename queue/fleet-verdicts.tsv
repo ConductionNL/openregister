@@ -7846,3 +7846,13 @@ dossiq	6324	6c79a3f15aa5729947b5b4155512234dbb2839f5	GREEN	worker-22:review	lib 
 dossiq	6465	f8b4ab75a711e81ad0b46ee78bea249ab56981b1	GREEN	worker-42	unit 16921 tests; baseline 16910 with 19 failures; new failures none; no JS; behaviour-preserving extraction per method-decomposition
 learniq	2493	cf5af58be50a78f58a4094bba696b05ea4557075	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.40 -> 4.38
 learniq	2501	ece22c4cf32ef3410d53b385a6c2c88ecb7f1860	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.40 -> 4.37
+learniq	2484	966fc211eb7466a5c4d62efe4dbd4d289deb3e64	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2486	60ddbc3e2261626abc93da3919a20a8be8637b67	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2488	8c0aeabe5e6e71833ff9193a003938cb8942e664	CONFLICT	merge3	conflicts with development; files: lib/Settings/learniq_register.json tests/Unit/Settings/OpenLearningMaterialRegisterTest.php 
+learniq	2496	fa97a1052525c80a1c9d548925fa6538a98ff29e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+learniq	2504	dfdefd471d3aafecc527fbbaf2ad610e6ea05d40	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+learniq	2513	f46c90f833babbf1dab1e1e2d6af2c80bf796bcb	CONFLICT	merge3	conflicts with development; files: tests/Unit/Settings/OpenLearningMaterialRegisterTest.php 
+learniq	2514	e9eecf6c6c4007f55ef454faa4b5511c8d62a16b	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2515	207eea46bbe48d2813d6d49bae637126200a8a49	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/learniq_register.json 
+learniq	2521	524f7f541ddebef4849d8b5286dfd1c7c37a5b01	CONFLICT	merge3	conflicts with development; files: tests/Unit/Settings/OpenLearningMaterialRegisterTest.php 
+learniq	2523	9fae0016dcb648153dc9bf9aa7954cff3641efa2	CONFLICT	merge3	conflicts with development; files: lib/Settings/learniq_register.json tests/Unit/Settings/OpenLearningMaterialRegisterTest.php 
