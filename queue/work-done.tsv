@@ -8517,3 +8517,4 @@ build:versioniq:safety-upgrade-migration-preview	partial: PR #706 (1.2 reader, 1
 build:versioniq:releases-channel-and-prereleases	partial: PR #709 (1.2,2.1,2.2,4.1 + 1.1 code; left 1.1 live check,2.3,3.x,4.2,5.1,6.1)	session-20261114T070333-41d2bfe8	2026-11-14T09:01:09Z
 fix:learniq:2490:0a737598	conflict resolved: merged development, nl keys moved off the tail, clean with #2486; new head fedc6da6; REVERIFY recorded	session-20261114T082633-64525b24	2026-11-14T09:01:08Z
 build:versioniq:inventory-lifecycle-signals	partial: PR #711, 1.2 done, 2.1 backend (job+notifier), 1.1 part (removedFromStore, stale); archived, per-app EOS, UI, successors left	session-20261114T082612-ca93c5ee	2026-11-14T09:01:23Z
+verify:buildiq:1554:9f24b71c	GREEN 1554 1631; RED 1629 (AppInfoPropertiesTest with development); CONFLICT 1630 1632 (l10n with siblings)	session-20261114T082639-95045d35	2026-11-14T09:01:37Z
