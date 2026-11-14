@@ -8648,3 +8648,4 @@ build:versioniq:safety-update-checks	PR #729: tasks 1.1-4.2 built, 73 tests; e2e
 verify:versioniq:717:c29a7ca3	5 GREEN (717,719,720,721,724), 1 RED (722), 3 CONFLICT (718,723,725)	session-20261114T073105-752e50ad	2026-11-14T09:21:43Z
 cover:portaliq:b60f3b81m4ccb:9f37f66f	PR portaliq#2488: 3 test files, 10 tests (RawRequestBody, TrafficServerToken, TrafficRecordingService); Traffic 96.71% -> 97.38%; suite 5092 -> 5102, 0 failures	session-20261114T075640-efa02b24	2026-11-14T09:22:54Z
 cover:dossiq:069ee2d6mbd37:f545d745	PR #6487: 5 Repair classes fully covered, +21 tests, lib/Repair 93.26->94.28%	session-20261114T085635-07e3ca9b	2026-11-14T09:23:04Z
+verify:versioniq:725:03a723aa	725 GREEN, 726 GREEN, 727 CONFLICT, 728 CONFLICT	session-20261114T070909-be4543e0	2026-11-14T09:23:28Z
