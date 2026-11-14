@@ -1,28 +1,28 @@
 {
  "app": "opencatalogi",
- "commit": "6229950200450f55dabc2001bd8b1ad01eb9e9dc",
- "measured_at": "2026-11-13T20:26:17Z",
+ "commit": "7a6b970626229ee77317e1ea8e6521f380bb4628",
+ "measured_at": "2026-11-14T08:30:59Z",
  "php": {
   "tool": "pcov",
-  "pct": 95.91,
-  "statements": 17240,
-  "covered": 16535,
+  "pct": 96.55,
+  "statements": 17612,
+  "covered": 17005,
   "dirs": {
    "lib/BackgroundJob/": [
     90,
-    68
+    90
    ],
    "lib/Command/": [
     278,
-    273
+    275
    ],
    "lib/Contract/": [
-    10,
+    11,
     10
    ],
    "lib/Controller/": [
-    3278,
-    3129
+    3348,
+    3198
    ],
    "lib/Controller/Setup/": [
     297,
@@ -30,7 +30,7 @@
    ],
    "lib/Dashboard/": [
     55,
-    35
+    55
    ],
    "lib/Event/": [
     4,
@@ -45,28 +45,28 @@
     91
    ],
    "lib/Listener/": [
-    433,
-    424
+    478,
+    469
    ],
    "lib/Mcp/": [
     199,
-    196
+    199
    ],
    "lib/Middleware/": [
     57,
-    56
+    57
    ],
    "lib/Middleware/Support/": [
     59,
-    53
+    54
    ],
    "lib/Observability/": [
     186,
-    183
+    186
    ],
    "lib/Portal/": [
     294,
-    284
+    294
    ],
    "lib/Repair/": [
     387,
@@ -77,8 +77,8 @@
     6
    ],
    "lib/Service/": [
-    7835,
-    7447
+    7916,
+    7527
    ],
    "lib/Service/Broadcast/": [
     2,
@@ -90,7 +90,7 @@
    ],
    "lib/Service/Community/": [
     265,
-    254
+    264
    ],
    "lib/Service/Connection/": [
     171,
@@ -105,8 +105,12 @@
     560
    ],
    "lib/Service/Publication/": [
-    1104,
-    1094
+    1116,
+    1112
+   ],
+   "lib/Service/Table/": [
+    163,
+    161
    ],
    "lib/Service/Term/": [
     4,
@@ -114,15 +118,15 @@
    ],
    "lib/Service/Withheld/": [
     152,
-    150
+    151
    ],
    "lib/Service/Woo/": [
     945,
-    932
+    945
    ],
    "lib/Settings/": [
     24,
-    13
+    24
    ],
    "lib/Tool/": [
     287,
@@ -131,197 +135,85 @@
   }
  },
  "js": {
-  "pct": 17.98,
-  "statements": 7658,
-  "covered": 1377,
+  "pct": 77.3,
+  "statements": 2220,
+  "covered": 1716,
   "dirs": {
    "src/": [
-    115,
-    9
-   ],
-   "src/components/": [
-    73,
-    0
-   ],
-   "src/components/__snapshots__/": [
-    7,
-    0
-   ],
-   "src/components/tabs/": [
-    1,
-    0
+    50,
+    50
    ],
    "src/components/widgets/": [
-    145,
-    0
-   ],
-   "src/components/widgets/__snapshots__/": [
-    15,
-    0
+    8,
+    8
    ],
    "src/composables/": [
-    89,
+    70,
     70
-   ],
-   "src/css/": [
-    0,
-    0
-   ],
-   "src/dialogs/": [
-    128,
-    0
-   ],
-   "src/dialogs/__snapshots__/": [
-    35,
-    0
-   ],
-   "src/dialogs/attachment/": [
-    53,
-    0
-   ],
-   "src/dialogs/attachment/__snapshots__/": [
-    12,
-    0
-   ],
-   "src/dialogs/caseType/": [
-    51,
-    0
-   ],
-   "src/dialogs/generic/": [
-    146,
-    0
-   ],
-   "src/dialogs/generic/__snapshots__/": [
-    28,
-    0
-   ],
-   "src/dialogs/retention/": [
-    60,
-    0
    ],
    "src/entities/": [
     13,
     12
    ],
    "src/entities/attachment/": [
-    44,
+    28,
     26
    ],
    "src/entities/catalogi/": [
-    39,
+    24,
     24
    ],
    "src/entities/configuration/": [
-    22,
+    6,
     4
    ],
    "src/entities/glossary/": [
-    29,
-    0
+    13,
+    13
    ],
    "src/entities/listing/": [
-    25,
+    6,
     4
    ],
    "src/entities/organization/": [
-    48,
-    13
+    15,
+    15
    ],
    "src/entities/publication/": [
-    41,
+    24,
     22
    ],
    "src/entities/publicationType/": [
-    40,
+    24,
     22
    ],
    "src/entities/theme/": [
-    28,
+    8,
     6
    ],
-   "src/manifest.d/": [
-    18,
-    0
-   ],
-   "src/modals/catalog/": [
-    122,
-    0
-   ],
-   "src/modals/catalog/__snapshots__/": [
-    9,
-    0
-   ],
-   "src/modals/directory/": [
-    163,
-    0
-   ],
    "src/modals/generic/": [
-    648,
-    0
+    23,
+    23
    ],
    "src/modals/object/": [
-    1308,
-    0
-   ],
-   "src/modals/theme/": [
-    50,
-    0
+    163,
+    162
    ],
    "src/navigation/": [
-    48,
+    19,
     19
    ],
    "src/services/": [
-    744,
-    495
-   ],
-   "src/sidebars/dashboard/": [
-    138,
-    0
-   ],
-   "src/sidebars/directory/": [
-    39,
-    0
-   ],
-   "src/sidebars/search/": [
-    63,
-    0
-   ],
-   "src/store/": [
-    4,
-    0
+    584,
+    579
    ],
    "src/store/modules/": [
-    1572,
+    1136,
     651
    ],
-   "src/views/catalogi/": [
-    85,
-    0
-   ],
-   "src/views/dashboard/": [
-    93,
-    0
-   ],
-   "src/views/directory/": [
-    135,
-    0
-   ],
-   "src/views/publications/": [
-    513,
-    0
-   ],
-   "src/views/search/": [
-    15,
-    0
-   ],
-   "src/views/settings/": [
-    508,
-    0
-   ],
    "src/views/widgets/": [
-    96,
-    0
+    6,
+    6
    ]
   }
  }
