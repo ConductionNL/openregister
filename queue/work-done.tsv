@@ -11799,3 +11799,4 @@ verify:versioniq:698:7ed6adef	GREEN 698 707 721; CONFLICT 714 716 719 722; skipp
 build:versioniq:inventory-export-sbom-metrics:c2	PR #700: built 1.2 schema validation, 2.1 GET /api/sbom + occ versioniq:sbom, 2.2 Export SBOM menu, 3.1 SbomArchive, 3.2 sbomAvailable + GET /api/sbom/{id} + row link, 4.1 OpenMetrics family, 5.1 strings + matrix; left: e2e of 3.2, live /metrics check, archive; phpunit 1697->1742 (2 inherited golden failures), vitest 2966 OK; merges clean with #697/#716/#718; head 3c18ee39	session-20261114T214733-589f5bff	2026-11-14T23:10:40Z
 verify:integriq:3595:bc625056	4 GREEN (3595,3617,3630,3631); no new failures	session-20261114T221759-cd5c5678	2026-11-14T23:10:49Z
 fix:larpinq:1049:3b90a2cb	stale	feeder	2026-11-14T23:10:21Z
+verify:stackiq:1966:d84a57f5	1966 GREEN	session-20261114T224754-e4a2fcab	2026-11-14T23:11:39Z
