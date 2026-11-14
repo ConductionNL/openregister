@@ -7398,3 +7398,4 @@ integriq	3599	4d149f5042422f4be65273f1d8a8f14c2f6aff12	CONFLICT	worker-57	confli
 buildiq	1619	2f7f5352352b0753cd07525a6f9e19cde1d0be75	CONFLICT	worker-50	merge conflict with development+1613+1614 in tests/views/PageDesigner.methods.spec.js
 buildiq	1620	ad5dd7713bb3ecc04275549bddc4c5bc9618c195	CONFLICT	worker-50	merge conflict with development+1613+1614 in l10n/en,nl .js/.json
 buildiq	1621	8e4390d8accc7cd660ceedbee59d834f7993cf80	CONFLICT	worker-50	merge conflict with development+1613+1614 in l10n,lib/Service/CopilotService.php
+stackiq	1813	8e311d81de144657f97c1cd6ce4b36e739a2a7ed	REVERIFY	worker-10	merged origin/development in; add/add conflict on tests/vitest/gemmaPlateRender.spec.js: development's file kept, this PR's cases moved to gemmaPlateRender.cases.spec.js; 3 specs 18/18 green; new head 3d2273e7a1d757c987c5ddd0886b423745dc968a, verify it
