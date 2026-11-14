@@ -7119,5 +7119,18 @@ integriq	3551	677767dda177d9393e82bac7f46350b9a8ed045f	GREEN	worker-27	tree 3543
 pipelinq	3732	58e89f857926dae5f0577dd7f38b890aff55f545	CONFLICT	worker-48	conflicts with #3721 in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
 pipelinq	3812	c1cd8b0da193fc5676aa6796199b1e7ec4d27d8b	GREEN	worker-48	tree unit 8034 run, baseline 7890 green, 0 new failures; vitest 4912 green; tests only
 pipelinq	3813	90202bac4dcfbd7eed2489d0236919e610d5d91a	GREEN	worker-48	tree unit 8034 run, baseline 7890 green, 0 new failures; vitest 4912 green; tests only
+filinq	2071	7810b3d113215176687ed3f528837cdb3f5eff4a	GREEN	worker-21	build matches its change specs (new tools check file readability, fail closed); tree(2071,2074,2078) unit 6680 OK, vitest 758 OK; baseline unit 6626 OK, vitest 751 OK; no new failures
 shillinq	2974	f91c770a9581188930aea4b377f906413e16f0c1	GREEN	worker-36	phpunit 10799 tests on tree, baseline 10752 with 15 inherited failures, new failures 0 (development itself fatals in HoursSubjectAuditCommand: stale trait import; measured with a local one-line fix); vitest 1 inherited failure (dunningNextRun), none new
 shillinq	2976	03e24bcb91b8a325fb16601c5f35e3398866dd7c	GREEN	worker-36	phpunit 10799 tests on tree, baseline 10752 with 15 inherited failures, new failures 0 (development itself fatals in HoursSubjectAuditCommand: stale trait import; measured with a local one-line fix); vitest 1 inherited failure (dunningNextRun), none new
+shillinq	2996	cd1abe2c5f45ec4071382d37901cad51345d7b85	GREEN	worker-36	phpunit 10799 tests on tree, baseline 10752 with 15 inherited failures, new failures 0 (development itself fatals in HoursSubjectAuditCommand: stale trait import; measured with a local one-line fix); vitest 1 inherited failure (dunningNextRun), none new
+shillinq	2982	48c84db20f24e8cbf4c6e0ed5f6810697c37a6d8	CONFLICT	worker-36	conflicts in tree, files: appinfo/info.xml tests/fixtures/register-versions.lock.json
+shillinq	2986	79a81b92ef3d13026c76d9e3733f1ac6aecddc6d	CONFLICT	worker-36	conflicts in tree, files: tests/fixtures/register-versions.lock.json
+shillinq	2993	6f526c3c6e639693ee8dbf20bddaf40d40f0d6b4	CONFLICT	worker-36	conflicts in tree, files: appinfo/info.xml
+shillinq	2995	028a9490d3db02040536abbc237a03baea29f717	CONFLICT	worker-36	conflicts in tree, files: appinfo/info.xml tests/fixtures/register-versions.lock.json
+shillinq	3009	bd7e5e427058f46815fd4362dccdbd95a8732780	CONFLICT	worker-36	conflicts in tree, files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json
+filinq	2074	92ebb286e850a07761547f9303b1947f9f13bbed	GREEN	worker-21	build matches its change specs; tree(2071,2074,2078) unit 6680 OK, vitest 758 OK; baseline unit 6626 OK, vitest 751 OK; no new failures
+filinq	2078	8247eff99a8282125a4e13fa0a74b9fe52750439	GREEN	worker-21	build matches its change specs; tree(2071,2074,2078) unit 6680 OK, vitest 758 OK; baseline unit 6626 OK, vitest 751 OK; no new failures
+filinq	2085	cf785bbf6d94c57779d1766b4337793bde34c4a0	CONFLICT	worker-21	clean on development; conflicts with tree in l10n/en.js,en.json,nl.js,nl.json and lib/Settings/filinq_register.json
+filinq	2098	cde3e349a7cf3de71f80d830ac43dd843945fce3	CONFLICT	worker-21	clean on development; conflicts with tree in l10n/en.js,en.json,nl.js,nl.json
+filinq	2099	7b0032ea1245796b40818698f835727ddb22663e	CONFLICT	worker-21	clean on development; conflicts with tree in lib/Settings/filinq_register.json
+filinq	2106	58464bdff055d5ceb3b2f424b621f9cafd35c3f8	CONFLICT	worker-21	clean on development; conflicts with tree in lib/Settings/filinq_register.json
