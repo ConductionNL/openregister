@@ -10138,6 +10138,7 @@ stackiq	1906	a7646b3c2ea326ee1e389ab171cba00e49203fb5	GREEN	worker-08	unit 3634 
 hermiq	1739	ebafadc023d5c7f231743c3c66ad1d5b478754db	CONFLICT	worker-51	merge into development conflicts in l10n/nl.js, l10n/nl.json
 hermiq	1751	316c998af8821b8b9c7f26e666936f447801241b	CONFLICT	worker-51	merge into development conflicts in l10n/nl.js, l10n/nl.json, lib/Settings/hermiq_register.json
 stackiq	1908	6726be39a829f4636784dec56e6c986f56dceb8f	GREEN	worker-08	unit 3634 OK (baseline 3602 OK), vitest 2586/2587 (facets FACET_DIMENSIONS red on plain development too), no new failures
+hermiq	1750	7b8181e8c657250662383ab9ae409345bbac6335	REVERIFY	worker-54	merged development in: knowledge base rows join after the file scope and keep to validated files in validated mode, form keeps both field sets, register 0.58.0, golden re-recorded as the union, +2 tests; PHP 5220 and vitest 1528 green; new head e161826555c4680510b8af8de6fddc7a43ee39fc, verify it
 stackiq	1926	e764756fc6cdeac5f8def032d62915d838777825	GREEN	worker-08	unit 3634 OK (baseline 3602 OK), vitest 2586/2587 (facets FACET_DIMENSIONS red on plain development too), no new failures
 stackiq	1930	bf2b3a8e776b7856e8e4973b247ef71865fd4934	GREEN	worker-08	unit 3634 OK (baseline 3602 OK), vitest 2586/2587 (facets FACET_DIMENSIONS red on plain development too), no new failures
 stackiq	1933	ecd2e6a0964a6efd4ed7de8a0a9c29b1a1ad1e9b	CONFLICT	worker-08	conflicts in tree after #1906-#1930 (l10n/en,nl .js/.json)
