@@ -4105,6 +4105,7 @@ Notification/SchemaChangeSubjectRenderer.php,,Notification,,,,,Notifications
 Service/Schema/SchemaChangeNoticeService.php,,Service,,,,,Core
 Db/MagicMapper/SearchFolding.php,234,Db,Service,Service/Db/MagicMapper/SearchFolding.php,0,,Core
 Db/MagicMapper/MagicUnaccentProbe.php,160,Db,Service,Service/Db/MagicMapper/MagicUnaccentProbe.php,0,,Core
+Db/MagicMapper/AccentFoldingSetting.php,81,Db,Service,Service/Db/MagicMapper/AccentFoldingSetting.php,0,,Core
 Migration/Version1Date20261113140000.php,122,Migration,,,,,Platform
 Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Migration/Version1Date20261113200000.php,30,Migration,,,,,Platform
