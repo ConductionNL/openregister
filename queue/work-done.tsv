@@ -10330,3 +10330,4 @@ merge:pipelinq:3752:57d1a221	merge3 tree of 2 pipelinq PRs: merged=1 red=0 fail=
 merge:pipelinq:3818:ed8a85ce	merge3 tree of 2 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T17:00:58Z
 build4:openregister:rules-compose-read-transitions-and-time:c3	partial: not started in this session (worker context nearly full); PR #10529 open on build/rules-compose-read-transitions-and-time-2, left unchanged 1.2b/1.5b/2.2b/2.3b/3.2b/3.3b/4.3b/5.4	session-20261114T151004-fa188a10	2026-11-14T17:01:06Z
 verify:integriq:3600:cd84c7be	3600 CONFLICT with current development on l10n tail	session-20261114T154807-4c2c3327	2026-11-14T17:01:48Z
+fix:decidiq:2170:5a972e2e	fixed: merged development, l10n moved, unit 4252 OK; new head cc4d4813	session-20261114T154807-c05f4e57	2026-11-14T17:03:33Z
