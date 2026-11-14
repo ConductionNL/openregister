@@ -11320,3 +11320,4 @@ verify:keepiq:1789:4bde5ea5	1789 GREEN, 1816 GREEN; unit 5203 vs 5186, vitest on
 build:opencatalogi:open-data-table-query-and-dictionary:c2	PR #2706: every code task built (1.4, 3.1, 3.2, 4.1, 5.1); live API/Newman/e2e checks left; phpunit 5617 (same 2 inherited fails), jest same inherited fails	session-20261114T211815-849a5f5d	2026-11-14T21:52:47Z
 fix:hermiq:1736:a4bcf7a9	conflict resolved, register 0.58.0, new head 3886cbe8	session-20261114T214733-589f5bff	2026-11-14T21:52:44Z
 cover:opencatalogi:fc83bfb1md382:js09173935	PR #2719: 19 tests for object store registry + copyObject; store modules lines 90.1% -> 96.9% (PR body says 91.3% before, measured 90.1%); jest 1074 -> 1093, same inherited failures	session-20261114T204759-5dc9dba7	2026-11-14T21:52:56Z
+fix:stackiq:1946:f75d98b8	conflict resolved, pushed c75ea65b, REVERIFY	session-20261114T214735-aacd1703	2026-11-14T21:53:01Z
