@@ -9835,3 +9835,4 @@ verify:hermiq:1725:1c12b6c1	GREEN 1725, 1767; CONFLICT 1753, 1754, 1755, 1758 (w
 review:openregister:10560:a50581e0	APPROVE: matches change spec, suites green	session-20261114T151802-24eee21b	2026-11-14T15:30:36Z
 fix:shillinq:3004:f4e963c1	REVERIFY: dev merged, l10n conflict with #2972 removed; lock.json version record still collides with #2972 (resolve after it lands); head effacbb9	session-20261114T151801-20bb3a08	2026-11-14T15:30:43Z
 fix:shillinq:2991:612f3175	merged development in; sibling-only l10n/lock collisions; REVERIFY f7e28a5d	session-20261114T151755-dc817df2	2026-11-14T15:30:50Z
+build:hermiq:memory-project-scopes:c2	done: PR #1738 +441006a0 - tasks 3-5 built (project key on both transports incl. run token, session project picker, Memory page layers + move); PHPUnit 5059->5099 OK, vitest 1459->1479 OK; Playwright tests and live check left (e2e/live)	session-20261114T144817-a7709c05	2026-11-14T15:31:01Z
