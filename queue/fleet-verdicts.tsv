@@ -7856,3 +7856,4 @@ learniq	2514	e9eecf6c6c4007f55ef454faa4b5511c8d62a16b	CONFLICT	merge3	merges cle
 learniq	2515	207eea46bbe48d2813d6d49bae637126200a8a49	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/learniq_register.json 
 learniq	2521	524f7f541ddebef4849d8b5286dfd1c7c37a5b01	CONFLICT	merge3	conflicts with development; files: tests/Unit/Settings/OpenLearningMaterialRegisterTest.php 
 learniq	2523	9fae0016dcb648153dc9bf9aa7954cff3641efa2	CONFLICT	merge3	conflicts with development; files: lib/Settings/learniq_register.json tests/Unit/Settings/OpenLearningMaterialRegisterTest.php 
+dossiq	6385	5bf6b3afe181d49c4d0074fe33964d5518352a1f	REVERIFY	worker-22	merged development, resolved AdminSettings conflict (packageAdminTabs moved into dev's provideTabState); unit suite 16928 tests, 19 failures all inherited from development; new head 11c3b49f325b6970f5da78af20f2bd3177ec98dc, verify it
