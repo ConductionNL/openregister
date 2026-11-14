@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Rbac\PartyRoleSlotResolver;
 
 /**
  * Whether one rule entry grants the request: a user-level override, or a group entry.
@@ -72,6 +73,38 @@ final class GroupRuleEntries {
 
 		return $this->groupEntryMatches(entry: $entry, request: $request);
 	}//end grants()
+
+	/**
+	 * Whether a slot entry grants the request to a caller occupying that slot.
+	 *
+	 * A slot entry (`{"partyRole": "<role>"}`) names a party role on the record
+	 * rather than a principal. It grants only when the role is one the caller
+	 * occupies on the object now ({@see PartyRoleSlotResolver::rolesHeldBy()}),
+	 * and its optional `match` clause is read exactly as a user override's is.
+	 * Anything else, a malformed role included, grants nothing. Deliberately
+	 * not part of {@see grants()}: that one is asked once per group, and the
+	 * slot is asked once per question.
+	 *
+	 * @param mixed              $entry     One entry of the action's rule list.
+	 * @param GroupRuleRequest   $request   The question; its user is the caller.
+	 * @param array<int, string> $heldRoles The roles the caller occupies on the object.
+	 *
+	 * @return bool True only for a well-formed slot the caller occupies, whose clause passes.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md#requirement-a-grant-may-name-a-role-slot-on-the-record-rather-than-a-principal-req-gsr-001
+	 */
+	public function slotGrants(mixed $entry, GroupRuleRequest $request, array $heldRoles): bool {
+		$role = PartyRoleSlotResolver::slotOf(entry: $entry);
+		if ($role === null || is_array($entry) === false || $request->userId === null || $request->userId === '') {
+			return false;
+		}
+
+		if (in_array($role, $heldRoles, true) === false) {
+			return false;
+		}
+
+		return $this->overrideClausePasses(clause: ($entry['match'] ?? null), request: $request);
+	}//end slotGrants()
 
 	/**
 	 * Whether the entry is a user-level override that grants the caller the action.

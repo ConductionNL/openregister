@@ -54,5 +54,15 @@ final class AccessListenerRegistrar {
 			\OCP\User\Events\BeforeUserDeletedEvent::class,
 			\OCA\OpenRegister\Listener\SharerViewsEndWithUserListener::class
 		);
+
+		// A grant to a slot follows whoever holds the role, so the change of
+		// occupant, not the grant, is what goes on the trail (REQ-GSR-001).
+		foreach ([
+			\OCA\OpenRegister\Event\PersonLinkedEvent::class,
+			\OCA\OpenRegister\Event\PersonLinkUpdatedEvent::class,
+			\OCA\OpenRegister\Event\PersonUnlinkedEvent::class,
+		] as $linkEvent) {
+			$context->registerEventListener($linkEvent, \OCA\OpenRegister\Listener\SlotOccupantAuditListener::class);
+		}
 	}//end register()
 }//end class

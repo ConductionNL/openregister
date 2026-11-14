@@ -195,6 +195,15 @@
 	"OCA\\OpenRegister\\Event\\ObjectsMergedEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyMergeListener"
 	],
+	"OCA\\OpenRegister\\Event\\PersonLinkUpdatedEvent": [
+		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
+	],
+	"OCA\\OpenRegister\\Event\\PersonLinkedEvent": [
+		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
+	],
+	"OCA\\OpenRegister\\Event\\PersonUnlinkedEvent": [
+		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
+	],
 	"OCA\\OpenRegister\\Event\\RegisterCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",

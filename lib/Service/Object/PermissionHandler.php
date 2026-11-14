@@ -71,6 +71,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\PartyRoleSlotResolver;
 use OCA\OpenRegister\Service\Rbac\ProvenanceOptions;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use OCA\OpenRegister\Service\Rbac\StagedDenial;
@@ -408,6 +409,32 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 	}//end objectGrants()
+
+	/**
+	 * Who occupies a party role on an object, for a grant to a slot.
+	 *
+	 * Resolved from the container when the bundle carries none, like the grant
+	 * resolver above. Unavailable means null, and a slot then grants nothing.
+	 *
+	 * @return PartyRoleSlotResolver|null The resolver, or null when unavailable.
+	 */
+	private function partyRoleSlots(): ?PartyRoleSlotResolver {
+		if ($this->rules->partyRoleSlots !== null) {
+			return $this->rules->partyRoleSlots;
+		}
+
+		try {
+			$resolved = $this->data->container->get(PartyRoleSlotResolver::class);
+			if (($resolved instanceof PartyRoleSlotResolver) === true) {
+				return $resolved;
+			}
+
+			return null;
+		} catch (\Throwable $e) {
+			// Fail CLOSED: nobody occupies a slot that cannot be read.
+			return null;
+		}
+	}//end partyRoleSlots()
 
 	/**
 	 * Check if current user has permission to perform action on schema
@@ -1283,6 +1310,13 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return true;
 		}
 
+		// A grant to a slot (REQ-GSR-001): whoever occupies the named party
+		// role on the object now. Asked last, after every principal, so it only
+		// ever adds an answer where the rules above said no.
+		if ($this->slotGrants(check: $check) === true) {
+			return true;
+		}
+
 		// The refusal names the rule that produced it (task 3.3).
 		$this->logRefusal(check: $check);
 
@@ -1305,6 +1339,91 @@ class PermissionHandler implements PermissionHandlerInterface {
 				->onObject(data: $check->objectData, organisation: $check->objectOrganisation)
 		);
 	}//end groupGrants()
+
+	/**
+	 * Whether a grant to a party role (a slot) on the object admits the caller.
+	 *
+	 * The grant names a role on the record instead of a principal, and the
+	 * occupant is read at this moment, never copied (design D-1): replacing the
+	 * occupant moves the access with no grant edited, and a vacant slot admits
+	 * nobody. Only the object's OWN block is honoured, because a slot is a
+	 * per-object grant and the list emitters filter on the schema's block alone;
+	 * a slot honoured on the schema would admit on a read what a list hides.
+	 *
+	 * Fail closed throughout: no object, no caller, a token ceiling that
+	 * refuses, an unreadable occupant or a malformed role all answer no. It runs
+	 * after the deny pass and the private scope, so a deny beats it and it never
+	 * reopens a private object.
+	 *
+	 * @param PermissionCheck $check The check, its caller and cascaded block resolved.
+	 *
+	 * @return bool True when the caller occupies a slot the object grants the action to.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md#requirement-a-grant-may-name-a-role-slot-on-the-record-rather-than-a-principal-req-gsr-001
+	 */
+	private function slotGrants(PermissionCheck $check): bool {
+		$entries = $this->objectSlotEntries(check: $check);
+		if ($entries === [] || $check->userId === null || $check->userId === '') {
+			return false;
+		}
+
+		$request = (new GroupRuleRequest(authorization: $check->authorization, action: $check->action))
+			->forGroup(groupId: '', userGroup: null)
+			->forUser(userId: $check->userId, objectOwner: $check->objectOwner)
+			->onObject(data: $check->objectData, organisation: $check->objectOrganisation);
+		if ($this->tokenCeilingRefuses(request: $request) === true) {
+			return false;
+		}
+
+		$held = $this->slotsHeldBy(userId: $check->userId, object: $check->object);
+		if ($held === []) {
+			return false;
+		}
+
+		$reader = new GroupRuleEntries(conditionMatcher: $this->rules->conditionMatcher);
+		foreach ($entries as $entry) {
+			if ($reader->slotGrants(entry: $entry, request: $request, heldRoles: $held) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end slotGrants()
+
+	/**
+	 * The slot entries of the action's cascaded rule list, when the object's own block declares that action.
+	 *
+	 * Read from the cascaded list, so an ended (`until`) or out-of-area entry is
+	 * already gone and a token has already narrowed it.
+	 *
+	 * @param PermissionCheck $check The check.
+	 *
+	 * @return array<int, array> The slot entries, empty when the object declares none for the action.
+	 */
+	private function objectSlotEntries(PermissionCheck $check): array {
+		$own = $check->object?->getAuthorization();
+		if (is_array($own) === false || array_key_exists($check->action, $own) === false) {
+			return [];
+		}
+
+		return PartyRoleSlotResolver::slotEntriesOf(entries: ($check->authorization[$check->action] ?? null));
+	}//end objectSlotEntries()
+
+	/**
+	 * The party roles a user occupies on an object now; none without an object or a resolver.
+	 *
+	 * @param string|null       $userId The caller.
+	 * @param ObjectEntity|null $object The object.
+	 *
+	 * @return array<int, string> The roles held.
+	 */
+	private function slotsHeldBy(?string $userId, ?ObjectEntity $object): array {
+		if ($object === null) {
+			return [];
+		}
+
+		return ($this->partyRoleSlots()?->rolesHeldBy(userId: $userId, objectUuid: $object->getUuid()) ?? []);
+	}//end slotsHeldBy()
 
 	/**
 	 * Record a refusal with the rule behind it.
@@ -1506,7 +1625,18 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver(), principals: $principals);
 		$enforced = $this->denyEnforcementMode()->enforces();
 
-		return $resolver->forActions(actions: $request->actions, options: new ProvenanceOptions(blocks: $blocks, denials: $denials, enforced: $enforced));
+		// The slots the caller occupies on this object, read only when the
+		// object's own block names one: the answer then names the slot as the
+		// source of the grant (REQ-GSR-001).
+		$heldSlots = [];
+		if (PartyRoleSlotResolver::slotsNamedIn(block: $request->object?->getAuthorization()) !== []) {
+			$heldSlots = $this->slotsHeldBy(userId: $userId, object: $request->object);
+		}
+
+		return $resolver->forActions(
+			actions: $request->actions,
+			options: new ProvenanceOptions(blocks: $blocks, denials: $denials, enforced: $enforced, heldSlots: $heldSlots)
+		);
 	}//end provenanceFor()
 
 	/**

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Object\Permission;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
+use OCA\OpenRegister\Service\Rbac\PartyRoleSlotResolver;
 use OCP\EventDispatcher\IEventDispatcher;
 
 /**
@@ -40,6 +41,9 @@ final class PermissionRuleServices {
 	 * @param ?IEventDispatcher    $eventDispatcher     Optional dispatcher for custom-scope events.
 	 * @param ?ObjectScopeResolverInterface $objectScopeResolver Shared object-scope resolver; absent means a fresh one.
 	 * @param ?ObjectGrantResolver $objectGrantResolver Shared per-object grant resolver; absent means a fresh one.
+	 * @param ?PartyRoleSlotResolver $partyRoleSlots   Who occupies a party role on an object, for a grant to a slot;
+	 *                                                 absent means it is resolved from the container, and a slot
+	 *                                                 grants nothing when that fails.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
@@ -48,6 +52,7 @@ final class PermissionRuleServices {
 		public readonly ?IEventDispatcher $eventDispatcher = null,
 		public readonly ?ObjectScopeResolverInterface $objectScopeResolver = null,
 		public readonly ?ObjectGrantResolver $objectGrantResolver = null,
+		public readonly ?PartyRoleSlotResolver $partyRoleSlots = null,
 	) {
 	}//end __construct()
 }//end class
