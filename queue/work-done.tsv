@@ -10774,3 +10774,4 @@ fix:decidiq:2172:8177a027	floor restored by splitting new methods; new head 148e
 build:filinq:llm-entity-detection-provider:c3	partial: PR #2119 has every code task; ran openspec validate --strict (0 errors, 5 wording warnings recorded in tasks.md); left 5.2 e2e (live) and the strict spec-wording warnings	session-20261114T194805-954d5649	2026-11-14T20:07:06Z
 fix:pipelinq:3835:fc0173c1	no change possible yet: conflict is only against unmerged #3829 (adjacent openapi.json hunks), development already merged; recorded REVERIFY with the resolution for after #3829 lands	session-20261114T191723-85c550b2	2026-11-14T20:07:20Z
 fix:shillinq:3069:02821381	floor restored (catalogue to JSON, dup blocks removed), REVERIFY	session-20261114T185851-d4a7f75f	2026-11-14T20:07:39Z
+fix:decidiq:2177:b68a5de6	merged development in clean, unit + vitest green; new head b9836c204fea0ba0a9712b759315fa792977a7d0, REVERIFY recorded	session-20261114T194751-bb7578f8	2026-11-14T20:07:46Z
