@@ -54,7 +54,11 @@
 
 ## 4. Results
 
-- [ ] 4.1 Result view driven by the status object.
+- [x] 4.1 Result view driven by the status object.
+  - Built (14 Nov): `RecordImportDialog` shows the dry-run or import result from the
+    status payload: created, updated, unchanged and failed counts, the reference-cache
+    hits and misses and the duration, the first 50 failures with their lines, and a
+    "Download failed rows" button that saves the 4.2 export as `<file>-failed.csv`.
 - [x] 4.2 Failed-row export in the input's column shape plus a reason column,
       round-trippable back into the importer.
   - Built (14 Nov): `FailedRowExport::export()` re-reads the imported file and keeps
@@ -65,9 +69,19 @@
 
 ## 5. Widget
 
-- [ ] 5.1 Drop target that hands the file to the import surface and holds no
+- [x] 5.1 Drop target that hands the file to the import surface and holds no
       parsing or write logic.
+  - Built (14 Nov): `RecordFileDropTarget` around the objects list. A dropped CSV,
+    TSV, XLSX or JSON-lines file (by extension) goes to `openRecordImport()` with the
+    list's register and schema; any other file is left alone. The dialog then runs
+    every step through `services/recordImport.js` (mapping, dry run, import), keeps
+    Dry run and Import disabled while a column is undecided, and states create-only
+    when no identifying property is chosen.
 - [ ] 5.2 Progress reporting for long imports.
+  - Partly built (14 Nov): the dialog shows the upload's progress and then that the
+    server is processing the rows. Row-by-row progress needs the streaming loop to run
+    asynchronously and report from a job, which the streaming primitive leaves out of
+    scope; it stays open for that.
 
 ## Verification
 
