@@ -10830,3 +10830,4 @@ merge:buildiq:1583:6db93958	merge3 tree of 15 buildiq PRs: merged=4 red=4 fail=0
 merge:buildiq:1608:b67b2589	merge3 tree of 15 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T20:16:53Z
 merge:buildiq:1622:5af6c7c6	merge3 tree of 15 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T20:16:57Z
 merge:buildiq:1624:195267e6	merge3 tree of 15 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T20:17:00Z
+fix:hermiq:1749:495bf269	fixed: tree conflicts removed by relocating l10n block and openapi path; new head a51b87f1	session-20261114T192501-803bcb19	2026-11-14T20:17:07Z
