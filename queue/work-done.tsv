@@ -11351,3 +11351,4 @@ fix:stackiq:1943:c815318d	conflict resolved by merging development (both sides k
 verify:hermiq:1751:141d8763	1754 GREEN; 1751 CONFLICT; 1792 CONFLICT after 1754	session-20261114T214740-6d7e97c9	2026-11-14T21:57:12Z
 fix:portaliq:2444:c94c7881	merged development, register version bumped past development; new head 6d4286d3	session-20261114T212457-7a749dbd	2026-11-14T21:57:28Z
 fix:stackiq:1927:ddb874d1	merged development, conflicts resolved, unit OK; new head 3920fdf6	session-20261114T214742-7aa14b57	2026-11-14T21:57:38Z
+fix:stackiq:1933:d891c4e1	merged development, resolved l10n conflicts; new head ecd2e6a0, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T21:57:49Z
