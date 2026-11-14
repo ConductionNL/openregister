@@ -9935,3 +9935,4 @@ build:integriq:approvals-verification-pack:c2	nothing left to build in code: PR 
 build:integriq:events-async-api-products:c2	partial: PR #3617 builds tasks 2-4 (channel pull/subscribe routes, product-gated push deliveries, slug guard, page section); left: API-key consumers on channel routes, Playwright/Newman/AsyncAPI-schema checks (live)	session-20261114T134654-82ca2be5	2026-11-14T15:49:20Z
 verify:humaniq:1125:3d159c4d	stale	session-20261114T151936-6991f242	2026-11-14T15:49:22Z
 verify:portaliq:2493:2ce001aa	GREEN #2493 (unit 5255 OK vs baseline 5247, 0 new failures)	session-20261114T151758-95655a27	2026-11-14T15:49:35Z
+verify:learniq:2484:b15fa23f	2484 GREEN, 2538 GREEN, 2493 CONFLICT (l10n after 2484)	session-20261114T141738-30f539db	2026-11-14T15:49:52Z
