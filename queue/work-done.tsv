@@ -9929,3 +9929,4 @@ verify:shillinq:3067:7666a036	#3067 GREEN; #3069 skipped (head moved to 3f4b9186
 fix:humaniq:1139:540268b1	merged development (clean at current head); new head 181389a6	session-20261114T151936-6991f242	2026-11-14T15:47:17Z
 verify:pipelinq:3833:c60f3044	GREEN 3833	session-20261114T151938-8fa99f90	2026-11-14T15:47:35Z
 build:integriq:gateway-upstream-routing:c2	done: PR #3562 +0a95d0c2 - task 4 built (targets editor in endpoint form, routedEndpoint stamp, Calls per target donut on endpoint detail), 12 vitest + router assertions; PHPUnit 8516 same failures as before, vitest 2169 OK; left: Playwright spec, and the design's disabled seed endpoint (endpoint has no disabled state; targets need source uuids)	session-20261114T144817-a7709c05	2026-11-14T15:48:12Z
+fix:humaniq:1142:4a3cccf9	merged development; sick leave no longer exportable (development privacy rule); head 5bcc930d; REVERIFY recorded	session-20261114T144756-7c8966f2	2026-11-14T15:48:29Z
