@@ -23,9 +23,9 @@ use ReflectionMethod;
  * `uuid:`, `_extend:` and so on). PHP resolves a named argument against the
  * parameter NAME of the method that runs, so renaming, removing or moving one of
  * these parameters is a runtime "Unknown named parameter" error in every app that
- * uses it, and no type check in this repository notices. This test pins the names,
- * their order and their defaults as published in v2.1.47, and the trailing
- * options-object parameter that takes the newer form by name.
+ * uses it, and no type check in this repository notices. This test pins the names
+ * and defaults published in v2.1.47, and main's value-object parameters in main's
+ * positions, which test doubles and positional value-object calls rely on.
  */
 class LegacyArgumentNamesTest extends TestCase {
 
@@ -37,7 +37,7 @@ class LegacyArgumentNamesTest extends TestCase {
 	/**
 	 * The release's parameters per method, in order, with their defaults, then the options parameter.
 	 *
-	 * @return array<string, array{0: string, 1: array<string, mixed>, 2: string}>
+	 * @return array<string, array{0: string, 1: array<string, mixed>, 2: list<string>}>
 	 */
 	private static function contract(): array {
 		return [
@@ -60,7 +60,7 @@ class LegacyArgumentNamesTest extends TestCase {
 					'_dedupOverride' => false,
 					'_owner'         => null,
 				],
-				'options',
+				['object', 'options', '_rbac', '_multitenancy'],
 			],
 			'find'         => [
 				'find',
@@ -75,7 +75,7 @@ class LegacyArgumentNamesTest extends TestCase {
 					'_render'       => true,
 					'_audit'        => true,
 				],
-				'options',
+				['id', 'options', '_rbac', '_multitenancy'],
 			],
 			'findSilent'   => [
 				'findSilent',
@@ -88,7 +88,7 @@ class LegacyArgumentNamesTest extends TestCase {
 					'_rbac'         => true,
 					'_multitenancy' => true,
 				],
-				'options',
+				['id', 'options', '_rbac', '_multitenancy'],
 			],
 			'deleteObject' => [
 				'deleteObject',
@@ -102,7 +102,7 @@ class LegacyArgumentNamesTest extends TestCase {
 					'currentUser'     => null,
 					'permanent'       => false,
 				],
-				'deletion',
+				['deletion', '_rbac', '_multitenancy', '_retentionSweep'],
 			],
 			'saveObjects'  => [
 				'saveObjects',
@@ -118,7 +118,7 @@ class LegacyArgumentNamesTest extends TestCase {
 					'enrich'         => true,
 					'_audit'         => true,
 				],
-				'options',
+				['objects', 'options', '_rbac', '_multitenancy'],
 			],
 			'lockObject'   => [
 				'lockObject',
@@ -130,7 +130,7 @@ class LegacyArgumentNamesTest extends TestCase {
 					'runUuid'    => null,
 					'nodeId'     => null,
 				],
-				'request',
+				['request', 'advisory'],
 			],
 			'unlockObject' => [
 				'unlockObject',
@@ -139,7 +139,7 @@ class LegacyArgumentNamesTest extends TestCase {
 					'advisory'   => false,
 					'runUuid'    => null,
 				],
-				'request',
+				['request'],
 			],
 			'patchObject'  => [
 				'patchObject',
@@ -152,7 +152,7 @@ class LegacyArgumentNamesTest extends TestCase {
 					'_multitenancy' => true,
 					'currentUser'   => null,
 				],
-				'patch',
+				['patch', '_rbac', '_multitenancy'],
 			],
 		];
 	}//end contract()
@@ -160,13 +160,13 @@ class LegacyArgumentNamesTest extends TestCase {
 	/**
 	 * Every published method on every class or interface a consuming app resolves.
 	 *
-	 * @return array<string, array{0: class-string, 1: string, 2: array<string, mixed>, 3: string}>
+	 * @return array<string, array{0: class-string, 1: string, 2: array<string, mixed>, 3: list<string>}>
 	 */
 	public static function publishedMethods(): array {
 		$cases = [];
 		foreach ([ObjectServiceInterface::class, ObjectOperationsInterface::class, ObjectService::class] as $class) {
-			foreach (self::contract() as $key => [$method, $params, $options]) {
-				$cases[$class.'::'.$key] = [$class, $method, $params, $options];
+			foreach (self::contract() as $key => [$method, $params, $main]) {
+				$cases[$class.'::'.$key] = [$class, $method, $params, $main];
 			}
 		}
 
@@ -181,45 +181,51 @@ class LegacyArgumentNamesTest extends TestCase {
 			'_multitenancy' => true,
 		];
 		foreach ([ObjectOperationsInterface::class, ObjectService::class] as $class) {
-			$cases[$class.'::renderEntity'] = [$class, 'renderEntity', $render, 'selection'];
+			$cases[$class.'::renderEntity'] = [$class, 'renderEntity', $render, ['entity', 'selection', '_rbac', '_multitenancy']];
 		}
 
 		return $cases;
 	}//end publishedMethods()
 
 	/**
-	 * The release's parameters keep their names, positions and defaults; the options form follows them.
+	 * Main's parameters keep main's positions; every release parameter is still there by name, with its default.
 	 *
-	 * @param class-string         $class   The class or interface.
-	 * @param string               $method  The method.
-	 * @param array<string, mixed> $params  The release's parameters and defaults, in order.
-	 * @param string               $options The name of the options-object parameter.
+	 * Main's positions are what test doubles and positional value-object calls rely on; the
+	 * release's names are what consuming apps call with.
+	 *
+	 * @param class-string         $class  The class or interface.
+	 * @param string               $method The method.
+	 * @param array<string, mixed> $params The release's parameters and defaults.
+	 * @param list<string>         $main   Main's parameter names, in order.
 	 *
 	 * @return void
 	 */
 	#[DataProvider('publishedMethods')]
-	public function testTheReleaseParametersAreStillThere(string $class, string $method, array $params, string $options): void {
-		$parameters = (new ReflectionMethod($class, $method))->getParameters();
+	public function testTheReleaseParametersAreStillThere(string $class, string $method, array $params, array $main): void {
+		$parameters = [];
+		foreach ((new ReflectionMethod($class, $method))->getParameters() as $parameter) {
+			$parameters[$parameter->getName()] = $parameter;
+		}
 
-		$expected = array_keys($params);
-		$expected[] = $options;
 		$this->assertSame(
-			$expected,
-			array_map(static fn (\ReflectionParameter $p): string => $p->getName(), $parameters),
-			"{$class}::{$method}() must keep the parameter names and order consuming apps call it with."
+			$main,
+			array_slice(array_keys($parameters), 0, count($main)),
+			"{$class}::{$method}() must keep main's parameters in main's positions."
 		);
 
-		foreach (array_values($params) as $position => $default) {
+		foreach ($params as $name => $default) {
+			$this->assertArrayHasKey($name, $parameters, "{$class}::{$method}() must keep the parameter \${$name} consuming apps call it with.");
 			if ($default === self::REQUIRED) {
 				continue;
 			}
 
-			$parameter = $parameters[$position];
-			$this->assertTrue($parameter->isDefaultValueAvailable(), "{$class}::{$method}() \${$parameter->getName()} must stay optional.");
-			$this->assertSame($default, $parameter->getDefaultValue(), "{$class}::{$method}() \${$parameter->getName()} must keep its default.");
-		}
+			$parameter = $parameters[$name];
+			$this->assertTrue($parameter->isDefaultValueAvailable(), "{$class}::{$method}() \${$name} must stay optional.");
+			if ($parameter->getPosition() < count($main)) {
+				continue;
+			}
 
-		$last = end($parameters);
-		$this->assertTrue($last->allowsNull() && $last->isDefaultValueAvailable() && $last->getDefaultValue() === null, "{$class}::{$method}() \${$options} must default to null.");
+			$this->assertSame($default, $parameter->getDefaultValue(), "{$class}::{$method}() \${$name} must keep its default.");
+		}
 	}//end testTheReleaseParametersAreStillThere()
 }//end class

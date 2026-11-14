@@ -319,7 +319,68 @@ class ObjectServiceLegacyArgumentsTest extends TestCase {
 			$requests[3][0]
 		);
 	}
+
+	public function testReleasePositionalCallsMeanWhatTheyMeantInTheRelease(): void {
+		$user = $this->createMock(IUser::class);
+
+		$positional = $this->service();
+		$positional->saveObject(['a' => 1], ['owner'], 'r', 's', 'u-1', false, false, true);
+		$named = $this->service();
+		$named->saveObject(object: ['a' => 1], extend: ['owner'], register: 'r', schema: 's', uuid: 'u-1', _rbac: false, _multitenancy: false, silent: true);
+		$this->assertEquals($named->calls(), $positional->calls());
+		$this->assertEquals(new AccessFlags(rbac: false, multitenancy: false), $positional->calls()[0][1]['access']);
+
+		$positional = $this->service();
+		$positional->deleteObject('u-1', 'r', 's', false, true, true, $user, true);
+		$positional->deleteObject('u-1', null, null);
+		$named = $this->service();
+		$named->deleteObject(uuid: 'u-1', register: 'r', schema: 's', _rbac: false, _multitenancy: true, _retentionSweep: true, currentUser: $user, permanent: true);
+		$named->deleteObject(uuid: 'u-1');
+		$this->assertEquals($named->calls(), $positional->calls());
+		$this->assertEquals(new AccessFlags(rbac: true, multitenancy: true), $positional->calls()[1][1]['access']);
+
+		$positional = $this->service();
+		$positional->patchObject('u-1', ['a' => 1], 'r', 's', false, false, $user);
+		$named = $this->service();
+		$named->patchObject(objectId: 'u-1', data: ['a' => 1], register: 'r', schema: 's', _rbac: false, _multitenancy: false, currentUser: $user);
+		$this->assertEquals($named->calls(), $positional->calls());
+
+		$positional = $this->service();
+		$positional->saveObjects([['a' => 1]], 'r', 's', false, false, true, true, false, false, false);
+		$named = $this->service();
+		$named->saveObjects(objects: [['a' => 1]], register: 'r', schema: 's', _rbac: false, _multitenancy: false, validation: true, events: true, _audit: false);
+		$this->assertEquals($named->calls(), $positional->calls());
+
+		$positional = $this->service();
+		$positional->findSilent('u-1', ['a'], true, 'r', 's', false, false);
+		$named = $this->service();
+		$named->findSilent(id: 'u-1', _extend: ['a'], files: true, register: 'r', schema: 's', _rbac: false, _multitenancy: false);
+		$this->assertEquals($named->calls(), $positional->calls());
+	}
+
+	public function testAPositionalDeleteThatMayHaveLeftRbacOutKeepsRbacOn(): void {
+		$user    = $this->createMock(IUser::class);
+		$service = $this->service();
+		$service->deleteObject('u-1', 'r', 's', currentUser: $user);
+		$service->deleteObject('u-1', 'r', 's', false);
+
+		$this->assertEquals(new AccessFlags(rbac: true, multitenancy: true), $service->calls()[0][1]['access']);
+		$this->assertEquals(new AccessFlags(rbac: false, multitenancy: true), $service->calls()[1][1]['access']);
+	}
+
+	public function testReleasePositionalLockCallsBuildTheSameRequest(): void {
+		$expected = new LockRequest(identifier: 'u-1', process: 'import', duration: 60, runStep: new LockRunStep(runUuid: 'run', nodeId: 'node'));
+		$lock     = $this->createMock(LockHandler::class);
+		$lock->expects($this->exactly(2))->method('lock')->with($expected, true)->willReturn([]);
+
+		$service = $this->service();
+		$this->setHandler($service, 'lockHandler', $lock);
+
+		$service->lockObject('u-1', 'import', 60, true, 'run', 'node');
+		$service->lockObject($expected, true);
+	}
 }//end class
+
 
 /**
  * The recording seam the test's ObjectService exposes.

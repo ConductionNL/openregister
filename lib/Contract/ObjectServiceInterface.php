@@ -153,40 +153,43 @@ interface ObjectServiceInterface {
 	/**
 	 * Persist an object, creating or updating it.
 	 *
-	 * Takes an ObjectSaveOptions (as `$options`, or positionally in place of `$extend`) or the
-	 * separate arguments of the published contract; an options object wins.
+	 * Takes main's value-object form or the release's separate arguments, by name or by position.
+	 * The value object keeps its main position; the release's names follow, and a positional release
+	 * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
 	 *
-	 * @param array						$object		 The object to store.
-	 * @param array|ObjectSaveOptions|null $extend		 Relations to expand on the result, or the options object.
-	 * @param string|int|null			  $register	   Register id, UUID or slug.
-	 * @param string|int|null			  $schema		 Schema id, UUID or slug.
-	 * @param ?string					  $uuid		   The object UUID.
-	 * @param bool						 $_rbac		  Apply register RBAC.
-	 * @param bool						 $_multitenancy  Apply organisation scoping.
-	 * @param bool						 $silent		 Suppress events for this save.
-	 * @param bool						 $_validation	Validate against the schema.
-	 * @param ?array					   $uploadedFiles  Files uploaded alongside the object.
-	 * @param ?IUser					   $currentUser	Explicit acting user; null uses the session.
-	 * @param bool						 $failIfExists   Fail instead of updating when the object already exists.
-	 * @param bool						 $_unowned	   Create the row with the SYSTEM owner.
-	 * @param bool						 $_dedupOverride Save through a blocking duplicate match.
-	 * @param ?string					  $_owner		 Explicit owner of a new row.
-	 * @param ObjectSaveOptions|null	   $options		The register and schema (id, UUID or slug), the object
-	 *													 UUID, the relations to expand on the result, the files
-	 *													 uploaded alongside the object, the save policy (events,
-	 *													 validation, insert-only) and the explicit acting user
-	 *													 (null uses the session).
+	 * @param array                        $object                 The object data to save or ObjectEntity instance.
+	 * @param array|ObjectSaveOptions|null $options                The save options; an array here is the release's positional `$extend`.
+	 * @param bool|string|int|null         $_rbac                  Whether to apply RBAC checks; a register here is the release's positional
+	 *                                                             `$register`.
+	 * @param bool|string|int|null         $_multitenancy          Whether to apply multitenancy filtering; a schema here is the release's
+	 *                                                             positional `$schema`.
+	 * @param string|null                  $uuid                   The UUID of the object to update.
+	 * @param bool                         $positionalRbac         The release's positional `$_rbac`, read only with a positional register.
+	 * @param bool                         $positionalTenancy The release's positional `$_multitenancy`, read only with a positional register.
+	 * @param bool                         $silent                 Suppress events for this save.
+	 * @param bool                         $_validation            Validate against the schema.
+	 * @param array|null                   $uploadedFiles          Files uploaded from multipart/form-data.
+	 * @param IUser|null                   $currentUser            Explicit acting user; null uses the session.
+	 * @param bool                         $failIfExists           Fail instead of updating when the object already exists.
+	 * @param bool                         $_unowned               Create the row with the SYSTEM owner.
+	 * @param bool                         $_dedupOverride         Save through a blocking duplicate match.
+	 * @param string|null                  $_owner                 Explicit owner of a new row.
+	 * @param array|null                   $extend                 Properties to extend the result with.
+	 * @param string|int|null              $register               The register object or its ID/UUID/slug.
+	 * @param string|int|null              $schema                 The schema object or its ID/UUID/slug.
 	 *
 	 * @return ObjectEntityInterface The stored object.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
 	 */
 	public function saveObject(
 		array $object,
-		array|ObjectSaveOptions|null $extend=[],
-		string|int|null $register=null,
-		string|int|null $schema=null,
+		array|ObjectSaveOptions|null $options=new ObjectSaveOptions(),
+		bool|string|int|null $_rbac=true,
+		bool|string|int|null $_multitenancy=true,
 		?string $uuid=null,
-		bool $_rbac=true,
-		bool $_multitenancy=true,
+		bool $positionalRbac=true,
+		bool $positionalTenancy=true,
 		bool $silent=false,
 		bool $_validation=true,
 		?array $uploadedFiles=null,
@@ -195,7 +198,9 @@ interface ObjectServiceInterface {
 		bool $_unowned=false,
 		bool $_dedupOverride=false,
 		?string $_owner=null,
-		?ObjectSaveOptions $options=null
+		?array $extend=[],
+		string|int|null $register=null,
+		string|int|null $schema=null
 	): ObjectEntityInterface;
 
 	/**
@@ -210,33 +215,45 @@ interface ObjectServiceInterface {
 	/**
 	 * Find a single object by id, UUID or slug.
 	 *
-	 * Takes an ObjectFindOptions (as `$options`, or positionally in place of `$_extend`) or the
-	 * separate arguments of the published contract; an options object wins.
+	 * Takes main's value-object form or the release's separate arguments, by name or by position.
+	 * The value object keeps its main position; the release's names follow, and a positional release
+	 * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
 	 *
-	 * @param int|string				   $id			Object id, UUID or slug.
-	 * @param array|ObjectFindOptions|null $_extend	   Relations to expand on the result, or the options object.
-	 * @param bool						 $files		 Include file metadata.
-	 * @param string|int|null			  $register	  Register id, UUID or slug.
-	 * @param string|int|null			  $schema		Schema id, UUID or slug.
-	 * @param bool						 $_rbac		 Apply register RBAC.
-	 * @param bool						 $_multitenancy Apply organisation scoping.
-	 * @param bool						 $_render	   Render the entity before returning it.
-	 * @param bool						 $_audit		Write an audit-trail entry.
-	 * @param ObjectFindOptions|null	   $options	   Register, schema, extend, files, render and audit.
+	 * @param int|string                   $id                     The object ID or UUID.
+	 * @param array|ObjectFindOptions|null $options                Register, schema, extend, files, render and audit; an array here is the release's
+	 *                                                             positional `$_extend`.
+	 * @param bool                         $_rbac                  Whether to apply RBAC checks; the release's positional `$files` when the call is
+	 *                                                             positional.
+	 * @param bool|string|int|null         $_multitenancy          Whether to apply multitenancy filtering; a register here is the release's
+	 *                                                             positional `$register`.
+	 * @param string|int|null              $positionalSchema       The release's positional `$schema`.
+	 * @param bool                         $positionalRbac         The release's positional `$_rbac`.
+	 * @param bool                         $positionalTenancy The release's positional `$_multitenancy`.
+	 * @param bool                         $_render                False when the caller performs its own single render.
+	 * @param bool                         $_audit                 False for machine-to-machine reads inside one operation.
+	 * @param array|null                   $_extend                Relations to expand on the result.
+	 * @param bool                         $files                  Include file metadata.
+	 * @param string|int|null              $register               Register object, id, UUID or slug.
+	 * @param string|int|null              $schema                 Schema object, id, UUID or slug.
 	 *
 	 * @return ?ObjectEntityInterface The object, or null when absent or not permitted.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
 	 */
 	public function find(
 		int|string $id,
-		array|ObjectFindOptions|null $_extend=[],
-		bool $files=false,
-		string|int|null $register=null,
-		string|int|null $schema=null,
+		array|ObjectFindOptions|null $options=null,
 		bool $_rbac=true,
-		bool $_multitenancy=true,
+		bool|string|int|null $_multitenancy=true,
+		string|int|null $positionalSchema=null,
+		bool $positionalRbac=true,
+		bool $positionalTenancy=true,
 		bool $_render=true,
 		bool $_audit=true,
-		?ObjectFindOptions $options=null
+		?array $_extend=[],
+		bool $files=false,
+		string|int|null $register=null,
+		string|int|null $schema=null
 	): ?ObjectEntityInterface;
 
 	/**
@@ -287,33 +304,41 @@ interface ObjectServiceInterface {
 	/**
 	 * Delete an object by UUID.
 	 *
-	 * Takes an ObjectDeletion (as `$deletion`, or positionally in place of `$uuid`) or the
-	 * separate arguments of the published contract; an ObjectDeletion wins.
+	 * Takes main's value-object form or the release's separate arguments, by name or by position.
+	 * The value object keeps its main position; the release's names follow, and a positional release
+	 * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
 	 *
-	 * @param string|ObjectDeletion|null $uuid			The object UUID, or the deletion object.
-	 * @param string|int|null			$register		Register id, UUID or slug.
-	 * @param string|int|null			$schema		  Schema id, UUID or slug.
-	 * @param bool					   $_rbac		   Apply register RBAC.
-	 * @param bool					   $_multitenancy   Apply organisation scoping.
-	 * @param bool					   $_retentionSweep Run as part of a retention sweep.
-	 * @param ?IUser					 $currentUser	 Explicit acting user; null uses the session.
-	 * @param bool					   $permanent	   Delete permanently instead of soft-deleting.
-	 * @param ObjectDeletion|null		$deletion		The object UUID, the optional register and schema scope,
-	 *													the explicit acting user (null uses the session) and
-	 *													whether to delete permanently instead of soft-deleting.
+	 * @param string|ObjectDeletion|null $deletion                 The deletion; a string here is the release's positional `$uuid`.
+	 * @param bool|string|int|null       $_rbac                    Whether to apply RBAC checks; a register here is the release's positional
+	 *                                                             `$register`.
+	 * @param bool|string|int|null       $_multitenancy            Whether to apply multitenancy filtering; a schema here is the release's
+	 *                                                             positional `$schema`.
+	 * @param bool                       $_retentionSweep          Internal flag set by ArchivalRetentionTask to bypass the archival-immutability
+	 *                                                             gate; the release's positional `$_rbac` when the call is positional.
+	 * @param bool                       $positionalTenancy   The release's positional `$_multitenancy`.
+	 * @param bool                       $positionalSweep The release's positional `$_retentionSweep`.
+	 * @param IUser|null                 $currentUser              Explicit acting user for the RBAC `delete` check.
+	 * @param bool                       $permanent                Destroy the row rather than tombstoning it.
+	 * @param string|null                $uuid                     The UUID of the object to delete.
+	 * @param string|int|null            $register                 The register scope (object, ID, UUID or slug).
+	 * @param string|int|null            $schema                   The schema scope (object, ID, UUID or slug).
 	 *
 	 * @return bool True when the object was deleted.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
 	 */
 	public function deleteObject(
-		string|ObjectDeletion|null $uuid=null,
-		string|int|null $register=null,
-		string|int|null $schema=null,
-		bool $_rbac=true,
-		bool $_multitenancy=true,
+		string|ObjectDeletion|null $deletion=null,
+		bool|string|int|null $_rbac=true,
+		bool|string|int|null $_multitenancy=true,
 		bool $_retentionSweep=false,
+		bool $positionalTenancy=true,
+		bool $positionalSweep=false,
 		?IUser $currentUser=null,
 		bool $permanent=false,
-		?ObjectDeletion $deletion=null
+		?string $uuid=null,
+		string|int|null $register=null,
+		string|int|null $schema=null
 	): bool;
 
 	/**
@@ -389,38 +414,42 @@ interface ObjectServiceInterface {
 	/**
 	 * Persist many objects in one bulk operation.
 	 *
-	 * Takes a BulkSaveOptions (as `$options`, or positionally in place of `$register`) or the
-	 * separate arguments of the published contract; an options object wins.
+	 * Takes main's value-object form or the release's separate arguments, by name or by position.
+	 * The value object keeps its main position; the release's names follow, and a positional release
+	 * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
 	 *
-	 * @param array						   $objects		The objects to store.
-	 * @param BulkSaveOptions|string|int|null $register	   Register id, UUID or slug, or the options object.
-	 * @param string|int|null				 $schema		 Schema id, UUID or slug.
-	 * @param bool							$_rbac		  Apply register RBAC.
-	 * @param bool							$_multitenancy  Apply organisation scoping.
-	 * @param bool							$validation	 Validate against the schema.
-	 * @param bool							$events		 Emit events for each object.
-	 * @param bool							$deduplicateIds Accepted for compatibility; has no effect.
-	 * @param bool							$enrich		 Accepted for compatibility; has no effect.
-	 * @param bool							$_audit		 Write an audit-trail entry.
-	 * @param BulkSaveOptions|null			$options		The register and schema for rows that name none (id, UUID
-	 *														or slug), whether to validate against the schema, whether
-	 *														to emit events for each object, and whether to write
-	 *														audit-trail entries.
+	 * @param array                           $objects                Array of objects in serialized format.
+	 * @param BulkSaveOptions|string|int|null $options                The bulk save options; a register here is the release's positional `$register`.
+	 * @param bool|string|int|null            $_rbac                  Whether to apply RBAC filtering; a schema here is the release's positional
+	 *                                                                `$schema`.
+	 * @param bool                            $_multitenancy          Whether to apply multi-organization filtering; the release's positional
+	 *                                                                `$_rbac` when the call is positional.
+	 * @param bool                            $positionalTenancy The release's positional `$_multitenancy`.
+	 * @param bool                            $validation             Validate objects against schema definitions.
+	 * @param bool                            $events                 Dispatch object lifecycle events.
+	 * @param bool                            $deduplicateIds         Accepted for the published contract; has no effect.
+	 * @param bool                            $enrich                 Accepted for the published contract; has no effect.
+	 * @param bool                            $_audit                 Write audit trail rows (bulk mirror of `silent`).
+	 * @param string|int|null                 $register               The register for rows that name none.
+	 * @param string|int|null                 $schema                 The schema for rows that name none.
 	 *
 	 * @return array The stored objects.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
 	 */
 	public function saveObjects(
 		array $objects,
-		BulkSaveOptions|string|int|null $register=null,
-		string|int|null $schema=null,
-		bool $_rbac=true,
+		BulkSaveOptions|string|int|null $options=new BulkSaveOptions(),
+		bool|string|int|null $_rbac=true,
 		bool $_multitenancy=true,
+		bool $positionalTenancy=true,
 		bool $validation=false,
 		bool $events=false,
 		bool $deduplicateIds=true,
 		bool $enrich=true,
 		bool $_audit=true,
-		?BulkSaveOptions $options=null
+		string|int|null $register=null,
+		string|int|null $schema=null
 	): array;
 
 	/**
@@ -499,52 +528,53 @@ interface ObjectServiceInterface {
 	/**
 	 * Release a lock on an object.
 	 *
-	 * Takes an UnlockRequest (as `$request`, or positionally in place of `$identifier`) or the
-	 * separate arguments of the published contract; an UnlockRequest wins.
+	 * Takes main's value-object form or the release's separate arguments, by name or by position.
+	 * The value object keeps its main position; the release's names follow, and a positional release
+	 * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
 	 *
-	 * @param string|int|UnlockRequest|null $identifier The object id or UUID, or the unlock request.
-	 * @param bool						  $advisory   Release an advisory (non-blocking) lock.
-	 * @param ?string					   $runUuid	The flow run releasing the lock, for a run-scoped lock.
-	 * @param UnlockRequest|null			$request	The object, the advisory flag and the flow run releasing a
-	 *												  run-scoped lock. A request with `break` set is refused;
-	 *												  breakObjectLock() breaks a lock.
+	 * @param string|int|UnlockRequest|null $request    The unlock request; a string or int here is the release's positional `$identifier`.
+	 * @param bool                          $advisory   Release the appConfig-backed advisory lock for this synthetic key without scanning tables.
+	 * @param string|null                   $runUuid    The flow run releasing a run-scoped lock.
+	 * @param string|int|null               $identifier The object id or UUID.
 	 *
 	 * @return bool True when the lock was released.
 	 */
 	public function unlockObject(
-		string|int|UnlockRequest|null $identifier=null,
+		string|int|UnlockRequest|null $request=null,
 		bool $advisory=false,
 		?string $runUuid=null,
-		?UnlockRequest $request=null
+		string|int|null $identifier=null
 	): bool;
 
 	/**
 	 * Take a lock on an object.
 	 *
-	 * Takes a LockRequest (as `$request`, or positionally in place of `$identifier`) or the
-	 * separate arguments of the published contract; a LockRequest wins.
+	 * Takes main's value-object form or the release's separate arguments, by name or by position.
+	 * The value object keeps its main position; the release's names follow, and a positional release
+	 * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
 	 *
-	 * @param string|LockRequest|null $identifier The object id or UUID, or the lock request.
-	 * @param ?string				 $process	A label for the process holding the lock.
-	 * @param ?int					$duration   Lock duration in seconds.
-	 * @param bool					$advisory   Take an advisory (non-blocking) lock.
-	 * @param ?string				 $runUuid	The flow run taking the lock. A run-scoped lock
-	 *											refuses every other caller, the run's own runAs
-	 *											user included.
-	 * @param ?string				 $nodeId	 The flow node that took it, recorded for the sweep.
-	 * @param LockRequest|null		$request	The object, the process label, the duration in seconds and
-	 *											the flow run step taking the lock.
+	 * @param string|LockRequest|null $request            The lock request; a string here is the release's positional `$identifier`.
+	 * @param bool|string|null        $advisory           When true, treat the identifier as a synthetic pre-creation key and take the appConfig-
+	 *                                                    backed advisory lock without scanning object tables; a string here is the release's
+	 *                                                    positional `$process`.
+	 * @param int|null                $duration           Lock duration in seconds.
+	 * @param bool                    $positionalAdvisory The release's positional `$advisory`.
+	 * @param string|null             $runUuid            The flow run taking the lock.
+	 * @param string|null             $nodeId             The flow node that took it, recorded for the sweep.
+	 * @param string|null             $identifier         The object id or UUID.
+	 * @param string|null             $process            A label for the process holding the lock.
 	 *
 	 * @return array The resulting lock state.
 	 */
 	public function lockObject(
-		string|LockRequest|null $identifier=null,
-		?string $process=null,
+		string|LockRequest|null $request=null,
+		bool|string|null $advisory=false,
 		?int $duration=null,
-		bool $advisory=false,
+		bool $positionalAdvisory=false,
 		?string $runUuid=null,
 		?string $nodeId=null,
-		?LockRequest $request=null
+		?string $identifier=null,
+		?string $process=null
 	): array;
 
 	/**
@@ -631,22 +661,22 @@ interface ObjectServiceInterface {
 	 * The merged result goes through the same save path as `saveObject()`, so
 	 * schema validation, the audit trail and event dispatch all still apply.
 	 *
-	 * Takes an ObjectPatch (as `$patch`, or positionally in place of `$objectId`) or the
-	 * separate arguments of the published contract; an ObjectPatch wins.
+	 * Takes main's value-object form or the release's separate arguments, by name or by position.
+	 * The value object keeps its main position; the release's names follow, and a positional release
+	 * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
 	 *
-	 * @param string|ObjectPatch|null $objectId      Object id, UUID or slug, or the patch object.
-	 * @param ?array                  $data          The partial data to merge. Omitted keys are PRESERVED.
-	 *                                               Required with `$objectId`.
-	 * @param string|int|null         $register      Register id, UUID or slug.
-	 * @param string|int|null         $schema        Schema id, UUID or slug.
-	 * @param bool                    $_rbac         Apply register RBAC.
-	 * @param bool                    $_multitenancy Apply organisation scoping.
-	 * @param ?IUser                  $currentUser   Explicit acting user; null uses the session.
-	 *                                               Non-HTTP callers (cron, flow runs, imports)
-	 *                                               should pass one to avoid a default-deny.
-	 * @param ObjectPatch|null        $patch         The object id, UUID or slug, the partial data to merge
-	 *                                               (omitted keys are PRESERVED), the optional register and
-	 *                                               schema scope, and the explicit acting user.
+	 * @param string|ObjectPatch|null $patch                  The patch; a string here is the release's positional `$objectId`.
+	 * @param bool|array              $_rbac                  Whether to apply RBAC checks; an array here is the release's positional `$data`.
+	 * @param bool|string|int|null    $_multitenancy          Whether to apply multitenancy filtering; a register here is the release's positional
+	 *                                                        `$register`.
+	 * @param string|int|null         $positionalSchema       The release's positional `$schema`.
+	 * @param bool                    $positionalRbac         The release's positional `$_rbac`.
+	 * @param bool                    $positionalTenancy The release's positional `$_multitenancy`.
+	 * @param IUser|null              $currentUser            Explicit acting user forwarded to `saveObject()`.
+	 * @param string|null             $objectId               The object id, uuid or slug.
+	 * @param array|null              $data                   The partial data to merge; required with `$objectId`.
+	 * @param string|int|null         $register               The register scope.
+	 * @param string|int|null         $schema                 The schema scope.
 	 *
 	 * @return ObjectEntityInterface The patched object.
 	 *
@@ -664,16 +694,21 @@ interface ObjectServiceInterface {
 	 * break lands on a `conduction/hydra-gates` RELEASE carrying this contract,
 	 * not on this merge, because leaf apps read it from vendor/: land those
 	 * three doubles before the release, or pin.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
 	 */
 	public function patchObject(
-		string|ObjectPatch|null $objectId=null,
+		string|ObjectPatch|null $patch=null,
+		bool|array $_rbac=true,
+		bool|string|int|null $_multitenancy=true,
+		string|int|null $positionalSchema=null,
+		bool $positionalRbac=true,
+		bool $positionalTenancy=true,
+		?IUser $currentUser=null,
+		?string $objectId=null,
 		?array $data=null,
 		string|int|null $register=null,
-		string|int|null $schema=null,
-		bool $_rbac=true,
-		bool $_multitenancy=true,
-		?IUser $currentUser=null,
-		?ObjectPatch $patch=null
+		string|int|null $schema=null
 	): ObjectEntityInterface;
 
 	/**
@@ -723,29 +758,41 @@ interface ObjectServiceInterface {
 	/**
 	 * Find an object without emitting audit or read events.
 	 *
-	 * Takes an ObjectFindOptions (as `$options`, or positionally in place of `$_extend`) or the
-	 * separate arguments of the published contract; an options object wins.
+	 * Takes main's value-object form or the release's separate arguments, by name or by position.
+	 * The value object keeps its main position; the release's names follow, and a positional release
+	 * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
 	 *
-	 * @param string                       $id            Object id, UUID or slug.
-	 * @param array|ObjectFindOptions|null $_extend       Relations to expand on the result, or the options object.
-	 * @param bool                         $files         Include file metadata.
-	 * @param string|int|null              $register      Register id, UUID or slug.
-	 * @param string|int|null              $schema        Schema id, UUID or slug.
-	 * @param bool                         $_rbac         Apply register RBAC.
-	 * @param bool                         $_multitenancy Apply organisation scoping.
-	 * @param ObjectFindOptions|null       $options       Register, schema, extend and files; render and audit are ignored.
+	 * @param string                       $id                     The ID of the object to get.
+	 * @param array|ObjectFindOptions|null $options                Register, schema, extend and files; an array here is the release's positional
+	 *                                                             `$_extend`.
+	 * @param bool                         $_rbac                  Whether to apply RBAC checks; the release's positional `$files` when the call is
+	 *                                                             positional.
+	 * @param bool|string|int|null         $_multitenancy          Whether to apply multitenancy filtering; a register here is the release's
+	 *                                                             positional `$register`.
+	 * @param string|int|null              $positionalSchema       The release's positional `$schema`.
+	 * @param bool                         $positionalRbac         The release's positional `$_rbac`.
+	 * @param bool                         $positionalTenancy The release's positional `$_multitenancy`.
+	 * @param array|null                   $_extend                Relations to expand on the result.
+	 * @param bool                         $files                  Include file metadata.
+	 * @param string|int|null              $register               Register object, id, UUID or slug.
+	 * @param string|int|null              $schema                 Schema object, id, UUID or slug.
 	 *
 	 * @return ObjectEntityInterface The object.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
 	 */
 	public function findSilent(
 		string $id,
-		array|ObjectFindOptions|null $_extend=[],
+		array|ObjectFindOptions|null $options=null,
+		bool $_rbac=true,
+		bool|string|int|null $_multitenancy=true,
+		string|int|null $positionalSchema=null,
+		bool $positionalRbac=true,
+		bool $positionalTenancy=true,
+		?array $_extend=[],
 		bool $files=false,
 		string|int|null $register=null,
-		string|int|null $schema=null,
-		bool $_rbac=true,
-		bool $_multitenancy=true,
-		?ObjectFindOptions $options=null
+		string|int|null $schema=null
 	): ObjectEntityInterface;
 
 	/**
