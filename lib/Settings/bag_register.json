@@ -126,6 +126,15 @@
             "maxLength": 80,
             "facetable": true,
             "title": "City Name"
+          },
+          "adresseerbaarObject": {
+            "type": "string",
+            "description": "BAG identification of the verblijfsobject, standplaats or ligplaats this address is assigned to",
+            "pattern": "^[0-9]{16}$",
+            "minLength": 16,
+            "maxLength": 16,
+            "facetable": false,
+            "title": "Addressable Object"
           }
         },
         "hardValidation": false,
