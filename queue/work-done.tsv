@@ -11021,3 +11021,4 @@ verify:keepiq:1798:28a9f0d5	GREEN #1798 (PHP 5192 green; 3 inherited vitest reds
 fix:integriq:3633:7bc3cc79	fixed: l10n re-sort conflict resolved, pushed 90a867a5b221ea9285ddb5531b3a7bfa16136b5d, REVERIFY recorded	session-20261114T204804-ae7e06a7	2026-11-14T20:49:48Z
 fix:shillinq:2995:11635055	test count 18->20 for the new listener registrations; unit 11371 OK; REVERIFY at cb8dc292	session-20261114T194744-563ce177	2026-11-14T20:49:55Z
 fix:learniq:2493:c4fb5a2d	floor restored to 3.99 (component independence), new head d5717bf0dd4f237e02456a7983fa30ae81e27e82	session-20261114T201752-7e06b161	2026-11-14T20:50:07Z
+fix:integriq:3549:9b625281	floor restored to 3.56, new head d85e6b22	session-20261114T201755-10d43934	2026-11-14T20:50:32Z
