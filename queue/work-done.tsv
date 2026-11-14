@@ -9595,3 +9595,4 @@ build:decidiq:bodies-onboarding-checklist-walkthrough:c2	done: PR #2169 head 5f1
 verify:pipelinq:3821:fe84ed8f	GREEN 3821, GREEN 3836; 8400 tests, 0 new failures	session-20261114T144809-d686f759	2026-11-14T14:51:17Z
 review:openregister:10558:63e014bc	APPROVE: additive app-declared webhook events; required suites green	session-20261114T131646-cdc565a4	2026-11-14T14:51:24Z
 verify:filinq:2078:fb73f409	GREEN #2078: phpunit 6737 ok (base 6695), vitest 786 ok	session-20261114T144751-8958c054	2026-11-14T14:51:30Z
+verify:decidiq:2155:eec7ce8d	2155,2162,2172 GREEN; 2177 skipped (head moved to 5dde082)	session-20261114T144757-446bd6da	2026-11-14T14:51:42Z
