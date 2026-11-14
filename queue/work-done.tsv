@@ -11654,3 +11654,4 @@ verify:buildiq:1622:df861555	#1622 GREEN, #1648 GREEN	session-20261114T211808-5e
 fix:shillinq:3062:1eafaacd	l10n keys moved off the catalogue end; stacks clean on 3051; new head eafe1f44, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T22:42:12Z
 build:versioniq:install-manual-upload:c2	partial: no progress this session (worker context nearly full before starting); PR #715 at 43e28198 still has 1.1 and 2.3 done, left 1.2, 2.1, 2.2, 3.1, 3.2 (code) and 3.3, 4.1	session-20261114T211808-5e900938	2026-11-14T22:42:39Z
 fix:launchpad:1209:2cb0094a	conflict resolved, pushed 9d0c1bf3, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T22:42:41Z
+fix:versioniq:695:93abbf9c	floor restored by splitting VERS/CSAF units; pushed 9d0f302d	session-20261114T211810-b8f5dc24	2026-11-14T22:42:58Z
