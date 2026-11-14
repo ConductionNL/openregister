@@ -11311,3 +11311,4 @@ fix:shillinq:dummy	x	session-20261114T194805-be886caa	2026-11-14T21:51:11Z
 fix:opencatalogi:2701:493cd752	failed: interaction, not a defect here; #2697's test testAnUnknownCatalogueListsNothing expects the old empty list, catalogs CAT-002 (built in #2701) requires 404; branch merged with development green apart from inherited WooControllerTest	session-20261114T194805-be886caa	2026-11-14T21:51:14Z
 fix:portaliq:2443:b5fa534f	merged development in, resolved l10n + register version conflicts; new head f562b574, REVERIFY	session-20261114T204750-c1efccdb	2026-11-14T21:51:22Z
 fix:portaliq:2498:694d2dce	merged development, conflicts resolved keeping both sides; new head b8d95863	session-20261114T212457-7a749dbd	2026-11-14T21:51:28Z
+verify:opencatalogi:2665:90e45c67	GREEN 2665,2677,2687,2688; RED 2668,2671; CONFLICT 2696; 2672,2682 skipped (head moved)	session-20261114T203357-c555025b	2026-11-14T21:51:38Z
