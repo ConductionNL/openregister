@@ -11051,3 +11051,4 @@ build:portaliq:intake-conditional-questions-and-drafts:c2	failed: blocked: openr
 fix:integriq:3630:0ab3bc4c	fixed: split long units, unit_size back to 3.56; pushed 99809145, REVERIFY recorded	session-20261114T203357-c555025b	2026-11-14T20:55:13Z
 verify:learniq:2484:02be6f11	2484 GREEN; 2507 skipped (head moved from a78116f to cea92f1)	session-20261114T204759-5dc9dba7	2026-11-14T20:55:20Z
 verify:planninq:1160:f637f413	GREEN #1160: phpunit 1095 OK, vitest 3354 OK	session-20261114T194745-243de12d	2026-11-14T20:55:37Z
+fix:buildiq:1608:9907d8e5	merged development cleanly; new head 78af9a24, REVERIFY recorded	session-20261114T174753-100b2a07	2026-11-14T20:55:47Z
