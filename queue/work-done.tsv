@@ -11947,6 +11947,8 @@ fix:decidiq:2178:24b4be0c	conflict resolved, new head b9927684	session-20261114T
 cover:hermiq:065f1631mcdb5:0f859653	failed: no pcov/xdebug installable here (no apt package, no pecl) to locate the uncovered lines; every lib/Flow class already has behaviour tests (11 files), so the thin 4% cannot be targeted by reading - needs a worker with a coverage driver	session-20261114T222427-f171565a	2026-11-14T23:34:57Z
 cover:hermiq:065f1631mcdb5:1191da39	already done: lib/Service/WebResearch/ at 97.6% line coverage on development (target 95), quality/test-coverage-1191da39-1 exists	session-20261114T221743-dbe5c07e	2026-11-14T23:35:09Z
 fix:decidiq:2149:b733293a	l10n conflict resolved (union of keys, js rebuilt), suites green; new head 08dbad8e	session-20261114T221801-9a21d394	2026-11-14T23:35:07Z
+fix:portaliq:2498:b8d95863	merged development (l10n union, js regenerated), unit 5868 green; new head b177669a0, REVERIFY recorded	session-20261114T223333-658f3be1	2026-11-14T23:35:16Z
+build:launchpad:mcp-tool-surface:c4	failed: not started; this worker reached its context limit right after claiming it, so it is handed back untouched (PR #1222 unchanged at d08fb11f) for another worker	session-20261114T221801-9a21d394	2026-11-14T23:35:28Z
 verify:integriq:3640:46ba2b24	3640 GREEN (tests only, no new failures)	session-20261114T224753-194bb25e	2026-11-14T23:35:25Z
 fix:decidiq:2191:ccb12641	merged development, manifest/spec conflicts resolved keeping both blocks; vitest 2825 pass; new head a2e14c6c	session-20261114T225452-4fcfea7f	2026-11-14T23:35:33Z
 fix:dossiq:6523:ebc2a65d	conflict resolved, pushed 2cc454b5, REVERIFY	session-20261114T231756-01da210e	2026-11-14T23:35:47Z
