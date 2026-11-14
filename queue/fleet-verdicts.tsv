@@ -10389,3 +10389,4 @@ integriq	3595	07e2a23686f1889ef90284c53ecb5af67d38c282	CONFLICT	merge3	merges cl
 integriq	3630	9980914500767dff664e46ee0750d0ae46425fc3	CONFLICT	merge3	merges clean on development alone; files: src/modals/v2/ModalHost.vue tests/vitest/modalHostEvents.spec.js 
 integriq	3631	0f8a82af89e4a76c857b625da5dd1570a670beb8	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js lib/Service/EndpointService.php 
 integriq	3633	90a867a5b221ea9285ddb5531b3a7bfa16136b5d	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js lib/Service/EndpointService.php src/modals/v2/SourceFormFields.vue 
+versioniq	685	7f027ce272fc47f60b584d2c78788216f5288533	GREEN	worker-31:review	builds advisories-bundled-libraries as specified; existing endpoints keep admin checks and outputs (new fields added, library check off by default); phpunit unit-only 1731 tests, only the 2 golden failures inherited from development; vitest 2975 pass
