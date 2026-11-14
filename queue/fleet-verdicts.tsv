@@ -10454,3 +10454,4 @@ versioniq	726	d1f35455cb6c3ef29edc3819589c85d9b3064795	CONFLICT	worker-13	confli
 versioniq	728	45cdec97a22bcbfbe8994a82a14e49803a98bce7	CONFLICT	worker-13	conflicts on tree (l10n, AutoUpdateJob.php)
 versioniq	729	94184de77ad0169023cfaaec14c8bcc13ed6	CONFLICT	worker-13	conflicts on tree (l10n, AutoUpdateJob.php)
 versioniq	707	f78fb56e3ee24e701d8a8548caa1a49db7f8a0c0	GREEN	worker-23	unit-only 1762 tests, 2 failures = baseline (External/SelectedReleaseInstallGoldenTest, inherited); vitest 2989 pass; no new failures
+versioniq	714	3e04dbd12dba0066c2e035c855244a5aacd92430	GREEN	worker-23	unit-only 1762 tests, 2 failures = baseline (External/SelectedReleaseInstallGoldenTest, inherited); vitest 2989 pass; no new failures
