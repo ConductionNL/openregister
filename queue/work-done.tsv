@@ -11796,3 +11796,4 @@ fix:keepiq:1791:cd6b33cf	merged development, openapi.json regenerated; unit gree
 cover:pipelinq:7f9dc8e6m799d:e78626a8	already done: lib/Service/Marketing/*.php at 99.6% statements on development (target 95)	session-20261114T224740-064dbb86	2026-11-14T23:09:56Z
 cover:pipelinq:7f9dc8e6m799d:8f2b650b	already done: lib/Service/Competitor/*.php 634/643 lines (98.6%, pcov) on development, above 95 target; no PR	session-20261114T225452-4fcfea7f	2026-11-14T23:10:28Z
 verify:versioniq:698:7ed6adef	GREEN 698 707 721; CONFLICT 714 716 719 722; skipped 700 718 (head moved); 1812 tests, no new failures	session-20261114T223333-658f3be1	2026-11-14T23:10:30Z
+verify:integriq:3595:bc625056	4 GREEN (3595,3617,3630,3631); no new failures	session-20261114T221759-cd5c5678	2026-11-14T23:10:49Z
