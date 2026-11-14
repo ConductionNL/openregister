@@ -7159,3 +7159,4 @@ integriq	3565	b9920cdf69440d362ab94cfd63a1b5778617dbbb	GREEN	worker-53	baseline 
 integriq	3566	1e7c9524885af4333fb14425b99358ea3f994b8f	GREEN	worker-53	baseline 8493 (5 inherited), tree without 3564/3567 8609 with no new failures, vitest 2158/2158; organisation scoping tightens ApprovalService::find, optional param keeps callers
 integriq	3567	99d3f2b0f8490ccb647ce978c8406a05d74efa14	RED	worker-53	alone on development: ApplicationRegistrationOrderTest::testRegistrationsMatchTheRecordedSequence fails (CtiEventIntake alias shifts the recorded sequence)
 integriq	3568	b0c0f0415ade92f2ade4a1b6daaca86bf4fb4d4b	GREEN	worker-53	baseline 8493 (5 inherited), tree without 3564/3567 8609 with no new failures, vitest 2158/2158; manifest and frontend only
+integriq	3569	85f5f4b5d2459ab21976919bf9463212b0e42bf5	GREEN	worker-53	baseline 8493 (5 inherited), tree without 3564/3567 8609 with no new failures, vitest 2158/2158; discovery sets and broker signing guard per change
