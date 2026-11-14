@@ -11434,6 +11434,9 @@ fix:stackiq:1905:dc6d3343	sbom regenerated, --check passes; new head 99fed107, R
 fix:hermiq:1750:7b8181e8	conflict resolved, merged development, +2 tests, suites green; new head e1618265, REVERIFY recorded	session-20261114T214736-dd784d82	2026-11-14T22:06:24Z
 fix:shillinq:2977:7f14a104	conflict resolved, new head 56133b60	session-20261114T214733-589f5bff	2026-11-14T22:06:50Z
 review:opencatalogi:2643:e9586088	GREEN: matches dcat-catalogue-completion spec; unit suite only inherited failures, touched jest/vitest green	session-20261114T211808-5e900938	2026-11-14T22:07:00Z
+merge:humaniq:1125:c3833d20	merge3 tree of 5 humaniq PRs: merged=3 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:07:32Z
+merge:humaniq:1144:7d38728c	merge3 tree of 5 humaniq PRs: merged=3 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:07:41Z
+merge:humaniq:1133:fbe861bc	merge3 tree of 5 humaniq PRs: merged=3 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:07:50Z
 build:stackiq:capability-requirements-from-the-matrix:c2	partial: not started this run (worker context nearly full); #1923 merged with Tasks 2 and 4; left Task 1 (EntryWizardDialog + manifest) and Task 3 (Active-only-by-approved-decision guard, best via the contracts-to-decidesk.json fragment lifecycle since workers may not touch softwarecatalogus_register.json)	session-20261114T203357-c555025b	2026-11-14T22:07:38Z
 verify:opencatalogi:2668:7ed34598	8 GREEN (2668,2710-2716); 2684 skipped (head moved to 8f4a54a3f); no new failures	session-20261114T211801-f16dd26d	2026-11-14T22:07:57Z
 fix:stackiq:1937:2057fef1	merged development, l10n keys moved mid-catalogue; merges clean with 1933 and the other open builds; unit 3618 OK; new head f2aac75d, REVERIFY recorded	session-20261114T204759-2444e6ca	2026-11-14T22:08:08Z
