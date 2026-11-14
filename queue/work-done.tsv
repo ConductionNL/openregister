@@ -11972,3 +11972,4 @@ merge:shillinq:3048:2e5ba200	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail
 cover:hermiq:065f1631mcdb5:66a28494	PR #1797: 3 classes, +11 tests, Engine 95.4%->96.5%, suite 5180->5191 green	session-20261114T231738-f75034a1	2026-11-14T23:38:24Z
 merge:shillinq:2977:84d0488b	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:38:13Z
 merge:shillinq:3062:16ca8421	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:38:27Z
+cover:planninq:e1c9866dm4f63:jsea7197ec	PR #1181: 12 tests userNames/forgeUrl, src/utils lines 98.72->99.12%, suite 3388->3400 green	session-20261114T231756-01da210e	2026-11-14T23:38:55Z
