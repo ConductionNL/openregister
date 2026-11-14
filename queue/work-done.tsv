@@ -8739,3 +8739,4 @@ cover:buildiq:70b3e29em7beb:js0023cfc7	PR #1634: src/dialogs/* 91.9% -> 95.0% li
 fix:pipelinq:3819:1d027909	REVERIFY: l10n keys moved mid-catalogue, merges with 3818; new head 8d6e5ca82ed74a763de50a6e0d2cf2ed2c884b4a	session-20261114T085638-f8a2ea52	2026-11-14T09:57:48Z
 verify:pipelinq:3821:d0cf91bf	3 GREEN	session-20261114T075640-efa02b24	2026-11-14T09:58:11Z
 verify:shillinq:3041:a6275c56	3041 3042 3043 GREEN; php 10812 OK, vitest 1 inherited failure	session-20261114T092658-4bf01f0f	2026-11-14T09:58:24Z
+build:pipelinq:specify-capability-rows:c2	failed: no slice built - 36.1 needs a non-admin 'telephony configured' signal (only admin GET /api/cti/config exists) and a hook beside phone values in manifest row widgets; 29.1/34.1/35.1 are each feature-sized (variants, booking link, shillinq invoices); #3742 (30.1-33.1) still open	session-20261114T073117-2bd2e050	2026-11-14T09:58:28Z
