@@ -9568,3 +9568,8 @@ decidiq	2202	3a275a0425fce2a3464bf1ee3b6ed0600e02fadd	GREEN	worker-08	tree phpun
 decidiq	2204	60f57522b5b0f51012bb8d94cc2b3cd0691033bc	GREEN	worker-08	tree phpunit 4311 (0 failures; development baseline 0), vitest 2795 pass; build the-decision-as-a-walked-process
 decidiq	2205	9c878baf6585a4e5d7036e6c07e0450a982483ae	CONFLICT	worker-08	conflicts in municipality.json, openapi.json, src/manifest.json, tests/vitest/simpleDecisionPage.spec.js on the tree
 portaliq	2440	1f256935ef1449ce9712adf1f1d0a9f1a4f91a82	RED	merge3:merge-gate	GATE RED floor: duplication: 4.31 -> 4.29; unit_complexity: 3.30 -> 3.28
+portaliq	2443	b48462345846bb41ec39caaf82a1a18751e5fca1	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/PortalIntakeController.php lib/Service/Signin/BrokerEnvelopeCheck.php tests/Unit/Controller/PortalIntakeControllerTest.php tests/Unit/Set
+portaliq	2444	0778a65a5d855b374fdfd951c627f2f88236755e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Settings/PortaliqRegisterConfigTest.php 
+portaliq	2498	2811eefb68d1439bcc9297edc22dfe527e75e240	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json package.json 
+portaliq	2500	ba7c86b7326529629ea81d8649613daee311dccb	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/portaliq_register.json package.json tests/Unit/Settings/PortaliqRegisterConfigTest.php 
+portaliq	2508	00941d7f63672da64eded8571302c0d9181357df	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Settings/PortaliqRegisterConfigTest.php 
