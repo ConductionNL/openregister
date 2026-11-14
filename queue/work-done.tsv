@@ -8260,3 +8260,4 @@ build:launchpad:mcp-tool-surface	partial: PR #1204, tasks 1-5, 21, 22 and 4 of 1
 fix:integriq:3574:a352f502	fixed RED (test mock + golden for the new CSV fields), new head 48797432; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T08:28:36Z
 fix:opencatalogi:2651:cfe48dc9	conflict resolved (listener registrar, registrar test, docs); REVERIFY at c5411594	session-20261114T075648-394d8174	2026-11-14T08:28:52Z
 fix:learniq:2490:f65b7b6d	conflict resolved, new head 0a737598	session-20261114T082633-7466e3ea	2026-11-14T08:29:13Z
+fix:opencatalogi:2648:cd875eb3	floor restored: controller ctor 7->6 params via PublicationRights::mayPublish; pushed 225f1e628; 2 inherited test failures	session-20261114T065632-a1c920c5	2026-11-14T08:29:26Z
