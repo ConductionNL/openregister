@@ -11863,3 +11863,4 @@ verify:dossiq:6521:26af6f5f	6521 GREEN; 6522, 6523 CONFLICT (add/add test files 
 cover:openregister:7350e3efmba30:js0b5eefce	PR #10575: 17 tests (ViewObject record scope, selectedObjectsDialog); dir lines 92.21->92.40, branches 85.54->86.42; rest is compiler artifacts	session-20261114T231750-d1c755b0	2026-11-14T23:23:25Z
 cover:decidiq:a5f973bbmae46:81b1241f	already done: lib/Portal/*.php measures 246/246 (100%) on development with the whole unit suite	session-20261114T214733-589f5bff	2026-11-14T23:23:20Z
 fix:filinq:2070:e3723880	merged development in cleanly, unit+jest green, new head 88c64439; REVERIFY recorded	session-20261114T222427-f171565a	2026-11-14T23:23:41Z
+cover:pipelinq:7f9dc8e6m799d:js06645759	already done: src/components/* lines 1389/1423 (97.61%, vitest v8) on development 0d8e11ea2, above 95 target; remainder is a few lines per file; no PR	session-20261114T225452-4fcfea7f	2026-11-14T23:23:51Z
