@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Db\Schema;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CalendarDateKindException;
+use OCA\OpenRegister\Service\Dbal\ReadOnlyQueryGuard;
 
 /**
  * Validates a schema configuration, keeping what passes and recording what it drops.
@@ -34,6 +35,16 @@ use OCA\OpenRegister\Exception\CalendarDateKindException;
  * @spec exclude schema plumbing moved out of the entity, not a capability of its own
  */
 final class ConfigurationValidator {
+
+	/**
+	 * The annotation that names a schema's object source.
+	 */
+	private const OBJECT_SOURCE_ANNOTATION = 'x-openregister-object-source';
+
+	/**
+	 * The id of the database object-source provider, whose config may carry a query.
+	 */
+	private const DATABASE_PROVIDER = 'dbal-source';
 
 	/**
 	 * Routes each key to its rule.
@@ -117,6 +128,10 @@ final class ConfigurationValidator {
 	 * @return array The values the key keeps; empty when it is dropped.
 	 */
 	private function keptValues(int|string $key, mixed $value): array {
+		if ((string)$key === self::OBJECT_SOURCE_ANNOTATION) {
+			$this->guardSourceQuery(source: $value);
+		}
+
 		try {
 			$accepted = $this->entries->validateConfigurationEntry(key: $key, value: $value);
 		} catch (InvalidArgumentException $e) {
@@ -129,6 +144,46 @@ final class ConfigurationValidator {
 
 		return $accepted;
 	}//end keptValues()
+
+	/**
+	 * Refuse a database source whose query is not a single read (design D-1).
+	 *
+	 * The guard runs on save so an author learns at once that a statement will
+	 * never be read, and again on every read with the source's own platform.
+	 * The whole save fails rather than the key being dropped: without its
+	 * object source the schema would read as an ordinary, empty, writable one.
+	 * Comment syntax here is the most lenient (MySQL's, which also strips `#`)
+	 * because the source's platform is not known at save; the read re-checks
+	 * with the real one.
+	 *
+	 * @param mixed $source The `x-openregister-object-source` value.
+	 *
+	 * @throws \InvalidArgumentException When the query is not a single read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	private function guardSourceQuery(mixed $source): void {
+		if (is_array($source) === false || ($source['provider'] ?? null) !== self::DATABASE_PROVIDER) {
+			return;
+		}
+
+		$query = ($source['config']['query'] ?? null);
+		if (is_string($query) === false || trim($query) === '') {
+			return;
+		}
+
+		try {
+			(new ReadOnlyQueryGuard())->assert(sql: $query, platform: 'mysql');
+		} catch (InvalidArgumentException $e) {
+			throw new InvalidArgumentException(
+				sprintf('%s.config.query was refused: %s', self::OBJECT_SOURCE_ANNOTATION, $e->getMessage()),
+				0,
+				$e
+			);
+		}
+	}//end guardSourceQuery()
 
 	/**
 	 * Drop a refused key, or fail the whole save when the key must not degrade.
