@@ -9650,3 +9650,4 @@ planninq	1179	837bd1985b561477e04b186193c9bb7228d2203d	GREEN	worker-24	phpunit 1
 hermiq	1794	2758eae5e3b21ed994d0bd19e9a9775594e3287a	REVERIFY	worker-45	merged development; admin-root.spec.js now expects the Code sandbox section the change adds (REQ-SANDBOX-004) and stubs CodeSandboxSettings; vitest 1491/0, phpunit 5172/0; new head 97a61ef1f8c212a30d231ab9df7c34b874c3600a, verify it
 launchpad	1195	f694b2e8401e3db775151339ce224d26c770f6b4	GREEN	worker-17	phpunit 4142 (baseline 4136, 1 inherited fail OpenApiStabilityTest), vitest 2250 pass, no new failures
 launchpad	1206	5b45315f8b0fd72199c96b6b23d131c63a02846d	GREEN	worker-17	phpunit 4142 (baseline 4136, 1 inherited fail OpenApiStabilityTest), vitest 2250 pass, no new failures
+hermiq	1735	61ad767f2f1d16530dfa278b6a27961e11c2f6d8	REVERIFY	worker-41	merged development in (clean); unit 5188 OK with the openregister sibling checkout; new head 9368c9eef41649b4fe9983a2f9898dc17608ab16, verify it
