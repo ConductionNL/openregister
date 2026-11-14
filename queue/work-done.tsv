@@ -8406,3 +8406,4 @@ build:stackiq:architecture-views-to-office-documents	partial: PR #1910 — Task 
 merge:hermiq:1729:25446213	stale	feeder	2026-11-14T08:45:24Z
 merge:opencatalogi:2597:34a6413e	stale	feeder	2026-11-14T08:45:24Z
 build:stackiq:landscape-migrate-from-previous-catalogue	failed: too big for one task: CmdbImportProfile hard-codes the five TOPdesk TARGETS, so a second profile (supplier/module/version/usage) first needs the profile loader generalised; suggest splitting that out as its own change	session-20261114T082642-0151cb21	2026-11-14T08:46:38Z
+build:stackiq:mcp-full-action-surface	partial: PR #1912, provider/alias/validator/contract+admin gates and the 3 contract tools; fragment, publication gate, other tools open	session-20261114T065626-0651b305	2026-11-14T08:46:41Z
