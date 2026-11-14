@@ -12078,3 +12078,4 @@ verify:filinq:2113:7a633dc7	2 GREEN (2113,2123), 3 CONFLICT (2114,2121,2126 on f
 verify:decidiq:2188:86d66dfe	3 GREEN (2188,2199,2210); unit 4455 ok, vitest ok	session-20261114T234944-ee1416bc	2026-11-14T23:56:25Z
 verify:larpinq:1050:eb04f1a2	GREEN 1053; CONFLICT 1054,1056 (settings/mock register vs 1053, clean on development alone); 1050 skipped (head moved); unit 848 OK, vitest 548	session-20261114T225452-4fcfea7f	2026-11-14T23:56:35Z
 review:filinq:2079:eb1a5b1d	GREEN: spec-conformant, 6860 unit + 767 vitest OK	session-20261114T234952-566b7ef5	2026-11-14T23:56:47Z
+fix:hermiq:1754:8f57a36c	merged development (AdminRoot conflict resolved), l10n moved mid-catalogue; new head 2a87aaa9	session-20261114T224738-9571d712	2026-11-14T23:56:58Z
