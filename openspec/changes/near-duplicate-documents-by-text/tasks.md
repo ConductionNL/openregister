@@ -13,7 +13,7 @@
 
 ## 3. Match rule (REQ-NDT-003)
 
-- [ ] 3.1 Accept `method: text` in the `x-openregister-dedup` validator and score it in `DuplicateDetectionService`. Verify: `tests/Unit/Service/Quality/DuplicateTextRuleTest.php::testTwoObjectsWithNearIdenticalFilesArePaired` through `DuplicateController::index()`, `testAnObjectWithoutFilesScoresZero`.
+- [x] 3.1 Accept `method: text` in the `x-openregister-dedup` validator and score it in `DuplicateDetectionService`. Verify: `tests/Unit/Service/Quality/DuplicateTextRuleTest.php::testTwoObjectsWithNearIdenticalFilesArePaired` through `DuplicateController::index()`, `testAnObjectWithoutFilesScoresZero`. Built: the validator and `DedupRuleResolver` accept a text rule without a field; `lib/Search/Service/Quality/ObjectTextSimilarity.php` reads the run's file signatures once and `DuplicateDetectionService` scores each pair's best file similarity into `PayloadComparator::score()` as a prescored rule reported as `text` in `matchedOn`. An unsaved candidate (`checkCandidate()`) has no files, so a text rule does not count there.
 - [ ] 3.2 Show `text` in the duplicates review. Verify: `tests/e2e/ci/near-duplicate-documents.spec.ts` seeds two objects with near-identical PDFs, opens the duplicates review and sees the pair marked as a text match.
 
 ## 4. Cross-app

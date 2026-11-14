@@ -91,6 +91,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param TextGroupFinder $textGroups Groups files by their text signatures.
+	 * @param ObjectTextSimilarity|null $objectTexts Scores the `text` match rule; without it a text rule counts for nothing.
 	 *
 	 * @return void
 	 *
@@ -102,6 +103,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 		private readonly DismissedPairStore $dismissals,
 		private readonly LoggerInterface $logger,
 		private readonly TextGroupFinder $textGroups,
+		private readonly ?ObjectTextSimilarity $objectTexts = null,
 	) {
 		$this->ruleResolver = self::ruleResolverOver(sources: $sources);
 		$this->comparator = new PayloadComparator(similarity: $sources->similarity);
@@ -573,29 +575,65 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * @return array<int, array<string, mixed>> The pairs at or above the cut-off.
 	 */
 	private function scorePartitions(DedupRun $run): array {
+		$texts = $this->textSignaturesFor(run: $run);
 		$pairs = [];
 		foreach ($this->partition(objects: $run->getObjects(), blockingKeys: $run->getBlockingKeys()) as $bucket) {
-			array_push($pairs, ...$this->scoreBucket(bucket: $bucket, run: $run));
+			array_push($pairs, ...$this->scoreBucket(bucket: $bucket, run: $run, texts: $texts));
 		}
 
 		return $pairs;
 	}//end scorePartitions()
 
 	/**
+	 * The file signatures of the run's objects, read once, when a rule compares text.
+	 *
+	 * @param DedupRun $run The run.
+	 *
+	 * @return array<string, list<list<int>>>|null Uuid => signatures; null when no rule compares text or it cannot be scored.
+	 *
+	 * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-a-schema-can-declare-text-similarity-as-a-match-rule-req-ndt-003
+	 */
+	private function textSignaturesFor(DedupRun $run): ?array {
+		if ($this->objectTexts === null || $this->textRules(rules: $run->getRules()) === []) {
+			return null;
+		}
+
+		$uuids = array_map(static fn (ObjectEntity $object): string => (string) $object->getUuid(), $run->getObjects());
+		try {
+			return $this->objectTexts->signaturesOf(uuids: $uuids);
+		} catch (Throwable $e) {
+			$this->logger->warning('Duplicate detection could not read the text signatures: ' . $e->getMessage());
+			return [];
+		}
+	}//end textSignaturesFor()
+
+	/**
+	 * The text rules among the match rules.
+	 *
+	 * @param array<int, array<string, mixed>> $rules Match rules.
+	 *
+	 * @return list<array<string, mixed>> The text rules.
+	 */
+	private function textRules(array $rules): array {
+		return array_values(array_filter($rules, static fn (array $rule): bool => ObjectTextSimilarity::isTextRule(rule: $rule)));
+	}//end textRules()
+
+	/**
 	 * Score every pair within a bucket and collect those above the cut-off.
 	 *
 	 * @param array<int, ObjectEntity> $bucket Objects in one block.
 	 * @param DedupRun $run The run, with the rules and cut-off.
+	 * @param array<string, list<list<int>>>|null $texts The objects' file signatures, when a rule compares text.
 	 *
 	 * @return array<int, array<string, mixed>> The pairs at or above the cut-off.
 	 */
-	private function scoreBucket(array $bucket, DedupRun $run): array {
+	private function scoreBucket(array $bucket, DedupRun $run, ?array $texts=null): array {
 		$bucket = array_values($bucket);
 		$count = count($bucket);
 		$pairs = [];
 		for ($i = 0; $i < $count; $i++) {
 			for ($j = ($i + 1); $j < $count; $j++) {
-				$result = $this->scorePair(pair: [$bucket[$i], $bucket[$j]], rules: $run->getRules());
+				$result = $this->scorePair(pair: [$bucket[$i], $bucket[$j]], rules: $run->getRules(), texts: $texts);
 				if ($result['score'] >= $run->getCutOff()) {
 					$pairs[] = $result;
 				}
@@ -610,14 +648,19 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 *
 	 * @param array{0: ObjectEntity, 1: ObjectEntity} $pair The two objects.
 	 * @param array<int, array<string, mixed>> $rules Match rules.
+	 * @param array<string, list<list<int>>>|null $texts The objects' file signatures, when a rule compares text.
 	 *
 	 * @return array{objectA: string, objectB: string, score: float, matchedOn: array<int, string>}
 	 *
 	 * @spec openspec/changes/mdm-dedup-nested-paths/tasks.md#task-2
 	 */
-	private function scorePair(array $pair, array $rules): array {
+	private function scorePair(array $pair, array $rules, ?array $texts=null): array {
 		[$a, $b] = $pair;
-		$result = $this->comparator->score(payloads: [($a->getObject() ?? []), ($b->getObject() ?? [])], rules: $rules);
+		$result = $this->comparator->score(
+			payloads: [($a->getObject() ?? []), ($b->getObject() ?? [])],
+			rules: $rules,
+			prescored: $this->textScores(pair: $pair, rules: $rules, texts: $texts)
+		);
 
 		return [
 			'objectA' => (string) $a->getUuid(),
@@ -626,4 +669,43 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 			'matchedOn' => $result['matchedOn'],
 		];
 	}//end scorePair()
+
+	/**
+	 * The text rules scored for one pair: the highest similarity between their files, 0 when either has none.
+	 *
+	 * @param array{0: ObjectEntity, 1: ObjectEntity} $pair  The two objects.
+	 * @param array<int, array<string, mixed>>        $rules Match rules.
+	 * @param array<string, list<list<int>>>|null     $texts The objects' file signatures; null scores no text rule.
+	 *
+	 * @return list<array{field: string, method: string, weight: float, similarity: float}>
+	 *
+	 * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-a-schema-can-declare-text-similarity-as-a-match-rule-req-ndt-003
+	 */
+	private function textScores(array $pair, array $rules, ?array $texts): array {
+		if ($texts === null || $this->objectTexts === null) {
+			return [];
+		}
+
+		$similarity = $this->objectTexts->similarity(
+			first: ($texts[(string) $pair[0]->getUuid()] ?? []),
+			second: ($texts[(string) $pair[1]->getUuid()] ?? [])
+		);
+
+		$scored = [];
+		foreach ($this->textRules(rules: $rules) as $rule) {
+			$weight = 1.0;
+			if (is_numeric($rule['weight'] ?? null) === true) {
+				$weight = (float) $rule['weight'];
+			}
+
+			if ($weight > 0.0) {
+				$scored[] = [
+					'field' => ObjectTextSimilarity::MATCHED_ON, 'method' => ObjectTextSimilarity::METHOD,
+					'weight' => $weight, 'similarity' => $similarity,
+				];
+			}
+		}
+
+		return $scored;
+	}//end textScores()
 }//end class

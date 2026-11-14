@@ -135,6 +135,11 @@ class DedupRuleResolver {
 			return false;
 		}
 
+		// A text rule compares attached files and has no field (REQ-NDT-003).
+		if (ObjectTextSimilarity::isTextRule(rule: $rule) === true) {
+			return true;
+		}
+
 		return (string) ($rule['field'] ?? '') !== '' && (string) ($rule['method'] ?? '') !== '';
 	}//end isWellFormed()
 
