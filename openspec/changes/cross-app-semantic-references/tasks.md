@@ -31,10 +31,11 @@
 
 ## 4. Discovery surface (OpenRegister)
 
-- [ ] 4.1 Extend the integrations OCS capability payload with `semanticProviders:
+- [x] 4.1 Extend the integrations OCS capability payload with `semanticProviders:
   [{ uri, register, schema, appId, available, reason }]` computed from
   resolvable schemas + provider availability.
   > second pass, not built: `IntegrationsCapability::getCapabilities()` runs whenever Nextcloud builds the capabilities (page loads included), and the provider list needs every schema (`SemanticTypeResolver` enumerates `SchemaMapper::findAll()` and walks `allOf`). It needs a cached list invalidated on schema and app changes before it can go there; `GET /api/schemas/resolve-by-implements` (4.2) already serves the on-demand lookup.
+  > third pass: built on a cached list. `SemanticProviderCatalogue` builds the rows (`uri, register, registerSlug, schema, schemaSlug, appId, available, reason`; `reason` is `app-disabled` or `app-not-installed`) from the schemas the user can see. It caches them per user in a distributed cache for an hour, and `SemanticProviderCacheListener` empties that cache on any schema, register, app-enable or app-disable event. `IntegrationsCapability` advertises the list as `semanticProviders` and falls back to `[]` when the list fails. Tests: `SemanticProviderCatalogueTest`, `SemanticProviderCacheListenerTest`, `IntegrationsCapabilityTest`.
 - [x] 4.2 Add `@NoAdminRequired` `SchemasController::resolveByImplements(uri)`
   returning the resolved `{register, schema}` or `null`. (verified: lib/Controller/SchemasController.php, appinfo/routes.php, tests/Unit/Controller/SchemasControllerTest.php)
 - [ ] 4.3 API test both surfaces (present provider, absent provider → null,
