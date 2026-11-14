@@ -7682,3 +7682,4 @@ thematiq	1674	98968446d60e5b546f797cc8e7b368a08816d711	GREEN	worker-09	phpunit t
 keepiq	1790	8cf6924577ebc6c2c1f23f068e8f3bedfccfb849	GREEN	worker-35	phpunit 4975 OK (baseline 4975 OK), vitest 6440 passed (baseline 6414), no new failures
 keepiq	1792	6fa603979fa7084585210ec3ba74c6e9e265a0f2	CONFLICT	worker-35	conflicts with development plus 1790
 larpinq	1048	c6276ffe5f6d09819449da01522854818e4f376d	GREEN	worker-24	php 813 (base 792, 0 failures), vitest 506 pass; owner/game-master sheet access as the change specifies
+larpinq	1049	3b90a2cbb3d5c6af836669e61e0ca14cfb6bfef4	RED	worker-24	vitest tests/vitest/effectiveManifest.golden.spec.js: 'has the menu the inline pipeline built' and 'has the pages the inline pipeline built, in the same order' fail with this PR alone on development (pass on base); golden needs re-recording; php suite clean
