@@ -10265,3 +10265,4 @@ build:buildiq:lifecycle-import-app-and-cli:c2	PR #1645 (follow-up, #1598 merged)
 verify:hermiq:1725:7d6a5851	GREEN 1725 1779; CONFLICT 1757 1762 (tree only, l10n)	session-20261114T141010-8dc8bd74	2026-11-14T16:45:57Z
 fix:shillinq:2991:f7e28a5d	conflict resolved (l10n, version, register lock), suite green, pushed b7472331, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T16:46:04Z
 build:dossiq:capability-rows-say-the-whole-capability:c4	partial: PR #6520 row 1.7 (RoleActs + admin card, tests); left: provider rows to their apps, 1.9/1.12/1.16-1.18/1.22/1.24/2.17-2.19 larger features, 3.1/3.2 hand-over; suite no new failures	session-20261114T154751-59b4cd56	2026-11-14T16:46:13Z
+fix:buildiq:1632:a746e5ea	conflict resolved (validator imports + l10n), new head c06b2a4f, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T16:46:23Z
