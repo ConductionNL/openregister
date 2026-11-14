@@ -8567,3 +8567,4 @@ hermiq	1740	95293ea1f01ba6d78a4638da3db914c8bc091885	CONFLICT	worker-29	conflict
 filinq	2124	803f8a8705729868e4adea70abd1b08d06332f61	GREEN	worker-14	unit 6793 OK on tree (baseline 6736 OK), vitest 752 OK, no new failures; builds document-waarmerk-certification per its specs
 dossiq	6513	94e99bfa5bbbbe91b76502d389cf40ef354ec4f5	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 filinq	2105	2929a64c8a81ffd9acafec313ab0e61ceb37e4c8	GREEN	worker-08	phpunit 6834 OK (baseline 6736 OK, 6 skipped), vitest 762 passed, php -l clean; builds office-template-authoring per its specs; no new failures
+learniq	2514	2e2444ab4454d26a110258855a257f891ba0768c	REVERIFY	worker-22	No change: merges cleanly onto current development; the conflict came only from stacking it after another unmerged PR; new head 2e2444ab4454d26a110258855a257f891ba0768c, verify it alone or first
