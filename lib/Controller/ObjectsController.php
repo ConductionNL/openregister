@@ -800,7 +800,7 @@ class ObjectsController extends Controller {
 		$schemaEntities   = $this->crossTableEntities(ids: $schemas, kind: 'schema');
 		$pairs            = [];
 		foreach ($registerEntities as $registerEntity) {
-			foreach ($schemaEntities as $schemaEntity) {
+			foreach ($this->crossTableSchemasOf(register: $registerEntity, schemaEntities: $schemaEntities) as $schemaEntity) {
 				if ($registerEntity->isMagicMappingEnabledForSchema(
 					schemaId: $schemaEntity->getId(),
 					schemaSlug: $schemaEntity->getSlug()
@@ -813,6 +813,36 @@ class ObjectsController extends Controller {
 
 		return $pairs;
 	}//end crossTablePairs()
+
+	/**
+	 * The schemas a cross-table search names, as seen from one register.
+	 *
+	 * A slug two registers share resolved globally to one of them; inside this
+	 * register it names this register's own schema, read once per register
+	 * and only for slugs. Ids, uuids and slugs the register does not carry
+	 * keep the schema resolved up front.
+	 *
+	 * @param Register              $register       The register.
+	 * @param array<string, Schema> $schemaEntities The schemas resolved up front, by the reference the search used.
+	 *
+	 * @return array<string, Schema> The schemas, by reference.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function crossTableSchemasOf(Register $register, array $schemaEntities): array {
+		$scoped = [];
+		foreach ($schemaEntities as $ref => $schemaEntity) {
+			$ref = (string)$ref;
+			$own = null;
+			if (is_numeric($ref) === false && ($register->getSchemas() ?? []) !== []) {
+				$own = $this->services->store->schemaMapper->findBySlugInIds(slug: $ref, schemaIds: $register->getSchemas());
+			}
+
+			$scoped[$ref] = ($own ?? $schemaEntity);
+		}
+
+		return $scoped;
+	}//end crossTableSchemasOf()
 
 	/**
 	 * Resolve the registers or schemas of a cross-table search, skipping (and logging) invalid ones.
