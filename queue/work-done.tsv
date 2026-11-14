@@ -11402,3 +11402,4 @@ fix:shillinq:3000:5625ba51	conflict resolved, new head 4004df626e1b846c7829deea4
 build:opencatalogi:woo-document-assessment-screen:c2	all code tasks done: PR #2688 (redaction page 4.1, Redact action 2.3) + openregister PR #10573 (GET /api/entity-relations?fileId=); left e2e/live 5.1,5.3,5.4	session-20261114T214719-cd72efa7	2026-11-14T22:05:08Z
 verify:portaliq:2500:8218d706	GREEN 2500	session-20261114T212457-7a749dbd	2026-11-14T22:05:28Z
 verify:stackiq:1906:092f4d41	GREEN 1906 1908 1926 1930 1951; CONFLICT 1933 1938 1941 1943; no new failures	session-20261114T214742-7aa14b57	2026-11-14T22:06:06Z
+fix:stackiq:1905:dc6d3343	sbom regenerated, --check passes; new head 99fed107, REVERIFY recorded	session-20261114T204759-2444e6ca	2026-11-14T22:06:17Z
