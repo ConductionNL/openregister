@@ -8088,3 +8088,4 @@ shillinq	3061	82553c9acb867def23064b5060def89f0bd5b4f1	GREEN	worker-25	phpunit-u
 shillinq	3056	212bba18361520ede85e52f2fe28a28017c0e537	GREEN	worker-40	phpunit 11050->11076 tests, baseline green, no new failures; vitest 2713 (1 inherited dunningNextRun failure, also on development)
 shillinq	3057	2ba4b36560fbd27f73fabef7b3aeccd6c4963d81	GREEN	worker-40	phpunit 11050->11076 tests, baseline green, no new failures; vitest 2713 (1 inherited dunningNextRun failure, also on development)
 shillinq	3058	771e437d85af16e87262e2fbcee07a534c5ab1da	GREEN	worker-40	phpunit 11050->11076 tests, baseline green, no new failures; vitest 2713 (1 inherited dunningNextRun failure, also on development)
+shillinq	2975	a74bb305d61265bf01084dd0f5eb1b1b68137d4c	GREEN	worker-38	phpunit 11075 ok (baseline 11050 ok); vitest 1 inherited fail dunningNextRun (baseline same); build ledger-period-end matches specs
