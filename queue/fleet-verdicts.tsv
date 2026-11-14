@@ -8340,4 +8340,6 @@ learniq	2506	e3c542f67b25cc2e7c32f3bbdc4348543ab57b2f	REVERIFY	worker-56	l10n ca
 decidiq	2176	26e67dc64895f61b5ddd15038a271411c25dabec	REVERIFY	worker-57	merged development in, l10n conflicts (en/nl js/json) resolved keeping both sides' keys, test:l10n OK; new head 825a0640eaffd22feb08b4e5e7554833640b72bd, verify it
 shillinq	3050	b62151d4c34aad6eb814644a90bef24e81e0acf9	GREEN	worker-01	unit 11191 on the tree (baseline 11184, 0 failures before and after); vitest 46/46 on the touched specs; php -l clean; build of enforced-schema-authorization: a release-reason guard listener, additive
 shillinq	3065	59e20f973150af922603f9855f61313f0934e2b0	CONFLICT	worker-01	conflicts on top of development+3050: l10n en/nl
+pipelinq	3821	547ce3a39010816573d785333019d456eb9182c1	GREEN	worker-58	unit 8400 run on tree (baseline 8388 OK, 2 skipped), 0 new failures; build of reports-compare-periods-and-scheduled-delivery matches REQ-RPD-002
 shillinq	3063	02b19218febcc3b6fe72eee1b884fbbdbca04282	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.91 -> 2.89
+pipelinq	3836	b5fa5c079a7cbbe73eb44b434358524f68e59533	GREEN	worker-58	unit 8400 run on tree (baseline 8388 OK, 2 skipped), 0 new failures; build of data-portability-full-export attached files per REQ-DPE-002
