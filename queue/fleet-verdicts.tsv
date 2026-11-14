@@ -8026,3 +8026,21 @@ shillinq	2972	c133a9da0f018b477cd7a122835df69aa83ceec2	GREEN	worker-24	unit suit
 portaliq	2444	fc4cf85f6732ff700c30c3ccc157079ee6189cc3	REVERIFY	worker-36	merged development in: register version collision resolved (this branch 0.112.0, portal 0.30.0, clear of #2434/#2437), l10n both sides, .js rebuilt; unit 5187 OK, node specs 4 fails = development baseline; did not merge #2440 (open), re-check the tree; new head 5cdcdfc491fba7d9ab5890a8ae38b70374fa9c36, verify it
 integriq	3546	0b8d072db66354d32aa6feb59827d9617af24319	RED	merge3:merge-gate	GATE RED floor: duplication: 3.76 -> 3.74
 integriq	3564	4fdc043f287402841d9e155e44528ecbcf546c34	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.97 -> 3.92
+integriq	3539	19e9055d0d08f2dc6237536d03ceee1efb69bf3d	CONFLICT	merge3	merges clean on development alone; files: lib/Service/CallService.php 
+integriq	3540	cce40cdaa44914e0bb0097dbbd96a3b7e55d03f1	RED	merge3	new unit failures ActionSeedCoverageTest::testEverySeededActionDefaultsToAdminWithALabelAndAnArea + ActionMatrixControllerTest::testGetMatrixGivesEachSeededActionALabelAndAnArea: seeded action job.schedule-preview has no label/area in the matrix
+integriq	3545	c1939271fed7e0c24dd69fd2af3b26b62ef0b91e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
+integriq	3549	1db0c824ec97177583d04c82e3cea987258764b6	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
+integriq	3557	a7f1750e5f86eaefcccfc48da8e92997219c4165	CONFLICT	merge3	merges clean on development alone; files: appinfo/routes.php lib/Service/EndpointService.php 
+integriq	3569	85f5f4b5d2459ab21976919bf9463212b0e42bf5	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+integriq	3572	173aef7f8c60f7871cb6e75311e135293ccec764	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json lib/Controller/IntakeChannelsController.php openapi.json 
+integriq	3574	4879743207913454780555162b88ae2a71343b96	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
+integriq	3578	ece4d99dfa1cae2b141a775e2782b98795297913	CONFLICT	merge3	merges clean on development alone; files: lib/Service/EndpointService.php 
+integriq	3582	da7df603e24436c0c5855ccca85472a3c4167729	CONFLICT	merge3	merges clean on development alone; files: openapi.json 
+integriq	3584	5c6ec02c65edb352d5bcdce0523a2c16f24d6254	CONFLICT	merge3	merges clean on development alone; files: lib/EventListener/EventListenerBindings.php lib/Service/CatalogRegistryService.php tests/Unit/Service/CatalogRegistrySeedGoldenTest.php tests/fixtures/application-registration-order.json 
+integriq	3585	54c3167e0ab8f4bc25cc5b8edda74ac4d7568c6e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+integriq	3588	f2c639eeed04d9c0ec0a8bd70f534148e8f1aae1	CONFLICT	merge3	merges clean on development alone; files: docs/features/README.md l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/integriq_register.json 
+integriq	3592	f5a90aa9d8521c0e3f027890fb707bcedff852a0	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json lib/Service/JobService.php 
+integriq	3593	242407825c135afba2cf51a6a5be28e64ed35661	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Service/ServiceBindingsFactoriesTest.php 
+integriq	3595	7a399d4ef63b97d29507baa122e0dbbaaf635411	CONFLICT	merge3	merges clean on development alone; files: lib/EventListener/EventListenerBindings.php tests/Unit/Service/CatalogRegistrySeedGoldenTest.php tests/fixtures/application-registration-order.json 
+integriq	3601	25189bc82ccd2a0ae552c0d0fc0ac7542e40476e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
+integriq	3602	aef1753267c64c46e220247dda6081ad3af71b8d	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
