@@ -11989,3 +11989,4 @@ cover:hermiq:065f1631mcdb5:b3dd490e	PR #1799: ScopedPassageSource + ImageGenerat
 fix:versioniq:709:45a2d42c	no change: clean on development; tree-only conflict with #692 (both append a command in info.xml), REVERIFY at same head	session-20261114T231756-01da210e	2026-11-14T23:40:09Z
 build:opencatalogi:api-says-what-it-filtered:c2	PR #2720: 3.1 AppliedFilters in both OpenAPI docs + parity test, 3.2 integrator doc; 4.1 gated on D10 skipped; 5.2/5.3 CI tooling not run; suite 5600, same 2 inherited failures	session-20261114T225452-4fcfea7f	2026-11-14T23:40:03Z
 fix:versioniq:714:8da32088	moved its l10n keys so it no longer conflicts with #698/#707, new head bab85cc5	session-20261114T214733-589f5bff	2026-11-14T23:40:33Z
+fix:larpinq:1050:a1b099f3	no change: a1b099f3 already contains development; the l10n conflict is with unmerged #1039/#1048/#1049, merge development in after they land	session-20261114T221743-dbe5c07e	2026-11-14T23:40:39Z
