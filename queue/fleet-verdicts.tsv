@@ -10008,3 +10008,7 @@ opencatalogi	2695	a0a2b92ec000df3cbeb5f86b63625a6fc60a74b2	REVERIFY	worker-34	mo
 launchpad	1223	60f58983158604cd0bca025a4b41eb87110d9c5a	REVERIFY	worker-01	no change needed: branch already contains development dc36afff and merges clean; new head 60f58983158604cd0bca025a4b41eb87110d9c5a (unchanged), verify it
 hermiq	1767	69628bfa7e3249300984c45a5f519fc59c745036	RED	merge3:merge-gate	GATE RED absolute floor: hermiq maintainability 3.73 after merge is below its floor 3.77
 launchpad	1229	66aa995c6aedb648f6257f9897418001b34b56eb	GREEN	worker-17	PHP unit 4196 baseline (1 inherited failure OpenApiStabilityTest::testEveryOperationIsPublicOrInternal) -> 4273 on tree, same 1 failure, none new; php -l clean; no JS; builds scheduled-exports per its specs, owner-or-admin checks in service
+hermiq	1735	9368c9eef41649b4fe9983a2f9898dc17608ab16	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json 
+hermiq	1736	a4bcf7a9dc2dabc7dc5598001f67f289678d2567	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
+hermiq	1791	94f2f048b95566885321310262e09e46e982823f	CONFLICT	merge3	merges clean on development alone; files: appinfo/routes.php lib/Settings/hermiq_register.json src/modals/AgentFormModal.vue tests/Fixtures/Golden/agent-form-payload.json 
+hermiq	1792	2d3f556e025d556e204520c04d51a4bc22648876	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json lib/Notification/Notifier.php 
