@@ -7737,3 +7737,4 @@ fix:learniq:2502:20eb3a98	no change: merges clean on development; conflict only 
 fix:learniq:2516:c60e8cb8	conflict resolved, new head 140091fc; REVERIFY recorded	session-20261114T070344-897ffa0f	2026-11-14T07:09:31Z
 fix:shillinq:2959:94bd9e96	conflict resolved, pushed ee38037a, REVERIFY; development suite fatals (stale trait import in HoursSubjectAuditCommand)	session-20261114T062142-da017174	2026-11-14T07:09:40Z
 fix:pipelinq:3742:9c19413d	l10n keys relocated so #3742 merges clean after #3707; pushed 64271ebc, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:09:53Z
+fix:learniq:2518:6f169224	no change: merges clean on current development; remaining conflict only with other unmerged tree PRs, resolve after they land	session-20261114T070346-2d3b1362	2026-11-14T07:10:05Z
