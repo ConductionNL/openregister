@@ -8718,3 +8718,4 @@ build4:openregister:api-test-coverage:c2	partial: no code-only work left; build 
 measure:openregister:20261114h08	php 95.08% (pcov, phpunit.xml Unit suite; phpunit-unit.xml needs a Nextcloud tree), js 92.5%	session-20261114T082640-df1db926	2026-11-14T09:47:22Z
 build:pipelinq:reports-compare-periods-and-scheduled-delivery:c2	partial: PR #3821 (2.3 per-recipient RBAC extraction and mail, 2.4 run outcome + owner notification, 2.5 tests); left 1.3, 3.1, 3.2 frontend and 3.3 live; phpunit 7898/0 fail	session-20261114T075644-ec2e07ac	2026-11-14T09:47:31Z
 cover:openregister:7350e3efma401:3ec0a637	done: PR #10473, 17 tests in 4 files for lib/AppHost/Service (AppHost tests alone 90.2->97.4%); no new failures; note phpunit-unit.xml bootstrap broken on main without Nextcloud (OCP not registered before IntegriqStubs)	session-20261114T062200-62a0b439	2026-11-14T09:47:26Z
+verify:dossiq:6495:7228b06a	GREEN 6495, 6496	session-20261114T065631-b4991134	2026-11-14T09:48:06Z
