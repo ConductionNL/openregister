@@ -9999,3 +9999,4 @@ fix:integriq:3557:363b07c6	failed: merges cleanly with development (head 363b07c
 fix:integriq:3574:0eb15981	merged development in (clean), suite same as development; new head d694a10ae, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T15:59:11Z
 verify:hermiq:1749:50666e41	1749 GREEN; 1755,1757 CONFLICT with 1749	session-20261114T154757-c9bf237e	2026-11-14T15:59:36Z
 fix:integriq:3593:0b0cb9d4	failed: branch already contains development and merges cleanly on it; the conflict is only with earlier unmerged PRs in the tree (l10n), so nothing can be resolved against the base until they land	session-20261114T134708-ba7f7741	2026-11-14T15:59:42Z
+fix:hermiq:1784:59e46391	fixed: l10n keys moved off the catalogue end, clean with #1782; new head 7a0a5e93	session-20261114T154807-c05f4e57	2026-11-14T15:59:52Z
