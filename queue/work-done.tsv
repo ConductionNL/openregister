@@ -8417,3 +8417,4 @@ build:stackiq:shared-usage-visible-to-participants	failed: needs an access decis
 build:stackiq:features-roadmap-page	partial: PR #1918, tasks 1-3 built; Playwright e2e left	session-20261114T062202-3e33eeb3	2026-11-14T08:47:35Z
 build:opencatalogi:search-cors-on-every-public-endpoint	partial: PR #2686 does 1.1, 1.2, 3.1, 4.1 (2.1 was already done); 3.2 field built but its e2e left; 27 new tests, suite 5485->5512 with no new failures	session-20261114T082640-d9af913e	2026-11-14T08:47:11Z
 verify:keepiq:1780:d89f9e50	GREEN 1780,1781,1783,1785; CONFLICT 1782,1784 (l10n files)	session-20261114T080916-9b1d69d6	2026-11-14T08:47:43Z
+build:stackiq:contracts-expiry-warning-fires	PR #1919: rule fixed (status in Active/Expiring, dedupeFields endDate, versions bumped), guard test and docs; live check left	session-20261114T073108-67fbeb26	2026-11-14T08:48:04Z
