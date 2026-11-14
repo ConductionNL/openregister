@@ -10519,3 +10519,4 @@ integriq	3633	2cf69c00a89f7e878553792c7b1c9409b9db0053	CONFLICT	worker-52	merge 
 integriq	3637	cfec360e12db5196fefbce1216d21ebd98db0b1f	GREEN	worker-52	php 9292 tests on tree, baseline 9162 with 2 errors 5 failures, no new failures; vitest 2321 passed
 larpinq	1039	7b286ddee5d0f6c1861115d440505c5929d72503	GREEN	worker-51	tree 1039+1048+1052: phpunit 857 OK, vitest 548 passed; phpunit baseline 832 OK; vitest baseline 548 passed; new endpoint buy() guarded per character (owner/GM), per change
 larpinq	1048	258a4b907098477295a89e6d2696b2967a4c6ca9	GREEN	worker-51	tree 1039+1048+1052: phpunit 857 OK, vitest 548 passed; phpunit baseline 832 OK; vitest baseline 548 passed; owner/GM sheet access as player-character-sheet-access specifies
+larpinq	1052	1b2b0ad356c9f3412103f96707507ed8a1869548	GREEN	worker-51	tree 1039+1048+1052: phpunit 857 OK, vitest 548 passed; phpunit baseline 832 OK; vitest baseline 548 passed
