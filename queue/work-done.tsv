@@ -10164,3 +10164,4 @@ build4:openregister:identity-survives-a-move:c3	no code tasks left: 1.2 route ex
 fix:shillinq:3074:714defc1	stale	session-20261114T151802-aefa9c5e	2026-11-14T16:24:36Z
 fix:planninq:1169:1268ee2b	conflict resolved: l10n keys relocated, merges cleanly after 1158/1159/1162; REVERIFY 64a5c7efa1b0c1dd8bebd0d6737a43309cad99c6	session-20261114T161806-530176c3	2026-11-14T16:24:48Z
 merge:hermiq:1736:920ff480	merge3 tree of 12 hermiq PRs: merged=5 red=1 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:25:14Z
+merge:hermiq:1723:109b6198	merge3 tree of 12 hermiq PRs: merged=5 red=1 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:25:17Z
