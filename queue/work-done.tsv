@@ -10929,3 +10929,4 @@ merge:planninq:1169:6c882f71	merge3 tree of 7 planninq PRs: merged=3 red=3 fail=
 fix:learniq:2536:c7133ae4	conflict resolved, new head b3147dbe; REVERIFY recorded	session-20261114T194015-817c4278	2026-11-14T20:33:16Z
 review:portaliq:2443:b5fa534f	GREEN; phpunit 5785 ok	session-20261114T194743-e736657e	2026-11-14T20:33:23Z
 fix:integriq:3593:13184c4f	conflict resolved, new head b76109f8	session-20261114T201755-10d43934	2026-11-14T20:33:29Z
+fix:hermiq:1792:0d15ce6a	fixed: ScheduleService ctor param placed apart from #1767; tree dev+1736+1767+1792 green; new head 2d3f556e	session-20261114T192501-803bcb19	2026-11-14T20:33:36Z
