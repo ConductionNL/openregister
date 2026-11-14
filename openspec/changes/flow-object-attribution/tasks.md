@@ -1,6 +1,6 @@
 ## 1. Storage
 
-- [ ] 1.1 Add `flow_run`, `flow_node`, `flow_step` (nullable) plus a `flow_run` index to `oc_openregister_audit_trails` in a new `lib/Migration/Version1Date*.php`; verify `occ migrations:execute` applies and the columns exist on MySQL, PostgreSQL and SQLite (code exists, test missing: lib/Migration/Version1Date20260828120000.php)
+- [ ] 1.1 Add `flow_run`, `flow_node`, `flow_step` (nullable) plus a `flow_run` index to `oc_openregister_audit_trails` in a new `lib/Migration/Version1Date*.php`; verify `occ migrations:execute` applies and the columns exist on MySQL, PostgreSQL and SQLite (code exists: lib/Migration/Version1Date20260828120000.php; unit-tested in tests/Unit/Migration/Version1Date20260828120000Test.php, and the migrated SQLite schema carries the columns in tests/Unit/Db/AuditTrailFlowRunFilterTest.php; the live `occ` run on MySQL and PostgreSQL is still open)
 - [x] 1.2 Add the three fields to `AuditTrail` with getters/setters and `addType()` registration; verify a hydrated row round-trips the values through the mapper (verified: lib/Db/AuditTrail.php, tests/Unit/Db/AuditFlowAttributionTest.php)
 
 ## 2. Ambient run context
@@ -17,7 +17,7 @@
 
 ## 4. Hash chain (ADR-003 Rule 4)
 
-- [ ] 4.1 Add the three keys to `AuditTrail::jsonSerialize()` and move `GENESIS_SEED` to `openregister-genesis-v2`; verify a freshly seeded chain verifies end to end under v2
+- [x] 4.1 Add the three keys to `AuditTrail::jsonSerialize()` and move `GENESIS_SEED` to `openregister-genesis-v2`; verify a freshly seeded chain verifies end to end under v2 (verified: lib/Db/AuditTrail/AuditTrailFieldTypes.php `SEALED_FIELDS`, lib/Service/AuditHashService.php `GENESIS_SEED`; tests/Unit/Service/AuditHashFlowAttributionTest.php; the move of v1-seeded instances is the repair step of 5.1)
       > ⚠️ **THE SEED HALF OF THIS TASK IS ALREADY IN THE CODE.**
       > `AuditHashService::GENESIS_SEED` reads `openregister-genesis-v2`, and
       > the development instance's chain is seeded under it (first sealed row's
@@ -30,7 +30,7 @@
       > keys and the migration for instances seeded under v1, whose row 1 now
       > verifies as broken.
 - [x] 4.2 Add `AuditCanonicalV1` — a frozen private copy of the v1 key list and canonicalisation rules, marked never-to-be-updated; verify it reproduces the stored hash of a row sealed before this change (verified: lib/Service/AuditCanonicalV1.php, tests/Unit/Service/AuditCanonicalV1Test.php)
-- [ ] 4.3 Verify tampering with `flow_run`, `flow_node` or `flow_step` on a sealed row makes `verifyChain()` report a break at that row
+- [x] 4.3 Verify tampering with `flow_run`, `flow_node` or `flow_step` on a sealed row makes `verifyChain()` report a break at that row (verified: tests/Unit/Service/AuditHashFlowAttributionTest.php — re-pointed, stripped and added run, renamed node and changed step each break at that row; the tests go red when `flowRun` leaves `SEALED_FIELDS`)
 
 ## 5. Verify-then-rechain migration
 
@@ -41,7 +41,7 @@
 ## 6. Read surfaces
 
 - [x] 6.1 Add `GET /api/flow-runs/{uuid}/objects` returning objects grouped by node with action and step, reusing the visibility rule `FlowRunController::resume()` applies; verify a caller who may not read the run is refused without learning the run exists, a suspended run reports what it has touched so far, and a run that wrote nothing returns an empty collection rather than an error (verified: lib/Controller/FlowRunController.php; refusal without leaking the run in tests/Unit/Controller/FlowRunObjectsGoldenTest.php, the suspended run, the empty run and the caller without a session in tests/Unit/Controller/FlowRunObjectsEdgesTest.php)
-- [ ] 6.2 Add a `flowRun` filter to the audit-trail query and expose the three fields in the audit-trail serialisation; verify filtering returns only that run's rows and a pruned run's rows still read
+- [x] 6.2 Add a `flowRun` filter to the audit-trail query and expose the three fields in the audit-trail serialisation; verify filtering returns only that run's rows and a pruned run's rows still read (verified: lib/Db/AuditTrailMapper.php `FILTER_ALIASES` — `flowRun`, `flowNode` and `flowStep` filter their columns instead of being dropped; tests/Unit/Db/AuditTrailFlowRunFilterTest.php)
 
 ## 7. Frontend
 
