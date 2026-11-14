@@ -9976,3 +9976,4 @@ verify:pipelinq:3818:ed8a85ce	GREEN 3818,3835	session-20261114T151938-8fa99f90	2
 fix:hermiq:1738:441006a0	no change: head 441006a unchanged and merges clean on development; conflicts only with unmerged #1735 (flows-hand-off-and-wait), which needs one of the two landed first, then a development merge into the other	session-20261114T151758-95655a27	2026-11-14T15:56:19Z
 fix:integriq:3572:4ceacefd	merged development (clean), pushed 35bfc428; openapi.json overlap only with #3546, order it after 3546	session-20261114T154751-59b4cd56	2026-11-14T15:56:29Z
 fix:integriq:3582:a9dc2cea	stale	feeder	2026-11-14T15:55:25Z
+fix:hermiq:1757:6d9e76d5	merged development (clean); conflict is with unmerged #1735; new head 52b33f1f	session-20261114T154757-c9bf237e	2026-11-14T15:56:53Z
