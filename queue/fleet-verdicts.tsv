@@ -8969,6 +8969,7 @@ buildiq	1639	10b01657fa89d99803b76323b967f85b98027943	GREEN	worker-26	phpunit 31
 integriq	3601	be3e4259ac257c0fa3cd07f418850dd15d366231	REVERIFY	worker-28	no change: branch already contains development; the conflict is with open PRs 3589/3596 only; head unchanged be3e4259ac257c0fa3cd07f418850dd15d366231, verify it on its own or after those land
 filinq	2118	17b69a70e2add5d767380fa92f9b9085ad2f9d19	GREEN	worker-54	tree 2070+2118 on development 90ad1e68: phpunit 6773 ok (baseline 6754 ok, 6 skipped), vitest 758, jest 537, no new failures; build of signing-cancellation per its change
 filinq	2078	515468bfeec6aec2643ffc364f1823164c0642ac	CONFLICT	worker-54	conflicts on the tree (development+2070): lib/Settings/filinq_register.json
+hermiq	1736	ff4bd9c2b2471dd65a362385a787af15ff3dee6b	REVERIFY	worker-21	merged development in: register description conflict (both v0.55.0) resolved as v0.56.0 keeping both descriptions; unit suite 5064 OK with ../openregister present; new head 7da99d85e1cfa1ac9ef1998dfc64ee9cc3d68c14, verify it
 filinq	2119	5a16fc08252fc625ac4f9c22f9dbe0366e055308	CONFLICT	worker-54	conflicts on the tree (development+2070+2118): l10n/en.js en.json nl.js nl.json
 filinq	2124	5e42335d1e29a3e766b0ba6f1598a6e09e960777	CONFLICT	worker-54	conflicts on the tree (development+2070+2118): src/views/signing/SigningRequestDetail.vue
 filinq	2126	9eb180737f1b58fba101f1f4813d6412b5432250	CONFLICT	worker-54	conflicts on the tree (development+2070+2118): lib/Settings/filinq_register.json
