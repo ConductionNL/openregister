@@ -1638,6 +1638,22 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // kind, its fields, the pin, the follow-up and the raw inbound
         // source. All #[NoAdminRequired] with a per-object RBAC guard in the
         // method body (ADR-005/016/029); CSRF stays enabled on the writes.
+        // Messages bound to an object: list, and cancel a scheduled one
+        // (send-at-on-the-messaging-leaf). #[NoAdminRequired] with the object
+        // resolved under the caller's read access in the method body; cancel
+        // also checks author or `update`. CSRF stays enabled on the cancel.
+        [
+            'name' => 'scheduledMessages#index',
+            'url' => '/api/objects/{register}/{schema}/{id}/messages',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
+            'name' => 'scheduledMessages#cancel',
+            'url' => '/api/objects/{register}/{schema}/{id}/messages/{messageId}/cancel',
+            'verb' => 'POST',
+            'requirements' => ['id' => '[^/]+', 'messageId' => '[0-9]+'],
+        ],
         [
             'name' => 'timelineEntries#index',
             'url' => '/api/objects/{register}/{schema}/{id}/timeline',
@@ -2044,6 +2060,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// User - Profile management and authentication.
 		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
+		// Scoped API tokens: the calling principal and the grant its token carries.
+		['name' => 'whoami#show', 'url' => '/api/whoami', 'verb' => 'GET'],
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
 		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],

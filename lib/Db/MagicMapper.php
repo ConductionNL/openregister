@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
+use OCA\OpenRegister\Db\MagicMapper\ObjectEventDeferral;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
@@ -1940,13 +1941,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return false;
 		}
 
-		// 🔴 `_related`, `_referenced` and `_element` are EXISTS subqueries that only the
+		// 🔴 `_related`, `_referenced`, `_ref` and `_element` are EXISTS subqueries that only the
 		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
 		// refuses them, which on this route would end in an uncaught exception
 		// (HTTP 500), so a query carrying either takes the sequential path.
 		// `_relations_contains` has no raw-SQL twin either: a union would answer
 		// without the filter.
-		$builderOnly = ['_related', '_referenced', '_element', '_relations_contains'];
+		$builderOnly = ['_related', '_referenced', '_ref', '_element', '_relations_contains'];
 		if (array_intersect($builderOnly, array_keys($query)) !== []) {
 			return false;
 		}
@@ -9299,6 +9300,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * land before the save returns, and deferring would silently break that
 	 * promise. So this stays off until an instance decides it wants the trade,
 	 * via `occ config:app:set openregister defer_object_events --value=1`.
+	 * A caller that needs the side effects before the response sends
+	 * `X-OpenRegister-Effects: sync` (ObjectEventDeferral), and that request's
+	 * event is dispatched inline as without deferral.
 	 *
 	 * Returns false — meaning "dispatch it inline yourself" — whenever the
 	 * deferral cannot be set up, so a misconfiguration degrades to the current
@@ -9312,7 +9316,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
 	 */
 	private function dispatchCreatedDeferred(ObjectEntity $entity, RegisterSchema $table): bool {
-		if ($this->appConfig->getValueString('openregister', 'defer_object_events', '') !== '1') {
+		if ((new ObjectEventDeferral(appConfig: $this->appConfig, request: $this->currentRequest()))->defers() === false) {
 			return false;
 		}
 
@@ -9355,6 +9359,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}//end try
 
 	}//end dispatchCreatedDeferred()
+
+	/**
+	 * The current request, or null when this write runs outside one (a job, occ).
+	 *
+	 * @return \OCP\IRequest|null The request.
+	 */
+	private function currentRequest(): ?\OCP\IRequest {
+		try {
+			$request = $this->container->get(\OCP\IRequest::class);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		if ($request instanceof \OCP\IRequest === false) {
+			return null;
+		}
+
+		return $request;
+	}//end currentRequest()
 
 	/**
 	 * Update an existing object entity with event dispatching.

@@ -79,6 +79,7 @@ use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Listener\ChangeGateListener;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
@@ -3911,12 +3912,46 @@ class ObjectsController extends Controller {
 			$e instanceof AppendOnlyException => new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED),
 			$e instanceof TranslationTargetConflictException => new JSONResponse(data: $e->toErrorBody(), statusCode: 400),
 			$e instanceof ValidationException, $e instanceof CustomValidationException => $objectService->handleValidationException(exception: $e),
+			$e instanceof HookStoppedException && self::heldChangeAnswer(exception: $e) !== null => self::heldChangeAnswer(exception: $e),
 			$e instanceof HookStoppedException => new JSONResponse(data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()], statusCode: 422),
 			$e instanceof LockedException => $this->lockedResponse(exception: $e),
 			$e instanceof FolderAccessDeniedException => $this->folderAccessDeniedResponse(exception: $e),
 			default => null,
 		};
 	}//end writeRefusal()
+
+	/**
+	 * The answer to a write a change gate held: 202 with the pending change's
+	 * key, or 409 while a pending change of the same gate is still open. Any
+	 * other hook refusal is not a held change and answers as before.
+	 *
+	 * @param HookStoppedException $exception The refusal.
+	 *
+	 * @return JSONResponse|null The answer, or null when the refusal is not a held change.
+	 *
+	 * @spec openspec/changes/records-change-held-for-approval/specs/approval-workflow/spec.md#requirement-an-approval-chain-can-hold-a-change-until-it-is-approved
+	 */
+	private static function heldChangeAnswer(HookStoppedException $exception): ?JSONResponse {
+		$errors = $exception->getErrors();
+		$code   = ($errors['code'] ?? null);
+		if ($code === ChangeGateListener::CODE_PENDING) {
+			return new JSONResponse(
+				data: [
+					'message' => $exception->getMessage(),
+					'pendingChange' => (string)($errors['pendingChange'] ?? ''),
+					'object' => (string)($errors['object'] ?? ''),
+					'chain' => (string)($errors['chain'] ?? ''),
+				],
+				statusCode: Http::STATUS_ACCEPTED
+			);
+		}
+
+		if ($code === ChangeGateListener::CODE_OPEN) {
+			return new JSONResponse(data: ['error' => $exception->getMessage(), 'errors' => $errors], statusCode: Http::STATUS_CONFLICT);
+		}
+
+		return null;
+	}//end heldChangeAnswer()
 
 	/**
 	 * Why an `_upsertOn` request cannot proceed, or null when it can.
