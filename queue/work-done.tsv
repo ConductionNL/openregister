@@ -10945,3 +10945,4 @@ build:shillinq:sales-webshop-orders:c4	partial: PR #3073 (head 8b6796bd6) built 
 verify:shillinq:3051:f42d6ccd	3051 CONFLICT (ServiceRegistrarTest vs development); 3055 GREEN: unit 11396 0 failures, vitest only inherited dunningNextRun	session-20261114T194744-563ce177	2026-11-14T20:36:19Z
 verify:humaniq:1125:c3833d20	GREEN 1125, GREEN 1145; tree 4330 OK	session-20261114T194740-7cca8afd	2026-11-14T20:36:39Z
 review:filinq:2079:dc28f783	GREEN: spec-driven (two changes), ownership kept; phpunit 6817 OK	session-20261114T194745-243de12d	2026-11-14T20:36:46Z
+fix:integriq:3574:67ece58a	l10n insertion points moved, merges with every tree sibling; new head daca1f8965	session-20261114T194935-f789346b	2026-11-14T20:37:00Z
