@@ -11728,3 +11728,4 @@ build:stackiq:organisations-role-mapping-and-access-review:c2	PR #1946 updated: 
 verify:versioniq:690:6eb3b7a4	690 GREEN, 712 GREEN; skipped (head moved): 691 692 694 699 703 706 718	session-20261114T221756-d9538cf9	2026-11-14T22:58:16Z
 verify:stackiq:1924:b400b408	1924 GREEN; 1946 skipped: head moved to 5f9d3840	session-20261114T224756-971efe57	2026-11-14T22:58:24Z
 build:versioniq:releases-version-facts:c2	partial: PR #734 built 1.2, 2.1, 2.2, 3.2, 4.2 (unit 1712/2 inherited); left 2.3 (waits on install-multi-instance-promotion), 4.1 picker UI + 4.3 strings, 4.4 e2e, 5.1 archive	session-20261114T211012-c469e919	2026-11-14T22:58:38Z
+verify:versioniq:712:17aab136	729 GREEN; 712, 719, 723 skipped (heads moved since the task)	session-20261114T214930-79d5b35c	2026-11-14T22:58:46Z
