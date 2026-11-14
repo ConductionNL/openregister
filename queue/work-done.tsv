@@ -8181,3 +8181,4 @@ build:launchpad:engagement-activity-digest	nothing to build: tasks 1-4 already o
 gap:keepiq:complexity:d652781b	failed: permission (downloading a Kotlin syntax checker was refused; the max-CCN offender is mobile/android ItemDetailScreen.kt ItemDetail CCN 45, plus vendored argon2 C 37/34; refactor not pushed unverified)	session-20261114T075644-ec2e07ac	2026-11-14T08:17:18Z
 fix:integriq:3584:f4e22d30	merged development (clean), pushed 5c6ec02c; remaining conflict is with unlanded tree PRs	session-20261114T065626-0651b305	2026-11-14T08:17:40Z
 verify:learniq:2516:863cf63e	GREEN 2516, GREEN 2521; no new failures (phpunit or node)	session-20261114T062202-3e33eeb3	2026-11-14T08:17:54Z
+fix:hermiq:1740:80684962	fixed: null guard in DepartmentSwitch, +1 test; new head 3d96250b, REVERIFY recorded	session-20261114T075640-614c8df8	2026-11-14T08:18:02Z
