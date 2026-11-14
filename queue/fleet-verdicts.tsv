@@ -8474,3 +8474,10 @@ filinq	2118	3335401f9db44ee7c9bdf04e3a6fbe2558c1e0c6	CONFLICT	merge3	conflicts w
 filinq	2124	e55ecf9223b0780b31103e2917fa8eaa29855798	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/views/settings/Settings.vue tests/jest/golden/settings-page.json 
 filinq	2119	948c6cd49bb2e212e99579bcf2dbd46843ceab7e	REVERIFY	worker-32	merged development in: kept both settings sections and l10n keys, rebuilt catalogues; phpunit 6736 ok, jest 550 ok, vitest 751 ok; new head 8d9239c18eecd7aa3ec7a7c83b22c97e9c3529bd, verify it
 shillinq	3059	2d5c27283126710009d4a274e282e4ac034e42c6	GREEN	worker-49	phpunit 11225 OK (baseline 11203 OK); vitest 2742, 1 failure inherited from development (dunningNextRun ENABLED_PROPERTY); no new failures
+decidiq	2149	9c7128558a1d00d002cbfa05d0eadb8708d0b132	CONFLICT	worker-03	conflicts with plain development: l10n/en.js en.json nl.js nl.json
+decidiq	2171	c22e208da2ebe146eac87961d44154253dcf6dd1	CONFLICT	worker-03	conflicts with plain development: l10n en/nl js+json, tests/Unit/RegisterAuthorizationTest.php
+decidiq	2175	19e6648e17bdd1afaa754bece6585b9b902a2fd6	GREEN	worker-03	tree dev+2175+2193+2194+2195: unit 4191 OK (baseline 4174 OK), vitest 2759 pass, no new failures; builds platform-microsoft-365-calendar-and-teams, additive only
+decidiq	2181	207ca46a911f312062ccebf1ede258fc787da832	CONFLICT	worker-03	clean on development alone, conflicts after #2175: l10n en/nl js+json
+decidiq	2193	03fef7f11207c7492d4a975306397dbcd79b1e66	GREEN	worker-03	tree dev+2175+2193+2194+2195: unit 4191 OK (baseline 4174 OK), vitest 2759 pass, no new failures; builds routes-send-proposal-along-route task 2 (agenda placement guard) as its change asks
+decidiq	2194	6149ccc2e258510796b34ae501550faea5c0ae31	GREEN	worker-03	tree dev+2175+2193+2194+2195: unit 4191 OK (baseline 4174 OK), vitest 2759 pass, no new failures; builds toezeggingen-ingekomen-stukken, no lib change
+decidiq	2195	158130f3b08c16cbd16bba727ac257cc30bb76f6	GREEN	worker-03	tree dev+2175+2193+2194+2195: unit 4191 OK (baseline 4174 OK), vitest 2759 pass, no new failures; builds capability-rows-get-requirements, no lib change
