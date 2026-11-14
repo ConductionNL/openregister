@@ -2888,3 +2888,8 @@ hermiq	1715	47d76c7cf8852efb3d4e181065c868036fa09e0a	RED	merge3	GATE RED floor: 
 hermiq	1782	f0562d6f013540c84154271800e3a6102ac05d3e	RED	merge3	GATE RED floor: unit_interfacing: 2.45 -> 2.43
 hermiq	1790	5e82a5ebfcf2826bfe6ff14d7b9da29c257efa35	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
 hermiq	1793	fb17183cdd4dddbdb8756f87ad4fe8fb5eb3031d	RED	merge3	GATE RED floor: unit_complexity: 4.52 -> 4.50
+learniq	2493	b4d28b9283d5249cfc45f1efc77193c139b7d6b3	RED	merge3	GATE RED floor: unit_complexity: 4.35 -> 4.32
+learniq	2515	f8a8874234220f1fd7d319ff4688894d097bfb47	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2520	eb56a06d586ad0869e2703ec0267bc42bc0f7ea6	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2531	4185b758f553340c9a7c1e16ff9356f6d7f75653	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2541	6a283faba384ab440427851957870c2890495d84	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
