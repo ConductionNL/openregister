@@ -8537,3 +8537,4 @@ build:larpinq:character-player-picker	PR #1037 (tasks 1-5 already on development
 fix:launchpad:1210:886f85bb	tree conflict with #1209 removed (l10n keys moved up), development merged, pushed 256d3e09	session-20261114T065635-61264d14	2026-11-14T09:03:37Z
 verify:versioniq:691:eecdb461	691 GREEN; 692 CONFLICT with #691 (AutoUpdateJob.php)	session-20261114T065633-3e3cb668	2026-11-14T09:03:47Z
 fix:opencatalogi:2678:c98dd334	merged development (clean), pushed d4e2c6f1; conflict is with unlanded tree PRs	session-20261114T065626-0651b305	2026-11-14T09:04:07Z
+build:versioniq:safety-withdrawn-and-revoked	partial: PR #720 builds withdrawn versions (store, sweep installedWithdrawn, install refusal; 10 tests, 0 new failures); revocation list + recheck left	session-20261114T062200-62a0b439	2026-11-14T09:04:18Z
