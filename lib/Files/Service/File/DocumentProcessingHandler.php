@@ -482,8 +482,8 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * Verify the written copy against every redacted value and keep the verdict.
 	 *
 	 * The verdict is kept on the copy's metadata, where the publish guard
-	 * reads it, and on this run's log row. Logs carry the verdict, the routes
-	 * and counts, never a value.
+	 * reads it, and on this run's log row: the verdict, the routes and
+	 * counts, never a value.
 	 *
 	 * @param File                  $output       The copy as written.
 	 * @param array<string, string> $replacements Needle to placeholder: the values that must not be recoverable.
@@ -506,18 +506,6 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		);
 		$this->lastVerification = RedactionVerdictStore::publicForm(verification: $result);
 		$this->redaction->verdicts?->record(fileId: (int)$output->getId(), verification: $result);
-
-		if ($this->lastVerification['mayBePublished'] === false) {
-			$this->logger->warning(
-				'DocumentProcessingHandler: the anonymised copy is not clean',
-				[
-					'fileId' => (int)$output->getId(),
-					'verdict' => $this->lastVerification['verdict'],
-					'outputMode' => $this->lastVerification['outputMode'],
-					'findings' => $this->lastVerification['findings'],
-				]
-			);
-		}
 	}//end verifyWrittenCopy()
 
 	/**
@@ -1156,6 +1144,29 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	}//end sanitiserStep()
 
 	/**
+	 * The text-bearing parts of an Office container, in package order.
+	 *
+	 * @param ZipArchive $zip The open container.
+	 *
+	 * @return list<string> The part names.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-3.2
+	 */
+	private static function containerTextParts(ZipArchive $zip): array {
+		$parts = [];
+		for ($index = 0; $index < $zip->numFiles; $index++) {
+			$name = (string)$zip->getNameIndex($index);
+			if (in_array($name, ['content.xml', 'styles.xml', 'xl/sharedStrings.xml'], true) === true
+				|| preg_match('#^(xl/worksheets/sheet|ppt/slides/slide)[0-9]+\.xml$#', $name) === 1
+			) {
+				$parts[] = $name;
+			}
+		}
+
+		return $parts;
+	}//end containerTextParts()
+
+	/**
 	 * Replace words inside a sanitised Office ZIP container's text parts.
 	 *
 	 * Used for the ODT path: the sanitised derivative is a valid ODT ZIP, so
@@ -1179,9 +1190,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		}
 
 		// ODT text content lives in content.xml; styles/headers may also carry
-		// visible text. Apply replacements to the text-bearing parts.
-		$textParts = ['content.xml', 'styles.xml'];
-		foreach ($textParts as $part) {
+		// visible text. A spreadsheet's text is in its shared strings and, as
+		// inline strings, in its sheets; a presentation's is in its slides.
+		// Apply replacements to the text-bearing parts.
+		foreach (self::containerTextParts(zip: $zip) as $part) {
 			$xml = $zip->getFromName($part);
 			if ($xml === false) {
 				continue;

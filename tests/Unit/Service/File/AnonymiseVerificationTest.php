@@ -333,7 +333,7 @@ class AnonymiseVerificationTest extends TestCase {
 			entities: [['text' => 'Jan Jansen', 'entityType' => 'PERSON', 'key' => 'p1']]
 		);
 
-		$this->assertNotSame([], $this->logLines, 'a leaking copy is logged');
+		$this->assertNotSame([], $this->logLines, 'the run logs');
 		foreach ($this->logLines as $line) {
 			$this->assertStringNotContainsStringIgnoringCase('jan jansen', $line);
 		}
