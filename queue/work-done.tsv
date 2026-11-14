@@ -9770,3 +9770,4 @@ verify:learniq:2521:9ce1d457	CONFLICT 2521 with development (register)	session-2
 verify:filinq:2069:9098be00	2 GREEN (2069, 2100); unit 6777 OK, vitest 751 OK	session-20261114T151750-b10540e9	2026-11-14T15:21:18Z
 build:learniq:report-card-pdf-to-guardians:c2	x	session-20261114T141737-e9e54940	2026-11-14T15:21:23Z
 fix:humaniq:1139:d55d4144	merged development, l10n conflict resolved keeping both; new head 540268b1	session-20261114T151936-6991f242	2026-11-14T15:21:24Z
+build:hermiq:delegation-runs-in-parallel:c2	partial: PR #1785 builds 1.2 DelegatedRunJob + claim and 1.3 parallel wait (grace, inline fallback, timeout), 23 tests; left 2.1 chat steps on HmChat, 3.1 gate run	session-20261114T141737-e9e54940	2026-11-14T15:21:33Z
