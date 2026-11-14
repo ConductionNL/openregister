@@ -8376,3 +8376,4 @@ build:opencatalogi:scanned-attachments-become-searchable	partial: PR #2679, task
 build:stackiq:federation-pull-fetches-the-peer	failed: the change does not name the peer endpoint the pull reads (path, paging shape, where the peer's organisation name comes from); needs a design line before Task 1, and Tasks 2-3 build on what Task 1 records	session-20261114T062134-840bbeee	2026-11-14T08:42:48Z
 verify:keepiq:1786:a8b5a1cd	1786 GREEN; 1787,1788 CONFLICT (l10n vs 1786)	session-20261114T062156-16c77e6a	2026-11-14T08:42:58Z
 fix:stackiq:1706:5ba0e54b	conflict resolved, pushed dcde9ef2, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T08:43:19Z
+build:stackiq:architecture-shared-usage-on-views	partial: PR #1903, overlay mapping util + tests (task 2), task 1 already on development; page tasks wait for architecture-views-editor, export task 4 left	session-20261114T062156-e8adf8ca	2026-11-14T08:43:28Z
