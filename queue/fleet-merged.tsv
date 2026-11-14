@@ -2951,3 +2951,16 @@ planninq	1167	b566c9819ebd534939a6b06a693d5e6345edb546	RED	merge3	GATE RED floor
 planninq	1169	b5cc95224da0aaca56ffadc758517f3655d8a639	RED	merge3	GATE RED floor: overall: 4.83 -> 4.81; unit_interfacing: 4.70 -> 4.47
 planninq	1170	610e91fd90b929d8bf4a2702777a5c9c58aaef7a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.72
 planninq	1178	3c7b73e8ca14fd90976e83e402ec201379e56535	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.72
+integriq	3592	70be0200dd77aca2fac76f59d3fffc01f09bdc9e	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3595	7d624dc8ce92826b30bb0d6259d4fd40c1b894b7	RED	merge3	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3634	fc69f0f0a47b7ee97c1af2ffacbc711f5174bc23	RED	merge3	GATE RED floor: module_coupling: 5.03 -> 5.00
+keepiq	1801	b18c5187d1591f799825995df27dd774c3cad309	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1802	10522d79d5e9f9d37b695cc3f91541fff035304c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+launchpad	1203	3942bf49f8be1cd3c9155de7001207efa099f6a9	RED	merge3	GATE RED floor: unit_complexity: 4.75 -> 4.72
+launchpad	1205	c133356449a4a95815a728177ef52e3feed1b9b7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.65
+launchpad	1208	68b22419f76bdb28cde1f02b2c17099f43e29907	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.65
+launchpad	1210	360cba65e5d977258afd3634294087d11f8d6638	RED	merge3	GATE RED floor: unit_complexity: 4.75 -> 4.73
+launchpad	1215	507cc1f085745611834ee76e087ea94366e82e2c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.65
+launchpad	1222	8b68eeb3f425ded57606bb8c51ebcbec33489723	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.65
+launchpad	1223	bde0c65bc53ccd454d74c1f6654ca25e761c2d29	RED	merge3	GATE RED floor: unit_interfacing: 3.44 -> 3.37
+launchpad	1224	9b93d2fae68898af1e824d933e7acca9a0532c49	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
