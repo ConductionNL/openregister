@@ -60,7 +60,7 @@ class Version1Date20261114120000 extends SimpleMigrationStep {
 	 * @param Closure              $schemaClosure Returns the schema wrapper.
 	 * @param array<string, mixed> $options       Migration options.
 	 *
-	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
+	 * @return ISchemaWrapper The schema, changed or not: a null return drops the shared snapshot.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
@@ -101,11 +101,9 @@ class Version1Date20261114120000 extends SimpleMigrationStep {
 			}
 		}
 
-		if ($changed === false) {
-			return null;
+		if ($changed === true) {
+			$output->info('Added the import run lineage, prune mark, submitted row and row outcome columns');
 		}
-
-		$output->info('Added the import run lineage, prune mark, submitted row and row outcome columns');
 
 		return $schema;
 	}//end changeSchema()

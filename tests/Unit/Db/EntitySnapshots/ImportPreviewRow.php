@@ -17,6 +17,8 @@ return array (
     'payload' => 'json',
     'appliedAt' => 'datetime',
     'created' => 'datetime',
+    'source' => 'json',
+    'outcome' => 'string',
   ),
   'empty' => 
   array (
@@ -34,6 +36,10 @@ return array (
     ),
     'appliedAt' => NULL,
     'created' => NULL,
+    'source' => 
+    array (
+    ),
+    'outcome' => NULL,
   ),
   'filled' => 
   array (
@@ -53,6 +59,11 @@ return array (
     ),
     'appliedAt' => '2026-01-02T03:04:05+00:00',
     'created' => '2026-01-02T03:04:05+00:00',
+    'source' => 
+    array (
+      'k' => 'source',
+    ),
+    'outcome' => 'outcome-v',
   ),
   'filledUpdated' => 
   array (
@@ -66,6 +77,8 @@ return array (
     7 => 'payload',
     8 => 'appliedAt',
     9 => 'created',
+    10 => 'source',
+    11 => 'outcome',
   ),
   'refused' => 
   array (
