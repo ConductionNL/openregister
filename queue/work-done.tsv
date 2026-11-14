@@ -11790,3 +11790,4 @@ build:larpinq:worlds-maps:c2	done: PR #1049 head ad99dd01; built 1.2 seed + Worl
 fix:larpinq:1052:e1874075	fixed: unit_interfacing (award 4->2 params, moderate band 10.37%->9.96%); suite 799 OK; new head 1b2b0ad3	session-20261114T225452-4fcfea7f	2026-11-14T23:08:07Z
 verify:larpinq:1041:fd0b344e	1041 GREEN, 1045 GREEN, 1051/1053/1054 CONFLICT; phpunit 852 ok, vitest 548 ok	session-20261114T224742-00d4fbcb	2026-11-14T23:08:40Z
 fix:integriq:3596:caba8462	merged development, floor holds (unit_size 3.56), pushed dd7babfc, REVERIFY	session-20261114T214735-aacd1703	2026-11-14T23:08:49Z
+verify:stackiq:1946:c951cbb8	1946 GREEN; 1966 skipped (head moved to 0000ed25 after the queued sha)	session-20261114T224754-e4a2fcab	2026-11-14T23:09:06Z
