@@ -7119,3 +7119,4 @@ integriq	3551	677767dda177d9393e82bac7f46350b9a8ed045f	GREEN	worker-27	tree 3543
 pipelinq	3732	58e89f857926dae5f0577dd7f38b890aff55f545	CONFLICT	worker-48	conflicts with #3721 in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
 pipelinq	3812	c1cd8b0da193fc5676aa6796199b1e7ec4d27d8b	GREEN	worker-48	tree unit 8034 run, baseline 7890 green, 0 new failures; vitest 4912 green; tests only
 pipelinq	3813	90202bac4dcfbd7eed2489d0236919e610d5d91a	GREEN	worker-48	tree unit 8034 run, baseline 7890 green, 0 new failures; vitest 4912 green; tests only
+shillinq	2974	f91c770a9581188930aea4b377f906413e16f0c1	GREEN	worker-36	phpunit 10799 tests on tree, baseline 10752 with 15 inherited failures, new failures 0 (development itself fatals in HoursSubjectAuditCommand: stale trait import; measured with a local one-line fix); vitest 1 inherited failure (dunningNextRun), none new
