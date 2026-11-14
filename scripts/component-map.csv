@@ -1563,6 +1563,7 @@ Notifications/Service/Notification/RecipientAudience.php,10,Notifications,Notifi
 Notifications/Service/Notification/RecipientDelivery.php,15,Notifications,Notifications,Notifications/Service/Notification/RecipientDelivery.php,0,,Notifications
 Notifications/Service/Notification/RecipientResolverInterface.php,7,Notifications,Notifications,Notifications/Service/Notification/RecipientResolverInterface.php,26,491,Notifications
 Notifications/Service/Notification/RecipientSource.php,13,Notifications,Notifications,Notifications/Service/Notification/RecipientSource.php,0,,Notifications
+Notifications/Service/Notification/ReferrersRecipientValidator.php,48,Notifications,Notifications,Notifications/Service/Notification/ReferrersRecipientValidator.php,0,,Notifications
 Notifications/Service/Notification/ReplyThreadResolver.php,99,Notifications,Notifications,Notifications/Service/Notification/ReplyThreadResolver.php,0,,Notifications
 Notifications/Service/Notification/RuleFiring.php,44,Notifications,Notifications,Notifications/Service/Notification/RuleFiring.php,0,,Notifications
 Notifications/Service/Notification/RuleReachRecorder.php,49,Notifications,Notifications,Notifications/Service/Notification/RuleReachRecorder.php,0,,Notifications

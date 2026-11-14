@@ -10,7 +10,8 @@
 
 ## 2. Referrers kind
 
-- [ ] 2.1 `referrers` in the validator with `of`, `register`, `schema`, `property` and a nested block that may not contain `referrers`. Verify: validator tests naming each refused field.
+- [x] 2.1 `referrers` in the validator with `of`, `register`, `schema`, `property` and a nested block that may not contain `referrers`. Verify: validator tests naming each refused field.
+      > 2026-11-14: `referrers` is a recipient kind, checked by `ReferrersRecipientValidator`: `register`, `schema` and `property` must be non-empty (`notification-recipient-referrers-missing`, naming the key), `of` when present must be a property of the triggering schema (`-bad-of`), `recipients` must be a non-empty list (`-no-recipients`) with no `referrers` inside (`-nested`, naming `recipients[i]`), and each nested entry passes the usual checks (a nested `field` names a property of the referring schema, so only its presence is checked). Whether the named register, schema and property exist is not checked at save: the validator has no schema lookup; a missing one resolves nobody at dispatch and is recorded there. Tests: `tests/Unit/Notifications/Service/Notification/ReferrersRecipientValidatorTest.php`.
 - [ ] 2.2 Resolution through `findByRelationBatchInSchema()` with the 10 and 200 caps and the `referrers-truncated` diagnostic. Verify: a new `tests/Unit/Service/Notification/NotificationRecipientResolverReferrersTest.php` for direct referrers, `of`, the cap, a nested `object-acl` and a reached user without read on the triggering object.
 
 ## 3. Tests and docs
