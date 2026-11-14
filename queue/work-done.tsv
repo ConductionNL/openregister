@@ -7666,3 +7666,4 @@ review:dossiq:6237:53871137	GREEN: tests only, 0 new failures	session-20261114T0
 fix:pipelinq:3614:e56b0d3e	obsolete: development already has a fuller ListObjectStoreTest; PR closed	session-20261114T062200-6a28e40c	2026-11-14T06:51:17Z
 review:dossiq:6204:d2fc826c	GREEN tests only, 0 new failures	session-20261114T062156-16c77e6a	2026-11-14T06:51:51Z
 fix:pipelinq:3708:d1e03085	l10n conflict resolved + import order, vitest green, pushed e4400e7482c9834e2d49bcbae17506c7cef25889	session-20261114T062202-3e33eeb3	2026-11-14T06:53:03Z
+review:dossiq:6287:470df60f	GREEN tests only, 0 new failures	session-20261114T062156-16c77e6a	2026-11-14T06:53:38Z
