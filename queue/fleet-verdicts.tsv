@@ -9128,3 +9128,4 @@ humaniq	1134	57f484fd596bc8f0af99d93c7aa20dd4fe76aa69	CONFLICT	merge3	conflicts 
 buildiq	1608	9907d8e54ffe8c3aec72f3ed8009300de18f07c1	GREEN	worker-51	phpunit 3191 tests, baseline 1 failure (ExportZipGoldenTest), no new failures; vitest 4511 green; builds pages-custom-code as specified (code changes refused unless enabled and owner; MCP strips code)
 hermiq	1739	6d69e90eb847251e9368bee2e600ae0d786fb7d2	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.53 -> 4.51
 hermiq	1788	ab0f629aae0afe31f15da9682e548a9db69a26ab	RED	merge3:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+buildiq	1620	2ef94dee1f1925461fe5d11ffa3855fe26a83087	GREEN	worker-51	phpunit 3191 tests, baseline 1 failure (ExportZipGoldenTest), no new failures; vitest 4511 green; builds form-dutch-field-formats as specified
