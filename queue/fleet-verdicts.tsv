@@ -8502,3 +8502,4 @@ shillinq	2972	0efea67cce902d770f9de079c6722a19eb0b2e61	GREEN	worker-45	unit 1122
 shillinq	2975	b4abe00a4904a15540d40606881ac37917d8a6e1	CONFLICT	worker-45	conflicts in tree after 2972 (appinfo/info.xml, openapi.json, tests/fixtures/register-versions.lock.json); merges clean on plain development
 shillinq	2991	612f317575a843479f2edba95eebc72f62760913	CONFLICT	worker-45	conflicts in tree after 2972 (l10n en/nl js+json, tests/fixtures/register-versions.lock.json); merges clean on plain development
 shillinq	3004	f4e963c1eb4283d11d5f03592248340d8f9f55c2	CONFLICT	worker-45	conflicts in tree after 2972 (l10n en/nl js+json, tests/fixtures/register-versions.lock.json); merges clean on plain development
+shillinq	3057	da7239cadb5817492c2d87f42108964301251c23	GREEN	worker-45	unit 11229 tests on tree, baseline 11203/0 failures, new failures 0; builds ledger-retention-due-records per its specs, per-administration access check present
