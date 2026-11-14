@@ -11678,3 +11678,4 @@ build:versioniq:audit-attribution-and-forwarding:c2	PR #697: built 1.3 origin co
 review:versioniq:685:7f027ce2	GREEN	session-20261114T221800-b231235b	2026-11-14T22:46:24Z
 merge:integriq:3592:7088891f	merge3 tree of 23 integriq PRs: merged=6 red=9 fail=0 skip=0; conflict 5, lint 0, moved 3; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T22:46:27Z
 merge:integriq:3631:a2c0b949	merge3 tree of 23 integriq PRs: merged=6 red=9 fail=0 skip=0; conflict 5, lint 0, moved 3; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T22:46:31Z
+build:buildiq:pages-custom-code:c3	partial: PR #1608 (head 3687676) merged development (l10n conflicts resolved), T05 fx toggle on columns/visibility/field default + 14 vitest cases + en/nl strings; left T04/T07 editors+preview, T06 nextcloud-vue, T08 e2e, T10 (openspec CLI run refused by permission check). vitest 4683 pass; phpunit 1 inherited failure (ExportZipGoldenTest)	session-20261114T204759-5dc9dba7	2026-11-14T22:47:07Z
