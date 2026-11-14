@@ -9192,3 +9192,4 @@ merge:buildiq:1579:e2884240	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=
 merge:buildiq:1587:a93e4a28	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:13Z
 merge:buildiq:1588:ca733c53	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:25Z
 review:openregister:10539:e48a4d13	APPROVE: matches spec; phpstan + Architecture/Rules/Controller/Contract/touched tests green; migration name collides with #10518	session-20261114T114416-aa10a904	2026-11-14T13:07:24Z
+merge:buildiq:1597:c9b17ca0	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:33Z
