@@ -10219,3 +10219,4 @@ fix:learniq:2497:c85c5913	no change: branch already contains development and is 
 verify:pipelinq:3818:2f80b104	CONFLICT 3818 3829 with development (l10n)	session-20261114T141010-8dc8bd74	2026-11-14T16:35:37Z
 verify:integriq:3574:db80d1d8	2 GREEN (3574,3596), 1 CONFLICT (3600)	session-20261114T161744-497aae45	2026-11-14T16:36:11Z
 merge:decidiq:2148:37e7484d	merge3 tree of 21 decidiq PRs: merged=5 red=2 fail=0 skip=0; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-14T16:36:25Z
+merge:decidiq:2175:b7e36fe1	merge3 tree of 21 decidiq PRs: merged=5 red=2 fail=0 skip=0; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-14T16:36:28Z
