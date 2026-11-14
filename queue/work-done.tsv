@@ -11121,3 +11121,4 @@ verify:learniq:2513:2d18b6cc	2521 GREEN; 2513 skipped (head moved e4c3065 -> 672
 build:buildiq:data-external-database-sources:c3	PR #1652: T06-T11 built (reader + fromDatabase wizard path, StartFromDatabase, SqlQueryDialog, docs); left T12 (openspec CLI absent) and the T07 Playwright journey (live)	session-20261114T201755-10d43934	2026-11-14T21:15:24Z
 verify:launchpad:1197:68c31484	3 GREEN (1197,1214,1216); phpunit 4245/0 fail, vitest 2272 pass	session-20261114T211012-c469e919	2026-11-14T21:15:23Z
 verify:learniq:2523:fec4832d	GREEN 2523; no new failures	session-20261114T193415-4b507b08	2026-11-14T21:15:32Z
+build:launchpad:record-parity-requirements:c2	task 4 built on PR #1211 (head 5c5da5e4); all code tasks done, task 5 on archive	session-20261114T201750-64b6fe0f	2026-11-14T21:15:49Z
