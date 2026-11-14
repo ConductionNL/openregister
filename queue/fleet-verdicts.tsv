@@ -6756,3 +6756,4 @@ learniq	2521	6daba5ed48c173e7b0f8afba5945e17d6646ecd1	CONFLICT	worker-14	merge c
 learniq	2522	ba589e01bd0ebab9a0f1e7f16ea2bcdc50d2dbb6	GREEN	worker-14	unit 6615 tests on 3-PR tree, baseline 6575 w/ 1 inherited failure (HigherEducationExampleSetTest), 0 new; js node --test 1339, same 9 inherited failures, 0 new
 learniq	2523	9fae0016dcb648153dc9bf9aa7954cff3641efa2	GREEN	worker-14	unit 6615 tests on 3-PR tree, baseline 6575 w/ 1 inherited failure (HigherEducationExampleSetTest), 0 new; js node --test 1339, same 9 inherited failures, 0 new
 learniq	2524	6053e2e2b8f0b6a0b7831bc9335c21c8aebbff7b	CONFLICT	worker-14	merge conflict with development + earlier tree PRs
+dossiq	6349	6b24d3d0f0f16146bf8b12884dcb36fe073f5a39	REVERIFY	worker-17	merged development; add/add appShell.spec.js resolved to development's superset version, registryContract.spec.js kept; vitest 25/25, eslint clean; new head d1c7c17249209c432f21fd7b70412f3a3f622bce, verify it
