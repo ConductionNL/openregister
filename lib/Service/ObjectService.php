@@ -6686,7 +6686,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function migrate(ObjectMigration $migration): array
     {
         $source       = $this->migrationSource(ref: $migration->source);
-        $targetSchema = $this->utilityHandler->normalizeEntity(entity: $migration->target->schema, type: 'schema');
+        $targetSchema = $this->utilityHandler->normalizeEntity(
+            entity: $migration->target->schema,
+            type: 'schema',
+            register: $migration->target->register
+        );
         if ($source === null || ($targetSchema instanceof Schema) === false) {
             throw new OcpDoesNotExistException('One or more registers/schemas not found');
         }
@@ -6731,7 +6735,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function migrationSource(RegisterSchemaRef $ref): ?RegisterSchema
     {
         $register = $this->utilityHandler->normalizeEntity(entity: $ref->register, type: 'register');
-        $schema   = $this->utilityHandler->normalizeEntity(entity: $ref->schema, type: 'schema');
+        $schema   = $this->utilityHandler->normalizeEntity(entity: $ref->schema, type: 'schema', register: $register);
         if (($register instanceof Register) === false || ($schema instanceof Schema) === false) {
             return null;
         }
