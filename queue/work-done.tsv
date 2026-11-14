@@ -10852,5 +10852,6 @@ build:hermiq:tools-deep-research-report:c4	partial: no code this pass; PR #1790 
 verify:hermiq:1736:ca717681	1736 GREEN, 1767 GREEN, 1792 CONFLICT (ScheduleService.php vs 1767); unit 5167, no new failures; vitest 1487 green	session-20261114T192501-803bcb19	2026-11-14T20:20:27Z
 fix:decidiq:2205:9c878baf	failed: development already merged in; conflicts only with unmerged siblings #2143 #2169 #2172 #2189 #2191 (same append points in l10n, municipality.json, openapi.json, manifest DecisionDetail, simpleDecisionPage widget count); merge development after they land	session-20261114T194935-f789346b	2026-11-14T20:20:47Z
 verify:portaliq:2498:ad719f3d	2498 GREEN, 2500 CONFLICT	session-20261114T201755-10d43934	2026-11-14T20:20:51Z
+build:filinq:redaction-guarantees-from-the-engine:c2	failed: precondition still unmet - openregister main has redaction-release-safeguards 0/20 and redaction-policy-as-data 3/15 ticked; both are being built on build/redaction-* branches, not merged or released; the change says wait for both	session-20261114T194745-243de12d	2026-11-14T20:21:05Z
 review:shillinq:3000:5625ba51	GREEN: unit 11325 OK on PR+development; behaviour changes are specced	session-20261114T194744-563ce177	2026-11-14T20:21:04Z
 verify:planninq:1179:11810379	GREEN 1179: phpunit 1067 ok, vitest 3345 ok	session-20261114T201752-7e06b161	2026-11-14T20:21:11Z
