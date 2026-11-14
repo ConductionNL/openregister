@@ -7797,3 +7797,9 @@ decidiq	2149	c82a792a1a602f97f413b3002b9c629897ff3666	RED	merge3:merge-gate	GATE
 pipelinq	3831	cd981132d7790e59379bd2a232b316a7c9858295	REVERIFY	worker-28	merged development in; structureProfile.spec.js counts both sides' additions (53 entries, 107 pages); vitest 5037/5038 (myWorkPage.spec.js red on plain development too), PHP 8344 OK; new head 368ec966d2fbb2787138d4d96bcfb1b63812eac5, verify it
 portaliq	2415	4f70e4023a105abc5da184ee16e44db10f7f37cc	RED	merge3:merge-gate	GATE RED floor: duplication: 4.30 -> 4.28
 portaliq	2432	81aa6171072aa8c21b105408a5148dd7321c3a3c	RED	merge3:merge-gate	GATE RED floor: duplication: 4.30 -> 4.28
+portaliq	2284	e29a4e8e9962a4592df018ae68d55545bf5404ac	CONFLICT	merge3	conflicts with development; files: lib/Controller/CitizenCaseController.php lib/Controller/ContributionController.php 
+portaliq	2427	43ff8091e149a21ff147bbdde0fe11520238576a	CONFLICT	merge3	merges clean on development alone; files: package.json 
+portaliq	2430	fc437ac24686b9b36baa4a8441496e29b8cbda71	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Settings/PortaliqRegisterConfigTest.php 
+portaliq	2433	ca20ec2f1d419a458a537ebbe99f0d73699c8bc4	CONFLICT	merge3	merges clean on development alone; files: package.json 
+portaliq	2434	4d1b114444b3af9c190d895ef10d779fec265b3a	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Settings/PortaliqRegisterConfigTest.php tests/example-site.spec.mjs 
+portaliq	2442	9eb5c87639509ae900f4bb82d859cb6b12ce72b5	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
