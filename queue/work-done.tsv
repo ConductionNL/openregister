@@ -11475,3 +11475,4 @@ fix:learniq:2544:eab2300d	floor restored to 3.99, new head 51f1817053398a1fa5481
 fix:shillinq:3048:10a5df9d	conflict resolved, new head 2ab1e91c	session-20261114T214733-589f5bff	2026-11-14T22:13:46Z
 build:opencatalogi:woo-national-output-assurance:c2	failed: still blocked, tasks.md says start once diwoo-metadata-on-the-publication is merged; its PR #2655 (head 1c462772) is still open and development has no lib/Settings/diwoo XSD	session-20261114T211808-5e900938	2026-11-14T22:13:50Z
 fix:shillinq:2997:a72f8f14	merged development in clean, suite green; new head 7b590930, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T22:13:53Z
+build:opencatalogi:diwoo-metadata-on-the-publication-filinq-handoff:c2	failed: still blocked on diwoo-metadata-on-the-publication, whose PR #2655 (head 1c462772) is open and not on development	session-20261114T211808-5e900938	2026-11-14T22:14:12Z
