@@ -272,4 +272,79 @@ class AggregationControllerValueGroupedTest extends TestCase {
 		$this->assertTrue($captured->isMultiMetric());
 
 	}//end testGroupedParsesMetricsListIntoQuery()
+	// -----------------------------------------------------------------------
+	// Comma-list metric shorthand (rapportage-bi-export).
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Capture the query the runner receives.
+	 *
+	 * @param AggregationQuery|null $captured Set to the query on the call.
+	 *
+	 * @return void
+	 */
+	private function captureQuery(?AggregationQuery &$captured): void {
+		$this->runner->method('runAdhocByRef')->willReturnCallback(
+			function ($reg, $sch, AggregationQuery $query) use (&$captured) {
+				$captured = $query;
+				return ['groups' => [], 'backend' => 'postgres', 'cached' => false];
+			}
+		);
+
+	}//end captureQuery()
+
+	public function testGroupedCommaMetricListSharesTheFieldExceptForCount(): void {
+		$this->stubParams(['metric' => 'count, sum,avg', 'field' => 'bedrag', 'groupBy' => 'status']);
+		$captured = null;
+		$this->captureQuery($captured);
+
+		$response = $this->makeController()->grouped('reg', 'sch');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertTrue($captured->isMultiMetric());
+		$this->assertSame(
+			[
+				['metric' => 'count', 'field' => null],
+				['metric' => 'sum', 'field' => 'bedrag'],
+				['metric' => 'avg', 'field' => 'bedrag'],
+			],
+			$captured->getMetrics()
+		);
+		$this->assertSame('count', $captured->metric);
+		$this->assertNull($captured->field);
+
+	}//end testGroupedCommaMetricListSharesTheFieldExceptForCount()
+
+	public function testCommaMetricListWithoutAFieldIsRefused(): void {
+		$this->stubParams(['metric' => 'count,sum', 'groupBy' => 'status']);
+		$this->runner->expects($this->never())->method('runAdhocByRef');
+
+		$response = $this->makeController()->grouped('reg', 'sch');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertStringContainsString('sum', $response->getData()['error']);
+
+	}//end testCommaMetricListWithoutAFieldIsRefused()
+
+	public function testCommaMetricListWithAnUnknownMetricIsRefused(): void {
+		$this->stubParams(['metric' => 'count,median', 'field' => 'bedrag']);
+		$this->runner->expects($this->never())->method('runAdhocByRef');
+
+		$response = $this->makeController()->value('reg', 'sch');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertStringContainsString('median', $response->getData()['error']);
+
+	}//end testCommaMetricListWithAnUnknownMetricIsRefused()
+
+	public function testAnExplicitMetricsListWinsOverACommaMetric(): void {
+		$this->stubParams(['metric' => 'count,sum', 'field' => 'bedrag', 'metrics' => [['metric' => 'max', 'field' => 'price']]]);
+		$captured = null;
+		$this->captureQuery($captured);
+
+		$this->makeController()->value('reg', 'sch');
+
+		$this->assertSame([['metric' => 'max', 'field' => 'price']], $captured->getMetrics());
+
+	}//end testAnExplicitMetricsListWinsOverACommaMetric()
 }//end class

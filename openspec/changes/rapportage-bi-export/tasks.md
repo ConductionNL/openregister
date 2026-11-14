@@ -1,6 +1,10 @@
 # Tasks: Rapportage en BI Export
 
 - [ ] Implement: The system MUST provide a general-purpose aggregation API
+      PARTIAL: the API exists as `GET /api/objects/aggregations/{register}/{schema}/value|grouped|timeseries` (count, sum, avg,
+      min, max, groupBy, filters, `metrics[...]` lists). Added the spec's short spelling `metric=count,sum,avg&field=bedrag`
+      (count takes no field); pinned in `AggregationControllerValueGroupedTest`. Left: `having`, zero-filled months, the
+      `{register}/{schema}/aggregate` path and the `results`/`total` envelope.
 - [ ] Implement: The system MUST support configurable report templates
 - [ ] Implement: The system MUST support scheduled report generation
 - [x] Implement: The system MUST support export in CSV, Excel, PDF, and ODS formats
