@@ -9758,6 +9758,7 @@ verify:shillinq:2972:061b1d37	3 GREEN (2972,3057,3063), 4 CONFLICT in tree (2975
 build:decidiq:document-accessibility-check:c2	partial: PR #2149 now has tasks 2,4,5,6 (publication path),7,8 built and tested (unit 4057->4080, vitest 2700->2711 green); left: task 9 percentages/override count/CSV disclaimer (no widget support), e2e/Newman	session-20261114T141746-50f5f9cc	2026-11-14T15:18:34Z
 fix:decidiq:2146:47325aad	fixed: merged development, l10n union, .js rebuilt; new head 5875281c; REVERIFY recorded	session-20261114T144727-6763e1fc	2026-11-14T15:18:42Z
 verify:learniq:2532:c8d0a195	2532 GREEN, 2538 CONFLICT (register, after 2532)	session-20261114T134654-82ca2be5	2026-11-14T15:18:51Z
+build:hermiq:tools-agent-workspace-and-installed-tools:c2	partial: PR #1760 task 3 done (Files panel, list/download/save routes, register 0.55.0 after dev merge); left: 2/4/5 blocked on unbuilt tools-code-sandbox, 6 and 7 not started	session-20261114T144746-30bc6559	2026-11-14T15:18:57Z
 fix:decidiq:2171:c22e208d	merged development, conflicts resolved keeping both sides; new head d0195ef7; REVERIFY recorded	session-20261114T144816-cf37407b	2026-11-14T15:18:57Z
 fix:decidiq:2168:59aba86f	fixed: version pins made at-least checks, vitest green, new head 517bc1d0, REVERIFY	session-20261114T141721-aeb4e068	2026-11-14T15:19:04Z
 verify:decidiq:2170:a5c4b2b7	GREEN 2170,2172; CONFLICT 2173,2192; skipped 2198,2199 (head moved); unit 4242 OK (baseline 4174), vitest 2735 OK	session-20261114T141724-6227a125	2026-11-14T15:19:25Z
