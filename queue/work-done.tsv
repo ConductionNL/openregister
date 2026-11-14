@@ -7906,3 +7906,6 @@ review:shillinq:2819:441fdc81	GREEN: tests only, +27 passing, no new failures	se
 fix:portaliq:2442:53aae580	merged development cleanly, pushed 9a1924638a8447357161f7305c30651471f71ce3, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T07:37:18Z
 build:integriq:objecten-api-facade	already done: every code task is on development (handlers, token service, wiring, declaration reader, catalogue card, docs, tests); only instance-bound tasks remain (e2e, Newman, query plan, openspec validate)	session-20261114T062202-3e33eeb3	2026-11-14T07:37:25Z
 verify:integriq:3540:b6bb08d6	GREEN integriq#3540: 0 new failures (5 inherited), vitest green	session-20261114T073108-8b40426a	2026-11-14T07:37:28Z
+build:integriq:opt-outs-in-an-app-table-and-routing-rules-read-as-config	already done: built in #2528; only 4.1 left (retire recipient_opt_out after the copy has run on every instance), a rollout follow-up	session-20261114T062200-62a0b439	2026-11-14T07:37:35Z
+verify:hermiq:1673:eba73e7e	GREEN 1673,1674,1715; CONFLICT 1714 (with development), 1717,1719,1723,1725,1726 (with 1715)	session-20261114T073105-27c9d15e	2026-11-14T07:38:03Z
+fix:pipelinq:3726:9f496577	documented my-work/week-stats in openapi.json, suite green; REVERIFY at 86f30be74c8565f4ed7232305c282a7334d32443	session-20261114T070909-be4543e0	2026-11-14T07:38:25Z
