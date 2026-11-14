@@ -3043,3 +3043,5 @@ learniq	2547	b382fbfd567a5aed9e36befd4bcbb57769f14849	MERGED	merge3	GATE OK sbom
 shillinq	2977	dcb021934e64d9e0cfbd89ae5afac7f3e66a8332	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
 shillinq	3051	2f5d4cd88a0e33564f8b495a5783dd2df19e345d	RED	merge3	GATE RED floor: unit_size: 4.44 -> 4.42; unit_complexity: 4.96 -> 4.94; unit_interfacing: 2.75 -> 2.73
 shillinq	3079	3c06f6f11901ea64c9f06769f1c53bb0fd903bb5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
+humaniq	1133	fcad2ca7ba5cdb7979eaf1ca6780f2f39871825e	RED	merge3	GATE RED floor: unit_interfacing: 3.63 -> 3.60
+humaniq	1156	40bb5c448af5eb4652c6ba62981cb40d223fc9ee	RED	merge3	GATE RED floor: overall: 4.44 -> 4.42; unit_size: 4.48 -> 4.46; unit_complexity: 3.55 -> 3.50; unit_interfacing: 3.61 -> 3.54
