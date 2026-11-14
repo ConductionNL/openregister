@@ -11523,3 +11523,4 @@ fix:buildiq:1652:ef6d7d01	development merged in, new head b3c39fa0	session-20261
 fix:decidiq:2191:4d6f144b	clean on development; conflict is with a sibling PR; merged development, new head ccb1264	session-20261114T204759-5dc9dba7	2026-11-14T22:21:42Z
 verify:hermiq:1760:f27f6d1e	#1760 GREEN; #1795 skipped (head moved to a4cac7c2)	session-20261114T211808-5e900938	2026-11-14T22:21:49Z
 fix:buildiq:1613:9a9eb9cb	merged development, l10n conflicts resolved; new head 755c76ad, REVERIFY	session-20261114T221756-d9538cf9	2026-11-14T22:22:10Z
+build:filinq:diwoo-documentsoort-to-opencatalogi:c2	blocked: opencatalogi development (a137132) still has no documentsoort on the publication schema; it arrives with opencatalogi #2655 (diwoo-metadata-on-the-publication), still open and being pushed to	session-20261114T201752-7e06b161	2026-11-14T22:22:17Z
