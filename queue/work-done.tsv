@@ -9530,3 +9530,4 @@ fix:portaliq:2443:4da2e8a4	no change: branch up to date with development; confli
 verify:filinq:2105:43315379	2105 GREEN; 2107/2120/2121/2122/2123 CONFLICT after 2105; 2114 skipped (head moved)	session-20261114T134708-0947487e	2026-11-14T14:38:03Z
 build4:openregister:flow-engine-unification:c4	failed: nothing buildable left in openregister: 3.1 remnant (RunFlowOperation) and 3.5 are product decisions, 3.2/5.x/6.3 live in nextcloud-vue and hermiq, 4.2 ADR-031 is not in this repository, 7.x are live checks	session-20261114T131646-cdc565a4	2026-11-14T14:38:22Z
 verify:shillinq:2997:db45dc25	2997 CONFLICT, 3007 CONFLICT (both vs plain development: info.xml, l10n, register lock; 2997 also routes.php); baseline unit 5057 green	session-20261114T131654-c068f436	2026-11-14T14:38:38Z
+fix:shillinq:3050:1bdb43ad	conflict resolved, merged development; new head b62151d4	session-20261114T141727-56b2bf78	2026-11-14T14:39:09Z
