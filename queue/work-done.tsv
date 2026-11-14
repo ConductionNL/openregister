@@ -10422,3 +10422,4 @@ build:learniq:learner-list-and-page-follow-the-boards:c3	partial: PR #2541 build
 build:decidiq:termijnagenda:c3	partial: PR #2203 (new; #2157 was merged) builds tasks 4 board+reschedule dialog, 5 realise/lapse dialogs, 6 overdue KPI (D6 client-side), 22 vitest tests, suite green. Left: task 1 owner rule only warned (OR accepts the save), task 7 e2e	session-20261114T172412-df2c66f1	2026-11-14T17:34:13Z
 fix:pipelinq:3818:44c090e1	merged development, resolved manifest/test conflict; new head 2161a99c, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T17:34:09Z
 fix:humaniq:1125:01e77231	conflict resolved (l10n), new head a44e6b58, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:34:24Z
+fix:learniq:2521:34c33485	floor restored (overall 4.35, size 4.14, complexity 4.38, interfacing 3.13); pushed 5a578a1e, REVERIFY recorded	session-20261114T171832-d4fb04b0	2026-11-14T17:34:40Z
