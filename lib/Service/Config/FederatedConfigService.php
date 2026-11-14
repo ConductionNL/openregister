@@ -385,7 +385,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	}//end repoExists()
 
 	/**
-	 * Create the repo: as an org repo first, then in the authenticated user's namespace.
+	 * Create the repo: as an org repo first, then in the authenticated user's namespace
+	 * unless the target switched that fallback off.
 	 *
 	 * @param BrokeredPublishTarget $destination The target (`owner/repo`, privacy) and the broker credential.
 	 *
@@ -393,7 +394,12 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 */
 	private function createRepo(BrokeredPublishTarget $destination): bool {
 		$owner = $destination->ownerAndName()[0];
-		foreach ([sprintf('/orgs/%s/repos', $owner), '/user/repos'] as $createPath) {
+		$createPaths = [sprintf('/orgs/%s/repos', $owner)];
+		if ($destination->target->allowsUserNamespaceFallback() === true) {
+			$createPaths[] = '/user/repos';
+		}
+
+		foreach ($createPaths as $createPath) {
 			if ($this->tryCreateRepo(createPath: $createPath, destination: $destination) === true) {
 				return true;
 			}
@@ -428,12 +434,19 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	}//end tryCreateRepo()
 
 	/**
-	 * Set a repository's discovery topics (best-effort).
+	 * Add discovery topics to a repository, keeping the topics it already has (best-effort).
+	 *
+	 * GitHub's PUT /topics replaces the whole list, so the existing topics are
+	 * read first and the union is written: publishing into an existing
+	 * repository must not drop that repository's own discovery topics. A list
+	 * that cannot be read counts as empty.
 	 *
 	 * @param BrokeredPublishTarget $destination The target (`owner/repo`) and the broker credential.
-	 * @param array<int, string>    $topics      The topics to set.
+	 * @param array<int, string>    $topics      The topics to add.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/federated-config-sharing/spec.md
 	 */
 	private function setTopics(BrokeredPublishTarget $destination, array $topics): void {
 		$repo = $destination->target->repo;
@@ -450,7 +463,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 				method: 'PUT',
 				path: sprintf('/repos/%s/topics', $repo),
 				headers: ['Accept' => 'application/vnd.github+json'],
-				body: (string)json_encode(['names' => $names])
+				body: (string)json_encode(['names' => self::mergedTopics(topics: $names, existing: $this->existingTopics(destination: $destination))])
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -460,6 +473,57 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		}
 
 	}//end setTopics()
+
+	/**
+	 * The repository's current topic names, [] when they cannot be read.
+	 *
+	 * @param BrokeredPublishTarget $destination The target (`owner/repo`) and the broker credential.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function existingTopics(BrokeredPublishTarget $destination): array {
+		try {
+			$answer = $this->transport->broker->request(
+				credentialId: $destination->credentialId,
+				appId: self::APP_ID,
+				method: 'GET',
+				path: sprintf('/repos/%s/topics', $destination->target->repo),
+				headers: ['Accept' => 'application/vnd.github+json']
+			);
+		} catch (Throwable $e) {
+			return [];
+		}
+
+		$decoded = json_decode((string)($answer['body'] ?? ''), true);
+		if ((int)($answer['status'] ?? 0) !== 200 || is_array($decoded['names'] ?? null) === false) {
+			return [];
+		}
+
+		return $decoded['names'];
+	}//end existingTopics()
+
+	/**
+	 * The new topics plus every other non-empty existing topic, once each, sorted.
+	 *
+	 * @param array<int, string> $topics   The topics to add.
+	 * @param array<int, mixed>  $existing The repository's existing topic names.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/federated-config-sharing/spec.md
+	 */
+	private static function mergedTopics(array $topics, array $existing): array {
+		$names = [];
+		foreach (array_merge($topics, $existing) as $name) {
+			$name = trim((string)$name);
+			if ($name !== '' && in_array($name, $names, true) === false) {
+				$names[] = $name;
+			}
+		}
+
+		sort($names);
+		return $names;
+	}//end mergedTopics()
 
 	/**
 	 * Discover published bundles across GitHub by their type's discovery topic.
