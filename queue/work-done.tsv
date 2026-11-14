@@ -9521,6 +9521,7 @@ fix:decidiq:2162:2dc5d296	conflict resolved, new head 16f8a9d3, REVERIFY recorde
 fix:filinq:2072:68ef821e	no change: clean on development; conflicts only with unmerged #2070; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T14:36:58Z
 build:learniq:open-learning-material:c2	PR #2533: 2.4 server-side NC withholding + free-to-paid test; left 2.3 (integriq has no download), 4.3 (no title-edit surface), 6.x verify lane	session-20261114T141731-49ccbf3f	2026-11-14T14:37:19Z
 review:portaliq:2284:f2a7c870	2284 GREEN	session-20261114T141738-30f539db	2026-11-14T14:37:16Z
+build:learniq:capability-rows-say-what-they-do:c2	partial: PR #2515 adds 2.16 (sign-in fills profile); 2.1-2.10, 2.13-2.15, 3.1, 4.1 left; unit 6715, 1 inherited fail	session-20261114T131653-f4593056	2026-11-14T14:37:22Z
 build:learniq:site-workplace-trainer-portal-design:c2	failed: blocked; PR #2511 is merged; T7b needs portaliq to render a one-line description on a collection block or tile (the block and tile contract has no description today), T5 needs a task audience on trainer portal accounts in the portal-task seam, T9 is e2e	session-20261114T131646-cdc565a4	2026-11-14T14:37:22Z
 verify:dossiq:6514:2c99e5bc	GREEN 6514; no new failures	session-20261114T134643-47800317	2026-11-14T14:37:24Z
 build:learniq:certificate-verification-and-key-rotation:c2	partial: PR #2534 built 1.1 + page part of 1.3; left 1.2 (awaits owner confirmation), 1.3 Playwright (live), 4.1 archive	session-20261114T141720-f9e7a46b	2026-11-14T14:37:59Z
