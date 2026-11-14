@@ -2515,3 +2515,27 @@ humaniq	1132	0fa00663becac66e1e2cfcf59081ffff1a532759	MERGED	merge3	GATE OK sbom
 humaniq	1134	928fcce07435a8ce063a133e1bf8f3500f37e00c	RED	merge3	GATE RED floor: unit_interfacing: 3.62 -> 3.59
 humaniq	1136	66752b672af0e596e073d0783a45467aadabe3bc	RED	merge3	GATE RED floor: unit_size: 4.49 -> 4.47; unit_complexity: 3.57 -> 3.53
 humaniq	1140	a1547b95c38420b53801024f6e9adf40e66effe0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2456	dc12f0da9e2e6462ac876fc4c424dbbe055c0cf2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2624	a9266eb7542d04aa272aa1caaebb2f51beab5a58	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2636	2f54ca69077fa4019b3d524ed7418705ed898e4f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2639	bf46a41b1da5be5bf45b44ccd8f3d3b874960e9d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2641	3950bab067200867165fcf54366831365bfc6537	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2645	a2b8a989cbc3c86233515c1dc1e321a80bf5c9e0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2647	6c8c836ead4756db2af78ca4e652df10a13e2ad6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2652	21cb083b36c3b0d697110ad47ae65c0519868e6a	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail
+opencatalogi	2660	072c48fad70e42d187fa311f83991e3a5159ce13	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2661	aee216e1ce9022bb6aa6149216335b8b1df9008c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2662	c0e023bc02a30c09b6d8d778e548b746684c4890	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2663	d60e50401f35d743c4456211e2b90adfb7da60dc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2664	f25b58643246c4f4134dda4a5738b70f55dba85f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2666	29467e089d485beb827fd8d85721e4fbf0cd4025	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2667	7809674fba3624ce9ece3ce249a879a0b74ca3c8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2668	94f01dce604c9c427f96f2498a0f1e7e35e8bc40	RED	merge3	GATE RED floor: unit_interfacing: 4.87 -> 4.83
+opencatalogi	2671	3632cf8ddfced209a88de659375ae0023befdbdf	RED	merge3	GATE RED floor: unit_interfacing: 4.87 -> 4.85
+opencatalogi	2672	cef40fa2e3023023ca13603aaf89c7a3bbc6bed0	RED	merge3	GATE RED floor: unit_interfacing: 4.87 -> 4.83
+opencatalogi	2673	de0d1edb6b527b2daa54bb816ef26aaf0b1ac4f4	RED	merge3	GATE RED floor: unit_complexity: 4.86 -> 4.84; module_coupling: 5.44 -> 5.41
+opencatalogi	2675	75dd2782987c2335977997663a67a6b5ad06a6c0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2676	b4a5739bc4c42ac84137c36fd324bb24416a4fab	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2677	fecc3eb0fdc7e2246258c94db533312f32d510fe	RED	merge3	GATE RED floor: unit_interfacing: 4.87 -> 4.83
+opencatalogi	2681	7bc6df59a36c2694555913fec60c94d605bc8595	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2689	3c9a0ede846ac028e92b55454aa9266ce4a5a262	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
