@@ -164,12 +164,14 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 		$summary['gathered'] = (count($batch->items) + count($batch->errorsById()));
 
 		$summary['tombstoned'] = 0;
+		$summary['deleted']    = 0;
 		if ($batch->complete === true) {
-			$summary['tombstoned'] = $this->syncRecordMapper->markTombstones(
-				sourceId: (int)$harvest->source->getId(),
-				seenIds: $batch->seenIds(),
-				at: new \DateTime()
+			$pass = new HarvestTombstonePass(
+				records: $this->syncRecordMapper,
+				objects: $this->importServices->objectService,
+				logger: $this->logger
 			);
+			$summary = array_replace($summary, $pass->apply(source: $harvest->source, seenIds: $batch->seenIds()));
 		}
 
 		if ($batch->checkpoint !== null) {

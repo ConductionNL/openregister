@@ -254,6 +254,38 @@ class SyncRecordMapper extends QBMapper implements SyncRecordMapperInterface {
 	}//end markTombstones()
 
 	/**
+	 * The object uuids of a source's records tombstoned at one moment.
+	 *
+	 * @param int      $sourceId The source.
+	 * @param DateTime $at       The tombstone time the pass wrote.
+	 *
+	 * @return list<string> The linked object uuids, without duplicates.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function objectUuidsTombstonedAt(int $sourceId, DateTime $at): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct('object_uuid')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('tombstoned', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
+			->andWhere($qb->expr()->eq('tombstoned_at', $qb->createNamedParameter($at, IQueryBuilder::PARAM_DATE)))
+			->andWhere($qb->expr()->isNotNull('object_uuid'));
+
+		$uuids  = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			if ((string)$row['object_uuid'] !== '') {
+				$uuids[] = (string)$row['object_uuid'];
+			}
+		}
+
+		$result->closeCursor();
+
+		return $uuids;
+	}//end objectUuidsTombstonedAt()
+
+	/**
 	 * The latest record (id and tombstone flag) per external id of a source.
 	 *
 	 * @param int $sourceId The source.

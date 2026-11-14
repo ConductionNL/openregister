@@ -94,4 +94,16 @@ interface SyncRecordMapperInterface {
 	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public function markTombstones(int $sourceId, array $seenIds, \DateTime $at): int;
+
+	/**
+	 * The object uuids of a source's records tombstoned at one moment.
+	 *
+	 * @param int       $sourceId The source.
+	 * @param \DateTime $at       The tombstone time the pass wrote.
+	 *
+	 * @return list<string> The linked object uuids, without duplicates.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function objectUuidsTombstonedAt(int $sourceId, \DateTime $at): array;
 }//end interface
