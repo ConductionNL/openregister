@@ -10126,3 +10126,4 @@ fix:buildiq:1583:1d68d4b1	RED floor fixed: unit_interfacing 3.42 vs base 3.41, p
 build:integriq:sources-sftp-adapter:c2	partial: PR #3593, pickup wired into the engine (contracts per file, owner's Files), editor kinds and fields, seed, docs, 15 new tests; left: Task 1 composer dependency (lock not committed by workers), mapping target, fingerprint confirm step, container/e2e tests	session-20261114T151755-dc817df2	2026-11-14T16:20:16Z
 fix:learniq:2538:77a7f766	merged development, resolved l10n conflict; new head bb7460d5, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T16:20:26Z
 verify:humaniq:1145:c964df9a	GREEN 1145; CONFLICT 1156 (manifest-baseline pages.json)	session-20261114T151750-b10540e9	2026-11-14T16:20:43Z
+fix:learniq:2497:dcf3a162	conflict resolved, new head c85c5913	session-20261114T154806-a38868f0	2026-11-14T16:20:50Z
