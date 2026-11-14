@@ -9016,3 +9016,4 @@ merge:dossiq:6462:ef13eac4	merge3 tree of 31 dossiq PRs: replayed; conflict 4, l
 merge:dossiq:6459:aef672b2	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:11:11Z
 build:pipelinq:marketing-events:c3	PR #3834: 4.2 Add attendee via CnActionDialog (9 vitest); 4.1 menu entry left (board keeps Marketing to campaigns), Playwright left	session-20261114T114416-aa10a904	2026-11-14T12:12:24Z
 build:pipelinq:platform-record-lock:c3	done on PR #3752: 1.3 + 3.1 ticked, +3 tests; left 2.4, 3.2 (Playwright/live only)	session-20261114T114625-63eafe85	2026-11-14T12:13:28Z
+review:openregister:10531:e2d28b31	APPROVE: share crosses declaration per REQ-PCF-002; suites green (reserved-word test offline only)	session-20261114T114410-130907cc	2026-11-14T12:15:07Z
