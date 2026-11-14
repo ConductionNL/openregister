@@ -8533,5 +8533,6 @@ fix:opencatalogi:2665:34754ce1	no change: merges cleanly with current developmen
 fix:versioniq:685:0d04ca1a	failed: floor still lowered after a partial fix pushed (new head 0a9c1956): unit_interfacing 3.88->4.06 (base 4.08), overall 4.87->4.89 (4.92); still down: php unit_complexity (units >CCN5 +132 loc: OsvClient firstFixed/resolve/queryAll), duplication (BundledLibrariesSection.vue +31 lines, php +18), unit_size 4.71 (4.73); needs a deeper refactor than the 45-min cap	session-20261114T073111-9b40710a	2026-11-14T09:03:03Z
 verify:learniq:2494:595ea3c0	2494 GREEN	session-20261114T065635-0aca43d3	2026-11-14T09:03:13Z
 fix:buildiq:1632:4b09bf4c	merged development (clean); conflict only with sibling tree PRs; new head a746e5ea97d30ac540a85acbe684e3aa3debbebf for reverify	session-20261114T073105-27c9d15e	2026-11-14T09:03:20Z
+build:larpinq:character-player-picker	PR #1037 (tasks 1-5 already on development, task 6 seeds added; browser tests left)	session-20261114T082633-7466e3ea	2026-11-14T09:03:37Z
 fix:launchpad:1210:886f85bb	tree conflict with #1209 removed (l10n keys moved up), development merged, pushed 256d3e09	session-20261114T065635-61264d14	2026-11-14T09:03:37Z
 verify:versioniq:691:eecdb461	691 GREEN; 692 CONFLICT with #691 (AutoUpdateJob.php)	session-20261114T065633-3e3cb668	2026-11-14T09:03:47Z
