@@ -41,6 +41,7 @@ jest.mock('./sections/ReadEventVisibilityConfiguration.vue', () => ({ __esModule
 jest.mock('./sections/RegisterDescriptors.vue', () => ({ __esModule: true, default: { name: 'RegisterDescriptors', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/RetentionConfiguration.vue', () => ({ __esModule: true, default: { name: 'RetentionConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/StatisticsOverview.vue', () => ({ __esModule: true, default: { name: 'StatisticsOverview', props: ['pushStatus'], render: () => null } }))
+jest.mock('./sections/TranslationConfiguration.vue', () => ({ __esModule: true, default: { name: 'TranslationConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/WorkingCalendars.vue', () => ({ __esModule: true, default: { name: 'WorkingCalendars', props: ['pushStatus'], render: () => null } }))
 jest.mock('@nextcloud/vue', () => mockLibrary())
 jest.mock('@conduction/nextcloud-vue', () => mockLibrary())

@@ -131,7 +131,7 @@ describe('ExportRegister mounted', () => {
 		expect(open().findComponent({ name: 'NcDialog' }).exists()).toBe(false)
 	})
 
-	it('names the schema and register and offers Excel and CSV, Excel first', () => {
+	it('names the schema and register and offers Excel, CSV, TSV, JSON and XML, Excel first', () => {
 		const wrapper = open()
 		expect(wrapper.findComponent({ name: 'NcDialog' }).attributes('title')).toBe('t:Export Objects')
 		expect(wrapper.get('.formContainer p').text()).toBe(
@@ -141,6 +141,9 @@ describe('ExportRegister mounted', () => {
 		expect(select.vm.$attrs.options).toEqual([
 			{ label: 'Excel', value: 'excel' },
 			{ label: 'CSV', value: 'csv' },
+			{ label: 'TSV', value: 'tsv' },
+			{ label: 'JSON', value: 'json' },
+			{ label: 'XML', value: 'xml' },
 		])
 		expect(select.vm.$attrs.modelValue).toBe('excel')
 		expect(select.vm.$attrs.reduce({ label: 'CSV', value: 'csv' })).toBe('csv')
