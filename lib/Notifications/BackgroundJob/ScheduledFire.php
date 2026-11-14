@@ -99,6 +99,13 @@ final class ScheduledFire {
 	public int $deduplicated = 0;
 
 	/**
+	 * The rule's `reminder` block, empty for a plain scheduled rule.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public array $reminder = [];
+
+	/**
 	 * Constructor
 	 *
 	 * @param Schema               $schema  Schema the rule is declared on

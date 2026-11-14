@@ -350,7 +350,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$subjectKey = $this->canonicalSubject(trigger: $event->trigger);
 
 		foreach ($notifications as $name => $spec) {
-			if (is_array($spec) === false) {
+			if (is_array($spec) === false || self::reminderAllows(spec: $spec, name: (string)$name, context: $event->context) === false) {
 				continue;
 			}
 
@@ -366,6 +366,31 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 	}//end fireRules()
+
+	/**
+	 * Whether a rule takes part in this dispatch, as far as reminders go.
+	 *
+	 * A reminder's sends are counted and stopped by the scheduled sweep, so a
+	 * rule with a `reminder` block fires only from its own reminder dispatch,
+	 * and a reminder dispatch fires only the rule it names. Without that, any
+	 * other scheduled rule on the schema would send the reminder past its
+	 * count and its stop condition.
+	 *
+	 * @param array<string, mixed> $spec    The rule.
+	 * @param string               $name    The rule's key.
+	 * @param array<string, mixed> $context The dispatch context.
+	 *
+	 * @return boolean True when the rule may fire.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/notificatie-engine/spec.md
+	 */
+	private static function reminderAllows(array $spec, string $name, array $context): bool {
+		if (array_key_exists('reminderSequence', $context) === true) {
+			return $name === (string)($context['notificationName'] ?? '');
+		}
+
+		return is_array($spec['reminder'] ?? null) === false;
+	}//end reminderAllows()
 
 	/**
 	 * Fire one rule and leave its automation run record: one per evaluation,
