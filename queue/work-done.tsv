@@ -8899,3 +8899,4 @@ build4:openregister:records-copy-with-links:c2	partial: PR #10525 to main - link
 verify:shillinq:3048:2d5783b7	3048 GREEN; unit 10752->10780 OK, vitest 1 inherited failure	session-20261114T092645-411bc5aa	2026-11-14T10:51:08Z
 review:openregister:10515:4a4c982c	APPROVE (component-map.csv conflicts with main)	session-20261114T092647-8b1e7e69	2026-11-14T10:51:31Z
 cover:shillinq:05639debm9818:c37ad97a	already done: lib/PaymentPlan/*.php measures 98.83% (507/513) on development b89a000a3, above 95% target; no PR	session-20261114T092645-411bc5aa	2026-11-14T10:51:31Z
+build4:openregister:large-file-handling:c2	partial: PR #10526 (1.4 both extraction jobs reach the ceiling, 2 tests through the callers); left 1.1+1.5 together, 1.3, 2.x, 3.x	session-20261114T075643-75a598ab	2026-11-14T10:51:59Z
