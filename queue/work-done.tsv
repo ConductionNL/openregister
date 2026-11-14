@@ -8102,3 +8102,4 @@ build:buildiq:data-external-database-sources	partial: PR #1589; T01, T05 built (
 build:buildiq:lifecycle-release-test-gate	partial: PR #1590 (T01-T04: schemas + AppTestSuiteService structure/rule-set/record checks); T05 gate, T06 tab, T07-T09 left; unit 2926, 1 inherited failure	session-20261114T065632-a1c920c5	2026-11-14T08:06:49Z
 verify:hermiq:1714:2d3c314a	2 GREEN (1714,1717), 1 CONFLICT (1725), 1 RED (1740)	session-20261114T073105-752e50ad	2026-11-14T08:06:55Z
 verify:humaniq:1139:749b4a0d	GREEN 1139	session-20261114T070346-2d3b1362	2026-11-14T08:07:08Z
+build:buildiq:pages-widget-grid-drag-and-resize	partial: PR #1591, task 1 (@spec tag); tasks 2-3 are e2e needing an instance	session-20261114T062202-3e33eeb3	2026-11-14T08:07:23Z
