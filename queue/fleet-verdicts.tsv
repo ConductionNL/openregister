@@ -9679,3 +9679,4 @@ filinq	2119	10ac7dcc3fad76fac6644f5102bf2ded6f0ac225	REVERIFY	worker-34	merged d
 integriq	3617	6ff0aa8564d1f6d67d2d68ba6f36dcf47679860b	CONFLICT	worker-49	does not merge on the verified tree (development + earlier PRs in tree order)
 integriq	3626	d61b9b391a44fb8f53d98133a207fbe45b8c5073	CONFLICT	worker-49	does not merge on the verified tree (development + earlier PRs in tree order)
 integriq	3633	7bc3cc79d69ea49cf6f81e22129	CONFLICT	worker-49	does not merge on the verified tree (development + earlier PRs in tree order)
+shillinq	2995	47788041f503f44917ec13134769c37ee1f669ed	REVERIFY	worker-31	merged development in: kept both listener sets (20 subscriptions, indexes updated), both openapi tags, relocked versions under 0.5.7-unstable.20261114213000; listener, AppInfo, openapi and registrar tests pass; new head 116350555ba678943f8ef1f99bcfa38377183565, verify it
