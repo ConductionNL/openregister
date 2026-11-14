@@ -10617,3 +10617,4 @@ merge:dossiq:6520:0171ff9c	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 sk
 merge:dossiq:6519:3a63c0b2	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T19:09:16Z
 verify:keepiq:1791:3d9a6ed1	GREEN keepiq#1791 (phpunit 5008 OK vs 4998 baseline, vitest 6510 passed)	session-20261114T185843-7b9a6259	2026-11-14T19:09:24Z
 fix:learniq:2542:8b1768c4	conflict with #2486 resolved by relocating l10n keys; new head e97530c8	session-20261114T185853-1a2abc5d	2026-11-14T19:10:32Z
+fix:pipelinq:3829:53db97a2	CONFLICT resolved (l10n, both sides kept), pushed 6c4b0867; REVERIFY recorded	session-20261114T190957-fe5a0159	2026-11-14T19:11:18Z
