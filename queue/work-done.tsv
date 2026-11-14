@@ -7716,3 +7716,5 @@ fix:filinq:2055:9f73dbba	conflict resolved (union of nl keys), new head 8dba7a69
 fix:shillinq:2974:427617f3	conflict resolved, new head f91c770a, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T07:05:34Z
 fix:shillinq:3001:01fbc500	conflict resolved into new registrar layout, no new failures (development has inherited reds incl. a fatal), pushed 7df05963bf423329f68c23ba582819c6350cde6a	session-20261114T062202-3e33eeb3	2026-11-14T07:05:44Z
 fix:shillinq:2819:c6c0b8c1	conflict resolved, pushed 1c3c860b; REVERIFY recorded	session-20261114T062222-96f530fc	2026-11-14T07:05:55Z
+fix:shillinq:2993:0555adba	conflict resolved, pushed 6f526c3c; REVERIFY recorded	session-20261114T065626-0651b305	2026-11-14T07:05:58Z
+fix:filinq:2078:4eb138c6	conflict resolved, development merged, suite green; new head 8247eff9	session-20261114T070333-41d2bfe8	2026-11-14T07:06:08Z
