@@ -8254,3 +8254,4 @@ verify:buildiq:1597:42bcb238	7 GREEN (1597-1601,1603,1604), 2 CONFLICT (1602,160
 merge:buildiq:1526:619b7e6d	merge3 tree of 15 buildiq PRs: merged=13 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T08:27:33Z
 fix:keepiq:1631:b88267e0	import conflicts resolved, merged development, vitest green; REVERIFY recorded	session-20261114T070323-628c2f37	2026-11-14T08:28:19Z
 verify:hermiq:1725:8f12959c	1725 GREEN (0 new failures, 172 inherited), 1740 CONFLICT (register.json vs #1725)	session-20261114T073108-8b40426a	2026-11-14T08:28:27Z
+fix:integriq:3574:a352f502	fixed RED (test mock + golden for the new CSV fields), new head 48797432; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T08:28:36Z
