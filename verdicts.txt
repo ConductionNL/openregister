@@ -3185,3 +3185,4 @@
 10461 aa2216e305daab23ac68a7460a38fee0e6a180c0 APPROVE Owner-scoped delivery per change webhooks-for-owners; unowned webhooks unchanged, owned ones fail closed. phpstan clean; Architecture/Rules/Controller/Contract/Rbac green; Webhook test reds are env DNS, same on main. component-map.csv conflict with main.
 10463 2a65b3e07ccfbdf218a3d485336201466cbf477f APPROVE integrator IL5 review: publiccode.yml only; adds the Common Ground layer data (NL.vng.commonground.layer plus a supports entry); YAML parses; the tree's checker floor checks the publiccode criterion
 10463 2a65b3e07ccfbdf218a3d485336201466cbf477f APPROVE metadata only: publiccode.yml gains supports + NL.vng.commonground.layer; valid YAML, no duplicate keys, no code or behaviour change
+10459 39c1dc0355388cdaee09c4564b12e419977f8d04 APPROVE tests and task ticks only, no lib change; ticked tasks verified present on main; new tests and Architecture/Rules/Controller/Contract suites green on merge with main
