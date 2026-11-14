@@ -11143,3 +11143,4 @@ fix:opencatalogi:2680:2f800fe4	conflict resolved, new head 5c8f25a1	session-2026
 fix:opencatalogi:2687:f9bcf3c4	conflict resolved, merged development, new head 6e430b3e; 2 unit failures inherited from development	session-20261114T211808-5e900938	2026-11-14T21:21:19Z
 fix:opencatalogi:2685:b09d48cf	merged development, resolved PHP+l10n conflicts; new head 607939f5, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T21:21:27Z
 fix:opencatalogi:2654:138d711b	merged development in, conflicts resolved; new head 89b4f055; REVERIFY	session-20261114T204802-b2e553ef	2026-11-14T21:21:45Z
+build:launchpad:mcp-tool-surface:c3	partial: PR #1222 head d08fb11f, read tools 11 of 14 (added tree, shares, templates, pending acks, kiosk playlists; 10 tests). Left: listVersions, getDashboardMetadata, getReactions, tasks 6, 8-28 (writes, scopes/reach tests, catalogue closure, register mcp block, deny tests)	session-20261114T201750-64b6fe0f	2026-11-14T21:21:54Z
