@@ -11090,3 +11090,4 @@ fix:launchpad:1214:4cafc2d4	fixed: merges clean with development and #1209; new 
 fix:filinq:2123:46ec780d	golden re-recorded for the sort controls; new head dceb01e3a67a3703a57f910a99b57c731f5b5aee, REVERIFY	session-20261114T201741-909e04de	2026-11-14T21:04:04Z
 build:keepiq:crypto-recovery-kit:c2	already built: 2.1-2.3 are on PR #1791 (88cbd0b0, specs pass 15/15); only 3.1 left (matrix + archive, after merge)	session-20261114T203357-c555025b	2026-11-14T21:04:09Z
 review:filinq:2079:5988e906	GREEN: spec-backed, unit 6860 ok, phpstan clean	session-20261114T204802-89dfe85e	2026-11-14T21:04:16Z
+fix:launchpad:1216:2d1a07b7	merged development in clean, suites green; new head 6a89c7cdc8ffe73a1bcda615e6a06089086d9c44, REVERIFY recorded	session-20261114T194751-bb7578f8	2026-11-14T21:04:32Z
