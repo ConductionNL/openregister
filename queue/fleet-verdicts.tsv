@@ -10408,3 +10408,4 @@ launchpad	1225	92488c7c6b729b611a1cb3c465cdd9235c26f8ac	GREEN	worker-55	phpunit 
 hermiq	1751	803e1445292a793b66cb7fc4cd60d8b2aa9faad6	GREEN	worker-41	phpunit 5240 (baseline 5178), 188 failing same set as baseline, no new failures; vitest 1528 passed; builds models-provider-connections
 hermiq	1795	515311fc811e827c25fb53eeb998cdd66acca0ad	GREEN	worker-41	phpunit 5240 (baseline 5178), 188 failing same set as baseline, no new failures; vitest 1528 passed; builds memory-knowledge-bases, owner-scoped
 integriq	3593	94eb4bae92280b5dd607353214fa7f9041dc15eb	GREEN	worker-45	phpunit 9224 tests (baseline 9162, 7 inherited fails/errors), no new failures; vitest 2305 passed; build of sources-sftp-adapter per its specs
+stackiq	1931	e0997de959cc2f167101ae9610158b58c6cb0dff	GREEN	worker-10	phpunit 3639 OK (baseline 3602 OK); vitest 2591, 1 fail facets.spec FACET_DIMENSIONS inherited from development; build landscape-owner-attestation per spec
