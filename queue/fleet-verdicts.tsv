@@ -8410,4 +8410,5 @@ decidiq	2191	3b57f7a239b3b26a3adf325f11a2cb088880afdd	GREEN	worker-39	tree dev+2
 learniq	2496	5dd6a73e82724a96e4d90d6b09558f0c276e9ad9	GREEN	worker-19	unit 6718 on tree (baseline 6703, 1 inherited fail HigherEducationExampleSet), no new failures; js-unit 1345 pass, 9 inherited; builds exam-sitting-overview-section
 hermiq	1750	7edc05a18016a7f5149b4611b3a2ca2f64019cd9	CONFLICT	worker-58	conflicts with #1736 in the tree, files: lib/Settings/hermiq_register.json
 hermiq	1762	0722e3ca9a2c3b629b43f8b13c13975af7ad3ffe	GREEN	worker-58	unit 5063 on tree (baseline 5044, 188 inherited failures), 0 new; vitest 1466 passed; build of action-matrix-screen, admin-only endpoints, seed grants unchanged
+filinq	2119	948c6cd49bb2e212e99579bcf2dbd46843ceab7e	CONFLICT	worker-31	conflicts with development: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/views/settings/Settings.vue
 learniq	2532	53b53ed8b5adc16bc972088c742608c9b2b2dc51	REVERIFY	worker-34	moved the 6 new l10n keys in en.json/nl.json from the end to mid-catalogue; merges clean on development + 2493, 2501, 2515; l10n parity OK; new head aeb0f5c388c6babd88eebec20c9f7a53df496084, verify it
