@@ -38,6 +38,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Repair\AbstractRegisterImportStep
  * @covers \OCA\OpenRegister\Repair\ImportCredentialBrokerRegister
  * @covers \OCA\OpenRegister\Repair\ImportDecisionTableRegister
+ * @covers \OCA\OpenRegister\Repair\ImportTranslationGlossaryRegister
  * @covers \OCA\OpenRegister\Repair\ImportDestructionListRegister
  * @covers \OCA\OpenRegister\Repair\ImportDismissedPairRegister
  * @covers \OCA\OpenRegister\Repair\ImportEdepotTransferRegister
@@ -62,6 +63,7 @@ class RegisterImportStepsGoldenTest extends TestCase {
 		'ImportMergeOperationRegister',
 		'ImportRedactionPolicyRegister',
 		'ImportSurveyRegister',
+		'ImportTranslationGlossaryRegister',
 		'ImportTrustConfigurationRegister',
 	];
 

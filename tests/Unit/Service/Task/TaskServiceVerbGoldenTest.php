@@ -809,4 +809,37 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		);
 		$this->assertSame([], $this->written);
 	}//end testAnImportDenialIsNotAuditedAndWritesNothing()
+
+	public function testTerminateAsMootTakesTheReleaseArguments(): void {
+		$this->stored($this->task());
+
+		$done = $this->service()->terminateAsMoot(uuid: 't-7', reason: 'moot', source: 'flow:x');
+
+		$this->assertSame(['terminated', Task::STATE_TERMINATED, 'terminate'], [$done->getOutcome(), $done->getState(), $done->getLastAction()]);
+		$this->assertSame(['terminate', 'flow:x', 'moot'], [$this->onlyAudit()['action'], $this->onlyAudit()['actor'], $this->onlyAudit()['reason']]);
+	}
+
+	public function testTerminateAsMootTakesTheReleasePositions(): void {
+		$this->stored($this->task());
+
+		$done = $this->service()->terminateAsMoot('t-7', 'moot', 'flow:x');
+
+		$this->assertSame(Task::STATE_TERMINATED, $done->getState());
+		$this->assertSame(['terminate', 'flow:x', 'moot'], [$this->onlyAudit()['action'], $this->onlyAudit()['actor'], $this->onlyAudit()['reason']]);
+	}
+
+	public function testOfferTakesTheReleaseArguments(): void {
+		$this->stored($this->task());
+
+		foreach ([
+			fn () => $this->service()->offer(uuid: 't-7', pool: [], actor: 'rita'),
+			fn () => $this->service()->offer('t-7', [], 'rita'),
+		] as $offer) {
+			$this->expectRefusal(
+				$offer,
+				TaskConflictException::class,
+				"Verb 'offer' refused: task 't-7' is already assigned; unclaim or reassign it instead."
+			);
+		}
+	}
 }//end class

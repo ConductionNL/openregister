@@ -180,3 +180,62 @@ ingestion for the user who configured it). Semantics:
   ignored entirely.
 - The value is an assertion by trusted same-instance code — derive it from
   durable job context (the configuring user), never from request input.
+
+## Secrets held in an outside vault
+
+A credential can leave its secret in the organisation's own HashiCorp Vault or OpenBao
+instead of the broker's custody leaf. The broker then reads the secret from the vault
+each time an authorized call needs it, keeps it for that request only, and never
+writes it to the custody leaf, the database, a log or a response.
+
+Two credentials make this work.
+
+1. **A vault connection**: a credential with provider `outside-vault`. Its
+   `instanceBaseUrl` is the vault's address, `vaultAuthMethod` is `token` or
+   `approle`, `vaultRoleId` is the AppRole role id (AppRole only) and `vaultMount`
+   is the KV v2 mount (default `secret`). Its secret is the vault login: a token, or
+   the AppRole secret id. That secret is held like any other, in the custody leaf.
+   The broker uses it only to read for outside credentials: it is never proxied and
+   never resolved for an app.
+2. **An outside credential**: any `secret`-kind credential created with
+   `custody: "outside"` and `vaultRef: {connection, path, key}`. It is created
+   without a secret; a create that carries one is refused. The connection must be
+   an `outside-vault` credential of the same organisation (organisation scope) or the
+   same owner (personal scope). The broker checks that again on every read.
+
+```
+POST /api/credentials
+{
+  "name": "Zaaksysteem",
+  "provider": "generic-bearer",
+  "allowedApps": ["integriq"],
+  "custody": "outside",
+  "vaultRef": { "connection": "<uuid of the vault connection>", "path": "integriq/zaaksysteem", "key": "password" }
+}
+```
+
+The owner, membership and allowed-app guards run before the vault is contacted, so an
+app or user the guards refuse never causes a vault request. A read the vault refuses
+answers with an upstream error naming the vault connection, and sets the credential's
+`lastError` to a fixed sentence; the vault's own answer is not stored or logged.
+
+### The vault policy
+
+Give the AppRole read access to the paths the references name, and nothing else. For a
+KV v2 mount named `secret`:
+
+```hcl
+path "secret/data/integriq/*" {
+  capabilities = ["read"]
+}
+```
+
+The broker reads `GET /v1/<mount>/data/<path>` and logs in with
+`POST /v1/auth/approle/login`. Each login or read has a two second timeout.
+
+### Limits
+
+- The vault address is validated like any `instanceBaseUrl`: an absolute https URL on a
+  public host name. A vault reachable only on a private address cannot be used yet.
+- Only `secret`-kind credentials can be held outside. OAuth2 token sets stay in the
+  custody leaf, because the broker refreshes and rewrites them.

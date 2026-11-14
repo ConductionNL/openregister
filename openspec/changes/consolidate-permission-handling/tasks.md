@@ -16,8 +16,8 @@
   - The object plane's anonymous branch is pinned as a PAIR per verb: a schema granting `public` `read` serves an anonymous caller rows; the same schema without that grant serves none. A test that asserts only the refusal passes just as well when everything is refused.
   - The entity plane's anonymous refusal is pinned for each mapper that uses `verifyRbacPermission()` — register, schema, agent, webhook, application, source, view, action, mapping, endpoint — so a consolidation that quietly widens ONE of them fails.
   - The two blanket bypasses (`PHP_SAPI === 'cli'`, `SystemOperationContext::isActive()`) are pinned as the ONLY ones. A third arriving later must break a test.
-- [ ] Implement
-- [ ] Test
+- [x] Implement (built in `tests/Unit/Db/EntityPlaneAnonymousPinTest.php` for the entity plane and `PermissionHandlerRbacTest::testAnonymousAccessFollowsThePublicGrantForEveryVerb` for the object plane; there is no ActionMapper on the trait, and ConfigurationMapper, which is on it, is pinned too)
+- [x] Test
 
 ### Task 2: Extract the evaluator
 - **spec_ref**: `openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes`

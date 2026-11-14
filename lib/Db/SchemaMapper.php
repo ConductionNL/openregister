@@ -932,10 +932,18 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * Searches for schemas matching the given slug with optional
 	 * multi-tenancy and RBAC filtering.
 	 *
-	 * @param string $slug The slug to search for
-	 * @param ListQuery $query The page: its limit and offset
-	 * @param bool $_rbac Whether to apply RBAC permission checks (default: true)
-	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+	 * Takes the page as main's ListQuery, or as the limit and offset of the published contract, by
+	 * name or by position (an int in the second slot).
+	 *
+	 * @param string             $slug              The slug to search for
+	 * @param ListQuery|int|null $query             The page: its limit and offset; an int here is the release's positional `$limit`.
+	 * @param bool|int           $_rbac             Whether to apply RBAC permission checks (default: true); an int here is the
+	 *                                              release's positional `$offset`.
+	 * @param bool               $_multitenancy     Whether to apply multi-tenancy filtering (default: true); the release's
+	 *                                              positional `$_rbac` when the call is positional.
+	 * @param bool               $positionalTenancy The release's positional `$_multitenancy`.
+	 * @param int                $limit             The page size.
+	 * @param int                $offset            The offset.
 	 *
 	 * @return Schema[] Array of matching schemas
 	 *
@@ -945,10 +953,25 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	public function findBySlug(
 		string $slug,
-		ListQuery $query,
-		bool $_rbac = true,
+		ListQuery|int|null $query = null,
+		bool|int $_rbac = true,
 		bool $_multitenancy = true,
+		bool $positionalTenancy = true,
+		int $limit = 10,
+		int $offset = 0,
 	): array {
+		if (is_int($query) === true) {
+			$limit = $query;
+			$query = null;
+			if (is_int($_rbac) === true) {
+				$offset = $_rbac;
+			}
+
+			$_rbac         = $_multitenancy;
+			$_multitenancy = $positionalTenancy;
+		}
+
+		$query ??= new ListQuery(limit: $limit, offset: $offset);
 		$this->readTrace()->record(method: 'findBySlug');
 
 		$qb = $this->exactSlugQuery(slug: $slug);
@@ -1296,6 +1319,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$access->checkDepartmentMatrix(schema: $schema);
 		$access->checkRevealAudit(schema: $schema);
 		$access->checkClassification(schema: $schema);
+		$access->checkConfidentiality(schema: $schema);
 		(new PropertyDeclarationRefusals())->checkReversibility(schema: $schema);
 		(new SubjectDeclarationRefusals())->checkReview(schema: $schema);
 	}//end checkAccessDeclarations()

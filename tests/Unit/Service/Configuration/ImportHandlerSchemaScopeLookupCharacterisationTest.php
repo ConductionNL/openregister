@@ -72,7 +72,8 @@ class ImportHandlerSchemaScopeLookupCharacterisationTest extends TestCase {
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		foreach (['findBySlugInIds', 'findBySlug', 'find', 'findByApplicationAndSlug'] as $method) {
-			$schemaMapper->method($method)->willReturnCallback(fn (...$args) => $this->answer('schema.' . $method, $args));
+			// findBySlug() also declares the published limit and offset after main's four parameters.
+			$schemaMapper->method($method)->willReturnCallback(fn (...$args) => $this->answer('schema.' . $method, array_slice($args, 0, 4)));
 		}
 
 		$registerMapper = $this->createMock(RegisterMapper::class);

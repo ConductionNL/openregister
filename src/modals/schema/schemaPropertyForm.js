@@ -301,15 +301,43 @@ export function itemsTypeSelect() {
 }
 
 /**
- * The select of a string's format.
+ * The geometry formats an object property can declare. The server validates a
+ * value against them on save (GeoJsonGeometryValidator::declaredGeoType()).
+ *
+ * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+ */
+export const GEO_FORMATS = Object.freeze([
+	'geo:point',
+	'geo:linestring',
+	'geo:polygon',
+	'geo:multipolygon',
+	'geo:geometry',
+])
+
+/**
+ * The select of a property's format: the geometry formats for an object, the
+ * string formats otherwise.
  *
  * @spec openspec/specs/entity-management-modals/spec.md
+ * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+ * @param {string} [type] The property type
  * @return {object}
  */
-export function formatSelect() {
+export function formatSelect(type = 'string') {
 	return {
 		inputLabel: 'Format',
 		multiple: false,
-		options: [...STRING_FORMATS],
+		options: type === 'object' ? [...GEO_FORMATS] : [...STRING_FORMATS],
 	}
+}
+
+/**
+ * Whether a property type offers a format choice.
+ *
+ * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+ * @param {string} type The property type
+ * @return {boolean}
+ */
+export function hasFormatChoice(type) {
+	return type === 'string' || type === 'object'
 }

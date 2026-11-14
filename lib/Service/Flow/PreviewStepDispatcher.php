@@ -94,7 +94,7 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 	private function previewStep(IFlowNode $node, DryRunStep $step): array {
 		if ($node instanceof IFlowSideEffectFree) {
 			$this->previews[$step->nodeId] = ['performed' => true, 'summary' => $node->getDisplayName()];
-			return $node->execute(call: $step->nodeCall());
+			return (new FlowNodeInvoker())->execute(node: $node, call: $step->nodeCall());
 		}
 
 		// A described step is never executed, so its own check has to run here
