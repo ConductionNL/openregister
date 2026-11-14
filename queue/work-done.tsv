@@ -8348,3 +8348,4 @@ build:stackiq:anonymous-aanbod-listing-is-published-only	failed: blocked; task 1
 verify:launchpad:1202:7004b99b	5 GREEN (1202 1203 1204 1205 1207), 1206 RED (OpenApiStabilityTest with #1202)	session-20261114T070329-a050d62b	2026-11-14T08:39:10Z
 verify:integriq:3582:8119f13e	GREEN 3582,3593,3598; CONFLICT 3599	session-20261114T070346-2d3b1362	2026-11-14T08:39:29Z
 verify:buildiq:1613:14c7196f	GREEN 1613,1614; CONFLICT 1615-1621 (l10n en/nl, 1619 PageDesigner.methods.spec, 1621 CopilotService)	session-20261114T075646-ed650af0	2026-11-14T08:40:24Z
+build:stackiq:architecture-data-model-and-ggm	failed: depends on architecture-views-editor, which is unbuilt (0/18 tasks): element/relation have no origin field and there is no Architecture menu group, which this change's filters, seed and menu placement require; build that change first	session-20261114T070346-2d3b1362	2026-11-14T08:40:37Z
