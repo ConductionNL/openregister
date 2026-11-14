@@ -195,6 +195,8 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	 * @param IL10N $l10n Localisation.
 	 * @param LoggerInterface $logger Logger for degraded paths (never receives a BSN).
 	 * @param IConfig|null $config System config; its `secret` keys the family references.
+	 * @param BrpMockRegister|null $mockRegister The seeded mock BRP register, read for a family
+	 *                                           lookup when the source is flagged `mock`.
 	 *
 	 * @return void
 	 */
@@ -204,6 +206,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 		private IL10N $l10n,
 		private LoggerInterface $logger,
 		private ?IConfig $config = null,
+		private ?BrpMockRegister $mockRegister = null,
 	) {
 	}//end __construct()
 
@@ -476,6 +479,16 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	 * @return array<string,mixed> The router envelope: `body` and `meta`.
 	 */
 	private function familyCall(array $bsns, array $fields): array {
+		if ($this->mockRegister !== null && $this->runsOnMock() === true) {
+			// Design D4: a canned mockResponse answers one fixed body whatever
+			// is asked, so on the mock source each asked BSN is read from the
+			// seeded register instead, in the HaalCentraal shape.
+			return [
+				'body' => ['personen' => $this->mockRegister->persons(bsns: $bsns)],
+				'meta' => ['correlationId' => null, 'durationMs' => 0, 'status' => 200],
+			];
+		}
+
 		return $this->router->callWithMeta(
 			provider: $this,
 			request: $this->personenRequest(
@@ -487,6 +500,24 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 			)
 		);
 	}//end familyCall()
+
+	/**
+	 * Whether the BRP source is the mock source (`configuration.mock: true`).
+	 *
+	 * A source that cannot be read is not the mock: the real call then
+	 * degrades as it always did.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/brp-family-members-lookup/tasks.md
+	 */
+	private function runsOnMock(): bool {
+		try {
+			return (($this->router->sourceConfiguration(provider: $this)['mock'] ?? false) === true);
+		} catch (Throwable) {
+			return false;
+		}
+	}//end runsOnMock()
 
 	/**
 	 * The current partners and the children of a resident, by relation.

@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Export\Odt;
 
 use DOMDocument;
 use DOMXPath;
+use OCA\OpenRegister\Service\Export\Odt\OdtHouseStyle;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Service\Export\RowsTable;
@@ -203,6 +204,65 @@ class OdtWriterTest extends TestCase {
 
 		$this->assertSame('Document', $this->xpath(part: 'meta.xml')->evaluate('string(//dc:title)'));
 	}//end testUntitledDocument()
+
+	/**
+	 * A house style colours the table header and prints its footer lines above the page number.
+	 *
+	 * @return void
+	 */
+	public function testHouseStyleColoursTheHeaderAndAddsFooterLines(): void {
+		$style = new OdtHouseStyle(headBackground: '#00529b', headText: '#fefefe', footerLines: ['Gemeente Hilversum, Dudokpark 1', 'Toegang & <privacy>']);
+		$html = (new RowsPdfSection())->build(table: new RowsTable(title: 'Vergunningen', columns: ['naam' => 'Naam'], rows: [['naam' => 'A']]));
+
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: $html, landscape: true, houseStyle: $style));
+
+		$content = $this->xpath(part: 'content.xml');
+		$this->assertSame('#00529b', $content->evaluate('string(//style:style[@style:name="OR_TH"]/style:table-cell-properties/@fo:background-color)'));
+		$this->assertSame('#fefefe', $content->evaluate('string(//style:style[@style:name="OR_HeadCell"]/style:text-properties/@fo:color)'));
+
+		$styles = $this->xpath(part: 'styles.xml');
+		$footer = $styles->query('//style:master-page/style:footer/text:p');
+		$this->assertSame(3, $footer->length);
+		$this->assertSame('Gemeente Hilversum, Dudokpark 1', $footer->item(0)->textContent);
+		$this->assertSame('Toegang & <privacy>', $footer->item(1)->textContent);
+		$this->assertSame('OR_FooterLine', $footer->item(0)->getAttributeNS('urn:oasis:names:tc:opendocument:xmlns:text:1.0', 'style-name'));
+		$this->assertStringStartsWith('Page ', $footer->item(2)->textContent);
+		$this->assertSame(1, $styles->query('//style:style[@style:name="OR_FooterLine"]')->length);
+	}//end testHouseStyleColoursTheHeaderAndAddsFooterLines()
+
+	/**
+	 * Without a house style every part is exactly the plain layout's.
+	 *
+	 * @return void
+	 */
+	public function testWithoutAHouseStyleThePartsAreUnchanged(): void {
+		$html = (new RowsPdfSection())->build(table: new RowsTable(title: 'Vergunningen', columns: ['naam' => 'Naam'], rows: [['naam' => 'A']]));
+
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: $html, landscape: true));
+		$plain = $this->parts;
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: $html, landscape: true, houseStyle: null));
+
+		$this->assertSame($plain, $this->parts);
+		$content = $this->xpath(part: 'content.xml');
+		$this->assertSame('#2c3e50', $content->evaluate('string(//style:style[@style:name="OR_TH"]/style:table-cell-properties/@fo:background-color)'));
+		$this->assertSame('#ffffff', $content->evaluate('string(//style:style[@style:name="OR_HeadCell"]/style:text-properties/@fo:color)'));
+		$styles = $this->xpath(part: 'styles.xml');
+		$this->assertSame(1, $styles->query('//style:master-page/style:footer/text:p')->length);
+		$this->assertSame(0, $styles->query('//style:style[@style:name="OR_FooterLine"]')->length);
+	}//end testWithoutAHouseStyleThePartsAreUnchanged()
+
+	/**
+	 * A style with colours only keeps the plain footer.
+	 *
+	 * @return void
+	 */
+	public function testColoursOnlyKeepThePlainFooter(): void {
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: '<p>Tekst</p>', landscape: false, houseStyle: new OdtHouseStyle(headBackground: '#112233')));
+
+		$styles = $this->xpath(part: 'styles.xml');
+		$this->assertSame(1, $styles->query('//style:master-page/style:footer/text:p')->length);
+		$this->assertSame('#ffffff', $this->xpath(part: 'content.xml')->evaluate('string(//style:style[@style:name="OR_HeadCell"]/style:text-properties/@fo:color)'));
+	}//end testColoursOnlyKeepThePlainFooter()
 
 	/**
 	 * Entry names, sorted.

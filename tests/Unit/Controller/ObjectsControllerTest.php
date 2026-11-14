@@ -6835,6 +6835,63 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	/**
+	 * An XML export answers an `.xml` file as application/xml and records the
+	 * number of `<object>` records it served.
+	 *
+	 * @return void
+	 */
+	public function testAnXmlExportIsRecordedWithItsRowCountAndNamedXml(): void {
+		// The controller swallows a recorder failure (it costs the row, never the
+		// export), so an assertion inside the callback could never fail the test.
+		// Capture what was recorded and assert after the call.
+		$recorded = null;
+		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
+		$runs->expects($this->once())->method('record')->willReturnCallback(
+			function (...$args) use (&$recorded) {
+				$recorded = $args[1];
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+		$this->grantExport(true, $runs);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn(new \OCA\OpenRegister\Db\Register());
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'format') ? 'xml' : $default
+		);
+		// A nested property named `object` must not count as a record.
+		$xml = (new \OCA\OpenRegister\Service\Export\XmlObjectWriter())->write(
+			[['@self' => ['id' => 'a'], 'object' => ['x' => 1]], ['@self' => ['id' => 'b']]]
+		);
+		$this->exportService->expects($this->once())->method('exportToXml')->willReturn($xml);
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertSame($xml, $result->render());
+		$this->assertSame('application/xml; charset=utf-8', $result->getHeaders()['Content-Type']);
+		$this->assertStringEndsWith('.xml', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('xml', $recorded->format);
+		$this->assertSame(2, $recorded->rowCount, 'a nested property named object is not a record');
+	}
+
+	/**
+	 * An XML export runs as the signed-in caller, like the JSON export.
+	 *
+	 * @return void
+	 */
+	public function testAnXmlExportRunsAsTheSignedInCaller(): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->arrangeRecordedExport(format: 'xml');
+		$this->exportService->expects($this->once())->method('exportToXml')->with(
+			$this->callback(static fn (ObjectExportRequest $request): bool => $request->currentUser === $user)
+		)->willReturn('<?xml version="1.0" encoding="UTF-8"?><objects/>');
+
+		$this->controller->export('1', '2', $this->objectService);
+	}
+
+	/**
 	 * An Excel export is recorded and answers an xlsx file.
 	 *
 	 * @return void

@@ -247,6 +247,7 @@ interface EntityRelationMapperInterface {
 	 * has flagged with `skip_anonymization = true`. The anonymise flow
 	 * (`FileTextController::anonymizeFile`) uses this method to build the
 	 * replacements list so skipped occurrences are excluded from redaction.
+	 * Each row also carries the relation's `bases` (the exception grounds).
 	 *
 	 * @param int $fileId The file ID.
 	 *
