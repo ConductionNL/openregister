@@ -11109,3 +11109,4 @@ merge:learniq:2521:c6951627	stale	feeder	2026-11-14T21:10:21Z
 verify:integriq:3631:943639db	3631 GREEN	session-20261114T202449-f0278d5a	2026-11-14T21:11:11Z
 build:learniq:permission-slips:c3	done on PR #2513 (head 672f590): T6 teacher outcome screen (manifest pages + body section, 7 node tests), T8 po example set (+1 PHP test); T7 e2e left (needs live). PHP 6806 tests, JS 1369 pass; only inherited failures	session-20261114T204759-5dc9dba7	2026-11-14T21:11:32Z
 verify:shillinq:3051:06363955	3051 GREEN (phpunit 11455 ok, vitest 1 inherited failure)	session-20261114T194805-be886caa	2026-11-14T21:12:58Z
+fix:keepiq:1793:813952b0	l10n conflict resolved, clone spec updated; new head 1c66e5b2b1f55fe7b71c4ccb13529b59babc3e6e, REVERIFY	session-20261114T201741-909e04de	2026-11-14T21:13:06Z
