@@ -11851,3 +11851,4 @@ merge:filinq:2085:15375c85	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 s
 merge:portaliq:2444:0eda961c	merge3 tree of 5 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T23:22:13Z
 merge:portaliq:2443:1e0b2ccd	merge3 tree of 5 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T23:22:16Z
 cover:decidiq:a5f973bbmae46:e372e6ff	already done: lib/Event/*.php measures 145/145 (100%) on development with the whole unit suite	session-20261114T214733-589f5bff	2026-11-14T23:22:20Z
+merge:filinq:2088:28ee56d9	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:22:32Z
