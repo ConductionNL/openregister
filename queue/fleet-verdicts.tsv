@@ -8539,3 +8539,4 @@ humaniq	1137	80108332bd9f45248a62f87e1ed34974d4c39687	REVERIFY	worker-33	merged 
 humaniq	1148	0dbbf502a0f3f781d78b23d9870e3a7feea98817	REVERIFY	worker-01	merged origin/development, resolved l10n conflicts keeping both sides, rebuilt l10n js; new head 6e604dadb0725789e4f38e973566b2ae19e34f63, verify it
 humaniq	1030	0a2fd47c5bbae2971f1d7f58f0009e377496d9d2	REVERIFY	worker-28	merged development in: both sides moved a getter out of SettingsService, merge keeps neither there; unit 4185 tests, 1 failure ListExportDeclarationTest inherited from development; new head fb14cdc3018545e229f8392854f2daed8405f81a, verify it
 hermiq	1737	71841a9d96c979da82a17c63f88a02cb9703643a	GREEN	worker-54	unit 5083 on tree, baseline 5046 green (with ../openregister main), 0 new failures
+hermiq	1750	647eadd55e033188fdc6776f07e1c2cd3354a7f2	GREEN	worker-54	unit 5083 on tree, baseline 5046 green (with ../openregister main), 0 new failures
