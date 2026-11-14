@@ -7621,3 +7621,4 @@ fix:dossiq:6322:75d1559d	merged development (docblock-only conflicts); new head 
 fix:dossiq:6320:7fdc5f62	conflict resolved, pushed 9dfb0cb9f172df30a8510e948a21300cda90ea94, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T06:37:19Z
 verify:filinq:2092:67bec582	2092 GREEN	session-20261114T062142-da017174	2026-11-14T06:37:30Z
 fix:dossiq:6324:9b502e2f	conflict resolved, new head 07609287, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T06:37:36Z
+review:openregister:10463:2a65b3e0	APPROVE (publiccode.yml metadata only)	session-20261114T062142-da017174	2026-11-14T06:38:13Z
