@@ -97,7 +97,7 @@ trait FluentQueryBuilderTrait {
 				return $qb;
 			};
 		};
-		foreach (['select', 'selectAlias', 'from', 'where', 'andWhere', 'update', 'insert', 'delete', 'set', 'setValue', 'orderBy', 'addOrderBy', 'groupBy', 'setMaxResults', 'setFirstResult'] as $method) {
+		foreach (['select', 'selectAlias', 'from', 'where', 'andWhere', 'update', 'insert', 'delete', 'set', 'setValue', 'orderBy', 'addOrderBy', 'groupBy', 'setMaxResults', 'setFirstResult', 'innerJoin'] as $method) {
 			$qb->method($method)->willReturnCallback($record($method));
 		}
 
