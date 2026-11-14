@@ -11926,3 +11926,4 @@ fix:filinq:2079:5988e906	merged development, resolved l10n conflicts; new head e
 verify:portaliq:2517:92cab8f9	GREEN 2517	session-20261114T224740-064dbb86	2026-11-14T23:32:06Z
 fix:portaliq:2500:c274a629	merged development (conflicts resolved, register 0.115.0/portal 0.32.0), unit 5921 green; new head 3fa95f369, REVERIFY recorded	session-20261114T223333-658f3be1	2026-11-14T23:32:28Z
 fix:portaliq:2444:6d4286d3	conflict resolved by merging development; new head 14f7dd01	session-20261114T224754-e4a2fcab	2026-11-14T23:32:35Z
+fix:decidiq:2188:cd0af402	conflict resolved, new head 6507a1b9	session-20261114T214733-589f5bff	2026-11-14T23:32:41Z
