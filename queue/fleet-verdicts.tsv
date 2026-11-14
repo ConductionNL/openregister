@@ -8354,3 +8354,4 @@ decidiq	2170	7cfa5d98754d85d2e4818d97789354d78b38fcc5	GREEN	worker-54	unit 4205 
 shillinq	2972	e24273baa1e8a21927cb6ee90fdfb4c4f725787f	CONFLICT	worker-16	conflicts with plain development (moved since): l10n/en.js en.json nl.js nl.json
 shillinq	2976	e4c7b8aac193d5af27d8ebad58eccb3a6e6f638d	GREEN	worker-16	unit 11249 OK on development+2976, baseline 11194 OK, no new failures; builds sales-cancellation and ledger-journal-line-dimensions per their specs, portal cancel checks subject ownership
 shillinq	3003	e9b31d7d5a2e426782cf5860b3c12c23a19066ab	CONFLICT	worker-16	clean on development alone; conflicts after #2976 in appinfo/info.xml, tests/fixtures/register-versions.lock.json
+shillinq	3004	46afd0d948f99a07b3b27fc7496a37381225bd95	CONFLICT	worker-16	conflicts with plain development: appinfo/info.xml, l10n en/nl js+json, lib/Service/ConnectionReportService.php, tests/Unit/Service/ConnectionReportServiceTest.php, register-versions.lock.json
