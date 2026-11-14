@@ -27,10 +27,12 @@ use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Service\Anonymisation\OriginalCustodyService;
 use OCA\OpenRegister\Service\Anonymisation\RedactionVerdictStore;
 use OCP\Files\File;
 use OCP\IServerContainer;
 use Psr\Log\LoggerInterface;
+use Throwable;
 use ZipArchive;
 
 /**
@@ -189,8 +191,42 @@ class FilePublishingHandler {
 			}
 		);
 		$this->debug(message: '[FilePublishingHandler] publishFile: Successfully published file: ' . $fileNode->getName());
+		$this->scheduleOriginalCustody(fileNode: $fileNode, object: $object);
 		return $fileNode;
 	}//end publishFile()
+
+	/**
+	 * Schedule the deletion of a published redacted copy's original, when
+	 * `anonymisation.originalRetention` holds a duration (REQ-RRS-005).
+	 *
+	 * Runs after the share exists. A failure is logged and the publication
+	 * stands: an unscheduled original is kept, which deletes nothing.
+	 *
+	 * @param File         $fileNode The published file.
+	 * @param ObjectEntity $object   The object it belongs to.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-the-unredacted-originals-custody-is-stated-and-its-deletion-scheduled-req-rrs-005
+	 */
+	private function scheduleOriginalCustody(File $fileNode, ObjectEntity $object): void {
+		if (OriginalCustodyService::isCopy(name: (string)$fileNode->getName()) === false) {
+			return;
+		}
+
+		try {
+			/*
+			 * @var OriginalCustodyService $custody
+			 */
+			$custody = $this->container->get(OriginalCustodyService::class);
+			$custody->scheduleOnPublication(copy: $fileNode, objectUuid: (string)($object->getUuid() ?? ''));
+		} catch (Throwable $error) {
+			$this->logger->error(
+				message: '[FilePublishingHandler] Scheduling the original of a published redacted copy failed; the original is kept',
+				context: ['fileId' => (int)$fileNode->getId(), 'error' => $error->getMessage()]
+			);
+		}
+	}//end scheduleOriginalCustody()
 
 	/**
 	 * Refuse to publish a restricted file: a public link is served without

@@ -4270,3 +4270,12 @@ Service/Anonymisation/RedactionRunFingerprint.php,,Service,,,,,Compliance
 Service/Anonymisation/RedactionReviewGate.php,,Service,,,,,Compliance
 Exception/ReviewRequiredException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261114100200.php,,Migration,,,,,Platform
+Files/Service/File/Sanitizer/MetadataMask.php,,Files,,,,,Files
+Files/Service/File/Sanitizer/MetadataMaskingSanitizerInterface.php,,Files,,,,,Files
+Files/Service/File/Pdf/PdfInfoText.php,,Files,,,,,Files
+Db/OriginalCustody.php,,Db,,,,,Compliance
+Db/OriginalCustodyMapper.php,,Db,,,,,Compliance
+Service/Anonymisation/OriginalCustodyService.php,,Service,,,,,Compliance
+Controller/RedactionCustodyController.php,,Controller,,,,,Compliance
+BackgroundJob/OriginalRetentionJob.php,,BackgroundJob,,,,,Compliance
+Migration/Version1Date20261114100300.php,,Migration,,,,,Platform

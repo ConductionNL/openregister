@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Service\Settings;
 
+use DateInterval;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
@@ -36,6 +37,7 @@ use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
 use OCP\IAppConfig;
 use RuntimeException;
+use Throwable;
 
 /**
  * Handler for file management settings operations.
@@ -103,6 +105,17 @@ class FileSettingsHandler {
 	 * The anonymisation setting that makes output wait for a person's check.
 	 */
 	public const REQUIRE_REVIEW_KEY = 'requireReview';
+
+	/**
+	 * The anonymisation setting naming how long an unredacted original is kept
+	 * after its redacted copy is published: `keep` or an ISO 8601 duration.
+	 */
+	public const ORIGINAL_RETENTION_KEY = 'originalRetention';
+
+	/**
+	 * The retention that deletes nothing: the original is kept as the record.
+	 */
+	public const ORIGINAL_RETENTION_KEEP = 'keep';
 
 	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
@@ -388,6 +401,10 @@ class FileSettingsHandler {
 			$settings[self::REQUIRE_REVIEW_KEY] = ($settings[self::REQUIRE_REVIEW_KEY] === true);
 		}
 
+		if (array_key_exists(self::ORIGINAL_RETENTION_KEY, $settings) === true) {
+			$settings[self::ORIGINAL_RETENTION_KEY] = self::normaliseRetention(value: $settings[self::ORIGINAL_RETENTION_KEY]);
+		}
+
 		return $settings;
 	}//end readableAnonymisation()
 
@@ -403,6 +420,43 @@ class FileSettingsHandler {
 	public function requireReview(): bool {
 		return (($this->storedAnonymisation()[self::REQUIRE_REVIEW_KEY] ?? false) === true);
 	}//end requireReview()
+
+	/**
+	 * How long an unredacted original is kept after its redacted copy is
+	 * published: `keep` (the default, nothing is deleted) or an ISO 8601
+	 * duration such as `P90D`.
+	 *
+	 * @return string The retention.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-the-unredacted-originals-custody-is-stated-and-its-deletion-scheduled-req-rrs-005
+	 */
+	public function originalRetention(): string {
+		return self::normaliseRetention(value: ($this->storedAnonymisation()[self::ORIGINAL_RETENTION_KEY] ?? null));
+	}//end originalRetention()
+
+	/**
+	 * A retention as stored: an ISO 8601 duration that reads, else `keep`,
+	 * so a value that cannot be read never deletes anything.
+	 *
+	 * @param mixed $value The submitted or stored value.
+	 *
+	 * @return string `keep` or the duration.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-the-unredacted-originals-custody-is-stated-and-its-deletion-scheduled-req-rrs-005
+	 */
+	public static function normaliseRetention(mixed $value): string {
+		if (is_string($value) === false || preg_match('/^P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?$/', $value) !== 1) {
+			return self::ORIGINAL_RETENTION_KEEP;
+		}
+
+		try {
+			new DateInterval($value);
+		} catch (Throwable $unreadable) {
+			return self::ORIGINAL_RETENTION_KEEP;
+		}
+
+		return $value;
+	}//end normaliseRetention()
 
 	/**
 	 * The organisation's capacity policy (REQ-DKP-001): the stored one, else the shipped default.
@@ -475,10 +529,14 @@ class FileSettingsHandler {
 		// A save that does not name the capacity policy or the officials
 		// source keeps the stored ones (REQ-DKP-001); what is kept is
 		// normalised, so an unknown capacity or decision never reaches a run.
-		$kept       = ['capacityPolicy' => true, 'officialsSource' => true, self::REQUIRE_REVIEW_KEY => true];
+		$kept       = ['capacityPolicy' => true, 'officialsSource' => true, self::REQUIRE_REVIEW_KEY => true, self::ORIGINAL_RETENTION_KEY => true];
 		$submitted += array_intersect_key($this->storedAnonymisation(), $kept);
 		if (array_key_exists(self::REQUIRE_REVIEW_KEY, $submitted) === true) {
 			$submitted[self::REQUIRE_REVIEW_KEY] = ($submitted[self::REQUIRE_REVIEW_KEY] === true);
+		}
+
+		if (array_key_exists(self::ORIGINAL_RETENTION_KEY, $submitted) === true) {
+			$submitted[self::ORIGINAL_RETENTION_KEY] = self::normaliseRetention(value: $submitted[self::ORIGINAL_RETENTION_KEY]);
 		}
 		$submitted['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($submitted['capacityPolicy'] ?? null))->rules();
 		$submitted['officialsSource'] = OfficialsSource::normalise(value: ($submitted['officialsSource'] ?? null));
