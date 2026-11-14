@@ -8284,6 +8284,7 @@ measure:opencatalogi:20261113h22	php 96.55% (pcov, 17612 stmts), js 77.3% at 7a6
 build:opencatalogi:the-public-and-community-surface	failed: only open task 3.3 is blocked on open question Q-opencatalogi-1 (feed access check)	session-20261114T062202-3e33eeb3	2026-11-14T08:31:46Z
 fix:opencatalogi:2639:426466c7	floor restored (unit_interfacing 4.87), pushed bf46a41b	session-20261114T065631-b4991134	2026-11-14T08:31:50Z
 build:opencatalogi:prometheus-metrics	partial: PR opencatalogi#2661 federation reachable/unreachable gauges + docs; up/health/search-backend items are engine-owned (OpenRegister AppHost) or N/A	session-20261114T075640-efa02b24	2026-11-14T08:32:24Z
+fix:buildiq:1596:41f4f3c3	no change: merges clean on current development; conflicts only with unmerged #1590 (tests/Unit/Service/RegisterFragmentMergeTest.php) and #1593 (l10n/nl.js, nl.json); resolve after those land	session-20261114T073105-752e50ad	2026-11-14T08:32:17Z
 build:opencatalogi:publications-merge-and-migrate	PR #2660: T08 done (spec tag, parity rows building); T07 e2e open	session-20261114T065626-0651b305	2026-11-14T08:32:04Z
 build:launchpad:integrations-live-tile-lists	PR #1205: tasks 1-4 done (validation, server-side mapping, list/table/keyvalue renderer, form + presets); 5 Playwright and 6 archive left; PHP 4072 OK, vitest 2221 pass	session-20261114T070329-a050d62b	2026-11-14T08:32:20Z
 fix:opencatalogi:2643:0d9b922c	merged development in, no conflict remaining; 2 inherited unit failures; new head cde2b13d	session-20261114T082640-198131b9	2026-11-14T08:32:21Z
