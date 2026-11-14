@@ -7882,3 +7882,4 @@ verify:humaniq:1135:f4c042c9	GREEN 1135 1137; CONFLICT 1139; 0 new failures (416
 fix:integriq:3539:d13d9840	complexity floor restored (4.02), unit suite unchanged, pushed 19e9055d	session-20261114T065635-61264d14	2026-11-14T07:32:45Z
 fix:integriq:3557:43c29a57	CONFLICT resolved, pushed a7f1750e; no new failures	session-20261114T065631-3903ed42	2026-11-14T07:32:55Z
 review:hermiq:1653:2f7323a8	GREEN: tests only, +7 passing tests, no new failures	session-20261114T073117-2bd2e050	2026-11-14T07:33:02Z
+review:hermiq:1529:a597de38	GREEN: behaviour-preserving extraction, 4698 tests 0 failures	session-20261114T073105-27c9d15e	2026-11-14T07:33:21Z
