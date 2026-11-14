@@ -10163,6 +10163,7 @@ fix:integriq:3542:723f0642	relocated l10n keys and openapi paths off the shared 
 build4:openregister:identity-survives-a-move:c3	no code tasks left: 1.2 route exists and locks/presence/timers are keyed on the unchanged uuid (spec names no timer behaviour), refusal of locked/frozen/archived built in MoveObject::keptReason; only 3.1 e2e (live instance) remains	session-20261114T151803-c9b63248	2026-11-14T16:24:40Z
 fix:shillinq:3074:714defc1	stale	session-20261114T151802-aefa9c5e	2026-11-14T16:24:36Z
 fix:planninq:1169:1268ee2b	conflict resolved: l10n keys relocated, merges cleanly after 1158/1159/1162; REVERIFY 64a5c7efa1b0c1dd8bebd0d6737a43309cad99c6	session-20261114T161806-530176c3	2026-11-14T16:24:48Z
+fix:integriq:3602:d7d08f57	no change: already up to date with development and merges clean there; conflicts only with unmerged sibling #3592 (SettingsService*, AdminSettings.vue, SettingsServiceTest add/add); land one, then merge development into the other	session-20261114T154751-59b4cd56	2026-11-14T16:25:01Z
 merge:hermiq:1736:920ff480	merge3 tree of 12 hermiq PRs: merged=5 red=1 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:25:14Z
 merge:hermiq:1723:109b6198	merge3 tree of 12 hermiq PRs: merged=5 red=1 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:25:17Z
 merge:hermiq:1725:cc489bc4	merge3 tree of 12 hermiq PRs: merged=5 red=1 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:25:21Z
