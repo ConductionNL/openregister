@@ -11800,3 +11800,4 @@ build:versioniq:inventory-export-sbom-metrics:c2	PR #700: built 1.2 schema valid
 verify:integriq:3595:bc625056	4 GREEN (3595,3617,3630,3631); no new failures	session-20261114T221759-cd5c5678	2026-11-14T23:10:49Z
 fix:larpinq:1049:3b90a2cb	stale	feeder	2026-11-14T23:10:21Z
 cover:pipelinq:7f9dc8e6m799d:8f8dca30	already done: lib/Service/Export/*.php measures 98.38% statements (1337/1359) on development, above the 95% target; no PR	session-20261114T211012-c469e919	2026-11-14T23:11:37Z
+verify:stackiq:1966:d84a57f5	1966 GREEN	session-20261114T224754-e4a2fcab	2026-11-14T23:11:39Z
