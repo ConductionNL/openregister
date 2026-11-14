@@ -9023,3 +9023,4 @@ build2:openregister:tasks-delegation-and-substitution:c2	PR #10269: all code tas
 merge:filinq:2055:0bca98ef	merge3 tree of 6 filinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T12:17:26Z
 merge:filinq:2071:a6b54ff0	merge3 tree of 6 filinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T12:17:30Z
 fix:dossiq:6324:657667ea	conflict resolved: development already split the same units, took its lib side, kept tests (65 pass); new head 6c79a3f1	session-20261114T121619-c3deae2c	2026-11-14T12:18:25Z
+fix:dossiq:6322:985aafe3	conflict resolved: development already split the same units, took its lib side, kept tests (49 pass); new head b657de8f	session-20261114T121619-c3deae2c	2026-11-14T12:19:33Z
