@@ -9856,3 +9856,4 @@ fix:integriq:3582:da7df603	merged development (clean), pushed a9dc2ceaab80f802c2
 fix:integriq:3546:0b8d072d	duplication refactor pushed, head 726d7006, REVERIFY	session-20261114T151802-24eee21b	2026-11-14T15:34:01Z
 fix:integriq:3540:cce40cda	fixed job.schedule-preview label/area; regression-suite.* label failure inherited from development; head b60f9413	session-20261114T144734-e99d406c	2026-11-14T15:34:09Z
 fix:humaniq:1129:f4fd7074	fixed module_coupling (interview subscription out of Application.php); merged development and two newer build commits; head 5162c296; REVERIFY recorded (new unit_size/unit_interfacing drops come from the later build commits)	session-20261114T144756-7c8966f2	2026-11-14T15:34:26Z
+fix:integriq:3588:f2c639ee	conflict resolved (register version, features table), development merged in; failing tests inherited from development; new head 3b34e85d	session-20261114T141724-6227a125	2026-11-14T15:34:33Z
