@@ -11666,3 +11666,4 @@ fix:versioniq:707:19102464	floor restored (PASS), new head f78fb56e; REVERIFY re
 fix:versioniq:698:d0d1b4db	floor restored (complexity 4.60, interfacing 4.11), pushed 543a383c, REVERIFY recorded	session-20261114T221804-88b39b17	2026-11-14T22:44:51Z
 build:versioniq:install-one-click-updates:c2	no code tasks left on PR #717: 2.4 is an e2e spec and 3.1 is the close/archive step, both left for the live/release lanes	session-20261114T221804-88b39b17	2026-11-14T22:45:10Z
 fix:launchpad:1225:47177d86	floor restored (unit_interfacing 3.46), pushed 92488c7c, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T22:45:22Z
+merge:integriq:3539:11108ddf	merge3 tree of 23 integriq PRs: merged=6 red=9 fail=0 skip=0; conflict 5, lint 0, moved 3; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T22:45:43Z
