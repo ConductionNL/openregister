@@ -7551,3 +7551,4 @@ opencatalogi	2679	687626409577e58ac1c366ae64b47f7a8b286b26	CONFLICT	worker-44	me
 opencatalogi	2680	2f800fe4acfc06ca93594cea5d48fbf4d881ff48	CONFLICT	worker-44	merges clean on development alone; conflicts in tree order after 2648 in l10n/en.js en.json nl.js nl.json
 opencatalogi	2683	7a142fe75ca6421376d6ca75196abe994eae0bdc	CONFLICT	worker-44	merges clean on development alone; conflicts in tree order after 2648 in l10n/en.js en.json nl.js nl.json
 opencatalogi	2682	f086ce6d581a6ccf7785f21f19683bb3f0458495	CONFLICT	worker-44	merges clean on development alone; conflicts in tree order in l10n/en.js en.json nl.js nl.json lib/Listener/ListenerRegistrar.php tests/Unit/AppInfo/ComponentRegistrarsTest.php
+versioniq	693	ea33c69171ac0671c595af1e54899661be713ece	GREEN	worker-27	tree 693-701 (without 699): unit-only 1725 tests, baseline 1643 (2 failures inherited), 0 new; vitest 64 files/2964 pass; build advisories-name-their-feeds
