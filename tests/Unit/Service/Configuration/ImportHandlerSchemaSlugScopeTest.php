@@ -40,8 +40,10 @@ final class ImportHandlerSchemaSlugScopeTest extends TestCase {
 	/** @var SchemaMapperInterface&MockObject */
 	private SchemaMapperInterface $schemas;
 
+	/** @var ImportHandler The handler, built without its collaborators. */
 	private ImportHandler $handler;
 
+	/** @var ReflectionClass The handler's class, to reach its private lookups. */
 	private ReflectionClass $class;
 
 	protected function setUp(): void {

@@ -244,6 +244,7 @@ class SchemaTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getSchema(string $id): array {
+		// Stays global: the agent tool takes no register parameter.
 		$schema = $this->schemaMapper->find(id: $id);
 
 		return $this->formatSuccess(
@@ -324,6 +325,7 @@ class SchemaTool extends AbstractTool {
 	 */
 	public function updateSchema(UpdateSchemaCommand $command): array {
 		return $this->applyUpdate(
+			// Stays global: UpdateSchemaCommand carries no register.
 			schema: $this->schemaMapper->find(id: $command->id),
 			changes: ['title' => $command->title, 'description' => $command->description, 'properties' => $command->properties, 'required' => null]
 		);
@@ -420,6 +422,7 @@ class SchemaTool extends AbstractTool {
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
 	public function deleteSchema(string $id): array {
+		// Stays global: the agent tool takes no register parameter.
 		$schema = $this->schemaMapper->find(id: $id);
 		$this->schemaMapper->delete(entity: $schema);
 

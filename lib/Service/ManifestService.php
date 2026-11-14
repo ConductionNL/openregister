@@ -257,6 +257,7 @@ class ManifestService implements ManifestServiceInterface {
 	 */
 	private function profileSchemas(string $schemaSlug): ?array {
 		try {
+			// Stays global: a manifest's currentUserSchema names no register.
 			return $this->schemaMapper->findBySlug(slug: $schemaSlug, query: new ListQuery(limit: 1));
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -526,6 +527,7 @@ class ManifestService implements ManifestServiceInterface {
 	 */
 	private function schemaConfiguration(string $schemaSlug): ?array {
 		try {
+			// Stays global: a manifest's currentUserSchema names no register.
 			$schemas = $this->schemaMapper->findBySlug(slug: $schemaSlug, query: new ListQuery(limit: 1));
 		} catch (Throwable) {
 			return null;

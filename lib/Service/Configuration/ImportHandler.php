@@ -1480,6 +1480,8 @@ class ImportHandler {
 	 */
 	private function owningAppOfSlug(mixed $slug): ?string {
 		try {
+			// Stays global: a diagnostic on the app-scoped path, reached only when the import has no register
+			// schema ids.
 			return $this->schemaMapper->find($slug, _multitenancy: false)->getApplication();
 		} catch (\Throwable $ignore) {
 			// No pre-existing schema (or ambiguous) — nothing to warn about.
@@ -1508,6 +1510,7 @@ class ImportHandler {
 	 */
 	private function resolveSchemaGlobally(array $data, SchemaImportOptions $options): ?Schema {
 		try {
+			// Stays global: the legacy fallback for an import with neither register schema ids nor an app id.
 			return $this->schemaMapper->find($data['slug'], _multitenancy: false);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			$msg = "Schema '{$data['slug']}' not found, will create new one";

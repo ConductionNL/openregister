@@ -573,6 +573,8 @@ class SchemasController extends Controller {
 			return $this->resolveSchemaInRegister(id: $id, registerParam: (string)$registerParam);
 		}
 
+		// No register in this request: GET /api/schemas/{id} without ?register= stays global (Decision 3);
+		// with it, resolveSchemaInRegister() ran first.
 		$schema = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
 
 		// Leave evidence when a slug was ambiguous and nobody said which register they
@@ -2929,6 +2931,7 @@ class SchemasController extends Controller {
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
 	 */
 	private function outgoingSchemas(int|string $id): array {
+		// Stays global: /api/schemas/{id}/related names no register, and a schema is not owned by one.
 		$targetSchema = $this->schemaMapper->find($id, _multitenancy: false);
 		$properties = $targetSchema->getProperties() ?? [];
 
@@ -3057,6 +3060,8 @@ class SchemasController extends Controller {
 	public function indexes(int|string $id): JSONResponse {
 		try {
 			// Metadata-read bypass, as stats(): the schema definition is a catalogue read.
+			// Stays global: /api/schemas/{id}/indexes names no register; its registers are listed only after the
+			// schema is found.
 			$schema  = $this->schemaMapper->find($id, _multitenancy: false);
 			$results = [];
 			foreach ($this->registerMapper->getAllRegisterIdsWithSchema(schemaId: (int)$schema->getId()) as $registerId) {
@@ -3652,6 +3657,7 @@ class SchemasController extends Controller {
 		try {
 			// Metadata read: a schema's own declaration is catalogue data, scoped
 			// the same way the sibling `related` endpoint scopes it.
+			// Stays global: /api/schemas/{id}/list-presentation names no register.
 			$schema = $this->schemaMapper->find($id, _multitenancy: false);
 		} catch (\Throwable $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);

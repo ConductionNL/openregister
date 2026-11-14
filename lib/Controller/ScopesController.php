@@ -231,6 +231,7 @@ class ScopesController extends Controller {
 		}
 
 		try {
+			// Stays global: the matrix preview route names only the schema and the user.
 			$schema = $this->schemaMapper->find($id);
 		} catch (DoesNotExistException | MultipleObjectsReturnedException) {
 			return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
