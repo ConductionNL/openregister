@@ -11552,3 +11552,4 @@ review:shillinq:2991:f2980f52	GREEN	session-20261114T214733-589f5bff	2026-11-14T
 build:stackiq:landscape-completeness-score:c2	nothing left in code: PR #1942 already has tasks 1-4 implemented with unit tests and the docs page, branch current with development; left Playwright (2,3) and screenshot (5), need a live instance	session-20261114T214719-cd72efa7	2026-11-14T22:25:42Z
 fix:stackiq:1946:c75ea65b	no change: branch already contains development; conflict is only with unmerged siblings #1911/#1928 (l10n), reverify after they land	session-20261114T214719-cd72efa7	2026-11-14T22:26:10Z
 review:integriq:3542:cd5c8335	stale	session-20261114T221759-cd5c5678	2026-11-14T22:26:21Z
+fix:shillinq:3062:cbb6114b	merged development (clean), new head 1eafaacd22c1d16ca5ab111eeeb9816f2f4b9564; suite 11501/0 fail; tree conflict is with sibling PRs version/lock/l10n	session-20261114T211012-c469e919	2026-11-14T22:26:54Z
