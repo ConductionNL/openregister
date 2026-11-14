@@ -11756,3 +11756,4 @@ fix:integriq:3592:8a35a39a	floor restored to 3.56 via scheduler interface; new h
 fix:integriq:3633:90a867a5	fixed: development merged in clean, pushed 2cf69c00	session-20261114T224740-064dbb86	2026-11-14T23:02:59Z
 fix:larpinq:1045:8588a19f	merged dev, l10n block moved off the catalogue end (clean with #1041), listener-order test updated; new head fc4e9f54	session-20261114T221759-c6bc4865	2026-11-14T23:03:06Z
 fix:versioniq:706:61f814de	no change: branch contains development and merges clean; the l10n conflict is only with unmerged #691, resolves after #691 lands	session-20261114T221801-9a21d394	2026-11-14T23:03:09Z
+build:buildiq:capability-requirements-backfill:c4	failed: not started; this worker's context was nearly full after 28 tasks, needs a fresh worker (PR #1647, T01, T03-T04, T06-T20, T22-T30 left; T31 needs the openspec CLI)	session-20261114T204759-5dc9dba7	2026-11-14T23:03:19Z
