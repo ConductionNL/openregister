@@ -10072,6 +10072,7 @@ review:openregister:10566:9fb975a0	APPROVE 10566	session-20261114T144809-d686f75
 build:pipelinq:kcc-agent-panel:c2	failed: not buildable: the change itself declares implementation out of scope (plan only, 'not to be built now'); needs a follow-up implementation change, and integriq kcc-cti-adapter CallEvent is still unbuilt	session-20261114T161013-497dba57	2026-11-14T16:10:49Z
 fix:buildiq:1590:ab70ca96	conflict removed (test moved to own file), pushed 44e1dfb1, REVERIFY recorded	session-20261114T151942-48d6369d	2026-11-14T16:10:49Z
 merge:filinq:2123:0c1ad3dd	merge3 tree of 10 filinq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T16:10:58Z
+verify:integriq:3539:438931ea	3539 GREEN; 3589 RED (4 payment tests); 3542,3569,3572,3574,3582,3596 CONFLICT vs 3539; 3564 skipped (head moved)	session-20261114T154734-655bd0f3	2026-11-14T16:10:57Z
 fix:planninq:1170:b025d50e	conflict resolved keeping both sides; new head c04b52d2, REVERIFY recorded	session-20261114T151934-e3441c93	2026-11-14T16:11:07Z
 merge:filinq:2070:0971d94c	merge3 tree of 10 filinq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T16:11:23Z
 merge:filinq:2105:df149391	merge3 tree of 10 filinq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T16:11:37Z
