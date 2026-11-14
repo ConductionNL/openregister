@@ -11039,3 +11039,4 @@ review:portaliq:2440:05103dba	GREEN: spec-backed portal-admin scope, fails close
 fix:filinq:2094:f7a9efc0	fixed: initialState->initial on externalDocument + test; spec text aligned to the one filinq register; pushed f466700e111bbb4f5ce9b123ebfc87435510234e, REVERIFY recorded. Note: signingRequest and dossier on development carry the same initialState defect	session-20261114T191742-bf93c040	2026-11-14T20:53:01Z
 fix:integriq:3612:50b7eb46	complexity floor restored (3.88->3.90 PASS); new head b5b2780e	session-20261114T204741-7bef6f2a	2026-11-14T20:53:12Z
 fix:planninq:1167:b566c981	fixed floor: refactor restores unit_size/complexity/interfacing, floor_check PASS; pushed d6c4dc18; REVERIFY recorded	session-20261114T194745-243de12d	2026-11-14T20:53:32Z
+fix:buildiq:1626:9c88d3df	resolved nl l10n conflict keeping both; new head cac162dc, REVERIFY	session-20261114T204750-c1efccdb	2026-11-14T20:53:41Z
