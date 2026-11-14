@@ -8529,6 +8529,7 @@ build:versioniq:safety-rollback-backup-and-preflight	partial: PR #714, tasks 1.1
 review:opencatalogi:2456:dc12f0da	GREEN	session-20261114T065626-0651b305	2026-11-14T09:02:23Z
 build:versioniq:install-manual-upload	partial: PR #715 with 1.1 (upload inspect route + UploadedArchive) and 2.3 (allow-unsigned setting); 1.2, 2.1, 2.2, 3.x left; phpunit 1643->1662 (2 inherited), vitest green	session-20261114T075638-c30fc6de	2026-11-14T09:02:30Z
 verify:keepiq:1793:c59ba7fe	1793 GREEN	session-20261114T070329-a050d62b	2026-11-14T09:02:47Z
+build:stackiq:organisations-role-mapping-and-access-review	partial: PR #1946 (backend of tasks 1,2,4; 44 tests); task 1 Vue, 3 auto-sync, 5 page, 6 seed/docs left	session-20261114T062156-16c77e6a	2026-11-14T09:02:54Z
 fix:opencatalogi:2665:34754ce1	no change: merges cleanly with current development; conflict only with unmerged #2664 (PublicationsControllerTest), resolve after it lands	session-20261114T075638-c30fc6de	2026-11-14T09:03:08Z
 fix:versioniq:685:0d04ca1a	failed: floor still lowered after a partial fix pushed (new head 0a9c1956): unit_interfacing 3.88->4.06 (base 4.08), overall 4.87->4.89 (4.92); still down: php unit_complexity (units >CCN5 +132 loc: OsvClient firstFixed/resolve/queryAll), duplication (BundledLibrariesSection.vue +31 lines, php +18), unit_size 4.71 (4.73); needs a deeper refactor than the 45-min cap	session-20261114T073111-9b40710a	2026-11-14T09:03:03Z
 verify:learniq:2494:595ea3c0	2494 GREEN	session-20261114T065635-0aca43d3	2026-11-14T09:03:13Z
