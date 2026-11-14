@@ -39,7 +39,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-every-detection-backend-reports-what-it-is-built-from-req-adi-001
  */
-class Version1Date20261114100000 extends SimpleMigrationStep {
+class Version1Date20261114113000 extends SimpleMigrationStep {
 
 	/**
 	 * Change the database schema.
