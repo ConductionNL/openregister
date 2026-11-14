@@ -6,7 +6,8 @@
       > 2026-11-14: `Version1Date20261114100000` adds `direction`. A link made from a Mail message is `inbound`; `details.direction` reads the metadata first, then the column.
 - [x] 1.2 Read the header at link time (built, in `EmailService` and `EmailLinkService`); `BackfillEmailLinkMessageIdJob` one-shot with a kill switch.
       > 2026-11-14: the migration queues `BackfillEmailLinkMessageIdJob` once; `EmailLinkMessageIdBackfill` walks the links without an id by id and reads `mail_messages.message_id`. App config `backfill_email_link_message_id = no` skips it.
-- [ ] 1.3 Outbound link written by the dispatch leaf's e-mail channel when `object` is bound.
+- [x] 1.3 Outbound link written by the dispatch leaf's e-mail channel when `object` is bound.
+      > 2026-11-14: `MailContent` takes an optional `MailObjectBinding`; `EmailSender` mints the `Message-ID` on a bound mail and, once it is sent, `OutboundMailLinkWriter` stores an `outbound` link with it (account and message ids 0, uid the `Message-ID`). The send-email flow step binds a mail to an external address to its item's object. A mailer without a mail object, or a failed link write, sends the mail unlinked.
 
 ## 2. Resolve
 
