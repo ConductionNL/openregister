@@ -8134,3 +8134,4 @@ portaliq	2489	9988356c0cce6d32c1860267f1bcf27175694f7e	CONFLICT	merge3	merges cl
 portaliq	2493	1eb55a790dbf0055737fc15391ed4e495e27e147	CONFLICT	merge3	merges clean on development alone; files: package.json 
 portaliq	2494	270c3876581085507b6e64b24c8848f820a79a53	CONFLICT	merge3	merges clean on development alone; files: package.json 
 shillinq	3059	50043d179ea704d66e9c323e56f09d69dd48e543	GREEN	worker-11	PHP 11072 on tree, baseline 11050 green, no new failures; vitest 2729, 1 inherited (dunningNextRun); builds receivables-sepa-direct-debit 1.2-1.4, 2.1, 3.1 as specified
+filinq	2069	4243443d7476553095e3a44eafd13dd8cfd9a513	GREEN	worker-23	unit 6718 OK (baseline 6695 OK), no JS, no new failures; builds intake-acknowledge-and-stamp, additive listener after the save
