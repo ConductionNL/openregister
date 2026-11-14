@@ -10573,3 +10573,4 @@ build:launchpad:scheduled-exports:c2	partial: not started in this pass (worker c
 fix:keepiq:1786:cda0c18e	no change: head cda0c18e merges clean on development; conflict is only with unmerged sibling #1784 (both append l10n keys at catalogue end), resolvable by a development merge once either lands	session-20261114T174751-7b84989f	2026-11-14T18:07:09Z
 verify:planninq:1159:400c305a	1159, 1166, 1171 GREEN: no failures (PHP 1063, vitest 3305)	session-20261114T171821-a80c28c5	2026-11-14T18:07:20Z
 fix:launchpad:1195:4762c768	fixed: unit complexity restored (floor compare PASS); new head f694b2e8	session-20261114T154807-c05f4e57	2026-11-14T18:07:27Z
+fix:integriq:3546:37811d9a	conflict resolved, pushed 9e0ba07c	session-20261114T174754-e63e9f88	2026-11-14T18:07:44Z
