@@ -8740,4 +8740,5 @@ fix:pipelinq:3819:1d027909	REVERIFY: l10n keys moved mid-catalogue, merges with 
 verify:pipelinq:3821:d0cf91bf	3 GREEN	session-20261114T075640-efa02b24	2026-11-14T09:58:11Z
 build:pipelinq:my-work-roadmap:c2	already building: the first pass PR #3726 (block 1, MyWorkController and WorklistService changes the later blocks build on) is not merged yet; continue after it lands	session-20261114T075644-ec2e07ac	2026-11-14T09:58:23Z
 verify:shillinq:3041:a6275c56	3041 3042 3043 GREEN; php 10812 OK, vitest 1 inherited failure	session-20261114T092658-4bf01f0f	2026-11-14T09:58:24Z
+build:pipelinq:specify-capability-rows:c2	failed: no slice built - 36.1 needs a non-admin 'telephony configured' signal (only admin GET /api/cti/config exists) and a hook beside phone values in manifest row widgets; 29.1/34.1/35.1 are each feature-sized (variants, booking link, shillinq invoices); #3742 (30.1-33.1) still open	session-20261114T073117-2bd2e050	2026-11-14T09:58:28Z
 verify:decidiq:2183:f78e46a5	3 GREEN (2183,2184,2185); unit 4027->4050, no new failures	session-20261114T095640-f8608005	2026-11-14T09:58:37Z
