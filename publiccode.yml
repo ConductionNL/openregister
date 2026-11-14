@@ -60,11 +60,6 @@ maintenance:
       email: info@conduction.nl
       affiliation: Conduction B.V.
 
-# Common Ground layer (nl.vng profile). The NL country section is deprecated in
-# publiccode.yml 1.0, so the same layer is also declared as a supports entry.
+# Common Ground layer (nl.vng profile), as a standard supports entry.
 supports:
   - id: https://commonground.nl/cms/view/54476261/5-lagen-model#data
-NL:
-  vng:
-    commonground:
-      layer: data
