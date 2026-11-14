@@ -643,11 +643,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findAll(
-		?int $limit=null,
-		?int $offset=null,
-		?array $filters=[],
-		?array $sort=['created' => 'DESC'],
-		?string $search=null,
+		int|null $limit=null,
+		int|null $offset=null,
+		array|null $filters=[],
+		array|null $sort=['created' => 'DESC'],
+		string|null $search=null,
 	): array {
 		return $this->findTrail(
 			query: new ListQuery(
