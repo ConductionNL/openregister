@@ -11814,3 +11814,4 @@ cover:pipelinq:7f9dc8e6m799d:09cc8f24	already done: lib/Service/Cti/ 374/374 sta
 cover:pipelinq:7f9dc8e6m799d:38e80a9f	already done: lib/Command/*.php 423/423 statements (100%, pcov, full unit suite) on development 0d8e11ea2; every command has tests; no PR	session-20261114T225452-4fcfea7f	2026-11-14T23:14:57Z
 cover:dossiq:069ee2d6mbd37:53c979ad	already done: lib/Service/Zaakdossier/*.php at 98.1% statements (target 95), no PR	session-20261114T224738-9571d712	2026-11-14T23:15:25Z
 verify:integriq:3592:6deae096	3592,3612,3615,3628,3637 GREEN; 3633 CONFLICT	session-20261114T224753-194bb25e	2026-11-14T23:15:30Z
+build:larpinq:communication-help-desk:c2	PR #1045: 3.1 pages+dashboard+age cell, 3.2 portal askQuestion/myQuestions/notification, 4.1 strings 37 locales, 4.2 docs done; left 3.3 e2e + Newman (live instance); unit 839->844, vitest 548->561 green	session-20261114T224751-87da8a15	2026-11-14T23:16:01Z
