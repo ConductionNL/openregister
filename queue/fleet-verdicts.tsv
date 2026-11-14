@@ -8289,4 +8289,5 @@ learniq	2523	68089f6f3395c0c6ba8e75418981cf66d76ad74d	GREEN	worker-01	unit 6741 
 learniq	2493	fb2835b0f160f1880c5c3768243d989c51998803	CONFLICT	worker-01	conflicts on top of development+2484: l10n/nl.json
 dossiq	6385	0de8a79923d7951731d8e91f41d3a4da6038de97	REVERIFY	worker-20	renumbered 99-case-type-inspection-checklist caseType 1.48.0 -> 1.49.0 (+digest record); tests/Unit/Settings 840, only the 2 inherited sibling-openregister failures; new head db74d1b0be23a8e02e760af441f90e532c96bbf8, verify it
 learniq	2507	0316c337c72793e0e0278fb488e4e69b6bb91b4b	CONFLICT	worker-01	conflicts on top of development+2484: l10n/nl.json, learniq_register.json, OpenLearningMaterialRegisterTest.php
+decidiq	2155	91ee96826cd760fbd69a9d1a519c48b2ed7e1d5f	REVERIFY	worker-37	merged origin/development in; l10n en/nl .js/.json conflicts resolved as union of both sides' keys, l10n:build --check and test:l10n green; unit suite 4175 tests OK; new head 932b251cb43268565ca74da412c141a809e13234, verify it
 learniq	2524	593b6b3784220353064af7c871ab4a4cd59ee388	CONFLICT	worker-01	conflicts on top of development+2484+2521+2523: l10n/nl.json, learniq_register.json, HourPlanRegisterTest.php
