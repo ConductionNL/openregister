@@ -67,13 +67,28 @@ issuer and are outside this pass. Test: `tests/Unit/Service/Rbac/ObjectGrantIssu
 
 ## 5. Tests
 
-- [ ] 5.1 Unit tests: the four contract scenarios, both postures, issuer
+- [x] 5.1 Unit tests: the four contract scenarios, both postures, issuer
       derive and revoke, and the validator refusals on the issue path. Doubles
       use `onlyMethods`.
 - [ ] 5.2 `tests/e2e/api-direct/object-access-contract.spec.ts`, probing with
       an ordinary authenticated user who should be refused.
-- [ ] 5.3 A test asserting `PermissionHandler` and `MagicRbacHandler` answer
+- [x] 5.3 A test asserting `PermissionHandler` and `MagicRbacHandler` answer
       the same set for one declaration, which is the layer-agreement guard.
+
+Build note (5): the contract scenarios and the layer-agreement guard are
+`tests/Unit/Service/Rbac/ObjectAccessContractTest.php`. It runs the real
+`PermissionHandler` (find) and the real `MagicRbacHandler` (list, compiled by
+`MagicSearchHandler` and executed on an SQLite table, row verdict too) over one
+real `ConditionMatcher`, for the D-1 declaration: the assignee, a member of
+`assignees`, a stranger whose refusal names the principals and the rule, the
+`permittedActionsFor()` answer against the enforcement, and per caller the find
+set equal to the list set. Both postures are
+`PermissionHandlerUndecidablePostureTest` and `MagicRbacUndecidablePostureTest`;
+issuer derive and revoke is `ObjectGrantIssuerTest`; the validator's reason on
+the issue path is `ConsumersControllerTest`. On the issue path the issuer's
+verbs are the catalogue's verbs, so the "wider than the issuer" refusal is only
+reachable through the validator's own tests (`TokenGrantValidatorRefusalTest`).
+5.2 is an e2e spec against a live instance and is left for the e2e lane.
 
 ## 6. Consuming apps
 
