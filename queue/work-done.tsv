@@ -8554,3 +8554,4 @@ review:keepiq:1631:f4de0e6f	GREEN: formatter extraction, behaviour unchanged, vi
 build:thematiq:action-colour-token	already built: on development since 06c92322e (#1252), every code task ticked; only 6.4 (running-instance check) open	session-20261114T075640-614c8df8	2026-11-14T09:06:01Z
 build:thematiq:shell-tokens-endpoint	already done: built in #1250; only 5.3 (live call against a running instance) is open, which cannot be done here	session-20261114T062200-6a28e40c	2026-11-14T09:06:19Z
 fix:stackiq:1906:0659304c	development merged in clean; conflict only with open #1899; REVERIFY at 5acf605d	session-20261114T075648-394d8174	2026-11-14T09:06:13Z
+build:thematiq:brand-form-action-colour	already done: tasks 1-7 built on development (brand-form.json, BrandFormService, controller, admin form, l10n); only task 8 (live look) left	session-20261114T075646-ed650af0	2026-11-14T09:06:39Z
