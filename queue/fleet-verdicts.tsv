@@ -9401,3 +9401,4 @@ pipelinq	3835	53c482bd863ceaf5d117d415362b24b587eea728	CONFLICT	merge3	merges cl
 learniq	2536	c7133ae45238f5b3683031ca0f1cb403c886a1a5	GREEN	worker-08	phpunit 6782 tests (baseline 6754, 1 inherited failure HigherEducationExampleSetTest), js 1372 (9 inherited fails), no new failures; build of bpv-coach-today-and-placement-board, ownership checked on visit answer
 filinq	2126	ff1f07a22f724c52228553853290ed7893e14bfc	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.48 -> 4.45
 filinq	2130	9f002cf966a2557ed80253c20c1cae97f45d359e	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
+keepiq	1791	16a86af240189492e6e567da770939bd71ca1ba7	GREEN	worker-46	phpunit 5008 tests OK (baseline 4998 OK, 241 skipped both), vitest 6510/6510 passed; no new failures; implements crypto-recovery-kit per its spec
