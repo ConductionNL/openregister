@@ -9656,3 +9656,4 @@ build:decidiq:governing-documents-register:c2	built: PR #2177 head 1d3a5285, tas
 verify:shillinq:2997:438ec8cf	2997 GREEN; 3007 CONFLICT after 2997	session-20261114T141737-e9e54940	2026-11-14T14:59:58Z
 fix:learniq:2519:f19a370b	merged development, re-recorded portal golden; new head e252f190	session-20261114T141010-8dc8bd74	2026-11-14T15:00:17Z
 review:hermiq:1492:c1a27c1a	GREEN: faithful refactor, no new unit failures, phpstan clean	session-20261114T144812-4140669d	2026-11-14T15:00:31Z
+fix:shillinq:3065:59e20f97	conflict with #3050 removed (l10n block moved), pushed 6cbead018f926712cd87a6a8a861b08b9b9e2161, REVERIFY	session-20261114T141720-f9e7a46b	2026-11-14T15:00:42Z
