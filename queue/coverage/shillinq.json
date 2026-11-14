@@ -1,12 +1,12 @@
 {
  "app": "shillinq",
- "commit": "8790805a469b030acdae905e0f16720579423dc5",
- "measured_at": "2026-11-13T22:33:24Z",
+ "commit": "045ffd218834b5c31edd34d24b37dbef323da222",
+ "measured_at": "2026-11-14T07:10:35Z",
  "php": {
   "tool": "pcov",
-  "pct": 91.6,
-  "statements": 80581,
-  "covered": 73813,
+  "pct": 92.26,
+  "statements": 81269,
+  "covered": 74981,
   "dirs": {
    "lib/AppInfo/": [
     72,
@@ -14,7 +14,7 @@
    ],
    "lib/BackgroundJob/": [
     1728,
-    1712
+    1718
    ],
    "lib/BackgroundJob/Support/": [
     12,
@@ -25,12 +25,12 @@
     234
    ],
    "lib/Command/": [
-    208,
-    194
+    262,
+    259
    ],
    "lib/Controller/": [
-    9880,
-    9374
+    9893,
+    9584
    ],
    "lib/Dashboard/": [
     164,
@@ -74,11 +74,11 @@
    ],
    "lib/Lifecycle/": [
     7071,
-    6293
+    6540
    ],
    "lib/Lifecycle/Action/": [
     616,
-    587
+    592
    ],
    "lib/Listener/": [
     2845,
@@ -87,6 +87,10 @@
    "lib/Listener/Registration/": [
     335,
     102
+   ],
+   "lib/Mcp/": [
+    105,
+    103
    ],
    "lib/Middleware/": [
     59,
@@ -102,7 +106,7 @@
    ],
    "lib/PaymentPlan/": [
     513,
-    492
+    497
    ],
    "lib/PaymentRun/": [
     509,
@@ -118,7 +122,7 @@
    ],
    "lib/Repair/": [
     3924,
-    3140
+    3214
    ],
    "lib/Repair/Support/": [
     81,
@@ -126,7 +130,7 @@
    ],
    "lib/Reporting/": [
     346,
-    339
+    341
    ],
    "lib/Reporting/Feed/": [
     30,
@@ -149,8 +153,8 @@
     5
    ],
    "lib/Service/": [
-    32776,
-    29378
+    33100,
+    29702
    ],
    "lib/Service/Asset/": [
     564,
@@ -165,8 +169,8 @@
     102
    ],
    "lib/Service/Booking/": [
-    377,
-    359
+    385,
+    367
    ],
    "lib/Service/Commitment/": [
     541,
@@ -174,7 +178,7 @@
    ],
    "lib/Service/Dunning/": [
     812,
-    797
+    808
    ],
    "lib/Service/EInvoice/": [
     349,
@@ -242,7 +246,7 @@
    ],
    "lib/Service/Import/": [
     898,
-    864
+    875
    ],
    "lib/Service/Import/ImportProfile/": [
     116,
@@ -254,7 +258,7 @@
    ],
    "lib/Service/Lifecycle/": [
     11,
-    5
+    11
    ],
    "lib/Service/Migration/": [
     283,
@@ -274,7 +278,7 @@
    ],
    "lib/Service/Pivot/": [
     185,
-    184
+    185
    ],
    "lib/Service/Platform/": [
     160,
@@ -285,8 +289,8 @@
     112
    ],
    "lib/Service/PublicSector/": [
-    462,
-    452
+    504,
+    497
    ],
    "lib/Service/PurchaseOrder/": [
     126,
@@ -296,9 +300,13 @@
     91,
     91
    ],
+   "lib/Service/Receivables/": [
+    142,
+    34
+   ],
    "lib/Service/Relation/": [
     258,
-    256
+    258
    ],
    "lib/Service/Sales/": [
     473,
@@ -318,7 +326,7 @@
    ],
    "lib/Service/Tax/": [
     59,
-    50
+    59
    ],
    "lib/Service/Treasury/": [
     538,
@@ -363,9 +371,9 @@
   }
  },
  "js": {
-  "pct": 85.33,
-  "statements": 7503,
-  "covered": 6402,
+  "pct": 90.31,
+  "statements": 7571,
+  "covered": 6837,
   "dirs": {
    "src/": [
     3,
@@ -381,7 +389,7 @@
    ],
    "src/components/BudgetBBVMapping/": [
     457,
-    439
+    457
    ],
    "src/components/Dashboard/": [
     45,
@@ -425,7 +433,7 @@
    ],
    "src/components/inventory/": [
     327,
-    311
+    327
    ],
    "src/components/invoice/": [
     95,
@@ -488,8 +496,8 @@
     4
    ],
    "src/modals/": [
-    1560,
-    888
+    1597,
+    1185
    ],
    "src/store/": [
     3,
@@ -504,12 +512,12 @@
     0
    ],
    "src/utils/": [
-    638,
-    612
+    669,
+    643
    ],
    "src/views/": [
     502,
-    422
+    495
    ],
    "src/views/bookings/": [
     308,
