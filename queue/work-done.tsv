@@ -11894,3 +11894,4 @@ fix:filinq:2088:2d0b82be	merged development in clean, unit 6782 OK, new head 0e8
 cover:decidiq:a5f973bbmae46:1b97f731	PR #2209: guard listener tests no longer risky (+@uses), 8 new edge tests; Listener 94.67% -> 98.25%; suite 4248 -> 4256, risky 14 -> 8, no failures	session-20261114T214733-589f5bff	2026-11-14T23:27:29Z
 merge:decidiq:2187:0a80e3a7	merge3 tree of 11 decidiq PRs: merged=4 red=0 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T23:27:49Z
 fix:larpinq:1051:c35fd6e8	l10n block moved mid-catalogue, clean with #1041/#1045/#1060; REVERIFY e02d02f9c6de89cda74e6f462f829bbac7a69e1c	session-20261114T224756-971efe57	2026-11-14T23:27:55Z
+fix:filinq:2126:8274bd42	fixed: development merged in clean, pushed 5e6533ee	session-20261114T224740-064dbb86	2026-11-14T23:28:02Z
