@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\TwigSandboxFilters;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
 use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use Psr\Log\LoggerInterface;
@@ -95,23 +96,7 @@ class ComputedFieldHandler {
 	 * The filters the Twig sandbox allows in computed expressions.
 	 */
 	private const SANDBOX_FILTERS = [
-		'date',
-		'date_modify',
-		'upper',
-		'lower',
-		'trim',
-		'length',
-		'default',
-		'number_format',
-		'round',
-		'abs',
-		'split',
-		'join',
-		'slice',
-		'first',
-		'last',
-		'replace',
-		'format',
+		...TwigSandboxFilters::COMMON,
 		'b64enc',
 		'b64dec',
 		'json_decode',
