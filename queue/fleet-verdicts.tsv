@@ -8225,3 +8225,4 @@ dossiq	6509	676824939370fe2968a93ba14e8ac60809607f46	GREEN	worker-29	phpunit 173
 dossiq	6510	1f3c039488364d0a9647207329b0bdadaa4f37f0	GREEN	worker-29	phpunit 17322 tests on tree, baseline 13 failures (stub drift), 0 new; vitest 7058, 1 inherited failure (capabilityComparison closure rows, red on development)
 shillinq	2963	fa86a71113bc295365d2849082a913866a2ef4bb	GREEN	worker-34	unit 11146 tests 0 failures; vitest 2726 tests, 1 failure inherited from development (dunningNextRun.spec.js); new failures none
 shillinq	2976	b29fc602b8b9b344cd3aee25345c2b45a7cf077d	CONFLICT	worker-32	conflicts with development e6aba398: info.xml, l10n, register.d foundation json, register-versions lock
+shillinq	2997	d69cea0597d6b42b5a0248e3edf5a7d270fc882f	CONFLICT	worker-34	conflicts with development: appinfo/info.xml appinfo/routes.php l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json
