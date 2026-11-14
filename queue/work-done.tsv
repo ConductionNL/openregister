@@ -11419,4 +11419,5 @@ fix:stackiq:1905:dc6d3343	sbom regenerated, --check passes; new head 99fed107, R
 fix:hermiq:1750:7b8181e8	conflict resolved, merged development, +2 tests, suites green; new head e1618265, REVERIFY recorded	session-20261114T214736-dd784d82	2026-11-14T22:06:24Z
 fix:shillinq:2977:7f14a104	conflict resolved, new head 56133b60	session-20261114T214733-589f5bff	2026-11-14T22:06:50Z
 review:opencatalogi:2643:e9586088	GREEN: matches dcat-catalogue-completion spec; unit suite only inherited failures, touched jest/vitest green	session-20261114T211808-5e900938	2026-11-14T22:07:00Z
+build:stackiq:capability-requirements-from-the-matrix:c2	partial: not started this run (worker context nearly full); #1923 merged with Tasks 2 and 4; left Task 1 (EntryWizardDialog + manifest) and Task 3 (Active-only-by-approved-decision guard, best via the contracts-to-decidesk.json fragment lifecycle since workers may not touch softwarecatalogus_register.json)	session-20261114T203357-c555025b	2026-11-14T22:07:38Z
 verify:opencatalogi:2668:7ed34598	8 GREEN (2668,2710-2716); 2684 skipped (head moved to 8f4a54a3f); no new failures	session-20261114T211801-f16dd26d	2026-11-14T22:07:57Z
