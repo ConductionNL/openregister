@@ -10589,3 +10589,5 @@ learniq	2486	f0544ac9b797c7925644e7571820803aeeeb4235	CONFLICT	merge3	merges cle
 learniq	2513	2bcbcc6d2ccd517e7f04fc3684d4412403862fc2	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json 
 versioniq	733	12c4f99641c4c0ef361c42add879b5cc4b4412cc	GREEN	worker-58	tree dev+700+733: unit-only suite 1742 (baseline 1697, same 2 inherited golden failures; runner phpunit 10.5 from a cached vendor since vendor-bin/phpunit is not installed), vitest 2974 passed; new failures none; tests only (2 vitest specs)
 versioniq	734	c03718fb341de7b2c00073052072e38c7d10a759	CONFLICT	worker-58	merges clean on development alone; conflicts with #700 in lib/Db/AuditEntryMapper.php
+pipelinq	3844	c727734b9f8741e1d90a4fb46e938b8555a66d71	GREEN	worker-23	tests only, no assertions removed; phpunit 8563 tests 0 failures on tree
+pipelinq	3845	e0dd744ca2e826d116078083012a3d825b36e9a1	GREEN	worker-23	tests only, no assertions removed; phpunit 8563 tests 0 failures on tree
