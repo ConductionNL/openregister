@@ -9899,6 +9899,7 @@ build:integriq:adapter-configuration-screens:c2	PR #3610: tasks 2-3 built (LTI p
 cover:integriq:92114ab0m0593:d0ed39e1	PR #3611: +31 tests (SharePointOnlineAdapter lookups, StufZknClient exchange refusals); dirs 93.5% -> 97.4%	session-20261114T151755-dc817df2	2026-11-14T15:42:25Z
 verify:integriq:3549:6d83665f	GREEN 3549 (8930 tests, 0 new failures)	session-20261114T151801-20bb3a08	2026-11-14T15:42:28Z
 verify:filinq:2069:e41aab19	GREEN 2069 2100 2118; CONFLICT 2079 2112 2126	session-20261114T144756-7c8966f2	2026-11-14T15:42:53Z
+measure:integriq:20261114h08	php 94.65% (pcov, 67366 stmts), js 89.78% (7204 stmts) at b36e19bc	session-20261114T144812-7fefa6ba	2026-11-14T15:43:20Z
 build:integriq:brp-connection-monitor-from-pipelinq:c2	PR #3612: task 3.1 handover listener built with 19 tests; 4.1 full check:strict not run (touched-file gates green); all code tasks ticked	session-20261114T151751-5fc6ef5c	2026-11-14T15:43:02Z
 verify:hermiq:1728:28794c35	stale	session-20261114T144757-446bd6da	2026-11-14T15:43:08Z
 fix:hermiq:1753:17a75239	conflict with #1725 removed: moved this PR's 2 l10n keys away from the shared insertion point, merged development; clean against #1725 and development; new head f4cfe671, REVERIFY recorded	session-20261114T144751-8a65b704	2026-11-14T15:43:17Z
