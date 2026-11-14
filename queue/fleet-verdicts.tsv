@@ -10481,3 +10481,5 @@ larpinq	1039	726a2623a0ede8c3bb10b131c8fcbb3f95a174f8	REVERIFY	worker-23	unit_co
 versioniq	694	246472f018c3dd2b6bb46542332e86975a816b72	REVERIFY	worker-46	continuation build: tasks 2.1-4.2 added (readers, triage routes, assignment notification, page, l10n), merged development; unit-only 1750 tests 2 inherited golden failures, vitest 2981 passed; new head 69cc235c74aa72a728613e9eb195e65e55d029c5, verify it
 versioniq	694	13fece40e8d3a45c04a9a33203aabe6babef7bec	CONFLICT	worker-42	clean on development, conflicts with the tree (692) in l10n/en,nl .js/.json
 versioniq	695	2ff98dba5061daf37fd2bbcc3c825c84f2e6f500	GREEN	worker-42	unit 1810 on the tree (baseline 1697, 2 inherited golden failures), 0 new failures; vitest 2974 green; implements advisories-ncsc-feed
+versioniq	699	6a44c2e644694907791be3c78f9da79ccd1673c3	CONFLICT	worker-42	conflicts with development in appinfo/info.xml, lib/Db/AuditEntry.php, tests/phpunit-unit-only.xml, tests/unit/Controller/ApiTest.php
+versioniq	709	45a2d42c2ce23a5de50525495a9ec84a8651f7a8	CONFLICT	worker-42	clean on development, conflicts with the tree (692/695) in appinfo/info.xml
