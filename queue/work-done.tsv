@@ -11364,6 +11364,7 @@ verify:opencatalogi:2665:8d708939	2672/2679/2686/2695/2707 GREEN, 2682 CONFLICT;
 review:portaliq:2444:6d4286d3	GREEN	session-20261114T212457-7a749dbd	2026-11-14T21:59:13Z
 fix:stackiq:1918:31731952	failed: besides l10n, src/manifest.json conflicts on the Store page: this PR makes /store a redirect to the FeaturesRoadmap extensions tab (REQ-FRM-002), development made it a type store page (platform-properties REQ-PLAT-007); keeping both needs a decision on which renders the store	session-20261114T194805-be886caa	2026-11-14T21:59:19Z
 review:opencatalogi:2650:6ae5f600	GREEN	session-20261114T201755-10d43934	2026-11-14T21:59:25Z
+fix:portaliq:2500:37ad4e5f	merged development, resolved register/l10n/package.json, new head c274a629b572a705bee605706aeb540f02e7032d	session-20261114T201752-7e06b161	2026-11-14T21:59:44Z
 build:stackiq:landscape-dependent-field-options:c2	failed: blocked upstream: tasks 1-2 merged (#1917); task 3 needs CnFormDialog support for x-openregister-dependent-values, absent in @conduction/nextcloud-vue up to 2.180.0; its Playwright test waits with it	session-20261114T211806-b9cd4119	2026-11-14T21:59:34Z
 verify:launchpad:1214:b41b2296	GREEN 1214@3cd2835b; phpunit 4242/0 fail, vitest 2273 pass	session-20261114T211012-c469e919	2026-11-14T21:59:46Z
 fix:stackiq:1930:1dc72b4b	merged development, conflicts resolved, versions bumped past development; new head bf2b3a8e	session-20261114T214742-7aa14b57	2026-11-14T21:59:53Z
@@ -11382,3 +11383,4 @@ review:opencatalogi:2652:50d4611a	GREEN	session-20261114T201755-10d43934	2026-11
 review:portaliq:2443:f562b574	GREEN (example-site pin red inherited)	session-20261114T212457-7a749dbd	2026-11-14T22:02:27Z
 build:humaniq:leave-approval-steps-and-history:c3	done on PR #1133 (head a8bfed0): 2.5 coverage warning shown on LeaveRequestDetail and stamped on approval (new LeaveCoverageWarning service, 9 new tests), 3.1 e2e exclusions + spec tags; 3.2 live check left. PHPUnit 4302 -> 4311 green; test:js 1 inherited failure	session-20261114T204759-5dc9dba7	2026-11-14T22:02:44Z
 fix:opencatalogi:2668:ca0b78fe	fixed: test container given the new record view; new head 1f117b1c, REVERIFY recorded	session-20261114T211754-5182f374	2026-11-14T22:02:46Z
+verify:launchpad:1226:208205d7	1226, 1229 GREEN: no new failures (PHP 4326, vitest 2288)	session-20261114T171821-a80c28c5	2026-11-14T22:03:05Z
