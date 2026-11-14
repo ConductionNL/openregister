@@ -4228,6 +4228,7 @@ BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Core
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Core
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Db/SchemaMapper/AdministeredValidationCheck.php,,Db,,,,,Core
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Core
 Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core
 Service/Import/RecordImport/ConfirmedMapping.php,,Service,,,,,Core
