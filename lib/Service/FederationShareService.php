@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Federation\ShareCreatorCheck;
+use OCA\OpenRegister\Service\Federation\ShareCrosses;
 use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCA\OpenRegister\Service\Federation\ShareLifetime;
 use OCP\Security\ISecureRandom;
@@ -218,7 +219,11 @@ class FederationShareService implements FederationShareServiceInterface {
 
 		$queryFilter = ($params['queryFilter'] ?? null);
 		$this->assertQueryFilterKeepsItsTarget(queryFilter: $queryFilter);
-		return ['scope' => $scope] + $this->shareTarget(params: $params) + ['queryFilter' => $queryFilter, 'permissions' => $permissions];
+		$crosses = ShareCrosses::declared(requested: ($params['crosses'] ?? null));
+
+		$grant = ['queryFilter' => $queryFilter, 'permissions' => $permissions, 'crosses' => $crosses];
+
+		return ['scope' => $scope] + $this->shareTarget(params: $params) + $grant;
 	}//end outgoingGrant()
 
 	/**
