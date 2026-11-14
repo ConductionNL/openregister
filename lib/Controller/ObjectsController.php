@@ -79,6 +79,7 @@ use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Listener\ChangeGateListener;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
@@ -3911,12 +3912,46 @@ class ObjectsController extends Controller {
 			$e instanceof AppendOnlyException => new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED),
 			$e instanceof TranslationTargetConflictException => new JSONResponse(data: $e->toErrorBody(), statusCode: 400),
 			$e instanceof ValidationException, $e instanceof CustomValidationException => $objectService->handleValidationException(exception: $e),
+			$e instanceof HookStoppedException && self::heldChangeAnswer(exception: $e) !== null => self::heldChangeAnswer(exception: $e),
 			$e instanceof HookStoppedException => new JSONResponse(data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()], statusCode: 422),
 			$e instanceof LockedException => $this->lockedResponse(exception: $e),
 			$e instanceof FolderAccessDeniedException => $this->folderAccessDeniedResponse(exception: $e),
 			default => null,
 		};
 	}//end writeRefusal()
+
+	/**
+	 * The answer to a write a change gate held: 202 with the pending change's
+	 * key, or 409 while a pending change of the same gate is still open. Any
+	 * other hook refusal is not a held change and answers as before.
+	 *
+	 * @param HookStoppedException $exception The refusal.
+	 *
+	 * @return JSONResponse|null The answer, or null when the refusal is not a held change.
+	 *
+	 * @spec openspec/changes/records-change-held-for-approval/specs/approval-workflow/spec.md#requirement-an-approval-chain-can-hold-a-change-until-it-is-approved
+	 */
+	private static function heldChangeAnswer(HookStoppedException $exception): ?JSONResponse {
+		$errors = $exception->getErrors();
+		$code   = ($errors['code'] ?? null);
+		if ($code === ChangeGateListener::CODE_PENDING) {
+			return new JSONResponse(
+				data: [
+					'message' => $exception->getMessage(),
+					'pendingChange' => (string)($errors['pendingChange'] ?? ''),
+					'object' => (string)($errors['object'] ?? ''),
+					'chain' => (string)($errors['chain'] ?? ''),
+				],
+				statusCode: Http::STATUS_ACCEPTED
+			);
+		}
+
+		if ($code === ChangeGateListener::CODE_OPEN) {
+			return new JSONResponse(data: ['error' => $exception->getMessage(), 'errors' => $errors], statusCode: Http::STATUS_CONFLICT);
+		}
+
+		return null;
+	}//end heldChangeAnswer()
 
 	/**
 	 * Why an `_upsertOn` request cannot proceed, or null when it can.
@@ -5714,16 +5749,65 @@ class ObjectsController extends Controller {
 	 */
 	private function moveEnds(array $source, array $target): array|null {
 		$registers = $this->services->store->registerMapper;
-		$schemas = $this->services->store->schemaMapper;
 		try {
+			$fromRegister = $registers->find($source[0]);
+			$toRegister = $registers->find($target[0]);
 			return [
-				'from' => ['register' => $registers->find($source[0]), 'schema' => $schemas->find($source[1])],
-				'to' => ['register' => $registers->find($target[0]), 'schema' => $schemas->find($target[1])],
+				'from' => ['register' => $fromRegister, 'schema' => $this->schemaInRegister(schemaRef: $source[1], register: $fromRegister)],
+				'to' => ['register' => $toRegister, 'schema' => $this->schemaInRegister(schemaRef: $target[1], register: $toRegister)],
 			];
 		} catch (\Throwable $e) {
 			return null;
 		}
 	}//end moveEnds()
+
+	/**
+	 * A schema reference resolved inside the register the caller named.
+	 *
+	 * A slug is looked up among the register's own schemas first: the global
+	 * `find()` matches `LOWER(slug)` across every register and returns whichever
+	 * row its tie-break orders first, so a generic slug such as `agent` landed in
+	 * another app's register. A numeric id or a uuid is no slug and goes straight
+	 * to `find()`, as does a slug the register does not carry (the pattern of
+	 * `ObjectService::setSchema()`, class (b) of register-scoped-schema-slug-resolution).
+	 *
+	 * @param string|int    $schemaRef The schema's id, uuid or slug.
+	 * @param Register|null $register  The register the caller named, when known.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema does not exist.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function schemaInRegister(string|int $schemaRef, ?Register $register): Schema {
+		$schemas = $this->services->store->schemaMapper;
+		if ($register !== null && is_string($schemaRef) === true && is_numeric($schemaRef) === false) {
+			$scoped = $schemas->findBySlugInIds(slug: $schemaRef, schemaIds: ($register->getSchemas() ?? []));
+			if ($scoped !== null) {
+				return $scoped;
+			}
+		}
+
+		return $schemas->find($schemaRef);
+	}//end schemaInRegister()
+
+	/**
+	 * The register a reference names, or null when it cannot be read.
+	 *
+	 * @param string|int $registerRef The register's id, uuid or slug.
+	 *
+	 * @return Register|null The register.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function registerOrNull(string|int $registerRef): ?Register {
+		try {
+			return $this->services->store->registerMapper->find($registerRef);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end registerOrNull()
 
 	/**
 	 * The answer to a move that ran.
@@ -6760,7 +6844,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
 
-		$schemaEntity = $this->services->store->schemaMapper->find($source->schema);
+		$schemaEntity = $this->schemaInRegister(schemaRef: $source->schema, register: $this->registerOrNull(registerRef: $source->register));
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
 		$mayDeleteSource = $permissions->hasPermission(

@@ -111,6 +111,13 @@ final class NotificationAnnotationValidator implements NotificationAnnotationVal
 	private NotificationTriggerValidator $triggers;
 
 	/**
+	 * Validates each rule's `reminder`.
+	 *
+	 * @var NotificationReminderValidator
+	 */
+	private NotificationReminderValidator $reminders;
+
+	/**
 	 * Validates each rule's `recipients`.
 	 *
 	 * @var NotificationRecipientValidator
@@ -161,6 +168,7 @@ final class NotificationAnnotationValidator implements NotificationAnnotationVal
 	) {
 		$this->forcedChannels = ($forcedChannels ?? new ForcedChannelPolicy());
 		$this->triggers       = new NotificationTriggerValidator(filterParser: ($filterParser ?? new ScheduledFilterParser()));
+		$this->reminders      = new NotificationReminderValidator(filterParser: ($filterParser ?? new ScheduledFilterParser()));
 		$this->recipients     = new NotificationRecipientValidator();
 		$this->content        = new NotificationContentValidator();
 		$this->digests        = new NotificationDigestValidator();
@@ -260,7 +268,10 @@ final class NotificationAnnotationValidator implements NotificationAnnotationVal
 			$this->validateContent(name: $rule->name, spec: $rule->spec),
 			$this->validateScope(name: $rule->name, spec: $rule->spec),
 			$this->validateCriticalAndDigest(spec: $rule->spec, name: $rule->name),
-			$this->recipients->validate(rule: $rule)
+			$this->recipients->validate(rule: $rule),
+			// A reminder's anchor, offset, bounded repeat and stop condition
+			// (service-hours-and-repeating-reminders).
+			$this->reminders->validate(rule: $rule)
 		);
 	}//end ruleErrors()
 

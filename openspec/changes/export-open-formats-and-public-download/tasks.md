@@ -13,7 +13,7 @@
 
 ## 3. Dialog
 
-- [ ] 3.1 Offer CSV, TSV, JSON, XML and Excel in `src/modals/register/ExportRegister.vue` and derive the fallback file name from the chosen format. Verify: `src/modals/register/ExportRegister.spec.js` asserts the five options and the `.tsv` and `.xml` fallback names.
+- [x] 3.1 Offer CSV, TSV, JSON, XML and Excel in `src/modals/register/ExportRegister.vue` and derive the fallback file name from the chosen format. Verify: `src/modals/register/ExportRegister.spec.js` asserts the five options and the `.tsv` and `.xml` fallback names.
 
 ## 4. Docs and end-to-end test
 
