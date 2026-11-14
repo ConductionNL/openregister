@@ -11682,3 +11682,4 @@ build:buildiq:pages-custom-code:c3	partial: PR #1608 (head 3687676) merged devel
 build:versioniq:install-multi-instance-promotion:c2	partial: PR #712 head a624f550, 2.1 done (ManifestBuilder + GET /api/instance/manifest, openapi, tests); left 2.2, 2.3, 3.1-3.3, 4.1-4.4, 5.1, 6.1 (worker context nearly full)	session-20261114T221817-a815ec70	2026-11-14T22:47:07Z
 fix:stackiq:1924:09c7c010	conflict resolved by merging development (l10n, registers), suite green, new head f6dc9dd2; REVERIFY recorded	session-20261114T214719-cd72efa7	2026-11-14T22:47:50Z
 fix:versioniq:718:c0066590	moved its l10n keys so it no longer conflicts with #710, new head 0258f8d1	session-20261114T214733-589f5bff	2026-11-14T22:48:18Z
+fix:integriq:3593:b76109f8	stale	session-20261114T224740-064dbb86	2026-11-14T22:48:55Z
