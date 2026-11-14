@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Object\DraftService;
+use OCA\OpenRegister\Controller\Support\DraftVersionRead;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
@@ -3234,6 +3236,11 @@ class ObjectsController extends Controller {
 				return ($this->movedShow(show: $show, read: $read) ?? $this->absentObject(show: $show, read: $read));
 			}
 
+			$version = trim((string)$this->request->getParam('version', ''));
+			if (DraftVersionRead::namesADraft(version: $version) === true) {
+				return $this->draftShow(show: $show, read: $read, object: $objectEntity, version: $version);
+			}
+
 			return $this->renderedShow(shown: new ShownEntity(show: $show, entity: $objectEntity, extend: $read->extend), read: $read);
 		} catch (DoesNotExistException $exception) {
 			return ($this->movedShow(show: $show, read: $read) ?? new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404));
@@ -3243,6 +3250,47 @@ class ObjectsController extends Controller {
 			return $this->ambiguousIdentifierResponse(id: $show->id);
 		}
 	}//end shownObject()
+
+	/**
+	 * The object at a draft version: the draft's delta merged onto the live data, rendered the same way.
+	 *
+	 * A draft that does not exist, or that the caller may not see, answers 404
+	 * like a missing object, so the answer does not tell which drafts exist.
+	 *
+	 * @param ObjectShow        $show    The request.
+	 * @param ObjectReadOptions $read    The read options.
+	 * @param ObjectEntity      $object  The live object, already read under the caller's access.
+	 * @param string            $version The draft key.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/records-draft-versions/design.md
+	 */
+	private function draftShow(ObjectShow $show, ObjectReadOptions $read, ObjectEntity $object, string $version): JSONResponse {
+		$schema = ($show->resolved['schemaEntity'] ?? null);
+		$draft  = null;
+		if ($schema instanceof Schema) {
+			$draft = DraftVersionRead::of(
+				drafts: $this->container->get(DraftService::class),
+				object: $object,
+				schema: $schema,
+				key: $version,
+				caller: $this->userSession->getUser()?->getUID()
+			);
+		}
+
+		if ($draft === null) {
+			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		}
+
+		$response = $this->renderedShow(shown: new ShownEntity(show: $show, entity: $draft->entity, extend: $read->extend), read: $read);
+		$data     = $response->getData();
+		if (is_array($data) === true) {
+			$response->setData($draft->stamped(rendered: $data));
+		}
+
+		return $response;
+	}//end draftShow()
 
 	/**
 	 * Find the object without rendering it.
