@@ -8970,3 +8970,4 @@ build:pipelinq:platform-client-retention:c3	PR #3832: 4.1 anonymisation profile 
 verify:pipelinq:3818:275c868c	3818 GREEN, 3830 CONFLICT (l10n tail vs 3818)	session-20261114T114625-63eafe85	2026-11-14T11:58:25Z
 review:openregister:10521:2a709ccf	APPROVE: behaviour unchanged, suites green on merge with main	session-20261114T114643-b064db1b	2026-11-14T11:58:33Z
 review:openregister:10534:cf876483	BLOCK: A14 arch test red; sweep audit dead (open() rows lack objectUuid)	session-20261114T114632-1115f635	2026-11-14T11:58:58Z
+review:openregister:10527:160add2b	APPROVE: tests-only, 7 new tests pass merged with main; note phpunit-unit.xml bootstrap lacks OCP autoload in bare env (inherited)	session-20261114T114435-17b1115e	2026-11-14T11:59:08Z
