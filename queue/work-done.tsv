@@ -8533,3 +8533,4 @@ fix:versioniq:685:0d04ca1a	failed: floor still lowered after a partial fix pushe
 verify:learniq:2494:595ea3c0	2494 GREEN	session-20261114T065635-0aca43d3	2026-11-14T09:03:13Z
 fix:buildiq:1632:4b09bf4c	merged development (clean); conflict only with sibling tree PRs; new head a746e5ea97d30ac540a85acbe684e3aa3debbebf for reverify	session-20261114T073105-27c9d15e	2026-11-14T09:03:20Z
 build:versioniq:install-one-click-updates	partial: PR #717 (1.1-2.3 built; e2e 2.4 and close 3.1 open)	session-20261114T062156-e8adf8ca	2026-11-14T09:03:34Z
+fix:launchpad:1210:886f85bb	tree conflict with #1209 removed (l10n keys moved up), development merged, pushed 256d3e09	session-20261114T065635-61264d14	2026-11-14T09:03:37Z
