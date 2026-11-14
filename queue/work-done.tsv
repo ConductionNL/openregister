@@ -8973,3 +8973,4 @@ review:openregister:10534:cf876483	BLOCK: A14 arch test red; sweep audit dead (o
 review:openregister:10527:160add2b	APPROVE: tests-only, 7 new tests pass merged with main; note phpunit-unit.xml bootstrap lacks OCP autoload in bare env (inherited)	session-20261114T114435-17b1115e	2026-11-14T11:59:08Z
 review:openregister:10483:afa31a85	APPROVE 10483 (tests green on merge with main; l10n conflict)	session-20261114T114632-df20a06a	2026-11-14T12:00:34Z
 build:pipelinq:clients-reversible-merge:c3	done: PR pipelinq#3817 +3.2 Merges section with Undo (RecordMergesSection, merge#reverse, 30-day window); 3.1 left to OpenRegister steward surface per REQ-CRM-001; vitest 4910->4926 green; head d5edf415	session-20261114T114634-73dcd983	2026-11-14T12:01:20Z
+review:pipelinq:3752:d375909c	GREEN: as specced, phpunit 8346 OK, vitest only inherited myWorkPage failure	session-20261114T114647-2bec20c6	2026-11-14T12:02:11Z
