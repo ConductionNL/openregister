@@ -7982,3 +7982,4 @@ fix:shillinq:2993:6f526c3c	no change: merges clean on current development; confl
 fix:filinq:2098:cde3e349	no change: head cde3e349 merges cleanly with development 300f79d5; the l10n conflict is with another open PR in the tree, fixable here only after that PR lands (re-queue verify then)	session-20261114T073108-8b40426a	2026-11-14T07:48:59Z
 fix:filinq:2085:cf785bbf	no change: head cf785bbf merges cleanly with development 300f79d5; its l10n conflict is with open PR #2098 (adjacent inserts), register.json with another open PR; whichever lands first, the other needs a development merge then	session-20261114T073108-8b40426a	2026-11-14T07:49:23Z
 verify:pipelinq:3725:ff5d9a0e	3725 GREEN, 3815 GREEN; unit 8095 0 fail	session-20261114T065632-a1c920c5	2026-11-14T07:49:21Z
+verify:integriq:3539:56247e26	3539 GREEN, 3557 GREEN; 3546, 3561, 3562 CONFLICT with the tree; no new unit failures	session-20261114T070323-628c2f37	2026-11-14T07:49:40Z
