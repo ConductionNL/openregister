@@ -8355,3 +8355,7 @@ shillinq	2972	e24273baa1e8a21927cb6ee90fdfb4c4f725787f	CONFLICT	worker-16	confli
 shillinq	2976	e4c7b8aac193d5af27d8ebad58eccb3a6e6f638d	GREEN	worker-16	unit 11249 OK on development+2976, baseline 11194 OK, no new failures; builds sales-cancellation and ledger-journal-line-dimensions per their specs, portal cancel checks subject ownership
 shillinq	3003	e9b31d7d5a2e426782cf5860b3c12c23a19066ab	CONFLICT	worker-16	clean on development alone; conflicts after #2976 in appinfo/info.xml, tests/fixtures/register-versions.lock.json
 shillinq	3004	46afd0d948f99a07b3b27fc7496a37381225bd95	CONFLICT	worker-16	conflicts with plain development: appinfo/info.xml, l10n en/nl js+json, lib/Service/ConnectionReportService.php, tests/Unit/Service/ConnectionReportServiceTest.php, register-versions.lock.json
+shillinq	2975	12f8c569964b3cf28b0497789a3ea32958696b1f	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	2991	44f9551ba872fc81d0116fa7a7b0ec48d43ccdc9	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	3057	2ba4b36560fbd27f73fabef7b3aeccd6c4963d81	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+shillinq	3059	50043d179ea704d66e9c323e56f09d69dd48e543	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
