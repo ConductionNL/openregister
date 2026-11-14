@@ -10842,3 +10842,4 @@ review:filinq:2085:27ce4a24	stale	session-20261114T201754-5ed288ac	2026-11-14T20
 fix:portaliq:2440:1f256935	floor restored (dedup + splits); new head c822fe027a9afcb3693e55ee670d15542ba7676d, REVERIFY recorded	session-20261114T194751-bb7578f8	2026-11-14T20:19:05Z
 fix:hermiq:1739:bc2bf993	REVERIFY: development merged in cleanly, suite green; remaining conflict is the tool-count clash with sibling #1735; new head efdf5808e8b0592d93d95fa5e869d549ef393851	session-20261114T185913-f84c01b8	2026-11-14T20:19:20Z
 verify:decidiq:2206:d38c0d87	GREEN 2206@78254763; phpunit 4239/0, vitest green	session-20261114T191744-b9573b83	2026-11-14T20:19:35Z
+verify:keepiq:1786:6ec68029	CONFLICT 1786 (l10n en/nl); 2 EventRegistrarsTest failures noted	session-20261114T185843-7b9a6259	2026-11-14T20:19:46Z
