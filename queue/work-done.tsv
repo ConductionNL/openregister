@@ -10925,3 +10925,4 @@ fix:shillinq:3077:7c48c1ce	merged development, resolved info.xml + register lock
 review:filinq:2102:898cbd6b	GREEN: spec-driven, per-record access check kept; phpunit 6774 OK, jest 539 OK	session-20261114T194745-243de12d	2026-11-14T20:32:41Z
 merge:planninq:1160:bd5f5d16	merge3 tree of 7 planninq PRs: merged=3 red=3 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T20:33:00Z
 merge:planninq:1165:e53d568e	merge3 tree of 7 planninq PRs: merged=3 red=3 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T20:33:03Z
+merge:planninq:1169:6c882f71	merge3 tree of 7 planninq PRs: merged=3 red=3 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T20:33:07Z
