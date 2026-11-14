@@ -10194,3 +10194,4 @@ build4:openregister:flow-object-attribution:c3	partial: not started this pass (w
 build:integriq:mapping-formats-and-lookups:c2	done: PR #3574 now builds tasks 3-5 (ArrayToXml + MappingOutput + renderOutput + preview; XML/CSV body to API targets; lookup() with admin allowlist, controller, admin section); +18 PHPUnit, +6 vitest, no new failures (baseline 9 inherited); left: Playwright e2e, trace-step warning; head cfe173d8	session-20261114T144756-7c8966f2	2026-11-14T16:30:16Z
 verify:filinq:2123:75c5beb8	GREEN 2123	session-20261114T151802-24eee21b	2026-11-14T16:30:25Z
 verify:integriq:3574:781dc47f	GREEN 3624 3625 3626 3627 3629; CONFLICT 3628 (tree, l10n); 3574 3593 3630 skipped (head moved)	session-20261114T141010-8dc8bd74	2026-11-14T16:31:02Z
+verify:integriq:3542:1e5c37b6	2 GREEN (3542,3564), 1 CONFLICT (3630)	session-20261114T161744-497aae45	2026-11-14T16:31:21Z
