@@ -9535,3 +9535,4 @@ pipelinq	3841	a9be79625769353f4e0dfba808d974538c7a3bcc	GREEN	worker-33	phpunit 8
 keepiq	1793	813952b02f96211c4897e0644ea2d66021a4bb7c	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 learniq	2486	7b4f15bcbffd4e2495a51d5658a91b9b79943f04	GREEN	worker-10	unit 6797 tests on tree (baseline 6775, 1 inherited failure HigherEducationExampleSetTest); no new failures; diff matches absence-reports-seen-and-ended specs
 filinq	2069	34b4dc33709563dcd00aea49676d07cac207c4b9	GREEN	worker-49	unit 6788 OK on tree (baseline 6760 OK), vitest 763 OK, new failures none; implements intake-acknowledge-and-stamp
+filinq	2118	a4503a17fe5ba2c5997f2cf5ea1d81c6e3021b02	GREEN	worker-49	unit 6788 OK on tree (baseline 6760 OK), vitest 763 OK, new failures none; implements signing-cancellation (lifecycle cancel with save fallback)
