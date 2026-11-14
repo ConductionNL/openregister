@@ -12022,3 +12022,4 @@ fix:shillinq:3062:eafe1f44	merged development in, unit green, REVERIFY new head 
 fix:larpinq:1054:41befe20	no change: clean on development; tree-only conflicts with #1041/#1045, REVERIFY at same head	session-20261114T231756-01da210e	2026-11-14T23:44:31Z
 build:larpinq:larpinq-adopt-or-abstractions:c2	PR #1061: task 3.5 finished (Events/Items lists get the translated-from badge via columnOverrides on the derived name column); no code tasks left; vitest 548 -> 553, phpunit 832 green	session-20261114T223333-658f3be1	2026-11-14T23:44:57Z
 fix:thematiq:1677:ab35c3aa	merged development, l10n union resolved and rebuilt, l10n gates + vitest green; new head 5e934e94	session-20261114T223937-a95b1403	2026-11-14T23:45:01Z
+fix:larpinq:1049:ad99dd01	golden fixture updated for worlds-maps pages; vitest 548 green; new head 0b6c6360, REVERIFY recorded	session-20261114T231738-f75034a1	2026-11-14T23:45:09Z
