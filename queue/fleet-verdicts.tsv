@@ -10557,3 +10557,5 @@ dossiq	6523	ebc2a65d0499537ed8bb63328cf412df63077363	CONFLICT	worker-26	add/add 
 filinq	2070	e3723880a96ae6e67ea9735ef087911b7b33f513	REVERIFY	worker-02	merged development in (clean, no conflict); unit 6786 OK, jest 570 OK; new head 88c644391052b203b8ac34670c5abca6b6b517ea, verify it
 pipelinq	3842	7b79334bd2781517ac08fffba9afced73613bf43	GREEN	worker-46	unit 8452 tests on the tree (baseline development 8452), 0 failures; tests-only: adds @uses metadata to 5 test classes, which clears their risky results under coverage (ClientRiskServiceTest 6 risky -> 0, WalkInQueueNumberTest 2 -> 0)
 dossiq	6524	b53a3dfd52fc67a6386c727015ac6ed456d80bdb	GREEN	worker-26	tree 17510 unit tests, baseline 13 failures (StubApiDrift), 0 new; tests only
+dossiq	6525	f101fce0eb2fa13e53daada943f370cd0797e1e2	GREEN	worker-26	tree 17510 unit tests, baseline 13 failures (StubApiDrift), 0 new; tests only
+dossiq	6526	a9bc68c3df6f946582e4b22a62677121bfedcc9e	GREEN	worker-26	tree 17510 unit tests, baseline 13 failures (StubApiDrift), 0 new; tests only
