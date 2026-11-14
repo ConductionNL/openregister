@@ -10196,3 +10196,4 @@ decidiq	2143	f51a1774d8f40b7c7bd91a388ee530d9ba2e04e6	RED	merge3:merge-gate	GATE
 decidiq	2169	994902108e71373a71178554606541426e03c634	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
 decidiq	2172	148e74e7725f5549647398286241b07c976d9f51	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
 decidiq	2202	3a275a0425fce2a3464bf1ee3b6ed0600e02fadd	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
+opencatalogi	2655	1c46277239ce48894e125ab697f81e210e8856ec	GREEN	worker-02:review	build diwoo-metadata-on-the-publication: completeness listener, batch refusal and sitemap hold-back as REQ-DWP-002..004 ask; new documentsoorten route logged-in only; merged with development: phpunit 5641, 1 failure (baseline AppIdentityTest), phpstan clean, jest NationalAnnounceWidget 9/9
