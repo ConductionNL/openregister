@@ -122,6 +122,16 @@ interface ThrottledSurfacesInterface {
 	public const FORM_SUBMIT = 'openregister_form_submit';
 
 	/**
+	 * Starting or answering a journey run.
+	 *
+	 * An unknown journey id registers an attempt, so walking journey ids to
+	 * find one that accepts anonymous writes slows down like a token guess.
+	 *
+	 * @var string
+	 */
+	public const JOURNEY_RUN = 'openregister_journey_run';
+
+	/**
 	 * Every throttled surface, as `name => throttler action`.
 	 *
 	 * @var array<string, string>
@@ -135,5 +145,6 @@ interface ThrottledSurfacesInterface {
 		'oauth2Callback' => self::OAUTH2_CALLBACK,
 		'elevation' => self::ELEVATION,
 		'formSubmit' => self::FORM_SUBMIT,
+		'journeyRun' => self::JOURNEY_RUN,
 	];
 }//end interface

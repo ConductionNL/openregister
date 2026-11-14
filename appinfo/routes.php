@@ -1261,6 +1261,11 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],
         ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
         ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
+        // Journey runs (or-form-and-journey-registry): public and throttled; a saved run is the filer's or the resume token's draft.
+        ['name' => 'journeyRun#start', 'url' => '/api/journeys/{journeyId}/runs', 'verb' => 'POST'],
+        ['name' => 'journeyRun#answer', 'url' => '/api/journeys/{journeyId}/runs/answer', 'verb' => 'POST'],
+        ['name' => 'journeyRun#save', 'url' => '/api/journeys/{journeyId}/runs/save', 'verb' => 'POST'],
+        ['name' => 'journeyRun#resume', 'url' => '/api/journeys/{journeyId}/runs/resume', 'verb' => 'GET'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.

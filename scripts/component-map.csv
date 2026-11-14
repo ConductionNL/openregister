@@ -4073,6 +4073,15 @@ Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/RecordTypeAuditListener.php,,Listener,,,,,Compliance
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Formats/WebsiteFormat.php,96,Formats,Formats,Formats/WebsiteFormat.php,0,,Kernel
+Formats/NlPhoneFormat.php,68,Formats,Formats,Formats/NlPhoneFormat.php,0,,Kernel
+Service/Form/JourneyDefinition.php,279,Service,Work,Work/Service/Form/JourneyDefinition.php,0,,Processes
+Service/Form/JourneyRunService.php,299,Service,Work,Work/Service/Form/JourneyRunService.php,0,,Processes
+Service/Form/LocalConditionEvaluator.php,350,Service,Work,Work/Service/Form/LocalConditionEvaluator.php,0,,Processes
+Service/Form/JourneyAuthoringValidator.php,275,Service,Work,Work/Service/Form/JourneyAuthoringValidator.php,0,,Processes
+Listener/JourneyValidationListener.php,166,Listener,Work,Work/Listener/JourneyValidationListener.php,0,,Processes
+Repair/ImportFormsRegister.php,82,Repair,Platform,Platform/Repair/ImportFormsRegister.php,0,,Platform
+Controller/JourneyRunController.php,232,Controller,Work,Work/Controller/JourneyRunController.php,0,,Processes
 Db/SchemaMapper/IdentityDeclarationCheck.php,,Db,,,,,Core
 Listener/IdentityGuardListener.php,,Listener,,,,,Core
 Service/Object/ObjectKeyResolver.php,,Service,,,,,Core

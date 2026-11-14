@@ -1,0 +1,220 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Forms",
+        "description": "System register for forms and journeys. A form is a manifest-v2 form-page config with where its answers land; a journey is an ordered sequence of form, review and confirmation steps that may branch, write objects at declared steps and be saved part-way as draft objects.",
+        "version": "1.0.0"
+    },
+    "x-openregister": {
+        "type": "core",
+        "app": "openregister",
+        "openregister": "^v0.2.10",
+        "description": "Foundational forms register shipped by OpenRegister; backs the form and journey objects the run API drives."
+    },
+    "paths": {},
+    "components": {
+        "registers": {
+            "forms": {
+                "slug": "forms",
+                "title": "Forms",
+                "version": "1.0.0",
+                "description": "Forms and the journeys that string them together.",
+                "published": "2026-01-01T00:00:00+00:00",
+                "schemas": [
+                    "form",
+                    "journey"
+                ],
+                "folder": "Open Registers/Forms"
+            }
+        },
+        "schemas": {
+            "form": {
+                "slug": "form",
+                "title": "Form",
+                "version": "1.0.0",
+                "published": "2026-01-01T00:00:00+00:00",
+                "summary": "A form as its own object: its page config, its audience and where its answers are written.",
+                "description": "The config is a manifest-v2 `type: form` page config, validated by the same manifest validator an app manifest is, so a form body and a manifest form page cannot drift. Its writes, or its destination and mapping, name where a submit lands; the mapping is judged against the destination schema when the form is saved.",
+                "required": [
+                    "title",
+                    "config"
+                ],
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "title": "Title",
+                        "description": "What this form is called.",
+                        "maxLength": 255
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description",
+                        "description": "What the form is for, for the people who maintain it."
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status",
+                        "description": "Only a published form or journey can be filled in or started.",
+                        "enum": [
+                            "draft",
+                            "published",
+                            "retired"
+                        ],
+                        "default": "draft",
+                        "facetable": true
+                    },
+                    "audience": {
+                        "type": "string",
+                        "title": "Audience",
+                        "description": "Who may fill it in: anyone (public), a signed-in user (authenticated) or staff only (internal).",
+                        "enum": [
+                            "public",
+                            "authenticated",
+                            "internal"
+                        ],
+                        "default": "public",
+                        "facetable": true
+                    },
+                    "config": {
+                        "type": "object",
+                        "title": "Form config",
+                        "description": "A manifest-v2 form-page config (`config.fields[]`, `config.steps[]`, per-field validation and visibleWhen)."
+                    },
+                    "destination": {
+                        "type": "object",
+                        "title": "Destination",
+                        "description": "The one register and schema a submit writes into, when the form writes one object.",
+                        "properties": {
+                            "register": {
+                                "type": "string"
+                            },
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "mapping": {
+                        "type": "object",
+                        "title": "Mapping",
+                        "description": "How form fields map onto the destination schema: `fields[]` of { field, property } and `fixed` values."
+                    },
+                    "writes": {
+                        "type": "array",
+                        "title": "Writes",
+                        "description": "The objects a submit writes, in order: { register, schema, mapping, as }. A fixed value { \"$write\": \"<as>\" } is the id of an earlier write.",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "journey": {
+                "slug": "journey",
+                "title": "Journey",
+                "version": "1.0.0",
+                "published": "2026-01-01T00:00:00+00:00",
+                "summary": "An ordered sequence of form, review and confirmation steps, with branching, writes and access.",
+                "description": "A journey is UI-facing: it may trigger a flow, and it is not one. Each step is { id, type, form?, fields?, next?, writes? }; a next rule is { when, step } where `when` is the manifest `visibleWhen` condition. Objects are created or leave draft only at a step declaring writes, all or none. Access is required and never inferred.",
+                "required": [
+                    "title",
+                    "access",
+                    "steps"
+                ],
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "title": "Title",
+                        "description": "What this journey is called.",
+                        "maxLength": 255
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description",
+                        "description": "What the journey is for, for the people who maintain it."
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status",
+                        "description": "Only a published form or journey can be filled in or started.",
+                        "enum": [
+                            "draft",
+                            "published",
+                            "retired"
+                        ],
+                        "default": "draft",
+                        "facetable": true
+                    },
+                    "access": {
+                        "type": "string",
+                        "title": "Access",
+                        "description": "Who may start it: anyone without a session (anonymous), a signed-in user (authenticated) or a user with a verified trust level (minTrust).",
+                        "enum": [
+                            "anonymous",
+                            "authenticated",
+                            "minTrust"
+                        ],
+                        "facetable": true
+                    },
+                    "mode": {
+                        "type": "string",
+                        "title": "Mode",
+                        "description": "create starts new objects; update changes one existing object opened through an access link.",
+                        "enum": [
+                            "create",
+                            "update"
+                        ],
+                        "default": "create"
+                    },
+                    "steps": {
+                        "type": "array",
+                        "title": "Steps",
+                        "description": "The steps in order.",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "id",
+                                "type"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "form",
+                                        "review",
+                                        "confirmation"
+                                    ]
+                                },
+                                "form": {
+                                    "type": "string",
+                                    "description": "The form object whose config this step renders."
+                                },
+                                "fields": {
+                                    "type": "array",
+                                    "description": "The fields this step asks for."
+                                },
+                                "next": {
+                                    "type": "array",
+                                    "description": "Branching rules { when, step }; the first whose condition holds names the next step.",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                },
+                                "writes": {
+                                    "type": "array",
+                                    "description": "The objects this step writes when answered: { register, schema, mapping, as }.",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

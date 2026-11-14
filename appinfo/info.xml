@@ -260,6 +260,8 @@ Vrij en open source onder de EUPL-licentie.
 			     while `occ upgrade` reported success: exactly the failure the
 			     comment above records, one register later. -->
 			<step>OCA\OpenRegister\Repair\ImportSurveyRegister</step>
+			<!-- The forms register: form and journey, which the journey run API reads. -->
+			<step>OCA\OpenRegister\Repair\ImportFormsRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
@@ -471,6 +473,8 @@ Vrij en open source onder de EUPL-licentie.
 			     while `occ upgrade` reported success: exactly the failure the
 			     comment above records, one register later. -->
 			<step>OCA\OpenRegister\Repair\ImportSurveyRegister</step>
+			<!-- The forms register: form and journey, which the journey run API reads. -->
+			<step>OCA\OpenRegister\Repair\ImportFormsRegister</step>
 			<!-- Rewrite before the index is derived: the index is built FROM node
 			     types, so the types should already be the current ones. -->
 			<step>OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes</step>
