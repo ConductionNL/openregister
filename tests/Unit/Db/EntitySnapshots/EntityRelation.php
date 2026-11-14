@@ -30,6 +30,9 @@ return array (
     'page' => 'integer',
     'box' => 'json',
     'createdAt' => 'datetime',
+    'redactionDecision' => 'string',
+    'decidedBy' => 'string',
+    'decidedAt' => 'datetime',
   ),
   'empty' => 
   array (
@@ -56,6 +59,9 @@ return array (
     'page' => NULL,
     'box' => NULL,
     'createdAt' => NULL,
+    'redactionDecision' => 'undecided',
+    'decidedBy' => NULL,
+    'decidedAt' => NULL,
   ),
   'filled' => 
   array (
@@ -88,6 +94,9 @@ return array (
       'k' => 'box',
     ),
     'createdAt' => '2026-01-02T03:04:05+00:00',
+    'redactionDecision' => 'redactionDecision-v',
+    'decidedBy' => 'decidedBy-v',
+    'decidedAt' => '2026-01-02T03:04:05+00:00',
   ),
   'filledUpdated' => 
   array (
@@ -114,6 +123,9 @@ return array (
     20 => 'page',
     21 => 'box',
     22 => 'createdAt',
+    23 => 'redactionDecision',
+    24 => 'decidedBy',
+    25 => 'decidedAt',
   ),
   'refused' => 
   array (

@@ -4262,3 +4262,11 @@ Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Service/Anonymisation/RedactionVerdictStore.php,,Service,,,,,Compliance
 Exception/RedactionNotPublishableException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261114100000.php,,Migration,,,,,Platform
+Migration/Version1Date20261114100100.php,,Migration,,,,,Platform
+Db/RedactionReviewMark.php,,Db,,,,,Compliance
+Db/RedactionReviewMarkMapper.php,,Db,,,,,Compliance
+Controller/RedactionReviewMarkController.php,,Controller,,,,,Compliance
+Service/Anonymisation/RedactionRunFingerprint.php,,Service,,,,,Compliance
+Service/Anonymisation/RedactionReviewGate.php,,Service,,,,,Compliance
+Exception/ReviewRequiredException.php,,Exception,,,,,Kernel
+Migration/Version1Date20261114100200.php,,Migration,,,,,Platform
