@@ -8586,3 +8586,4 @@ fix:buildiq:1626:e4ef5397	no change: head e4ef5397 merges clean with development
 verify:launchpad:1206:026b815c	1206 GREEN	session-20261114T065635-0aca43d3	2026-11-14T09:09:18Z
 build:larpinq:rules-rulebook-and-spell-lists	partial: PR #1050 tasks 1.1 (skillList schema, list and hiddenFromRulebook fields, schema strings) and 1.2 (one budget per pool, refusal names the pool), 6 tests, suite 792->798 no failures; left seed, pages, Rulebook.vue, portal skillLists, docs	session-20261114T073109-bb0ea608	2026-11-14T09:09:47Z
 verify:launchpad:1214:2a8623bd	1214 GREEN, 1217 CONFLICT (info.xml version with 1214), 1219 GREEN; tree phpunit 4106 OK, vitest 2223 OK	session-20261114T065635-61264d14	2026-11-14T09:10:05Z
+build:larpinq:hermiq-ai-tooling	PR #1052: tasks 1, 2, 3, 5 built (two curated MCP tools, opt-in list, awardedVia attribution), 7 tests, suite 799 OK; task 4 live governance check left	session-20261114T065633-3e3cb668	2026-11-14T09:10:52Z
