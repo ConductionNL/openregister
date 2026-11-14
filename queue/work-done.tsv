@@ -9809,3 +9809,4 @@ verify:filinq:2119:f4e59c3b	GREEN 2119, 2124; unit 6793 OK (baseline 6736), vite
 build:humaniq:filings-pension-upa-message:c2	failed: blocked, PR #1145 unchanged: 2.1 needs the official UPA and APG 2026 format schemas (publisher hosts unreachable from the worker, not to be written from memory); 2.3 builders and 2.4 guard build on them	session-20261114T141721-aeb4e068	2026-11-14T15:27:35Z
 merge:dossiq:6324:89b224ac	merge3 tree of 6 dossiq PRs: merged=5 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T15:27:35Z
 merge:dossiq:6514:2c99e5bc	merge3 tree of 6 dossiq PRs: merged=5 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T15:27:39Z
+fix:pipelinq:3752:7334221b	merged development (l10n union, duplicates collapsed, .js rebuilt); unit green; new head cedbd5450150fc0197c83f37318382def8507737	session-20261114T134654-82ca2be5	2026-11-14T15:27:54Z
