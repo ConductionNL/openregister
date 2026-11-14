@@ -9788,4 +9788,5 @@ fix:portaliq:2493:ee816fa9	conflict resolved (package.json union), pushed 1cf3c7
 build:hermiq:schedules-onto-engine-triggers:c2	partial: PR #1734 task 2.2 built (zone-sensitive crons mirror with the owner's timezone; +5 tests, no new failures) on openregister PR #10563 (trigger-schedule timezone key, +5 tests); left 2.1/2.3/2.4 (need an OpenRegister contract for flow-owned one-shot timers), 3.2/3.3 wait on them	session-20261114T144748-3f042cbf	2026-11-14T15:23:36Z
 fix:humaniq:1030:0a2fd47c	merged development, resolved SettingsService conflict; new head fb14cdc3	session-20261114T141010-8dc8bd74	2026-11-14T15:23:41Z
 fix:filinq:2118:3335401f	merged development, l10n kept both; new head 0781ccf6db43edd72a722e64f9f0f7ef25d4bc6a	session-20261114T141738-30f539db	2026-11-14T15:23:50Z
+fix:humaniq:1144:7dd68965	merged development, register JSON conflict resolved keeping both; new head c4f3b613	session-20261114T151936-6991f242	2026-11-14T15:23:57Z
 verify:hermiq:1726:92871433	2 GREEN (1737,1750); 1726,1728,1735,1738,1740,1757 skipped: head moved; 1767 skipped: row sha truncated	session-20261114T144816-cf37407b	2026-11-14T15:24:14Z
