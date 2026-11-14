@@ -12090,3 +12090,4 @@ verify:buildiq:1653:6c939f2b	1653 GREEN	session-20261114T224754-e4a2fcab	2026-11
 review:learniq:2486:a242580e	GREEN: per spec, no new failures (6868 tests), phpstan clean	session-20261114T224736-f9da4a35	2026-11-14T23:58:23Z
 review:shillinq:3000:7a353f6d	GREEN: per change specs, unit 11486/0 new failures, phpstan clean	session-20261114T234944-eb1b5f87	2026-11-14T23:58:34Z
 merge:larpinq:1041:95a58113	stale	feeder	2026-11-14T23:55:38Z
+fix:shillinq:2977:dcb02193	fixed: SPDX headers on 2 specs; new head b5f66d62	session-20261114T234948-b89aaae1	2026-11-14T23:58:56Z
