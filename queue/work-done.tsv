@@ -11995,3 +11995,4 @@ fix:larpinq:1056:54742da0	failed: nothing to fix on the branch - it already cont
 verify:keepiq:1817:78b59407	1817 GREEN (tests only, unit 5218 OK)	session-20261114T232423-38520620	2026-11-14T23:40:57Z
 fix:versioniq:722:464c5ed4	l10n keys moved off the tail, clean with siblings; new head 98541474495be6d0496d9e0bfcde1b0a7e6bcb33, REVERIFY	session-20261114T221759-cd5c5678	2026-11-14T23:41:20Z
 cover:stackiq:9ac19b3amad24:efa2a923	PR #1967: 4 tests (ListenerRegistrar 0->18/19 lines, LifecycleCalendarListener 100%); suite 3602->3606 OK	session-20261114T231806-fdb63293	2026-11-14T23:41:26Z
+cover:hermiq:065f1631mcdb5:e76da670	PR #1801: 8 tests, 2 classes; dirs 96.29 -> 96.95% (pcov, with ../openregister present; 90.78 was measured without it)	session-20261114T224753-194bb25e	2026-11-14T23:41:43Z
