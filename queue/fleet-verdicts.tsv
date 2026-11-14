@@ -8187,3 +8187,4 @@ portaliq	2440	95a6ddd5d1fde7d8c922475e6265b362fab6850f	REVERIFY	worker-14	merged
 filinq	2095	6e10cdbc01182bccf11f321b50c3a7d2187a7d5f	CONFLICT	worker-01	conflicts on top of development+2072+2098: mock register, filinq_register.json
 filinq	2099	2529cfcb0dad4e34702730a36a0ecf588ee4823d	CONFLICT	worker-01	conflicts on top of development+2072+2098: filinq_register.json
 filinq	2102	1a9333c7d7ef8ab9d7c40863ab4defee24b53cb6	CONFLICT	worker-01	conflicts on top of development+2072+2098: SettingsService.php, filinq_register.json, Settings.vue
+portaliq	2443	50fdf0f84d19ab2e88cc514ff1491df850e4500f	REVERIFY	worker-16	merged development; renumbered branch register bumps to 0.111.0/0.112.0 and portal schema to 0.30.0 after development's 0.110.0/0.29.0; unit 5265 OK, 3 node specs pass; new head 4da2e8a4e492b815cb708bc68d96de247c83fd98, verify it
