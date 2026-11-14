@@ -10049,3 +10049,4 @@ verify:hermiq:1767:72e7b8b4	1767 GREEN, 1784 GREEN	session-20261114T154757-c9bf2
 build:planninq:tasks-dates:c2	failed: permission (npx openspec validate was refused); note: PR #1159 already has every code task built, only Playwright/mount checks and openspec validate remain	session-20261114T144749-57007b4b	2026-11-14T16:06:13Z
 review:openregister:10565:5956924a	APPROVE: additive performer-placeholder resolution; Architecture/Contract/Rules/Controller/Flow suites green, phpstan clean	session-20261114T144751-8a65b704	2026-11-14T16:06:36Z
 fix:planninq:1166:a5c5ee2d	development merged clean, new head c4659443, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T16:06:43Z
+fix:learniq:2501:d58497ec	restored floor: merged tree 3.99 (was 3.97); new head 2407536, REVERIFY recorded	session-20261114T154820-5269035e	2026-11-14T16:06:58Z
