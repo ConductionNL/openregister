@@ -8559,3 +8559,4 @@ learniq	2493	1d780890600e8c09b2d28e5da0f58df0b57ab3b1	CONFLICT	merge3	merges cle
 learniq	2514	2e2444ab4454d26a110258855a257f891ba0768c	CONFLICT	merge3	merges clean on development alone; files: 
 learniq	2513	85ff6fe85ee1df16af4c6677e1dbe40a21dc11b7	REVERIFY	merge3	head moved since the verdict (was ef587d083a0753b2fd4bbdf748a8e2cf98f98a44, f46c90f8:REVERIFY,ef587d08:GREEN); verify the new head
 hermiq	1726	7e84fbb0591a49b40f24956cd5565a0a4521d154	GREEN	worker-29	phpunit 5076 on tree (baseline 5046, 0 failures), vitest 1462 passed, 0 new failures; builds chat-carry-a-conversation-across-channels as its tasks ask
+hermiq	1735	add11fbd5923026ea5e5851638be054d9126ef8d	CONFLICT	worker-29	clean on development alone; conflicts with #1726 in this tree
