@@ -11,13 +11,13 @@
 ## 2. Source fields (REQ-HAF-003, D-4)
 
 - [x] 2.1 Migration adding the ten nullable columns of D-4 to `openregister_sources`; `lib/Db/Source.php` types and `jsonSerialize`; bump `appinfo/info.xml` above every stamp on `development`.
-- [ ] 2.2 `lib/Service/Sync/SourceService.php`: create, update, delete with validation (config against the fetcher schema, `runAs` required with `schedule` and resolvable to an enabled account, `conflictRules` through `DecisionTableValidator`, `hard-delete` refused when `application` is set), each refusal a 422 naming the field. `SourcesController` create and update go through it.
+- [x] 2.2 `lib/Service/Sync/SourceService.php`: create, update, delete with validation (config against the fetcher schema, `runAs` required with `schedule` and resolvable to an enabled account, `conflictRules` through `DecisionTableValidator`, `hard-delete` refused when `application` is set), each refusal a 422 naming the field. `SourcesController` create and update go through it.
 
 ## 3. Harvest node and flow (REQ-HAF-004, REQ-HAF-005, D-5, D-6)
 
-- [ ] 3.1 `lib/Service/Flow/Nodes/HarvestSourceNode.php` (`openregister.harvest-source`, config `sourceId`): lock through `ILockingProvider`, run the pipeline, update last-sync fields, emit the D-10 summary; refusals `source-disabled`, `fetcher-missing`, `mapping-missing`, `already-running`. Register it with the engine's own nodes.
-- [ ] 3.2 `SourceService` writes, updates, disables and deletes the source's flow through `FlowService::save()`/`delete()` keyed by the source uuid (D-6 graph); sets `flowId`.
-- [ ] 3.3 `SourcesController::syncNow()`: start the manual trigger when `flowId` is set and return the run id; keep the inline run otherwise.
+- [x] 3.1 `lib/Service/Flow/Nodes/HarvestSourceNode.php` (`openregister.harvest-source`, config `sourceId`): lock through `ILockingProvider`, run the pipeline, update last-sync fields, emit the D-10 summary; refusals `source-disabled`, `fetcher-missing`, `mapping-missing`, `already-running`. Register it with the engine's own nodes.
+- [x] 3.2 `SourceService` writes, updates, disables and deletes the source's flow through `FlowService::save()`/`delete()` keyed by the source uuid (D-6 graph); sets `flowId`.
+- [x] 3.3 `SourcesController::syncNow()`: start the manual trigger when `flowId` is set and return the run id; keep the inline run otherwise.
 - [x] 3.4 `lib/BackgroundJob/SyncDataJob.php`: skip sources with a `flowId`; log one warning per run naming the sources still on the job.
 
 ## 4. Decisions, strategies and states (REQ-HAF-006, REQ-HAF-007, REQ-HAF-008, D-7, D-8)
