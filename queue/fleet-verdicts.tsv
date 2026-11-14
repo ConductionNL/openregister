@@ -7379,3 +7379,4 @@ opencatalogi	2645	a2b8a989cbc3c86233515c1dc1e321a80bf5c9e0	GREEN	worker-53	PHP 5
 opencatalogi	2648	225f1e628870876832616b144915ef14e4a461f2	CONFLICT	worker-53	CHANGELOG.md and l10n en/nl conflict in tree; clean on development alone
 opencatalogi	2651	c541159476cd28d0f384e3452b33462e3aeb2c02	CONFLICT	worker-53	src/manifest.json conflict in tree; clean on development alone
 buildiq	1609	67352fa2550bfd41972240a17082c6f5dcf1530e	GREEN	worker-01	tree dev+1605+1608+1609+1611+1613: phpunit 2963 tests, 1 failure (ExportZipGoldenTest, also red on development baseline 2939/1), vitest 4195 passed; no new failures; openbuild-first-time-setup, tests only
+buildiq	1610	65aa047ea0cc0a84e7d4ca89f3766a3a9be0a254	CONFLICT	worker-01	conflicts in the tree only in l10n/en.js en.json nl.js nl.json (with earlier tree PRs); merges clean on development alone
