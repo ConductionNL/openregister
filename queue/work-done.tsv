@@ -8601,3 +8601,4 @@ build:thematiq:authoring-save-edits-as-a-new-theme	built: PR #1671; leftover val
 verify:versioniq:685:30ec33d9	GREEN 702-708; RED 685 (InstanceSettingsPanel.failures spec); CONFLICT 709 (AutoUpdateJob.php vs 705)	session-20261114T080916-9b1d69d6	2026-11-14T09:12:34Z
 verify:keepiq:1784:c0dc4a58	GREEN 1784	session-20261114T082639-95045d35	2026-11-14T09:12:53Z
 verify:opencatalogi:2678:eb671c7c	GREEN 2678	session-20261114T065626-0651b305	2026-11-14T09:13:09Z
+verify:stackiq:1916:4e2011b0	7 GREEN, 2 CONFLICT (1922, 1924 vs tree); no new failures	session-20261114T075640-efa02b24	2026-11-14T09:13:22Z
