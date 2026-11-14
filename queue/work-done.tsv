@@ -11840,3 +11840,4 @@ build4:openregister:object-write-at-instance-floor:c4	partial: PR #10520 (branch
 cover:pipelinq:7f9dc8e6m799d:f545d745	PR #3843: 23 tests over 3 repair classes, lib/Repair 92.48% -> 96.28%	session-20261114T224754-e4a2fcab	2026-11-14T23:21:00Z
 cover:dossiq:069ee2d6mbd37:b7fd3ec4	PR #6527: 15 tests for BezwaarTermijnScheduler, CaseRemedy, BezwaarArchiveTimer; Beschikking 91.3% -> 96.4%; suite 17379 -> 17394, 29 inherited failures unchanged	session-20261114T214733-589f5bff	2026-11-14T23:21:07Z
 verify:learniq:2548:dfff3611	2548 GREEN	session-20261114T221743-dbe5c07e	2026-11-14T23:21:21Z
+merge:filinq:2079:f382d609	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:21:40Z
