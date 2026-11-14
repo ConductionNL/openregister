@@ -8419,3 +8419,4 @@ learniq	2507	c4857461821b9b5bf8fc3e1869aae2f84b3a4695	GREEN	worker-19	unit 6718 
 learniq	2534	097afa2d9090610d05c97d2c2e116aeeed835108	CONFLICT	worker-19	conflicts with tree after 2496/2506/2507 in l10n/en.js, l10n/nl.js
 learniq	2535	bbf4909be9ea31c46eb8802627c4282d76c925f9	GREEN	worker-19	unit 6718 on tree (baseline 6703, 1 inherited fail HigherEducationExampleSet), no new failures; js-unit 1345 pass, 9 inherited; builds compliance-attestation-locked-after-signing (audit pack states frozen attestations)
 learniq	2536	004355d0a606ad6c056860d86fc9563f380521a9	CONFLICT	worker-19	conflicts with tree in lib/Settings/learniq_register.json
+learniq	2537	1f3f874a78efd8a8826808ced66f96d563db16d7	CONFLICT	worker-19	conflicts with tree in l10n/en.json, l10n/nl.json
