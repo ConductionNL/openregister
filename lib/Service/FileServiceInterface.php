@@ -168,6 +168,15 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	public function getLastStructurePreservation(): ?StructurePreservation;
 
 	/**
+	 * The irreversibility verdict of the copy the most recent anonymizeDocument() call wrote.
+	 *
+	 * @return array<string, mixed>|null The verdict, or null when no copy was verified.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.2
+	 */
+	public function getLastVerification(): ?array;
+
+	/**
 	 * Get the file lock handler.
 	 *
 	 * @return FileLockHandler The lock handler.

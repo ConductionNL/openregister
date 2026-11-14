@@ -100,6 +100,11 @@ class FileSettingsHandler {
 	public const MASK_FORMS_KEY = 'maskForms';
 
 	/**
+	 * The anonymisation setting that makes output wait for a person's check.
+	 */
+	public const REQUIRE_REVIEW_KEY = 'requireReview';
+
+	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
 	 *
 	 * The enabled file types are LLPhant-friendly: native PHP support plus common
@@ -379,9 +384,25 @@ class FileSettingsHandler {
 
 		$settings['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($settings['capacityPolicy'] ?? null))->rules();
 		$settings['officialsSource'] = OfficialsSource::normalise(value: ($settings['officialsSource'] ?? null));
+		if (array_key_exists(self::REQUIRE_REVIEW_KEY, $settings) === true) {
+			$settings[self::REQUIRE_REVIEW_KEY] = ($settings[self::REQUIRE_REVIEW_KEY] === true);
+		}
 
 		return $settings;
 	}//end readableAnonymisation()
+
+	/**
+	 * Whether anonymised output waits for a person's check of every detection.
+	 *
+	 * Off unless an administrator switched it on: only `true` turns it on.
+	 *
+	 * @return bool True when review is required.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.3
+	 */
+	public function requireReview(): bool {
+		return (($this->storedAnonymisation()[self::REQUIRE_REVIEW_KEY] ?? false) === true);
+	}//end requireReview()
 
 	/**
 	 * The organisation's capacity policy (REQ-DKP-001): the stored one, else the shipped default.
@@ -454,7 +475,11 @@ class FileSettingsHandler {
 		// A save that does not name the capacity policy or the officials
 		// source keeps the stored ones (REQ-DKP-001); what is kept is
 		// normalised, so an unknown capacity or decision never reaches a run.
-		$submitted += array_intersect_key($this->storedAnonymisation(), ['capacityPolicy' => true, 'officialsSource' => true]);
+		$kept       = ['capacityPolicy' => true, 'officialsSource' => true, self::REQUIRE_REVIEW_KEY => true];
+		$submitted += array_intersect_key($this->storedAnonymisation(), $kept);
+		if (array_key_exists(self::REQUIRE_REVIEW_KEY, $submitted) === true) {
+			$submitted[self::REQUIRE_REVIEW_KEY] = ($submitted[self::REQUIRE_REVIEW_KEY] === true);
+		}
 		$submitted['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($submitted['capacityPolicy'] ?? null))->rules();
 		$submitted['officialsSource'] = OfficialsSource::normalise(value: ($submitted['officialsSource'] ?? null));
 

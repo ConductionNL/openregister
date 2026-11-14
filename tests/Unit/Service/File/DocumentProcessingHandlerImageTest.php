@@ -212,6 +212,8 @@ final class DocumentProcessingHandlerImageTest extends TestCase {
 				'pdf-metadata-sanitiser' => ['outcome' => 'not-applicable'],
 				'docx-sanitiser' => ['outcome' => 'not-applicable'],
 				'odt-sanitiser' => ['outcome' => 'not-applicable'],
+				'xlsx-sanitiser' => ['outcome' => 'not-applicable'],
+				'pptx-sanitiser' => ['outcome' => 'not-applicable'],
 				'image-burner' => ['outcome' => 'ran'],
 			],
 			$this->logged->getStepsArray()

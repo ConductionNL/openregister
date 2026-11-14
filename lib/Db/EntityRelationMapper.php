@@ -198,6 +198,27 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	}//end findEntitiesForFile()
 
 	/**
+	 * The detections of a file's current run, with each one's redaction decision.
+	 *
+	 * @param int $fileId The file ID.
+	 *
+	 * @return list<array<string, mixed>> Rows with `relation_id`, `entity_type`, `entity_value`,
+	 *                                    `position_start` and `redaction_decision`.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.3
+	 */
+	public function findDetectionsForReview(int $fileId): array {
+		$qb = $this->selectFileEntities(fileId: $fileId);
+		$qb->addSelect('r.redaction_decision')->orderBy('r.position_start', 'ASC');
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return array_values($rows);
+	}//end findDetectionsForReview()
+
+	/**
 	 * Find anonymised entity relations with the full decision-metadata + entity context for a file.
 	 *
 	 * Differs from {@see findEntitiesForFile} in two ways:
@@ -769,6 +790,10 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		}
 
 		$actingUser = ($edit->actingUser ?? $this->userSession->getUser());
+		if (array_key_exists('decision', $changedFields) === true || array_key_exists('skipAnonymization', $changedFields) === true) {
+			self::stampDecider(relation: $edit->relation, actingUser: $actingUser);
+		}
+
 		$change     = new DecisionMetadataChange(relation: $edit->relation, changedFields: $changedFields, actingUser: $actingUser);
 		return $this->recordDecisionChange(change: $change);
 	}//end updateDecisionMetadata()
@@ -861,7 +886,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * @throws CustomValidationException When a whitelist or shape violation is detected.
 	 */
 	private static function assertDecisionFieldsValid(array $fields): void {
-		$unknown = array_diff(array_keys($fields), ['bases', 'skipAnonymization']);
+		$unknown = array_diff(array_keys($fields), ['bases', 'skipAnonymization', 'decision']);
 		if (count($unknown) > 0) {
 			$first = (string)reset($unknown);
 			throw new CustomValidationException(
@@ -882,7 +907,92 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 				errors: ['field' => 'skipAnonymization', 'reason' => 'must_be_boolean']
 			);
 		}
+
+		self::assertDecisionShape(fields: $fields);
 	}//end assertDecisionFieldsValid()
+
+	/**
+	 * Reject a `decision` outside the three decisions, or one that contradicts `skipAnonymization`.
+	 *
+	 * @param array $fields The supplied fields.
+	 *
+	 * @return void
+	 *
+	 * @throws CustomValidationException When the decision is unknown or contradicts the skip flag.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.1
+	 */
+	private static function assertDecisionShape(array $fields): void {
+		if (array_key_exists('decision', $fields) === false) {
+			return;
+		}
+
+		if (in_array($fields['decision'], EntityRelation::DECISIONS, true) === false) {
+			throw new CustomValidationException(
+				message: 'Invalid decision: must be one of ' . implode(', ', EntityRelation::DECISIONS),
+				errors: ['field' => 'decision', 'reason' => 'unknown_decision']
+			);
+		}
+
+		$skip = self::skipOf(decision: $fields['decision']);
+		if ($skip !== null && array_key_exists('skipAnonymization', $fields) === true && $fields['skipAnonymization'] !== $skip) {
+			throw new CustomValidationException(
+				message: 'The decision contradicts skipAnonymization',
+				errors: ['field' => 'decision', 'reason' => 'contradicts_skip_anonymization']
+			);
+		}
+	}//end assertDecisionShape()
+
+	/**
+	 * The skip flag a decision stands for, null for `undecided`.
+	 *
+	 * @param string $decision The decision.
+	 *
+	 * @return bool|null True to release, false to redact.
+	 */
+	private static function skipOf(string $decision): ?bool {
+		return match ($decision) {
+			EntityRelation::DECISION_RELEASE => true,
+			EntityRelation::DECISION_REDACT => false,
+			default => null,
+		};
+	}//end skipOf()
+
+	/**
+	 * The decision a skip flag stands for.
+	 *
+	 * @param bool $skip Whether the value is skipped.
+	 *
+	 * @return string `release` when skipped, else `redact`.
+	 */
+	private static function decisionOf(bool $skip): string {
+		if ($skip === true) {
+			return EntityRelation::DECISION_RELEASE;
+		}
+
+		return EntityRelation::DECISION_REDACT;
+	}//end decisionOf()
+
+	/**
+	 * Name the person who took the decision and when; an undecided relation names nobody.
+	 *
+	 * @param EntityRelation $relation   The relation, updated in place.
+	 * @param IUser|null     $actingUser The person deciding.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.1
+	 */
+	private static function stampDecider(EntityRelation $relation, ?IUser $actingUser): void {
+		if ($relation->getRedactionDecision() === EntityRelation::DECISION_UNDECIDED) {
+			$relation->setDecidedBy(null);
+			$relation->setDecidedAt(null);
+			return;
+		}
+
+		$relation->setDecidedBy($actingUser?->getUID());
+		$relation->setDecidedAt(new \DateTime());
+	}//end stampDecider()
 
 	/**
 	 * Reject a `bases` value that is neither null nor an array of strings.
@@ -940,6 +1050,27 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 				'new' => $fields['skipAnonymization'],
 			];
 			$relation->setSkipAnonymization($fields['skipAnonymization']);
+		}
+
+		// The decision and the skip flag say the same thing. A flipped flag is a
+		// decision, recorded on the row; the change it announces stays the flag.
+		if (array_key_exists('decision', $fields) === false) {
+			if (array_key_exists('skipAnonymization', $changedFields) === true) {
+				$relation->setRedactionDecision(self::decisionOf(skip: $relation->getSkipAnonymization()));
+			}
+
+			return $changedFields;
+		}
+
+		$skip = self::skipOf(decision: $fields['decision']);
+		if ($skip !== null && $relation->getSkipAnonymization() !== $skip) {
+			$changedFields['skipAnonymization'] = ['previous' => $relation->getSkipAnonymization(), 'new' => $skip];
+			$relation->setSkipAnonymization($skip);
+		}
+
+		if ($relation->getRedactionDecision() !== $fields['decision']) {
+			$changedFields['decision'] = ['previous' => $relation->getRedactionDecision(), 'new' => $fields['decision']];
+			$relation->setRedactionDecision($fields['decision']);
 		}
 
 		return $changedFields;

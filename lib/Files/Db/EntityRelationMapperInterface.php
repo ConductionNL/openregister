@@ -273,6 +273,18 @@ interface EntityRelationMapperInterface {
 	public function findSkippedEntityValuesForFile(int $fileId): array;
 
 	/**
+	 * The detections of a file's current run, with each one's redaction decision.
+	 *
+	 * @param int $fileId The file ID.
+	 *
+	 * @return list<array<string, mixed>> Rows with `relation_id`, `entity_type`, `entity_value`,
+	 *                                    `position_start` and `redaction_decision`.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.3
+	 */
+	public function findDetectionsForReview(int $fileId): array;
+
+	/**
 	 * Update operator-decision metadata on an EntityRelation row.
 	 *
 	 * Single audited write path for the two decision-only fields:

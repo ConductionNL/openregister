@@ -52,6 +52,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Anonymisation\RedactionReviewGate;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -248,6 +249,13 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	private DocumentProcessingHandlerInterface $documentProcessingHandler;
 
 	/**
+	 * Refuses anonymised output a person has not checked (REQ-RRS-002).
+	 *
+	 * @var RedactionReviewGate|null
+	 */
+	private ?RedactionReviewGate $reviewGate = null;
+
+	/**
 	 * File publishing handler (Single Responsibility: File publishing and ZIP archiving)
 	 *
 	 * @var FilePublishingHandler
@@ -393,6 +401,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 		$this->rootFolder = $platform->rootFolder;
 		$this->shareUrls = $platform->shareUrls;
 		$this->userSession = $platform->userSession;
+		$this->reviewGate = $platform->reviewGate;
 	}//end adoptPlatform()
 
 	/**
@@ -1816,10 +1825,11 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * @param array|null                       $entities          The detected entities.
 	 *
 	 * @throws Exception If anonymization fails.
+	 * @throws \OCA\OpenRegister\Exception\ReviewRequiredException When review is required and the file was not checked.
 	 *
 	 * @return Node The anonymized file node.
 	 *
-	 * @spec exclude Delegation to DocumentProcessingHandler::anonymize; no facade-owned logic.
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.3
 	 */
 	public function anonymizeDocument(
 		Node $node,
@@ -1841,6 +1851,10 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
 			$anonymization = new DocumentAnonymization(entities: $entities, scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure);
 		}
+
+		// NOTHING IS WRITTEN UNTIL A PERSON HAS CHECKED IT, whoever calls:
+		// the endpoint, another app or a batch path (REQ-RRS-002).
+		$this->reviewGate?->assertMayAnonymise(fileId: $node->getId());
 
 		$options = new DocumentAnonymisationOptions(
 			scope: $anonymization->scope,
@@ -1881,6 +1895,18 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	public function getLastStructurePreservation(): ?StructurePreservation {
 		return $this->documentProcessingHandler->getLastStructurePreservation();
 	}//end getLastStructurePreservation()
+
+	/**
+	 * The irreversibility verdict of the copy the most recent anonymizeDocument() call wrote.
+	 *
+	 * @return array<string, mixed>|null Verdict, mayBePublished, outputMode, routesChecked and
+	 *                                   findings (route and count), or null when no copy was verified.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.2
+	 */
+	public function getLastVerification(): ?array {
+		return $this->documentProcessingHandler->getLastVerification();
+	}//end getLastVerification()
 
 	/**
 	 * Per-entity placeholder map from the most recent anonymizeDocument() call.

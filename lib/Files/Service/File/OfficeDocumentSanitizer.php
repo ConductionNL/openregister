@@ -37,7 +37,9 @@ namespace OCA\OpenRegister\Files\Service\File;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\PptxSanitizer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\SanitizerInterface;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\XlsxSanitizer;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\ITempManager;
@@ -91,6 +93,8 @@ class OfficeDocumentSanitizer {
 		private readonly array $strategies = [
 			new DocxSanitizer(sentinel: self::SENTINEL),
 			new OdtSanitizer(sentinel: self::SENTINEL),
+			new XlsxSanitizer(sentinel: self::SENTINEL),
+			new PptxSanitizer(sentinel: self::SENTINEL),
 		],
 	) {
 	}//end __construct()
@@ -222,6 +226,14 @@ class OfficeDocumentSanitizer {
 	private function extensionForMime(string $mimeType): string {
 		if ($mimeType === 'application/vnd.oasis.opendocument.text') {
 			return '.odt';
+		}
+
+		if ($mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+			return '.xlsx';
+		}
+
+		if ($mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+			return '.pptx';
 		}
 
 		return '.docx';

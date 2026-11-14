@@ -1991,6 +1991,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// File Anonymization - Replace detected entities with placeholders.
 		['name' => 'fileText#anonymizeFile', 'url' => '/api/files/{fileId}/anonymize', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'redactionReviewMark#create', 'url' => '/api/files/{fileId}/anonymisation/review-mark', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
 
 		// Manual entity addition - operator-supplied value, chunk-aware string matching, persists catalogue + relations.
 		['name' => 'fileText#addManualEntity', 'url' => '/api/files/{fileId}/manual-entities', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],

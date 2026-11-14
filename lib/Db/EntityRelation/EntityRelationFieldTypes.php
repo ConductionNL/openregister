@@ -57,5 +57,8 @@ final class EntityRelationFieldTypes {
 		'page' => 'integer',
 		'box' => 'json',
 		'createdAt' => 'datetime',
+		'redactionDecision' => 'string',
+		'decidedBy' => 'string',
+		'decidedAt' => 'datetime',
 	];
 }//end class

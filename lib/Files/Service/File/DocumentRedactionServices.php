@@ -26,6 +26,7 @@ use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
+use OCA\OpenRegister\Service\Anonymisation\RedactionVerdictStore;
 
 /**
  * The redaction collaborators of the document processing handler.
@@ -43,6 +44,8 @@ final class DocumentRedactionServices {
 	 * @param FileSettingsHandler|null     $fileSettings           The file settings, for the mask form per entity type; null masks nothing.
 	 * @param ImageRedactionService|null    $images                 The image seam that burns decided regions; without it an image
 	 *                                                              is refused, never sent down the text path.
+	 * @param RedactionVerdictStore|null    $verdicts               Keeps the written copy's irreversibility verdict on the copy;
+	 *                                                              null verifies without keeping the verdict on the file.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
@@ -53,6 +56,7 @@ final class DocumentRedactionServices {
 		public readonly ?AnonymisationLogMapper $anonymisationLogMapper = null,
 		public readonly ?FileSettingsHandler $fileSettings = null,
 		public readonly ?ImageRedactionService $images = null,
+		public readonly ?RedactionVerdictStore $verdicts = null,
 	) {
 	}//end __construct()
 }//end class
