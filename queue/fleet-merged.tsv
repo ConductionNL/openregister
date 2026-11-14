@@ -2898,3 +2898,4 @@ planninq	1159	fc0531ddf109692998b779202366fc0631b11e0f	MERGED	merge3	GATE OK sbo
 planninq	1166	5fa61e8e0ef1376130dea7e87564f54eb18cab9a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.72
 planninq	1171	6e9f4ac2e51d2e152758d6a09e48c2982a2742e4	RED	merge3	GATE RED floor: overall: 4.78 -> 4.75; duplication: 4.61 -> 4.55; unit_complexity: 4.83 -> 4.79; unit_interfacing: 4.71 -> 4.63; module_coupling: 3.82 -> 3.80
 planninq	1178	93ae38333c81b66f1230d253a2e16b8510e2247f	RED	merge3	GATE RED floor: unit_complexity: 4.84 -> 4.82
+launchpad	1197	21a4f902991a71d9fedf679680951fd1f36f8e33	RED	merge3	GATE RED floor: unit_interfacing: 3.44 -> 3.40
