@@ -10627,3 +10627,4 @@ merge:hermiq:1791:34fcbc06	merge3 tree of 10 hermiq PRs: merged=1 red=3 fail=0 s
 merge:hermiq:1785:5227a3d5	merge3 tree of 10 hermiq PRs: merged=1 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T19:11:59Z
 fix:pipelinq:3835:53c482bd	CONFLICT resolved (spec counts combined), pushed fc0173c1; REVERIFY recorded	session-20261114T190957-fe5a0159	2026-11-14T19:12:40Z
 merge:learniq:2520:af48c00b	merge3 tree of 8 learniq PRs: merged=2 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:13:40Z
+merge:learniq:2493:ba6bff8b	merge3 tree of 8 learniq PRs: merged=2 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:13:43Z
