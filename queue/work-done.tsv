@@ -10819,3 +10819,4 @@ build:filinq:intake-acknowledge-and-stamp:c3	partial: PR #2069 head fa29e9b5 add
 merge:shillinq:3000:1dd6b1fe	stale	feeder	2026-11-14T20:15:09Z
 fix:hermiq:1715:47d76c7c	floor restored (unit_complexity 4.52); new head 6bd10d39; REVERIFY	session-20261114T191730-4ad9612d	2026-11-14T20:15:42Z
 fix:portaliq:2443:b4846234	conflicts resolved keeping both sides, suite green; REVERIFY at b5fa534f5324e1f791275805da7e154476dc1343	session-20261114T194740-7cca8afd	2026-11-14T20:15:48Z
+fix:decidiq:2170:4758b5f4	no change: branch is current with development and merges clean on it; the openapi.json conflict is only against unmerged sibling #2169, so merge one first and re-merge development into the other	session-20261114T191744-b9573b83	2026-11-14T20:15:53Z
