@@ -7287,3 +7287,4 @@ planninq	1167	3df6651df2909229b3cb52d288dec6679a6cb6eb	CONFLICT	worker-03	confli
 integriq	3594	3777aac3860b46849590f44b1231cf10aa004a09	GREEN	worker-58	tree without 3574/3599: php unit 8533 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2162 passed
 integriq	3595	7a399d4ef63b97d29507baa122e0dbbaaf635411	GREEN	worker-58	tree without 3574/3599: php unit 8533 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2162 passed
 integriq	3597	45379cb79c5296feecd1c188c161d8eee67a57fd	GREEN	worker-58	tree without 3574/3599: php unit 8533 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2162 passed
+planninq	1162	52a340748cab9daf1a75e4c3e4e586ff9b1fe2fd	GREEN	worker-03	phpunit 1034 (baseline 1034, 0 failures), vitest 3219 (baseline 3198, all pass); no new failures; implements case-link-editing as specified
