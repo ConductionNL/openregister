@@ -10,7 +10,8 @@
 - [x] 2.1 `version` parameter on `ObjectService::find()` merging the delta and adding `@self._version`. Verify: API test `GET .../{id}?version=update-1` returns merged data, `?version=main` equals no parameter.
       > Built at the read route rather than in `ObjectService::find()`, whose signature fleet apps call with named arguments (published contract): `ObjectsController::show()` reads `version`; `main` or absent is the live object unchanged; another key goes through `DraftService::find()` (creator or write access), merges the delta onto a copy of the live object, renders it through the same path and stamps `@self._version` `{key, name, base}`; an absent or invisible draft answers 404 like a missing object (`lib/Controller/Support/DraftVersionRead.php`). Unit: `DraftVersionReadTest`, `ObjectsControllerDraftVersionTest`. The API test needs an instance and is not written.
 - [x] 2.2 `VersionsController` routes under `/api/objects/{register}/{schema}/{id}/versions` for create, list, read, update and delete. Verify: `tests/Api/ObjectDraftsTest`.
-- [ ] 2.3 `_drafts=true` adds visible draft keys to `@self.drafts` without changing the result set. Verify: API test.
+- [x] 2.3 `_drafts=true` adds visible draft keys to `@self.drafts` without changing the result set. Verify: API test.
+      > Both list paths of `ObjectsController::index()` (magic table and object service) pass their rendered rows through `Controller/Support/DraftKeysOnList`: one `findForObjects` read for the page, own drafts always shown, others only after `update` on the loaded object (a failed load hides them); rows are never added, removed or reordered. Unit: `DraftKeysOnListTest`, `ObjectsControllerDraftKeysTest`, `DraftServiceTest`. The API test needs an instance and is not written.
 
 ## 3. Promotion
 

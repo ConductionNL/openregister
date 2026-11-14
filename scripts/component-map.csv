@@ -4249,3 +4249,4 @@ Controller/Support/DraftVersionRead.php,103,Controller,Service,Service/Controlle
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Controller/Support/DraftKeysOnList.php,188,Controller,Controller,Controller/Support/DraftKeysOnList.php,0,,Core

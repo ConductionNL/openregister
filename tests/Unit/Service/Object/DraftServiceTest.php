@@ -266,4 +266,39 @@ final class DraftServiceTest extends TestCase {
 		$this->assertFalse($this->service->mayCreate($this->object, $this->schema, 'reader'));
 		$this->assertFalse($this->service->mayCreate($this->object, $this->schema, null));
 	}
+
+	public function testDraftsOfGroupsTheDraftsOfManyObjectsInOneRead(): void {
+		$other = $this->draft('b', 'kees');
+		$other->setObjectUuid('other-uuid');
+		$mine = $this->draft('a', 'kees');
+		$this->drafts->expects($this->once())->method('findForObjects')->with(['9a1e0f3c-5d6b-4c7a-8e9f-0a1b2c3d4e5f', 'other-uuid'])->willReturn([$mine, $other]);
+
+		$grouped = $this->service->draftsOf(objectUuids: ['9a1e0f3c-5d6b-4c7a-8e9f-0a1b2c3d4e5f', 'other-uuid']);
+
+		$this->assertSame(['9a1e0f3c-5d6b-4c7a-8e9f-0a1b2c3d4e5f' => [$mine], 'other-uuid' => [$other]], $grouped);
+	}
+
+	public function testDraftsOfNothingReadsNothing(): void {
+		$this->drafts->expects($this->never())->method('findForObjects');
+
+		$this->assertSame([], $this->service->draftsOf(objectUuids: []));
+	}
+
+	public function testVisibleAmongGivesAWriterEveryDraftAndOthersTheirOwn(): void {
+		$this->writers('wendy');
+		$kees = $this->draft('a', 'kees');
+		$piet = $this->draft('b', 'piet');
+
+		$this->assertSame([$kees, $piet], $this->service->visibleAmong(drafts: [$kees, $piet], object: $this->object, schema: $this->schema, caller: 'wendy'));
+		$this->assertSame([$kees], $this->service->visibleAmong(drafts: [$kees, $piet], object: $this->object, schema: $this->schema, caller: 'kees'));
+		$this->assertSame([], $this->service->visibleAmong(drafts: [$kees, $piet], object: $this->object, schema: $this->schema, caller: null));
+	}
+
+	public function testVisibleAmongWithoutTheObjectShowsOnlyOwnDraftsAndAsksNoPermission(): void {
+		$this->permissions->expects($this->never())->method('hasPermission');
+		$kees = $this->draft('a', 'kees');
+		$piet = $this->draft('b', 'piet');
+
+		$this->assertSame([$piet], $this->service->visibleAmong(drafts: [$kees, $piet], object: null, schema: $this->schema, caller: 'piet'));
+	}
 }

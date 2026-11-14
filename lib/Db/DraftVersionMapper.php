@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -98,4 +99,28 @@ class DraftVersionMapper extends QBMapper {
 			return null;
 		}
 	}//end findByKey()
+
+	/**
+	 * Every draft of the given objects, oldest first, in one read per chunk.
+	 *
+	 * @param array<int, string> $objectUuids The objects' uuids.
+	 *
+	 * @return array<int, DraftVersion> The drafts.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-drafts-never-appear-as-objects-in-lists-or-search
+	 */
+	public function findForObjects(array $objectUuids): array {
+		$objectUuids = array_values(array_unique(array_filter($objectUuids, static fn (mixed $uuid): bool => is_string($uuid) === true && $uuid !== '')));
+		$drafts      = [];
+		foreach (array_chunk($objectUuids, 500) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('*')
+				->from(self::TABLE)
+				->where($qb->expr()->in('object_uuid', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
+				->orderBy('id', 'ASC');
+			array_push($drafts, ...$this->findEntities(query: $qb));
+		}
+
+		return $drafts;
+	}//end findForObjects()
 }//end class

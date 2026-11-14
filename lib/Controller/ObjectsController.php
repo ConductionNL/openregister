@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Object\DraftService;
 use OCA\OpenRegister\Controller\Support\DraftVersionRead;
+use OCA\OpenRegister\Controller\Support\DraftKeysOnList;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
@@ -1435,6 +1436,7 @@ class ObjectsController extends Controller {
 		$responseData = $this->buildMagicResponse(page: $page, listing: $listing);
 		$responseData = $this->addIgnoredFilterHint(responseData: $responseData, ignoredFilters: $magicMapper->getIgnoredFilters());
 		$responseData = $this->addMagicFacets(responseData: $responseData, listing: $listing);
+		$responseData = $this->withDraftKeys(result: $responseData, listing: $listing, objectService: $objectService);
 
 		return $this->magicListingResponse(responseData: $responseData, listing: $listing);
 	}//end indexFromMagicTable()
@@ -1911,6 +1913,7 @@ class ObjectsController extends Controller {
 
 		// Spatial post-filter for ?geo.bbox= / ?geo.near=&geo.radius= / ?geo.property=.
 		$result = $this->applyGeoQueryFilters(params: $listing['params'], result: $result);
+		$result = $this->withDraftKeys(result: $result, listing: $listing, objectService: $objectService);
 
 		// Content negotiation: a JSON-LD @graph over the already-rendered,
 		// RBAC-filtered result (json-ld-output).
@@ -1925,6 +1928,47 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(data: $result);
 	}//end indexFromObjectService()
+
+	/**
+	 * With `_drafts=true`, the keys of the drafts the caller may see on each row, in `@self.drafts`.
+	 *
+	 * The rows themselves are not changed, added or removed: drafts live in
+	 * their own table and never come back as objects.
+	 *
+	 * @param array                     $result        The listing body.
+	 * @param array                     $listing       The listing scope.
+	 * @param ObjectOperationsInterface $objectService Reads a row's live object under the caller's access.
+	 *
+	 * @psalm-param array<string, mixed> $result
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return array<string, mixed> The listing body.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-drafts-never-appear-as-objects-in-lists-or-search
+	 */
+	private function withDraftKeys(array $result, array $listing, ObjectOperationsInterface $objectService): array {
+		$schemaEntity   = ($listing['resolved']['schemaEntity'] ?? null);
+		$registerEntity = ($listing['resolved']['registerEntity'] ?? null);
+		if (DraftKeysOnList::asked(params: $listing['params']) === false
+			|| ($schemaEntity instanceof Schema) === false
+			|| is_array($result['results'] ?? null) === false
+		) {
+			return $result;
+		}
+
+		$result['results'] = DraftKeysOnList::annotate(
+			results: $result['results'],
+			drafts: $this->container->get(DraftService::class),
+			schema: $schemaEntity,
+			caller: $this->userSession->getUser()?->getUID(),
+			load: fn (string $uuid): mixed => $objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: $registerEntity, schema: $schemaEntity, render: false, audit: false)
+			)
+		);
+
+		return $result;
+	}//end withDraftKeys()
 
 	/**
 	 * Batched object-count endpoint — POST /api/objects/counts.
