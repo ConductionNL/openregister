@@ -204,3 +204,5 @@ openregister#9971 817922566eae2758481439e567458de704e497cf fails on main: WriteR
 openregister#9972 5f4af6d7bdad1398bfcf4cb9e261708150ecb3bc fails on main: ConfigurationServiceRegistrarTest::testRegistersTheServicesInOrder and ConfigurationServiceRegistrarWiringTest pin the registrar list; ConfigurationSeedService added without updating them
 openregister#10061 c8d3817dae3b3b39d54bf7e75ff3cda30f6fa085 precheck-park: sbom: package-lock.json changed without sbom.cdx.json
 openregister#8948 c58650a7f085c8a1d8ffdc97ff5c0c5b67ac30d6 fails on main: ListenerOrderTest and ListenerRegistrationOrderGoldenTest (SharerViewsEndWithUserListener not in the pinned order); RecentLensLookupCallSitesTest (SharerAccessSweepJob::objectOf find has no audit decision)
+openregister#10464 21c8c5a9076a5c78b6b5b561ad51673384e31c45 auto-park: floor: module_coupling: 5.03 -> 5.01
+openregister#10464 21c8c5a9076a5c78b6b5b561ad51673384e31c45 auto-park: floor: module_coupling: 5.03 -> 5.01
