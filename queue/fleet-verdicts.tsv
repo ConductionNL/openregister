@@ -9532,3 +9532,4 @@ planninq	1170	610e91fd90b929d8bf4a2702777a5c9c58aaef7a	GREEN	worker-03	phpunit u
 planninq	1179	7c95f234d90a75b5d986b49884ca28ccf13fff0e	GREEN	worker-03	phpunit unit 1082 on development+1170+1179 (baseline 1067, 0 failures), vitest 3326 passed, 0 new failures; build of projects-templates-shared-workflow: Templates chip and owner/manager-only switch as specced
 pipelinq	3835	fc0173c18be06fcbdc5ded8ba321dbf5c62cd3aa	CONFLICT	worker-33	openapi.json conflicts when merged after #3829 on development
 pipelinq	3841	a9be79625769353f4e0dfba808d974538c7a3bcc	GREEN	worker-33	phpunit 8452 on tree with #3829 (baseline 8435, 0 failures), vitest 5172 tests, 1 failure inherited from development; build per change specs
+keepiq	1793	813952b02f96211c4897e0644ea2d66021a4bb7c	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
