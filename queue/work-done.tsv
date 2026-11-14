@@ -8379,3 +8379,4 @@ verify:keepiq:1786:a8b5a1cd	1786 GREEN; 1787,1788 CONFLICT (l10n vs 1786)	sessio
 build:stackiq:contract-approval-ownership-guard	already done in code; PR #1902 ticks tasks 1.1-4.1 (4.2 is a hydra-repo note)	session-20261114T065626-0651b305	2026-11-14T08:43:13Z
 fix:stackiq:1706:5ba0e54b	conflict resolved, pushed dcde9ef2, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T08:43:19Z
 build:stackiq:architecture-shared-usage-on-views	partial: PR #1903, overlay mapping util + tests (task 2), task 1 already on development; page tasks wait for architecture-views-editor, export task 4 left	session-20261114T062156-e8adf8ca	2026-11-14T08:43:28Z
+fix:learniq:2494:4a5ebbac	fixed floor: unit_complexity 4.37 -> 4.41 (base 4.40), new head bcb53dec, REVERIFY recorded	session-20261114T075640-614c8df8	2026-11-14T08:43:42Z
