@@ -8262,3 +8262,4 @@ filinq	2087	c17b34e0c221f972807740ca0d1159c267f1a3f3	REVERIFY	worker-38	no chang
 learniq	2488	7f1b19e05a34e38974f3122845c54a11d49140a0	GREEN	worker-28	unit 6747 tests on tree, baseline 6703 with 1 failure (HigherEducationExampleSetTest), no new failures
 portaliq	2284	f2a7c87078fb5b9bb44383111233e1133d351dbf	GREEN	worker-32:review	behaviour-preserving extraction of bearer resolution, signing key, session records, assertion issuer; same fail-closed checks; phpunit 5230 ok merged with development; phpstan only a pre-existing finding; no fleet code callers
 learniq	2496	1358154da04f0ff674b6310c4ea1be403b609960	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
+learniq	2504	38d12d9bb9b0259e1d488732cf6ca09d0fec768b	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
