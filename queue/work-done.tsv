@@ -8065,3 +8065,4 @@ fix:hermiq:1725:9101789f	stacked on 1715, register 0.55.0, new head cafeae63a99f
 verify:learniq:2504:f5f42d6b	2504 GREEN, 2511 GREEN; no new PHP or JS failures	session-20261114T070323-628c2f37	2026-11-14T07:59:19Z
 fix:humaniq:1139:51e1740c	l10n keys relocated, merges clean with dev and 1135, pushed d55d4144, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T07:59:24Z
 verify:portaliq:2423:8fd85626	2423/2430/2433 GREEN, 2442 CONFLICT (package.json); unit 5102 0 fail	session-20261114T065632-a1c920c5	2026-11-14T07:59:31Z
+build:buildiq:logic-script-step	failed: blocked on depends_on logic-automation-actions-that-run (0/12 tasks built); its flow backend is what T02/T04 compile into, so build that change first	session-20261114T070352-19ea7dff	2026-11-14T07:59:44Z
