@@ -9605,3 +9605,4 @@ build:decidiq:platform-baseline-on-nextcloud:c2	partial: no new code; PR #2155 (
 verify:decidiq:2148:3e34c64b	3 GREEN (2148,2168,2170); 2149,2178,2187 skipped: head moved	session-20261114T144816-cf37407b	2026-11-14T14:52:24Z
 build:decidiq:followup-implementation-progress:c2	tasks 3-5 implemented in decidiq#2191 (manifest widget, list column + quick filters, Newman collection); left: Playwright and Newman runs (live)	session-20261114T134636-f5681596	2026-11-14T14:53:07Z
 verify:shillinq:2972:e04cc355	2976 GREEN; 2972, 3003, 3004 CONFLICT	session-20261114T141737-e9e54940	2026-11-14T14:53:19Z
+fix:decidiq:2169:d6a0067e	stale: correction of the row above, nothing pushed; the branch moved to 5f13d30 (another lane's build commit) during the fix, REVERIFY row removed	session-20261114T141720-f9e7a46b	2026-11-14T14:53:23Z
