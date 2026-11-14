@@ -7797,3 +7797,4 @@ fix:hermiq:1764:ac844442	merged development (l10n union, register -> 0.54.0); un
 fix:hermiq:1741:dd035123	no conflict with development; only overlaps open #1739 in tests/Unit/Mcp/HermiqToolProviderTest.php, needs a development merge after #1739 lands	session-20261114T070352-19ea7dff	2026-11-14T07:19:18Z
 fix:hermiq:1763:015ce782	conflict resolved, new head a68d1b9b; REVERIFY recorded	session-20261114T070344-897ffa0f	2026-11-14T07:19:16Z
 merge:integriq:3557:5d03d280	merge3 tree of 1 integriq PRs: none; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T07:19:26Z
+fix:hermiq:1674:33bac907	conflict resolved (identical @uses additions, kept development's superset); no new failures; new head 72d6bf37	session-20261114T070332-b3a23612	2026-11-14T07:19:36Z
