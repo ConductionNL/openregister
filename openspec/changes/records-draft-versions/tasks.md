@@ -35,7 +35,8 @@
 ## 6. Spec and docs
 
 - [ ] 6.1 Remove the "Status: deferred" notes from the two draft requirements in `openspec/specs/content-versioning/spec.md` when 1.1 to 3.2 have shipped.
-- [ ] 6.2 `docs/` page on drafts, promotion and site preview.
+- [x] 6.2 `docs/` page on drafts, promotion and site preview.
+      > `docs/features/draft-versions.md` (visibility, keys, routes, `?version`, `_drafts`, promotion and `force`, `previewUrl` and preview links), linked from `docs/features/README.md`; the stale lifecycle paragraph in `versioning-and-audit.md` now points to it.
 
 Acceptance:
 - An object with no drafts reads, lists and saves exactly as before.
