@@ -4252,3 +4252,4 @@ Capabilities/SearchCapability.php,,Capabilities,,,,,Platform
 Service/Search/TextSearchConfiguration.php,,Service,,,,,Core
 Controller/Settings/SearchSettingsController.php,,Controller,,,,,Configuration
 Migration/Version1Date20261114120000.php,,Migration,,,,,Platform
+Service/Search/SearchSnippetAttacher.php,,Service,,,,,Core

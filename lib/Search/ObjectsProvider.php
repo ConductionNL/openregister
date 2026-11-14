@@ -444,6 +444,9 @@ class ObjectsProvider implements IFilteringProvider {
 		$searchQuery = [];
 		if (empty($search) === false) {
 			$searchQuery['_search'] = $search;
+			// The matched passage for the subline, under REQ-SDL-002's safety
+			// rules (search-dutch-language-quality).
+			$searchQuery['_snippet'] = true;
 		}
 
 		$register = $query->getFilter('register')?->get();

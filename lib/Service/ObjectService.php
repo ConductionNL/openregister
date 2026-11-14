@@ -58,6 +58,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Search\SearchSnippetAttacher;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -5643,6 +5644,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $result['@self']['deleted'] = $deleted;
 
         $result = $this->extendSearchResult(result: $result, query: $query);
+        // `_snippet=true` adds `@self.snippet` to each row (search-dutch-language-quality
+        // REQ-SDL-002); without it the result is returned untouched.
+        $result = (new SearchSnippetAttacher(schemas: $this->schemaMapper))->attach(result: $result, query: $query);
 
         (new SearchTrailRecorder(
             searchQueryHandler: $this->searchQueryHandler,

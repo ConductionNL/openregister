@@ -3141,6 +3141,7 @@ class MagicSearchHandler {
 			'_order',
 			'_sort',
 			'_search',
+			'_snippet',
 			'_extend',
 			'_fields',
 			'_filter',
