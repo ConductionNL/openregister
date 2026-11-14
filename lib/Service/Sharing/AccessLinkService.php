@@ -120,10 +120,12 @@ class AccessLinkService implements AccessLinkServiceInterface {
 		$kind = $this->requireSubjectType(subjectType: $request->subjectType);
 		$subject = $this->requireSubjectId(subjectId: $request->subjectId);
 		$declared = $this->normaliseCapabilities(capabilities: $terms->capabilities);
+		$journey = $this->requireJourneyTerms(subjectType: $kind, declared: $declared, journey: $terms->journey);
 		$expiry = $this->requireExpiry(expiresAt: $terms->expiresAt);
 
 		$link = $this->newLink(subjectType: $kind, subjectId: $subject);
 		$link->setCapabilities(implode(',', $declared));
+		$link->setJourney($journey);
 		$link->setLabel($this->trimmedOrNull(value: $terms->label));
 		$link->setPasswordHash($this->hashedPassword(password: $terms->password));
 		$link->setCreatedBy($minter);
@@ -569,6 +571,45 @@ class AccessLinkService implements AccessLinkServiceInterface {
 
 		return $declared;
 	}//end normaliseCapabilities()
+
+	/**
+	 * The journey a link is minted with: required with `edit`, refused without it.
+	 *
+	 * Only an object link can carry one, since an `edit` run changes one
+	 * object. Whether that journey may change that object is
+	 * LinkJourneyGuard's question, asked before mint().
+	 *
+	 * @param string             $subjectType The validated subject kind.
+	 * @param array<int, string> $declared    The normalised capabilities.
+	 * @param string|null        $journey     The requested journey.
+	 *
+	 * @return string|null The journey's uuid, or null for a link without `edit`.
+	 *
+	 * @throws InvalidArgumentException When `edit` comes without a journey, a journey without `edit`, or either on a non-object link.
+	 *
+	 * @spec openspec/changes/or-form-and-journey-registry/tasks.md#task-6-1
+	 */
+	private function requireJourneyTerms(string $subjectType, array $declared, ?string $journey): ?string {
+		$journey = $this->trimmedOrNull(value: $journey);
+		$edits = in_array(AccessLink::CAP_EDIT, $declared, true);
+		if ($edits === false && $journey === null) {
+			return null;
+		}
+
+		if ($edits === false) {
+			throw new InvalidArgumentException('Only a link that declares edit can carry a journey.');
+		}
+
+		if ($subjectType !== AccessLink::SUBJECT_OBJECT) {
+			throw new InvalidArgumentException('Only a link over one object can declare edit.');
+		}
+
+		if ($journey === null) {
+			throw new InvalidArgumentException('A link that declares edit must name the journey it changes the object through.');
+		}
+
+		return $journey;
+	}//end requireJourneyTerms()
 
 	/**
 	 * One requested capability, lower-cased and trimmed; '' for a blank one.

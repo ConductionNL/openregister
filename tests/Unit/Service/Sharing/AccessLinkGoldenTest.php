@@ -288,11 +288,11 @@ class AccessLinkGoldenTest extends TestCase {
 			],
 			'unknown capability' => [
 				array_merge($ok, ['capabilities' => ['read', ' Delete ']]),
-				"'delete' is not a link capability: use read, comment, upload.",
+				"'delete' is not a link capability: use read, comment, upload, edit.",
 			],
 			'bad capability beats missing expiry' => [
 				array_merge($ok, ['capabilities' => ['delete'], 'expiresAt' => null]),
-				"'delete' is not a link capability: use read, comment, upload.",
+				"'delete' is not a link capability: use read, comment, upload, edit.",
 			],
 			'missing expiry' => [
 				array_merge($ok, ['expiresAt' => null]),

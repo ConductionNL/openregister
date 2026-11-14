@@ -67,6 +67,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\LinkJourneyGuard;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -127,6 +128,13 @@ class AccessLinkController extends Controller {
 	private readonly AccessLinkActsInterface $acts;
 
 	/**
+	 * Decides whether an `edit` link may open its journey; null refuses every `edit` link.
+	 *
+	 * @var LinkJourneyGuard|null
+	 */
+	private readonly ?LinkJourneyGuard $journeys;
+
+	/**
 	 * The current session, on the owner endpoints.
 	 *
 	 * @var IUserSession
@@ -162,6 +170,7 @@ class AccessLinkController extends Controller {
 		$this->reader = $services->domain->reader;
 		$this->mintGuard = $services->domain->mintGuard;
 		$this->acts = $services->domain->acts;
+		$this->journeys = $services->domain->journeys;
 		$this->userSession = $services->platform->userSession;
 		$this->logger = $services->platform->logger;
 		$this->rejections = self::rejectionCounter(platform: $services->platform);
@@ -419,6 +428,11 @@ class AccessLinkController extends Controller {
 			return $this->notFound();
 		}
 
+		$refusal = $this->journeyRefusal(mintRequest: $mintRequest);
+		if ($refusal !== null) {
+			return $this->badRequest(message: $refusal);
+		}
+
 		return $this->minted(mintRequest: $mintRequest);
 	}//end mint()
 
@@ -445,6 +459,33 @@ class AccessLinkController extends Controller {
 	}//end mintRequestFor()
 
 	/**
+	 * Why an `edit` link over this object may not open the requested journey, or null.
+	 *
+	 * Asked only when the request names both `edit` and a journey on an object
+	 * link; any other combination is refused by the link service's own rules.
+	 *
+	 * @param LinkMintRequest $mintRequest What to mint
+	 *
+	 * @return string|null The refusal, or null
+	 *
+	 * @spec openspec/changes/or-form-and-journey-registry/tasks.md#task-6-1
+	 */
+	private function journeyRefusal(LinkMintRequest $mintRequest): ?string {
+		$journey = trim((string)$mintRequest->terms->journey);
+		$names = array_map(static fn (string $name): string => strtolower(trim($name)), $mintRequest->terms->capabilities);
+		$edits = in_array(AccessLink::CAP_EDIT, $names, true);
+		if ($journey === '' || $edits === false || $mintRequest->subjectType !== AccessLink::SUBJECT_OBJECT) {
+			return null;
+		}
+
+		if ($this->journeys === null) {
+			return 'Links that change a record are not available.';
+		}
+
+		return $this->journeys->mintRefusal(objectUuid: trim($mintRequest->subjectId), journeyId: $journey);
+	}//end journeyRefusal()
+
+	/**
 	 * The terms the caller asks the new link to carry.
 	 *
 	 * @return AccessLinkTerms Capabilities, expiry, password and label
@@ -454,7 +495,8 @@ class AccessLinkController extends Controller {
 			capabilities: $this->capabilitiesParam(),
 			expiresAt: $this->stringParam(name: 'expiresAt'),
 			password: $this->stringParam(name: 'password'),
-			label: $this->stringParam(name: 'label')
+			label: $this->stringParam(name: 'label'),
+			journey: $this->stringParam(name: 'journey')
 		);
 	}//end requestedTerms()
 
