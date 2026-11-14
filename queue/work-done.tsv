@@ -10374,3 +10374,4 @@ merge:hermiq:1785:63d838e8	merge3 tree of 16 hermiq PRs: merged=6 red=2 fail=0 s
 merge:hermiq:1736:ceb1e3aa	merge3 tree of 16 hermiq PRs: merged=6 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T17:14:23Z
 merge:hermiq:1725:31885638	merge3 tree of 16 hermiq PRs: merged=6 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T17:14:26Z
 verify:buildiq:1645:239d9ad1	1645 GREEN	session-20261114T151932-05b02c14	2026-11-14T17:14:39Z
+build4:openregister:anonymisation-discloses-itself:c3	done (code): PR #10494 head cb2f4f05 adds 2.1 corpus, 2.2 occ evaluate + DetectorEvaluation in backend-state, 2.3 figures and 3.2 statement form on FileConfiguration (+18 PHPUnit, +11 jest, en/nl strings), main merged in; unit suite by directory: failures only where main fails identically; left: 3.2 e2e, V.* process	session-20261114T151803-c9b63248	2026-11-14T17:14:51Z
