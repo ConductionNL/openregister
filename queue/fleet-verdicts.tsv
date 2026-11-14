@@ -6760,3 +6760,4 @@ dossiq	6349	6b24d3d0f0f16146bf8b12884dcb36fe073f5a39	REVERIFY	worker-17	merged d
 integriq	3545	c1939271fed7e0c24dd69fd2af3b26b62ef0b91e	GREEN	worker-11	unit 8493 baseline 5 inherited fail (JobsControllerTest x2, CallServiceTest x2, SyncEntryGolden); tree 8497 same 5; vitest 2157 pass; new failures none
 integriq	3549	0b1e6d115aea0a1892b619a84ab29fb80042ab06	CONFLICT	worker-11	merge conflict with development + 3545
 integriq	3552	506cd3ae6568deb216819b627dc69d90aca1e10e	GREEN	worker-11	unit 8493 baseline 5 inherited fail (JobsControllerTest x2, CallServiceTest x2, SyncEntryGolden); tree 8497 same 5; vitest 2157 pass; new failures none
+dossiq	6348	7c80d468c93540cfd3a1b631e564bd806b61ff7c	REVERIFY	worker-14	merged development in; both sides added searchIndexFactsSection.spec.js, kept development's and moved the branch's to searchIndexFactsStatus.spec.js (13 tests pass, eslint clean); new head 90471ed48f399afa0d1cceaf40f7e7125c9e2ecf, verify it
