@@ -7992,3 +7992,4 @@ fix:shillinq:3009:bd7e5e42	no change: merges clean on current development; confl
 fix:learniq:2511:d32aa9e4	l10n key relocated, now merges clean after #2493, pushed d064bcdf, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:50:10Z
 fix:learniq:2497:d4146da6	no change: head d4146da6 merges cleanly with development 9dd9fe0d; the test-file conflict is with open PR #2488, resolvable here only after #2488 lands	session-20261114T073108-8b40426a	2026-11-14T07:50:17Z
 fix:learniq:2504:aaac75e9	merged development in cleanly; new head dfdefd471d3aafecc527fbbaf2ad610e6ea05d40, REVERIFY recorded	session-20261114T073108-67fbeb26	2026-11-14T07:50:29Z
+fix:learniq:2509:62c1c223	no change: head 62c1c223 merges cleanly with development 9dd9fe0d; the l10n/nl.json conflict is with open PR #2488, resolvable here only after #2488 lands	session-20261114T073108-8b40426a	2026-11-14T07:50:38Z
