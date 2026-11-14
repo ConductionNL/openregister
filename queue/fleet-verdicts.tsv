@@ -7983,3 +7983,7 @@ portaliq	2449	aff4b8ab8816adc7d78b8cbd166d57d26aff38c1	GREEN	worker-48	unit 5211
 portaliq	2490	b014d53eee9cf7763cf17639fccbb7cc0cc25bc4	GREEN	worker-48	unit 5211 on tree, baseline 5187 green, new failures 0; node specs proposal-queue-widget, site-news-event pass
 portaliq	2491	4a730b50894407e51be9582c5cb941bff78d7ad8	GREEN	worker-48	unit 5211 on tree, baseline 5187 green, new failures 0; node specs proposal-queue-widget, site-news-event pass
 portaliq	2492	2f4977f912901947c35fbe684822be603b67f902	CONFLICT	worker-48	merge conflict on development + 2415,2449,2490,2491
+buildiq	1582	3d48cc81fd33684f6901d26f3e623b264c71dc66	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.43 -> 3.40; unit_interfacing: 3.41 -> 3.36
+buildiq	1583	1d68d4b1ac1b146d60304964372b87ea8578031b	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.41 -> 3.39
+buildiq	1608	d42aa0c4ed1e1203e8c38b853559477bd6f73918	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.41 -> 3.39
+buildiq	1625	26fd13852458473da9ae85f4014f9d16f6a297ec	RED	merge3:merge-gate	GATE RED floor: duplication: 4.32 -> 4.27
