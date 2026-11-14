@@ -3,7 +3,8 @@
 ## 1. Note trigger
 
 - [x] 1.1 `ObjectNoteAddedEvent` dispatched from `NoteService::createNoteAs()` after save. Verify: `NoteServiceTest` asserts one event with note id, actor and visibility. Built in `NoteService::postNote()` (what `createNoteAs()` became; `createNote()` and link-authored notes both go through it), verified by `tests/Unit/Service/NoteServiceNoteAddedEventTest.php`.
-- [ ] 1.2 `noteAdded` in the validator with the optional `visibility` key; the listener branch deferring to the dispatch job. Verify: `NotificationAnnotationValidatorTest` for valid, bad key and reserved app event; listener test.
+- [x] 1.2 `noteAdded` in the validator with the optional `visibility` key; the listener branch deferring to the dispatch job. Verify: `NotificationAnnotationValidatorTest` for valid, bad key and reserved app event; listener test.
+      > 2026-11-14: `noteAdded` is a reserved trigger type; its object form is checked by `NoteAddedTriggerValidator` (only `visibility`, `public` or `internal`; any other key refused by name). `AnnotationNotificationListener` handles `ObjectNoteAddedEvent`: finds the object by uuid through the deferred-entry resolver, keeps the schema gate, and defers `noteAdded` with the note id, actor and visibility; `AnnotationNotificationDispatchJob` dispatches it. Tests: `NotificationNoteAddedTriggerValidatorTest`, `AnnotationNotificationListenerNoteAddedTest`, `AnnotationNotificationDispatchJobTest::testNoteAddedEntryForwardsTheNoteContext`.
 - [ ] 1.3 Dispatcher: matching, `note.author` and `note.excerpt`, author exclusion and the read filter. Verify: `AnnotationNotificationDispatcherTest` with a watcher, the author and a user without read.
 
 ## 2. Referrers kind

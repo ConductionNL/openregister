@@ -27,6 +27,7 @@ use OCA\OpenRegister\Event\DraftUpdatedEvent;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectNoteAddedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
@@ -705,6 +706,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
+		$context->registerEventListener(ObjectNoteAddedEvent::class, AnnotationNotificationListener::class);
 
 		// Object-lifecycle flow triggers have ONE listener: FlowTriggerListener,
 		// registered above with the other flow triggers. EventCatalogListener

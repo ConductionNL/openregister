@@ -65,19 +65,19 @@
     "bad-trigger-type": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "no-trigger": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "trigger-int": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "scheduled-no-interval": [

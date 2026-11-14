@@ -1527,6 +1527,7 @@ Notifications/Service/Notification/EmailSenderInterface.php,8,Notifications,Noti
 Notifications/Service/Notification/ForcedChannelPolicy.php,105,Notifications,Notifications,Notifications/Service/Notification/ForcedChannelPolicy.php,0,,Notifications
 Notifications/Service/Notification/NcNotificationSender.php,131,Notifications,Notifications,Notifications/Service/Notification/NcNotificationSender.php,0,215,Notifications
 Notifications/Service/Notification/NcNotificationSenderInterface.php,13,Notifications,Notifications,Notifications/Service/Notification/NcNotificationSenderInterface.php,0,,Notifications
+Notifications/Service/Notification/NoteAddedTriggerValidator.php,35,Notifications,Notifications,Notifications/Service/Notification/NoteAddedTriggerValidator.php,0,,Notifications
 Notifications/Service/Notification/NotificationAnnotationValidator.php,477,Notifications,Notifications,Notifications/Service/Notification/NotificationAnnotationValidator.php,3,43,Notifications
 Notifications/Service/Notification/NotificationBroadcastService.php,77,Notifications,Notifications,Notifications/Service/Notification/NotificationBroadcastService.php,0,,Notifications
 Notifications/Service/Notification/NotificationChannelPolicy.php,28,Notifications,Notifications,Notifications/Service/Notification/NotificationChannelPolicy.php,0,448,Notifications
