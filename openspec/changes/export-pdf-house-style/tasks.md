@@ -7,8 +7,10 @@
 ## 2. PDF
 
 - [ ] 2.1 Logo as data URI with the size and type caps, primary colours on the table header, footer lines through `page_text()`. Verify: `ExportServiceTest` renders a PDF with a fake profile and asserts the footer text and the embedded image with a PDF text and image extractor.
+  - Done in the ODT pipeline that replaced Dompdf (the design's `page_text()` no longer exists): `OdtHouseStyle` reads `colours.primary` / `colours.primaryText` onto the table header and `footer.lines`, `accessibilityUrl` and `privacyUrl` into footer lines above the page number on every page; `ExportService` reads the requesting user's profile (the instance default for a table with no user). Open: the logo, which needs an in-process read of thematiq's logo and an embedded picture in the ODT package.
 - [ ] 2.2 Custom fonts registered from the profile, DejaVu Sans fallback per role. Verify: the same test with a font that fails to load.
-- [ ] 2.3 Without a profile the output is unchanged. Verify: a byte-level comparison of the text layer against the current output for the same data.
+- [x] 2.3 Without a profile the output is unchanged. Verify: a byte-level comparison of the text layer against the current output for the same data.
+  - `OdtWriterTest::testWithoutAHouseStyleThePartsAreUnchanged` compares every ODT part with and without a null style and pins the plain colours and single footer line; `ExportServicePdfTest::testWithoutAProfileTheExportKeepsThePlainLayout`.
 - [ ] 2.4 Export one record as a PDF: a record route that renders the readable fields with their labels through the same converter and house style, and an "Export as PDF" action on the record page. Verify: an `ExportServiceTest` case that exports one record with a hidden field and asserts the field is absent from the PDF text.
 
 ## 3. Proof and docs

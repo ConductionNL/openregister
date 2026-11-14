@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 
 /**
  * The redaction collaborators of the document processing handler.
@@ -38,6 +39,7 @@ final class DocumentRedactionServices {
 	 * @param OfficeDocumentSanitizer       $sanitizer              Office document sanitiser (DOCX / ODT).
 	 * @param AnonymisationLogMapper|null   $anonymisationLogMapper Mapper for per-run anonymisation log rows; null keeps the handler construct-safe
 	 *                                                              without persistence.
+	 * @param FileSettingsHandler|null     $fileSettings           The file settings, for the mask form per entity type; null masks nothing.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -45,6 +47,7 @@ final class DocumentRedactionServices {
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
 		public readonly OfficeDocumentSanitizer $sanitizer,
 		public readonly ?AnonymisationLogMapper $anonymisationLogMapper = null,
+		public readonly ?FileSettingsHandler $fileSettings = null,
 	) {
 	}//end __construct()
 }//end class
