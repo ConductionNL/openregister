@@ -7765,3 +7765,12 @@ pipelinq	3713	61678b3913763579be384e50794c927d6d38b2c3	GREEN	worker-23	build mar
 shillinq	3048	dff36567da54f8cc5d74e9a0e810b61e3b0b0ccc	GREEN	worker-23	build expenses-category-mapping, judged against its specs; unit 10780 (baseline 10752 OK); vitest 2606 passed, 1 inherited failure (dunningNextRun.spec.js, red on development too); 0 new failures
 integriq	3574	4879743207913454780555162b88ae2a71343b96	GREEN	worker-03	phpunit 8504 run, baseline 8493 with 5 inherited fail/err, 0 new; vitest 2157/2157; build of mapping-formats-and-lookups tasks 1-2 per spec
 pipelinq	3826	f843cb02c08fb3f6eb87abd8e14139c0cd12ce60	RED	merge3:merge-gate	GATE RED checker floor: adrvalidator: warn -> fail
+pipelinq	3708	e4400e7482c9834e2d49bcbae17506c7cef25889	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3713	61678b3913763579be384e50794c927d6d38b2c3	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3721	6013120eda665e9a9dabb48e7ea7c960837aedf0	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3742	64271ebc71a9c65e29c4af4c090796fa21d58ed2	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3752	939f173a393a19700e970cf1e8e241fc1d8995e6	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3818	d7e6927f980886525c507e0c61662f6f533a5ecd	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3821	6c16605793fca763cb09eef69e445ab3fd0994c9	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3830	eed4b55311a70a28dc7ecb87e59c02721d1f1cb5	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3831	cd981132d7790e59379bd2a232b316a7c9858295	CONFLICT	merge3	merges clean on development alone; files: tests/vitest/structureProfile.spec.js 
