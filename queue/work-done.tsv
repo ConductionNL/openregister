@@ -8118,3 +8118,4 @@ build:planninq:tasks-create-by-email	partial: PR #1172 (1.1, 2.2, 2.3 built and 
 fix:planninq:1168:8c796e13	no change: branch already holds development; conflicts only with unmerged sibling PRs; suite green (1043); REVERIFY recorded	session-20261114T073111-9b40710a	2026-11-14T08:09:06Z
 fix:hermiq:1767:b41f7d98	fixed: spec expects new Trace export section; pushed 1ac66da7, REVERIFY recorded	session-20261114T073105-752e50ad	2026-11-14T08:09:12Z
 merge:versioniq:680:f9aac3f1	merge3 tree of 7 versioniq PRs: merged=5 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T08:09:35Z
+merge:versioniq:683:386c6fba	merge3 tree of 7 versioniq PRs: merged=5 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T08:09:39Z
