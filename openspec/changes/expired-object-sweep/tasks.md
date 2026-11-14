@@ -12,7 +12,7 @@ Kind: code. Size M. Row: portaliq `ops-submission-retention`.
 
 ## 3. Sweep
 
-- [ ] 3.1 Add `lib/Service/Retention/ExpiredObjectSweeper.php` with the steps of design D3 and the audit entries `expiry.deleted` and `expiry.anonymised`. Verify: `tests/Db/ExpiredObjectSweeperTest.php` covers delete, anonymise with files, legal hold, a schema that did not opt in, and the batch limit.
+- [x] 3.1 Add `lib/Service/Retention/ExpiredObjectSweeper.php` with the steps of design D3 and the audit entries `expiry.deleted` and `expiry.anonymised`. Verify: `tests/Db/ExpiredObjectSweeperTest.php` covers delete, anonymise with files, legal hold, a schema that did not opt in, and the batch limit.
 - [x] 3.2 Add `lib/BackgroundJob/ExpiredObjectSweepJob.php` (daily, app config keys of D3) and register it in `appinfo/info.xml`. Verify: `tests/Unit/BackgroundJob/ExpiredObjectSweepJobTest.php`.
 
 ## 4. Dry run

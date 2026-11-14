@@ -221,7 +221,7 @@ class ExpiredObjectStore implements ExpiredObjectStoreInterface {
 	}//end optedInSchema()
 
 	/**
-	 * The base query for a table's rows with an expiry before $now.
+	 * The base query for a table's rows, not in the trash, with an expiry before $now.
 	 *
 	 * @param Register          $register The register.
 	 * @param Schema            $schema   The schema.
@@ -233,7 +233,9 @@ class ExpiredObjectStore implements ExpiredObjectStoreInterface {
 		$qb = $this->sources->db->getQueryBuilder();
 		$qb->from($this->sources->magic->getTableNameForRegisterSchema(register: $register, schema: $schema))
 			->where($qb->expr()->isNotNull('_expires'))
-			->andWhere($qb->expr()->lt('_expires', $qb->createNamedParameter($now->format('Y-m-d H:i:s'))));
+			->andWhere($qb->expr()->lt('_expires', $qb->createNamedParameter($now->format('Y-m-d H:i:s'))))
+			// A deleted object keeps its expiry in the trash: without this every run would take it again.
+			->andWhere($qb->expr()->isNull('_deleted'));
 
 		return $qb;
 	}//end expiredQuery()
