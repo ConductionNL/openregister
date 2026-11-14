@@ -8239,3 +8239,4 @@ build:keepiq:vault-website-addresses	partial: PR #1785 (1.1 storage/API/cap, 1.2
 build:launchpad:launcher-tile-launch-types	partial: PR #1201, task 1 (scheme allow-list and SSO launch templates, validated; 14 tests, suite green); tasks 2-8 left	session-20261114T062202-3e33eeb3	2026-11-14T08:24:55Z
 fix:opencatalogi:2650:894030c7	merged development, resolved ListenerRegistrar + test conflict keeping both listeners; new head 76e9e835	session-20261114T075638-c30fc6de	2026-11-14T08:25:07Z
 build:launchpad:integrations-office-tiles	partial: PR #1197, tasks 1-2 (service, endpoints, actions, openapi, 15 tests); 3-4 frontend dialog/picker, 5 e2e, 6 strings/archive left	session-20261114T070341-dde19dba	2026-11-14T08:25:00Z
+merge:learniq:2486:d60155e4	merge3 tree of 11 learniq PRs: merged=8 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T08:25:40Z
