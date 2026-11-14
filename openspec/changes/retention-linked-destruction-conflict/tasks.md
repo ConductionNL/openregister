@@ -18,7 +18,8 @@
 
 ## 4. Docs and end-to-end test
 
-- [ ] 4.1 Document the conflict kinds, the refresh at review, the acknowledgement and the approval count in `docs/features/archival-destruction.md`, including the JSON shape consumers render. Verify: `npm run build` in `docs/` succeeds.
+- [x] 4.1 Document the conflict kinds, the refresh at review, the acknowledgement and the approval count in `docs/features/archival-destruction.md`, including the JSON shape consumers render. Verify: `npm run build` in `docs/` succeeds.
+  > Section "Linked-record conflicts" in `docs/features/archival-destruction.md`. `npm run build` in `docs/` succeeded (after `npm install`: the committed `docs/package-lock.json` is out of sync with `docs/package.json`, so `npm ci` refuses; the lock file is not part of this change).
 - [ ] 4.2 Add `tests/e2e/ci/destruction-linked-conflict.spec.ts`: seed a case with a linked decision nominated `bewaren`, run the destruction check, read the list and see the conflict, get 422 on an unacknowledged destroy, then destroy with an acknowledgement and read `overriddenConflicts` in the history. Verify: the spec runs green in the Playwright CI project.
 
 ## Acceptance
