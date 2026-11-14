@@ -7066,6 +7066,7 @@ hermiq	1751	d868cafb17b2ccdca63c099c352a143d3596b95c	CONFLICT	worker-27	clean on
 hermiq	1755	aba4ba32a59a4243f95c371d8581ccab26a17b71	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Controller/ChatStreamController.php,lib/Settings/hermiq_register.json
 hermiq	1760	7cc54c6b0bda2cfb9d638b94b524408a662d87b7	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in appinfo/info.xml,lib/Settings/hermiq_register.json
 hermiq	1761	30c4d00a822f350c2aed9e02e3a	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
+pipelinq	3726	9f496577003b9652a9797042a11fc8641ff62e28	REVERIFY	worker-13	merged development in; documented GET /api/v1/my-work/week-stats in openapi.json; unit suite 7901 OK; new head 86f30be74c8565f4ed7232305c282a7334d32443, verify it
 shillinq	2819	441fdc811dbf22b3064ed0c3e262c881f5a55e80	GREEN	worker-18:review	tests only (3 files, +27 tests, all pass, coverage metadata set); unit suite on PR+development 10773 tests vs baseline 10746, same 14E/1F inherited, no new failures
 integriq	3540	cce40cdaa44914e0bb0097dbbd96a3b7e55d03f1	GREEN	worker-29	phpunit 8567 tests (baseline 8493: 2 errors, 3 failures, same 5 inherited), 0 new failures; vitest 2168/2168 pass; implements openspec automation-job-calendar-schedules
 portaliq	2442	53aae5806dc6517e6b473d490af6870f7bef3e54	REVERIFY	worker-58	merged current development cleanly (l10n/package.json conflicts were only against other tree PRs); new head 9a1924638a8447357161f7305c30651471f71ce3, verify it
