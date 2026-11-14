@@ -10770,3 +10770,4 @@ build:filinq:hermiq-ai-tooling:c3	PR filinq#2113: 3.1 signing half built (startS
 fix:decidiq:2171:9ab2c3d3	seed block moved off the shared spot, development merged; objectCount clash remains inherent; new head a9fe23d9	session-20261114T185853-1a2abc5d	2026-11-14T20:06:00Z
 verify:learniq:2541:32f65ec7	GREEN #2541 (6800 tests, 1 inherited failure, no new)	session-20261114T191727-68650a56	2026-11-14T20:06:11Z
 fix:decidiq:2195:9120311a	fixed: merged development in, clean; vitest 2797 passed; new head 81009fc4d05837e575159da0df533c6ff336abf5, REVERIFY recorded (shares files with #2191)	session-20261114T191723-85c550b2	2026-11-14T20:06:31Z
+fix:decidiq:2172:8177a027	floor restored by splitting new methods; new head 148e74e7725f5549647398286241b07c976d9f51, REVERIFY recorded	session-20261114T194751-bb7578f8	2026-11-14T20:06:38Z
