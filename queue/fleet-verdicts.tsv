@@ -7792,3 +7792,5 @@ pipelinq	3821	b58b2b29fba3708d93ac4ed7abdcf51e8d0f2fad	GREEN	worker-33	unit 8357
 pipelinq	3826	a94cd12dbfd8d9bc22ad90dbef20e5c0796e6f5a	GREEN	worker-33	unit 8357 tests on tree 0 failures; vitest 5035, 1 failure inherited from development (myWorkPage.spec), none new; full export status route admin-only like start
 pipelinq	3832	1f6a95ca85342e0f616c853852fbae8786e9ea42	GREEN	worker-16	phpunit 8346 OK (baseline 8344 OK), no new failures; schema-only per platform-client-retention D6
 pipelinq	3830	c7d405c94f0918ad0cdb180933c763869803dcb5	REVERIFY	worker-33	merged development in, moved its 26 l10n keys (en/nl js+json) from the catalogue tail to mid-catalogue so it no longer conflicts with 3818; merge-tree clean with 3818 and development, l10n checks green; new head ec8232ea52227343317cebde280f4dbffcbd8650, verify it
+decidiq	2148	7350b5a6b5ca673939aa570b8ba3827cdde8fcf2	RED	merge3:merge-gate	GATE RED floor: duplication: 3.82 -> 3.80; unit_complexity: 3.89 -> 3.87
+decidiq	2149	c82a792a1a602f97f413b3002b9c629897ff3666	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.89 -> 3.86; unit_interfacing: 3.33 -> 3.31
