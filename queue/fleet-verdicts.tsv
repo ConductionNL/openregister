@@ -7142,3 +7142,5 @@ integriq	3541	659b6c67a4d438fd456ec65644fb68b5af1553cd	GREEN	worker-20	unit 8530
 integriq	3549	1db0c824ec97177583d04c82e3cea987258764b6	GREEN	worker-20	unit 8530 tests on the tree (baseline 8493, 2E/3F inherited), no new failures; builds connectors-job-board-multiposting, tests only added
 integriq	3556	42424fdd58272236dda98bbada428c809aab2605	GREEN	worker-20	unit 8530 tests on the tree (baseline 8493, 2E/3F inherited), no new failures; builds gateway-response-cache-and-problem-errors (problem+json, statuses kept)
 integriq	3539	19e9055d0d08f2dc6237536d03ceee1efb69bf3d	GREEN	worker-20	unit 8594 tests on the tree (baseline 8493, 2E/3F inherited), no new failures; builds connections-declare-data-residency (admin-only routes, residency refusal before the call)
+pipelinq	3725	1bf3ea3d88092a4545b14be9a777c9771abf3e21	GREEN	worker-12	unit 8095 (baseline 7890, 0 fail), no new failures; KvkSearchController per request-dialog-client-lookups, CRM privilege check first like the enrichment endpoints
+pipelinq	3815	ae004b9add877f3be1e1ed48091a2a2c2935b3f5	GREEN	worker-12	unit 8095 (baseline 7890, 0 fail); tests only
