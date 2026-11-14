@@ -4259,3 +4259,6 @@ Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Service/Anonymisation/RedactionVerdictStore.php,,Service,,,,,Compliance
+Exception/RedactionNotPublishableException.php,,Exception,,,,,Kernel
+Migration/Version1Date20261114100000.php,,Migration,,,,,Platform

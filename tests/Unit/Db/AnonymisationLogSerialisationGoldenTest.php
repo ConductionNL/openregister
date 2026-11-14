@@ -50,6 +50,7 @@ final class AnonymisationLogSerialisationGoldenTest extends TestCase {
 		$log->setSanitization('{"names":2}');
 		$log->setReplacements(4);
 		$log->setDurationMs(120);
+		$log->setVerification('{"verdict":"clean"}');
 		$log->setCreated(new DateTime('2026-03-04T05:06:07+01:00'));
 
 		$this->assertSame(
@@ -67,6 +68,7 @@ final class AnonymisationLogSerialisationGoldenTest extends TestCase {
 				'replacements' => 4,
 				'durationMs' => 120,
 				'steps' => null,
+				'verification' => ['verdict' => 'clean'],
 				'created' => '2026-03-04T05:06:07+01:00',
 			],
 			$log->jsonSerialize()

@@ -618,6 +618,12 @@ class FileTextController extends Controller {
 			$responseData['structurePreservation'] = $structureResult->jsonSerialize();
 		}
 
+		// Route and count only, never a value (REQ-RRS-001).
+		$verification = $this->fileService->getLastVerification();
+		if ($verification !== null) {
+			$responseData['verification'] = $verification;
+		}
+
 		return new JSONResponse(data: $responseData);
 	}//end anonymizedFileResponse()
 

@@ -1883,6 +1883,18 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	}//end getLastStructurePreservation()
 
 	/**
+	 * The irreversibility verdict of the copy the most recent anonymizeDocument() call wrote.
+	 *
+	 * @return array<string, mixed>|null Verdict, mayBePublished, outputMode, routesChecked and
+	 *                                   findings (route and count), or null when no copy was verified.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.2
+	 */
+	public function getLastVerification(): ?array {
+		return $this->documentProcessingHandler->getLastVerification();
+	}//end getLastVerification()
+
+	/**
 	 * Per-entity placeholder map from the most recent anonymizeDocument() call.
 	 *
 	 * Maps the internal global entity id (stringified) to the exact placeholder

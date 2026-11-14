@@ -27,6 +27,7 @@ use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Service\Anonymisation\RedactionVerdictStore;
 use OCP\Files\File;
 use OCP\IServerContainer;
 use Psr\Log\LoggerInterface;
@@ -173,6 +174,7 @@ class FilePublishingHandler {
 		$this->debug(message: '[FilePublishingHandler] publishFile: Creating share link for file: ' . $fileNode->getPath());
 
 		$this->assertNotRestricted(fileNode: $fileNode);
+		$this->assertRedactionVerdictPermits(fileNode: $fileNode);
 
 		// NO SEAL, NO PUBLICATION. The share is created inside the unit of work
 		// that records the file's digest and writes the `file.published` audit
@@ -207,6 +209,32 @@ class FilePublishingHandler {
 			throw new Exception('A restricted file cannot be published');
 		}
 	}//end assertNotRestricted()
+
+	/**
+	 * Refuse to publish an anonymised copy whose irreversibility verdict is not clean.
+	 *
+	 * Resolved only for an `_anonymized` copy, so publishing any other file
+	 * does not touch the verdict store.
+	 *
+	 * @param File $fileNode The file.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\RedactionNotPublishableException When the copy is leaking or unverifiable.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.4
+	 */
+	private function assertRedactionVerdictPermits(File $fileNode): void {
+		if (str_contains((string)$fileNode->getName(), '_anonymized') === false) {
+			return;
+		}
+
+		/*
+		 * @var RedactionVerdictStore $verdicts
+		 */
+		$verdicts = $this->container->get(RedactionVerdictStore::class);
+		$verdicts->assertMayBePublished(file: $fileNode);
+	}//end assertRedactionVerdictPermits()
 
 	/**
 	 * The object, looked up when given by id.

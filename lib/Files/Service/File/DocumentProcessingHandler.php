@@ -31,6 +31,9 @@ use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
+use OCA\OpenRegister\Service\Anonymisation\RedactionIrreversibilityVerifier;
+use OCA\OpenRegister\Service\Anonymisation\RedactionOutputMode;
+use OCA\OpenRegister\Service\Anonymisation\RedactionVerdictStore;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
 use OCA\OpenRegister\Service\File\ImageRegionNotBurnableException;
 use OCA\OpenRegister\Service\File\OfficeMediaBurner;
@@ -156,6 +159,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	private array $stepsRan = [];
 
 	/**
+	 * The public form of the last written copy's irreversibility verdict.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private ?array $lastVerification = null;
+
+	/**
 	 * Constructor for DocumentProcessingHandler.
 	 *
 	 * @param DocumentProcessingPlatform $platform  Root folder, user session and the optional acting-user localisation.
@@ -210,6 +220,18 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	public function getLastStructurePreservation(): ?StructurePreservation {
 		return $this->lastStructurePreservation;
 	}//end getLastStructurePreservation()
+
+	/**
+	 * The irreversibility verdict of the copy the last anonymize() call wrote.
+	 *
+	 * @return array<string, mixed>|null The public form, or null when the last run verified no copy
+	 *                                   (a standalone image, or no run yet).
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.2
+	 */
+	public function getLastVerification(): ?array {
+		return $this->lastVerification;
+	}//end getLastVerification()
 
 	/**
 	 * Per-entity placeholder map from the most recent anonymize() call.
@@ -425,6 +447,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			$this->burnOfficeImages(source: $node, output: $anonymizedFile);
 		}
 
+		// THE VERDICT IS TAKEN ON THE BYTES ACTUALLY WRITTEN, AFTER EVERY
+		// OTHER STEP, so nothing a later step adds escapes it (REQ-RRS-001).
+		$this->verifyWrittenCopy(output: $anonymizedFile, replacements: $replacements);
+
 		// Flip the source's EntityRelation rows to `anonymized = 1` so the
 		// anonymised state is queryable downstream. Skip-aware (rows where
 		// `skip_anonymization = 1` are preserved per the
@@ -451,6 +477,48 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		return $anonymizedFile;
 	}//end anonymize()
+
+	/**
+	 * Verify the written copy against every redacted value and keep the verdict.
+	 *
+	 * The verdict is kept on the copy's metadata, where the publish guard
+	 * reads it, and on this run's log row. Logs carry the verdict, the routes
+	 * and counts, never a value.
+	 *
+	 * @param File                  $output       The copy as written.
+	 * @param array<string, string> $replacements Needle to placeholder: the values that must not be recoverable.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.2
+	 */
+	private function verifyWrittenCopy(File $output, array $replacements): void {
+		try {
+			$bytes = (string)$output->getContent();
+		} catch (Throwable $ignored) {
+			$bytes = '';
+		}
+
+		$result = (new RedactionIrreversibilityVerifier())->verify(
+			bytes: $bytes,
+			redactedValues: array_map('strval', array_keys($replacements)),
+			outputMode: RedactionOutputMode::forFileName(fileName: (string)$output->getName())
+		);
+		$this->lastVerification = RedactionVerdictStore::publicForm(verification: $result);
+		$this->redaction->verdicts?->record(fileId: (int)$output->getId(), verification: $result);
+
+		if ($this->lastVerification['mayBePublished'] === false) {
+			$this->logger->warning(
+				'DocumentProcessingHandler: the anonymised copy is not clean',
+				[
+					'fileId' => (int)$output->getId(),
+					'verdict' => $this->lastVerification['verdict'],
+					'outputMode' => $this->lastVerification['outputMode'],
+					'findings' => $this->lastVerification['findings'],
+				]
+			);
+		}
+	}//end verifyWrittenCopy()
 
 	/**
 	 * Anonymise a standalone image: burn its decided regions into the pixels.
@@ -547,6 +615,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		$this->lastPlaceholderMap = [];
 		$this->lastStructurePreservation = null;
 		$this->stepsRan = [];
+		$this->lastVerification = null;
 	}//end resetRunState()
 
 	/**
@@ -938,6 +1007,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			}
 		}
 
+		if ($this->lastVerification !== null) {
+			$verification = json_encode($this->lastVerification);
+			if (is_string($verification) === true) {
+				$entity->setVerification($verification);
+			}
+		}
+
 		$entity->setCreated(new DateTime());
 
 		try {
@@ -1071,11 +1147,12 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @return string The step id.
 	 */
 	private function sanitiserStep(Node $node): string {
-		if ($this->logMimeType(node: $node) === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-			return PipelineSteps::DOCX_SANITISER;
-		}
-
-		return PipelineSteps::ODT_SANITISER;
+		return match ($this->logMimeType(node: $node)) {
+			'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => PipelineSteps::DOCX_SANITISER,
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => PipelineSteps::XLSX_SANITISER,
+			'application/vnd.openxmlformats-officedocument.presentationml.presentation' => PipelineSteps::PPTX_SANITISER,
+			default => PipelineSteps::ODT_SANITISER,
+		};
 	}//end sanitiserStep()
 
 	/**

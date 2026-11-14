@@ -59,6 +59,17 @@ interface DocumentProcessingHandlerInterface {
 	public function getLastStructurePreservation(): ?StructurePreservation;
 
 	/**
+	 * The irreversibility verdict of the copy the most recent run wrote.
+	 *
+	 * @return array<string, mixed>|null The public form (verdict, mayBePublished, outputMode,
+	 *                                   routesChecked, findings with route and count), or null
+	 *                                   when the last run wrote no verified copy.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.2
+	 */
+	public function getLastVerification(): ?array;
+
+	/**
 	 * Per-entity placeholder map from the most recent anonymize() call.
 	 *
 	 * Maps the internal global entity id (stringified) to the exact placeholder

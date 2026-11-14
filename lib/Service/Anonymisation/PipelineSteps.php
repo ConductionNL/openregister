@@ -27,6 +27,8 @@ use OCA\OpenRegister\Files\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\PptxSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\XlsxSanitizer;
 use OCA\OpenRegister\Service\File\ImageBurner;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
 
@@ -45,6 +47,8 @@ final class PipelineSteps {
 	public const PDF_METADATA_SANITISER = 'pdf-metadata-sanitiser';
 	public const DOCX_SANITISER = 'docx-sanitiser';
 	public const ODT_SANITISER = 'odt-sanitiser';
+	public const XLSX_SANITISER = 'xlsx-sanitiser';
+	public const PPTX_SANITISER = 'pptx-sanitiser';
 	public const IMAGE_BURNER = 'image-burner';
 
 	public const OUTCOME_RAN = 'ran';
@@ -54,6 +58,8 @@ final class PipelineSteps {
 	private const PDF = 'application/pdf';
 	private const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 	private const ODT = 'application/vnd.oasis.opendocument.text';
+	private const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+	private const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
 	/**
 	 * The steps in pipeline order: label, implementing class, and the MIME types it applies to (null: every type).
@@ -85,6 +91,16 @@ final class PipelineSteps {
 			'label' => 'ODT sanitiser',
 			'implementedBy' => OdtSanitizer::class,
 			'mimeTypes' => [self::ODT],
+		],
+		self::XLSX_SANITISER => [
+			'label' => 'XLSX sanitiser',
+			'implementedBy' => XlsxSanitizer::class,
+			'mimeTypes' => [self::XLSX],
+		],
+		self::PPTX_SANITISER => [
+			'label' => 'PPTX sanitiser',
+			'implementedBy' => PptxSanitizer::class,
+			'mimeTypes' => [self::PPTX],
 		],
 		self::IMAGE_BURNER => [
 			'label' => 'Image region burner (decided regions painted into the pixels)',

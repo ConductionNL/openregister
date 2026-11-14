@@ -101,7 +101,7 @@ final class PipelineStepReportTest extends TestCase {
 	public function testEveryRegisteredStepHasAReportEntry(): void {
 		$reported = array_column($this->report(recognitionEnabled: true)->report(), 'step');
 		$this->assertSame(
-			['anonymiser', 'pdf-text-replacer', 'pdf-metadata-sanitiser', 'docx-sanitiser', 'odt-sanitiser', 'image-burner'],
+			['anonymiser', 'pdf-text-replacer', 'pdf-metadata-sanitiser', 'docx-sanitiser', 'odt-sanitiser', 'xlsx-sanitiser', 'pptx-sanitiser', 'image-burner'],
 			$reported
 		);
 
@@ -220,6 +220,8 @@ final class PipelineStepReportTest extends TestCase {
 				'pdf-metadata-sanitiser' => ['outcome' => 'not-applicable'],
 				'docx-sanitiser' => ['outcome' => 'ran'],
 				'odt-sanitiser' => ['outcome' => 'not-applicable'],
+				'xlsx-sanitiser' => ['outcome' => 'not-applicable'],
+				'pptx-sanitiser' => ['outcome' => 'not-applicable'],
 				'image-burner' => ['outcome' => 'skipped', 'reason' => 'the step did not run for this file'],
 			],
 			$logged->getStepsArray()
@@ -270,7 +272,7 @@ final class PipelineStepReportTest extends TestCase {
 		$answered = $controller->index();
 		$this->assertSame(200, $answered->getStatus());
 		$this->assertSame('anonymiser', $answered->getData()['steps'][0]['step']);
-		$this->assertCount(6, $answered->getData()['steps']);
+		$this->assertCount(8, $answered->getData()['steps']);
 	}//end testTheRouteIsAdminOnly()
 
 	/**
