@@ -7255,3 +7255,4 @@ integriq	3593	331b9581d2f6f19ebf938549d4413fdab28d9ba9	CONFLICT	worker-18	confli
 integriq	3596	0a5a8f4f94444e169890fd509e3c503f1dd52f32	CONFLICT	worker-58	conflicts with development+earlier tree PRs
 integriq	3598	855df76cd116e980d6c47737c1adfe1fa20571f3	CONFLICT	worker-58	conflicts with development+earlier tree PRs
 integriq	3600	8575e0efb7590d087c7742b4bbdc3b146d5b4ab7	CONFLICT	worker-58	conflicts with development+earlier tree PRs
+planninq	1167	7d30bb1e77216e07fb074b0d0df055ebdf910b13	REVERIFY	worker-47	merged development in cleanly (the l10n/openapi overlap is with sibling tree PRs not yet on development); phpunit 1065 OK, vitest 3201 passed, eslint clean on touched files; new head 3df6651df2909229b3cb52d288dec6679a6cb6eb, verify it
