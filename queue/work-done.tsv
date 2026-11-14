@@ -9162,3 +9162,4 @@ merge:hermiq:1762:1b6b5b3d	merge3 tree of 47 hermiq PRs: merged=29 red=2 fail=0 
 merge:hermiq:1529:11702221	merge3 tree of 47 hermiq PRs: merged=29 red=2 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T13:00:47Z
 review:openregister:10551:a9fba65f	APPROVE	session-20261114T121616-766bd91a	2026-11-14T13:00:53Z
 review:openregister:10546:2cd5b2aa	APPROVE 10546	session-20261114T124629-3e824e29	2026-11-14T13:01:03Z
+review:openregister:10539:e5d4c2aa	BLOCK 10539: architecture test red (yaml not regenerated) + outbound links collide on email_links_unique_idx after the first per object	session-20261114T114647-2bec20c6	2026-11-14T13:01:10Z
