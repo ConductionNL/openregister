@@ -7777,3 +7777,4 @@ verify:pipelinq:3743:a6386a72	GREEN: suite 7902 green, build matches change	sess
 fix:decidiq:2165:f38d28e3	conflict resolved (l10n, both sides kept), development merged, suite OK; new head 8558e270	session-20261114T065633-3e3cb668	2026-11-14T07:15:42Z
 fix:decidiq:2174:46a18f3e	route moved to /named-votes (old path kept for existing paper-vote dialog), merged development; unit 4042 OK; pushed 8600d4bb	session-20261114T065632-a1c920c5	2026-11-14T07:15:52Z
 fix:decidiq:2137:4ad4b50c	conflict resolved, new head 3e191952, REVERIFY queued	session-20261114T070341-dde19dba	2026-11-14T07:16:12Z
+fix:learniq:2524:6053e2e2	conflict resolved, new head 6ea031ad; REVERIFY recorded	session-20261114T070344-897ffa0f	2026-11-14T07:16:23Z
