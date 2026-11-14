@@ -11331,3 +11331,4 @@ fix:hermiq:1791:94f2f048	conflict resolved, register 0.58.0, golden re-recorded;
 fix:stackiq:1911:3d9e84f8	conflict resolved, pushed 08944d1b, REVERIFY	session-20261114T214735-aacd1703	2026-11-14T21:54:17Z
 fix:stackiq:1928:de70d7be	merged development, l10n union resolved; suite green; new head ff430e3ce3f0e63cb8415b8ea4a2d159b568f9a3	session-20261114T194805-be886caa	2026-11-14T21:54:23Z
 fix:stackiq:1939:683b674e	failed: the only conflict with development is in lib/Settings/softwarecatalogus_register.json, which workers must not touch (Softwarecatalogus); needs a manual resolution	session-20261114T202449-f0278d5a	2026-11-14T21:54:40Z
+fix:stackiq:1944:f47ecfa3	conflict resolved, merged development, new head 25fa2c20; REVERIFY queued	session-20261114T214930-79d5b35c	2026-11-14T21:54:45Z
