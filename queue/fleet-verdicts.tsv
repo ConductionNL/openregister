@@ -9891,3 +9891,4 @@ launchpad	1227	b0d1c0efe31a3f9bc5070f7dff8e3c1d31fe0479	GREEN	worker-26	phpunit 
 buildiq	1593	e35622b504e68d9a90bb659908502b0606784a32	GREEN	worker-45	unit 3171 tests, baseline 3142 w/ 1 failure (ExportZipGoldenTest, inherited), no new failures; vitest 4657 pass; test:l10n:parity OK
 buildiq	1608	78af9a24a6414a59194f58f13dd424a492545888	CONFLICT	worker-45	clean on development; conflicts in l10n/en.js,en.json,nl.js,nl.json with 1582+1593 in tree
 buildiq	1620	c5ef8423ca8365e71ea026ddccbc4a243f07ce38	CONFLICT	worker-45	clean on development; conflicts in l10n/nl.js,nl.json with 1582+1593 in tree
+buildiq	1621	1a2abcb6033bf36b49bb60889eebac7d999b326c	RED	worker-45	unit 3195 tests no new failures, vitest 4669 pass; but test:l10n:parity (added by 1593) fails: en.json key "{duration} ms" added without nl.json value; add it
