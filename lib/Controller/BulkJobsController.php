@@ -56,6 +56,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\QueryPage;
+use OCA\OpenRegister\Service\Resilience\Sheddable;
 
 /**
  * BulkJobsController.
@@ -243,6 +244,7 @@ class BulkJobsController extends Controller {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
+	#[Sheddable]
 	public function create(): JSONResponse {
 		$uid = $this->currentUid();
 		if ($uid === null) {

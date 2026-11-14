@@ -125,6 +125,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Resilience\Sheddable;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Search\HistoryPredicateInterface;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
@@ -6184,6 +6185,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
+	#[Sheddable]
 	public function export(string $register, string $schema, ObjectOperationsInterface $objectService): DataDownloadResponse|JSONResponse {
 		// Set the register and schema context.
 		$objectService->setRegister(register: $register);

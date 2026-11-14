@@ -20,7 +20,8 @@
 
 ## 3. Database pressure
 
-- [ ] 3.1 Add `DatabasePressureMeter` and the `#[Sheddable]` attribute, stamp timings in `LoadSheddingMiddleware`, and mark the routes in design D-4. Verify: `tests/Unit/Service/Resilience/DatabasePressureMeterTest.php`; `tests/Unit/Middleware/LoadSheddingSheddableTest.php` asserts an export is refused under pressure while `objects#show` passes; a reflection test lists every `#[Sheddable]` method so the set cannot drift unseen.
+- [x] 3.1 Add `DatabasePressureMeter` and the `#[Sheddable]` attribute, stamp timings in `LoadSheddingMiddleware`, and mark the routes in design D-4. Verify: `tests/Unit/Service/Resilience/DatabasePressureMeterTest.php`; `tests/Unit/Middleware/LoadSheddingSheddableTest.php` asserts an export is refused under pressure while `objects#show` passes; a reflection test lists every `#[Sheddable]` method so the set cannot drift unseen.
+  > 2026-11-14: `DatabasePressureMeter` counts requests, slow ones (over `slow_ms`, default 2000) and Doctrine driver errors per 10 second bucket on the distributed memcache (local fallback, fail-open), with the thresholds and an on/off switch under the `load_shedding_pressure_*` appconfig keys. `LoadSheddingMiddleware` stamps the start in `beforeController()`, counts in `afterController()` and `afterException()`, and refuses a `#[Sheddable]` method under pressure with the `database` 503 and `Retry-After: 30`. Marked: `objects#export`, the four aggregation routes, `graphQL#execute`, the six `bulk#` routes, `bulkJobs#create`, and the report runs `reports#render` and `reports#preview`. Tests: `DatabasePressureMeterTest`, `LoadSheddingSheddableTest`, `tests/Unit/Architecture/SheddableRoutesTest.php` (the reflection list).
 
 ## 4. Administration
 

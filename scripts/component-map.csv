@@ -3065,7 +3065,9 @@ Service/Relation/RelationTypeResolver.php,221,Service,Service,Service/Relation/R
 Service/Resilience/BreakerRegistry.php,237,Service,Platform,Platform/Service/Resilience/BreakerRegistry.php,0,,Platform
 Service/Resilience/BreakerThresholds.php,55,Service,Platform,Platform/Service/Resilience/BreakerThresholds.php,0,,Platform
 Service/Resilience/CircuitBreaker.php,399,Service,Platform,Platform/Service/Resilience/CircuitBreaker.php,0,,Platform
+Service/Resilience/DatabasePressureMeter.php,330,Service,Platform,Platform/Service/Resilience/DatabasePressureMeter.php,0,,Platform
 Service/Resilience/DependencyUnavailableException.php,87,Service,Platform,Platform/Service/Resilience/DependencyUnavailableException.php,0,,Platform
+Service/Resilience/Sheddable.php,15,Service,Platform,Platform/Service/Resilience/Sheddable.php,0,,Platform
 Service/Resolver/Exception/MissingConfigException.php,27,Service,Service,Service/Resolver/Exception/MissingConfigException.php,20,,Core
 Service/Resolver/Exception/PropertyNotFoundException.php,45,Service,Service,Service/Resolver/Exception/PropertyNotFoundException.php,0,,Core
 Service/Resolver/Exception/RegisterNotFoundException.php,33,Service,Service,Service/Resolver/Exception/RegisterNotFoundException.php,0,,Core
