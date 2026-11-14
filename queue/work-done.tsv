@@ -7889,3 +7889,4 @@ review:humaniq:1029:f6914e2e	GREEN: pure refactor, 4159 tests OK, no new phpstan
 build:integriq:gateway-usage-per-consumer-and-endpoint	PR #3561: byConsumer/byEndpoint analytics, consumer recorded on inbound call_log, usage tables; Playwright left; unit 8493->8500 no new failures	session-20261114T062142-da017174	2026-11-14T07:34:30Z
 verify:hermiq:1761:f97b578c	1761 GREEN, 1763 GREEN, 1764 CONFLICT (with the tree); no new unit or vitest failures	session-20261114T070323-628c2f37	2026-11-14T07:34:31Z
 review:hermiq:1487:ddb5eb84	GREEN: behaviour-preserving extraction, 4707 tests 0 failures	session-20261114T073105-27c9d15e	2026-11-14T07:34:38Z
+fix:pipelinq:3725:8b52d1d9	documented kvk/search in openapi.json, suite green; REVERIFY at 1bf3ea3d	session-20261114T070909-be4543e0	2026-11-14T07:34:53Z
