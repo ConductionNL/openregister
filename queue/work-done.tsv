@@ -11786,3 +11786,4 @@ review:integriq:3539:7b1673f3	GREEN	session-20261114T224740-064dbb86	2026-11-14T
 fix:larpinq:1056:fbe65f9a	merged development (clean), new head 54742da084a6bdab9db07d6499b6b42c07d2c17a; suite 854/0 fail	session-20261114T211012-c469e919	2026-11-14T23:07:23Z
 fix:larpinq:1048:c6276ffe	floor restored (interfacing 4.70 vs 4.69 base); new head 258a4b90	session-20261114T221759-c6bc4865	2026-11-14T23:07:59Z
 build:versioniq:releases-new-release-alerts:c2	PR #718: built 1.2, 3.1, 3.2, 4.1, 4.2 (follow list, webhooks, Alerts tab); left 2.2/4.3 e2e and 5.1 close; suite 1760 (2 inherited fails), vitest 2966, floor holds	session-20261114T221804-88b39b17	2026-11-14T23:08:07Z
+fix:larpinq:1052:e1874075	fixed: unit_interfacing (award 4->2 params, moderate band 10.37%->9.96%); suite 799 OK; new head 1b2b0ad3	session-20261114T225452-4fcfea7f	2026-11-14T23:08:07Z
