@@ -9755,6 +9755,7 @@ verify:learniq:2520:6ae4a049	GREEN 2520	session-20261114T141010-8dc8bd74	2026-11
 fix:decidiq:2148:2bf0e346	failed: merges clean on development; the conflicts are only with #2143 and #2154 (adjacent sorted use line in SaveGuardSubscriptions.php and l10n keys), neither on development yet; resolve once they land	session-20261114T141724-6227a125	2026-11-14T15:17:17Z
 build:hermiq:store-through-federated-config:c2	partial: openregister#10562 builds G5 (topic union) and G6 (withoutUserNamespaceFallback), 5 tests, Config 151->156; left: G1-G4 engine gaps in openregister, then hermiq 3.1/3.3/3.4 (PR hermiq#1736 holds 3.2)	session-20261114T141728-9a5d03fc	2026-11-14T15:17:56Z
 verify:shillinq:2972:061b1d37	3 GREEN (2972,3057,3063), 4 CONFLICT in tree (2975,2991,3004,3065; clean on plain development); 0 new failures	session-20261114T151004-fa188a10	2026-11-14T15:18:09Z
+fix:decidiq:2146:47325aad	fixed: merged development, l10n union, .js rebuilt; new head 5875281c; REVERIFY recorded	session-20261114T144727-6763e1fc	2026-11-14T15:18:42Z
 verify:learniq:2532:c8d0a195	2532 GREEN, 2538 CONFLICT (register, after 2532)	session-20261114T134654-82ca2be5	2026-11-14T15:18:51Z
 fix:decidiq:2171:c22e208d	merged development, conflicts resolved keeping both sides; new head d0195ef7; REVERIFY recorded	session-20261114T144816-cf37407b	2026-11-14T15:18:57Z
 fix:decidiq:2168:59aba86f	fixed: version pins made at-least checks, vitest green, new head 517bc1d0, REVERIFY	session-20261114T141721-aeb4e068	2026-11-14T15:19:04Z
