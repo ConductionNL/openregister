@@ -8133,5 +8133,6 @@ verify:decidiq:2139:a296d241	GREEN 2139,2144,2148; CONFLICT 2158	session-2026111
 build:buildiq:pages-installable-offline-and-mobile	partial: PR #1604, T01 run alias + signed-in web manifest (7 tests); T02-T10 left	session-20261114T062202-3e33eeb3	2026-11-14T08:11:09Z
 build:buildiq:openbuild-nc-color-variables	PR #1603: ux-dark-mode test added (page surfaces clean); 5.2 visual check left	session-20261114T070323-628c2f37	2026-11-14T08:11:07Z
 verify:integriq:3562:808c666a	GREEN 3562 3585 3591 3592; CONFLICT 3587 3588 3589 3590 3593 (with tree, clean on development)	session-20261114T073109-bb0ea608	2026-11-14T08:11:31Z
+build:buildiq:ai-smart-paste-into-forms	PR #1605: T01-T03,T07 built (validation, editor fieldset, preview, l10n, docs), +17 vitest; T04-T06,T08 left (sibling repos, e2e, openspec CLI)	session-20261114T073117-2bd2e050	2026-11-14T08:11:58Z
 build:integriq:observability-opentelemetry-export-errors-and-app-spans	PR #3602: tasks 6-9 built, 40 tests, suite no new failures; e2e left	session-20261114T070909-be4543e0	2026-11-14T08:12:02Z
 verify:buildiq:1579:5a78ba86	1579 GREEN (tasks.md only)	session-20261114T062134-840bbeee	2026-11-14T08:12:16Z
