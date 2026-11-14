@@ -53,12 +53,14 @@
 
 ## 6. First adopter + docs
 
-- [ ] 6.1 shillinq `Payee`: set `configuration.jsonld.type =
+- [x] 6.1 shillinq `Payee`: set `configuration.jsonld.type =
   https://schema.org/Organization` (confirm/adjust).
-- [ ] 6.2 pipelinq `product`: add `buyCost` (number) and `vendor`
+  > confirmed on shillinq development (d288f9f14): `Payee` declares `x-schema-org: schema:Organization` and `configuration.implements: [ns#Vendor, schema.org/Organization]`, so the resolver finds it for both. No change needed.
+- [x] 6.2 pipelinq `product`: add `buyCost` (number) and `vendor`
   (`referenceSemanticType: https://schema.org/Organization`,
   `referenceSemanticApp: shillinq`). Verify: with shillinq → vendor picker
   lists Payees; without shillinq → vendor disabled + tooltip, product still
   editable.
+  > on pipelinq development (`register.d/92-product-supply-master.json`): `vendor` carries `referenceSemanticType: https://openregister.app/ns#Vendor` and `referenceSemanticApp: shillinq`. It uses the narrower ns#Vendor role, which Payee also implements, so it targets accounts-payable vendors rather than any organisation. The buy cost is the product's existing `cost` field ("cost to the organization per unit"), so no duplicate `buyCost` field was added. Checking the picker with and without shillinq needs 5.x and a live instance.
 - [x] 6.3 Document the pattern in OR schema-config docs; cross-link ADR-048.
   > `docs/Features/json-ld.md`, "Referencing a type another app provides".
