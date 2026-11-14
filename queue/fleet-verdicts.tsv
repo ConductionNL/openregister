@@ -8988,3 +8988,4 @@ integriq	3574	cfe173d8254059423a2abd5ebe9c49d4321165f0	GREEN	worker-48	php 8970 
 integriq	3596	ccfce1461772a9284cc1ee537efca7f88937b959	GREEN	worker-48	php 8970 tests (baseline 8920, inherited failures incl. SynchronizationSynchronizeEntryGoldenTest which fails on plain development), vitest 2174 pass; new failures 0; build matches sources-outbound-rate-limit-pacing
 decidiq	2143	1430cc3a06f1246370a93124179a171fbb021b48	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
 decidiq	2169	5f13d30a50ff2a49f1034a0be211d6dd0b6d225e	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.87 -> 3.85
+integriq	3600	36f330ac60dca71cff2d360f3f3912e6902c93cf	CONFLICT	worker-48	conflicts with development + 3574,3596
