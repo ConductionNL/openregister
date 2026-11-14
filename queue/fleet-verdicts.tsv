@@ -10334,3 +10334,4 @@ versioniq	685	0a9c195645934316546829afa80d0d261a3a5d95	REVERIFY	worker-42	merged
 versioniq	718	c00665905d8a4ebcf7bc36765200ddcdaa9a6022	CONFLICT	worker-23	conflicts with the tree after 700,709,710
 versioniq	722	1be4fab6b869c26ff970fe97364df1261b6fefca	CONFLICT	worker-23	conflicts with the tree after 700,709,710
 decidiq	2202	0cea5e8c781ca6a4e97a6e05ec64d51f5843af60	REVERIFY	worker-51	ContractBindings: Ori services referenced as Ori\X::class instead of new use lines next to VotingServiceInterface (the hunk #2172 also edits); clean on dev+2172+2178+2188, unit 4283 OK; new head dbba38504b9a4d209125dceb600bf485b8011d4e, verify it
+shillinq	3065	376d309318c629c867258858feaafe677e25f59a	GREEN	worker-32	unit 11487 tests on the tree, baseline 11463 green, no failures; vitest 1 failure inherited from development (dunningNextRun.spec.js); build of sales-billable-rate-per-hour: the EUR 100 fallback becoming no-rate is design D4, the cross-administration tests are kept
