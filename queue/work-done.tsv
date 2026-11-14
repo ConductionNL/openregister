@@ -10560,3 +10560,4 @@ verify:hermiq:1793:f083d332	1793 GREEN (no new failures); 1794 skipped: head mov
 fix:integriq:3564:c37760b6	l10n conflict resolved keep-both, pushed 03eb3019, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T18:04:55Z
 verify:buildiq:1625:d3665261	GREEN 1625	session-20261114T174754-e63e9f88	2026-11-14T18:05:12Z
 fix:launchpad:1215:01fd4612	conflict resolved (nl l10n), new head 507cc1f0	session-20261114T171830-19af6b65	2026-11-14T18:05:22Z
+fix:integriq:3622:45832696	docs README conflict resolved keep-both, pushed 85e683d9, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T18:05:38Z
