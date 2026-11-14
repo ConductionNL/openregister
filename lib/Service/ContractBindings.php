@@ -280,6 +280,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
@@ -1045,6 +1047,7 @@ final class ContractBindings {
 		TemporalCalculationSweepServiceInterface::class => TemporalCalculationSweepService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		TransitionNodeInterface::class => TransitionNode::class,
+		TagObjectNodeInterface::class => TagObjectNode::class,
 		TrustedPartyReaderInterface::class => PartyService::class,
 		TranslationHandlerInterface::class => TranslationHandler::class,
 		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,

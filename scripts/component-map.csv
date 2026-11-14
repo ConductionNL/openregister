@@ -1168,6 +1168,7 @@ Files/Service/File/Sanitizer/DocxSanitizer.php,468,Files,Files,Files/Service/Fil
 Files/Service/File/Sanitizer/OdtSanitizer.php,197,Files,Files,Files/Service/File/Sanitizer/OdtSanitizer.php,0,,Files
 Files/Service/File/Sanitizer/SanitizerInterface.php,9,Files,Files,Files/Service/File/Sanitizer/SanitizerInterface.php,0,,Files
 Files/Service/File/ShareUrlBuilder.php,28,Files,Files,Files/Service/File/ShareUrlBuilder.php,0,455,Files
+Files/Service/File/TagColour.php,29,Files,Files,Files/Service/File/TagColour.php,0,,Files
 Files/Service/File/TaggingHandler.php,225,Files,Files,Files/Service/File/TaggingHandler.php,0,101,Files
 Files/Service/FileSidebarService.php,198,Files,Files,Files/Service/FileSidebarService.php,0,,Files
 Files/Service/Integration/AttachTargetFilter.php,75,Files,Files,Files/Service/Integration/AttachTargetFilter.php,0,,Files
@@ -2361,6 +2362,9 @@ Service/Flow/Nodes/SendTalkMessageNode.php,88,Service,Flows,Flows/Service/Flow/N
 Service/Flow/Nodes/SetFieldsNode.php,198,Service,Flows,Flows/Service/Flow/Nodes/SetFieldsNode.php,0,,Processes
 Service/Flow/Nodes/SubFlowNode.php,186,Service,Flows,Flows/Service/Flow/Nodes/SubFlowNode.php,1,,Processes
 Service/Flow/Nodes/SwitchNode.php,46,Service,Flows,Flows/Service/Flow/Nodes/SwitchNode.php,1,,Processes
+Service/Flow/Nodes/TagObjectNode.php,235,Service,Flows,Flows/Service/Flow/Nodes/TagObjectNode.php,0,,Processes
+Service/Flow/Nodes/TagObjectNodeInterface.php,6,Service,Flows,Flows/Service/Flow/Nodes/TagObjectNodeInterface.php,0,,Processes
+Service/Flow/Nodes/TagStepConfig.php,38,Service,Flows,Flows/Service/Flow/Nodes/TagStepConfig.php,0,,Processes
 Service/Flow/Nodes/TransitionNode.php,85,Service,Flows,Flows/Service/Flow/Nodes/TransitionNode.php,0,,Processes
 Service/Flow/Nodes/TriggerManualNode.php,59,Service,Flows,Flows/Service/Flow/Nodes/TriggerManualNode.php,0,,Processes
 Service/Flow/Nodes/TriggerObjectNode.php,92,Service,Flows,Flows/Service/Flow/Nodes/TriggerObjectNode.php,1,,Processes
