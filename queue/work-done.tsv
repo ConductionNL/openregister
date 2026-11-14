@@ -7721,3 +7721,4 @@ fix:filinq:2078:4eb138c6	conflict resolved, development merged, suite green; new
 review:openregister:10466:f64d6bb1	BLOCK: 2 Controller tests red (mock with() pinned to moved param slots); Arch/Rules/Contract/Event/Form/Task/Flow green, phpstan clean; note positional FormDependent(form,author,mapping) no longer works	session-20261114T065631-3903ed42	2026-11-14T07:06:25Z
 fix:filinq:2062:baea435f	conflict resolved in register JSON, unit suite green, pushed 58dde4ae	session-20261114T065635-61264d14	2026-11-14T07:06:31Z
 fix:shillinq:2995:9ace9c6d	conflict resolved, new head 028a9490; REVERIFY recorded	session-20261114T070344-897ffa0f	2026-11-14T07:06:38Z
+fix:filinq:2074:38456639	conflict resolved (union of en/nl keys), new head 92ebb286; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T07:06:51Z
