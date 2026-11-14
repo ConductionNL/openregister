@@ -10203,3 +10203,4 @@ build:buildiq:pages-custom-code:c2	partial: PR #1608 T01 admin toggle, T03 Sandb
 fix:shillinq:2997:89216b68	conflict resolved, pushed 613c18e2, REVERIFY recorded	session-20261114T151802-aefa9c5e	2026-11-14T16:32:22Z
 build:buildiq:registration-form-builder:c2	done: PR #1613 +37f34495 task 2.1 (steps with phase labels, applies-to, visibleWhen rules, save for later in RegistrationFormEditor) + nl/en strings, 13 vitest tests; vitest 4478/4478 green; left 4.2 e2e, 4.3 docs+screenshots, 4.4 cross-app handoff (non-code)	session-20261114T161752-4c07cde6	2026-11-14T16:32:56Z
 verify:filinq:2070:22eb57ed	GREEN 2070, 2118; CONFLICT 2078, 2119, 2124, 2126, 2130 (on the tree); phpunit 6773 ok, vitest 758, jest 537	session-20261114T154755-0f1a24cf	2026-11-14T16:32:53Z
+fix:hermiq:1736:ff4bd9c2	merged development, register to v0.56.0, head 7da99d85, REVERIFY	session-20261114T151802-24eee21b	2026-11-14T16:33:01Z
