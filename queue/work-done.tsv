@@ -8421,3 +8421,13 @@ build:opencatalogi:search-cors-on-every-public-endpoint	partial: PR #2686 does 1
 verify:keepiq:1780:d89f9e50	GREEN 1780,1781,1783,1785; CONFLICT 1782,1784 (l10n files)	session-20261114T080916-9b1d69d6	2026-11-14T08:47:43Z
 build:stackiq:contracts-expiry-warning-fires	PR #1919: rule fixed (status in Active/Expiring, dedupeFields endDate, versions bumped), guard test and docs; live check left	session-20261114T073108-67fbeb26	2026-11-14T08:48:04Z
 fix:opencatalogi:2643:cde2b13d	no change: clean on development; tree-only l10n conflict with unmerged #2641/#2645, REVERIFY recorded	session-20261114T082640-d9af913e	2026-11-14T08:48:22Z
+build:stackiq:insight-assistant-answers-and-action-trail	partial: PR #1920 task 1 (ask service + route); panel, actions page, history label, docs left	session-20261114T062200-6a28e40c	2026-11-14T08:48:29Z
+review:stackiq:1693:71f027fc	GREEN: behaviour-preserving refactor; vitest 2486/2486	session-20261114T073105-27c9d15e	2026-11-14T08:48:32Z
+review:stackiq:1706:dcde9ef2	GREEN	session-20261114T065626-0651b305	2026-11-14T08:48:39Z
+fix:buildiq:1616:6cdd062c	conflict resolved: l10n keys moved mid-catalogue, tree with 1613+1614 merges clean; new head ccde40f3; REVERIFY queued	session-20261114T073109-930980c2	2026-11-14T08:48:50Z
+fix:opencatalogi:2651:c5411594	no change: clean on development; tree-only src/manifest.json conflict, REVERIFY recorded	session-20261114T082640-d9af913e	2026-11-14T08:49:07Z
+fix:buildiq:1606:08b13ebd	l10n keys moved off the shared tail; clean with 1597/1602/1605; new head e22586b36080c66057524a8a5dfbd2e8c1dce2ac	session-20261114T075640-efa02b24	2026-11-14T08:49:16Z
+review:stackiq:1704:3ca945de	GREEN: behaviour-preserving refactor, vitest 2486 pass	session-20261114T073117-2bd2e050	2026-11-14T08:49:26Z
+build:stackiq:sharing-compliance-documents	partial: PR #1924 complianceDocument schema in the register with audience read rules, demo data, 7 tests (task 1); pages and docs (tasks 2, 3) left	session-20261114T073108-8b40426a	2026-11-14T08:49:37Z
+verify:opencatalogi:2636:234eba4c	9 GREEN (2636-2662), no conflicts, no new failures	session-20261114T065631-3903ed42	2026-11-14T08:50:15Z
+fix:buildiq:1619:2f7f5352	merged development in, kept both describe blocks; new head e0722b68, REVERIFY recorded	session-20261114T073108-67fbeb26	2026-11-14T08:50:22Z
