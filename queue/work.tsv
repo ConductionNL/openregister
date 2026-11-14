@@ -8342,3 +8342,4 @@ fix:shillinq:3023:0221ca26	fix	shillinq	development	3023	sha=0221ca260b3af831cde
 fix:shillinq:2996:c8bf209f	fix	shillinq	development	2996	sha=c8bf209f8503b2d563208844cd9f45e764e0681c;verdict=RED;branch=quality/build-sales-billable-rate-per-hour;reason=GATE RED floor: unit_interfacing: 2.95 -> 2.93	2026-11-13T23:45:22Z
 merge:dossiq:6424:474c57af	merge	dossiq	development	development	prs=6424@0edd0cb288d8aad25a4a21a32cc9eb02bd64acd4	2026-11-13T23:45:22Z
 merge:shillinq:2971:80ce0cc9	merge	shillinq	development	development	prs=2971@c6fdd59368b22090a32c0748effe73484e2ff28f	2026-11-13T23:50:21Z
+measure:shillinq:20261114h00	measure	shillinq	development	queue/coverage/shillinq.json	why=slices need per-directory coverage	2026-11-14T00:35:20Z
