@@ -8140,3 +8140,4 @@ filinq	2083	d552a718d051ae502a53692b952fd31e288d23a1	CONFLICT	worker-23	clean on
 filinq	2086	fe4bcf088455dba29cd81fe5163aa3fdafe7a7a6	CONFLICT	worker-23	clean on development, conflicts with #2069 (earlier in tree order); merge development in once #2069 lands
 filinq	2090	923c98e033f7a781763895ce2a83eca95d902a0f	CONFLICT	worker-23	clean on development, conflicts with #2069 (earlier in tree order); merge development in once #2069 lands
 filinq	2091	72c1df1540cdfb1054b2eb6bc498611efc0415ab	CONFLICT	worker-23	clean on development, conflicts with #2069 (earlier in tree order); merge development in once #2069 lands
+filinq	2100	3dd51da6ac1f0f392fce6fbc10edffc64376143d	CONFLICT	worker-23	conflicts with development in l10n catalogues
