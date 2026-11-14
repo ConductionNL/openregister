@@ -1070,6 +1070,9 @@ final class ContractBindings {
 		TenantLifecycleServiceInterface::class => TenantLifecycleService::class,
 		\OCA\OpenRegister\Service\History\StateHistoryRebuildInterface::class => \OCA\OpenRegister\Service\History\StateHistoryRebuild::class,
 		\OCA\OpenRegister\Service\Merge\MasterRecomputeInterface::class => \OCA\OpenRegister\Service\Merge\MasterRecomputeService::class,
+		// Merge relinking (mdm-merge-relinks-every-reference): the relation index finds each reference, the save path moves it.
+		\OCA\OpenRegister\Service\Merge\ReferenceFinderInterface::class => \OCA\OpenRegister\Service\Merge\RelationIndexReferenceFinder::class,
+		\OCA\OpenRegister\Service\Merge\ReferenceWriterInterface::class => \OCA\OpenRegister\Service\Merge\SavePathReferenceWriter::class,
 		\OCA\OpenRegister\Service\Schema\SchemaBatchMigratorInterface::class => \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
 		\OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface::class => \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
 		\OCA\OpenRegister\Service\Sync\SyncScheduleInterface::class => \OCA\OpenRegister\Service\Sync\SyncScheduleService::class,
