@@ -139,9 +139,31 @@ separate piece of work.
 In this order, and it never falls back to weekdays:
 
 1. the calendar named on the deadline
-2. the calendar configured for the subject's organisation
-3. the seeded national default, `nl-national`
+2. the calendar its record type names: a schema names one in its
+   configuration as `workingCalendar` (a calendar slug), and a deadline armed
+   with `schema` set takes it when it names none of its own
+3. the calendar configured for the subject's organisation
+4. the seeded national default, `nl-national`
+
+A schema or an organisation that names nothing falls through, so an instance
+where nobody declares one behaves exactly as before.
 
 A name that resolves to nothing is an error at the moment the deadline is set,
 with the name in the message. That is deliberate: a quiet downgrade to weekdays
 produces a deadline that is wrong by several days and looks entirely healthy.
+
+### A person's own working days
+
+A deadline armed with `person` set (a user id) is computed against that
+person's working pattern when an installed app answers for them. OpenRegister
+never stores anybody's working hours or absences: the app that administers
+them registers a `WorkingPatternProviderInterface` on
+`RegisterWorkingPatternProvidersEvent`. Its answer may replace the working
+weekdays and the hours per day, and may add days off; the calendar's own
+closure days, zone and blackouts still apply. When no app answers, the
+calendar decides.
+
+The term diagnostic says which happened: `calendarScope` is `timer`,
+`recordType`, `unit` or `instance` (or `given` for a definition you send it),
+and `workingPattern` is `person` or `calendar`, with the app it came from in
+`workingPatternSource`.
