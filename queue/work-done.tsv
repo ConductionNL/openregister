@@ -8313,3 +8313,4 @@ build:opencatalogi:woo-national-output-assurance	failed: blocked; tasks.md says 
 build:opencatalogi:organisations-page-edits-the-shared-organisation	partial: PR #2666 (pages on the shared organisation, field list, docs, 6 tests); edit gate needs a library write gate, live/e2e/check:strict left	session-20261114T070323-628c2f37	2026-11-14T08:35:13Z
 verify:planninq:1169:002c6202	GREEN #1169	session-20261114T070344-897ffa0f	2026-11-14T08:35:21Z
 build:opencatalogi:woo-value-list-curation	failed: blocked; tasks.md says start once woo-value-lists-on-the-concept-register is merged, and that change is unbuilt (0 of 16 tasks, no build branch); build it first	session-20261114T082640-d9af913e	2026-11-14T08:35:25Z
+build:opencatalogi:search	partial: PR #2667 (spec tags, metadata label, audits); 1.x/3.1/3.2/7.x stale vs code (routed methods, public WOO-506 search), left open with reasons	session-20261114T073109-930980c2	2026-11-14T08:35:41Z
