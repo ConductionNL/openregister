@@ -9624,3 +9624,4 @@ build:decidiq:ori-adoption:c2	partial: no new commits this run (worker context r
 fix:hermiq:1762:dba1a0fe	conflict resolved, new head 0722e3ca	session-20261114T144746-30bc6559	2026-11-14T14:55:21Z
 review:openregister:10559:0aa53588	APPROVE: additive contract, tests and phpstan green	session-20261114T141727-56b2bf78	2026-11-14T14:55:31Z
 fix:hermiq:1736:871292e7	CONFLICT resolved (register now 0.55.0), pushed ff4bd9c2; no new failures (dev baseline 192 red, inherited)	session-20261114T144809-d686f759	2026-11-14T14:55:41Z
+build:decidiq:motion-change-recommendations:c2	done: PR #2181 merged development in (conflicts resolved), task 6 docs + e2e spec written; e2e run and live accept left (need live instance); PHP 4194 OK, vitest 2738 OK; head 207ca46a	session-20261114T144757-446bd6da	2026-11-14T14:55:57Z
