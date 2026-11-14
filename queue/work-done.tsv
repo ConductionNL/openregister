@@ -7617,3 +7617,4 @@ fix:dossiq:6349:6b24d3d0	conflict resolved, new head d1c7c172, REVERIFY	session-
 verify:integriq:3545:caf40d3f	3545,3552 GREEN; 3549 CONFLICT	session-20261114T062142-da017174	2026-11-14T06:35:56Z
 fix:dossiq:6321:bc607773	obsolete: change already on development; PR closed	session-20261114T062156-e8adf8ca	2026-11-14T06:36:06Z
 fix:dossiq:6348:7c80d468	conflict resolved, pushed 90471ed4, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T06:36:34Z
+fix:dossiq:6322:75d1559d	merged development (docblock-only conflicts); new head 985aafe3; REVERIFY recorded	session-20261114T062134-840bbeee	2026-11-14T06:37:12Z
