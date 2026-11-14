@@ -35,6 +35,9 @@ use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Exception\TextDisclosureNotRecordedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
+use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Service\Anonymisation\CapacitySuggester;
+use OCA\OpenRegister\Service\Anonymisation\OfficialsDirectory;
 use OCA\OpenRegister\Service\Anonymisation\TextDisclosureSource;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
@@ -147,6 +150,7 @@ class EntityRecognitionHandler {
 	 * @param LoggerInterface           $logger       Logger.
 	 * @param FileSettingsHandler|null  $fileSettings The organisation's detection threshold (REQ-ADI-007).
 	 * @param JurisdictionPatternSets   $patternSets The jurisdiction pattern sets and their merge.
+	 * @param OfficialsDirectory|null   $officials   The register of officials a person's capacity is read from (REQ-DKP-001).
 	 */
 	public function __construct(
 		private readonly EntityRecognitionStores $stores,
@@ -154,6 +158,7 @@ class EntityRecognitionHandler {
 		private readonly LoggerInterface $logger,
 		private readonly ?FileSettingsHandler $fileSettings=null,
 		private readonly JurisdictionPatternSets $patternSets=new JurisdictionPatternSets(),
+		private readonly ?OfficialsDirectory $officials=null,
 	) {
 	}//end __construct()
 
@@ -431,10 +436,11 @@ class EntityRecognitionHandler {
 		$entitiesFound = 0;
 		$relationsCreated = 0;
 		$storedEntities = [];
+		$capacity = $this->capacityRun(detectedEntities: $detectedEntities);
 
 		foreach ($detectedEntities as $detected) {
 			try {
-				$storedEntities[] = $this->storeDetectedEntity(detected: $detected, scan: $scan);
+				$storedEntities[] = $this->storeDetectedEntity(detected: $detected, scan: $scan, capacity: $capacity);
 				$entitiesFound++;
 				$relationsCreated++;
 			} catch (Exception $e) {
@@ -464,12 +470,13 @@ class EntityRecognitionHandler {
 	 *
 	 * @param array           $detected One detected entity.
 	 * @param ChunkEntityScan $scan     The chunk, its text, the method and the context window.
+	 * @param array|null      $capacity The capacity policy and officials (capacityRun()), null when no person was detected.
 	 *
 	 * @return array{type: mixed, value: mixed, confidence: mixed} The stored entity summary.
 	 *
 	 * @throws Exception When the entity or the relation cannot be stored.
 	 */
-	private function storeDetectedEntity(array $detected, ChunkEntityScan $scan): array {
+	private function storeDetectedEntity(array $detected, ChunkEntityScan $scan, ?array $capacity=null): array {
 		$chunk = $scan->chunk;
 
 		// Find or create entity.
@@ -486,6 +493,7 @@ class EntityRecognitionHandler {
 		$context = $this->extractContext(detected: $detected, scan: $scan);
 		$relation->setContext($this->sanitizeUtf8(value: $context));
 		$relation->setCreatedAt(new DateTime());
+		$this->suggestCapacity(relation: $relation, detected: $detected, context: $context, capacity: $capacity);
 
 		$this->setRelationSource(relation: $relation, chunk: $chunk);
 
@@ -497,6 +505,73 @@ class EntityRecognitionHandler {
 			'confidence' => $detected['confidence'],
 		];
 	}//end storeDetectedEntity()
+
+	/**
+	 * The capacity policy and the officials for one batch of detections, read once; null when no person was detected.
+	 *
+	 * @param array $detectedEntities The detected entities.
+	 *
+	 * @return array{policy: CapacityPolicy, officials: list<array<string, string>>}|null
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1.3
+	 */
+	private function capacityRun(array $detectedEntities): ?array {
+		$hasPerson = false;
+		foreach ($detectedEntities as $detected) {
+			if (($detected['type'] ?? null) === self::ENTITY_TYPE_PERSON) {
+				$hasPerson = true;
+				break;
+			}
+		}
+
+		if ($hasPerson === false) {
+			return null;
+		}
+
+		$policy = CapacityPolicy::fromStored(stored: null);
+		$source = null;
+		if ($this->fileSettings !== null) {
+			$policy = $this->fileSettings->capacityPolicy();
+			$source = $this->fileSettings->officialsSource();
+		}
+
+		$officials = [];
+		if ($this->officials !== null) {
+			$officials = $this->officials->officials(source: $source);
+		}
+
+		return ['policy' => $policy, 'officials' => $officials];
+	}//end capacityRun()
+
+	/**
+	 * Put the suggested capacity and its source on a PERSON relation (REQ-DKP-001).
+	 *
+	 * The suggestion never sets skipAnonymization: an unconfirmed suggestion is
+	 * anonymised like any other occurrence until a reviewer confirms it (REQ-DKP-002).
+	 *
+	 * @param EntityRelation $relation The relation being built.
+	 * @param array          $detected The detected entity.
+	 * @param string         $context  The text around the occurrence.
+	 * @param array|null     $capacity The capacity policy and officials (capacityRun()), null when no person was detected.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1.3
+	 */
+	private function suggestCapacity(EntityRelation $relation, array $detected, string $context, ?array $capacity): void {
+		if ($capacity === null || ($detected['type'] ?? null) !== self::ENTITY_TYPE_PERSON) {
+			return;
+		}
+
+		$suggestion = (new CapacitySuggester())->suggest(
+			name: (string) ($detected['value'] ?? ''),
+			context: $context,
+			officials: $capacity['officials'],
+			policy: $capacity['policy']
+		);
+		$relation->setCapacity($suggestion['capacity']);
+		$relation->setCapacitySource($suggestion['capacitySource']);
+	}//end suggestCapacity()
 
 	/**
 	 * Set the source references on a relation from the chunk's source type.

@@ -29,6 +29,11 @@ return array (
     'decisionUuid' => 'string',
     'page' => 'integer',
     'box' => 'json',
+    'capacity' => 'string',
+    'capacitySource' => 'string',
+    'capacityApplied' => 'string',
+    'capacityConfirmedBy' => 'string',
+    'capacityConfirmedAt' => 'datetime',
     'createdAt' => 'datetime',
   ),
   'empty' => 
@@ -55,6 +60,11 @@ return array (
     'decision' => NULL,
     'page' => NULL,
     'box' => NULL,
+    'capacity' => NULL,
+    'capacitySource' => NULL,
+    'capacityApplied' => NULL,
+    'capacityConfirmedBy' => NULL,
+    'capacityConfirmedAt' => NULL,
     'createdAt' => NULL,
   ),
   'filled' => 
@@ -87,6 +97,11 @@ return array (
     array (
       'k' => 'box',
     ),
+    'capacity' => 'capacity-v',
+    'capacitySource' => 'capacitySource-v',
+    'capacityApplied' => 'capacityApplied-v',
+    'capacityConfirmedBy' => 'capacityConfirmedBy-v',
+    'capacityConfirmedAt' => '2026-01-02T03:04:05+00:00',
     'createdAt' => '2026-01-02T03:04:05+00:00',
   ),
   'filledUpdated' => 
@@ -113,7 +128,12 @@ return array (
     19 => 'decisionUuid',
     20 => 'page',
     21 => 'box',
-    22 => 'createdAt',
+    22 => 'capacity',
+    23 => 'capacitySource',
+    24 => 'capacityApplied',
+    25 => 'capacityConfirmedBy',
+    26 => 'capacityConfirmedAt',
+    27 => 'createdAt',
   ),
   'refused' => 
   array (

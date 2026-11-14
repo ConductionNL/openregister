@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
 use InvalidArgumentException;
 use DateTime;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -763,12 +764,13 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		}
 
 		self::assertDecisionFieldsValid(fields: $edit->fields);
+		$actingUser    = ($edit->actingUser ?? $this->userSession->getUser());
 		$changedFields = self::applyDecisionChanges(relation: $edit->relation, fields: $edit->fields);
+		$changedFields += self::applyCapacityConfirmation(relation: $edit->relation, fields: $edit->fields, actingUser: $actingUser);
 		if (count($changedFields) === 0) {
 			return $edit->relation;
 		}
 
-		$actingUser = ($edit->actingUser ?? $this->userSession->getUser());
 		$change     = new DecisionMetadataChange(relation: $edit->relation, changedFields: $changedFields, actingUser: $actingUser);
 		return $this->recordDecisionChange(change: $change);
 	}//end updateDecisionMetadata()
@@ -861,7 +863,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * @throws CustomValidationException When a whitelist or shape violation is detected.
 	 */
 	private static function assertDecisionFieldsValid(array $fields): void {
-		$unknown = array_diff(array_keys($fields), ['bases', 'skipAnonymization']);
+		$unknown = array_diff(array_keys($fields), ['bases', 'skipAnonymization', 'capacity']);
 		if (count($unknown) > 0) {
 			$first = (string)reset($unknown);
 			throw new CustomValidationException(
@@ -880,6 +882,15 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 			throw new CustomValidationException(
 				message: 'Invalid skipAnonymization shape: must be a boolean',
 				errors: ['field' => 'skipAnonymization', 'reason' => 'must_be_boolean']
+			);
+		}
+
+		if (array_key_exists('capacity', $fields) === true
+			&& in_array($fields['capacity'], CapacityPolicy::CAPACITIES, true) === false
+		) {
+			throw new CustomValidationException(
+				message: 'Invalid capacity: must be one of ' . implode(', ', CapacityPolicy::CAPACITIES),
+				errors: ['field' => 'capacity', 'reason' => 'unknown_capacity']
 			);
 		}
 	}//end assertDecisionFieldsValid()
@@ -910,6 +921,32 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 			}
 		}
 	}//end assertBasesShape()
+
+	/**
+	 * Record a reviewer's confirmation of a person's capacity (REQ-DKP-002): the
+	 * capacity applied, who confirmed it and when. Confirming the capacity that
+	 * is already applied changes nothing, so the first confirmation is kept.
+	 *
+	 * @param EntityRelation       $relation   The relation being edited.
+	 * @param array<string, mixed> $fields     The validated edit fields.
+	 * @param IUser|null           $actingUser The reviewer.
+	 *
+	 * @return array<string, array{previous: mixed, new: mixed}> The audited change, empty when nothing changed.
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-2.1
+	 */
+	private static function applyCapacityConfirmation(EntityRelation $relation, array $fields, ?IUser $actingUser): array {
+		if (array_key_exists('capacity', $fields) === false || $relation->getCapacityApplied() === $fields['capacity']) {
+			return [];
+		}
+
+		$change = ['capacityApplied' => ['previous' => $relation->getCapacityApplied(), 'new' => $fields['capacity']]];
+		$relation->setCapacityApplied($fields['capacity']);
+		$relation->setCapacityConfirmedBy($actingUser?->getUID());
+		$relation->setCapacityConfirmedAt(new DateTime());
+
+		return $change;
+	}//end applyCapacityConfirmation()
 
 	/**
 	 * Apply the supplied decision metadata to the relation and list what changed.

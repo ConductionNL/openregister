@@ -25,6 +25,11 @@
             "decision": null,
             "page": null,
             "box": null,
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
             "createdAt": "2026-01-02T03:04:05+00:00"
         },
         "updated": [
@@ -68,6 +73,11 @@
             "decision": null,
             "page": null,
             "box": null,
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
             "createdAt": "now"
         },
         "updated": [
@@ -99,6 +109,11 @@
             "decision": null,
             "page": null,
             "box": null,
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
             "createdAt": "now"
         },
         "updated": [
@@ -130,6 +145,11 @@
             "decision": null,
             "page": null,
             "box": null,
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
             "createdAt": "now"
         },
         "updated": [
@@ -161,6 +181,11 @@
             "decision": null,
             "page": null,
             "box": null,
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
             "createdAt": "now"
         },
         "updated": [
@@ -192,6 +217,11 @@
             "decision": null,
             "page": null,
             "box": null,
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
             "createdAt": "now"
         },
         "updated": [
@@ -223,6 +253,11 @@
             "decision": null,
             "page": null,
             "box": null,
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
             "createdAt": "now"
         },
         "updated": [
