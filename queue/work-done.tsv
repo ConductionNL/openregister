@@ -9135,3 +9135,4 @@ build4:openregister:register-document-store:c2	PR #10518 (pushed 8cfa4f15): move
 build4:openregister:apphost-settings-plane:c3	partial: PR #10553 (3.2 SchemasController destroy/related/stats/indexes via handleApiException, +2 tests); left 3.2 17 wave-1 controllers, 3.1, 3.3, 4.2-4.4 (context nearly full)	session-20261114T121618-959073d3	2026-11-14T12:55:15Z
 review:openregister:10550:7df348c8	stale	feeder	2026-11-14T12:55:12Z
 build:portaliq:catalogue-entry-shows-costs-and-conditions:c2	partial: PR #2490 T06 strict validate passes; left T04 (issue to opencatalogi, not code) and T05 e2e/live	session-20261114T124625-07e62ccf	2026-11-14T12:56:16Z
+review:openregister:10548:bc5f2007	APPROVE	session-20261114T114405-27c89384	2026-11-14T12:56:48Z
