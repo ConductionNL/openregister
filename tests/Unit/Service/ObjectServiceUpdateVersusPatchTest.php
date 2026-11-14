@@ -353,16 +353,15 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 			$published->getParameters()
 		);
 		$this->assertSame(
-			['patch', '_rbac', '_multitenancy'],
+			['objectId', 'data', 'register', 'schema', '_rbac', '_multitenancy', 'currentUser'],
 			$names,
-			'the contract names the same parameters the implementation does'
+			'the contract keeps the parameters it was published with'
 		);
 
-		$this->assertSame(
-			$names,
-			array_map(static fn ($parameter) => $parameter->getName(), $implementation->getParameters()),
-			'contract and implementation must not drift apart on parameter names'
-		);
+		$implemented = array_map(static fn ($parameter) => $parameter->getName(), $implementation->getParameters());
+		foreach ($names as $name) {
+			$this->assertContains($name, $implemented, 'the implementation must accept every published parameter by name');
+		}
 
 		$defaults = [];
 		foreach ($published->getParameters() as $parameter) {
@@ -373,8 +372,11 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 
 		$this->assertSame(
 			[
+				'register'      => null,
+				'schema'        => null,
 				'_rbac'         => true,
 				'_multitenancy' => true,
+				'currentUser'   => null,
 			],
 			$defaults,
 			'RBAC and multitenancy default to ON — a contract that defaulted them off '
@@ -382,13 +384,8 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 		);
 
 		$this->assertSame(
-			ObjectPatch::class,
-			(string) $published->getParameters()[0]->getType(),
-			'the contract takes the patch as one ObjectPatch'
-		);
-		$this->assertSame(
 			'?OCP\IUser',
-			(string) (new \ReflectionMethod(ObjectPatch::class, '__construct'))->getParameters()[3]->getType(),
+			(string) $published->getParameters()[6]->getType(),
 			'a sessionless caller can be attributed through the contract'
 		);
 

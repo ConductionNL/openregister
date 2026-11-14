@@ -11,14 +11,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectValidationVerdict;
-use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\IUser;
 
 /**
@@ -153,22 +145,34 @@ interface ObjectServiceInterface {
 	/**
 	 * Persist an object, creating or updating it.
 	 *
-	 * @param array             $object        The object to store.
-	 * @param ObjectSaveOptions $options       The register and schema (id, UUID or slug), the object
-	 *                                         UUID, the relations to expand on the result, the files
-	 *                                         uploaded alongside the object, the save policy (events,
-	 *                                         validation, insert-only) and the explicit acting user
-	 *                                         (null uses the session).
-	 * @param bool              $_rbac         Apply register RBAC.
-	 * @param bool              $_multitenancy Apply organisation scoping.
+	 * @param array           $object        The object to store.
+	 * @param ?array          $extend        Relations to expand on the result.
+	 * @param string|int|null $register      Register id, UUID or slug.
+	 * @param string|int|null $schema        Schema id, UUID or slug.
+	 * @param ?string         $uuid          The object UUID.
+	 * @param bool            $_rbac         Apply register RBAC.
+	 * @param bool            $_multitenancy Apply organisation scoping.
+	 * @param bool            $silent        Suppress events for this save.
+	 * @param bool            $_validation   Validate against the schema.
+	 * @param ?array          $uploadedFiles Files uploaded alongside the object.
+	 * @param ?IUser          $currentUser   Explicit acting user; null uses the session.
+	 * @param bool            $failIfExists  Fail instead of updating when the object already exists.
 	 *
 	 * @return ObjectEntityInterface The stored object.
 	 */
 	public function saveObject(
 		array $object,
-		ObjectSaveOptions $options=new ObjectSaveOptions(),
+		?array $extend=[],
+		string|int|null $register=null,
+		string|int|null $schema=null,
+		?string $uuid=null,
 		bool $_rbac=true,
-		bool $_multitenancy=true
+		bool $_multitenancy=true,
+		bool $silent=false,
+		bool $_validation=true,
+		?array $uploadedFiles=null,
+		?IUser $currentUser=null,
+		bool $failIfExists=false
 	): ObjectEntityInterface;
 
 	/**
@@ -183,18 +187,28 @@ interface ObjectServiceInterface {
 	/**
 	 * Find a single object by id, UUID or slug.
 	 *
-	 * @param int|string             $id            Object id, UUID or slug.
-	 * @param ObjectFindOptions|null $options       Register, schema, extend, files, render and audit.
-	 * @param bool                   $_rbac         Apply register RBAC.
-	 * @param bool                   $_multitenancy Apply organisation scoping.
+	 * @param int|string      $id            Object id, UUID or slug.
+	 * @param ?array          $_extend       Relations to expand on the result.
+	 * @param bool            $files         Include file metadata.
+	 * @param string|int|null $register      Register id, UUID or slug.
+	 * @param string|int|null $schema        Schema id, UUID or slug.
+	 * @param bool            $_rbac         Apply register RBAC.
+	 * @param bool            $_multitenancy Apply organisation scoping.
+	 * @param bool            $_render       Render the entity before returning it.
+	 * @param bool            $_audit        Write an audit-trail entry.
 	 *
 	 * @return ?ObjectEntityInterface The object, or null when absent or not permitted.
 	 */
 	public function find(
 		int|string $id,
-		?ObjectFindOptions $options=null,
+		?array $_extend=[],
+		bool $files=false,
+		string|int|null $register=null,
+		string|int|null $schema=null,
 		bool $_rbac=true,
-		bool $_multitenancy=true
+		bool $_multitenancy=true,
+		bool $_render=true,
+		bool $_audit=true
 	): ?ObjectEntityInterface;
 
 	/**
@@ -245,20 +259,26 @@ interface ObjectServiceInterface {
 	/**
 	 * Delete an object by UUID.
 	 *
-	 * @param ObjectDeletion $deletion        The object UUID, the optional register and schema scope,
-	 *                                        the explicit acting user (null uses the session) and
-	 *                                        whether to delete permanently instead of soft-deleting.
-	 * @param bool           $_rbac           Apply register RBAC.
-	 * @param bool           $_multitenancy   Apply organisation scoping.
-	 * @param bool           $_retentionSweep Run as part of a retention sweep.
+	 * @param string          $uuid            The object UUID.
+	 * @param string|int|null $register        Register id, UUID or slug.
+	 * @param string|int|null $schema          Schema id, UUID or slug.
+	 * @param bool            $_rbac           Apply register RBAC.
+	 * @param bool            $_multitenancy   Apply organisation scoping.
+	 * @param bool            $_retentionSweep Run as part of a retention sweep.
+	 * @param ?IUser          $currentUser     Explicit acting user; null uses the session.
+	 * @param bool            $permanent       Delete permanently instead of soft-deleting.
 	 *
 	 * @return bool True when the object was deleted.
 	 */
 	public function deleteObject(
-		ObjectDeletion $deletion,
+		string $uuid,
+		string|int|null $register=null,
+		string|int|null $schema=null,
 		bool $_rbac=true,
 		bool $_multitenancy=true,
-		bool $_retentionSweep=false
+		bool $_retentionSweep=false,
+		?IUser $currentUser=null,
+		bool $permanent=false
 	): bool;
 
 	/**
@@ -334,21 +354,30 @@ interface ObjectServiceInterface {
 	/**
 	 * Persist many objects in one bulk operation.
 	 *
-	 * @param array           $objects       The objects to store.
-	 * @param BulkSaveOptions $options       The register and schema for rows that name none (id, UUID
-	 *                                       or slug), whether to validate against the schema, whether
-	 *                                       to emit events for each object, and whether to write
-	 *                                       audit-trail entries.
-	 * @param bool            $_rbac         Apply register RBAC.
-	 * @param bool            $_multitenancy Apply organisation scoping.
+	 * @param array           $objects        The objects to store.
+	 * @param string|int|null $register       Register id, UUID or slug.
+	 * @param string|int|null $schema         Schema id, UUID or slug.
+	 * @param bool            $_rbac          Apply register RBAC.
+	 * @param bool            $_multitenancy  Apply organisation scoping.
+	 * @param bool            $validation     Validate against the schema.
+	 * @param bool            $events         Emit events for each object.
+	 * @param bool            $deduplicateIds Drop duplicate ids within the batch.
+	 * @param bool            $enrich         Enrich each object with derived metadata.
+	 * @param bool            $_audit         Write an audit-trail entry.
 	 *
 	 * @return array The stored objects.
 	 */
 	public function saveObjects(
 		array $objects,
-		BulkSaveOptions $options=new BulkSaveOptions(),
+		string|int|null $register=null,
+		string|int|null $schema=null,
 		bool $_rbac=true,
-		bool $_multitenancy=true
+		bool $_multitenancy=true,
+		bool $validation=false,
+		bool $events=false,
+		bool $deduplicateIds=true,
+		bool $enrich=true,
+		bool $_audit=true
 	): array;
 
 	/**
@@ -427,24 +456,36 @@ interface ObjectServiceInterface {
 	/**
 	 * Release a lock on an object.
 	 *
-	 * @param UnlockRequest $request The object, the advisory flag and the flow run releasing a run-scoped lock.
-	 *                               A request with `break` set is refused; breakObjectLock() breaks a lock.
+	 * @param string|int $identifier The object id or UUID.
+	 * @param bool       $advisory   Take an advisory (non-blocking) lock.
+	 * @param ?string    $runUuid    The flow run releasing the lock, for a run-scoped lock.
 	 *
 	 * @return bool True when the lock was released.
 	 */
-	public function unlockObject(UnlockRequest $request): bool;
+	public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool;
 
 	/**
 	 * Take a lock on an object.
 	 *
-	 * @param LockRequest $request  The object, the process label, the duration in seconds and the flow
-	 *                              run step taking the lock. A run-scoped lock refuses every other caller,
-	 *                              the run's own runAs user included.
-	 * @param bool        $advisory Take an advisory (non-blocking) lock.
+	 * @param string  $identifier The object id or UUID.
+	 * @param ?string $process    A label for the process holding the lock.
+	 * @param ?int    $duration   Lock duration in seconds.
+	 * @param bool    $advisory   Take an advisory (non-blocking) lock.
+	 * @param ?string $runUuid    The flow run taking the lock. A run-scoped lock
+	 *                            refuses every other caller, the run's own runAs
+	 *                            user included.
+	 * @param ?string $nodeId     The flow node that took it, recorded for the sweep.
 	 *
 	 * @return array The resulting lock state.
 	 */
-	public function lockObject(LockRequest $request, bool $advisory=false): array;
+	public function lockObject(
+		string $identifier,
+		?string $process=null,
+		?int $duration=null,
+		bool $advisory=false,
+		?string $runUuid=null,
+		?string $nodeId=null
+	): array;
 
 	/**
 	 * Delete many objects by UUID.
@@ -498,8 +539,8 @@ interface ObjectServiceInterface {
 	 *
 	 * @param string $objectId      The object UUID.
 	 * @param array  $data          The object's COMPLETE new data. Anything omitted is dropped.
-	 * @param bool   $_rbac         Apply register RBAC; false lifts it for this save, as with saveObject().
-	 * @param bool   $_multitenancy Apply organisation scoping; false lifts it for this save, as with saveObject().
+	 * @param bool   $_rbac         Apply register RBAC.
+	 * @param bool   $_multitenancy Apply organisation scoping.
 	 *
 	 * @return ObjectEntityInterface The replaced object.
 	 *
@@ -530,13 +571,15 @@ interface ObjectServiceInterface {
 	 * The merged result goes through the same save path as `saveObject()`, so
 	 * schema validation, the audit trail and event dispatch all still apply.
 	 *
-	 * @param ObjectPatch $patch         The object id, UUID or slug, the partial data to merge
-	 *                                   (omitted keys are PRESERVED), the optional register and
-	 *                                   schema scope, and the explicit acting user (null uses the
-	 *                                   session; non-HTTP callers such as cron, flow runs and
-	 *                                   imports should pass one to avoid a default-deny).
-	 * @param bool        $_rbac         Apply register RBAC.
-	 * @param bool        $_multitenancy Apply organisation scoping.
+	 * @param string          $objectId      Object id, UUID or slug.
+	 * @param array           $data          The partial data to merge. Omitted keys are PRESERVED.
+	 * @param string|int|null $register      Register id, UUID or slug.
+	 * @param string|int|null $schema        Schema id, UUID or slug.
+	 * @param bool            $_rbac         Apply register RBAC.
+	 * @param bool            $_multitenancy Apply organisation scoping.
+	 * @param ?IUser          $currentUser   Explicit acting user; null uses the session.
+	 *                                       Non-HTTP callers (cron, flow runs, imports)
+	 *                                       should pass one to avoid a default-deny.
 	 *
 	 * @return ObjectEntityInterface The patched object.
 	 *
@@ -555,7 +598,15 @@ interface ObjectServiceInterface {
 	 * not on this merge, because leaf apps read it from vendor/: land those
 	 * three doubles before the release, or pin.
 	 */
-	public function patchObject(ObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntityInterface;
+	public function patchObject(
+		string $objectId,
+		array $data,
+		string|int|null $register=null,
+		string|int|null $schema=null,
+		bool $_rbac=true,
+		bool $_multitenancy=true,
+		?IUser $currentUser=null
+	): ObjectEntityInterface;
 
 	/**
 	 * The objects this object refers to.
@@ -604,16 +655,22 @@ interface ObjectServiceInterface {
 	/**
 	 * Find an object without emitting audit or read events.
 	 *
-	 * @param string                 $id            Object id, UUID or slug.
-	 * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
-	 * @param bool                   $_rbac         Apply register RBAC.
-	 * @param bool                   $_multitenancy Apply organisation scoping.
+	 * @param string          $id            Object id, UUID or slug.
+	 * @param ?array          $_extend       Relations to expand on the result.
+	 * @param bool            $files         Include file metadata.
+	 * @param string|int|null $register      Register id, UUID or slug.
+	 * @param string|int|null $schema        Schema id, UUID or slug.
+	 * @param bool            $_rbac         Apply register RBAC.
+	 * @param bool            $_multitenancy Apply organisation scoping.
 	 *
 	 * @return ObjectEntityInterface The object.
 	 */
 	public function findSilent(
 		string $id,
-		?ObjectFindOptions $options=null,
+		?array $_extend=[],
+		bool $files=false,
+		string|int|null $register=null,
+		string|int|null $schema=null,
 		bool $_rbac=true,
 		bool $_multitenancy=true
 	): ObjectEntityInterface;
@@ -636,26 +693,6 @@ interface ObjectServiceInterface {
 		?array $ids=null,
 		?string $uses=null
 	): int;
-
-	/**
-	 * Whether a sample record would be accepted, without saving it.
-	 *
-	 * Checks the sample against the schema and every save rule that decides
-	 * acceptance (coded values, dependent values, unique fields, declared
-	 * bounds, read-only fields), as a create, or with an id as an update of that
-	 * object. Writes nothing and dispatches no object event. The sample is
-	 * invalid exactly when a save of it would be refused for one of these rules.
-	 *
-	 * @param array      $object   The sample record.
-	 * @param string|int $register The register (id, uuid or slug).
-	 * @param string|int $schema   The schema (id, uuid or slug).
-	 * @param ?string    $id       The object the sample updates, or null for a create.
-	 *
-	 * @return ObjectValidationVerdict `valid`, and one error per refused property with the rule that refused it.
-	 *
-	 * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
-	 */
-	public function validateObject(array $object, string|int $register, string|int $schema, ?string $id=null): ObjectValidationVerdict;
 
 	/**
 	 * The object currently held as context, if any.

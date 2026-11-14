@@ -93,6 +93,8 @@ use OCA\OpenRegister\Service\Object\ObjectSaveChecks;
 use OCA\OpenRegister\Service\Object\SampleValidationErrors;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderRequest;
+use OCA\OpenRegister\Service\Object\RenderPath;
+use OCA\OpenRegister\Service\Object\RenderPreloads;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
@@ -126,6 +128,7 @@ use OCA\OpenRegister\Service\Object\ObjectSelection;
 use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
@@ -1590,14 +1593,26 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Finds an object by ID or UUID and renders it.
      *
-     * @param int|string             $id            The object ID or UUID.
-     * @param ObjectFindOptions|null $options       Register, schema, extend and files, plus `render`
-     *                                              (false when the caller performs its own single render,
-     *                                              e.g. ObjectsController::show(); permission checks and
-     *                                              read logging still run) and `audit` (false for
-     *                                              machine-to-machine reads inside one operation).
-     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * Takes main's value-object form or the release's separate arguments, by name or by position.
+     * The value object keeps its main position; the release's names follow, and a positional release
+     * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
+     *
+     * @param int|string                    $id                     The object ID or UUID.
+     * @param array|ObjectFindOptions|null  $options                Register, schema, extend, files, render and audit; an array here is the
+     *                                                              release's positional `$_extend`.
+     * @param bool                          $_rbac                  Whether to apply RBAC checks; the release's positional `$files` when the call is
+     *                                                              positional.
+     * @param bool|Register|string|int|null $_multitenancy          Whether to apply multitenancy filtering; a register here is the release's
+     *                                                              positional `$register`.
+     * @param Schema|string|int|null        $positionalSchema       The release's positional `$schema`.
+     * @param bool                          $positionalRbac         The release's positional `$_rbac`.
+     * @param bool                          $positionalTenancy The release's positional `$_multitenancy`.
+     * @param bool                          $_render                False when the caller performs its own single render.
+     * @param bool                          $_audit                 False for machine-to-machine reads inside one operation.
+     * @param array|null                    $_extend                Relations to expand on the result.
+     * @param bool                          $files                  Include file metadata.
+     * @param Register|string|int|null      $register               Register object, id, UUID or slug.
+     * @param Schema|string|int|null        $schema                 Schema object, id, UUID or slug.
      *
      * @return ObjectEntity|null The rendered object (or the raw entity when `render` is false) or null.
      *
@@ -1606,32 +1621,83 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex permission and context handling requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional parameters create many execution paths
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) The published contract's separate arguments plus the options object.
      *
      * @spec exclude Facade coordinating GetObject + permission check + RenderObject handlers;
      *   read/RBAC/render behavior owned by object-interactions / rbac-scopes / files-render-extension.
      */
     public function find(
         int | string $id,
-        ?ObjectFindOptions $options=null,
+        array | ObjectFindOptions | null $options=null,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool | Register | string | int | null $_multitenancy=true,
+        Schema | string | int | null $positionalSchema=null,
+        bool $positionalRbac=true,
+        bool $positionalTenancy=true,
+        bool $_render=true,
+        bool $_audit=true,
+        ?array $_extend=[],
+        bool $files=false,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null
     ): ?ObjectEntity {
-        $options ??= new ObjectFindOptions();
-        $request   = new ObjectFindRequest(
+        if (is_array($options) === true || is_bool($_multitenancy) === false || $positionalSchema !== null) {
+            $_extend = $options;
+            $files   = $_rbac;
+            $register = $this->positionalScope(given: $register, positional: $_multitenancy);
+
+            $schema      ??= $positionalSchema;
+            $_rbac         = $positionalRbac;
+            $_multitenancy = $positionalTenancy;
+            $options       = null;
+        }
+
+        if ($options === null || [$_extend, $files, $register, $schema, $_render, $_audit] !== [[], false, null, null, true, true]) {
+            $options = new ObjectFindOptions(
+                register: $register,
+                schema: $schema,
+                extend: $_extend,
+                files: $files,
+                render: $_render,
+                audit: $_audit
+            );
+        }
+
+        return $this->findWithOptions(
+            id: $id,
+            options: $options,
+            access: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy)
+        );
+    }//end find()
+
+    /**
+     * Find one object once its arguments are in options form.
+     *
+     * @param int|string        $id      The object ID or UUID.
+     * @param ObjectFindOptions $options Register, schema, extend, files, render and audit.
+     * @param AccessFlags       $access  The caller's RBAC and multitenancy flags.
+     *
+     * @return ObjectEntity|null The rendered object (or the raw entity when `render` is false).
+     *
+     * @spec exclude Seam between the published argument forms and the operation; behaviour owned by the public method.
+     */
+    protected function findWithOptions(int | string $id, ObjectFindOptions $options, AccessFlags $access): ?ObjectEntity
+    {
+        $request = new ObjectFindRequest(
             id: $id,
             extend: $options->extend,
             files: $options->files,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
+            rbac: $access->rbac,
+            multitenancy: $access->multitenancy,
             audit: $options->audit
         );
-        $target    = ObjectFindTarget::fromFindOptions(options: $options);
+        $target  = ObjectFindTarget::fromFindOptions(options: $options);
         if ($options->render === false) {
             return $this->findUnrendered(request: $request, target: $target);
         }
 
         return $this->findRendered(request: $request, target: $target);
-    }//end find()
+    }//end findWithOptions()
 
     /**
      * Find one object, check the caller may read it, and render it.
@@ -2074,36 +2140,93 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * This method is used internally by other operations (like UPDATE) that need to
      * retrieve an object without logging the read action.
      *
-     * @param string                 $id            The ID of the object to get.
-     * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
-     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * Takes main's value-object form or the release's separate arguments, by name or by position.
+     * The value object keeps its main position; the release's names follow, and a positional release
+     * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
+     *
+     * @param string                        $id                     The ID of the object to get.
+     * @param array|ObjectFindOptions|null  $options                Register, schema, extend and files; an array here is the release's positional
+     *                                                              `$_extend`.
+     * @param bool                          $_rbac                  Whether to apply RBAC checks; the release's positional `$files` when the call is
+     *                                                              positional.
+     * @param bool|Register|string|int|null $_multitenancy          Whether to apply multitenancy filtering; a register here is the release's
+     *                                                              positional `$register`.
+     * @param Schema|string|int|null        $positionalSchema       The release's positional `$schema`.
+     * @param bool                          $positionalRbac         The release's positional `$_rbac`.
+     * @param bool                          $positionalTenancy The release's positional `$_multitenancy`.
+     * @param array|null                    $_extend                Relations to expand on the result.
+     * @param bool                          $files                  Include file metadata.
+     * @param Register|string|int|null      $register               Register object, id, UUID or slug.
+     * @param Schema|string|int|null        $schema                 Schema object, id, UUID or slug.
      *
      * @return ObjectEntity The retrieved object.
      *
      * @throws Exception If there is an error during retrieval.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.NPathComplexity) The release's positional form is told apart by type.
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
      *
      * @spec exclude Facade variant of find() that skips audit logging; read behavior owned by object-interactions / audit-trail-immutable.
      */
     public function findSilent(
         string $id,
-        ?ObjectFindOptions $options=null,
+        array | ObjectFindOptions | null $options=null,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool | Register | string | int | null $_multitenancy=true,
+        Schema | string | int | null $positionalSchema=null,
+        bool $positionalRbac=true,
+        bool $positionalTenancy=true,
+        ?array $_extend=[],
+        bool $files=false,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null
     ): ObjectEntity {
-        $options ??= new ObjectFindOptions();
-        $request   = new ObjectFindRequest(
+        if (is_array($options) === true || is_bool($_multitenancy) === false || $positionalSchema !== null) {
+            $_extend = $options;
+            $files   = $_rbac;
+            $register = $this->positionalScope(given: $register, positional: $_multitenancy);
+
+            $schema      ??= $positionalSchema;
+            $_rbac         = $positionalRbac;
+            $_multitenancy = $positionalTenancy;
+            $options       = null;
+        }
+
+        if ($options === null || [$_extend, $files, $register, $schema] !== [[], false, null, null]) {
+            $options = new ObjectFindOptions(register: $register, schema: $schema, extend: $_extend, files: $files);
+        }
+
+        return $this->findSilentWithOptions(
+            id: $id,
+            options: $options,
+            access: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy)
+        );
+    }//end findSilent()
+
+    /**
+     * Find one object without an audit row once its arguments are in options form.
+     *
+     * @param string            $id      The ID of the object to get.
+     * @param ObjectFindOptions $options Register, schema, extend and files; render and audit are ignored.
+     * @param AccessFlags       $access  The caller's RBAC and multitenancy flags.
+     *
+     * @return ObjectEntity The retrieved object.
+     *
+     * @spec exclude Seam between the published argument forms and the operation; behaviour owned by the public method.
+     */
+    protected function findSilentWithOptions(string $id, ObjectFindOptions $options, AccessFlags $access): ObjectEntity
+    {
+        $request = new ObjectFindRequest(
             id: $id,
             extend: $options->extend,
             files: $options->files,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
+            rbac: $access->rbac,
+            multitenancy: $access->multitenancy,
             audit: false
         );
         return $this->findWithoutAudit(request: $request, target: ObjectFindTarget::fromFindOptions(options: $options));
-    }//end findSilent()
+    }//end findSilentWithOptions()
 
     /**
      * Find one object without writing an audit row.
@@ -2422,33 +2545,128 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * FOR BULK OPERATIONS: Use saveObjects() method for optimized bulk processing
      *
-     * @param array|ObjectEntity $object        The object data to save or ObjectEntity instance
-     * @param ObjectSaveOptions  $options       The register and schema (object or ID/UUID), the UUID of the
-     *                                          object to update, the properties to extend the result with,
-     *                                          the files uploaded from multipart/form-data, the save policy
-     *                                          (events and audit, validation, insert-only, duplicate
-     *                                          override) and the actor (explicit acting user, explicit or
-     *                                          SYSTEM owner of a new row). See SavePolicy and SaveActor.
-     * @param bool               $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool               $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * Takes main's value-object form or the release's separate arguments, by name or by position.
+     * The value object keeps its main position; the release's names follow, and a positional release
+     * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
+     *
+     * @param array|ObjectEntity            $object                 The object data to save or ObjectEntity instance.
+     * @param array|ObjectSaveOptions|null  $options                The save options; an array here is the release's positional `$extend`.
+     * @param bool|Register|string|int|null $_rbac                  Whether to apply RBAC checks; a register here is the release's positional
+     *                                                              `$register`.
+     * @param bool|Schema|string|int|null   $_multitenancy          Whether to apply multitenancy filtering; a schema here is the release's
+     *                                                              positional `$schema`.
+     * @param string|null                   $uuid                   The UUID of the object to update.
+     * @param bool                          $positionalRbac         The release's positional `$_rbac`, read only with a positional register.
+     * @param bool                          $positionalTenancy The release's positional `$_multitenancy`, read only with a positional register.
+     * @param bool                          $silent                 Suppress events for this save.
+     * @param bool                          $_validation            Validate against the schema.
+     * @param array|null                    $uploadedFiles          Files uploaded from multipart/form-data.
+     * @param IUser|null                    $currentUser            Explicit acting user; null uses the session.
+     * @param bool                          $failIfExists           Fail instead of updating when the object already exists.
+     * @param bool                          $_unowned               Create the row with the SYSTEM owner.
+     * @param bool                          $_dedupOverride         Save through a blocking duplicate match.
+     * @param string|null                   $_owner                 Explicit owner of a new row.
+     * @param array|null                    $extend                 Properties to extend the result with.
+     * @param Register|string|int|null      $register               The register object or its ID/UUID/slug.
+     * @param Schema|string|int|null        $schema                 The schema object or its ID/UUID/slug.
      *
      * @return ObjectEntity The saved and rendered object
      *
      * @throws Exception If there is an error during save
      *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) The published contract's separate arguments plus the options object.
+     *
      * @TODO Add property-level RBAC validation here
      * Before saving object data, check if user has permission to create/update specific properties
      * based on property-level authorization arrays in the schema.
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) The release's positional form is told apart by type.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function saveObject(
         array | ObjectEntity $object,
-        ObjectSaveOptions $options=new ObjectSaveOptions(),
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        array | ObjectSaveOptions | null $options=new ObjectSaveOptions(),
+        bool | Register | string | int | null $_rbac=true,
+        bool | Schema | string | int | null $_multitenancy=true,
+        ?string $uuid=null,
+        bool $positionalRbac=true,
+        bool $positionalTenancy=true,
+        bool $silent=false,
+        bool $_validation=true,
+        ?array $uploadedFiles=null,
+        ?IUser $currentUser=null,
+        bool $failIfExists=false,
+        bool $_unowned=false,
+        bool $_dedupOverride=false,
+        ?string $_owner=null,
+        ?array $extend=[],
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null
     ): ObjectEntity {
+        if (is_bool($_rbac) === false || is_bool($_multitenancy) === false) {
+            $register      = $this->positionalScope(given: $register, positional: $_rbac);
+            $schema        = $this->positionalScope(given: $schema, positional: $_multitenancy);
+            $_rbac         = $positionalRbac;
+            $_multitenancy = $positionalTenancy;
+        }
+
+        if (is_array($options) === true || $options === null) {
+            $extend  = $options;
+            $options = null;
+        }
+
+        $separate = [
+            $register,
+            $schema,
+            $uuid,
+            $extend,
+            $uploadedFiles,
+            $currentUser,
+            $_owner,
+            $silent,
+            $_validation,
+            $failIfExists,
+            $_unowned,
+            $_dedupOverride,
+        ];
+        if ($options === null || $separate !== [null, null, null, [], null, null, null, false, true, false, false, false]) {
+            $options = new ObjectSaveOptions(
+                target: new ObjectFindTarget(register: $register, schema: $schema),
+                uuid: $uuid,
+                extend: $extend,
+                uploadedFiles: $uploadedFiles,
+                policy: new SavePolicy(
+                    silent: $silent,
+                    validation: $_validation,
+                    failIfExists: $failIfExists,
+                    dedupOverride: $_dedupOverride
+                ),
+                actor: new SaveActor(currentUser: $currentUser, owner: $_owner, unowned: $_unowned)
+            );
+        }
+
+        return $this->saveWithOptions(
+            object: $object,
+            options: $options,
+            access: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy)
+        );
+    }//end saveObject()
+
+    /**
+     * Save one object once its arguments are in options form.
+     *
+     * @param array|ObjectEntity $object  The object data to save or ObjectEntity instance.
+     * @param ObjectSaveOptions  $options Target, uuid, extend, uploaded files, policy and actor.
+     * @param AccessFlags        $access  The caller's RBAC and multitenancy flags.
+     *
+     * @return ObjectEntity The saved and rendered object.
+     *
+     * @spec exclude Seam between the published argument forms and the operation; behaviour owned by the public method.
+     */
+    protected function saveWithOptions(array | ObjectEntity $object, ObjectSaveOptions $options, AccessFlags $access): ObjectEntity
+    {
         return $this->saveAtTransitionBoundary(
             object: $object,
             options: [
@@ -2456,8 +2674,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 'register'       => $options->target->register,
                 'schema'         => $options->target->schema,
                 'uuid'           => $options->uuid,
-                '_rbac'          => $_rbac,
-                '_multitenancy'  => $_multitenancy,
+                '_rbac'          => $access->rbac,
+                '_multitenancy'  => $access->multitenancy,
                 'silent'         => $options->policy->silent,
                 '_validation'    => $options->policy->validation,
                 'uploadedFiles'  => $options->uploadedFiles,
@@ -2468,7 +2686,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 '_owner'         => $options->actor->owner,
             ]
         );
-    }//end saveObject()
+    }//end saveWithOptions()
 
     /**
      * Runs one save inside the automatic-transition boundary, with its scope kept local.
@@ -4227,24 +4445,26 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * call sites so the storage layer can refuse cross-scope deletes by
      * construction.
      *
-     * @param ObjectDeletion $deletion        The UUID of the object to delete; the optional register and
-     *                                        schema scope (object, ID, UUID, or slug; when both are set
-     *                                        the lookup targets exactly that magic table); the explicit
-     *                                        acting user for the RBAC `delete` check (null resolves the
-     *                                        subject from `IUserSession`, today's behaviour for every
-     *                                        HTTP caller; a sessionless caller such as a flow run, cron
-     *                                        or import pipeline MUST set one, because anonymous is
-     *                                        default-deny); and `permanent`, which destroys the row
-     *                                        rather than tombstoning it. Soft delete stays the default;
-     *                                        reserve `permanent` for rows that are a CLAIM rather than a
-     *                                        record, see `DeleteObject::deleteObject()` and
-     *                                        openregister#2459.
-     * @param bool           $_rbac           Whether to apply RBAC checks (default: true).
-     * @param bool           $_multitenancy   Whether to apply multitenancy filtering (default: true).
-     * @param bool           $_retentionSweep Internal flag set by ArchivalRetentionTask
-     *                                        to bypass the archival-immutability gate.
-     *                                        Reachable only via PHP DI; no HTTP surface
-     *                                        exposes it. Defaults to false.
+     * Takes main's value-object form or the release's separate arguments, by name or by position.
+     * The value object keeps its main position; the release's names follow, and a positional release
+     * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
+     *
+     * @param string|ObjectDeletion|null    $deletion                 The deletion; a string here is the release's positional `$uuid`.
+     * @param bool|Register|string|int|null $_rbac                    Whether to apply RBAC checks; a register here is the release's positional
+     *                                                                `$register`.
+     * @param bool|Schema|string|int|null   $_multitenancy            Whether to apply multitenancy filtering; a schema here is the release's
+     *                                                                positional `$schema`.
+     * @param bool                          $_retentionSweep          Internal flag set by ArchivalRetentionTask to bypass the archival-immutability
+     *                                                                gate;
+     *                                                                the release's positional `$_rbac` when the call is positional. A positional
+     *                                                                call that cannot be told from one that left it out keeps RBAC on.
+     * @param bool                          $positionalTenancy   The release's positional `$_multitenancy`.
+     * @param bool                          $positionalSweep The release's positional `$_retentionSweep`.
+     * @param IUser|null                    $currentUser              Explicit acting user for the RBAC `delete` check.
+     * @param bool                          $permanent                Destroy the row rather than tombstoning it.
+     * @param string|null                   $uuid                     The UUID of the object to delete.
+     * @param Register|string|int|null      $register                 The register scope (object, ID, UUID or slug).
+     * @param Schema|string|int|null        $schema                   The schema scope (object, ID, UUID or slug).
      *
      * @return bool Whether the deletion was successful
      *
@@ -4254,21 +4474,126 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @throws \Exception If user does not have delete permission.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.NPathComplexity) The release's positional form is told apart by type.
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
      *
      * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
     public function deleteObject(
-        ObjectDeletion $deletion,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_retentionSweep=false
+        string | ObjectDeletion | null $deletion=null,
+        bool | Register | string | int | null $_rbac=true,
+        bool | Schema | string | int | null $_multitenancy=true,
+        bool $_retentionSweep=false,
+        bool $positionalTenancy=true,
+        bool $positionalSweep=false,
+        ?IUser $currentUser=null,
+        bool $permanent=false,
+        ?string $uuid=null,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null
     ): bool {
+        if (is_string($deletion) === true) {
+            $uuid    ??= $deletion;
+            $deletion  = null;
+            if (is_bool($_rbac) === false || is_bool($_multitenancy) === false) {
+                $passed          = func_num_args();
+                $register        = $this->positionalScope(given: $register, positional: $_rbac);
+                $schema          = $this->positionalScope(given: $schema, positional: $_multitenancy);
+                $_rbac           = $this->positionalRbac(
+                    value: $_retentionSweep,
+                    passed: ($passed === 4 || ($passed > 4 && [$positionalTenancy, $positionalSweep] !== [true, false]))
+                );
+                $_multitenancy   = $positionalTenancy;
+                $_retentionSweep = $positionalSweep;
+            }
+        }
+
+        if ($deletion === null) {
+            if ($uuid === null) {
+                throw new InvalidArgumentException('deleteObject() needs a uuid or an ObjectDeletion.');
+            }
+
+            $deletion = new ObjectDeletion(
+                uuid: $uuid,
+                target: new ObjectFindTarget(register: $register, schema: $schema),
+                currentUser: $currentUser,
+                permanent: $permanent
+            );
+        }
+
+        return $this->deleteWithDeletion(
+            deletion: $deletion,
+            access: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy),
+            retentionSweep: $_retentionSweep
+        );
+    }//end deleteObject()
+
+    /**
+     * The register or schema of a call: the named one, else what a positional release call put in a shared slot.
+     *
+     * A boolean in the shared slot is the flag main puts there, not a scope.
+     *
+     * @param Register|Schema|string|int|null      $given      The scope the call named.
+     * @param Register|Schema|string|int|bool|null $positional What landed in the shared slot.
+     *
+     * @return Register|Schema|string|int|null The scope.
+     *
+     * @spec exclude Argument normalisation for the published object methods; no business rule.
+     */
+    private function positionalScope(
+        Register | Schema | string | int | null $given,
+        Register | Schema | string | int | bool | null $positional
+    ): Register | Schema | string | int | null {
+        if ($given !== null || is_bool($positional) === true) {
+            return $given;
+        }
+
+        return $positional;
+    }//end positionalScope()
+
+    /**
+     * The RBAC flag of a positional release call: the value in its slot when the call passed it, else on.
+     *
+     * A named argument after positional ones also counts toward func_num_args(), so a call that may have
+     * left the slot out keeps RBAC on rather than reading the slot's default as "off".
+     *
+     * @param bool $value  What landed in the slot.
+     * @param bool $passed Whether the call certainly passed the slot.
+     *
+     * @return bool The RBAC flag.
+     *
+     * @spec exclude Argument normalisation for the published object methods; no business rule.
+     */
+    private function positionalRbac(bool $value, bool $passed): bool
+    {
+        if ($passed === false) {
+            return true;
+        }
+
+        return $value;
+    }//end positionalRbac()
+
+    /**
+     * Delete one object once its arguments are in ObjectDeletion form.
+     *
+     * @param ObjectDeletion $deletion       The UUID, scope, acting user and permanence of the delete.
+     * @param AccessFlags    $access         The caller's RBAC and multitenancy flags.
+     * @param bool           $retentionSweep Whether ArchivalRetentionTask runs the delete.
+     *
+     * @return bool Whether the deletion was successful.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors deleteObject()'s own retention-sweep flag.
+     *
+     * @spec exclude Seam between the published argument forms and the operation; behaviour owned by the public method.
+     */
+    protected function deleteWithDeletion(ObjectDeletion $deletion, AccessFlags $access, bool $retentionSweep=false): bool
+    {
         $request = new ObjectDeleteRequest(
             uuid: $deletion->uuid,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
-            retentionSweep: $_retentionSweep,
+            rbac: $access->rbac,
+            multitenancy: $access->multitenancy,
+            retentionSweep: $retentionSweep,
             currentUser: $deletion->currentUser,
             scoped: $deletion->isScoped(),
             reach: $deletion->reach
@@ -4277,7 +4602,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $this->enterDeleteScope(register: $deletion->target->register, schema: $deletion->target->schema);
             return $this->deleteRequested(request: $request, permanent: $deletion->permanent);
         });
-    }//end deleteObject()
+    }//end deleteWithDeletion()
 
     /**
      * Open the scope of one delete: drop a pending schema reference and apply the caller's register and schema.
@@ -6011,22 +6336,71 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * A top-level render: depth 0, nothing preloaded.
      *
-     * @param ObjectEntity         $entity        The entity to be rendered
-     * @param RenderSelection|null $selection     The extend, filter, fields and unset lists; null renders the plain object
-     * @param bool                 $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * Takes main's value-object form or the release's separate arguments, by name or by position.
+     * The value object keeps its main position; the release's names follow, and a positional release
+     * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
+     *
+     * @param ObjectEntity               $entity                 The entity to be rendered.
+     * @param array|RenderSelection|null $selection              The extend, filter, fields and unset lists; an array here is the release's
+     *                                                           positional `$_extend`.
+     * @param bool|int|null              $_rbac                  Whether to apply RBAC checks; an int here is the release's positional `$depth`.
+     * @param bool|array|null            $_multitenancy          Whether to apply multitenancy filtering; an array here is the release's positional
+     *                                                           `$filter`.
+     * @param array|null                 $fields                 Properties to keep.
+     * @param array|null                 $unset                  Properties to drop.
+     * @param bool                       $positionalRbac         The release's positional `$_rbac`.
+     * @param bool                       $positionalTenancy The release's positional `$_multitenancy`.
+     * @param array|null                 $_extend                Relations to extend.
+     * @param int|null                   $depth                  The render depth the entity sits at.
+     * @param array|null                 $filter                 Properties to filter on.
      *
      * @return array Rendered entity data
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) The published contract's separate lists plus the selection object.
+     * @SuppressWarnings(PHPMD.NPathComplexity) The release's positional form is told apart by type.
      *
      * @spec exclude Facade delegating object rendering to the render handler;
      *   render contract owned by files-render-extension / schema-driven-read-coercion.
      */
-    public function renderEntity(ObjectEntity $entity, ?RenderSelection $selection=null, bool $_rbac=true, bool $_multitenancy=true): array
-    {
-        $selection ??= new RenderSelection(extend: [], filter: [], fields: [], unset: []);
+    public function renderEntity(
+        ObjectEntity $entity,
+        array | RenderSelection | null $selection=null,
+        bool | int | null $_rbac=true,
+        bool | array | null $_multitenancy=true,
+        ?array $fields=[],
+        ?array $unset=[],
+        bool $positionalRbac=true,
+        bool $positionalTenancy=true,
+        ?array $_extend=[],
+        ?int $depth=0,
+        ?array $filter=[]
+    ): array {
+        if (is_array($selection) === true || is_bool($_rbac) === false || is_bool($_multitenancy) === false) {
+            if (is_array($selection) === true) {
+                $_extend = $selection;
+            }
+
+            if (is_bool($_rbac) === false) {
+                $depth = $_rbac;
+            }
+
+            if (is_bool($_multitenancy) === false) {
+                $filter = $_multitenancy;
+            }
+
+            $_rbac         = $positionalRbac;
+            $_multitenancy = $positionalTenancy;
+            $selection     = null;
+        }
+
+        $selection ??= new RenderSelection(extend: $_extend, filter: $filter, fields: $fields, unset: $unset);
         return $this->renderHandler->render(
             entity: $entity,
-            request: RenderRequest::page(selection: $selection),
+            request: new RenderRequest(
+                selection: $selection,
+                preloads: new RenderPreloads(registers: [], schemas: [], objects: []),
+                path: new RenderPath(depth: ($depth ?? 0), visitedIds: [])
+            ),
             _rbac: $_rbac,
             _multitenancy: $_multitenancy
         )->jsonSerialize();
@@ -6159,23 +6533,64 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * Locks an object to prevent concurrent modifications.
      *
-     * @param LockRequest $request  The object, process, duration and flow run step of the lock. A
-     *                              run-scoped lock refuses every other caller including the run's
-     *                              own runAs user.
-     * @param bool        $advisory When true, treat the identifier as a synthetic
-     *                              pre-creation key and take the appConfig-backed
-     *                              advisory lock without scanning object tables
+     * Takes main's value-object form or the release's separate arguments, by name or by position.
+     * The value object keeps its main position; the release's names follow, and a positional release
+     * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
+     *
+     * @param string|LockRequest|null $request            The lock request; a string here is the release's positional `$identifier`.
+     * @param bool|string|null        $advisory           When true, treat the identifier as a synthetic pre-creation key and take the appConfig-
+     *                                                    backed advisory lock without scanning object tables; a string here is the release's
+     *                                                    positional `$process`.
+     * @param int|null                $duration           Lock duration in seconds.
+     * @param bool                    $positionalAdvisory The release's positional `$advisory`.
+     * @param string|null             $runUuid            The flow run taking the lock.
+     * @param string|null             $nodeId             The flow node that took it, recorded for the sweep.
+     * @param string|null             $identifier         The object id or UUID.
+     * @param string|null             $process            A label for the process holding the lock.
      *
      * @return array Lock information
      *
      * @throws \Exception If lock operation fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The advisory flag mirrors the lock handler.
+     * @SuppressWarnings(PHPMD.NPathComplexity) The release's positional form is told apart by type.
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
      *
      * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
      */
-    public function lockObject(LockRequest $request, bool $advisory=false): array
-    {
+    public function lockObject(
+        string | LockRequest | null $request=null,
+        bool | string | null $advisory=false,
+        ?int $duration=null,
+        bool $positionalAdvisory=false,
+        ?string $runUuid=null,
+        ?string $nodeId=null,
+        ?string $identifier=null,
+        ?string $process=null
+    ): array {
+        if (is_string($request) === true) {
+            $identifier ??= $request;
+            $request      = null;
+        }
+
+        if (is_bool($advisory) === false) {
+            $process ??= $advisory;
+            $advisory  = $positionalAdvisory;
+        }
+
+        if ($request === null) {
+            if ($identifier === null) {
+                throw new InvalidArgumentException('lockObject() needs an identifier or a LockRequest.');
+            }
+
+            $request = new LockRequest(
+                identifier: $identifier,
+                process: $process,
+                duration: $duration,
+                runStep: new LockRunStep(runUuid: $runUuid, nodeId: $nodeId)
+            );
+        }
+
         return $this->lockHandler->lock(request: $request, advisory: $advisory);
     }//end lockObject()
 
@@ -6184,19 +6599,45 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * Removes the lock from an object, allowing other processes to modify it.
      *
-     * @param UnlockRequest $request The object, the advisory flag and the flow run releasing a
-     *                               run-scoped lock. A request with `break` set is refused;
-     *                               breakObjectLock() breaks a lock.
+     * Takes main's value-object form or the release's separate arguments, by name or by position.
+     * The value object keeps its main position; the release's names follow, and a positional release
+     * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
+     *
+     * @param string|int|UnlockRequest|null $request    The unlock request; a string or int here is the release's positional `$identifier`.
+     * @param bool                          $advisory   Release the appConfig-backed advisory lock for this synthetic key without scanning tables.
+     * @param string|null                   $runUuid    The flow run releasing a run-scoped lock.
+     * @param string|int|null               $identifier The object id or UUID.
      *
      * @return bool True if unlocked successfully
      *
      * @throws \InvalidArgumentException When the request asks to break the lock
      * @throws \Exception If unlock operation fails
      *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The advisory flag mirrors the lock handler.
+     * @SuppressWarnings(PHPMD.NPathComplexity) The release's positional form is told apart by type.
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
+     *
      * @spec exclude One-line delegation to lock handler; unlock behavior owned by object-lifecycle.
      */
-    public function unlockObject(UnlockRequest $request): bool
-    {
+    public function unlockObject(
+        string | int | UnlockRequest | null $request=null,
+        bool $advisory=false,
+        ?string $runUuid=null,
+        string | int | null $identifier=null
+    ): bool {
+        if (is_string($request) === true || is_int($request) === true) {
+            $identifier ??= $request;
+            $request      = null;
+        }
+
+        if ($request === null) {
+            if ($identifier === null) {
+                throw new InvalidArgumentException('unlockObject() needs an identifier or an UnlockRequest.');
+            }
+
+            $request = new UnlockRequest(identifier: (string) $identifier, advisory: $advisory, runUuid: $runUuid);
+        }
+
         if ($request->break === true) {
             throw new \InvalidArgumentException('unlockObject() does not break locks; use breakObjectLock().');
         }
@@ -6259,14 +6700,25 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * - Time complexity: O(N*M*P) → O(N*M)
      * - Processing speed: 2-3x faster for large datasets
      *
-     * @param array           $objects       Array of objects in serialized format
-     * @param BulkSaveOptions $options       The register and schema for rows that name none (optional
-     *                                       filters for validation), whether to validate objects
-     *                                       against schema definitions, whether to dispatch object
-     *                                       lifecycle events, and whether to write audit trail rows
-     *                                       (bulk mirror of `silent`)
-     * @param bool            $_rbac         Whether to apply RBAC filtering
-     * @param bool            $_multitenancy Whether to apply multi-organization filtering
+     * Takes main's value-object form or the release's separate arguments, by name or by position.
+     * The value object keeps its main position; the release's names follow, and a positional release
+     * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
+     *
+     * @param array                                    $objects                Array of objects in serialized format.
+     * @param BulkSaveOptions|Register|string|int|null $options                The bulk save options; a register here is the release's positional
+     *                                                                         `$register`.
+     * @param bool|Schema|string|int|null              $_rbac                  Whether to apply RBAC filtering; a schema here is the release's
+     *                                                                         positional `$schema`.
+     * @param bool                                     $_multitenancy          Whether to apply multi-organization filtering; the release's
+     *                                                                         positional `$_rbac` when the call is positional.
+     * @param bool                                     $positionalTenancy The release's positional `$_multitenancy`.
+     * @param bool                                     $validation             Validate objects against schema definitions.
+     * @param bool                                     $events                 Dispatch object lifecycle events.
+     * @param bool                                     $deduplicateIds         Accepted for the published contract; has no effect.
+     * @param bool                                     $enrich                 Accepted for the published contract; has no effect.
+     * @param bool                                     $_audit                 Write audit trail rows (bulk mirror of `silent`).
+     * @param Register|string|int|null                 $register               The register for rows that name none.
+     * @param Schema|string|int|null                   $schema                 The schema for rows that name none.
      *
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -6278,22 +6730,74 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @phpstan-return array<string, mixed>
      *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) The published contract's separate arguments plus the options object.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)  $deduplicateIds and $enrich are kept for the published contract.
+     * @SuppressWarnings(PHPMD.NPathComplexity) The release's positional form is told apart by type.
+     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObjects(
         array $objects,
-        BulkSaveOptions $options=new BulkSaveOptions(),
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        BulkSaveOptions | Register | string | int | null $options=new BulkSaveOptions(),
+        bool | Schema | string | int | null $_rbac=true,
+        bool $_multitenancy=true,
+        bool $positionalTenancy=true,
+        bool $validation=false,
+        bool $events=false,
+        bool $deduplicateIds=true,
+        bool $enrich=true,
+        bool $_audit=true,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null
     ): array {
+        if (($options instanceof BulkSaveOptions) === false) {
+            $register ??= $options;
+            $schema = $this->positionalScope(given: $schema, positional: $_rbac);
+
+            $_rbac         = $_multitenancy;
+            $_multitenancy = $positionalTenancy;
+            $options       = null;
+        }
+
+        if ($options === null || [$register, $schema, $validation, $events, $_audit] !== [null, null, false, false, true]) {
+            $options = new BulkSaveOptions(
+                defaults: new BulkBatchDefaults(register: $register, schema: $schema),
+                validation: $validation,
+                events: $events,
+                audit: $_audit
+            );
+        }
+
+        return $this->saveManyWithOptions(
+            objects: $objects,
+            options: $options,
+            access: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy)
+        );
+    }//end saveObjects()
+
+    /**
+     * Save many objects once their arguments are in options form.
+     *
+     * @param array           $objects Array of objects in serialized format.
+     * @param BulkSaveOptions $options Defaults, validation, events and audit of the bulk save.
+     * @param AccessFlags     $access  The caller's RBAC and multitenancy flags.
+     *
+     * @return array Bulk operation results.
+     *
+     * @phpstan-param array<int, array<string, mixed>> $objects
+     * @psalm-param   array<int, array<string, mixed>> $objects
+     * @phpstan-return array<string, mixed>
+     *
+     * @spec exclude Seam between the published argument forms and the operation; behaviour owned by the public method.
+     */
+    protected function saveManyWithOptions(array $objects, BulkSaveOptions $options, AccessFlags $access): array
+    {
         // A BULK SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         // Same contract as saveObject(); see restoreScopeContext().
-        $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
-
         return $this->preservingScope(
             operation: fn (): array => $this->saveBulkWithinScope(objects: $objects, options: $options, access: $access)
         );
-    }//end saveObjects()
+    }//end saveManyWithOptions()
 
     /**
      * Runs one bulk save inside the context saveObjects() keeps.
@@ -6663,6 +7167,43 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @phpstan-return array<int, array<string, mixed>>
      */
 
+
+    /**
+     * Migrate objects between registers and/or schemas, by separate arguments.
+     *
+     * The published call; migrate() takes the same as one ObjectMigration.
+     *
+     * @param string|int $sourceRegister The source register.
+     * @param string|int $sourceSchema   The source schema.
+     * @param string|int $targetRegister The target register.
+     * @param string|int $targetSchema   The target schema.
+     * @param array      $objectIds      The objects to move.
+     * @param array      $mapping        Source property => target property.
+     *
+     * @return array Migration report with success status, statistics, details, warnings, and errors.
+     *
+     * @throws OcpDoesNotExistException If register or schema not found.
+     * @throws NotAuthorizedException If the caller may not create objects in the target schema.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    public function migrateObjects(
+        string | int $sourceRegister,
+        string | int $sourceSchema,
+        string | int $targetRegister,
+        string | int $targetSchema,
+        array $objectIds,
+        array $mapping
+    ): array {
+        return $this->migrate(
+            migration: new ObjectMigration(
+                source: new RegisterSchemaRef(register: $sourceRegister, schema: $sourceSchema),
+                target: new RegisterSchemaRef(register: $targetRegister, schema: $targetSchema),
+                objectIds: $objectIds,
+                mapping: $mapping
+            )
+        );
+    }//end migrateObjects()
 
     /**
      * Migrate objects between registers and/or schemas.
@@ -7832,25 +8373,89 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * audit trail and event dispatch all apply — a patch is a save of a
      * different shape, not a privileged shortcut around one.
      *
-     * @param ObjectPatch $patch         The object id, uuid or slug, the partial data to merge, the
-     *                                   optional register and schema scope, and the explicit acting
-     *                                   user forwarded to `saveObject()`. Non-HTTP callers (cron, flow
-     *                                   runs, import pipelines) MUST set one to avoid the default-deny
-     *                                   fall-through.
-     * @param bool        $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * Takes main's value-object form or the release's separate arguments, by name or by position.
+     * The value object keeps its main position; the release's names follow, and a positional release
+     * call is recognised by the type of what lands in the shared slots. Separate arguments, when given, win.
+     *
+     * @param string|ObjectPatch|null       $patch                  The patch; a string here is the release's positional `$objectId`.
+     * @param bool|array                    $_rbac                  Whether to apply RBAC checks; an array here is the release's positional `$data`.
+     * @param bool|Register|string|int|null $_multitenancy          Whether to apply multitenancy filtering; a register here is the release's
+     *                                                              positional `$register`.
+     * @param Schema|string|int|null        $positionalSchema       The release's positional `$schema`.
+     * @param bool                          $positionalRbac         The release's positional `$_rbac`.
+     * @param bool                          $positionalTenancy The release's positional `$_multitenancy`.
+     * @param IUser|null                    $currentUser            Explicit acting user forwarded to `saveObject()`.
+     * @param string|null                   $objectId               The object id, uuid or slug.
+     * @param array|null                    $data                   The partial data to merge; required with `$objectId`.
+     * @param Register|string|int|null      $register               The register scope.
+     * @param Schema|string|int|null        $schema                 The schema scope.
      *
      * @return ObjectEntity Patched object entity
      *
      * @throws \Exception If patch fails
      *
+     * @SuppressWarnings(PHPMD.NPathComplexity) The release's positional form is told apart by type.
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
+     *
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
-    public function patchObject(ObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
-    {
-        $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
-        return $this->preservingScope(operation: fn (): ObjectEntity => $this->patchWithinScope(patch: $patch, access: $access));
+    public function patchObject(
+        string | ObjectPatch | null $patch=null,
+        bool | array $_rbac=true,
+        bool | Register | string | int | null $_multitenancy=true,
+        Schema | string | int | null $positionalSchema=null,
+        bool $positionalRbac=true,
+        bool $positionalTenancy=true,
+        ?IUser $currentUser=null,
+        ?string $objectId=null,
+        ?array $data=null,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null
+    ): ObjectEntity {
+        if (is_string($patch) === true) {
+            $objectId ??= $patch;
+            $patch      = null;
+        }
+
+        if (is_array($_rbac) === true) {
+            $data ??= $_rbac;
+            $register = $this->positionalScope(given: $register, positional: $_multitenancy);
+
+            $schema      ??= $positionalSchema;
+            $_rbac         = $positionalRbac;
+            $_multitenancy = $positionalTenancy;
+        }
+
+        if ($patch === null) {
+            if ($objectId === null || $data === null) {
+                throw new InvalidArgumentException('patchObject() needs an objectId and data, or an ObjectPatch.');
+            }
+
+            $patch = new ObjectPatch(
+                objectId: $objectId,
+                data: $data,
+                target: new ObjectFindTarget(register: $register, schema: $schema),
+                currentUser: $currentUser
+            );
+        }
+
+        return $this->patchWithPatch(patch: $patch, access: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy));
     }//end patchObject()
+
+    /**
+     * Patch one object once its arguments are in ObjectPatch form.
+     *
+     * @param ObjectPatch $patch  The object, the change, where to find it and who acts.
+     * @param AccessFlags $access The caller's RBAC and multitenancy flags.
+     *
+     * @return ObjectEntity Patched object entity.
+     *
+     * @spec exclude Seam between the published argument forms and the operation; behaviour owned by the public method.
+     */
+    protected function patchWithPatch(ObjectPatch $patch, AccessFlags $access): ObjectEntity
+    {
+        return $this->preservingScope(operation: fn (): ObjectEntity => $this->patchWithinScope(patch: $patch, access: $access));
+    }//end patchWithPatch()
 
     /**
      * Apply one patch in the scope patchObject() keeps: resolve the target, merge the change and save it.
@@ -8061,8 +8666,26 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function validateObjectsBySchema(int $schemaId): array
     {
-        return $this->validationHandler->validateObjectsBySchema(schemaId: $schemaId, saveCallback: [$this, 'saveObject']);
+        return $this->validationHandler->validateObjectsBySchema(schemaId: $schemaId, saveCallback: $this->optionsFormSaveCallback());
     }//end validateObjectsBySchema()
+
+    /**
+     * A save callback taking the options form positionally: (object, options, rbac, multitenancy).
+     *
+     * @return \Closure The callback.
+     *
+     * @spec exclude Adapter for ValidationHandler's positional save callback; save behaviour owned by saveObject().
+     */
+    private function optionsFormSaveCallback(): \Closure
+    {
+        return function (array | ObjectEntity $object, ObjectSaveOptions $options, bool $_rbac, bool $_multitenancy): ObjectEntity {
+            return $this->saveWithOptions(
+                object: $object,
+                options: $options,
+                access: new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy)
+            );
+        };
+    }//end optionsFormSaveCallback()
 
 
     /**
