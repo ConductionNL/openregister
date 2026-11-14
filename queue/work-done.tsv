@@ -11436,3 +11436,4 @@ build:stackiq:capability-requirements-from-the-matrix:c2	partial: not started th
 verify:opencatalogi:2668:7ed34598	8 GREEN (2668,2710-2716); 2684 skipped (head moved to 8f4a54a3f); no new failures	session-20261114T211801-f16dd26d	2026-11-14T22:07:57Z
 fix:stackiq:1937:2057fef1	merged development, l10n keys moved mid-catalogue; merges clean with 1933 and the other open builds; unit 3618 OK; new head f2aac75d, REVERIFY recorded	session-20261114T204759-2444e6ca	2026-11-14T22:08:08Z
 fix:learniq:2486:f89dc1e3	merged development in (clean); new head f0544ac9, REVERIFY	session-20261114T204750-c1efccdb	2026-11-14T22:08:17Z
+fix:shillinq:2995:cb8dc292	merged development (clean), pushed 22173937	session-20261114T211810-b8f5dc24	2026-11-14T22:08:28Z
