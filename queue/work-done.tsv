@@ -10503,3 +10503,4 @@ build4:openregister:query-filter-through-a-reference:c3	pushed 9b925ba3f to PR #
 fix:buildiq:1625:04a5e4fe	checker floor restored (renamed OBJECT_ID_TOKEN false positive); new head 706c4494	session-20261114T174106-c933f162	2026-11-14T17:53:41Z
 fix:keepiq:1791:a0a825d5	merged development, new head bb4f5f10, REVERIFY recorded	session-20261114T165414-28281f96	2026-11-14T17:54:16Z
 fix:planninq:1166:eb8a0d7e	floor restored (PASS), new head 5fa61e8e, REVERIFY recorded	session-20261114T172412-df2c66f1	2026-11-14T17:54:26Z
+verify:planninq:1158:74ad759a	GREEN 1158 (phpunit 1046 OK, vitest 3270 passed)	session-20261114T174741-aa9751f9	2026-11-14T17:54:38Z
