@@ -11395,3 +11395,4 @@ review:opencatalogi:2650:2f0dabac	GREEN: build PR, RBAC kept, no new test failur
 fix:opencatalogi:2682:e154925a	failed: conflicts only with unmerged #2672, #2686, #2695 (none on development yet); merges clean on development, nothing to resolve until they land	session-20261114T204750-c1efccdb	2026-11-14T22:04:37Z
 review:opencatalogi:2655:05b49194	stale	session-20261114T201752-7e06b161	2026-11-14T22:04:12Z
 fix:opencatalogi:2671:19095782	stale	session-20261114T211754-5182f374	2026-11-14T22:04:44Z
+build:opencatalogi:diwoo-metadata-on-the-publication:c2	PR #2655: all code tasks done (4.1-4.3, 5.1-5.3, 6.1, 7.1, 9.1, 10.x) + label fix; left 4.4 e2e, 7.2 live; suite 5614->5641, 1 inherited failure	session-20261114T211800-2a24a3a9	2026-11-14T22:05:03Z
