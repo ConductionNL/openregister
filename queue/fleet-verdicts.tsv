@@ -6895,3 +6895,4 @@ portaliq	2419	684f8a07a56aa520f1449f3fae3169ea3e768e6e	GREEN	worker-36	phpunit 5
 portaliq	2431	a75a3e0e95e37bc31a3dec5c4b26a88282c648db	GREEN	worker-36	phpunit 5111 tests on tree, baseline 5049 with 0 failures, new failures 0; node specs intake-catalogue-costs/example-site/form-statements/no-translate pass
 portaliq	2423	96437597b964f5d0338e015944ffa0d15099170f	CONFLICT	worker-36	conflicts in tree after 2418, files: package.json (check:specs list)
 portaliq	2430	c0571758d5ba886e5aa602f39015dcf33d151403	CONFLICT	worker-36	conflicts in tree after 2419, files: tests/Unit/Settings/PortaliqRegisterConfigTest.php (register version lines)
+portaliq	2433	6cd14d914da71f008a5de2c654d654cd0c38fb74	CONFLICT	worker-36	conflicts in tree, files: package.json (check:specs list)
