@@ -11189,3 +11189,4 @@ fix:buildiq:1608:78af9a24	no change: branch already up to date with development;
 verify:opencatalogi:2674:f6178f0d	2674 GREEN, 2679 GREEN	session-20261114T211754-5182f374	2026-11-14T21:28:34Z
 verify:filinq:2123:d7d9fff5	GREEN: 2123 (phpunit 6808 OK, vitest 770 OK)	session-20261114T211815-849a5f5d	2026-11-14T21:28:58Z
 review:decidiq:2143:f51a1774	GREEN: matches change spec; unit 4270 ok, vitest ok	session-20261114T212457-7a749dbd	2026-11-14T21:29:06Z
+build:launchpad:drill-down-cross-widget-filter:c2	partial: PR #1195 head 2983d95c: built 4-6 (bus per dashboard, URL sync, active-filters panel + reset, 4 strings x37 locales) and 21 (declaration validation), +22 vitest, suite 2310 ok; left: 7 (needs CnChartWidget selection event in nextcloud-vue), 8-10, saved views 11-14, telemetry 15-17, e2e/perf 22-30/35, 31-34	session-20261114T204802-89dfe85e	2026-11-14T21:29:28Z
