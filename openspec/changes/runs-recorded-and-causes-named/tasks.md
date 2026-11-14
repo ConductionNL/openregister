@@ -72,7 +72,9 @@
 - [x] 4.3 Unit tests for the run record, the retry lineage and the prune that keeps the header.
       `ImportRunRecordTest`, `ImportFailedRowsCsvTest`, `ImportRunRetentionTest`, `ImportRunControllerTest`.
 - [ ] 4.4 An e2e over an import run read back after it finished, with a failed row and its reason.
-- [ ] 4.5 Deduplication check (ADR-012) recorded in the PR body.
+- [x] 4.5 Deduplication check (ADR-012) recorded in the PR body.
+      Section 1 in its PR and below; sections 2 and 3: the scorer and evaluator reused, the import preview
+      reused as the run record, the cause frame reused for the run identity, no second store or evaluator.
 
 ## What was built: section 1, the cause
 
