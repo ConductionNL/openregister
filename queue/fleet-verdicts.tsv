@@ -8122,3 +8122,13 @@ filinq	2103	265e7f099856724afc4370666e8a63151b12b621	CONFLICT	worker-23	clean on
 filinq	2106	49daac7208d9f72565219d2d2f8fbe799cea2c9e	CONFLICT	worker-23	clean on development, conflicts with #2086 (earlier in tree order); merge development in once #2086 lands
 filinq	2117	67325de6ead9a37c97199cc53cae7e4984c58835	GREEN	worker-23	unit 6731 OK (baseline 6695 OK), vitest 751 OK, no new failures; builds mcp-generation-tools 1.2 (status tool references), additive
 portaliq	2284	57d43340a4fa91fd0fcd0c14612984ab3856ca48	RED	merge3:merge-gate	GATE RED floor: module_coupling: 5.00 -> 4.98
+portaliq	2430	1d196c09c2bffe9dd3f80aca234321970942aa0d	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+portaliq	2433	a1b48896e4ec3511906813a3116e46adaac313be	CONFLICT	merge3	merges clean on development alone; files: package.json 
+portaliq	2437	9b5122872762f226f96ccfd63e4e7b89f4516b57	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/portaliq_register.json package.json tests/Unit/Settings/PortaliqRegisterConfigTest.php tests/example-site.spec.mjs 
+portaliq	2440	95a6ddd5d1fde7d8c922475e6265b362fab6850f	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Settings/PortaliqRegisterConfigTest.php 
+portaliq	2442	5eed416859fd825a4014afb0c45f19b55f6ddf02	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+portaliq	2444	5cdcdfc491fba7d9ab5890a8ae38b70374fa9c36	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/portaliq_register.json src/views/PageLayoutDesigner.vue tests/Unit/Settings/PortaliqRegisterConfigTest.php tests/example-site.spec.mjs 
+portaliq	2449	67b3b6ab8d869918f526683f2c463da1ce5b5922	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/ContentController.php lib/Controller/PortalPageController.php package.json src/customComponents.js tests/Unit/Settings/PortaliqRegisterCo
+portaliq	2489	9988356c0cce6d32c1860267f1bcf27175694f7e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/SiteShell.php 
+portaliq	2493	1eb55a790dbf0055737fc15391ed4e495e27e147	CONFLICT	merge3	merges clean on development alone; files: package.json 
+portaliq	2494	270c3876581085507b6e64b24c8848f820a79a53	CONFLICT	merge3	merges clean on development alone; files: package.json 
