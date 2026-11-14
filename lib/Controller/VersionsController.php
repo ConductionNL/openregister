@@ -35,8 +35,15 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\DraftConflictException;
+use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Listener\ChangeGateListener;
+use OCA\OpenRegister\Service\Object\DraftPromoter;
 use OCA\OpenRegister\Service\Object\DraftService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -64,6 +71,7 @@ class VersionsController extends Controller {
 	 * @param ObjectOperationsInterface $objects     Reads the object under the caller's RBAC.
 	 * @param DraftService              $drafts      Owns the drafts and who may touch them.
 	 * @param IUserSession              $userSession The caller.
+	 * @param DraftPromoter             $promoter    Makes a draft the published version.
 	 */
 	public function __construct(
 		IRequest $request,
@@ -72,6 +80,7 @@ class VersionsController extends Controller {
 		private readonly ObjectOperationsInterface $objects,
 		private readonly DraftService $drafts,
 		private readonly IUserSession $userSession,
+		private readonly DraftPromoter $promoter,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -208,6 +217,67 @@ class VersionsController extends Controller {
 			}
 		);
 	}//end destroy()
+
+	/**
+	 * Promote a draft: it becomes the published object and is deleted.
+	 *
+	 * `force=true` promotes over conflicting changes and is for administrators only.
+	 *
+	 * @param string $register The register id or slug.
+	 * @param string $schema   The schema id or slug.
+	 * @param string $id       The object id.
+	 * @param string $key      The draft key.
+	 *
+	 * @return JSONResponse 200 with the saved object; 403 without the right; 409 with the conflicting fields; 422 when the save refuses.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md#requirement-drafts-must-be-promotable-to-published-version
+	 */
+	#[NoAdminRequired]
+	public function promote(string $register, string $schema, string $id, string $key): JSONResponse {
+		return $this->withDraft(
+			route: [$register, $schema, $id, $key],
+			action: function (DraftVersion $draft, ObjectEntity $object, Schema $schemaEntity, string $caller): JSONResponse {
+				try {
+					$saved = $this->promoter->promote(
+						draft: $draft,
+						object: $object,
+						schema: $schemaEntity,
+						caller: $caller,
+						force: filter_var($this->request->getParam('force', false), FILTER_VALIDATE_BOOLEAN)
+					);
+				} catch (NotAuthorizedException $e) {
+					return self::error(message: $e->getMessage(), status: Http::STATUS_FORBIDDEN);
+				} catch (DraftConflictException $e) {
+					return new JSONResponse(['error' => $e->getMessage(), 'conflicts' => $e->getConflicts()], Http::STATUS_CONFLICT);
+				} catch (ValidationException | CustomValidationException $e) {
+					return $this->objects->handleValidationException(exception: $e);
+				} catch (HookStoppedException $e) {
+					return self::stopped(exception: $e);
+				}
+
+				return new JSONResponse($saved->jsonSerialize());
+			}
+		);
+	}//end promote()
+
+	/**
+	 * The answer to a promotion a hook stopped: 202 when a change gate holds it for approval, 422 otherwise.
+	 *
+	 * @param HookStoppedException $exception The refusal.
+	 *
+	 * @return JSONResponse
+	 */
+	private static function stopped(HookStoppedException $exception): JSONResponse {
+		$errors = $exception->getErrors();
+		if (($errors['code'] ?? null) === ChangeGateListener::CODE_PENDING) {
+			return new JSONResponse(
+				['message' => $exception->getMessage(), 'pendingChange' => (string)($errors['pendingChange'] ?? '')],
+				Http::STATUS_ACCEPTED
+			);
+		}
+
+		return new JSONResponse(['error' => $exception->getMessage(), 'errors' => $errors], Http::STATUS_UNPROCESSABLE_ENTITY);
+	}//end stopped()
 
 	/**
 	 * Run an action on a draft the caller may see; 404 otherwise.

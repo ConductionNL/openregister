@@ -32,6 +32,10 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Exception\DraftConflictException;
+use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\DraftPromoter;
 use OCA\OpenRegister\Service\Object\DraftService;
 use OCP\IRequest;
 use OCP\IUser;
@@ -48,6 +52,8 @@ use PHPUnit\Framework\TestCase;
 class VersionsControllerTest extends TestCase {
 
 	private DraftService&MockObject $drafts;
+
+	private DraftPromoter&MockObject $promoter;
 
 	private ObjectEntity $object;
 
@@ -81,8 +87,9 @@ class VersionsControllerTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 		$this->drafts = $this->createMock(DraftService::class);
+		$this->promoter = $this->createMock(DraftPromoter::class);
 
-		return new VersionsController($request, $registers, $schemas, $objects, $this->drafts, $session);
+		return new VersionsController($request, $registers, $schemas, $objects, $this->drafts, $session, $this->promoter);
 	}//end controller()
 
 	/**
@@ -214,4 +221,49 @@ class VersionsControllerTest extends TestCase {
 		$this->assertSame('update-1', $controller->update('r', 's', 'melding-1', 'update-1')->getData()['key']);
 		$this->assertSame(204, $controller->destroy('r', 's', 'melding-1', 'update-1')->getStatus());
 	}//end testReadUpdateAndDiscardAVisibleDraft()
+
+	/**
+	 * Promoting answers the saved object, and passes `force` through as a boolean.
+	 *
+	 * @return void
+	 */
+	public function testPromoteAnswersTheSavedObject(): void {
+		$controller = $this->controller(['force' => 'true']);
+		$draft = self::draft('update-1');
+		$this->drafts->method('find')->willReturn($draft);
+		$saved = new ObjectEntity();
+		$saved->setUuid('melding-1');
+		$saved->setObject(['titel' => 'Kapotte lamp', 'status' => 'gesloten']);
+		$this->promoter->expects($this->once())->method('promote')
+			->with($draft, $this->object, $this->isInstanceOf(Schema::class), 'medewerker-1', true)
+			->willReturn($saved);
+
+		$response = $controller->promote('r', 's', 'melding-1', 'update-1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('gesloten', $response->getData()['status']);
+	}//end testPromoteAnswersTheSavedObject()
+
+	/**
+	 * A conflict is 409 with the fields; a refusal is 403; a hook refusal is 422; a hidden draft is 404 before promotion.
+	 *
+	 * @return void
+	 */
+	public function testPromoteRefusalsKeepTheirStatus(): void {
+		$controller = $this->controller();
+		$this->drafts->method('find')->willReturnOnConsecutiveCalls(self::draft('a'), self::draft('a'), self::draft('a'), null);
+		$conflicts = [['field' => 'status', 'draft' => 'gesloten', 'live' => 'in_behandeling']];
+		$this->promoter->expects($this->exactly(3))->method('promote')->willReturnOnConsecutiveCalls(
+			$this->throwException(new DraftConflictException(conflicts: $conflicts)),
+			$this->throwException(new NotAuthorizedException(message: 'Nee.')),
+			$this->throwException(new HookStoppedException(message: 'Gestopt.', errors: ['code' => 'other']))
+		);
+
+		$conflict = $controller->promote('r', 's', 'melding-1', 'a');
+		$this->assertSame(409, $conflict->getStatus());
+		$this->assertSame($conflicts, $conflict->getData()['conflicts']);
+		$this->assertSame(403, $controller->promote('r', 's', 'melding-1', 'a')->getStatus());
+		$this->assertSame(422, $controller->promote('r', 's', 'melding-1', 'a')->getStatus());
+		$this->assertSame(404, $controller->promote('r', 's', 'melding-1', 'a')->getStatus());
+	}//end testPromoteRefusalsKeepTheirStatus()
 }//end class

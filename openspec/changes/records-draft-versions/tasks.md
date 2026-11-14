@@ -15,8 +15,10 @@
 
 ## 3. Promotion
 
-- [ ] 3.1 `promote` with per-field conflict detection against `base_version`, 409 body, save through `SaveObject`, draft deleted in the same transaction. Verify: tests for no conflict, conflict, and non-overlapping changes.
-- [ ] 3.2 `force=true` for administrators with the overwritten fields on the audit entry. Verify: test that a non-admin gets 403 and an admin's audit entry lists the fields.
+- [x] 3.1 `promote` with per-field conflict detection against `base_version`, 409 body, save through `SaveObject`, draft deleted in the same transaction. Verify: tests for no conflict, conflict, and non-overlapping changes.
+      > `Service/Object/DraftPromoter` behind `POST .../versions/{key}/promote` (`VersionsController::promote`): the base state comes from the audit trail (`revertObjectWith` to `base_version`; an unrebuildable base counts every differing field as a conflict), 409 carries `conflicts: [{field, draft, live}]`, the merged data is saved through `ObjectOperationsInterface::saveObject()`, and the `draft.promoted` audit entry and the draft delete run in one transaction (rolled back on a refused save). Unit: `DraftPromoterTest`, `VersionsControllerTest`.
+- [x] 3.2 `force=true` for administrators with the overwritten fields on the audit entry. Verify: test that a non-admin gets 403 and an admin's audit entry lists the fields.
+      > `force=true` from a non-administrator is 403 before anything is read; an administrator's promotion records `forced: true` and `overwritten: [fields]` (with the previous values) on the `draft.promoted` entry. Unit: `DraftPromoterTest`.
 
 ## 4. Preview
 

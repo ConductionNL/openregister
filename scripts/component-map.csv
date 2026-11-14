@@ -4250,3 +4250,5 @@ Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configurat
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Controller/Support/DraftKeysOnList.php,188,Controller,Controller,Controller/Support/DraftKeysOnList.php,0,,Core
+Service/Object/DraftPromoter.php,274,Service,Service,Service/Object/DraftPromoter.php,0,,Core
+Exception/DraftConflictException.php,59,Exception,Exception,Exception/DraftConflictException.php,0,,Kernel
