@@ -138,7 +138,8 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 			schemaSlug: $registration->schemaSlug,
 			urlTemplate: $registration->urlTemplate,
 			icon: $this->effectiveIcon(appId: $registration->appId, icon: ''),
-			displayName: $registration->displayName
+			displayName: $registration->displayName,
+			taskUrlTemplate: $registration->taskUrlTemplate
 		);
 	}//end withEffectiveIcon()
 
@@ -285,6 +286,25 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 		$registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
 		return $registration?->resolveUrl(objectData: $objectData, contactContext: $contactContext);
 	}//end resolveUrl()
+
+	/**
+	 * The owning app's own route for a task about an object of this register and schema.
+	 *
+	 * Null when no app claimed the pair or the app that did registered no task route;
+	 * the caller then links OpenRegister's task page.
+	 *
+	 * @param int                  $registerId The subject's register id.
+	 * @param int                  $schemaId   The subject's schema id.
+	 * @param array<string, mixed> $taskData   The task row (uuid, objectUuid, registerId, schemaId).
+	 *
+	 * @return string|null The URL, or null.
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
+	 */
+	public function resolveTaskUrl(int $registerId, int $schemaId, array $taskData): ?string {
+		$registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
+		return $registration?->resolveTaskUrl(taskData: $taskData);
+	}//end resolveTaskUrl()
 
 	/**
 	 * Get the icon for a registered deep link, or null if no registration.

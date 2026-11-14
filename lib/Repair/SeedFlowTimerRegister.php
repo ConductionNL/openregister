@@ -60,11 +60,13 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 	 * working calendar and stops requiring `rules`: until it landed, an
 	 * administrator's opening hours were dropped by the object store because
 	 * the schema had never heard of the property, and a calendar without a
-	 * holiday list could not be saved at all.
+	 * holiday list could not be saved at all. 1.4.0 declares `blackouts` and
+	 * `firstWeekOfYear` on the working calendar, which the object store would
+	 * otherwise drop on save.
 	 *
 	 * @var string
 	 */
-	private const REGISTER_VERSION = '1.2.0';
+	private const REGISTER_VERSION = '1.4.0';
 
 	/**
 	 * Constructor.
