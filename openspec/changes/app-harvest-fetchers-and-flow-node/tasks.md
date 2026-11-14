@@ -23,8 +23,8 @@
 ## 4. Decisions, strategies and states (REQ-HAF-006, REQ-HAF-007, REQ-HAF-008, D-7, D-8)
 
 - [x] 4.1 Migration on `openregister_sync_records`: `conflict_reason`, `tombstoned`, `tombstoned_at`, `last_applied_at`, `resolutions` (json). `SyncRecord` types; `SyncRecordStatus` gains `shadowed`, `rejected` and the D-8 transitions.
-- [ ] 4.2 `HarvestPipelineService::importRecord()`: the D-7 table (pre-existing claim via `identityProperty`, edit time against `lastAppliedAt`, local delete, hash fallback once); local read with `_audit: false`; `lastAppliedAt` on every harvest write; `protectedFields` dropped and `provenance` set after mapping.
-- [ ] 4.3 `SyncConflictResolver`: strategy `reject`; `local-deleted` forced to `manual`; `conflictRules` evaluated with `DecisionTableEvaluator`, falling back to `conflictStrategy`.
+- [x] 4.2 `HarvestPipelineService::importRecord()`: the D-7 table (pre-existing claim via `identityProperty`, edit time against `lastAppliedAt`, local delete, hash fallback once); local read with `_audit: false`; `lastAppliedAt` on every harvest write; `protectedFields` dropped and `provenance` set after mapping.
+- [x] 4.3 `SyncConflictResolver`: strategy `reject`; `local-deleted` forced to `manual`; `conflictRules` evaluated with `DecisionTableEvaluator`, falling back to `conflictStrategy`.
 
 ## 5. Resolution API (REQ-HAF-009, D-9)
 
