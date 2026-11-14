@@ -11876,4 +11876,5 @@ cover:shillinq:05639debm9818:9d3a1784	already done: lib/BackgroundJob/*.php at 9
 cover:pipelinq:7f9dc8e6m799d:34f5c300	PRs #3842 (risky metadata, 90.39->91.49%) and #3845 (6 classes, 67 tests, 90.39->91.67%); lib/Service/*.php ~92.8% combined, target 95 not yet reached	session-20261114T224740-064dbb86	2026-11-14T23:24:55Z
 verify:pipelinq:3842:1b0854c9	GREEN 3842 (tests-only coverage metadata; 8452 tests, 0 failures, risky cleared)	session-20261114T223333-658f3be1	2026-11-14T23:24:54Z
 cover:shillinq:05639debm9818:ca9bcd40	already done: lib/Lifecycle/Action/*.php at 96.1% lines (816/849) on development 6e0f5bac8, target 95	session-20261114T231755-998f7ff8	2026-11-14T23:25:13Z
+cover:portaliq:b60f3b81m4ccb:e7fd1c43	PR #2517: 16 tests over DestinationSubmit and PortalFamilyMembers, Intake 98.12% -> 98.63% (pcov)	session-20261114T224754-e4a2fcab	2026-11-14T23:25:01Z
 cover:integriq:92114ab0m4b3f:60c2c265	already done: lib/Controller/*.php measured 95.20% (6350/6670 stmts, full suite, pcov) at development 531865634, above target 95.0; branches -1..-6 merged	session-20261114T224736-f9da4a35	2026-11-14T23:25:02Z
