@@ -11008,3 +11008,4 @@ fix:planninq:1160:9979a267	complexity floor restored (4.85), new head eb03492e; 
 review:shillinq:2997:a72f8f14	GREEN: doc-only delta over the reviewed ee7b7248	session-20261114T194744-563ce177	2026-11-14T20:46:40Z
 build:shillinq:bookings-messages-and-embedding:c4	PR shillinq#3078: built 1.1 rest, 1.2, 1.3, 1.4, 1.5 + strings; left 1.4 Playwright and 1.6 live check (need live instance); phpunit 11299->11346 green	session-20261114T193415-4b507b08	2026-11-14T20:47:05Z
 verify:learniq:2486:5341ea1c	2486 GREEN (phpunit 6809, 1 inherited failure; js 9 inherited), 2536 CONFLICT after 2486 in Portal golden	session-20261114T191744-b9573b83	2026-11-14T20:47:26Z
+review:filinq:2088:2d0b82be	GREEN	session-20261114T194751-bb7578f8	2026-11-14T20:47:37Z
