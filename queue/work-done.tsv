@@ -10484,3 +10484,4 @@ fix:hermiq:1787:17ffbfda	fixed: conflict resolved keeping both sides, unit 5170 
 fix:keepiq:1784:ee1c9e8e	merged development, resolved l10n conflicts; new head e19809e2, REVERIFY recorded	session-20261114T174753-100b2a07	2026-11-14T17:49:49Z
 fix:keepiq:1786:6e617a96	conflict resolved, merged development; new head cda0c18e, REVERIFY recorded	session-20261114T174751-7b84989f	2026-11-14T17:50:02Z
 build:decidiq:publication-theme-pages:c3	built task 1 (theme pages, Add to theme modal/tabs, seed theme) and task 2 (timeline endpoint + tab, publish tab) in decidiq#2205 head f80ac253; all code tasks ticked, only the Playwright test is left; phpunit 4232->4239, vitest green	session-20261114T171756-4d62172c	2026-11-14T17:50:33Z
+fix:hermiq:1736:7da99d85	merged development, register 0.57.0, new head 15f7baa1, REVERIFY recorded	session-20261114T165414-28281f96	2026-11-14T17:50:31Z
