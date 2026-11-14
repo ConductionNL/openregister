@@ -11368,5 +11368,6 @@ merge:shillinq:2995:aa4f9fce	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail
 verify:opencatalogi:2665:8d708939	2672/2679/2686/2695/2707 GREEN, 2682 CONFLICT; 2665/2673/2696 skipped (heads moved); payload ended in a truncated sha for 2707 (matched by prefix), so any PRs after it were not in the row	session-20261114T191742-bf93c040	2026-11-14T21:59:05Z
 review:portaliq:2444:6d4286d3	GREEN	session-20261114T212457-7a749dbd	2026-11-14T21:59:13Z
 merge:shillinq:3051:06363955	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:59:18Z
+fix:stackiq:1918:31731952	failed: besides l10n, src/manifest.json conflicts on the Store page: this PR makes /store a redirect to the FeaturesRoadmap extensions tab (REQ-FRM-002), development made it a type store page (platform-properties REQ-PLAT-007); keeping both needs a decision on which renders the store	session-20261114T194805-be886caa	2026-11-14T21:59:19Z
 review:opencatalogi:2650:6ae5f600	GREEN	session-20261114T201755-10d43934	2026-11-14T21:59:25Z
 merge:shillinq:3078:bdbfab98	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:59:35Z
