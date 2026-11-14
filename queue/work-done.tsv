@@ -9507,3 +9507,4 @@ fix:filinq:2098:ee9aee9c	no change needed: up to date with development; conflict
 fix:filinq:2095:6e10cdbc	no change: branch current with development; conflict only with unmerged #2072/#2098; REVERIFY recorded	session-20261114T134708-0947487e	2026-11-14T14:34:25Z
 fix:filinq:2094:3874c2ea	no change: branch already contains development and merges clean with it; conflicts only with unmerged #2072/#2098 (append-append in both register files + info.version bump), so re-merge once they land	session-20261114T134636-f5681596	2026-11-14T14:34:23Z
 verify:dossiq:6515:c390c97f	6515 GREEN; 0 new failures	session-20261114T141727-56b2bf78	2026-11-14T14:34:46Z
+fix:filinq:2088:dd674209	no change needed: up to date with development; conflict only vs unmerged #2070 (register json)	session-20261114T134703-00d8a302	2026-11-14T14:34:55Z
