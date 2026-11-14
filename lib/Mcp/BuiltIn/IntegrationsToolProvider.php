@@ -41,6 +41,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
+use OCA\OpenRegister\Service\Integration\IntegrationProviderInvoker;
 
 /**
  * IntegrationsToolProvider
@@ -194,7 +195,8 @@ class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 			$filters = [];
 		}
 
-		$items = $provider->list(
+		$items = (new IntegrationProviderInvoker())->list(
+			$provider,
 			new ObjectRef(
 				register: $this->requireText(arguments: $arguments, param: 'register'),
 				schema: $this->requireText(arguments: $arguments, param: 'schema'),
@@ -216,7 +218,8 @@ class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 	private function getLinked(array $arguments): array {
 		$provider = $this->resolveProvider(arguments: $arguments);
 
-		return $provider->get(
+		return (new IntegrationProviderInvoker())->get(
+			$provider,
 			new ObjectRef(
 				register: $this->requireText(arguments: $arguments, param: 'register'),
 				schema: $this->requireText(arguments: $arguments, param: 'schema'),
@@ -244,7 +247,8 @@ class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 			$payload = [];
 		}
 
-		return $provider->create(
+		return (new IntegrationProviderInvoker())->create(
+			$provider,
 			new ObjectRef(
 				register: $this->requireText(arguments: $arguments, param: 'register'),
 				schema: $this->requireText(arguments: $arguments, param: 'schema'),

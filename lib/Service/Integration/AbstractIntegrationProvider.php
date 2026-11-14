@@ -35,16 +35,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
-use OCA\OpenRegister\Exception\NotImplementedException;
-use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
-
 /**
  * Default starting point for concrete IntegrationProvider implementations.
  *
  * Concrete providers MUST override the metadata methods (getId,
  * getLabel, getIcon, getRequiredApp, getStorageStrategy) and the
- * read-path list(). They MAY override get/create/update/delete when
- * their storage strategy supports those operations.
+ * read-path list(). They MAY add get/create/update/delete when their
+ * storage strategy supports those operations, in either published form
+ * (see IntegrationProvider); an operation a provider does not declare
+ * answers NotImplementedException through IntegrationProviderInvoker.
  *
  * @SuppressWarnings(PHPMD.NumberOfChildren) ADR-019's pluggable integration
  *   registry is built around exactly this template-method base — each leaf
@@ -101,104 +100,6 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	public function getOpenConnectorSource(): ?string {
 		return null;
 	}//end getOpenConnectorSource()
-
-	/**
-	 * Get a single linked thing.
-	 *
-	 * Default: throw NotImplementedException. List-only and query-time
-	 * providers can rely on this default; CRUD-capable providers
-	 * override.
-	 *
-	 * @param ObjectRef $ref The owning object: register, schema and uuid.
-	 * @param string $entityId Linked-thing id.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @throws NotImplementedException Always, unless overridden.
-	 *
-	 * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
-	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
-	 */
-	public function get(ObjectRef $ref, string $entityId): array {
-		throw $this->unsupported(operation: 'get');
-	}//end get()
-
-	/**
-	 * Create / attach a linked thing.
-	 *
-	 * @param ObjectRef $ref The owning object: register, schema and uuid.
-	 * @param array<string,mixed> $payload New linked-thing fields.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @throws NotImplementedException Always, unless overridden.
-	 *
-	 * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
-	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
-	 */
-	public function create(ObjectRef $ref, array $payload): array {
-		throw $this->unsupported(operation: 'create');
-	}//end create()
-
-	/**
-	 * Update a linked thing.
-	 *
-	 * @param ObjectRef $ref The owning object: register, schema and uuid.
-	 * @param string $entityId Linked-thing id.
-	 * @param array<string,mixed> $payload Update payload.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @throws NotImplementedException Always, unless overridden.
-	 *
-	 * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
-	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
-	 */
-	public function update(ObjectRef $ref, string $entityId, array $payload): array {
-		throw $this->unsupported(operation: 'update');
-	}//end update()
-
-	/**
-	 * Delete / unlink a linked thing.
-	 *
-	 * @param ObjectRef $ref The owning object: register, schema and uuid.
-	 * @param string $entityId Linked-thing id.
-	 *
-	 * @return void
-	 *
-	 * @throws NotImplementedException Always, unless overridden.
-	 *
-	 * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
-	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
-	 */
-	public function delete(ObjectRef $ref, string $entityId): void {
-		throw $this->unsupported(operation: 'delete');
-	}//end delete()
-
-	/**
-	 * The NotImplementedException a provider answers for an operation it does not support.
-	 *
-	 * @param string $operation The operation, as the message names it: `get`, `create`, `update` or `delete`.
-	 *
-	 * @return NotImplementedException
-	 */
-	private function unsupported(string $operation): NotImplementedException {
-		return new NotImplementedException(
-			message: sprintf('Provider %s does not support %s()', $this->getId(), $operation)
-		);
-	}//end unsupported()
 
 	/**
 	 * Default health descriptor — assumes a healthy, configured integration.
