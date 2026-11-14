@@ -8604,3 +8604,4 @@ verify:opencatalogi:2678:eb671c7c	GREEN 2678	session-20261114T065626-0651b305	20
 verify:stackiq:1916:4e2011b0	7 GREEN, 2 CONFLICT (1922, 1924 vs tree); no new failures	session-20261114T075640-efa02b24	2026-11-14T09:13:22Z
 build:larpinq:events-casting-and-crew-roles	partial: PR #1054; casting solver, service, controller, fragment, 36-locale strings; deadline rule, seed, Casting tab and e2e open; suite 816 green	session-20261114T082633-64525b24	2026-11-14T09:13:31Z
 verify:larpinq:1035:ae15fa03	5 GREEN (1035-1039); phpunit 812 OK, vitest 511 passed, no new failures	session-20261114T082640-198131b9	2026-11-14T09:13:39Z
+verify:learniq:2490:547a039b	GREEN #2490 (6641 tests, no new failures)	session-20261114T082640-df1db926	2026-11-14T09:14:07Z
