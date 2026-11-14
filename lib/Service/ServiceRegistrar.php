@@ -41,8 +41,8 @@ use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
+use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -164,13 +164,14 @@ final class ServiceRegistrar {
 			}
 		);
 
-		// Register the default no-op TranslationProvider. Operators replace
-		// this binding with a real provider (LibreTranslate / DeepL / etc.)
-		// by overriding it in their own app's registration.
+		// Bind the translation provider the admin settings select: Nextcloud
+		// Task Processing only when an administrator chose it and confirmed
+		// that record text may be sent; the no-op identity provider otherwise
+		// (ai-translation-with-a-glossary design D-6).
 		$context->registerService(
 			TranslationProviderInterface::class,
-			function () {
-				return new IdentityTranslationProvider();
+			static function (ContainerInterface $c) {
+				return $c->get(TranslationProviderResolver::class)->resolve();
 			}
 		);
 

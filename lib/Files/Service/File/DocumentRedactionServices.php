@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
 
 /**
@@ -39,6 +40,7 @@ final class DocumentRedactionServices {
 	 * @param OfficeDocumentSanitizer       $sanitizer              Office document sanitiser (DOCX / ODT).
 	 * @param AnonymisationLogMapper|null   $anonymisationLogMapper Mapper for per-run anonymisation log rows; null keeps the handler construct-safe
 	 *                                                              without persistence.
+	 * @param FileSettingsHandler|null     $fileSettings           The file settings, for the mask form per entity type; null masks nothing.
 	 * @param ImageRedactionService|null    $images                 The image seam that burns decided regions; without it an image
 	 *                                                              is refused, never sent down the text path.
 	 *
@@ -49,6 +51,7 @@ final class DocumentRedactionServices {
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
 		public readonly OfficeDocumentSanitizer $sanitizer,
 		public readonly ?AnonymisationLogMapper $anonymisationLogMapper = null,
+		public readonly ?FileSettingsHandler $fileSettings = null,
 		public readonly ?ImageRedactionService $images = null,
 	) {
 	}//end __construct()

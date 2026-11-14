@@ -93,16 +93,18 @@ class OdtWriter implements OdtWriterInterface {
 	/**
 	 * Write the ODT for an HTML document.
 	 *
-	 * @param string $html      Export section or report HTML.
-	 * @param bool   $landscape Landscape A4 when true, portrait A4 otherwise.
+	 * @param string             $html       Export section or report HTML.
+	 * @param bool               $landscape  Landscape A4 when true, portrait A4 otherwise.
+	 * @param OdtHouseStyle|null $houseStyle The organisation's house style, or null for the plain layout.
 	 *
 	 * @return string The ODT bytes.
 	 *
 	 * @throws RuntimeException When the package cannot be written.
 	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
 	 */
-	public function fromHtml(string $html, bool $landscape): string {
+	public function fromHtml(string $html, bool $landscape, ?OdtHouseStyle $houseStyle = null): string {
 		$converter = new HtmlToOdt();
 		$text = $converter->convert(html: $html);
 		$title = $converter->title();
@@ -115,13 +117,14 @@ class OdtWriter implements OdtWriterInterface {
 		$content = new DOMDocument();
 		$content->loadXML(
 			'<?xml version="1.0" encoding="UTF-8"?><office:document-content ' . self::NAMESPACES . '>'
-			. self::FONT_FACES . $this->contentStyles() . '<office:body>' . $text->ownerDocument->saveXML($text) . '</office:body></office:document-content>',
+			. self::FONT_FACES . $this->contentStyles(houseStyle: $houseStyle)
+			. '<office:body>' . $text->ownerDocument->saveXML($text) . '</office:body></office:document-content>',
 			(LIBXML_NSCLEAN | LIBXML_NONET | LIBXML_PARSEHUGE)
 		);
 
 		$parts = [
 			'content.xml' => (string) $content->saveXML(),
-			'styles.xml' => $this->styles(landscape: $landscape),
+			'styles.xml' => $this->styles(landscape: $landscape, houseStyle: $houseStyle),
 			'meta.xml' => '<?xml version="1.0" encoding="UTF-8"?><office:document-meta ' . self::NAMESPACES . '><office:meta>'
 				. '<dc:title>' . htmlspecialchars($title, (ENT_XML1 | ENT_QUOTES), 'UTF-8') . '</dc:title>'
 				. '<meta:generator>OpenRegister</meta:generator></office:meta></office:document-meta>',
@@ -141,16 +144,31 @@ class OdtWriter implements OdtWriterInterface {
 	/**
 	 * The automatic styles of the content part, used by {@see HtmlToOdt} and {@see OdtTableBuilder}.
 	 *
+	 * A house style recolours the table header: its background and its text.
+	 * Without one every style is the plain layout's.
+	 *
+	 * @param OdtHouseStyle|null $houseStyle The house style, or null.
+	 *
 	 * @return string
 	 */
-	private function contentStyles(): string {
+	private function contentStyles(?OdtHouseStyle $houseStyle): string {
+		$paragraphStyles = self::PARAGRAPH_STYLES;
+		$cellStyles = self::CELL_STYLES;
+		if ($houseStyle?->headText !== null) {
+			$paragraphStyles['OR_HeadCell'][1] = 'fo:font-size="8pt" fo:font-weight="bold" fo:color="' . $houseStyle->headText . '"';
+		}
+
+		if ($houseStyle?->headBackground !== null) {
+			$cellStyles['OR_TH'] = $houseStyle->headBackground;
+		}
+
 		$xml = '<office:automatic-styles>' . self::TABLE_STYLE;
-		foreach (self::PARAGRAPH_STYLES as $name => [$paragraph, $text]) {
+		foreach ($paragraphStyles as $name => [$paragraph, $text]) {
 			$xml .= '<style:style style:name="' . $name . '" style:family="paragraph">'
 				. '<style:paragraph-properties ' . $paragraph . '/><style:text-properties style:font-name="Liberation Sans" ' . $text . '/></style:style>';
 		}
 
-		foreach (self::CELL_STYLES as $name => $background) {
+		foreach ($cellStyles as $name => $background) {
 			$fill = '';
 			if ($background !== '') {
 				$fill = ' fo:background-color="' . $background . '"';
@@ -166,11 +184,25 @@ class OdtWriter implements OdtWriterInterface {
 	/**
 	 * The styles part: default font, A4 page layout and the page-number footer.
 	 *
-	 * @param bool $landscape Landscape or portrait.
+	 * A house style's footer lines are printed on every page above the page number.
+	 *
+	 * @param bool               $landscape  Landscape or portrait.
+	 * @param OdtHouseStyle|null $houseStyle The house style, or null.
 	 *
 	 * @return string
 	 */
-	private function styles(bool $landscape): string {
+	private function styles(bool $landscape, ?OdtHouseStyle $houseStyle): string {
+		$footerLines = '';
+		$lines = [];
+		if ($houseStyle !== null) {
+			$lines = $houseStyle->footerLines;
+		}
+
+		foreach ($lines as $line) {
+			$footerLines .= '<text:p text:style-name="OR_FooterLine">'
+				. htmlspecialchars($line, (ENT_XML1 | ENT_QUOTES), 'UTF-8') . '</text:p>';
+		}
+
 		$size = 'fo:page-width="21cm" fo:page-height="29.7cm" style:print-orientation="portrait"';
 		if ($landscape === true) {
 			$size = 'fo:page-width="29.7cm" fo:page-height="21cm" style:print-orientation="landscape"';
@@ -183,16 +215,33 @@ class OdtWriter implements OdtWriterInterface {
 			. '<style:style style:name="Standard" style:family="paragraph"/>'
 			. '<style:style style:name="OR_Footer" style:family="paragraph"><style:paragraph-properties fo:text-align="end"/>'
 			. '<style:text-properties fo:font-size="8pt" fo:color="#4d4d4d"/></style:style>'
+			. $this->footerLineStyle(used: ($footerLines !== ''))
 			. '</office:styles>'
 			. '<office:automatic-styles><style:page-layout style:name="OR_Page"><style:page-layout-properties ' . $size
 			. ' fo:margin-top="1.2cm" fo:margin-bottom="0.8cm" fo:margin-left="1.2cm" fo:margin-right="1.2cm"/>'
 			. '<style:footer-style><style:header-footer-properties fo:min-height="0.4cm" fo:margin-top="0.2cm"/></style:footer-style>'
 			. '</style:page-layout></office:automatic-styles>'
 			. '<office:master-styles><style:master-page style:name="Standard" style:page-layout-name="OR_Page">'
-			. '<style:footer><text:p text:style-name="OR_Footer">'
+			. '<style:footer>' . $footerLines . '<text:p text:style-name="OR_Footer">'
 			. 'Page <text:page-number text:select-page="current"/> / <text:page-count/></text:p></style:footer>'
 			. '</style:master-page></office:master-styles></office:document-styles>';
 	}//end styles()
+
+	/**
+	 * The paragraph style of a house-style footer line, only when one is printed.
+	 *
+	 * @param bool $used Whether the footer carries house-style lines.
+	 *
+	 * @return string
+	 */
+	private function footerLineStyle(bool $used): string {
+		if ($used === false) {
+			return '';
+		}
+
+		return '<style:style style:name="OR_FooterLine" style:family="paragraph"><style:paragraph-properties fo:text-align="start"/>'
+			. '<style:text-properties fo:font-size="8pt" fo:color="#4d4d4d"/></style:style>';
+	}//end footerLineStyle()
 
 	/**
 	 * Zip the parts, with the uncompressed `mimetype` entry first.

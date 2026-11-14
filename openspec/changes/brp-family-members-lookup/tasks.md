@@ -9,7 +9,7 @@ Kind: code. Size S. Row: portaliq `int-family-prefill`.
 
 ## 2. Mock
 
-- [ ] 2.1 Answer `lookupFamily()` from the mock BRP register per design D4. Verify: `tests/Unit/Service/Integration/Providers/BrpPersonProviderFamilyMockTest.php` uses the seeded family of BSN 999990627.
+- [x] 2.1 Answer `lookupFamily()` from the mock BRP register per design D4. Verify: `tests/Unit/Service/Integration/Providers/BrpPersonProviderFamilyMockTest.php` uses the seeded family of BSN 999990627.
 
 ## 3. Docs
 

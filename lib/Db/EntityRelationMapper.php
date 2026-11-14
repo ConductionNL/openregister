@@ -631,10 +631,16 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 *
 	 * @param int $fileId The file ID.
 	 *
+	 * Each row also carries the relation's `bases`, the exception grounds the
+	 * placeholder prints (REQ-PIS-011).
+	 *
 	 * @return array<int, array<string, mixed>> Array of entity rows joined with their Entity record.
+	 *
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-the-placeholder-carries-the-exception-ground-where-it-applies-req-pis-011
 	 */
 	public function findEntitiesForAnonymization(int $fileId): array {
 		$qb = $this->selectFileEntities(fileId: $fileId);
+		$qb->addSelect('r.bases');
 		$qb->andWhere($qb->expr()->eq('r.skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
 			->orderBy('r.position_start', 'ASC');
 
