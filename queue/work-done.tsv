@@ -10186,3 +10186,4 @@ merge:shillinq:2972:6383e585	merge3 tree of 11 shillinq PRs: merged=2 red=3 fail
 merge:shillinq:2991:86ea6479	merge3 tree of 11 shillinq PRs: merged=2 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:27:59Z
 merge:shillinq:3067:04af9c3f	merge3 tree of 11 shillinq PRs: merged=2 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:28:03Z
 verify:learniq:2486:24042903	GREEN 2486 2506; CONFLICT 2497 2519 2538 (with tree, clean vs development); no new failures	session-20261114T161815-d54ad7b4	2026-11-14T16:28:29Z
+verify:planninq:1158:d78abc90	5 GREEN (1158,1165,1166,1176,1177), 3 CONFLICT (1167,1170,1178); phpunit 1067/0 fail, vitest 3257 pass	session-20261114T161750-16a1c558	2026-11-14T16:28:48Z
