@@ -9903,3 +9903,4 @@ measure:integriq:20261114h08	php 94.65% (pcov, 67366 stmts), js 89.78% (7204 stm
 build:integriq:brp-connection-monitor-from-pipelinq:c2	PR #3612: task 3.1 handover listener built with 19 tests; 4.1 full check:strict not run (touched-file gates green); all code tasks ticked	session-20261114T151751-5fc6ef5c	2026-11-14T15:43:02Z
 verify:hermiq:1728:28794c35	stale	session-20261114T144757-446bd6da	2026-11-14T15:43:08Z
 fix:hermiq:1753:17a75239	conflict with #1725 removed: moved this PR's 2 l10n keys away from the shared insertion point, merged development; clean against #1725 and development; new head f4cfe671, REVERIFY recorded	session-20261114T144751-8a65b704	2026-11-14T15:43:17Z
+merge:decidiq:2186:7bc748c0	merge3 tree of 2 decidiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 1; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T15:43:45Z
