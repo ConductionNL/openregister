@@ -11107,3 +11107,4 @@ build:launchpad:launcher-tile-sorting:c2	done: PR #1215 is merged on development
 build:buildiq:logic-automation-actions-that-run:c3	partial: PR buildiq#1648 (head 0d30354d) T02,T03 done; T06 compile+T08 repair backend done; left T04,T05 rule-set condition,T06 composer+recompile-on-activation,T07,T08 page reason,T09,T11 (T10,T12 live)	session-20261114T204742-0d9e5b8f	2026-11-14T21:10:47Z
 merge:learniq:2521:c6951627	stale	feeder	2026-11-14T21:10:21Z
 verify:integriq:3631:943639db	3631 GREEN	session-20261114T202449-f0278d5a	2026-11-14T21:11:11Z
+build:learniq:permission-slips:c3	done on PR #2513 (head 672f590): T6 teacher outcome screen (manifest pages + body section, 7 node tests), T8 po example set (+1 PHP test); T7 e2e left (needs live). PHP 6806 tests, JS 1369 pass; only inherited failures	session-20261114T204759-5dc9dba7	2026-11-14T21:11:32Z
