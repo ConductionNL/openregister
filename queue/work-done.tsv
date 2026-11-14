@@ -11363,3 +11363,4 @@ verify:opencatalogi:2665:8d708939	2672/2679/2686/2695/2707 GREEN, 2682 CONFLICT;
 review:portaliq:2444:6d4286d3	GREEN	session-20261114T212457-7a749dbd	2026-11-14T21:59:13Z
 fix:stackiq:1918:31731952	failed: besides l10n, src/manifest.json conflicts on the Store page: this PR makes /store a redirect to the FeaturesRoadmap extensions tab (REQ-FRM-002), development made it a type store page (platform-properties REQ-PLAT-007); keeping both needs a decision on which renders the store	session-20261114T194805-be886caa	2026-11-14T21:59:19Z
 review:opencatalogi:2650:6ae5f600	GREEN	session-20261114T201755-10d43934	2026-11-14T21:59:25Z
+verify:launchpad:1214:b41b2296	GREEN 1214@3cd2835b; phpunit 4242/0 fail, vitest 2273 pass	session-20261114T211012-c469e919	2026-11-14T21:59:46Z
