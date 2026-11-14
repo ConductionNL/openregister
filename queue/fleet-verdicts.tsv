@@ -9764,3 +9764,4 @@ launchpad	1210	360cba65e5d977258afd3634294087d11f8d6638	RED	merge3:merge-gate	GA
 launchpad	1223	bde0c65bc53ccd454d74c1f6654ca25e761c2d29	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.44 -> 3.37
 launchpad	1224	9b93d2fae68898af1e824d933e7acca9a0532c49	RED	merge3:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
 integriq	3628	fb3c554133d3b392deb2e4974101d11db41f26d4	REVERIFY	worker-23	merged development in; register info.version set to 1.2.1 over development's 1.2.0 (branch had 1.1.8); register/seed/messaging tests: 917 run, 2 failures both inherited from development; new head 3039ae5d, verify it
+shillinq	3077	106e652ef6b7c799e319e38d44ce92672fb8be42	GREEN	worker-01	unit 11441 OK on tree (baseline 11360 OK), vitest 2753/2754 with 1 inherited fail (dunningNextRun, red on development), no new failures
