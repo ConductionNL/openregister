@@ -8344,3 +8344,4 @@ merge:dossiq:6424:474c57af	merge	dossiq	development	development	prs=6424@0edd0cb
 merge:shillinq:2971:80ce0cc9	merge	shillinq	development	development	prs=2971@c6fdd59368b22090a32c0748effe73484e2ff28f	2026-11-13T23:50:21Z
 measure:shillinq:20261114h00	measure	shillinq	development	queue/coverage/shillinq.json	why=slices need per-directory coverage	2026-11-14T00:35:20Z
 measure:pipelinq:20261114h00	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-14T00:40:20Z
+gap:launchpad:14:732b368d	gap	launchpad	development	14	criterion=opensourcehealth: vulnerabilities (1 high);row=launchpad;fix=`npm:dompurify@2.5.9` (high). Bump dompurify (or the package pulling it) to >= 3.4.16 and refresh package-lock, learniq has `dependabot/npm_and_yarn/development/dompurify-3.4.16`. Recommended, no score effect.	2026-11-14T01:50:20Z
