@@ -7864,3 +7864,16 @@ shillinq	2972	a45e4b84e4eb62ecaf203d6fda0d8c48bf2c6a8c	CONFLICT	merge3	merges cl
 shillinq	2976	03e24bcb91b8a325fb16601c5f35e3398866dd7c	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/register.d/add-shillinq-bookkeeping-foundation.json tests/fixtures/register-versions.lock.json 
 shillinq	3046	1ba604de3bdc76b64eae6f8a332c18099aea9bb4	RED	merge3	ServiceRegistrarTest::testContractBindingsAreIncluded hardcodes 231 bindings; with #3001 merged there are 232. Merge development and update the count
 shillinq	3048	dff36567da54f8cc5d74e9a0e810b61e3b0b0ccc	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml lib/Lifecycle/Action/MaterialiseGlTransactionAction.php tests/fixtures/register-versions.lock.json 
+versioniq	690	3691ac8a0ac16edddf2f0fd8f16c7cd054d12e1d	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.58 -> 4.53
+versioniq	694	99fa1db18c20c4e18f134615f9366e682ee31078	RED	merge3:merge-gate	GATE RED floor: overall: 4.92 -> 4.90; duplication: 5.14 -> 5.12; unit_complexity: 4.58 -> 4.50; unit_interfacing: 4.08 -> 4.00
+versioniq	695	93abbf9c593eb2e03f2877a5051e8f6ee0b64feb	RED	merge3:merge-gate	GATE RED floor: overall: 4.92 -> 4.90; unit_size: 4.73 -> 4.71; unit_complexity: 4.58 -> 4.41
+versioniq	698	d0d1b4db945a37fff5e4edb89e3a9dd4e96cbbc1	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.58 -> 4.52; unit_interfacing: 4.08 -> 4.01
+versioniq	700	c430025c921e916b855a42ffd51516cb8f164786	RED	merge3:merge-gate	GATE RED floor: overall: 4.92 -> 4.89; unit_size: 4.73 -> 4.71; unit_interfacing: 4.08 -> 3.88
+versioniq	703	d13b5594d02003bc643a833e480af7a7079bd026	RED	merge3:merge-gate	GATE RED checker floor: secretscanning: pass -> fail
+versioniq	705	93d382e6351dfdc05c5dea4794e5a20880eee4ed	RED	merge3:merge-gate	GATE RED floor: overall: 4.92 -> 4.90; unit_size: 4.73 -> 4.71; unit_complexity: 4.58 -> 4.49; unit_interfacing: 4.08 -> 4.06
+versioniq	706	679d4733d3ec10fd072143ebefe2acea2995f32e	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.73 -> 4.71; unit_complexity: 4.58 -> 4.52
+versioniq	707	191024645b835d55581f0f771fa301a5a4ec1331	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.58 -> 4.56; unit_interfacing: 4.08 -> 4.04
+versioniq	712	58bc9a3c0463797adcefdd7b9dfd4b0d2b745aa2	RED	merge3:merge-gate	GATE RED floor: overall: 4.92 -> 4.89; duplication: 5.14 -> 5.08; unit_complexity: 4.58 -> 4.56; unit_interfacing: 4.08 -> 3.88
+versioniq	719	b6008a2ea44a5221c6f3320e8417facd599518e4	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.08 -> 4.03
+versioniq	721	26d19829123d756aaf0879ed5abfbd04e78923fd	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.58 -> 4.55
+versioniq	724	51a01f6bdc21e813a6626c466b7a6a237a21e641	RED	merge3:merge-gate	GATE RED floor: overall: 4.92 -> 4.89; unit_size: 4.73 -> 4.71; unit_complexity: 4.58 -> 4.48; unit_interfacing: 4.08 -> 4.00
