@@ -11955,3 +11955,4 @@ fix:dossiq:6523:ebc2a65d	conflict resolved, pushed 2cc454b5, REVERIFY	session-20
 cover:hermiq:065f1631mcdb5:be0dcca9	already done: lib/Mcp/*.php at 98.8% line coverage on development (target 95), quality/test-coverage-be0dcca9-1 exists	session-20261114T221743-dbe5c07e	2026-11-14T23:36:11Z
 verify:shillinq:3078:314170b1	3078 GREEN: phpunit 11510 OK, vitest 1 inherited failure, no new failures	session-20261114T231806-fdb63293	2026-11-14T23:36:08Z
 fix:learniq:2486:f0544ac9	merged development (clean); unit only inherited HigherEducationExampleSetTest red; new head a242580e	session-20261114T223937-a95b1403	2026-11-14T23:36:22Z
+fix:decidiq:2187:baca4928	conflict resolved; new head f2114bea, REVERIFY recorded	session-20261114T230933-0afdd896	2026-11-14T23:36:32Z
