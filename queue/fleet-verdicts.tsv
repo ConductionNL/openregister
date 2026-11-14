@@ -6720,3 +6720,4 @@ hermiq	1750	13938be580977e113cbddf513e2bee4b4b7f0c1a	GREEN	worker-58	php unit 47
 hermiq	1752	8b69ca5d4ac1f67fddc454ec36d1a81e6d26164a	GREEN	worker-58	php unit 4737 run on tree, baseline 4653 with 172 inherited err/fail, 0 new; vitest 1440 pass
 hermiq	1753	89b097a46bbf8372d6646d9b4c25cc85d8c97ea6	GREEN	worker-58	php unit 4737 run on tree, baseline 4653 with 172 inherited err/fail, 0 new; vitest 1440 pass
 decidiq	2159	45ec0921c5b99c7dd8b7a2f4758a65c3fb3cc1cd	RED	worker-11	alone on development: vitest simpleMeetingPage.spec.js 3 failures (reads the server table it is compared with; names the state in the pill...; draws four steps...) - meeting lifecycle table now has 7 states vs 6 the page mirrors; PHP unit green
+decidiq	2160	bb45fef306e3e03fc24ced4d920ee8866b772d1a	CONFLICT	worker-11	merge conflict with development + earlier tree PRs
