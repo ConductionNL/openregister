@@ -10072,3 +10072,4 @@ build:pipelinq:kcc-agent-panel:c2	failed: not buildable: the change itself decla
 fix:buildiq:1590:ab70ca96	conflict removed (test moved to own file), pushed 44e1dfb1, REVERIFY recorded	session-20261114T151942-48d6369d	2026-11-14T16:10:49Z
 verify:integriq:3539:438931ea	3539 GREEN; 3589 RED (4 payment tests); 3542,3569,3572,3574,3582,3596 CONFLICT vs 3539; 3564 skipped (head moved)	session-20261114T154734-655bd0f3	2026-11-14T16:10:57Z
 fix:planninq:1170:b025d50e	conflict resolved keeping both sides; new head c04b52d2, REVERIFY recorded	session-20261114T151934-e3441c93	2026-11-14T16:11:07Z
+verify:planninq:1158:524d7154	1158, 1159, 1162 GREEN; 1169 CONFLICT (l10n in tree order)	session-20261114T151932-05b02c14	2026-11-14T16:11:35Z
