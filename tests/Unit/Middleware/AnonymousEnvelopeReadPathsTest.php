@@ -459,6 +459,9 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 
 		$answers['graphql'] = json_encode($this->graphQlResult(signedIn: true));
 
+		// The list's syncWatermark is the read's own start time (REQ-SYNC-004); its shape is pinned, not its value.
+		$answers['index'] = (string)preg_replace('/"syncWatermark":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00"/', '"syncWatermark":"<watermark>"', $answers['index']);
+
 		if (getenv('RECORD_GOLDEN') === '1') {
 			file_put_contents(self::GOLDEN, json_encode($answers, JSON_PRETTY_PRINT));
 		}

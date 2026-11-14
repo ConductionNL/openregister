@@ -32,6 +32,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\BatchOutcome;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
 use OCA\OpenRegister\Controller\Support\PurgeRequest;
+use OCA\OpenRegister\Controller\Support\SyncWatermark;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -271,9 +272,12 @@ class DeletedController extends Controller {
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-list-responses-carry-a-server-side-sync-watermark-req-sync-004
 	 */
 	public function index(): JSONResponse {
-		$params = $this->extractRequestParameters();
+		// REQ-SYNC-004: taken before the query, so a write during the read is in the next run.
+		$watermark = new SyncWatermark();
+		$params    = $this->extractRequestParameters();
 
 		// Read-scoped for a non-admin, as the object list is (openregister#4078).
 		$scoped = ($this->services->access->authorizer->isCurrentUserAdmin() === false);
@@ -313,7 +317,7 @@ class DeletedController extends Controller {
 				$pages = ceil($total / $params['limit']);
 			}
 
-			return new JSONResponse(
+			$response = new JSONResponse(
 				data: [
 					'results' => $this->withWindows(objects: $deletedObjects),
 					'total' => $total,
@@ -323,6 +327,8 @@ class DeletedController extends Controller {
 					'offset' => $params['offset'],
 				]
 			);
+
+			return $watermark->stamp(response: $response);
 		} catch (\Exception $e) {
 			return new JSONResponse(
 				data: [

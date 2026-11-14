@@ -32,6 +32,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
+use OCA\OpenRegister\Controller\Support\SyncWatermark;
 use OCA\OpenRegister\Controller\Support\ObjectExport;
 use OCA\OpenRegister\Controller\Support\ObjectCountScope;
 use OCA\OpenRegister\Controller\Support\ObjectDeleteRoute;
@@ -1214,6 +1215,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-list-responses-carry-a-server-side-sync-watermark-req-sync-004
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
@@ -1223,6 +1225,9 @@ class ObjectsController extends Controller {
 		// per-request counts at all. Stamp + flush here so the same in-PHP
 		// counters that made the write numbers trustworthy cover reads too.
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.index.in');
+
+		// REQ-SYNC-004: taken before the query, so a write during the read is in the next run.
+		$watermark = new SyncWatermark();
 
 		$params = $this->request->getParams();
 
@@ -1234,7 +1239,7 @@ class ObjectsController extends Controller {
 		$urlPath = ['register' => $register, 'schema' => $schema];
 		$targets = $this->crossTableTargets(params: $params, urlPath: $urlPath);
 		if ($targets !== null) {
-			return $this->crossTableSearch(registers: $targets['registers'], schemas: $targets['schemas'], objectService: $objectService);
+			return $watermark->stamp(response: $this->crossTableSearch(registers: $targets['registers'], schemas: $targets['schemas'], objectService: $objectService));
 		}
 
 		try {
@@ -1255,10 +1260,10 @@ class ObjectsController extends Controller {
 		$listing = $this->buildListingScope(urlPath: $urlPath, resolved: $resolved);
 
 		if ($this->isServedFromMagicTable(resolved: $resolved) === true) {
-			return $this->indexFromMagicTable(listing: $listing, objectService: $objectService);
+			return $watermark->stamp(response: $this->indexFromMagicTable(listing: $listing, objectService: $objectService));
 		}
 
-		return $this->indexFromObjectService(listing: $listing, objectService: $objectService);
+		return $watermark->stamp(response: $this->indexFromObjectService(listing: $listing, objectService: $objectService));
 	}//end index()
 
 	/**

@@ -2009,7 +2009,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
 
-		$this->assertSame(expected: ['results', 'total', 'pages', 'page', 'limit', '@self'], actual: array_keys($data));
+		$this->assertSame(expected: ['results', 'total', 'pages', 'page', 'limit', '@self', 'syncWatermark'], actual: array_keys($data));
 		$this->assertSame(expected: [[], 45, 5, 3, 10], actual: [$data['results'], $data['total'], $data['pages'], $data['page'], $data['limit']]);
 		$this->assertSame(
 			expected: ['source', 'register', 'schema', 'query', 'rbac', 'multi', 'deleted', 'activeOrganisation', 'lenses'],

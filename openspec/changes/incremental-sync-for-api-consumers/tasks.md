@@ -30,8 +30,10 @@
 
 ## 4. Watermark (REQ-SYNC-004, D-4)
 
-- [ ] 4.1 `ObjectsController` list and `DeletedController::index`: take the server time before the query and return it as `syncWatermark`.
-- [ ] 4.2 Test: the watermark is earlier than or equal to the `updated` of an object written during the read (simulate with a mapper stub that writes mid-query).
+- [x] 4.1 `ObjectsController` list and `DeletedController::index`: take the server time before the query and return it as `syncWatermark`.
+      > 2026-11-14: `Controller\Support\SyncWatermark`, taken first thing in both `index()` methods (single-table, magic-table and cross-table listings); UTC ISO 8601 truncated to the second, which only moves it earlier. Only a 200 envelope with `results` is stamped: a refusal is not a read to resume from, and a JSON-LD collection keeps its own shape.
+- [x] 4.2 Test: the watermark is earlier than or equal to the `updated` of an object written during the read (simulate with a mapper stub that writes mid-query).
+      > 2026-11-14: `DeletedControllerSyncFilterTest::testTheWatermarkIsNotLaterThanAWriteDuringTheRead` (the stub writes, then runs past the next second, so a watermark taken after the query fails it); `SyncWatermarkTest`.
 
 ## 5. Docs and links
 
