@@ -997,6 +997,7 @@ Exception/AppendOnlyException.php,35,Exception,Exception,Exception/AppendOnlyExc
 Exception/ArchivalImmutableException.php,39,Exception,Exception,Exception/ArchivalImmutableException.php,9,,Kernel
 Exception/ArchiveNotOfferedException.php,15,Exception,Exception,Exception/ArchiveNotOfferedException.php,0,,Kernel
 Exception/AuthenticationException.php,13,Exception,Exception,Exception/AuthenticationException.php,40,,Kernel
+Exception/TokenRateLimitExceededException.php,19,Exception,Exception,Exception/TokenRateLimitExceededException.php,0,,Kernel
 Exception/AuthorizationBlockException.php,10,Exception,Exception,Exception/AuthorizationBlockException.php,0,,Kernel
 Exception/AuthorizationUnresolvableException.php,6,Exception,Exception,Exception/AuthorizationUnresolvableException.php,0,,Kernel
 Exception/BpmnImportRefused.php,18,Exception,Exception,Exception/BpmnImportRefused.php,0,,Kernel
@@ -3027,6 +3028,7 @@ Service/Rbac/ShareTimeWriter.php,24,Service,Access,Access/Service/Rbac/ShareTime
 Service/Rbac/StoredRuleBlocks.php,66,Service,Service,Service/Rbac/StoredRuleBlocks.php,0,,Core
 Service/Rbac/TokenGrant.php,109,Service,Access,Access/Service/Rbac/TokenGrant.php,0,,Core
 Service/Rbac/TokenGrantNarrower.php,102,Service,Access,Access/Service/Rbac/TokenGrantNarrower.php,0,,Core
+Service/Rbac/TokenGrantRateLimiter.php,59,Service,Access,Access/Service/Rbac/TokenGrantRateLimiter.php,0,,Core
 Service/Rbac/TokenGrantSource.php,38,Service,Access,Access/Service/Rbac/TokenGrantSource.php,2,432,Core
 Service/Rbac/TokenGrantValidator.php,80,Service,Access,Access/Service/Rbac/TokenGrantValidator.php,0,,Core
 Service/Rbac/UndecidablePosture.php,30,Service,Access,Access/Service/Rbac/UndecidablePosture.php,0,,Core
@@ -4245,6 +4247,7 @@ Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
 Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Core
+Service/Outbound/OutboundAllowlist.php,,Service,,,,,Integrations
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration

@@ -65,11 +65,11 @@
       `@self.tokenSubject`. The narrowed block reaches `MagicRbacHandler`
       through `resolveSchemaAuthorization()`, which delegates here, so a list
       is already filtered by the narrowed verbs; the row condition is 1.1d.
-- [ ] 2.2 `actorVia` and `whoami`. `TokenGrant::toArray()` and `tokenId` are
+- [x] 2.2 `actorVia` and `whoami`. `TokenGrant::toArray()` and `tokenId` are
       the data both need; the audit writer and the whoami endpoint are the
       two callers, and neither is written yet.
       - Done, the `whoami` half: `GET /api/whoami` (`WhoamiController::show()`) answers the calling user, `actorVia` (the bound grant's token or Consumer id) and the effective grant from `TokenGrantSource`. `expired` follows `TokenGrant::isExpired()`, so a missing end date reads as expired. It answers 401 without a user and takes no id, so only the caller is ever answered. Tests: `tests/Unit/Controller/WhoamiControllerTest.php` (7).
-      - Open, the audit half: `TokenAttribution` already seals the calling token and Consumer into `resultSummary.token` and the `consumer` column. Naming that `actorVia` on every write through a granted token is not done here.
+      - Done, the audit half: `TokenAttribution::apply()`, which every audit row passes through in `AuditTrailMapper`, now also writes `resultSummary.actorVia` (inside the sealed JSON) with the bound grant's token or Consumer id whenever a grant with an id is bound to the request. The user stays the actor; an interactive session or an ungranted token gets no `actorVia` key. Tests: `tests/Unit/Service/Audit/TokenAttributionActorViaTest.php` (5).
 
 ## 3. Surfaces
 
@@ -95,9 +95,21 @@
       renewal.
 - [x] C40.4a The limit is carried on the grant and validated as a positive
       number of calls per minute.
-- [ ] C40.4b The counter and the refusal that names it, which needs a shared
+- [x] C40.4b The counter and the refusal that names it, which needs a shared
       cache and a middleware.
-- [ ] C40.5 An administered outbound allowlist checked at save (D-C40-3).
+      - Done at the authorisation layer rather than a middleware, because the
+        grant is bound in `AuthorizationService` (JWT and API-key Consumers),
+        which integriq's endpoint runtime calls outside any OpenRegister
+        middleware. `TokenGrantRateLimiter` counts each token in a fixed
+        one-minute window in the distributed memcache; the call over the limit
+        throws `TokenRateLimitExceededException` (an `AuthenticationException`,
+        status 429, message and details naming the limit, the window and the
+        retry delay) before the request acts as the Consumer's user. No
+        distributed memcache: nothing is counted or refused. Personal tokens
+        follow once 1.1c gives them a grant. Tests:
+        `tests/Unit/Service/Rbac/TokenGrantRateLimiterTest.php` (6).
+- [x] C40.5 An administered outbound allowlist checked at save (D-C40-3).
+      - Done for webhooks: `OutboundAllowlist` reads the app setting `outboundAllowlist` (a JSON array of hosts, or one per line or comma; `*.example.nl` admits subdomains only). `WebhooksController::create()` and `update()` (when `url` is sent) refuse a destination outside it with 422 naming the field, the host and the allowlist, before anything is saved. Unset or empty: every destination is admitted, as today. Set but unreadable: refused. Tests: `tests/Unit/Service/Outbound/OutboundAllowlistTest.php` (8), `tests/Unit/Controller/WebhooksControllerAllowlistTest.php` (5). Left: flow HTTP steps (automations) are not checked yet, and the setting has no admin page field yet (it is set with `occ config:app:set openregister outboundAllowlist`).
 - [ ] C40.6 Tests: the missing end date refusal, the expired token, the leaver who does not break the integration, the interactive sign-in refusal, the allowlist refusal at save. The leaver and the interactive sign-in tests belong to the service account, which moved with C40.3 to `scoped-api-tokens-machine-callers` (task W.4 there); they are written there, not here.
 - [ ] C40.7 Hand over to the dossiq and integriq lanes with candidate ids C-access-and-privacy-35, -42, -43, -44 and -70, noting that C-access-and-privacy-35 is already answered by `account-self-service`.
 - [x] C40.8 Reported, unfixed, in the PR body: `openspec validate --strict`
