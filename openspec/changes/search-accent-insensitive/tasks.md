@@ -18,7 +18,8 @@
 ## 3. Tests and docs
 
 - [ ] 3.1 Add `tests/e2e/ci/search-accents.spec.ts`: seed objects named "Café de Flore" and "reünie", search the object API and the index page with `cafe` and `reunie`, and with `_accents=exact`.
-- [ ] 3.2 Document accent-insensitive search and the setting in `docs/features/`.
+- [x] 3.2 Document accent-insensitive search and the setting in `docs/features/`.
+  - The "Accents (`_accents`)" section of `docs/features/search-and-faceting.md`.
 
 Acceptance:
 
