@@ -7059,3 +7059,4 @@ decidiq	2165	8558e27092941ee5136b6878bf9c409815a07a00	GREEN	worker-58	tree witho
 hermiq	1758	0dad551fafb0efbec570b10bc2f0191732fff7d1	GREEN	worker-27	tree 1726+1758: 4720 tests, baseline 4694 (146E/26F inherited), 0 new failures; build reports-on-a-schedule matches its specs
 hermiq	1492	871a590f1e53a7b52cf8f67ab2a6444a61bb5acd	GREEN	worker-20:review	moved cli methods compared body by body with development: same refusal messages, timeouts, guard order and personal-scope check; no public method removed; phpstan clean; unit suite on PR+development 4712 tests, no new failures
 hermiq	1728	71ac65736fee2a5805927d20321be3caef9ce772	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
+hermiq	1735	7510e23605d22504ee32d588d29250e4114d827a	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
