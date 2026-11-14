@@ -11316,3 +11316,4 @@ fix:portaliq:2498:694d2dce	merged development, conflicts resolved keeping both s
 verify:opencatalogi:2665:90e45c67	GREEN 2665,2677,2687,2688; RED 2668,2671; CONFLICT 2696; 2672,2682 skipped (head moved)	session-20261114T203357-c555025b	2026-11-14T21:51:38Z
 review:decidiq:2149:b733293a	GREEN: decidiq#2149 matches its change specs; unit 4294 OK, vitest 2813 pass, phpstan clean	session-20261114T214742-7aa14b57	2026-11-14T21:51:45Z
 verify:hermiq:1781:b8bda1f3	CONFLICT: #1781 conflicts with development in hermiq_register.json	session-20261114T214740-6d7e97c9	2026-11-14T21:52:03Z
+fix:launchpad:1226:b0a0aa85	fixed duplicate nl.js keys vs #1212, pushed 2e6e68db, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T21:52:21Z
