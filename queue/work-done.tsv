@@ -11656,3 +11656,4 @@ build:versioniq:install-manual-upload:c2	partial: no progress this session (work
 fix:launchpad:1209:2cb0094a	conflict resolved, pushed 9d0c1bf3, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T22:42:41Z
 fix:versioniq:695:93abbf9c	floor restored by splitting VERS/CSAF units; pushed 9d0f302d	session-20261114T211810-b8f5dc24	2026-11-14T22:42:58Z
 fix:versioniq:727:b606104e	conflicts resolved keeping both sides, new head 745065b5, REVERIFY	session-20261114T221756-d9538cf9	2026-11-14T22:43:08Z
+fix:versioniq:706:679d4733	fixed floor: refactor to small units, floor passes; head fdbbbe0c	session-20261114T221801-9a21d394	2026-11-14T22:43:22Z
