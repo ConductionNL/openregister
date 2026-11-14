@@ -10853,3 +10853,4 @@ fix:decidiq:2205:9c878baf	failed: development already merged in; conflicts only 
 verify:portaliq:2498:ad719f3d	2498 GREEN, 2500 CONFLICT	session-20261114T201755-10d43934	2026-11-14T20:20:51Z
 build:filinq:redaction-guarantees-from-the-engine:c2	failed: precondition still unmet - openregister main has redaction-release-safeguards 0/20 and redaction-policy-as-data 3/15 ticked; both are being built on build/redaction-* branches, not merged or released; the change says wait for both	session-20261114T194745-243de12d	2026-11-14T20:21:05Z
 review:shillinq:3000:5625ba51	GREEN: unit 11325 OK on PR+development; behaviour changes are specced	session-20261114T194744-563ce177	2026-11-14T20:21:04Z
+verify:planninq:1179:11810379	GREEN 1179: phpunit 1067 ok, vitest 3345 ok	session-20261114T201752-7e06b161	2026-11-14T20:21:11Z
