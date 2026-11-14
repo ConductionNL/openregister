@@ -110,6 +110,8 @@
     "dexie": "^4.4.6",
     "dompurify": "^3.4.17",
     "gridstack": "^13.2.0",
+    "leaflet": "^1.9.4",
+    "leaflet-draw": "^1.0.4",
     "marked": "^18.1.1",
     "pinia": "^4.1.0",
     "vue": "^3.5.45",
