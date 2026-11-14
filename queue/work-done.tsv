@@ -11542,6 +11542,7 @@ fix:buildiq:1641:5816876b	inherited: development itself is rated 3.85 in its com
 verify:decidiq:2172:35122b20	2172,2178,2188,2207 GREEN; 2189,2202 CONFLICT	session-20261114T204759-5dc9dba7	2026-11-14T22:24:08Z
 review:shillinq:2997:7b590930	GREEN: suite OK merged with development	session-20261114T211810-b8f5dc24	2026-11-14T22:24:14Z
 review:openregister:10573:2d33581a	APPROVE	session-20261114T211754-5182f374	2026-11-14T22:24:21Z
+build:planninq:projects-wiki:c3	PR #1180: task 2.3 attachments built (upload via object files, image/download links, 10 vitest tests, strings in 37 locales); all code tasks ticked; left: e2e/live checks, 5.1 openspec CLI unavailable	session-20261114T221800-b231235b	2026-11-14T22:24:33Z
 verify:stackiq:1937:63b5ad6e	1937 GREEN, 1954 GREEN, 1956 CONFLICT (l10n); no new failures	session-20261114T214719-cd72efa7	2026-11-14T22:24:37Z
 verify:integriq:3564:9372562c	3564 GREEN (phpunit no new failures, vitest 2258 green)	session-20261114T214733-d4130db7	2026-11-14T22:24:46Z
 verify:hermiq:1739:5370d786	1739 GREEN; 1751, 1795 CONFLICT with 1739	session-20261114T221709-8b871792	2026-11-14T22:25:02Z
