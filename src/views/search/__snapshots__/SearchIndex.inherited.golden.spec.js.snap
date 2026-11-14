@@ -1,0 +1,96 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the search page schema with byEveryReference merges and normalizes the properties 1`] = `
+{
+  "normalized": {
+    "allOf": [
+      {
+        "id": 1,
+      },
+      "u-2",
+      3,
+      "4",
+    ],
+    "properties": {
+      "age": {
+        "type": "integer",
+      },
+      "city": {
+        "order": 1,
+      },
+      "name": {
+        "order": 2,
+        "type": "string",
+      },
+      "own": {
+        "order": 5,
+      },
+      "shared": {
+        "from": "own",
+        "order": 0,
+      },
+    },
+  },
+  "order": [
+    "name",
+    "shared",
+    "age",
+    "city",
+    "own",
+  ],
+  "same": false,
+}
+`;
+
+exports[`the search page schema with noAllOf merges and normalizes the properties 1`] = `
+{
+  "normalized": {
+    "properties": {
+      "own": {
+        "order": 7,
+      },
+    },
+  },
+  "order": [
+    "own",
+  ],
+  "same": false,
+}
+`;
+
+exports[`the search page schema with noProperties merges and normalizes the properties 1`] = `
+{
+  "normalized": {
+    "allOf": [
+      1,
+    ],
+  },
+  "order": [],
+  "same": true,
+}
+`;
+
+exports[`the search page schema with none merges and normalizes the properties 1`] = `
+{
+  "normalized": null,
+  "order": null,
+  "same": true,
+}
+`;
+
+exports[`the search page schema with unknownParent merges and normalizes the properties 1`] = `
+{
+  "normalized": {
+    "allOf": [
+      "nope",
+    ],
+    "properties": {
+      "own": {},
+    },
+  },
+  "order": [
+    "own",
+  ],
+  "same": false,
+}
+`;

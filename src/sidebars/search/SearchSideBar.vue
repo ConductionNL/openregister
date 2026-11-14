@@ -517,6 +517,7 @@ import {
 	schemaStore,
 	viewsStore,
 } from '../../store/store.js'
+import { inheritedProperties } from '../../views/search/inheritedProperties.js'
 import { scopeListLoader } from '../scopeListLoader.js'
 
 /**
@@ -601,6 +602,103 @@ function facetEntries(fields, keys, label) {
 	})
 }
 
+/**
+ * The register picker of the sidebar's scope pickers.
+ *
+ * @param {object} sidebar The sidebar
+ * @return {object} The picker
+ */
+function registerPicker(sidebar) {
+	return {
+		id: 'registerSelect',
+		label: t('openregister', 'Registers'),
+		bag: sidebar.registerOptions,
+		value: sidebar.selectedRegisters,
+		loading: sidebar.registerLoading,
+		disabled: sidebar.registerLoading,
+		placeholder: t('openregister', 'Select one or more registers'),
+		change: sidebar.handleRegisterChange,
+		hint: t('openregister', 'register(s) selected'),
+	}
+}
+
+/**
+ * The schema picker of the sidebar's scope pickers; disabled until a
+ * register is picked.
+ *
+ * @param {object} sidebar The sidebar
+ * @return {object} The picker
+ */
+function schemaPicker(sidebar) {
+	return {
+		id: 'schemaSelect',
+		label: t('openregister', 'Schemas'),
+		bag: sidebar.schemaOptions,
+		value: sidebar.selectedSchemas,
+		loading: sidebar.schemaLoading,
+		disabled: sidebar.selectedRegisters.length === 0 || sidebar.schemaLoading,
+		placeholder: t('openregister', 'Select one or more schemas'),
+		change: sidebar.handleSchemaChange,
+		hint: t('openregister', 'schema(s) selected'),
+	}
+}
+
+/**
+ * The metadata (`@self`) facet category.
+ *
+ * @param {object} facetableFields The facetable fields by category
+ * @return {object} The category
+ */
+function metadataFacetCategory(facetableFields) {
+	return {
+		key: '@self',
+		title: t('openregister', 'Metadata Filters'),
+		entries: facetEntries(
+			facetableFields['@self'],
+			(fieldName) => [
+				`@self.${fieldName}`,
+				`facet-@self-${fieldName}`,
+			],
+			(field, fieldName) => field.description || fieldName,
+		),
+	}
+}
+
+/**
+ * The content (object field) facet category.
+ *
+ * @param {object} facetableFields The facetable fields by category
+ * @return {object} The category
+ */
+function contentFacetCategory(facetableFields) {
+	return {
+		key: 'object_fields',
+		title: t('openregister', 'Content Filters'),
+		entries: facetEntries(
+			facetableFields.object_fields,
+			(fieldName) => [fieldName, `facet-${fieldName}`],
+			(field, fieldName) =>
+				field.title || field.description || fieldName,
+		),
+	}
+}
+
+/**
+ * How one facet is asked for: by the field's first facet type, terms by
+ * default, and a date histogram bucketed by month.
+ *
+ * @param {object|undefined} fieldInfo The facetable field
+ * @return {{type: string, interval?: string}} The facet request
+ */
+function facetRequest(fieldInfo) {
+	const facetType = fieldInfo?.facet_types?.[0] || 'terms'
+	const request = { type: facetType }
+	if (facetType === 'date_histogram') {
+		request.interval = 'month'
+	}
+	return request
+}
+
 export default {
 	name: 'SearchSideBar',
 	components: {
@@ -667,30 +765,7 @@ export default {
 		 * @return {Array<object>} The pickers, registers first
 		 */
 		scopePickers() {
-			return [
-				{
-					id: 'registerSelect',
-					label: t('openregister', 'Registers'),
-					bag: this.registerOptions,
-					value: this.selectedRegisters,
-					loading: this.registerLoading,
-					disabled: this.registerLoading,
-					placeholder: t('openregister', 'Select one or more registers'),
-					change: this.handleRegisterChange,
-					hint: t('openregister', 'register(s) selected'),
-				},
-				{
-					id: 'schemaSelect',
-					label: t('openregister', 'Schemas'),
-					bag: this.schemaOptions,
-					value: this.selectedSchemas,
-					loading: this.schemaLoading,
-					disabled: this.selectedRegisters.length === 0 || this.schemaLoading,
-					placeholder: t('openregister', 'Select one or more schemas'),
-					change: this.handleSchemaChange,
-					hint: t('openregister', 'schema(s) selected'),
-				},
-			]
+			return [registerPicker(this), schemaPicker(this)]
 		},
 
 		/**
@@ -702,28 +777,8 @@ export default {
 		 */
 		facetCategories() {
 			return [
-				{
-					key: '@self',
-					title: t('openregister', 'Metadata Filters'),
-					entries: facetEntries(
-						this.facetableFields['@self'],
-						(fieldName) => [
-							`@self.${fieldName}`,
-							`facet-@self-${fieldName}`,
-						],
-						(field, fieldName) => field.description || fieldName,
-					),
-				},
-				{
-					key: 'object_fields',
-					title: t('openregister', 'Content Filters'),
-					entries: facetEntries(
-						this.facetableFields.object_fields,
-						(fieldName) => [fieldName, `facet-${fieldName}`],
-						(field, fieldName) =>
-							field.title || field.description || fieldName,
-					),
-				},
+				metadataFacetCategory(this.facetableFields),
+				contentFacetCategory(this.facetableFields),
 			]
 		},
 
@@ -1418,21 +1473,7 @@ export default {
 		 * @return {object} Merged properties object
 		 */
 		resolveInheritedProperties(schema) {
-			const allOf = schema?.allOf || []
-			const inherited = {}
-			for (const ref of allOf) {
-				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(
-					(s) =>
-						s.id === schemaId
-						|| s.uuid === schemaId
-						|| String(s.id) === String(schemaId),
-				)
-				if (parentSchema?.properties) {
-					Object.assign(inherited, parentSchema.properties)
-				}
-			}
-			return { ...inherited, ...(schema?.properties || {}) }
+			return { ...inheritedProperties(schema), ...(schema?.properties || {}) }
 		},
 
 		/**
@@ -1507,23 +1548,14 @@ export default {
 					const field = fieldName.replace('@self.', '')
 					if (!config['@self']) config['@self'] = {}
 
-					const fieldInfo = this.facetableFields?.['@self']?.[field]
-					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
-
-					config['@self'][field] = { type: facetType }
-					if (facetType === 'date_histogram') {
-						config['@self'][field].interval = 'month'
-					}
+					config['@self'][field] = facetRequest(
+						this.facetableFields?.['@self']?.[field],
+					)
 				} else {
 					// Object field facet
-					const fieldInfo =
-						this.facetableFields?.object_fields?.[fieldName]
-					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
-
-					config[fieldName] = { type: facetType }
-					if (facetType === 'date_histogram') {
-						config[fieldName].interval = 'month'
-					}
+					config[fieldName] = facetRequest(
+						this.facetableFields?.object_fields?.[fieldName],
+					)
 				}
 			})
 
