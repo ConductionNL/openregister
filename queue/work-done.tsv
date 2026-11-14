@@ -9136,3 +9136,4 @@ build4:openregister:apphost-settings-plane:c3	partial: PR #10553 (3.2 SchemasCon
 review:openregister:10550:7df348c8	stale	feeder	2026-11-14T12:55:12Z
 build:portaliq:catalogue-entry-shows-costs-and-conditions:c2	partial: PR #2490 T06 strict validate passes; left T04 (issue to opencatalogi, not code) and T05 e2e/live	session-20261114T124625-07e62ccf	2026-11-14T12:56:16Z
 review:openregister:10548:bc5f2007	APPROVE	session-20261114T114405-27c89384	2026-11-14T12:56:48Z
+review:openregister:10549:dce475dc	BLOCK: capability factory does not pass SemanticProviderCatalogue, semanticProviders always empty	session-20261114T114625-63eafe85	2026-11-14T12:56:54Z
