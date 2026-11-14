@@ -12070,3 +12070,4 @@ review:learniq:2484:109cbc95	GREEN: matches change specs; 6863 tests, 1 inherite
 review:filinq:2088:0e8040fe	GREEN: PHP 6782 OK, vitest/jest green	session-20261114T234758-aa94f07d	2026-11-14T23:54:39Z
 review:hermiq:1739:4f848818	GREEN: matches the change specs; unit suite 5236 green, vitest/eslint/phpstan clean	session-20261114T231754-004f1f75	2026-11-14T23:54:49Z
 review:filinq:2094:80494522	GREEN: suites green on merge with development	session-20261114T234941-e3e51cb9	2026-11-14T23:55:14Z
+build:larpinq:rules-rulebook-and-spell-lists:c2	partial: PR #1050 now has tasks 1.1-3.1 and 4.2 (seed, pages, Rulebook.vue, portal skillLists, docs), en+nl strings; left: 4.1 the other 34 locales (27 keys, test:l10n parity red), Playwright and live import	session-20261114T224754-e4a2fcab	2026-11-14T23:55:25Z
