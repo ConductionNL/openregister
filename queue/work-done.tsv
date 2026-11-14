@@ -10057,3 +10057,4 @@ verify:integriq:3542:2a386390	GREEN 3612 3614 3615 3616 3617 3619; CONFLICT 3618
 verify:filinq:2079:a5825284	#2079 GREEN; #2112 and #2126 CONFLICT after #2079	session-20261114T141721-aeb4e068	2026-11-14T16:07:59Z
 verify:dossiq:6513:12248002	GREEN dossiq#6513; 17370 tests, 19 inherited, none new	session-20261114T154807-c05f4e57	2026-11-14T16:08:10Z
 verify:shillinq:2959:11fd9164	2959 GREEN, 3075 GREEN (11225 OK); 3074 RED ConnectionsDeclarationTest	session-20261114T154733-94bb2e01	2026-11-14T16:08:35Z
+build:planninq:platform-baseline:c2	PR #1177 builds 2.4 (stylelint hex-outside-var-fallback + use-logical as error); every code task done; left 4.1 axe, 4.2 live, 4.3 Newman (need an instance), 5.1 archive. vitest 3224 pass, PHP 1038 OK	session-20261114T151932-05b02c14	2026-11-14T16:08:46Z
