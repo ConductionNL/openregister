@@ -2556,6 +2556,7 @@ OC.L10N.register(
     "Retry Policy" : "Uuesti proovimise poliitika",
     "Retry upload" : "Proovi üleslaadimist uuesti",
     "Retrying..." : "Uuesti proovimine...",
+    "Reveal" : "Paljasta",
     "Reverse" : "Pööra tagasi",
     "Reversed / final" : "Tagasi pööratud / lõplik",
     "Reversible" : "Tagasipööratav",

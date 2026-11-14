@@ -2556,6 +2556,7 @@ OC.L10N.register(
     "Retry Policy" : "Politika opakovania",
     "Retry upload" : "Skúsiť nahrávanie znova",
     "Retrying..." : "Opakuje sa...",
+    "Reveal" : "Odhaliť",
     "Reverse" : "Vrátiť späť",
     "Reversed / final" : "Vrátené / konečné",
     "Reversible" : "Vratné",

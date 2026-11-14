@@ -2556,6 +2556,7 @@ OC.L10N.register(
     "Retry Policy" : "Atkārtošanas politika",
     "Retry upload" : "Atkārtot augšupielādi",
     "Retrying..." : "Mēģina vēlreiz...",
+    "Reveal" : "Atklāt",
     "Reverse" : "Atgriezt",
     "Reversed / final" : "Atgriezts / galīgs",
     "Reversible" : "Atgriezenisks",

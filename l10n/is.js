@@ -2556,6 +2556,7 @@ OC.L10N.register(
     "Retry Policy" : "Endurtilraunaregla",
     "Retry upload" : "Endurtaka upphleðslu",
     "Retrying..." : "Endurtaki...",
+    "Reveal" : "Birta",
     "Reverse" : "Afturkalla",
     "Reversed / final" : "Afturkallað / endanlegt",
     "Reversible" : "Afturkræft",

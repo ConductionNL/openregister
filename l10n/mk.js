@@ -2556,6 +2556,7 @@ OC.L10N.register(
     "Retry Policy" : "Политика за повторување",
     "Retry upload" : "Обиди се повторно со прикачување",
     "Retrying..." : "Повторно обидување...",
+    "Reveal" : "Откриј",
     "Reverse" : "Поништи",
     "Reversed / final" : "Поништено / конечно",
     "Reversible" : "Поништливо",

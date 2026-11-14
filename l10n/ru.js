@@ -2556,6 +2556,7 @@ OC.L10N.register(
     "Retry Policy" : "Политика повтора",
     "Retry upload" : "Повторить загрузку",
     "Retrying..." : "Повтор...",
+    "Reveal" : "Раскрытие",
     "Reverse" : "Reverse",
     "Reversed / final" : "Reversed / final",
     "Reversible" : "Reversible",

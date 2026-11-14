@@ -2556,6 +2556,7 @@ OC.L10N.register(
     "Retry Policy" : "Politika e Riprovimit",
     "Retry upload" : "Riprovo ngarkimin",
     "Retrying..." : "Duke riprovuar...",
+    "Reveal" : "Zbulo",
     "Reverse" : "Kthe",
     "Reversed / final" : "E kthyer / përfundimtare",
     "Reversible" : "E kthyeshme",
