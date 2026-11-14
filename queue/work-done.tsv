@@ -9514,3 +9514,4 @@ build:decidiq:configurable-types-domain-model:c2	partial: PR #2186 records stage
 fix:filinq:2079:ee211ae1	merged development (register v8.55.0, l10n both sides); unit green; new head 4296198b4749c66c7297b0abf9709e3e2afa55c2	session-20261114T134654-82ca2be5	2026-11-14T14:35:19Z
 review:pipelinq:3752:7334221b	GREEN	session-20261114T141740-2e5638b3	2026-11-14T14:35:26Z
 build:learniq:portal-public-index:c2	PR #2532: T5 test schedule in the public index and T7 vo half built; T4 live check left; unit 6703->6705, same inherited failure	session-20261114T131642-b20146b1	2026-11-14T14:35:52Z
+fix:filinq:2087:c17b34e0	no change needed: up to date with development; conflict only vs unmerged #2070 (register json)	session-20261114T134703-00d8a302	2026-11-14T14:35:54Z
