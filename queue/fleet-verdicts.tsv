@@ -7096,3 +7096,4 @@ learniq	2520	35126bf97fa281cf063ec85288b5c3dd2bb77a4c	CONFLICT	worker-16	conflic
 learniq	2521	0e48166e66cc2767e4b4860b37b68b28cc7b230e	CONFLICT	worker-16	conflicts with 2488 in the tree, merges clean on development alone, files: tests/Unit/Settings/OpenLearningMaterialRegisterTest.php
 learniq	2524	6ea031ad0bb06544268a431f1854bf4bd669be93	CONFLICT	worker-16	conflicts with 2488 in the tree, merges clean on development alone, files: l10n/en.json l10n/nl.json lib/Listener/Registrar/IntegrityListenerRegistrar.php tests/Unit/Settings/OpenLearningMaterialRegisterTest.php
 decidiq	2137	3e19195251053f9a67e5d9a72987f1b46f1166b9	GREEN	worker-21	build matches its change specs; tree(2121,2137,2143,2149) unit 4135 OK, vitest 2694 OK; baseline 4027 OK; no new failures
+decidiq	2139	750d9f2f91766e515c7ed621ca8648d609c9e429	CONFLICT	worker-21	conflicts with development itself in l10n/en.js,en.json,nl.js,nl.json
