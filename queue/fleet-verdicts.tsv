@@ -10521,3 +10521,4 @@ larpinq	1039	7b286ddee5d0f6c1861115d440505c5929d72503	GREEN	worker-51	tree 1039+
 larpinq	1048	258a4b907098477295a89e6d2696b2967a4c6ca9	GREEN	worker-51	tree 1039+1048+1052: phpunit 857 OK, vitest 548 passed; phpunit baseline 832 OK; vitest baseline 548 passed; owner/GM sheet access as player-character-sheet-access specifies
 larpinq	1052	1b2b0ad356c9f3412103f96707507ed8a1869548	GREEN	worker-51	tree 1039+1048+1052: phpunit 857 OK, vitest 548 passed; phpunit baseline 832 OK; vitest baseline 548 passed
 larpinq	1049	ad99dd018d7bdeb95e824bdcbafe9759eadd443e	RED	worker-51	vitest tests/vitest/effectiveManifest.golden.spec.js: 'has the menu the inline pipeline built' and 'has the pages the inline pipeline built, in the same order' fail on #1049 alone (pass on development); golden not updated for the new worlds-maps pages
+larpinq	1050	a1b099f31feaa925e061aea60a5207d918045ed5	CONFLICT	worker-51	after 1039,1048,1049: l10n/en.js en.json nl.js nl.json
