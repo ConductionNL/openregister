@@ -4,7 +4,7 @@
 - [ ] Implement: Standard Application Metrics
 - [ ] Implement: Register, Schema, and Object Count Metrics
 - [ ] Implement: CRUD Operation Counters
-- [ ] Implement: Search Performance Metrics
+- [x] Implement: Search Performance Metrics
 - [ ] Implement: Webhook Delivery Monitoring
 - [ ] Implement: Health Check Endpoint
 - [x] Implement: Readiness Endpoint
@@ -68,3 +68,16 @@ Both values are set with `occ config:app:set <app> metrics_api_token --value=...
 settings field for them is not built. "Prometheus Metrics Endpoint" stays unticked: the
 counters/histograms/richer labels named in its requirement text are covered by the other
 items, which remain open.
+
+**Fourth pass, 2026-11-14: search performance metrics.** All three scenarios of "Search
+Performance Metrics" are built, so the item is ticked. `search_requests_total{type}` now
+carries the `keyword` / `semantic` / `hybrid` label (it was an unlabelled tableCount over
+`search_%` rows), `search_duration_seconds{type}` is a histogram with the 0.05 … 5.0 s
+bounds, and `embeddings_generated_total{status}` counts `success` and `failure` (every
+non-success status). `Search\Service\SearchMetricsReader` aggregates the
+`openregister_metrics` rows in two grouped queries, so a scrape never loads single rows;
+`Service\Observability\SearchMetricsProvider` turns them into samples and joins
+`OpenRegisterMetricsProvider`. A search recorded without a duration counts as a request but
+not in the histogram. The renderer now emits `# TYPE … histogram` and the `_bucket` / `_sum`
+/ `_count` series for a `histogram` family (a point names its series in an optional
+`suffix`); gauge and counter output is unchanged.

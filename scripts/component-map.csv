@@ -4249,3 +4249,5 @@ Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configurat
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 AppHost/Observability/MetricsAccessGuard.php,,AppHost,,,,,Integrations
+Search/Service/SearchMetricsReader.php,,Search,,,,,Search
+Service/Observability/SearchMetricsProvider.php,,Service,,,,,Integrations

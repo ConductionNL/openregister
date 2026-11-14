@@ -33,7 +33,7 @@ use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
 
 /**
- * Joins the task and webhook gauges under OpenRegister's provider alias.
+ * Joins the task, webhook and search metrics under OpenRegister's provider alias.
  *
  * @spec openspec/changes/production-observability
  */
@@ -44,21 +44,23 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	 *
 	 * @param TaskMetricsProviderInterface $tasks    The overdue-task gauge.
 	 * @param WebhookRetryMetricsProvider  $webhooks The webhook retry queue gauge.
+	 * @param SearchMetricsProvider        $search   The search and embedding metrics.
 	 */
 	public function __construct(
 		private readonly TaskMetricsProviderInterface $tasks,
 		private readonly WebhookRetryMetricsProvider $webhooks,
+		private readonly SearchMetricsProvider $search,
 	) {
 	}//end __construct()
 
 	/**
-	 * The samples of every joined provider, tasks first.
+	 * The samples of every joined provider: tasks, webhooks, then search.
 	 *
 	 * @return array<int, MetricSample>
 	 *
 	 * @spec openspec/changes/production-observability
 	 */
 	public function metrics(): array {
-		return [...$this->tasks->metrics(), ...$this->webhooks->metrics()];
+		return [...$this->tasks->metrics(), ...$this->webhooks->metrics(), ...$this->search->metrics()];
 	}//end metrics()
 }//end class
