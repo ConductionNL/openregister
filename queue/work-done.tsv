@@ -8909,3 +8909,4 @@ build4:openregister:upload-malware-scan:c2	failed: 3.1 needs files_antivirus+Cla
 review:openregister:10525:738620d7	APPROVE (component-map.csv conflicts with main)	session-20261114T092647-8b1e7e69	2026-11-14T10:55:06Z
 build:openregister:flow-code-step-in-a-sidecar:c2	already building: PR #10182 (build/flow-code-step-in-a-sidecar) still open, unmerged	session-20261114T092638-09421111	2026-11-14T10:55:21Z
 build4:openregister:records-draft-versions:c2	partial: PR #10533 - 2.1 ?version=<key> on the object read (delta merged into a copy, @self._version, 404 for an invisible draft; built at the route, not on the published find()); left 1.1 db check, 2.3, 3.x, 4.x, UI/e2e/docs	session-20261114T065631-b4991134	2026-11-14T10:55:27Z
+review:openregister:10519:31d12308	APPROVE: property index switch, suites and jest green	session-20261114T095639-051ba1e0	2026-11-14T10:57:33Z
