@@ -24,11 +24,12 @@
       serves every object through `ShareCrosses::shape()`: without `data` only `@self` is sent,
       without `files` or `timeline` those keys leave `@self`. Timeline entries are not served
       by any endpoint yet, so `timeline` only matters once 1.1 sends them.
-- [ ] 1.5 A schema declaration of whether its objects may be federated, defaulting to not. — partial:
+- [x] 1.5 A schema declaration of whether its objects may be federated, defaulting to not.
       `configuration.federatable: true` (`Schema::isFederatable()`, kept by `ConfigurationEntryRules`)
       is the declaration; `ShareGrantor::federationRefusal()` refuses creating a schema, object or
-      query share of a schema that does not declare it. Existing shares keep serving. A whole-register
-      share is not judged per schema yet.
+      query share of a schema that does not declare it, and a whole-register share unless every
+      schema in the register declares it (`ShareTargets::registerSchemas()`; a register or schema
+      that does not resolve is refused too). Existing shares keep serving.
 - [ ] 2.1 `tests/e2e/ci/platform-federation.spec.ts`: share to a second instance, accept, open, revoke, fail to open.
 - [ ] 2.2 Unit tests: the payload for each declaration, the undeclared schema refusal, an unchanged inbound path. — partial:
       the undeclared schema refusal (`ShareGrantorTest`, `ShareCreationRightsChainTest`,
