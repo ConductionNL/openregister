@@ -7920,6 +7920,7 @@ build:integriq:observability-log-filters	partial: PR #3568 SourceLogs scoped to 
 build:integriq:native-data-gathering-provider	partial: PR #3570 (contract test + feature page; 6 tasks ticked; waves 1-3 need live runs and the spectr drafts)	session-20261114T065635-61264d14	2026-11-14T07:39:30Z
 build:humaniq:time-non-project-activities	PR #1148: tasks 1.1-2.3 built (TimeActivity, absence refusal, week view, totals per kind); 3.1 live/e2e left; suite 4159->4187, 0 failures	session-20261114T070332-b3a23612	2026-11-14T07:39:31Z
 verify:learniq:2488:b28ed8ee	2488 GREEN; 2497 2506 2509 2519 2520 2521 2524 CONFLICT with 2488	session-20261114T070333-41d2bfe8	2026-11-14T07:39:34Z
+build:integriq:mapping-message-schema-validation	already built: all code tasks done on development (Oct); only live Playwright/Newman items remain	session-20261114T073111-9b40710a	2026-11-14T07:40:04Z
 fix:portaliq:2443:d5298d5e	failed: conflict is with unmerged #2434, not development (development merges clean): both bump the register 0.108.0 to 0.109.0 on the same test lines, so the register version itself collides; once #2434 lands, merge development and move this branch to 0.110.0	session-20261114T070323-628c2f37	2026-11-14T07:39:49Z
 build:integriq:form-submission-registration-targets	partial: PR #3571 (schemas, command+refusals+record, json & objects-api legs, list endpoint; zgw/stuf legs, file reading, admin page left)	session-20261114T062222-96f530fc	2026-11-14T07:39:45Z
 build:integriq:intake-channels-beyond-mail	partial: PR #3572 (assign route, service, event, schema, tests); inbox row actions left (logs page has no row actions, no action rights in manifest)	session-20261114T062134-840bbeee	2026-11-14T07:39:51Z
@@ -7929,6 +7930,7 @@ cover:pipelinq:7f9dc8e6mf8bb:34763eb4	already done: lib/Middleware/*.php is 58/5
 verify:shillinq:2972:2dd4705a	2972 GREEN, 3010 GREEN, 3004+3009 CONFLICT (with 2972)	session-20261114T073109-bb0ea608	2026-11-14T07:40:47Z
 build:integriq:ori-public-serving	already done: every code task built on development; open items need a live instance (Newman TC-1..14, TC-10 publish window) or are a cross-repo note	session-20261114T062134-840bbeee	2026-11-14T07:40:59Z
 fix:portaliq:2430:c0571758	merged development cleanly, Settings tests OK, pushed fc437ac24686b9b36baa4a8441496e29b8cbda71, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T07:40:55Z
+verify:integriq:3543:3001e881	2 GREEN (3543,3551); 0 new failures	session-20261114T073117-2bd2e050	2026-11-14T07:41:06Z
 build:integriq:nextcloud-event-hub-verification	partial: PR #3573, docs page for Task 5 written; Tasks 1-4 and the screenshot need a live instance/browser	session-20261114T065633-3e3cb668	2026-11-14T07:41:06Z
 verify:pipelinq:3742:7851a5a8	3742 GREEN, 3752 GREEN; unit 7903 0 fail, vitest 4938 pass	session-20261114T065632-a1c920c5	2026-11-14T07:41:14Z
 review:integriq:3435:8f36c1e1	GREEN integriq#3435: tests only, 9 new tests pass, no new failures	session-20261114T073108-8b40426a	2026-11-14T07:41:24Z
