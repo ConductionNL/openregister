@@ -120,7 +120,7 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
   - Built: "GET file settings as admin: the document store" in
     `tests/integration/openregister-api-filesettings-anonymisationbackend.postman_collection.json`, the file settings
     collection `tests/newman/run-all.sh` runs; it asserts every `documentStore` key and its type.
-- [ ] 3.3 Administrator documentation `docs/Installation/separate-document-store.md`: mount a store with the External
+- [x] 3.3 Administrator documentation `docs/Installation/separate-document-store.md`: mount a store with the External
   storage app for the `openregister` account, set the root on a fresh installation, move an existing corpus
   (dry run, move, check status, purge), and what stops a register. Load the hydra `writing` skill first.
 
