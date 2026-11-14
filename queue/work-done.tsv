@@ -11941,3 +11941,4 @@ fix:decidiq:2199:fe3a4fc8	conflict resolved (l10n both sides kept), unit 4404 OK
 cover:shillinq:05639debm9818:ef05df2f	PR #3084: 107 tests for NationalExtraTailChecks + NationalReportingTailChecks; lib/Standards/Checks 93.6% -> ~95.4%; suite 11568 OK	session-20261114T231755-998f7ff8	2026-11-14T23:34:30Z
 measure:versioniq:20261114h22	php 98.24% (pcov), js 97.27%	session-20261114T221759-cd5c5678	2026-11-14T23:34:35Z
 fix:decidiq:2178:24b4be0c	conflict resolved, new head b9927684	session-20261114T214733-589f5bff	2026-11-14T23:34:42Z
+fix:versioniq:716:73f4cacd	no change: branch already contains development; conflicts only with open sibling PRs #698/#707 (ApiController.php and 3 tests); merge development in after they land	session-20261114T221759-cd5c5678	2026-11-14T23:34:57Z
