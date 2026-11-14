@@ -12097,3 +12097,4 @@ build:dossiq:capability-rows-say-the-whole-capability:c5	partial: no new code th
 verify:opencatalogi:2720:aa902ddb	GREEN 2720: no new failures (2 inherited)	session-20261114T234952-566b7ef5	2026-11-14T23:59:21Z
 cover:shillinq:05639debm9818:2befd24e	stale: lib/Service/Asset/ no longer exists on development (moved in a refactor); nothing to cover	session-20261114T234948-b89aaae1	2026-11-14T23:59:42Z
 verify:dossiq:6523:582fa52e	GREEN 6523 (tests only, no new failures)	session-20261114T234941-e3e51cb9	2026-11-14T23:59:40Z
+verify:decidiq:2187:dd2696e2	2187 RED (duplicate DecisionDetail layout id 19, vitest sendForApproval); 2191, 2207 GREEN	session-20261114T234944-ee1416bc	2026-11-14T23:59:53Z
