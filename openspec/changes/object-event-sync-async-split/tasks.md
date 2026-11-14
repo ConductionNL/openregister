@@ -135,7 +135,12 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
       removed. Opted-out schemas enqueue nothing; `listenerDeferral=inline`
       runs the old inline path.
 - [ ] 2.5 OBSOLETE (`ActionListener` removed in #3382). `ActionListener` (C/U/D) → `ActionDispatchJob`; Deleted entry carries payload; keep `ActionRetryJob` as the failure path unchanged.
-- [ ] 2.6 `SourceRecordChangeListener` (C/U/D) → `SourceRecordRecomputeJob` under the D3 payload contract: resolve new + old master UUIDs **inline**, carry those (not the source uuid), dedupe on masterUuid, log captured-vs-current org drift and no-op rather than partially writing.
+- [x] 2.6 `SourceRecordChangeListener` (C/U/D) → `SourceRecordRecomputeJob` under the D3 payload contract: resolve new + old master UUIDs **inline**, carry those (not the source uuid), dedupe on masterUuid, log captured-vs-current org drift and no-op rather than partially writing.
+      DONE: the listener resolves the new and old master UUIDs inline and
+      defers `['masterUuid' => …]` to `SourceRecordRecomputeJob` with the
+      master as dedupe key; the job runs under `ActorForwardedJob`, which logs
+      captured-vs-current organisation drift and proceeds under current
+      authority (D3). Evidence: `tests/Unit/Listener/SourceRecordChangeListenerPayloadTest.php`.
 
 ## 3. Inline exceptions
 
@@ -149,7 +154,11 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
 
 - [ ] 4.1 (ContextChatSubmissionJob part done: `tests/Unit/BackgroundJob/ContextChatSubmissionJobTest.php`) Job unit tests for the six new jobs: forwarded-actor execution, stale/gone entry no-op, and — for `ContextChatSubmissionJob` — the same-uuid re-create existence check.
 - [ ] 4.2 (ContextChatSubmissionListener part done: `tests/Unit/Listener/ContextChatSubmissionDeferralTest.php`) Listener unit tests: request path enqueues instead of running heavy work; interest gates suppress the enqueue; `listenerDeferral=inline` runs the full inline path.
-- [ ] 4.3 `SourceRecordChangeListener` payload tests: re-parenting refreshes **both** masters; a bulk edit of 500 source records on one master collapses to one recompute; deleted-path master uuid resolved inline.
+- [x] 4.3 `SourceRecordChangeListener` payload tests: re-parenting refreshes **both** masters; a bulk edit of 500 source records on one master collapses to one recompute; deleted-path master uuid resolved inline.
+      DONE: `tests/Unit/Listener/SourceRecordChangeListenerPayloadTest.php`
+      runs the listener against the real deferral buffer: 500 updates on one
+      master enqueue one job with one entry, re-parenting enqueues both
+      masters once, a deleted source carries its master (not its own uuid).
 - [ ] 4.4 OBSOLETE (with 2.2). `HookListener` split test: a pre-event hook veto still aborts the save and enqueues **no** post-event job.
 
 ## 4b. Filtered subscription (D6 — resolves hydra Open Question 2)
