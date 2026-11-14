@@ -2703,3 +2703,25 @@ decidiq	2169	d6a0067ec1d6b3f291bedc78cbadce8e9e01cad9	RED	merge3	GATE RED floor:
 decidiq	2175	30ead60504c2129cb93d3174e224f045f34a6056	RED	merge3	GATE RED floor: unit_complexity: 3.90 -> 3.88
 decidiq	2183	bbf91e1cfa0902ace0fa12e8e8091e14d1d1a91c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2185	ca52b5c98bd3b5af11c8c55ac09cc9cbc3c46989	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6287	470df60fac7081193bd581a5474974fad1eb1bf7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6309	fd3b2c3092e4d56fd43ca1618ef085d8b5041dae	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6320	9dfb0cb9f172df30a8510e948a21300cda90ea94	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6348	90471ed48f399afa0d1cceaf40f7e7125c9e2ecf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6349	d1c7c17249209c432f21fd7b70412f3a3f622bce	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6378	17885db4f7e842f5d571cea1e283b9fa35b7d803	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6434	b7e5e4ed13f3d5706efdb3c08d602d2ce8e983f1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6459	6d6b896bd133b1b0711e3be0561e3b76567d992a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6462	fd68cfadb0313e6418475bcefe0e65f1dde9409b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6464	03c0730710ceb03d964d8062f06f1bcc965d1cd8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6487	03b99af3822b2428efe509e3dd7d3b048c6a5ac7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6488	7f65b484582ffe8deff78d18c5839034950bf869	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6489	983ea920c8f5175f0150ca7fe3ce1bd889ddd7b5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6490	8fc1e32676d9481d6d9bf760fd4a7a826b1c9a15	FAIL	merge3	{"message":"Base branch was modified. Review and try the merge again.","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Base branch was modified. Review and try the merge again. (HTTP 405)
+dossiq	6491	3405f4aa27cc404b0c835c414ad7890f6ba078d7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6492	ddb7d6a53264d7c6515e6f66d3e733a2a026bdef	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6493	8fbb966c71a80e566b1d8b8ac2156519825efe7a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6494	7ac4936ec04d62ceef51e56b1c70b47ae4819d64	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6495	6952c6a486f2fa8531b023650c3f33b21ae848c2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6496	a6fc098e10be82f6226f109f68595d928ca13cf0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6498	72b3abf3f981f78e230f1f257c55ce31c4b6b8db	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+dossiq	6500	fc50db36f904b216baebe0bdcbe804a7c921ac42	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
