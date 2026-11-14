@@ -7491,3 +7491,4 @@ opencatalogi	2648	225f1e628870876832616b144915ef14e4a461f2	REVERIFY	worker-15	me
 buildiq	1630	a2088089094ea2f7d956fcc33307c7e65a004dd2	CONFLICT	worker-28	conflicts with development+1554+1629+1631 in tree order
 buildiq	1632	4b09bf4c18e88f9c4de0ad3fff6123eaa109968a	CONFLICT	worker-28	conflicts when merged in tree order
 buildiq	1618	95f5b703b67e561d3ce6424d89f1f1c7c80dcc5a	REVERIFY	worker-05	merged development (clean); php unit 2965 run, only failure ExportZipGoldenTest = development baseline. Remaining overlap with unmerged #1613/#1614 is l10n en/nl only: merge those first, then this needs another development merge; new head 08874393b34c1159158d28e01989613124330863, verify it
+keepiq	1791	a0a825d574acc00878c4bab9af78d0a48c5e4f3b	GREEN	worker-13	unit 4985 OK (baseline 4975 OK), no new failures; build crypto-recovery-kit matches its specs
