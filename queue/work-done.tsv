@@ -8373,3 +8373,4 @@ build:stackiq:capability-rows-the-code-does-not-yet-meet	failed: no slice built 
 build:stackiq:bundle-hygiene-apexcharts-lodash	already done on development (85c57ba4: apexcharts dropped, lodash imports scoped); tasks.md not ticked	session-20261114T082633-7466e3ea	2026-11-14T08:42:35Z
 build:stackiq:federation-pull-fetches-the-peer	failed: the change does not name the peer endpoint the pull reads (path, paging shape, where the peer's organisation name comes from); needs a design line before Task 1, and Tasks 2-3 build on what Task 1 records	session-20261114T062134-840bbeee	2026-11-14T08:42:48Z
 verify:keepiq:1786:a8b5a1cd	1786 GREEN; 1787,1788 CONFLICT (l10n vs 1786)	session-20261114T062156-16c77e6a	2026-11-14T08:42:58Z
+build:stackiq:contract-approval-ownership-guard	already done in code; PR #1902 ticks tasks 1.1-4.1 (4.2 is a hydra-repo note)	session-20261114T065626-0651b305	2026-11-14T08:43:13Z
