@@ -8824,3 +8824,4 @@ planninq	1160	67464e9d1417e21a9ca496d8a751d172e4884886	REVERIFY	worker-57	unit_i
 planninq	1159	b7c86685b93e00fd2a9068fee34ffeef20327226	GREEN	worker-38	tree dev+1158+1159+1162: phpunit 1046 OK, vitest 3269 pass, 0 failures (no baseline failures); builds tasks-dates, golden updates only add the date pickers
 planninq	1162	9ad30c89501f3dc502bdd902f8a88e0a0f4c102a	GREEN	worker-38	tree dev+1158+1159+1162: phpunit 1046 OK, vitest 3269 pass, 0 failures (no baseline failures); builds case-link-editing
 planninq	1169	1268ee2b3412634abc210fcf92b1706e31e75ab3	CONFLICT	worker-38	l10n catalogues of every locale conflict with #1158/#1159/#1162 in tree order
+integriq	3596	be7f832475973073cb19c8e7cfd	CONFLICT	worker-02	correction of the previous 3596 row: the CONFLICT (vs development + 3539, lib/Service/CallService.php) was found on head be7f8324...; the head moved to 831eea2f8d0a9a1aa88a69d7d0777692d07284cd while recording, which was not verified
