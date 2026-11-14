@@ -10897,3 +10897,4 @@ verify:hermiq:1715:3f8364d7	1715 GREEN, 1739 GREEN; 1726 1749 1785 1787 CONFLICT
 merge:learniq:2536:57bab69d	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:07Z
 merge:learniq:2542:ae32d345	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:11Z
 verify:shillinq:3062:94e9ae91	3062 CONFLICT against development: info.xml, register-versions.lock.json	session-20261114T194744-563ce177	2026-11-14T20:29:17Z
+merge:learniq:2493:3be33264	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:23Z
