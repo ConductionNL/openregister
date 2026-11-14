@@ -306,11 +306,25 @@
 	"OCP\\App\\Events\\AppEnableEvent": [
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener"
 	],
+	"OCP\\Calendar\\Events\\CalendarObjectCreatedEvent": [
+		"OCA\\OpenRegister\\Listener\\CalendarObjectChangedListener"
+	],
 	"OCP\\Calendar\\Events\\CalendarObjectDeletedEvent": [
-		"OCA\\OpenRegister\\Listener\\TaskVtodoWriteBackListener"
+		"OCA\\OpenRegister\\Listener\\TaskVtodoWriteBackListener",
+		"OCA\\OpenRegister\\Listener\\CalendarObjectDeletedListener"
+	],
+	"OCP\\Calendar\\Events\\CalendarObjectMovedEvent": [
+		"OCA\\OpenRegister\\Listener\\CalendarObjectChangedListener"
+	],
+	"OCP\\Calendar\\Events\\CalendarObjectMovedToTrashEvent": [
+		"OCA\\OpenRegister\\Listener\\CalendarObjectDeletedListener"
+	],
+	"OCP\\Calendar\\Events\\CalendarObjectRestoredEvent": [
+		"OCA\\OpenRegister\\Listener\\CalendarObjectChangedListener"
 	],
 	"OCP\\Calendar\\Events\\CalendarObjectUpdatedEvent": [
-		"OCA\\OpenRegister\\Listener\\TaskVtodoWriteBackListener"
+		"OCA\\OpenRegister\\Listener\\TaskVtodoWriteBackListener",
+		"OCA\\OpenRegister\\Listener\\CalendarObjectChangedListener"
 	],
 	"OCP\\Comments\\CommentsEntityEvent": [
 		"OCA\\OpenRegister\\Listener\\CommentsEntityListener"

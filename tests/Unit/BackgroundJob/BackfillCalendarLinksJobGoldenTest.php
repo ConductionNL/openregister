@@ -69,7 +69,7 @@ class BackfillCalendarLinksJobGoldenTest extends TestCase {
 	 *
 	 * @return array<int, string> The call log.
 	 */
-	private function runBackfill(string $flag, array $users=[], array $exists=[], array $failOn=[]): array {
+	private function runBackfill(?string $flag, array $users=[], array $exists=[], array $failOn=[]): array {
 		$this->calls = [];
 		$current     = null;
 
@@ -77,7 +77,7 @@ class BackfillCalendarLinksJobGoldenTest extends TestCase {
 		$config->method('getValueString')->willReturnCallback(
 			function (string $app, string $key, string $default) use ($flag): string {
 				$this->calls[] = 'config '.$app.'.'.$key.' default='.$default;
-				return $flag;
+				return $flag ?? $default;
 			}
 		);
 
@@ -181,7 +181,7 @@ class BackfillCalendarLinksJobGoldenTest extends TestCase {
 	public function testFlagOff(): void {
 		self::assertSame(
 			[
-				'config openregister.backfill_calendar_links default=no',
+				'config openregister.backfill_calendar_links default=yes',
 				'info BackfillCalendarLinksJob skipped (flag backfill_calendar_links = no)',
 			],
 			$this->runBackfill('no', ['u1' => []])
@@ -256,7 +256,7 @@ class BackfillCalendarLinksJobGoldenTest extends TestCase {
 		);
 
 		$expected = [
-			'config openregister.backfill_calendar_links default=no',
+			'config openregister.backfill_calendar_links default=yes',
 			'setUser broken',
 			'setUser offline',
 			"getEvents ''",
@@ -275,4 +275,62 @@ class BackfillCalendarLinksJobGoldenTest extends TestCase {
 
 		self::assertSame($expected, $calls);
 	}//end testMatrix()
+	/**
+	 * An instance that never set the flag runs the backfill (REQ-CAL-INB-004):
+	 * the default is enabled, and only "no" stops it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-backfill-job-is-registered-and-enabled-by-default-req-cal-inb-004
+	 */
+	public function testAnUnsetFlagRunsTheBackfill(): void {
+		$calls = $this->runBackfill(null, ['alice' => [['objectUuid' => 'o1', 'uid' => 'e1']]]);
+
+		self::assertSame('config openregister.backfill_calendar_links default=yes', $calls[0]);
+		self::assertContains('find o1|e1', $calls);
+		self::assertSame('info BackfillCalendarLinksJob finished. Inserted=1, skipped=0', end($calls));
+	}//end testAnUnsetFlagRunsTheBackfill()
+
+	/**
+	 * Only the exact value "no" is the kill switch; any other value runs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-backfill-job-is-registered-and-enabled-by-default-req-cal-inb-004
+	 */
+	public function testOnlyNoIsTheKillSwitch(): void {
+		foreach (['', 'true', 'NO '] as $flag) {
+			$calls = $this->runBackfill($flag, ['alice' => []]);
+			self::assertSame('info BackfillCalendarLinksJob finished. Inserted=0, skipped=0', end($calls), 'flag '.var_export($flag, true));
+		}
+	}//end testOnlyNoIsTheKillSwitch()
+
+	/**
+	 * A second run over the same events inserts nothing: every event is skipped.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-backfill-job-is-registered-and-enabled-by-default-req-cal-inb-004
+	 */
+	public function testARerunInsertsNothing(): void {
+		$events = [['objectUuid' => 'o1', 'uid' => 'e1'], ['objectUuid' => 'o2', 'uid' => 'e2']];
+		$calls  = $this->runBackfill(null, ['alice' => $events], ['o1|e1' => true, 'o2|e2' => true]);
+
+		self::assertSame([], array_values(array_filter($calls, static fn (string $c): bool => str_starts_with($c, 'insert '))));
+		self::assertSame('info BackfillCalendarLinksJob finished. Inserted=0, skipped=2', end($calls));
+	}//end testARerunInsertsNothing()
+
+	/**
+	 * The job is registered in appinfo/info.xml, so it is queued without a manual run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-backfill-job-is-registered-and-enabled-by-default-req-cal-inb-004
+	 */
+	public function testTheJobIsRegisteredInInfoXml(): void {
+		$info = simplexml_load_file(dirname(__DIR__, 3).'/appinfo/info.xml');
+		$jobs = array_map('strval', iterator_to_array($info->{'background-jobs'}->job, false));
+
+		self::assertContains(BackfillCalendarLinksJob::class, $jobs);
+	}//end testTheJobIsRegisteredInInfoXml()
 }//end class
