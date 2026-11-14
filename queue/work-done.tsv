@@ -11906,3 +11906,4 @@ fix:portaliq:2508:540d4522	conflict resolved by merging development; new head 04
 fix:filinq:2102:898cbd6b	conflict with development resolved (l10n), new head 1985bdd5, REVERIFY recorded	session-20261114T224736-f9da4a35	2026-11-14T23:29:15Z
 merge:learniq:2486:73e78579	merge3 tree of 7 learniq PRs: merged=2 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T23:29:36Z
 merge:learniq:2484:7c4f324f	merge3 tree of 7 learniq PRs: merged=2 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T23:29:39Z
+merge:learniq:2507:b47f3806	merge3 tree of 7 learniq PRs: merged=2 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T23:29:42Z
