@@ -2964,3 +2964,4 @@ launchpad	1215	507cc1f085745611834ee76e087ea94366e82e2c	MERGED	merge3	GATE OK sb
 launchpad	1222	8b68eeb3f425ded57606bb8c51ebcbec33489723	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.65
 launchpad	1223	bde0c65bc53ccd454d74c1f6654ca25e761c2d29	RED	merge3	GATE RED floor: unit_interfacing: 3.44 -> 3.37
 launchpad	1224	9b93d2fae68898af1e824d933e7acca9a0532c49	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
+portaliq	2440	05103dba28dab12a7bc76241c17706e632851a19	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
