@@ -7916,3 +7916,4 @@ review:openregister:10470:c3a811f5	APPROVE (publiccode.yml metadata only)	sessio
 fix:portaliq:2423:96437597	conflict with #2418 removed (check:help-settings chained from check:page-help); REVERIFY recorded, new head ca8637cc	session-20261114T070323-628c2f37	2026-11-14T07:38:58Z
 review:integriq:3466:07247ead	GREEN (tests only, passes merged with development)	session-20261114T065631-3903ed42	2026-11-14T07:39:05Z
 build:integriq:observability-log-filters	partial: PR #3568 SourceLogs scoped to outbound; nextcloud-vue release with filterControls not shipped yet	session-20261114T062200-6a28e40c	2026-11-14T07:39:20Z
+verify:learniq:2488:b28ed8ee	2488 GREEN; 2497 2506 2509 2519 2520 2521 2524 CONFLICT with 2488	session-20261114T070333-41d2bfe8	2026-11-14T07:39:34Z
