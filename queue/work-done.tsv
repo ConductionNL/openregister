@@ -9781,3 +9781,4 @@ verify:portaliq:2495:4121effd	GREEN 2495 (docs-only; unit 5247 OK, no new failur
 fix:portaliq:2440:55c8203a	conflict resolved, pushed b114e2d2, REVERIFY recorded	session-20261114T151802-aefa9c5e	2026-11-14T15:22:56Z
 fix:humaniq:1148:0dbbf502	merged development, resolved l10n conflicts; new head 6e604dad	session-20261114T151938-8fa99f90	2026-11-14T15:23:03Z
 fix:hermiq:1756:1311e7fc	no change: clean on development; conflicts only with #1739 on tool counts; verify alone	session-20261114T141727-56b2bf78	2026-11-14T15:23:13Z
+fix:humaniq:1137:80108332	fixed: merged development, merged duplicate configuration blocks on 4 schemas (export + MCP); remaining ListExportDeclaration failure (DeploymentPlan) is inherited from development; new head b1c9fdb7	session-20261114T144727-6763e1fc	2026-11-14T15:23:19Z
