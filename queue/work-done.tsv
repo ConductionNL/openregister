@@ -9924,6 +9924,7 @@ build:integriq:native-data-gathering-provider:c2	no code tasks doable on PR #357
 verify:integriq:3540:894c04a7	GREEN 3540 3546; CONFLICT 3572 3582 3588 3601 3602 (openapi.json / l10n vs tree)	session-20261114T151802-24eee21b	2026-11-14T15:46:20Z
 fix:humaniq:1145:6e47a417	merged development (clean at current head); new head 32c023d2	session-20261114T151936-6991f242	2026-11-14T15:46:31Z
 verify:hermiq:1728:4f9f10a0	1735 GREEN; 1738,1751,1754,1755,1757,1781 CONFLICT with #1735 in tree (clean on dev); 1728,1782 skipped (head moved)	session-20261114T144757-446bd6da	2026-11-14T15:47:02Z
+build:portaliq:site-honest-without-javascript:c3	PR portaliq#2498 builds 2.1 2.2 2.4 2.5 3.1 3.2 3.3 (plain /site/plain page, publication search+detail, 28 unit + 5 node tests, suite 5247->5275 green); left 3.4 4.1 (e2e/CI), 4.2 live, 5.x delivery	session-20261114T151758-95655a27	2026-11-14T15:47:14Z
 verify:shillinq:3067:7666a036	#3067 GREEN; #3069 skipped (head moved to 3f4b9186)	session-20261114T141721-aeb4e068	2026-11-14T15:47:10Z
 fix:humaniq:1139:540268b1	merged development (clean at current head); new head 181389a6	session-20261114T151936-6991f242	2026-11-14T15:47:17Z
 verify:pipelinq:3833:c60f3044	GREEN 3833	session-20261114T151938-8fa99f90	2026-11-14T15:47:35Z
