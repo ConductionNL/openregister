@@ -9293,3 +9293,4 @@ verify:hermiq:1777:f5cff830	GREEN 1777: no new failures	session-20261114T114630-
 build:shillinq:ledger-multi-administration:c2	partial: PR #2977 merged development in (conflicts + fallout fixed, suite green), 3.2 save-as-template built with tests; left 2.1 scoped index wrapper, 2.2 nextcloud-vue issue (out of reach), 3.3 wizard template step, 4.1 e2e, 4.2 remaining strings	session-20261114T114410-8ce13f7f	2026-11-14T13:41:15Z
 fix:portaliq:2443:9ff7996a	development merged in, versions renumbered, pushed 50fdf0f8	session-20261114T124625-07e62ccf	2026-11-14T13:41:40Z
 build:shillinq:tax-vat-return-from-books:c2	partial: PR #3062 builds 3.1 checks and 3.2 submit guard (suite 11062, no failures); left 1.2 (rate decision), 2.3, 3.3, 4.1, 5.1, 6.1	session-20261114T114414-1a8d8ccd	2026-11-14T13:43:06Z
+fix:portaliq:2452:21f98e99	development merged in, pushed fa58e527	session-20261114T124625-07e62ccf	2026-11-14T13:43:35Z
