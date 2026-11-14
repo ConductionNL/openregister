@@ -8514,3 +8514,4 @@ fix:larpinq:1024:b09265c2	merged development in, kept development copy of the du
 fix:buildiq:1630:a2088089	no change: merges clean with development; conflicts only with unmerged siblings #1629 (useManifestValidator.js) and #1631 (l10n en/nl) — resolve whichever lands second	session-20261114T065625-baa65a50	2026-11-14T09:00:59Z
 build:versioniq:releases-minimum-age	partial: PR #707, section 1 (setting, policy field, API 400s, MinimumAgeRule/FirstSeenStore); planner, job, page open	session-20261114T065626-0651b305	2026-11-14T09:00:53Z
 build:versioniq:safety-upgrade-migration-preview	partial: PR #706 (1.2 reader, 1.3 size probe; 1.1 needs live instance, 2.x/3.x after)	session-20261114T082633-7466e3ea	2026-11-14T09:00:40Z
+fix:learniq:2490:0a737598	conflict resolved: merged development, nl keys moved off the tail, clean with #2486; new head fedc6da6; REVERIFY recorded	session-20261114T082633-64525b24	2026-11-14T09:01:08Z
