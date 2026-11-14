@@ -9801,3 +9801,4 @@ fix:humaniq:1142:00f242d8	conflict resolved (l10n union), new head 4a3cccf9, REV
 fix:filinq:2074:228eb673	merged development (clean), unit OK; new head f1017b40c	session-20261114T151750-b10540e9	2026-11-14T15:25:49Z
 fix:pipelinq:3835:39c04790	conflict resolved, pushed f9170d1a, REVERIFY recorded	session-20261114T151942-48d6369d	2026-11-14T15:25:57Z
 fix:decidiq:2173:d0e45f2d	merged development cleanly, new head 1ef930fb, REVERIFY recorded	session-20261114T141728-9a5d03fc	2026-11-14T15:26:10Z
+build:decidiq:document-annotations:c2	done: PR #2171 now builds tasks 2-7 (annotation endpoints with server-side visibility, version capture, counts, own export/delete; pdf.js annotator, overlay, panel, Annotate widget, agenda badges, My notes); +12 PHPUnit, +17 vitest; suites 4191/2741 green; live/browser/e2e-run/docs left; head c0a0d101	session-20261114T144756-7c8966f2	2026-11-14T15:26:28Z
