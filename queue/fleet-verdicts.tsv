@@ -10273,6 +10273,7 @@ stackiq	1956	5e21700ec3c47e32ad2e88f449a204df304de2ba	CONFLICT	worker-15	conflic
 hermiq	1751	5340b3de69728be69e06a0c7b9c343128e3af434	CONFLICT	worker-34	merges clean on development but conflicts with #1739 in this tree
 hermiq	1795	a4cac7c25d0216ee17d020d655206ff0eb532905	CONFLICT	worker-34	merges clean on development but conflicts with #1739 in this tree
 decidiq	2143	f51a1774d8f40b7c7bd91a388ee530d9ba2e04e6	REVERIFY	worker-58	merged development; drop was component independence 2.49->2.45 (job-only lift-by sweep in Service exposed); moved it to lib/BackgroundJob/ConfidentialityLiftBySweep, overall 3.78 (floor 3.78); unit 4285 OK; new head 03e7b689e73ccc5b00babe514e28642297da1e34, verify it
+shillinq	2977	56133b60db0688d17e55b61ead23b16eb17f9879	REVERIFY	worker-36	regenerated src/administrationScopedPages.json (6 schemas from development); administrationScopedIndex.spec 10/10; vitest 2765/2766, dunningNextRun.spec fails on plain development too (inherited); new head dcb021934e64d9e0cfbd89ae5afac7f3e66a8332, verify it
 learniq	2521	33d6a10d4aa16d12fb49fbc159c992a382a2a5bc	GREEN	worker-54	PHP unit 6897 on tree (baseline 6835, only the 2 inherited failures), node unit-js no new failures
 learniq	2544	51f1817053398a1fa5481bbb97f968818664d3e9	CONFLICT	worker-54	conflicts with #2521 in scripts/example-sets/__pycache__/example_set.cpython-311.pyc (committed bytecode)
 learniq	2547	a6615a23072d18b9074017bf5a0eabe92d97a304	CONFLICT	worker-54	conflicts with #2507/#2521 in l10n en/nl (json and js)
