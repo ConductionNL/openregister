@@ -11634,3 +11634,4 @@ fix:versioniq:712:58bc9a3c	floor restored (PASS, overall 4.93), tests green; new
 build:stackiq:mcp-full-action-surface:c2	PR #1962: fragment, publication/sbom gates, 12 read + 15 write tools, tests (3602->3631 OK); membership tools deferred per 5.4; 1.4/7.2 live/archive	session-20261114T221804-88b39b17	2026-11-14T22:39:04Z
 verify:opencatalogi:2665:a0384d19	GREEN 2665	session-20261114T211810-b8f5dc24	2026-11-14T22:38:59Z
 fix:planninq:1169:ad389bd3	SPDX + openapi tag fixed, new head 23ab3aa4; REVERIFY recorded	session-20261114T221800-b231235b	2026-11-14T22:39:08Z
+build:stackiq:platform-properties:c2	done on PR #1934 (head c797e719): tasks 3-5 built and tested; left: task 6 matrix rows at archive time	session-20261114T214742-7aa14b57	2026-11-14T22:39:30Z
