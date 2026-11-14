@@ -7675,3 +7675,4 @@ verify:dossiq:6465:230ad901	GREEN 6465; 0 new failures	session-20261114T062156-e
 review:pipelinq:3685:d4db9224	GREEN: tests only, vitest 4956 pass	session-20261114T062200-62a0b439	2026-11-14T06:56:12Z
 fix:portaliq:2430:bc693f18	controller + test conflict resolved, suite green, pushed c0571758d5ba886e5aa602f39015dcf33d151403	session-20261114T062202-3e33eeb3	2026-11-14T06:56:28Z
 verify:pipelinq:3707:c69da37d	3707 GREEN; 3721,3742,3752 CONFLICT with #3707 (l10n tail)	session-20261114T062134-840bbeee	2026-11-14T06:57:03Z
+fix:portaliq:2393:624f0fe2	CONFLICT resolved (tests kept both), suite green; new head 02d38ade	session-20261114T062200-6a28e40c	2026-11-14T06:57:53Z
