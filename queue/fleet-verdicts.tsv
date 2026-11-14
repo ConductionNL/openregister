@@ -8463,3 +8463,4 @@ hermiq	1774	8f94070461aba862012147c5fc77ee89537a2b88	REVERIFY	worker-44	merged d
 hermiq	1739	693f7b98007b3937901f810d09b699c941078a18	GREEN	worker-11	phpunit 5138 tests on tree (baseline 5044, 188 inherited errors/failures, 0 new); vitest 1463 passed
 hermiq	1757	6877198f5d5593e151dec866562dba8b42524e08	GREEN	worker-11	phpunit 5138 tests on tree (baseline 5044, 188 inherited errors/failures, 0 new); vitest 1463 passed
 hermiq	1756	1311e7fc83333e0c04aecf6044f9c6e6bc660a50	CONFLICT	worker-11	clean on development; conflicts with #1739 in this tree (tests/Unit/Mcp/HermiqToolProviderTest.php)
+hermiq	1763	c379cfbf56960a663c275d8894af2cb3f6e0651e	CONFLICT	worker-11	clean on development; conflicts with earlier PRs in this tree (l10n/en.js en.json nl.js nl.json)
