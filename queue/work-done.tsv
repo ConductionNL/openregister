@@ -11012,3 +11012,4 @@ review:filinq:2088:2d0b82be	GREEN	session-20261114T194751-bb7578f8	2026-11-14T20
 fix:integriq:3584:fb0129bd	fixed: maintainability 3.56 holds after merge; new head 161c9167, REVERIFY recorded	session-20261114T203931-14af5319	2026-11-14T20:47:47Z
 verify:planninq:1171:180164ee	1171 GREEN	session-20261114T201750-64b6fe0f	2026-11-14T20:48:28Z
 fix:integriq:3564:03eb3019	complexity refactor pushed; REVERIFY at d712cf14bb47d721128efa245e719f37c2339375	session-20261114T194740-7cca8afd	2026-11-14T20:48:35Z
+build:integriq:integriq-tenant-scoping:c3	partial: PR integriq#3629 +33 system reasons, MCP agent-tool reads now organisation-scoped (2 tests, fail without the fix); suite 8922, failures inherited (CallService, action seed, Jobs); left 13 user-reachable reads listed in tasks.md, then the task-4 PHPUnit check	session-20261114T194805-954d5649	2026-11-14T20:48:41Z
