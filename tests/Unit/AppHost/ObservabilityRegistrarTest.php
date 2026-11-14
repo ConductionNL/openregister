@@ -15,6 +15,7 @@ use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricsAccessGuard;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCA\OpenRegister\AppHost\ObservabilityRegistrar;
 use OCP\AppFramework\IAppContainer;
@@ -71,6 +72,7 @@ class ObservabilityRegistrarTest extends TestCase {
 			ManifestLoader::class => $this->createMock(originalClassName: ManifestLoader::class),
 			HealthCheckExecutor::class => $this->createMock(originalClassName: HealthCheckExecutor::class),
 			MetricsEngine::class => $this->createMock(originalClassName: MetricsEngine::class),
+			MetricsAccessGuard::class => $this->createMock(originalClassName: MetricsAccessGuard::class),
 		];
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturnCallback(

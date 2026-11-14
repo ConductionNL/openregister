@@ -27,6 +27,7 @@ use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\LocalHealthChecks;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Observability\MetricSources;
+use OCA\OpenRegister\AppHost\Observability\MetricsAccessGuard;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCA\OpenRegister\AppHost\Observability\MetricsRuntime;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
@@ -120,7 +121,7 @@ final class ObservabilityWiring {
 	 * Self-dogfood the GET /api/health and /api/metrics routes at the
 	 * generic AppHost controllers.
 	 *
-	 * appinfo/routes.php aliases these URLs
+	 * The appinfo/routes.php file aliases these URLs
 	 * to route names 'AppHost\Controller\GenericMetrics#index' /
 	 * 'AppHost\Controller\GenericHealth#index' — NC's RouteParser turns
 	 * that into the literal DI lookup key
@@ -300,7 +301,8 @@ final class ObservabilityWiring {
 			appName: $appId,
 			request: $container->get('OCP\IRequest'),
 			manifestLoader: $container->get(ManifestLoader::class),
-			engine: $container->get(MetricsEngine::class)
+			engine: $container->get(MetricsEngine::class),
+			accessGuard: $container->get(MetricsAccessGuard::class)
 		);
 	}//end metricsController()
 }//end class
