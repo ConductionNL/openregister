@@ -10944,3 +10944,4 @@ fix:integriq:3542:ee72f32b	floor: new complex units split, lizard bands at/below
 build:shillinq:sales-webshop-orders:c4	partial: PR #3073 (head 8b6796bd6) built 2.2 (created-by-channel mark, KvK/email tests) and 2.4 (settle paid order on clearing account, payment id kept), development merged; suite 11366 no failures; left 2.3 VAT route, 2.5 credit notes, 3.1 pages, 4.1 docs	session-20261114T194747-cb37937d	2026-11-14T20:36:03Z
 verify:shillinq:3051:f42d6ccd	3051 CONFLICT (ServiceRegistrarTest vs development); 3055 GREEN: unit 11396 0 failures, vitest only inherited dunningNextRun	session-20261114T194744-563ce177	2026-11-14T20:36:19Z
 verify:humaniq:1125:c3833d20	GREEN 1125, GREEN 1145; tree 4330 OK	session-20261114T194740-7cca8afd	2026-11-14T20:36:39Z
+review:filinq:2079:dc28f783	GREEN: spec-driven (two changes), ownership kept; phpunit 6817 OK	session-20261114T194745-243de12d	2026-11-14T20:36:46Z
