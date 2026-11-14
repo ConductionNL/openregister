@@ -8406,6 +8406,7 @@ build:stackiq:insight-exports-and-custom-reports	partial: PR #1909 - task 1, org
 build:stackiq:architecture-views-to-office-documents	partial: PR #1910 — Task 1 SVG renderer with 5 tests; Tasks 2/4/5 wait on architecture-views-editor, Task 3 on filinq's document contract	session-20261114T073105-27c9d15e	2026-11-14T08:46:25Z
 merge:hermiq:1729:25446213	stale	feeder	2026-11-14T08:45:24Z
 merge:opencatalogi:2597:34a6413e	stale	feeder	2026-11-14T08:45:24Z
+build:stackiq:landscape-migrate-from-previous-catalogue	failed: too big for one task: CmdbImportProfile hard-codes the five TOPdesk TARGETS, so a second profile (supplier/module/version/usage) first needs the profile loader generalised; suggest splitting that out as its own change	session-20261114T082642-0151cb21	2026-11-14T08:46:38Z
 build:stackiq:architecture-reference-component-coverage	partial: PR #1911 (task 6 overlap in portfolio report; 5, 7 docs page, Playwright left)	session-20261114T075648-394d8174	2026-11-14T08:46:39Z
 build:stackiq:connections-diagram-and-graph-export	partial: PR #1914, layout and CSV/SVG export utilities with 10 vitest cases; the map widget, diagram component, ArchiMate flows, docs and e2e left	session-20261114T065633-3e3cb668	2026-11-14T08:46:46Z
 build:stackiq:mcp-full-action-surface	partial: PR #1912, provider/alias/validator/contract+admin gates and the 3 contract tools; fragment, publication gate, other tools open	session-20261114T065626-0651b305	2026-11-14T08:46:41Z
