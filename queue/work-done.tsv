@@ -11296,3 +11296,4 @@ merge:hermiq:1715:364d15f3	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 sk
 merge:hermiq:1735:6c4391c0	merge3 tree of 9 hermiq PRs: merged=3 red=1 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T21:48:20Z
 verify:keepiq:1792:e76e77e3	1792 GREEN (phpunit 5192 ok; vitest 3 inherited failures); 1816 skipped (head moved to 6bce7859)	session-20261114T194805-be886caa	2026-11-14T21:48:25Z
 verify:launchpad:1206:9ecdf737	1206 GREEN, 1214 GREEN; 1229 skipped (head moved 06f0b1b -> 66aa995)	session-20261114T204759-5dc9dba7	2026-11-14T21:48:48Z
+build:opencatalogi:publication-plain-language-and-translation:c2	partial: PR #2682 head e154925a adds 2.2 draft-and-accept widget (code); left 1.4/2.2 e2e, 4.1 gated on D10; maintainability floor red from earlier commits (PlainSummaryCheck::check cc10 and others), needs a fix pass	session-20261114T211810-b8f5dc24	2026-11-14T21:49:07Z
