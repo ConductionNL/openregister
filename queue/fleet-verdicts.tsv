@@ -10415,3 +10415,4 @@ stackiq	1965	9ec5fe4f46c87b1fbc3e6712f572cfeb3b672744	GREEN	worker-10	phpunit 36
 buildiq	1596	e5795e30e93248e89a292588e86dd6e2a05d6dec	GREEN	worker-26	phpunit 3225 tests (baseline 3192, 1 inherited ExportZipGoldenTest), vitest 4673 pass; build PR, access only narrowed by organisation scope, slug message as the spec asks
 learniq	2544	c238e05cc880ce2d0127410cac5d3a6814f405c1	GREEN	worker-52	php 6846 tests, baseline 6835 with 1 failure (HigherEducationExampleSetTest), no new failures; js 1374 tests, 9 failures all in baseline
 learniq	2547	b382fbfd567a5aed9e36befd4bcbb57769f14849	GREEN	worker-52	php 6846 tests, baseline 6835 with 1 failure (HigherEducationExampleSetTest), no new failures; js 1374 tests, 9 failures all in baseline
+decidiq	2202	dbba38504b9a4d209125dceb600bf485b8011d4e	GREEN	worker-41	phpunit 4283 OK (baseline 4248 OK), no new failures, no JS; builds ori-adoption, public feeds filter to public meetings as spec asks
