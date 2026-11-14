@@ -7134,3 +7134,7 @@ filinq	2085	cf785bbf6d94c57779d1766b4337793bde34c4a0	CONFLICT	worker-21	clean on
 filinq	2098	cde3e349a7cf3de71f80d830ac43dd843945fce3	CONFLICT	worker-21	clean on development; conflicts with tree in l10n/en.js,en.json,nl.js,nl.json
 filinq	2099	7b0032ea1245796b40818698f835727ddb22663e	CONFLICT	worker-21	clean on development; conflicts with tree in lib/Settings/filinq_register.json
 filinq	2106	58464bdff055d5ceb3b2f424b621f9cafd35c3f8	CONFLICT	worker-21	clean on development; conflicts with tree in lib/Settings/filinq_register.json
+stackiq	1693	44193bc9eecf070881f3df33c1002d339868025b	CONFLICT	merge3	conflicts with development; files: src/components/sbom/SbomComponentsPanel.vue 
+stackiq	1704	f55ed033a0d75c518f0476302f49b8bf3218d361	CONFLICT	merge3	conflicts with development; files: tests/vitest/viewObjectPublishActions.spec.js 
+stackiq	1706	5ba0e54b3550a536789ec349d1e6b746e42ab4ee	CONFLICT	merge3	conflicts with development; files: eslint-suppressions.json tests/vitest/viewObjectPublishActions.spec.js 
+stackiq	1813	8e311d81de144657f97c1cd6ce4b36e739a2a7ed	CONFLICT	merge3	conflicts with development; files: tests/vitest/gemmaPlateRender.spec.js 
