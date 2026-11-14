@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Capabilities;
 use OCA\OpenRegister\Capabilities\CapabilityRegistrar;
 use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Capabilities\PlatformCapability;
+use OCA\OpenRegister\Capabilities\SearchScopesCapability;
 use OCA\OpenRegister\Capabilities\UrnCapability;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\IAppContainer;
@@ -44,7 +45,7 @@ class CapabilityRegistrarTest extends TestCase {
 
 		CapabilityRegistrar::register(context: $context);
 
-		$this->assertSame(expected: [UrnCapability::class, IntegrationsCapability::class, PlatformCapability::class], actual: $capabilities);
+		$this->assertSame(expected: [UrnCapability::class, IntegrationsCapability::class, PlatformCapability::class, SearchScopesCapability::class], actual: $capabilities);
 		$this->assertSame(expected: [IntegrationsCapability::class], actual: array_keys($factories));
 
 		$container = $this->createMock(originalClassName: IAppContainer::class);
