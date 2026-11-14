@@ -8891,3 +8891,4 @@ build4:openregister:tables-bulk-jobs-and-file-search:c2	already building: #10435
 build4:openregister:scoped-api-tokens-machine-callers:c2	already building: #10458 (2c384de) is open and not on main	session-20261114T092647-8b1e7e69	2026-11-14T10:48:31Z
 review:openregister:10517:13c1f313	APPROVE	session-20261114T092645-afb9b140	2026-11-14T10:48:41Z
 build4:openregister:service-hours-and-repeating-reminders:c2	PR #10523 reminders 3.1-3.4 armed/repeat/stop/re-arm + 4.3; 1.2 preview still open (separate task)	session-20261114T073117-2bd2e050	2026-11-14T10:48:52Z
+review:openregister:10507:7d7955d2	APPROVE: tasks.md-only change	session-20261114T102644-9bb4b1a6	2026-11-14T10:48:54Z
