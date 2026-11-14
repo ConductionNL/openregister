@@ -8385,3 +8385,4 @@ learniq	2534	097afa2d9090610d05c97d2c2e1	CONFLICT	worker-28	merges clean on deve
 filinq	2070	cc02ae1201069f52a0c048cfd4c73d73070291ea	REVERIFY	worker-31	merged development, resolved l10n (both sides) and register description, version 8.56.0; unit 6750 tests OK; new head af678887942c6164c1916330de03096aa1517fd8, verify it
 decidiq	2154	c54749267921b41c1cc7efb284c89358e39b7c3e	REVERIFY	worker-56	build continued: merged development in, added the decision term (register.d/133, DecisionTermCalculator, DecisionTermListener, DecisionDetail fields) with 8 unit tests; unit suite 4189 tests green; new head 10e369670ea31c82ef6b1e19329579d7ed6c8104, verify it
 decidiq	2149	f93e7d668f88b1f111ad606814cee9db8bb2f2f9	CONFLICT	worker-39	conflicts with development: l10n/en.js, en.json, nl.js, nl.json
+decidiq	2178	04b734b95ec481928fd583a3ec7386d911c6a392	CONFLICT	worker-39	conflicts on development+2169+2173+2177: openapi.json
