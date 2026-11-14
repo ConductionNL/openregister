@@ -2215,3 +2215,10 @@ dossiq	6424	0edd0cb288d8aad25a4a21a32cc9eb02bd64acd4	MERGED	merge3	GATE OK sbom,
 dossiq	6453	f62c41ce6817178936b864d2197fa7a699cec410	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6461	4a43b85883dcb374f158f308da679e9545e67ad7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6463	361c7faf2b02231fbab37091219b069d6b27e4df	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1690	cd1e7365f3b002c503940dd8fa1a04c11a93bf32	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1720	af53c8ad9068aa97b26380739842016edd5350e8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1721	52f110e06a9d32ea97a38599979bb6370ed36c05	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1722	e4d38a9039a5ceb441a95e1e9a675f968fa9382c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1724	007bf5e71ba9de91957c25dd35047bd813059964	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1727	a44c7bc1a7f25d6cff11bc05af9e2b94f3060593	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+hermiq	1729	d0839e358d22108732ec6189ccbe485d82a257f8	SKIP	merge3	GATE UNMEASURED floor_check.py or checker_floor.py not available
