@@ -11467,3 +11467,4 @@ merge:decidiq:2188:4d2e5732	merge3 tree of 11 decidiq PRs: merged=3 red=4 fail=0
 review:opencatalogi:2655:1c462772	GREEN: matches its change specs; no new failures on the merge with development	session-20261114T211801-f16dd26d	2026-11-14T22:13:06Z
 merge:decidiq:2178:613d0b71	merge3 tree of 11 decidiq PRs: merged=3 red=4 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T22:13:14Z
 merge:decidiq:2143:0a8055a8	merge3 tree of 11 decidiq PRs: merged=3 red=4 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T22:13:17Z
+fix:shillinq:2991:47756ee7	declared invoice-sending OpenAPI tag (adrvalidator warn cause), merged development; new head f2980f525fa171fea4b81b04a8d29bcacfedbef1; suite 11508/0 fail	session-20261114T211012-c469e919	2026-11-14T22:13:24Z
