@@ -8785,3 +8785,4 @@ build:pipelinq:clients-history-summary-and-risk:c2	done: PR #3707 all code tasks
 build4:openregister:appraisal-inherited-from-a-parent:c2	partial: PR #10483 builds 2.1 review half (held-back table + GET /api/archival/held-back); left 2.1 e2e (seeded instance), 3.1 hand-over to opencatalogi lane, V.* process	session-20261114T062200-62a0b439	2026-11-14T10:14:08Z
 fix:pipelinq:3829:0fea8b00	conflict resolved, new head 920af96c, REVERIFY	session-20261114T095645-0268807e	2026-11-14T10:14:50Z
 build4:openregister:confidentiality-classification-primitive:c2	partial: PR #10484 render mirror @self.confidentiality (3.1, 4.3) + 6 tests; enforcement wiring 2.2-2.5 and 4.2 left (five RBAC seams, needs own pass)	session-20261114T092644-f8ff8fc9	2026-11-14T10:14:55Z
+review:openregister:10480:1e086e08	APPROVE: dialog-only change for task 3.1, jest 161 green	session-20261114T095639-eb9fb02c	2026-11-14T10:15:03Z
