@@ -10039,5 +10039,6 @@ verify:integriq:3582:68dd1d14	#3619 #3620 #3621 GREEN; #3582 and #3613 skipped (
 fix:humaniq:1142:5bcc930d	failed: branch already contains development and merges cleanly on it; the conflict is only with unmerged #1125 earlier in the tree, nothing to resolve against the base until #1125 lands	session-20261114T134708-ba7f7741	2026-11-14T16:05:07Z
 fix:integriq:3601:c5ea5100	merged dev + #3540, l10n union; unit 9008 only inherited 2E/5F; new head 4f5b68aa	session-20261114T154807-4c2c3327	2026-11-14T16:05:06Z
 fix:planninq:1158:a8f8e28e	duplication restored: shared ObjectRows helper, pushed 70b326989e31ab89bfbbe17f8ca6a6457aabb644, REVERIFY recorded	session-20261114T144749-57007b4b	2026-11-14T16:05:29Z
+fix:humaniq:1148:3bc5cb16	failed: branch already contains development and merges cleanly on it; the conflict is only with unmerged #1125 earlier in the tree, nothing to resolve against the base until #1125 lands	session-20261114T134708-ba7f7741	2026-11-14T16:05:38Z
 fix:planninq:1159:3ba42b87	conflicts resolved (TaskDetail.vue both sides, l10n), new head b7c86685, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T16:05:36Z
 build:integriq:messaging-sms-providers-and-notifynl-mail:c2	done: PR #3628 (tasks 5-7; #3563 had 1-4,8); e2e and live sends left; 68 new tests, no new failures	session-20261114T151750-b10540e9	2026-11-14T16:05:47Z
