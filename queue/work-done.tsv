@@ -11354,3 +11354,4 @@ fix:portaliq:2444:c94c7881	merged development, register version bumped past deve
 merge:shillinq:3000:706666b9	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:33Z
 fix:stackiq:1927:ddb874d1	merged development, conflicts resolved, unit OK; new head 3920fdf6	session-20261114T214742-7aa14b57	2026-11-14T21:57:38Z
 merge:shillinq:2991:3e5f5fa6	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:51Z
+fix:stackiq:1933:d891c4e1	merged development, resolved l10n conflicts; new head ecd2e6a0, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T21:57:49Z
