@@ -10433,3 +10433,4 @@ build:learniq:compliance-assign-from-hr-roles:c3	PR #2542: 4.1 built (out-of-sco
 fix:hermiq:1749:df82486d	resolved l10n conflict (json union + l10n:build); no new failures; new head 495bf269, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T17:36:55Z
 verify:humaniq:1123:bc177029	1123 GREEN; 1145, 1156 CONFLICT (generated manifest files in tree order)	session-20261114T151932-05b02c14	2026-11-14T17:37:23Z
 verify:decidiq:2189:f986e58e	2 GREEN (2189, 2194); phpunit 4257/0 fail, vitest 2764 pass	session-20261114T161750-16a1c558	2026-11-14T17:37:34Z
+build:openregister:expired-object-sweep:c3	done: PR #10232 pushed 3ad5136, all code tasks ticked; 3.1 live Db test (7 tests green on local NC34+pg) found and fixed _expires never written by single-object saves and trashed rows re-swept	session-20261114T171008-ae51009d	2026-11-14T17:37:53Z
