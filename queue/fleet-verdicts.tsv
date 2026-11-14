@@ -7331,3 +7331,4 @@ buildiq	1526	2ab00cf5eec7706a83146c6418b6e3aa926ac0bd	CONFLICT	merge3	conflicts 
 buildiq	1554	4cd4aecc9cac014cfe14f816ca06c4bb80d7bd73	RED	merge3	new unit failure on the tree with development: OpenRegisterAggregationGatewayWithoutOpenRegisterTest::testWithoutOpenRegisterTheWidgetIsEmpty, the runner class is known in the separate process (development defines it in OpenRegisterAggregationGatewayTest; the global state is preserved into the child)
 integriq	3590	c8a86e413d5813b40aea2387835ab5aa138ba4eb	CONFLICT	worker-58	conflicts with development+earlier tree PRs (3584,3588)
 integriq	3600	fd8aca3232bfe0216688779360556fdeff902b63	CONFLICT	worker-58	conflicts with development+earlier tree PRs (3584,3588)
+integriq	3584	5c6ec02c65edb352d5bcdce0523a2c16f24d6254	GREEN	worker-58	php unit 8525 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2157 passed
