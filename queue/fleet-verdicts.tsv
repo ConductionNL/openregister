@@ -7031,3 +7031,4 @@ decidiq	2173	79a6146a1395dea7281bef057068901598351636	CONFLICT	worker-58	conflic
 decidiq	2174	8600d4bb4484ee43924b7f0d25aaf87eaa11f825	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
 decidiq	2178	cb54bcf167945f8cb1c648f1e870e7a4872edbe9	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
 humaniq	1135	e0d59fddfa85610c518b84e6375d0c9b8e720939	GREEN	worker-36	phpunit 4162 tests on tree, baseline 4159 with 0 failures, new failures 0; no JS beyond catalogues
+integriq	3539	d13d98400d1ddb28100f51d9bbce21eadfc88278	REVERIFY	worker-31	floor restored: split the residency units this change added (prepareCall egress guard, copyDeclaredResidency, sourceDestinations, recentCallHosts, matchesPattern) to McCabe<=5, behaviour unchanged; unit_complexity 4.00 -> 4.02, overall 3.94; unit 8263 tests, same 5 failures as before the fix; new head 19e9055d0d08f2dc6237536d03ceee1efb69bf3d, verify it
