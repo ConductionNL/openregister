@@ -8036,5 +8036,6 @@ fix:integriq:3546:42cf9463	merged development (clean), pushed 0b8d072d; conflict
 build:integriq:sources-outbound-rate-limit-pacing	partial: PR #3596 (Tasks 1-2 built and unit-tested; Task 3 source page and live Newman/Playwright items left)	session-20261114T073111-9b40710a	2026-11-14T07:55:14Z
 fix:learniq:2521:0e48166e	test line aligned with #2488, merges clean, 2 inherited failures only, pushed 524f7f54, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:55:25Z
 fix:hermiq:1740:58e98963	merged development (clean); conflict is only with open #1726/#1758; new head 8068496294f6df31438dbde37b96e9ae4e6c3538 for reverify	session-20261114T073105-27c9d15e	2026-11-14T07:55:34Z
+build:integriq:sources-ws-security-encryption	PR #3597: encryptor, WUS profile sign+encrypt / decrypt+verify, delivery wiring, schema; 13 tests; SOAPService WSDL path unchanged (no WS-Security there)	session-20261114T070341-dde19dba	2026-11-14T07:55:47Z
 fix:hermiq:1760:7cc54c6b	no change: merges clean with development; conflicts only with unmerged siblings 1726 and 1758 (appinfo/info.xml version, hermiq_register.json); re-merge development after they land	session-20261114T065625-baa65a50	2026-11-14T07:56:02Z
 fix:hermiq:1717:6c837475	l10n keys relocated, now merges clean after #1715, pushed 28e34f1d, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:56:21Z
