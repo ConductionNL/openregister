@@ -9747,3 +9747,4 @@ build:hermiq:chat-carry-a-conversation-across-channels:c2	pushed to PR #1726 (me
 verify:decidiq:2162:fdae4082	GREEN 2162,2195,2196,2197; BLOCK 2190 (behaviour change outside a build); CONFLICT 2198; skipped 2172,2173,2192 (head moved); unit 4218 OK (baseline 4174), vitest 2740 OK	session-20261114T141724-6227a125	2026-11-14T15:16:18Z
 fix:decidiq:2177:1d3a5285	fixed: conflict with #2143 removed by relocating this PR's catalogue keys and listener subscription; new head 667519c0; REVERIFY recorded	session-20261114T144727-6763e1fc	2026-11-14T15:16:14Z
 fix:hermiq:1750:7edc05a1	stale	feeder	2026-11-14T15:15:30Z
+fix:decidiq:2181:207ca46a	l10n conflict with #2143 resolved; new head 90e427b0; note: conflicts with #2170 in openapi.json/RegisterAuthorizationTest	session-20261114T144816-cf37407b	2026-11-14T15:16:50Z
