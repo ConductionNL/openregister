@@ -11700,3 +11700,4 @@ fix:integriq:3600:a9ac8949	fixed: catalogue digest moved, merged development, pu
 verify:learniq:2544:457dce2f	2544 GREEN, 2547 GREEN; no new failures	session-20261114T224753-194bb25e	2026-11-14T22:54:34Z
 build:versioniq:autoupdate-security-first:c2	done: PR #691 head 8386b5aa; built 2.1-2.4, 3.1, 3.2, 4.1 (patch policy store/API/statement/panel, security-first two-pass run, overview reasons); left e2e 4.2/4.3 and release 5.1/5.2; phpunit 1765 (2 root-only installer goldens), vitest 2970 OK	session-20261114T221743-dbe5c07e	2026-11-14T22:54:40Z
 verify:buildiq:1596:a3494497	1596 GREEN	session-20261114T204759-5dc9dba7	2026-11-14T22:54:42Z
+verify:decidiq:2202:451c30bc	GREEN decidiq#2202 (phpunit 4283 OK)	session-20261114T224738-9571d712	2026-11-14T22:54:56Z
