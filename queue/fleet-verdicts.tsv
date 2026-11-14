@@ -8747,3 +8747,4 @@ humaniq	1148	3bc5cb169ca881148b3da46289c09cedb10edbdb	CONFLICT	worker-38	conflic
 hermiq	1749	df82486d0dbc2ba96c2a96806b3855e4ad723788	GREEN	worker-12	phpunit 5058 OK (baseline 5046 OK), vitest 1481 passed, 0 new failures; implements chat-session-search-and-bulk-delete per spec, owner check on bulk
 integriq	3574	0eb15981b800e3c8d69eae1a8504b1e6d38f64d2	REVERIFY	worker-26	merged origin/development in (clean); unit suite 8931 tests, 2 errors and 5 failures same as development (8920); conflict was with earlier tree PRs in l10n, recheck after they land; new head d694a10ae93f50e7c86cc403d7f68d89c2295bea, verify it
 portaliq	2437	0bea0f46a52d61994a5d40a2da96c0efa6169ba3	RED	merge3:merge-gate	GATE RED checker floor: testcoderatio: pass -> warn; testcoderatio stars: 4 -> 3
+hermiq	1755	c4172dcdcbebaa845adbb9e55c068dbf495df7f7	CONFLICT	worker-12	conflicts with #1749 in tree (l10n/en.js en.json nl.js nl.json); clean vs development
