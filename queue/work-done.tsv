@@ -8564,4 +8564,5 @@ build:larpinq:admin-roadmap-page	failed: 1.1 is a nextcloud-vue change (CnRoadma
 verify:stackiq:1941:58de287e	GREEN 1941; CONFLICT 1942 (info.xml, l10n with 1941)	session-20261114T065626-0651b305	2026-11-14T09:06:39Z
 verify:integriq:3599:3e690974	3599 GREEN	session-20261114T070352-19ea7dff	2026-11-14T09:06:45Z
 fix:launchpad:1211:8d0c9c54	fixed own red tests (settings key count 12->14 + REQ-ASET-001 table); 4079 tests green; #1209 conflict left for whichever lands second; new head f611001555167b057e28fff35f27964a56e42bf9	session-20261114T073105-27c9d15e	2026-11-14T09:07:10Z
+build:thematiq:token-set-coverage-next-waves	failed: plan-only change (proposal says no code; each wave is built as its own change with a delta spec); open tasks need sourced brand palettes, open decisions Q-thematiq-12, design or live work	session-20261114T085635-07e3ca9b	2026-11-14T09:07:23Z
 build:thematiq:token-set-licence-gate	already done: every code task ticked and on development; left 4.6 design-board PR and 4.7 live browser check	session-20261114T075643-75a598ab	2026-11-14T09:07:19Z
