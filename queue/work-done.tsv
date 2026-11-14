@@ -11118,6 +11118,7 @@ verify:integriq:3635:76370912	3635 GREEN	session-20261114T202449-f0278d5a	2026-1
 verify:decidiq:2178:62aa27f4	stale	session-20261114T204741-7bef6f2a	2026-11-14T21:14:08Z
 build:launchpad:openregister-leaf-integrations:c2	partial: PR #1228 ticks tasks 9-10 (no routes/controllers/services; strict checks + hydra gates unchanged); tasks 4-8 blocked: dashboards have no OpenRegister object for the talk leaf, needs a design decision (store dashboards in OR or map them); 3, 11-15 need a live instance	session-20261114T204802-89dfe85e	2026-11-14T21:14:43Z
 verify:learniq:2513:2d18b6cc	2521 GREEN; 2513 skipped (head moved e4c3065 -> 672f590)	session-20261114T204759-5dc9dba7	2026-11-14T21:14:51Z
+build:buildiq:data-external-database-sources:c3	PR #1652: T06-T11 built (reader + fromDatabase wizard path, StartFromDatabase, SqlQueryDialog, docs); left T12 (openspec CLI absent) and the T07 Playwright journey (live)	session-20261114T201755-10d43934	2026-11-14T21:15:24Z
 verify:launchpad:1197:68c31484	3 GREEN (1197,1214,1216); phpunit 4245/0 fail, vitest 2272 pass	session-20261114T211012-c469e919	2026-11-14T21:15:23Z
 verify:learniq:2523:fec4832d	GREEN 2523; no new failures	session-20261114T193415-4b507b08	2026-11-14T21:15:32Z
 build:launchpad:record-parity-requirements:c2	task 4 built on PR #1211 (head 5c5da5e4); all code tasks done, task 5 on archive	session-20261114T201750-64b6fe0f	2026-11-14T21:15:49Z
