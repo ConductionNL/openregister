@@ -10429,3 +10429,4 @@ build:decidiq:the-decision-as-a-walked-process:c3	partial: PR #2204 builds 7.2 (
 fix:decidiq:2149:936b9a26	fixed: merged development, register 0.16.0 with both lines; new head f2767637	session-20261114T154807-c05f4e57	2026-11-14T17:35:30Z
 fix:humaniq:1134:57f484fd	conflict resolved (l10n, golden), new head 6ff842b4, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:36:03Z
 verify:decidiq:2171:0d7b8b59	2171 GREEN (unit 4249 vs baseline 4232, vitest green); 2175 CONFLICT after 2171 (municipality.json, UserSettings.vue)	session-20261114T171756-4d62172c	2026-11-14T17:36:24Z
+build:learniq:compliance-assign-from-hr-roles:c3	PR #2542: 4.1 built (out-of-scope list on compliance page, HR card on learner page); all code tasks done; left 5.1 (integriq issue, not a code task), 6.x live/release	session-20261114T171830-19af6b65	2026-11-14T17:36:32Z
