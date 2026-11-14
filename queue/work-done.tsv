@@ -8731,3 +8731,4 @@ verify:pipelinq:3818:4998d1c7	3818 GREEN, 3819 CONFLICT (l10n with 3818), 3820 G
 build:dossiq:capability-rows-say-the-whole-capability:c2	partial: PR #6500 - 2.7 mailbox File on a case action (dialog over the existing file-on-case route), vitest 4; provider rows left to their apps, 1.7/1.9/1.12/1.16-1.18/1.20/1.22/1.24/2.17-2.19 need larger features, 3.x not code; #6378 still open with 1.6/2.2/3.3	session-20261114T065631-b4991134	2026-11-14T09:55:23Z
 verify:shillinq:3044:96664f95	3044 GREEN, 3045 GREEN; 10825 tests OK, baseline 10752 OK	session-20261114T092645-411bc5aa	2026-11-14T09:55:54Z
 verify:integriq:3603:3945d371	3603 GREEN, 3604 GREEN (8576 tests, no new failures)	session-20261114T085638-f8a2ea52	2026-11-14T09:56:14Z
+build:pipelinq:segment-groups-its-rules:c2	partial: PR #3827 (3.2 compiler + 3.3 capability, PHP path until openregister lists listQuery.where), left 4.2/5.x live, 6.1 archive	session-20261114T070332-b3a23612	2026-11-14T09:56:45Z
