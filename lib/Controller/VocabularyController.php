@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CodedOptionPage;
 use OCA\OpenRegister\Controller\Support\CodedOptionsRequest;
 use OCA\OpenRegister\Controller\Support\VocabularyControllerServices;
 use OCA\OpenRegister\Controller\Support\VocabularyLanguage;
@@ -153,9 +154,13 @@ class VocabularyController extends Controller {
 	}//end __construct()
 
 	/**
-	 * GET /api/vocabulary/options?schema=...&property=...&context=...&tree=1
+	 * GET /api/vocabulary/options?schema=...&property=...&context=...&tree=1&q=...&_limit=&_offset=
 	 *
 	 * The options a coded property offers, as a flat list or as a tree.
+	 *
+	 * The flat list is bounded (design D-3): one page of at most 200 options, searched by
+	 * `q` over label, notation and value, with `total`, `page`, `pages` and `searchHint`
+	 * (more options than one page holds). A scheme within one page comes back whole.
 	 *
 	 * A value outside its validity window is absent from this answer and
 	 * still resolves through the three routes above, which is what lets a
@@ -187,7 +192,9 @@ class VocabularyController extends Controller {
 			return new JSONResponse(['message' => 'Either "schema" and "property", or "scheme", must be given.'], Http::STATUS_BAD_REQUEST);
 		}
 
-		$declaration = $this->declarationResolver->resolveDeclaration(new DeclarationLookup(schemaRef: $schemaRef, property: $property, schemeUri: $schemeUri));
+		$declaration = $this->declarationResolver->resolveDeclaration(
+			new DeclarationLookup(schemaRef: $schemaRef, property: $property, schemeUri: $schemeUri)
+		);
 		if ($declaration === null) {
 			return $this->notFound();
 		}
@@ -232,11 +239,13 @@ class VocabularyController extends Controller {
 	}//end optionsAnswer()
 
 	/**
-	 * The flat option list, narrowed by `context` when given.
+	 * The flat option list, narrowed by `context` when given, one page of it.
 	 *
 	 * @param CodedOptionsRequest $read The declaration, reported name and language.
 	 *
 	 * @return JSONResponse The list envelope.
+	 *
+	 * @spec openspec/changes/property-code-list-from-concept-scheme/specs/skos-concept-registers/spec.md
 	 */
 	private function optionList(CodedOptionsRequest $read): JSONResponse {
 		$context = trim((string)$this->request->getParam('context', ''));
@@ -245,13 +254,14 @@ class VocabularyController extends Controller {
 		}
 
 		$options = $this->options->options(declaration: $read->declaration, scope: new CodedOptionScope(language: $read->language, context: $context));
-
-		return new JSONResponse(
-			array_merge(
-				$read->envelope(),
-				['context' => $context, 'results' => $options, 'total' => count($options)]
-			)
+		// Bounded (design D-3): one page with the matching count; a small scheme fits one page whole.
+		$page = CodedOptionPage::fromParameters(
+			limit: $this->request->getParam('_limit'),
+			offset: $this->request->getParam('_offset'),
+			query: $this->request->getParam('q')
 		);
+
+		return new JSONResponse(array_merge($read->envelope(), ['context' => $context], $page->of(options: $options)));
 	}//end optionList()
 
 	/**
