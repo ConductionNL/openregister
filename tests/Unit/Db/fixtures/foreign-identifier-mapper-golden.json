@@ -1,0 +1,46 @@
+{
+    "find found": {
+        "result": "zaak-1",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_foreign_ids, NULL)",
+            "#1 param :p1 = zgw:gemeente-x, 2",
+            "#1 expr.eq(issuer, :p1, NULL)",
+            "#1 where(eq(issuer, :p1, NULL))",
+            "#1 param :p2 = 1001, 2",
+            "#1 expr.eq(value, :p2, NULL)",
+            "#1 andWhere(eq(value, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "find missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_foreign_ids, NULL)",
+            "#1 param :p1 = stuf:belastingen, 2",
+            "#1 expr.eq(issuer, :p1, NULL)",
+            "#1 where(eq(issuer, :p1, NULL))",
+            "#1 param :p2 = 1001, 2",
+            "#1 expr.eq(value, :p2, NULL)",
+            "#1 andWhere(eq(value, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "for object": {
+        "result": [
+            "1001",
+            "2026-0042"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_foreign_ids, NULL)",
+            "#1 param :p1 = zaak-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(issuer, ASC)",
+            "#1 addOrderBy(value, ASC)",
+            "#1 executeQuery()"
+        ]
+    }
+}
