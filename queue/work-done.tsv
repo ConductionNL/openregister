@@ -9817,3 +9817,4 @@ fix:pipelinq:3752:7334221b	merged development (l10n union, duplicates collapsed,
 fix:humaniq:1145:098b771d	CONFLICT resolved: development merged, l10n union, new head 6e47a4174a486aad84f9e7c048e487c529a34c11, REVERIFY recorded	session-20261114T141744-acced0c5	2026-11-14T15:28:05Z
 verify:hermiq:1715:b877e805	1726 GREEN; 1735 1738 1740 1749 1760 1763 CONFLICT (1740 with development, rest with #1726); 1715 1767 skipped (head moved)	session-20261114T141727-56b2bf78	2026-11-14T15:28:16Z
 fix:humaniq:1134:928fcce0	merged development, BandOp interfacing fix; floor PASS 3.62->3.61; new head 9dd99b9c	session-20261114T151938-8fa99f90	2026-11-14T15:28:33Z
+merge:learniq:2484:8ad08a63	merge3 tree of 8 learniq PRs: merged=2 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T15:28:40Z
