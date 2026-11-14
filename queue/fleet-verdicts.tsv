@@ -7331,5 +7331,6 @@ buildiq	1554	4cd4aecc9cac014cfe14f816ca06c4bb80d7bd73	RED	merge3	new unit failur
 hermiq	1740	3d96250b670d983727712908b9c3bf045ab565c9	CONFLICT	worker-29	conflicts with #1725 in lib/Settings/hermiq_register.json; merges clean on development alone
 integriq	3590	c8a86e413d5813b40aea2387835ab5aa138ba4eb	CONFLICT	worker-58	conflicts with development+earlier tree PRs (3584,3588)
 integriq	3600	fd8aca3232bfe0216688779360556fdeff902b63	CONFLICT	worker-58	conflicts with development+earlier tree PRs (3584,3588)
+keepiq	1631	b88267e065a281bd8637bf013e2c84a7b3804548	REVERIFY	worker-20	merged development in; import-only conflicts in HoneyPanel.vue and HoneySection.vue resolved keeping both (dateTimeOrDash, isSnoozed); eslint clean; vitest 6420 passed (development 6414), no failures; new head 6ab64a41e365cfa698f9bc20d06d55f1913bc430, verify it
 integriq	3584	5c6ec02c65edb352d5bcdce0523a2c16f24d6254	GREEN	worker-58	php unit 8525 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2157 passed
 integriq	3588	f2c639eeed04d9c0ec0a8bd70f534148e8f1aae1	GREEN	worker-58	php unit 8525 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2157 passed
