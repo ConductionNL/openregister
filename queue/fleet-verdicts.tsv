@@ -8888,3 +8888,6 @@ learniq	2520	3a7f33845adaf7d06a5218c707c323a9b9fa1835	REVERIFY	worker-27	merged 
 humaniq	1123	a6b9adfa96fe7bfb9b6cb0183baa71a0f9d3de6e	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.62 -> 3.60
 humaniq	1129	5162c29635dd0edd98b93029de22176e215462ef	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.49 -> 4.47; unit_interfacing: 3.62 -> 3.60
 learniq	2501	240753660bef555eede7d9b3aec4f30bf8b615f2	GREEN	worker-40	PHPUnit 6724->6750 (baseline 1 failure HigherEducationExampleSetTest, no new), node --test 1363->1367 (9 inherited failures, no new), php -l + eslint clean; builds credentials-migrate-with-validity as its spec asks, migrate route gated by credential.migrate
+humaniq	1134	5d3b94c9067adb8751b102ce65e3e03a2907bce6	REVERIFY	merge3	verdict sha is not the head: head is 57f484fd596bc8f0af99d93c7aa20dd4fe76aa69
+humaniq	1135	9114728c712827c9ba2f0d31a4437d7dbc650bfb	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json 
+humaniq	1144	c0dbe84a58883d8a2fbcb395b9e57999c05fac29	REVERIFY	merge3	head moved since the verdict (was c4f3b613733ef7e9e6cea1f8ba371d7512d5a83a, 7dd68965:REVERIFY,c4f3b613:GREEN); verify the new head
