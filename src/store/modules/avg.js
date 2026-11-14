@@ -262,6 +262,73 @@ export const LEGAL_BASIS_VOCABULARY = Object.freeze([
  */
 export const STATUS_VOCABULARY = Object.freeze(['concept', 'published', 'archived'])
 
+/**
+ * How each tracked action words its failure: the fallback text, and whether
+ * the server's own error comes before the exception's message.
+ */
+const FAILURES = {
+	fetchActivities: { fallback: 'Failed to fetch processing activities', serverFirst: false },
+	fetchActivity: { fallback: 'Failed to fetch processing activity', serverFirst: false },
+	createActivity: { fallback: 'Failed to create processing activity', serverFirst: true },
+	updateActivity: { fallback: 'Failed to update processing activity', serverFirst: true },
+	archiveActivity: { fallback: 'Failed to archive processing activity', serverFirst: true },
+	fetchAccountability: { fallback: 'Failed to fetch accountability document', serverFirst: false },
+	runAccess: { fallback: 'Failed to run access', serverFirst: true },
+	runErasure: { fallback: 'Failed to run erasure', serverFirst: true },
+	runPortability: { fallback: 'Failed to run portability', serverFirst: true },
+	runRectification: { fallback: 'Failed to run rectification', serverFirst: true },
+	fetchCompliance: { fallback: 'Failed to fetch compliance report', serverFirst: true },
+	fetchCases: { fallback: 'Failed to fetch cases', serverFirst: true },
+	fetchCase: { fallback: 'Failed to fetch case', serverFirst: true },
+	updateCase: { fallback: 'Failed to update case', serverFirst: true },
+	transitionCase: { fallback: 'Transition refused', serverFirst: true },
+	collectEvidence: { fallback: 'Evidence harvest failed', serverFirst: true },
+	applyRedaction: { fallback: 'Redaction failed', serverFirst: true },
+	generateBundle: { fallback: 'Bundle generation failed', serverFirst: true },
+	downloadBundle: { fallback: 'Download failed', serverFirst: true },
+	verifyIdentity: { fallback: 'Identity verification failed', serverFirst: true },
+	escalateRegulator: { fallback: 'Regulator escalation failed', serverFirst: true },
+	fetchActivePolicyPack: { fallback: 'Failed to fetch policy pack', serverFirst: true },
+}
+
+/**
+ * The store error an action shows for a failure.
+ *
+ * @param {string} action The action's name
+ * @param {object} e The failure
+ * @return {string} The message
+ */
+function failureMessage(action, e) {
+	const { fallback, serverFirst } = FAILURES[action]
+	if (serverFirst) {
+		return e.response?.data?.error ?? e.message ?? fallback
+	}
+	return e.message ?? fallback
+}
+
+/**
+ * Run one action's request on the store (`this`): loading while it runs, the
+ * error cleared first and, on a failure, set, logged under the action's name
+ * and rethrown.
+ *
+ * @param {string} action The action's name
+ * @param {() => Promise<unknown>} request The request; its result is the action's result
+ * @return {Promise<unknown>} The request's result
+ */
+async function tracked(action, request) {
+	this.loading = true
+	this.error = null
+	try {
+		return await request()
+	} catch (e) {
+		this.error = failureMessage(action, e)
+		console.error(`[avg.${action}]`, e)
+		throw e
+	} finally {
+		this.loading = false
+	}
+}
+
 export const useAvgStore = defineStore('avg', {
 	state: () => ({
 		activities: [],
@@ -311,22 +378,14 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — GET /api/avg/processing-activities; observable contract owned by avg-verwerkingsregister.
 		 */
 		async fetchActivities(params = {}) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'fetchActivities', async () => {
 				const response = await axios.get(
 					`${API_BASE}/processing-activities`,
 					{ params },
 				)
 				this.activities = response.data?.results ?? []
 				return this.activities
-			} catch (e) {
-				this.error = e.message ?? 'Failed to fetch processing activities'
-				console.error('[avg.fetchActivities]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -338,21 +397,13 @@ export const useAvgStore = defineStore('avg', {
 		 */
 		async fetchActivity(identifier) {
 			if (!identifier) return null
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'fetchActivity', async () => {
 				const response = await axios.get(
 					`${API_BASE}/processing-activities/${encodeURIComponent(identifier)}`,
 				)
 				this.activeActivity = response.data ?? null
 				return this.activeActivity
-			} catch (e) {
-				this.error = e.message ?? 'Failed to fetch processing activity'
-				console.error('[avg.fetchActivity]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -363,9 +414,7 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — POST /api/avg/processing-activities; observable contract owned by avg-verwerkingsregister.
 		 */
 		async createActivity(payload) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'createActivity', async () => {
 				const response = await axios.post(
 					`${API_BASE}/processing-activities`,
 					payload,
@@ -374,16 +423,7 @@ export const useAvgStore = defineStore('avg', {
 				this.activities = [...this.activities, created]
 				this.activeActivity = created
 				return created
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to create processing activity'
-				console.error('[avg.createActivity]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -395,9 +435,7 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — PUT /api/avg/processing-activities/{id}; observable contract owned by avg-verwerkingsregister.
 		 */
 		async updateActivity(identifier, payload) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'updateActivity', async () => {
 				const response = await axios.put(
 					`${API_BASE}/processing-activities/${encodeURIComponent(identifier)}`,
 					payload,
@@ -410,16 +448,7 @@ export const useAvgStore = defineStore('avg', {
 					this.activeActivity = updated
 				}
 				return updated
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to update processing activity'
-				console.error('[avg.updateActivity]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -431,9 +460,7 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — DELETE /api/avg/processing-activities/{id} (soft-archive); observable contract owned by avg-verwerkingsregister.
 		 */
 		async archiveActivity(identifier) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'archiveActivity', async () => {
 				await axios.delete(
 					`${API_BASE}/processing-activities/${encodeURIComponent(identifier)}`,
 				)
@@ -446,16 +473,7 @@ export const useAvgStore = defineStore('avg', {
 						: a,
 				)
 				return true
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to archive processing activity'
-				console.error('[avg.archiveActivity]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -465,19 +483,11 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — GET /api/avg/accountability (Art 30 §4); observable contract owned by avg-verwerkingsregister.
 		 */
 		async fetchAccountability() {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'fetchAccountability', async () => {
 				const response = await axios.get(`${API_BASE}/accountability`)
 				this.accountability = response.data
 				return this.accountability
-			} catch (e) {
-				this.error = e.message ?? 'Failed to fetch accountability document'
-				console.error('[avg.fetchAccountability]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -492,23 +502,14 @@ export const useAvgStore = defineStore('avg', {
 		 */
 		async runAccess({ subject, type, mode }) {
 			if (!subject) return null
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'runAccess', async () => {
 				const params = { subject }
 				if (type) params.type = type
 				if (mode) params.mode = mode
 				const response = await axios.get(`${API_BASE}/access`, { params })
 				this.dsarResults = response.data
 				return this.dsarResults
-			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Failed to run access'
-				console.error('[avg.runAccess]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -524,9 +525,7 @@ export const useAvgStore = defineStore('avg', {
 		 */
 		async runErasure({ subject, type, dryRun = false }) {
 			if (!subject) return null
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'runErasure', async () => {
 				const params = { subject }
 				if (type) params.type = type
 				if (dryRun) params.dryRun = 'true'
@@ -535,14 +534,7 @@ export const useAvgStore = defineStore('avg', {
 				})
 				this.dsarSummary = response.data
 				return this.dsarSummary
-			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Failed to run erasure'
-				console.error('[avg.runErasure]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -556,25 +548,14 @@ export const useAvgStore = defineStore('avg', {
 		 */
 		async runPortability({ subject, type }) {
 			if (!subject) return null
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'runPortability', async () => {
 				const params = { subject }
 				if (type) params.type = type
 				const response = await axios.get(`${API_BASE}/portability`, {
 					params,
 				})
 				return response.data
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to run portability'
-				console.error('[avg.runPortability]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -585,24 +566,13 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — POST /api/avg/rectification (Art 16 rectification); observable contract owned by avg-verwerkingsregister.
 		 */
 		async runRectification(payload) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'runRectification', async () => {
 				const response = await axios.post(
 					`${API_BASE}/rectification`,
 					payload,
 				)
 				return response.data
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to run rectification'
-				console.error('[avg.runRectification]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -612,22 +582,11 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — GET /api/avg/compliance; observable contract owned by avg-verwerkingsregister.
 		 */
 		async fetchCompliance() {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'fetchCompliance', async () => {
 				const response = await axios.get(`${API_BASE}/compliance`)
 				this.complianceReport = response.data
 				return this.complianceReport
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch compliance report'
-				console.error('[avg.fetchCompliance]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		// -------------------------------------------------------------
@@ -646,23 +605,14 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — GET /api/objects/{caseRegister}/{caseSchema}; observable contract owned by dsar-case-engine.
 		 */
 		async fetchCases(params = {}) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'fetchCases', async () => {
 				const response = await axios.get(
 					`${OBJECTS_API_BASE}/${encodeURIComponent(CASE_REGISTER_SLUG)}/${encodeURIComponent(CASE_SCHEMA_SLUG)}`,
 					{ params: { _limit: 200, ...params } },
 				)
 				this.cases = response.data?.results ?? response.data ?? []
 				return this.cases
-			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Failed to fetch cases'
-				console.error('[avg.fetchCases]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -674,22 +624,13 @@ export const useAvgStore = defineStore('avg', {
 		 */
 		async fetchCase(identifier) {
 			if (!identifier) return null
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'fetchCase', async () => {
 				const response = await axios.get(
 					`${OBJECTS_API_BASE}/${encodeURIComponent(CASE_REGISTER_SLUG)}/${encodeURIComponent(CASE_SCHEMA_SLUG)}/${encodeURIComponent(identifier)}`,
 				)
 				this.activeCase = response.data ?? null
 				return this.activeCase
-			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Failed to fetch case'
-				console.error('[avg.fetchCase]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -702,23 +643,14 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — PUT /api/objects/{caseRegister}/{caseSchema}/{id}; observable contract owned by dsar-case-engine.
 		 */
 		async updateCase(identifier, patch) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'updateCase', async () => {
 				const response = await axios.put(
 					`${OBJECTS_API_BASE}/${encodeURIComponent(CASE_REGISTER_SLUG)}/${encodeURIComponent(CASE_SCHEMA_SLUG)}/${encodeURIComponent(identifier)}`,
 					patch,
 				)
 				this.activeCase = response.data ?? this.activeCase
 				return this.activeCase
-			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Failed to update case'
-				console.error('[avg.updateCase]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -730,23 +662,14 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — POST /api/gdpr/cases/{id}/transition; guard + state graph owned by dsar-case-engine.
 		 */
 		async transitionCase(identifier, action) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'transitionCase', async () => {
 				const response = await axios.post(
 					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/transition`,
 					{ action },
 				)
 				this.activeCase = response.data ?? this.activeCase
 				return this.activeCase
-			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Transition refused'
-				console.error('[avg.transitionCase]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -785,21 +708,12 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — POST /api/gdpr/cases/{id}/evidence; harvest owned by dsar-case-engine.
 		 */
 		async collectEvidence(identifier) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'collectEvidence', async () => {
 				const response = await axios.post(
 					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/evidence`,
 				)
 				return response.data
-			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Evidence harvest failed'
-				console.error('[avg.collectEvidence]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -811,22 +725,13 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — POST /api/gdpr/cases/{id}/redactions; redaction write owned by dsar-case-engine.
 		 */
 		async applyRedaction(identifier, payload) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'applyRedaction', async () => {
 				const response = await axios.post(
 					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/redactions`,
 					payload,
 				)
 				return response.data
-			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Redaction failed'
-				console.error('[avg.applyRedaction]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -838,23 +743,12 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — POST /api/gdpr/cases/{id}/bundle; bundle mint + token burn owned by dsar-case-engine.
 		 */
 		async generateBundle(identifier) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'generateBundle', async () => {
 				const response = await axios.post(
 					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/bundle`,
 				)
 				return response.data
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Bundle generation failed'
-				console.error('[avg.generateBundle]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -867,22 +761,13 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — GET /api/gdpr/cases/{id}/bundle/download; one-time token burned server-side.
 		 */
 		async downloadBundle(identifier, token) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'downloadBundle', async () => {
 				const response = await axios.get(
 					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/bundle/download`,
 					{ params: { token }, responseType: 'blob' },
 				)
 				return response.data
-			} catch (e) {
-				this.error =
-					e.response?.data?.error ?? e.message ?? 'Download failed'
-				console.error('[avg.downloadBundle]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -894,23 +779,12 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — POST /api/gdpr/cases/{id}/verify-identity; seam resolution owned by dsar-integration-seams.
 		 */
 		async verifyIdentity(identifier) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'verifyIdentity', async () => {
 				const response = await axios.post(
 					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/verify-identity`,
 				)
 				return response.data
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Identity verification failed'
-				console.error('[avg.verifyIdentity]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -922,23 +796,12 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — POST /api/gdpr/cases/{id}/escalate; seam resolution owned by dsar-integration-seams.
 		 */
 		async escalateRegulator(identifier) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'escalateRegulator', async () => {
 				const response = await axios.post(
 					`${CASE_API_BASE}/${encodeURIComponent(identifier)}/escalate`,
 				)
 				return response.data
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Regulator escalation failed'
-				console.error('[avg.escalateRegulator]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
@@ -954,9 +817,7 @@ export const useAvgStore = defineStore('avg', {
 		 * @spec exclude Thin API passthrough — GET /api/objects/{packRegister}/{packSchema}; pack contract owned by dsar-policy-pack-and-seams.
 		 */
 		async fetchActivePolicyPack({ jurisdiction } = {}) {
-			this.loading = true
-			this.error = null
-			try {
+			return tracked.call(this, 'fetchActivePolicyPack', async () => {
 				const response = await axios.get(
 					`${OBJECTS_API_BASE}/${encodeURIComponent(PACK_REGISTER_SLUG)}/${encodeURIComponent(PACK_SCHEMA_SLUG)}`,
 					{ params: { _limit: 200 } },
@@ -969,16 +830,7 @@ export const useAvgStore = defineStore('avg', {
 					?? packs[0]
 					?? null
 				return this.activePolicyPack
-			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					?? e.message
-					?? 'Failed to fetch policy pack'
-				console.error('[avg.fetchActivePolicyPack]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 	},
 })
