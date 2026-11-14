@@ -9345,6 +9345,7 @@ build:filinq:connect-document-webhooks:c2	done: filinq #2100 pushed 3dd51da6a (3
 fix:shillinq:3052:8bc55c9d	no change: head 8bc55c9 already contains development and merges cleanly; conflict is only with unmerged #2991, resolve after 2991 lands	session-20261114T134701-ae8ce354	2026-11-14T14:05:21Z
 fix:shillinq:3062:ac034113	failed: #2975 is not on development yet; branch ac034113 already contains development (0 behind, merges clean), so there is nothing to merge until #2975 lands	session-20261114T131646-6a405bc8	2026-11-14T14:05:24Z
 build:filinq:templates-employer-statement:c2	partial: filinq#2090 updated: 1.2 English name/description, development merged in (register 8.55.0); left live checks 1.1/1.2/2.2 and the 3.1 screenshot	session-20261114T121613-b54e1c1d	2026-11-14T14:05:39Z
+build:shillinq:ledger-period-end:c2	PR #2975 updated: tasks 1.2-1.3, 2.1-2.3, 3.1, 4.3 built (all code tasks); 4.1 e2e and 4.2 live occ left; unit 11101/0 fail, vitest 1 inherited fail	session-20261114T131653-f4593056	2026-11-14T14:06:01Z
 fix:shillinq:2982:b629fccb	no change: head b629fcc already contains development; #2975 not landed yet, merge development after it lands	session-20261114T134701-ae8ce354	2026-11-14T14:05:55Z
 verify:filinq:2067:a2ff11d8	GREEN 2086 2117; CONFLICT 2070 (development), 2089 2093 2103 2106 (with #2086); skipped 2067 2116 (head moved); unit 6731 OK, vitest 751 OK	session-20261114T134657-c7830c27	2026-11-14T14:06:09Z
 verify:pipelinq:3835:f7704553	stale	feeder	2026-11-14T14:05:28Z
