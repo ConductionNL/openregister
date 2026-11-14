@@ -59,16 +59,26 @@
       limit: the router reports an upstream 404 as an outage, so "the
       register has nothing" is only seen when the source answers an empty
       body.
-- [ ] 2.2 Widget: fetch by host key, display fields, fetch time and source, refresh, empty states.
-      Open: the leaf widgets are `@conduction/nextcloud-vue` components
-      (a `CnExternalRegisterCard` beside `CnIntegrationCard`), which this
-      repository consumes and does not hold. The endpoint it reads is in
-      place (task 2.1).
+- [x] 2.2 Widget: fetch by host key, display fields, fetch time and source, refresh, empty states.
+      Built in this repository until the library ships a
+      `CnExternalRegisterCard` (preferred when present):
+      `src/integrations/builtin/externalRegister.js` registers
+      `external-register` (widget and tab) in the shared registry from
+      `bootstrap.js`, like bookmarks, and
+      `src/integrations/builtin/ExternalRegisterCard.vue` reads
+      `GET /api/external-register/{register}/{schema}/{key}` by the host's key
+      value, shows the `display` fields in order (all scalar fields when
+      none are named), when it was fetched and from which source, and a
+      refresh that passes `?refresh=1`. Each state has its own sentence
+      (`externalRegisterState.js`): only `not-found` says the register holds
+      nothing. The key value reaches the card as `keyValue`, resolved by the
+      host from a token such as `@object.bagId`, because `key` is reserved in
+      Vue. Strings are in all 37 bundles.
 
 ## 3. Tests
 
 - [ ] 3.1 `tests/e2e/ci/external-register-leaf.spec.ts`: a stubbed BAG source, a case with an address, the widget renders.
-- [ ] 3.2 Unit tests for the provider mapping; vitest for the widget states.
+- [x] 3.2 Unit tests for the provider mapping; vitest for the widget states.
       **The degrade half is tested**:
       `tests/Unit/Service/Integration/ExternalRegisterDegradeTest.php` (9),
       including that exactly one state means the register has nothing, that
@@ -76,7 +86,10 @@
       change the moment somebody acts are not cached at all.
       **The provider half is tested**:
       `tests/Unit/Service/ObjectSource/OpenConnectorHttpProviderTest.php` (9).
-      The widget's vitest half waits for task 2.2.
+      **The widget is tested** (jest, the runner this repository uses):
+      `externalRegisterState.spec.js` (7), `externalRegister.spec.js` (3),
+      `ExternalRegisterCard.spec.js` (5), and the bootstrap order in
+      `bootstrap.spec.js`.
       **The leaf's read is tested**:
       `OpenConnectorHttpProviderTest` (+10 for `lookup()`),
       `ExternalRegisterLookupTest` (9), `ExternalRegisterProviderTest` (6),
