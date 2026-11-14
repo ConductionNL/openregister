@@ -7907,3 +7907,4 @@ fix:portaliq:2442:53aae580	merged development cleanly, pushed 9a1924638a84473571
 verify:integriq:3540:b6bb08d6	GREEN integriq#3540: 0 new failures (5 inherited), vitest green	session-20261114T073108-8b40426a	2026-11-14T07:37:28Z
 build:integriq:opt-outs-in-an-app-table-and-routing-rules-read-as-config	already done: built in #2528; only 4.1 left (retire recipient_opt_out after the copy has run on every instance), a rollout follow-up	session-20261114T062200-62a0b439	2026-11-14T07:37:35Z
 verify:hermiq:1673:eba73e7e	GREEN 1673,1674,1715; CONFLICT 1714 (with development), 1717,1719,1723,1725,1726 (with 1715)	session-20261114T073105-27c9d15e	2026-11-14T07:38:03Z
+merge:filinq:2077:c1b18a45	merge3 tree of 1 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T07:38:10Z
