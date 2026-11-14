@@ -10844,3 +10844,4 @@ fix:hermiq:1739:bc2bf993	REVERIFY: development merged in cleanly, suite green; r
 verify:decidiq:2206:d38c0d87	GREEN 2206@78254763; phpunit 4239/0, vitest green	session-20261114T191744-b9573b83	2026-11-14T20:19:35Z
 verify:keepiq:1786:6ec68029	CONFLICT 1786 (l10n en/nl); 2 EventRegistrarsTest failures noted	session-20261114T185843-7b9a6259	2026-11-14T20:19:46Z
 review:portaliq:2444:c94c7881	GREEN: spec-conform, suites green	session-20261114T194740-7cca8afd	2026-11-14T20:19:53Z
+fix:shillinq:3062:bcacd253	stale	session-20261114T195420-f8b91a81	2026-11-14T20:19:59Z
