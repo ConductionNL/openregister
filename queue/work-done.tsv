@@ -9197,3 +9197,4 @@ merge:buildiq:1605:8757df03	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=
 review:openregister:10550:14485ef9	BLOCK: architecture, component and TaskInboxRequest tests fail	session-20261114T114405-27c89384	2026-11-14T13:07:42Z
 merge:buildiq:1526:da213d70	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:47Z
 merge:buildiq:1627:46bffd60	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:51Z
+merge:buildiq:1554:21ef73a5	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:55Z
