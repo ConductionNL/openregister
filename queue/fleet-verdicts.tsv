@@ -7579,3 +7579,4 @@ buildiq	1612	40bed07f1c09d081dfbd618cd1610ccb046181cf	GREEN	worker-36	phpunit-un
 buildiq	1615	cabc0268dd549b6286cdc040f9797ca1b6f39518	GREEN	worker-36	phpunit-unit 2965->2979 tests, baseline 1 failure (ExportZipGoldenTest), no new; vitest 458 files/4367 tests pass; matches data-field-types-and-choice-lists (named types per REQ-BQFT-001)
 buildiq	1617	eca3f8547227811a7851480fb8d945b9a6c0ed60	CONFLICT	worker-36	l10n/en.js en.json nl.js nl.json after 1606+1612+1615
 buildiq	1618	08874393b34c1159158d28e01989613124330863	CONFLICT	worker-36	l10n/en.js en.json nl.js nl.json after 1606+1612+1615
+buildiq	1625	26fd13852458473da9ae85f4014f9d16f6a297ec	GREEN	worker-36	phpunit-unit 2965->2979 tests, baseline 1 failure (ExportZipGoldenTest), no new; vitest 458 files/4367 tests pass; matches pages-detail-related-items
