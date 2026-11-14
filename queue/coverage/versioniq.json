@@ -1,32 +1,36 @@
 {
  "app": "versioniq",
- "commit": "07c79a09e01f3b303f0e934a2582e8ebfde1bbc6",
- "measured_at": "2026-11-13T20:11:24Z",
+ "commit": "935320dd8e19601b3da7ccda8bcf397806415a6b",
+ "measured_at": "2026-11-14T23:33:05Z",
  "php": {
   "tool": "pcov",
-  "pct": 97.8,
-  "statements": 5823,
-  "covered": 5695,
+  "pct": 98.24,
+  "statements": 6077,
+  "covered": 5970,
   "dirs": {
    "lib/BackgroundJob/": [
-    172,
-    169
+    173,
+    170
    ],
    "lib/Command/": [
     188,
     186
    ],
    "lib/Controller/": [
-    492,
-    479
+    496,
+    496
    ],
    "lib/Db/": [
-    122,
-    122
+    124,
+    124
    ],
    "lib/Listener/": [
     12,
     8
+   ],
+   "lib/Mcp/": [
+    117,
+    114
    ],
    "lib/Middleware/": [
     59,
@@ -34,7 +38,7 @@
    ],
    "lib/Middleware/Support/": [
     30,
-    15
+    25
    ],
    "lib/Notification/": [
     102,
@@ -49,8 +53,8 @@
     5
    ],
    "lib/Service/": [
-    1148,
-    1139
+    1173,
+    1164
    ],
    "lib/Service/Advisory/": [
     488,
@@ -61,16 +65,16 @@
     6
    ],
    "lib/Service/Audit/": [
-    39,
-    39
+    66,
+    66
    ],
    "lib/Service/AutoUpdate/": [
     121,
     121
    ],
    "lib/Service/Availability/": [
-    82,
-    82
+    118,
+    118
    ],
    "lib/Service/Cache/": [
     223,
@@ -97,20 +101,24 @@
     269
    ],
    "lib/Service/Pin/": [
-    92,
-    92
+    93,
+    93
    ],
    "lib/Service/Policy/": [
     25,
     25
+   ],
+   "lib/Service/Release/": [
+    36,
+    36
    ],
    "lib/Service/Settings/": [
     136,
     136
    ],
    "lib/Service/Source/": [
-    824,
-    801
+    829,
+    807
    ],
    "lib/Settings/": [
     8,
@@ -119,17 +127,17 @@
   }
  },
  "js": {
-  "pct": 93.61,
+  "pct": 97.27,
   "statements": 1831,
-  "covered": 1714,
+  "covered": 1781,
   "dirs": {
    "src/": [
     840,
-    811
+    827
    ],
    "src/components/": [
     705,
-    620
+    671
    ],
    "src/dialogs/": [
     81,
