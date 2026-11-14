@@ -9567,3 +9567,4 @@ decidiq	2194	ea9b865865c4d1bdfbeae3149bef9a002366cd33	CONFLICT	worker-08	conflic
 decidiq	2202	3a275a0425fce2a3464bf1ee3b6ed0600e02fadd	GREEN	worker-08	tree phpunit 4311 (0 failures; development baseline 0), vitest 2795 pass; build ori-adoption
 decidiq	2204	60f57522b5b0f51012bb8d94cc2b3cd0691033bc	GREEN	worker-08	tree phpunit 4311 (0 failures; development baseline 0), vitest 2795 pass; build the-decision-as-a-walked-process
 decidiq	2205	9c878baf6585a4e5d7036e6c07e0450a982483ae	CONFLICT	worker-08	conflicts in municipality.json, openapi.json, src/manifest.json, tests/vitest/simpleDecisionPage.spec.js on the tree
+portaliq	2440	1f256935ef1449ce9712adf1f1d0a9f1a4f91a82	RED	merge3:merge-gate	GATE RED floor: duplication: 4.31 -> 4.29; unit_complexity: 3.30 -> 3.28
