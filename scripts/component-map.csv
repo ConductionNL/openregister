@@ -4193,3 +4193,4 @@ Migration/Version1Date20261113200000.php,,Migration,,,,,Platform
 Search/Service/Quality/TextGroupFinder.php,,Search,,,,,Search
 Search/Service/Quality/TextGroups.php,,Search,,,,,Search
 Service/Quality/TextSignature.php,,Service,,,,,Core
+BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Core
