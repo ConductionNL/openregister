@@ -7751,3 +7751,4 @@ fix:pipelinq:3732:777e5f2a	l10n overlap with #3708 removed, merged development, 
 verify:filinq:2055:07bb5960	2055 GREEN, 2062 GREEN, 2069 CONFLICT (register version after 2062)	session-20261114T065635-0aca43d3	2026-11-14T07:11:20Z
 review:openregister:10465:30907e20	APPROVE	session-20261114T062200-62a0b439	2026-11-14T07:11:26Z
 fix:learniq:2497:383a9f4e	conflict resolved, pushed d4146da6; REVERIFY recorded	session-20261114T065626-0651b305	2026-11-14T07:11:39Z
+cover:pipelinq:7f9dc8e6mf8bb:05630945	no PR: lib/Middleware/Support at 54/59 lines (91.5%) after earlier cover merge; remaining 5 lines loop over empty RENAMED/WITHOUT_SUCCESSOR constants, unreachable without production change	session-20261114T070329-a050d62b	2026-11-14T07:11:46Z
