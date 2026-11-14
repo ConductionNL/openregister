@@ -54,9 +54,12 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
     flow graph node ids or a path listed with the reason, and the shapes a file-typed object property takes
     (`objectFileIds()`, `rewriteObject()`). Export runs and scheduled reports were confirmed against the migrations:
     export runs hold a file id; scheduled reports hold a delivery path, not an id.
-- [ ] 2.2 Migration and entity for `openregister_document_moves` (`register_id`, `old_id`, `new_id`, `kind` file or
+- [x] 2.2 Migration and entity for `openregister_document_moves` (`register_id`, `old_id`, `new_id`, `kind` file or
   folder or version, `sha256`, `state` copied, verified, switched or refused, `reason`, `moved_at`), with its mapper.
   - unit `DocumentMoveMapperTest::testAMappingRoundTrips`; the migration runs in the CI PHPUnit job.
+  - Built: `Version1Date20261114100000`, `DocumentMove`, `DocumentMoveMapper` (`forRegister()`, `switchRegister()`,
+    `switchedOldIds()`). One extra column, `version_time`, holds an earlier version's original time, which 2.3 asks the
+    mapping to record.
 - [ ] 2.3 `lib/Service/File/DocumentStoreMove.php::copyRegister()`: copy folders and files into the target root,
   replay earlier versions oldest first (read each version through the versions API Nextcloud exposes for the node;
   record the original version times in the mapping), compute SHA-256 of source and copy through `fopen()` streams,

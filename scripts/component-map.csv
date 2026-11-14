@@ -4235,3 +4235,6 @@ Service/Import/RecordImport/RowRangeFilter.php,,Service,,,,,Core
 Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
+Db/DocumentMove.php,156,Db,,,,,Core
+Db/DocumentMoveMapper.php,119,Db,,,,,Core
+Migration/Version1Date20261114100000.php,89,Migration,,,,,Platform
