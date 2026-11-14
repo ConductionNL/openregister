@@ -11491,3 +11491,4 @@ review:shillinq:3000:4004df62	GREEN: suite 11478 green, phpstan clean, behaviour
 fix:stackiq:1941:9651b6f8	no change: branch already up to date with development (merges clean); the conflict is only with earlier unmerged tree PRs' l10n keys, merge development in again once they land	session-20261114T214735-aacd1703	2026-11-14T22:16:02Z
 fix:stackiq:1927:3920fdf6	no change: branch already up to date with development; it only conflicts in l10n en/nl json with #1911, unmerged; merge development in again once #1911 lands	session-20261114T214735-aacd1703	2026-11-14T22:16:23Z
 fix:decidiq:2178:37197bc0	merged development (clean), l10n off tail, new head 24b4be0ce9783ae7473305f184d73174083bfad8	session-20261114T201752-7e06b161	2026-11-14T22:16:40Z
+fix:decidiq:2188:b774355c	clean on development; conflict is with a sibling PR in the tree (SaveGuardSubscriptions.php); merged development, new head cd0af40	session-20261114T204759-5dc9dba7	2026-11-14T22:16:48Z
