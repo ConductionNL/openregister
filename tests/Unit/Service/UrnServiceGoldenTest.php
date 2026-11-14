@@ -108,7 +108,8 @@ class UrnServiceGoldenTest extends TestCase {
 			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper(), schemas: $this->schemaMapper(), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			$this->urlGenerator($options['base']),
 			$this->appConfig($options['config']),
-			$this->logger()
+			$this->logger(),
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class)
 		);
 
 		$results = [];

@@ -16,14 +16,15 @@
 
 - [ ] 3.1 `lib/Controller/AutomationRecordsController.php` and `lib/Service/AutomationRecordService.php` with the access rule of D-4; route `GET /api/automation-records`. Newman: both kinds by key prefix, a caller without read access sees nothing.
   - [x] Controller, service, route and access rule, with unit tests (admin, reader, foreign object, anonymous).
-  - [ ] Newman case: needs a running stack.
+  - [x] Newman case written: `tests/integration/openregister-automation-records.postman_collection.json` (both kinds by key prefix, a caller without read access sees nothing, anonymous refused).
+  - [ ] First live Newman pass: needs a running stack; the collection carries `@newman exclude` until then, drop it after the first green run.
 - [ ] 3.2 `docs/`: the `key` on declarations and the records route. Tell buildiq the change name so `logic-automation-run-log` reads it.
   - [x] `docs/features/webhooks-and-notifications.md` and `docs/features/workflow-automation.md`.
   - [ ] Tell buildiq: left to the maintainers.
 
 ## 4. Close
 
-- [ ] 4.1 `@spec` tags; `openspec validate automation-run-records --strict`.
+- [x] 4.1 `@spec` tags; `openspec validate automation-run-records --strict`.
   - [x] `@spec` tags on every new class and method.
-  - [ ] `openspec validate`: the CLI is not installed in the build environment.
+  - [x] `openspec validate --strict` passes; the over-long requirements were split into one behaviour each.
 - [x] 4.2 Hydra gates route-auth and no-admin-idor on the new controller.

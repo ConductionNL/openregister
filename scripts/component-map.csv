@@ -1675,6 +1675,7 @@ Search/Service/Aggregation/AggregationJoinAnnotationValidator.php,140,Search,Sea
 Search/Service/Aggregation/AggregationMetricsAnnotationValidator.php,103,Search,Search,Search/Service/Aggregation/AggregationMetricsAnnotationValidator.php,0,,Search
 Search/Service/Aggregation/AggregationQuery.php,267,Search,Search,Search/Service/Aggregation/AggregationQuery.php,22,81,Search
 Search/Service/Aggregation/AggregationSpecEntry.php,10,Search,Search,Search/Service/Aggregation/AggregationSpecEntry.php,0,,Search
+Search/Service/Aggregation/CrossSchemaTarget.php,25,Search,Search,Search/Service/Aggregation/CrossSchemaTarget.php,0,,Search
 Search/Service/Aggregation/MetricEntrySite.php,17,Search,Search,Search/Service/Aggregation/MetricEntrySite.php,0,,Search
 Search/Service/Aggregation/MetricsDeclaration.php,14,Search,Search,Search/Service/Aggregation/MetricsDeclaration.php,0,,Search
 Search/Service/Aggregation/ThresholdEvaluationService.php,131,Search,Search,Search/Service/Aggregation/ThresholdEvaluationService.php,0,,Search
@@ -2172,10 +2173,12 @@ Service/Export/ExportRightService.php,98,Service,Configuration,Configuration/Ser
 Service/Export/ExportRunRecorder.php,147,Service,Configuration,Configuration/Service/Export/ExportRunRecorder.php,0,182,Configuration
 Service/Export/ExportValueRenderer.php,78,Service,Configuration,Configuration/Service/Export/ExportValueRenderer.php,0,,Configuration
 Service/Export/Odt/HtmlToOdt.php,103,Service,Configuration,Configuration/Service/Export/Odt/HtmlToOdt.php,0,,Configuration
+Service/Export/Odt/OdtHouseStyle.php,72,Service,Configuration,Configuration/Service/Export/Odt/OdtHouseStyle.php,0,,Configuration
 Service/Export/Odt/OdtTableBuilder.php,93,Service,Configuration,Configuration/Service/Export/Odt/OdtTableBuilder.php,0,,Configuration
 Service/Export/Odt/OdtWriter.php,125,Service,Configuration,Configuration/Service/Export/Odt/OdtWriter.php,0,224,Configuration
 Service/Export/Odt/VisibleText.php,22,Service,Configuration,Configuration/Service/Export/Odt/VisibleText.php,0,,Configuration
 Service/Export/RowsPdfSection.php,60,Service,Configuration,Configuration/Service/Export/RowsPdfSection.php,0,,Configuration
+Service/Export/XmlObjectWriter.php,268,Service,Configuration,Configuration/Service/Export/XmlObjectWriter.php,0,,Configuration
 Service/ExportService.php,696,Service,Configuration,Configuration/Service/ExportService.php,1,,Configuration
 Service/ExternalLink/ExternalLinkAnnotationValidator.php,119,Service,Service,Service/ExternalLink/ExternalLinkAnnotationValidator.php,0,,Core
 Service/ExternalLink/ExternalLinkResolver.php,130,Service,Integrations,Integrations/Service/ExternalLink/ExternalLinkResolver.php,0,218,Core
@@ -2513,6 +2516,7 @@ Service/Integration/PropertySemanticReferenceValidator.php,68,Service,Integratio
 Service/Integration/Providers/ActivityProvider.php,121,Service,Integrations,Integrations/Service/Integration/Providers/ActivityProvider.php,0,,Integrations
 Service/Integration/Providers/AnalyticsProvider.php,61,Service,Integrations,Integrations/Service/Integration/Providers/AnalyticsProvider.php,0,,Integrations
 Service/Integration/Providers/BookmarksProvider.php,49,Service,Integrations,Integrations/Service/Integration/Providers/BookmarksProvider.php,0,,Integrations
+Service/Integration/Providers/BrpMockRegister.php,138,Service,Work,Work/Service/Integration/Providers/BrpMockRegister.php,0,,Integrations
 Service/Integration/Providers/BrpPersonProvider.php,187,Service,Work,Work/Service/Integration/Providers/BrpPersonProvider.php,3,,Integrations
 Service/Integration/Providers/CalendarProvider.php,73,Service,Integrations,Integrations/Service/Integration/Providers/CalendarProvider.php,0,,Integrations
 Service/Integration/Providers/CollectivesProvider.php,67,Service,Integrations,Integrations/Service/Integration/Providers/CollectivesProvider.php,0,,Integrations
@@ -2729,6 +2733,7 @@ Service/Object/RunLockRegistry.php,130,Service,Service,Service/Object/RunLockReg
 Service/Object/SaveObject.php,3491,Service,Service,Service/Object/SaveObject.php,0,2,Core
 Service/Object/SaveObject/BulkObjectSlugs.php,156,Service,Service,Service/Object/SaveObject/BulkObjectSlugs.php,0,,Core
 Service/Object/SaveObject/CascadeRun.php,12,Service,Service,Service/Object/SaveObject/CascadeRun.php,0,,Core
+Service/Object/SaveObject/ClassificationFloorGuard.php,131,Service,Service,Service/Object/SaveObject/ClassificationFloorGuard.php,0,,Core
 Service/Object/SaveObject/ComputedFieldHandler.php,427,Service,Service,Service/Object/SaveObject/ComputedFieldHandler.php,0,,Core
 Service/Object/SaveObject/DefaultValueContext.php,6,Service,Service,Service/Object/SaveObject/DefaultValueContext.php,0,,Core
 Service/Object/SaveObject/FilePropertyHandler.php,795,Service,Service,Service/Object/SaveObject/FilePropertyHandler.php,0,,Core
@@ -4029,6 +4034,7 @@ Db/MagicMapper/SearchFolding.php,234,Db,Service,Service/Db/MagicMapper/SearchFol
 Db/MagicMapper/MagicUnaccentProbe.php,160,Db,Service,Service/Db/MagicMapper/MagicUnaccentProbe.php,0,,Core
 Migration/Version1Date20261113140000.php,122,Migration,,,,,Platform
 Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
+Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core
@@ -4117,3 +4123,11 @@ Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/Obje
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
+Exception/UnknownMaskFormException.php,30,Exception,Exception,Exception/UnknownMaskFormException.php,0,,Kernel
+Files/Service/File/MaskForm.php,208,Files,Files,Files/Service/File/MaskForm.php,0,,Files
+Files/Service/File/PlaceholderText.php,113,Files,Files,Files/Service/File/PlaceholderText.php,0,,Files
+Command/RetentionDryRunCommand.php,,Command,,,,,Compliance
+Service/Archival/DestructionDryRun.php,,Service,,,,,Compliance
+Service/Translation/DetailedTranslationProviderInterface.php,,Service,,,,,Configuration
+Service/Translation/TranslationProviderResolver.php,,Service,,,,,Configuration
+Repair/ImportTranslationGlossaryRegister.php,,Repair,,,,,Platform

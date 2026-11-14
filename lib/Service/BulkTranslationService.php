@@ -39,7 +39,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Service\Translation\DetailedTranslationProviderInterface;
 use OCA\OpenRegister\Service\Translation\LanguagePair;
+use OCA\OpenRegister\Service\Translation\TranslationOutcome;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use Psr\Log\LoggerInterface;
 
@@ -76,27 +78,28 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 			return ['translated' => [], 'skipped' => ['_global' => 'fromLang === toLang']];
 		}
 
-		$translatableProps = $this->translatablePropertiesOf(object: $request->object);
+		$schema = $this->loadSchema(object: $request->object);
+		$translatableProps = $this->translatablePropertiesOf(schema: $schema);
 		if (is_string($translatableProps) === true) {
 			return ['translated' => [], 'skipped' => ['_global' => $translatableProps]];
 		}
 
 		return $this->translateProperties(
 			request: $request,
-			properties: $this->selectedProperties(translatable: $translatableProps, whitelist: $properties)
+			properties: $this->selectedProperties(translatable: $translatableProps, whitelist: $properties),
+			encrypted: ($schema?->getEncryptedProperties() ?? [])
 		);
 	}//end translate()
 
 	/**
 	 * The translatable properties of the object's schema, or why there are none.
 	 *
-	 * @param ObjectEntity $object The object to translate.
+	 * @param Schema|null $schema The object's schema, null when it could not be resolved.
 	 *
 	 * @return array<int|string,string>|string The properties; the skip reason when the
 	 *                                         schema cannot be resolved or has none.
 	 */
-	private function translatablePropertiesOf(ObjectEntity $object): array|string {
-		$schema = $this->loadSchema(object: $object);
+	private function translatablePropertiesOf(?Schema $schema): array|string {
 		if ($schema === null) {
 			return 'schema-not-resolvable';
 		}
@@ -131,17 +134,33 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 	/**
 	 * Translate each property, collecting the translated texts and the skip reasons.
 	 *
+	 * A property encrypted at rest is never sent to a provider. A translation that
+	 * missed a glossary term is translated, stored as a draft, and its reason is
+	 * listed under the property in `skipped` too.
+	 *
 	 * @param ObjectTranslationRequest $request    The object and language pair.
 	 * @param array<int|string,string> $properties The properties to translate.
+	 * @param array<int,string>        $encrypted  The schema's properties encrypted at rest.
 	 *
 	 * @return array{translated: array<string,string>, skipped: array<string,string>}
+	 *
+	 * @spec openspec/changes/ai-translation-with-a-glossary/specs
 	 */
-	private function translateProperties(ObjectTranslationRequest $request, array $properties): array {
+	private function translateProperties(ObjectTranslationRequest $request, array $properties, array $encrypted=[]): array {
 		$result = ['translated' => [], 'skipped' => []];
 		foreach ($properties as $property) {
+			if (in_array($property, $encrypted, true) === true) {
+				$result['skipped'][$property] = 'encrypted-at-rest';
+				continue;
+			}
+
 			$value = $this->translateProperty(request: $request, property: $property);
 			if ($value['translated'] === true) {
 				$result['translated'][$property] = $value['text'];
+				if (($value['draft'] ?? '') !== '') {
+					$result['skipped'][$property] = $value['draft'];
+				}
+
 				continue;
 			}
 
@@ -160,7 +179,7 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 	 * @param ObjectTranslationRequest $request  The object and languages.
 	 * @param string                   $property The property name.
 	 *
-	 * @return array{translated: bool, text: string} The translation, or the reason it was skipped.
+	 * @return array{translated: bool, text: string, draft?: string} The translation, or the reason it was skipped.
 	 */
 	private function translateProperty(ObjectTranslationRequest $request, string $property): array {
 		$existing = $request->data[$property] ?? null;
@@ -182,23 +201,58 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 	 * @param PropertyTranslation $translation The object, the languages and the property.
 	 * @param string              $sourceValue The text in the source language.
 	 *
-	 * @return array{translated: bool, text: string}
+	 * @return array{translated: bool, text: string, draft?: string} The translation and, for a
+	 *                                                            glossary miss, the reason it is a draft.
+	 *
+	 * @spec openspec/changes/ai-translation-with-a-glossary/specs
 	 */
 	private function providerTranslation(PropertyTranslation $translation, string $sourceValue): array {
 		try {
-			$translatedValue = $this->provider->translate($sourceValue, $translation->languages());
+			$outcome = $this->askProvider(translation: $translation, sourceValue: $sourceValue);
 		} catch (\Throwable $e) {
 			$this->logProviderFailure(translation: $translation, error: $e);
 			return ['translated' => false, 'text' => 'provider-error: ' . $e->getMessage()];
 		}
 
-		if ($this->isText(value: $translatedValue) === false) {
+		if ($outcome === null || $this->isText(value: $outcome->text) === false) {
 			return ['translated' => false, 'text' => 'provider-returned-empty'];
 		}
 
-		$this->mirrorTranslation(translation: $translation, value: $translatedValue);
-		return ['translated' => true, 'text' => $translatedValue];
+		$status = Translation::STATUS_MACHINE_TRANSLATED;
+		if ($outcome->keptTheGlossary() === false) {
+			$status = Translation::STATUS_DRAFT;
+		}
+
+		$this->mirrorTranslation(translation: $translation, value: $outcome->text, status: $status);
+		return ['translated' => true, 'text' => $outcome->text, 'draft' => $outcome->reason()];
 	}//end providerTranslation()
+
+	/**
+	 * The provider's answer: with the glossary terms it missed when the provider reports them.
+	 *
+	 * @param PropertyTranslation $translation The object, the languages and the property.
+	 * @param string              $sourceValue The text in the source language.
+	 *
+	 * @return TranslationOutcome|null Null when the provider gives no text.
+	 *
+	 * @spec openspec/changes/ai-translation-with-a-glossary/specs
+	 */
+	private function askProvider(PropertyTranslation $translation, string $sourceValue): ?TranslationOutcome {
+		if ($this->provider instanceof DetailedTranslationProviderInterface) {
+			return $this->provider->translateDetailed(
+				text: $sourceValue,
+				pair: $translation->languages(),
+				register: $translation->request->object->getRegister()
+			);
+		}
+
+		$text = $this->provider->translate($sourceValue, $translation->languages());
+		if ($text === null) {
+			return null;
+		}
+
+		return new TranslationOutcome(text: $text);
+	}//end askProvider()
 
 	/**
 	 * Log a provider that failed to translate a property.
@@ -274,16 +328,17 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 	 *
 	 * @param PropertyTranslation $translation The object, the languages and the property.
 	 * @param string              $value       The translated value.
+	 * @param string              $status      The slot status: machine_translated, or draft for a glossary miss.
 	 *
 	 * @return void
 	 */
-	private function mirrorTranslation(PropertyTranslation $translation, string $value): void {
+	private function mirrorTranslation(PropertyTranslation $translation, string $value, string $status=Translation::STATUS_MACHINE_TRANSLATED): void {
 		try {
 			$this->stores->translationMapper->upsert(
 				slot: $translation->targetSlot(),
 				edit: new TranslationEdit(
 					value: $value,
-					status: Translation::STATUS_MACHINE_TRANSLATED,
+					status: $status,
 					translator: 'provider:' . $this->provider->getIdentifier()
 				)
 			);
