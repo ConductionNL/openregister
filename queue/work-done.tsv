@@ -10469,3 +10469,4 @@ fix:humaniq:1135:9114728c	development merged in, l10n resolved, new head 120d0cd
 verify:decidiq:2169:b67a6495	2169 GREEN	session-20261114T174106-c933f162	2026-11-14T17:46:46Z
 fix:planninq:1158:4d1b5b8d	fixed: unit complexity restored (floor compare PASS); new head 11b7da5e	session-20261114T154807-c05f4e57	2026-11-14T17:46:53Z
 verify:integriq:3600:528563f5	3600 GREEN, 3632 CONFLICT (seed golden test vs 3600); no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:47:06Z
+fix:hermiq:1735:dfc8010c	conflict resolved (register version 0.58.0 + schema union, l10n), pushed 61ad767f, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T17:47:28Z
