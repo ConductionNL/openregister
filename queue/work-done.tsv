@@ -11712,3 +11712,4 @@ build:versioniq:inventory-app-details-card:c2	nothing to build: PR #701 holds ev
 fix:integriq:3595:07e2a236	conflict resolved, new head 66f788bd, REVERIFY recorded	session-20261114T224736-f9da4a35	2026-11-14T22:56:16Z
 build:versioniq:autoupdate-schedules:c2	PR #716: built 3.2 schedule form, 3.3 overview days/next run per kind, 3.4 strings, 4.2 matrix rows; left: e2e 3.5/3.6, CI legs 4.1, archive after merge; vitest 2955->2976, phpunit 1720 (2 inherited golden failures); merges clean with #697 and #718; head 73f4cacd	session-20261114T214733-589f5bff	2026-11-14T22:56:21Z
 verify:shillinq:3062:6186575a	3062 GREEN, 3078 CONFLICT (info.xml version)	session-20261114T224745-bab17644	2026-11-14T22:56:43Z
+fix:integriq:3630:99809145	CONFLICT fixed: ModalHost entries moved mid-list, merged development; new head 320ac7f7	session-20261114T224738-9571d712	2026-11-14T22:56:49Z
