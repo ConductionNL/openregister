@@ -7057,3 +7057,5 @@ decidiq	2160	26c3d35bf4954d0935e80a79381b6b455d35bd4a	GREEN	worker-58	tree witho
 integriq	3343	cd29b4de72eecc12fe7abae56cf8b5f67df2529d	GREEN	worker-39:review	Behaviour-preserving refactor into CallPreparation: phase order, short-circuit outputs and 409 logs unchanged; suite on PR+development 8494 tests, same 5 inherited failures as baseline; phpstan clean
 decidiq	2165	8558e27092941ee5136b6878bf9c409815a07a00	GREEN	worker-58	tree without 2158: php unit 4048 OK (baseline 4027 OK), vitest 2711 passed (190 files), 0 new failures
 hermiq	1758	0dad551fafb0efbec570b10bc2f0191732fff7d1	GREEN	worker-27	tree 1726+1758: 4720 tests, baseline 4694 (146E/26F inherited), 0 new failures; build reports-on-a-schedule matches its specs
+hermiq	1728	71ac65736fee2a5805927d20321be3caef9ce772	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
+hermiq	1735	7510e23605d22504ee32d588d29250e4114d827a	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
