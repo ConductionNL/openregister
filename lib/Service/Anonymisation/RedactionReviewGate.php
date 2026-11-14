@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Anonymisation;
 
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\RedactionReviewMarkMapper;
 use OCA\OpenRegister\Exception\ReviewRequiredException;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
@@ -44,12 +44,12 @@ class RedactionReviewGate {
 	 * Constructor.
 	 *
 	 * @param FileSettingsHandler       $settings  Whether review is required.
-	 * @param EntityRelationMapper      $relations The file's detections and their decisions.
+	 * @param EntityRelationMapperInterface $relations The file's detections and their decisions.
 	 * @param RedactionReviewMarkMapper $marks     The file's review marks.
 	 */
 	public function __construct(
 		private readonly FileSettingsHandler $settings,
-		private readonly EntityRelationMapper $relations,
+		private readonly EntityRelationMapperInterface $relations,
 		private readonly RedactionReviewMarkMapper $marks,
 	) {
 	}//end __construct()

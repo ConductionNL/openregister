@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\RedactionReviewMark;
 use OCA\OpenRegister\Db\RedactionReviewMarkMapper;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
@@ -57,7 +57,7 @@ class RedactionReviewMarkController extends Controller {
 	 * @param IUserSession              $userSession The signed-in person.
 	 * @param ISession                  $session    The session, to tell an app-password login apart.
 	 * @param CallerFileAccess          $fileAccess Whether the caller may read the file.
-	 * @param EntityRelationMapper      $relations  The file's detections.
+	 * @param EntityRelationMapperInterface $relations  The file's detections.
 	 * @param RedactionReviewMarkMapper $marks      Where marks are kept.
 	 */
 	public function __construct(
@@ -66,7 +66,7 @@ class RedactionReviewMarkController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly ISession $session,
 		private readonly CallerFileAccess $fileAccess,
-		private readonly EntityRelationMapper $relations,
+		private readonly EntityRelationMapperInterface $relations,
 		private readonly RedactionReviewMarkMapper $marks,
 	) {
 		parent::__construct(appName: $appName, request: $request);
