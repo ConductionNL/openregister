@@ -11953,3 +11953,4 @@ fix:decidiq:2191:ccb12641	merged development, manifest/spec conflicts resolved k
 fix:dossiq:6523:ebc2a65d	conflict resolved, pushed 2cc454b5, REVERIFY	session-20261114T231756-01da210e	2026-11-14T23:35:47Z
 verify:shillinq:3078:314170b1	3078 GREEN: phpunit 11510 OK, vitest 1 inherited failure, no new failures	session-20261114T231806-fdb63293	2026-11-14T23:36:08Z
 measure:hermiq:20261114h22	php 95.87% (pcov, 5180 tests), js 95.79% (vitest 1509) at b48ad14b	session-20261114T214736-dd784d82	2026-11-14T23:36:23Z
+fix:learniq:2486:f0544ac9	merged development (clean); unit only inherited HigherEducationExampleSetTest red; new head a242580e	session-20261114T223937-a95b1403	2026-11-14T23:36:22Z
