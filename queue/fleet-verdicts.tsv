@@ -8923,3 +8923,4 @@ planninq	1171	75d4a18fef2dc27b767b50ff65f5dcfde51a73ca	GREEN	worker-36	tree 1160
 planninq	1172	bfc1c86f4546c2ea2de9396214b63c3a09311680	GREEN	worker-36	tree 1160+1171+1172 on development: unit 1078 tests 0 failures (baseline 1038, 4 failures), vitest 3219/3219; build commits judged against their changes, no access weakening or deleted assertions
 planninq	1165	f972465934b39446b68c074c4c159a2254af2c11	GREEN	worker-13	phpunit 1067 tests 0 failures (baseline 1038, 0 failures); vitest 3257 passed; new failures none
 planninq	1166	eb8a0d7e65be1a098046ec7f4864af95e565ee42	GREEN	worker-13	phpunit 1067 tests 0 failures (baseline 1038, 0 failures); vitest 3257 passed; new failures none
+planninq	1167	f3b3b20bbcff3cfb0c44cd29d37ad9df429a1042	CONFLICT	worker-13	conflicts with the tree (development + earlier PRs in order)
