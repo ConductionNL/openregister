@@ -9722,3 +9722,4 @@ integriq	3542	ee72f32bc9f17f90f07e70db7a490de89e280c93	REVERIFY	worker-42	unit_c
 shillinq	3051	9fb95cfc70abe973da61db3f38f074f15c2b7421	CONFLICT	worker-03	conflicts with development alone; files: tests/Unit/Service/ServiceRegistrarTest.php
 shillinq	3055	732d0b78a0a185bf1714e4c3bc2bfd6f2bced161	GREEN	worker-03	phpunit unit 11396 on development+3055 (development 11360, 0 failures), vitest 2761 passed, 1 failure inherited from development (dunningNextRun); build of public-sector-council-and-auditor-statements, new endpoints guarded per administration (404 mask)
 humaniq	1125	9ef38fe583be2d2e69ab1a084539588f0057f11d	GREEN	worker-41	tree unit 4330 OK, baseline 4289 OK, no new failures; build of payroll-special-regimes, changed assertions follow its Zvw inhouding
+humaniq	1145	0310b8ea98dbd5d1c1e5396abae95adf55ee59e5	GREEN	worker-41	tree unit 4330 OK, baseline 4289 OK, no new failures; build of filings-pension-upa-message, no deleted tests or access checks
