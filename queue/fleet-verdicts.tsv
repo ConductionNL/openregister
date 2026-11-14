@@ -8074,3 +8074,4 @@ portaliq	2452	21f98e99a6d2451808886c250136cce663198020	REVERIFY	worker-01	merged
 portaliq	2430	90762148bdc47deb766bdc7c460935f8ca5fa882	REVERIFY	worker-01	example-site.spec pinned register 0.109.0; now pins 0.110.0, which this branch ships (check:example-site 15/15); check:notices and check:site-look red on development too; new head 1d196c09c2bffe9dd3f80aca234321970942aa0d, verify it
 decidiq	2169	d6a0067ec1d6b3f291bedc78cbadce8e9e01cad9	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.34 -> 3.32
 decidiq	2175	30ead60504c2129cb93d3174e224f045f34a6056	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.88
+portaliq	2430	1d196c09c2bffe9dd3f80aca234321970942aa0d	GREEN	worker-18	unit 5205 tests 0 failures (baseline 5187, 0 failures); node specs: 1 inherited failure in form-binding-settings-page (red on development too); implements its openspec change
