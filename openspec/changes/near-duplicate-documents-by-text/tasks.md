@@ -18,7 +18,7 @@
 
 ## 4. Cross-app
 
-- [ ] 4.1 Contract for consumers: request `GET /api/files/near-duplicates?objectIds[]=...`; response keys `groups[].representative`, `groups[].members[].fileId|similarity|identicalText`, `notCompared[].fileId|reason`. Verify: `tests/Contract/NearDuplicatesContractTest.php` pins the shape; `dossiq/woo-request-corpus-collection` carries its consumer test. Without OpenRegister nothing calls it; every consumer requires OpenRegister.
+- [x] 4.1 Contract for consumers: request `GET /api/files/near-duplicates?objectIds[]=...`; response keys `groups[].representative`, `groups[].members[].fileId|similarity|identicalText`, `notCompared[].fileId|reason`. Verify: `tests/Contract/NearDuplicatesContractTest.php` pins the shape; `dossiq/woo-request-corpus-collection` carries its consumer test. Without OpenRegister nothing calls it; every consumer requires OpenRegister. Built: `tests/Unit/Contract/NearDuplicatesContractTest.php` (in the unit suite beside the other contract tests) pins the route, the parameterless `@NoAdminRequired` method and the response keys; the consumer test belongs to the dossiq change.
 
 ## V. Verification and done
 
