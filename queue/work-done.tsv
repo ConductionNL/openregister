@@ -10478,5 +10478,6 @@ verify:humaniq:1127:4030a7ef	1127, 1133 GREEN	session-20261114T151932-05b02c14	2
 build:integriq:connectors-hr-staff-sync:c3	failed: tasks 1-4 still blocked, developer.untis.com is not in the cloud network allowlist (DNS refused) and design D2 requires pinned endpoints; task 5 and engine parts already on development, both build branches merged	session-20261114T171822-35ca2aeb	2026-11-14T17:48:40Z
 fix:portaliq:2437:692916ba	REVERIFY 4fe52aad	session-20261114T134708-ba7f7741	2026-11-14T17:48:44Z
 verify:decidiq:2202:3a62e78d	GREEN 2202	session-20261114T161742-d79a1d0e	2026-11-14T17:49:04Z
+verify:portaliq:2500:2041ffeb	skipped 2500: head moved to cf59f800	session-20261114T134708-ba7f7741	2026-11-14T17:49:09Z
 verify:planninq:1165:9d023db3	GREEN 1165; 1038 OK, vitest 3262 OK	session-20261114T154807-c05f4e57	2026-11-14T17:49:12Z
 fix:hermiq:1787:17ffbfda	fixed: conflict resolved keeping both sides, unit 5170 + vitest 1496 green; new head d0f18c15	session-20261114T173956-74ab8962	2026-11-14T17:49:26Z
