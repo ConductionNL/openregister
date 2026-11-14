@@ -6813,3 +6813,4 @@ dossiq	6462	8cc82b015ae15553de5132490b7ff13ebb9e3965	REVERIFY	worker-58	merged d
 pipelinq	3713	ebf9d492052c519dc1f0755ca68bacc201348082	GREEN	worker-11	unit baseline 7592/0 fail; tree (3713 only) 7595 pass; vitest 4910 pass; new failures none
 pipelinq	3725	eec84aa023cf2eb42d944fe3887e1a637e7d30f3	CONFLICT	worker-11	merge conflict with development + 3713
 pipelinq	3726	b2988e37d8e2cd6fc33439b6156b9b8ffa7677c2	CONFLICT	worker-11	merge conflict with development + 3713
+pipelinq	3736	1ee73020fde5a7a88976e483636eb0c2bbcc726a	CONFLICT	worker-11	merge conflict with development + 3713
