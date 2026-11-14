@@ -9003,3 +9003,4 @@ review:pipelinq:3708:59d07177	GREEN 3708	session-20261114T114647-2bec20c6	2026-1
 merge:dossiq:6195:c4d392fa	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:10:12Z
 merge:dossiq:6135:c977f1de	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:10:15Z
 merge:dossiq:6204:f987c517	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:10:19Z
+merge:dossiq:6378:d5a27033	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:10:22Z
