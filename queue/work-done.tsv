@@ -10888,4 +10888,18 @@ fix:shillinq:3055:5be550bb	fixed conflict: merged development, relocked versions
 merge:shillinq:2976:bd1a106e	merge3 tree of 4 shillinq PRs: merged=3 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T20:26:38Z
 verify:launchpad:1225:0f52d2f7	1225 GREEN	session-20261114T201750-64b6fe0f	2026-11-14T20:26:45Z
 merge:shillinq:2997:17ab833c	merge3 tree of 4 shillinq PRs: merged=3 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T20:26:54Z
+build:filinq:intake-paper-archive-digitisation:c3	partial: PR #2121 +2.1 v2 separator per original, +2.2 v2 segments filed on the project record (PaperOriginalFiling, RBAC bypass recorded); suite 6695 -> 6704, 0 failures; left 3.2 CSV box import, 4.1/4.2 screens, 5.1 strings/docs, 5.2 coverage	session-20261114T185843-7b9a6259	2026-11-14T20:26:48Z
+verify:launchpad:1225:0f52d2f7	1225 GREEN	session-20261114T201750-64b6fe0f	2026-11-14T20:26:45Z
+build:hermiq:models-prompt-and-answer-cache:c4	partial: PR #1791 (head 94f2f048) adds Clear cached answers (DELETE /api/agents/{id}/answer-cache, owner-only, clearForAgent, openapi, tests); left: task 6 similarity layer (needs an OpenRegister vector facade), the thumbs-down hook (messages do not record the serving entry), the Clear button and the Ask-again note in the UI; phpunit 5169 OK	session-20261114T185853-1a2abc5d	2026-11-14T20:27:04Z
 verify:learniq:2521:c6951627	GREEN #2521: 6832 tests, no new failures (1 inherited)	session-20261114T194015-817c4278	2026-11-14T20:27:01Z
+verify:integriq:3539:4e4df37e	3539 3596 3615 3622 GREEN; 3546 3574 3617 3626 3633 CONFLICT	session-20261114T194935-f789346b	2026-11-14T20:27:37Z
+fix:filinq:2119:10ac7dcc	conflict resolved (l10n, both sides kept); new head 6b034d33	session-20261114T194805-954d5649	2026-11-14T20:27:48Z
+fix:humaniq:1125:a44e6b58	floor refactor pushed, suite green; REVERIFY at 9ef38fe583be2d2e69ab1a084539588f0057f11d	session-20261114T194740-7cca8afd	2026-11-14T20:28:04Z
+fix:shillinq:2995:47788041	fixed conflict: merged development, both sides kept; new head 116350555	session-20261114T194747-cb37937d	2026-11-14T20:28:13Z
+verify:shillinq:3051:e173767e	stale	session-20261114T202449-f0278d5a	2026-11-14T20:28:34Z
+verify:hermiq:1715:3f8364d7	1715 GREEN, 1739 GREEN; 1726 1749 1785 1787 CONFLICT; unit 5175 0 failures with openregister present, vitest 1500 green	session-20261114T192501-803bcb19	2026-11-14T20:28:56Z
+merge:learniq:2536:57bab69d	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:07Z
+merge:learniq:2542:ae32d345	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:11Z
+verify:shillinq:3062:94e9ae91	3062 CONFLICT against development: info.xml, register-versions.lock.json	session-20261114T194744-563ce177	2026-11-14T20:29:17Z
+merge:learniq:2493:3be33264	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:23Z
+merge:learniq:2484:e7f1cf8b	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:30Z
