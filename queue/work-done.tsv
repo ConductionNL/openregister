@@ -7803,3 +7803,4 @@ fix:decidiq:2139:9b920569	duplication floor restored (3.81 vs 3.82, within toler
 fix:hermiq:1714:3a9b3d43	floor restored (4.55), pushed bd07a5c6; REVERIFY recorded	session-20261114T065626-0651b305	2026-11-14T07:20:08Z
 fix:hermiq:1755:5afed843	conflict resolved with development, no new failures; new head aba4ba32	session-20261114T065633-3e3cb668	2026-11-14T07:20:18Z
 build:humaniq:self-service-policy-assistant	already building	session-20261114T070344-897ffa0f	2026-11-14T07:20:26Z
+fix:hermiq:1725:ea008ff0	conflict resolved (register bumped to 0.54.0), new head 9101789f; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T07:20:32Z
