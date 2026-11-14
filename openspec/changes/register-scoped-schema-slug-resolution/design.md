@@ -131,8 +131,8 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 
 | Path | Disposition | Why it is not done here |
 | --- | --- | --- |
-| `SchemaManageGate::mayManageNamed()` (mixed-schema bulk rights) and `SaveLookups::schemaIdBySlug()` (the save) | (b), open | Must change together: scoping the rights check alone would check a different schema than the save writes. A follow-up. |
-| `SearchQueryHandler::schemaOrNull()` | (b), open | `buildSearchQuery()` holds the register but passes only the schema down. |
+| `SchemaManageGate::mayManageNamed()` (mixed-schema bulk rights) and `SaveLookups::schemaIdBySlug()` (the save) | (b), open | Must change together: scoping the rights check alone would check a different schema than the save writes. `SaveLookups::schemaId()` is also the shared reference resolver (`$ref` existence, filter guards, inverse write-back) behind one per-save slug cache, so the save's register has to be threaded into that cache first. A follow-up. |
+| `SearchQueryHandler::schemaOrNull()` | (b), open | `buildSearchQuery()` holds the register but passes only the schema down, through four parsing helpers, and the handler has no register reader; the lookup only decides how parameters are parsed (object-source columns, a declared `filter` property). |
 
 ### Class (a) and (c)
 
