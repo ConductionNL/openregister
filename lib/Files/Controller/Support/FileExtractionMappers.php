@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Files\Controller\Support;
 
 use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 
 /**
  * The mappers and repositories of the file extraction API.
@@ -34,14 +35,16 @@ final class FileExtractionMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ChunkIndexOverviewInterface   $chunkMapper          Chunk mapper for text chunks
-	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
+	 * @param ChunkIndexOverviewInterface     $chunkMapper          Chunk mapper for text chunks
+	 * @param EntityRelationMapperInterface   $entityRelationMapper Entity relation mapper
+	 * @param MagicObjectFinderInterface|null $objectFinder         Finds the object that carries a file, for the row's object uuid
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly ChunkIndexOverviewInterface $chunkMapper,
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
+		public readonly ?MagicObjectFinderInterface $objectFinder = null,
 	) {
 	}//end __construct()
 }//end class

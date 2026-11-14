@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Files\Controller\Support;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\File\UrlFileSource;
 use OCP\Files\IRootFolder;
 
 /**
@@ -40,6 +41,7 @@ final class FileStore {
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param IRootFolder   $rootFolder    The root folder.
 	 * @param ?FileMapperInterface   $fileMapper    The file mapper, null when absent.
+	 * @param ?UrlFileSource         $urlFileSource Fetches a file to create from a URL, null when absent.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -48,6 +50,7 @@ final class FileStore {
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly IRootFolder $rootFolder,
 		public readonly ?FileMapperInterface $fileMapper = null,
+		public readonly ?UrlFileSource $urlFileSource = null,
 	) {
 	}//end __construct()
 }//end class

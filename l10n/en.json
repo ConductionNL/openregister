@@ -3484,7 +3484,8 @@
         "Schema \"%1$s\" changed in a way that can break your use of it (version %2$s)": "Schema \"%1$s\" changed in a way that can break your use of it (version %2$s)",
         "A breaking change to schema \"%1$s\" was applied as version %2$s. Check the changelog before your next call.": "A breaking change to schema \"%1$s\" was applied as version %2$s. Check the changelog before your next call.",
         "Note from the administrator: %s": "Note from the administrator: %s",
-        "Open changelog": "Open changelog"
+        "Open changelog": "Open changelog",
+        "Your saved views and the objects you watch. The objects themselves stay with your organisation.": "Your saved views and the objects you watch. The objects themselves stay with your organisation."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

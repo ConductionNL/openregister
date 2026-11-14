@@ -19,6 +19,9 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
     `testDescribeOnPrimaryStorageIsNotSeparate`.
   - `tests/Unit/Service/File/DocumentStoreLiteralTest.php::testNoOtherOpenRegistersLiteralInLib` scans `lib/`.
   - Through the caller: `FolderManagementHandlerTest::testRegisterFolderIsCreatedUnderTheConfiguredRoot`.
+  - Built except the refusal of a root that holds another installation's managed folders
+    (`testAForeignManagedRootIsRefused`): recognising "another installation" needs a marker in the root, and a file
+    written into the shared tree is seen by the file listeners, so that choice is left open here.
 - [ ] 1.2 Report the store: `documentStore` in `SettingsService::getFileSettingsOnly()` (so
   `FileSettingsController::getFileSettings()` returns it), a read-only block at the top of
   `src/views/settings/sections/FileConfiguration.vue`, and `occ openregister:document-store:status`
@@ -26,6 +29,10 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
   for the labels.
   - **fails today**: `tests/Unit/Controller/Settings/FileSettingsControllerTest.php::testDocumentStoreIsReturned`,
     `tests/Unit/Command/DocumentStoreStatusCommandTest.php::testStatusPrintsTheStore`.
+  - Built: `documentStore` in `GET /api/settings/files` (added by `FileSettingsController::getFileSettings()`, not by
+    `getFileSettingsOnly()`, whose many internal readers should not touch the storage; null with a logged warning
+    when the storage cannot be read; never stored on save) and `occ openregister:document-store:status`. Left: the
+    read-only block in `FileConfiguration.vue`, whose labels need values in every locale, and the Playwright test.
   - Playwright `tests/e2e/document-store-status.spec.ts` (`@e2e file-actions::the-administrator-reads-where-documents-live`):
     the settings page shows `Open Registers`, the primary backend and "not separate".
 - [x] 1.3 Guard the byte paths: `tests/Unit/Service/File/DocumentBytePathTest.php::testNoManagedFileIsReadByLocalPath`

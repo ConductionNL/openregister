@@ -133,6 +133,7 @@ abstract class FlowHop {
 			'itemsOut' => count($items),
 			'input' => $this->sample(items: $this->itemsIn),
 			'output' => $this->sample(items: $items),
+			'produced' => FlowStateDelta::produced(itemsIn: $this->itemsIn, itemsOut: $items),
 			'durationMs' => $this->elapsedMs(),
 		];
 

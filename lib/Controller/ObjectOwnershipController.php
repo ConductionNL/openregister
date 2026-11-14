@@ -136,7 +136,7 @@ class ObjectOwnershipController extends Controller {
 	}//end claim()
 
 	/**
-	 * Assign one record to a named owner. Administrators only.
+	 * Assign one record to a named owner. Administrators, and callers holding `assign` on the record.
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.

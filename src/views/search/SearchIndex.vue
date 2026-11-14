@@ -1,8 +1,10 @@
 <script>
 import {
+	CnCardGrid,
 	CnIndexPage,
 	CnObjectCalendar,
 	CnObjectKanban,
+	CnPagination,
 } from '@conduction/nextcloud-vue'
 /**
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-across-registers-global-search
@@ -16,6 +18,12 @@ import Merge from 'vue-material-design-icons/Merge.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import EditableCell from '../../components/tables/EditableCell.vue'
+import {
+	cardSize,
+	galleryCardFields,
+	galleryCards,
+	gallerySchema,
+} from '../../services/galleryCards.js'
 import { copyRows } from '../../services/objectCopy.js'
 import { isInlineEditable } from '../../services/propertyEditor.js'
 import {
@@ -40,6 +48,25 @@ function normalizeObjects(raw) {
 	})
 }
 
+/**
+ * Ask the list to extend one more key, keeping the ones it already asks for.
+ *
+ * @param {string} key The `_extend` key.
+ * @return {boolean} True when the key was added.
+ */
+function extendSearch(key) {
+	const current = objectStore.searchParams?._extend
+	let extend = []
+	if (Array.isArray(current)) {
+		extend = current
+	} else if (current) {
+		extend = [current]
+	}
+	if (extend.includes(key)) return false
+	objectStore.updateSearchParams({ _extend: [...extend, key] })
+	return true
+}
+
 export default {
 	name: 'SearchIndex',
 	components: {
@@ -49,6 +76,8 @@ export default {
 		CnIndexPage,
 		CnObjectKanban,
 		CnObjectCalendar,
+		CnCardGrid,
+		CnPagination,
 		CheckCircle,
 		ContentCopy,
 		DatabaseExport,
@@ -266,6 +295,56 @@ export default {
 		},
 
 		/**
+		 * The active view's gallery config (`coverField`/`titleField`/`cardFields`/`cardSize`).
+		 *
+		 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-the-search-page-renders-a-gallery-view-as-cards
+		 * @return {object}
+		 */
+		galleryConfig() {
+			return this.activeView?.presentation?.gallery || {}
+		},
+
+		/**
+		 * The page's records as gallery cards, each with its cover thumbnail.
+		 *
+		 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-the-search-page-renders-a-gallery-view-as-cards
+		 * @return {Array<object>}
+		 */
+		galleryObjects() {
+			return galleryCards(this.normalizedObjects, this.galleryConfig, this.normalizedSchema)
+		},
+
+		/**
+		 * The schema the cards are drawn with: the view's title field as the title, the cover as the image.
+		 *
+		 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-the-search-page-renders-a-gallery-view-as-cards
+		 * @return {object}
+		 */
+		galleryCardSchema() {
+			return gallerySchema(this.normalizedSchema, this.galleryConfig)
+		},
+
+		/**
+		 * The fields each card lists, at most four.
+		 *
+		 * @spec exclude UI plumbing — derived view config for CnCardGrid props
+		 * @return {Array<string>}
+		 */
+		galleryFields() {
+			return galleryCardFields(this.galleryConfig)
+		},
+
+		/**
+		 * The grid's size class from the view's card size.
+		 *
+		 * @spec exclude UI plumbing — derived CSS class
+		 * @return {string}
+		 */
+		galleryClass() {
+			return `search-gallery--${cardSize(this.galleryConfig)}`
+		},
+
+		/**
 		 * Kanban board columns with each column's cards normalized the same way
 		 * as the table's `normalizedObjects` (top-level `id` from `@self.id`),
 		 * so `CnObjectKanban`'s default `row-key="id"` resolves cards correctly.
@@ -317,6 +396,9 @@ export default {
 			if (newVal && this.presentationType === 'kanban') {
 				this.fetchKanbanBoard()
 			}
+			if (newVal && this.presentationType === 'gallery') {
+				this.requestGalleryCover()
+			}
 		},
 	},
 
@@ -327,6 +409,9 @@ export default {
 		this.requestUpdateRights()
 		if (this.activeViewId && this.presentationType === 'kanban') {
 			this.fetchKanbanBoard()
+		}
+		if (this.activeViewId && this.presentationType === 'gallery') {
+			this.requestGalleryCover()
 		}
 	},
 
@@ -341,15 +426,24 @@ export default {
 		 * @return {void}
 		 */
 		requestUpdateRights() {
-			const current = objectStore.searchParams?._extend
-			let extend = []
-			if (Array.isArray(current)) {
-				extend = current
-			} else if (current) {
-				extend = [current]
+			extendSearch('@self.can')
+		},
+
+		/**
+		 * A gallery whose cover is not the schema's own image field asks the list
+		 * to extend that field, so the file is present to take the thumbnail of
+		 * (records-gallery-view D-2). The schema's image field is already
+		 * rendered as `@self.image`.
+		 *
+		 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-the-search-page-renders-a-gallery-view-as-cards
+		 * @return {void}
+		 */
+		requestGalleryCover() {
+			const field = this.galleryConfig.coverField
+			if (!field || field === this.normalizedSchema?.configuration?.objectImageField) return
+			if (extendSearch(field)) {
+				objectStore.refetchSearchCollection()
 			}
-			if (extend.includes('@self.can')) return
-			objectStore.updateSearchParams({ _extend: [...extend, '@self.can'] })
 		},
 
 		/**
@@ -715,7 +809,7 @@ export default {
 			Dispatch on the active view's presentation.viewType
 			(REQ-VIEW-PRES-05): `table` (or no active view / no presentation,
 			i.e. a legacy view) keeps the existing CnIndexPage list unchanged;
-			`kanban`/`calendar` render the shared nextcloud-vue components —
+			`kanban`/`calendar`/`gallery` render the shared nextcloud-vue components —
 			OpenRegister only wires props/events, it does not re-implement
 			rendering locally.
 		-->
@@ -854,10 +948,86 @@ export default {
 			rowKey="id"
 			@rangeChange="handleCalendarRangeChange"
 			@objectClick="handleRowClick" />
+
+		<div
+			v-else-if="presentationType === 'gallery'"
+			:key="`gallery-${activeViewId}`"
+			class="search-gallery"
+			:class="galleryClass">
+			<CnCardGrid
+				:objects="galleryObjects"
+				:schema="galleryCardSchema"
+				:cardFields="galleryFields"
+				:loading="objectStore.searchLoading"
+				rowKey="id"
+				@click="handleRowClick">
+				<template #card-actions="{ object }">
+					<NcActions>
+						<NcActionButton closeAfterClick @click="handleRowClick(object)">
+							<template #icon>
+								<Pencil :size="20" />
+							</template>
+							{{ t('openregister', 'Edit') }}
+						</NcActionButton>
+						<NcActionButton closeAfterClick @click="handleMergeRow(object)">
+							<template #icon>
+								<Merge :size="20" />
+							</template>
+							{{ t('openregister', 'Merge') }}
+						</NcActionButton>
+						<NcActionButton closeAfterClick @click="handleCopyRow(object)">
+							<template #icon>
+								<ContentCopy :size="20" />
+							</template>
+							{{ t('openregister', 'Copy') }}
+						</NcActionButton>
+						<NcActionButton closeAfterClick @click="handleDeleteRow(object)">
+							<template #icon>
+								<TrashCanOutline :size="20" />
+							</template>
+							{{ t('openregister', 'Delete') }}
+						</NcActionButton>
+					</NcActions>
+				</template>
+			</CnCardGrid>
+			<CnPagination
+				v-if="objectStore.searchPagination && objectStore.searchPagination.pages > 1"
+				:currentPage="objectStore.searchPagination.page || 1"
+				:totalPages="objectStore.searchPagination.pages || 1"
+				:totalItems="objectStore.searchPagination.total || 0"
+				:currentPageSize="objectStore.searchPagination.limit || 20"
+				@pageChanged="handlePageChanged"
+				@pageSizeChanged="handlePageSizeChanged" />
+		</div>
 	</NcAppContent>
 </template>
 
 <style scoped>
+/* The view's card size sets the grid's column width (records-gallery-view). */
+.search-gallery--small {
+	--cn-card-grid-min: 160px;
+}
+
+.search-gallery--small :deep(.cn-card-grid__grid) {
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.search-gallery--medium {
+	--cn-card-grid-min: 240px;
+}
+
+.search-gallery--medium :deep(.cn-card-grid__grid) {
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.search-gallery--large {
+	--cn-card-grid-min: 360px;
+}
+
+.search-gallery--large :deep(.cn-card-grid__grid) {
+	grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+}
+
 .add-button-disabled :deep(.cn-actions-bar .button-vue--vue-primary) {
 	opacity: 0.5;
 	cursor: not-allowed;

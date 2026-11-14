@@ -1,7 +1,10 @@
 <?php
 
 /**
- * Mail headers — the thread headers of collected `.eml` files.
+ * Create the text signature table.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
@@ -10,12 +13,11 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * @version GIT: <git-id>
  *
- * @link https://www.OpenRegister.app
+ * @link https://OpenRegister.app
  *
- * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-collected-mail-files-carry-their-thread-headers-req-rth-010
+ * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-every-extracted-file-carries-a-text-signature-req-ndt-001
  */
 
 declare(strict_types=1);
@@ -29,11 +31,11 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Create `openregister_mail_headers`: one row per collected `.eml` file with
- * its Message-ID, In-Reply-To, References chain and sent date. Idempotent:
+ * Create `openregister_text_signatures`: one MinHash signature per extracted
+ * file, its shingle count and the SHA-256 of its normalised text. Idempotent:
  * created only when absent.
  *
- * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-collected-mail-files-carry-their-thread-headers-req-rth-010
+ * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-every-extracted-file-carries-a-text-signature-req-ndt-001
  */
 class Version1Date20261113200000 extends SimpleMigrationStep {
 
@@ -46,9 +48,7 @@ class Version1Date20261113200000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The changed schema.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
-	 *
-	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-collected-mail-files-carry-their-thread-headers-req-rth-010
+	 * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-every-extracted-file-carries-a-text-signature-req-ndt-001
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
@@ -56,25 +56,25 @@ class Version1Date20261113200000 extends SimpleMigrationStep {
 		 */
 
 		$schema = $schemaClosure();
-		if ($schema->hasTable('openregister_mail_headers') === true) {
+
+		if ($schema->hasTable('openregister_text_signatures') === true) {
 			return $schema;
 		}
 
-		$table = $schema->createTable('openregister_mail_headers');
+		$table = $schema->createTable('openregister_text_signatures');
 		$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-		$table->addColumn('file_id', Types::BIGINT, ['notnull' => true]);
-		$table->addColumn('message_id', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => '']);
-		$table->addColumn('in_reply_to', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => '']);
-		$table->addColumn('reference_ids', Types::TEXT, ['notnull' => false]);
-		$table->addColumn('sent_at', Types::DATETIME, ['notnull' => false]);
+		$table->addColumn('file_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
+		$table->addColumn('signature', Types::TEXT, ['notnull' => false]);
+		$table->addColumn('shingle_count', Types::INTEGER, ['notnull' => true, 'unsigned' => true, 'default' => 0]);
+		$table->addColumn('text_sha256', Types::STRING, ['notnull' => true, 'length' => 64]);
+		$table->addColumn('created', Types::DATETIME, ['notnull' => true]);
 
 		$table->setPrimaryKey(['id']);
-		$table->addUniqueIndex(['file_id'], 'or_mail_headers_file');
-		$table->addIndex(['message_id'], 'or_mail_headers_msgid');
-		$table->addIndex(['in_reply_to'], 'or_mail_headers_reply');
+		$table->addUniqueIndex(['file_id'], 'idx_or_tsig_file');
 
-		$output->info('Created openregister_mail_headers table');
+		$output->info('Created openregister_text_signatures table');
 
 		return $schema;
+
 	}//end changeSchema()
 }//end class

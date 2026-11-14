@@ -133,6 +133,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // The bulk route lives under `/api/ownership` rather than `/api/objects`
         // on purpose: `/api/objects/ownership/reassign` would be matched by the
         // two-segment `/api/objects/{register}/{schema}` create route first.
+        // platform-collaboration-resources: the Nextcloud collections an object belongs to.
+        ['name' => 'objectCollections#index', 'url' => '/api/objects/{register}/{schema}/{id}/collections', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#show',          'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'GET',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#claim',         'url' => '/api/objects/{register}/{schema}/{id}/ownership/claim', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#assign',        'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
@@ -144,6 +146,12 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // nothing leaves draft by accident. A plain Controller, so a refusal
         // keeps its status (OCSMiddleware would turn a 403 into a 200).
         ['name' => 'objectDraft#activate', 'url' => '/api/objects/{register}/{schema}/{id}/activate', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        // Named drafts of an object beside the published one (records-draft-versions 2.2).
+        ['name' => 'versions#index', 'url' => '/api/objects/{register}/{schema}/{id}/versions', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'versions#create', 'url' => '/api/objects/{register}/{schema}/{id}/versions', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'versions#show', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
+        ['name' => 'versions#update', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'PUT', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
+        ['name' => 'versions#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
 
         // Who holds which right on one object, and how that set changed. The
         // other direction of `/api/scopes`: that one answers a caller about
@@ -266,6 +274,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // Virtual registers over DBAL — connection test + introspection (dbal-virtual-registers spec).
         ['name' => 'sources#testConnection', 'url' => '/api/sources/{id}/test-connection', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'sources#introspect',     'url' => '/api/sources/{id}/introspect',      'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'sources#queryPreview',   'url' => '/api/sources/{id}/query-preview',   'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
         ['name' => 'configurations#patch', 'url' => '/api/configurations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'applications#patch', 'url' => '/api/applications/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -1334,6 +1343,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             // and the timers, silently, which is what closing and refiling
             // does today.
         ['name' => 'objects#move', 'url' => '/api/objects/{register}/{schema}/{id}/move', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // A copy is a new identity with its own trail (records-copy-with-links).
+        ['name' => 'objects#copy', 'url' => '/api/objects/{register}/{schema}/{id}/copy', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#lock', 'url' => '/api/objects/{register}/{schema}/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
             // 🔴 THE SAME RELEASE, REACHED BY DELETING THE LOCK. A lock is a
@@ -1621,6 +1632,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#lock', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+        ['name' => 'notes#journal', 'url' => '/api/objects/{register}/{schema}/{id}/notes-journal', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
         // Timeline entries under objects: the entry as a record, with its
         // kind, its fields, the pin, the follow-up and the raw inbound
@@ -1746,6 +1758,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'requirements' => ['id' => '[^/]+'],
         ],
         ['name' => 'schemas#stats', 'url' => '/api/schemas/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'schemas#indexes', 'url' => '/api/schemas/{id}/indexes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#explore', 'url' => '/api/schemas/{id}/explore', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#updateFromExploration', 'url' => '/api/schemas/{id}/update-from-exploration', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // Schema versioning & object migration (schema-versioning-and-object-migration).
