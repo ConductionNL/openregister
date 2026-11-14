@@ -10234,3 +10234,4 @@ build:buildiq:ai-agents-knowledge-and-run-trace:c2	PR #1621: T03, T04, T09 built
 verify:buildiq:1608:28aba9a6	1613, 1614 GREEN; 1608 skipped (head moved to ff681f71)	session-20261114T151932-05b02c14	2026-11-14T16:38:04Z
 fix:shillinq:3050:b62151d4	floor restored 3.88->3.89 by removing duplicated listener prologue; pushed 03b114f2, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T16:38:12Z
 fix:hermiq:1725:bdb02899	merged development, resolved register and nl l10n; new head 01ca65a0	session-20261114T141010-8dc8bd74	2026-11-14T16:38:24Z
+fix:integriq:3628:2ecd4a27	l10n strings moved off shared tail; new head fb3c5541	session-20261114T161744-497aae45	2026-11-14T16:38:39Z
