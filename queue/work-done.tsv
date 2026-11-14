@@ -8103,3 +8103,4 @@ build:buildiq:lifecycle-release-test-gate	partial: PR #1590 (T01-T04: schemas + 
 verify:hermiq:1714:2d3c314a	2 GREEN (1714,1717), 1 CONFLICT (1725), 1 RED (1740)	session-20261114T073105-752e50ad	2026-11-14T08:06:55Z
 verify:humaniq:1139:749b4a0d	GREEN 1139	session-20261114T070346-2d3b1362	2026-11-14T08:07:08Z
 build:buildiq:pages-widget-grid-drag-and-resize	partial: PR #1591, task 1 (@spec tag); tasks 2-3 are e2e needing an instance	session-20261114T062202-3e33eeb3	2026-11-14T08:07:23Z
+fix:integriq:3564:128e21d4	RED fixed: new alias recorded in the two registration tests, pushed 4fdc043f	session-20261114T065635-61264d14	2026-11-14T08:07:23Z
