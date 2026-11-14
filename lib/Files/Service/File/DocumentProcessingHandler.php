@@ -45,6 +45,7 @@ use Throwable;
 use ZipArchive;
 use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest;
+use OCA\OpenRegister\Service\Anonymisation\BackendInfo;
 
 /**
  * Handles document processing operations.
@@ -880,6 +881,12 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			$entity->setSteps($steps);
 		}
 
+		// The version record of the detection backend that ran (REQ-ADI-001).
+		$detector = $this->detectorRecord();
+		if ($detector !== null) {
+			$entity->setDetector($detector);
+		}
+
 		if ($this->lastSanitizationReport !== null) {
 			$encoded = json_encode($this->lastSanitizationReport->jsonSerialize());
 			if (is_string($encoded) === true) {
@@ -898,6 +905,46 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			);
 		}
 	}//end persistAnonymisationLog()
+
+	/**
+	 * The version record of the detection backend in effect, as JSON, with the
+	 * backend's name under `backend`.
+	 *
+	 * Best-effort like the row it goes on: without the backend state, without a
+	 * record for the effective backend, or when reading the state fails, the run
+	 * stores no record rather than failing (the file is already written).
+	 *
+	 * @return string|null The JSON record, or null.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-every-detection-backend-reports-what-it-is-built-from-req-adi-001
+	 */
+	private function detectorRecord(): ?string {
+		if ($this->redaction->detectors === null) {
+			return null;
+		}
+
+		try {
+			$state = $this->redaction->detectors->getState();
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'DocumentProcessingHandler: detector version record unavailable',
+				['error' => $e->getMessage()]
+			);
+			return null;
+		}
+
+		$info = ($state->backends[$state->effectiveMethod] ?? null);
+		if (($info instanceof BackendInfo) === false || $info->detector === null) {
+			return null;
+		}
+
+		$encoded = json_encode(array_merge(['backend' => $state->effectiveMethod], $info->detector->jsonSerialize()));
+		if (is_string($encoded) === false) {
+			return null;
+		}
+
+		return $encoded;
+	}//end detectorRecord()
 
 	/**
 	 * The source file id of a run, 0 when the node has none.

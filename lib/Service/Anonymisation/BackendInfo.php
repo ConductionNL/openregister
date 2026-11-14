@@ -60,12 +60,14 @@ final class BackendInfo implements JsonSerializable {
 	 * @param bool        $configured Whether the backend has usable configuration.
 	 * @param ProbeResult $probe      The latest probe: reachability, when, and its latency.
 	 * @param DetectorVersion|null $detector What the backend is built from, when reported.
+	 * @param BackendStatement|null $statement What the backend does with the text: training use and retention.
 	 */
 	public function __construct(
 		public readonly string $name,
 		public readonly bool $configured,
 		ProbeResult $probe,
 		public readonly ?DetectorVersion $detector=null,
+		public readonly ?BackendStatement $statement=null,
 	) {
 		$this->available = $probe->reachable;
 		$this->lastProbedAt = $probe->probedAt;
@@ -75,7 +77,9 @@ final class BackendInfo implements JsonSerializable {
 	/**
 	 * Serialise to a JSON-friendly array.
 	 *
-	 * @return array{name: string, available: bool, configured: bool, lastProbedAt: string|null, latencyMs: int|null, detector?: array<string, mixed>}
+	 * @return array<string, mixed> name, available, configured, lastProbedAt and latencyMs; detector and statement when known.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
 	 */
 	public function jsonSerialize(): array {
 		$info = [
@@ -87,6 +91,10 @@ final class BackendInfo implements JsonSerializable {
 		];
 		if ($this->detector !== null) {
 			$info['detector'] = $this->detector->jsonSerialize();
+		}
+
+		if ($this->statement !== null) {
+			$info['statement'] = $this->statement->jsonSerialize();
 		}
 
 		return $info;

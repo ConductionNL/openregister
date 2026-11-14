@@ -4,7 +4,7 @@
 
 - [x] 1.1 Add `VERSION` and `CHANGED_AT` public constants to `JurisdictionPatternSet` implementations, starting with `lib/Service/TextExtraction/PatternSet/NlPatternSet.php`, and a `DetectorVersion` value object. Verify: `tests/Unit/Service/Anonymisation/AnonymisationBackendServiceVersionTest.php::testThePatternSetReportsItsVersionAndChangeDate` (fails today: no constant exists).
 - [x] 1.2 Read engine and model versions from each backend probe in `AnonymisationBackendService::probe()`, reporting `unknown` for anything not exposed, and return the record from `getState()`. Verify: `testAnUnexposedModelIsReportedAsUnknown`.
-- [ ] 1.3 Store the record on `AnonymisationLog` (migration adding a `detector` JSON column) from the call site in `DocumentProcessingHandler::anonymizeDocument()`. Verify: `tests/Unit/Db/AnonymisationLogVersionTest.php::testARunStoresTheBackendVersionRecord`, which drives the real `DocumentProcessingHandler` call path, not the entity alone.
+- [x] 1.3 Store the record on `AnonymisationLog` (migration adding a `detector` JSON column) from the call site in `DocumentProcessingHandler::anonymizeDocument()`. Verify: `tests/Unit/Db/AnonymisationLogVersionTest.php::testARunStoresTheBackendVersionRecord`, which drives the real `DocumentProcessingHandler` call path, not the entity alone.
 - [x] 1.4 Keep a version history per backend and set `changedAt` on first sight of a new record. Verify: `tests/Unit/Service/Anonymisation/DetectorVersionHistoryTest.php::testANewModelVersionStartsAHistoryEntry`.
 
 ## 2. Measured accuracy (REQ-ADI-002)
@@ -15,7 +15,7 @@
 
 ## 3. Statements (REQ-ADI-003)
 
-- [ ] 3.1 Add `trainingUse` and `retention` per backend to `FileSettingsHandler`, product-declared and read-only for the internal ExApp and regex, `unknown` default for external ones; write changes through the settings audit writer. Verify: `tests/Unit/Service/Anonymisation/BackendStatementTest.php::testTheInternalExAppIsDeclaredExcluded`, `testAnExternalBackendDefaultsToUnknown`, `testAChangedStatementIsAudited`.
+- [x] 3.1 Add `trainingUse` and `retention` per backend to `FileSettingsHandler`, product-declared and read-only for the internal ExApp and regex, `unknown` default for external ones; write changes through the settings audit writer. Verify: `tests/Unit/Service/Anonymisation/BackendStatementTest.php::testTheInternalExAppIsDeclaredExcluded`, `testAnExternalBackendDefaultsToUnknown`, `testAChangedStatementIsAudited`.
 - [ ] 3.2 Edit both statements on the file configuration page. Verify: `FileConfiguration.spec.js` case for the external backend form, and `tests/e2e/ci/anonymisation-disclosure.spec.ts` (created here) opens the page and covers the page scenarios of REQ-ADI-002 and REQ-ADI-003. `anonymisation-discloses-itself-pipeline` extends the same spec.
 
 ## 6. Threshold setting (REQ-ADI-007)
