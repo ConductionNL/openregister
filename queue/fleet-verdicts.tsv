@@ -7310,3 +7310,4 @@ decidiq	2158	68d22a7ac7daeb012993c28564d2b0fd3f743ed4	GREEN	worker-18	unit 4038 
 opencatalogi	2650	894030c71b786b4ddb1ae3e5674b8b9fb60c831d	REVERIFY	worker-03	merged development (2646, 2649 landed); kept TermRollListener and PublicationLinksListener in ListenerRegistrar + ComponentRegistrarsTest; AppInfo and listener tests green; new head 76e9e835913e99db44603c4e13a59cd35a97fa35, verify it
 launchpad	1190	817847ca89f5851946d3be89677b54a839583366	GREEN	worker-16	phpunit 4087 tests OK (baseline 4068 OK); tests only: controller removal, render-failure and sign-in paths
 launchpad	1194	48c15fa3a007f1c679d932ea77d524e1518acd0e	GREEN	worker-16	phpunit 4087 tests OK, 0 new failures; new Embed services (CSP, rate limit, scope, theme) with tests per embedded-analytics tasks 5 and 8; not wired into a route yet
+learniq	2494	4a5ebbac106b506e613a5702d0882e74a01513fe	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.40 -> 4.37
