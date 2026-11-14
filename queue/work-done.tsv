@@ -11902,3 +11902,4 @@ fix:filinq:2114:c9e0c441	merged development in clean, unit 6816 OK, new head 789
 cover:pipelinq:7f9dc8e6m799d:jsfef87a3a	PR #3848: ScorecardManager + PosTenderTypeManager mounted specs (5 tests); dirs 92.96->93.76% (target 95 not reached: rest is in store-bound detail/form pages)	session-20261114T214735-aacd1703	2026-11-14T23:28:51Z
 cover:decidiq:a5f973bbmae46:f545d745	already done: lib/Repair/*.php measures 803/803 (100%) on development 79e01508 with the whole unit suite	session-20261114T214733-589f5bff	2026-11-14T23:28:42Z
 fix:filinq:2095:3fec27e5	merged development in (clean, was behind); suites green; new head e0ebb0e0	session-20261114T221801-9a21d394	2026-11-14T23:28:47Z
+fix:portaliq:2508:540d4522	conflict resolved by merging development; new head 04d531ae	session-20261114T224754-e4a2fcab	2026-11-14T23:29:07Z
