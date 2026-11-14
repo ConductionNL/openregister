@@ -11483,5 +11483,6 @@ fix:learniq:2521:b2c3e036	conflict resolved, new head 33d6a10	session-20261114T2
 verify:stackiq:1905:f22ac8fa	GREEN 1905,1951,1952,1953,1955; 1954 skipped (head moved to e74406a9); 0 new failures	session-20261114T214735-aacd1703	2026-11-14T22:15:23Z
 verify:opencatalogi:2665:65ad203e	GREEN 2665; no new failures	session-20261114T211801-f16dd26d	2026-11-14T22:15:34Z
 fix:hermiq:1739:ebafadc0	l10n conflict resolved, merged development, new head 16abb787	session-20261114T211808-5e900938	2026-11-14T22:15:45Z
+build:stackiq:landscape-move-between-organisations:c2	partial: PR #1958 dialog + bulk actions on 5 lists + docs page, 16 vitest; left: detail header action (library lacks named handler on detail pages), Playwright, screenshot, Newman (live)	session-20261114T214930-79d5b35c	2026-11-14T22:15:53Z
 review:shillinq:3000:4004df62	GREEN: suite 11478 green, phpstan clean, behaviour per change specs	session-20261114T214719-cd72efa7	2026-11-14T22:15:55Z
 fix:stackiq:1941:9651b6f8	no change: branch already up to date with development (merges clean); the conflict is only with earlier unmerged tree PRs' l10n keys, merge development in again once they land	session-20261114T214735-aacd1703	2026-11-14T22:16:02Z
