@@ -88,4 +88,16 @@ interface UniqueConstraintEvaluatorInterface {
 	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
 	 */
 	public function identityRefusals(?array $configuration): array;
+
+	/**
+	 * The key of an object under an identity: its values joined in declared order.
+	 *
+	 * @param array{name:string,properties:array<int,string>,action:string} $identity The identity constraint.
+	 * @param array<string,mixed> $object The object data.
+	 *
+	 * @return string|null The key, or null when one of the values is absent, empty or not scalar.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function keyOf(array $identity, array $object): ?string;
 }//end interface

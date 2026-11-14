@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
+use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -156,6 +157,40 @@ final class RecordAnnotations {
 			$entity->setObject(self::withLinks(objectData: $objectData, links: $links));
 		}
 	}//end resolveLinks()
+
+	/**
+	 * Put the object's key on `@self.key` when its schema declares an identity.
+	 *
+	 * The key is built from the rendered values, after the read strip, so a
+	 * reader who may not see one of the identity properties is not shown it
+	 * through the key either; such a reader, like an object missing a value,
+	 * gets no key.
+	 *
+	 * @param ObjectEntity $entity The rendered object.
+	 * @param Schema|null  $schema Its schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function attachKey(ObjectEntity $entity, ?Schema $schema): void {
+		if ($schema === null) {
+			return;
+		}
+
+		$this->guarded(
+			failure: 'identity key failed for ' . (string)$entity->getUuid(),
+			step: static function () use ($entity, $schema): void {
+				$evaluator = SchemaDeclarationValidators::uniqueConstraints();
+				$identity = $evaluator->identity(configuration: $schema->getConfiguration());
+				if ($identity === null) {
+					return;
+				}
+
+				$entity->setIdentityKey($evaluator->keyOf(identity: $identity, object: self::objectOf(entity: $entity)));
+			}
+		);
+	}//end attachKey()
 
 	/**
 	 * The object data with the links on its `@self`.
