@@ -7644,3 +7644,4 @@ fix:pipelinq:3685:54fa55d4	conflict resolved, pushed d4db9224, REVERIFY recorded
 fix:pipelinq:3602:d28667fb	failed: permission (PR is obsolete: development cfe01e1c1 has a superset of its Social tests; closing it was refused)	session-20261114T062200-62a0b439	2026-11-14T06:44:47Z
 merge:dossiq:6453:af8a71fe	merge3 tree of 7 dossiq PRs: merged=4 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T06:44:47Z
 merge:dossiq:6464:d2b312d1	merge3 tree of 7 dossiq PRs: merged=4 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T06:44:50Z
+merge:dossiq:6424:474c57af	merge3 tree of 7 dossiq PRs: merged=4 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T06:44:54Z
