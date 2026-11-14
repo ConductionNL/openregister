@@ -51,6 +51,8 @@ use OCA\OpenRegister\Search\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\User\Events\OutOfOfficeEndedEvent;
+use OCP\User\Events\OutOfOfficeStartedEvent;
 
 /**
  * Subscribes every OpenRegister listener to its events.
@@ -270,6 +272,12 @@ final class ListenerRegistrar {
 		// own transaction committed (the listener skips uncommitted dispatches);
 		// a failure here costs latency, never the completion.
 		$context->registerEventListener(TaskTerminalEvent::class, UserTaskTerminalListener::class);
+
+		// Substitution (tasks-delegation-and-substitution, design D-5): an
+		// absence that starts or ends only queues TaskSubstitutionJob, which
+		// moves the person's open tasks to the stand-in or gives untouched ones back.
+		$context->registerEventListener(OutOfOfficeStartedEvent::class, TaskAbsenceListener::class);
+		$context->registerEventListener(OutOfOfficeEndedEvent::class, TaskAbsenceListener::class);
 
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): a terminal task (TaskMapper, both write paths) or a terminal run

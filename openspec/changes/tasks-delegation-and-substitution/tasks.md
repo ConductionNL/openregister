@@ -14,8 +14,8 @@
 
 - [x] 3.1 `TaskSubstitution::routeIfAbsent()` reading the Nextcloud absence and applying D-4 and D-6. Verify: `tests/Unit/Service/Task/TaskSubstitutionTest.php` for absent with replacement, absent without, absence not in effect, feature disabled, stand-in without mandate.
 - [x] 3.2 Call it on create, import, assign, reassign, offer routing and claim fallback; drop absent members in `TaskPerformerResolver`. Verify: `TaskServiceTest` and `TaskPerformerResolverTest` cases.
-- [ ] 3.3 Listener for `OutOfOfficeStartedEvent` and `OutOfOfficeEndedEvent` queuing `TaskSubstitutionJob`, bounded to 200 per run with a watermark; the return rule of D-5. Verify: `TaskSubstitutionJobTest` for start, end with an untouched task, end with a touched task, and 450 tasks over three runs.
-- [ ] 3.4 `assigneeAbsent` and `absentUntil` on the inbox row. Verify: `TaskInboxServiceTest`.
+- [x] 3.3 Listener for `OutOfOfficeStartedEvent` and `OutOfOfficeEndedEvent` queuing `TaskSubstitutionJob`, bounded to 200 per run with a watermark; the return rule of D-5. Verify: `TaskSubstitutionJobTest` for start, end with an untouched task, end with a touched task, and 450 tasks over three runs.
+- [x] 3.4 `assigneeAbsent` and `absentUntil` on the inbox row. Verify: `TaskInboxServiceTest`.
 
 ## 4. Tests and docs
 
