@@ -3030,3 +3030,4 @@ integriq	3634	8688e02b4065bdc69ee6e2508eb49624b78e266f	MERGED	merge3	GATE OK sbo
 integriq	3635	412d252c6ba3bdbe4b7db6b5b830323941a88cd0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 keepiq	1786	e7b22f0502010ba03a591b8a3d30d6a6a900522c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
 keepiq	1798	0dec26815b252fe4ee42dfc6d9ee9f1d2a5337fa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+filinq	2119	6b034d33fff491c65fcc1b2191bac7de55d2e922	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
