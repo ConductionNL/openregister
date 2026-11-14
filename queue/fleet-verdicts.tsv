@@ -6648,3 +6648,19 @@ shillinq	3004	0b2be938955fce6d7ebc09529c883913faa5c24a	CONFLICT	merge3	conflicts
 shillinq	3009	7342e5558e4fae638320532ab6ee0e11699f3138	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 shillinq	3010	d5daca5350e079d897a60e1490f94ef5f6c0b81d	RED	merge3	new unit failures on the tree with development: Class OCA\Shillinq\AppInfo\AppIdentity not found (development moved AppIdentity to lib/Kernel); update the import
 shillinq	3023	0221ca260b3af831cde2dbcef86f7111ab3b88d1	RED	merge3	new unit failures with development: GuardRegistrarTest expected list lacks BudgetScenarioModifierGuard::validateOnSave, registered on development
+pipelinq	3602	d28667fb1df455d1b16f790053f93d332148c1e4	CONFLICT	merge3	conflicts with development; files: tests/Unit/Service/Social/BrokerCredentialReaderTest.php 
+pipelinq	3614	e56b0d3e983a0d6b2e4234af8d5dcf5cafa05164	CONFLICT	merge3	conflicts with development; files: tests/Unit/Service/Marketing/ListObjectStoreTest.php 
+pipelinq	3685	54fa55d46f6424e459b7aff7a05eaa0e09d34376	CONFLICT	merge3	conflicts with development; files: tests/vitest/registryWidgetProps.spec.js 
+pipelinq	3691	e3fecc47411af13f67e1b036e108d71be561fd18	CONFLICT	merge3	conflicts with development; files: tests/vitest/contactImportDialogFlow.spec.js 
+pipelinq	3694	93cdbede425f26b5da6fcfdc897c8861cc7a0286	CONFLICT	merge3	conflicts with development; files: tests/Unit/Service/CostReconciliationServiceTest.php 
+pipelinq	3707	52402cf243bd1496262608ab2e76e81cc89c08c5	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/AppInfo/Application.php 
+pipelinq	3708	d1e03085fcab9ad7df2b8309c2dca6ebfb9b94c2	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3713	102b99c87bb4a3eab6d9a470c5833413314a50c8	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3721	f846326553ca8ca0ed4c03160ec7125ca4a255c9	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/AppInfo/Application.php 
+pipelinq	3725	77b357a77befb4e421ddeb9f2056f8c812348786	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3726	73dd707c6aa3d3b43c8f9aa57010f88bf4648866	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/WorklistService.php 
+pipelinq	3732	7c8892f0e4b162d83bcb1b20a34c1e360f89ed01	CONFLICT	merge3	conflicts with development; files: l10n/de.js l10n/de.json l10n/en.js l10n/en.json l10n/es.js l10n/es.json l10n/fr.js l10n/fr.json l10n/it.js l10n/it.json l10n/nl.js l10n/nl.json 
+pipelinq	3736	b7ce4bd444c45c7dde75a425d27adfd6cdb36f66	CONFLICT	merge3	conflicts with development; files: lib/Controller/ProductCatalogController.php lib/Service/ProductCatalogService.php 
+pipelinq	3742	78566a171a0593d51dfaa6324f462cc3635f72ed	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Notification/Notifier.php 
+pipelinq	3743	222fa459e19bbc0c4f9efa55f0f2e055f7d0e121	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml 
+pipelinq	3752	b87ad31731214a90f98665830f2026ef2c60af5c	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
