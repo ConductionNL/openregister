@@ -8551,3 +8551,4 @@ verify:opencatalogi:2648:4ae5e1a7	GREEN 2648 2681 2684; CONFLICT (tree, l10n) 26
 build:larpinq:events-qr-checkin	partial: PR #1041 (1.1 check-in code + repair step, 2.1 checkin-code endpoint; unit 792->805, 0 fail); left frontend 3.x, 4.x	session-20261114T075643-75a598ab	2026-11-14T09:05:49Z
 review:keepiq:1631:f4de0e6f	GREEN: formatter extraction, behaviour unchanged, vitest 6420 pass	session-20261114T070329-a050d62b	2026-11-14T09:05:50Z
 build:larpinq:platform-baseline-on-nextcloud	PR #1042: language switch (2.1, 2.2) on MyCharacters; detail page lacks an actions slot	session-20261114T085635-07e3ca9b	2026-11-14T09:05:58Z
+build:thematiq:action-colour-token	already built: on development since 06c92322e (#1252), every code task ticked; only 6.4 (running-instance check) open	session-20261114T075640-614c8df8	2026-11-14T09:06:01Z
