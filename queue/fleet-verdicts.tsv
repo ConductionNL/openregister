@@ -9883,3 +9883,4 @@ buildiq	1650	637488fda0324786fb14534db23b41619b30a879	GREEN	worker-11	tree 1622+
 buildiq	1624	f4e7c1bd61625c049c067b2972fd4d0c45198ffb	GREEN	worker-16	implements openbuild-mcp-adoption per its specs; unit 3181 (baseline 3142, same 1 inherited ExportZipGoldenTest failure), 0 new; copilot vitest 39 pass
 decidiq	2178	37197bc0dc79c7ac6841b3162e6f177815309958	GREEN	worker-07	php unit 4275 (baseline 4233, 0 fails), 0 new failures; vitest 2812 pass; builds inspreekrecht-plenair, moderation guarded per meeting
 keepiq	1790	5c0dced9415c6f4243adb6bd0f6ecb83731e6bf9	GREEN	worker-22	PHP unit 5186 (baseline 5186), 0 failures; vitest 6620 pass, 3 inherited reds (HealthReportView.controls); JS-only vault-duplicate-finder build
+keepiq	1792	5b788ad39cb3ade53790b534fc83dce411a16007	CONFLICT	worker-22	conflicts with #1790 in all 37 l10n catalogues (.js and .json); merge development after #1790 lands
