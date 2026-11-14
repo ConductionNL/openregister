@@ -7126,3 +7126,4 @@ shillinq	2996	cd1abe2c5f45ec4071382d37901cad51345d7b85	GREEN	worker-36	phpunit 1
 shillinq	2982	48c84db20f24e8cbf4c6e0ed5f6810697c37a6d8	CONFLICT	worker-36	conflicts in tree, files: appinfo/info.xml tests/fixtures/register-versions.lock.json
 shillinq	2986	79a81b92ef3d13026c76d9e3733f1ac6aecddc6d	CONFLICT	worker-36	conflicts in tree, files: tests/fixtures/register-versions.lock.json
 shillinq	2993	6f526c3c6e639693ee8dbf20bddaf40d40f0d6b4	CONFLICT	worker-36	conflicts in tree, files: appinfo/info.xml
+shillinq	2995	028a9490d3db02040536abbc237a03baea29f717	CONFLICT	worker-36	conflicts in tree, files: appinfo/info.xml tests/fixtures/register-versions.lock.json
