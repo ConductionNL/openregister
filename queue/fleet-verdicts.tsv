@@ -8281,6 +8281,7 @@ learniq	2484	9c722d00825149b5a1661bb32a8852e6007edcfd	GREEN	worker-01	unit 6741 
 shillinq	2997	6cf1addfc0ca51e15f5fc2ba3ea4798a3dfe38fb	CONFLICT	worker-30	conflicts with plain development in appinfo/info.xml, appinfo/routes.php, l10n/en+nl js/json, tests/fixtures/register-versions.lock.json
 filinq	2116	29aaca50dbc8a8af8d2509b71be07cd80bd2b2bf	CONFLICT	worker-39	conflicts on development+2112+2118: l10n en/nl, filinq_mock_register.json, filinq_register.json, openapi.json
 filinq	2119	6a1f160d8f4f0bb7c2cebae8a428358aa0da67e8	CONFLICT	worker-39	conflicts on development+2112+2118: l10n en/nl, src/views/settings/Settings.vue, tests/jest/golden/settings-page.json
+shillinq	3050	1bdb43ad5bf72f49de0cf3dd84de617a2226e4b2	REVERIFY	worker-29	merged development in; l10n en/nl .js/.json conflicts (both sides appended keys) resolved keeping both, no duplicate keys; test:l10n, parity, dutch-tokens green; new head b62151d4c34aad6eb814644a90bef24e81e0acf9, verify it
 filinq	2120	261649dc22979f0fb626a6aeb76	CONFLICT	worker-39	conflicts on development+2112+2118: l10n en/nl, filinq_register.json
 shillinq	3007	a5a3a09c0545b93fa1bfc2bad5ae9ededc4b1694	CONFLICT	worker-30	conflicts with plain development in appinfo/info.xml, l10n/en+nl js/json, tests/fixtures/register-versions.lock.json
 learniq	2521	7c3cb66340e404fdb84702e999a52c0ab97f4cce	GREEN	worker-01	unit 6741 on the tree (baseline 6703, the same 1 failure HigherEducationExampleSetTest on development, 0 new); php -l clean; no JS unit script in the repo; build of training-provider-course-days, additive
