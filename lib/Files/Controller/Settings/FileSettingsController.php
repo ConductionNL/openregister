@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Files\Controller\Settings;
 use OCA\OpenRegister\Service\File\MalwareScanGate;
 use OCA\OpenRegister\Service\File\MalwareScanState;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
+use OCA\OpenRegister\Exception\PersonRegisterPurposeMissingException;
 use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\AppInfo\Application;
@@ -220,6 +221,8 @@ class FileSettingsController extends Controller {
 		} catch (UnknownPatternSetException $e) {
 			return $this->error(message: $e->getMessage(), status: 400);
 		} catch (UnknownMaskFormException $e) {
+			return $this->error(message: $e->getMessage(), status: 400);
+		} catch (PersonRegisterPurposeMissingException $e) {
 			return $this->error(message: $e->getMessage(), status: 400);
 		} catch (Exception $e) {
 			return $this->error(message: $e->getMessage());

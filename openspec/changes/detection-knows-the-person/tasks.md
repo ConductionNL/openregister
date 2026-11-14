@@ -14,7 +14,7 @@
 
 ## 3. Person register (REQ-DKP-003)
 
-- [ ] 3.1 Settings `anonymisation.personRegister` (source and purpose, purpose required when a source is set), `anonymisation.personRegisterBoost`, `anonymisation.placeRegister`. Verify: `tests/Unit/Service/Settings/PersonRegisterSettingTest.php::testASourceWithoutAPurposeIsRefused`.
+- [x] 3.1 Settings `anonymisation.personRegister` (source and purpose, purpose required when a source is set), `anonymisation.personRegisterBoost`, `anonymisation.placeRegister`. Verify: `tests/Unit/Service/Settings/PersonRegisterSettingTest.php::testASourceWithoutAPurposeIsRefused`. Built: `PersonRegisterSource` normalises the three keys (a schema with a name property, or a contacts address book, plus purpose); a save naming a source without purpose throws `PersonRegisterPurposeMissingException`, answered 400.
 - [ ] 3.2 `PersonRegisterMatcher`: in-memory normalised lookup per run, boost, uncertain flag, no record id stored, purpose and lookup count on the run. Verify: `tests/Unit/Service/Anonymisation/PersonRegisterMatcherTest.php::testAMatchRaisesConfidence`, `testAStreetMatchMarksUncertainAndKeepsTheCandidate`, `testWithoutARegisterTheRunSaysNotConfigured`, `testTheRelationHoldsNoRecordIdentifier`.
 - [ ] 3.3 Call it from `EntityRecognitionHandler` before relations are stored, for every detection method. Verify: `EntityRecognitionCapacityTest::testTheMatcherRunsForEveryMethod` parameterised over regex, presidio, openanonymiser, llm and hybrid.
 
