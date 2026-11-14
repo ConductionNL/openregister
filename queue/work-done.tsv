@@ -11885,6 +11885,7 @@ fix:integriq:3633:2cf69c00	no change: merges clean on development (531865634); t
 cover:shillinq:05639debm9818:89bf3ba4	already done: lib/Reporting/Generator/*.php at 99.9% lines (1529/1531) on development 6e0f5bac8, target 95	session-20261114T231755-998f7ff8	2026-11-14T23:25:39Z
 verify:dossiq:6524:530fa8c5	6524, 6525, 6526 GREEN (tests only, no new failures)	session-20261114T231754-82b5ae61	2026-11-14T23:25:39Z
 verify:larpinq:1045:0a88942d	1045 GREEN; 1060 skipped: head moved to d9a9b311	session-20261114T224756-971efe57	2026-11-14T23:25:57Z
+fix:filinq:2103:14cf5ada	no change: merges clean on development; conflicts only with an unmerged sibling PR in lib/Settings/filinq_register.json; merge development again once that lands	session-20261114T224736-f9da4a35	2026-11-14T23:26:14Z
 fix:filinq:2106:8bc70f64	conflict resolved (l10n union, register 8.56.0 keeping both), suites green, new head 3c54d4a0; REVERIFY recorded	session-20261114T222427-f171565a	2026-11-14T23:26:15Z
 fix:filinq:2072:0ae79239	merged development (clean; tree conflict is sibling register version bumps); suite 6784 OK; new head 347356f9	session-20261114T225452-4fcfea7f	2026-11-14T23:26:22Z
 fix:filinq:2096:b8ad81a5	fixed: development merged in clean, pushed 603fca94	session-20261114T224740-064dbb86	2026-11-14T23:26:40Z
