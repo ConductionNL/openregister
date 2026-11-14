@@ -11263,3 +11263,4 @@ build:decidiq:document-accessibility-check:c3	done: PR #2149 task 9 built (per-b
 fix:opencatalogi:2672:ff66df72	stale: head moved to 06710304 (development already merged in by another lane) before my push	session-20261114T204747-26056883	2026-11-14T21:42:42Z
 fix:opencatalogi:2682:cf3c904f	l10n conflict resolved; new head 087fccb0d4e1bc0f5915a7f9b8667e233987ba96, REVERIFY	session-20261114T201741-909e04de	2026-11-14T21:43:01Z
 build:opencatalogi:publication-detail-for-the-portal:c2	partial: nothing built this run (worker context nearly full); PR #2670 open at cc1f0bf4, left 1.2, 2.1, 5.1, 5.2, 6.1, 7.x unchanged	session-20261114T204802-89dfe85e	2026-11-14T21:43:12Z
+fix:opencatalogi:2688:d9b88d99	fixed CONFLICT: l10n keys moved off the shared tail, .js regenerated; tree with 2683/2684 merges clean; new head 36797f41, REVERIFY recorded	session-20261114T211806-b9cd4119	2026-11-14T21:43:28Z
