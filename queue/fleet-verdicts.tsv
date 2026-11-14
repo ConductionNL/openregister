@@ -8699,3 +8699,4 @@ filinq	2079	afd77651ea86a4e6e1a8f8ce14f48cde5343a4cc	REVERIFY	worker-57	merged d
 hermiq	1739	6d69e90eb847251e9368bee2e600ae0d786fb7d2	GREEN	worker-15	unit 5131 on tree (dev+1715,1739,1774) with the OpenRegister grant grammar, baseline dev 5046, no new failures; vitest 106 files green; builds spec-coverage-built-rows task 1.2/1.4 (createFile/moveFile confined to the user's folder)
 hermiq	1767	96c447ea93f25c063c3517f0f36005989ddf64e9	CONFLICT	worker-15	clean on development, conflicts with #1715 (earlier in tree order) in l10n/en.js en.json nl.js nl.json
 hermiq	1774	8e39a155faa66d050d24dc9bbf329fa04b273b35	GREEN	worker-15	unit 5131 on tree (dev+1715,1739,1774) with the OpenRegister grant grammar, baseline dev 5046, no new failures; vitest 106 files green; tests only
+hermiq	1781	6deabb7ce14d9449bf8434eb18497d15100b9833	CONFLICT	worker-15	clean on development, conflicts with #1715 (earlier in tree order) in lib/Settings/hermiq_register.json
