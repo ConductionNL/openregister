@@ -8549,4 +8549,5 @@ verify:versioniq:693:85a880aa	8 GREEN, 1 CONFLICT (699); 0 new failures	session-
 build:larpinq:registration-cancel-transfer-refund	already done in larpinq: 2.3 dispatch half built; its listener half and 5.1 wait on shillinq's refund/credit events	session-20261114T073117-2bd2e050	2026-11-14T09:05:25Z
 fix:stackiq:1912:8ec0b91d	REVERIFY 7bab8b71dad1cdfbce0c5773c2245f44c7978738	session-20261114T070323-628c2f37	2026-11-14T09:05:23Z
 verify:opencatalogi:2648:4ae5e1a7	GREEN 2648 2681 2684; CONFLICT (tree, l10n) 2655 2678 2679 2680 2682 2683	session-20261114T062200-6a28e40c	2026-11-14T09:05:32Z
+build:larpinq:events-qr-checkin	partial: PR #1041 (1.1 check-in code + repair step, 2.1 checkin-code endpoint; unit 792->805, 0 fail); left frontend 3.x, 4.x	session-20261114T075643-75a598ab	2026-11-14T09:05:49Z
 review:keepiq:1631:f4de0e6f	GREEN: formatter extraction, behaviour unchanged, vitest 6420 pass	session-20261114T070329-a050d62b	2026-11-14T09:05:50Z
