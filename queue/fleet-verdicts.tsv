@@ -7026,3 +7026,4 @@ humaniq	1025	6f9b0ff7e245bae839982c1790257765d05c864d	GREEN	worker-36:review	pre
 decidiq	2165	8558e27092941ee5136b6878bf9c409815a07a00	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
 humaniq	1131	7391a99f6591ec4ee8db24c0d23b379048a40e5e	GREEN	worker-16	phpunit 4175 tests OK, baseline 4159 OK, 0 new failures; DeploymentPlan schema, listener and CAO norm per education-staff-deployment-and-count
 humaniq	1140	a1547b95c38420b53801024f6e9adf40e66effe0	GREEN	worker-16	phpunit 4175 tests OK, 0 new failures; manifest validate + parity pass; read-only TimeEntry fields and register parity test per time-entry-domain-object-ref
+decidiq	2171	cacffb605d758702aaa381eca0cf0efe5abbe077	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
