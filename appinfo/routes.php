@@ -1438,6 +1438,15 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.
+        ['name' => 'qualityAudit#index', 'url' => '/api/quality-audits', 'verb' => 'GET'],
+        ['name' => 'qualityAudit#create', 'url' => '/api/quality-audits', 'verb' => 'POST'],
+        ['name' => 'qualityAudit#show', 'url' => '/api/quality-audits/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#update', 'url' => '/api/quality-audits/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#destroy', 'url' => '/api/quality-audits/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#run', 'url' => '/api/quality-audits/{id}/run', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#runs', 'url' => '/api/quality-audits/{id}/runs', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#failures', 'url' => '/api/quality-audit-runs/{id}/failures', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#failuresCsv', 'url' => '/api/quality-audit-runs/{id}/failures.csv', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
         ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
         ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],

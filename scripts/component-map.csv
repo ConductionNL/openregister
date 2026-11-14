@@ -4252,3 +4252,16 @@ Migration/Version1Date20261114120000.php,,Migration,,,,,Platform
 Service/Import/ImportFailedRowsCsv.php,,Service,,,,,Configuration
 Service/Import/ImportRunRetention.php,,Service,,,,,Configuration
 BackgroundJob/ImportRunRetentionJob.php,,BackgroundJob,,,,,Configuration
+Migration/Version1Date20261114130000.php,,Migration,,,,,Platform
+Db/QualityAudit.php,,Db,,,,,Compliance
+Db/QualityAuditRun.php,,Db,,,,,Compliance
+Db/QualityAuditFailure.php,,Db,,,,,Compliance
+Db/QualityAuditMapper.php,,Db,,,,,Compliance
+Db/QualityAuditMapperInterface.php,,Db,,,,,Compliance
+Db/QualityAuditRunMapper.php,,Db,,,,,Compliance
+Db/QualityAuditRunMapperInterface.php,,Db,,,,,Compliance
+Service/Quality/QualityAuditService.php,,Service,,,,,Compliance
+Service/Quality/QualityAuditStores.php,,Service,,,,,Compliance
+Service/Quality/QualityAuditRefusedException.php,,Service,,,,,Compliance
+Controller/QualityAuditController.php,,Controller,,,,,Compliance
+BackgroundJob/QualityAuditScheduleJob.php,,BackgroundJob,,,,,Compliance

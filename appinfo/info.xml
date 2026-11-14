@@ -160,6 +160,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\AutomationRecordRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\RuleRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ImportRunRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\QualityAuditScheduleJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\OneUseJobKeySweepJob</job>
 		<!--
