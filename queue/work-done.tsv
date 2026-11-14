@@ -11781,3 +11781,4 @@ build:larpinq:larpinq-mcp-adoption:c2	partial: CHANGELOG task done, PR #1059; le
 fix:larpinq:1050:fcc12a23	reduced new helper parameter counts (5->2, 3->2, 2->1), merged development, unit green; new head a1b099f3 (floor not re-measured locally)	session-20261114T223937-a95b1403	2026-11-14T23:06:50Z
 build:versioniq:advisories-triage:c2	built tasks 2.1, 2.2, 3.1, 3.2, 4.1, 4.2 on PR #694 (head 69cc235); left: 4.3/4.4 e2e, 5.x CI/release; unit-only 1750 (2 inherited), vitest 2981 green	session-20261114T223333-658f3be1	2026-11-14T23:07:01Z
 review:integriq:3539:7b1673f3	GREEN	session-20261114T224740-064dbb86	2026-11-14T23:07:12Z
+fix:larpinq:1056:fbe65f9a	merged development (clean), new head 54742da084a6bdab9db07d6499b6b42c07d2c17a; suite 854/0 fail	session-20261114T211012-c469e919	2026-11-14T23:07:23Z
