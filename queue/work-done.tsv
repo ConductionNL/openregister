@@ -11508,3 +11508,4 @@ build:opencatalogi:publication-translations:c2	done: PR #2665 head 936d474b1 - 1
 cover:stackiq:9ac19b3amad24:216a9a0a	already done: lib/Kernel/*.php holds LogSafeMessage (fully covered by LogSafeMessageTest, merged) and two constant-only classes with no executable lines; no PR	session-20261114T214930-79d5b35c	2026-11-14T22:18:40Z
 review:shillinq:2977:56133b60	RED: generated scoped-pages list stale after development merge (1 vitest)	session-20261114T214733-589f5bff	2026-11-14T22:18:43Z
 fix:decidiq:2189:d54fa228	merged development in cleanly; new head 9db1906e, REVERIFY recorded	session-20261114T221759-c6bc4865	2026-11-14T22:19:07Z
+fix:shillinq:3051:98b5bfe7	merged development in cleanly; new head 2f5d4cd88a0e33564f8b495a5783dd2df19e345d, REVERIFY	session-20261114T221759-cd5c5678	2026-11-14T22:19:22Z
