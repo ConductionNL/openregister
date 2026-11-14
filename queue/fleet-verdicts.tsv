@@ -9154,3 +9154,6 @@ decidiq	2177	b68a5de6405145b82edaa6f84e836b663ee0f311	GREEN	worker-25	tree of 2:
 pipelinq	3835	f9170d1a51e5ed54fdf7ed7ed42388c9025dcf46	REVERIFY	worker-41	merged development in, l10n conflicts resolved keeping both sides' keys (en/nl js+json valid, no duplicates, test:l10n and check:l10n-js green); new head 53c482bd863ceaf5d117d415362b24b587eea728, verify it
 learniq	2493	11d23894e30dfff6e101ae31cceb1eeb26476399	REVERIFY	worker-21	merged origin/development, resolved l10n/en.js by regenerating en.js/nl.js from merged .json (l10n parity OK); new head b4d28b9283d5249cfc45f1efc77193c139b7d6b3, verify it
 decidiq	2149	936b9a269887958caffb30ef068393f94c63dc90	CONFLICT	merge3	conflicts with development; files: lib/Settings/decidesk_register.json 
+buildiq	1621	72ff5a22e09f4fdb94d6e705b2e039cbb29c6511	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.41 -> 3.39
+buildiq	1624	0e334f6fbc199ebb47f933485ecb5504bb256c8e	RED	merge3:merge-gate	GATE RED absolute floor: buildiq maintainability 3.88 after merge is below its floor 3.91
+buildiq	1625	04a5e4fe063ed3c67d9deafe10a0ade754a65b26	RED	merge3:merge-gate	GATE RED checker floor: owaspsecurecoding: pass -> warn; owaspsecurecoding stars: 5 -> 3; score: 100 -> 96
