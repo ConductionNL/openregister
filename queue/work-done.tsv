@@ -8547,6 +8547,7 @@ fix:opencatalogi:2678:c98dd334	merged development (clean), pushed d4e2c6f1; conf
 build:versioniq:safety-withdrawn-and-revoked	partial: PR #720 builds withdrawn versions (store, sweep installedWithdrawn, install refusal; 10 tests, 0 new failures); revocation list + recheck left	session-20261114T062200-62a0b439	2026-11-14T09:04:18Z
 verify:versioniq:690:28decbf9	690 GREEN; no new failures	session-20261114T075640-efa02b24	2026-11-14T09:04:14Z
 measure:pipelinq:20261114h08	php 90.04% (pcov), js 94.9% at 2045245	session-20261114T085638-f8a2ea52	2026-11-14T09:04:31Z
+build:larpinq:capability-rows-missing-requirements	partial: PR #1039 builds 3.1 (item price + purchase endpoint, 10 tests); other tasks left unchecked	session-20261114T082640-198131b9	2026-11-14T09:04:38Z
 verify:versioniq:693:85a880aa	8 GREEN, 1 CONFLICT (699); 0 new failures	session-20261114T073117-2bd2e050	2026-11-14T09:05:04Z
 build:versioniq:sources-gitlab-forge	partial: PR #721 (1.1 GitLab forge dialect+host, 1.3 already present, GitLab token validation of 3.1); 1.2, 2.x, 3.1 deeplink, 4.x, 5.x left; suite 1651 (base 1643), same 2 inherited failures	session-20261114T065631-b4991134	2026-11-14T09:05:11Z
 build:larpinq:larpinq-adopt-or-abstractions	partial: PR #1040 built 3.2, 3.3 and 3.5 for Characters; Events/Items list badge left	session-20261114T075646-ed650af0	2026-11-14T09:05:23Z
