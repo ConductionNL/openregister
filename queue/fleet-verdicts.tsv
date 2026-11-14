@@ -8547,3 +8547,4 @@ filinq	2112	8e90e8285f083f093db175df59a8c5ae390f7ea5	REVERIFY	worker-08	merged d
 hermiq	1778	de0780faf65f1dc24ee54e042bec4408762d3877	GREEN	worker-13	PHP unit 5057 run, baseline 5044 (164E/26F inherited), no new failures; vitest 1478/1478; tests only
 hermiq	1779	c70ede4d3407eb3e1286a65e341da79d589d82b0	GREEN	worker-13	PHP unit 5057 run, baseline 5044 (164E/26F inherited), no new failures; vitest 1478/1478; builds agent-authored-marking task 3.1 (contact/calendar counts) as its spec asks
 hermiq	1780	8baa21399f0515095fbc3c57610a6a0a372cf921	GREEN	worker-13	PHP unit 5057 run, baseline 5044 (164E/26F inherited), no new failures; vitest 1478/1478; tests only
+filinq\t2074\t228eb6732862ad2d722fc122df3833215cdef0a8\tREVERIFY\tworker-53\tmerged development in (clean now; l10n appends resolved upstream), php -l/json ok, unit 6736 OK; new head f1017b40caade2ebaf8931e56ea57edba212d522, verify it
