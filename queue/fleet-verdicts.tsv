@@ -7581,3 +7581,4 @@ buildiq	1615	cabc0268dd549b6286cdc040f9797ca1b6f39518	GREEN	worker-36	phpunit-un
 buildiq	1617	eca3f8547227811a7851480fb8d945b9a6c0ed60	CONFLICT	worker-36	l10n/en.js en.json nl.js nl.json after 1606+1612+1615
 buildiq	1618	08874393b34c1159158d28e01989613124330863	CONFLICT	worker-36	l10n/en.js en.json nl.js nl.json after 1606+1612+1615
 buildiq	1625	26fd13852458473da9ae85f4014f9d16f6a297ec	GREEN	worker-36	phpunit-unit 2965->2979 tests, baseline 1 failure (ExportZipGoldenTest), no new; vitest 458 files/4367 tests pass; matches pages-detail-related-items
+buildiq	1629	7ba3e45bb7a2694599cdb0e63113cb17fba78a23	GREEN	worker-36	phpunit-unit 2965->2979 tests, baseline 1 failure (ExportZipGoldenTest), no new; vitest 458 files/4367 tests pass; matches platform-properties, download access guard unchanged
