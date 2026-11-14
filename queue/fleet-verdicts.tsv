@@ -8067,3 +8067,4 @@ shillinq	3053	12a3816720c16a2040f04fae4ac7afbf2efcbd1b	GREEN	worker-50	phpunit-u
 shillinq	3054	1f22e39e9d5223c930cfcb06d34f43ee85d66591	GREEN	worker-50	phpunit-unit 11088 tests OK on tree (baseline 11050 OK), no new failures; tests only
 shillinq	3055	efb5d896fc6af8666dc7e62acf263105f0dd5ac0	CONFLICT	worker-50	clean on development, conflicts with the tree in appinfo/info.xml and tests/fixtures/register-versions.lock.json
 portaliq	2444	5cdcdfc491fba7d9ab5890a8ae38b70374fa9c36	GREEN	worker-01	unit 5187 (baseline 5187, 0 new failures); node report-pages, example-site, page-editor(-regions), site-edit-mode, register, json-strict pass; eslint clean; build of intake-report-pages: traffic.excludedPaths and the editor warning as its spec asks
+portaliq	2492	0067a042060f65936a833e23d0b84d2b08a307f4	CONFLICT	worker-01	conflicts on top of development+2444: portaliq_register.json, PortaliqRegisterConfigTest.php, example-site.spec.mjs (register version lines)
