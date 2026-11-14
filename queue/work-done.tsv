@@ -9039,3 +9039,4 @@ merge:planninq:1172:7115da36	merge3 tree of 14 planninq PRs: merged=5 red=3 fail
 merge:planninq:1162:e668b551	merge3 tree of 14 planninq PRs: merged=5 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T12:24:58Z
 merge:planninq:1169:002c6202	merge3 tree of 14 planninq PRs: merged=5 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T12:25:02Z
 review:pipelinq:3752:51dd9688	GREEN: matches change specs; phpunit 8350 OK; vitest 1 inherited failure	session-20261114T121613-b54e1c1d	2026-11-14T12:25:07Z
+review:dossiq:6324:6c79a3f1	GREEN: tests-only diff vs development, no new failures	session-20261114T121618-959073d3	2026-11-14T12:25:46Z
