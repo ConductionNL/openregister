@@ -9098,3 +9098,4 @@ merge:humaniq:1124:ead88f8d	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=
 build4:openregister:search-accent-insensitive:c2	PR #10551: 1.4, 2.1, 3.2 + folded relevance order built, +17 tests; left 3.1 e2e and live PostgreSQL/MariaDB runs; no new unit failures	session-20261114T114625-63eafe85	2026-11-14T12:46:13Z
 merge:humaniq:1136:0bca5caa	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:23Z
 merge:humaniq:1030:477af195	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:35Z
+merge:humaniq:1025:45632ee2	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:47Z
