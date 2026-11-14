@@ -9803,3 +9803,4 @@ planninq	1167	b566c9819ebd534939a6b06a693d5e6345edb546	REVERIFY	worker-36	merged
 buildiq	1641	2a563552d9b93b253ebbc5b378cf992d119e679c	REVERIFY	worker-23	merged development in (clean); floor_check against-floor PASS (overall 4.29 vs committed 3.85) and compare vs development PASS (no property drops >0.01); the gate's 3.87<3.91 did not reproduce here; new head 5816876b, verify it
 filinq	2114	c9e0c44116e99043c2c084c8e0f0caed6f2a87c6	GREEN	worker-33	phpunit 6765->6816 (baseline 0 failures), vitest 775, jest 547, no new failures; build per anonymization-review-workbench (checked-review gate on anonymise is specced)
 shillinq	3078	95db3c3cdcf75d7ee118b1c7d1047430cd68adea	CONFLICT	worker-56	merge with development conflicts in appinfo/info.xml (version); not tested
+filinq	2122	c84b46d9d961b38e5ac198250d9584ca0c39f93b	CONFLICT	worker-33	conflicts after #2114 in lib/Settings/filinq_register.json and openapi.json
