@@ -12014,3 +12014,4 @@ fix:shillinq:2995:22173937	merged development (clean), unit suite green; new hea
 build:thematiq:token-references-stay-live:c2	nothing left to build: PR #1677 (head ab35c3aac) has every code task 1.1-3.1 ticked; 4.1 is archive/matrix after merge, not a code task	session-20261114T231755-998f7ff8	2026-11-14T23:43:35Z
 fix:shillinq:3048:2ab1e91c	no change: clean on development; tree-only version-bump conflict, REVERIFY at same head	session-20261114T231756-01da210e	2026-11-14T23:43:50Z
 fix:shillinq:3000:4004df62	merged development in clean, suite green; new head 7a353f6d	session-20261114T233949-aa2f6275	2026-11-14T23:44:05Z
+build:larpinq:admin-phone-friendly-pages:c2	partial: PR #1035 merged; 1.2 rest blocked: the scan field comes with events-qr-checkin (not built) and stacked rows are CnDataTable's own (ADR-012, upstream); 1.4 needs upstream issues, 1.5 a live run	session-20261114T224753-194bb25e	2026-11-14T23:44:12Z
