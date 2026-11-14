@@ -6666,3 +6666,4 @@ pipelinq	3743	222fa459e19bbc0c4f9efa55f0f2e055f7d0e121	CONFLICT	merge3	conflicts
 pipelinq	3752	b87ad31731214a90f98665830f2026ef2c60af5c	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 hermiq	1740	c24fd1d289e24f747a0c920a29d7c522e380abeb	CONFLICT	worker-58	conflicts with development+earlier tree PRs (1737-1739)
 hermiq	1741	dd035123e2cce781159c50399fa9d412db09d3f8	CONFLICT	worker-58	conflicts with development+earlier tree PRs (1737-1739)
+decidiq	2174	46a18f3ef0a371ded02cd6fdcb4a3aa4fec4fd79	BLOCK	worker-11	unit 4001 baseline 0 fail; tree 2174-2177: 4068 pass; vitest 2700 pass; new route voting#recordVotes duplicates URL+verb of existing paperVote#record (POST /api/voting-rounds/{id}/recorded-votes), which matches first, so the new endpoint is unreachable and 'entries' bodies get 400
