@@ -9115,3 +9115,4 @@ fix:portaliq:2442:9eb5c876	merged development (clean now), unit OK, pushed 36c16
 build:openregister:anonymising-as-an-archival-outcome:c2	partial: PR #10132 (pushed ef0ce86) — 2.3 built (AnonymisationCandidates: anonymise nominations to sweep candidates, never destruction); left 1.2 list carries the action, 3.2 index/history targets, 3.3 audit redaction+re-seal, 5.3-5.5	session-20261114T121614-c059f6b1	2026-11-14T12:50:02Z
 fix:portaliq:2284:e29a4e8e	conflict resolved, pushed 57d43340	session-20261114T124625-07e62ccf	2026-11-14T12:50:25Z
 fix:portaliq:2427:43ff8091	merged development, resolved package.json check:specs union; REVERIFY new head 4af909f6	session-20261114T124625-c74fc712	2026-11-14T12:50:32Z
+review:dossiq:6385:11c3b49f	GREEN: 0 new failures (19 inherited), vitest 70/70	session-20261114T124625-335f7476	2026-11-14T12:50:48Z
