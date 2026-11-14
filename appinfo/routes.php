@@ -273,6 +273,10 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'sources#types',      'url' => '/api/sources/types',            'verb' => 'GET'],
         ['name' => 'sources#syncNow',    'url' => '/api/sources/{id}/sync',        'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'sources#syncStatus', 'url' => '/api/sources/{id}/sync-status', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        // app-harvest-fetchers-and-flow-node (REQ-HAF-009): the conflict queue and its resolution. The bulk route first.
+        ['name' => 'syncRecords#resolveBulk', 'url' => '/api/sources/{id}/sync-records/resolve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'syncRecords#resolve', 'url' => '/api/sources/{id}/sync-records/{recordId}/resolve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'recordId' => '\d+']],
+        ['name' => 'syncRecords#index', 'url' => '/api/sources/{id}/sync-records', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
         // Virtual registers over DBAL — connection test + introspection (dbal-virtual-registers spec).
         ['name' => 'sources#testConnection', 'url' => '/api/sources/{id}/test-connection', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],

@@ -4253,8 +4253,11 @@ Service/Sync/HarvestTombstonePass.php,,Service,,,,,Integrations
 Service/Sync/SourceService.php,,Service,,,,,Integrations
 Service/Sync/SourceRefused.php,,Service,,,,,Integrations
 Service/Sync/SourceHarvestFlow.php,,Service,,,,,Integrations
-Service/Flow/Nodes/HarvestSourceNode.php,,Service,,,,,Integrations
-Service/Flow/Nodes/HarvestSourceNodeInterface.php,,Service,,,,,Integrations
+Service/Sync/SyncRecordResolver.php,,Service,,,,,Integrations
+Service/Sync/ResolutionRefused.php,,Service,,,,,Integrations
+Controller/SyncRecordsController.php,,Controller,,,,,Integrations
+Service/Flow/Nodes/HarvestSourceNode.php,,Service,,,,,Processes
+Service/Flow/Nodes/HarvestSourceNodeInterface.php,,Service,,,,,Processes
 Service/Sync/HarvestHttpClient.php,,Service,,,,,Integrations
 Service/Sync/IBatchSourceFetcher.php,,Service,,,,,Integrations
 Service/Sync/RegisterSourceFetchersEvent.php,,Service,,,,,Integrations

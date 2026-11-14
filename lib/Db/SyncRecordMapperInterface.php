@@ -106,4 +106,39 @@ interface SyncRecordMapperInterface {
 	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public function objectUuidsTombstonedAt(int $sourceId, \DateTime $at): array;
+
+	/**
+	 * The latest record per external id of a source, optionally only those in one status.
+	 *
+	 * @param int         $sourceId The source.
+	 * @param string|null $status   The status to keep, or null for every status.
+	 *
+	 * @return list<SyncRecord> The records.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function findLatestBySource(int $sourceId, ?string $status=null): array;
+
+	/**
+	 * One record of a source, or null when the source has no record with that id.
+	 *
+	 * @param int $sourceId The source.
+	 * @param int $recordId The record.
+	 *
+	 * @return SyncRecord|null
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function findOfSource(int $sourceId, int $recordId): ?SyncRecord;
+
+	/**
+	 * Persist a record's fields without changing its status.
+	 *
+	 * @param SyncRecord $record The record.
+	 *
+	 * @return SyncRecord
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function save(SyncRecord $record): SyncRecord;
 }//end interface

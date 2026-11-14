@@ -254,6 +254,72 @@ class SyncRecordMapper extends QBMapper implements SyncRecordMapperInterface {
 	}//end markTombstones()
 
 	/**
+	 * The latest record per external id of a source, optionally only those in one status.
+	 *
+	 * @param int         $sourceId The source.
+	 * @param string|null $status   The status to keep, or null for every status.
+	 *
+	 * @return list<SyncRecord> The records, newest external id last.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function findLatestBySource(int $sourceId, ?string $status=null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNotNull('external_id'))
+			->orderBy('id', 'ASC');
+
+		$latest = [];
+		foreach ($this->findEntities(query: $qb) as $record) {
+			// Ascending ids: the last record seen per external id is its latest.
+			$latest[(string)$record->getExternalId()] = $record;
+		}
+
+		if ($status === null) {
+			return array_values($latest);
+		}
+
+		return array_values(array_filter($latest, static fn (SyncRecord $record): bool => $record->getStatus() === $status));
+	}//end findLatestBySource()
+
+	/**
+	 * One record of a source, or null when the source has no record with that id.
+	 *
+	 * @param int $sourceId The source.
+	 * @param int $recordId The record.
+	 *
+	 * @return SyncRecord|null
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function findOfSource(int $sourceId, int $recordId): ?SyncRecord {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($recordId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('source_id', $qb->createNamedParameter($sourceId, IQueryBuilder::PARAM_INT)));
+
+		$found = $this->findEntities(query: $qb);
+
+		return ($found[0] ?? null);
+	}//end findOfSource()
+
+	/**
+	 * Persist a record's fields without changing its status.
+	 *
+	 * @param SyncRecord $record The record.
+	 *
+	 * @return SyncRecord
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function save(SyncRecord $record): SyncRecord {
+		return $this->touch(record: $record);
+	}//end save()
+
+	/**
 	 * The object uuids of a source's records tombstoned at one moment.
 	 *
 	 * @param int      $sourceId The source.
