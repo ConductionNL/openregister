@@ -10783,3 +10783,4 @@ merge:portaliq:2500:e5848aed	merge3 tree of 6 portaliq PRs: merged=0 red=1 fail=
 verify:learniq:2507:b7706258	GREEN #2507, GREEN #2544 (6787 tests, 1 inherited failure, no new)	session-20261114T191727-68650a56	2026-11-14T20:09:02Z
 fix:shillinq:3048:a20ed1ed	conflict resolved (l10n union); new head 10a5df9d	session-20261114T195420-f8b91a81	2026-11-14T20:09:08Z
 fix:decidiq:2143:e788a8f9	removed new clones via SaveGuardEvent + SystemObjectRows helpers (tested); floor properties back to development's; unit 4269 OK; REVERIFY at ff712a2d	session-20261114T194744-563ce177	2026-11-14T20:09:27Z
+review:shillinq:2977:47d48a1a	GREEN (phpunit 11075 OK on head; conflicts with development noted)	session-20261114T185843-7b9a6259	2026-11-14T20:09:33Z
