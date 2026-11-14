@@ -7748,3 +7748,4 @@ pipelinq	3828	0f8c8cc2d68947f4db6edfcdf0660f948dbc125e	GREEN	worker-13	unit 7893
 pipelinq	3829	0fea8b0065eba2cf76d8aeb2523a0c5d0c5e98a4	CONFLICT	worker-13	conflicts with development itself in l10n/en.js en.json nl.js nl.json
 dossiq	6499	fb5dfa20fb2a4f82d33efed191f82702f18453ef	GREEN	worker-25	builds social-domain-consent-and-safeguards per its specs; phpunit 16867 on tree (baseline 16850, 19 failures inherited), vitest 6932 (1 inherited capabilityComparison failure); no new failures
 dossiq	6500	fc50db36f904b216baebe0bdcbe804a7c921ac42	GREEN	worker-25	builds capability-rows-say-the-whole-capability (manifest action + strings + spec); phpunit 16867, vitest 6932 with 1 inherited failure; no new failures
+dossiq	6459	1b887f8346f2a084d8438e8c12a2e019a78bb7bf	REVERIFY	worker-22	continuation build: tasks 3.1-3.3 (advice form route, DecisionTableAdviceDialog, header action, advice list on Decisions tab); new head 6d6b896bd133b1b0711e3be0561e3b76567d992a, verify it
