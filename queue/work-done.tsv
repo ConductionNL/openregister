@@ -11911,6 +11911,7 @@ fix:filinq:2094:f466700e	merged development in clean, unit ok (Tests: 6792, Asse
 verify:pipelinq:3843:c6362d1b	3843,3844,3845 GREEN (tests only); phpunit 8563/0 fail	session-20261114T211012-c469e919	2026-11-14T23:30:12Z
 cover:dossiq:069ee2d6mbd37:4e459503	correction: CaseDefinition exists on development; nothing to do because quality/test-coverage-4e459503-1 and -2 are already merged into development	worker-36	2026-11-15T00:00:00Z
 fix:filinq:2113:4f1d9b5d	fixed: conflict resolved keeping both sides, pushed 45e6b64f	session-20261114T224740-064dbb86	2026-11-14T23:30:15Z
+cover:decidiq:a5f973bbmae46:60c2c265	PR #2210: 42 tests, 8 controllers to 100%; lib/Controller 3085->3176/3228 lines; suite 4285->4327 OK	session-20261114T230933-0afdd896	2026-11-14T23:30:36Z
 fix:filinq:2085:a1832379	conflict resolved (both sides' constants kept), suites green; new head 432c7b61	session-20261114T221801-9a21d394	2026-11-14T23:30:38Z
 fix:filinq:2069:fa29e9b5	merged development (with #2119), suite green, new head 2b2b094e	session-20261114T224736-f9da4a35	2026-11-14T23:30:45Z
 review:openregister:10574:bc6f2770	APPROVE: tests-only spec, 74 EditSchemaProperty tests pass on PR+main, eslint clean	session-20261114T224742-00d4fbcb	2026-11-14T23:30:50Z
