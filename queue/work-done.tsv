@@ -10041,6 +10041,8 @@ fix:integriq:3601:c5ea5100	merged dev + #3540, l10n union; unit 9008 only inheri
 fix:planninq:1158:a8f8e28e	duplication restored: shared ObjectRows helper, pushed 70b326989e31ab89bfbbe17f8ca6a6457aabb644, REVERIFY recorded	session-20261114T144749-57007b4b	2026-11-14T16:05:29Z
 fix:humaniq:1148:3bc5cb16	failed: branch already contains development and merges cleanly on it; the conflict is only with unmerged #1125 earlier in the tree, nothing to resolve against the base until #1125 lands	session-20261114T134708-ba7f7741	2026-11-14T16:05:38Z
 fix:planninq:1159:3ba42b87	conflicts resolved (TaskDetail.vue both sides, l10n), new head b7c86685, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T16:05:36Z
+build:integriq:sources-outbound-rate-limit-pacing:c2	pushed 831eea2f to PR #3596: merged development (pacing ported into CallPreparation, routed gateway calls live), Task 3 source-page pacing widget + aggregation + nl labels, 5 vitest tests; left: Playwright, Newman, openspec validate	session-20261114T151934-e3441c93	2026-11-14T16:05:50Z
 build:integriq:messaging-sms-providers-and-notifynl-mail:c2	done: PR #3628 (tasks 5-7; #3563 had 1-4,8); e2e and live sends left; 68 new tests, no new failures	session-20261114T151750-b10540e9	2026-11-14T16:05:47Z
 verify:hermiq:1767:72e7b8b4	1767 GREEN, 1784 GREEN	session-20261114T154757-c9bf237e	2026-11-14T16:06:05Z
 verify:humaniq:1134:cd8f41cc	GREEN 1134 (4231 tests, 1 inherited failure, 0 new)	session-20261114T151801-20bb3a08	2026-11-14T16:06:14Z
+build:planninq:tasks-dates:c2	failed: permission (npx openspec validate was refused); note: PR #1159 already has every code task built, only Playwright/mount checks and openspec validate remain	session-20261114T144749-57007b4b	2026-11-14T16:06:13Z
