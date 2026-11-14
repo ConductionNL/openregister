@@ -10710,3 +10710,4 @@ filinq	2123	65d916d0072db231070fb22bd3e8b85db36e6eee	GREEN	worker-19	unit 6816 t
 filinq	2126	5e6533ee71489d563587aaedfbd24555ef720dab	CONFLICT	worker-19	conflicts in tree on l10n/en,nl (.js/.json) and filinq_register.json; clean on plain development
 portaliq	2508	04d531aee06be019ac0c895d72944884dbb201bc	CONFLICT	worker-49	conflicts with #2500 on top of development: tests/example-site.spec.mjs and tests/Unit/Settings/PortaliqRegisterConfigTest.php (register version assertions)
 decidiq	2188	6507a1b94afa99131ae6def2cda418c66e8675e5	GREEN	worker-32	unit 4455 on tree, baseline 4377 green, no new failures; vitest 2834 pass; build agenda-item-confidential-papers per spec
+decidiq	2199	68646faa2457838725c278873a7f023a7aa39dd6	GREEN	worker-32	unit 4455 on tree, baseline 4377 green, no new failures; vitest 2834 pass; build meeting-pack-board-book, compile chair/secretary gated, status participant gated
