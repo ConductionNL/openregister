@@ -9848,3 +9848,4 @@ keepiq	1792	48fd5a1f68a698e25775ed027147e8a2ff3ac0b0	REVERIFY	worker-46	merged d
 integriq	3612	b5b2780e101251c6012d88963009cbbde107e72c	GREEN	worker-01	unit 9156 on tree (baseline dev 6dc4a06e: same 7 inherited fails), vitest 2256 OK, no new failures
 integriq	3630	9980914500767dff664e46ee0750d0ae46425fc3	GREEN	worker-01	unit 9156 on tree (baseline dev 6dc4a06e: same 7 inherited fails), vitest 2256 OK, no new failures
 integriq	3634	8688e02b4065bdc69ee6e2508eb49624b78e266f	GREEN	worker-01	unit 9156 on tree (baseline dev 6dc4a06e: same 7 inherited fails), vitest 2256 OK, no new failures
+shillinq	3051	34ab1459a4f0f0539c83373022c744c49e801603	REVERIFY	worker-56	merged development in; the ServiceRegistrarTest alias count is now 207 + 25 (development's added binding, less the Digipoort alias this PR replaces with a factory); phpunit-unit 11455 tests green, l10n checks pass; new head 98b5bfe797b9f82b0d7a700cf5e7d03f724296b0, verify it
