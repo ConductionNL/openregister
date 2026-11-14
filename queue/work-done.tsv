@@ -9053,3 +9053,70 @@ merge:learniq:2490:547a039b	merge3 tree of 23 learniq PRs: merged=11 red=2 fail=
 review:openregister:10536:16396e6f	APPROVE: task 1.2 built as specified, tests green, Controller DBAL errors inherited	session-20261114T121627-23b97246	2026-11-14T12:28:06Z
 fix:dossiq:6385:5bf6b3af	conflict resolved, merged development; 19 unit failures inherited; new head 11c3b49f	session-20261114T121618-959073d3	2026-11-14T12:28:12Z
 verify:dossiq:6499:cb5648a8	6499 GREEN (16927 tests, no new failures beyond 19 baseline)	session-20261114T121619-c3deae2c	2026-11-14T12:28:19Z
+merge:shillinq:2930:0a676383	merge3 tree of 22 shillinq PRs: merged=16 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T12:28:51Z
+merge:shillinq:2819:8e6a71c1	merge3 tree of 22 shillinq PRs: merged=16 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T12:28:55Z
+merge:shillinq:3041:ca355027	merge3 tree of 22 shillinq PRs: merged=16 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T12:28:59Z
+merge:shillinq:3046:21c68f48	merge3 tree of 22 shillinq PRs: merged=16 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T12:29:04Z
+merge:shillinq:3048:2d5783b7	merge3 tree of 22 shillinq PRs: merged=16 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T12:29:09Z
+build4:openregister:flow-engine-unification:c3	partial: hermiq#1777 budget oversight check (3.4d), openregister#10544 ticks 3.3/3.4d; left 3.1 remnant/3.5 product decision, 3.2/5.x component library, 6.3 after 5.x, 4.2 ADR, 7.x live	session-20261114T121613-b54e1c1d	2026-11-14T12:30:51Z
+review:openregister:10540:375d3731	stale	feeder	2026-11-14T12:30:21Z
+review:openregister:10542:ead1e956	stale	feeder	2026-11-14T12:30:21Z
+review:openregister:10537:f7d14866	APPROVE 10537	session-20261114T114647-2bec20c6	2026-11-14T12:31:40Z
+merge:versioniq:690:a1bae370	merge3 tree of 30 versioniq PRs: merged=8 red=13 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T12:34:03Z
+merge:versioniq:700:909b0f77	merge3 tree of 30 versioniq PRs: merged=8 red=13 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T12:34:08Z
+merge:versioniq:702:b126a702	merge3 tree of 30 versioniq PRs: merged=8 red=13 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T12:34:12Z
+merge:versioniq:709:0a953efe	merge3 tree of 30 versioniq PRs: merged=8 red=13 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T12:34:16Z
+merge:versioniq:721:36048029	merge3 tree of 30 versioniq PRs: merged=8 red=13 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T12:34:20Z
+build4:openregister:widget-record-import:c2	partial: PR #10542 adds 4.2 failed-row export + admin-only record-import route (mapping/import, +15 tests; suite green except 5 inherited ReservedColumnNamesTest errors); left: 2.1/2.2 dry run (needs validate-only save mode), 4.1 result view, 5.1/5.2 widget (frontend), V1-V6	session-20261114T114435-17b1115e	2026-11-14T12:35:20Z
+review:openregister:10540:109e26e4	stale	feeder	2026-11-14T12:35:23Z
+review:openregister:10542:f643bdb4	stale	feeder	2026-11-14T12:35:23Z
+build4:openregister:search-file-text-and-vector-facade:c2	partial: PR #10545 — 1.1 shape and 4.2 docs done; 3.2 (archive-time spec) and 4.1 (live Newman) left	session-20261114T121614-c059f6b1	2026-11-14T12:36:07Z
+build4:openregister:retention-linked-destruction-conflict:c2	PR #10546: tasks 2.2, 3.1, 3.2, 4.1 built; 4.2 (e2e) left	session-20261114T114405-27c89384	2026-11-14T12:36:24Z
+build4:openregister:shared-credentials-and-flows:c2	3.8 built on #10456 (MagicSharePrincipals at the table, 10 tests, suite unchanged vs main); left: 1.2 + groups 6-7 blocked on decisions, 8.3/9.x live+docs, 10.x leaf apps	session-20261114T114632-1115f635	2026-11-14T12:36:31Z
+build4:openregister:confidentiality-classification-primitive:c3	partial: no change this pass (worker context too limited for a safe pass over the RBAC seams); still left 2.2-2.5 and 4.2 — needs a fresh worker	session-20261114T114435-17b1115e	2026-11-14T12:36:40Z
+build4:openregister:records-saved-templates:c3	failed: no openregister code task left (PR #10500 merged; 1.1/1.2 open only for live DB/API passes, 2.x e2e live); 2.3 belongs in nextcloud-vue, which this worker cannot reach	session-20261114T114405-27c89384	2026-11-14T12:37:19Z
+review:openregister:10541:41eab00d	APPROVE: comma-list metrics per spec, legacy paths unchanged, inherited Controller errors only	session-20261114T121627-23b97246	2026-11-14T12:37:58Z
+review:openregister:10536:25a54a88	10536 APPROVE	session-20261114T121619-c3deae2c	2026-11-14T12:38:05Z
+build4:openregister:api-test-coverage:c3	partial: no code-only work left; all 17 unchecked tasks are Newman/live-instance suites (live pass), earlier branches merged, no PR	session-20261114T121627-23b97246	2026-11-14T12:38:50Z
+review:openregister:10544:70a280a5	10544 APPROVE (tasks.md only)	session-20261114T121619-c3deae2c	2026-11-14T12:39:04Z
+build4:openregister:near-duplicate-documents-by-text:c2	PR #10536: built 1.2, 2.2, 3.1, 4.1 (16 tests); left 2.3 newman, 3.2 e2e, V.* (live/CI)	session-20261114T114632-df20a06a	2026-11-14T12:40:21Z
+merge:launchpad:1190:7a8a1f51	merge3 tree of 25 launchpad PRs: merged=11 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:40:34Z
+merge:launchpad:1195:a2b534c2	merge3 tree of 25 launchpad PRs: merged=11 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:40:38Z
+merge:launchpad:1203:c0c3bd88	merge3 tree of 25 launchpad PRs: merged=11 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:40:42Z
+merge:launchpad:1208:9ff63961	merge3 tree of 25 launchpad PRs: merged=11 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:40:50Z
+merge:launchpad:1206:64623a15	merge3 tree of 25 launchpad PRs: merged=11 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:40:55Z
+merge:launchpad:1210:130edce2	merge3 tree of 25 launchpad PRs: merged=11 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:40:59Z
+merge:launchpad:1211:414469f0	merge3 tree of 25 launchpad PRs: merged=11 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:41:04Z
+review:openregister:10540:37225ef2	stale	feeder	2026-11-14T12:40:12Z
+build4:openregister:ai-translation-with-a-glossary:c3	PR #10547: 3.2 Translate action + restored BulkTranslateDialog via Dialogs host, 13 strings in all 37 locales; 4.2 e2e left	session-20261114T114416-aa10a904	2026-11-14T12:41:36Z
+build:openregister:bag-address-lookup-by-postcode:c2	done: PR #10139 head 896f67d1, all code tasks ticked (1.1 composite index, 2.1 loader+occ, 2.2 monthly job, 3.2 Newman, 4.1 docs); unit suite = main baseline (5E/1F); live re-import/DB/Newman runs left	session-20261114T121616-766bd91a	2026-11-14T12:42:41Z
+review:openregister:10539:ff77e2a2	unfinished: build of reply-threading-by-headers still running on the branch (2.2, 3.1 unticked, body in progress); no verdict	session-20261114T121616-766bd91a	2026-11-14T12:43:41Z
+build4:openregister:classification-clearance-on-an-object:c3	partial: PR #10548 (3.2 list SQL IN, 3.3 list ceiling, 4.1 deleted CaseTypeAuthorizationService, 5.1, 5.3 paging test); left 5.2 e2e, 6.1-6.2 dossiq (must follow this PR)	session-20261114T121618-959073d3	2026-11-14T12:44:42Z
+build4:openregister:anonymisation-image-seam:c3	failed: blocked, nothing codeable left: 3.1 TIFF needs a decoder (GD only, no imagick), 3.2/4.1 PDF XObjects need a PDF writer (only smalot/pdfparser); 4.3 e2e live. Needs a dependency decision	session-20261114T121618-959073d3	2026-11-14T12:45:36Z
+review:openregister:10542:45d597c0	APPROVE	session-20261114T114405-27c89384	2026-11-14T12:45:49Z
+merge:humaniq:1122:b7dbfdb2	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:45:59Z
+merge:humaniq:1124:ead88f8d	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:03Z
+build4:openregister:search-accent-insensitive:c2	PR #10551: 1.4, 2.1, 3.2 + folded relevance order built, +17 tests; left 3.1 e2e and live PostgreSQL/MariaDB runs; no new unit failures	session-20261114T114625-63eafe85	2026-11-14T12:46:13Z
+merge:humaniq:1136:0bca5caa	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:23Z
+merge:humaniq:1030:477af195	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:35Z
+merge:humaniq:1025:45632ee2	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:47Z
+merge:humaniq:1144:b82ee8f3	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:46:58Z
+build4:openregister:platform-collaboration-resources:c3	failed: nothing buildable; 1.4 needs a core hook on collection membership that the resource provider interface lacks, 2.2 audit test waits on 1.4, 2.1 is e2e	session-20261114T114625-63eafe85	2026-11-14T12:46:58Z
+build4:openregister:reply-threading-by-headers:c2	partial: PR #10539 builds 1.1-1.3, 2.1, 4.4, 4.6 (+3.1 unit part); left 4.5 sidebar section (37-locale l10n + e2e), 3.1 Newman; 2.2 n/a (by-message route gone on main)	session-20261114T114629-c5ef9a76	2026-11-14T12:47:07Z
+merge:humaniq:1148:cb90c27d	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:47:14Z
+build4:openregister:object-event-sync-async-split:c3	partial: no buildable code task left. 5.3: psalm clean on the 13 touched lib files (0 errors), phpcs/phpstan clean; 3 phpmd findings predate the change (WebhookService TooManyMethods+StaticAccess, ContextChatSubmissionListener complexity), not refactored: WebhookService split would rewrite 24 reflection tests of its URL guard. 5.1/5.2 need the gate updated in hydra-gates; 5.4/5.5 live; 4b.8 no sub	session-20261114T114405-27c89384	2026-11-14T12:47:27Z
+merge:humaniq:1139:749b4a0d	merge3 tree of 24 humaniq PRs: merged=10 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:47:27Z
+review:openregister:10543:94deae10	APPROVE	session-20261114T114632-1115f635	2026-11-14T12:47:58Z
+fix:portaliq:2430:fc437ac2	conflict resolved, versions bumped, pushed 9bb36ef8	session-20261114T124625-07e62ccf	2026-11-14T12:48:52Z
+fix:portaliq:2434:4d1b1144	conflict resolved (register 0.110.0, l10n both sides), pushed 12c46c01, REVERIFY recorded	session-20261114T124634-b093d74a	2026-11-14T12:48:59Z
+fix:portaliq:2432:81aa6171	fixed: duplication removed (ActionDueMailer/PlanEndingMailer share new ReminderMailer); new head a6c24c39fc1908d8f4c70237f40fc80fb626baa2, REVERIFY recorded	session-20261114T124620-a07546ab	2026-11-14T12:49:08Z
+review:openregister:10547:f5cbec59	APPROVE: frontend-only task 3.2, jest 2450 green, l10n gates no new failures	session-20261114T124625-c74fc712	2026-11-14T12:49:18Z
+build4:openregister:geometry-on-a-map:c2	done: PR openregister#10552 builds 2.1-2.4 (map presentation + area geo-search, leaflet deps, CSP for tiles) and 3.2/3.3 (geometry editor); left 2.5 e2e, 3.1 format labels (l10n pass); jest 8517 green, phpunit tests/Unit 62082 with 6 env-only failures	session-20261114T114634-73dcd983	2026-11-14T12:49:36Z
+fix:portaliq:2442:9eb5c876	merged development (clean now), unit OK, pushed 36c16864, REVERIFY recorded	session-20261114T124634-b093d74a	2026-11-14T12:49:58Z
+build:openregister:anonymising-as-an-archival-outcome:c2	partial: PR #10132 (pushed ef0ce86) — 2.3 built (AnonymisationCandidates: anonymise nominations to sweep candidates, never destruction); left 1.2 list carries the action, 3.2 index/history targets, 3.3 audit redaction+re-seal, 5.3-5.5	session-20261114T121614-c059f6b1	2026-11-14T12:50:02Z
+fix:portaliq:2284:e29a4e8e	conflict resolved, pushed 57d43340	session-20261114T124625-07e62ccf	2026-11-14T12:50:25Z
+fix:portaliq:2427:43ff8091	merged development, resolved package.json check:specs union; REVERIFY new head 4af909f6	session-20261114T124625-c74fc712	2026-11-14T12:50:32Z
+review:dossiq:6385:11c3b49f	GREEN: 0 new failures (19 inherited), vitest 70/70	session-20261114T124625-335f7476	2026-11-14T12:50:48Z
+build4:openregister:redaction-release-safeguards:c2	partial: PR openregister#10451 - built 1.2, 1.4, 2.1, 2.2, 2.3, 3.2, 6.1 (head a06d03130); left 2.4 admin setting UI, 4.1 metadata masking, 5.1-5.3 custody, V	session-20261114T114643-b064db1b	2026-11-14T12:51:37Z
+review:openregister:10545:f341dcba	APPROVE	session-20261114T121616-766bd91a	2026-11-14T12:51:52Z
+fix:portaliq:2433:ca20ec2f	conflict resolved, pushed a1b48896	session-20261114T124625-07e62ccf	2026-11-14T12:52:27Z
