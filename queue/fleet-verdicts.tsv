@@ -9372,3 +9372,4 @@ integriq	3617	3448ba56879c58898f61c83099e08beac8bb857f	REVERIFY	worker-43	merged
 integriq	3574	cfe173d8254059423a2abd5ebe9c49d4321165f0	REVERIFY	worker-19	merged development in, kept both sides' l10n keys in en.js and nl.js; test:l10n OK, vitest 2252 green; new head 67ece58a674829e7418f3776edd552d1650d1869, verify it
 keepiq	1782	11f3b67861a974e68128f3a7d2eb237f21966b60	GREEN	worker-05	tree phpunit 5015 ok (baseline 4998, 0 fail), vitest 6571 pass; frontend and extension build of health-site-security-checks as its specs ask
 keepiq	1792	0912bdc4f1e84d5df7de821e403799c388f566e5	CONFLICT	worker-05	conflicts with development itself: appinfo/info.xml, l10n en/nl js+json, lib/Controller/SecretController.php
+keepiq	1793	813952b02f96211c4897e0644ea2d66021a4bb7c	GREEN	worker-05	tree phpunit 5015 ok, vitest 6571 pass; frontend build of vault-custom-field-kinds-and-ssh-key, l10n additions only
