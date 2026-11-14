@@ -2870,3 +2870,10 @@ integriq	3624	4585f9f580587384238578ba4ee0a99a7872c7d9	MERGED	merge3	GATE OK sbo
 integriq	3627	ff0fbf0fe8a86ea1a0837c2848df4ec20b304a1b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	3629	57732eae7e7aeb18b456d5bca76a33dcfd82d102	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 filinq	2079	6c42e26ff3536b707485a5a4d65eb294e6832979	RED	merge3	GATE RED floor: unit_complexity: 4.49 -> 4.47; unit_interfacing: 2.85 -> 2.83
+shillinq	3050	03b114f2d96dd462e163fb31d3e824dcb0385397	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+shillinq	3065	7e8c6350577a04d792a11ef66d3e941d8dffba45	RED	merge3	GATE RED floor: unit_interfacing: 2.90 -> 2.88
+shillinq	3069	02821381e11a188a12d691a482eda9969cdf2aef	RED	merge3	GATE RED floor: overall: 4.20 -> 4.18; duplication: 3.29 -> 3.27; unit_interfacing: 2.91 -> 2.87
+shillinq	3072	941f33620301465774d2674140435dd29f03e415	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.15
+shillinq	3073	03de0be4b1066fd7400be7ef5cae5fd8347bd8bd	RED	merge3	GATE RED floor: unit_interfacing: 2.91 -> 2.89
+shillinq	3074	dac382bad7003ab69e20421ba3e402e6858f40db	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.14
+shillinq	3075	d4610beea277313c58f452fc167fa67569f2820f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.14
