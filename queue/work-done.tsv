@@ -8353,3 +8353,4 @@ verify:buildiq:1613:14c7196f	GREEN 1613,1614; CONFLICT 1615-1621 (l10n en/nl, 16
 build:stackiq:architecture-data-model-and-ggm	failed: depends on architecture-views-editor, which is unbuilt (0/18 tasks): element/relation have no origin field and there is no Architecture menu group, which this change's filters, seed and menu placement require; build that change first	session-20261114T070346-2d3b1362	2026-11-14T08:40:37Z
 fix:buildiq:1605:a2943842	no change: clean on development; tree-only l10n conflict, REVERIFY recorded	session-20261114T065635-0aca43d3	2026-11-14T08:40:33Z
 verify:learniq:2486:d6585746	1 GREEN (2486), 1 CONFLICT (2490 on l10n/nl.js); 0 new failures	session-20261114T073117-2bd2e050	2026-11-14T08:40:46Z
+gap:learniq:16:614b0a03	failed: advisory only (no score effect); the fix is a dependency refresh sweep, and package installs were refused by a permission check earlier in this run	session-20261114T073117-2bd2e050	2026-11-14T08:41:04Z
