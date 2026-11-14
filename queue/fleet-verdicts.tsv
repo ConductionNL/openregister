@@ -10707,3 +10707,4 @@ portaliq	2500	3fa95f36995c9655a46d0a16f6fddee2d770343f	GREEN	worker-49	unit 5921
 filinq	2114	789d94cb7d3c13b23694020b1069fb863077a413	CONFLICT	worker-19	conflicts in tree (after 2113,2123) on lib/Settings/filinq_register.json; clean on plain development
 filinq	2121	3c3c358f2faa1c38d7303f789ad9a4efff53cf67	CONFLICT	worker-19	conflicts in tree on lib/Settings/filinq_register.json; clean on plain development
 filinq	2123	65d916d0072db231070fb22bd3e8b85db36e6eee	GREEN	worker-19	unit 6816 tests (baseline 6765, 6 skipped), vitest 770 pass, 0 new failures; builds specify-capability-rows, new routes authenticated
+portaliq	2508	04d531aee06be019ac0c895d72944884dbb201bc	CONFLICT	worker-49	conflicts with #2500 on top of development: tests/example-site.spec.mjs and tests/Unit/Settings/PortaliqRegisterConfigTest.php (register version assertions)
