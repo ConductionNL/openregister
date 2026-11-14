@@ -31,7 +31,8 @@
 
 ## 5. Docs and end-to-end test
 
-- [ ] 5.1 Document the breakers, the failure rules, the sheddable routes, the thresholds and the 503 contract in `docs/features/instance-hardening.md`. Verify: `npm run build` in `docs/` succeeds.
+- [x] 5.1 Document the breakers, the failure rules, the sheddable routes, the thresholds and the 503 contract in `docs/features/instance-hardening.md`. Verify: `npm run build` in `docs/` succeeds.
+  > 2026-11-14: `docs/features/instance-hardening.md` gains the breakers and their keys, the failure rules, the webhook deferral, the sheddable routes, the 503 contract, the console endpoints and reset, and the threshold settings. The docs build was not run in this pass.
 - [ ] 5.2 Add `tests/e2e/ci/load-shedding.spec.ts`: point an outside database source at an unreachable port, read its objects until the breaker opens, see an immediate 503 with `Retry-After`, then reset it from the operations console as an administrator. Verify: the spec runs green in the Playwright CI project.
 
 ## Acceptance
