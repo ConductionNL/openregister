@@ -151,8 +151,14 @@ that number is read, so "done" is a measurement rather than an opinion.
       stopping at the first hit, and `Version1Date20261114170000` creates
       `idx_schemas_lower_slug ON (LOWER(slug))` on PostgreSQL and SQLite.
       Still open: narrowing `SELECT *` needs the read-trace histogram to say
-      which callers want metadata only, and `findInIds()` keeps the combined
-      query.
+      which callers want metadata only.
+      2026-11-14 (c4): `findInIds()` now walks the same one-column arms as
+      `find()` (id for a numeric identifier, then uuid, then slug), each
+      narrowed to the register's id set, first hit wins; the combined
+      `uuid OR LOWER(slug) OR id` builder is gone from `SchemaMapper`.
+      Pinned in `SchemaMapperIdentifierArmsTest` (4 tests) and the re-recorded
+      `schema-mapper-find-in-ids-golden.json`. `RegisterMapper::find()` still
+      builds the combined query; that is task 3's register half.
 
 - [ ] **Task 4 — cross-request cache.**
       APCu layer keyed on `schema.id + schema.updated`, so a cold worker does

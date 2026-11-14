@@ -1,7 +1,7 @@
 <?php
 
 /**
- * SchemaMapper::find() reads one identifier column per query, and its request
+ * SchemaMapper::find() and findInIds() read one identifier column per query, and find()'s request
  * cache is shared across RBAC settings but never widens tenancy.
  *
  * @category  Test
@@ -150,6 +150,40 @@ class SchemaMapperIdentifierArmsTest extends TestCase {
 		$mapper->find(7, [], false, false);
 
 		self::assertSame(1, $this->executions());
+	}
+
+	public function testFindInIdsWalksTheSameArmsNarrowedToTheSet(): void {
+		$this->queuedRows = [[], [self::ROW]];
+		$schema = $this->makeMapper()->findInIds('seven', [7, 9]);
+
+		self::assertSame(7, $schema?->getId());
+		self::assertSame(['#1 where(eq(uuid, :p1, NULL))', '#2 where(eq(lower(slug), :p3, NULL))'], $this->wheres());
+		self::assertSame(
+			['#1 andWhere(in(id, :p2, NULL))', '#2 andWhere(in(id, :p4, NULL))'],
+			array_values(array_filter($this->queryLog, static fn (string $line): bool => str_contains($line, ' andWhere(in(id')))
+		);
+		self::assertSame(2, $this->executions());
+	}
+
+	public function testFindInIdsStopsAtAnExactId(): void {
+		$this->queuedRows = [[self::ROW], [self::ROW], [self::ROW]];
+		$schema = $this->makeMapper()->findInIds(7, [7]);
+
+		self::assertSame(7, $schema?->getId());
+		self::assertSame(['#1 where(eq(id, :p1, NULL))'], $this->wheres());
+		self::assertSame(1, $this->executions());
+	}
+
+	public function testFindInIdsReturnsNullAfterEveryArmMisses(): void {
+		$this->queuedRows = [[], [], []];
+
+		self::assertNull($this->makeMapper()->findInIds('12', [7, 9]));
+		self::assertSame(3, $this->executions());
+	}
+
+	public function testFindInIdsWithNoUsableIdsReadsNothing(): void {
+		self::assertNull($this->makeMapper()->findInIds('seven', [0, -1, 'x']));
+		self::assertSame(0, $this->executions());
 	}
 
 	/**

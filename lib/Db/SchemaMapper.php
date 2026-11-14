@@ -413,6 +413,30 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
 	 */
 	private function armRows(string $arm, string|int $id, bool $multitenancy): array {
+		$qb = $this->armQuery(arm: $arm, id: $id);
+		$this->filterByOrganisation(qb: $qb, multitenancy: $multitenancy);
+		$qb->setMaxResults(2);
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return $rows;
+	}//end armRows()
+
+	/**
+	 * A query for the schemas whose one column matches the identifier, owned rows first.
+	 *
+	 * Shared by find() and findInIds() so both match an identifier the same way.
+	 *
+	 * @param string     $arm `id`, `uuid` or `slug`.
+	 * @param int|string $id  The identifier.
+	 *
+	 * @return IQueryBuilder The query, without the organisation filter.
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function armQuery(string $arm, string|int $id): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_schemas');
@@ -423,15 +447,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			default => $this->slugEquals(qb: $qb, slug: (string)$id),
 		});
 		$this->orderOwnedRowsFirst(qb: $qb);
-		$this->filterByOrganisation(qb: $qb, multitenancy: $multitenancy);
-		$qb->setMaxResults(2);
 
-		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
-		$result->closeCursor();
-
-		return $rows;
-	}//end armRows()
+		return $qb;
+	}//end armQuery()
 
 	/**
 	 * Limit a schema query to the active organisation, schemas without one included.
@@ -474,59 +492,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			$this->findCache[strtolower($schema->getSlug()) . $cacheSuffix] = $schema;
 		}
 	}//end cacheSchemaByIdentifiers()
-
-	/**
-	 * A query for the schema whose uuid, slug (case-insensitive) or, for a
-	 * numeric identifier, id matches, in tie-break order.
-	 *
-	 * BUG-DB-10: a numeric identifier could be a primary key or a numeric
-	 * uuid/slug, so an exact `id` hit is ordered first; a row whose slug is
-	 * "5" never shadows the row with id 5. The id comparison is left out for
-	 * a non-numeric identifier because PostgreSQL types it strictly.
-	 *
-	 * @param int|string $id The identifier.
-	 *
-	 * @return IQueryBuilder The query, without the organisation filter.
-	 *
-	 * @spec openspec/specs/register-slug-resolution/spec.md
-	 */
-	private function buildFindByIdentifierQuery(string|int $id): IQueryBuilder {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from('openregister_schemas');
-
-		$this->whereIdentifier(qb: $qb, id: $id);
-		$this->orderOwnedRowsFirst(qb: $qb);
-
-		return $qb;
-	}//end buildFindByIdentifierQuery()
-
-	/**
-	 * Match an identifier against uuid, slug and, for a numeric one, id, an exact id first.
-	 *
-	 * @param IQueryBuilder $qb The query.
-	 * @param int|string    $id The identifier.
-	 *
-	 * @return void
-	 */
-	private function whereIdentifier(IQueryBuilder $qb, string|int $id): void {
-		$conditions = $qb->expr()->orX(
-			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
-			$this->slugEquals(qb: $qb, slug: (string)$id)
-		);
-
-		$idParam = null;
-		if (is_numeric($id) === true) {
-			$idParam = $qb->createNamedParameter(value: (int)$id, type: IQueryBuilder::PARAM_INT);
-			$conditions->add($qb->expr()->eq('id', $idParam));
-		}
-
-		$qb->where($conditions);
-
-		if ($idParam !== null) {
-			$qb->addOrderBy($qb->createFunction('CASE WHEN id = ' . $idParam . ' THEN 0 ELSE 1 END'), 'ASC');
-		}
-	}//end whereIdentifier()
 
 	/**
 	 * Order rows an application owns before unattributed ones, then by lowest id.
@@ -847,12 +812,21 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		$this->readTrace()->record(method: 'findInIds');
 
-		// Same identifier forms and tie-breaks as find(), narrowed to the id set.
-		$qb = $this->buildFindByIdentifierQuery(id: (string)$id);
-		$qb->andWhere($this->idIn(qb: $qb, ids: $ids));
-		$qb->setMaxResults(1);
+		// Same identifier forms and tie-breaks as find(), narrowed to the id set:
+		// one column per query (id for a numeric identifier, then uuid, then
+		// slug), the first arm with a hit wins.
+		foreach (self::identifierArms(id: (string)$id) as $arm) {
+			$qb = $this->armQuery(arm: $arm, id: (string)$id);
+			$qb->andWhere($this->idIn(qb: $qb, ids: $ids));
+			$qb->setMaxResults(1);
 
-		return $this->firstResolved(qb: $qb);
+			$schema = $this->firstResolved(qb: $qb);
+			if ($schema !== null) {
+				return $schema;
+			}
+		}
+
+		return null;
 	}//end findInIds()
 
 	/**
