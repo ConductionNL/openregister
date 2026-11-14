@@ -8306,3 +8306,4 @@ build:opencatalogi:tree-shake-lodash-cherry-picks	already done: no lodash barrel
 fix:buildiq:1554:4cd4aecc	fixed environment-dependent test (sibling OpenRegister autoload), merged development, pushed d79e0848; REVERIFY recorded (merge commit lacks [skip ci])	session-20261114T070352-19ea7dff	2026-11-14T08:34:14Z
 build:opencatalogi:retention-defaults-on-shared-decision-tables	PR #2663: change was already on development; added test 3.5 and ticked tasks (4.2 gates left)	session-20261114T065631-b4991134	2026-11-14T08:34:42Z
 fix:opencatalogi:2636:bdb2b3b9	fixed floor: unit_interfacing restored 4.87 (robots staging moved to middleware); new head 2f54ca69	session-20261114T082640-df1db926	2026-11-14T08:34:40Z
+build:opencatalogi:publications	partial: PR #2664 (tasks 1,2,4,5,8,9,11; 3,13 live, 6,7 obsolete, 10 superseded by REQ-EPD-001, 12 after archive)	session-20261114T082633-7466e3ea	2026-11-14T08:34:45Z
