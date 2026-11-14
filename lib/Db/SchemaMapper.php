@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck;
 use OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields;
 use OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck;
+use OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations;
 use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
@@ -170,6 +171,13 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @var bool
 	 */
 	private bool $warnUnlinkable = false;
+
+	/**
+	 * The advisory annotations the last schema save ignored.
+	 *
+	 * @var DiscardedAnnotations|null
+	 */
+	private ?DiscardedAnnotations $discarded = null;
 
 	/**
 	 * Event dispatcher for schema events.
@@ -1199,6 +1207,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return void
 	 */
 	private function cleanObject(Schema $schema): void {
+		// Each save starts its own list, so the response names this schema's faults only.
+		$this->discarded = new DiscardedAnnotations();
 		$this->prepareForSave(schema: $schema);
 		$this->checkBehaviourDeclarations(schema: $schema);
 		$this->checkDataDeclarations(schema: $schema);
@@ -1232,11 +1242,11 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return void
 	 */
 	private function checkBehaviourDeclarations(Schema $schema): void {
-		(new LifecycleAnnotationCheck(logger: $this->logger))->check(schema: $schema);
+		(new LifecycleAnnotationCheck(logger: $this->logger, discarded: $this->discarded))->check(schema: $schema);
 		(new DeclaredActionCheck(objectActions: $this->objectActions, logger: $this->logger))->check(schema: $schema);
 		(new RecordAnnotationRefusals(logger: $this->logger))->checkMdtoMapping(schema: $schema);
-		(new AdvisoryAnnotationChecks(logger: $this->logger))->checkAggregations(schema: $schema);
-		(new CalculationAnnotationCheck(logger: $this->logger))->check(schema: $schema);
+		(new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded))->checkAggregations(schema: $schema);
+		(new CalculationAnnotationCheck(logger: $this->logger, discarded: $this->discarded))->check(schema: $schema);
 		(new SubjectDeclarationRefusals())->checkConsent(schema: $schema);
 		(new RelationDeclarationCheck(
 			findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)
@@ -1253,7 +1263,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return void
 	 */
 	private function checkDataDeclarations(Schema $schema): void {
-		$advisory = new AdvisoryAnnotationChecks(logger: $this->logger);
+		$advisory = new AdvisoryAnnotationChecks(logger: $this->logger, discarded: $this->discarded);
 		$records = new RecordAnnotationRefusals(logger: $this->logger);
 		$advisory->checkQuality(schema: $schema);
 		$advisory->checkDedup(schema: $schema);
@@ -1567,6 +1577,20 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	public function updateEventCount(int $schemaId): int {
 		return ($this->updateEventCounts[$schemaId] ?? 0);
 	}//end updateEventCount()
+
+	/**
+	 * The advisory annotations the last schema save logged and ignored, one entry per family.
+	 *
+	 * Empty when the last save found none, or before any save. The save itself is unchanged:
+	 * an ignored advisory annotation never refuses it.
+	 *
+	 * @return list<array{family: string, schema: string, messages: list<string>}> The ignored annotations.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function discardedAnnotations(): array {
+		return $this->discarded?->all() ?? [];
+	}//end discardedAnnotations()
 
 	/**
 	 * From now on a notification url action that cannot be linked to only warns on save.
