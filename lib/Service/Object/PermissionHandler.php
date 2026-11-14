@@ -78,6 +78,8 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\PartyRoleSlotResolver;
+use OCA\OpenRegister\Service\Rbac\BreakGlassDeclaration;
+use OCA\OpenRegister\Service\Rbac\BreakGlassService;
 use OCA\OpenRegister\Service\Rbac\ProvenanceOptions;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use OCA\OpenRegister\Service\Rbac\StagedDenial;
@@ -1363,6 +1365,13 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return true;
 		}
 
+		// Emergency access taken with a reason (REQ-GSR-004): only the verbs the
+		// schema declares, only while the take holds, every use audited. Asked
+		// after the slot for the same reason: it only ever adds an answer.
+		if ($this->breakGlassGrants(check: $check) === true) {
+			return true;
+		}
+
 		// The refusal names the rule that produced it (task 3.3).
 		$this->logRefusal(check: $check);
 
@@ -1435,6 +1444,68 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return false;
 	}//end slotGrants()
+
+	/**
+	 * Whether a break-glass grant the caller took on this object admits the action now.
+	 *
+	 * Fail closed: no object, no caller, a token ceiling that refuses, or an
+	 * unavailable service all answer no. Runs after the deny pass and the
+	 * private scope, so a deny still beats it.
+	 *
+	 * @param PermissionCheck $check The check.
+	 *
+	 * @return bool True when a current take of the caller carries the action.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md#requirement-emergency-self-granted-access-is-declared-bounded-and-announced-req-gsr-004
+	 */
+	private function breakGlassGrants(PermissionCheck $check): bool {
+		if ($check->object === null || $check->userId === null || $check->userId === '') {
+			return false;
+		}
+
+		// The cheap exit: a schema that declares no emergency access never reads the trail.
+		if (BreakGlassDeclaration::fromSchema(schema: $check->schema)?->grants(verb: $check->action) !== true) {
+			return false;
+		}
+
+		$request = (new GroupRuleRequest(authorization: $check->authorization, action: $check->action))
+			->forGroup(groupId: '', userGroup: null)
+			->forUser(userId: $check->userId, objectOwner: $check->objectOwner)
+			->onObject(data: $check->objectData, organisation: $check->objectOrganisation);
+		if ($this->tokenCeilingRefuses(request: $request) === true) {
+			return false;
+		}
+
+		return ($this->breakGlass()?->grants(
+			userId: $check->userId,
+			object: $check->object,
+			schema: $check->schema,
+			verb: $check->action
+		) === true);
+	}//end breakGlassGrants()
+
+	/**
+	 * The break-glass service, from the bundle or the container; null when unavailable.
+	 *
+	 * @return BreakGlassService|null The service.
+	 */
+	private function breakGlass(): ?BreakGlassService {
+		if ($this->rules->breakGlass !== null) {
+			return $this->rules->breakGlass;
+		}
+
+		try {
+			$resolved = $this->data->container->get(BreakGlassService::class);
+			if (($resolved instanceof BreakGlassService) === true) {
+				return $resolved;
+			}
+
+			return null;
+		} catch (\Throwable $e) {
+			// Fail CLOSED: an emergency grant that cannot be read admits nobody.
+			return null;
+		}
+	}//end breakGlass()
 
 	/**
 	 * The slot entries of the action's cascaded rule list, when the object's own block declares that action.

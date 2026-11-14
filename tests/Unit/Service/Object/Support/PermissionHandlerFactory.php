@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Rbac\GrantConstraints;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\PartyRoleSlotResolver;
+use OCA\OpenRegister\Service\Rbac\BreakGlassService;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
@@ -66,6 +67,7 @@ final class PermissionHandlerFactory {
 	 * @param TokenGrantSource|null     $tokenGrantSource     Constructor argument.
 	 * @param TokenGrantNarrower|null   $tokenGrantNarrower   Constructor argument.
 	 * @param PartyRoleSlotResolver|null $partyRoleSlots     Constructor argument.
+	 * @param BreakGlassService|null     $breakGlass         Constructor argument.
 	 *
 	 * @return array<int, object>
 	 */
@@ -91,6 +93,7 @@ final class PermissionHandlerFactory {
 		?TokenGrantSource $tokenGrantSource = null,
 		?TokenGrantNarrower $tokenGrantNarrower = null,
 		?PartyRoleSlotResolver $partyRoleSlots = null,
+		?BreakGlassService $breakGlass = null,
 	): array {
 		return [
 			new PermissionCallerServices(
@@ -111,6 +114,7 @@ final class PermissionHandlerFactory {
 				objectScopeResolver: $objectScopeResolver,
 				objectGrantResolver: $objectGrantResolver,
 				partyRoleSlots: $partyRoleSlots,
+				breakGlass: $breakGlass,
 			),
 			new PermissionGrantServices(
 				deny: new PermissionDenyServices(

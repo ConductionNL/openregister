@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
+use OCA\OpenRegister\Service\Rbac\BreakGlassDeclaration;
 use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 
 /**
@@ -304,6 +305,13 @@ final class AnnotationVocabulary {
 		// fails closed. Absent from this list setConfiguration() would drop it
 		// and every confidential object would read as unclassified.
 		ConfidentialityAnnotationValidator::ANNOTATION,
+		// Whether emergency self-granted access is offered, which verbs it
+		// grants, for how long and who is told (REQ-GSR-004). Read by
+		// BreakGlassDeclaration, refused at save by
+		// AccessDeclarationChecks::checkBreakGlass(). Absent from this list
+		// setConfiguration() would drop it and every take would be refused as
+		// undeclared while its author read a 200.
+		BreakGlassDeclaration::ANNOTATION,
 	];
 
 

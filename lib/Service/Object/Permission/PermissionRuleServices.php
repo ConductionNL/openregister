@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PartyRoleSlotResolver;
+use OCA\OpenRegister\Service\Rbac\BreakGlassService;
 use OCP\EventDispatcher\IEventDispatcher;
 
 /**
@@ -44,6 +45,8 @@ final class PermissionRuleServices {
 	 * @param ?PartyRoleSlotResolver $partyRoleSlots   Who occupies a party role on an object, for a grant to a slot;
 	 *                                                 absent means it is resolved from the container, and a slot
 	 *                                                 grants nothing when that fails.
+	 * @param ?BreakGlassService     $breakGlass       Emergency takes on an object; absent means it is resolved
+	 *                                                 from the container, and none admits when that fails.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
@@ -53,6 +56,7 @@ final class PermissionRuleServices {
 		public readonly ?ObjectScopeResolverInterface $objectScopeResolver = null,
 		public readonly ?ObjectGrantResolver $objectGrantResolver = null,
 		public readonly ?PartyRoleSlotResolver $partyRoleSlots = null,
+		public readonly ?BreakGlassService $breakGlass = null,
 	) {
 	}//end __construct()
 }//end class
