@@ -38,18 +38,24 @@ export function recordAddress(item) {
  * `watcherCount` stays null when the server sent none, which hides the
  * count and the followers popover; `canManage` is true only for an explicit
  * `@self.can.manage === true` (D-6), so a missing answer hides the picker.
+ * A record read without `@self.can` (a list row) takes `can` from the
+ * context the page fetched for it. `notifies` is false only when the
+ * record's schema is known to send watchers nothing (D-4); an unknown schema
+ * keeps the toggle's default.
  *
  * @param {object|null} item The record as the store holds it
+ * @param {{notifies?: boolean|null, can?: object|null}} context What the page learned beside the record
  * @return {object|null} The props
  * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
  */
-export function followProps(item) {
+export function followProps(item, context = {}) {
 	const address = recordAddress(item)
 	if (address === null) {
 		return null
 	}
 
 	const self = item['@self'] || {}
+	const can = self.can ?? context.can ?? null
 	return {
 		register: address.register,
 		schema: address.schema,
@@ -57,7 +63,80 @@ export function followProps(item) {
 		watching: self.watching === true,
 		notify: typeof self.watchNotify === 'boolean' ? self.watchNotify : null,
 		watcherCount: typeof self.watcherCount === 'number' ? self.watcherCount : null,
-		canManage: self.can?.manage === true,
+		canManage: can?.manage === true,
+		notifies: context.notifies !== false,
+	}
+}
+
+/**
+ * Whether a schema's notification rules send anything to the record's
+ * followers (design D-4): true when one rule lists the `{"watchers": true}`
+ * recipient, false when none does, null when the schema is not known.
+ *
+ * @param {object|null} schema The schema as the API returns it
+ * @return {boolean|null} Whether following notifies
+ * @spec openspec/changes/record-star-follow-and-unread-on-screen/specs/object-interactions/spec.md
+ */
+export function schemaNotifiesWatchers(schema) {
+	if (!schema || typeof schema !== 'object') {
+		return null
+	}
+
+	const rules = schema.configuration?.['x-openregister-notifications']
+	if (!rules || typeof rules !== 'object') {
+		return false
+	}
+
+	return Object.values(rules).some((rule) => Array.isArray(rule?.recipients)
+		&& rule.recipients.some((recipient) => recipient?.watchers === true))
+}
+
+/**
+ * Whether a schema is the one a record's `@self.schema` names, by id, uuid or slug.
+ *
+ * @param {object|null} schema The schema
+ * @param {string} reference The record's schema reference
+ * @return {boolean} Whether they match
+ * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+ */
+export function schemaMatches(schema, reference) {
+	if (!schema || reference === undefined || reference === null) {
+		return false
+	}
+
+	return [schema.id, schema.uuid, schema.slug]
+		.filter((value) => value !== undefined && value !== null)
+		.some((value) => String(value) === String(reference))
+}
+
+/**
+ * Fetch a record's `@self.can` for a record the page got without it, such
+ * as a list row (D-6). Null when the read fails or carries none: the
+ * picker then stays hidden, as for an answer of false.
+ *
+ * @param {{register: string, schema: string, id: string}} address The record's address
+ * @param {Function} fetchFn The fetch to read it with
+ * @return {Promise<object|null>} The `can` object
+ * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+ */
+export async function fetchRecordCan(address, fetchFn = globalThis.fetch) {
+	const parts = [address.register, address.schema, address.id].map(encodeURIComponent)
+	try {
+		const response = await fetchFn(`/index.php/apps/openregister/api/objects/${parts.join('/')}?_extend=@self.can`, {
+			headers: {
+				Accept: 'application/json',
+				'OCS-APIRequest': 'true',
+				requesttoken: globalThis.OC?.requestToken,
+			},
+		})
+		if (response.ok !== true) {
+			return null
+		}
+
+		const can = (await response.json())?.['@self']?.can
+		return can && typeof can === 'object' ? can : null
+	} catch {
+		return null
 	}
 }
 

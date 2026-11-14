@@ -641,8 +641,16 @@ import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
-import { navigationStore, objectStore } from '../../store/store.js'
-import { followProps, recordAddress, sendReadState, unreadBadges } from './recordFollow.js'
+import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
+import {
+	fetchRecordCan,
+	followProps,
+	recordAddress,
+	schemaMatches,
+	schemaNotifiesWatchers,
+	sendReadState,
+	unreadBadges,
+} from './recordFollow.js'
 
 /**
  * Register the live target's object type with the store, once.
@@ -800,6 +808,8 @@ export default {
 			fileLoading: false,
 			pagination: initialPagination(),
 			readMarkedFor: null,
+			// What the Follow toggle needs beside the record (D-4, D-6), for followContext.id.
+			followContext: { id: null, notifies: null, can: null },
 			// Open flow tasks on this record, for the Tasks tab badge; null until known.
 			openTaskCount: null,
 		}
@@ -814,7 +824,9 @@ export default {
 		 * @return {object|null}
 		 */
 		followToggle() {
-			return followProps(objectStore?.objectItem)
+			const item = objectStore?.objectItem
+			const context = this.followContext.id === recordAddress(item)?.id ? this.followContext : {}
+			return followProps(item, context)
 		},
 
 		/**
@@ -951,6 +963,7 @@ export default {
 			this.getAuditTrails()
 			this.getRelations()
 			this.markReadAfterRender()
+			this.loadFollowContext()
 			this.countOpenTasks()
 		}
 		this.syncLiveSubscription()
@@ -971,6 +984,7 @@ export default {
 			this.countOpenTasks()
 			this.syncLiveSubscription()
 			this.markReadAfterRender()
+			this.loadFollowContext()
 		}
 	},
 
@@ -1002,6 +1016,55 @@ export default {
 			this.readMarkedFor = address.id
 			await this.$nextTick()
 			await sendReadState(address, 'PUT')
+		},
+
+		/**
+		 * Learn what the Follow toggle needs that the record may not carry:
+		 * whether its schema notifies followers (the D-4 tooltip), and, for a
+		 * record reached from a list read without it, `@self.can` (D-6). A
+		 * failure keeps the toggle's defaults: notifying, no picker.
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async loadFollowContext() {
+			const item = objectStore?.objectItem
+			const address = recordAddress(item)
+			if (address === null || this.followContext.id === address.id) {
+				return
+			}
+
+			this.followContext = { id: address.id, notifies: null, can: null }
+			const needsCan = item['@self']?.can === undefined
+			const [schema, can] = await Promise.all([
+				this.recordSchema(address.schema),
+				needsCan ? fetchRecordCan(address) : Promise.resolve(null),
+			])
+			if (this.followContext.id !== address.id) {
+				return
+			}
+
+			this.followContext = { id: address.id, notifies: schemaNotifiesWatchers(schema), can }
+		},
+
+		/**
+		 * The record's schema: the one the schema store holds when it is that
+		 * schema, else read from the API; null when it cannot be read.
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @param {string} reference The record's `@self.schema`
+		 * @return {Promise<object|null>}
+		 */
+		async recordSchema(reference) {
+			if (schemaMatches(schemaStore?.schemaItem, reference)) {
+				return schemaStore.schemaItem
+			}
+
+			try {
+				return await schemaStore.getSchema(reference)
+			} catch {
+				return null
+			}
 		},
 
 		/**
