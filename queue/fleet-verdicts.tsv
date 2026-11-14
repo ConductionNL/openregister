@@ -9331,3 +9331,4 @@ integriq	3622	45832696d92d72fb541b12ac2eb092a08e9b3ea0	CONFLICT	merge3	merges cl
 integriq	3625	bd47bd4cd95090b3280bf70f2d83cf8bbe8b1bcd	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
 integriq	3626	0b6ea2adb278d723255596548d62d781abcc82c3	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/nl.js 
 integriq	3631	b0b558d83e2f38ea4f662bf52fc6714038987f6e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js lib/Service/EndpointService.php 
+hermiq	1735	61ad767f2f1d16530dfa278b6a27961e11c2f6d8	GREEN	worker-49	phpunit 5191 ok on tree (baseline development 5134 ok, both with ../openregister present), vitest 1496 passed; build of flows-hand-off-and-wait, changes to existing engine files additive
