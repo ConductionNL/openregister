@@ -8109,3 +8109,4 @@ fix:humaniq:1146:497b5f3c	no change: merges clean on development; conflict only 
 build:buildiq:logic-automation-run-log	partial: PR #1592 (schema, recorder, runs endpoints, prune job; dispatch hooks T03 and UI left)	session-20261114T062222-96f530fc	2026-11-14T08:07:45Z
 build:buildiq:openbuild-nl-locale-parity	PR buildiq#1593: 495 nl keys backfilled, nl parity gate wired into Code Quality; 3.1 (tracking issue) left for a maintainer	session-20261114T075640-efa02b24	2026-11-14T08:07:52Z
 build:buildiq:logic-shared-flows-and-automations	partial: PR #1594 (T01 schema fragment + test); T03-T05 wait on logic-automation-actions-that-run T02 flow backend, UI tasks follow	session-20261114T062134-840bbeee	2026-11-14T08:07:59Z
+build:planninq:tasks-create-by-email	partial: PR #1172 (1.1, 2.2, 2.3 built and unit-tested; 2.1 IMAP client needs a composer.lock change, 1.2/1.3 frontend and live items left)	session-20261114T073111-9b40710a	2026-11-14T08:08:15Z
