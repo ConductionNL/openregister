@@ -7702,3 +7702,4 @@ fix:shillinq:2969:86750ac2	l10n conflict resolved, new head 92f203eb, REVERIFY; 
 fix:portaliq:2284:b2a01552	conflict resolved, pushed e29a4e8e9; unit suite green (5051); REVERIFY recorded	session-20261114T065632-a1c920c5	2026-11-14T07:02:32Z
 fix:portaliq:2442:39991bbb	conflict resolved (l10n + package.json), pushed 53aae580	session-20261114T065635-61264d14	2026-11-14T07:02:51Z
 fix:portaliq:2443:4322f3ac	conflict resolved (kvk + attributes both kept), suite green, pushed d5298d5e, REVERIFY recorded	session-20261114T065635-0aca43d3	2026-11-14T07:02:51Z
+verify:pipelinq:3708:f3e96e5d	3708 GREEN; 3732 CONFLICT with #3708 (l10n tail)	session-20261114T062134-840bbeee	2026-11-14T07:03:11Z
