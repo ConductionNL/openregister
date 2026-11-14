@@ -10087,3 +10087,4 @@ merge:learniq:2519:4a590c2b	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0
 merge:learniq:2520:5f6881c0	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:25Z
 merge:learniq:2484:b5de1e71	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:28Z
 fix:buildiq:1608:d42aa0c4	floor restored (unit_interfacing 3.39 -> 3.41) by splitting the new helpers into 2-parameter units; floor PASS, PR tests green; new head 9096415d3, REVERIFY recorded	session-20261114T144751-8a65b704	2026-11-14T16:13:35Z
+verify:integriq:3564:838f1ae2	GREEN 3588 3592 3595 3610; CONFLICT 3564 3600 (development, openapi.json), 3602 3613 (tree only); 3596 skipped (head moved)	session-20261114T141010-8dc8bd74	2026-11-14T16:14:10Z
