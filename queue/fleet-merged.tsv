@@ -2501,3 +2501,17 @@ launchpad	1205	3d06446c539eeb35634e4eb3db55e3357c050e63	RED	merge3	GATE RED floo
 launchpad	1207	892a823d8a1998a1b7b3780656c8b54978c0ef24	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 launchpad	1208	592965c0777101e5defadb8660e58e36ecddceff	RED	merge3	GATE RED floor: unit_interfacing: 3.45 -> 3.41
 launchpad	1213	089051026a4cf042e525120b71a87b878c65cf96	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1025	6f9b0ff7e245bae839982c1790257765d05c864d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1029	f6914e2ecf39116c63cfb6c892d894555b0bdf7c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1031	bfb119fa90df4693b23d904cb42548989237cb9e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1122	2cd02b1bd987c9937e38320ba7ff1af6b08a9164	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1123	eeb3b525f554f86e3e947ef758ea6c7d4baa336f	RED	merge3	GATE RED floor: unit_interfacing: 3.62 -> 3.60
+humaniq	1124	e8550c41a4ce0ed9deab8463daca670f0bea6bc1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1126	aba37b993bc20a587f0b1257be507ca3dd3ffc91	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1128	8d2efc39249714ec66dbc9d6c9d6d51775f38609	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1129	f4fd707435852417eba7b5174d02634f0d76a47f	RED	merge3	GATE RED floor: module_coupling: 4.06 -> 4.03
+humaniq	1131	7391a99f6591ec4ee8db24c0d23b379048a40e5e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1132	0fa00663becac66e1e2cfcf59081ffff1a532759	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+humaniq	1134	928fcce07435a8ce063a133e1bf8f3500f37e00c	RED	merge3	GATE RED floor: unit_interfacing: 3.62 -> 3.59
+humaniq	1136	66752b672af0e596e073d0783a45467aadabe3bc	RED	merge3	GATE RED floor: unit_size: 4.49 -> 4.47; unit_complexity: 3.57 -> 3.53
+humaniq	1140	a1547b95c38420b53801024f6e9adf40e66effe0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
