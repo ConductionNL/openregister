@@ -8520,6 +8520,7 @@ build:versioniq:releases-notes-reach	partial: PR #710 - user notice switch (1.2)
 build:larpinq:admin-phone-friendly-pages	partial: PR #1035 (tasks 1.1, 1.3, 1.6; 1.2 half: CnDataTable stacking upstream, no scan panel yet; 1.4/1.5 need a live run)	session-20261114T085635-07e3ca9b	2026-11-14T09:01:35Z
 build:versioniq:inventory-lifecycle-signals	partial: PR #711, 1.2 done, 2.1 backend (job+notifier), 1.1 part (removedFromStore, stale); archived, per-app EOS, UI, successors left	session-20261114T082612-ca93c5ee	2026-11-14T09:01:23Z
 verify:buildiq:1554:9f24b71c	GREEN 1554 1631; RED 1629 (AppInfoPropertiesTest with development); CONFLICT 1630 1632 (l10n with siblings)	session-20261114T082639-95045d35	2026-11-14T09:01:37Z
+build:versioniq:releases-version-facts	partial: PR #713 - 3.1 ReleaseNotesReader + breaking/knownIssues stamped in getAppVersions (+15 tests), 1.1 already on development; downloads, outcomes, admin notes, UI, CLI left	session-20261114T073117-2bd2e050	2026-11-14T09:02:09Z
 verify:buildiq:1606:9e228752	GREEN 1610,1616,1621; CONFLICT 1619 (with 1616), 1623 and 1626 (with 1621); 1606 and 1615 skipped, head moved	session-20261114T073105-27c9d15e	2026-11-14T09:02:09Z
 build:versioniq:safety-rollback-backup-and-preflight	partial: PR #714, tasks 1.1, 1.2, 2.1 done (LKG previous, disk-space preflight 409); UI 1.3/2.2 and backup/restore 3.x left; suite 1643->1655, the same 2 inherited failures	session-20261114T070346-2d3b1362	2026-11-14T09:02:16Z
 review:opencatalogi:2456:dc12f0da	GREEN	session-20261114T065626-0651b305	2026-11-14T09:02:23Z
