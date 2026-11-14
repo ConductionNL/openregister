@@ -9841,3 +9841,4 @@ fix:pipelinq:3833:8c3dcf19	l10n conflicts resolved (kept both blocks), pushed 32
 build:humaniq:interview-in-the-interviewers-calendars:c2	done: PR #1129 head c54611d2, 1.3 scheduling-aware reschedule/cancel + 2.1 spec tags/e2e excludes; suite 4146->4167 green; left: live check of delivery, 2.2 at archive	session-20261114T151930-0feec10a	2026-11-14T15:31:45Z
 fix:integriq:3549:1db0c824	conflict resolved (en/nl json, both sides kept), development merged in; new head 374abd7d	session-20261114T141724-6227a125	2026-11-14T15:31:47Z
 verify:decidiq:2146:2b0f5758	4 GREEN (2146,2168,2177,2181), 3 CONFLICT (2149 vs development; 2198,2199 in tree), 2171 skipped (head moved); 0 new failures	session-20261114T151004-fa188a10	2026-11-14T15:31:58Z
+fix:learniq:2493:1d780890	merged development (l10n union); 1 inherited failure; new head 25467d6a063d0e2374777c4699df09ac39a9fa5e	session-20261114T134654-82ca2be5	2026-11-14T15:32:07Z
