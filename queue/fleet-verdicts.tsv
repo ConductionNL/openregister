@@ -8263,6 +8263,7 @@ filinq	2072	68ef821e46429ab7d7171cdcaf50936b2cb5a6a2	REVERIFY	worker-22	No chang
 learniq	2488	7f1b19e05a34e38974f3122845c54a11d49140a0	GREEN	worker-28	unit 6747 tests on tree, baseline 6703 with 1 failure (HigherEducationExampleSetTest), no new failures
 learniq	2496	1358154da04f0ff674b6310c4ea1be403b609960	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
 learniq	2504	38d12d9bb9b0259e1d488732cf6ca09d0fec768b	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
+decidiq	2162	2dc5d2969c2668b5d7a870d274ee0e4ffe399402	REVERIFY	worker-40	merged development in, kept both save-guard subscriptions in SaveGuardSubscriptions.php; phpunit 4182 green; new head 16f8a9d357f278a0cd906ac019eebd6da15d1502, verify it
 learniq	2513	ef587d083a0753b2fd4bbdf748a8e2cf98f98a44	GREEN	worker-28	unit 6747 tests on tree, baseline 6703 with 1 failure (HigherEducationExampleSetTest), no new failures
 learniq	2514	2e2444ab4454d26a110258855a257f891ba0768c	GREEN	worker-28	unit 6747 tests on tree, baseline 6703 with 1 failure (HigherEducationExampleSetTest), no new failures
 learniq	2515	42835386c700e558fc6c6897d94b645fd55e55b7	GREEN	worker-28	unit 6747 tests on tree, baseline 6703 with 1 failure (HigherEducationExampleSetTest), no new failures
