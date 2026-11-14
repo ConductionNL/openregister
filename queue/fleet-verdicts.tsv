@@ -8761,3 +8761,4 @@ humaniq	1133	9d19d31d708e515565cb49b4d80c93601b6198d9	GREEN	worker-38	unit 4201 
 humaniq	1144	c0dbe84a58883d8a2fbcb395b9e57999c05fac29	CONFLICT	worker-38	l10n en/nl catalogues conflict with #1127/#1133 in tree order
 humaniq	1156	ca5305e6208da4734c4e1cf6ad01c6889e8e8524	CONFLICT	worker-38	l10n/en.js and nl.js conflict with #1127/#1133 in tree order
 shillinq	3072	941f33620301465774d2674140435dd29f03e415	GREEN	worker-41	tree 3072+3073 on development: unit 11218 OK (baseline 11203 OK), no new failures; builds receivables-payment-links 3.1 PayLinkService per spec
+integriq	3595	442dd4fc86c1e6a8c2177ea91ee10c7ba6086656	REVERIFY	worker-26	merged origin/development in (clean); unit suite 8942 tests, 2 errors and 5 failures same as development; a remaining conflict would be with earlier tree PRs only; new head 7df20bcae6a3c131101cfe25b69c6fb290d0fe51, verify it
