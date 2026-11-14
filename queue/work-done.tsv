@@ -11099,5 +11099,6 @@ fix:buildiq:1624:cc9050a1	fixed: refactored PR's plan units (complexity up vs ba
 build:learniq:training-provider-course-days:c3	partial: PR learniq#2521 head b2c3e036: T4 done (Course days board/table/calendar, moveCourseDay, derived dayDate); left T5 trainer Today UI, T6 planner Today, T7 list/page, T8 example set; suite 6832->6833, same 1 inherited	session-20261114T193415-4b507b08	2026-11-14T21:07:06Z
 verify:integriq:3592:7088891f	3592 GREEN, 3595 GREEN	session-20261114T202449-f0278d5a	2026-11-14T21:07:11Z
 fix:buildiq:1626:cac162dc	no change: branch already up to date with development; it conflicts only with unmerged #1613 (l10n/nl.json), so whichever lands second needs development merged in afterwards	session-20261114T191742-bf93c040	2026-11-14T21:07:54Z
+fix:launchpad:1210:360cba65	stale	session-20261114T194751-bb7578f8	2026-11-14T21:09:03Z
 fix:keepiq:1789:e905bf11	fixed CONFLICT: development merged, nl l10n union, head c8b160f5; inherited l10n parity + HealthReportView reds noted	session-20261114T201754-5ed288ac	2026-11-14T21:09:02Z
 verify:launchpad:1212:11462701	GREEN: no new failures (inherited OpenApiStabilityTest red; 9 new ops lack x-launchpad-stability, noted)	session-20261114T204802-89dfe85e	2026-11-14T21:09:11Z
