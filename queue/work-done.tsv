@@ -10467,3 +10467,4 @@ fix:humaniq:1134:6ff842b4	no change: branch already contains development and mer
 verify:portaliq:2500:4216ab5a	GREEN 2500	session-20261114T134708-ba7f7741	2026-11-14T17:46:24Z
 fix:humaniq:1135:9114728c	development merged in, l10n resolved, new head 120d0cde, REVERIFY recorded	session-20261114T161742-d79a1d0e	2026-11-14T17:46:34Z
 verify:decidiq:2169:b67a6495	2169 GREEN	session-20261114T174106-c933f162	2026-11-14T17:46:46Z
+fix:planninq:1158:4d1b5b8d	fixed: unit complexity restored (floor compare PASS); new head 11b7da5e	session-20261114T154807-c05f4e57	2026-11-14T17:46:53Z
