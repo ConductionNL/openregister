@@ -4,8 +4,8 @@
 - [x] Add `scope` (enum personal|organisation, default personal) + `organisation`
       (UUID, required when scope=organisation) to the `credential` schema in
       `lib/Settings/credential_broker_register.json`; keep it secret-free. (code exists; now tested: tests/Unit/Service/Credential/CredentialOrganisationScopeSchemaTest.php pins the enum/default, the optional UUID field, and that neither property can hold a secret)
-- [ ] Bump the register descriptor + confirm the Repair-step materialisation picks up
-      the new properties (ADR-037: OR does not self-import its own register JSON). (code exists, test missing: lib/Repair/ImportCredentialBrokerRegister.php)
+- [x] Bump the register descriptor + confirm the Repair-step materialisation picks up
+      the new properties (ADR-037: OR does not self-import its own register JSON). (code exists; now tested: tests/Unit/Repair/ImportCredentialBrokerRegisterTest.php pins that the step hands the shipped descriptor, with `scope` and `organisation` on the credential schema, to the importer, that descriptor and schema versions are past 1.0.0, and that a missing, malformed or failing import warns instead of aborting the upgrade)
 
 ## Vault owner selection (D2)
 - [x] Add a single private helper that maps a credential's scope → vault owner

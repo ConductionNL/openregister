@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
@@ -28,10 +29,19 @@ use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
 use ReflectionMethod;
+use ReflectionProperty;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @covers \OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder
+ * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionPage
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Support\OrderParameter
+ * @uses   \OCA\OpenRegister\Support\QueryLimit
  */
 class CaseInsensitiveOrderingTest extends TestCase {
 
@@ -160,4 +170,91 @@ class CaseInsensitiveOrderingTest extends TestCase {
 			$this->orderTerms(['@self.name' => 'asc'], new PostgreSQLPlatform())
 		);
 	}//end testTheNameMetadataFieldOrdersCaseInsensitivelyAndTotally()
+	/**
+	 * Call a private MagicMapper method on a mapper over the given platform.
+	 *
+	 * @param string $method   The method.
+	 * @param array  $args     Its arguments.
+	 * @param object $platform The database platform.
+	 *
+	 * @return mixed
+	 */
+	private function mapperCall(string $method, array $args, object $platform): mixed {
+		$mapper = (new ReflectionClass(MagicMapper::class))->newInstanceWithoutConstructor();
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($platform);
+		(new ReflectionProperty(MagicMapper::class, 'db'))->setValue($mapper, $db);
+
+		return (new ReflectionMethod(MagicMapper::class, $method))->invokeArgs($mapper, $args);
+	}//end mapperCall()
+
+	/**
+	 * A schema with the given properties.
+	 *
+	 * @param array $properties The properties.
+	 *
+	 * @return Schema
+	 */
+	private static function schemaWith(array $properties): Schema {
+		$schema = new Schema();
+		$schema->setProperties($properties);
+		return $schema;
+	}//end schemaWith()
+
+	/**
+	 * REQ-CIO-001 on the UNION path: a text column orders lower-cased, then raw,
+	 * then by uuid, in the SQL and in the merge of several batches alike.
+	 *
+	 * @return void
+	 */
+	public function testTheUnionPathOrdersTheSameWay(): void {
+		$postgres = $this->mapperCall('unionOrderByClause', ['query' => ['_order' => ['title' => 'asc']], 'textColumns' => ['title']], new PostgreSQLPlatform());
+		$this->assertSame(' ORDER BY LOWER(CAST("title" AS TEXT)) ASC, "title" ASC, _uuid ASC', $postgres);
+
+		$mysql = $this->mapperCall('unionOrderByClause', ['query' => ['_order' => ['title' => 'desc']], 'textColumns' => ['title']], new MariaDBPlatform());
+		$this->assertSame(' ORDER BY LOWER(`title`) DESC, `title` DESC, _uuid ASC', $mysql);
+
+		$rows = [
+			['_uuid' => 'u1', 'title' => 'Zienswijze'],
+			['_uuid' => 'u2', 'title' => 'besluit'],
+			['_uuid' => 'u3', 'title' => 'aanvraag'],
+			['_uuid' => 'u4', 'title' => 'Besluit'],
+			['_uuid' => 'u0', 'title' => 'besluit'],
+		];
+		$merged = $this->mapperCall('mergeUnionBatchRows', ['rows' => $rows, 'query' => ['_order' => ['title' => 'asc']], 'textColumns' => ['title']], new MariaDBPlatform());
+
+		// aanvraag before Besluit before Zienswijze; the raw value then the uuid break the ties.
+		$this->assertSame(['u3', 'u4', 'u0', 'u2', 'u1'], array_column($merged, '_uuid'));
+	}//end testTheUnionPathOrdersTheSameWay()
+
+	/**
+	 * A text metadata column folds case on the UNION path without being declared; a non-text column keeps its native order.
+	 *
+	 * @return void
+	 */
+	public function testTheUnionPathFoldsTheNameAndLeavesNumbersAlone(): void {
+		$this->assertSame(
+			' ORDER BY LOWER(CAST("_name" AS TEXT)) ASC, "_name" ASC, _uuid ASC',
+			$this->mapperCall('unionOrderByClause', ['query' => ['_order' => ['@self.name' => 'asc']], 'textColumns' => []], new PostgreSQLPlatform())
+		);
+		$this->assertSame(
+			' ORDER BY "amount" ASC, _uuid ASC',
+			$this->mapperCall('unionOrderByClause', ['query' => ['_order' => ['amount' => 'asc']], 'textColumns' => ['title']], new PostgreSQLPlatform())
+		);
+	}//end testTheUnionPathFoldsTheNameAndLeavesNumbersAlone()
+
+	/**
+	 * A column is text on the UNION path only when every schema declaring it holds text there.
+	 *
+	 * @return void
+	 */
+	public function testAUnionColumnIsTextOnlyWhenEverySchemaHoldsText(): void {
+		$pairs = [
+			['schema' => self::schemaWith(['title' => ['type' => 'string'], 'code' => ['type' => 'string'], 'when' => ['type' => 'string', 'format' => 'date'], 'label' => ['type' => 'string', 'translatable' => true]])],
+			['schema' => self::schemaWith(['title' => ['type' => 'string'], 'code' => ['type' => 'integer'], 'extra' => ['type' => 'string']])],
+			['schema' => null],
+		];
+
+		$this->assertSame(['title', 'extra'], $this->mapperCall('unionTextColumns', ['registerSchemaPairs' => $pairs], new PostgreSQLPlatform()));
+	}//end testAUnionColumnIsTextOnlyWhenEverySchemaHoldsText()
 }//end class

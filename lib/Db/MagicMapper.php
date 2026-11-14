@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
 use OCA\OpenRegister\Db\MagicMapper\ObjectEventDeferral;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
@@ -1975,11 +1976,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function searchAcrossMultipleTablesWithUnion(array $query, array $registerSchemaPairs): array {
 		$batches = array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE);
+		// Which columns order as text is decided over every schema of the
+		// search, so each batch and the merge of the batches agree (REQ-CIO-001).
+		$textColumns = $this->unionTextColumns(registerSchemaPairs: $registerSchemaPairs);
 
 		// One batch: the single-statement path, unchanged.
 		if (count($batches) <= 1) {
 			return $this->convertUnionRowsToEntities(
-				rows: $this->runUnionBatch(query: $query, registerSchemaPairs: $registerSchemaPairs)
+				rows: $this->runUnionBatch(query: $query, registerSchemaPairs: $registerSchemaPairs, textColumns: $textColumns)
 			);
 		}
 
@@ -1989,12 +1993,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// contribute row `offset + limit - 1` even when it owns it.
 		$rows = [];
 		foreach ($batches as $batch) {
-			foreach ($this->unionBatchRows(query: $query, registerSchemaPairs: $batch) as $row) {
+			foreach ($this->unionBatchRows(query: $query, registerSchemaPairs: $batch, textColumns: $textColumns) as $row) {
 				$rows[] = $row;
 			}
 		}
 
-		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query);
+		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query, textColumns: $textColumns);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Cross-batch union search merged',
@@ -2020,12 +2024,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs, already bounded by the caller.
+	 * @param array<string> $textColumns The property columns that order as text.
 	 *
 	 * @return array Raw result rows.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
 	 */
-	private function runUnionBatch(array $query, array $registerSchemaPairs): array {
+	private function runUnionBatch(array $query, array $registerSchemaPairs, array $textColumns = []): array {
 		$qb = $this->db->getQueryBuilder();
 		$parts = [];
 
@@ -2056,7 +2062,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// The batch orders on what it projects: a column of another batch is null in all of its rows.
 		$orderQuery = (new MagicUnionOrder(isPostgres: false))->orderable(query: $query, columns: ($allPropertyColumns ?? []));
-		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $orderQuery) . $this->unionPage(query: $query)->limitClause();
+		$unionSql = implode(' UNION ALL ', $parts)
+			. $this->unionOrderByClause(query: $orderQuery, textColumns: $textColumns)
+			. $this->unionPage(query: $query)->limitClause();
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
@@ -2084,15 +2092,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param array $query               Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs, already bounded by the caller.
+	 * @param array<string> $textColumns The property columns that order as text.
 	 *
 	 * @return array Raw result rows.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
-	private function unionBatchRows(array $query, array $registerSchemaPairs): array {
+	private function unionBatchRows(array $query, array $registerSchemaPairs, array $textColumns = []): array {
 		$rows = [];
 		foreach ($this->unionPage(query: $query)->batchSteps() as $step) {
-			$stepRows = $this->runUnionBatch(query: $step, registerSchemaPairs: $registerSchemaPairs);
+			$stepRows = $this->runUnionBatch(query: $step, registerSchemaPairs: $registerSchemaPairs, textColumns: $textColumns);
 			$rows = array_merge($rows, $stepRows);
 			if (count($stepRows) < (int)($step['_limit'] ?? 0)) {
 				break;
@@ -2191,16 +2200,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * several batches sorts on exactly what the SQL sorts on.
 	 *
 	 * @param array $query Search parameters.
+	 * @param array<string> $textColumns The property columns that order as text.
 	 *
 	 * @return string The clause, with a leading space.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
-	private function unionOrderByClause(array $query): string {
+	private function unionOrderByClause(array $query, array $textColumns = []): string {
 		$isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
 
 		$orderClauses = [];
-		foreach ($this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres) as $orderKey) {
+		foreach ($this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres, textColumns: $textColumns) as $orderKey) {
 			$orderClauses[] = $orderKey['sql'] . ' ' . $orderKey['dir'];
 		}
 
@@ -2218,12 +2228,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param array $query      Search parameters.
 	 * @param bool  $isPostgres Whether the platform is PostgreSQL (identifier quoting).
+	 * @param array<string> $textColumns The property columns that order as text.
 	 *
-	 * @return array<int, array{row: string, sql: string, dir: string}> Ordered sort keys.
+	 * @return array<int, array{row: string, sql: string, dir: string, fold?: bool}> Ordered sort keys.
 	 *
 	 */
-	private function buildUnionOrderKeys(array $query, bool $isPostgres): array {
-		return (new MagicUnionOrder(isPostgres: $isPostgres))->keys(query: $query);
+	private function buildUnionOrderKeys(array $query, bool $isPostgres, array $textColumns = []): array {
+		return (new MagicUnionOrder(isPostgres: $isPostgres, textColumns: $textColumns))->keys(query: $query);
 	}//end buildUnionOrderKeys()
 
 	/**
@@ -2246,11 +2257,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param array $rows  Rows from every batch, in batch order.
 	 * @param array $query The caller's search parameters (offset and limit).
+	 * @param array<string> $textColumns The property columns that order as text.
 	 *
 	 * @return array The merged page.
 	 */
-	private function mergeUnionBatchRows(array $rows, array $query): array {
-		$order = new MagicUnionOrder(isPostgres: $this->isPostgresPlatform());
+	private function mergeUnionBatchRows(array $rows, array $query, array $textColumns = []): array {
+		$order = new MagicUnionOrder(isPostgres: $this->isPostgresPlatform(), textColumns: $textColumns);
 
 		return $this->unionPage(query: $query)->cut(rows: $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query)));
 	}//end mergeUnionBatchRows()
@@ -2544,6 +2556,56 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $allColumns;
 	}//end collectAllPropertyColumns()
+
+	/**
+	 * The property columns of a cross-schema search that hold text in every schema declaring them.
+	 *
+	 * Such a column orders case-insensitively in the union, as a text property
+	 * does in a single-schema search. A column that is a number, a date or a
+	 * translatable map in any schema of the search keeps its native order,
+	 * since LOWER() on it would order digits as text.
+	 *
+	 * @param array $registerSchemaPairs The register+schema pairs of the search.
+	 *
+	 * @return array<int, string> The text columns.
+	 *
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 */
+	private function unionTextColumns(array $registerSchemaPairs): array {
+		$isText = [];
+		foreach ($registerSchemaPairs as $pair) {
+			$properties = ($pair['schema'] ?? null)?->getProperties();
+			if (is_array($properties) === false) {
+				continue;
+			}
+
+			foreach ($properties as $propertyName => $propertyConfig) {
+				if (is_array($propertyConfig) === false || in_array($propertyName, MagicSchemaColumns::CONFIGURATION_FIELDS, true) === true) {
+					continue;
+				}
+
+				$column = $this->sanitizeColumnName(name: (string) $propertyName);
+				$isText[$column] = (($isText[$column] ?? true) && self::isUnionTextProperty(propertyConfig: $propertyConfig));
+			}
+		}
+
+		return array_keys(array_filter($isText));
+	}//end unionTextColumns()
+
+	/**
+	 * Whether a property orders as text: a string that is not a date and not translatable.
+	 *
+	 * @param array $propertyConfig The property definition.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 */
+	private static function isUnionTextProperty(array $propertyConfig): bool {
+		return ($propertyConfig['type'] ?? 'string') === 'string'
+			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false
+			&& ($propertyConfig['translatable'] ?? false) !== true;
+	}//end isUnionTextProperty()
 
 	/**
 	 * Convert UNION query row to ObjectEntity.
@@ -3943,6 +4005,35 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end updateTableIndexes()
 
 	/**
+	 * Every index on a register+schema table, with the property flag that asked
+	 * for each (modelling-property-index-switch D-4). Empty when the table does
+	 * not exist yet.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array<int, array{name: string, property: string|null, column: string|null, kind: string, flag: string|null}> The indexes.
+	 *
+	 * @throws Exception When the catalogue cannot be read.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-a-property-can-ask-for-an-index-without-being-a-facet
+	 */
+	public function tableIndexes(Register $register, Schema $schema): array {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return [];
+		}
+
+		$tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$run        = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
+		$isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+		$existing   = (new MagicTableIndexCatalogue(db: $this->db))->names(fullTableName: $run->fullTableName, isPostgres: $isPostgres);
+
+		$indexer    = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+
+		return $indexer->describe(run: $run, schema: $schema, existing: $existing);
+	}//end tableIndexes()
+
+	/**
 	 * Drop the property indexes no property flag asks for any more. A catalogue
 	 * that cannot be read leaves every index in place and never fails the sync.
 	 *
@@ -3997,6 +4088,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			// the codebase already uses (DbalObjectSourceProvider, DatabaseIntrospectionService).
 			$quotedTable = $connection->getDatabasePlatform()->quoteIdentifier($fullTableName);
 			$connection->executeStatement('DROP TABLE IF EXISTS ' . $quotedTable);
+
+			// The request-scoped memos remember only that a table EXISTS, so a
+			// drop must take this one out of them: a later probe in the same
+			// request must ask the database again, not answer "exists" for a
+			// table that is gone (object-write-at-instance-floor task 5).
+			unset($this->tableExistsMemo[$tableName]);
+			$this->liveMagicTablesMemo = null;
 
 			// A table recreated under this name must be inspected afresh.
 			$this->getMetadataColumnHealer()->forget(tableName: $tableName);
@@ -5705,19 +5803,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param int|null $offset Rows to skip (pagination).
 	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
 	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
+	 * @param DeletedFilter|null $filter Only this register, schema and deletion window; null reads the whole bin.
 	 *
 	 * @return ObjectEntity[] Soft-deleted objects across all magic tables.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-the-deleted-list-filters-by-register-schema-and-deletion-time-req-sync-002
 	 */
 	public function findDeletedAcrossAllMagicTables(
 		?int $limit = null,
 		?int $offset = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
+		?DeletedFilter $filter = null,
 	): array {
 		$page = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset);
-		return $this->findDeletedAcross(page: $page, _rbac: $_rbac, _multitenancy: $_multitenancy);
+		return $this->findDeletedAcross(page: $page, _rbac: $_rbac, _multitenancy: $_multitenancy, filter: $filter);
 	}//end findDeletedAcrossAllMagicTables()
 
 	/**
@@ -5726,12 +5827,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param ListQuery $page          The limit (unbounded for all) and offset, applied after the merge.
 	 * @param bool      $_rbac         Whether to apply RBAC.
 	 * @param bool      $_multitenancy Whether to apply multitenancy.
+	 * @param DeletedFilter|null $filter The register, schema and deletion window, or null for the whole bin.
 	 *
 	 * @return ObjectEntity[] The deleted objects.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-the-deleted-list-filters-by-register-schema-and-deletion-time-req-sync-002
 	 */
-	public function findDeletedAcross(ListQuery $page, bool $_rbac=true, bool $_multitenancy=true): array {
+	public function findDeletedAcross(ListQuery $page, bool $_rbac=true, bool $_multitenancy=true, ?DeletedFilter $filter=null): array {
+		$filter ??= new DeletedFilter();
 		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
 		$updatedCol = self::METADATA_PREFIX . 'updated';
 
@@ -5743,6 +5847,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$items = [];
 
 		foreach ($this->discoverMagicTables() as $fullTableName => $info) {
+			// Narrowed before the scan: a table outside the filter is never read.
+			if ($filter->admitsTable(table: $info) === false) {
+				continue;
+			}
+
 			$bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
 			try {
 				$qb = $this->db->getQueryBuilder();
@@ -5755,7 +5864,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					continue;
 				}
 
-				$items = array_merge($items, $this->deletedItems(rows: $qb->executeQuery()->fetchAll(), table: $info));
+				$rows = array_values(
+					array_filter(
+						$qb->executeQuery()->fetchAll(),
+						static fn (array $row): bool => $filter->admitsMarker(marker: ($row[self::METADATA_PREFIX . 'deleted'] ?? null))
+					)
+				);
+				$items = array_merge($items, $this->deletedItems(rows: $rows, table: $info));
 			} catch (\Exception $e) {
 				$this->logger->debug(
 					message: '[MagicMapper] findDeletedAcrossAllMagicTables: skipping table',
@@ -6006,31 +6121,29 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
 	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
+	 * @param DeletedFilter|null $filter The same filter the listing applies, so the total matches its rows.
 	 *
 	 * @return int Total soft-deleted object count.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-the-deleted-list-filters-by-register-schema-and-deletion-time-req-sync-002
 	 */
-	public function countDeletedAcrossAllMagicTables(bool $_rbac = true, bool $_multitenancy = true): int {
-		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
+	public function countDeletedAcrossAllMagicTables(bool $_rbac = true, bool $_multitenancy = true, ?DeletedFilter $filter = null): int {
+		$filter ??= new DeletedFilter();
 		$total = 0;
 
 		foreach ($this->discoverMagicTables() as $fullTableName => $info) {
-			$bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
+			if ($filter->admitsTable(table: $info) === false) {
+				continue;
+			}
+
 			try {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select($qb->func()->count('*', 'cnt'))
-					->from($bareTableName, 't')
-					->where($qb->expr()->isNotNull($deletedCol));
-
-				if ($this->scopeDeletedScanToCaller(qb: $qb, table: $info, _rbac: $_rbac, _multitenancy: $_multitenancy) === false) {
-					continue;
-				}
-
-				$res = $qb->executeQuery();
-				$row = $res->fetch();
-				$res->closeCursor();
-				$total += (int)($row['cnt'] ?? 0);
+				$total += $this->countDeletedInTable(
+					bareTableName: substr($fullTableName, strlen($this->getTablePrefix())),
+					table: $info,
+					filter: $filter,
+					access: ['rbac' => $_rbac, 'multitenancy' => $_multitenancy]
+				);
 			} catch (\Exception $e) {
 				continue;
 			}
@@ -6038,6 +6151,52 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $total;
 	}//end countDeletedAcrossAllMagicTables()
+
+	/**
+	 * The deleted rows of one magic table the caller may read, within the filter.
+	 *
+	 * Without a deletion window this is a COUNT(*). With one, the markers are
+	 * read and compared exactly as the listing compares them.
+	 *
+	 * @param string                                $bareTableName The table without the prefix.
+	 * @param array{registerId: int, schemaId: int} $table         The table's register and schema.
+	 * @param DeletedFilter                         $filter        The filter.
+	 * @param array{rbac: bool, multitenancy: bool} $access        Whether to apply RBAC and the organisation boundary.
+	 *
+	 * @return int The count; 0 when the table must be skipped.
+	 */
+	private function countDeletedInTable(string $bareTableName, array $table, DeletedFilter $filter, array $access): int {
+		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
+		$qb = $this->db->getQueryBuilder();
+		if ($filter->readsMarkers() === true) {
+			$qb->select($deletedCol);
+		} else {
+			$qb->select($qb->func()->count('*', 'cnt'));
+		}
+
+		$qb->from($bareTableName, 't')->where($qb->expr()->isNotNull($deletedCol));
+
+		if ($this->scopeDeletedScanToCaller(qb: $qb, table: $table, _rbac: $access['rbac'], _multitenancy: $access['multitenancy']) === false) {
+			return 0;
+		}
+
+		$res = $qb->executeQuery();
+		if ($filter->readsMarkers() === false) {
+			$row = $res->fetch();
+			$res->closeCursor();
+			return (int)($row['cnt'] ?? 0);
+		}
+
+		$count = 0;
+		while (($row = $res->fetch()) !== false) {
+			if ($filter->admitsMarker(marker: ($row[self::METADATA_PREFIX . 'deleted'] ?? null)) === true) {
+				$count++;
+			}
+		}
+
+		$res->closeCursor();
+		return $count;
+	}//end countDeletedInTable()
 
 	/**
 	 * Narrow one magic table's trash scan to the rows the caller may read.

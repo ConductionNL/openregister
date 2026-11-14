@@ -63,6 +63,35 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				:disabled="loading"
 				:label="t('openregister', 'Title')" />
 
+			<fieldset class="property-titles" data-testid="property-titles">
+				<legend>{{ t('openregister', 'Names per language') }}</legend>
+				<div
+					v-for="(row, index) in titleRows"
+					:key="index"
+					class="property-titles__row">
+					<NcTextField
+						v-model="row.language"
+						:disabled="loading"
+						:label="t('openregister', 'Language code')" />
+					<NcTextField
+						v-model="row.name"
+						:disabled="loading"
+						:label="t('openregister', 'Name')" />
+					<NcButton
+						variant="tertiary"
+						:disabled="loading"
+						@click="removeTitleRow(index)">
+						{{ t('openregister', 'Remove') }}
+					</NcButton>
+				</div>
+				<NcButton
+					variant="secondary"
+					:disabled="loading"
+					@click="addTitleRow()">
+					{{ t('openregister', 'Add a name in another language') }}
+				</NcButton>
+			</fieldset>
+
 			<div class="ASP-selectContainer">
 				<NcSelect
 					v-bind="typeOptions"
@@ -70,10 +99,10 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					inputLabel="Properties Type" />
 
 				<NcSelect
-					v-bind="formatOptions"
+					v-bind="propertyFormatOptions"
 					v-model="properties.format"
 					inputLabel="Properties Format"
-					:disabled="properties.type !== 'string'" />
+					:disabled="formatDisabled" />
 			</div>
 			<!-- TYPE : OBJECT -->
 			<div
@@ -892,6 +921,7 @@ import {
 	emptyFacetConfig,
 	emptyPropertyDefinition,
 	formatSelect,
+	hasFormatChoice,
 	itemsTypeSelect,
 	propertyTypeSelect,
 	semanticRoleOptions,
@@ -982,6 +1012,17 @@ function propertyTypeState() {
 }
 
 /**
+ * The property's names per language, one editable row each.
+ *
+ * @return {object} The rows
+ */
+function titlesState() {
+	return {
+		titleRows: [],
+	}
+}
+
+/**
  * The save request's progress and outcome, and the register and schema
  * picked for a relation.
  *
@@ -1024,10 +1065,32 @@ export default {
 			...calculationState(),
 			...propertyTypeState(),
 			...requestState(),
+			...titlesState(),
 		}
 	},
 
 	computed: {
+		/**
+		 * The format choices of the edited property: geometry formats for an
+		 * object, string formats otherwise.
+		 *
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+		 * @return {object}
+		 */
+		propertyFormatOptions() {
+			return formatSelect(this.properties.type)
+		},
+
+		/**
+		 * Whether the edited property's type has no format to choose.
+		 *
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+		 * @return {boolean}
+		 */
+		formatDisabled() {
+			return !hasFormatChoice(this.properties.type)
+		},
+
 		/**
 		 * The selected storage form of a coded value.
 		 *
@@ -1545,7 +1608,9 @@ export default {
 		},
 
 		/**
-		 * @spec exclude Modal hydration plumbing — loads existing property values into the form.
+		 * Load an existing property's values into the property form when it opens.
+		 *
+		 * @spec openspec/changes/modelling-stated-requirements/specs/entity-management-modals/spec.md#requirement-a-schemas-fields-are-built-in-a-form-req-msr-004
 		 */
 		initializeSchemaItem() {
 			if (!schemaStore.schemaPropertyKey) return
@@ -1558,6 +1623,66 @@ export default {
 			this.propertyTitle = schemaStore.schemaPropertyKey
 			this.hydrateCodeListState(schemaProperty)
 			this.properties = this.mergedPropertyDefinition(schemaProperty)
+			this.hydrateTitleRows(schemaProperty.titles)
+		},
+
+		/**
+		 * Load the stored names per language into editable rows.
+		 *
+		 * @param {object|undefined} titles The stored `titles`, language code to name
+		 * @spec openspec/changes/modelling-field-names-per-language/specs/schema-property-exploration/spec.md#requirement-a-property-can-carry-its-name-in-several-languages
+		 */
+		hydrateTitleRows(titles) {
+			if (!titles || typeof titles !== 'object' || Array.isArray(titles)) {
+				this.titleRows = []
+				return
+			}
+			this.titleRows = Object.entries(titles).map(([language, name]) => ({
+				language,
+				name: typeof name === 'string' ? name : '',
+			}))
+		},
+
+		/**
+		 * Add an empty row for a name in another language.
+		 *
+		 * @spec openspec/changes/modelling-field-names-per-language/specs/schema-property-exploration/spec.md#requirement-a-property-can-carry-its-name-in-several-languages
+		 */
+		addTitleRow() {
+			this.titleRows.push({ language: '', name: '' })
+		},
+
+		/**
+		 * Remove one name-per-language row.
+		 *
+		 * @param {number} index The row
+		 * @spec openspec/changes/modelling-field-names-per-language/specs/schema-property-exploration/spec.md#requirement-a-property-can-carry-its-name-in-several-languages
+		 */
+		removeTitleRow(index) {
+			this.titleRows.splice(index, 1)
+		},
+
+		/**
+		 * The rows as the property's `titles`: trimmed, without rows that miss a
+		 * language or a name, and without the key at all when none is left, so
+		 * clearing every name removes `titles` from the property.
+		 *
+		 * @spec openspec/changes/modelling-field-names-per-language/specs/schema-property-exploration/spec.md#requirement-a-property-can-carry-its-name-in-several-languages
+		 */
+		applyTitleRows() {
+			const titles = {}
+			for (const row of this.titleRows) {
+				const language = (row.language || '').trim()
+				const name = (row.name || '').trim()
+				if (language !== '' && name !== '') {
+					titles[language] = name
+				}
+			}
+			if (Object.keys(titles).length === 0) {
+				delete this.properties.titles
+				return
+			}
+			this.properties.titles = titles
 		},
 
 		/**
@@ -1863,9 +1988,12 @@ export default {
 		},
 
 		/**
-		 * @spec exclude Modal save plumbing — assembles the property payload and delegates to schemaStore.saveSchema.
+		 * Save the property form: assemble the property and save the schema through the schema store.
+		 *
+		 * @spec openspec/changes/modelling-stated-requirements/specs/entity-management-modals/spec.md#requirement-a-schemas-fields-are-built-in-a-form-req-msr-004
 		 */
 		addSchemaProperty() {
+			this.applyTitleRows()
 			this.loading = true
 
 			// delete the key when its an edit modal (the item will be re-created later, so don't worry about it)
