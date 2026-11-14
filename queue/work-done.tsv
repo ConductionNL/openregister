@@ -10104,3 +10104,4 @@ fix:filinq:2105:2929a64c	failed: tree conflict on filinq_register.json is a vers
 fix:buildiq:1617:eca3f854	REVERIFY: dev merged, l10n resolved; still overlaps open #1612 in src; head 1c506804	session-20261114T151801-20bb3a08	2026-11-14T16:16:04Z
 fix:integriq:3618:e9d117fd	no change needed: already contains development, conflict only with other open PRs	session-20261114T141010-8dc8bd74	2026-11-14T16:16:34Z
 fix:buildiq:1631:308971ea	merged development, moved 6 l10n keys mid-catalogue; new head d05a201d07	session-20261114T154820-5269035e	2026-11-14T16:16:44Z
+fix:filinq:2126:1432867f	merged development, head 9eb18073, REVERIFY; remaining #2079 conflict is the register version header only	session-20261114T151802-24eee21b	2026-11-14T16:16:55Z
