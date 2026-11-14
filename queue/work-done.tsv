@@ -9706,3 +9706,4 @@ merge:portaliq:2440:661dad5b	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=
 merge:portaliq:2284:47ded3a7	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T15:07:52Z
 verify:decidiq:2143:2a8cdde4	2143 GREEN; 2154 RED (seed count on top of 2143), 2168 RED (pinned version tests); 2146 CONFLICT dev; 2148 2170 2174 2177 2181 CONFLICT after 2143	session-20261114T141720-f9e7a46b	2026-11-14T15:07:59Z
 verify:filinq:2070:ff4fbe39	2070 GREEN; 2074 CONFLICT after 2070 (l10n)	session-20261114T141738-30f539db	2026-11-14T15:08:18Z
+build:hermiq:reports-on-a-schedule:c2	pushed to PR #1758: 2.1 done; left 1.2, blocked on per-card actions in nextcloud-vue CnReportsPage (still absent in 2.180.0)	session-20261114T141732-bb541f91	2026-11-14T15:08:28Z
