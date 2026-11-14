@@ -9378,3 +9378,4 @@ merge:dossiq:6462:e8e58ee1	merge3 tree of 6 dossiq PRs: merged=4 red=0 fail=0 sk
 merge:dossiq:6322:b7d8ba4c	merge3 tree of 6 dossiq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T14:11:58Z
 merge:dossiq:6324:6656ac42	merge3 tree of 6 dossiq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T14:12:02Z
 merge:dossiq:6385:5d7c8197	merge3 tree of 6 dossiq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T14:12:06Z
+build:filinq:redaction-at-scale:c2	partial: PR #2079 pushed ee211ae10 (2.4 cancel/resume endpoints + cooperative cancel, 3.2 sampler wired; suite 6471 green); left 1.3, 2.1 versioning, 2.2 coordinator, 2.3, 2.4 anonymizationLink lookup, 2.5, 3.2 documentReview routing, 4.x UI, 5.x	session-20261114T134701-f1ddf795	2026-11-14T14:12:20Z
