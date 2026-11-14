@@ -6850,3 +6850,4 @@ humaniq	1134	928fcce07435a8ce063a133e1bf8f3500f37e00c	GREEN	worker-53	PHP 4203 o
 humaniq	1135	31e8c61f8389711fe848ea6604fd0ffc82cb45f2	CONFLICT	worker-53	l10n/en.js en.json nl.js nl.json conflict after 1132-1134
 humaniq	1136	66752b672af0e596e073d0783a45467aadabe3bc	GREEN	worker-53	PHP 4203 on tree vs 4159 baseline, 0 new failures; JS 185/185 vs 178 baseline; setup wizard steps per change spec
 humaniq	1137	5e825cca64a0d144c6e1b3beb3f487909dfe42de	CONFLICT	worker-53	lib/Settings/register.d/hr-leave-types.json conflicts with 1133
+portaliq	2415	1b3e5f2d8564310105899ff754ce3416a97c01ca	REVERIFY	worker-24	merged development in; ProposalController moved to Kernel interfaces (DeclaredProposableProperties now takes PortalContributionRegistryInterface), l10n union; ProposalController+Proposals tests 57 pass, widget spec 12 pass, phpcs/phpstan clean; new head 4f70e4023a105abc5da184ee16e44db10f7f37cc, verify it
