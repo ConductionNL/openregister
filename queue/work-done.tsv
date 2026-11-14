@@ -10914,3 +10914,4 @@ fix:integriq:3600:60d4c594	conflict resolved, new head 7440f904	session-20261114
 review:filinq:2085:c770444d	stale	session-20261114T201754-5ed288ac	2026-11-14T20:30:55Z
 build:filinq:multi-tenant-hardening:c3	partial: pushed to PR #2072 (merged development, register v8.56.0): 2.2 bypass removed from BasesResolverService+PolicyRetroactiveService with pinning tests; left 2.2 PolicyMatchService and 2.3 PolicyCrudService (need an access decision: users lack read on rule schemas / own guard admits more groups), 2.4 waits on them, 3.2, 4.1, 4.2, 6.x; unit 6784 OK	session-20261114T201745-19e2e5d6	2026-11-14T20:30:59Z
 verify:learniq:2544:ce07da0d	GREEN 2544: phpunit 0 new failures, js 0 new	session-20261114T201752-7e06b161	2026-11-14T20:31:04Z
+fix:humaniq:1156:833152c1	merged development in cleanly, checks green; REVERIFY at 9ce437fa1d43b06fa0d8e45c4b04c7001ac27162	session-20261114T194740-7cca8afd	2026-11-14T20:31:23Z
