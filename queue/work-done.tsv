@@ -9997,3 +9997,4 @@ verify:humaniq:1125:484df94f	1125 GREEN; 1139/1142/1145/1148 CONFLICT (with #112
 fix:shillinq:2959:74a7dfd4	RED not reproducible with current vendor; merged development, 11214 OK, new head 4e16db47	session-20261114T154733-94bb2e01	2026-11-14T15:58:48Z
 fix:integriq:3557:363b07c6	failed: merges cleanly with development (head 363b07c6 unchanged); the conflict is with earlier open PRs of the verify tree, which must land first, then merge development in again	session-20261114T141721-aeb4e068	2026-11-14T15:58:56Z
 fix:integriq:3574:0eb15981	merged development in (clean), suite same as development; new head d694a10ae, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T15:59:11Z
+verify:hermiq:1749:50666e41	1749 GREEN; 1755,1757 CONFLICT with 1749	session-20261114T154757-c9bf237e	2026-11-14T15:59:36Z
