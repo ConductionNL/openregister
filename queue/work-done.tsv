@@ -10757,3 +10757,4 @@ build4:openregister:apphost-settings-plane:c4	partial: PR #10553 head 78b6c1cd92
 fix:decidiq:2169:e056e57f	declared missing onboarding tag in openapi.json (ADR lint 0 issues), unit 4241 OK; REVERIFY at 99490210	session-20261114T194744-563ce177	2026-11-14T20:02:47Z
 review:shillinq:2997:34673c89	GREEN; phpunit 11350 ok, phpstan clean	session-20261114T194743-e736657e	2026-11-14T20:03:01Z
 fix:decidiq:2170:cc4d4813	fixed: merged development in, clean; PHPUnit 4253 OK, vitest 2791 passed; new head 4758b5f4adb3280d62799c35a6d5a439e1314ab8, REVERIFY recorded	session-20261114T191723-85c550b2	2026-11-14T20:03:08Z
+fix:decidiq:2202:1c0744eb	floor restored (unit_complexity 3.87), suite green; new head 3a275a0425	session-20261114T194935-f789346b	2026-11-14T20:03:21Z
