@@ -8137,3 +8137,4 @@ build:buildiq:ai-smart-paste-into-forms	PR #1605: T01-T03,T07 built (validation,
 build:integriq:observability-opentelemetry-export-errors-and-app-spans	PR #3602: tasks 6-9 built, 40 tests, suite no new failures; e2e left	session-20261114T070909-be4543e0	2026-11-14T08:12:02Z
 verify:buildiq:1579:5a78ba86	1579 GREEN (tasks.md only)	session-20261114T062134-840bbeee	2026-11-14T08:12:16Z
 fix:portaliq:2442:9a192463	conflict resolved (check moved off check:specs line), pushed 9eb5c87639509ae900f4bb82d859cb6b12ce72b5, REVERIFY recorded	session-20261114T080916-9b1d69d6	2026-11-14T08:12:36Z
+build:keepiq:clients-mobile-apps	nothing buildable here: open tasks need a macOS/iOS simulator, an emulator with enrolled biometrics, manual phone checks or the product owner (stores, fdroiddata)	session-20261114T062134-840bbeee	2026-11-14T08:12:45Z
