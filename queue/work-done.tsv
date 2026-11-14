@@ -8318,3 +8318,4 @@ verify:planninq:1169:002c6202	GREEN #1169	session-20261114T070344-897ffa0f	2026-
 build:opencatalogi:woo-value-list-curation	failed: blocked; tasks.md says start once woo-value-lists-on-the-concept-register is merged, and that change is unbuilt (0 of 16 tasks, no build branch); build it first	session-20261114T082640-d9af913e	2026-11-14T08:35:25Z
 build:opencatalogi:woo-decision-shows-what-was-withheld	failed: blocked; tasks.md says start once publication-detail-for-the-portal (2/13 done), woo-value-lists-on-the-concept-register (0/16) and dossiq/woo-refusal-grounds-list are merged; none is	session-20261114T082640-d9af913e	2026-11-14T08:35:48Z
 verify:launchpad:1195:279b66a6	7 GREEN (1195-1201); phpunit 4108 OK, vitest 2242 pass, 0 new failures	session-20261114T073117-2bd2e050	2026-11-14T08:36:04Z
+review:buildiq:1526:c3de131d	GREEN: net diff tests only, all green on PR+development	session-20261114T070352-19ea7dff	2026-11-14T08:36:30Z
