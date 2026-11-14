@@ -11127,3 +11127,4 @@ build:decidiq:delegatie-mandaatregister:c3	done: PR #2190 head be028a48 — task
 build:decidiq:goals-linked-to-decisions:c3	PR #2187: Task 4 goal page built (step bar, progress, contributions, parent card, both structures), head baca4928; vitest 2809 pass, php 4242 pass; left Playwright test and Related-tab count (shared tabs widget counts one list)	session-20261114T204802-b2e553ef	2026-11-14T21:16:14Z
 verify:decidiq:2190:c3a88d64	2190 skipped: head moved to be028a48	session-20261114T204802-b2e553ef	2026-11-14T21:17:04Z
 verify:buildiq:1622:2cdfc6df	1622 GREEN, 1650 GREEN; 1648 and 1649 skipped (heads moved)	session-20261114T191742-bf93c040	2026-11-14T21:17:20Z
+verify:shillinq:3078:bdbfab98	3078 GREEN (phpunit 11407 ok, vitest 1 inherited failure)	session-20261114T194805-be886caa	2026-11-14T21:17:29Z
