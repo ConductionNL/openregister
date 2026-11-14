@@ -32,7 +32,9 @@ use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IConfig;
 use OCP\IDBConnection;
 
 /**
@@ -78,14 +80,127 @@ class PersonalStateReader {
 	public const NOTES_OBJECT_TYPE = 'openregister';
 
 	/**
+	 * The app whose user values hold the notification preferences.
+	 *
+	 * @var string
+	 */
+	public const PREFERENCES_APP = 'openregister';
+
+	/**
+	 * The user-value key prefixes of a user's own notification preferences:
+	 * the global value and the value pinned to a scope. Group defaults are the
+	 * group's, stored in app config, and never part of a user's export.
+	 *
+	 * @var list<string>
+	 */
+	public const PREFERENCE_PREFIXES = ['notification_pref/', 'notif_pref_s/'];
+
+	/**
+	 * The longest user-value key Nextcloud stores.
+	 *
+	 * @var int
+	 */
+	public const MAX_PREFERENCE_KEY_LENGTH = 64;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db The database.
+	 * @param IDBConnection           $db          The database.
+	 * @param IConfig|null            $config      The user values holding the notification preferences.
+	 * @param ReadHistoryService|null $readHistory The read history behind "recently opened".
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
+		private readonly ?IConfig $config = null,
+		private readonly ?ReadHistoryService $readHistory = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The objects the user opened most recently, newest first: uuid and moment, never the object.
+	 *
+	 * Read from the audit trail as the `_recent` lens reads it; an audit trail
+	 * that is off or unreadable answers none.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return list<array{objectUuid: string, openedAt: string}>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.2
+	 */
+	public function recents(string $userId): array {
+		if ($userId === '' || $this->readHistory === null) {
+			return [];
+		}
+
+		$lens = $this->readHistory->resolveRecentLens(userId: $userId);
+		if (($lens['available'] ?? false) !== true) {
+			return [];
+		}
+
+		$recents = [];
+		foreach (($lens['views'] ?? []) as $uuid => $openedAt) {
+			$recents[] = ['objectUuid' => (string)$uuid, 'openedAt' => (string)$openedAt];
+		}
+
+		return $recents;
+	}//end recents()
+
+	/**
+	 * The user's own notification preferences: each stored override, global or scoped, by its key.
+	 *
+	 * A value that is not a JSON object or list is not a preference and is left out.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return list<array{key: string, value: array<mixed>}>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.2
+	 */
+	public function notificationPreferences(string $userId): array {
+		if ($userId === '' || $this->config === null) {
+			return [];
+		}
+
+		$preferences = [];
+		foreach ($this->config->getUserKeys($userId, self::PREFERENCES_APP) as $key) {
+			if (self::isPreferenceKey(key: (string)$key) === false) {
+				continue;
+			}
+
+			$value = json_decode($this->config->getUserValue($userId, self::PREFERENCES_APP, (string)$key, ''), true);
+			if (is_array($value) === false) {
+				continue;
+			}
+
+			$preferences[] = ['key' => (string)$key, 'value' => $value];
+		}
+
+		return $preferences;
+	}//end notificationPreferences()
+
+	/**
+	 * Whether a user-value key is one of a user's own notification preferences.
+	 *
+	 * @param string $key The key.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.2
+	 */
+	public static function isPreferenceKey(string $key): bool {
+		if (strlen($key) > self::MAX_PREFERENCE_KEY_LENGTH) {
+			return false;
+		}
+
+		foreach (self::PREFERENCE_PREFIXES as $prefix) {
+			if (strlen($key) > strlen($prefix) && str_starts_with($key, $prefix) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isPreferenceKey()
 
 	/**
 	 * The views this user owns, oldest first.

@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\UserMigration\ImportReport;
 use OCA\OpenRegister\Service\UserMigration\PersonalStateMigrator;
 use OCA\OpenRegister\Service\UserMigration\PersonalStateReader;
 use OCA\OpenRegister\Service\UserMigration\RegisterReferences;
+use OCP\IConfig;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\UserMigration\IExportDestination;
@@ -93,7 +94,7 @@ final class PersonalStateMigratorTest extends TestCase {
 		);
 	}//end setUp()
 
-	private function migrator(): PersonalStateMigrator {
+	private function migrator(?IConfig $config = null): PersonalStateMigrator {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
@@ -102,7 +103,8 @@ final class PersonalStateMigratorTest extends TestCase {
 			references: $this->references,
 			views: $this->views,
 			watchers: $this->watchers,
-			l10n: $l10n
+			l10n: $l10n,
+			config: $config
 		);
 	}//end migrator()
 
@@ -210,6 +212,8 @@ final class PersonalStateMigratorTest extends TestCase {
 				PersonalStateMigrator::FEED_TOKENS,
 				PersonalStateMigrator::NOTES,
 				PersonalStateMigrator::TIMELINE,
+				PersonalStateMigrator::RECENTS,
+				PersonalStateMigrator::NOTIFICATION_PREFERENCES,
 				PersonalStateMigrator::MANIFEST,
 			],
 			array_keys($this->written)
@@ -217,7 +221,10 @@ final class PersonalStateMigratorTest extends TestCase {
 		$manifest = $this->exported(path: PersonalStateMigrator::MANIFEST);
 		$this->assertFalse($manifest['objectsIncluded']);
 		$this->assertFalse($manifest['secretsIncluded']);
-		$this->assertSame(['views' => 1, 'watches' => 1, 'feedTokens' => 0, 'notes' => 0, 'timelineEntries' => 0], $manifest['contains']);
+		$this->assertSame(
+			['views' => 1, 'watches' => 1, 'feedTokens' => 0, 'notes' => 0, 'timelineEntries' => 0, 'recents' => 0, 'notificationPreferences' => 0],
+			$manifest['contains']
+		);
 		$this->assertStringContainsString('Objects are not exported', $manifest['notes'][0]);
 
 		// Nothing in the export names other people or groups.
@@ -495,6 +502,147 @@ final class PersonalStateMigratorTest extends TestCase {
 			$output->fetch()
 		);
 	}//end testAnImportReportsFeedTokensAndCreatesNone()
+
+	/**
+	 * Task 1.2: recently opened objects travel as uuid and moment, the user's own
+	 * notification preferences by key, and the manifest counts both.
+	 */
+	public function testRecentsAndNotificationPreferencesAreExported(): void {
+		$this->reader->method('recents')->with('alice')->willReturn([
+			['objectUuid' => 'obj-9', 'openedAt' => '2026-11-02 09:15:00'],
+			['objectUuid' => 'obj-4', 'openedAt' => '2026-11-01 16:40:00'],
+		]);
+		$this->reader->method('notificationPreferences')->with('alice')->willReturn([
+			['key' => 'notification_pref/zaak/status-changed', 'value' => ['enabled' => false]],
+		]);
+		$output = new BufferedOutput();
+
+		$this->migrator()->export($this->user(uid: 'alice'), $this->destination(), $output);
+
+		$this->assertSame(
+			[['objectUuid' => 'obj-9', 'openedAt' => '2026-11-02 09:15:00'], ['objectUuid' => 'obj-4', 'openedAt' => '2026-11-01 16:40:00']],
+			$this->exported(path: PersonalStateMigrator::RECENTS)
+		);
+		$this->assertSame(
+			[['key' => 'notification_pref/zaak/status-changed', 'value' => ['enabled' => false]]],
+			$this->exported(path: PersonalStateMigrator::NOTIFICATION_PREFERENCES)
+		);
+		$manifest = $this->exported(path: PersonalStateMigrator::MANIFEST);
+		$this->assertSame(2, $manifest['contains']['recents']);
+		$this->assertSame(1, $manifest['contains']['notificationPreferences']);
+		$this->assertContains(
+			'Your own notification preferences are exported by key; an import restores each one this account has not set itself. Group defaults are not exported.',
+			$manifest['notes']
+		);
+		$this->assertStringContainsString('recently opened objects, notification preferences', $output->fetch());
+	}//end testRecentsAndNotificationPreferencesAreExported()
+
+	/**
+	 * Task 1.2: an import writes the user's own preferences this account has not
+	 * set, cleaned to what the engine stores; it keeps a value set here and
+	 * refuses any key that is not a user's notification preference.
+	 */
+	public function testAnImportRestoresOwnNotificationPreferencesAndKeepsTheTargetsOwn(): void {
+		$config = $this->createMock(IConfig::class);
+		$config->method('getUserValue')->willReturnCallback(
+			static fn (string $uid, string $app, string $key, string $default): string => match ($key) {
+				'notif_pref_s/register:zaken/zaak/assigned' => '{"enabled":true}',
+				default => $default,
+			}
+		);
+		$config->expects($this->once())->method('setUserValue')->with(
+			'carol',
+			'openregister',
+			'notification_pref/zaak/status-changed',
+			'{"enabled":false,"channels":["email"]}'
+		);
+		$output = new BufferedOutput();
+
+		$this->migrator(config: $config)->import(
+			$this->user(uid: 'carol'),
+			$this->source(
+				files: [
+					PersonalStateMigrator::NOTIFICATION_PREFERENCES => [
+						['key' => 'notification_pref/zaak/status-changed', 'value' => ['enabled' => false, 'channels' => ['email', '', 7], 'extra' => 'x']],
+						['key' => 'notif_pref_s/register:zaken/zaak/assigned', 'value' => ['enabled' => false]],
+						['key' => 'pref_theme', 'value' => ['enabled' => true]],
+						['key' => 'notification_pref/zaak/closed', 'value' => 'off'],
+					],
+				]
+			),
+			$output
+		);
+
+		$this->assertSame(
+			"OpenRegister: restored 1, not restored 3.\n"
+			. "Not restored: notification preference \"notif_pref_s/register:zaken/zaak/assigned\": this account already has its own setting for it, which is kept\n"
+			. "Not restored: notification preference \"pref_theme\": it is not a notification preference this instance reads\n"
+			. "Not restored: notification preference \"notification_pref/zaak/closed\": it is not a notification preference this instance reads\n",
+			$output->fetch()
+		);
+	}//end testAnImportRestoresOwnNotificationPreferencesAndKeepsTheTargetsOwn()
+
+	/**
+	 * Without a place to store user values a preference is reported, not lost silently.
+	 */
+	public function testAPreferenceWithoutAStoreIsReported(): void {
+		$output = new BufferedOutput();
+
+		$this->migrator()->import(
+			$this->user(uid: 'carol'),
+			$this->source(files: [PersonalStateMigrator::NOTIFICATION_PREFERENCES => [['key' => 'notification_pref/zaak/closed', 'value' => ['enabled' => true]]]]),
+			$output
+		);
+
+		$this->assertSame(
+			"OpenRegister: restored 0, not restored 1.\n"
+			. "Not restored: notification preference \"notification_pref/zaak/closed\": preferences cannot be stored on this instance\n",
+			$output->fetch()
+		);
+	}//end testAPreferenceWithoutAStoreIsReported()
+
+	/**
+	 * A refused write of a preference is reported with its reason.
+	 */
+	public function testARefusedPreferenceWriteIsReported(): void {
+		$config = $this->createMock(IConfig::class);
+		$config->method('getUserValue')->willReturn('');
+		$config->method('setUserValue')->willThrowException(new RuntimeException('key too long'));
+		$output = new BufferedOutput();
+
+		$this->migrator(config: $config)->import(
+			$this->user(uid: 'carol'),
+			$this->source(files: [PersonalStateMigrator::NOTIFICATION_PREFERENCES => [['key' => 'notification_pref/zaak/closed', 'value' => ['enabled' => true]]]]),
+			$output
+		);
+
+		$this->assertSame(
+			"OpenRegister: restored 0, not restored 1.\n"
+			. "Not restored: notification preference \"notification_pref/zaak/closed\": it could not be stored: key too long\n",
+			$output->fetch()
+		);
+	}//end testARefusedPreferenceWriteIsReported()
+
+	/**
+	 * Recently opened is the target's own audit trail: an import writes none and says so.
+	 */
+	public function testAnImportReportsRecentsAndRestoresNone(): void {
+		$config = $this->createMock(IConfig::class);
+		$config->expects($this->never())->method('setUserValue');
+		$output = new BufferedOutput();
+
+		$this->migrator(config: $config)->import(
+			$this->user(uid: 'carol'),
+			$this->source(files: [PersonalStateMigrator::RECENTS => [['objectUuid' => 'obj-9', 'openedAt' => '2026-11-02 09:15:00'], ['objectUuid' => 'obj-4', 'openedAt' => '2026-11-01 16:40:00']]]),
+			$output
+		);
+
+		$this->assertSame(
+			"OpenRegister: restored 0, not restored 1.\n"
+			. "Not restored: 2 recently opened objects: recently opened is read from this instance's audit trail and starts afresh here; the list stays in the export\n",
+			$output->fetch()
+		);
+	}//end testAnImportReportsRecentsAndRestoresNone()
 
 	/**
 	 * The migrator is named for the user and identified as openregister.

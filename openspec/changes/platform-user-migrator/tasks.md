@@ -2,8 +2,10 @@
 
 - [x] 1.1 An `IMigrator` registered for OpenRegister's per-user state (D-1).
   - `Service/UserMigration/PersonalStateMigrator`, registered in `Application::register()` with `registerUserMigrator()`.
-- [ ] 1.2 Export of saved views, favourites and recents, watches, notification preferences and overrides.
-  - Partly built: the views the user owns and the objects they watch (a favourite is a watch here, `_favourite` is the deprecated alias of `_watching`), register and schema references as slugs. Left: recents, notification preferences and overrides.
+- [x] 1.2 Export of saved views, favourites and recents, watches, notification preferences and overrides.
+  - The views the user owns and the objects they watch (a favourite is a watch here, `_favourite` is the deprecated alias of `_watching`), register and schema references as slugs.
+  - Recents (`openregister/recents.json`): the `_recent` lens's read history from the audit trail, uuid and moment only. An import restores none and says so: the target reads its own audit trail.
+  - Notification preferences and scoped overrides (`openregister/notification-preferences.json`): the user's own `notification_pref/` and `notif_pref_s/` values by key; group defaults are the group's and stay out. An import writes each one the account has not set itself, cleaned to `enabled` and `channels`, and reports the rest.
 - [x] 1.3 Export of personal token metadata with no secret values (D-4).
   - The user's calendar feed tokens (`openregister/feed-tokens.json`): label, scope (a schema scope as its slug), created, expires, revoked and last read; never the token value. An import creates no token and names each one as not restored.
 - [x] 1.4 Export of the user's own notes and timeline entries as a readable archive.
