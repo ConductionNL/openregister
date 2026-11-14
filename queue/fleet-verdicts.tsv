@@ -10169,3 +10169,4 @@ hermiq	1735	09766374a9ba9386facc8d120dcbb51db6a96b32	GREEN	worker-54	PHP unit 52
 hermiq	1760	57830914d3c1fb8c0a78823edfcde6f75006e0e8	CONFLICT	worker-54	conflicts with #1735 in appinfo/info.xml and lib/Settings/hermiq_register.json
 hermiq	1781	65071efe64508005bed86210f84f94ddd400a388	CONFLICT	worker-54	conflicts with #1735 in l10n en/nl and lib/Settings/hermiq_register.json
 hermiq	1792	33071fc8103fd4d270cdcb4c55a4bcbd06b75ca3	GREEN	worker-54	PHP unit 5244 on tree (baseline 5180, 0 failures), vitest 1539 passed, 0 new failures
+shillinq	3077	106e652ef6b7c799e319e38d44ce92672fb8be42	REVERIFY	worker-43	merged current development in (clean; the conflict was with another PR in the tree on info.xml/lock/l10n); unit suite 11497 OK; new head e22c24245b3f60a6851ae071b51c73683825a437, verify it
