@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
+use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\ExportRequest;
 use OCA\OpenRegister\Service\Export\ExportTable;
@@ -369,10 +370,7 @@ class ExportService implements ObjectExporterInterface {
 			throw new InvalidArgumentException('JSON export requires a specific schema.');
 		}
 
-		$rows = array_map(
-			static fn (ObjectEntity $object): array => $object->jsonSerialize(),
-			$this->fetchObjectsForExport(request: $request)
-		);
+		$rows = $this->documentRows(request: $request);
 
 		return json_encode($rows, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 	}//end jsonFor()
@@ -413,13 +411,43 @@ class ExportService implements ObjectExporterInterface {
 			throw new InvalidArgumentException('XML export requires a specific schema.');
 		}
 
+		$rows = $this->documentRows(request: $request);
+
+		return (new XmlObjectWriter())->write(rows: $rows);
+	}//end xmlFor()
+
+	/**
+	 * The objects of a JSON or XML export as documents.
+	 *
+	 * For the public principal the `@self` administration block is left out
+	 * (design D-3), and any envelope nested in a property loses the fields
+	 * that name people, as the anonymous list endpoint answers them.
+	 *
+	 * @param ExportRequest $request The export.
+	 *
+	 * @return array<int, array<string, mixed>> The documents.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	private function documentRows(ExportRequest $request): array {
 		$rows = array_map(
 			static fn (ObjectEntity $object): array => $object->jsonSerialize(),
 			$this->fetchObjectsForExport(request: $request)
 		);
+		if ($request->isForThePublic() === false) {
+			return $rows;
+		}
 
-		return (new XmlObjectWriter())->write(rows: $rows);
-	}//end xmlFor()
+		$envelope = new AnonymousEnvelope();
+
+		return array_map(
+			static function (array $row) use ($envelope): array {
+				unset($row['@self']);
+				return (array)$envelope->redact(data: $row);
+			},
+			$rows
+		);
+	}//end documentRows()
 
 	/**
 	 * Export data to PDF format

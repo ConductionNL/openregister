@@ -49,6 +49,13 @@ final class ExportRequest {
 	private ?ExportPage $page = null;
 
 	/**
+	 * Whether the export is written for the public principal. Set only through {@see forThePublic()}.
+	 *
+	 * @var bool
+	 */
+	private bool $public = false;
+
+	/**
 	 * Describe one export.
 	 *
 	 * @param Register|null        $register    The register exported, or null for none.
@@ -92,6 +99,31 @@ final class ExportRequest {
 
 		return $copy;
 	}//end withPage()
+
+	/**
+	 * The same export, written for the public principal: no administration metadata.
+	 *
+	 * @return self A copy; this request is unchanged.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	public function forThePublic(): self {
+		$copy         = clone $this;
+		$copy->public = true;
+
+		return $copy;
+	}//end forThePublic()
+
+	/**
+	 * Whether the export is written for the public principal.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	public function isForThePublic(): bool {
+		return $this->public;
+	}//end isForThePublic()
 
 	/**
 	 * The request over the stored rows behind an exporter-contract request.

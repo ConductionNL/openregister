@@ -88,7 +88,8 @@ class PublicExportService {
 	public function export(ExportRequest $request, string $format): PublicExportResult {
 		// The rows are read as nobody, whoever the request was built for.
 		$request = (new ExportRequest(register: $request->register, schema: $request->schema, filters: $request->filters))
-			->withPage(page: ($request->page() ?? new ExportPage()));
+			->withPage(page: ($request->page() ?? new ExportPage()))
+			->forThePublic();
 
 		$refusal = $this->refusal(request: $request, format: $format);
 		if ($refusal !== null) {

@@ -22,12 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Export\ExportPage;
 use OCA\OpenRegister\Service\Export\ExportRequest;
 use OCA\OpenRegister\Service\ExportService;
+use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -41,6 +43,8 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(ExportService::class)]
 #[UsesClass(ExportRequest::class)]
 #[UsesClass(ExportPage::class)]
+#[UsesClass(AnonymousEnvelope::class)]
+#[UsesClass(ObjectEntity::class)]
 #[UsesClass(Register::class)]
 #[UsesClass(Schema::class)]
 final class ExportServiceAnonymousPagingTest extends TestCase {
@@ -153,4 +157,63 @@ final class ExportServiceAnonymousPagingTest extends TestCase {
 
 		$this->assertSame(23500, $this->service()->countExportTotal(request: $this->request(page: new ExportPage(number: 2))));
 	}//end testTheTotalCountsTheWholeSelection()
+
+	/**
+	 * A decision owned by alice, with an envelope nested in a property.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function decision(): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid('11111111-1111-4111-8111-111111111111');
+		$object->setOwner('alice');
+		$object->setObject(['titel' => 'Besluit milieu', 'zaak' => ['naam' => 'Z1', '@self' => ['owner' => 'bob', 'id' => 'z1']]]);
+
+		return $object;
+	}//end decision()
+
+	/**
+	 * A public JSON export carries the data without the `@self` block or a nested owner.
+	 *
+	 * @return void
+	 */
+	public function testAPublicJsonExportLeavesOutTheAdministration(): void {
+		$this->objects->method('searchObjects')->willReturn([$this->decision()]);
+
+		$rows = json_decode($this->service()->jsonFor(request: $this->request(page: new ExportPage())->forThePublic()), true);
+
+		$this->assertCount(1, $rows);
+		$this->assertArrayNotHasKey('@self', $rows[0]);
+		$this->assertSame('Besluit milieu', $rows[0]['titel']);
+		$this->assertSame('Z1', $rows[0]['zaak']['naam']);
+		$this->assertSame(['id' => 'z1'], $rows[0]['zaak']['@self']);
+		$this->assertStringNotContainsString('alice', json_encode($rows));
+	}//end testAPublicJsonExportLeavesOutTheAdministration()
+
+	/**
+	 * A public XML export leaves out the owner too, and keeps the record id.
+	 *
+	 * @return void
+	 */
+	public function testAPublicXmlExportLeavesOutTheAdministration(): void {
+		$this->objects->method('searchObjects')->willReturn([$this->decision()]);
+
+		$xml = $this->service()->xmlFor(request: $this->request(page: new ExportPage())->forThePublic());
+
+		$this->assertStringNotContainsString('alice', $xml);
+		$this->assertStringContainsString('Besluit milieu', $xml);
+	}//end testAPublicXmlExportLeavesOutTheAdministration()
+
+	/**
+	 * A signed-in JSON export keeps its `@self` block, as before.
+	 *
+	 * @return void
+	 */
+	public function testASignedInJsonExportKeepsTheAdministration(): void {
+		$this->objects->method('searchObjects')->willReturn([$this->decision()]);
+
+		$rows = json_decode($this->service()->jsonFor(request: $this->request(page: null)), true);
+
+		$this->assertSame('alice', $rows[0]['@self']['owner']);
+	}//end testASignedInJsonExportKeepsTheAdministration()
 }//end class
