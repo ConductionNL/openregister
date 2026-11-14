@@ -11510,5 +11510,6 @@ review:shillinq:2977:56133b60	RED: generated scoped-pages list stale after devel
 fix:decidiq:2189:d54fa228	merged development in cleanly; new head 9db1906e, REVERIFY recorded	session-20261114T221759-c6bc4865	2026-11-14T22:19:07Z
 fix:shillinq:3051:98b5bfe7	merged development in cleanly; new head 2f5d4cd88a0e33564f8b495a5783dd2df19e345d, REVERIFY	session-20261114T221759-cd5c5678	2026-11-14T22:19:22Z
 verify:stackiq:1957:0061a321	GREEN 1957: vitest +10 tests, 0 new failures	session-20261114T214735-aacd1703	2026-11-14T22:19:42Z
+build:integriq:connectors-job-board-multiposting:c3	partial: PR #3549 head 931cf8b2, task 2 LinkedIn and Indeed templates/mappings with recorded examples and JobBoardSetsTest; left: werk.nl (UWV publishes no posting API/format), Indeed feed answer and feed endpoint (task 3, needs an XML rendering hook), docs/strings (task 4); unit suite 9094->9098, no new failures	session-20261114T214733-d4130db7	2026-11-14T22:19:51Z
 review:shillinq:2995:22173937	GREEN: suite 11474 green, phpstan/eslint/manifest clean	session-20261114T214719-cd72efa7	2026-11-14T22:19:48Z
 fix:buildiq:1649:64e6ca03	merged development, l10n conflicts resolved; new head c40e299a, REVERIFY	session-20261114T221756-d9538cf9	2026-11-14T22:19:59Z
