@@ -7825,3 +7825,4 @@ pipelinq	3752	d375909c53d67247106ff0747340c64e457ff217	REVERIFY	worker-33	build 
 pipelinq	3830	ec8232ea52227343317cebde280f4dbffcbd8650	GREEN	worker-28	PHP unit 8358 OK (baseline 8344 OK), vitest 5038/5039 (myWorkPage.spec.js inherited from development), no new failures; implements clients-contact-capture as specified
 filinq	2074	92ebb286e850a07761547f9303b1947f9f13bbed	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json 
 filinq	2078	8247eff99a8282125a4e13fa0a74b9fe52750439	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
+dossiq	6324	657667ea629ed8b7de0e54a92ac48a98faf2f909	REVERIFY	worker-42	merged development; the 5 conflicted lib files take development's version (it already split the same units), branch keeps its tests (65 pass on it); new head 6c79a3f15aa5729947b5b4155512234dbb2839f5, verify it
