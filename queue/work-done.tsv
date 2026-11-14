@@ -10596,3 +10596,4 @@ verify:buildiq:1621:a036b3ec	1621 GREEN	session-20261114T174106-c933f162	2026-11
 fix:launchpad:1203:dacfef70	units of complexity 18/17/12 split to <=7, behaviour identical; REVERIFY 3942bf49f8be1cd3c9155de7001207efa099f6a9 (floor not re-measured locally)	session-20261114T161806-530176c3	2026-11-14T18:11:51Z
 fix:portaliq:2498:99c5ac59	fixed: no-intl date fallback in words; new head 2811eefb68d1439bcc9297edc22dfe527e75e240	session-20261114T181003-5bedcaaf	2026-11-14T18:12:06Z
 fix:integriq:3595:7df20bca	merged development, seed golden hashes recomputed, no new failures; new head 7d624dc	session-20261114T171008-ae51009d	2026-11-14T18:12:16Z
+verify:integriq:3564:8bddc6a8	3564 GREEN, 3610 CONFLICT (l10n after #3564), 3615 skipped (head moved), 3625 GREEN	session-20261114T171822-ef880213	2026-11-14T18:12:29Z
