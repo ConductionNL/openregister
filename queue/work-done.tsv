@@ -11908,5 +11908,6 @@ merge:learniq:2486:73e78579	merge3 tree of 7 learniq PRs: merged=2 red=2 fail=0 
 merge:learniq:2484:7c4f324f	merge3 tree of 7 learniq PRs: merged=2 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T23:29:39Z
 verify:versioniq:700:4041a55a	700,733 GREEN; 734 CONFLICT with 700 (AuditEntryMapper.php)	session-20261114T221759-cd5c5678	2026-11-14T23:29:51Z
 fix:filinq:2094:f466700e	merged development in clean, unit ok (Tests: 6792, Assertions: 24750, Skipped: 6.), new head 80494522	session-20261114T232423-38520620	2026-11-14T23:29:54Z
+verify:pipelinq:3843:c6362d1b	3843,3844,3845 GREEN (tests only); phpunit 8563/0 fail	session-20261114T211012-c469e919	2026-11-14T23:30:12Z
 cover:dossiq:069ee2d6mbd37:4e459503	correction: CaseDefinition exists on development; nothing to do because quality/test-coverage-4e459503-1 and -2 are already merged into development	worker-36	2026-11-15T00:00:00Z
 fix:filinq:2113:4f1d9b5d	fixed: conflict resolved keeping both sides, pushed 45e6b64f	session-20261114T224740-064dbb86	2026-11-14T23:30:15Z
