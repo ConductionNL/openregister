@@ -8550,3 +8550,4 @@ hermiq	1778	de0780faf65f1dc24ee54e042bec4408762d3877	GREEN	worker-13	PHP unit 50
 hermiq	1779	c70ede4d3407eb3e1286a65e341da79d589d82b0	GREEN	worker-13	PHP unit 5057 run, baseline 5044 (164E/26F inherited), no new failures; vitest 1478/1478; builds agent-authored-marking task 3.1 (contact/calendar counts) as its spec asks
 hermiq	1780	8baa21399f0515095fbc3c57610a6a0a372cf921	GREEN	worker-13	PHP unit 5057 run, baseline 5044 (164E/26F inherited), no new failures; vitest 1478/1478; tests only
 filinq\t2074\t228eb6732862ad2d722fc122df3833215cdef0a8\tREVERIFY\tworker-53\tmerged development in (clean now; l10n appends resolved upstream), php -l/json ok, unit 6736 OK; new head f1017b40caade2ebaf8931e56ea57edba212d522, verify it
+decidiq	2173	d0e45f2dc97f0f15f448fa010c5247e481d3aac0	REVERIFY	worker-42	merged development (now clean, 2170/2172 landed); unit 4214 OK; new head 1ef930fba70034dc5681169906198a5ba12e7c1c, verify it
