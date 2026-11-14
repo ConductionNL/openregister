@@ -11972,5 +11972,6 @@ merge:shillinq:3048:2e5ba200	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail
 cover:hermiq:065f1631mcdb5:66a28494	PR #1797: 3 classes, +11 tests, Engine 95.4%->96.5%, suite 5180->5191 green	session-20261114T231738-f75034a1	2026-11-14T23:38:24Z
 merge:shillinq:2977:84d0488b	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:38:13Z
 cover:stackiq:9ac19b3amad24:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php holds 56 interfaces with no method bodies (no executable statements); no PR	session-20261114T224742-00d4fbcb	2026-11-14T23:38:30Z
+cover:buildiq:70b3e29em7beb:13d51e6a	PR #1653: 9 tests for VersionMergeRequest, VersionBranchRefused, VersionSchemaWriter, VersionState::stemOf; Branch 90.09% -> 95.05%; suite 3192 -> 3201, 1 inherited failure unchanged	session-20261114T214733-589f5bff	2026-11-14T23:38:31Z
 merge:shillinq:3062:16ca8421	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:38:27Z
 verify:versioniq:694:5a4cdf16	694,724,733 GREEN; 718,722,723,727,728 CONFLICT on tree (clean on development); 700 skipped (head moved)	session-20261114T221759-cd5c5678	2026-11-14T23:39:03Z
