@@ -2827,3 +2827,4 @@ learniq	2501	240753660bef555eede7d9b3aec4f30bf8b615f2	MERGED	merge3	GATE OK sbom
 learniq	2506	958cde6a5c04678c65416a5ec07ea787ae3dda0b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2515	b47ed90a65416f33691c2fcf1c432bbcfe7a54c6	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 learniq	2521	34c33485a9bb30531e0afef5d1730ca32e358cd8	RED	merge3	GATE RED floor: overall: 4.35 -> 4.33; unit_size: 4.12 -> 4.10; unit_complexity: 4.36 -> 4.31; unit_interfacing: 3.13 -> 3.11
+humaniq	1133	9d19d31d708e515565cb49b4d80c93601b6198d9	RED	merge3	GATE RED floor: duplication: 4.58 -> 4.56; unit_interfacing: 3.62 -> 3.59; module_coupling: 4.20 -> 4.14
