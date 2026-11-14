@@ -7206,3 +7206,4 @@ larpinq	1012	ef4abe687e638b6310d495b0a7ec7304d4e22d7a	CONFLICT	merge3	conflicts 
 larpinq	1024	b09265c2d7813f7eb698b72638c136147f71c7e5	CONFLICT	merge3	conflicts with development; files: tests/vitest/registrationChangesView.spec.js 
 planninq	1162	59563d43c658b073d396cf5bb5aeeb7df645530e	CONFLICT	worker-58	conflicts with development+earlier tree PRs (1159-1161)
 planninq	1159	3ba42b87867c837776ceaac13ca06a1cd4149d8d	GREEN	worker-58	php unit 1047 OK on tree (baseline 1034 OK), vitest 3236 passed, l10n parity OK; 0 new failures
+planninq	1160	67464e9d1417e21a9ca496d8a751d172e4884886	GREEN	worker-58	php unit 1047 OK on tree (baseline 1034 OK), vitest 3236 passed, l10n parity OK; 0 new failures
