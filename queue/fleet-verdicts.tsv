@@ -8234,3 +8234,4 @@ pipelinq	3818	6ddd22c5a319ff5f8e825b8609014f848fdf1c88	GREEN	worker-42	unit 8394
 shillinq	2959	5eee35355bbb70f91514e6687961bdcdff829c7b	RED	merge3	again 16 new unit failures in FinancialDocumentActionsTest/FinancialDocumentAuthoringTest: IAppManager::isEnabledForAnyone cannot be mocked (nextcloud/ocp v35.0.1 in composer.lock lacks it)
 shillinq	2972	11951c7e3417dac7a10d217f97d447eefe8e9328	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/register.d/add-shillinq-bookkeeping-foundation.json 
 shillinq	3050	1bdb43ad5bf72f49de0cf3dd84de617a2226e4b2	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3821	dbc409a3a7d59acf2f50ace14b5415adb50e41e9	CONFLICT	worker-42	merges clean on development alone; conflicts after 3818 in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
