@@ -4240,3 +4240,11 @@ Db/DocumentMoveMapper.php,119,Db,,,,,Core
 Migration/Version1Date20261114100000.php,89,Migration,,,,,Platform
 Service/File/DocumentStoreMoveGuard.php,132,Service,Service,Service/File/DocumentStoreMoveGuard.php,0,,Core
 Service/File/DocumentStoreMoving.php,54,Service,Service,Service/File/DocumentStoreMoving.php,0,,Core
+Service/File/DocumentStoreMove.php,1005,Service,Service,Service/File/DocumentStoreMove.php,0,,Core
+Service/File/DocumentCopyRun.php,114,Service,Service,Service/File/DocumentCopyRun.php,0,,Core
+Service/File/DocumentMoveOutcome.php,143,Service,Service,Service/File/DocumentMoveOutcome.php,0,,Core
+Service/File/DocumentStoreMoveOptions.php,60,Service,Service,Service/File/DocumentStoreMoveOptions.php,0,,Core
+Service/File/DocumentStoreMovePlatform.php,57,Service,Service,Service/File/DocumentStoreMovePlatform.php,0,,Core
+Service/File/DocumentStoreObjects.php,193,Service,Service,Service/File/DocumentStoreObjects.php,0,,Core
+Service/File/DocumentVersions.php,162,Service,Service,Service/File/DocumentVersions.php,0,,Core
+Command/DocumentStoreMoveCommand.php,231,Command,Service,Service/Command/DocumentStoreMoveCommand.php,0,,Core

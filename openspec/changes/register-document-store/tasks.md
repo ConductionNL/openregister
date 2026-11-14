@@ -60,24 +60,34 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
   - Built: `Version1Date20261114100000`, `DocumentMove`, `DocumentMoveMapper` (`forRegister()`, `switchRegister()`,
     `switchedOldIds()`). One extra column, `version_time`, holds an earlier version's original time, which 2.3 asks the
     mapping to record.
-- [ ] 2.3 `lib/Service/File/DocumentStoreMove.php::copyRegister()`: copy folders and files into the target root,
+- [x] 2.3 `lib/Service/File/DocumentStoreMove.php::copyRegister()`: copy folders and files into the target root,
   replay earlier versions oldest first (read each version through the versions API Nextcloud exposes for the node;
   record the original version times in the mapping), compute SHA-256 of source and copy through `fopen()` streams,
   and record `verified` or `refused`. Refuse a target on the same storage id.
   - **fails today**: `tests/Unit/Service/File/DocumentStoreMoveTest.php::testAFailedCopySwitchesNothing`,
     `testVersionsAreCarriedOldestFirst`, `testATargetWithoutVersionsRefusesAVersionedRegister`,
     `testWithoutEarlierVersionsIsRecordedPerFile`, `testTheSameStorageIsRefused`.
-- [ ] 2.4 `DocumentStoreMove::rewriteReferences()`: for a register whose every copy verified, rewrite each place in
+  - Built: versions are read through `DocumentVersions` (the versions app's manager, reached by name because the app is
+    optional); the copy's own versions are checked against the source's by SHA-256, oldest first. Whether a target
+    keeps versions is whether the version manager has a backend for its storage.
+- [x] 2.4 `DocumentStoreMove::rewriteReferences()`: for a register whose every copy verified, rewrite each place in
   `DocumentReferenceMap` from old to new id in one transaction per register, object properties through the object
   save path in system context with one audit trail entry per object (`action: document-store-move`).
   - **fails today**: `DocumentStoreMoveTest::testEveryReferenceFollowsTheFile`,
     `testAnUnverifiedRegisterKeepsItsReferences`, `testEachChangedObjectGetsOneAuditEntry`.
-- [ ] 2.5 `DocumentStoreMove::recreateShares()` and tags: user, group and link shares through `OCP\Share\IManager`
+  - Built: columns through the query builder, objects through `DocumentStoreObjects` (every row of every schema in
+    system context, stored through the object mapper with the old state, one audit entry per changed object), all in
+    one transaction. `testEachChangedObjectGetsOneAuditEntry` lives in `DocumentStoreObjectsTest`.
+- [x] 2.5 `DocumentStoreMove::recreateShares()` and tags: user, group and link shares through `OCP\Share\IManager`
   with the same token (`IShare::setToken()`), permissions, expiry and label; system tags through
   `ISystemTagObjectMapper`. A password-protected link share, or a share the manager refuses, marks the register
   `refused` before any reference is rewritten.
   - **fails today**: `DocumentStoreMoveTest::testALinkShareKeepsItsToken`, `testAPasswordProtectedShareStopsTheRegister`,
     `testTagsAreCopied`.
+  - Built: every share is read before any is created, so a password-protected link refuses the register first. A
+    share is created on the copy, the old one removed, and a link share's token set back with `updateShare()`; a link
+    that cannot keep its token refuses the register and names the token it now has. The shares move before the
+    references, so a register refused after that point has its links already on its (verified, identical) copies.
 - [x] 2.6 Refuse uploads into a register while it moves: a flag per register in app config set by the move and
   checked by `FilesController::create()`, `save()`, `createMultipart()`, `update()` and `FilePropertyHandler`'s file
   write, answering 503 `{error: "document-store-move"}` and writing nothing; reads are not checked.
@@ -86,12 +96,12 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
   - Built: `DocumentStoreMoveGuard` (app config `document_store_moving_<register id>`), `DocumentStoreMoving`
     (503 `document-store-move`). `create()`, `save()`, `createMultipart()` and `update()` take their object through
     `writableObject()`; `FilePropertyHandler` checks before it adds a file. Also `FilePropertyMoveGuardTest`.
-- [ ] 2.7 Switch and purge: when every register is switched, set `document_store_root` to the target and rename the
+- [x] 2.7 Switch and purge: when every register is switched, set `document_store_root` to the target and rename the
   old root to `<root> (moved <YYYY-MM-DD>)`; `--purge-source` deletes the renamed tree only when every file in it has
   a `switched` mapping, else deletes nothing and names the files.
   - **fails today**: `DocumentStoreMoveTest::testTheRootSwitchesOnlyWhenEveryRegisterDid`,
     `testPurgeDeletesNothingWithAnUnmappedFile`, `testPurgeDeletesAFullyMappedTree`.
-- [ ] 2.8 `occ openregister:document-store:move --to <path> [--register <id>] [--dry-run] [--without-earlier-versions] [--purge-source]`
+- [x] 2.8 `occ openregister:document-store:move --to <path> [--register <id>] [--dry-run] [--without-earlier-versions] [--purge-source]`
   (`lib/Command/DocumentStoreMoveCommand.php`, registered in `appinfo/info.xml`), printing per register the counts and
   refusals; exit 1 when any register was refused.
   - **fails today**: `tests/Unit/Command/DocumentStoreMoveCommandTest.php::testDryRunChangesNothing`,
