@@ -7181,3 +7181,4 @@ hermiq	1717	6c8374750bf2abfa549d81cd8de7f41e736ae6f5	REVERIFY	worker-08	merged d
 humaniq	1149	2fbe69348b10b7aaf199c12e71536250c6aab231	CONFLICT	worker-29	conflicts with #1148 in l10n/en.js,en.json,nl.js,nl.json; merges clean on development alone
 hermiq	1728	71ac65736fee2a5805927d20321be3caef9ce772	REVERIFY	worker-32	merges clean on current development; the lib/Settings/hermiq_register.json conflict is only with open siblings #1726/#1758, nothing to fix on the branch until one lands; head unchanged 71ac65736fee2a5805927d20321be3caef9ce772, verify it alone or after the siblings
 planninq	1156	b11fa6b9f5c4ba83f964d06a4aa55525d037317a	GREEN	worker-53	PHP 1040 vs 1034 baseline, 0 failures; vitest 3206/3206 vs 3198; admin page onto CnAdminSettingsShell per change
+planninq	1157	e8b353abf0fb2483f7fb5dcaf80f6ecc5a682846	GREEN	worker-53	PHP 1040 vs 1034 baseline, 0 failures; vitest 3206/3206 vs 3198; task.linkedFiles reference per change
