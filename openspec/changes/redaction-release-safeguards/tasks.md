@@ -40,7 +40,8 @@
 
 ## 6. Cross-app
 
-- [ ] 6.1 Contract for opencatalogi and filinq: the anonymise response keys `verification.verdict` (`clean`, `leaking`, `unverifiable`), `verification.mayBePublished`, `verification.outputMode`, `verification.routesChecked[]`, `verification.findings[].route|count`; the gate refusal 409 `{error: "review-required", reason: "no-mark"|"undecided-entities"|"stale-mark", undecided, message}` and the PHP exception `ReviewRequiredException` with the same fields for direct callers. Verify: `tests/Contract/RedactionGuaranteeContractTest.php` pins both; `opencatalogi/woo-redaction-scans-and-text-layer` and `filinq/redaction-guarantees-from-the-engine` carry their consumer tests. Both require OpenRegister, so there is no absent-engine path.
+- [x] 6.1 Contract for opencatalogi and filinq: the anonymise response keys `verification.verdict` (`clean`, `leaking`, `unverifiable`), `verification.mayBePublished`, `verification.outputMode`, `verification.routesChecked[]`, `verification.findings[].route|count`; the gate refusal 409 `{error: "review-required", reason: "no-mark"|"undecided-entities"|"stale-mark", undecided, message}` and the PHP exception `ReviewRequiredException` with the same fields for direct callers. Verify: `tests/Contract/RedactionGuaranteeContractTest.php` pins both; `opencatalogi/woo-redaction-scans-and-text-layer` and `filinq/redaction-guarantees-from-the-engine` carry their consumer tests. Both require OpenRegister, so there is no absent-engine path.
+  - Built: `tests/Unit/Contract/RedactionGuaranteeContractTest.php` (under `tests/Unit/Contract`, where the unit suite runs contract tests; `tests/Contract` holds other apps' contracts and is not in the unit suite) pins the `verification` keys and finding keys of the anonymise response, the three verdicts, the 409 body and the `ReviewRequiredException` fields. The consumer tests belong to the opencatalogi and filinq changes.
 
 ## V. Verification and done
 
