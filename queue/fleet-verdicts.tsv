@@ -8011,3 +8011,13 @@ portaliq	2493	1eb55a790dbf0055737fc15391ed4e495e27e147	GREEN	worker-12	unit 5226
 shillinq	3046	4d142112e0464fe5e9a503949ff6f08da2db6a12	GREEN	worker-23	tests only (6 files, 68 tests); unit 11118 run, baseline 11050 with 0 failures, 0 new failures
 shillinq	3048	dff36567da54f8cc5d74e9a0e810b61e3b0b0ccc	REVERIFY	worker-16	merged development in; info.xml keeps the branch's later version, register-versions lock records it after development's entry with the merged hash; unit 11078 OK; new head aec0ee124a0ca8e585f7b55ba677e6bbf88556b0, verify it
 stackiq	1905	dc6d3343245dd3e273a0908f2db00d51d7b57471	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+stackiq	1706	dcde9ef24d8288b646227ea325ca8e985111d0b7	CONFLICT	merge3	merges clean on development alone; files: tests/vitest/viewObjectPublishActions.spec.js 
+stackiq	1906	5acf605d172f78a4f74097b7926398add39fd1fb	CONFLICT	merge3	merges clean on development alone; files: lib/Service/ContractApprovalService.php 
+stackiq	1908	9ee44b11072dda2141d5bf0375a6693fb17154f3	RED	merge3	new unit failure PlatformPropertiesTest::testEveryRouteDeclaresWhoMayCallIt: routed health#index and metrics#index have no access attribute or documented admin-only posture
+stackiq	1911	3d9e84f8481be30f832638de74a190b397f65b8a	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+stackiq	1918	31731952aaa64bfdb4d90ee2e2bdea3e55d6b147	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json 
+stackiq	1926	47d3e2874a4a53ffc721bb94cb97530e5cb82b80	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+stackiq	1933	d891c4e13ec170fdd53de4577c9a7682561cc081	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+stackiq	1939	683b674e746539e17861e2cc8feeceb015a49206	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/softwarecatalogus_register.json 
+stackiq	1941	e8635d30fa5e755d7306ae2a6f403d1e4861691e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/MergeOrganisatieService.php 
+stackiq	1943	c815318d76799a941d20105fe463076b82c2a8bd	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/softwarecatalogus_register.json 
