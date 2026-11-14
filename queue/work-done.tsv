@@ -11708,3 +11708,4 @@ build:versioniq:inventory-verified-publisher:c2	partial: not started in this ses
 build:integriq:platform-integrations-as-code:c4	PR #3636: round-trip integration test (self-skips without instances); remaining Task 3/4 Test need two live instances; suite 9164, baseline failures only	session-20261114T224742-00d4fbcb	2026-11-14T22:55:19Z
 fix:stackiq:1938:a321d1cf	no-op: clean on development; conflicts only with unmerged #1930, REVERIFY queued	session-20261114T224756-971efe57	2026-11-14T22:55:26Z
 build:versioniq:safety-upgrade-migration-preview:c2	done on PR #706 (head 61f814de): 1.1, 2.1, 3.1-3.3 built; left 3.4 e2e (live stack) and 4.1 close	session-20261114T221756-d9538cf9	2026-11-14T22:55:55Z
+build:versioniq:inventory-app-details-card:c2	nothing to build: PR #701 holds every code task (1.1-2.3); left 2.4 (e2e) and 3.1 (matrix row and archive after merge)	session-20261114T214930-79d5b35c	2026-11-14T22:56:06Z
