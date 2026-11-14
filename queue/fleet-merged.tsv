@@ -2807,3 +2807,8 @@ humaniq	1137	b1c9fdb7bb91d1677052b6af170244fd116eed76	MERGED	merge3	GATE OK sbom
 humaniq	1153	e82ee06e93038b1ab59a65eca6c387c20a9bfbbf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 humaniq	1154	2968cb9f20db895ff2d75f9b8a8efd8d5809c30d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 humaniq	1155	14bc8068203bb024a5d7274bd4ddfe8e1807315f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+shillinq	2972	0efea67cce902d770f9de079c6722a19eb0b2e61	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.89 holds at 3.89
+shillinq	3050	b62151d4c34aad6eb814644a90bef24e81e0acf9	RED	merge3	GATE RED absolute floor: shillinq maintainability 3.88 after merge is below its floor 3.89
+shillinq	3057	da7239cadb5817492c2d87f42108964301251c23	RED	merge3	GATE RED absolute floor: shillinq maintainability 3.88 after merge is below its floor 3.89
+shillinq	3063	42a3ed12e00d94952d52ff1fb122b2b68197e930	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.89 holds at 3.89
+shillinq	3070	a2d99b13b6ad18a085d5dad9d5c590433fa98bd8	RED	merge3	GATE RED absolute floor: shillinq maintainability 3.88 after merge is below its floor 3.89
