@@ -2869,3 +2869,4 @@ integriq	3623	a9bc234c5cadeaa63ab6906431bc65b972f7f723	MERGED	merge3	GATE OK sbo
 integriq	3624	4585f9f580587384238578ba4ee0a99a7872c7d9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	3627	ff0fbf0fe8a86ea1a0837c2848df4ec20b304a1b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	3629	57732eae7e7aeb18b456d5bca76a33dcfd82d102	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+filinq	2079	6c42e26ff3536b707485a5a4d65eb294e6832979	RED	merge3	GATE RED floor: unit_complexity: 4.49 -> 4.47; unit_interfacing: 2.85 -> 2.83
