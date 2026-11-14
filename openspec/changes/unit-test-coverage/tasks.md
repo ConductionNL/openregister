@@ -12,7 +12,8 @@
 - [ ] Implement: Test All Event Classes via DataProvider Grouping (~39 source files)
 - [ ] Implement: Test All BackgroundJob, Command, Cron, and Listener Classes
 - [ ] Implement: Test All Exception and Format Classes
-- [ ] Implement: Test Organisation Service Multi-Tenancy Paths
+- [x] Implement: Test Organisation Service Multi-Tenancy Paths
+  - Done: `OrganisationServiceMembershipTest` covers joining (membership added, the cached organisation list dropped; another user must exist; a missing organisation keeps the cache) and leaving (the last organisation refused, the active organisation cleared only when it is the one left, removing another user skipping the last-organisation guard). The cache expiry and default-organisation fallback scenarios were already covered by `ActiveOrganisationCachingTest` and `DefaultOrganisationManagementTest`.
 - [x] Implement: Test Webhook Service Delivery and Retry Logic
   - Done: `WebhookServiceTest` (delivery, retry scheduling, logging) and `WebhookInterceptionFastPathTest` resolve hosts through a fixed offline address guard instead of DNS, so their delivery paths run and assert on every machine; before, 14 + 3 of them failed without DNS.
 - [ ] Implement: Test Import and Export Service Handlers
