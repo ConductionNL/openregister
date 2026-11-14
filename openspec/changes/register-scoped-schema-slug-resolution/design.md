@@ -119,6 +119,7 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | `TablesSchemaSyncService::findSchemaBySlug()` | was (b), now scoped | The `tables` register. |
 | `ImportHandler` object configuration, listed objects, seed objects, seed passes, seed references | was (b), now scoped | The configuration's register, the object's `@self.register`, the pass's target register, the seed object's register. |
 | `ObjectsController::crossTablePairs()` (cross-table search) | was (b), now scoped | Each register pairs with its own schema for a shared slug. |
+| `RelatedRowQueryApplier::findSchema()` (`_ref` target schema) | was (b), now scoped | The register the query runs in (`RelatedRowFilterTarget::$register`), via `SchemaRefInRegister::findInRegister()`; the refuse-when-ambiguous chain runs unchanged when the register lacks the slug. |
 
 ### Still class (b): open
 
@@ -132,7 +133,6 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | `FacetHandler::schemasMatching()` | (b), open | The query's `@self.register` is there; no register reader is injected. |
 | `SearchQueryHandler::schemaOrNull()` | (b), open | `buildSearchQuery()` holds the register but passes only the schema down. |
 | `AggregationRunner::loadSchema()` | (b) for `resolveCrossTarget()`, (c) for joins and the no-register `findSchema()` | `$run->register` is held on the cross-schema path. |
-| `RelatedRowQueryApplier::findSchema()` | (b), open | Reached after an ambiguous slug; the filter target's register is not passed down. |
 
 ### Class (a) and (c)
 

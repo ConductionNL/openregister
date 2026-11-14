@@ -98,6 +98,19 @@ final class SchemaRefInRegisterTest extends TestCase {
 		$this->assertSame(22, $found->getId());
 	}
 
+	public function testFindInRegisterAnswersTheScopedMatchWithoutAGlobalFallback(): void {
+		$this->schemas->expects($this->exactly(2))->method('findBySlugInIds')
+			->with('agent', [36, 37])->willReturnOnConsecutiveCalls(self::schema(36), null);
+		$this->schemas->expects($this->never())->method('find');
+
+		$lookup = new SchemaRefInRegister(schemas: $this->schemas);
+
+		$this->assertSame(36, $lookup->findInRegister(schemaRef: 'agent', register: self::register([36, 37]))?->getId());
+		$this->assertNull($lookup->findInRegister(schemaRef: 'agent', register: self::register([36, 37])));
+		$this->assertNull($lookup->findInRegister(schemaRef: 'agent', register: null));
+		$this->assertNull($lookup->findInRegister(schemaRef: '36', register: self::register([36, 37])));
+	}
+
 	public function testANumericIdNeverConsultsTheRegister(): void {
 		$this->registers->expects($this->never())->method('find');
 		$this->schemas->expects($this->never())->method('findBySlugInIds');

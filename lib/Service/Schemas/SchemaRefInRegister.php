@@ -83,6 +83,26 @@ final class SchemaRefInRegister {
 	}//end find()
 
 	/**
+	 * Only the register's own schema carrying this slug, with no global fallback.
+	 *
+	 * For a caller whose own fallback differs from `find()` (one that refuses an
+	 * ambiguous slug, or answers null instead of throwing): the scoped step
+	 * alone, after which the caller's existing lookup runs unchanged.
+	 *
+	 * @param int|string $schemaRef The schema's id, uuid or slug.
+	 * @param mixed      $register  The register in context: the entity, its id, uuid or slug.
+	 * @param bool       $_rbac          Passed to a register read, when only a reference was given.
+	 * @param bool       $_multitenancy  Passed to a register read, when only a reference was given.
+	 *
+	 * @return Schema|null The register's schema; null for an id, a uuid, no register or a slug the register lacks.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	public function findInRegister(int|string $schemaRef, mixed $register, bool $_rbac = true, bool $_multitenancy = true): ?Schema {
+		return $this->inRegister(schemaRef: $schemaRef, register: $register, flags: [$_rbac, $_multitenancy]);
+	}//end findInRegister()
+
+	/**
 	 * The register's own schema carrying this slug, or null.
 	 *
 	 * @param int|string $schemaRef The schema reference.

@@ -25,7 +25,9 @@ namespace OCA\OpenRegister\Service\Query;
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Support\OrderParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -152,7 +154,10 @@ class RelatedRowQueryApplier {
 	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
 	public function apply(RelatedRowFilterTarget $target, array $query, ?Schema $schema = null): int {
-		$filters = array_merge($this->filtersIn(query: $query), $this->referenceFiltersIn(query: $query, schema: $schema));
+		$filters = array_merge(
+			$this->filtersIn(query: $query),
+			$this->referenceFiltersIn(query: $query, schema: $schema, register: $target->register)
+		);
 		if ($filters === []) {
 			return 0;
 		}
@@ -273,8 +278,9 @@ class RelatedRowQueryApplier {
 	/**
 	 * Every `_ref` block in a query, read against the queried schema.
 	 *
-	 * @param array<mixed> $query  The request query.
-	 * @param Schema|null  $schema The schema being queried.
+	 * @param array<mixed>  $query    The request query.
+	 * @param Schema|null   $schema   The schema being queried.
+	 * @param Register|null $register The register the query runs in; a `$ref` slug resolves among its schemas first.
 	 *
 	 * @return array<int, RelatedRowFilter> The filters.
 	 *
@@ -282,7 +288,7 @@ class RelatedRowQueryApplier {
 	 *
 	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
-	private function referenceFiltersIn(array $query, ?Schema $schema): array {
+	private function referenceFiltersIn(array $query, ?Schema $schema, ?Register $register = null): array {
 		if (array_key_exists(ReferenceFilterParser::KEY, $query) === false) {
 			return [];
 		}
@@ -295,7 +301,7 @@ class RelatedRowQueryApplier {
 			);
 		}
 
-		$parser  = new ReferenceFilterParser(resolveSchema: fn (string $name): ?Schema => $this->findSchema(name: $name));
+		$parser  = new ReferenceFilterParser(resolveSchema: fn (string $name): ?Schema => $this->findSchema(name: $name, register: $register));
 		$filters = $parser->parse(query: $query, schema: $schema);
 		foreach ($filters as $filter) {
 			$this->refuseListReference(schema: $schema, property: $filter->foreignKey);
@@ -335,11 +341,23 @@ class RelatedRowQueryApplier {
 	/**
 	 * The schema a reference property's `$ref` names (slug, id or uuid), or null when none.
 	 *
-	 * @param string $name The identifier.
+	 * A slug is looked up among the register's own schemas first: slugs are
+	 * unique within a register, not across the instance, so the register the
+	 * query runs in answers before the instance-wide lookup does.
+	 *
+	 * @param string        $name     The identifier.
+	 * @param Register|null $register The register the query runs in.
 	 *
 	 * @return Schema|null The schema.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	private function findSchema(string $name): ?Schema {
+	private function findSchema(string $name, ?Register $register = null): ?Schema {
+		$scoped = (new SchemaRefInRegister(schemas: $this->lookups->schemaMapper))->findInRegister(schemaRef: $name, register: $register);
+		if ($scoped !== null) {
+			return $scoped;
+		}
+
 		try {
 			return $this->resolveSchema(name: $name);
 		} catch (InvalidArgumentException $e) {
