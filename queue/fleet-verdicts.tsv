@@ -9787,3 +9787,4 @@ integriq	3549	9b625281b04902c6392215f2c7126ec7f9bf1601	REVERIFY	worker-16	merged
 integriq	3542	2128a8ec1cbd18b3fd6c62d28c6fb3eaf7a46c0f	GREEN	worker-09	phpunit 9189 run, same 7 failures as development baseline (9084 run), no new failures; vitest 2258 ok
 integriq	3574	daca1f896514025811d3ee2526ee24a753e1ee51	GREEN	worker-09	phpunit 9189 run, same 7 failures as development baseline (9084 run), no new failures; vitest 2258 ok
 integriq	3617	51d9a2baaebe30ec3caaa026d9f19f877e4e3590	GREEN	worker-09	phpunit 9189 run, same 7 failures as development baseline (9084 run), no new failures; vitest 2258 ok
+integriq	3631	30fbce0b409da46860d8d46d47899632144a7b79	CONFLICT	worker-09	does not merge on development+3542+3574+3617: lib/Service/EndpointService.php (3542 splits processAuthenticationRule)
