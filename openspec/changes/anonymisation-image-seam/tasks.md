@@ -22,7 +22,7 @@
 ## 4. Wiring (REQ-AIS-004)
 
 - [ ] 4.1 Route images and image content through the seam inside `FileService::anonymizeDocument()` / `DocumentProcessingHandler::anonymizeDocument()`. Verify: `tests/Unit/Service/FileServiceImageRouteTest.php::testADirectServiceCallBurnsImageRegions` (the opencatalogi call shape) and `tests/Unit/Controller/FileTextControllerImageTest.php` (the endpoint).
-- [ ] 4.2 Report the image steps in the pipeline report when `anonymisation-discloses-itself` has landed (REQ-ADI-006); until then, record them on the run. Verify: `PipelineStepReportTest` gains the image steps if that change is merged first.
+- [x] 4.2 Report the image steps in the pipeline report when `anonymisation-discloses-itself` has landed (REQ-ADI-006); until then, record them on the run. Verify: `PipelineStepReportTest` gains the image steps if that change is merged first.
 - [ ] 4.3 End to end: `tests/e2e/ci/image-redaction.spec.ts` uploads a JPEG fixture with provided OCR words, decides the PERSON region and downloads an `_anonymized` file whose region is filled.
 
 ## V. Verification and done
