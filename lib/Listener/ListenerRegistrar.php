@@ -121,6 +121,18 @@ final class ListenerRegistrar {
 		foreach (array_keys(RecordTypeAuditListener::ACTIONS) as $event) {
 			$context->registerEventListener($event, RecordTypeAuditListener::class);
 		}
+		// Every schema and register create, update and delete, whichever door
+		// it came through (history-schema-and-settings-edits-audited).
+		foreach ([
+			SchemaCreatedEvent::class,
+			SchemaUpdatedEvent::class,
+			SchemaDeletedEvent::class,
+			RegisterCreatedEvent::class,
+			RegisterUpdatedEvent::class,
+			RegisterDeletedEvent::class,
+		] as $entityEvent) {
+			$context->registerEventListener($entityEvent, EntityEditAuditListener::class);
+		}
 	}//end registerAuditListeners()
 
 	/**
