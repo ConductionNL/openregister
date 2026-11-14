@@ -9844,3 +9844,4 @@ fix:integriq:3549:1db0c824	conflict resolved (en/nl json, both sides kept), deve
 verify:decidiq:2146:2b0f5758	4 GREEN (2146,2168,2177,2181), 3 CONFLICT (2149 vs development; 2198,2199 in tree), 2171 skipped (head moved); 0 new failures	session-20261114T151004-fa188a10	2026-11-14T15:31:58Z
 fix:learniq:2493:1d780890	merged development (l10n union); 1 inherited failure; new head 25467d6a063d0e2374777c4699df09ac39a9fa5e	session-20261114T134654-82ca2be5	2026-11-14T15:32:07Z
 build:humaniq:setup-wizard-six-steps:c2	partial: PR #1136 head efb90562 adds 3.4 health check + 4.1 language resolver (16 tests, suite 4214, 1 inherited fail); left 1.x/2.2/2.5 need CnSetupWizard support in nextcloud-vue (schema rejects repeatable/summaryHint/summaryEditable), 2.1/2.3/2.4/2.6+3.1 ship with that manifest, 5.x e2e/live	session-20261114T151803-c9b63248	2026-11-14T15:32:38Z
+fix:humaniq:1123:eeb3b525	stale	session-20261114T151930-0feec10a	2026-11-14T15:32:48Z
