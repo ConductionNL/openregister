@@ -9559,4 +9559,5 @@ build:learniq:bpv-hours-per-day:c2	PR #2537: T2 writeHourDay, T3 form fields + r
 fix:decidiq:2168:89b4e6ca	conflict resolved, new head 39f054e9, REVERIFY recorded	session-20261114T141728-9a5d03fc	2026-11-14T14:43:34Z
 fix:decidiq:2149:c82a792a	floor restored, floor_check PASS, new head 04365462, REVERIFY recorded	session-20261114T134701-ae8ce354	2026-11-14T14:43:42Z
 fix:shillinq:2972:11951c7e	conflict resolved, new head e24273baa	session-20261114T141737-e9e54940	2026-11-14T14:43:52Z
+fix:filinq:2120:261649dc	failed: clean against development; conflicts only with unmerged #2105 (both bump filinq_register.json info version/description and add schemas, l10n tail, tests/vitest/manifestFragments.spec.js); cannot be resolved without #2105's content, re-run after #2105 lands	session-20261114T131654-c068f436	2026-11-14T14:44:06Z
 fix:shillinq:3003:1d3df490	development merged in, app version moved, pushed e9b31d7d	session-20261114T124625-07e62ccf	2026-11-14T14:44:03Z
