@@ -10980,3 +10980,4 @@ review:filinq:2085:a1832379	GREEN on head (phpunit 6782 OK); conflicts with deve
 verify:humaniq:1144:7d38728c	GREEN 1144, GREEN 1156; tree 4329 OK	session-20261114T194740-7cca8afd	2026-11-14T20:41:40Z
 build:filinq:anonymization-review-workbench:c3	partial: PR #2114 head c9e0c441, merged development (register 8.56.0, l10n/openapi both sides), suite 6816 green, vitest 775; no new tasks built this run (worker context full); left: 4.1 coverage measure + live e2e, 4.2, 4.5, 4.6, 5.1-5.4	session-20261114T201002-25be0d7f	2026-11-14T20:41:52Z
 verify:hermiq:1792:77e32ff7	1792 GREEN; unit 5154 0 failures, vitest 1504 green	session-20261114T192501-803bcb19	2026-11-14T20:41:54Z
+fix:portaliq:2500:e811794d	merged development (clean), pushed 37ad4e5f; conflict is with sibling #2498; REVERIFY recorded	session-20261114T194743-e736657e	2026-11-14T20:42:24Z
