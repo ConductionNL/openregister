@@ -8437,3 +8437,4 @@ build:keepiq:vault-custom-field-kinds-and-ssh-key	PR #1793: tasks 1.1,1.3,2.1,2.
 fix:buildiq:1619:2f7f5352	merged development in, kept both describe blocks; new head e0722b68, REVERIFY recorded	session-20261114T073108-67fbeb26	2026-11-14T08:50:22Z
 fix:buildiq:1615:48ea2bb2	l10n keys moved off the shared tail; clean on dev+1613+1614; new head e9c07802714b18a7f782432d8870f9f1eb5dd516	session-20261114T075640-efa02b24	2026-11-14T08:50:34Z
 fix:buildiq:1612:ad606b04	merged development in cleanly; new head 40bed07f1c09d081dfbd618cd1610ccb046181cf, REVERIFY recorded	session-20261114T073117-2bd2e050	2026-11-14T08:50:56Z
+build:stackiq:insight-supplier-facet	PR #1932: tasks 1, 2 and 3 (implement) done, task 4 seed and doc text done; Playwright tests and the doc screenshot left	session-20261114T065625-baa65a50	2026-11-14T08:51:14Z
