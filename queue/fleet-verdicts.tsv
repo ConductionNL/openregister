@@ -8333,3 +8333,4 @@ learniq	2501	d58497ec9d6bf0ce6b45804a2d86c45928e53884	GREEN	worker-46	unit 6753 
 learniq	2515	91ac6bf3edc1791b8e60ddde86c2cbaa88b839c9	GREEN	worker-46	unit 6753 tests, baseline 6703 with 1 failure (he.json generator), no new failures; node --test 1352, 9 failures same as baseline
 learniq	2519	f19a370b95730fccc087cfd4c07f7a82c578ab58	CONFLICT	worker-46	conflicts with development: tests/Unit/Portal/golden/PortalManifests.json (and l10n with the tree)
 learniq	2520	aa7888d132a4d8938fbb1959ea8dfa14d0122f18	CONFLICT	worker-46	conflicts with development: lib/Settings/learniq_register.json tests/Unit/Portal/golden/PortalManifests.json tests/Unit/Settings/OpenLearningMaterialRegisterTest.php
+learniq	2532	53b53ed8b5adc16bc972088c742608c9b2b2dc51	CONFLICT	worker-46	merges clean on development alone; conflicts with the tree (2493/2501/2515) in l10n/en.json l10n/nl.json
