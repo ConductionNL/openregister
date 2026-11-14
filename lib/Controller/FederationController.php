@@ -36,6 +36,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Federation\CreatorPropertyFilter;
+use OCA\OpenRegister\Service\Federation\ShareCrosses;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
 use OCA\OpenRegister\Service\Federation\PlainQueryMatch;
@@ -1031,7 +1032,8 @@ class FederationController extends Controller {
 	}//end applyShareVisibility()
 
 	/**
-	 * An object as a share serves it: an object-scope share keeps to the properties its creator may read.
+	 * An object as a share serves it: an object-scope share keeps to the properties its creator may read,
+	 * and every share sends only the parts it declares.
 	 *
 	 * @param FederatedShare $share  The share being served.
 	 * @param ObjectEntity   $object The object.
@@ -1040,11 +1042,12 @@ class FederationController extends Controller {
 	 */
 	private function rendered(FederatedShare $share, ObjectEntity $object): array {
 		$rendered = $object->jsonSerialize();
-		if ($share->getScope() !== 'object') {
-			return $rendered;
+		if ($share->getScope() === 'object') {
+			$rendered = $this->creatorProperties->readable(share: $share, object: $object, rendered: $rendered);
 		}
 
-		return $this->creatorProperties->readable(share: $share, object: $object, rendered: $rendered);
+		// Only what the share declares crosses (REQ-PCF-002).
+		return ShareCrosses::shape(rendered: $rendered, crosses: ShareCrosses::of(share: $share));
 	}//end rendered()
 
 	/**
