@@ -1037,16 +1037,37 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 	}//end testDestroyReturnsEmptyOnSuccess()
 
-	public function testDestroyReturns500WhenNotFound(): void {
-		// SchemasController::destroy() catches \Exception (not DoesNotExistException
-		// specifically), so DoesNotExistException results in 500 not 404.
+	public function testDestroyReturns404WhenNotFound(): void {
+		// destroy() answers its generic failures through handleApiException(),
+		// so an unknown schema is the typed 404, not a 500.
 		$this->schemaMapper->method('find')
 			->willThrowException(new DoesNotExistException('Not found'));
 
 		$result = $this->controller->destroy(999);
 
+		$this->assertSame(404, $result->getStatus());
+		$this->assertSame(['message' => 'Not found', 'error' => 'does-not-exist'], $result->getData());
+	}//end testDestroyReturns404WhenNotFound()
+
+	public function testDestroyKeepsAnUntypedFailureGeneric(): void {
+		$this->schemaMapper->method('find')
+			->willThrowException(new Exception('SQLSTATE[HY000] secret detail'));
+
+		$result = $this->controller->destroy(1);
+
 		$this->assertSame(500, $result->getStatus());
-	}//end testDestroyReturns500WhenNotFound()
+		$this->assertStringNotContainsString('secret detail', json_encode($result->getData()));
+	}//end testDestroyKeepsAnUntypedFailureGeneric()
+
+	public function testRelatedAnswersATypedConflictWithItsStatus(): void {
+		$this->schemaMapper->method('getRelated')
+			->willThrowException(new DatabaseConstraintException('Duplicate relation'));
+
+		$result = $this->controller->related(1);
+
+		$this->assertSame(409, $result->getStatus());
+		$this->assertSame('database-constraint', $result->getData()['error']);
+	}//end testRelatedAnswersATypedConflictWithItsStatus()
 
 	public function testDownloadReturnsSchema(): void {
 		$schema = $this->createRealSchema(1, 'Downloadable');
