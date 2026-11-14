@@ -10678,3 +10678,4 @@ merge:decidiq:2205:3516e00d	merge3 tree of 16 decidiq PRs: merged=2 red=5 fail=0
 merge:decidiq:2202:4338db13	merge3 tree of 16 decidiq PRs: merged=2 red=5 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T19:30:39Z
 fix:learniq:2493:b4d28b92	floor restored (unit_complexity), new head c4fb5a2d; REVERIFY	session-20261114T191730-4ad9612d	2026-11-14T19:30:50Z
 review:portaliq:2440:04953348	stale	feeder	2026-11-14T19:30:13Z
+build:portaliq:intake-report-pages:c3	partial: PR #2444 pushed 0778a65a; T08 built (report detail page via entitySource endpoint, now supported by nextcloud-vue 2.180: facts, conversation list, Reply with visibility toggle, Request reveal; index rows link to it; nl/en labels), development merged (register 0.112.0 kept with 0.111.0 asserts); unit 5539 OK, node 4 inherited reds; left T01 live check only	session-20261114T190957-fe5a0159	2026-11-14T19:34:16Z
