@@ -10491,3 +10491,4 @@ verify:filinq:2126:321f27ff	GREEN 2126	session-20261114T161742-d79a1d0e	2026-11-
 build:keepiq:extension-passkey-enrolment:c2	done: no code task left; PR #1776 merged into development; 0.2/0.3 (store ids, live browser ceremonies) and 4.2 (manual live test) need a human, 4.1 is the pre-push check of already-landed code	session-20261114T173956-74ab8962	2026-11-14T17:51:25Z
 verify:hermiq:1715:565afba9	GREEN 1715; CONFLICT 1728, 1785; skipped 1791, 1792 (head moved)	session-20261114T161750-16a1c558	2026-11-14T17:51:32Z
 fix:keepiq:1789:57b0a1bf	merged development, l10n conflict resolved keeping both; new head e905bf11; parity red inherited from development	session-20261114T174756-fe199e72	2026-11-14T17:51:43Z
+fix:buildiq:1624:0e334f6f	relative floor restored (overall 4.29, interfacing 3.43 vs 3.44, PASS); suite inherited-only; new head cc9050a1, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:51:50Z
