@@ -9564,3 +9564,4 @@ decidiq	2170	4758b5f4adb3280d62799c35a6d5a439e1314ab8	CONFLICT	worker-08	conflic
 decidiq	2189	d54fa2289e2eb3b59dd2fedbbfb0ec076afc3829	GREEN	worker-08	tree phpunit 4311 (0 failures; development baseline 0), vitest 2795 pass; build agenda-paper-watermark
 decidiq	2191	4d6f144bcc6304f052adc9d77f24d84379a9ec62	GREEN	worker-08	tree phpunit 4311 (0 failures; development baseline 0), vitest 2795 pass; build followup-implementation-progress
 decidiq	2194	ea9b865865c4d1bdfbeae3149bef9a002366cd33	CONFLICT	worker-08	conflicts in l10n/nl.js l10n/nl.json on development+#2169,#2189,#2191
+decidiq	2202	3a275a0425fce2a3464bf1ee3b6ed0600e02fadd	GREEN	worker-08	tree phpunit 4311 (0 failures; development baseline 0), vitest 2795 pass; build ori-adoption
