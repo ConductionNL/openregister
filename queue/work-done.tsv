@@ -8460,6 +8460,7 @@ fix:buildiq:1623:3b56d20b	merged development (clean); conflict is only with sibl
 fix:buildiq:1621:8e4390d8	CONFLICT resolved, suite green apart from inherited; new head 6c531050	session-20261114T062200-6a28e40c	2026-11-14T08:52:39Z
 build:stackiq:connections-derived-dependencies	partial: PR #1936 tasks 1-3 (service, carry-over, guarded routes + openapi), 13 tests, suite 3446->3459 no failures; left Newman, task 4 panel, task 5 docs	session-20261114T073109-bb0ea608	2026-11-14T08:52:49Z
 fix:keepiq:1788:a87d4e63	l10n keys relocated, merges clean after #1786, pushed bb0ad68b, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T08:52:50Z
+fix:buildiq:1620:ad5dd771	no change: merges clean on current development; the l10n conflict is with open #1613/#1614, not on development yet; merge development in after they land	session-20261114T073108-67fbeb26	2026-11-14T08:53:05Z
 build:stackiq:security-baseline-classification	partial: PR #1937 (tasks 1-2 done: properties and derived bbnLevel; task 3 suggestion/summary, 4 UI, 5 seed/docs open)	session-20261114T070344-897ffa0f	2026-11-14T08:53:06Z
 verify:launchpad:1208:5e651df7	1208, 1209 GREEN; 1210, 1211 CONFLICT with #1209	session-20261114T065633-3e3cb668	2026-11-14T08:52:59Z
 verify:opencatalogi:2662:87f7d0cf	8 GREEN (2662-2664, 2666-2670), 2665 CONFLICT in tree (PublicationsControllerTest with #2664, clean alone); unit 5470 vs 5485 (MCP provider tests removed per change), same 2 inherited failures; vitest 1039 green	session-20261114T082640-d9af913e	2026-11-14T08:53:02Z
