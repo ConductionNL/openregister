@@ -2975,3 +2975,7 @@ shillinq	3069	71d3c09e624976e5e85566397eefea9aaf539dda	MERGED	merge3	GATE OK sbo
 learniq	2493	d5717bf0dd4f237e02456a7983fa30ae81e27e82	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2541	b1472267b8b9596ae7a571f09291b972972d4ace	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2544	eab2300dc8912a3ba19c32e619ccea540c2eab20	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+humaniq	1125	9ef38fe583be2d2e69ab1a084539588f0057f11d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1133	5c864a84ca469623869034a2241fd0ca96d20adc	SKIP	merge3	GATE UNMEASURED head moved to 672afd47b2
+humaniq	1144	1aded0f35865e52ae3736c12d1342fe20c99ea2e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1145	0310b8ea98dbd5d1c1e5396abae95adf55ee59e5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
