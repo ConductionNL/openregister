@@ -7842,3 +7842,4 @@ fix:integriq:3543:aaeb1f5d	nl keys relocated off tail, development merged, 5 inh
 merge:opencatalogi:2456:22af3268	merge3 tree of 61 opencatalogi PRs: merged=51 red=5 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:26:49Z
 merge:filinq:2106:f3917ef2	stale	feeder	2026-11-14T07:23:59Z
 merge:learniq:2487:509cc6c7	stale	feeder	2026-11-14T07:23:59Z
+merge:opencatalogi:2595:996caeef	merge3 tree of 61 opencatalogi PRs: merged=51 red=5 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:27:08Z
