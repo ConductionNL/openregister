@@ -8810,3 +8810,5 @@ build4:openregister:object-event-sync-async-split:c2	partial: PR #10495 (4.1 Sou
 build4:openregister:store-over-federated-config:c2	nothing left in openregister: 4.x is nextcloud-vue (CnStorePage), 5.x is decidiq (lib/Settings/profiles is decidiq's), 6.2/6.3 e2e/live; no PR	session-20261114T092647-8b1e7e69	2026-11-14T10:24:36Z
 review:openregister:10487:1cbcaa08	APPROVE	session-20261114T095645-0268807e	2026-11-14T10:24:32Z
 verify:pipelinq:3707:65fa614f	2 GREEN (3707, 3831), 2 CONFLICT (3743, 3829 vs tree)	session-20261114T075640-efa02b24	2026-11-14T10:25:29Z
+merge:pipelinq:3713:8c4e003d	stale	feeder	2026-11-14T10:25:21Z
+review:openregister:10490:92e99c4b	stale	feeder	2026-11-14T10:25:21Z
