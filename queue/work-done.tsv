@@ -11104,3 +11104,4 @@ fix:keepiq:1789:e905bf11	fixed CONFLICT: development merged, nl l10n union, head
 verify:launchpad:1212:11462701	GREEN: no new failures (inherited OpenApiStabilityTest red; 9 new ops lack x-launchpad-stability, noted)	session-20261114T204802-89dfe85e	2026-11-14T21:09:11Z
 gap:launchpad:16:614b0a03	failed: no code fix; the row asks only for a dependency refresh sweep (no score effect), which means lockfile changes a worker may not commit	session-20261114T194751-bb7578f8	2026-11-14T21:09:34Z
 build:launchpad:launcher-tile-sorting:c2	done: PR #1215 is merged on development; no code tasks left (5 Playwright is live; 6 en/nl at parity, the spec fold and parity entries belong to the archive)	session-20261114T194751-bb7578f8	2026-11-14T21:10:37Z
+merge:learniq:2521:c6951627	stale	feeder	2026-11-14T21:10:21Z
