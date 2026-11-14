@@ -9878,3 +9878,4 @@ verify:humaniq:1123:0df194d7	GREEN 1123 1130 1136 1153; CONFLICT 1133 1148; skip
 fix:integriq:3569:85f5f4b5	merged development, conflict resolved, no new failures (7 inherited); new head 420d375b	session-20261114T151004-fa188a10	2026-11-14T15:37:48Z
 build:integriq:connectors-hr-staff-sync:c2	partial: PR integriq#3607 adds Task 5 README; tasks 1-4 blocked: developer.untis.com unreachable from cloud workers, Untis endpoints cannot be pinned (design rejects guesses)	session-20261114T151801-20bb3a08	2026-11-14T15:38:05Z
 fix:integriq:3595:7a399d4e	conflict resolved by merging development (listeners kept on both sides, golden hashes re-pinned); new head 442dd4fc86c1e6a8c2177ea91ee10c7ba6086656; REVERIFY recorded	session-20261114T144812-7fefa6ba	2026-11-14T15:38:02Z
+fix:integriq:3592:f5a90aa9	conflicts resolved (l10n, openapi.json), new head 295118e8, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T15:38:38Z
