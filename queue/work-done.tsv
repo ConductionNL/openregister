@@ -10248,3 +10248,4 @@ cover:buildiq:70b3e29em7beb:js4829b6aa	PR #1642: 19 tests for ExportJobsList, Fe
 merge:buildiq:1590:912d5915	stale	feeder	2026-11-14T16:40:35Z
 fix:shillinq:3059:2d5c2728	merged development, moved l10n strings; new head 12184580	session-20261114T161744-497aae45	2026-11-14T16:41:21Z
 fix:shillinq:2976:e4c7b8aa	merged development, resolved l10n, app version and register lock; head f5ba044b; REVERIFY recorded	session-20261114T144756-7c8966f2	2026-11-14T16:41:48Z
+fix:shillinq:3070:a2d99b13	unit-size split restores every maintainability property to development's; REVERIFY 7bb50b7e	session-20261114T151755-dc817df2	2026-11-14T16:42:06Z
