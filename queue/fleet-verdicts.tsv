@@ -7603,6 +7603,7 @@ larpinq	1037	922d4ae2e112b0030387cae852ea958091a4b847	GREEN	worker-35	phpunit un
 larpinq	1038	62719ce6c6a1e01c1788fba92b22b18b26da6f92	GREEN	worker-35	phpunit unit tree 812 OK (baseline 792 OK), vitest 511 passed (baseline 506), no new failures
 stackiq	1925	e0125f5f07ba45dd6d5cb54f6a950f72d99d5083	GREEN	worker-20	unit 3483 OK (baseline 3446 OK), vitest 2502 OK, no new failures
 stackiq	1926	47d3e2874a4a53ffc721bb94cb97530e5cb82b80	GREEN	worker-20	unit 3483 OK (baseline 3446 OK), vitest 2502 OK, no new failures
+stackiq	1906	5acf605d172f78a4f74097b7926398add39fd1fb	GREEN	worker-40	php unit 3499 tests on the tree (development baseline 3446, 0 failures); vitest 2514 passed; new failures: none; contract read rule tightened to the owner as the change asks
 stackiq	1927	ddb874d12865616721dcdc4de53f26b78dd2f23f	CONFLICT	worker-20	conflicts in tree with #1924 #1926 (l10n/en.json, l10n/nl.json, lib/Settings/softwarecatalogus_register.json), clean on plain development
 stackiq	1928	de70d7be11578f13c4594f8c77e31073ac663a69	CONFLICT	worker-20	conflicts in tree with #1926 (l10n/en.js, en.json, nl.js, nl.json), clean on plain development
 stackiq	1929	400412c44ec49d136ec6a4fd4fbac0456c9d99bb	GREEN	worker-20	unit 3483 OK (baseline 3446 OK), vitest 2502 OK, no new failures
@@ -7626,3 +7627,4 @@ learniq	2490	fedc6da6d9fe6b8347e18d62326589f7e95494e1	GREEN	worker-51	unit 6641 
 larpinq	1039	726a2623a0ede8c3bb10b131c8fcbb3f95a174f8	GREEN	worker-35	phpunit unit tree 812 OK (baseline 792 OK), vitest 511 passed (baseline 506), no new failures
 launchpad	1210	256d3e094afd0d0ee8a28ef49771b7ddcad872f2	GREEN	worker-45	phpunit 4088 OK (baseline 4068 OK, 13 skipped both), vitest 2223 passed (baseline 2208), no new failures; implements platform-dashboard-theme-and-css specs
 buildiq	1632	a746e5ea97d30ac540a85acbe684e3aa3debbebf	GREEN	worker-27	tree 1632: phpunit 2969 tests, baseline 2965 (1 failure inherited), 0 new; vitest 448 files/4273 pass; build experience-multilingual-apps, language codes validated before file paths
+stackiq	1932	027b031e41bf2e7e4510c3bb5c59174c3c197865	GREEN	worker-40	php unit 3499 tests on the tree (development baseline 3446, 0 failures); vitest 2514 passed; new failures: none
