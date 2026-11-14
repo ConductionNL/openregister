@@ -8688,3 +8688,4 @@ verify:dossiq:6487:e340fbb4	6487 6488 6489 6490 GREEN	session-20261114T085635-07
 cover:shillinq:05639debm9818:568ec52a	PR #3042 (5 classes, 24 tests, Lifecycle 92.49->94.88%)	session-20261114T062156-e8adf8ca	2026-11-14T09:33:02Z
 cover:hermiq:065f1631mcdb5:f545d745	done: PR #1771 (Repair 88.5->97.6%, risky metadata fixed)	session-20261114T070332-b3a23612	2026-11-14T09:33:20Z
 cover:hermiq:065f1631mcdb5:js0be8c659	PR #1772: 7 template tests for AgentFormModal (83.6% -> 95.3% lines); vitest 1439 -> 1446, 0 failures	session-20261114T075644-ec2e07ac	2026-11-14T09:33:59Z
+build:pipelinq:contact-moments-phone-lookup:c2	failed: 1.6 needs a search-shape source switch in @conduction/nextcloud-vue CnIndexPage (2.180.0 has only fixed named sources with searchParam); not buildable in pipelinq alone	session-20261114T062156-e8adf8ca	2026-11-14T09:34:03Z
