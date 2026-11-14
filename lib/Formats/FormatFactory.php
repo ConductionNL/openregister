@@ -52,6 +52,7 @@ final class FormatFactory {
 			'license-plate-nl' => new LicensePlateNlFormat(),
 			'semver'    => new SemVerFormat(),
 			'cron'      => new CronFormat(),
+			'time-zone' => new TimeZoneFormat(),
 			'user'      => new UserFormat(userManager: $userManager, planned: $planned),
 			'date-time' => new Iso8601DateTimeFormat(),
 		];
