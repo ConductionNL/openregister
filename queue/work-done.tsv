@@ -10708,3 +10708,4 @@ verify:planninq:1171:a9d6c6c0	GREEN 1171@84c03da1; unit 1071/0, vitest green	ses
 fix:shillinq:2997:613c18e2	conflict resolved, new head 34673c89, REVERIFY recorded	session-20261114T185843-7b9a6259	2026-11-14T19:46:48Z
 fix:planninq:1167:28092815	merged development, l10n union; tests green; new head b566c981	session-20261114T191744-b9573b83	2026-11-14T19:46:55Z
 build:learniq:content-scorm-package-upload:c3	PR learniq#2543: 2.3 Opis lesson-schema validation (4 tests), 3.1 screen text; suite 6775->6779, 1 inherited failure; left 4.1 Playwright live, 4.2 close-out	session-20261114T191730-4ad9612d	2026-11-14T19:47:56Z
+verify:planninq:1165:e53d568e	GREEN 1165@69833fe6; unit 1067/0, vitest green	session-20261114T191744-b9573b83	2026-11-14T19:48:36Z
