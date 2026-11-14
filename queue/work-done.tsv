@@ -10502,3 +10502,4 @@ cover:keepiq:c967a31fm10bf:8ed5443b	nothing to cover: all 89 files in lib/Kernel
 build4:openregister:query-filter-through-a-reference:c3	pushed 9b925ba3f to PR #10528: 2.1 another register, 2.2 facets via _facets[_ref], 2.3 noted (Solr removed); left 2.1 CI integration, 3.1 Newman (live), 3.3 validate+matrix; suite 61948, no new failures	session-20261114T171807-697deef1	2026-11-14T17:53:27Z
 fix:buildiq:1625:04a5e4fe	checker floor restored (renamed OBJECT_ID_TOKEN false positive); new head 706c4494	session-20261114T174106-c933f162	2026-11-14T17:53:41Z
 fix:keepiq:1791:a0a825d5	merged development, new head bb4f5f10, REVERIFY recorded	session-20261114T165414-28281f96	2026-11-14T17:54:16Z
+fix:planninq:1166:eb8a0d7e	floor restored (PASS), new head 5fa61e8e, REVERIFY recorded	session-20261114T172412-df2c66f1	2026-11-14T17:54:26Z
