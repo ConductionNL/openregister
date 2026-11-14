@@ -9898,3 +9898,4 @@ build:integriq:adapter-configuration-screens:c2	PR #3610: tasks 2-3 built (LTI p
 cover:integriq:92114ab0m0593:d0ed39e1	PR #3611: +31 tests (SharePointOnlineAdapter lookups, StufZknClient exchange refusals); dirs 93.5% -> 97.4%	session-20261114T151755-dc817df2	2026-11-14T15:42:25Z
 verify:integriq:3549:6d83665f	GREEN 3549 (8930 tests, 0 new failures)	session-20261114T151801-20bb3a08	2026-11-14T15:42:28Z
 verify:filinq:2069:e41aab19	GREEN 2069 2100 2118; CONFLICT 2079 2112 2126	session-20261114T144756-7c8966f2	2026-11-14T15:42:53Z
+verify:hermiq:1728:28794c35	stale	session-20261114T144757-446bd6da	2026-11-14T15:43:08Z
