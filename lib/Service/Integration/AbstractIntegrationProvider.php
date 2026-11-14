@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Exception\NotImplementedException;
+
 /**
  * Default starting point for concrete IntegrationProvider implementations.
  *
@@ -100,6 +102,19 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	public function getOpenConnectorSource(): ?string {
 		return null;
 	}//end getOpenConnectorSource()
+
+	/**
+	 * The NotImplementedException a provider answers for an operation it does not support.
+	 *
+	 * @param string $operation The operation, as the message names it: `get`, `create`, `update` or `delete`.
+	 *
+	 * @return NotImplementedException
+	 */
+	protected function unsupported(string $operation): NotImplementedException {
+		return new NotImplementedException(
+			message: sprintf('Provider %s does not support %s()', $this->getId(), $operation)
+		);
+	}//end unsupported()
 
 	/**
 	 * Default health descriptor — assumes a healthy, configured integration.
