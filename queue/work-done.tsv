@@ -10692,3 +10692,4 @@ review:portaliq:2443:b4846234	GREEN recorded (conflicts with development noted)	
 fix:planninq:1171:6e9f4ac2	floor restored, every rating at or above base; tests green; new head 84c03da1	session-20261114T191744-b9573b83	2026-11-14T19:39:13Z
 review:portaliq:2444:0778a65a	2444 GREEN	session-20261114T185851-d4a7f75f	2026-11-14T19:39:28Z
 verify:launchpad:1203:2d28a434	3 GREEN (1203,1208,1223); no new failures beyond 1 inherited	session-20261114T193415-4b507b08	2026-11-14T19:39:47Z
+fix:shillinq:2959:4e16db47	floor restored (unit_interfacing 2.90 vs 2.91 floor), new head fc4870f100, REVERIFY recorded	session-20261114T185843-7b9a6259	2026-11-14T19:40:19Z
