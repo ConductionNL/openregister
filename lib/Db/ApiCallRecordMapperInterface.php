@@ -61,4 +61,29 @@ interface ApiCallRecordMapperInterface {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public function findInPeriod(ApiCallPeriod $period): array;
+
+	/**
+	 * The principals that called any of the given route prefixes since a moment, busiest first.
+	 *
+	 * @param array<int, string> $prefixes The route prefixes.
+	 * @param DateTime           $from     The earliest last call.
+	 * @param int                $limit    The most principals to return.
+	 *
+	 * @return array<int, array{principal: string, calls: int, lastSeen: string|null}> The callers.
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-the-breaking-change-gate-shows-who-will-be-affected
+	 */
+	public function findCallersOfRoutes(array $prefixes, DateTime $from, int $limit = 500): array;
+
+	/**
+	 * How many principals called any of the given route prefixes since a moment.
+	 *
+	 * @param array<int, string> $prefixes The route prefixes.
+	 * @param DateTime           $from     The earliest last call.
+	 *
+	 * @return int The number of distinct principals.
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-the-breaking-change-gate-shows-who-will-be-affected
+	 */
+	public function countCallersOfRoutes(array $prefixes, DateTime $from): int;
 }//end interface

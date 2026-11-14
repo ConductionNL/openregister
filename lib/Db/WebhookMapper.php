@@ -240,6 +240,36 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	}//end findEnabled()
 
 	/**
+	 * The webhooks one user owns, in the active organisation.
+	 *
+	 * An administrator's webhook has no owner and is never among them. An
+	 * empty user id owns nothing.
+	 *
+	 * @param string $uid The owner's user id.
+	 *
+	 * @return Webhook[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	public function findOwnedBy(string $uid): array {
+		if (trim($uid) === '' || $this->tableExists() === false) {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('owner', $qb->createNamedParameter($uid)))
+			->orderBy('id', 'ASC');
+
+		$this->applyOrganisationFilter(qb: $qb);
+
+		return $this->findEntities(query: $qb);
+	}//end findOwnedBy()
+
+	/**
 	 * Find all enabled webhooks WITHOUT organisation filtering
 	 *
 	 * Tenant-agnostic variant of findEnabled() used exclusively to compute

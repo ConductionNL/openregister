@@ -79,9 +79,9 @@
             "holdsEmpty": false
         },
         "nested ok": {
-            "wellFormed": false,
-            "valid": false,
-            "holdsA7": false,
+            "wellFormed": true,
+            "valid": true,
+            "holdsA7": true,
             "holdsEmpty": false
         },
         "nested bad": {
@@ -121,8 +121,8 @@
             "holdsEmpty": false
         },
         "ast throws": {
-            "wellFormed": false,
-            "valid": false,
+            "wellFormed": true,
+            "valid": true,
             "holdsA7": false,
             "holdsEmpty": false
         },

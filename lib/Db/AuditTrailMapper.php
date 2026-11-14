@@ -596,6 +596,23 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	];
 
 	/**
+	 * Request-shaped filter names findTrail() reads as their column.
+	 *
+	 * The audit-trail rows serialise their attribution as `flowRun`,
+	 * `flowNode` and `flowStep`, so a reader filters on the name it reads.
+	 * Without this map `?flowRun=<uuid>` is outside QUERY_COLUMNS and is
+	 * silently dropped, answering the whole trail as if one run had touched
+	 * everything.
+	 *
+	 * @var array<string, string>
+	 */
+	public const FILTER_ALIASES = [
+		'flowRun' => 'flow_run',
+		'flowNode' => 'flow_node',
+		'flowStep' => 'flow_step',
+	];
+
+	/**
 	 * Audit trails matching a listing's filters, search and sort, from its offset.
 	 *
 	 * An unbounded listing ({@see ListQuery::unbounded()}) returns every match.
@@ -623,6 +640,44 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findTrail()
 
 	/**
+	 * Find all audit trails with filters and sorting.
+	 *
+	 * The released signature, kept for apps written against it; it answers
+	 * exactly what {@see findTrail()} answers for the same listing.
+	 *
+	 * @param int|null    $limit   The limit of the results, null for all.
+	 * @param int|null    $offset  The offset of the results.
+	 * @param array|null  $filters The filters to apply.
+	 * @param array|null  $sort    The sort to apply.
+	 * @param string|null $search  Optional search term to filter by ext fields.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @deprecated Use findTrail() with a ListQuery.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function findAll(
+		int|null $limit=null,
+		int|null $offset=null,
+		array|null $filters=[],
+		array|null $sort=['created' => 'DESC'],
+		string|null $search=null,
+	): array {
+		return $this->findTrail(
+			query: new ListQuery(
+				limit: ($limit ?? ListQuery::UNBOUNDED),
+				offset: $offset,
+				filters: ($filters ?? []),
+				sort: ($sort ?? []),
+				search: $search
+			)
+		);
+	}//end findAll()
+
+	/**
 	 * Add the search on the changed field, when a search term is provided.
 	 *
 	 * @param IQueryBuilder $qb     The query being built.
@@ -642,7 +697,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 	/**
 	 * Apply the filters of findTrail(): system variables (starting with _) and
-	 * columns outside QUERY_COLUMNS are ignored.
+	 * columns outside QUERY_COLUMNS are ignored; a name in FILTER_ALIASES
+	 * filters on its column.
 	 *
 	 * @param IQueryBuilder $qb      The query being built.
 	 * @param array         $filters The filters, keyed by column.
@@ -650,6 +706,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @return void
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/changes/flow-object-attribution
 	 */
 	private function applyFindFilters(IQueryBuilder $qb, array $filters): void {
 		$filters = array_filter(
@@ -661,6 +718,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		);
 
 		foreach ($filters as $field => $value) {
+			$field = (self::FILTER_ALIASES[$field] ?? $field);
 			if (in_array(
 				$field,
 				self::QUERY_COLUMNS
@@ -1047,6 +1105,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		$changed = $this->diffForAudit(pair: $pair, action: $action);
 		$changed = $this->foldCascadeContext(changed: $changed, cascadeContext: $change->cascadeContext);
+		$changed = array_merge($changed, $change->marks);
 		// The markers are added before the row is built and sealed: the hash
 		// chain covers whatever is in the row.
 		$changed = $this->markTransitionOrigin(changed: $changed, objectEntity: $objectEntity);
@@ -1253,6 +1312,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @return array The changed fields with any markers.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md#requirement-a-declared-reopen-is-the-only-move-out-of-a-terminal-state
 	 */
 	private function markTransitionOrigin(array $changed, ObjectEntity $objectEntity): array {
 		$automaticAction = null;
@@ -1271,6 +1331,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$systemApp = $this->transitionSystemApp(uuid: (string)$objectEntity->getUuid());
 		if ($systemApp !== null) {
 			$changed['transitionAsSystem'] = ['app' => $systemApp];
+		}
+
+		// A declared reopen out of a terminal state is audited as a reopen, so
+		// an auditor can tell it from an ordinary forward move.
+		if ($this->transitionDeclaredFor(uuid: (string)$objectEntity->getUuid()) === \OCA\OpenRegister\Service\Lifecycle\GraphMoveCatalogue::REOPEN) {
+			$changed['transitionKind'] = \OCA\OpenRegister\Service\Lifecycle\GraphMoveCatalogue::REOPEN;
 		}
 
 		return $changed;
@@ -1397,6 +1463,31 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			return null;
 		}
 	}//end transitionSystemApp()
+
+	/**
+	 * The lifecycle action being applied to this object right now, if any.
+	 *
+	 * Read the same way as {@see transitionSystemApp()}: unavailable means
+	 * "no named transition in flight", never a failed audit row.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return string|null The declared action, or null for an ordinary write.
+	 *
+	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md#requirement-a-declared-reopen-is-the-only-move-out-of-a-terminal-state
+	 */
+	private function transitionDeclaredFor(string $uuid): ?string {
+		if ($uuid === '') {
+			return null;
+		}
+
+		try {
+			return AuditTrailCollaborators::lifecycleActionContextFrom(container: $this->container)
+				->declaredFor($uuid);
+		} catch (\Throwable $contextUnavailable) {
+			return null;
+		}
+	}//end transitionDeclaredFor()
 
 	/**
 	 * Stamp an audit row's expiry and retention source from the retention of
@@ -2178,6 +2269,38 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	public function actionChartData(AuditStatisticsScope $scope): array {
 		return $this->actionStatistics()->actionChart(scope: $scope);
 	}//end actionChartData()
+
+	/**
+	 * Get chart data for audit trail actions over time.
+	 *
+	 * The released signature, kept for apps written against it.
+	 *
+	 * @param DateTime|null $from       Start date for the chart data.
+	 * @param DateTime|null $till       End date for the chart data.
+	 * @param int|null      $registerId Optional register ID to filter by.
+	 * @param int|null      $schemaId   Optional schema ID to filter by.
+	 *
+	 * @return ((int[]|string)[]|(int|string))[][]
+	 *
+	 * @psalm-return array{labels: list<array-key>,
+	 *     series: list<array{data: list<int>, name: string}>}
+	 *
+	 * @deprecated Use actionChartData() with an AuditStatisticsScope.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function getActionChartData(
+		?DateTime $from=null,
+		?DateTime $till=null,
+		?int $registerId=null,
+		?int $schemaId=null,
+	): array {
+		$scope       = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
+		$scope->from = $from;
+		$scope->till = $till;
+
+		return $this->actionChartData(scope: $scope);
+	}//end getActionChartData()
 
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe

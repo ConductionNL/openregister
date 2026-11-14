@@ -69,6 +69,25 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 	use PropNameReading;
 
 	/**
+	 * The word forms of the arithmetic operators and the symbol each one is.
+	 *
+	 * Schemas were written with `mul`/`add`/`sub`/`div` and were discarded as
+	 * unknown operators. Both forms are in OPERATORS, so the validator accepts
+	 * them, and each word shares its symbol's dispatch arm, so the two forms
+	 * cannot compute differently.
+	 *
+	 * @var array<string, string>
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/tasks.md
+	 */
+	public const ARITHMETIC_ALIASES = [
+		'add' => '+',
+		'sub' => '-',
+		'mul' => '*',
+		'div' => '/',
+	];
+
+	/**
 	 * The operator vocabulary, described.
 	 *
 	 * This table is the published catalogue. The `category` picks the dispatch
@@ -168,6 +187,34 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 			'operands' => ['number', 'number'],
 			'result' => 'number',
 			'description' => 'The remainder after dividing the first operand by the second.',
+		],
+		'add' => [
+			'category' => 'arithmetic',
+			'arity' => '1+',
+			'operands' => ['number'],
+			'result' => 'number',
+			'description' => 'The word form of `+`: adds its operands.',
+		],
+		'sub' => [
+			'category' => 'arithmetic',
+			'arity' => '1+',
+			'operands' => ['number'],
+			'result' => 'number',
+			'description' => 'The word form of `-`: subtracts the later operands from the first, or negates a single operand.',
+		],
+		'mul' => [
+			'category' => 'arithmetic',
+			'arity' => '1+',
+			'operands' => ['number'],
+			'result' => 'number',
+			'description' => 'The word form of `*`: multiplies its operands.',
+		],
+		'div' => [
+			'category' => 'arithmetic',
+			'arity' => '2',
+			'operands' => ['number', 'number'],
+			'result' => 'number',
+			'description' => 'The word form of `/`: divides the first operand by the second. A zero divisor is refused.',
 		],
 		'eq' => [
 			'category' => 'comparison',
@@ -522,10 +569,10 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 		$args = $expression[$op];
 
 		return match ($op) {
-			'+' => array_sum($this->numericOperands(object: $object, args: $args)),
-			'-' => $this->subOrNeg(object: $object, args: $args),
-			'*' => array_product($this->numericOperands(object: $object, args: $args)),
-			'/' => $this->divide(object: $object, args: $args),
+			'+', 'add' => array_sum($this->numericOperands(object: $object, args: $args)),
+			'-', 'sub' => $this->subOrNeg(object: $object, args: $args),
+			'*', 'mul' => array_product($this->numericOperands(object: $object, args: $args)),
+			'/', 'div' => $this->divide(object: $object, args: $args),
 			'%' => $this->modulo(object: $object, args: $args),
 			default => $this->evaluateNumericFunction(object: $object, expression: $expression),
 		};//end match

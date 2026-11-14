@@ -127,6 +127,18 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 			'conversionNote' => 'A repeat rule cannot be derived from a date or a sentence.',
 			'description' => 'A repeat rule, such as every second Tuesday.',
 		],
+		'calendar-range' => [
+			'category' => 'temporal',
+			'conversion' => 'unsupported',
+			'conversionNote' => 'A start and an end cannot be derived from one stored value. Migrate the records first.',
+			'description' => 'A period: a start and an end kept together, the end not before the start.',
+		],
+		'image-url' => [
+			'category' => 'presentation',
+			'conversion' => 'conditional',
+			'conversionNote' => 'A stored value that is not a URL is refused, so run a migration first.',
+			'description' => 'An image address, with its width, height, alt text and file format.',
+		],
 		'NcFile' => [
 			'category' => 'nextcloud',
 			'conversion' => 'unsupported',
@@ -240,6 +252,8 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		// ZGW API mapping configurations" repair step. A built and wired feature
 		// was unreachable because two lists disagreed.
 		'bsn',
+		// Dutch licence plate in one of the fourteen sidecodes. See LicensePlateNlFormat.
+		'license-plate-nl',
 		// Nextcloud user id, checked against the user backend. The referenced
 		// user must exist. See UserFormat.
 		'user',
@@ -491,6 +505,11 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 	 */
 	public const MODIFIERS = [
 		'title' => ['value' => 'string', 'description' => 'The label a person reads above the field.'],
+		'titles' => [
+			'value' => 'object',
+			'description' => 'The label in other languages, by language tag: {"nl": "Einddatum contract", "en": "Contract end date"}. '
+				. 'A schema read with _lang or Accept-Language answers title in that language when it is here.',
+		],
 		'description' => ['value' => 'string', 'description' => 'The sentence under the field.'],
 		'example' => ['value' => 'any', 'description' => 'A sample answer, shown in the API documentation.'],
 		'order' => ['value' => 'number', 'description' => 'Where the field sits in the form.'],
@@ -506,6 +525,10 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		'groupLabel' => ['value' => 'string', 'description' => 'The member whose value labels a collapsed row. Needs repeatingGroup.'],
 		'deprecated' => ['value' => 'boolean', 'description' => 'Mark the field as on its way out.'],
 		'facetable' => ['value' => 'boolean', 'description' => 'Offer the field as a filter in search.'],
+		'indexed' => [
+			'value' => 'boolean',
+			'description' => 'Keep a database index on the field, so filtering and sorting on it stays fast without making it a facet.',
+		],
 		'facetConfig' => ['value' => 'object', 'description' => 'How the filter buckets its values.'],
 		'matchType' => ['value' => 'string', 'description' => 'How search compares a term against this field: exact, prefix, range, fuzzy or fulltext.'],
 		'inputControl' => ['value' => 'string', 'description' => 'The control a list surface should render to filter on this field.'],
@@ -539,6 +562,12 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 			'value' => 'object',
 			'description' => 'Where this one field\'s values come from: a provider id, what to ask it, and whether the answer is '
 				. 'looked up live or offered as a starting value. It binds ONE FIELD, not the whole schema.',
+		],
+		RequiredWhenDeclaration::ANNOTATION => [
+			'value' => 'object',
+			'description' => 'Make the field required only when a condition on another field holds: '
+				. '{field, op, value} or a list of them that must all hold. op is eq, neq, gt, gte, lt, lte, '
+				. 'empty or notEmpty. Every save is refused while the condition holds and the field is empty.',
 		],
 		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
 		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
@@ -900,6 +929,7 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 	 *                                       would answer one question and hold no state.
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
 	 */
 	private function assertDeclarations(array $property, string $path): void {
 		GeneratedIdentifierDeclaration::fromProperty(property: $property, path: $path);
@@ -907,6 +937,10 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
 		ScopedPropertyDeclaration::assert(property: $property, path: $path);
 		PropertySourceDeclaration::assert(property: $property, path: $path);
+		RequiredWhenDeclaration::fromProperty(property: $property, path: $path);
+		PropertyTitles::assert(property: $property, path: $path);
+		// Cross-app-semantic-references: a semantic type no resolver can match is refused at save.
+		SemanticReferenceDeclaration::assert(property: $property, path: $path);
 	}//end assertDeclarations()
 
 	/**
@@ -1345,7 +1379,36 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 			$this->validateProperty(property: $property, path: $path . '/' . $propertyName);
 		}
 
+		if ($path === '') {
+			$this->assertRequiredWhenFieldsDeclared(properties: $properties);
+		}
+
 		return true;
 	}//end validateProperties()
+
+	/**
+	 * Refuse a required-when condition on a field the schema does not declare, or on the property itself.
+	 *
+	 * Only at the top level: a condition reads the object from its root, so
+	 * the fields it may name are the schema's own properties, and only the
+	 * call that holds all of them can tell whether one is missing.
+	 *
+	 * @param array<string, mixed> $properties The schema's top-level properties.
+	 *
+	 * @throws PropertyVocabularyException When a condition names an undeclared field or its own property.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `fromProperty()` is a named constructor on a value object.
+	 *
+	 * @spec openspec/changes/modelling-required-when-enforced/specs/object-lifecycle/spec.md
+	 */
+	private function assertRequiredWhenFieldsDeclared(array $properties): void {
+		$declared = array_map('strval', array_keys($properties));
+		foreach ($properties as $propertyName => $property) {
+			$declaration = RequiredWhenDeclaration::fromProperty(property: $property, path: '/' . $propertyName);
+			$declaration?->assertFieldsDeclared(declared: $declared, property: (string)$propertyName, path: '/' . $propertyName);
+		}
+	}//end assertRequiredWhenFieldsDeclared()
 
 }//end class

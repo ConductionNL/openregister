@@ -24,9 +24,16 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
+use OCA\OpenRegister\Exception\UnknownMaskFormException;
+use OCA\OpenRegister\Exception\UnknownPatternSetException;
+use OCA\OpenRegister\Files\Service\File\MaskForm;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
+use OCA\OpenRegister\Service\File\ArchiveBounds;
 use OCP\IAppConfig;
 use RuntimeException;
 
@@ -46,6 +53,8 @@ use RuntimeException;
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/archive-members-are-searchable/specs
  */
 class FileSettingsHandler {
 
@@ -68,6 +77,27 @@ class FileSettingsHandler {
 	 * @var string
 	 */
 	public const OPENANONYMISER_PASSWORD_KEY = self::OPENANONYMISER_CREDENTIAL_FIELD;
+
+	/**
+	 * The minimum confidence a detection needs when no organisation setting says otherwise.
+	 *
+	 * @var float
+	 */
+	public const DEFAULT_CONFIDENCE_THRESHOLD = 0.5;
+
+	/**
+	 * The file settings key holding the anonymisation settings.
+	 *
+	 * @var string
+	 */
+	public const ANONYMISATION_KEY = 'anonymisation';
+
+	/**
+	 * The anonymisation settings key holding the mask form per entity type.
+	 *
+	 * @var string
+	 */
+	public const MASK_FORMS_KEY = 'maskForms';
 
 	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
@@ -107,6 +137,12 @@ class FileSettingsHandler {
 		'openAnonymiserPasswordSet' => false,
 		'entityRecognitionEnabled' => false,
 		'entityRecognitionMethod' => 'auto',
+		self::ANONYMISATION_KEY => [
+			'confidenceThreshold' => self::DEFAULT_CONFIDENCE_THRESHOLD,
+			'capacityPolicy' => CapacityPolicy::DEFAULT,
+			'officialsSource' => null,
+		],
+		ArchiveBounds::SETTINGS_KEY => ArchiveBounds::DEFAULTS,
 	];
 
 	/**
@@ -116,12 +152,14 @@ class FileSettingsHandler {
 	 *
 	 * @param IAppConfig $appConfig Configuration service.
 	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail (openregister#4100).
+	 * @param EntityPatternSetSetting|null $patternSets The enabled jurisdiction pattern sets; without one the default is none.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
+		private readonly ?EntityPatternSetSetting $patternSets = null,
 	) {
 	}//end __construct()
 
@@ -140,6 +178,7 @@ class FileSettingsHandler {
 			if (empty($fileConfig) === true) {
 				$defaults = self::FILE_DEFAULTS;
 				$defaults['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
+				$defaults[EntityPatternSetSetting::SETTINGS_KEY] = $this->patternSetSetting()->defaultCodes();
 				return $defaults;
 			}
 
@@ -172,9 +211,17 @@ class FileSettingsHandler {
 			$fileSettings['batchSize'] = $this->boundedBatchSize(batchSize: $fileSettings['batchSize']);
 		}
 
+		// The archive bounds always read whole: an install saved before they
+		// existed still states the bounds archives are opened under.
+		$fileSettings[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileSettings)->toArray();
+
 		unset($fileSettings[self::OPENANONYMISER_CREDENTIAL_FIELD]);
+		$fileSettings[self::ANONYMISATION_KEY] = $this->readableAnonymisation(stored: ($fileSettings[self::ANONYMISATION_KEY] ?? null));
 		$fileSettings['openAnonymiserUsername'] = (string) ($fileSettings['openAnonymiserUsername'] ?? '');
 		$fileSettings['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
+
+		// Never saved, the enabled pattern sets follow the phone region.
+		$fileSettings[EntityPatternSetSetting::SETTINGS_KEY] = $this->patternSetSetting()->read(stored: $fileSettings);
 
 		return $fileSettings;
 	}//end readableFileSettings()
@@ -223,6 +270,15 @@ class FileSettingsHandler {
 			$fileConfig['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
 
 			return $fileConfig;
+		} catch (ConfidenceThresholdOutOfRangeException $e) {
+			// The caller's value to correct, kept recognisable so the controller answers 400.
+			throw $e;
+		} catch (UnknownPatternSetException $e) {
+			// A refused value, answered as 400 naming the code: not a failure to store.
+			throw $e;
+		} catch (UnknownMaskFormException $e) {
+			// A refused mask form, answered as 400 naming the entity type.
+			throw $e;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
 		}//end try
@@ -266,11 +322,242 @@ class FileSettingsHandler {
 
 		unset($fileConfig['openAnonymiserPasswordSet']);
 		$fileConfig['batchSize'] = $this->boundedBatchSize(batchSize: $fileConfig['batchSize']);
+		$fileConfig[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileConfig)->toArray();
 		$fileConfig['openAnonymiserUsername'] = trim((string) $fileConfig['openAnonymiserUsername']);
 		$fileConfig[ReviewPolicy::SETTINGS_KEY] = $this->reviewDefault(fileData: $fileData);
+		$fileConfig[self::ANONYMISATION_KEY] = $this->submittedAnonymisation(fileData: $fileData);
+
+		$patternSets = $this->submittedPatternSets(fileData: $fileData);
+		if ($patternSets !== null) {
+			$fileConfig[EntityPatternSetSetting::SETTINGS_KEY] = $patternSets;
+		}
 
 		return $fileConfig;
 	}//end submittedFileSettings()
+
+	/**
+	 * The minimum confidence a detection needs, from the organisation's file settings.
+	 *
+	 * Read at request time by every detection path, so a changed setting applies
+	 * to the next detection without a restart.
+	 *
+	 * @return float A number between 0 and 1; the default when none is stored.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
+	 */
+	public function confidenceThreshold(): float {
+		$stored = $this->appConfig->getValueString(Application::APP_ID, 'fileManagement', '');
+		$settings = json_decode($stored, true);
+		if (is_array($settings) === false) {
+			return self::DEFAULT_CONFIDENCE_THRESHOLD;
+		}
+
+		return $this->readableAnonymisation(stored: ($settings[self::ANONYMISATION_KEY] ?? null))['confidenceThreshold'];
+	}//end confidenceThreshold()
+
+	/**
+	 * The anonymisation settings as a read returns them: a stored threshold
+	 * between 0 and 1, else the default.
+	 *
+	 * @param mixed $stored The stored anonymisation settings.
+	 *
+	 * @return array<string, mixed> The settings, with confidenceThreshold a float.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
+	 */
+	private function readableAnonymisation(mixed $stored): array {
+		$settings = [];
+		if (is_array($stored) === true) {
+			$settings = $stored;
+		}
+
+		$threshold = ($settings['confidenceThreshold'] ?? null);
+		$settings['confidenceThreshold'] = self::DEFAULT_CONFIDENCE_THRESHOLD;
+		if (self::isThreshold(value: $threshold) === true) {
+			$settings['confidenceThreshold'] = (float) $threshold;
+		}
+
+		$settings['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($settings['capacityPolicy'] ?? null))->rules();
+		$settings['officialsSource'] = OfficialsSource::normalise(value: ($settings['officialsSource'] ?? null));
+
+		return $settings;
+	}//end readableAnonymisation()
+
+	/**
+	 * The organisation's capacity policy (REQ-DKP-001): the stored one, else the shipped default.
+	 *
+	 * @return CapacityPolicy
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1-1
+	 */
+	public function capacityPolicy(): CapacityPolicy {
+		return CapacityPolicy::fromStored(stored: $this->storedAnonymisation()['capacityPolicy'] ?? null);
+	}//end capacityPolicy()
+
+	/**
+	 * Where the register of officials is read from, or null when none is configured (REQ-DKP-001).
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1-1
+	 */
+	public function officialsSource(): ?array {
+		return OfficialsSource::normalise(value: $this->storedAnonymisation()['officialsSource'] ?? null);
+	}//end officialsSource()
+
+	/**
+	 * The stored anonymisation settings, as stored.
+	 *
+	 * @return array<string, mixed> Empty when none are stored.
+	 */
+	private function storedAnonymisation(): array {
+		$settings = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		if (is_array($settings) === false || is_array($settings[self::ANONYMISATION_KEY] ?? null) === false) {
+			return [];
+		}
+
+		return $settings[self::ANONYMISATION_KEY];
+	}//end storedAnonymisation()
+
+	/**
+	 * The anonymisation settings to store from a save: the submitted ones, or the
+	 * stored ones when the save does not name them.
+	 *
+	 * @param array<string, mixed> $fileData The settings being saved.
+	 *
+	 * @return array<string, mixed> The settings to store.
+	 *
+	 * @throws ConfidenceThresholdOutOfRangeException When the threshold is not a number between 0 and 1.
+	 * @throws UnknownMaskFormException                When a mask form is unknown or its n is below 1.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-a-detection-may-be-masked-in-part-with-the-form-set-per-entity-type-req-pis-010
+	 */
+	private function submittedAnonymisation(array $fileData): array {
+		$submitted = ($fileData[self::ANONYMISATION_KEY] ?? null);
+		if (is_array($submitted) === false) {
+			$submitted = ['confidenceThreshold' => $this->confidenceThreshold()];
+		}
+
+		if (array_key_exists(self::MASK_FORMS_KEY, $submitted) === true) {
+			$submitted[self::MASK_FORMS_KEY] = MaskForm::normalise(maskForms: $submitted[self::MASK_FORMS_KEY]);
+		}
+
+		if (array_key_exists(self::MASK_FORMS_KEY, $submitted) === false) {
+			$submitted = $this->withStoredMaskForms(settings: $submitted);
+		}
+
+		if (array_key_exists('confidenceThreshold', $submitted) === false) {
+			$submitted['confidenceThreshold'] = $this->confidenceThreshold();
+		}
+
+		// A save that does not name the capacity policy or the officials
+		// source keeps the stored ones (REQ-DKP-001); what is kept is
+		// normalised, so an unknown capacity or decision never reaches a run.
+		$submitted += array_intersect_key($this->storedAnonymisation(), ['capacityPolicy' => true, 'officialsSource' => true]);
+		$submitted['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($submitted['capacityPolicy'] ?? null))->rules();
+		$submitted['officialsSource'] = OfficialsSource::normalise(value: ($submitted['officialsSource'] ?? null));
+
+		if (self::isThreshold(value: $submitted['confidenceThreshold']) === false) {
+			throw new ConfidenceThresholdOutOfRangeException(message: 'anonymisation.confidenceThreshold must be a number between 0 and 1');
+		}
+
+		$submitted['confidenceThreshold'] = (float) $submitted['confidenceThreshold'];
+
+		return $submitted;
+	}//end submittedAnonymisation()
+
+	/**
+	 * The mask form per entity type, from the organisation's file settings.
+	 *
+	 * Read at anonymisation time, so a saved form applies to the next document.
+	 * A stored value that no longer validates masks nothing: the placeholder is
+	 * the form that reveals least.
+	 *
+	 * @return array<string, array{form: string, n?: int}> Entity type to form; empty when none is set.
+	 *
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-a-detection-may-be-masked-in-part-with-the-form-set-per-entity-type-req-pis-010
+	 */
+	public function maskForms(): array {
+		$settings = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		$stored = ($settings[self::ANONYMISATION_KEY][self::MASK_FORMS_KEY] ?? null);
+		if (is_array($stored) === false) {
+			return [];
+		}
+
+		try {
+			return MaskForm::normalise(maskForms: $stored);
+		} catch (UnknownMaskFormException) {
+			return [];
+		}
+	}//end maskForms()
+
+	/**
+	 * The anonymisation settings with the stored mask forms kept, when there are any.
+	 *
+	 * @param array<string, mixed> $settings The anonymisation settings being stored.
+	 *
+	 * @return array<string, mixed> The settings.
+	 */
+	private function withStoredMaskForms(array $settings): array {
+		$maskForms = $this->maskForms();
+		if ($maskForms !== []) {
+			$settings[self::MASK_FORMS_KEY] = $maskForms;
+		}
+
+		return $settings;
+	}//end withStoredMaskForms()
+
+	/**
+	 * Whether a value is a number between 0 and 1, bounds included.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private static function isThreshold(mixed $value): bool {
+		if (is_int($value) === false && is_float($value) === false && (is_string($value) === false || is_numeric($value) === false)) {
+			return false;
+		}
+
+		$number = (float) $value;
+
+		return $number >= 0.0 && $number <= 1.0;
+	}//end isThreshold()
+
+	/**
+	 * The enabled pattern sets to store: the submitted list validated, else the
+	 * list already saved, else null so the setting keeps following the phone region.
+	 *
+	 * @param array<string, mixed> $fileData The settings being saved.
+	 *
+	 * @return array<int, string>|null
+	 *
+	 * @throws UnknownPatternSetException When the submitted list names an unknown code.
+	 *
+	 * @spec openspec/changes/detection-dutch-licence-plates/specs/pii-entity-detection/spec.md
+	 */
+	private function submittedPatternSets(array $fileData): ?array {
+		if (array_key_exists(EntityPatternSetSetting::SETTINGS_KEY, $fileData) === true) {
+			return $this->patternSetSetting()->submitted(codes: $fileData[EntityPatternSetSetting::SETTINGS_KEY]);
+		}
+
+		$stored = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		if (is_array($stored) === true && is_array($stored[EntityPatternSetSetting::SETTINGS_KEY] ?? null) === true) {
+			return $stored[EntityPatternSetSetting::SETTINGS_KEY];
+		}
+
+		return null;
+	}//end submittedPatternSets()
+
+	/**
+	 * The pattern set setting, or one without a phone region when none was injected.
+	 *
+	 * @return EntityPatternSetSetting
+	 */
+	private function patternSetSetting(): EntityPatternSetSetting {
+		return ($this->patternSets ?? new EntityPatternSetSetting());
+	}//end patternSetSetting()
 
 	/**
 	 * The instance review default from a settings save, refused when unsound.
@@ -283,7 +570,7 @@ class FileSettingsHandler {
 	 *
 	 * @throws InvalidArgumentException When the declaration names an ownership nobody can honour.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	private function reviewDefault(array $fileData): ?array {
 		if (array_key_exists(ReviewPolicy::SETTINGS_KEY, $fileData) === false) {

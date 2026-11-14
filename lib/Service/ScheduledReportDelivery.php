@@ -40,6 +40,7 @@ final class ScheduledReportDelivery {
 	 * @param ScheduledReportOwnerServices $owner  Owner-facing services (Files, notifications, impersonation).
 	 * @param IMailer                      $mailer Sends the email-delivery leg (deliveryMode email|both).
 	 * @param IConfig                      $config Resolves the instance's default mail sender.
+	 * @param ?AdminRecipientExpander     $adminRecipients Expands the @admins recipient token.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
@@ -47,6 +48,7 @@ final class ScheduledReportDelivery {
 		public readonly ScheduledReportOwnerServices $owner,
 		public readonly IMailer $mailer,
 		public readonly IConfig $config,
+		public readonly ?AdminRecipientExpander $adminRecipients = null,
 	) {
 	}//end __construct()
 }//end class

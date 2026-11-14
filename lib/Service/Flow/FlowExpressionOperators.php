@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+ * @spec openspec/specs/flow-expressions/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use DateTime;
 /**
  * The custom JSONLogic operators, by name, in registration order.
  *
- * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+ * @spec openspec/specs/flow-expressions/spec.md
  */
 final class FlowExpressionOperators {
 
@@ -40,7 +40,7 @@ final class FlowExpressionOperators {
 	 *
 	 * @return array<string, callable> Operator name => implementation.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	public static function all(): array {
 		return array_merge(self::strings(), self::dates(), self::arrays(), self::structure());

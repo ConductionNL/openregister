@@ -2,8 +2,9 @@
 
 ## 1. Formats
 
-- [ ] 1.1 Add `ExportService::exportToTsv()` and the `tsv` branch in `ObjectsController::export()` (tab delimiter, quoting as design D-1, UTF-8 with BOM, `text/tab-separated-values`). Verify: `tests/Unit/Service/ExportServiceTsvTest.php` round-trips a value with a tab, a line break and a quote through PhpSpreadsheet's reader.
-- [ ] 1.2 Add `ExportService::exportToXml()` with `XMLWriter` and the `xml` branch, implementing the existing scenario "Export to XML" plus the `<property name="...">` fallback for invalid names and `xsi:nil` for null. Verify: `tests/Unit/Service/ExportServiceXmlTest.php` validates the output with `DOMDocument::loadXML()`, covers arrays, nested objects, an `@self` block and a property named `2e-adres`.
+- [x] 1.1 Add `ExportService::exportToTsv()` and the `tsv` branch in `ObjectsController::export()` (tab delimiter, quoting as design D-1, UTF-8 with BOM, `text/tab-separated-values`). Verify: `tests/Unit/Service/ExportServiceTsvTest.php` round-trips a value with a tab, a line break and a quote through PhpSpreadsheet's reader.
+- [x] 1.2 Add `ExportService::exportToXml()` with `XMLWriter` and the `xml` branch, implementing the existing scenario "Export to XML" plus the `<property name="...">` fallback for invalid names and `xsi:nil` for null. Verify: `tests/Unit/Service/ExportServiceXmlTest.php` validates the output with `DOMDocument::loadXML()`, covers arrays, nested objects, an `@self` block and a property named `2e-adres`.
+  - Done: the writer is `lib/Service/Export/XmlObjectWriter.php` (XMLWriter, in memory). `ExportService::exportToXml()` / `xmlFor()` write the same rows as the JSON export, and `exportToXml()` is added to `ObjectExporterInterface`. The `xml` branch in `ObjectsController::export()` serves `application/xml; charset=utf-8` and records the run with the count of top-level `<object>` records. Characters XML 1.0 does not allow are replaced by U+FFFD, so the document stays well formed. Tests: `tests/Unit/Service/ExportServiceXmlTest.php`, `tests/Unit/Service/Export/XmlObjectWriterTest.php`, and two `ObjectsControllerTest` cases.
 
 ## 2. Public download
 
@@ -12,7 +13,7 @@
 
 ## 3. Dialog
 
-- [ ] 3.1 Offer CSV, TSV, JSON, XML and Excel in `src/modals/register/ExportRegister.vue` and derive the fallback file name from the chosen format. Verify: `src/modals/register/ExportRegister.spec.js` asserts the five options and the `.tsv` and `.xml` fallback names.
+- [x] 3.1 Offer CSV, TSV, JSON, XML and Excel in `src/modals/register/ExportRegister.vue` and derive the fallback file name from the chosen format. Verify: `src/modals/register/ExportRegister.spec.js` asserts the five options and the `.tsv` and `.xml` fallback names.
 
 ## 4. Docs and end-to-end test
 

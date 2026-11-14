@@ -17,7 +17,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notifications;
 
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
+use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\App\IAppManager;
 use OCP\AppFramework\IAppContainer;
@@ -30,6 +32,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Notifications\NotificationsRegistrar
  * @uses   \OCA\OpenRegister\Notifications\Service\WebPush\HexIconService
  * @uses \OCA\OpenRegister\Notifications\NotificationsWiring
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder
  */
 final class NotificationsRegistrarTest extends TestCase {
 
@@ -42,7 +45,7 @@ final class NotificationsRegistrarTest extends TestCase {
 		$context = new RecordingRegistrationContext();
 		NotificationsRegistrar::register(context: $context);
 
-		$this->assertSame(expected: [HexIconService::class], actual: $context->services);
+		$this->assertSame(expected: [HexIconService::class, RuleReachRecorder::class], actual: $context->services);
 
 		$appData = $this->createMock(IAppData::class);
 		$factory = $this->createMock(IAppDataFactory::class);
@@ -79,4 +82,37 @@ final class NotificationsRegistrarTest extends TestCase {
 		$this->assertCount(27, $expected);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
 	}//end testEveryInterfaceIsBoundToItsImplementation()
+
+	/**
+	 * The rule reach recorder is one shared service built on the container's
+	 * logger, so what one dispatcher counted is what the next one reads
+	 * (a-rule-that-reaches-nobody-says-so, task 3.1).
+	 *
+	 * @return void
+	 */
+	public function testTheRuleReachRecorderIsOneSharedService(): void {
+		$registered = [];
+		$context = $this->createMock(IRegistrationContext::class);
+		$context->method('registerService')->willReturnCallback(
+			static function (string $name, callable $factory, bool $shared = true) use (&$registered): void {
+				$registered[$name] = ['factory' => $factory, 'shared' => $shared];
+			}
+		);
+
+		NotificationsRegistrar::register(context: $context);
+
+		$this->assertArrayHasKey(RuleReachRecorder::class, $registered);
+		$this->assertTrue($registered[RuleReachRecorder::class]['shared']);
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(RuleReachRecorder::MARKER);
+		$container = $this->createMock(IAppContainer::class);
+		$container->method('get')->with(LoggerInterface::class)->willReturn($logger);
+
+		$recorder = $registered[RuleReachRecorder::class]['factory']($container);
+		$recorder->reachedNobody('rule-1', 'obj-1');
+		$recorder->reachedNobody('rule-1', 'obj-2');
+
+		$this->assertSame(2, $recorder->report()['occurrences']);
+	}//end testTheRuleReachRecorderIsOneSharedService()
 }//end class

@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCA\OpenRegister\Service\Flow\FlowToken;
  * handed outside the node. It holds the parent's token, so a waited-on child
  * merges into the very instance the parent's later steps read.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 final class SubFlowRun {
 
@@ -46,7 +46,7 @@ final class SubFlowRun {
 	 * @param array<string, mixed> $config  The step configuration.
 	 * @param array<string, mixed> $context The parent run's context.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function __construct(
 		public readonly SubFlowTarget $target,
@@ -60,7 +60,7 @@ final class SubFlowRun {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function fansOut(): bool {
 		return ($this->config['fanOut'] ?? false) === true;
@@ -74,7 +74,7 @@ final class SubFlowRun {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function withChildToken(array $context): array {
 		$context[FlowToken::CONTEXT_KEY] = $this->parentToken()->all();
@@ -90,7 +90,7 @@ final class SubFlowRun {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function absorb(FlowRun $child): void {
 		$this->parentToken()->merge((array)(($child->getContext() ?? [])[FlowToken::CONTEXT_KEY] ?? []));
@@ -102,7 +102,7 @@ final class SubFlowRun {
 	 *
 	 * @return FlowToken
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function parentToken(): FlowToken {
 		$token = ($this->context[FlowToken::CONTEXT_KEY] ?? null);

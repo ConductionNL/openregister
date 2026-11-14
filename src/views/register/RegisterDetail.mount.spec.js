@@ -70,6 +70,16 @@ jest.mock('../../modals/register/EditRegisterFormDialog.vue', () => ({
 	},
 }))
 jest.mock('./DetailChartGrid.vue', () => ({ __esModule: true, default: mockStub('DetailChartGrid') }))
+jest.mock('./RegisterModelDiagram.vue', () => ({
+	__esModule: true,
+	default: {
+		name: 'RegisterModelDiagram',
+		props: ['registerId'],
+		render() {
+			return require('vue').h('x-RegisterModelDiagram', { 'data-register-id': String(this.registerId) })
+		},
+	},
+}))
 jest.mock('./activeRegister.js', () => ({ findActiveRegister: jest.fn() }))
 jest.mock('@/services/getTheme.js', () => ({ getTheme: () => 'light' }))
 jest.mock('../../services/formatBytes.js', () => ({ __esModule: true, default: (bytes) => `${bytes}B` }))
@@ -290,5 +300,24 @@ describe('RegisterDetail mounted', () => {
 		expect(badge.attributes('title')).toBe('Managed by configuration: Remote')
 		expect(badge.text()).toBe('Managed')
 		expect(wrapper.findAll('.card')[0].findAll('button.NcActionButton')).toHaveLength(1)
+	})
+
+	it('switches the schemas between cards and the model of the register as a diagram', async () => {
+		const wrapper = await mounted({ id: 4, title: 'Zaken', schemas: SCHEMAS })
+		const cards = wrapper.find('[data-testid="schema-view-cards"]')
+		const diagram = wrapper.find('[data-testid="schema-view-diagram"]')
+
+		expect(cards.attributes('aria-pressed')).toBe('true')
+		expect(wrapper.find('x-RegisterModelDiagram').exists()).toBe(false)
+		expect(wrapper.findAll('.card')).toHaveLength(2)
+
+		await diagram.trigger('click')
+		expect(diagram.attributes('aria-pressed')).toBe('true')
+		expect(wrapper.find('x-RegisterModelDiagram').attributes('data-register-id')).toBe('4')
+		expect(wrapper.findAll('.card')).toHaveLength(0)
+
+		await cards.trigger('click')
+		expect(wrapper.find('x-RegisterModelDiagram').exists()).toBe(false)
+		expect(wrapper.findAll('.card')).toHaveLength(2)
 	})
 })

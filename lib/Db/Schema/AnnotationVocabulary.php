@@ -20,6 +20,8 @@ namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
+use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 
 /**
  * The `x-openregister-*` keys a schema configuration keeps.
@@ -58,6 +60,19 @@ final class AnnotationVocabulary {
 		'x-openregister-aggregate-refs',
 		'x-openregister-notifications',
 		'x-openregister-widgets',
+		// What a reference card of this schema's objects shows: its title
+		// property, up to three summary properties, an icon and an image
+		// property (platform-reference-provider). Absent from this list
+		// setConfiguration() would drop the block, every card would fall back
+		// to the dull title-and-schema default, and the schema would read as
+		// having declared nothing — the same or#460/#462-class silent drop the
+		// entries around this one record.
+		'x-openregister-card',
+		// What a unified-search result of this schema's objects shows: its
+		// title property, subline property and ordering date property
+		// (platform-search-provider). Absent from this list setConfiguration()
+		// would drop the block and every result would keep the derived title.
+		'x-openregister-search-result',
 		'x-openregister-relations',
 		// The named relation vocabulary: a list of
 		// {key, label, inverseLabel, symmetric, inherits} that several `$ref`
@@ -87,6 +102,15 @@ final class AnnotationVocabulary {
 		// register-level worked, so the capability looked healthy.
 		'x-openregister-processing',
 		'x-openregister-archival',
+		// Read by Schema::isPreservationEnabled() (REQ-APS-006): the preservation (statisch) regime.
+		'x-openregister-preserve',
+		// Which reference properties a record inherits a permanent appraisal
+		// through: `{"inheritAppraisalFrom": ["subjects"]}`. Read by
+		// InheritedAppraisal before an object is judged eligible for
+		// destruction. Absent from this list setConfiguration() would DROP it,
+		// and a publication under a hotspot subject would be destroyed while
+		// its schema editor reported the declaration saved.
+		'x-openregister-retention',
 		// The links out of a record, each a title plus a URL template whose
 		// placeholders fill from the object's own values
 		// (api-as-a-versioned-surface, ADR-031). Read by
@@ -267,6 +291,19 @@ final class AnnotationVocabulary {
 		// every subsequent invite would answer 403 "does not allow", the
 		// same silent no-op class every entry above records.
 		'x-openregister-talk-participants',
+		// An ordered classification vocabulary, the property carrying the
+		// label, group clearances, scope ceilings and a floor. Read by
+		// ClassificationScale, refused at save by
+		// ClassificationDeclarationValidator. Absent from this list
+		// setConfiguration() would drop it and every classified object would
+		// read as unclassified, the same silent no-op every entry above records.
+		ClassificationScale::ANNOTATION,
+		// A per-object confidentiality tier, legal ground and timed release
+		// (confidentiality-classification-primitive). Read by
+		// ConfidentialityRule; a faulty block is logged at error level and
+		// fails closed. Absent from this list setConfiguration() would drop it
+		// and every confidential object would read as unclassified.
+		ConfidentialityAnnotationValidator::ANNOTATION,
 	];
 
 

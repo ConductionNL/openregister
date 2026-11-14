@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * fragments in several passes; and an app seeding into another app's register
  * uses a schema that register lists.
  *
- * @spec openspec/changes/seed-schema-must-belong-to-its-register/specs/data-import-export/spec.md#requirement-a-seed-is-never-written-into-another-apps-schema-its-register-does-not-list
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class ForeignSeedSchema
 {
@@ -70,7 +70,7 @@ final class ForeignSeedSchema
 	 *
 	 * @return bool True when the seed must be skipped.
 	 *
-	 * @spec openspec/changes/seed-schema-must-belong-to-its-register/specs/data-import-export/spec.md#requirement-a-seed-is-never-written-into-another-apps-schema-its-register-does-not-list
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function isForeign(Register $register, Schema $schema): bool {
 		if ($this->registerAdmits(register: $register, schema: $schema) === true

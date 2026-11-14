@@ -83,6 +83,16 @@ final class RetentionEvaluatorTest extends TestCase {
 		);
 	}//end testDeclaredFactsAreResolvedForTheRow()
 
+	public function testDeclaredPartiesAreReadOffTheRow(): void {
+		$result = $this->makeEvaluator()->evaluate(
+			annotation: ['retention' => ['default' => 'P30D'], 'parties' => 'aanvrager'],
+			row: ['aanvrager' => ['naam' => 'Gemeente Zuiddrecht', 'id' => 'org-1']],
+			createdAt: $this->created()
+		);
+
+		self::assertSame([['role' => 'aanvrager', 'name' => 'Gemeente Zuiddrecht', 'id' => 'org-1']], $result['parties']);
+	}//end testDeclaredPartiesAreReadOffTheRow()
+
 	public function testAnUndeclaredFactIsAbsent(): void {
 		$result = $this->makeEvaluator()->evaluate(
 			annotation: ['retention' => ['default' => 'P30D']],
@@ -93,6 +103,7 @@ final class RetentionEvaluatorTest extends TestCase {
 		self::assertArrayNotHasKey('aggregationLevel', $result);
 		self::assertArrayNotHasKey('useRestriction', $result);
 		self::assertArrayNotHasKey('temporalCoverage', $result);
+		self::assertArrayNotHasKey('parties', $result);
 	}//end testAnUndeclaredFactIsAbsent()
 
 	public function testTemporalCoverageIsAbsentWhenTheRowDoesNotCarryTheProperty(): void {

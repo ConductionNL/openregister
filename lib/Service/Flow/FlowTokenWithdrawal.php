@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Flow;
  * The workflow, its subject and the output places whose tokens are withdrawn
  * because their exit was not taken.
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class FlowTokenWithdrawal {
 

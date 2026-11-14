@@ -171,7 +171,7 @@ class McpController extends Controller {
 	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt No object lookup: returns instance-wide schema metadata, not per-object data.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function grantableRights(): JSONResponse {
 		try {

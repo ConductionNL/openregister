@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookDispatchServices;
 use OCA\OpenRegister\Service\WebhookEvent;
@@ -91,6 +92,23 @@ class WebhookInterceptionFastPathTest extends TestCase {
 			),
 			logger: $this->logger
 		);
+
+		// Deliver to the example host without the network: the URL guard
+		// resolves it to one public address instead of asking DNS.
+		$guard = new class extends OutboundAddressGuard {
+			/**
+			 * Fixed resolution: one public address for any host.
+			 *
+			 * @param string $host The host.
+			 *
+			 * @return array<int, string> The addresses.
+			 */
+			protected function resolve(string $host): array {
+				return ['93.184.215.14'];
+			}//end resolve()
+		};
+		$property = new \ReflectionProperty(WebhookService::class, 'addressGuard');
+		$property->setValue($this->service, $guard);
 	}//end setUp()
 
 	/**

@@ -23,8 +23,8 @@
 
 ## 4. The gate
 
-- [ ] 4.1 A hydra gate refusing a node in THIS repository's node directory that declares neither. Scoped by path (D-3 trap), never by interface.
-- [ ] 4.2 An acceptance fixture with a planted undeclared node, so the gate is proven to refuse rather than assumed to.
+- [x] 4.1 A hydra gate refusing a node in THIS repository's node directory that declares neither. Scoped by path (D-3 trap), never by interface. (verified 13 Nov: gate-111 `flow-node-taxonomy`, `hydra-gates/scripts/lib/check_flow_node_taxonomy.py`, run by `run-hydra-gates.sh`; on this tree it checks 110 flow node files with no finding)
+- [x] 4.2 An acceptance fixture with a planted undeclared node, so the gate is proven to refuse rather than assumed to. (verified 13 Nov: `test-fixtures/gate-acceptance/flow-node-taxonomy/{clean,planted,no-nodes}`; `lib/test_gate111_flow_node_taxonomy.sh` passes: clean rc=0, planted rc=1 with one finding, no-nodes rc=4 not applicable)
 
 ## 5. Proof
 

@@ -56,6 +56,7 @@
 		"phpmetrics:violations": "./vendor/bin/phpmetrics --violations-xml=phpmetrics/violations.xml lib/",
 		"test:unit": "./vendor/bin/phpunit --testsuite=\"Unit Tests\" --colors=always",
 		"test:richdocuments-contract": "./vendor/bin/phpunit -c tests/Contract/Richdocuments/phpunit.xml --no-coverage --colors=always",
+		"test:files-antivirus-contract": "./vendor/bin/phpunit -c tests/Contract/FilesAntivirus/phpunit.xml --no-coverage --colors=always",
 		"test:integration": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Integration suite boots the Nextcloud server (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always; fi",
 		"test:db": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Database suite needs a booted Nextcloud server and a live database (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Database Tests\" --colors=always; fi",
 		"test:service": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Service suite needs a booted Nextcloud server container (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Service Tests\" --colors=always; fi",

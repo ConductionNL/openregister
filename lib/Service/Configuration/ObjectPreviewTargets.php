@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * The registers and schemas a previewed object can land in: the local ones, and the ones the import creates.
  *
- * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 final class ObjectPreviewTargets {
 
@@ -62,7 +62,7 @@ final class ObjectPreviewTargets {
 	 * @param array<string, Schema>                                                $schemasBySlug   Local schemas by lowercased slug.
 	 * @param array{registers: array<string, true>, schemas: array<string, true>} $planned         Register and schema slugs this import creates.
 	 *
-	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(array $registersBySlug, array $schemasBySlug, array $planned) {
 		$this->registersBySlug = $registersBySlug;
@@ -77,7 +77,7 @@ final class ObjectPreviewTargets {
 	 *
 	 * @return array{register: Register, schema: Schema}|null
 	 *
-	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function local(array $row): ?array {
 		$register = ($this->registersBySlug[strtolower($row['register'])] ?? null);
@@ -98,7 +98,7 @@ final class ObjectPreviewTargets {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function arrives(array $row): bool {
 		$register = strtolower($row['register']);

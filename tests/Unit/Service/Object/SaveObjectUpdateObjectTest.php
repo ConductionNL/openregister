@@ -157,6 +157,7 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Object\StoredObjectUpdate
  * @uses \OCA\OpenRegister\Service\ProtectedCarryForward
  * @uses \OCA\OpenRegister\Service\RecordUpdate
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedChange
  */
 final class SaveObjectUpdateObjectTest extends TestCase {
 
@@ -212,7 +213,12 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 				data: $case['data'],
 				existingObject: $existing
 			),
-			options: new ObjectUpdateOptions(silent: ($case['silent'] ?? false), oldObject: $old)
+			options: new ObjectUpdateOptions(
+				silent: ($case['silent'] ?? false),
+				oldObject: $old,
+				origin: ($case['origin'] ?? null),
+				marks: ($case['marks'] ?? [])
+			)
 		);
 
 		$lines = array_values(array_filter($logger->lines, static fn (string $l): bool => str_contains($l, 'updateInverseRelations') || str_contains($l, 'archive')));
@@ -264,6 +270,12 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 			$this->trace[] = ['audit', $old?->getObject(), $new?->getObject()];
 			$log = $this->createMock(AuditTrail::class);
 			$log->method('jsonSerialize')->willReturn(['log' => 1]);
+			return $log;
+		});
+		$audit->method('recordChange')->willReturnCallback(function (\OCA\OpenRegister\Db\AuditTrail\AuditedChange $change): AuditTrail {
+			$this->trace[] = ['recordChange', $change->action, $change->marks, $change->old?->getObject(), $change->new?->getObject()];
+			$log = $this->createMock(AuditTrail::class);
+			$log->method('jsonSerialize')->willReturn(['log' => 2]);
 			return $log;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
@@ -338,6 +350,45 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 			'image field not a file' => ['data' => ['title' => 'new', 'doc' => 'raw'], 'imageType' => 'string'],
 		];
 	}
+
+	/**
+	 * An update with origin `revert` writes one audit row under that action,
+	 * carrying the point restored to, and no plain update row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	public function testARevertOriginIsAuditedAsARevertWithItsMarks(): void {
+		$outcome = $this->runUpdate(
+			case: [
+				'data' => ['title' => 'then'],
+				'origin' => 'revert',
+				'marks' => ['revertedTo' => '1.0.1', 'revertedToVersion' => '1.0.1'],
+			]
+		);
+
+		$audits = array_values(array_filter($outcome['trace'], static fn (array $step): bool => in_array($step[0], ['audit', 'recordChange'], true)));
+		$this->assertSame(
+			[['recordChange', 'revert', ['revertedTo' => '1.0.1', 'revertedToVersion' => '1.0.1'], ['id' => '11111111-1111-1111-1111-111111111111', 'title' => 'old', 'kept' => 'yes'], ['id' => '11111111-1111-1111-1111-111111111111', 'title' => 'then', 'doc' => null]]],
+			$audits
+		);
+		$this->assertSame(['log' => 2], $outcome['lastLog']);
+	}//end testARevertOriginIsAuditedAsARevertWithItsMarks()
+
+	/**
+	 * With audit trails off, an update with an origin writes no audit row either.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	public function testARevertOriginHonoursAuditTrailsOff(): void {
+		$outcome = $this->runUpdate(case: ['data' => ['title' => 'then'], 'origin' => 'revert', 'audit' => false]);
+
+		$audits = array_filter($outcome['trace'], static fn (array $step): bool => in_array($step[0], ['audit', 'recordChange'], true));
+		$this->assertSame([], $audits);
+	}//end testARevertOriginHonoursAuditTrailsOff()
 
 	public function testEveryCaseMatchesTheGoldenRecordedOnTheOldCode(): void {
 		$fixture = __DIR__ . '/fixtures/save-object-update-object-golden.json';

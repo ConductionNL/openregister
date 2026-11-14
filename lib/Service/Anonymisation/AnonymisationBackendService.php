@@ -26,7 +26,6 @@ use OCP\App\IAppManager;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
-use OCP\ICache;
 use OCP\Server;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -61,31 +60,25 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	private const EXAPP_LIGHT = 'openanonymiser_light';
 
 	/**
-	 * IAppConfig key holding the probe-cache TTL in seconds.
-	 */
-	private const TTL_CONFIG_KEY = 'anonymisation.probe_cache_ttl';
-
-	/**
-	 * Default probe-cache TTL in seconds.
-	 */
-	private const TTL_DEFAULT = 60;
-
-	/**
-	 * Minimum allowed probe-cache TTL in seconds.
-	 */
-	private const TTL_MIN = 10;
-
-	/**
-	 * Maximum allowed probe-cache TTL in seconds.
-	 */
-	private const TTL_MAX = 600;
-
-	/**
-	 * Distributed probe-result cache, or null when no backend is available.
+	 * The cached probe result of each backend.
 	 *
-	 * @var ICache|null
+	 * @var ProbeResultCache
 	 */
-	private ?ICache $cache = null;
+	private readonly ProbeResultCache $probeCache;
+
+	/**
+	 * Reads what each backend is built from.
+	 *
+	 * @var DetectorVersionReader
+	 */
+	private readonly DetectorVersionReader $detectorVersions;
+
+	/**
+	 * The version records each backend has reported.
+	 *
+	 * @var DetectorVersionHistory
+	 */
+	private readonly DetectorVersionHistory $detectorHistory;
 
 	/**
 	 * App manager used for ExApp detection.
@@ -157,12 +150,16 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 		$this->logger              = $collaborators->logger;
 		$this->connectionReporter  = $collaborators->connectionReporter;
 
+		$cache = null;
 		try {
-			$this->cache = $platform->cacheFactory->createDistributed('openregister_anon_probe');
+			$cache = $platform->cacheFactory->createDistributed('openregister_anon_probe');
 		} catch (Throwable $e) {
 			$this->logger->warning('[AnonymisationBackendService] cache backend unavailable: ' . $e->getMessage());
-			$this->cache = null;
 		}
+
+		$this->probeCache = new ProbeResultCache(cache: $cache, appConfig: $this->appConfig);
+		$this->detectorVersions = new DetectorVersionReader(appManager: $this->appManager);
+		$this->detectorHistory  = new DetectorVersionHistory(appConfig: $this->appConfig);
 	}//end __construct()
 
 	/**
@@ -237,11 +234,11 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @return ProbeResult The fresh probe result.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function testConnection(string $method): ProbeResult {
 		$result = $this->freshProbe(method: $method);
-		$this->writeCache(method: $method, result: $result);
+		$this->probeCache->write(method: $method, result: $result);
 
 		if ($method === BackendState::METHOD_OPENANONYMISER) {
 			$this->reportOpenAnonymiser(result: $result);
@@ -260,7 +257,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function reportOpenAnonymiser(ProbeResult $result): void {
 		$this->connectionReporter->report(
@@ -316,13 +313,13 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * @return ProbeResult The (possibly cached) probe result.
 	 */
 	public function probe(string $method): ProbeResult {
-		$cached = $this->readCache(method: $method);
+		$cached = $this->probeCache->read(method: $method);
 		if ($cached !== null) {
 			return $cached;
 		}
 
 		$result = $this->freshProbe(method: $method);
-		$this->writeCache(method: $method, result: $result);
+		$this->probeCache->write(method: $method, result: $result);
 
 		return $result;
 	}//end probe()
@@ -433,7 +430,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @throws AnalyzeRequestRejectedException When the ExApp answers 4xx: it was reached and refused the request.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function requestOpenAnonymiser(AnonymiserCall $call): ?array {
 		return $this->sendToExApp(call: $call);
@@ -501,7 +498,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) The exception's own status predicate.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function decodeExAppResponse(IResponse $response, string $appId): ?array {
 		$status = $response->getStatusCode();
@@ -548,7 +545,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 
 			return $this->presidioHealthResult(latency: $latency, statusCode: $response->getStatusCode());
 		} catch (Throwable $e) {
-			return $this->unreachable(error: $this->mapHttpException(message: $e->getMessage()));
+			return $this->unreachable(error: ProbeResult::errorFromHttpMessage(message: $e->getMessage()));
 		}
 	}//end probePresidio()
 
@@ -644,8 +641,36 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			name: $method,
 			configured: $this->isConfigured(method: $method, probe: $probe),
 			probe: $probe,
+			detector: $this->detectorFor(method: $method, probe: $probe),
 		);
 	}//end buildBackendInfo()
+
+	/**
+	 * What a backend is built from. A reachable backend's record is noted in
+	 * the version history at the probe moment, which dates a record that
+	 * states no change day of its own; an unreachable one reports as it is.
+	 *
+	 * @param string      $method The backend method.
+	 * @param ProbeResult $probe  The backend's latest probe.
+	 *
+	 * @return DetectorVersion
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-every-detection-backend-reports-what-it-is-built-from-req-adi-001
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-detector-says-when-it-last-changed-req-adi-004
+	 */
+	private function detectorFor(string $method, ProbeResult $probe): DetectorVersion {
+		$exAppId = null;
+		if ($method === BackendState::METHOD_OPENANONYMISER) {
+			$exAppId = $this->resolveActiveExAppId();
+		}
+
+		$record = $this->detectorVersions->forMethod(method: $method, exAppId: $exAppId);
+		if ($probe->reachable === false) {
+			return $record;
+		}
+
+		return $this->detectorHistory->observe(backend: $method, record: $record, now: $probe->probedAt);
+	}//end detectorFor()
 
 	/**
 	 * Build the hybrid BackendInfo from the composed atomic records.
@@ -662,10 +687,13 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 		$available = ($regex->available === true && $presidio->available === true && $openAnonymiser->available === true);
 		$configured = ($presidio->configured === true && $openAnonymiser->configured === true);
 
+		$probe = new ProbeResult(reachable: $available, latencyMs: null, error: null, probedAt: $this->now());
+
 		return new BackendInfo(
 			name: BackendState::METHOD_HYBRID,
 			configured: $configured,
-			probe: new ProbeResult(reachable: $available, latencyMs: null, error: null, probedAt: $this->now()),
+			probe: $probe,
+			detector: $this->detectorFor(method: BackendState::METHOD_HYBRID, probe: $probe),
 		);
 	}//end buildHybridInfo()
 
@@ -742,130 +770,6 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 
 		return BackendState::METHOD_REGEX;
 	}//end resolveEffectiveMethod()
-
-	/**
-	 * Map an HTTP client exception message to a probe error code.
-	 *
-	 * @param string $message The exception message.
-	 *
-	 * @return string One of the ProbeResult::ERROR_* codes.
-	 */
-	private function mapHttpException(string $message): string {
-		$lower = strtolower($message);
-
-		if (str_contains($lower, 'timed out') === true || str_contains($lower, 'timeout') === true) {
-			return ProbeResult::ERROR_TIMEOUT;
-		}
-
-		if (str_contains($lower, 'could not resolve') === true || str_contains($lower, 'name or service not known') === true) {
-			return ProbeResult::ERROR_DNS_ERROR;
-		}
-
-		return ProbeResult::ERROR_CONNECT_REFUSED;
-	}//end mapHttpException()
-
-	/**
-	 * Resolve the probe-cache TTL, clamped to the allowed range.
-	 *
-	 * @return int The TTL in seconds.
-	 */
-	private function resolveTtl(): int {
-		$ttl = $this->appConfig->getValueInt('openregister', self::TTL_CONFIG_KEY, self::TTL_DEFAULT);
-
-		return max(self::TTL_MIN, min(self::TTL_MAX, $ttl));
-	}//end resolveTtl()
-
-	/**
-	 * Read a cached probe result for a method, or null on miss / disabled cache.
-	 *
-	 * @param string $method The method enum value.
-	 *
-	 * @return ProbeResult|null The cached result, or null.
-	 */
-	private function readCache(string $method): ?ProbeResult {
-		$data = $this->cachedProbeData(method: $method);
-		if ($data === null) {
-			return null;
-		}
-
-		return new ProbeResult(
-			reachable: (bool)($data['reachable'] ?? false),
-			latencyMs: $this->nullableInt(value: ($data['latencyMs'] ?? null)),
-			error: $this->nullableString(value: ($data['error'] ?? null)),
-			probedAt: (string)($data['probedAt'] ?? $this->now()),
-		);
-	}//end readCache()
-
-	/**
-	 * The decoded cache entry of a method, or null when there is no cache, no entry or no readable one.
-	 *
-	 * @param string $method One of BackendState::METHODS.
-	 *
-	 * @return array<string, mixed>|null The decoded entry.
-	 */
-	private function cachedProbeData(string $method): ?array {
-		if ($this->cache === null) {
-			return null;
-		}
-
-		$blob = $this->cache->get($method);
-		if (is_string($blob) === false) {
-			return null;
-		}
-
-		$data = json_decode($blob, true);
-		if (is_array($data) === false) {
-			return null;
-		}
-
-		return $data;
-	}//end cachedProbeData()
-
-	/**
-	 * A cached value as an int, keeping null.
-	 *
-	 * @param mixed $value The cached value.
-	 *
-	 * @return int|null The int, or null.
-	 */
-	private function nullableInt(mixed $value): ?int {
-		if ($value === null) {
-			return null;
-		}
-
-		return (int)$value;
-	}//end nullableInt()
-
-	/**
-	 * A cached value as a string, keeping null.
-	 *
-	 * @param mixed $value The cached value.
-	 *
-	 * @return string|null The string, or null.
-	 */
-	private function nullableString(mixed $value): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		return (string)$value;
-	}//end nullableString()
-
-	/**
-	 * Write a probe result to the cache with the configured TTL.
-	 *
-	 * @param string $method The method enum value.
-	 * @param ProbeResult $result The result to cache.
-	 *
-	 * @return void
-	 */
-	private function writeCache(string $method, ProbeResult $result): void {
-		if ($this->cache === null) {
-			return;
-		}
-
-		$this->cache->set($method, json_encode($result->jsonSerialize()), $this->resolveTtl());
-	}//end writeCache()
 
 	/**
 	 * Current time as an ISO-8601 string.

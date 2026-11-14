@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
  */
 
 declare(strict_types=1);
@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
  * An amount in one unit, the unit wanted, and the calendar that says how many
  * hours a business day has.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
  */
 final class UnitConversion {
 	/**
@@ -37,7 +37,7 @@ final class UnitConversion {
 	 * @param string          $toUnit   The unit wanted.
 	 * @param WorkingCalendar $calendar Supplies hoursPerWorkingDay.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
 	public function __construct(
 		public readonly float $value,

@@ -3037,6 +3037,461 @@
                 "message": "Tag \"UnknownSchema\" used by operations but not declared in top-level tags; auto-added.",
                 "code": "orphan_tag",
                 "severity": "auto_corrected"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Declared deviation from NLGov /core/uri-version: The server URL \"https://nc.example/apps/openregister/api\" does not end in the major version (/v{major}). The URL pattern /index.php/apps/{app}/api/{resource} is fixed for every app (hydra ADR-002); the version is negotiated by the API-Version header instead.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/uri-version"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.get.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.post.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.post.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.post.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.put.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.put.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.put.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.patch.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.patch.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.patch.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.get.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.post.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.post.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.post.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.put.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.put.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.put.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.patch.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.patch.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.patch.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.get.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.post.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.post.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.post.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.put.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.put.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.put.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.patch.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.patch.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.patch.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.get.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.post.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.post.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.post.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.put.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.put.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.put.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.patch.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.patch.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.patch.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
             }
         ]
     },
@@ -4702,6 +5157,237 @@
                 "message": "Tag \"JSON-LD\" used by operations but not declared in top-level tags; auto-added.",
                 "code": "orphan_tag",
                 "severity": "auto_corrected"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Declared deviation from NLGov /core/uri-version: The server URL \"https://nc.example/apps/openregister/api\" does not end in the major version (/v{major}). The URL pattern /index.php/apps/{app}/api/{resource} is fixed for every app (hydra ADR-002); the version is negotiated by the API-Version header instead.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/uri-version"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.get.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.post.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.post.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.post.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.put.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.put.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.put.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.patch.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.patch.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.patch.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.get.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.post.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.post.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant.post.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.put.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.put.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.put.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.patch.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.patch.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/klant/{id}.patch.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
             }
         ]
     },
@@ -6343,6 +7029,237 @@
                 "message": "Tag \"UnknownSchema\" used by operations but not declared in top-level tags; auto-added.",
                 "code": "orphan_tag",
                 "severity": "auto_corrected"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Declared deviation from NLGov /core/uri-version: The server URL \"https://nc.example/apps/openregister/api\" does not end in the major version (/v{major}). The URL pattern /index.php/apps/{app}/api/{resource} is fixed for every app (hydra ADR-002); the version is negotiated by the API-Version header instead.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/uri-version"
+            },
+            {
+                "path": "paths./objects/klanten/klant.get.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.post.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.post.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.post.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.put.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.put.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.put.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.patch.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.patch.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.patch.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.get.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_search\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.post.parameters.0",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.post.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled.post.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.get.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.get.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.get.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.put.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.put.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.put.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.patch.parameters.1",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_extend\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.patch.parameters.2",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_filter\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/untitled/{id}.patch.parameters.3",
+                "message": "Declared deviation from NLGov /core/query-keys-camel-case: The query key \"_unset\" is not camelCase. The underscore prefix marks a reserved query key (_limit, _page, _extend, ...) and every client sends them; renaming them breaks the contract.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/query-keys-camel-case"
             }
         ]
     },

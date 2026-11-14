@@ -53,6 +53,39 @@ Any schema property can be used as a filter parameter with comparison operators:
 
 System metadata fields (`_name`, `_uuid`, `_owner`, `_created`, `_updated`, `_deleted`, `_schema`, `_register`) are always available as filter targets regardless of schema.
 
+### Filtering through a reference (`_ref`)
+
+A filter can reach one step through a reference property of the queried schema
+and test a field of the object it points to:
+
+```
+GET /api/objects/{register}/aanvragen?_ref[aanvrager][woonplaats]=Zuiddrecht
+GET /api/objects/{register}/inschrijvingen?_ref[cursus][startdatum][gte]=2026-09-01
+GET /api/objects/{register}/aanvragen?_ref[aanvrager][woonplaats][in][]=Zuiddrecht&_ref[aanvrager][woonplaats][in][]=Oosterhout
+```
+
+- `<property>` is one of the queried schema's own reference properties; the
+  referenced schema is the one that property declares (`$ref` or
+  `objectConfiguration.schema`), so the caller never names it.
+- The operators are `eq` (the default), `ne`, `gt`, `gte`, `lt`, `lte` and `in`.
+- Several fields in one block must hold on the same referenced object. A second
+  block with a suffix, `_ref[aanvrager:2][...]`, asks for an independent one.
+- Only referenced objects the caller may read count: the referenced schema's
+  own access rules and organisation boundary apply inside the filter, so a
+  hidden object never makes a row match.
+- The filter runs inside the query, so totals and paging count only matching
+  objects.
+- Refused with HTTP 400, naming the part: an unknown property, a property that
+  is not a reference, a field the referenced schema lacks, an unknown operator,
+  a chain through a second reference, a property holding a list of references
+  (not supported yet), and `_ref` on a search across several schemas.
+
+**Direction.** `_ref` follows a reference *out* of the queried object (where
+this object points). `_related[<schema>][<property>]` runs the other way: it
+keeps objects that rows of another schema point *to*. `_referenced[<schema>][<property>]`
+is the same direction as `_ref` but names the referenced schema itself; `_ref`
+reads it from the property.
+
 ## Faceting
 
 Facets provide aggregated counts per distinct value — enabling "drill-down" navigation in UIs.
@@ -114,6 +147,22 @@ GET /api/objects/meldingen-register/meldingen?_order[aanmaakdatum]=desc&_order[t
 ```
 
 Multiple sort fields are supported. Metadata fields (`_created`, `_updated`, `_name`) are always sortable.
+
+### Indexing a field for filtering and sorting
+
+A record type with many rows stays fast to filter and sort on a field when that field has a database index. Set `indexed: true` on the property:
+
+```json
+"registratiedatum": { "type": "string", "format": "date", "indexed": true }
+```
+
+The magic table gets a btree index on the field's column (`{table}_{column}_sort_idx`) when the table is created, and on the next table sync for an existing table. The field does not become a facet: it is not added to facet responses. A property that is both `indexed` and `facetable` gets one index, the facet's. On PostgreSQL an indexed text field also gets a `lower()` index, because text sorts without regard to letter case.
+
+Switching the index off removes it on the next table sync. A sync drops only indexes that follow the naming convention and that no `indexed`, `facetable` or relation setting asks for any more; an index made by hand stays.
+
+**When to index**: a field people sort or filter on in long lists (a date, a status, a number), on a record type with thousands of rows or more.
+
+**What it costs**: every index makes each write a little slower and takes disk space, and building one on a large table can hold up writes on MariaDB and MySQL while it runs. Run the table sync at a quiet moment, and index only the fields lists actually use. Full-text search inside a value is a different index: `searchable` (PostgreSQL with `pg_trgm`).
 
 ## Pagination
 
@@ -224,6 +273,21 @@ Key behaviours:
 Apps declare their result URLs, icons, and display names via the boot-time
 deep-link registry (`DeepLinkRegistrationEvent`); the registry's optional
 `displayName` is what labels an app's unified-search results.
+
+### Tasks in the search bar
+
+A second provider, **Tasks** (`openregister_flow_tasks`), lists the flow tasks
+the searcher would see in their own task inbox: assigned to them, offered to one
+of their groups, or watched by them. It runs the inbox query itself, so it never
+shows a task the inbox would not; an administrator is searched like anyone
+else, not over the whole instance's work. Every word of the term must occur in
+the task's title or description, case insensitively; open tasks come before
+finished ones, ten per page.
+
+Each result shows the task title and a subline with the state (or "Overdue"),
+the due date and the subject's title when the searcher may read the subject. It
+opens OpenRegister's task page, or the subject app's own task view when that
+app registered a task route in the [deep link registry](deep-link-registry.md#task-routes).
 
 ## The administered dictionary
 

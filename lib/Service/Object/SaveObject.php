@@ -42,6 +42,8 @@ use Exception;
 use OCA\OpenRegister\Service\ProtectedCarryForward;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\PropertyWriteCheck;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
@@ -71,6 +73,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\CascadeRules;
 use OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\EmptyValues;
+use OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelations;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
@@ -94,6 +97,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass;
 use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents;
+use OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame;
@@ -2477,6 +2481,7 @@ class SaveObject implements SaveObjectInterface {
 
 		$this->normalizeCallTranslations(call: $call);
 		$this->guardPropertyAuthorization(call: $call);
+		$this->guardClassificationFloor(call: $call);
 
 		$existingObject = $this->existingObjectForSave(call: $call);
 		if ($existingObject !== null) {
@@ -2540,6 +2545,35 @@ class SaveObject implements SaveObjectInterface {
 			$this->refuseUnauthorizedProperties(call: $call);
 		}
 	}//end guardPropertyAuthorization()
+
+	/**
+	 * Refuse a save that sets a classification below the object's declared floor.
+	 *
+	 * Runs whatever the RBAC flag: the floor is a property of the record, not of
+	 * the caller, so a system write may not lower it either.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException When the label ranks below the floor.
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-a-write-may-raise-a-classification-and-not-lower-it-below-its-floor
+	 */
+	private function guardClassificationFloor(ObjectSaveCall $call): void {
+		// The mapper is reached only when a floor sits behind a reference, so a
+		// schema without one never touches it.
+		$guard = new ClassificationFloorGuard(
+			referencedData: function (string $reference): ?array {
+				try {
+					return $this->unifiedObjectMapper->find(identifier: $reference, _rbac: false, _multitenancy: false)->getObject();
+				} catch (\Throwable) {
+					return null;
+				}
+			}
+		);
+		$guard->refuseBelowFloor(schema: $call->schema, data: $call->data);
+	}//end guardClassificationFloor()
 
 	/**
 	 * Refuse a save that modifies properties the caller may not write.
@@ -3110,6 +3144,7 @@ class SaveObject implements SaveObjectInterface {
 
 			$this->refuseLockedByAnother(existingObject: $existingObject);
 			$this->refuseArchivedOrFrozen(existingObject: $existingObject);
+			$this->refusePreservedContentWrite(existingObject: $existingObject, schema: $call->schema);
 
 			return $existingObject;
 		} catch (DoesNotExistException $e) {
@@ -3226,6 +3261,36 @@ class SaveObject implements SaveObjectInterface {
 			throw ObjectStateWriteException::frozen($existingObject);
 		}
 	}//end refuseArchivedOrFrozen()
+
+	/**
+	 * Refuse a content write to an object in the preservation (statisch) regime.
+	 *
+	 * The preservation regime is enforced only where the object's schema offers
+	 * it ({@see \OCA\OpenRegister\Db\Schema::isPreservationEnabled()}), so a
+	 * schema that does not declare `x-openregister-preserve` behaves exactly as
+	 * before and the regime is opt-in (REQ-APS-006, backwards compatible). A
+	 * preserved object refuses writes to its own content; its references stay
+	 * resolvable and it stays readable, because resolving a reference and
+	 * reading the object do not pass through this write path.
+	 *
+	 * @param ObjectEntity $existingObject The object being written.
+	 * @param Schema|null  $schema         The object's schema, when the save call carries it.
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectStateWriteException When the object is preserved and its schema offers the regime.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	private function refusePreservedContentWrite(ObjectEntity $existingObject, ?Schema $schema): void {
+		if ($schema === null || $schema->isPreservationEnabled() === false) {
+			return;
+		}
+
+		if ($existingObject->isPreserved() === true) {
+			throw ObjectStateWriteException::preserved($existingObject);
+		}
+	}//end refusePreservedContentWrite()
 
 	/**
 	 * The `@self` an update works from: a version the caller carries counts only for a trusted caller.
@@ -3990,7 +4055,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function setSelfMetadata(ObjectEntity $objectEntity, SelfSubmission $submission): void {
 		$selfData = $submission->selfData;
@@ -4084,7 +4149,7 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function bindSelfFolder(ObjectEntity $objectEntity, FolderBind|null $bind): void {
 		// Propagate @self.folder so the access-control check governs the bind
@@ -4740,6 +4805,9 @@ class SaveObject implements SaveObjectInterface {
 			throw new Exception($errorMessage, 0, $e);
 		}
 
+		// An image is stored in its object form, whichever form it was sent in.
+		$data = (new ImageObjectForm())->apply(data: $data, properties: ($schema->getProperties() ?? []));
+
 		// Removed references are only cleaned up when the schema opts in. Read before
 		// the pre-cache below overwrites the entity's data with the incoming data.
 		$run->data = $data;
@@ -4948,6 +5016,8 @@ class SaveObject implements SaveObjectInterface {
 		$data           = $update->data;
 		$run            = new ObjectUpdateRun();
 		$run->silent    = $options->silent;
+		$run->origin    = $options->origin;
+		$run->marks     = $options->marks;
 
 		// Prefer the caller's oldObject (handleObjectUpdate): a clone taken here may
 		// already hold data prepareObjectForUpdate changed in place.
@@ -5080,10 +5150,31 @@ class SaveObject implements SaveObjectInterface {
 		);
 
 		if ($this->writesAuditRow(silent: $run->silent) === true) {
-			$log = $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
+			$log = $this->auditUpdate(run: $run, updatedEntity: $updatedEntity);
 			$updatedEntity->setLastLog($log->jsonSerialize());
 		}
 	}//end recordObjectUpdate()
+
+	/**
+	 * Write the audit row of an update: an edit as before, an update with an
+	 * origin (a revert) under that origin as its action, with its markers.
+	 *
+	 * @param ObjectUpdateRun $run           The update call.
+	 * @param ObjectEntity    $updatedEntity The updated entity.
+	 *
+	 * @return AuditTrail The audit row.
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	private function auditUpdate(ObjectUpdateRun $run, ObjectEntity $updatedEntity): AuditTrail {
+		if ($run->origin === null && $run->marks === []) {
+			return $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
+		}
+
+		return $this->auditTrailMapper->recordChange(
+			change: new AuditedChange(old: $run->oldObject, new: $updatedEntity, action: $run->origin, marks: $run->marks)
+		);
+	}//end auditUpdate()
 
 	/**
 	 * Check if audit trails are enabled in the settings

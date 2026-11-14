@@ -163,8 +163,7 @@
             "object",
             42,
             {
-                "method": "hybrid",
-                "confidence_threshold": 0.5
+                "method": "hybrid"
             }
         ],
         [
@@ -296,8 +295,7 @@
             "object",
             42,
             {
-                "method": "hybrid",
-                "confidence_threshold": 0.5
+                "method": "hybrid"
             }
         ],
         [
@@ -434,8 +432,7 @@
             "object",
             42,
             {
-                "method": "hybrid",
-                "confidence_threshold": 0.5
+                "method": "hybrid"
             }
         ],
         [
@@ -572,8 +569,7 @@
             "object",
             42,
             {
-                "method": "hybrid",
-                "confidence_threshold": 0.5
+                "method": "hybrid"
             }
         ],
         [
@@ -709,8 +705,7 @@
             "object",
             42,
             {
-                "method": "hybrid",
-                "confidence_threshold": 0.5
+                "method": "hybrid"
             }
         ],
         [

@@ -28,7 +28,7 @@ use OCP\IUserSession;
 /**
  * The platform services of the flow run API.
  *
- * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+ * @spec openspec/specs/flow-tooling/spec.md
  */
 final class FlowRunPlatform {
 	/**
@@ -37,7 +37,7 @@ final class FlowRunPlatform {
 	 * @param IUserSession   $userSession  Attributes a retried run to the caller.
 	 * @param ?IGroupManager $groupManager Distinguishes an administrator, who gets
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	public function __construct(
 		public readonly IUserSession $userSession,

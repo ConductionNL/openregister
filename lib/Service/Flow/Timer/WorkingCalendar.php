@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
  */
 
 declare(strict_types=1);
@@ -91,7 +91,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @throws FlowTimerValidationException On any refused definition, naming the fault.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public static function fromArray(array $definition): self {
 		return new self(definition: new WorkingCalendarDefinition(raw: $definition));
@@ -118,7 +118,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return string The slug.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getSlug(): string {
 		return $this->definition->getSlug();
@@ -129,7 +129,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return string|null The organisation, or null for a shared calendar.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getOrganisation(): ?string {
 		return $this->definition->getOrganisation();
@@ -156,7 +156,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return float The hours.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function getHoursPerWorkingDay(): float {
 		return $this->definition->getHoursPerWorkingDay();
@@ -231,7 +231,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return boolean True on a working weekday that is not a non-working date.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function isWorkingDay(DateTimeInterface $moment): bool {
 		// The date is the calendar's own: 22:30Z on a Friday is 23:30 that
@@ -269,13 +269,96 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	}//end local()
 
 	/**
+	 * The blackout period refusing this kind of booking at this moment, or null.
+	 *
+	 * Read in the calendar's own zone. A blackout never makes a day
+	 * non-working: {@see self::isWorkingDay()} does not consult it, so a term
+	 * runs through it as it would otherwise.
+	 *
+	 * @param DateTimeInterface $moment The booking's moment.
+	 * @param string            $kind   The kind of booking, e.g. `hearing`.
+	 *
+	 * @return array{name: string, from: string, to: string, refuses: array<int, string>}|null
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function blackoutRefusing(DateTimeInterface $moment, string $kind): ?array {
+		return $this->definition->getBlackouts()->refusing(moment: $this->inZone(moment: $moment), kind: $kind);
+	}//end blackoutRefusing()
+
+	/**
+	 * Refuse a booking of this kind at this moment when a blackout covers it.
+	 *
+	 * @param DateTimeInterface $moment The booking's moment.
+	 * @param string            $kind   The kind of booking.
+	 *
+	 * @return void
+	 *
+	 * @throws CalendarBlackoutRefusal Naming the period, when one refuses it.
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function assertBookable(DateTimeInterface $moment, string $kind): void {
+		$period = $this->blackoutRefusing(moment: $moment, kind: $kind);
+		if ($period !== null) {
+			throw new CalendarBlackoutRefusal(slug: $this->getSlug(), kind: trim($kind), period: $period);
+		}
+	}//end assertBookable()
+
+	/**
+	 * The declared blackout periods.
+	 *
+	 * @return array<int, array{name: string, from: string, to: string, refuses: array<int, string>}>
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function getBlackouts(): array {
+		return $this->definition->getBlackouts()->all();
+	}//end getBlackouts()
+
+	/**
+	 * The declared first week of the year: `iso`, `containsJanuary1` or `firstFullWeek`.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function getFirstWeekOfYear(): string {
+		return $this->definition->getWeekNumbering()->firstWeek;
+	}//end getFirstWeekOfYear()
+
+	/**
+	 * The week-year and week number of a moment, following the declared first week, in the calendar's zone.
+	 *
+	 * @param DateTimeInterface $moment The moment.
+	 *
+	 * @return array{year: int, week: int}
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function weekOf(DateTimeInterface $moment): array {
+		return $this->definition->getWeekNumbering()->weekOf(moment: $this->inZone(moment: $moment));
+	}//end weekOf()
+
+	/**
+	 * The moment in the calendar's own zone, so the day is the organisation's day.
+	 *
+	 * @param DateTimeInterface $moment The moment.
+	 *
+	 * @return DateTimeImmutable
+	 */
+	private function inZone(DateTimeInterface $moment): DateTimeImmutable {
+		return DateTimeImmutable::createFromInterface($moment)->setTimezone(new DateTimeZone($this->getTimezone()));
+	}//end inZone()
+
+	/**
 	 * The non-working dates of a year, computed from the rules and memoised.
 	 *
 	 * @param int $year The year.
 	 *
 	 * @return array<string, string> `Y-m-d` => name.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function nonWorkingDates(int $year): array {
 		return ($this->holidays->cached(year: $year) ?? $this->holidays->remember(year: $year, easter: self::easterSunday(year: $year)));
@@ -288,7 +371,7 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 *
 	 * @return DateTimeImmutable Easter Sunday at midnight UTC.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public static function easterSunday(int $year): DateTimeImmutable {
 		$sum = self::computus(year: $year);

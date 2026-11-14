@@ -517,7 +517,7 @@ class Flow extends Entity implements JsonSerializable {
 	 *
 	 * @return string|null The `runAs`, or null when no schedule trigger names one.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function scheduledRunAs(): ?string {
 		foreach (($this->nodes ?? []) as $node) {

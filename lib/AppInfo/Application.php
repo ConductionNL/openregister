@@ -178,6 +178,7 @@ class Application extends App implements IBootstrap {
 				return new OutboundClientFactory(
 					clientService: \OCP\Server::get(\OCP\Http\Client\IClientService::class),
 					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettingsInterface::class),
+					breakers: $container->get(\OCA\OpenRegister\Service\Resilience\BreakerRegistry::class),
 				);
 			}
 		);
@@ -197,6 +198,8 @@ class Application extends App implements IBootstrap {
 		SearchProviderRegistrar::register(context: $context);
 		$context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
 		$context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
+		// A user's saved views and watches leave and arrive with them; objects do not (platform-user-migrator).
+		$context->registerUserMigrator(\OCA\OpenRegister\Service\UserMigration\PersonalStateMigrator::class);
 
 		IntegrationRegistrar::register(context: $context);
 		CapabilityRegistrar::register(context: $context);
@@ -249,6 +252,10 @@ class Application extends App implements IBootstrap {
 		IntegrationRegistrar::boot(server: $server);
 		IntegrationRegistrar::bootLeafRegistry(server: $server);
 		ObjectSourceRegistrar::boot(server: $server);
+		// Any object whose schema opts in may join a collaboration collection
+		// (platform-collaboration-resources, REQ-PCR-001).
+		$server->get(\OCP\Collaboration\Resources\IProviderManager::class)
+			->registerResourceProvider(\OCA\OpenRegister\Collaboration\ObjectResourceProvider::class);
 		$this->bootFederation(server: $server);
 
 		// Allow GitHub-hosted avatars in img-src so the CnRoadmapItem

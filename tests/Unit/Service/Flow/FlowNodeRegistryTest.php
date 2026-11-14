@@ -236,7 +236,7 @@ class FlowNodeRegistryTest extends TestCase {
 		$entry = $registry->palette()[0];
 
 		$this->assertSame(
-			['id', 'displayName', 'description', 'icon', 'role', 'kind', 'category', 'aliases'],
+			['id', 'displayName', 'description', 'icon', 'role', 'kind', 'category', 'aliases', 'requiresRight'],
 			array_keys($entry)
 		);
 		$this->assertSame('Tag', $entry['displayName']);

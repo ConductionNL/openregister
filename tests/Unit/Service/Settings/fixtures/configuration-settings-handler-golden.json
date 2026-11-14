@@ -98,6 +98,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": []
@@ -197,6 +200,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": []
@@ -300,6 +306,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": []
@@ -489,6 +498,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": [
@@ -591,6 +603,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": [
@@ -663,6 +678,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": []
@@ -722,6 +740,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": [
@@ -800,6 +821,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": []
@@ -859,6 +883,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": [
@@ -925,6 +952,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": [
@@ -1035,6 +1065,9 @@
             },
             "party": {
                 "queryCap": 51
+            },
+            "audit": {
+                "readEventsVisibleTo": []
             }
         },
         "writes": []

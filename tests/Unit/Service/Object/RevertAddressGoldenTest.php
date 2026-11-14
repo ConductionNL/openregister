@@ -73,6 +73,7 @@ class RevertAddressGoldenTest extends TestCase {
 				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
 				objectEntityMapper: $magic,
 				validateHandler: $this->createMock(ValidateObject::class),
+				saveObject: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject::class),
 			),
 			container: $this->createMock(ContainerInterface::class),
 			eventDispatcher: $this->createMock(IEventDispatcher::class),
