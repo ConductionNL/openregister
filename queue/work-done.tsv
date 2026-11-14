@@ -11513,3 +11513,4 @@ fix:buildiq:1649:64e6ca03	merged development, l10n conflicts resolved; new head 
 fix:decidiq:2172:148e74e7	floor holds after merging development (unit_size 3.78); new head c322af3	session-20261114T204759-5dc9dba7	2026-11-14T22:20:20Z
 fix:buildiq:1650:2ada49a1	conflict resolved, new head 49084ce8	session-20261114T221817-a815ec70	2026-11-14T22:20:31Z
 build:stackiq:insight-knowledge-base	PR #1960: tasks 1-2 implemented (+docs text), 13 vitest; Playwright e2e and screenshots left	session-20261114T220941-bdf809d3	2026-11-14T22:20:38Z
+fix:decidiq:2202:3a275a04	floor restored to 3.78, new head 0cea5e8c781ca6a4e97a6e05ec64d51f5843af60	session-20261114T201752-7e06b161	2026-11-14T22:20:44Z
