@@ -1,12 +1,12 @@
 {
  "app": "pipelinq",
- "commit": "845fda8cce128f50324da5930b7f1333049f98e1",
- "measured_at": "2026-11-14T06:50:01Z",
+ "commit": "20452452291557956be3f2ff084cdb9b8bff09c8",
+ "measured_at": "2026-11-14T09:04:09Z",
  "php": {
   "tool": "pcov",
-  "pct": 88.91,
+  "pct": 90.04,
   "statements": 61119,
-  "covered": 54343,
+  "covered": 55034,
   "dirs": {
    "lib/Activity/": [
     66,
@@ -78,11 +78,11 @@
    ],
    "lib/Middleware/": [
     58,
-    57
+    58
    ],
    "lib/Middleware/Support/": [
     59,
-    53
+    54
    ],
    "lib/Notification/": [
     163,
@@ -106,7 +106,7 @@
    ],
    "lib/Service/": [
     31679,
-    26354
+    27043
    ],
    "lib/Service/Access/": [
     86,
@@ -303,9 +303,9 @@
   }
  },
  "js": {
-  "pct": 94.91,
+  "pct": 94.9,
   "statements": 17592,
-  "covered": 16696,
+  "covered": 16695,
   "dirs": {
    "src/": [
     88,
@@ -353,7 +353,7 @@
    ],
    "src/components/products/": [
     71,
-    61
+    60
    ],
    "src/components/rapportage/": [
     139,
