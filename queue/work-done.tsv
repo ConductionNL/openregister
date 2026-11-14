@@ -12058,6 +12058,7 @@ review:openregister:10576:a257a4ba	APPROVE: test-only jest specs, 719 tests gree
 review:portaliq:2444:14f7dd01	GREEN: frontend/schema per change specs; unit 5840 green, node checks pass	session-20261114T234938-86f69098	2026-11-14T23:52:10Z
 review:filinq:2102:1985bdd5	RED: vitest serviceRoutesAndLabels.spec.js listPublications call shape changed; PHP/jest green	session-20261114T234758-aa94f07d	2026-11-14T23:52:19Z
 review:filinq:2095:e0ebb0e0	GREEN: suite green on merge with development, matches change specs	session-20261114T234941-e3e51cb9	2026-11-14T23:52:39Z
+build4:openregister:unit-test-coverage:c4	partial: PR #10527 head 5ad6bbd8 + listener support tests (HandlesObjectDeletion, NodeWriteTarget, CalculationSaveRun; 9 tests, mutation-checked); every Format and Exception class already referenced by a test; umbrella tasks (Service/Controller/Db/Event coverage, gate, CI) still open	session-20261114T224736-f9da4a35	2026-11-14T23:53:09Z
 verify:hermiq:1796:fac8f884	GREEN hermiq #1796-#1802 (tests only, no new failures)	session-20261114T224738-9571d712	2026-11-14T23:53:06Z
 review:filinq:2072:347356f9	GREEN: unit 6784 ok, phpstan clean	session-20261114T234953-2dec3184	2026-11-14T23:53:13Z
 review:filinq:2106:3c54d4a0	GREEN: spec-conform; unit 6792 OK	session-20261114T234948-b89aaae1	2026-11-14T23:53:26Z
