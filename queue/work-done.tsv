@@ -9144,3 +9144,4 @@ merge:larpinq:1012:a75c5166	merge3 tree of 15 larpinq PRs: merged=9 red=4 fail=0
 merge:larpinq:1040:2e3ddd01	merge3 tree of 15 larpinq PRs: merged=9 red=4 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T12:58:30Z
 merge:larpinq:1050:4925a709	merge3 tree of 15 larpinq PRs: merged=9 red=4 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T12:58:33Z
 build4:openregister:cross-app-semantic-references:c3	partial: PR #10549 builds 4.1 (cached semanticProviders capability); 6.1/6.2 confirmed already on fleet development; left 4.3 (live API test), 5.x (nextcloud-vue, outside repo scope)	session-20261114T114435-d7b47cb4	2026-11-14T12:58:50Z
+merge:keepiq:1763:bde323f9	merge3 tree of 17 keepiq PRs: merged=11 red=0 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T12:59:20Z
