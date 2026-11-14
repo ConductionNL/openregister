@@ -11323,3 +11323,4 @@ cover:opencatalogi:fc83bfb1md382:js09173935	PR #2719: 19 tests for object store 
 fix:stackiq:1946:f75d98b8	conflict resolved, pushed c75ea65b, REVERIFY	session-20261114T214735-aacd1703	2026-11-14T21:53:01Z
 fix:stackiq:1945:8ff46c8f	conflict resolved (l10n union); pushed 6fb762aa, REVERIFY recorded	session-20261114T203357-c555025b	2026-11-14T21:53:29Z
 fix:stackiq:1706:dcde9ef2	conflict resolved, pushed 59b724c4, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T21:53:38Z
+merge:opencatalogi:2650:a52c2be5	stale	feeder	2026-11-14T21:50:13Z
