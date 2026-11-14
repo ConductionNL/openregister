@@ -10475,4 +10475,5 @@ fix:hermiq:1735:dfc8010c	conflict resolved (register version 0.58.0 + schema uni
 fix:hermiq:1739:6d69e90e	floor restored (unit_complexity 4.53), new head bc2bf993, REVERIFY recorded	session-20261114T165414-28281f96	2026-11-14T17:47:35Z
 fix:decidiq:2203:1a9ceed2	failed: branch already contains development; conflicts only with unmerged siblings #2143/#2149/#2162 (l10n en/nl, termijnagenda manifest); merge development in after they land	session-20261114T174106-c933f162	2026-11-14T17:47:44Z
 verify:humaniq:1127:4030a7ef	1127, 1133 GREEN	session-20261114T151932-05b02c14	2026-11-14T17:47:47Z
+build:integriq:connectors-hr-staff-sync:c3	failed: tasks 1-4 still blocked, developer.untis.com is not in the cloud network allowlist (DNS refused) and design D2 requires pinned endpoints; task 5 and engine parts already on development, both build branches merged	session-20261114T171822-35ca2aeb	2026-11-14T17:48:40Z
 fix:portaliq:2437:692916ba	REVERIFY 4fe52aad	session-20261114T134708-ba7f7741	2026-11-14T17:48:44Z
