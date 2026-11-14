@@ -10483,3 +10483,4 @@ versioniq	695	2ff98dba5061daf37fd2bbcc3c825c84f2e6f500	GREEN	worker-42	unit 1810
 versioniq	699	6a44c2e644694907791be3c78f9da79ccd1673c3	CONFLICT	worker-42	conflicts with development in appinfo/info.xml, lib/Db/AuditEntry.php, tests/phpunit-unit-only.xml, tests/unit/Controller/ApiTest.php
 versioniq	709	45a2d42c2ce23a5de50525495a9ec84a8651f7a8	CONFLICT	worker-42	clean on development, conflicts with the tree (692/695) in appinfo/info.xml
 versioniq	711	9d778e237f0011c36f80ba8de0db33b13467d944	CONFLICT	worker-42	clean on development, conflicts with the tree (695) in lib/Http/InstanceSettingsFields.php, lib/Service/Settings/InstanceSettings.php
+versioniq	716	73f4cacd9fc6d382f2b5596f7eec9948bdb8	CONFLICT	worker-42	clean on development, conflicts with the tree (692) in AutoUpdate job/settings store, ApiController, App.vue, AutoUpdateOverview and their tests
