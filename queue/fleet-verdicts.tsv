@@ -7399,3 +7399,5 @@ buildiq	1619	2f7f5352352b0753cd07525a6f9e19cde1d0be75	CONFLICT	worker-50	merge c
 buildiq	1620	ad5dd7713bb3ecc04275549bddc4c5bc9618c195	CONFLICT	worker-50	merge conflict with development+1613+1614 in l10n/en,nl .js/.json
 buildiq	1621	8e4390d8accc7cd660ceedbee59d834f7993cf80	CONFLICT	worker-50	merge conflict with development+1613+1614 in l10n,lib/Service/CopilotService.php
 stackiq	1813	8e311d81de144657f97c1cd6ce4b36e739a2a7ed	REVERIFY	worker-10	merged origin/development in; add/add conflict on tests/vitest/gemmaPlateRender.spec.js: development's file kept, this PR's cases moved to gemmaPlateRender.cases.spec.js; 3 specs 18/18 green; new head 3d2273e7a1d757c987c5ddd0886b423745dc968a, verify it
+buildiq	1613	9a07faa20e3787d2b96b824c20bf5890a20829a9	GREEN	worker-50	phpunit 2967 (baseline 2965, 1 inherited failure ExportZipGoldenTest), vitest 4238 passed; no new failures; implements registration-form-builder
+buildiq	1614	9a7e263b9e7ecfc3ba7bda2a4a7b565925802163	GREEN	worker-50	phpunit 2967 (baseline 2965, 1 inherited failure ExportZipGoldenTest), vitest 4238 passed; no new failures; implements operate-api-docs, read-only frontend
