@@ -11574,3 +11574,4 @@ merge:planninq:1160:f637f413	merge3 tree of 6 planninq PRs: merged=4 red=1 fail=
 fix:buildiq:1648:0d30354d	floor restored (refactor of rule decision/record units), new head 9ffd7d0a, REVERIFY	session-20261114T221756-d9538cf9	2026-11-14T22:28:41Z
 verify:stackiq:1958:c7ba5e7a	1958 GREEN, 1959 GREEN, 1960 CONFLICT (l10n); no new failures	session-20261114T214719-cd72efa7	2026-11-14T22:28:57Z
 fix:versioniq:710:0f065f4b	merged development (clean), suites at baseline; new head 3ab6b5e2, REVERIFY recorded	session-20261114T214736-dd784d82	2026-11-14T22:29:15Z
+build:stackiq:view-products-enrichment:c2	PR #1964: 4.3 controller test (3605 tests OK); 3.x blocked: no view detail UI exists to wire the toggle into (needs a decision), 4.4 e2e and 5.1 archive not code	session-20261114T222427-f171565a	2026-11-14T22:29:32Z
