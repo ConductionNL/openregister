@@ -3009,3 +3009,7 @@ planninq	1167	d6c4dc18a6d114b7e0652ee500612c49357de6b0	MERGED	merge3	GATE OK sbo
 planninq	1169	ad389bd3451b7bef7e6d236a84eb0baa7504d0a4	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; spdxheaders stars: 5 -> 4; score: 100 -> 97
 planninq	1171	1f740930b6cb8bfb7955a1e7a45720b927f497c3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.74
 planninq	1172	b335a2831202c9f19b633675ecfcdc873a3deee8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.76
+launchpad	1210	b146f2c1b3547be5eb3d42f5cd6649c57c532a60	RED	merge3	GATE RED floor: unit_complexity: 4.72 -> 4.68; unit_interfacing: 3.46 -> 3.43
+launchpad	1211	5c5da5e42947f24c2c9413ac040f7fb960746df2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.65
+launchpad	1225	47177d86534cba79d0aa9bb7bc70a053bc7bf137	RED	merge3	GATE RED floor: unit_interfacing: 3.44 -> 3.40
+launchpad	1228	99e6e308349f4e7556aade89819e1cb9e128ef44	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.65
