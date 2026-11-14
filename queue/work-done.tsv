@@ -7799,3 +7799,4 @@ fix:hermiq:1763:015ce782	conflict resolved, new head a68d1b9b; REVERIFY recorded
 merge:integriq:3557:5d03d280	merge3 tree of 1 integriq PRs: none; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T07:19:26Z
 fix:hermiq:1674:33bac907	conflict resolved (identical @uses additions, kept development's superset); no new failures; new head 72d6bf37	session-20261114T070332-b3a23612	2026-11-14T07:19:36Z
 fix:hermiq:1728:8b4955b5	register conflict resolved (0.54.0), 0 new failures; new head 71ac6573	session-20261114T070333-41d2bfe8	2026-11-14T07:19:45Z
+fix:decidiq:2139:9b920569	duplication floor restored (3.81 vs 3.82, within tolerance); new head 750d9f2f91766e515c7ed621ca8648d609c9e429	session-20261114T065625-baa65a50	2026-11-14T07:19:52Z
