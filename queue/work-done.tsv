@@ -10951,3 +10951,4 @@ fix:integriq:3574:67ece58a	l10n insertion points moved, merges with every tree s
 review:filinq:2106:8bc70f64	GREEN: per-spec field checks, additive sign() param, suite 6722/vitest 763 green; conflicts with development (l10n, register)	session-20261114T201002-25be0d7f	2026-11-14T20:37:07Z
 review:openregister:10571:6c49b419	APPROVE	session-20261114T201750-64b6fe0f	2026-11-14T20:37:13Z
 review:portaliq:2440:c822fe02	CONFLICT with development (BackfillCmsPortalReference); content per spec	session-20261114T194743-e736657e	2026-11-14T20:37:20Z
+fix:decidiq:2188:c7ab281d	fixed: complexity refactor of the confidentiality listener, PHP 4242 green; new head b774355c, REVERIFY recorded	session-20261114T201754-5ed288ac	2026-11-14T20:37:30Z
