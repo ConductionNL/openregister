@@ -7747,3 +7747,4 @@ pipelinq	3827	4f94733508a2f7385fa1ef53b1708903ab9bd910	GREEN	worker-27	tree 3819
 pipelinq	3828	0f8c8cc2d68947f4db6edfcdf0660f948dbc125e	GREEN	worker-13	unit 7893 OK (baseline 7890 OK), no new failures; SLA sweep skips frozen records per platform-record-lock task 1.3
 pipelinq	3829	0fea8b0065eba2cf76d8aeb2523a0c5d0c5e98a4	CONFLICT	worker-13	conflicts with development itself in l10n/en.js en.json nl.js nl.json
 dossiq	6499	fb5dfa20fb2a4f82d33efed191f82702f18453ef	GREEN	worker-25	builds social-domain-consent-and-safeguards per its specs; phpunit 16867 on tree (baseline 16850, 19 failures inherited), vitest 6932 (1 inherited capabilityComparison failure); no new failures
+dossiq	6500	fc50db36f904b216baebe0bdcbe804a7c921ac42	GREEN	worker-25	builds capability-rows-say-the-whole-capability (manifest action + strings + spec); phpunit 16867, vitest 6932 with 1 inherited failure; no new failures
