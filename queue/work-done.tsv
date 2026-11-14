@@ -8127,3 +8127,4 @@ build:buildiq:pages-chart-widget-authoring	PR #1600: T01, T02, T04 built (13 new
 verify:integriq:3546:1eb96cc2	5 GREEN (3546,3579,3580,3581,3583), 4 CONFLICT (3561,3582,3584,3585); 0 new failures	session-20261114T062156-e8adf8ca	2026-11-14T08:10:12Z
 fix:integriq:3567:99d3f2b0	RED fixed: missing alias recorded in the registration-order fixture, pushed 7056ff27	session-20261114T065635-61264d14	2026-11-14T08:10:18Z
 build:buildiq:data-restore-record-version	partial: PR #1602 (T01,T02,T06; 8 vitest cases); T03 nextcloud-vue and T05 openregister sibling halves, T04 e2e, T07 validate left	session-20261114T062156-16c77e6a	2026-11-14T08:10:31Z
+build:buildiq:openbuild-connector-widget-runtime	partial: PR #1601 (accessor, parity guard, schema matrix spec, docs; e2e 4.x, 3.4, 5.2-5.3 left)	session-20261114T075648-394d8174	2026-11-14T08:10:32Z
