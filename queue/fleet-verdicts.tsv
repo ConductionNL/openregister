@@ -8928,6 +8928,7 @@ planninq	1170	c04b52d211679dbe4d3a9ce6f465fe83eb10dbd7	CONFLICT	worker-13	confli
 planninq	1176	409813992f586d6d9c9cfe6ba83f9ecf21cee7b9	GREEN	worker-13	phpunit 1067 tests 0 failures (baseline 1038, 0 failures); vitest 3257 passed; new failures none
 integriq	3600	9f3a69a4aea05afd8fb2bc734f05b503b9c26f57	REVERIFY	worker-09	merged development in; openapi.json tag conflict resolved keeping both tags (catalogi, registration-targets); unit suite 8949, no new failures; new head 36f330ac60dca71cff2d360f3f3912e6902c93cf, verify it
 planninq	1177	96585272998ac8a2eb3713dcf2c9ae945a4a7a86	GREEN	worker-13	phpunit 1067 tests 0 failures (baseline 1038, 0 failures); vitest 3257 passed; new failures none
+planninq	1178	752a33c2935f30a610ab0fd1e7418a1f6fa9a124	CONFLICT	worker-13	conflicts with the tree (development + earlier PRs in order)
 shillinq	2976	e4c7b8aac193d5af27d8ebad58eccb3a6e6f638d	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
 shillinq	2991	f7e28a5d009e7d5734a90f35ab326a48cbef9b45	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
 shillinq	2997	89216b6889bd01a5277e4c9094430c65f618cb46	CONFLICT	merge3	merges clean on development alone; files: tests/fixtures/register-versions.lock.json 
