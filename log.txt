@@ -3395,3 +3395,4 @@
 2026-11-14T21:11:00Z session-20261114T194751-bb7578f8 worker-33 handed back build:launchpad:widget-calculated-fields:c2 unstarted (context nearly full)
 2026-11-14T22:00:39Z session-20261114T211804-dacad7c4 correction build:hermiq:flows-hand-off-and-wait:c3: the first push was rejected (branch moved to 299ff073); the work was rebuilt and pushed, PR #1735 head is 09766374 (not 835069ea); same content, vitest 1522 and PHPUnit 5229 green
 2026-11-14T22:00:54Z session-20261114T211750-05725ff5 worker-34 released cover:stackiq:9ac19b3amad24:216a9a0a unstarted (context full) and ended
+2026-11-14T22:08:25Z session-20261114T204750-c1efccdb worker-31 stopped near full context after 12 tasks; queue not drained
