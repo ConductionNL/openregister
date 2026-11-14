@@ -9830,3 +9830,4 @@ integriq	3564	d712cf14bb47d721128efa245e719f37c2339375	GREEN	worker-15	unit 9178
 integriq	3584	161c9167d86dbca7fdd977c603fe5c86ff3d9eb0	GREEN	worker-15	unit 9178 run, baseline 9084 with 7 inherited failures, 0 new; vitest 2253 passed
 integriq	3633	90a867a5b221ea9285ddb5531b3a7bfa16136b5d	GREEN	worker-15	unit 9178 run, baseline 9084 with 7 inherited failures, 0 new; vitest 2253 passed
 integriq	3635	c30a2e244078898144d6f1f761aaec4cce7d22a7	CONFLICT	worker-15	merge conflicts on development+3549,3564,3584,3633
+buildiq	1621	504a7501077e7ae8d76adbbcbdee4961869aad28	REVERIFY	worker-24	merged development in (clean); moved the change's en/nl strings (json+js) off the catalogue tail to after "Untitled application", same keys and values; test:l10n OK; phpunit 3166, 1 inherited failure ExportZipGoldenTest (red on development too); vitest 4660 passed; check:l10n-js stale on development too; new head 1a2abcb6033bf36b49bb60889eebac7d999b326c, verify it
