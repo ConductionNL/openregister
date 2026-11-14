@@ -10339,3 +10339,4 @@ shillinq	3065	376d309318c629c867258858feaafe677e25f59a	GREEN	worker-32	unit 1148
 decidiq	2169	e5e1813c55fd1c741d176563cf17f1fceadb9ae9	GREEN	worker-07	unit 4257 (baseline 4248 OK), vitest 2808 pass/4 skipped, 0 new failures; onboarding step endpoint guarded by admin or body scope per change
 stackiq	1934	c5b06d1ebdb8fc3b797e3e37df96cf466b900af8	REVERIFY	worker-08	build continued: merged development, tasks 3-5 (color-no-hex, lifecycle threshold, catalogue webhooks) pushed; new head c797e71925710f5712154622a28fc0274cd85c36, verify it
 buildiq	1613	755c76adb87fc1602a047a2c81f82f1b23e820e2	GREEN	worker-11	phpunit 3207 (baseline 3192, 1 inherited failure ExportZipGoldenTest), vitest 4697/4697 on tree; no new failures
+buildiq	1652	b3c39fa029023156b4b2bd60ad702de2bb6cbfdd	GREEN	worker-11	phpunit 3207 (baseline 3192, 1 inherited failure ExportZipGoldenTest), vitest 4697/4697 on tree; no new failures
