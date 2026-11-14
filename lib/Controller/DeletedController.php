@@ -28,6 +28,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\BatchOutcome;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
 use OCA\OpenRegister\Controller\Support\PurgeRequest;
@@ -35,6 +36,7 @@ use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
+use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -276,6 +278,13 @@ class DeletedController extends Controller {
 		// Read-scoped for a non-admin, as the object list is (openregister#4078).
 		$scoped = ($this->services->access->authorizer->isCurrentUserAdmin() === false);
 
+		// REQ-SYNC-002: a filter is applied or refused, never ignored. An ignored
+		// filter returns the whole bin, which reads as "everything was deleted".
+		$filter = $this->deletedFilter(scoped: $scoped);
+		if ($filter instanceof JSONResponse) {
+			return $filter;
+		}
+
 		try {
 			// Objects live in per-register/schema magic tables, so there is no
 			// single table for searchObjectsPaginated() to query without a
@@ -285,9 +294,14 @@ class DeletedController extends Controller {
 				limit: $params['limit'],
 				offset: $params['offset'],
 				_rbac: $scoped,
-				_multitenancy: $scoped
+				_multitenancy: $scoped,
+				filter: $filter
 			);
-			$total = $this->services->store->objectEntityMapper->countDeletedAcrossAllMagicTables(_rbac: $scoped, _multitenancy: $scoped);
+			$total = $this->services->store->objectEntityMapper->countDeletedAcrossAllMagicTables(
+				_rbac: $scoped,
+				_multitenancy: $scoped,
+				filter: $filter
+			);
 
 			// Same render boundary as a live row: no write-only or unreadable property leaves.
 			$deletedObjects = array_values($deletedObjects);
@@ -318,6 +332,106 @@ class DeletedController extends Controller {
 			);
 		}//end try
 	}//end index()
+
+	/**
+	 * The `register`, `schema` and `deletedSince` filters of the deleted list, or the refusal.
+	 *
+	 * A register or schema is named by id or slug and must exist for the caller
+	 * (404 otherwise). `deletedSince` must be an ISO 8601 date-time (400 naming
+	 * it otherwise).
+	 *
+	 * @param bool $scoped Whether the caller is read-scoped (not an administrator).
+	 *
+	 * @return DeletedFilter|JSONResponse The filter, or the refusal.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-the-deleted-list-filters-by-register-schema-and-deletion-time-req-sync-002
+	 */
+	private function deletedFilter(bool $scoped): DeletedFilter|JSONResponse {
+		$since = $this->deletedSince();
+		if ($since === false) {
+			return new JSONResponse(
+				data: ['error' => 'deletedSince must be an ISO 8601 date-time, such as 2026-10-05T00:00:00+00:00', 'parameter' => 'deletedSince'],
+				statusCode: 400
+			);
+		}
+
+		$registerId = $this->filterId(parameter: 'register', scoped: $scoped);
+		if ($registerId instanceof JSONResponse) {
+			return $registerId;
+		}
+
+		$schemaId = $this->filterId(parameter: 'schema', scoped: $scoped);
+		if ($schemaId instanceof JSONResponse) {
+			return $schemaId;
+		}
+
+		return new DeletedFilter(registerId: $registerId, schemaId: $schemaId, deletedSince: $since);
+	}//end deletedFilter()
+
+	/**
+	 * The `deletedSince` moment: null when absent, false when it is not ISO 8601.
+	 *
+	 * @return DateTimeImmutable|null|false
+	 */
+	private function deletedSince(): DateTimeImmutable|null|false {
+		$raw = $this->request->getParam('deletedSince');
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+
+		$pattern = '/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/';
+		if (is_string($raw) === false || preg_match($pattern, $raw) !== 1) {
+			return false;
+		}
+
+		try {
+			$moment = new DateTimeImmutable($raw);
+		} catch (\Exception $e) {
+			return false;
+		}
+
+		$errors = DateTimeImmutable::getLastErrors();
+		if ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0)) {
+			return false;
+		}
+
+		return $moment;
+	}//end deletedSince()
+
+	/**
+	 * The id of the register or schema a filter names, null when absent, or a 404.
+	 *
+	 * @param string $parameter `register` or `schema`.
+	 * @param bool   $scoped    Whether to resolve it as the caller (not an administrator).
+	 *
+	 * @return int|JSONResponse|null
+	 */
+	private function filterId(string $parameter, bool $scoped): int|JSONResponse|null {
+		$raw = $this->request->getParam($parameter);
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+
+		$notFound = new JSONResponse(data: ['error' => 'Unknown ' . $parameter, 'parameter' => $parameter], statusCode: 404);
+		if (is_scalar($raw) === false) {
+			return $notFound;
+		}
+
+		try {
+			if ($parameter === 'register') {
+				return (int)$this->services->store->registerMapper->find(id: (string)$raw, _rbac: $scoped, _multitenancy: $scoped)->getId();
+			}
+
+			$schemas = $this->services->store->schemaMapper;
+			if ($schemas === null) {
+				return $notFound;
+			}
+
+			return (int)$schemas->find(id: (string)$raw, _rbac: $scoped, _multitenancy: $scoped)->getId();
+		} catch (DoesNotExistException $e) {
+			return $notFound;
+		}
+	}//end filterId()
 
 	/**
 	 * Get statistics for deleted objects

@@ -745,6 +745,7 @@ Db/LikeOperator.php,62,Db,Service,Service/Db/LikeOperator.php,0,,Core
 Db/LinkColumn.php,33,Db,Integrations,Integrations/Db/LinkColumn.php,0,,Integrations
 Db/MagicMapper.php,6709,Db,Service,Service/Db/MagicMapper.php,54,1,Core
 Db/MagicMapper/ArrayElementFilter.php,58,Db,Service,Service/Db/MagicMapper/ArrayElementFilter.php,0,,Core
+Db/MagicMapper/DeletedFilter.php,54,Db,Service,Service/Db/MagicMapper/DeletedFilter.php,0,,Core
 Db/MagicMapper/DeletedLens.php,33,Db,Service,Service/Db/MagicMapper/DeletedLens.php,0,,Core
 Db/MagicMapper/FacetLabelLookup.php,31,Db,Service,Service/Db/MagicMapper/FacetLabelLookup.php,0,,Core
 Db/MagicMapper/MagicBulkHandler.php,457,Db,Service,Service/Db/MagicMapper/MagicBulkHandler.php,0,,Core

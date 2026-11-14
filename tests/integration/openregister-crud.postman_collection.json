@@ -3714,6 +3714,110 @@
       }
     },
     {
+      "name": "18a2. Filtered Deleted List (schema and deletedSince)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// incremental-sync-for-api-consumers REQ-SYNC-002: the filters apply to the rows and to total.",
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Total counts the filtered rows', function () {",
+              "        pm.expect(jsonData.results).to.be.an('array');",
+              "        pm.expect(jsonData.total).to.be.at.least(jsonData.results.length);",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/deleted?register={{register_slug}}&schema={{schema_slug}}&deletedSince=2000-01-01T00:00:00Z&_limit=100",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "deleted"
+          ],
+          "query": [
+            {
+              "key": "register",
+              "value": "{{register_slug}}"
+            },
+            {
+              "key": "schema",
+              "value": "{{schema_slug}}"
+            },
+            {
+              "key": "deletedSince",
+              "value": "2000-01-01T00:00:00Z"
+            },
+            {
+              "key": "_limit",
+              "value": "100"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "18a3. Deleted List Refuses A Malformed deletedSince",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// REQ-SYNC-002: a filter is applied or refused, never ignored.",
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('The refusal names deletedSince', function () {",
+              "    pm.expect(pm.response.json().parameter).to.eql('deletedSince');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/deleted?deletedSince=yesterday",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "deleted"
+          ],
+          "query": [
+            {
+              "key": "deletedSince",
+              "value": "yesterday"
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "18b. Restore Deleted Object",
       "event": [
         {
