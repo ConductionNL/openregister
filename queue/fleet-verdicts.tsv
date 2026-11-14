@@ -9442,3 +9442,5 @@ humaniq	1145	b05d3c3dddeb423605be9200575ffaa3cef27bcf	RED	merge3:merge-gate	GATE
 humaniq	1156	833152c1e985dc3a9eebbaa5eb2d957e8a98dbea	CONFLICT	merge3	merges clean on development alone; files: src/manifest.effective.json tests/fixtures/manifest-baseline/manifest-canonical.json tests/fixtures/manifest-baseline/pages.json 
 planninq	1178	93ae38333c81b66f1230d253a2e16b8510e2247f	REVERIFY	worker-02	split bulkPatch (CCN 14) into per-action builders, same behaviour; floor unit_complexity 4.84->4.84 PASS, vitest 3226/3226, eslint clean; new head 3c7b73e8ca14fd90976e83e402ec201379e56535, verify it
 learniq	2542	e97530c8bb4f7320a82a41fe8b74a548e8270695	GREEN	worker-58	php unit 6775 tests, 1 failure = baseline (he.json generator); js 1371 tests, 9 failures = baseline 9, 4 new pass; manifest+l10n parity ok; frontend-only build of compliance-assign-from-hr-roles task 4.1
+shillinq	2959	4e16db47ed275d534b1511ae9ae1dce334aee453	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.91 -> 2.85
+shillinq	2991	b7472331869926b992f4b40456836e022bf3c677	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.90 -> 2.88
