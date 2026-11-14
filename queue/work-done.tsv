@@ -10368,3 +10368,4 @@ verify:planninq:1170:e928faeb	GREEN planninq#1170: phpunit 1053 ok (baseline 103
 verify:buildiq:1608:b44227c5	GREEN 1608,1620,1646; no new failures	session-20261114T161752-4c07cde6	2026-11-14T17:13:45Z
 merge:hermiq:1715:d43d1c41	merge3 tree of 16 hermiq PRs: merged=6 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T17:13:56Z
 merge:hermiq:1749:51cddc99	merge3 tree of 16 hermiq PRs: merged=6 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T17:14:00Z
+merge:hermiq:1767:72e7b8b4	merge3 tree of 16 hermiq PRs: merged=6 red=2 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-14T17:14:03Z
