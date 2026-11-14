@@ -10110,3 +10110,4 @@ hermiq	1767	69628bfa7e3249300984c45a5f519fc59c745036	REVERIFY	worker-52	restored
 stackiq	1706	59b724c4744af256e70361cc88b9480acd17f92c	GREEN	worker-46:review	behaviour-preserving extraction (options, display-name check, editor content); tests only re-bound, no assertion removed; on development: vitest 2580 pass, 1 inherited facets.spec failure, eslint 0 errors; no PHP touched
 opencatalogi	2673	035193a4d37b4b72896ce59aad7f1154c2a65f80	GREEN	worker-45	unit 5634 tests, baseline 5599 w/ 2 failures (AppIdentityTest, WooControllerTest, inherited), no new failures; vitest 1083 pass
 opencatalogi	2674	98c76ef7d957f80d32f19fec14da6fd8e04b353e	CONFLICT	worker-45	conflicts in l10n/en.js,en.json,nl.js,nl.json with 2665+2673 in tree
+opencatalogi	2696	c991013b8c4f3f4ea5d26d8e0a4285eb6a914f11	CONFLICT	worker-45	conflicts in l10n/en.js,en.json,nl.js,nl.json and lib/Controller/FederationController.php with 2665+2673 in tree
