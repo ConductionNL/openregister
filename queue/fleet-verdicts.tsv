@@ -9227,3 +9227,4 @@ learniq\t2484\t953ce73f569e1ce4dd10737a2faf72a7e55ff73e\tGREEN\tworker-26\ttree 
 learniq\t2486\t6d3eac1aab7c3a344f1beebca35b4e742a632aa7\tCONFLICT\tworker-26\tdoes not merge onto development + #2484
 learniq\t2507\t4e19f9e610160a7af2b8e4777e3f3c3280ae3cdb\tGREEN\tworker-26\ttree identical to the one verified at development f5e65e9fe: unit 6776, 1 inherited failure (HigherEducationExampleSetTest); js-unit 1367, 9 inherited failures, same on development; no new failures
 learniq\t2536\t2561300cf84c2a45f41d366f260f5ec721a8f10e\tCONFLICT\tworker-26\tdoes not merge onto development + #2484 #2507
+learniq\t2542\tf59bed9f70837cfb3a60038982a0d6de3f71f55a\tCONFLICT\tworker-26\tdoes not merge onto development + #2484 #2507
