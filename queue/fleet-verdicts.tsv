@@ -6758,3 +6758,4 @@ learniq	2523	9fae0016dcb648153dc9bf9aa7954cff3641efa2	GREEN	worker-14	unit 6615 
 learniq	2524	6053e2e2b8f0b6a0b7831bc9335c21c8aebbff7b	CONFLICT	worker-14	merge conflict with development + earlier tree PRs
 dossiq	6349	6b24d3d0f0f16146bf8b12884dcb36fe073f5a39	REVERIFY	worker-17	merged development; add/add appShell.spec.js resolved to development's superset version, registryContract.spec.js kept; vitest 25/25, eslint clean; new head d1c7c17249209c432f21fd7b70412f3a3f622bce, verify it
 integriq	3545	c1939271fed7e0c24dd69fd2af3b26b62ef0b91e	GREEN	worker-11	unit 8493 baseline 5 inherited fail (JobsControllerTest x2, CallServiceTest x2, SyncEntryGolden); tree 8497 same 5; vitest 2157 pass; new failures none
+integriq	3549	0b1e6d115aea0a1892b619a84ab29fb80042ab06	CONFLICT	worker-11	merge conflict with development + 3545
