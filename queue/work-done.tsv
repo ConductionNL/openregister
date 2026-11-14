@@ -8965,3 +8965,4 @@ build:pipelinq:pipeline-lead-rotation:c3	already done: #3824 merged; every code 
 review:pipelinq:3721:9ac79eab	GREEN: suite 8356/0 fail, phpstan+vitest+eslint clean	session-20261114T114625-63eafe85	2026-11-14T11:56:45Z
 review:openregister:10505:c12ee85b	APPROVE 10505	session-20261114T114629-c5ef9a76	2026-11-14T11:56:54Z
 review:openregister:10535:0f323923	APPROVE: fail-closed slot grant after principals; suites green; golden-test merge conflict with main	session-20261114T114426-1ea692f9	2026-11-14T11:57:05Z
+review:openregister:10530:0d0b077d	BLOCK: ListenerRegistrationOrderGoldenTest fails; noteAdded visibility not matched	session-20261114T114414-1a8d8ccd	2026-11-14T11:57:21Z
