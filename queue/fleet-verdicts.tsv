@@ -8352,3 +8352,4 @@ portaliq	2437	0bea6c571ae35fb473763215fcd3e32565d6c64a	REVERIFY	worker-44	merged
 decidiq	2168	39f054e92f5589ec002cfcf694d7277aedf9b3da	GREEN	worker-54	unit 4205 on tree, baseline 4174 green, 0 new failures
 decidiq	2170	7cfa5d98754d85d2e4818d97789354d78b38fcc5	GREEN	worker-54	unit 4205 on tree, baseline 4174 green, 0 new failures
 shillinq	2972	e24273baa1e8a21927cb6ee90fdfb4c4f725787f	CONFLICT	worker-16	conflicts with plain development (moved since): l10n/en.js en.json nl.js nl.json
+shillinq	2976	e4c7b8aac193d5af27d8ebad58eccb3a6e6f638d	GREEN	worker-16	unit 11249 OK on development+2976, baseline 11194 OK, no new failures; builds sales-cancellation and ledger-journal-line-dimensions per their specs, portal cancel checks subject ownership
