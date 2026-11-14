@@ -8780,3 +8780,4 @@ humaniq	1134	2bf6072df3bc1cceda720e581f07acf39cf94e40	GREEN	worker-47	unit 4231 
 hermiq	1767	a6510da29fb1d66447143c9454f01db6753c50a2	GREEN	worker-12	phpunit 5069 OK (baseline 5046 OK), vitest 1463 passed, 0 new failures; implements observability-export-traces, admin-only settings routes, export never changes run results
 hermiq	1784	7a0a5e933336b6c6d871b89e1e43aa2f5e0f11a7	GREEN	worker-12	phpunit 5069 OK (baseline 5046 OK), vitest 1463 passed, 0 new failures; frontend-only tool-call mark per verify-row-scenarios
 filinq	2112	297a10b4a7f3e87e642ee92ec28d7c0d11dc63d6	CONFLICT	worker-06	conflicts after #2079 in the tree
+filinq	2126	1432867fa2b70adece648f05173ba77f039fec2b	CONFLICT	worker-06	conflicts after #2079 in the tree
