@@ -9569,3 +9569,4 @@ build:learniq:training-provider-course-days:c2	partial: PR #2521 head 2f793910 (
 fix:filinq:2078:d5baf540	conflict resolved, new head 2a556ec0, unit 6737 0 fail, REVERIFY	session-20261114T141721-aeb4e068	2026-11-14T14:44:54Z
 fix:filinq:2116:29aaca50	failed: clean against development; conflicts only with unmerged #2112/#2118 (each claims filinq register v8.55.0 in info.description and the schema list, mock register, openapi.json, l10n tail); needs one of them on development first, re-run then	session-20261114T131654-c068f436	2026-11-14T14:45:03Z
 fix:learniq:2504:38d12d9b	l10n conflicts removed (keys placed by neighbours); REVERIFY recorded, new head 30bff46d01a3c9d919fff7940ddc6a526d20a3fc	session-20261114T131642-b20146b1	2026-11-14T14:45:15Z
+verify:decidiq:2143:3b62a598	2143 GREEN, 2186 GREEN; unit 4196 OK (baseline 4174), vitest 2727 OK	session-20261114T141724-6227a125	2026-11-14T14:45:22Z
