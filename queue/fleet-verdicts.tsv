@@ -9418,3 +9418,7 @@ pipelinq	3835	53c482bd863ceaf5d117d415362b24b587eea728	REVERIFY	worker-15	merged
 learniq	2493	b4d28b9283d5249cfc45f1efc77193c139b7d6b3	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.35 -> 4.32
 learniq	2520	eb56a06d586ad0869e2703ec0267bc42bc0f7ea6	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 learniq	2541	6a283faba384ab440427851957870c2890495d84	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2484	953ce73f569e1ce4dd10737a2faf72a7e55ff73e	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2486	6ae0a045efcc4f4d21eb20acf158df24d661b800	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2507	4e19f9e610160a7af2b8e4777e3f3c3280ae3cdb	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
+learniq	2521	52cd66be6f16bb2c0d32073ed61fff8a400b378c	REVERIFY	merge3	head moved since the verdict (was 5a578a1e23b533ca4334d92b0008671ab2d47ef9, 5a578a1e:CONFLICT,5a578a1e:REVERIFY); verify the new head
