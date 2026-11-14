@@ -11802,3 +11802,4 @@ fix:larpinq:1049:3b90a2cb	stale	feeder	2026-11-14T23:10:21Z
 cover:pipelinq:7f9dc8e6m799d:8f8dca30	already done: lib/Service/Export/*.php measures 98.38% statements (1337/1359) on development, above the 95% target; no PR	session-20261114T211012-c469e919	2026-11-14T23:11:37Z
 verify:stackiq:1966:d84a57f5	1966 GREEN	session-20261114T224754-e4a2fcab	2026-11-14T23:11:39Z
 build:integriq:portal-idp-broker-config:c4	partial: PR integriq#3638 adds task 9 (metadata + JWKS endpoint, same 404, 503 on unreadable cert, 13 tests) and task 13 implement (admin docs, catalogue entry); suite 9162 -> 9176, failures inherited; left 1+5 (SAML lib needs composer.lock), 6 (OIDC adapter), 10 (UI), 12 (live), 13 docs build (docs lockfile out of sync)	session-20261114T175427-38d3d06f	2026-11-14T23:12:15Z
+cover:dossiq:069ee2d6mbd37:f8ba5a90	PR #6521: 4 tests, lib/Service/Task 98.4% -> 99.0% (target 95 already met)	session-20261114T224738-9571d712	2026-11-14T23:12:19Z
