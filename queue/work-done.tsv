@@ -10029,3 +10029,4 @@ merge:pipelinq:3821:fe84ed8f	merge3 tree of 3 pipelinq PRs: merged=3 red=0 fail=
 merge:pipelinq:3833:c60f3044	merge3 tree of 3 pipelinq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T16:03:45Z
 fix:hermiq:1757:52b33f1f	fixed: openapi.json additions moved mid-document, clean with #1749; new head 607d7107	session-20261114T154807-c05f4e57	2026-11-14T16:03:51Z
 fix:learniq:2531:5736628c	fixed: maintainability restored to 3.99 by splitting SCORM import units; new head 09479452	session-20261114T154806-a38868f0	2026-11-14T16:04:02Z
+build:integriq:forms-service-fetch-for-apps:c2	done (code tasks): PR #3626 builds task 5 (admin test endpoint + ServiceFetches manifest page + TestServiceFetchModal), +6 PHPUnit, +7 vitest; PHP 8926 no new failures, vitest 2171/2171; left: Playwright e2e	session-20261114T144812-7fefa6ba	2026-11-14T16:04:11Z
