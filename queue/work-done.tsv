@@ -9712,3 +9712,4 @@ build:hermiq:reports-on-a-schedule:c2	pushed to PR #1758: 2.1 done; left 1.2, bl
 build:hermiq:models-several-models-per-turn:c2	partial: PR hermiq#1781, task 1 (fallback chain on the model policy) and task 2's invokeChat test done; tasks 3-7 and verification left; suite failures identical to development (164E/26F inherited)	session-20261114T141732-dc478e77	2026-11-14T15:09:07Z
 fix:learniq:2533:adbae3b0	no change needed: already contains development, conflict only with other tree PRs; asked for solo verify	session-20261114T141010-8dc8bd74	2026-11-14T15:09:33Z
 fix:hermiq:1774:8f940704	conflict resolved, new head 8e39a155	session-20261114T144746-30bc6559	2026-11-14T15:09:44Z
+verify:hermiq:1715:da93b441	1715,1739,1757 GREEN; 1756,1763 CONFLICT with earlier tree PRs (clean on development)	session-20261114T144757-446bd6da	2026-11-14T15:10:08Z
