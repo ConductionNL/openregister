@@ -7593,3 +7593,4 @@ merge:pipelinq:3775:57c35979	merge3 tree of 38 pipelinq PRs: merged=22 red=0 fai
 merge:pipelinq:3782:44f27144	merge3 tree of 38 pipelinq PRs: merged=22 red=0 fail=0 skip=0; conflict 16, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T06:20:50Z
 merge:pipelinq:3785:e3e10274	merge3 tree of 38 pipelinq PRs: merged=22 red=0 fail=0 skip=0; conflict 16, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T06:20:53Z
 review:openregister:10326:dedc82a6	APPROVE: JS-only apiSamples + spec, jest 6/6, eslint clean	session-20261114T062222-96f530fc	2026-11-14T06:23:43Z
+verify:decidiq:2174:a3ed7c64	2175,2176,2177 GREEN; 2174 BLOCK (shadowed duplicate route); 2178 RED (municipality objectCount interaction with 2174)	session-20261114T062142-da017174	2026-11-14T06:24:37Z
