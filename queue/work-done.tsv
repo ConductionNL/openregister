@@ -10324,3 +10324,4 @@ build4:openregister:local-changes-to-app-shipped-configuration:c3	partial: no ne
 fix:integriq:3549:374abd7d	merged dev, strings moved off the shared tail; suites no new failures; new head 9b625281	session-20261114T154807-4c2c3327	2026-11-14T16:59:44Z
 fix:hermiq:1750:e321ec0c	nothing to fix: branch already contains development; conflict is only with #1736 (not yet on development), resolve after it lands	session-20261114T165414-28281f96	2026-11-14T17:00:05Z
 fix:buildiq:1608:c78047b8	merged development, l10n union, no new failures; new head 9907d8e5	session-20261114T151004-fa188a10	2026-11-14T17:00:19Z
+fix:decidiq:2188:f58a79f4	fixed: merged development, hotspot lines moved; clean with the tree; new head 0f122fbc	session-20261114T154807-c05f4e57	2026-11-14T17:00:30Z
