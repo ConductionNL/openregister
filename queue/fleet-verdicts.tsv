@@ -10579,6 +10579,7 @@ filinq	2121	d31730783d867b619d99513a2c3e8fa1b05b6170	REVERIFY	worker-15	merged d
 filinq	2095	3fec27e5946ffaac4fd5d465fcf250ec360b6fcf	REVERIFY	worker-42	merged development in (clean); unit 6786 OK, jest 567 and vitest 763 green; new head e0ebb0e0ebe5754c9471ca10c172be747f2d726f, verify it
 learniq	2507	b815725295bb7a86f6958c22d91916dfc723bbe2	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.12 -> 3.10
 learniq	2521	33d6a10d4aa16d12fb49fbc159c992a382a2a5bc	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+integriq	3639	e46772691b83900efe3492faf4f968767c898fa1	GREEN	worker-52	tests only; php 9178 tests on tree, baseline 9162 with 2 errors 4 failures, no new failures
 filinq	2102	898cbd6ba1970f7cb2efbd8b1aa23175e56908e0	REVERIFY	worker-45	merged development in: en/nl l10n json conflicts kept both sides' keys, .js regenerated (l10n:build); unit suite 6774 tests, 0 failures; still conflicts with unmerged #2103 in filinq_register.json (version/description line); new head 1985bdd5c6efaa65bf0faa5d9ac4f2374beb1b46, verify it
 filinq	2113	4f1d9b5d7940a2c15b8923847e175f24b8a09ad8	REVERIFY	worker-03	merged development in; SigningService constant conflict resolved keeping both sides (VIA_MCP, APP_ID, CANCEL_TRANSITION); phpstan/phpcs clean, unit 6773 tests OK; new head 45e6b64f8a2ce720ba101fcdd409f41779c0cc63, verify it
 pipelinq	3843	73494d8c75522efbbda2b445f79b34a8e115461e	GREEN	worker-23	tests only, no assertions removed; phpunit 8563 tests 0 failures on tree
@@ -10589,6 +10590,7 @@ learniq	2486	f0544ac9b797c7925644e7571820803aeeeb4235	CONFLICT	merge3	merges cle
 learniq	2513	2bcbcc6d2ccd517e7f04fc3684d4412403862fc2	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json 
 versioniq	733	12c4f99641c4c0ef361c42add879b5cc4b4412cc	GREEN	worker-58	tree dev+700+733: unit-only suite 1742 (baseline 1697, same 2 inherited golden failures; runner phpunit 10.5 from a cached vendor since vendor-bin/phpunit is not installed), vitest 2974 passed; new failures none; tests only (2 vitest specs)
 versioniq	734	c03718fb341de7b2c00073052072e38c7d10a759	CONFLICT	worker-58	merges clean on development alone; conflicts with #700 in lib/Db/AuditEntryMapper.php
+decidiq	2208	cddfe5e941a64d0cc81aecf343fa8a7b479b4c81	GREEN	worker-43	tests only (3 test files); unit suite on development dbda6812: 4377 OK, with the PR: 4385 OK, no new failures
 filinq	2085	a1832379990fe340d6e46fba03ad12a6cf76bab5	REVERIFY	worker-42	merged development in; SigningService.php conflict resolved keeping both sides' constants (accept/sign refusals and APP_ID/CANCEL_TRANSITION); phpcs/phpstan clean, unit 6787 OK; new head 432c7b61c70dd584e71f805269fa45a3506da207, verify it
 pipelinq	3844	c727734b9f8741e1d90a4fb46e938b8555a66d71	GREEN	worker-23	tests only, no assertions removed; phpunit 8563 tests 0 failures on tree
 pipelinq	3845	e0dd744ca2e826d116078083012a3d825b36e9a1	GREEN	worker-23	tests only, no assertions removed; phpunit 8563 tests 0 failures on tree
