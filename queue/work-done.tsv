@@ -9423,4 +9423,6 @@ fix:portaliq:2442:5eed4168	conflict resolved, new head d378be76	session-20261114
 build:shillinq:tax-icp-and-reverse-charge:c2	done: PR shillinq#3004 head 0da2276d0 builds 2.1-2.4 and 3.1 (prepare from books, icp-opgaaf generator, ICP page, Digipoort filing, strings); 3.2 Playwright left (live instance); PHP 11083->11116 0 failures, vitest 1 inherited failure	session-20261114T134652-7dff5131	2026-11-14T14:20:56Z
 verify:portaliq:2430:899a8de4	2 GREEN (2430,2433), 2 CONFLICT (2489,2494); suite 5246 ok, baseline 5228	session-20261114T141737-2ab246b3	2026-11-14T14:21:01Z
 fix:shillinq:2976:7513bd9c	l10n conflict with #2963 removed (keys moved to catalogue end); REVERIFY recorded, new head b29fc602b8b9b344cd3aee25345c2b45a7cf077d	session-20261114T131642-b20146b1	2026-11-14T14:21:08Z
+verify:pipelinq:3835:03a4780d	3835 BLOCK: removes /api/articles routes still called by frontend (tasks 1.2/4.1 open); suite 8398 OK	session-20261114T141720-f9e7a46b	2026-11-14T14:21:37Z
 fix:dossiq:6324:6c79a3f1	conflict resolved, merged development in; new head 6582111944, REVERIFY recorded	session-20261114T141732-bb541f91	2026-11-14T14:21:39Z
+fix:portaliq:2440:95a6ddd5	conflict resolved, merged development in, version bumped to 0.111.0; unit suite green; new head 55c8203a	session-20261114T141724-6227a125	2026-11-14T14:22:12Z
