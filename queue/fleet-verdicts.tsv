@@ -7676,3 +7676,4 @@ versioniq	714	6d93c5ca2353275ec1d9c4291d2825048504d7cd	GREEN	worker-29	php 1748 
 versioniq	715	43e281981c1176f250c817451b7fa0ddd6338d91	CONFLICT	worker-29	conflicts with the tree in l10n, SettingsController, InstanceSettingsFields, InstanceSettings, openapi.json, InstanceSettingsPanel
 versioniq	716	2a5ee6e0daa014e32dbfa18c41ead81dbcd30aea	GREEN	worker-29	php 1748 tests (baseline 1643), 2 inherited golden fails, no new; vitest 2962 pass
 versioniq	717	e8ddf437de5c8ca2221f1fba4a8743b5c91ce58b	CONFLICT	worker-29	conflicts with the tree in l10n/en.js en.json nl.js nl.json
+thematiq	1672	13e2f2a91655c3226c9d2139658523c595192da2	GREEN	worker-09	phpunit tree 2871 tests (baseline 2858), 1 failure inherited from development (MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow); vitest 1559 passed; no new failures; tests and tasks only
