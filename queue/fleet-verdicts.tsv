@@ -6737,3 +6737,4 @@ hermiq	1757	c0e6cda2ab5636133ef35d84060075d6457a5713	GREEN	worker-58	php unit 47
 hermiq	1759	c8d9f9d671778fbcaaccf125070da7808d9b8740	GREEN	worker-58	php unit 4748 run on tree, baseline 4653 with 172 inherited err/fail, 0 new; JS identical to 1753 tree (vitest 1440 pass)
 learniq	2496	fa97a1052525c80a1c9d548925fa6538a98ff29e	GREEN	worker-26	PHP unit 6582 tests on tree, baseline 1 inherited fail (HigherEducationExampleSetTest), no new; JS node tests 1345 vs 1339 baseline, same 9 inherited fails, no new
 learniq	2501	ece22c4cf32ef3410d53b385a6c2c88ecb7f1860	GREEN	worker-26	PHP unit 6582 tests on tree, baseline 1 inherited fail (HigherEducationExampleSetTest), no new; JS node tests 1345 vs 1339 baseline, same 9 inherited fails, no new
+learniq	2502	20eb3a98d6c98af18f21569d3ae798720c21dbfe	CONFLICT	worker-26	clean on development but conflicts with #2496 in l10n/en.js,en.json,nl.js,nl.json; not tested
