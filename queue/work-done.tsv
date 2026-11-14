@@ -10005,3 +10005,4 @@ build:integriq:gateway-openapi-import-and-publish:c2	done (code): PR #3582 head 
 fix:hermiq:1767:96c447ea	merged development (clean); l10n conflict is with unmerged #1715; new head a6510da2	session-20261114T154757-c9bf237e	2026-11-14T16:00:16Z
 merge:dossiq:6385:dc4aa4da	merge3 tree of 1 dossiq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T16:00:34Z
 merge:portaliq:2437:a7c54eab	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T16:00:42Z
+merge:portaliq:2495:4121effd	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T16:00:45Z
