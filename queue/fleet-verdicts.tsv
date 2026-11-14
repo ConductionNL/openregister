@@ -9396,3 +9396,5 @@ filinq	2069	4aa3130589e6a003a6724441372a1c3d1e1a03a9	RED	merge3	unit in a tree w
 filinq	2070	cd488491c6ef53d177b06f0b0d3fb2bed1fb67fd	CONFLICT	merge3	conflicts in tree
 filinq	2118	17b69a70e2add5d767380fa92f9b9085ad2f9d19	CONFLICT	merge3	conflicts in tree
 portaliq	2437	4fe52aadf12e8d05af3b9c7ffcad928a6ef91e59	RED	merge3:merge-gate	GATE RED checker floor: testcoderatio: pass -> warn; testcoderatio stars: 4 -> 3
+pipelinq	3829	53db97a2a57d9b2787f93d77e5619ebe0a00d334	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3835	53c482bd863ceaf5d117d415362b24b587eea728	CONFLICT	merge3	merges clean on development alone; files: tests/vitest/structureProfile.spec.js 
