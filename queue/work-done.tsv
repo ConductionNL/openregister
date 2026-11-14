@@ -8087,3 +8087,4 @@ merge:larpinq:1012:df5d9396	merge3 tree of 3 larpinq PRs: merged=1 red=0 fail=0 
 build:buildiq:apps-unified-search-deep-links	PR #1581: deep links for built-app + built apps' detail pages; 8 new tests, suite 2917->2926, 1 inherited failure; 3.2 live and 4.1 close-out left	session-20261114T075638-c30fc6de	2026-11-14T08:02:48Z
 build:planninq:time-timer-and-work-type	PR #1170: 1.1-1.4, 2.1-2.5 built; 1.5, 3.1, 3.2 (e2e/validate) left; unit 1034->1049, vitest 3198->3217 green	session-20261114T073105-752e50ad	2026-11-14T08:02:47Z
 build:buildiq:lifecycle-git-branches	partial: PR #1582 T01 fragment + T04 merge service; T02/T03/T05-T08 left	session-20261114T062200-6a28e40c	2026-11-14T08:03:00Z
+build:buildiq:logic-approval-task-form	partial: PR #1583, T02 refusals + T03 interim refusal + T01 stored shape; T01 UI, T04-T08 left	session-20261114T062202-3e33eeb3	2026-11-14T08:03:33Z
