@@ -11363,3 +11363,4 @@ fix:stackiq:1918:31731952	failed: besides l10n, src/manifest.json conflicts on t
 review:opencatalogi:2650:6ae5f600	GREEN	session-20261114T201755-10d43934	2026-11-14T21:59:25Z
 build:stackiq:landscape-dependent-field-options:c2	failed: blocked upstream: tasks 1-2 merged (#1917); task 3 needs CnFormDialog support for x-openregister-dependent-values, absent in @conduction/nextcloud-vue up to 2.180.0; its Playwright test waits with it	session-20261114T211806-b9cd4119	2026-11-14T21:59:34Z
 verify:launchpad:1214:b41b2296	GREEN 1214@3cd2835b; phpunit 4242/0 fail, vitest 2273 pass	session-20261114T211012-c469e919	2026-11-14T21:59:46Z
+fix:stackiq:1930:1dc72b4b	merged development, conflicts resolved, versions bumped past development; new head bf2b3a8e	session-20261114T214742-7aa14b57	2026-11-14T21:59:53Z
