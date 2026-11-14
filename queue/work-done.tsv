@@ -10094,3 +10094,4 @@ verify:hermiq:1757:075e9621	1757 RED (vitest AgentRunOperationsWidget run error 
 fix:filinq:2123:833c1b46	merged development (l10n tail conflicts, both sides kept), head 890c7dc2, REVERIFY	session-20261114T151802-24eee21b	2026-11-14T16:14:58Z
 fix:planninq:1172:93dd66c4	floor restored (interfacing 4.71, complexity 4.85, overall 4.80); new head bfc1c86f	session-20261114T151750-b10540e9	2026-11-14T16:15:07Z
 fix:buildiq:1614:9a7e263b	merged development, moved 11 l10n keys mid-catalogue; new head dd8560470e	session-20261114T154820-5269035e	2026-11-14T16:15:25Z
+fix:filinq:2112:297a10b4	failed: tree conflict is only with unmerged #2079 on filinq_register.json info.version/description (this 8.56.0, #2079 8.57.0, development 8.55.0); after #2079 lands, merge development and bump to 8.58.0 with both lines in the description. Clean on development; nothing pushed	session-20261114T154807-c05f4e57	2026-11-14T16:15:30Z
