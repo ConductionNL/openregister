@@ -10505,3 +10505,4 @@ fix:keepiq:1791:a0a825d5	merged development, new head bb4f5f10, REVERIFY recorde
 fix:planninq:1166:eb8a0d7e	floor restored (PASS), new head 5fa61e8e, REVERIFY recorded	session-20261114T172412-df2c66f1	2026-11-14T17:54:26Z
 verify:planninq:1158:74ad759a	GREEN 1158 (phpunit 1046 OK, vitest 3270 passed)	session-20261114T174741-aa9751f9	2026-11-14T17:54:38Z
 fix:launchpad:1197:e61de66b	fixed office-tiles stability marker, new head 21a4f902; remaining /analytics/me failure is inherited from development	session-20261114T171830-19af6b65	2026-11-14T17:54:45Z
+verify:learniq:2484:1e6ac179	GREEN 2484,2507,2515,2541; CONFLICT 2486,2521,2542; 2536 skipped (head moved); 0 new test failures	session-20261114T174740-5118fc4f	2026-11-14T17:55:29Z
