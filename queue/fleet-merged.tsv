@@ -2823,3 +2823,7 @@ integriq	3540	b60f9413cf610f318befebf0c4f6f8bd91942fa9	MERGED	merge3	GATE OK sbo
 pipelinq	3752	cedbd5450150fc0197c83f37318382def8507737	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.17
 dossiq	6513	8b5c0e0d92e24451f76592dff730fa7d4287c3e1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
 dossiq	6518	01cc4ced2ee1a263a51d1888a675e340a1015708	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+learniq	2501	240753660bef555eede7d9b3aec4f30bf8b615f2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2506	958cde6a5c04678c65416a5ec07ea787ae3dda0b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2515	b47ed90a65416f33691c2fcf1c432bbcfe7a54c6	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2521	34c33485a9bb30531e0afef5d1730ca32e358cd8	RED	merge3	GATE RED floor: overall: 4.35 -> 4.33; unit_size: 4.12 -> 4.10; unit_complexity: 4.36 -> 4.31; unit_interfacing: 3.13 -> 3.11
