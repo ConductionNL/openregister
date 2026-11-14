@@ -9440,3 +9440,4 @@ humaniq	1133	0e7cf4b632881b5454887acca9d29cc43f053255	RED	merge3:merge-gate	GATE
 humaniq	1144	0a397e554d164235aefbc4465a72f533a664be44	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.62 -> 3.60
 humaniq	1145	b05d3c3dddeb423605be9200575ffaa3cef27bcf	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.62 -> 3.59
 humaniq	1156	833152c1e985dc3a9eebbaa5eb2d957e8a98dbea	CONFLICT	merge3	merges clean on development alone; files: src/manifest.effective.json tests/fixtures/manifest-baseline/manifest-canonical.json tests/fixtures/manifest-baseline/pages.json 
+planninq	1178	93ae38333c81b66f1230d253a2e16b8510e2247f	REVERIFY	worker-02	split bulkPatch (CCN 14) into per-action builders, same behaviour; floor unit_complexity 4.84->4.84 PASS, vitest 3226/3226, eslint clean; new head 3c7b73e8ca14fd90976e83e402ec201379e56535, verify it
