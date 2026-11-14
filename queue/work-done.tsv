@@ -7987,6 +7987,7 @@ build:planninq:adopt-cnapproot-manifest-shell	PR #1156: 3.1 admin settings on Cn
 build:integriq:one-off-and-suppressed-recipients	PR #3587: all 7 implementation tasks built with 23 new tests; verification/handover tasks left (container, dossiq half); suite 8516 tests, failures = baseline 5	session-20261114T073105-27c9d15e	2026-11-14T07:49:34Z
 fix:shillinq:2995:028a9490	no change: merges clean on current development; conflict is only with sibling tree PRs in info.xml/register-versions.lock, verify after they land	session-20261114T062156-16c77e6a	2026-11-14T07:49:27Z
 verify:integriq:3539:56247e26	3539 GREEN, 3557 GREEN; 3546, 3561, 3562 CONFLICT with the tree; no new unit failures	session-20261114T070323-628c2f37	2026-11-14T07:49:40Z
+build:planninq:task-attachments-from-files	partial: PR #1157, Files from Files on the task page via CnRelatedFiles + task.linkedFiles; e2e left; vitest 3198->3203	session-20261114T062156-e8adf8ca	2026-11-14T07:49:46Z
 build:planninq:plannedtimeentry-reads-humaniqs-hours	partial: PR #1158 (repair step moving hours to humaniq, 4.1/5.2; store, widgets, 1.3 and e2e left)	session-20261114T065635-0aca43d3	2026-11-14T07:49:48Z
 review:openregister:10467:dd25bf3f	APPROVE (compat arguments; 13744 tests pass on merge)	session-20261114T065631-b4991134	2026-11-14T07:49:53Z
 fix:shillinq:3009:bd7e5e42	no change: merges clean on current development; conflict is only with sibling tree PRs (info.xml, l10n, register-versions.lock), verify after they land	session-20261114T062156-16c77e6a	2026-11-14T07:50:05Z
