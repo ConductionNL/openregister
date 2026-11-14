@@ -9468,3 +9468,4 @@ build:shillinq:tax-cbcr-and-pillar2-returns:c2	partial: PR #2997, done 1.1 1.2 3
 build:pipelinq:marketing-articles-move-to-portaliq:c2	partial: PR #3835 builds 1.1,1.2,2.1,3.1,3.2,4.1 and the controller/route half of 4.2; left: schema-fragment drop (needs live zero-failure move), composer check:strict (refuses root), live check 5.2	session-20261114T134654-82ca2be5	2026-11-14T14:27:59Z
 verify:dossiq:6509:4c5f222f	6509 GREEN, 6510 GREEN; 0 new failures (13 phpunit + 1 vitest inherited)	session-20261114T141727-56b2bf78	2026-11-14T14:27:58Z
 fix:learniq:2493:cf5af58b	floor restored: unit_complexity 4.38 -> 4.40 by splitting four units; REVERIFY recorded, new head dddd85e4411bd14431cfb9d1c78f6303b798aa0b	session-20261114T114435-d7b47cb4	2026-11-14T14:28:13Z
+verify:pipelinq:3835:56161fed	stale	session-20261114T134654-82ca2be5	2026-11-14T14:28:25Z
