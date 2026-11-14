@@ -9205,3 +9205,4 @@ learniq\t2484\t953ce73f569e1ce4dd10737a2faf72a7e55ff73e\tGREEN\tworker-26\tunit 
 decidiq	2194	29f064112169f161e7582dbfd6e615a03aad1723	GREEN	worker-13	phpunit 4257 tests 0 failures (baseline 4232, 0 failures); vitest 2764 passed, 4 skipped; new failures none
 learniq\t2486\t6d3eac1aab7c3a344f1beebca35b4e742a632aa7\tCONFLICT\tworker-26\tdoes not merge onto development + #2484
 learniq\t2507\t4e19f9e610160a7af2b8e4777e3f3c3280ae3cdb\tGREEN\tworker-26\tunit 6776 on tree, 1 inherited failure (HigherEducationExampleSetTest); js-unit 1367, 9 inherited failures, same on development; no new failures; build of practical-exam-assessment per spec
+learniq	2493	b4d28b9283d5249cfc45f1efc77193c139b7d6b3	GREEN	worker-29	unit 6774 tests vs baseline 6754, 1 inherited failure (HigherEducationExampleSetTest), 0 new; js 9 inherited, 0 new; mentor read rule is asked by the change spec
