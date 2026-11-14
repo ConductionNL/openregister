@@ -8235,6 +8235,7 @@ build:launchpad:launcher-discover-server-services	already done: tasks 1-4 built 
 verify:decidiq:2158:b0482d6a	2158 GREEN	session-20261114T073109-bb0ea608	2026-11-14T08:24:23Z
 build:keepiq:vault-item-clone-preview-and-print	failed: permission (adding the QR encoder npm dependency was refused); partial PR #1784 with clone and attachment preview (1.1-2.2), +18 vitest; print/QR (3.1, 3.2) and their docs left	session-20261114T073117-2bd2e050	2026-11-14T08:24:30Z
 verify:launchpad:1190:7a8a1f51	1190 GREEN, 1194 GREEN	session-20261114T070333-41d2bfe8	2026-11-14T08:24:45Z
+build:keepiq:vault-website-addresses	partial: PR #1785 (1.1 storage/API/cap, 1.2 search+match); 1.3 share copies, 1.4 UI/backup/GDPR, 1.5 extension, 2-4 left; unit 4974 -> 4992 green	session-20261114T065632-a1c920c5	2026-11-14T08:24:58Z
 build:launchpad:launcher-tile-launch-types	partial: PR #1201, task 1 (scheme allow-list and SSO launch templates, validated; 14 tests, suite green); tasks 2-8 left	session-20261114T062202-3e33eeb3	2026-11-14T08:24:55Z
 fix:opencatalogi:2650:894030c7	merged development, resolved ListenerRegistrar + test conflict keeping both listeners; new head 76e9e835	session-20261114T075638-c30fc6de	2026-11-14T08:25:07Z
 build:launchpad:integrations-office-tiles	partial: PR #1197, tasks 1-2 (service, endpoints, actions, openapi, 15 tests); 3-4 frontend dialog/picker, 5 e2e, 6 strings/archive left	session-20261114T070341-dde19dba	2026-11-14T08:25:00Z
