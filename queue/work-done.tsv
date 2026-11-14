@@ -9388,3 +9388,4 @@ merge:pipelinq:3752:edf319c0	merge3 tree of 13 pipelinq PRs: merged=7 red=0 fail
 merge:pipelinq:3708:9a977f4c	merge3 tree of 13 pipelinq PRs: merged=7 red=0 fail=0 skip=1; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T14:13:05Z
 merge:pipelinq:3830:c07e8308	merge3 tree of 13 pipelinq PRs: merged=7 red=0 fail=0 skip=1; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T14:13:08Z
 merge:pipelinq:3752:c52dd03a	merge3 tree of 13 pipelinq PRs: merged=7 red=0 fail=0 skip=1; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T14:13:12Z
+build:filinq:intake-paper-archive-digitisation:c2	partial: PR #2121 builds 1.1 (digitisationProject + paperOriginal schemas, register 8.55.0, demo data, authorization record, strings); left 2.1, 2.2, 3.2, 4.1, 4.2, 5.1, 5.2; suite 6695, 0 failures; stopped for context	session-20261114T124635-6520e795	2026-11-14T14:13:20Z
