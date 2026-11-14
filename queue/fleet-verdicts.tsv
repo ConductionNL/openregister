@@ -10272,3 +10272,4 @@ decidiq	2143	f51a1774d8f40b7c7bd91a388ee530d9ba2e04e6	REVERIFY	worker-58	merged 
 shillinq	2977	56133b60db0688d17e55b61ead23b16eb17f9879	REVERIFY	worker-36	regenerated src/administrationScopedPages.json (6 schemas from development); administrationScopedIndex.spec 10/10; vitest 2765/2766, dunningNextRun.spec fails on plain development too (inherited); new head dcb021934e64d9e0cfbd89ae5afac7f3e66a8332, verify it
 learniq	2521	33d6a10d4aa16d12fb49fbc159c992a382a2a5bc	GREEN	worker-54	PHP unit 6897 on tree (baseline 6835, only the 2 inherited failures), node unit-js no new failures
 learniq	2544	51f1817053398a1fa5481bbb97f968818664d3e9	CONFLICT	worker-54	conflicts with #2521 in scripts/example-sets/__pycache__/example_set.cpython-311.pyc (committed bytecode)
+learniq	2547	a6615a23072d18b9074017bf5a0eabe92d97a304	CONFLICT	worker-54	conflicts with #2507/#2521 in l10n en/nl (json and js)
