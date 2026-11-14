@@ -19,9 +19,17 @@
       (naming both the name and what referenced it), a cycle (naming the path
       that closes it, self-reference included) and a chain deeper than
       `MAX_DEPTH`.
-- [ ] 1.3b Calling it from the schema save path, which is
+- [x] 1.3b Calling it from the schema save path, which is
       `LifecycleAnnotationValidator`'s neighbourhood and needs the same
       decision about where the library lives.
+      (13 Nov: the library is the schema's own `x-openregister-conditions`.
+      `Db/SchemaMapper/NamedConditionCheck` runs in `SchemaMapper`'s behaviour
+      checks and refuses the save, through `NamedConditionLibrary::refusalFor()`,
+      when a lifecycle transition guard, a state field rule or an administered
+      validation names an undeclared condition, or the library has a cycle or a
+      chain over `MAX_DEPTH`. The refusal names the rule id. Flows keep their
+      conditions on the flow and are not read. `NamedConditionCheckTest` (6) and
+      `SchemaMapperNamedConditionTest` (2, the wiring, red without it).)
 - [x] 1.4a `usage()` answers condition → the rules naming it. DIRECT
       references only, deliberately: an administrator asking "what does
       correcting this break" wants the rules that name it, and a transitive

@@ -71,6 +71,32 @@ write:
   sequential-scan or transaction deltas
 - **AND** its p95 MUST remain within 500 ms
 
+### Requirement: A write response means persisted, and a caller can ask to wait for its side effects
+
+When an instance enables `defer_object_events`, a 2xx from an object write MUST
+mean that the object is persisted. It MUST NOT promise that the event's
+listeners have run: they run in a background job dispatched after the write,
+as the acting user.
+
+A caller that needs the previous guarantee MUST be able to ask for it per
+request by sending `X-OpenRegister-Effects: sync`, and that request's events
+MUST then be dispatched before the response, as without deferral. Without the
+setting, every write dispatches its events before the response, whatever the
+header says.
+
+#### Scenario: a deferred write answers before its listeners
+
+- **GIVEN** an instance with `defer_object_events` set to `1`
+- **WHEN** a client creates an object without the header
+- **THEN** the create answers 201 once the object is persisted
+- **AND** the created event is dispatched by a background job
+
+#### Scenario: a caller asks to wait
+
+- **GIVEN** the same instance
+- **WHEN** a client creates an object with `X-OpenRegister-Effects: sync`
+- **THEN** every listener of the created event has run before the 201
+
 ### Requirement: Schema resolution is cached per request and across requests
 
 Resolving a schema by id, uuid or slug MUST hit a single request-scoped

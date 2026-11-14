@@ -6,10 +6,15 @@
 
 ## 2. Holding
 
-- [ ] 2.1 Change-gate listener on `ObjectCreatingEvent` and `ObjectUpdatingEvent` storing the delta as a `pending-<n>` draft and stopping the write. Verify: `ChangeGateListenerTest` for a gated field, an ungated field, and an exempt group.
-- [ ] 2.2 202 answer with the pending change key from `ObjectsController` create, update and patch. Verify: API test that a gated PATCH answers 202 and the object reads unchanged.
-- [ ] 2.3 Gated create stored with a reserved uuid and no live object. Verify: API test that the uuid answers 404 and the list is unchanged.
-- [ ] 2.4 409 for a second gated write while one is open. Verify: API test.
+- [x] 2.1 Change-gate listener on `ObjectCreatingEvent` and `ObjectUpdatingEvent` storing the delta as a `pending-<n>` draft and stopping the write. Verify: `ChangeGateListenerTest` for a gated field, an ungated field, and an exempt group.
+- [x] 2.2 202 answer with the pending change key from `ObjectsController` create, update and patch. Verify: API test that a gated PATCH answers 202 and the object reads unchanged.
+- [x] 2.3 Gated create stored with a reserved uuid and no live object. Verify: API test that the uuid answers 404 and the list is unchanged.
+- [x] 2.4 409 for a second gated write while one is open. Verify: API test.
+      Built in `lib/Listener/ChangeGateListener.php` (registered last on both pre-write
+      events, after validation, constraints and quota) and `ObjectsController::heldChangeAnswer()`.
+      Unit-tested in `ChangeGateListenerTest` and `ObjectsControllerHeldChangeTest`; the API
+      tests named under 2.2-2.4 need a live instance and are not written yet. OPEN for 3.2:
+      promoting a pending change must pass this gate (it would be held again).
 
 ## 3. Deciding
 

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Service\File\DocumentStore;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -38,11 +39,15 @@ final class FileSettingsControllerServices {
 	 * @param ContainerInterface   $container       DI container, for the optional extraction backends.
 	 * @param AppSettingsInterface $settingsService Settings service.
 	 * @param LoggerInterface      $logger          Logger.
+	 * @param DocumentStore|null   $documentStore   Where the documents live; null leaves it out of the file settings.
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly ContainerInterface $container,
 		public readonly AppSettingsInterface $settingsService,
 		public readonly LoggerInterface $logger,
+		public readonly ?DocumentStore $documentStore = null,
 	) {
 	}//end __construct()
 }//end class

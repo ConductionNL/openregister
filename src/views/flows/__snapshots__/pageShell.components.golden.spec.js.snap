@@ -63,5 +63,6 @@ exports[`page-shell views register their components OperationsConsoleIndex 1`] =
   "NcEmptyContent",
   "NcLoadingIcon",
   "NcNoteCard",
+  "SeedReportSection",
 ]
 `;
