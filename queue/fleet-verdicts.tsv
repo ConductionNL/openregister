@@ -6672,3 +6672,4 @@ decidiq	2176	26e67dc64895f61b5ddd15038a271411c25dabec	GREEN	worker-11	unit 4001 
 decidiq	2177	7078a1ab11459f341e6d860c6f8efa696e2817e6	GREEN	worker-11	unit 4001 baseline 0 fail; tree 2174-2177: 4068 pass; vitest 2700 pass; new failures none
 decidiq	2178	268b6e5ee8d985a92e60e33a26b6c288c837970c	RED	worker-11	tree with 2178: RegisterJsonTest::testExampleSetsCountTheirOwnObjects (municipality.json objectCount 232 vs 236 seeds): 2174 and 2178 each raise 228->232 and each adds 4 objects; green alone, red merged with 2174 - set objectCount to the merged sum
 hermiq	1737	3a6db84b8da7148099112955eb1b0bf2ff0daaaa	GREEN	worker-58	php unit 4724 run on tree, baseline 4653 with 172 inherited err/fail, 0 new; vitest 1444 pass
+hermiq	1738	178cd95a5aeba03e3dc73ab808459cfecb10f84c	GREEN	worker-58	php unit 4724 run on tree, baseline 4653 with 172 inherited err/fail, 0 new; vitest 1444 pass
