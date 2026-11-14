@@ -7131,3 +7131,5 @@ shillinq	3009	bd7e5e427058f46815fd4362dccdbd95a8732780	CONFLICT	worker-36	confli
 filinq	2074	92ebb286e850a07761547f9303b1947f9f13bbed	GREEN	worker-21	build matches its change specs; tree(2071,2074,2078) unit 6680 OK, vitest 758 OK; baseline unit 6626 OK, vitest 751 OK; no new failures
 filinq	2078	8247eff99a8282125a4e13fa0a74b9fe52750439	GREEN	worker-21	build matches its change specs; tree(2071,2074,2078) unit 6680 OK, vitest 758 OK; baseline unit 6626 OK, vitest 751 OK; no new failures
 filinq	2085	cf785bbf6d94c57779d1766b4337793bde34c4a0	CONFLICT	worker-21	clean on development; conflicts with tree in l10n/en.js,en.json,nl.js,nl.json and lib/Settings/filinq_register.json
+filinq	2098	cde3e349a7cf3de71f80d830ac43dd843945fce3	CONFLICT	worker-21	clean on development; conflicts with tree in l10n/en.js,en.json,nl.js,nl.json
+filinq	2099	7b0032ea1245796b40818698f835727ddb22663e	CONFLICT	worker-21	clean on development; conflicts with tree in lib/Settings/filinq_register.json
