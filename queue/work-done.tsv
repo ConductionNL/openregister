@@ -10455,3 +10455,4 @@ build:humaniq:setup-wizard-six-steps:c3	failed: blocked: PR #1136 is merged; eve
 verify:shillinq:3048:d2250188	GREEN 3048	session-20261114T161742-d79a1d0e	2026-11-14T17:42:43Z
 fix:decidiq:2175:84afe008	failed: branch already contains development; conflicts only with unmerged sibling #2171 (municipality.json, UserSettings.vue); merge development in after #2171 lands	session-20261114T174106-c933f162	2026-11-14T17:42:52Z
 fix:hermiq:1715:dc6ec4b3	conflict resolved (register v0.57.0, l10n merged); new head 47d76c7c	session-20261114T161744-497aae45	2026-11-14T17:43:06Z
+fix:hermiq:1788:ab0f629a	failed: permission (local ADR ruleset lint run refused; the adrvalidator pass->warn needs the new openapi.json paths checked against the ADR 2.x rules, likely missing API-Version response headers as pipelinq#3826)	session-20261114T173956-74ab8962	2026-11-14T17:43:35Z
