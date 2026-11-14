@@ -7803,6 +7803,7 @@ fix:decidiq:2139:9b920569	duplication floor restored (3.81 vs 3.82, within toler
 fix:decidiq:2158:fd133af7	l10n conflicts resolved, pushed fe421ef4, REVERIFY recorded	session-20261114T065635-0aca43d3	2026-11-14T07:20:01Z
 fix:hermiq:1714:3a9b3d43	floor restored (4.55), pushed bd07a5c6; REVERIFY recorded	session-20261114T065626-0651b305	2026-11-14T07:20:08Z
 fix:hermiq:1755:5afed843	conflict resolved with development, no new failures; new head aba4ba32	session-20261114T065633-3e3cb668	2026-11-14T07:20:18Z
+build:humaniq:self-service-policy-assistant	already building	session-20261114T070344-897ffa0f	2026-11-14T07:20:26Z
 fix:hermiq:1725:ea008ff0	conflict resolved (register bumped to 0.54.0), new head 9101789f; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T07:20:32Z
 fix:humaniq:1127:bcbc1be8	clean on development; conflict only with sibling tree PRs, REVERIFY queued unchanged	session-20261114T070341-dde19dba	2026-11-14T07:20:39Z
 fix:hermiq:1723:04460787	conflict resolved (register 0.54.0), pushed 147d1ec0, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T07:20:48Z
@@ -7822,3 +7823,5 @@ fix:hermiq:1529:c0cafc44	merged development (contract + inbox move reconciled), 
 fix:integriq:3466:5930a910	conflict resolved, pushed 07247ead, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T07:23:24Z
 fix:humaniq:1137:5e825cca	now merges clean after #1133, unit 4162 OK, pushed 80108332, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:23:31Z
 fix:hermiq:1761:40e7cd07	test updated + register bump to 0.54.0, new head 30c4d00a, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T07:23:41Z
+fix:integriq:3540:ef9737c9	conflict resolved: l10n json keys moved clear of #3539, development merged; new head cce40cda	session-20261114T065633-3e3cb668	2026-11-14T07:23:59Z
+fix:hermiq:1673:a636a706	conflict resolved (refactor re-applied on development's version), no new failures, pushed b28c73b9	session-20261114T065635-61264d14	2026-11-14T07:24:15Z
