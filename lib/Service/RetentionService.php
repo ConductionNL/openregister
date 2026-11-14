@@ -1286,4 +1286,21 @@ class RetentionService implements RetentionServiceInterface {
 
 		return array_values(array_unique($bronnen));
 	}//end extractSelectionListSource()
+
+	/**
+	 * Release a legal hold on an object, by separate arguments.
+	 *
+	 * The published call; releaseHold() takes the reason and matter as one HoldOrder.
+	 *
+	 * @param ObjectEntity $object   The object to release the hold from.
+	 * @param string       $reason   The reason for releasing the hold.
+	 * @param string|null  $ownerKey The matter releasing its own hold; null for a manual hold, or to release every hold.
+	 *
+	 * @return ObjectEntity The object with legal hold released.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function releaseLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
+		return $this->releaseHold(object: $object, order: new HoldOrder(reason: $reason, ownerKey: $ownerKey));
+	}//end releaseLegalHold()
 }//end class

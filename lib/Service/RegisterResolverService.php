@@ -61,6 +61,8 @@ use Psr\Log\LoggerInterface;
  * Register / Schema entities, with request-scoped caching and
  * multi-tenant awareness.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The published resolveRegisterId() and resolveSchemaId() sit next to lookupId().
+ *
  * @spec openspec/specs/register-resolver-service/spec.md
  */
 final class RegisterResolverService implements RegisterResolverServiceInterface {
@@ -547,4 +549,44 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 
 		$this->lastTenantUuid = $currentUuid;
 	}//end noteTenant()
+
+	/**
+	 * The configured register id, slug or UUID of an app, by separate arguments.
+	 *
+	 * The published call; lookupId() takes the same as one ConfigLookup.
+	 *
+	 * @param string      $appId            Consumer app id.
+	 * @param string      $configKey        Config key to read.
+	 * @param string|null $default          Fallback value if the config is unset.
+	 * @param string|null $organisationUuid The organisation the lookup is for.
+	 *
+	 * @return string The configured value, or the fallback.
+	 *
+	 * @spec openspec/specs/register-resolver-service/spec.md
+	 */
+	public function resolveRegisterId(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
+		return $this->lookupId(
+			lookup: new ConfigLookup(appId: $appId, configKey: $configKey, default: $default, organisationUuid: $organisationUuid)
+		);
+	}//end resolveRegisterId()
+
+	/**
+	 * The configured schema id, slug or UUID of an app, by separate arguments.
+	 *
+	 * The published call; lookupId() takes the same as one ConfigLookup.
+	 *
+	 * @param string      $appId            Consumer app id.
+	 * @param string      $configKey        Config key to read.
+	 * @param string|null $default          Fallback value if the config is unset.
+	 * @param string|null $organisationUuid The organisation the lookup is for.
+	 *
+	 * @return string The configured value, or the fallback.
+	 *
+	 * @spec openspec/specs/register-resolver-service/spec.md
+	 */
+	public function resolveSchemaId(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
+		return $this->lookupId(
+			lookup: new ConfigLookup(appId: $appId, configKey: $configKey, default: $default, organisationUuid: $organisationUuid)
+		);
+	}//end resolveSchemaId()
 }//end class
