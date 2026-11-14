@@ -231,4 +231,24 @@ final class SearchFolding {
 
 		return "similarity({$left}, {$right}) > {$threshold}";
 	}//end similarity()
+
+	/**
+	 * The trigram similarity score of a text to a term, for the relevance
+	 * column and the relevance order; folded on both sides when folding on
+	 * PostgreSQL, so it ranks the rows the folded match let through.
+	 *
+	 * @param string $textExpression The text expression, already cast to text.
+	 * @param string $quotedLiteral  The quoted search term.
+	 *
+	 * @return string The `similarity(...)` expression.
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-object-search-ignores-accents-where-the-database-supports-it
+	 */
+	public function score(string $textExpression, string $quotedLiteral): string {
+		if ($this->platform === self::PLATFORM_POSTGRES && $this->folded === true) {
+			return 'similarity(' . self::FOLD_FUNCTION . "({$textExpression}), " . self::FOLD_FUNCTION . "({$quotedLiteral}))";
+		}
+
+		return "similarity({$textExpression}, {$quotedLiteral})";
+	}//end score()
 }//end class

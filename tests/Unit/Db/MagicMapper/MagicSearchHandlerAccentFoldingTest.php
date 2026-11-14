@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCA\OpenRegister\Db\MagicMapper\SortRequest;
+use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -55,6 +57,7 @@ use ReflectionProperty;
  * @covers \OCA\OpenRegister\Db\MagicMapper\SearchLeafScope
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\AccentFoldingSetting
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SortRequest
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  */
@@ -199,6 +202,37 @@ class MagicSearchHandlerAccentFoldingTest extends TestCase {
 		$this->assertNull($this->handler(isPostgres: true, available: true, appConfig: $off)->searchFolding(query: []));
 		$this->assertTrue($this->handler(isPostgres: true, available: true, appConfig: $on)->searchFolding(query: [])?->isFolded());
 	}//end testSwitchedOffFoldingKeepsTheHistoricalComparison()
+
+	/**
+	 * The relevance order of a folded search scores folded text; without
+	 * folding it keeps the historical expression.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-object-search-ignores-accents-where-the-database-supports-it
+	 */
+	public function testTheRelevanceOrderScoresFoldedText(): void {
+		$handler = $this->handler(isPostgres: true, available: true, fuzzy: true);
+		$method  = new ReflectionMethod(MagicSearchHandler::class, 'relevanceSortExpression');
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('createNamedParameter')->willReturn(':term');
+		$qb->method('createFunction')->willReturnCallback(
+			function (string $sql): IQueryFunction {
+				$function = $this->createMock(IQueryFunction::class);
+				$function->method('__toString')->willReturn($sql);
+				return $function;
+			}
+		);
+
+		$sort = new SortRequest(order: ['_relevance' => 'DESC'], schema: $this->schema());
+		$sort->searchTerm = 'cafe';
+		$sort->folding = $handler->searchFolding(query: []);
+		$this->assertSame('similarity(openregister_fold(t._name::text), openregister_fold(:term))', (string) $method->invoke($handler, $qb, $sort));
+
+		$sort->folding = null;
+		$this->assertSame('similarity(t._name::text, :term)', (string) $method->invoke($handler, $qb, $sort));
+	}//end testTheRelevanceOrderScoresFoldedText()
 
 	/**
 	 * The UNION-path conditions for one search.

@@ -527,12 +527,20 @@ class MagicSearchHandler {
 
 		// Add relevance score column when fuzzy search is enabled.
 		// This allows us to return the similarity score as a percentage in @self.relevance.
+		$folding = null;
+		if ($searchTerm !== null) {
+			$folding = $this->searchFolding(query: $query);
+		}
+
 		if ($fuzzyEnabled === true && $searchTerm !== null) {
 			$searchTermParam = $queryBuilder->createNamedParameter($searchTerm);
+			$score = "similarity(t._name::text, {$searchTermParam})";
+			if ($folding !== null) {
+				$score = $folding->score(textExpression: 't._name::text', quotedLiteral: (string)$searchTermParam);
+			}
+
 			$queryBuilder->addSelect(
-				$queryBuilder->createFunction(
-					'ROUND(similarity(t._name::text, ' . "{$searchTermParam}) * 100)::integer AS _relevance"
-				)
+				$queryBuilder->createFunction('ROUND(' . $score . ' * 100)::integer AS _relevance')
 			);
 		}
 
@@ -540,6 +548,7 @@ class MagicSearchHandler {
 		// indexes for ORDER BY … LIMIT instead of sorting the full result set.
 		$sort = new SortRequest(order: $order, schema: $schema);
 		$sort->searchTerm = $searchTerm;
+		$sort->folding = $folding;
 		$sort->recentViews = ($query['_recentViews'] ?? null);
 		$sort->dateTimeColumns = $tableSearch->dateTimeColumns;
 		$sort->sortLanguages = $this->sortLanguageChain(register: $register);
@@ -5176,6 +5185,7 @@ class MagicSearchHandler {
 	 * @return IQueryFunction|null The expression, or null without a search term or pg_trgm.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-multi-field-sorting-with-metadata-and-relevance-support
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-object-search-ignores-accents-where-the-database-supports-it
 	 */
 	private function relevanceSortExpression(IQueryBuilder $qb, SortRequest $sort): ?IQueryFunction {
 		if ($sort->searchTerm === null || $this->hasPgTrgmExtension() === false) {
@@ -5184,6 +5194,10 @@ class MagicSearchHandler {
 
 		// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
 		$paramName = $qb->createNamedParameter($sort->searchTerm);
+		if ($sort->folding !== null) {
+			return $qb->createFunction($sort->folding->score(textExpression: 't._name::text', quotedLiteral: (string)$paramName));
+		}
+
 		return $qb->createFunction("similarity(t._name::text, {$paramName})");
 	}//end relevanceSortExpression()
 
