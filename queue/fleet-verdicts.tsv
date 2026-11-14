@@ -7601,3 +7601,5 @@ stackiq	1926	47d3e2874a4a53ffc721bb94cb97530e5cb82b80	GREEN	worker-20	unit 3483 
 stackiq	1927	ddb874d12865616721dcdc4de53f26b78dd2f23f	CONFLICT	worker-20	conflicts in tree with #1924 #1926 (l10n/en.json, l10n/nl.json, lib/Settings/softwarecatalogus_register.json), clean on plain development
 stackiq	1928	de70d7be11578f13c4594f8c77e31073ac663a69	CONFLICT	worker-20	conflicts in tree with #1926 (l10n/en.js, en.json, nl.js, nl.json), clean on plain development
 stackiq	1929	400412c44ec49d136ec6a4fd4fbac0456c9d99bb	GREEN	worker-20	unit 3483 OK (baseline 3446 OK), vitest 2502 OK, no new failures
+stackiq	1930	1dc72b4bd293ea8a15358bb47d750700251c5e3a	CONFLICT	worker-20	conflicts in tree with #1924 #1926 (l10n/*, lib/Settings/softwarecatalogus_register.json), clean on plain development
+stackiq	1931	08b0b836e957dd7a63e78b167f32f3ccf6bfe2d2	CONFLICT	worker-20	conflicts in tree with #1924 (lib/Settings/softwarecatalogus_register.json), clean on plain development
