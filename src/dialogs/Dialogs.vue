@@ -6,6 +6,8 @@
 		<AuditTrailChanges />
 		<ClearAuditTrails />
 		<DeleteApplication v-if="navigationStore.dialog === 'deleteApplication'" />
+		<ConnectionReportDialog
+			v-if="navigationStore.dialog === 'connectionReport'" />
 	</div>
 </template>
 
@@ -20,6 +22,7 @@ import AuditTrailChanges from '../modals/logs/AuditTrailChanges.vue'
 import AuditTrailDetails from '../modals/logs/AuditTrailDetails.vue'
 import ClearAuditTrails from '../modals/logs/ClearAuditTrails.vue'
 import DeleteAuditTrail from '../modals/logs/DeleteAuditTrail.vue'
+import ConnectionReportDialog from './connections/ConnectionReportDialog.vue'
 
 export default {
 	name: 'Dialogs',
@@ -29,6 +32,7 @@ export default {
 		AuditTrailChanges,
 		ClearAuditTrails,
 		DeleteApplication,
+		ConnectionReportDialog,
 	},
 }
 </script>
