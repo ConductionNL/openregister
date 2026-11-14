@@ -2696,3 +2696,10 @@ integriq	3598	4071b13c1e730d8963bc5adec08f2ac22c40415d	MERGED	merge3	GATE OK sbo
 integriq	3599	54b8f5366be6bc2a89f5d7a1bd10ceb947df0174	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 integriq	3603	7d32eec6ecfd712256b289ab37202be907e45263	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 integriq	3604	f03022b0d8d4fdab2c071d7fec94cfa17f246e6c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2164	d924a5dc074edfa3f7c6820ce353a1cfb4762e12	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2166	40f36f767f750bd83a463f757ecabedd24a08e94	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2167	9cf33dc3ff5dc12df452df3cb753081e0cef9498	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2169	d6a0067ec1d6b3f291bedc78cbadce8e9e01cad9	RED	merge3	GATE RED floor: unit_interfacing: 3.34 -> 3.32
+decidiq	2175	30ead60504c2129cb93d3174e224f045f34a6056	RED	merge3	GATE RED floor: unit_complexity: 3.90 -> 3.88
+decidiq	2183	bbf91e1cfa0902ace0fa12e8e8091e14d1d1a91c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2185	ca52b5c98bd3b5af11c8c55ac09cc9cbc3c46989	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
