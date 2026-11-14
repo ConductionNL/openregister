@@ -9699,6 +9699,7 @@ build:decidiq:planning-long-term-agenda-tracks-and-report:c2	PR #2162: tasks 3-6
 build:portaliq:catalogue-entry-shows-costs-and-conditions:c3	no code left: PR #2490 merged; T04 is a question to opencatalogi's tracker, T05 an e2e/live check	session-20261114T141732-bb541f91	2026-11-14T15:06:43Z
 fix:learniq:2509:ca90dcaa	no change: clean on development; tree-only conflict in generated l10n .js; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T15:06:47Z
 build:hermiq:models-prompt-and-answer-cache:c2	partial: pushed to PR #1753 — merged development (l10n key union), task 3 OpenAI cached_tokens read (+1 test); left task 2, Runs.vue cache line (page shows no tokens yet), tasks 4-7 (answer cache)	session-20261114T134643-47800317	2026-11-14T15:06:52Z
+fix:decidiq:2149:f93e7d66	stale	feeder	2026-11-14T15:05:20Z
 fix:learniq:2523:d742d8a6	no change: clean on development; tree-only conflict; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T15:07:15Z
 merge:pipelinq:3713:751eeefd	merge3 tree of 4 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T15:07:32Z
 build:hermiq:personal-preferences:c2	partial: not started in this pass (worker context nearly full); PR #1742 is merged; left 1.1-1.3 settings dialog and strings, 2.1 answer language, 2.2 default agent, 2.4 run-done notification, 3.1 spec tags and e2e	session-20261114T131646-cdc565a4	2026-11-14T15:07:25Z
@@ -9707,4 +9708,10 @@ merge:portaliq:2440:661dad5b	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=
 merge:portaliq:2284:47ded3a7	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T15:07:52Z
 verify:decidiq:2143:2a8cdde4	2143 GREEN; 2154 RED (seed count on top of 2143), 2168 RED (pinned version tests); 2146 CONFLICT dev; 2148 2170 2174 2177 2181 CONFLICT after 2143	session-20261114T141720-f9e7a46b	2026-11-14T15:07:59Z
 merge:pipelinq:3833:9ae29a13	merge3 tree of 4 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T15:08:07Z
+build:filinq:document-sanitization:c2	partial: built OR PdfDocumentSanitizer (openregister#10561) and filinq PDF routing + record preservedAttachments (filinq#2126, task 2.1); left 3.4 sanitize flag (needs #10561 on OR main), 3.5/4.2 seal half (waits for document-waarmerk-certification)	session-20261114T134703-00d8a302	2026-11-14T15:08:22Z
 verify:filinq:2070:ff4fbe39	2070 GREEN; 2074 CONFLICT after 2070 (l10n)	session-20261114T141738-30f539db	2026-11-14T15:08:18Z
+build:hermiq:agent-acting-identity-picker:c2	PR #1782: tasks 2.1-2.4 done (edit page choice, right via initial state, unresolved warning endpoint, l10n); 3.1 e2e left (needs live instance)	session-20261114T144746-30bc6559	2026-11-14T15:08:28Z
+build:hermiq:reports-on-a-schedule:c2	pushed to PR #1758: 2.1 done; left 1.2, blocked on per-card actions in nextcloud-vue CnReportsPage (still absent in 2.180.0)	session-20261114T141732-bb541f91	2026-11-14T15:08:28Z
+build:hermiq:models-several-models-per-turn:c2	partial: PR hermiq#1781, task 1 (fallback chain on the model policy) and task 2's invokeChat test done; tasks 3-7 and verification left; suite failures identical to development (164E/26F inherited)	session-20261114T141732-dc478e77	2026-11-14T15:09:07Z
+fix:learniq:2533:adbae3b0	no change needed: already contains development, conflict only with other tree PRs; asked for solo verify	session-20261114T141010-8dc8bd74	2026-11-14T15:09:33Z
+fix:hermiq:1774:8f940704	conflict resolved, new head 8e39a155	session-20261114T144746-30bc6559	2026-11-14T15:09:44Z
