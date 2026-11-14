@@ -11530,3 +11530,4 @@ build:filinq:diwoo-documentsoort-to-opencatalogi:c2	blocked: opencatalogi develo
 fix:hermiq:1785:5ceb085f	DelegatedRun writes locked to admin, pushed 85359cade75cd578ce8d9a34cb1a51d6c33f3736, REVERIFY recorded	session-20261114T214740-6d7e97c9	2026-11-14T22:22:20Z
 fix:learniq:2523:6236bc6d	failed: up to date with development; conflicts only with unmerged #2513 (l10n, ParentSitePages, PortalContributionProvider, po profile), resolve after #2513 lands	session-20261114T211800-2a24a3a9	2026-11-14T22:22:33Z
 build:stackiq:architecture-reference-component-coverage:c2	done on PR #1911 (head e2ffb824): task 5 coverage map, task 7 docs+nl; left: Playwright tests and screenshots only	session-20261114T214742-7aa14b57	2026-11-14T22:22:51Z
+fix:shillinq:3065:e857eb23	conflict resolved, pushed 376d3093, REVERIFY recorded	session-20261114T221743-dbe5c07e	2026-11-14T22:22:57Z
