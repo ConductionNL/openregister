@@ -33,11 +33,26 @@
 
 ## 3. The import run
 
-- [ ] 3.1 An `importRun` record: file name, fingerprint, mapping, conflict policy, actor, moment, counts.
-- [ ] 3.2 One outcome per row with its reason, paged on read.
-- [ ] 3.3 The failed rows are exportable for correction.
-- [ ] 3.4 A retry of the failed rows creates a new run naming the original as its cause.
-- [ ] 3.5 Per-row detail is pruned on an administered period; the header and the counts are kept.
+- [x] 3.1 An `importRun` record: file name, fingerprint, mapping, conflict policy, actor, moment, counts.
+      The import preview of `import-preview-and-conflict-policy` already is that record (`sourceName`,
+      `sourceHash`, `packSlug`, `policy`, `createdBy`, `created`, the counts), so it is kept rather than
+      duplicated (D-7). `Version1Date20261114120000` adds `cause_run` and `rows_pruned_at` to it, and a
+      commit runs inside `WriteCause::runAs(import, <run uuid>)`, so every audit entry it writes names the run.
+- [x] 3.2 One outcome per row with its reason, paged on read.
+      The paged `/api/import-previews/{id}/rows` already existed; a row now also carries `outcome`
+      (`written` or `failed`), the object it created (its uuid fixed at preview time) or updated, and
+      `source`, the row as it was submitted.
+- [x] 3.3 The failed rows are exportable for correction.
+      `GET /api/import-previews/{id}/failed` (`ImportFailedRowsCsv`): every skipped, refused or failed row
+      in its submitted columns, read a page at a time, led by `_row` and `_reason`, which the importer
+      ignores, so the corrected file loads as it is.
+- [x] 3.4 A retry of the failed rows creates a new run naming the original as its cause.
+      `POST /api/import-previews` with `retryOf=<run id>`: only a run the caller may read is accepted, and
+      the new run's `causeRun` is the original's uuid; the original is not touched.
+- [x] 3.5 Per-row detail is pruned on an administered period; the header and the counts are kept.
+      `ImportRunRetentionJob` (daily) through `ImportRunRetention`: app config
+      `import_run_row_retention_days` (default 90). A pruned run reads `rowsPruned: true`, its rows say
+      `pruned`, and its failed-row export answers 410 rather than an empty file.
 
 ## 4. Tests
 
@@ -45,7 +60,8 @@
 - [x] 4.2 Unit tests for the tolerance verdict, the stored tolerance and the failing-record list.
       (`tests/Unit/Service/Quality/QualityAuditEvaluatorTest.php`, against the real scorer; the definition
       check of REQ-RCN-003 is covered there too.)
-- [ ] 4.3 Unit tests for the run record, the retry lineage and the prune that keeps the header.
+- [x] 4.3 Unit tests for the run record, the retry lineage and the prune that keeps the header.
+      `ImportRunRecordTest`, `ImportFailedRowsCsvTest`, `ImportRunRetentionTest`, `ImportRunControllerTest`.
 - [ ] 4.4 An e2e over an import run read back after it finished, with a failed row and its reason.
 - [ ] 4.5 Deduplication check (ADR-012) recorded in the PR body.
 
