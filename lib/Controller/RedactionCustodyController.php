@@ -75,7 +75,7 @@ class RedactionCustodyController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function show(int $fileId): JSONResponse {
-		if ($this->fileAccess->mayOpen(fileId: $fileId) === false) {
+		if ($this->mayReadFile(fileId: $fileId) === false) {
 			return new JSONResponse(
 				data: ['error' => 'forbidden', 'message' => 'You cannot read this file.'],
 				statusCode: Http::STATUS_FORBIDDEN
@@ -94,4 +94,15 @@ class RedactionCustodyController extends Controller {
 
 		return new JSONResponse(data: $this->custody->statement(file: $file));
 	}//end show()
+
+	/**
+	 * Whether the caller may read the file: the check that opening it applies.
+	 *
+	 * @param int $fileId The file.
+	 *
+	 * @return bool
+	 */
+	private function mayReadFile(int $fileId): bool {
+		return $this->fileAccess->mayOpen(fileId: $fileId);
+	}//end mayReadFile()
 }//end class
