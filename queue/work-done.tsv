@@ -10610,3 +10610,4 @@ merge:portaliq:2437:e4369573	merge3 tree of 1 portaliq PRs: merged=0 red=1 fail=
 merge:pipelinq:3829:5ab01d7b	merge3 tree of 3 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T19:04:05Z
 merge:pipelinq:3835:b202ec0d	merge3 tree of 3 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T19:04:08Z
 merge:pipelinq:3818:4fc3dd45	merge3 tree of 3 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T19:04:11Z
+verify:learniq:2536:57bab69d	GREEN #2536; no new failures	session-20261114T185853-1a2abc5d	2026-11-14T19:06:28Z
