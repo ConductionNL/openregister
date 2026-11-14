@@ -9498,3 +9498,4 @@ build:filinq:document-waarmerk-certification:c2	built 2.1-2.5, 3.1, 4.1-4.4, 5.1
 fix:portaliq:2494:01e731ef	no change: branch up to date with development; package.json conflict only with unmerged #2430/#2433, resolve after they land	session-20261114T141738-30f539db	2026-11-14T14:32:42Z
 review:dossiq:6324:65821119	GREEN: tests-only diff vs development, 2 new tests pass, no new failures	session-20261114T134643-47800317	2026-11-14T14:33:04Z
 fix:filinq:2099:2529cfcb	no change: branch current with development; conflict only with unmerged #2072/#2098 register version line; REVERIFY recorded	session-20261114T134708-0947487e	2026-11-14T14:33:30Z
+build:learniq:learner-list-and-page-follow-the-boards:c2	partial: PR #2530 builds T3's NextStep rule (5 tests); left T1 read-model field, T2 list columns and views, T3 endpoint and header, T4 side column, T5 guardian conversation, T6 strings and example data	session-20261114T131646-6a405bc8	2026-11-14T14:33:41Z
