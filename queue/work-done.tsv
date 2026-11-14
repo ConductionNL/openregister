@@ -11563,3 +11563,4 @@ verify:learniq:2507:edb22a18	2507 GREEN, 2521 GREEN, 2544 and 2547 CONFLICT in t
 fix:shillinq:2977:56133b60	regenerated scoped pages, pushed dcb02193, REVERIFY; dunningNextRun vitest red is inherited from development	session-20261114T221743-dbe5c07e	2026-11-14T22:27:01Z
 fix:versioniq:718:d08cc176	development merged in cleanly, new head c0066590	session-20261114T214733-589f5bff	2026-11-14T22:27:12Z
 review:integriq:3542:cd5c8335	stale	feeder	2026-11-14T22:25:11Z
+build:stackiq:operations-sync-status-and-progress:c2	PR #1963: task 5 page+permissions+11 tests, task 6 docs page; left: Playwright e2e and screenshots (live)	session-20261114T214735-aacd1703	2026-11-14T22:27:53Z
