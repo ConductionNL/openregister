@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Service\File\UrlFileFetcher;
 
 /**
  * Stream wrapper standing in for `http://` so the URL-fetch path can be tested
@@ -171,7 +172,8 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$this->handler = new FilePropertyHandler(
 			$this->logger,
-			$this->fileService
+			$this->fileService,
+			new UrlFileFetcher(opener: new WrapperStreamOpener())
 		);
 	}
 
@@ -2618,6 +2620,33 @@ class FilePropertyHandlerTest extends TestCase {
 		$schema->method('getProperties')->willReturn([]);
 
 		$this->assertFalse($this->handler->isFileInSchema($schema, 'document'));
+	}
+
+	/**
+	 * The property path fetches through the shared fetcher, with the instance's upload ceiling,
+	 * and reports any refusal other than the address guard as before (files-create-from-url 1.1).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/files-create-from-url/specs/file-actions/spec.md
+	 */
+	public function testTheFetchGoesThroughTheSharedFetcher(): void {
+		$fetcher = $this->createMock(UrlFileFetcher::class);
+		$fetcher->expects($this->exactly(2))
+			->method('fetch')
+			->with('http://93.184.216.34/a.pdf', \OCA\OpenRegister\Service\File\UrlFileSource::ceilingBytes())
+			->willReturnOnConsecutiveCalls(
+				'%PDF-1.4 bytes',
+				$this->throwException(new \OCA\OpenRegister\Service\File\UrlFetchRefused(reason: 'too-large', message: 'The file is larger than 1 bytes.'))
+			);
+		$handler = new FilePropertyHandler($this->logger, $this->fileService, $fetcher);
+		$method = new ReflectionMethod($handler, 'fetchFileFromUrl');
+
+		$this->assertSame('%PDF-1.4 bytes', $method->invoke($handler, 'http://93.184.216.34/a.pdf'));
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Unable to fetch file from URL: http://93.184.216.34/a.pdf');
+		$method->invoke($handler, 'http://93.184.216.34/a.pdf');
 	}
 
 	/**
