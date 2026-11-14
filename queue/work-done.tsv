@@ -10405,3 +10405,4 @@ build:decidiq:configurable-types-domain-model:c3	partial: nothing changed on PR 
 fix:learniq:2507:ba361dd5	fixed the BLOCK: Enrolment withdrawn label back to Withdrawn, the assessor assignment reads No longer assigned; new head 4e19f9e6, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T17:27:04Z
 build4:openregister:send-at-on-the-messaging-leaf:c3	done (code): smtp-mail seed in integriq PR #3632 (+2 tests, catalog digests), task 1.1 ticked on openregister PR #10534 (ffb41105); left 3.1 e2e and 3.2 Newman (live instance)	session-20261114T161750-16a1c558	2026-11-14T17:27:16Z
 fix:decidiq:2189:cdb66cba	development merged clean, new head 4d141d0a, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T17:27:14Z
+fix:humaniq:1123:a6b9adfa	floor restored (unit_interfacing 3.61 vs 3.62, PASS), suite OK, new head 29c65f19, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:28:04Z
