@@ -8297,3 +8297,4 @@ filinq	2079	4296198b4749c66c7297b0abf9709e3e2afa55c2	GREEN	worker-22	unit 6780 o
 filinq	2083	917afeaa9dda2341ebe7ba85ab45f7c8ad29111c	CONFLICT	worker-22	clean on development; conflicts after #2079 in the tree: l10n en/nl (.json and .js) and filinq_register.json
 filinq	2114	e4621a50308ba264f85b082f4d5f320b7f10c08d	CONFLICT	worker-22	clean on development; conflicts after #2079 in the tree: l10n en/nl (.json and .js) and filinq_register.json
 filinq	2124	e55ecf9223b0780b31103e2917fa8eaa29855798	GREEN	worker-22	unit 6780 on tree (baseline 6695, 0 failures), vitest 752 passed, new failures none; builds document-waarmerk-certification (admin-only settings, owner/admin-scoped seals, rate-limited public verify)
+decidiq	2178	cb54bcf167945f8cb1c648f1e870e7a4872edbe9	REVERIFY	worker-14	merged development in: RegisterAuthorizationTest block count 51 (both sides added blocks); unit 4205 OK; new head b14461bcea8816ac9fed9e813c2d72ae331bc186, verify it
