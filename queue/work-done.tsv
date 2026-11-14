@@ -10991,3 +10991,4 @@ fix:integriq:3632:b8b6d7ad	failed: no branch fix possible; merges clean on devel
 build:filinq:grondslagen-read-from-dossiq:c3	partial: PR #2122 (branch -c2, head c84b46d) built task 2 (WooGroundLabels; LegalBasisCatalog/DossierContextService/BaseLabelResolver via resolver; bases.js reads /api/grounds; GroundsReadersTest), task 3 repair RepointWooGrounds (dossier/consent/prohibition bases + entity_type_bases), task 4 (19 Woo seeds retired, register 8.56.0, BaseWooGroundGuard), task 5 read-only admin section, task 6 docs; 	session-20261114T194751-bb7578f8	2026-11-14T20:43:32Z
 fix:portaliq:2440:c822fe02	conflict resolved, pushed 05103dba; REVERIFY recorded	session-20261114T194743-e736657e	2026-11-14T20:43:34Z
 review:shillinq:2997:ee7b7248	GREEN: unit 11411 OK, vitest only inherited failure; specced	session-20261114T194744-563ce177	2026-11-14T20:43:58Z
+fix:keepiq:1791:16a86af2	REVERIFY cd6b33cf	session-20261114T134708-ba7f7741	2026-11-14T20:44:06Z
