@@ -9190,3 +9190,4 @@ build:portaliq:capability-rows-said-and-planned:c2	partial: no new commits this 
 build:shillinq:hours-to-humaniq:c2	failed: blocked: tasks 3-6 are gated by 2.3 (proceed only when the live subject-audit counts of 2.2 are zero), which needs the dev instance and installs; 3.1 lives in humaniq; PR #2967 holds the buildable part	session-20261114T124625-c74fc712	2026-11-14T13:07:07Z
 merge:buildiq:1579:e2884240	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:10Z
 merge:buildiq:1587:a93e4a28	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:13Z
+merge:buildiq:1588:ca733c53	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:25Z
