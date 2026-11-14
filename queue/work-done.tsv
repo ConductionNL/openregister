@@ -10531,3 +10531,4 @@ verify:decidiq:2202:4338db13	2202 GREEN (self-built; mechanical checks only)	ses
 fix:learniq:2542:f59bed9f	l10n keys moved mid-catalogue; merges clean onto dev+#2507+#2484; pushed 8b1768c4, REVERIFY recorded	session-20261114T171832-d4fb04b0	2026-11-14T18:00:31Z
 build:humaniq:record-history-on-every-detail-page:c3	no code task left on PR #1128 (head 3d540460): record name in the sentence needs a design decision (OpenRegister audit entries carry no name; resolving it from the browser writes read entries), 4.1 e2e for 4 browser scenarios and 4.2 need a live instance	session-20261114T171812-31ca6c88	2026-11-14T18:00:41Z
 fix:launchpad:1211:f6110015	conflict resolved (both settings pairs kept); new head b818b6fc, REVERIFY recorded	session-20261114T174741-aa9751f9	2026-11-14T18:00:37Z
+fix:launchpad:1205:3d06446c	floor restored (PASS), new head c1333564, REVERIFY recorded	session-20261114T172412-df2c66f1	2026-11-14T18:00:55Z
