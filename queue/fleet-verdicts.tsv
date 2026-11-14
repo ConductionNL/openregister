@@ -8278,3 +8278,4 @@ filinq	2121	7cda90b10a96dd93af5cd502975131a0ba9db07e	CONFLICT	worker-18	conflict
 filinq	2122	e2997aaa3872b1973bf114c10c1eba469a1261f8	CONFLICT	worker-18	conflicts after #2105: openapi.json
 filinq	2123	c039f5f90a1330950fbd0e2f9929b5e520c6d931	CONFLICT	worker-18	conflicts after #2105: appinfo/routes.php, l10n en/nl, DocumentProductionSchemaTest.php
 learniq	2484	9c722d00825149b5a1661bb32a8852e6007edcfd	GREEN	worker-01	unit 6741 on the tree (baseline 6703, the same 1 failure HigherEducationExampleSetTest on development, 0 new); php -l clean; no JS unit script in the repo; build of cohort-room-and-feedback-summary-for-the-learner: the summary carries no reviewer identity in any mode, as REQ asks
+filinq	2116	29aaca50dbc8a8af8d2509b71be07cd80bd2b2bf	CONFLICT	worker-39	conflicts on development+2112+2118: l10n en/nl, filinq_mock_register.json, filinq_register.json, openapi.json
