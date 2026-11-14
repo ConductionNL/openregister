@@ -7976,3 +7976,4 @@ portaliq	2430	9bb36ef821e8e718820f30f0a68656e2730b232b	GREEN	worker-56	unit 5204
 portaliq	2432	a6c24c39fc1908d8f4c70237f40fc80fb626baa2	GREEN	worker-56	unit 5204 on tree, baseline 5187, no new failures; no JS unit script; mailer refactor keeps behaviour and log text
 portaliq	2434	12c46c015e6e900d595268badfe306d735d63657	CONFLICT	worker-56	conflicts with development plus 2427, 2430, 2432
 portaliq	2442	36c168645698de7abbdaf0d8023bbe8db4301fc1	GREEN	worker-56	unit 5204 on tree, baseline 5187, no new failures; no JS unit script
+shillinq	3046	1ba604de3bdc76b64eae6f8a332c18099aea9bb4	REVERIFY	worker-19	merged development, ServiceRegistrarTest count 207+25 for the binding #3001 added; new head 4d142112e0464fe5e9a503949ff6f08da2db6a12, verify it
