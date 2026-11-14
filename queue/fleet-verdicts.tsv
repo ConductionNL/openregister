@@ -7299,3 +7299,4 @@ buildiq	1593	fbd23e44fba41003f2bf3a4318b81ffabbc69c63	GREEN	worker-44	phpunit 29
 buildiq	1594	1c834c69b2092227dbce09e438d0b40899d8ff69	GREEN	worker-44	phpunit 2955 tests on tree vs 2917 baseline, only inherited ExportZipGoldenTest; vitest 429 files/4097 green; no new failures
 buildiq	1596	41f4f3c3fe30b5f64a2bb761acf876f9bf4a51cb	CONFLICT	worker-44	conflicts with development plus 1588-1594 in tree order
 buildiq	1597	b4d6685f15a88f33cd1f90edad134ba6de802e91	CONFLICT	worker-44	conflicts with development plus 1588-1594 in tree order
+integriq	3582	770cf7a9990adde39b8b731acb2f6c1a8d95b4d6	REVERIFY	worker-58	merged current development cleanly (registration-order, OpenApi and Gateway tests OK); the conflict is only against earlier tree PRs not yet on development; new head da7df603e24436c0c5855ccca85472a3c4167729
