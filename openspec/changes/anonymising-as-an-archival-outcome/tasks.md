@@ -17,7 +17,7 @@
 ## 3. The act
 
 - [x] 3.1 Execution runs through the existing pseudonymise primitive, per the declared profile. (verified: lib/Service/Archival/AnonymisationService.php, tests/Unit/Service/Archival/AnonymisationTest.php)
-- [ ] 3.2 The search index, the history projection and every derived copy are updated in the same act.
+- [x] 3.2 The search index, the history projection and every derived copy are updated in the same act. (built: lib/Service/Archival/AnonymisationDerivedCopies.php lists the derived copies of a record as AnonymisationTargets, so AnonymisationRun prepares all before writing any: StateHistoryAnonymisationTarget drops the record's intervals of the changed properties, open and closed (new StateHistoryMapper::countForObjectProperties/deleteForObjectProperties); ContentIndexAnonymisationTarget drops its content-search chunks (source_type object; `deleteBySource` added to ChunkStoreInterface, which ChunkMapper already had); VectorAnonymisationTarget drops its semantic-search vectors under the uuid and the database id. Chunks and vectors are cut again from the anonymised record by the next extraction/vectorisation. Property search reads the record's own row, so it follows the record write. Not yet done: the target that writes the record itself, and the job that runs a sweep with these targets (with 1.2).)
 - [ ] 3.3 The anonymised values are removed from the audit trail's stored diffs, an entry records the act, and the chain is re-sealed.
 - [x] 3.4 A record under a legal hold is not anonymised, and the refusal names the hold. (verified: lib/Service/Archival/AnonymisationRun.php, tests/Unit/Service/Archival/AnonymisationRunTest.php)
 - [x] 3.5 A failure to reach a derived copy fails the whole act; nothing is half-anonymised. (verified: lib/Service/Archival/AnonymisationRun.php, tests/Unit/Service/Archival/AnonymisationRunTest.php)
@@ -31,6 +31,6 @@
 
 - [x] 5.1 Unit tests for each of the four treatments, including the stable pseudonym joining two rows. (verified: tests/Unit/Service/Archival/AnonymisationTest.php)
 - [x] 5.2 Unit tests for the legal-hold refusal and the all-or-nothing failure. (verified: tests/Unit/Service/Archival/AnonymisationRunTest.php)
-- [ ] 5.3 A test asserting the anonymised value is absent from the search index and the history projection.
+- [x] 5.3 A test asserting the anonymised value is absent from the search index and the history projection. (built: tests/Unit/Service/Archival/AnonymisationDerivedCopiesTest.php runs AnonymisationRun over in-memory history rows and content chunks: the former name is in neither afterwards, kept properties and other records keep theirs, and an unreachable content index leaves every copy whole; tests/Unit/Db/StateHistoryMapperPropertiesTest.php pins the two queries)
 - [ ] 5.4 A test asserting the audit chain verifies after the re-seal and that the anonymisation entry is on it.
 - [ ] 5.5 Deduplication check (ADR-012) recorded in the PR body.
