@@ -10192,3 +10192,7 @@ stackiq	1944	25fa2c20ed0031ac0278d3a787cffa3eca2f16bc	CONFLICT	worker-08	conflic
 stackiq	1945	6fb762aa974dd423d2dbf7928f22680a6ea9174d	CONFLICT	worker-08	conflicts in tree after #1911/#1928 (l10n/en,nl .js/.json)
 stackiq	1946	c75ea65b3ac255369597b172bfd0b8c42e80fff4	CONFLICT	worker-08	conflicts in tree after #1911/#1928 (l10n/en,nl .js/.json)
 learniq	2507	cea92f10012f9194913188c0323be1be359113c1	REVERIFY	worker-54	merged development in, en.js and nl.js regenerated from the merged json (other locales stale on development already, left as is), l10n parity OK; new head b815725295bb7a86f6958c22d91916dfc723bbe2, verify it
+decidiq	2143	f51a1774d8f40b7c7bd91a388ee530d9ba2e04e6	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	2169	994902108e71373a71178554606541426e03c634	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	2172	148e74e7725f5549647398286241b07c976d9f51	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	2202	3a275a0425fce2a3464bf1ee3b6ed0600e02fadd	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
