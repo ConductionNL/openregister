@@ -28,6 +28,7 @@ import { navigationStore } from '../store/store.js'
 	<MigrationObject v-if="navigationStore.modal === 'migrationObject'" />
 	<DeleteObject />
 	<CopyObject v-if="navigationStore.dialog === 'copyObject'" />
+	<SaveRecordTemplate v-if="navigationStore.dialog === 'saveRecordTemplate'" />
 	<LockObject />
 	<ViewObject />
 	<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
@@ -75,6 +76,7 @@ import MassDeleteObject from './object/MassDeleteObject.vue'
 import MassValidateObjects from './object/MassValidateObjects.vue'
 import MergeObject from './object/MergeObject.vue'
 import MigrationObject from './object/MigrationObject.vue'
+import SaveRecordTemplate from './object/SaveRecordTemplate.vue'
 import UploadObject from './object/UploadObject.vue'
 import ViewObject from './object/ViewObject.vue'
 import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
@@ -126,6 +128,7 @@ export default {
 		MigrationObject,
 		DeleteObject,
 		CopyObject,
+		SaveRecordTemplate,
 		UploadObject,
 		ViewObjectAuditTrail,
 		LockObject,

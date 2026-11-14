@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\MailHeaderMapper;
 use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
 
@@ -36,6 +37,7 @@ final class TextExtractionStorage {
 	 * @param FileMapperInterface $fileMapper Mapper for Nextcloud files
 	 * @param IRootFolder         $rootFolder Nextcloud root folder
 	 * @param IDBConnection       $db         Database connection
+	 * @param MailHeaderMapper|null $mailHeaders The thread headers of collected `.eml` files.
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $db is a well-known PHP idiom for a database connection parameter.
 	 */
@@ -43,6 +45,7 @@ final class TextExtractionStorage {
 		public readonly FileMapperInterface $fileMapper,
 		public readonly IRootFolder $rootFolder,
 		public readonly IDBConnection $db,
+		public readonly ?MailHeaderMapper $mailHeaders = null,
 	) {
 	}//end __construct()
 }//end class

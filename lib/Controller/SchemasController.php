@@ -1166,7 +1166,11 @@ class SchemasController extends Controller {
 			// Drop the cached copy so a follow-up read in this worker sees the new schema.
 			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
 
-			return new JSONResponse(data: $schema, statusCode: 201);
+			// Advisory annotations the save ignored ride along; the save itself stands.
+			return new JSONResponse(
+				data: array_merge($schema->jsonSerialize(), ['warnings' => $this->schemaMapper->discardedAnnotations()]),
+				statusCode: 201
+			);
 		} catch (Exception $e) {
 			return $this->schemaWriteErrorResponse(
 				e: $e,
@@ -1916,6 +1920,8 @@ class SchemasController extends Controller {
 	 */
 	private function writeSchemaUpdate(array $update): JSONResponse {
 		$updatedSchema = $this->schemaMapper->updateFromArray(id: $update['id'], object: $update['data']);
+		// Read before anything else saves a schema: the list belongs to this save.
+		$warnings = $this->schemaMapper->discardedAnnotations();
 
 		$flowWarnings = [];
 		if ($update['changeSet'] !== null) {
@@ -1938,7 +1944,8 @@ class SchemasController extends Controller {
 
 		// A rename that leaves a published trigger watching the old name is a
 		// warning beside the saved schema, never a refusal.
-		$extra = [];
+		// The advisory annotations the save ignored are always listed, empty when none.
+		$extra = ['warnings' => $warnings];
 		if ($flowWarnings !== []) {
 			$extra['flowWarnings'] = $flowWarnings;
 		}
@@ -1960,11 +1967,7 @@ class SchemasController extends Controller {
 			);
 		}
 
-		if ($extra !== []) {
-			return new JSONResponse(data: array_merge($updatedSchema->jsonSerialize(), $extra));
-		}
-
-		return new JSONResponse(data: $updatedSchema);
+		return new JSONResponse(data: array_merge($updatedSchema->jsonSerialize(), $extra));
 	}//end writeSchemaUpdate()
 
 	/**
@@ -2123,19 +2126,32 @@ class SchemasController extends Controller {
 	/**
 	 * Clear the draft of a schema the publish wrote; any other response passes through.
 	 *
+	 * The answer keeps what the update listed beside the schema (warnings, flow warnings,
+	 * affected forms) and carries the warnings of the save that cleared the draft.
+	 *
 	 * @param JSONResponse $response The response of applying the draft.
 	 *
 	 * @return JSONResponse The stored schema without its draft, or the response as given.
 	 */
 	private function withDraftCleared(JSONResponse $response): JSONResponse {
-		$published = $response->getData();
-		if ($response->getStatus() !== Http::STATUS_OK || $published instanceof Schema === false) {
+		$data = $response->getData();
+		if ($data instanceof Schema === true) {
+			$data = $data->jsonSerialize();
+		}
+
+		if ($response->getStatus() !== Http::STATUS_OK || is_array($data) === false || isset($data['id']) === false) {
 			return $response;
 		}
 
+		// The update answers with the schema's fields beside its warnings, so the
+		// stored schema is read back by id rather than taken from the body.
+		$published = $this->schemaMapper->find(id: (int)$data['id']);
 		$published->setDraft(null);
+		$stored = $this->schemaMapper->update(entity: $published);
 
-		return new JSONResponse(data: $this->schemaMapper->update(entity: $published));
+		return new JSONResponse(
+			data: array_merge($data, $stored->jsonSerialize(), ['warnings' => $this->schemaMapper->discardedAnnotations()])
+		);
 	}//end withDraftCleared()
 
 	/**
