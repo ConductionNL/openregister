@@ -9955,3 +9955,4 @@ fix:humaniq:1133:1f693dfc	merged development; moved its l10n keys so it merges b
 merge:shillinq:2959:50da24dd	merge3 tree of 1 shillinq PRs: none; conflict 0, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T15:52:34Z
 build:shillinq:sales-webshop-orders:c3	partial: PR #3073 built 2.1 (listener + invoicer, duplicate, refusals) and most of 2.2 (debtor match/create), suite 11212 green, head 03de0be4; left: 2.2 created-by mark + KvK/email tests, 2.3 VAT route, 2.4 settle paid, 2.5 credit notes, 3.1 pages, 4.1 docs	session-20261114T144819-9075aaa3	2026-11-14T15:52:59Z
 verify:hermiq:1782:afc1387a	2 GREEN (1782,1783), 4 CONFLICT with 1782 (1784,1785,1787,1788)	session-20261114T154757-c9bf237e	2026-11-14T15:53:07Z
+verify:learniq:2521:315d275f	GREEN 2521; 6763 tests, 0 new failures	session-20261114T144809-d686f759	2026-11-14T15:53:22Z
