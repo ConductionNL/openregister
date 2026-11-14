@@ -8960,3 +8960,4 @@ build:pipelinq:brp-monitor-moves-to-integriq:c3	failed: blocked, 2.1 and connect
 fix:pipelinq:3826:f843cb02	fixed: API-Version header on GET /export/full 200 restores adrvalidator warn; new head a94cd12d	session-20261114T114630-192fc047	2026-11-14T11:52:54Z
 review:openregister:10523:5ee3e7c6	BLOCK: 2 architecture tests fail (concrete SlaCalculator/WorkingCalendar named in new files)	session-20261114T114405-27c89384	2026-11-14T11:54:51Z
 review:pipelinq:3742:8cf62a44	GREEN: matches change tasks, suite 8355 OK, vitest 22 OK	session-20261114T114630-192fc047	2026-11-14T11:54:59Z
+review:openregister:10529:510a2d94	APPROVE: save-time validation check wired, fail-closed without evaluator; suites green	session-20261114T114410-130907cc	2026-11-14T11:55:33Z
