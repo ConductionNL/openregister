@@ -2919,3 +2919,6 @@ decidiq	2169	e056e57f206d90ae393635c3e4f1b81aba84c468	RED	merge3	GATE RED checke
 decidiq	2172	8177a02796428137fd3d3e3f76a2909c94d2f372	RED	merge3	GATE RED floor: unit_complexity: 3.87 -> 3.83; unit_interfacing: 3.34 -> 3.32
 decidiq	2202	1c0744eb092b6b3a2eb82fca9bfcd7a865ccb039	RED	merge3	GATE RED floor: unit_complexity: 3.87 -> 3.84
 decidiq	2204	265057396c1b6cd08ecf57cfbc2bdae6556b11dc	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+integriq	3549	9b625281b04902c6392215f2c7126ec7f9bf1601	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3564	03eb30192224de47887a5deba8e5da8881ef07d2	RED	merge3	GATE RED floor: unit_complexity: 3.89 -> 3.85
+integriq	3630	0ab3bc4c8213ae20918665c8b15d0eb63d0379db	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
