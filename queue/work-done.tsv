@@ -11753,3 +11753,4 @@ fix:integriq:3628:3039ae5d	fixed: unit_complexity floor (sendMessage 23->9, send
 verify:buildiq:1608:3495dba4	1608 GREEN	session-20261114T204759-5dc9dba7	2026-11-14T23:02:38Z
 fix:versioniq:710:52c774ec	no change: branch is up to date with development and merges clean; the l10n conflict is only with unmerged #691, so it resolves after #691 lands (re-merge development then)	session-20261114T221801-9a21d394	2026-11-14T23:02:44Z
 fix:integriq:3592:8a35a39a	floor restored to 3.56 via scheduler interface; new head 741a0638, REVERIFY	session-20261114T221759-cd5c5678	2026-11-14T23:02:45Z
+fix:integriq:3633:90a867a5	fixed: development merged in clean, pushed 2cf69c00	session-20261114T224740-064dbb86	2026-11-14T23:02:59Z
