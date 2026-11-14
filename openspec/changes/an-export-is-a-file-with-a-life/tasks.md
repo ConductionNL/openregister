@@ -86,9 +86,15 @@ profile and the export verb.
         no-op returns exactly what an administrator sees, which is
         indistinguishable from a working page until two accounts are
         compared.
-- [ ] 4.2 An index surface listing the runs, naming an expired export as
+- [x] 4.2 An index surface listing the runs, naming an expired export as
       expired rather than rendering it as a broken link.
       - A missing file and a file nobody produced look the same on a list
+      > 2026-11-13: the `exports` page in `src/manifest.json` (menu Data > Export) is an
+      > index over `GET /api/exports` through the `endpoint` named source; the endpoint
+      > scopes the rows. `status` is an enum column: Available, Served directly (no file
+      > kept), Expired as a pill, and no column is a link, so neither an expired run nor
+      > a fileless one renders as a broken link (`tests/unit/exportsPage.spec.js`).
+      > Not seen in a browser here: that is the 5.2 live pass.
 
 ## 5. Tests
 

@@ -229,6 +229,88 @@
       }
     },
     {
+      "id": "exports",
+      "route": "/exports",
+      "type": "index",
+      "title": "Export",
+      "_note": "The exports area (an-export-is-a-file-with-a-life 4.2): an ordinary index over the app's own GET /api/exports through the `endpoint` named source, not a custom page. The endpoint scopes the rows (a principal sees their own runs, an administrator all of them), so the page passes no scope. `status` is an enum column, so an expired run reads Expired as a pill and is never drawn as a link to a file that retention deleted.",
+      "config": {
+        "entitySource": "endpoint",
+        "sourceConfig": {
+          "url": "/apps/openregister/api/exports",
+          "rowsPath": "results",
+          "searchFields": {
+            "status": {
+              "param": "status",
+              "single": true
+            },
+            "format": {
+              "param": "format",
+              "single": true
+            }
+          }
+        },
+        "showAdd": false,
+        "columns": [
+          {
+            "key": "filename",
+            "label": "File"
+          },
+          {
+            "key": "format",
+            "label": "Format"
+          },
+          {
+            "key": "register",
+            "label": "Register"
+          },
+          {
+            "key": "schema",
+            "label": "Schema"
+          },
+          {
+            "key": "rowCount",
+            "label": "Rows",
+            "type": "integer"
+          },
+          {
+            "key": "producedAt",
+            "label": "Produced",
+            "format": "date-time"
+          },
+          {
+            "key": "expiresAt",
+            "label": "Expires",
+            "format": "date-time"
+          },
+          {
+            "key": "downloadCount",
+            "label": "Downloads",
+            "type": "integer"
+          },
+          {
+            "key": "status",
+            "label": "Status",
+            "enum": [
+              "available",
+              "served",
+              "expired"
+            ],
+            "enumLabels": {
+              "available": "Available",
+              "served": "Served directly",
+              "expired": "Expired"
+            },
+            "colorMap": {
+              "available": "success",
+              "served": "default",
+              "expired": "warning"
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "flow-task-inbox",
       "route": "/flow-tasks",
       "type": "index",
@@ -533,6 +615,13 @@
           "icon": "FileDocumentMultipleOutline",
           "route": "files",
           "order": 60
+        },
+        {
+          "id": "Exports",
+          "label": "Export",
+          "icon": "FileExportOutline",
+          "route": "exports",
+          "order": 70
         }
       ]
     },

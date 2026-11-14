@@ -29,6 +29,7 @@ import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import FileExportOutline from 'vue-material-design-icons/FileExportOutline.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import FileReplaceOutline from 'vue-material-design-icons/FileReplaceOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
@@ -72,6 +73,7 @@ export default {
 	DeleteRestore,
 	FileDocumentMultipleOutline,
 	FileDocumentOutline,
+	FileExportOutline,
 	FileOutline,
 	FileReplaceOutline,
 	FileTreeOutline,
