@@ -8121,3 +8121,4 @@ merge:versioniq:680:f9aac3f1	merge3 tree of 7 versioniq PRs: merged=5 red=1 fail
 merge:versioniq:683:386c6fba	merge3 tree of 7 versioniq PRs: merged=5 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T08:09:39Z
 build:buildiq:runtime-back-to-virtual-apps	PR #1599: code was in #811; tutorial label + nl string + tasks ticked	session-20261114T062134-840bbeee	2026-11-14T08:09:47Z
 merge:versioniq:684:10f67c07	merge3 tree of 7 versioniq PRs: merged=5 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T08:09:44Z
+merge:versioniq:685:7881db9e	merge3 tree of 7 versioniq PRs: merged=5 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T08:09:49Z
