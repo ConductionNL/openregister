@@ -9316,3 +9316,18 @@ integriq	3542	ee72f32bc9f17f90f07e70db7a490de89e280c93	RED	merge3:merge-gate	GAT
 integriq	3584	fb0129bd7ac6d92851882f443171ecc3a6a3d754	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
 integriq	3589	d0bb474f960b41ba047f128dfbf8c789a380f2db	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
 integriq	3612	50b7eb4630177b9d6406215163e6792f5a00879b	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.88
+integriq	3539	306587cfaab8ac0806a1e0c245921db10320665e	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/nl.js 
+integriq	3546	37811d9a3e4dcfd3eaa586d1ed781e0873c87bc5	CONFLICT	merge3	conflicts with development; files: appinfo/routes.php l10n/en.js l10n/nl.js 
+integriq	3564	c37760b6d64f16ccaf3e3d9a81ebbbb91bb379af	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/nl.js 
+integriq	3574	cfe173d8254059423a2abd5ebe9c49d4321165f0	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/nl.js 
+integriq	3592	528681d896cc3628d18bd2e3c18538481f826ac4	CONFLICT	merge3	conflicts with development; files: lib/Service/JobService.php 
+integriq	3593	13184c4fc0871a5d3ae0b0c9a84d1db8f24d4a85	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/nl.js 
+integriq	3595	7df20bcae6a3c131101cfe25b69c6fb290d0fe51	CONFLICT	merge3	merges clean on development alone; files: docs/features/README.md lib/EventListener/EventListenerBindings.php tests/fixtures/application-registration-order.json 
+integriq	3596	ccfce1461772a9284cc1ee537efca7f88937b959	CONFLICT	merge3	merges clean on development alone; files: lib/Service/EndpointService.php 
+integriq	3610	558feb74bdbc26e6c7165854c18eb73c89630909	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/nl.js 
+integriq	3615	619d1906b041c3b23b51ca8c990be4b954541545	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/integriq_register.json 
+integriq	3617	3448ba56879c58898f61c83099e08beac8bb857f	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/nl.js 
+integriq	3622	45832696d92d72fb541b12ac2eb092a08e9b3ea0	CONFLICT	merge3	merges clean on development alone; files: docs/features/README.md 
+integriq	3625	bd47bd4cd95090b3280bf70f2d83cf8bbe8b1bcd	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
+integriq	3626	0b6ea2adb278d723255596548d62d781abcc82c3	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/nl.js 
+integriq	3631	b0b558d83e2f38ea4f662bf52fc6714038987f6e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js lib/Service/EndpointService.php 
