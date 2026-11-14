@@ -11563,3 +11563,4 @@ fix:versioniq:718:d08cc176	development merged in cleanly, new head c0066590	sess
 review:integriq:3542:cd5c8335	stale	feeder	2026-11-14T22:25:11Z
 build:stackiq:operations-sync-status-and-progress:c2	PR #1963: task 5 page+permissions+11 tests, task 6 docs page; left: Playwright e2e and screenshots (live)	session-20261114T214735-aacd1703	2026-11-14T22:27:53Z
 fix:versioniq:709:c87ff93e	development merged in, new head 9dbd36ae; remaining conflict is with unmerged #705 only	session-20261114T214733-589f5bff	2026-11-14T22:28:01Z
+build:stackiq:landscape-application-components:c2	PR #1933: demo seed (2 components, +1 test) and docs page added; left: Playwright test and docs screenshot (need an instance)	session-20261114T214740-6d7e97c9	2026-11-14T22:28:20Z
