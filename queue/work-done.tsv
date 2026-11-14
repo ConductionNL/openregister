@@ -11516,3 +11516,4 @@ fix:stackiq:1944:25fa2c20	no change: branch already contains development; confli
 fix:decidiq:2202:3a275a04	floor restored to 3.78, new head 0cea5e8c781ca6a4e97a6e05ec64d51f5843af60	session-20261114T201752-7e06b161	2026-11-14T22:20:44Z
 verify:hermiq:1750:352dc629	1750 GREEN; 1760 and 1795 skipped (head moved)	session-20261114T221709-8b871792	2026-11-14T22:20:51Z
 fix:stackiq:1945:6fb762aa	no change: branch already contains origin/development and merges cleanly; the conflict is only with unmerged sibling PRs #1911/#1928 (l10n catalogues) in the verify tree - verify #1945 after or before them as its own tree	session-20261114T213415-b858b4ba	2026-11-14T22:20:55Z
+verify:learniq:2513:a7f170d2	2513 GREEN; 2523, 2536 CONFLICT after 2513	session-20261114T211800-2a24a3a9	2026-11-14T22:21:11Z
