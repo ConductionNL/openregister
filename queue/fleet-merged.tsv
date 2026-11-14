@@ -2986,3 +2986,11 @@ humaniq	1125	9ef38fe583be2d2e69ab1a084539588f0057f11d	MERGED	merge3	GATE OK sbom
 humaniq	1133	5c864a84ca469623869034a2241fd0ca96d20adc	SKIP	merge3	GATE UNMEASURED head moved to 672afd47b2
 humaniq	1144	1aded0f35865e52ae3736c12d1342fe20c99ea2e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 humaniq	1145	0310b8ea98dbd5d1c1e5396abae95adf55ee59e5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+buildiq	1582	3f74f59fbcf266b8ef63b825dbc65923eb1686a8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+buildiq	1593	e35622b504e68d9a90bb659908502b0606784a32	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+buildiq	1622	278bce402f9c6188abd086f156e63cad21caa5bc	RED	merge3	GATE RED absolute floor: buildiq maintainability 3.90 after merge is below its floor 3.91
+buildiq	1624	f4e7c1bd61625c049c067b2972fd4d0c45198ffb	RED	merge3	GATE RED absolute floor: buildiq maintainability 3.88 after merge is below its floor 3.91
+buildiq	1641	5816876bc47bfd396b174a9dc6006a7abf2a2716	RED	merge3	GATE RED absolute floor: buildiq maintainability 3.85 after merge is below its floor 3.91
+buildiq	1645	02d1e9adf306cf12d32ecef2f03bc4e004387fbf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+buildiq	1647	b8b6de45f92ab698fc59f9fc734b981d0bd5277e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
+buildiq	1648	0d30354dd00b8a5b59870d598d2246b49455f09a	RED	merge3	GATE RED floor: unit_size: 3.69 -> 3.67; unit_complexity: 3.35 -> 3.33; unit_interfacing: 3.45 -> 3.42
