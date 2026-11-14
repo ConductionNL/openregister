@@ -9274,3 +9274,4 @@ hermiq	1782	cc36a720484121e007c7220d19e172526cdee483	REVERIFY	worker-23	moved th
 filinq	2126	ff1f07a22f724c52228553853290ed7893e14bfc	GREEN	worker-24	on development 90ad1e68: PHPUnit 6777 green (baseline 6754 green), vitest 758 green; build of document-sanitization, new options are trailing defaults so old calls keep working
 hermiq	1715	47d76c7cf8852efb3d4e181065c868036fa09e0a	GREEN	worker-13	phpunit 5150 tests, same failures as baseline (5132 tests; development carries env failures needing a sibling openregister checkout); vitest 1500 passed; new failures none
 hermiq	1728	4b9a20c3a3ae512a14b96d659cfdd7af1bece5f0	CONFLICT	worker-13	conflicts with the tree (development + earlier PRs in order)
+hermiq	1785	d1b639b58c7327c2b31ad0417e35b27408424bee	CONFLICT	worker-13	conflicts with the tree (development + earlier PRs in order)
