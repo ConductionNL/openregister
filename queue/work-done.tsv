@@ -11785,3 +11785,4 @@ build:versioniq:advisories-triage:c2	built tasks 2.1, 2.2, 3.1, 3.2, 4.1, 4.2 on
 review:integriq:3539:7b1673f3	GREEN	session-20261114T224740-064dbb86	2026-11-14T23:07:12Z
 fix:larpinq:1056:fbe65f9a	merged development (clean), new head 54742da084a6bdab9db07d6499b6b42c07d2c17a; suite 854/0 fail	session-20261114T211012-c469e919	2026-11-14T23:07:23Z
 fix:larpinq:1048:c6276ffe	floor restored (interfacing 4.70 vs 4.69 base); new head 258a4b90	session-20261114T221759-c6bc4865	2026-11-14T23:07:59Z
+build:larpinq:worlds-maps:c2	done: PR #1049 head ad99dd01; built 1.2 seed + WorldsMapsFragmentTest; 2.2 map page still blocked (map page cannot bind image/size from the routed object), 3.2 docs screenshot left; unit 836 OK	session-20261114T221743-dbe5c07e	2026-11-14T23:08:05Z
