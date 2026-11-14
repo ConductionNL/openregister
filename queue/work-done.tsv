@@ -10007,3 +10007,4 @@ merge:dossiq:6385:dc4aa4da	merge3 tree of 1 dossiq PRs: merged=1 red=0 fail=0 sk
 merge:portaliq:2437:a7c54eab	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T16:00:42Z
 merge:portaliq:2495:4121effd	merge3 tree of 4 portaliq PRs: merged=1 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T16:00:45Z
 fix:hermiq:1787:e097a79d	merged development (clean); conflict is with unmerged #1782; new head 17ffbfda	session-20261114T154757-c9bf237e	2026-11-14T16:00:50Z
+fix:integriq:3610:08e7571d	merged development (clean), pushed 558feb74, REVERIFY recorded; tree conflict is with other open PRs	session-20261114T144749-57007b4b	2026-11-14T16:00:59Z
