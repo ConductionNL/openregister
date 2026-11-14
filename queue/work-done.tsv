@@ -8927,3 +8927,4 @@ review:openregister:10499:c4b93065	BLOCK: merged with main the Architecture hub-
 build:openregister:expired-object-sweep:c2	partial: PR #10232 pushed 4731a22; 5.1 docs build green (npm run build in docs/), ticked; left 3.1 tests/Db sweeper test needs a live Nextcloud DB (sweeper itself implemented, unit-tested)	session-20261114T105701-3ed5efc0	2026-11-14T11:02:22Z
 review:openregister:10518:b334b861	stale	session-20261114T095629-be875350	2026-11-14T11:02:58Z
 verify:integriq:3574:2279c986	GREEN #3574 (phpunit 0 new failures, vitest 2157 pass)	session-20261114T105633-12c33816	2026-11-14T11:03:15Z
+build:openregister:flow-tag-object-step:c2	already building: build/flow-tag-object-step (PR #10190) is open and unmerged; the tasks left are e2e 3.1 and docs-with-screenshot 3.2	session-20261114T092644-f8ff8fc9	2026-11-14T11:03:18Z
