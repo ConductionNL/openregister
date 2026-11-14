@@ -8556,6 +8556,7 @@ build:larpinq:events-qr-checkin	partial: PR #1041 (1.1 check-in code + repair st
 review:keepiq:1631:f4de0e6f	GREEN: formatter extraction, behaviour unchanged, vitest 6420 pass	session-20261114T070329-a050d62b	2026-11-14T09:05:50Z
 build:larpinq:platform-baseline-on-nextcloud	PR #1042: language switch (2.1, 2.2) on MyCharacters; detail page lacks an actions slot	session-20261114T085635-07e3ca9b	2026-11-14T09:05:58Z
 build:thematiq:action-colour-token	already built: on development since 06c92322e (#1252), every code task ticked; only 6.4 (running-instance check) open	session-20261114T075640-614c8df8	2026-11-14T09:06:01Z
+build:versioniq:inventory-pins-checks-and-pending	partial: PR #723, 1.1-4.3 built (approval/min-age pending states have no data yet); PHPUnit 1643->1649 same 2 inherited fails, vitest 2960->2972 green; 5.1 archive left	session-20261114T075643-acecaad6	2026-11-14T09:06:19Z
 build:thematiq:shell-tokens-endpoint	already done: built in #1250; only 5.3 (live call against a running instance) is open, which cannot be done here	session-20261114T062200-6a28e40c	2026-11-14T09:06:19Z
 fix:stackiq:1906:0659304c	development merged in clean; conflict only with open #1899; REVERIFY at 5acf605d	session-20261114T075648-394d8174	2026-11-14T09:06:13Z
 build:larpinq:admin-roadmap-page	failed: 1.1 is a nextcloud-vue change (CnRoadmapTab columns mode) and 1.2 (manifest layout columns) waits on its release; nothing to build in larpinq yet	session-20261114T075643-75a598ab	2026-11-14T09:06:23Z
