@@ -7339,3 +7339,4 @@ integriq	3584	5c6ec02c65edb352d5bcdce0523a2c16f24d6254	GREEN	worker-58	php unit 
 integriq	3588	f2c639eeed04d9c0ec0a8bd70f534148e8f1aae1	GREEN	worker-58	php unit 8525 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2157 passed
 keepiq	1777	b0bac635029bc075f87c073f2ae1aa6584e83b09	GREEN	worker-07	polyfills moved to devDependencies + sbom; phpunit 4974 (baseline 4974, 0 fail), vitest 6414/0 fail on tree; no new failures
 keepiq	1778	fb27899edd568ae46964f472cb627c49f19df2d0	GREEN	worker-07	docs + tasks.md only; phpunit 4974 (baseline 4974, 0 fail), vitest 6414/0 fail on tree; no new failures
+keepiq	1779	155d6a9d3ac5c226b5e84cf19f5f103ec3453ba9	GREEN	worker-07	type-icon map as Map, same mapping and default; phpunit 4974 (baseline 4974, 0 fail), vitest 6414/0 fail on tree; no new failures
