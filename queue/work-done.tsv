@@ -9593,3 +9593,4 @@ fix:filinq:2119:6a1f160d	fixed: section and strings moved off the shared spots, 
 verify:shillinq:3050:b694c421	3050 GREEN (unit 11191, 0 new failures); 3065 CONFLICT (l10n)	session-20261114T124625-07e62ccf	2026-11-14T14:50:33Z
 build:decidiq:bodies-onboarding-checklist-walkthrough:c2	done: PR #2169 head 5f13d30a, Task 3 checklist widget on both detail pages + vitest (5); all code tasks ticked; unit 4183 OK, vitest 2729 OK; Playwright e2e left (needs live instance)	session-20261114T141724-6227a125	2026-11-14T14:50:43Z
 verify:pipelinq:3821:fe84ed8f	GREEN 3821, GREEN 3836; 8400 tests, 0 new failures	session-20261114T144809-d686f759	2026-11-14T14:51:17Z
+review:openregister:10558:63e014bc	APPROVE: additive app-declared webhook events; required suites green	session-20261114T131646-cdc565a4	2026-11-14T14:51:24Z
