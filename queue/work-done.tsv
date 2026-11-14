@@ -10347,3 +10347,4 @@ fix:buildiq:1590:0761fb37	failed: clean on development; the tree conflict with #
 fix:decidiq:2172:1d208e5b	fixed: merged development, l10n moved; new head 8177a027	session-20261114T154807-c05f4e57	2026-11-14T17:07:38Z
 fix:buildiq:1644:0dfa21a6	CONFLICT resolved (l10n moved mid-catalogue), pushed 14839229	session-20261114T144809-d686f759	2026-11-14T17:08:44Z
 merge:dossiq:6513:12248002	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T17:09:00Z
+merge:dossiq:6518:b5f67994	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T17:09:03Z
