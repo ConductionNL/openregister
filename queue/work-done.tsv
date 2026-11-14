@@ -10024,5 +10024,7 @@ fix:hermiq:1755:c4172dcd	no change: already contains development; conflict is on
 verify:shillinq:3072:f0411a42	3072 GREEN, 3073 GREEN (11218 OK); 3074 skipped: head moved to 714defc1	session-20261114T154733-94bb2e01	2026-11-14T16:03:06Z
 fix:portaliq:2493:1cf3c736	no change: merges clean with development; package.json conflict is only with another unmerged PR in the tree, resolve after it lands	session-20261114T141738-30f539db	2026-11-14T16:03:10Z
 build:planninq:task-attachments-from-files:c2	no code tasks left on PR #1157: 1.1 owes only the live Playwright check, 2.1 openspec validate	session-20261114T151803-c9b63248	2026-11-14T16:03:10Z
+build:integriq:platform-integrations-as-code:c2	partial: PR #3591 now 634e13b4: Tasks 2-3 built (config:export/import, ConfigurationDirectoryCodec, 16 tests, suite 8524 with the 5 baseline failures only), Task 4 docs page; left: Task 3 live OpenRegister test, Task 4 round-trip integration test (need a live instance)	session-20261114T154755-0f1a24cf	2026-11-14T16:03:39Z
 merge:pipelinq:3821:fe84ed8f	merge3 tree of 3 pipelinq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T16:03:42Z
 merge:pipelinq:3833:c60f3044	merge3 tree of 3 pipelinq PRs: merged=3 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T16:03:45Z
+fix:hermiq:1757:52b33f1f	fixed: openapi.json additions moved mid-document, clean with #1749; new head 607d7107	session-20261114T154807-c05f4e57	2026-11-14T16:03:51Z
