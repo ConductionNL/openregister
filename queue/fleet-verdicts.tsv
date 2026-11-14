@@ -8007,3 +8007,4 @@ portaliq	2434	456e79cc0621c6cdc315f3cedb5212ba0a53f7ee	GREEN	worker-16	phpunit t
 portaliq	2442	5eed416859fd825a4014afb0c45f19b55f6ddf02	GREEN	worker-16	phpunit tree 5204 OK (baseline 5187 OK), node specs 50 pass, eslint 0 errors; shared-plans plan templates admin as specced
 portaliq	2450	6dde0dc32d6881bce36480a99577151cde752ff1	CONFLICT	worker-16	conflicts with development+2434+2442 tree
 portaliq	2440	95a6ddd5d1fde7d8c922475e6265b362fab6850f	GREEN	worker-12	unit 5226 tests on tree, baseline 5187 green, no new failures; check:specs: only notices, site-look, page-help red, all inherited from development
+portaliq	2493	1eb55a790dbf0055737fc15391ed4e495e27e147	GREEN	worker-12	unit 5226 tests on tree, baseline 5187 green, no new failures; check:specs: only notices, site-look, page-help red, all inherited from development
