@@ -52,6 +52,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
+use OCA\OpenRegister\Exception\ConditionGroupException;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\EncryptedFieldSortException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
@@ -931,6 +932,11 @@ class MagicSearchHandler {
 		if ($ids !== null && empty($ids) === false) {
 			$this->applyIdFilters(qb: $qb, ids: $ids);
 		}
+
+		// The `_where` condition tree: one parenthesised expression, after the
+		// flat filters and before RBAC and organisation scoping, which stay
+		// outside it and cannot be widened by an OR.
+		$this->applyConditionGroup(run: $run);
 	}//end applyContentFilters()
 
 	/**
@@ -1939,8 +1945,204 @@ class MagicSearchHandler {
 			array_push($conditions, ...$this->nestedPathConditionsSql(run: $run, filter: $filter));
 		}
 
-		return array_merge($conditions, $this->fieldFilterConditionsSql(run: $run, query: $query));
+		$conditions = array_merge($conditions, $this->fieldFilterConditionsSql(run: $run, query: $query));
+		$tree       = $this->conditionGroupOf(where: ($run->query['_where'] ?? null));
+		if ($tree !== null) {
+			$this->refuseUnknownLeaves(group: $tree, properties: $properties);
+			$conditions[] = $this->conditionGroupSql(run: $run, group: $tree);
+		}
+
+		return $conditions;
 	}//end buildObjectFilterConditionsSql()
+
+	/**
+	 * The `_where` tree as one raw SQL condition: each leaf through the flat
+	 * filter's own condition code, groups joined with AND or OR in parentheses.
+	 *
+	 * @param ConditionSqlRun $run   The condition pass the tree belongs to.
+	 * @param ConditionGroup  $group The group.
+	 *
+	 * @return string The parenthesised condition.
+	 *
+	 * @spec openspec/changes/list-query-condition-groups/specs/zoeken-filteren/spec.md
+	 */
+	private function conditionGroupSql(ConditionSqlRun $run, ConditionGroup $group): string {
+		$parts = [];
+		foreach ($group->children as $child) {
+			if ($child instanceof ConditionGroup) {
+				$parts[] = $this->conditionGroupSql(run: $run, group: $child);
+				continue;
+			}
+
+			$leaf    = new ConditionSqlRun(query: $child->asFlatFilter(), table: $run->table, connection: $run->connection, isPostgres: $run->isPostgres);
+			$parts[] = $this->joinedSql(conditions: $this->buildObjectFilterConditionsSql(run: $leaf), glue: ' AND ');
+		}
+
+		return $this->joinedSql(conditions: $parts, glue: ' ' . $group->type . ' ');
+	}//end conditionGroupSql()
+
+	/**
+	 * Conditions joined in parentheses; none holds always.
+	 *
+	 * @param array<int, string> $conditions The conditions.
+	 * @param string             $glue       ` AND ` or ` OR `.
+	 *
+	 * @return string
+	 */
+	private function joinedSql(array $conditions, string $glue): string {
+		if ($conditions === []) {
+			return '1=1';
+		}
+
+		return '(' . implode($glue, $conditions) . ')';
+	}//end joinedSql()
+
+	/**
+	 * Parse a `_where` parameter, or null when the query carries none.
+	 *
+	 * @param mixed $where The parameter: a JSON string, a decoded array or a parsed tree.
+	 *
+	 * @return ConditionGroup|null
+	 *
+	 * @throws ConditionGroupException When the tree is malformed (with its node path).
+	 */
+	private function conditionGroupOf(mixed $where): ?ConditionGroup {
+		if ($where === null || $where === '' || $where === []) {
+			return null;
+		}
+
+		if ($where instanceof ConditionGroup) {
+			return $where;
+		}
+
+		return (new ConditionGroupParser())->parse(where: $where);
+	}//end conditionGroupOf()
+
+	/**
+	 * Refuse a leaf the schema cannot answer, with its node path: a metadata
+	 * (`@self.`) leaf, which this build does not take yet, a property the schema
+	 * does not declare, or an encrypted one. Refused loudly, because a leaf
+	 * that silently matched everything or nothing would change what an OR returns.
+	 *
+	 * @param ConditionGroup            $group      The tree.
+	 * @param array<string, mixed>|null $properties The schema's declared properties.
+	 *
+	 * @return void
+	 *
+	 * @throws ConditionGroupException For the first leaf refused.
+	 *
+	 * @spec openspec/changes/list-query-condition-groups/specs/zoeken-filteren/spec.md
+	 */
+	private function refuseUnknownLeaves(ConditionGroup $group, ?array $properties): void {
+		foreach ($group->leaves() as $leaf) {
+			if (str_starts_with($leaf->field, '@') === true) {
+				throw new ConditionGroupException(message: 'A _where leaf on a metadata column is not supported yet: ' . $leaf->field, path: $leaf->path);
+			}
+
+			$root = explode('.', $leaf->field)[0];
+			if (isset($properties[$root]) === false) {
+				throw new ConditionGroupException(message: 'The schema does not declare the property ' . $root, path: $leaf->path);
+			}
+
+			if (($properties[$root]['x-openregister-encrypted'] ?? false) === true) {
+				throw new ConditionGroupException(message: 'The property ' . $root . ' is encrypted and cannot be filtered', path: $leaf->path);
+			}
+		}
+	}//end refuseUnknownLeaves()
+
+	/**
+	 * Apply the `_where` tree on the QueryBuilder path as one expression.
+	 *
+	 * @param TableFilterRun $run The filter pass: query builder, request query and table.
+	 *
+	 * @return void
+	 *
+	 * @throws ConditionGroupException When the tree is malformed or names a leaf the schema cannot answer.
+	 *
+	 * @spec openspec/changes/list-query-condition-groups/specs/zoeken-filteren/spec.md
+	 */
+	private function applyConditionGroup(TableFilterRun $run): void {
+		$tree = $this->conditionGroupOf(where: ($run->query['_where'] ?? null));
+		if ($tree === null) {
+			return;
+		}
+
+		$properties = ($run->schema()->getProperties() ?? []);
+		$this->refuseUnknownLeaves(group: $tree, properties: $properties);
+		$fields = new ObjectFilterRun(table: $run, properties: $properties, isPostgres: $this->isPostgresPlatform());
+		$run->qb->andWhere($this->conditionGroupExpression(fields: $fields, group: $tree));
+	}//end applyConditionGroup()
+
+	/**
+	 * One group as an `andX()` / `orX()` expression over its children.
+	 *
+	 * @param ObjectFilterRun $fields The object-filter pass.
+	 * @param ConditionGroup  $group  The group.
+	 *
+	 * @return ICompositeExpression
+	 */
+	private function conditionGroupExpression(ObjectFilterRun $fields, ConditionGroup $group): ICompositeExpression {
+		$parts = [];
+		foreach ($group->children as $child) {
+			if ($child instanceof ConditionGroup) {
+				$parts[] = $this->conditionGroupExpression(fields: $fields, group: $child);
+				continue;
+			}
+
+			$parts[] = $this->conditionLeafExpression(fields: $fields, leaf: $child);
+		}
+
+		$expr = $fields->table->qb->expr();
+		if ($group->type === ConditionGroup::TYPE_OR) {
+			return $expr->orX(...$parts);
+		}
+
+		return $expr->andX(...$parts);
+	}//end conditionGroupExpression()
+
+	/**
+	 * One leaf as the conditions its flat filter would add, ANDed into one
+	 * expression. A property the caller may not read matches nothing, as the
+	 * flat filter does; a leaf that adds no condition holds always.
+	 *
+	 * @param ObjectFilterRun $fields The object-filter pass.
+	 * @param ConditionLeaf   $leaf   The leaf.
+	 *
+	 * @return string|\Stringable|ICompositeExpression
+	 */
+	private function conditionLeafExpression(ObjectFilterRun $fields, ConditionLeaf $leaf): string|\Stringable|ICompositeExpression {
+		[$flat, $nested] = $this->nestedPaths->split(filters: $leaf->asFlatFilter(), properties: $fields->properties);
+		$conditions      = [];
+		foreach ($nested as $filter) {
+			$target = $this->readableNestedPathTarget(paths: $fields, filter: $filter);
+			if ($target === null) {
+				$conditions[] = '1 = 0';
+				continue;
+			}
+
+			array_push($conditions, ...$this->nestedPathCriterionConditions(target: $target, value: $filter['value']));
+		}
+
+		foreach ($flat as $field => $value) {
+			$filter = $fields->fieldFilter(field: $field);
+			if ($filter === null) {
+				$conditions[] = '1 = 0';
+				continue;
+			}
+
+			array_push($conditions, ...$this->objectFieldFilterConditions(filter: $filter, value: $value));
+		}
+
+		if ($conditions === []) {
+			return '1 = 1';
+		}
+
+		if (count($conditions) === 1) {
+			return $conditions[0];
+		}
+
+		return $fields->table->qb->expr()->andX(...$conditions);
+	}//end conditionLeafExpression()
 
 	/**
 	 * The conditions of one filter on a path inside an object property, on the raw UNION path

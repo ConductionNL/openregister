@@ -4168,3 +4168,4 @@ Files/Service/TextExtraction/ArchiveTextExtractor.php,271,Files,Files,Files/Serv
 Files/Service/TextExtraction/ArchiveContainers.php,134,Files,Files,Files/Service/TextExtraction/ArchiveContainers.php,0,,Files
 Service/Flow/FlowStateDelta.php,,Service,,,,,Processes
 Db/MagicMapper/MagicTableIdentityIndex.php,169,Db,Service,Service/Db/MagicMapper/MagicTableIdentityIndex.php,0,,Core
+Middleware/ConditionGroupMiddleware.php,17,Middleware,Platform,Platform/Middleware/ConditionGroupMiddleware.php,0,,Platform
