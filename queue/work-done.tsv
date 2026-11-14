@@ -9585,3 +9585,4 @@ fix:learniq:2496:1358154d	REVERIFY: l10n keys moved off the tail; clean on dev a
 build:decidiq:agenda-item-confidential-papers:c2	partial: PR #2188 built task 3 listener + task 2 Stukken badge; left task 1 read rules (needs body on item + OR evaluator test), task 2 Lezers toevoegen/Besloten punt, task 5 view log (belongs in OpenRegister file serving)	session-20261114T141720-f9e7a46b	2026-11-14T14:47:58Z
 verify:learniq:2493:749e1397	GREEN 2493,2501,2515; CONFLICT 2519,2520,2532; skipped (head moved) 2497,2521,2523	session-20261114T141721-d7ad4da5	2026-11-14T14:49:06Z
 fix:filinq:2123:c039f5f9	conflicts with #2105 removed; REVERIFY recorded, new head 833c1b46da8690a20d99ec6b65f7be64b64ec4e2 (both PRs share template 1.6.0, flagged)	session-20261114T131642-b20146b1	2026-11-14T14:49:24Z
+fix:decidiq:2176:26e67dc6	merged development, l10n conflicts resolved; new head 825a0640	session-20261114T144812-4140669d	2026-11-14T14:49:36Z
