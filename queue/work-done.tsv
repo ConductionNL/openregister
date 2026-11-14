@@ -9332,3 +9332,4 @@ build:filinq:signing-cancellation:c2	partial: filinq#2118 override test, declare
 build:filinq:llm-entity-detection-provider:c2	partial: PR #2119 builds 3.2 report half (review notice), 4.2 admin section, 5.3 EN/NL + docs; 30 new jest tests, jest 543 / vitest 751 green; left 5.2 e2e (live) and openspec validate (CLI unavailable)	session-20261114T134657-c7830c27	2026-11-14T14:01:35Z
 fix:shillinq:2963:f71e199c	conflict resolved, new head e233feba, REVERIFY recorded	session-20261114T134701-ae8ce354	2026-11-14T14:02:22Z
 fix:shillinq:3000:690067c0	no change: head 690067c already contains development and merges cleanly; conflict is only with unmerged #2991, resolve after 2991 lands	session-20261114T134701-ae8ce354	2026-11-14T14:03:02Z
+fix:shillinq:3008:e46cf667	no change: head e46cf66 already contains development and merges cleanly; conflict is only with unmerged #2991, resolve after 2991 lands	session-20261114T134701-ae8ce354	2026-11-14T14:03:31Z
