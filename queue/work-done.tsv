@@ -10858,3 +10858,4 @@ build:filinq:redaction-guarantees-from-the-engine:c2	failed: precondition still 
 review:shillinq:3000:5625ba51	GREEN: unit 11325 OK on PR+development; behaviour changes are specced	session-20261114T194744-563ce177	2026-11-14T20:21:04Z
 verify:planninq:1179:11810379	GREEN 1179: phpunit 1067 ok, vitest 3345 ok	session-20261114T201752-7e06b161	2026-11-14T20:21:11Z
 review:filinq:2069:fa29e9b5	GREEN: unit 6783 OK (baseline 6760), phpstan clean	session-20261114T201745-19e2e5d6	2026-11-14T20:21:36Z
+fix:hermiq:1794:2758eae5	test expects the new admin section, REVERIFY	session-20261114T185851-d4a7f75f	2026-11-14T20:21:51Z
