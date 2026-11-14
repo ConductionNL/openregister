@@ -8446,6 +8446,7 @@ build:stackiq:insight-supplier-facet	PR #1932: tasks 1, 2 and 3 (implement) done
 fix:keepiq:1787:a1fbe07c	failed: merges cleanly with development; conflict is only with unmerged #1786 (both add adjacent l10n en/nl keys), resolvable only after #1786 lands, then merge development in	session-20261114T070909-be4543e0	2026-11-14T08:51:13Z
 build:stackiq:landscape-owner-attestation	partial: PR #1931 (tasks 1-2; 3 listener/job, 4 pages, 5 docs left)	session-20261114T082633-7466e3ea	2026-11-14T08:51:14Z
 fix:keepiq:1631:6ab64a41	import order fixed, dev merged, pushed f4de0e6f, REVERIFY recorded	session-20261114T080916-9b1d69d6	2026-11-14T08:51:11Z
+build:stackiq:platform-properties	partial: PR #1934 builds tasks 1-2 (property tags, PlatformPropertiesTest + manifestHistoryTabs.spec.js, 45 admin-only routes documented); tasks 3-5 left	session-20261114T062200-62a0b439	2026-11-14T08:51:46Z
 review:stackiq:1813:3d2273e7	GREEN: tests only, vitest 2494/2494 on merge with development	session-20261114T082642-0151cb21	2026-11-14T08:51:43Z
 build:stackiq:mail-template-editor-saves	PR #1935: both tasks done (backend save/reset/load, transport warning), vitest 2493 passed	session-20261114T062134-840bbeee	2026-11-14T08:51:55Z
 fix:opencatalogi:2655:55850c5e	merged development cleanly, pushed 36ec34ca; tree conflict is with sibling PRs' l10n lines	session-20261114T065631-3903ed42	2026-11-14T08:52:02Z
@@ -8454,4 +8455,6 @@ fix:buildiq:1623:3b56d20b	merged development (clean); conflict is only with sibl
 fix:buildiq:1621:8e4390d8	CONFLICT resolved, suite green apart from inherited; new head 6c531050	session-20261114T062200-6a28e40c	2026-11-14T08:52:39Z
 fix:keepiq:1788:a87d4e63	l10n keys relocated, merges clean after #1786, pushed bb0ad68b, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T08:52:50Z
 fix:buildiq:1620:ad5dd771	no change: merges clean on current development; the l10n conflict is with open #1613/#1614, not on development yet; merge development in after they land	session-20261114T073108-67fbeb26	2026-11-14T08:53:05Z
+build:stackiq:security-baseline-classification	partial: PR #1937 (tasks 1-2 done: properties and derived bbnLevel; task 3 suggestion/summary, 4 UI, 5 seed/docs open)	session-20261114T070344-897ffa0f	2026-11-14T08:53:06Z
+verify:launchpad:1208:5e651df7	1208, 1209 GREEN; 1210, 1211 CONFLICT with #1209	session-20261114T065633-3e3cb668	2026-11-14T08:52:59Z
 verify:opencatalogi:2662:87f7d0cf	8 GREEN (2662-2664, 2666-2670), 2665 CONFLICT in tree (PublicationsControllerTest with #2664, clean alone); unit 5470 vs 5485 (MCP provider tests removed per change), same 2 inherited failures; vitest 1039 green	session-20261114T082640-d9af913e	2026-11-14T08:53:02Z
