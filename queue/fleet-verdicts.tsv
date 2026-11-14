@@ -7028,3 +7028,4 @@ humaniq	1131	7391a99f6591ec4ee8db24c0d23b379048a40e5e	GREEN	worker-16	phpunit 41
 humaniq	1140	a1547b95c38420b53801024f6e9adf40e66effe0	GREEN	worker-16	phpunit 4175 tests OK, 0 new failures; manifest validate + parity pass; read-only TimeEntry fields and register parity test per time-entry-domain-object-ref
 decidiq	2171	cacffb605d758702aaa381eca0cf0efe5abbe077	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
 decidiq	2173	79a6146a1395dea7281bef057068901598351636	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
+decidiq	2174	8600d4bb4484ee43924b7f0d25aaf87eaa11f825	CONFLICT	worker-58	conflicts with development+earlier tree PRs (2154-2160)
