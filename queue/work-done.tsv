@@ -11648,3 +11648,4 @@ fix:stackiq:1961:7d9fa300	conflict removed: labels moved off the catalogue end, 
 fix:humaniq:1133:a8bfed0a	conflict resolved, pushed fcad2ca7, REVERIFY	session-20261114T214735-aacd1703	2026-11-14T22:41:22Z
 fix:shillinq:3078:ccf88e69	resolved: l10n keys relocated, version aligned with #3055, merges clean after 3055; new head df173129	session-20261114T223937-a95b1403	2026-11-14T22:41:33Z
 build:shillinq:sales-cancellation:c4	partial: PR #2976 head 11d57012: merged development, 3.3 acknowledgement mail + signed guest link in the confirmation mail (7 tests, suite 11481 OK). Left: 3.4 widget link, 4.1 portaliq issue, 4.2 docs + release note, Playwright	session-20261114T213933-36bf6b99	2026-11-14T22:41:39Z
+fix:versioniq:717:e8ddf437	merged development in (clean), unit-only 1697 tests with 2 inherited golden failures; new head 6b86f6b4, REVERIFY recorded	session-20261114T223333-658f3be1	2026-11-14T22:41:39Z
