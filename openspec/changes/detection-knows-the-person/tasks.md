@@ -2,8 +2,8 @@
 
 ## 1. Capacity (REQ-DKP-001)
 
-- [ ] 1.1 Settings `anonymisation.officialsSource`, `anonymisation.capacityPolicy` (default as REQ-DKP-001) in `FileSettingsHandler`. Verify: `tests/Unit/Service/Settings/CapacityPolicySettingTest.php::testTheShippedDefault` (fails today: no key).
-- [ ] 1.2 `lib/Service/Anonymisation/CapacitySuggester.php`: officials lookup and Dutch role words (a versioned list in the pattern set, so `anonymisation-discloses-itself` reports it). Verify: `tests/Unit/Service/Anonymisation/CapacitySuggesterTest.php::testAnAldermanFromTheRegisterIsPublicOffice`, `testRoleWordsWithoutARegister`, `testAProfessionalIsSuggestedWithheldUnder512e`, `testNoEvidenceIsUnknown`.
+- [x] 1.1 Settings `anonymisation.officialsSource`, `anonymisation.capacityPolicy` (default as REQ-DKP-001) in `FileSettingsHandler`. Verify: `tests/Unit/Service/Settings/CapacityPolicySettingTest.php::testTheShippedDefault` (fails today: no key).
+- [x] 1.2 `lib/Service/Anonymisation/CapacitySuggester.php`: officials lookup and Dutch role words (a versioned list in the pattern set, so `anonymisation-discloses-itself` reports it). Verify: `tests/Unit/Service/Anonymisation/CapacitySuggesterTest.php::testAnAldermanFromTheRegisterIsPublicOffice`, `testRoleWordsWithoutARegister`, `testAProfessionalIsSuggestedWithheldUnder512e`, `testNoEvidenceIsUnknown`.
 - [ ] 1.3 Migration: `capacity`, `capacity_source`, `capacity_applied`, `capacity_confirmed_by`, `capacity_confirmed_at` on `openregister_entity_relations`; call the suggester from `EntityRecognitionHandler::storeDetectedEntities()`. Verify: `tests/Unit/Service/TextExtraction/EntityRecognitionCapacityTest.php` drives `storeDetectedEntities()` with a real `EntityRelation` and asserts the stored suggestion.
 
 ## 2. Confirmation (REQ-DKP-002)

@@ -51,11 +51,13 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Db\RegisterMapperServices;
+use OCA\OpenRegister\Tests\Support\ResultRowReaderTrait;
 
 /**
  * Proves the resolution diagnostics are wired and fire.
  */
 class RegisterMapperDiagnosticsTest extends TestCase {
+	use ResultRowReaderTrait;
 	/** @var IDBConnection&MockObject */
 	private IDBConnection $db;
 
@@ -149,7 +151,21 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 			function () use ($probeRow, &$executions): IResult {
 				$executions++;
 				$result = $this->createMock(IResult::class);
-				$result->method('fetch')->willReturn($executions === 1 ? $probeRow : false);
+
+				// QBMapper::findEntity() reads the row, then a guard read that must
+				// return false to prove uniqueness. Both reader names (`fetch()` up
+				// to NC 34, `fetchAssociative()` from NC 35) share one cursor.
+				$row = false;
+				if ($executions === 1) {
+					$row = $probeRow;
+				}
+
+				$next = function () use (&$row) {
+					$current = $row;
+					$row = false;
+					return $current;
+				};
+				$this->stubRowReader($result, $next);
 				$result->method('closeCursor')->willReturn(true);
 				return $result;
 			}

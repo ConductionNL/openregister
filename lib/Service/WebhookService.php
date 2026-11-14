@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use InvalidArgumentException;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
@@ -41,6 +42,7 @@ use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
+use OCP\EventDispatcher\Event;
 use OCP\IRequest;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventAttributes;
 use Psr\Http\Message\RequestInterface;
@@ -502,15 +504,38 @@ class WebhookService {
 	/**
 	 * Dispatch event to all matching webhooks
 	 *
-	 * @param string $eventName Event class name
-	 * @param array  $payload   Event payload data
+	 * Takes main's (eventName, payload), or the published (event, eventName, payload) whose event is
+	 * not read, by name or by position (an Event in the first slot).
+	 *
+	 * @param string|Event|null $eventName         Event class name; an Event here is the release's positional `$_event`.
+	 * @param array|string|null $payload           Event payload data; a string here is the release's positional `$eventName`.
+	 * @param array|null        $positionalPayload The release's positional `$payload`.
+	 * @param Event|null        $_event            The release's event; not read.
 	 *
 	 * @return void
+	 *
+	 * @throws InvalidArgumentException When no event name or payload is given.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_event is kept for the published contract.
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function dispatchEvent(string $eventName, array $payload): void {
+	public function dispatchEvent(
+		string|Event|null $eventName = null,
+		array|string|null $payload = null,
+		?array $positionalPayload = null,
+		?Event $_event = null,
+	): void {
+		if ($eventName instanceof Event) {
+			$eventName = $payload;
+			$payload   = $positionalPayload;
+		}
+
+		if (is_string($eventName) === false || is_array($payload) === false) {
+			throw new InvalidArgumentException('dispatchEvent() needs an event name and a payload.');
+		}
+
 		$this->dispatch(event: new WebhookEvent(name: $eventName, payload: $payload));
 	}//end dispatchEvent()
 

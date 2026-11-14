@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationSpecEntry
  * @uses   \OCA\OpenRegister\Search\Service\SearchAnnotationValidators
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaTarget
  * @uses   \OCA\OpenRegister\Service\Hinge\DeclaredLens
  * @uses   \OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator
  * @uses   \OCA\OpenRegister\Service\Merge\MergeAnnotationValidator
@@ -131,4 +132,36 @@ final class AdvisoryAnnotationChecksTest extends TestCase {
 			$checks->{$method}(self::schema([$key => 'not a block']));
 		}
 	}//end testAnAbsentOrScalarAnnotationIsSilent()
+
+	/**
+	 * At save time a `schema` key naming a related schema is a cross-schema
+	 * count, so its filter fields are not held to this schema's properties
+	 * and nothing is discarded; one naming this schema still is, and a typo
+	 * in it is logged (aggregation-dialect-repair, Fix 1).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/aggregation-api/spec.md#requirement-the-named-annotation-aggregation-surface-must-validate-filtergroupby-fields-against-the-schema-that-owns-them
+	 */
+	public function testAnAggregationOverARelatedSchemaIsKeptAtSave(): void {
+		$logged = [];
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			static function (string $message) use (&$logged): void {
+				$logged[] = $message;
+			}
+		);
+		$checks = new AdvisoryAnnotationChecks(logger: $logger);
+
+		$checks->checkAggregations(
+			self::schema(['x-openregister-aggregations' => ['documents' => ['metric' => 'count', 'schema' => 'document', 'filter' => ['zaak' => '@self.id']]]])
+		);
+		self::assertSame([], $logged, 'a count over a related schema was discarded');
+
+		$checks->checkAggregations(
+			self::schema(['x-openregister-aggregations' => ['titled' => ['metric' => 'count', 'schema' => 'Zaak', 'filter' => ['titel' => 'x']]]])
+		);
+		self::assertCount(1, $logged);
+		self::assertStringContainsString('filter references unknown field "titel"', $logged[0]);
+	}//end testAnAggregationOverARelatedSchemaIsKeptAtSave()
 }//end class

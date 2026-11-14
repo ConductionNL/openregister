@@ -68,6 +68,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The leaf now routes projected
  * VTODOs through the write-back gate beside its own CalDAV collaborators.
+ * @SuppressWarnings(PHPMD.TooManyMethods) getAllUserTasks, createTask and updateTask keep the
+ * released signatures that apps still call, beside the methods that replaced them.
  *
  * @spec openspec/specs/object-interactions/spec.md
  */
@@ -139,6 +141,27 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 
 		return ['results' => array_slice($allTasks, ($query->offset ?? 0), $query->limit), 'total' => count($allTasks)];
 	}//end listUserTasks()
+
+	/**
+	 * Get all tasks for the current user across all VTODO-supporting calendars.
+	 *
+	 * The released signature, kept for apps written against it.
+	 *
+	 * @param string|null $status Optional status filter (e.g. 'needs-action', 'completed')
+	 * @param int         $limit  Maximum number of tasks to return
+	 * @param int         $offset Number of tasks to skip
+	 *
+	 * @return array{results: array, total: int} Task results with total count
+	 *
+	 * @throws Exception If no user is logged in
+	 *
+	 * @deprecated Use listUserTasks() with a ListQuery.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-the-projection-carries-a-real-assignee-not-prose
+	 */
+	public function getAllUserTasks(?string $status=null, int $limit=50, int $offset=0): array {
+		return $this->listUserTasks(status: $status, query: new ListQuery(limit: $limit, offset: $offset));
+	}//end getAllUserTasks()
 
 	/**
 	 * Every task of the session user's VTODO calendars, optionally only those with a status, soonest due first.
@@ -406,6 +429,33 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	}//end createObjectTask()
 
 	/**
+	 * Create a new CalDAV task linked to an OpenRegister object.
+	 *
+	 * The released signature, kept for apps written against it.
+	 *
+	 * @param int    $registerId  The register ID to link
+	 * @param int    $schemaId    The schema ID to link
+	 * @param string $objectUuid  The object UUID to link
+	 * @param string $objectTitle The object title for the LINK label
+	 * @param array  $data        Task data: summary, description, priority, due, status
+	 *
+	 * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
+	 *
+	 * @throws Exception If no user is logged in or no calendar found
+	 * @throws TaskAccessDeniedException If the payload attempts to set an engine task identity
+	 *
+	 * @deprecated Use createObjectTask() with an ObjectRef and a LinkedTaskDraft.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
+	 */
+	public function createTask(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): ?array {
+		return $this->createObjectTask(
+			ref: new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid),
+			draft: new LinkedTaskDraft(objectTitle: $objectTitle, data: $data)
+		);
+	}//end createTask()
+
+	/**
 	 * Update an existing CalDAV task.
 	 *
 	 * Loads the existing VTODO, applies changes, and saves it back.
@@ -439,6 +489,28 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 
 		return $this->vtodoToArray(calendarData: $calendarData, at: $at);
 	}//end changeTask()
+
+	/**
+	 * Update an existing CalDAV task.
+	 *
+	 * The released signature, kept for apps written against it.
+	 *
+	 * @param string $calendarId The calendar ID containing the task
+	 * @param string $taskUri    The URI of the task to update
+	 * @param array  $data       Fields to update: summary, description, priority, due, status
+	 *
+	 * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
+	 *
+	 * @throws Exception If the task is not found or update fails
+	 * @throws TaskAccessDeniedException When a projected VTODO's change is refused
+	 *
+	 * @deprecated Use changeTask() with a TaskLocation.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
+	 */
+	public function updateTask(string $calendarId, string $taskUri, array $data): ?array {
+		return $this->changeTask(at: new TaskLocation(calendarId: $calendarId, uri: $taskUri), data: $data);
+	}//end updateTask()
 
 	/**
 	 * The stored iCalendar data of a task.

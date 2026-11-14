@@ -101,7 +101,7 @@ final class PipelineStepReportTest extends TestCase {
 	public function testEveryRegisteredStepHasAReportEntry(): void {
 		$reported = array_column($this->report(recognitionEnabled: true)->report(), 'step');
 		$this->assertSame(
-			['anonymiser', 'pdf-text-replacer', 'pdf-metadata-sanitiser', 'docx-sanitiser', 'odt-sanitiser'],
+			['anonymiser', 'pdf-text-replacer', 'pdf-metadata-sanitiser', 'docx-sanitiser', 'odt-sanitiser', 'image-burner'],
 			$reported
 		);
 
@@ -124,6 +124,10 @@ final class PipelineStepReportTest extends TestCase {
 
 		// The DOCX and ODT sanitisers, the PDF text replacer and the PDF metadata sanitiser.
 		$this->assertGreaterThanOrEqual(4, $found);
+
+		// The image seam's burner paints into pixels: it is a step too, for the standalone image types.
+		$this->assertSame('image-burner', $steps->stepImplementedBy(class: \OCA\OpenRegister\Service\File\ImageBurner::class));
+		$this->assertSame(['image/png', 'image/jpeg', 'image/tiff', 'image/webp'], $steps->mimeTypes(step: 'image-burner'));
 	}//end testEveryRegisteredStepHasAReportEntry()
 
 	/**
@@ -206,6 +210,7 @@ final class PipelineStepReportTest extends TestCase {
 				'pdf-metadata-sanitiser' => ['outcome' => 'not-applicable'],
 				'docx-sanitiser' => ['outcome' => 'ran'],
 				'odt-sanitiser' => ['outcome' => 'not-applicable'],
+				'image-burner' => ['outcome' => 'not-applicable'],
 			],
 			$logged->getStepsArray()
 		);
@@ -255,7 +260,7 @@ final class PipelineStepReportTest extends TestCase {
 		$answered = $controller->index();
 		$this->assertSame(200, $answered->getStatus());
 		$this->assertSame('anonymiser', $answered->getData()['steps'][0]['step']);
-		$this->assertCount(5, $answered->getData()['steps']);
+		$this->assertCount(6, $answered->getData()['steps']);
 	}//end testTheRouteIsAdminOnly()
 
 	/**

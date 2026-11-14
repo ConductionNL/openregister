@@ -134,8 +134,14 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * whose purpose is not `expiry`, an SLA outside the vocabulary, and an
 	 * escalation rule whose preBreach offset resolves before the anchor.
 	 *
-	 * @param array<string, mixed> $config The timer configuration.
-	 * @param FlowTimerAct         $act    The arming identity and the clock ({@see FlowTimerAct::of()} reads the real clock).
+	 * Takes main's FlowTimerAct, or the release's actor and clock, by name or by position (an actor
+	 * or null in the second slot).
+	 *
+	 * @param array<string, mixed>     $config The timer configuration.
+	 * @param FlowTimerAct|string|null $act    The arming identity and the clock ({@see FlowTimerAct::of()} reads the real clock); a string or null
+	 *                                         here is the release's positional `$actor`.
+	 * @param DateTimeInterface|null   $now    The clock; null reads the real one.
+	 * @param string|null              $actor  The arming identity.
 	 *
 	 * @return FlowTimer The armed timer.
 	 *
@@ -143,7 +149,16 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-deadline-declares-its-legal-effect-and-only-a-legal-one-enforces
 	 */
-	public function arm(array $config, FlowTimerAct $act): FlowTimer {
+	public function arm(
+		array $config,
+		FlowTimerAct|string|null $act = null,
+		DateTimeInterface|null $now = null,
+		string|null $actor = null,
+	): FlowTimer {
+		if (($act instanceof FlowTimerAct) === false) {
+			$act = new FlowTimerAct(actor: ($actor ?? $act), now: $this->instant(now: $now));
+		}
+
 		$timer = $this->factory()->build(config: $config, act: $act);
 		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 
