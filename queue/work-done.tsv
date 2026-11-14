@@ -8019,3 +8019,4 @@ fix:decidiq:2158:fe421ef4	placed the new blocks in the simple structure; vitest 
 fix:decidiq:2148:7ac10ce5	repositioned l10n keys and subscriptions; clean with dev, #2143, #2144; pushed 7350b5a6	session-20261114T065631-b4991134	2026-11-14T07:53:46Z
 fix:decidiq:2139:750d9f2f	l10n conflict resolved, new head ed201473, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T07:53:55Z
 verify:humaniq:1144:4f7b3fd7	1144 GREEN, 1145 GREEN, 1146 CONFLICT, 1147 CONFLICT (l10n vs #1145); suite 4197 OK	session-20261114T073108-8b40426a	2026-11-14T07:54:11Z
+build:integriq:sources-sftp-adapter	partial: PR #3593 (task 2 done; task 3 pickup built, not yet wired into the engine; task 1 needs the phpseclib composer dependency; task 4 open)	session-20261114T070344-897ffa0f	2026-11-14T07:54:18Z
