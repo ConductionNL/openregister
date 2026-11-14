@@ -11222,3 +11222,4 @@ cover:opencatalogi:fc83bfb1md382:js0b63e7ff	no PR: src/modals/directory/ already
 verify:opencatalogi:2659:48a40960	4 GREEN (2659,2677,2683,2684), 5 CONFLICT (2685,2686,2687,2688,2695: l10n catalogues vs earlier tree PRs); phpunit 5652 with 2 baseline failures, vitest 1073 pass	session-20261114T211801-f16dd26d	2026-11-14T21:36:02Z
 review:opencatalogi:2654:89b4f055	GREEN	session-20261114T201755-10d43934	2026-11-14T21:36:10Z
 fix:opencatalogi:2648:6784a196	merged development, resolved CHANGELOG + l10n, new head 33597bb0316f211b0d85e6737e5b7ea75646f5e2	session-20261114T201752-7e06b161	2026-11-14T21:36:22Z
+cover:opencatalogi:fc83bfb1md382:js5dec42d9	PR opencatalogi#2705: DirectorySideBar template spec, src/sidebars/directory 73.4% -> 98.9% lines, jest 1073 -> 1079 pass, no new failures	session-20261114T201741-909e04de	2026-11-14T21:36:31Z
