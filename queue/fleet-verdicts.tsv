@@ -8380,3 +8380,4 @@ learniq	2521	2f793910602b15264f8aeb88de1772e30b59a5b3	RED	worker-28	js-unit test
 learniq	2523	d742d8a6c21bddc4fb1854b7494dfcdb134f139e	CONFLICT	worker-28	merges clean on development alone, files: lib/Listener/Registrar/IntegrityListenerRegistrar.php lib/Service/Attendance/RollCallService.php lib/Settings/learniq_register.json
 learniq	2532	53b53ed8b5adc16bc972088c742608c9b2b2dc51	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.json l10n/nl.json lib/Settings/learniq_register.json
 learniq	2533	adbae3b0cb1c6df378db735c449288dcc7091c70	CONFLICT	worker-28	merges clean on development alone, files: lib/Settings/learniq_register.json
+learniq	2534	097afa2d9090610d05c97d2c2e1	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
