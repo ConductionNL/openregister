@@ -8406,3 +8406,4 @@ build:stackiq:architecture-views-to-office-documents	partial: PR #1910 — Task 
 merge:hermiq:1729:25446213	stale	feeder	2026-11-14T08:45:24Z
 merge:opencatalogi:2597:34a6413e	stale	feeder	2026-11-14T08:45:24Z
 build:stackiq:connections-diagram-and-graph-export	partial: PR #1914, layout and CSV/SVG export utilities with 10 vitest cases; the map widget, diagram component, ArchiMate flows, docs and e2e left	session-20261114T065633-3e3cb668	2026-11-14T08:46:46Z
+build:stackiq:mcp-full-action-surface	partial: PR #1912, provider/alias/validator/contract+admin gates and the 3 contract tools; fragment, publication gate, other tools open	session-20261114T065626-0651b305	2026-11-14T08:46:41Z
