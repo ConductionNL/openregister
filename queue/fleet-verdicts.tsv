@@ -9489,3 +9489,4 @@ launchpad	1212	a6e6dc5183cc6b2ef48937286099782db8b8da43	CONFLICT	worker-54	confl
 launchpad	1215	507cc1f085745611834ee76e087ea94366e82e2c	GREEN	worker-54	phpunit tree 4177 tests 0 failures (baseline 4136, 1 inherited failure), vitest 2272 passed, no new failures
 launchpad	1222	8b68eeb3f425ded57606bb8c51ebcbec33489723	GREEN	worker-54	phpunit tree 4177 tests 0 failures (baseline 4136, 1 inherited failure), vitest 2272 passed, no new failures
 launchpad	1224	9b93d2fae68898af1e824d933e7acca9a0532c49	GREEN	worker-54	phpunit tree 4177 tests 0 failures (baseline 4136, 1 inherited failure), vitest 2272 passed, no new failures
+planninq	1171	84c03da1fff800faf3581e81eb40d0422afdff50	GREEN	worker-02	phpunit 1071 (baseline 1067, 0 fail), vitest 3321/3321, new failures none; build tasks-move-between-projects per change, delete cleanup unchanged
