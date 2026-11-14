@@ -11393,6 +11393,7 @@ build:opencatalogi:subjects-as-first-class-records:c2	done: PR #2684 head 8f4a54
 build:opencatalogi:publication-tells-its-source:c2	built 1.2, 1.3, 1.4, 2.2, 3.1, 3.2 on PR #2671 (head cc569277); openregister piece as openregister#10572 (update webhook payload carries oldObject/newObject); left: live checks 4.1/4.2 and 5.3 npm legs; suite 5641 tests, 2 failures inherited	session-20261114T211808-5e900938	2026-11-14T22:03:57Z
 fix:hermiq:1781:80fadcc8	conflict resolved (l10n union, register 0.58.0); pushed 65071efe	session-20261114T211810-b8f5dc24	2026-11-14T22:03:57Z
 fix:hermiq:1792:11c3a878	fixed: nl strings moved to top, clean with #1754; new head 33071fc8, REVERIFY queued	session-20261114T213933-36bf6b99	2026-11-14T22:04:07Z
+build:humaniq:education-staff-deployment-and-count:c3	partial: PR #1156 (head 40bb5c4) merged with development (baseline fixture regenerated), PHPUnit 4357 green; left 1.3 (CAO PO primary source), 3.1-3.3 (IPTO spec not public, must be requested from DUO/OCW; IPTO covers VO), 4.2 live	session-20261114T204759-5dc9dba7	2026-11-14T22:04:38Z
 review:opencatalogi:2650:2f0dabac	GREEN: build PR, RBAC kept, no new test failures	session-20261114T204804-ae7e06a7	2026-11-14T22:04:37Z
 fix:opencatalogi:2682:e154925a	failed: conflicts only with unmerged #2672, #2686, #2695 (none on development yet); merges clean on development, nothing to resolve until they land	session-20261114T204750-c1efccdb	2026-11-14T22:04:37Z
 review:opencatalogi:2655:05b49194	stale	session-20261114T201752-7e06b161	2026-11-14T22:04:12Z
@@ -11404,3 +11405,4 @@ build:opencatalogi:woo-document-assessment-screen:c2	all code tasks done: PR #26
 verify:portaliq:2500:8218d706	GREEN 2500	session-20261114T212457-7a749dbd	2026-11-14T22:05:28Z
 verify:stackiq:1906:092f4d41	GREEN 1906 1908 1926 1930 1951; CONFLICT 1933 1938 1941 1943; no new failures	session-20261114T214742-7aa14b57	2026-11-14T22:06:06Z
 fix:stackiq:1905:dc6d3343	sbom regenerated, --check passes; new head 99fed107, REVERIFY recorded	session-20261114T204759-2444e6ca	2026-11-14T22:06:17Z
+fix:hermiq:1750:7b8181e8	conflict resolved, merged development, +2 tests, suites green; new head e1618265, REVERIFY recorded	session-20261114T214736-dd784d82	2026-11-14T22:06:24Z
