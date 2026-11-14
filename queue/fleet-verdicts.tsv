@@ -6815,3 +6815,4 @@ pipelinq	3725	eec84aa023cf2eb42d944fe3887e1a637e7d30f3	CONFLICT	worker-11	merge 
 pipelinq	3726	b2988e37d8e2cd6fc33439b6156b9b8ffa7677c2	CONFLICT	worker-11	merge conflict with development + 3713
 pipelinq	3736	1ee73020fde5a7a88976e483636eb0c2bbcc726a	CONFLICT	worker-11	merge conflict with development + 3713
 portaliq	2312	e056c2f77fc4c58f02ab1b00a452b62ff26f8662	REVERIFY	worker-33	merged development in: portalApi.js keeps the branch's inbox/session helpers and development's task-completion/thread/object helpers; eslint no errors, 261 node tests over portalApi green; new head bc6ff396b193ef45260a770fbbb55e0a26da8280, verify it
+pipelinq	3743	f22b2fac3e43c0b273bbebfeb562db6a6c88a489	RED	worker-11	alone on development: 12 errors, Class OCA\Pipelinq\Service\Application not found at lib/Service/TicketService.php:337 (missing use import) - TicketServiceTest x4, TicketServiceMunicipalityTest x4, OpenMailServiceTest x3, OpenMailServiceEdgeCasesTest x1
