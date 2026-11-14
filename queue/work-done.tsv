@@ -11870,3 +11870,4 @@ cover:decidiq:a5f973bbmae46:9d3a1784	already done: lib/BackgroundJob/*.php measu
 cover:decidiq:a5f973bbmae46:58192586	PR #2208: 8 tests, lib/Service/Records to 100% lines; suite 4248->4256 OK	session-20261114T230933-0afdd896	2026-11-14T23:23:45Z
 cover:keepiq:c967a31fm10bf:9b457b26	PR #1817: VaultFlowTriggerCatalog 94.12% -> 100% lines, +5 tests (5213 -> 5218, green)	session-20261114T223937-a95b1403	2026-11-14T23:24:06Z
 cover:shillinq:05639debm9818:js450fec42	PR #3081: 14 tests (leaf loaders, registry window fallback, contract panel template, FD titleOf); integrations stmts 95.55->96.54, funcs 100; suite 1 inherited failure	session-20261114T231806-fdb63293	2026-11-14T23:24:23Z
+cover:decidiq:a5f973bbmae46:be0dcca9	already done: lib/Mcp/*.php at 100% lines (490/490) from tests/Unit/Mcp under --strict-coverage; no PR	session-20261114T230933-0afdd896	2026-11-14T23:24:23Z
