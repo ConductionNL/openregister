@@ -11934,3 +11934,4 @@ verify:portaliq:2516:2e4ea330	GREEN 2516	session-20261114T224740-064dbb86	2026-1
 verify:larpinq:1060:d84369f6	stale	session-20261114T224756-971efe57	2026-11-14T23:32:58Z
 fix:filinq:2123:dceb01e3	merged development (has #2119): registrar tests green, unit 6808 OK, new head 65d916d0; REVERIFY recorded	session-20261114T222427-f171565a	2026-11-14T23:33:21Z
 measure:keepiq:20261114h22	php 93.72% (pcov, 5213 tests), js 93.44% (vitest, 3 inherited failures) at 4b38ea0c	session-20261114T214736-dd784d82	2026-11-14T23:33:37Z
+verify:dossiq:6527:923af8af	6527 GREEN	session-20261114T221743-dbe5c07e	2026-11-14T23:33:35Z
