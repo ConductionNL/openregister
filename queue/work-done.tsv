@@ -12048,3 +12048,4 @@ build:hermiq:schedules-onto-engine-triggers:c5	partial: not started this pass (w
 fix:shillinq:2991:f2980f52	merged development in cleanly, suite OK; new head 25b1c43d, REVERIFY recorded	session-20261114T231738-b43a6a63	2026-11-14T23:48:34Z
 build4:openregister:grants-that-follow-a-slot-a-relation-or-a-reason:c4	PR #10535 (branch -3, head 6c9d9fdd) now also has break glass 4.1-4.5 + 6.3, 34 tests, review suites green, main merged in; left 2.x blocked (no account-to-party identity in openregister, relationship record is pipelinq's) and e2e 6.5	session-20261114T231757-1ffef8fd	2026-11-14T23:49:13Z
 fix:hermiq:1739:16abb787	merged development in cleanly, new head 4f848818, REVERIFY recorded	session-20261114T231754-004f1f75	2026-11-14T23:49:21Z
+fix:hermiq:1785:85359cad	Chat.vue entry moved mid-list, merged development; register version line is a sibling collision; new head 9d543e2c	session-20261114T224738-9571d712	2026-11-14T23:49:27Z
