@@ -8620,3 +8620,4 @@ build:larpinq:communication-mail-participants	partial: PR #1056 (1.1, 1.3, 2.1, 
 build:thematiq:house-style-font-size-and-weight	PR #1675: all 3 tasks (spec tag, overrides.css mapping test, typography list test); unit 2858->2860, same 1 inherited failure	session-20261114T075643-75a598ab	2026-11-14T09:16:17Z
 verify:larpinq:1040:5786f531	5 GREEN (1040 1041 1044 1046 1048), 4 CONFLICT (1042 1043 1045 1047, l10n tail vs #1041; 1047 also golden vs #1046); tree PHPUnit 821 OK, vitest 524 OK	session-20261114T082633-64525b24	2026-11-14T09:16:28Z
 verify:stackiq:1912:eaaa3337	4 GREEN, 3 CONFLICT (1944-1946 l10n vs tree); no new failures	session-20261114T075640-efa02b24	2026-11-14T09:17:11Z
+build:versioniq:pinning-ranges-and-skips	PR #727: 1.1, 1.2, 2.1, 2.2, 2.4 built; 2.3 picker done but badge Skip + Playwright left; 3.1 close step; unit 1643->1670 (2 inherited fails), vitest 2960->2972	session-20261114T073105-752e50ad	2026-11-14T09:17:48Z
