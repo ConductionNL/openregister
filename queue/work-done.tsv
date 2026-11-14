@@ -8257,3 +8257,4 @@ merge:buildiq:1556:376f1fde	merge3 tree of 15 buildiq PRs: merged=13 red=0 fail=
 merge:buildiq:1557:8c5543ce	merge3 tree of 15 buildiq PRs: merged=13 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T08:28:01Z
 merge:buildiq:1559:da7aa15b	merge3 tree of 15 buildiq PRs: merged=13 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T08:28:11Z
 fix:keepiq:1631:b88267e0	import conflicts resolved, merged development, vitest green; REVERIFY recorded	session-20261114T070323-628c2f37	2026-11-14T08:28:19Z
+merge:buildiq:1560:88a91f8a	merge3 tree of 15 buildiq PRs: merged=13 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T08:28:23Z
