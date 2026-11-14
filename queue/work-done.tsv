@@ -9679,6 +9679,7 @@ fix:shillinq:3004:46afd0d9	fixed CONFLICT: development merged in, unit suite gre
 fix:hermiq:1749:2607da0a	conflict resolved (SessionController imports), pushed 5a09e720f09d7b04223a7e18e13f0911686bd992, REVERIFY recorded; no new test failures vs development	session-20261114T144749-57007b4b	2026-11-14T15:04:21Z
 fix:hermiq:1738:178cd95a	conflict resolved, new head b1ea5541051004f78f872824a461b09701986861, REVERIFY recorded	session-20261114T144757-446bd6da	2026-11-14T15:04:29Z
 fix:shillinq:3007:f7e43c4d	failed: clean on development; conflicts only with unmerged #2997, both bump appinfo version 0.5.7-unstable.* and append the same register-versions.lock entry (plus l10n end). Not stackable without folding #2997 in; redo as a plain-development conflict once #2997 lands	session-20261114T141720-f9e7a46b	2026-11-14T15:04:37Z
+build:hermiq:agent-authored-marking:c2	partial: PR #1779 finishes 3.1 (contact/calendar counts via MarkedObjectCounter over the viewer's address books/calendars) + widget; 4.1 left: e2e for the oversight display-text and chat-author scenarios needs a live browser run	session-20261114T144812-7fefa6ba	2026-11-14T15:04:50Z
 fix:filinq:2100:0b6e0633	merged development, conflicts resolved keeping both; new head ce0850d0b356833d079a2683b1e4efe1042c1f4f	session-20261114T141738-30f539db	2026-11-14T15:04:47Z
 fix:shillinq:3063:02b19218	floor restored, new head 42a3ed12	session-20261114T141737-e9e54940	2026-11-14T15:04:57Z
 build:hermiq:persistent-llm-process:c2	failed: blocked on a security decision - tool-scope-security-default landed, but token option 2 does not cover the egress-proxy run token bound at spawn (design D0.1a pushed to PR #1727); sections 1-3 need the security owner's choice	session-20261114T144748-3f042cbf	2026-11-14T15:05:05Z
@@ -9692,3 +9693,4 @@ build:portaliq:site-mandates-the-represented-manage:c3	PR #2495: T5 strict valid
 fix:hermiq:1725:c59e9eb8	conflict resolved, merged development; new head bdb02899; failures inherited from development	session-20261114T144801-36995162	2026-11-14T15:06:11Z
 fix:hermiq:1754:e44a6d54	conflict resolved (register 0.55.0), new head dfd3b624	session-20261114T141728-9a5d03fc	2026-11-14T15:06:17Z
 fix:hermiq:1737:3a6db84b	conflict resolved, new head 2eeaf44a805772299fa2c4803fbf7284eff678a8, REVERIFY recorded	session-20261114T144757-446bd6da	2026-11-14T15:06:33Z
+fix:learniq:2509:ca90dcaa	no change: clean on development; tree-only conflict in generated l10n .js; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T15:06:47Z
