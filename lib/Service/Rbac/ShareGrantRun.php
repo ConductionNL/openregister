@@ -38,7 +38,7 @@ final class ShareGrantRun {
 	/**
 	 * The share type being read, one of ObjectGrantResolver::PRINCIPAL_SHARE_TYPES.
 	 *
-	 * @var integer
+	 * @var IShare::TYPE_*
 	 */
 	public int $shareType = 0;
 
@@ -55,6 +55,16 @@ final class ShareGrantRun {
 	 * @var list<array{0: string, 1: IShare}>
 	 */
 	public array $candidates = [];
+
+	/**
+	 * Whether this pass reads the grants the caller ISSUED rather than received.
+	 *
+	 * An issuer holds the access their grant conveys for as long as it stands
+	 * (an-app-declares-object-access-rather-than-guarding-it, D-3).
+	 *
+	 * @var boolean
+	 */
+	public bool $issued = false;
 
 	/**
 	 * Start the run.

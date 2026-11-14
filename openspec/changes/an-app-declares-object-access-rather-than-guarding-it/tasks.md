@@ -40,10 +40,22 @@ logs stable.
 
 ## 3. Grant issuer
 
-- [ ] 3.1 Record the issuer on a per-object grant.
-- [ ] 3.2 Resolve the issuer's own access from their grant in
+- [x] 3.1 Record the issuer on a per-object grant.
+- [x] 3.2 Resolve the issuer's own access from their grant in
       `ObjectGrantResolver`, on both layers.
-- [ ] 3.3 Revoke the derived access when the grant is revoked.
+- [x] 3.3 Revoke the derived access when the grant is revoked.
+
+Build note (3): the issuer is the grant's own `sharedBy`, which
+`ObjectSharingService::shareOnFolder()` already sets to the calling user, so
+nothing new is stored. `ObjectGrantResolver::resolve()` reads a second pass,
+`IManager::getSharesBy()` with reshares off, over the same principal share
+types and through the same stored-folder check and widest-wins composition as
+a received grant. The map it fills is the one both layers read (`isGranted()`
+on the find path, `grantedObjectUuidsFor()` on the list path), so they cannot
+disagree. A revoked share is no longer returned, so the issuer's access goes
+with it; nothing is inferred from any other row. Link and email shares are
+minted by the app's account (`ShareLinkService`), so they carry no human
+issuer and are outside this pass. Test: `tests/Unit/Service/Rbac/ObjectGrantIssuerTest.php`.
 
 ## 4. The orphan validator
 
