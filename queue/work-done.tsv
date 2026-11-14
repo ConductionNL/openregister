@@ -11694,3 +11694,4 @@ build:integriq:sources-sftp-adapter:c3	done: PR #3593 head b138cdd2, mapping tar
 build:stackiq:architecture-assistant-drafted-views:c2	failed: blocked — needs architecture-views-editor (PR #1926) and mcp-full-action-surface (PR #1962) on development; both verified GREEN this run, awaiting the merge lane	session-20261114T214719-cd72efa7	2026-11-14T22:51:46Z
 verify:launchpad:1209:1ecaf271	1209 GREEN, 1225 GREEN; no new failures (1 inherited)	session-20261114T224751-87da8a15	2026-11-14T22:52:40Z
 verify:hermiq:1751:a3d9ecaa	GREEN hermiq#1751, #1795 (no new failures over baseline)	session-20261114T224738-9571d712	2026-11-14T22:53:31Z
+verify:integriq:3593:33b4fa9d	GREEN #3593: no new failures (phpunit 9224, vitest 2305)	session-20261114T224736-f9da4a35	2026-11-14T22:53:50Z
