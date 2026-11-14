@@ -9818,3 +9818,4 @@ verify:hermiq:1715:b877e805	1726 GREEN; 1735 1738 1740 1749 1760 1763 CONFLICT (
 fix:humaniq:1134:928fcce0	merged development, BandOp interfacing fix; floor PASS 3.62->3.61; new head 9dd99b9c	session-20261114T151938-8fa99f90	2026-11-14T15:28:33Z
 merge:learniq:2484:8ad08a63	merge3 tree of 8 learniq PRs: merged=2 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T15:28:40Z
 merge:learniq:2530:ee472f1a	merge3 tree of 8 learniq PRs: merged=2 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T15:28:43Z
+merge:learniq:2493:8b36a507	merge3 tree of 8 learniq PRs: merged=2 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T15:28:46Z
