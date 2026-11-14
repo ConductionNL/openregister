@@ -8889,6 +8889,7 @@ learniq	2520	3a7f33845adaf7d06a5218c707c323a9b9fa1835	REVERIFY	worker-27	merged 
 humaniq	1123	a6b9adfa96fe7bfb9b6cb0183baa71a0f9d3de6e	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.62 -> 3.60
 humaniq	1129	5162c29635dd0edd98b93029de22176e215462ef	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.49 -> 4.47; unit_interfacing: 3.62 -> 3.60
 learniq	2501	240753660bef555eede7d9b3aec4f30bf8b615f2	GREEN	worker-40	PHPUnit 6724->6750 (baseline 1 failure HigherEducationExampleSetTest, no new), node --test 1363->1367 (9 inherited failures, no new), php -l + eslint clean; builds credentials-migrate-with-validity as its spec asks, migrate route gated by credential.migrate
+learniq	2507	c4857461821b9b5bf8fc3e1869aae2f84b3a4695	REVERIFY	worker-32	merged development in: l10n and register of both sides, register 0.51.0, Enrolment 0.5.1; phpunit 6729 with 1 inherited failure (HigherEducationExampleSetTest); new head ba361dd553c7653eab8489660180fdc1235f9dcd, verify it
 shillinq	3050	b62151d4c34aad6eb814644a90bef24e81e0acf9	RED	merge3:merge-gate	GATE RED absolute floor: shillinq maintainability 3.88 after merge is below its floor 3.89
 shillinq	3057	da7239cadb5817492c2d87f42108964301251c23	RED	merge3:merge-gate	GATE RED absolute floor: shillinq maintainability 3.88 after merge is below its floor 3.89
 shillinq	3070	a2d99b13b6ad18a085d5dad9d5c590433fa98bd8	RED	merge3:merge-gate	GATE RED absolute floor: shillinq maintainability 3.88 after merge is below its floor 3.89
