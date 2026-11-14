@@ -527,15 +527,76 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/api-test-coverage/spec.md
 	 */
 	public function getExtractedText(int $fileId): ?string {
-		$text = null;
+		$read = $this->readExtractedText(fileId: $fileId);
+		if ($read === null) {
+			return null;
+		}
+
+		return $read['text'];
+	}//end getExtractedText()
+
+	/**
+	 * The text extracted from a file, with how many chunks it came from and when.
+	 *
+	 * The text is assembled exactly as {@see self::getExtractedText()} does.
+	 * `chunkCount` counts the content chunks (the metadata chunk is not text),
+	 * and `extractedAt` is the latest time one of them was written, as an
+	 * ISO 8601 string, or null when no chunk carries a time.
+	 *
+	 * @param int $fileId Nextcloud file ID.
+	 *
+	 * @return array{text: string, chunkCount: int, extractedAt: string|null}|null Null when the file has no text chunks.
+	 *
+	 * @spec openspec/changes/search-file-text-and-vector-facade/tasks.md#task-1.1
+	 */
+	public function readExtractedText(int $fileId): ?array {
+		$text   = null;
+		$count  = 0;
+		$latest = null;
 		foreach ($this->chunkMapper->findBySource(sourceType: 'file', sourceId: $fileId) as $chunk) {
-			if ($this->isContentChunk(chunk: $chunk) === true) {
-				$text = $this->joinChunk(text: $text, content: $chunk->getTextContent());
+			if ($this->isContentChunk(chunk: $chunk) === false) {
+				continue;
+			}
+
+			$text = $this->joinChunk(text: $text, content: (string)$chunk->getTextContent());
+			$count++;
+			$written = $this->writtenAt(chunk: $chunk);
+			if ($written !== null && ($latest === null || $written > $latest)) {
+				$latest = $written;
 			}
 		}
 
-		return $text;
-	}//end getExtractedText()
+		if ($text === null) {
+			return null;
+		}
+
+		return [
+			'text'        => $text,
+			'chunkCount'  => $count,
+			'extractedAt' => $latest?->format(DATE_ATOM),
+		];
+	}//end readExtractedText()
+
+	/**
+	 * When a chunk was last written: its update time, else its creation time.
+	 *
+	 * @param Chunk $chunk The chunk.
+	 *
+	 * @return \DateTimeInterface|null Null when the chunk carries neither.
+	 */
+	private function writtenAt(Chunk $chunk): ?\DateTimeInterface {
+		$updated = $chunk->getUpdatedAt();
+		if ($updated instanceof \DateTimeInterface) {
+			return $updated;
+		}
+
+		$created = $chunk->getCreatedAt();
+		if ($created instanceof \DateTimeInterface) {
+			return $created;
+		}
+
+		return null;
+	}//end writtenAt()
 
 	/**
 	 * Whether a stored chunk holds file content, not metadata.
