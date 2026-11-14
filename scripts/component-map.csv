@@ -4178,6 +4178,7 @@ Service/Object/ObjectSaveChecks.php,26,Service,Service,Service/Object/ObjectSave
 Service/Object/SampleValidationErrors.php,48,Service,Service,Service/Object/SampleValidationErrors.php,0,,Core
 Service/Configuration/SeedReport.php,166,Service,Configuration,Configuration/Service/Configuration/SeedReport.php,0,,Configuration
 Service/Configuration/SeedDirectoryImporter.php,164,Service,Configuration,Configuration/Service/Configuration/SeedDirectoryImporter.php,0,,Configuration
+Service/Configuration/ShippedRegisterBaseline.php,,Service,,,,,Configuration
 Repair/SeedFromDirectory.php,37,Repair,Platform,Platform/Repair/SeedFromDirectory.php,0,,Platform
 BackgroundJob/SeedDirectoryJob.php,19,BackgroundJob,Configuration,Configuration/BackgroundJob/SeedDirectoryJob.php,0,,Configuration
 Command/SeedImportCommand.php,58,Command,Configuration,Configuration/Command/SeedImportCommand.php,0,,Configuration

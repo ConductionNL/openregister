@@ -211,4 +211,39 @@ class ShippedBaselineStore {
 	public function schemaSubject(string $slug): string {
 		return ('schema:' . $slug);
 	}//end schemaSubject()
+
+	/**
+	 * Record what an app shipped for a register, under the register key.
+	 *
+	 * NEVER THROWS, for the reason {@see self::record()} gives.
+	 *
+	 * @param string            $slug    The register slug.
+	 * @param ShippedDefinition $shipped What the app ships, and which release.
+	 *
+	 * @return bool True when it was recorded.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function recordRegister(string $slug, ShippedDefinition $shipped): bool {
+		$address = new ConfigurationAddress(
+			layer: ConfigurationLayer::SUBJECT,
+			layerRef: $this->registerSubject(slug: $slug),
+			configKey: self::KEY_REGISTER
+		);
+
+		return $this->recordAt(address: $address, shipped: $shipped);
+	}//end recordRegister()
+
+	/**
+	 * The subject reference of a register slug.
+	 *
+	 * @param string $slug The register slug.
+	 *
+	 * @return string The reference.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function registerSubject(string $slug): string {
+		return ('register:' . $slug);
+	}//end registerSubject()
 }//end class
