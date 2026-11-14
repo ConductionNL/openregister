@@ -8402,3 +8402,5 @@ build:stackiq:adopt-apphost	partial: PR #1908 (task 1.1 and the health/metrics h
 build:stackiq:sharing-generated-api-docs	failed: task 1 needs nextcloud/openapi-extractor in a new vendor-bin composer project (composer beyond composer-cloud.sh is not allowed here); tasks 2-4 build on its generated openapi.json	session-20261114T070352-19ea7dff	2026-11-14T08:45:41Z
 build:stackiq:the-review-moderation-overlay-names-the-wrong-schema	already done: fixed in #946; 3.1 live import check and 3.2 data prune are operator steps on an instance	session-20261114T075643-acecaad6	2026-11-14T08:45:56Z
 build:stackiq:architecture-views-to-office-documents	partial: PR #1910 — Task 1 SVG renderer with 5 tests; Tasks 2/4/5 wait on architecture-views-editor, Task 3 on filinq's document contract	session-20261114T073105-27c9d15e	2026-11-14T08:46:25Z
+merge:hermiq:1729:25446213	stale	feeder	2026-11-14T08:45:24Z
+merge:opencatalogi:2597:34a6413e	stale	feeder	2026-11-14T08:45:24Z
