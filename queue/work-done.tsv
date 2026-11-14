@@ -7624,3 +7624,4 @@ fix:dossiq:6324:9b502e2f	conflict resolved, new head 07609287, REVERIFY	session-
 review:openregister:10463:2a65b3e0	APPROVE (publiccode.yml metadata only)	session-20261114T062142-da017174	2026-11-14T06:38:13Z
 fix:dossiq:6309:9da83645	conflict resolved, pushed fd3b2c30, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T06:38:19Z
 fix:dossiq:6459:89dbd4a8	openapi documented, new head 1b887f83, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T06:39:20Z
+fix:dossiq:6385:cf5945ae	conflict resolved, pushed 5bf6b3afe181d49c4d0074fe33964d5518352a1f, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T06:39:33Z
