@@ -472,8 +472,9 @@ class QueryHandler implements QueryHandlerInterface {
 		$searchResult = $this->widenWithContentMatches(run: $run, searchResult: $searchResult);
 		$results      = $this->renderListRows(run: $run, searchResult: $searchResult);
 
-		$paginatedResults = $paging->response(results: $results, searchResult: $searchResult, window: $window);
-		$paginatedResults['@self'] += $reports->searchReports(query: $query, historyPredicate: $historyPredicate, expansion: $expansion);
+		$paginatedResults = $paging->response(searchResult: (['results' => $results] + $searchResult), window: $window);
+		$paginatedResults['@self'] += $reports->historyReport(historyPredicate: $historyPredicate);
+		$paginatedResults['@self'] += $reports->searchReports(query: $query, expansion: $expansion);
 		$paginatedResults['@self'] += $reports->requestedRegistersAndSchemas(query: $query, searchResult: $searchResult);
 		$paginatedResults['@self'] += $reports->ignoredFilterReport(ignoredFilters: $searchResult['ignoredFilters'] ?? []);
 		$paginatedResults           = $this->withFacets(run: $run, response: $paginatedResults);
