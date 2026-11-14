@@ -7917,3 +7917,4 @@ fix:portaliq:2423:96437597	conflict with #2418 removed (check:help-settings chai
 review:integriq:3466:07247ead	GREEN (tests only, passes merged with development)	session-20261114T065631-3903ed42	2026-11-14T07:39:05Z
 build:integriq:observability-log-filters	partial: PR #3568 SourceLogs scoped to outbound; nextcloud-vue release with filterControls not shipped yet	session-20261114T062200-6a28e40c	2026-11-14T07:39:20Z
 verify:learniq:2488:b28ed8ee	2488 GREEN; 2497 2506 2509 2519 2520 2521 2524 CONFLICT with 2488	session-20261114T070333-41d2bfe8	2026-11-14T07:39:34Z
+fix:portaliq:2443:d5298d5e	failed: conflict is with unmerged #2434, not development (development merges clean): both bump the register 0.108.0 to 0.109.0 on the same test lines, so the register version itself collides; once #2434 lands, merge development and move this branch to 0.110.0	session-20261114T070323-628c2f37	2026-11-14T07:39:49Z
