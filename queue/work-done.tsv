@@ -10015,3 +10015,4 @@ fix:hermiq:1740:26c96d0f	no change: already contains development; conflict is on
 fix:integriq:3595:442dd4fc	merged development in (clean), suite same as development; new head 7df20bcae, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T16:01:55Z
 fix:planninq:1169:ea298e62	l10n conflicts resolved (37 locales), new head 1268ee2b, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T16:02:04Z
 build:integriq:zgw-catalogi-served:c2	partial: pushed 9f3a69a4 to PR #3600: task 4 done (admin-page Woo starter set button, vitest 3 tests, en/nl strings, docs); left task 5: Newman collection, Playwright spec, catalog entry, throttle config; vitest 2160 pass, Catalogi PHPUnit green	session-20261114T151751-5fc6ef5c	2026-11-14T16:02:11Z
+fix:hermiq:1760:adfddb8f	no change: already contains development; conflict is only with unmerged #1728/#1753, resolves when they land	session-20261114T154757-c9bf237e	2026-11-14T16:02:08Z
