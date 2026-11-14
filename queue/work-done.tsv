@@ -11158,3 +11158,4 @@ fix:opencatalogi:2669:8e6fee77	CHANGELOG conflict resolved, merged development, 
 fix:opencatalogi:2671:3632cf8d	fixed: unit_interfacing floor restored, pushed 8496b804c53da9ea3625fcef8491464e640d48c9, REVERIFY recorded	session-20261114T204804-ae7e06a7	2026-11-14T21:24:03Z
 verify:keepiq:1789:e236aa78	1789 RED (platform-properties.spec Dutch coverage gate)	session-20261114T201741-909e04de	2026-11-14T21:24:21Z
 fix:launchpad:1203:3942bf49	refactored calculatedFields to complexity<=5 per unit; vitest green; pushed bb45f19d061c3bb7e153a5b9a27b526808ec120c, REVERIFY recorded	session-20261114T211815-849a5f5d	2026-11-14T21:24:31Z
+fix:launchpad:1223:bde0c65b	floor restored (unit_interfacing 3.46->3.48 PASS); new head 55bac55a, REVERIFY recorded	session-20261114T205512-b62019b2	2026-11-14T21:24:39Z
