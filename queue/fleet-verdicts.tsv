@@ -10112,3 +10112,4 @@ opencatalogi	2674	98c76ef7d957f80d32f19fec14da6fd8e04b353e	CONFLICT	worker-45	co
 opencatalogi	2696	c991013b8c4f3f4ea5d26d8e0a4285eb6a914f11	CONFLICT	worker-45	conflicts in l10n/en.js,en.json,nl.js,nl.json and lib/Controller/FederationController.php with 2665+2673 in tree
 opencatalogi	2706	bad7090ef3f1f5575114bf2fef1705442078fdb1	CONFLICT	worker-45	conflicts in l10n/en.js,en.json,nl.js,nl.json and tests/Unit/Service/DcatServiceTest.php with 2665+2673 in tree
 opencatalogi	2708	860ecd4641811d9375e5a7262475d747aba345d4	GREEN	worker-45	unit 5634 tests, baseline 5599 w/ 2 failures (AppIdentityTest, WooControllerTest, inherited), no new failures; vitest 1083 pass; tests only
+opencatalogi	2709	2bcdab67edbb77985ae1c9fca7c686f79cad09d0	GREEN	worker-45	unit 5634 tests, baseline 5599 w/ 2 failures (AppIdentityTest, WooControllerTest, inherited), no new failures; vitest 1083 pass; openspec only
