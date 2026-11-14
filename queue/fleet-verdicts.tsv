@@ -6688,3 +6688,4 @@ decidiq	2172	315e8cf527153074e7aaddae643061b9e2413abb	GREEN	worker-11	unit basel
 decidiq	2173	a50aff1f68be1fecf5ec19cb5a48256559613e6b	CONFLICT	worker-11	merge conflict with development + earlier tree PRs (2166-2170)
 learniq	2503	f37b4ede90bc97079b5845a8fa5ac390a22ae0a6	GREEN	worker-26	6575 unit tests baseline (1 inherited fail HigherEducationExampleSetTest he.json out of date); tree of 2503,2505,2508,2510: 6594 tests, same 1 failure, no new failures
 decidiq	2174	46a18f3ef0a371ded02cd6fdcb4a3aa4fec4fd79	RED	worker-11	merged after 2172: NamedPaperVoteRegisterTest::testTheVersionsMoveUp (VotingRound must move above 0.5.0; 2172 written-resolution also takes 0.5.0); also duplicate recorded-votes route, see BLOCK
+learniq	2504	2527d77c22e0e94b34b4dda621d0b78db9292711	CONFLICT	worker-26	conflicts with development in l10n/en.json, l10n/nl.json; not tested
