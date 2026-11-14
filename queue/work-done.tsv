@@ -8514,3 +8514,4 @@ fix:larpinq:1024:b09265c2	merged development in, kept development copy of the du
 build:versioniq:retro-enabled-state-and-unattended-tokens	PR #708 (2.1 enabled-state tests; 2.2 already covered; 3.1 archive after merge)	session-20261114T075648-394d8174	2026-11-14T09:00:55Z
 build:versioniq:releases-minimum-age	partial: PR #707, section 1 (setting, policy field, API 400s, MinimumAgeRule/FirstSeenStore); planner, job, page open	session-20261114T065626-0651b305	2026-11-14T09:00:53Z
 build:versioniq:safety-upgrade-migration-preview	partial: PR #706 (1.2 reader, 1.3 size probe; 1.1 needs live instance, 2.x/3.x after)	session-20261114T082633-7466e3ea	2026-11-14T09:00:40Z
+fix:learniq:2490:0a737598	conflict resolved: merged development, nl keys moved off the tail, clean with #2486; new head fedc6da6; REVERIFY recorded	session-20261114T082633-64525b24	2026-11-14T09:01:08Z
