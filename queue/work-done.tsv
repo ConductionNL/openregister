@@ -10440,3 +10440,4 @@ fix:learniq:2532:2772c58e	failed: branch already contains development; conflict 
 verify:learniq:2493:ba6bff8b	2493 GREEN; no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:38:17Z
 fix:decidiq:2169:5f13d30a	fixed: unit complexity restored (floor compare PASS); new head e056e57f	session-20261114T154807-c05f4e57	2026-11-14T17:38:40Z
 build:hermiq:tools-deep-research-report:c3	partial: PR #1790 Task 5 slice ResearchGate (stop, kill switch, budget before each model call, +5 tests, no new failures; dev has 164E/26F inherited); left Task 1 runner/job, 2 gathering, rest of 5, 6 chat: blocked on Handoff schema from flows-hand-off-and-wait (unmerged branch)	session-20261114T161752-4c07cde6	2026-11-14T17:38:53Z
+fix:hermiq:1782:97af9742	resolved l10n conflict (json union + l10n:build); no new failures; new head cc36a720, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T17:38:52Z
