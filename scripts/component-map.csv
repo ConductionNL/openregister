@@ -4196,3 +4196,8 @@ Search/Service/Quality/TextGroupFinder.php,,Search,,,,,Search
 Search/Service/Quality/TextGroups.php,,Search,,,,,Search
 Service/Quality/TextSignature.php,,Service,,,,,Core
 BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Core
+Service/Anonymisation/DetectorEvaluation.php,233,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluation.php,0,,Compliance
+Service/Anonymisation/DetectorEvaluationService.php,92,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluationService.php,0,,Compliance
+Service/Anonymisation/DetectorEvaluationStore.php,87,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluationStore.php,0,,Compliance
+Service/Anonymisation/EvaluationCorpus.php,128,Service,Compliance,Compliance/Service/Anonymisation/EvaluationCorpus.php,0,,Compliance
+Command/EvaluateDetectorCommand.php,,Command,,,,,Compliance

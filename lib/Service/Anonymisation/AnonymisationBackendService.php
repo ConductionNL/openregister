@@ -635,14 +635,19 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * @param ProbeResult $probe The probe result for the method.
 	 *
 	 * @return BackendInfo The availability/configuration record.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-precision-and-recall-are-measured-over-a-named-corpus-and-published-with-the-detector-version-req-adi-002
 	 */
 	private function buildBackendInfo(string $method, ProbeResult $probe): BackendInfo {
+		$detector = $this->detectorFor(method: $method, probe: $probe);
+
 		return new BackendInfo(
 			name: $method,
 			configured: $this->isConfigured(method: $method, probe: $probe),
 			probe: $probe,
-			detector: $this->detectorFor(method: $method, probe: $probe),
+			detector: $detector,
 			statement: $this->statementFor(backend: $method),
+			evaluation: (new DetectorEvaluationStore(appConfig: $this->appConfig))->reportFor(method: $method, current: $detector),
 		);
 	}//end buildBackendInfo()
 

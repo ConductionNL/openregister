@@ -9,8 +9,8 @@
 
 ## 2. Measured accuracy (REQ-ADI-002)
 
-- [ ] 2.1 Ship `tests/Fixtures/anonymisation-eval/nl-woo-synthetic/` (version 1): synthetic Dutch texts with gold annotations for PERSON, EMAIL, PHONE, IBAN, BSN, ADDRESS, ORGANIZATION. No real personal data; the README says how it was generated. Verify: `tests/Unit/Service/Anonymisation/EvaluationCorpusTest.php` asserts every gold span lies inside its text and every BSN passes the elfproef with a reserved test range.
-- [ ] 2.2 Add `DetectorEvaluationService` and `occ openregister:anonymisation:evaluate`, registered in `appinfo/info.xml`, storing precision, recall and support per type with corpus and detector version. Verify: `tests/Unit/Command/EvaluateDetectorCommandTest.php` runs the regex backend over a three-document corpus and asserts known figures; `testFiguresForAnotherDetectorVersionAreNotCurrent`.
+- [x] 2.1 Ship `tests/Fixtures/anonymisation-eval/nl-woo-synthetic/` (version 1): synthetic Dutch texts with gold annotations for PERSON, EMAIL, PHONE, IBAN, BSN, ADDRESS, ORGANIZATION. No real personal data; the README says how it was generated. Verify: `tests/Unit/Service/Anonymisation/EvaluationCorpusTest.php` asserts every gold span lies inside its text and every BSN passes the elfproef with a reserved test range.
+- [x] 2.2 Add `DetectorEvaluationService` and `occ openregister:anonymisation:evaluate`, registered in `appinfo/info.xml`, storing precision, recall and support per type with corpus and detector version. Verify: `tests/Unit/Command/EvaluateDetectorCommandTest.php` runs the regex backend over a three-document corpus and asserts known figures; `testFiguresForAnotherDetectorVersionAreNotCurrent`.
 - [ ] 2.3 Show the current figures, or "not measured for this version", in `src/views/settings/sections/FileConfiguration.vue`. Verify: `src/views/settings/sections/FileConfiguration.spec.js` renders both states.
 
 ## 3. Statements (REQ-ADI-003)
