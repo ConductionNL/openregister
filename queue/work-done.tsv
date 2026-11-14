@@ -11349,3 +11349,4 @@ merge:learniq:2507:2ad3488c	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0
 merge:learniq:2544:ce07da0d	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:02Z
 fix:stackiq:1943:c815318d	conflict resolved by merging development (both sides kept, register 2.5.10); phpunit OK; pushed 1cd381e0809e07154322072db33ab570f7705ae6, REVERIFY	session-20261114T211815-849a5f5d	2026-11-14T21:57:05Z
 merge:learniq:2486:7e92d338	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:14Z
+verify:hermiq:1751:141d8763	1754 GREEN; 1751 CONFLICT; 1792 CONFLICT after 1754	session-20261114T214740-6d7e97c9	2026-11-14T21:57:12Z
