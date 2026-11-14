@@ -9406,3 +9406,9 @@ learniq	2542	8b1768c4256c3b8310aa27f3e35f0874d1085889	REVERIFY	worker-08	moved t
 hermiq	1715	47d76c7cf8852efb3d4e181065c868036fa09e0a	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.52 -> 4.46
 hermiq	1782	f0562d6f013540c84154271800e3a6102ac05d3e	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.45 -> 2.43
 hermiq	1793	fb17183cdd4dddbdb8756f87ad4fe8fb5eb3031d	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.52 -> 4.50
+hermiq	1726	901a6f77bd6a03b55d31f666fa3248bbcd9465a8	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json 
+hermiq	1735	61ad767f2f1d16530dfa278b6a27961e11c2f6d8	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json 
+hermiq	1749	495bf26935a9475d794809785f39e0aca058c533	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json lib/Controller/SessionController.php 
+hermiq	1767	7d75ca77587ddf63f6a1b008bb93eba5751ad260	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1785	913a55e5839466fe84e3d18e91b837f61f302862	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
+hermiq	1791	f0bebb66a9477aac86f4bb9c86350c1de2480f7d	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json src/modals/AgentFormModal.vue tests/Fixtures/Golden/agent-form-payload.json 
