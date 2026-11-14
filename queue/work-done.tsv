@@ -10510,3 +10510,4 @@ verify:learniq:2484:1e6ac179	GREEN 2484,2507,2515,2541; CONFLICT 2486,2521,2542;
 fix:learniq:2541:4c511e4f	conflict fixed: route moved apart from #2521, stray .pyc change reverted; new head 6a283faba, REVERIFY recorded	session-20261114T171807-697deef1	2026-11-14T17:55:37Z
 verify:pipelinq:3818:4fc3dd45	3818 GREEN; no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:55:47Z
 cover:keepiq:c967a31fm10bf:60c2c265	already done: lib/Controller/*.php measures 98.87% line coverage on development (4148 statements, 47 missed; target 95), no tests needed	session-20261114T161750-16a1c558	2026-11-14T17:56:06Z
+fix:keepiq:1793:2ffa6e1a	resolved l10n conflict (union), rebuilt js, tests green; new head 813952b02f96211c4897e0644ea2d66021a4bb7c, REVERIFY recorded	session-20261114T171756-4d62172c	2026-11-14T17:56:20Z
