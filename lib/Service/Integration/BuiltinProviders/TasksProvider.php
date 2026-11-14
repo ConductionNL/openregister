@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
@@ -209,7 +210,13 @@ class TasksProvider extends CoreIntegrationProvider {
 	 * @throws RuntimeException When the task service answers nothing.
 	 */
 	private function createTaskFor(ObjectRef $ref, array $payload): array {
-		$table = new RegisterSchema(register: $this->registerMapper->find(id: $ref->register), schema: $this->schemaMapper->find(id: $ref->schema));
+		// The schema is looked up inside the register first: a slug two apps
+		// share names this register's schema.
+		$register = $this->registerMapper->find(id: $ref->register);
+		$table = new RegisterSchema(
+			register: $register,
+			schema: (new SchemaRefInRegister(schemas: $this->schemaMapper))->find(schemaRef: $ref->schema, register: $register)
+		);
 		$task = $this->taskService->createObjectTask(
 			ref: new ObjectRef(register: $table->registerId(), schema: $table->schemaId(), id: $ref->id),
 			draft: new LinkedTaskDraft(objectTitle: $this->objectTitle(table: $table, objectId: $ref->id), data: self::taskData(payload: $payload))

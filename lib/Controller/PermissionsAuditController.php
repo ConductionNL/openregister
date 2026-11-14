@@ -215,7 +215,11 @@ class PermissionsAuditController extends Controller {
 			return $this->adminGate->refusal(doing: 'read the authorization model');
 		}
 
-		$rows = $this->audit->rows(registers: $this->scope->registers(filter: $register), schemas: $this->scope->schemas(filter: $schema));
+		$registers = $this->scope->registers(filter: $register);
+		$rows = $this->audit->rows(
+			registers: $registers,
+			schemas: $this->scope->schemas(filter: $schema, within: $this->narrowedTo(filter: $register, registers: $registers))
+		);
 
 		return new JSONResponse(
 			['denyEnforcement' => $this->enforcement->current(), 'schemaCount' => count($rows), 'scopes' => $rows]
@@ -445,11 +449,38 @@ class PermissionsAuditController extends Controller {
 	 * @return array<int, array<string, mixed>> The report entries.
 	 */
 	private function previewRules(?string $register, ?string $schema): array {
+		$registers = $this->scope->registers(filter: $register);
 		return array_merge(
-			$this->rulesOf(entities: $this->scope->registers(filter: $register), level: 'register'),
-			$this->rulesOf(entities: $this->scope->schemas(filter: $schema), level: 'schema')
+			$this->rulesOf(entities: $registers, level: 'register'),
+			$this->rulesOf(
+				entities: $this->scope->schemas(filter: $schema, within: $this->narrowedTo(filter: $register, registers: $registers)),
+				level: 'schema'
+			)
 		);
 	}//end previewRules()
+
+	/**
+	 * The one register a register filter narrowed the report to, or null.
+	 *
+	 * @param string|null $filter    The register filter.
+	 * @param array       $registers What the filter resolved to.
+	 *
+	 * @return Register|null The register a schema slug is looked up inside, or null without a filter.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function narrowedTo(?string $filter, array $registers): ?Register {
+		if ($filter === null || $filter === '' || count($registers) !== 1) {
+			return null;
+		}
+
+		$only = reset($registers);
+		if (($only instanceof Register) === false) {
+			return null;
+		}
+
+		return $only;
+	}//end narrowedTo()
 
 	/**
 	 * Flatten the deny rules of registers or schemas into report entries.
