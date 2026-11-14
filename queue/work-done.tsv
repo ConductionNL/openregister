@@ -8787,3 +8787,4 @@ fix:pipelinq:3829:0fea8b00	conflict resolved, new head 920af96c, REVERIFY	sessio
 build4:openregister:confidentiality-classification-primitive:c2	partial: PR #10484 render mirror @self.confidentiality (3.1, 4.3) + 6 tests; enforcement wiring 2.2-2.5 and 4.2 left (five RBAC seams, needs own pass)	session-20261114T092644-f8ff8fc9	2026-11-14T10:14:55Z
 review:openregister:10480:1e086e08	APPROVE: dialog-only change for task 3.1, jest 161 green	session-20261114T095639-eb9fb02c	2026-11-14T10:15:03Z
 build4:openregister:connections-daily-report-mail:c2	PR #10485: task 4.1 dialog + action + 9 strings in 37 locales, 15 jest tests; 5.2 e2e left	session-20261114T092658-4bf01f0f	2026-11-14T10:15:50Z
+build4:openregister:ai-translation-with-a-glossary:c2	partial: PR #10486 (3.1 admin section + settings API, 4.1 docs; 3.2 needs the BulkTranslateDialog that does not exist yet, 4.2 e2e)	session-20261114T062156-e8adf8ca	2026-11-14T10:15:56Z
