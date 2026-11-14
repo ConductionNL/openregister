@@ -121,6 +121,7 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | `ObjectsController::crossTablePairs()` (cross-table search) | was (b), now scoped | Each register pairs with its own schema for a shared slug. |
 | `RelatedRowQueryApplier::findSchema()` (`_ref` target schema) | was (b), now scoped | The register the query runs in (`RelatedRowFilterTarget::$register`), via `SchemaRefInRegister::findInRegister()`; the refuse-when-ambiguous chain runs unchanged when the register lacks the slug. |
 | `TranslationController::resolveSchema()` (object completeness) | was (b), now scoped | The object's own register, read through an optional register reader on `TranslationMappers`; ids skip the object read. |
+| `FacetHandler::schemasMatching()` (facet discovery) | was (b), now scoped | The query's `@self.register` when it names one register, read through an optional register reader on `FacetLookups`; a list of registers scopes nothing. |
 
 ### Still class (b): open
 
@@ -130,7 +131,6 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | `RegisterResolverService::findSchema()` (app-config pair) | (b), open | The scoped lookup bypasses the tenant filter, so the explicit-organisation check has to be carried over first. |
 | `SourceRecordResolver::lookupSchemaId()` (survivorship) | (b), open | Also memoised in a static keyed by the bare slug; the key needs the register first. |
 | `UtilityHandler::normalizeEntity()` (migration sides) | (b), open | Each side carries its register; the helper resolves one reference alone. |
-| `FacetHandler::schemasMatching()` | (b), open | The query's `@self.register` is there; no register reader is injected. |
 | `SearchQueryHandler::schemaOrNull()` | (b), open | `buildSearchQuery()` holds the register but passes only the schema down. |
 | `AggregationRunner::loadSchema()` | (b) for `resolveCrossTarget()`, (c) for joins and the no-register `findSchema()` | `$run->register` is held on the cross-schema path. |
 

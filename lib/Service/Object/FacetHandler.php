@@ -35,8 +35,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -82,6 +84,13 @@ class FacetHandler {
 	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
+	 * Reads the query's register, so a schema slug resolves inside it; null in a hand-built test.
+	 *
+	 * @var RegisterMapperInterface|null
+	 */
+	private readonly ?RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor for FacetHandler.
 	 *
 	 * @param FacetLookups $lookups The object and schema lookups facets are computed from.
@@ -106,6 +115,7 @@ class FacetHandler {
 	) {
 		$this->unifiedObjectMapper = $lookups->unifiedObjectMapper;
 		$this->schemaMapper        = $lookups->schemaMapper;
+		$this->registerMapper      = $lookups->registerMapper;
 	}//end __construct()
 
 	/**
@@ -307,7 +317,7 @@ class FacetHandler {
 
 		$schemaFilter = $baseQuery['@self']['schema'] ?? null;
 		if ($schemaFilter !== null) {
-			return $this->schemasMatching(schemaFilter: $schemaFilter);
+			return $this->schemasMatching(schemaFilter: $schemaFilter, register: ($baseQuery['@self']['register'] ?? null));
 		}
 
 		// Null = no limit: collection-wide discovery reads every schema.
@@ -318,18 +328,30 @@ class FacetHandler {
 	 * The schemas a singular `@self[schema]` filter names, without RBAC: schemas are system-level.
 	 *
 	 * @param mixed $schemaFilter A schema id or a list of them.
+	 * @param mixed $register     The query's `@self.register`; one register scopes a slug to its schemas.
 	 *
 	 * @return array<int, mixed> The schemas; none when a single id cannot be loaded.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
 	 */
-	private function schemasMatching(mixed $schemaFilter): array {
+	private function schemasMatching(mixed $schemaFilter, mixed $register = null): array {
 		if (is_array($schemaFilter) === true) {
 			return $this->schemaMapper->findMultiple(ids: $schemaFilter, _rbac: false, _multitenancy: false);
 		}
 
+		// A slug is unique within a register, not across the instance: the
+		// query's one register answers first. A list of registers names no
+		// single one, so it scopes nothing.
+		$within = $register;
+		if (is_array($register) === true) {
+			$within = null;
+		}
+
 		try {
-			return [$this->schemaMapper->find(id: $schemaFilter, _multitenancy: false, _rbac: false)];
+			return [
+				(new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper))
+					->find(schemaRef: $schemaFilter, register: $within, _rbac: false, _multitenancy: false),
+			];
 		} catch (\Exception $e) {
 			return [];
 		}
