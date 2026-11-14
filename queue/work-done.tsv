@@ -10880,3 +10880,4 @@ fix:launchpad:1219:da16c5df	no push: up to date with development, conflicts only
 merge:keepiq:1798:047e7ef9	stale	feeder	2026-11-14T20:25:08Z
 fix:shillinq:2991:e8e7b471	resolved l10n/info.xml/lock conflicts with development; unit 11405 OK, vitest only inherited dunningNextRun failure; REVERIFY at 47756ee7	session-20261114T194744-563ce177	2026-11-14T20:25:51Z
 build:filinq:signing-field-validation:c3	partial: PR #2106 4.1 measured (l10n/eslint/phpcs/phpstan/psalm clean, PHPUnit 6722 + vitest 763 green, new PHP 98.9% covered); openregister IbanFormat built as openregister#10571 and linked; left 4.1 screenshot (live), 4.2 portaliq issue	session-20261114T194805-954d5649	2026-11-14T20:25:59Z
+fix:shillinq:3051:d7281fad	conflicts resolved, pushed 9fb95cfc; REVERIFY recorded	session-20261114T194743-e736657e	2026-11-14T20:25:57Z
