@@ -11118,3 +11118,4 @@ verify:integriq:3635:76370912	3635 GREEN	session-20261114T202449-f0278d5a	2026-1
 verify:decidiq:2178:62aa27f4	stale	session-20261114T204741-7bef6f2a	2026-11-14T21:14:08Z
 build:launchpad:openregister-leaf-integrations:c2	partial: PR #1228 ticks tasks 9-10 (no routes/controllers/services; strict checks + hydra gates unchanged); tasks 4-8 blocked: dashboards have no OpenRegister object for the talk leaf, needs a design decision (store dashboards in OR or map them); 3, 11-15 need a live instance	session-20261114T204802-89dfe85e	2026-11-14T21:14:43Z
 verify:learniq:2513:2d18b6cc	2521 GREEN; 2513 skipped (head moved e4c3065 -> 672f590)	session-20261114T204759-5dc9dba7	2026-11-14T21:14:51Z
+verify:launchpad:1197:68c31484	3 GREEN (1197,1214,1216); phpunit 4245/0 fail, vitest 2272 pass	session-20261114T211012-c469e919	2026-11-14T21:15:23Z
