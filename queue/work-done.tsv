@@ -10905,3 +10905,4 @@ merge:learniq:2493:3be33264	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 
 merge:learniq:2484:e7f1cf8b	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:30Z
 merge:learniq:2486:2e75f19c	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:34Z
 merge:learniq:2543:4f85caa0	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:37Z
+merge:decidiq:2188:2f3d20f4	merge3 tree of 1 decidiq PRs: merged=0 red=1 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:58Z
