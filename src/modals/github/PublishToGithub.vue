@@ -235,17 +235,8 @@ export default {
 			success: false,
 			successMessage: '',
 
-			// Form fields
-			selectedRepository: null,
-			selectedBranch: null,
-			filePath: '',
-			commitMessage: '',
-
-			// Data
-			repositories: [],
-			branches: [],
-			loadingRepositories: true, // Start as true to show loading until repos are loaded
-			loadingBranches: false,
+			...blankPublishForm(),
+			...githubLookups(),
 		}
 	},
 
@@ -542,6 +533,34 @@ export default {
 			}, 4000)
 		},
 	},
+}
+
+/**
+ * The publish form's fields before anything is chosen.
+ *
+ * @return {object} The fields
+ */
+function blankPublishForm() {
+	return {
+		selectedRepository: null,
+		selectedBranch: null,
+		filePath: '',
+		commitMessage: '',
+	}
+}
+
+/**
+ * The repositories and branches the form looks up, before they are loaded.
+ *
+ * @return {object} The lookup state
+ */
+function githubLookups() {
+	return {
+		repositories: [],
+		branches: [],
+		loadingRepositories: true, // Start as true to show loading until repos are loaded
+		loadingBranches: false,
+	}
 }
 </script>
 
