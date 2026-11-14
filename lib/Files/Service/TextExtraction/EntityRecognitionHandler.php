@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\CapacitySuggester;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsDirectory;
+use OCA\OpenRegister\Service\Anonymisation\PersonRegisterMatcher;
+use OCA\OpenRegister\Service\Anonymisation\PersonRegisterRun;
 use OCA\OpenRegister\Service\Anonymisation\TextDisclosureSource;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
@@ -151,6 +153,7 @@ class EntityRecognitionHandler {
 	 * @param FileSettingsHandler|null  $fileSettings The organisation's detection threshold (REQ-ADI-007).
 	 * @param JurisdictionPatternSets   $patternSets The jurisdiction pattern sets and their merge.
 	 * @param OfficialsDirectory|null   $officials   The register of officials a person's capacity is read from (REQ-DKP-001).
+	 * @param PersonRegisterMatcher|null $personRegisters The persons and place registers a person is matched against (REQ-DKP-003).
 	 */
 	public function __construct(
 		private readonly EntityRecognitionStores $stores,
@@ -159,6 +162,7 @@ class EntityRecognitionHandler {
 		private readonly ?FileSettingsHandler $fileSettings=null,
 		private readonly JurisdictionPatternSets $patternSets=new JurisdictionPatternSets(),
 		private readonly ?OfficialsDirectory $officials=null,
+		private readonly ?PersonRegisterMatcher $personRegisters=null,
 	) {
 	}//end __construct()
 
@@ -430,15 +434,18 @@ class EntityRecognitionHandler {
 	 * @param array           $detectedEntities Array of detected entity data from detection methods.
 	 * @param ChunkEntityScan $scan             The chunk, its text, the method and the context window.
 	 *
-	 * @return array{entities_found: int, relations_created: int, entities: array} Storage results.
+	 * @return array{entities_found: int, relations_created: int, entities: array, person_register: array} Storage results.
 	 */
 	private function storeDetectedEntities(array $detectedEntities, ChunkEntityScan $scan): array {
 		$entitiesFound = 0;
 		$relationsCreated = 0;
 		$storedEntities = [];
 		$capacity = $this->capacityRun(detectedEntities: $detectedEntities);
+		$registers = $this->personRegisterRun(detectedEntities: $detectedEntities);
 
 		foreach ($detectedEntities as $detected) {
+			// REQ-DKP-003: matched against the registers before it is stored, whatever method detected it.
+			$detected = $registers->apply(detected: $detected);
 			try {
 				$storedEntities[] = $this->storeDetectedEntity(detected: $detected, scan: $scan, capacity: $capacity);
 				$entitiesFound++;
@@ -458,12 +465,71 @@ class EntityRecognitionHandler {
 			}//end try
 		}//end foreach
 
+		$this->logPersonRegisterRun(run: $registers, scan: $scan);
+
 		return [
 			'entities_found' => $entitiesFound,
 			'relations_created' => $relationsCreated,
 			'entities' => $storedEntities,
+			'person_register' => $registers->summary(),
 		];
 	}//end storeDetectedEntities()
+
+	/**
+	 * The persons and place registers for one batch of detections, read once;
+	 * a run that changes nothing when no person was detected or no register is configured.
+	 *
+	 * @param array $detectedEntities The detected entities.
+	 *
+	 * @return PersonRegisterRun
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.3
+	 */
+	private function personRegisterRun(array $detectedEntities): PersonRegisterRun {
+		if ($this->personRegisters === null || $this->fileSettings === null || $this->hasPerson(detectedEntities: $detectedEntities) === false) {
+			return PersonRegisterRun::notConfigured();
+		}
+
+		return $this->personRegisters->run(
+			personRegister: $this->fileSettings->personRegister(),
+			boost: $this->fileSettings->personRegisterBoost(),
+			placeRegister: $this->fileSettings->placeRegister()
+		);
+	}//end personRegisterRun()
+
+	/**
+	 * Record a run's persons register, purpose and number of lookups (REQ-DKP-003).
+	 *
+	 * @param PersonRegisterRun $run  The run.
+	 * @param ChunkEntityScan   $scan The chunk scanned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.3
+	 */
+	private function logPersonRegisterRun(PersonRegisterRun $run, ChunkEntityScan $scan): void {
+		$this->logger->info(
+			message: '[EntityRecognitionHandler] Persons register lookup',
+			context: ['chunk_id' => $scan->chunk->getId(), 'method' => $scan->method] + $run->summary()
+		);
+	}//end logPersonRegisterRun()
+
+	/**
+	 * Whether a batch of detections holds a PERSON.
+	 *
+	 * @param array $detectedEntities The detected entities.
+	 *
+	 * @return boolean
+	 */
+	private function hasPerson(array $detectedEntities): bool {
+		foreach ($detectedEntities as $detected) {
+			if (($detected['type'] ?? null) === self::ENTITY_TYPE_PERSON) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasPerson()
 
 	/**
 	 * Store one detected entity and the relation linking it to the chunk.
@@ -494,6 +560,10 @@ class EntityRecognitionHandler {
 		$relation->setContext($this->sanitizeUtf8(value: $context));
 		$relation->setCreatedAt(new DateTime());
 		$this->suggestCapacity(relation: $relation, detected: $detected, context: $context, capacity: $capacity);
+		$relation->setPersonMatch($detected['personMatch']['source'] ?? null);
+		if (($detected['uncertain'] ?? false) === true) {
+			$relation->setUncertain(true);
+		}
 
 		$this->setRelationSource(relation: $relation, chunk: $chunk);
 
@@ -516,15 +586,7 @@ class EntityRecognitionHandler {
 	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1.3
 	 */
 	private function capacityRun(array $detectedEntities): ?array {
-		$hasPerson = false;
-		foreach ($detectedEntities as $detected) {
-			if (($detected['type'] ?? null) === self::ENTITY_TYPE_PERSON) {
-				$hasPerson = true;
-				break;
-			}
-		}
-
-		if ($hasPerson === false) {
+		if ($this->hasPerson(detectedEntities: $detectedEntities) === false) {
 			return null;
 		}
 

@@ -36,6 +36,9 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsDirectory;
+use OCA\OpenRegister\Service\Anonymisation\PersonRegisterMatcher;
+use OCA\OpenRegister\Service\Anonymisation\RegisterNameReader;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
@@ -44,7 +47,9 @@ use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Container\ContainerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
@@ -71,7 +76,7 @@ class EntityRecognitionCapacityTest extends TestCase {
 		return new FileSettingsHandler($appConfig);
 	}//end fileSettings()
 
-	private function handler(?FileSettingsHandler $settings, ?OfficialsDirectory $officials): EntityRecognitionHandler {
+	private function handler(?FileSettingsHandler $settings, ?OfficialsDirectory $officials, ?PersonRegisterMatcher $registers=null): EntityRecognitionHandler {
 		$qb = $this->createMock(IQueryBuilder::class);
 		$expr = $this->createMock(IExpressionBuilder::class);
 		foreach (['select', 'from', 'where', 'andWhere', 'setMaxResults'] as $method) {
@@ -114,7 +119,8 @@ class EntityRecognitionCapacityTest extends TestCase {
 			),
 			logger: $this->createMock(LoggerInterface::class),
 			fileSettings: $settings,
-			officials: $officials
+			officials: $officials,
+			personRegisters: $registers
 		);
 	}//end handler()
 
@@ -126,7 +132,7 @@ class EntityRecognitionCapacityTest extends TestCase {
 	 *
 	 * @return array The storage result.
 	 */
-	private function store(EntityRecognitionHandler $handler, array $detected): array {
+	private function store(EntityRecognitionHandler $handler, array $detected, string $method='hybrid'): array {
 		$chunk = $this->getMockBuilder(Chunk::class)->addMethods(['getId', 'getSourceType', 'getSourceId'])->getMock();
 		$chunk->method('getId')->willReturn(3);
 		$chunk->method('getSourceType')->willReturn('file');
@@ -135,7 +141,7 @@ class EntityRecognitionCapacityTest extends TestCase {
 		return (new ReflectionMethod(EntityRecognitionHandler::class, 'storeDetectedEntities'))->invoke(
 			$handler,
 			$detected,
-			new ChunkEntityScan(chunk: $chunk, text: self::LETTER, method: 'hybrid', contextWindow: 20)
+			new ChunkEntityScan(chunk: $chunk, text: self::LETTER, method: $method, contextWindow: 20)
 		);
 	}//end store()
 
@@ -231,4 +237,80 @@ class EntityRecognitionCapacityTest extends TestCase {
 		$this->assertSame(['public-office', 'role-words'], [$this->inserted[0]->getCapacity(), $this->inserted[0]->getCapacitySource()]);
 		$this->assertSame(['professional', 'officials-register'], [$this->inserted[1]->getCapacity(), $this->inserted[1]->getCapacitySource()]);
 	}//end testTheRegisterIsReadOncePerBatch()
+	/**
+	 * The detection methods every PERSON candidate comes from.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function methods(): array {
+		return [
+			'regex' => ['regex'],
+			'presidio' => ['presidio'],
+			'openanonymiser' => ['openanonymiser'],
+			'llm' => ['llm'],
+			'hybrid' => ['hybrid'],
+		];
+	}//end methods()
+
+	/**
+	 * Whatever method detected them, persons are matched against the registers before they are stored (REQ-DKP-003).
+	 *
+	 * @param string $method The detection method.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('methods')]
+	public function testTheMatcherRunsForEveryMethod(string $method): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->expects($this->exactly(2))->method('findAll')->willReturnCallback(
+			static fn (array $config): array => match ($config['filters']['schema']) {
+				'personen' => [['id' => 'rec-1', 'naam' => 'J. Bakker']],
+				'straten' => [['id' => 'str-1', 'naam' => 'P. de Vriesstraat']],
+				default => [],
+			}
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($objects);
+		$matcher = new PersonRegisterMatcher(
+			reader: new RegisterNameReader(container: $container, contacts: $this->createMock(\OCP\Contacts\IManager::class)),
+			logger: $this->createMock(LoggerInterface::class)
+		);
+		$settings = $this->fileSettings(
+			anonymisation: [
+				'personRegister' => ['type' => 'schema', 'register' => 'brp', 'schema' => 'personen', 'nameProperty' => 'naam', 'purpose' => 'anonimiseren'],
+				'personRegisterBoost' => 0.05,
+				'placeRegister' => ['type' => 'schema', 'register' => 'bag', 'schema' => 'straten', 'nameProperty' => 'naam'],
+			]
+		);
+
+		$result = $this->store(
+			handler: $this->handler(settings: $settings, officials: null, registers: $matcher),
+			detected: [self::person(name: 'J. Bakker'), self::person(name: 'P. de Vries')],
+			method: $method
+		);
+
+		$this->assertCount(2, $this->inserted);
+		$this->assertSame($method, $this->inserted[0]->getDetectionMethod());
+		$this->assertSame(0.95, $this->inserted[0]->getConfidence());
+		$this->assertSame('schema:brp/personen', $this->inserted[0]->getPersonMatch());
+		$this->assertNull($this->inserted[0]->getUncertain());
+		$this->assertSame(0.9, $this->inserted[1]->getConfidence());
+		$this->assertNull($this->inserted[1]->getPersonMatch());
+		$this->assertTrue($this->inserted[1]->getUncertain());
+		$this->assertSame(['personRegister' => 'schema:brp/personen', 'purpose' => 'anonimiseren', 'lookups' => 2], $result['person_register']);
+		$this->assertStringNotContainsString('rec-1', (string) json_encode($this->inserted[0]));
+	}//end testTheMatcherRunsForEveryMethod()
+
+	/**
+	 * Without a persons register the run records not-configured and the confidence is unchanged.
+	 *
+	 * @return void
+	 */
+	public function testWithoutARegisterTheRunRecordsNotConfigured(): void {
+		$result = $this->store(handler: $this->handler(settings: null, officials: null), detected: [self::person(name: 'J. Bakker')]);
+
+		$this->assertSame(['personRegister' => 'not-configured', 'purpose' => null, 'lookups' => 0], $result['person_register']);
+		$this->assertSame(0.9, $this->inserted[0]->getConfidence());
+		$this->assertNull($this->inserted[0]->getPersonMatch());
+	}//end testWithoutARegisterTheRunRecordsNotConfigured()
 }//end class
