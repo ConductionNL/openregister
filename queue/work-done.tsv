@@ -9480,3 +9480,4 @@ build:learniq:enrolment-sync-classes-from-student-administration:c2	partial: no 
 merge:shillinq:2959:cbd07419	merge3 tree of 10 shillinq PRs: merged=7 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T14:30:18Z
 verify:pipelinq:3818:598de0ef	3818 GREEN, 3821 CONFLICT (l10n, after 3818)	session-20261114T141728-9a5d03fc	2026-11-14T14:30:25Z
 merge:shillinq:2972:3aeca5c8	merge3 tree of 10 shillinq PRs: merged=7 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T14:30:30Z
+merge:shillinq:2987:563fcc88	merge3 tree of 10 shillinq PRs: merged=7 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T14:30:33Z
