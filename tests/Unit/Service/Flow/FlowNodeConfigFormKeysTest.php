@@ -82,7 +82,9 @@ class FlowNodeConfigFormKeysTest extends TestCase {
 		$found = array_keys(self::formNodes());
 		$expected = [
 			'TriggerObjectNode', 'TriggerScheduleNode', 'TriggerManualNode', 'EndNode', 'WaitNode', 'FilterNode',
-			'MergeNode', 'ExplodeNode', 'IterateNode', 'SubFlowNode', 'AwaitSignalNode',
+			'MergeNode', 'ExplodeNode', 'IterateNode', 'SubFlowNode', 'AwaitSignalNode', 'SetFieldsNode', 'MapNode',
+			'SwitchNode', 'RouterNode', 'LoopNode', 'FlowStateNode', 'ObjectReadNode', 'LinkObjectNode', 'TransitionNode',
+			'ActionInputsNode',
 		];
 		foreach ($expected as $node) {
 			$this->assertContains($node, $found);
@@ -151,6 +153,48 @@ class FlowNodeConfigFormKeysTest extends TestCase {
 				'flowId' => ['select', true, '/apps/openregister/api/flows'],
 				'wait' => ['boolean', false, null],
 				'fanOut' => ['boolean', false, null],
+			]],
+			'edit fields keeps its field maps in the JSON pane' => [$nodes . 'SetFieldsNode', [
+				'keepOnlySet' => ['boolean', false, null],
+			]],
+			'map names a stored mapping' => [$nodes . 'MapNode', [
+				'mapping' => ['text', true, null],
+			]],
+			'switch reads its conditions off its edges' => [$nodes . 'SwitchNode', []],
+			'action inputs reads the run, not its config' => [$nodes . 'ActionInputsNode', []],
+			'route keeps its rules in the JSON pane' => [$nodes . 'RouterNode', [
+				'default' => ['text', false, null],
+			]],
+			'batch needs a size' => [$nodes . 'LoopNode', [
+				'batchSize' => ['number', true, null],
+			]],
+			'flow state keeps its JSON values in the JSON pane' => [$nodes . 'FlowStateNode', [
+				'operation' => ['text', true, null],
+				'key' => ['text', false, null],
+				'as' => ['text', false, null],
+				'from' => ['text', false, null],
+				'slots' => ['text', false, null],
+				'capacity' => ['number', false, null],
+				'leaseSeconds' => ['number', false, null],
+				'holder' => ['text', false, null],
+				'slot' => ['text', false, null],
+			]],
+			'object read picks a register and schema' => [$nodes . 'ObjectReadNode', [
+				'register' => ['select', true, '/apps/openregister/api/registers'],
+				'schema' => ['select', true, '/apps/openregister/api/schemas'],
+				'fanOut' => ['boolean', false, null],
+				'limit' => ['number', false, null],
+				'output' => ['text', false, null],
+			]],
+			'link object names a target or a handoff, neither required alone' => [$nodes . 'LinkObjectNode', [
+				'register' => ['select', false, '/apps/openregister/api/registers'],
+				'schema' => ['select', false, '/apps/openregister/api/schemas'],
+				'relation' => ['text', false, null],
+				'handoff' => ['text', false, null],
+			]],
+			'transition names its action' => [$nodes . 'TransitionNode', [
+				'action' => ['text', true, null],
+				'object' => ['text', false, null],
 			]],
 		];
 	}//end newForms()

@@ -55,20 +55,93 @@ class AgentRunRequestedEvent extends Event {
 	private string $correlationId;
 
 	/**
+	 * The triggering object.
+	 *
+	 * @var ObjectRef
+	 */
+	private readonly ObjectRef $subject;
+
+	/**
+	 * The agent, skill, rendered prompt and result field.
+	 *
+	 * @var AgentRunInstruction
+	 */
+	private readonly AgentRunInstruction $instruction;
+
+	/**
+	 * The approval gate, dispatch mode and owning flow.
+	 *
+	 * @var AgentRunDispatch
+	 */
+	private readonly AgentRunDispatch $dispatch;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectRef           $subject     Register, schema and UUID of the triggering object.
-	 * @param AgentRunInstruction $instruction The agent, skill, rendered prompt and result field.
-	 * @param AgentRunDispatch    $dispatch    The approval gate, dispatch mode and owning flow.
+	 * Takes main's ObjectRef, AgentRunInstruction and AgentRunDispatch, or the release's ten separate
+	 * values, by name or by position (strings in the first three slots); value objects win.
+	 *
+	 * @param ObjectRef|string|null           $subject          Register, schema and UUID of the triggering object; a string here is the
+	 *                                                          release's positional `$subjectUuid`.
+	 * @param AgentRunInstruction|string|null $instruction      The agent, skill, rendered prompt and result field; a string here is the
+	 *                                                          release's positional `$subjectRegister`.
+	 * @param AgentRunDispatch|string|null    $dispatch         The approval gate, dispatch mode and owning flow; a string here is the
+	 *                                                          release's positional `$subjectSchema`.
+	 * @param string|null                     $agent            The agent to run.
+	 * @param string|null                     $skill            The skill it runs with.
+	 * @param string|null                     $prompt           The rendered prompt.
+	 * @param string|null                     $resultField      The field the result is written to.
+	 * @param bool                            $requiresApproval Whether the run waits for an approval.
+	 * @param string|null                     $mode             The dispatch mode.
+	 * @param string|null                     $flowName         The owning flow.
+	 * @param string|null                     $subjectUuid      The triggering object's UUID.
+	 * @param string|null                     $subjectRegister  The triggering object's register.
+	 * @param string|null                     $subjectSchema    The triggering object's schema.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's value objects plus the release's separate values.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    The release's approval flag.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function __construct(
-		private readonly ObjectRef $subject,
-		private readonly AgentRunInstruction $instruction,
-		private readonly AgentRunDispatch $dispatch,
+		ObjectRef|string|null $subject = null,
+		AgentRunInstruction|string|null $instruction = null,
+		AgentRunDispatch|string|null $dispatch = null,
+		?string $agent = null,
+		?string $skill = null,
+		?string $prompt = null,
+		?string $resultField = null,
+		bool $requiresApproval = false,
+		?string $mode = null,
+		?string $flowName = null,
+		?string $subjectUuid = null,
+		?string $subjectRegister = null,
+		?string $subjectSchema = null,
 	) {
 		parent::__construct();
+		if (is_string($subject) === true) {
+			$subjectUuid ??= $subject;
+			$subject       = null;
+		}
+
+		if (is_string($instruction) === true) {
+			$subjectRegister ??= $instruction;
+			$instruction       = null;
+		}
+
+		if (is_string($dispatch) === true) {
+			$subjectSchema ??= $dispatch;
+			$dispatch        = null;
+		}
+
+		$this->subject     = ($subject ?? new ObjectRef(register: (string) $subjectRegister, schema: (string) $subjectSchema, id: (string) $subjectUuid));
+		$this->instruction = ($instruction ?? new AgentRunInstruction(
+			agent: (string) $agent,
+			skill: $skill,
+			prompt: (string) $prompt,
+			resultField: (string) $resultField
+		));
+		$this->dispatch    = ($dispatch ?? new AgentRunDispatch(requiresApproval: $requiresApproval, mode: (string) $mode, flowName: (string) $flowName));
 		$this->correlationId = Uuid::v4()->toRfc4122();
 	}//end __construct()
 

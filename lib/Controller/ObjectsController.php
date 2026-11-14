@@ -5566,6 +5566,102 @@ class ObjectsController extends Controller {
 	}//end move()
 
 	/**
+	 * Copy an object: a new object, with a new uuid, from the source's fields and the overrides.
+	 *
+	 * 🔴 A COPY IS A NEW IDENTITY, NOT A MOVE. It starts its own audit trail,
+	 * versions, files and notes; {@see move()} is the act that keeps them.
+	 *
+	 * The source is read under the caller's own permissions (404 when it
+	 * cannot be read), the caller needs `create` on the schema (403), and the
+	 * body goes through the normal create path, so every create rule and
+	 * validation applies (a refused body writes nothing). The identity, the
+	 * `@self` metadata and platform-minted properties are never copied
+	 * ({@see \OCA\OpenRegister\Service\Object\CopyPayload}). Copying links
+	 * (`include`) is not offered yet and is refused with 422 rather than
+	 * silently left out.
+	 *
+	 * @param string                    $register      The register.
+	 * @param string                    $schema        The schema.
+	 * @param string                    $id            The object to copy.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse 201 with `{object, links}`, or a 4xx naming what stood in the way.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
+	 */
+	#[NoAdminRequired]
+	public function copy(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+		}
+
+		$refusal = $this->copyRequestRefusal();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$source = $this->presenceObjectOrRefusal(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+		if ($source instanceof JSONResponse) {
+			return $source;
+		}
+
+		try {
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
+
+		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		if ($permissions->hasPermission(schema: $resolved['schemaEntity'], action: 'create') === false) {
+			return new JSONResponse(data: ['error' => 'You may not create objects in this schema.'], statusCode: 403);
+		}
+
+		$overrides = $this->request->getParam('overrides', []);
+		if (is_array($overrides) === false) {
+			$overrides = [];
+		}
+
+		$body = (new \OCA\OpenRegister\Service\Object\CopyPayload())->of(
+			source: $source->getObject(),
+			overrides: $overrides,
+			schema: $resolved['schemaEntity']
+		);
+		$controls = new ObjectCreateControls(request: $this->request, caller: $this->caller());
+		$create  = new ObjectCreate(object: $body, resolved: $resolved, objectService: $objectService, controls: $controls);
+		$created = $this->createdResponse(create: $create);
+		if ($created->getStatus() !== 201) {
+			return $created;
+		}
+
+		return new JSONResponse(
+			data: ['object' => $created->getData(), 'links' => ['relationRows' => [], 'incoming' => [], 'files' => []]],
+			statusCode: 201
+		);
+	}//end copy()
+
+	/**
+	 * The refusal of a copy request that asks for what a copy does not do yet.
+	 *
+	 * @return JSONResponse|null 422 for links or an upsert key; null when the request may proceed.
+	 *
+	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
+	 */
+	private function copyRequestRefusal(): ?JSONResponse {
+		$include = $this->request->getParam('include', []);
+		if (is_array($include) === true && $include !== []) {
+			return new JSONResponse(data: ['error' => 'Copying links is not available yet; copy without include.'], statusCode: 422);
+		}
+
+		if (trim((string) $this->request->getParam('_upsertOn', '')) !== '') {
+			return new JSONResponse(data: ['error' => 'A copy always creates a new object; it cannot upsert.'], statusCode: 422);
+		}
+
+		return null;
+	}//end copyRequestRefusal()
+
+	/**
 	 * Move an object to the register and schema the request names.
 	 *
 	 * @param ObjectEntity $object The object.
@@ -5618,16 +5714,65 @@ class ObjectsController extends Controller {
 	 */
 	private function moveEnds(array $source, array $target): array|null {
 		$registers = $this->services->store->registerMapper;
-		$schemas = $this->services->store->schemaMapper;
 		try {
+			$fromRegister = $registers->find($source[0]);
+			$toRegister = $registers->find($target[0]);
 			return [
-				'from' => ['register' => $registers->find($source[0]), 'schema' => $schemas->find($source[1])],
-				'to' => ['register' => $registers->find($target[0]), 'schema' => $schemas->find($target[1])],
+				'from' => ['register' => $fromRegister, 'schema' => $this->schemaInRegister(schemaRef: $source[1], register: $fromRegister)],
+				'to' => ['register' => $toRegister, 'schema' => $this->schemaInRegister(schemaRef: $target[1], register: $toRegister)],
 			];
 		} catch (\Throwable $e) {
 			return null;
 		}
 	}//end moveEnds()
+
+	/**
+	 * A schema reference resolved inside the register the caller named.
+	 *
+	 * A slug is looked up among the register's own schemas first: the global
+	 * `find()` matches `LOWER(slug)` across every register and returns whichever
+	 * row its tie-break orders first, so a generic slug such as `agent` landed in
+	 * another app's register. A numeric id or a uuid is no slug and goes straight
+	 * to `find()`, as does a slug the register does not carry (the pattern of
+	 * `ObjectService::setSchema()`, class (b) of register-scoped-schema-slug-resolution).
+	 *
+	 * @param string|int    $schemaRef The schema's id, uuid or slug.
+	 * @param Register|null $register  The register the caller named, when known.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema does not exist.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function schemaInRegister(string|int $schemaRef, ?Register $register): Schema {
+		$schemas = $this->services->store->schemaMapper;
+		if ($register !== null && is_string($schemaRef) === true && is_numeric($schemaRef) === false) {
+			$scoped = $schemas->findBySlugInIds(slug: $schemaRef, schemaIds: ($register->getSchemas() ?? []));
+			if ($scoped !== null) {
+				return $scoped;
+			}
+		}
+
+		return $schemas->find($schemaRef);
+	}//end schemaInRegister()
+
+	/**
+	 * The register a reference names, or null when it cannot be read.
+	 *
+	 * @param string|int $registerRef The register's id, uuid or slug.
+	 *
+	 * @return Register|null The register.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function registerOrNull(string|int $registerRef): ?Register {
+		try {
+			return $this->services->store->registerMapper->find($registerRef);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end registerOrNull()
 
 	/**
 	 * The answer to a move that ran.
@@ -6054,6 +6199,7 @@ class ObjectsController extends Controller {
 			'csv' => $this->csvExport(export: $export),
 			'tsv' => $this->tsvExport(export: $export),
 			'json' => $this->jsonExport(export: $export),
+			'xml' => $this->xmlExport(export: $export),
 			'pdf' => $this->pdfExport(export: $export),
 			'ods' => $this->odsExport(export: $export),
 			default => $this->excelExport(export: $export),
@@ -6176,6 +6322,25 @@ class ObjectsController extends Controller {
 
 		return $export->download(format: 'json', content: $content);
 	}//end jsonExport()
+
+	/**
+	 * Export as XML.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	private function xmlExport(ObjectExport $export): DataDownloadResponse {
+		$content = $this->services->transfer->exportService->exportToXml(
+			request: $this->callerExportRequest(export: $export),
+		);
+
+		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'xml', rowCount: self::countXmlExportRows(xml: $content)));
+
+		return $export->download(format: 'xml', content: $content);
+	}//end xmlExport()
 
 	/**
 	 * Export as PDF; an export over the row limit or without an office server is refused.
@@ -6510,6 +6675,35 @@ class ObjectsController extends Controller {
 	}//end countJsonExportRows()
 
 	/**
+	 * The number of `<object>` records directly under the root of an exported XML document.
+	 *
+	 * @param string $xml The document.
+	 *
+	 * @return int The record count, 0 when the document cannot be read.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	private static function countXmlExportRows(string $xml): int {
+		$previous = libxml_use_internal_errors(true);
+		$reader = new \XMLReader();
+		$count = 0;
+		if ($reader->XML($xml) === true) {
+			while ($reader->read() === true) {
+				if ($reader->nodeType === \XMLReader::ELEMENT && $reader->depth === 1 && $reader->name === 'object') {
+					$count++;
+				}
+			}
+
+			$reader->close();
+		}
+
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous);
+
+		return $count;
+	}//end countXmlExportRows()
+
+	/**
 	 * Sum the data rows across every sheet of an exported spreadsheet.
 	 *
 	 * @param \PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet The spreadsheet.
@@ -6615,7 +6809,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
 
-		$schemaEntity = $this->services->store->schemaMapper->find($source->schema);
+		$schemaEntity = $this->schemaInRegister(schemaRef: $source->schema, register: $this->registerOrNull(registerRef: $source->register));
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
 		$mayDeleteSource = $permissions->hasPermission(

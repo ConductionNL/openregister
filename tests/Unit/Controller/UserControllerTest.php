@@ -891,4 +891,107 @@ class UserControllerTest extends TestCase {
 		$this->assertEquals('Failed to export data', $result->getData()['error']);
 		$this->assertStringNotContainsString('/var/www', $result->getData()['error']);
 	}
+
+	// ── login() — second factor (platform-provided-capabilities REQ-PPC-002, REQ-PPC-004) ──
+
+	/**
+	 * A controller whose second-factor registry answers $states, or throws.
+	 *
+	 * @param array<string, bool>|\Throwable $states The provider states.
+	 *
+	 * @return \OCA\OpenRegister\Controller\UserController
+	 */
+	private function controllerWithSecondFactor(array|\Throwable $states): \OCA\OpenRegister\Controller\UserController {
+		$registry = $this->createMock(\OCP\Authentication\TwoFactorAuth\IRegistry::class);
+		if ($states instanceof \Throwable) {
+			$registry->method('getProviderStates')->willThrowException($states);
+		} else {
+			$registry->method('getProviderStates')->willReturn($states);
+		}
+
+		return UserControllerFactory::create(
+			'openregister',
+			$this->request,
+			$this->userService,
+			$this->securityService,
+			$this->userManager,
+			$this->userSession,
+			$this->logger,
+			$this->l10n,
+			$registry
+		);
+	}
+
+	/**
+	 * A valid password, checked through IUserManager, with the user and request set up.
+	 *
+	 * @return IUser
+	 */
+	private function validPassword(): IUser {
+		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
+		$user->method('getUID')->willReturn('anna');
+		$this->securityService->method('getClientIpAddress')->willReturn('127.0.0.1');
+		$this->securityService->method('validateLoginCredentials')->willReturn(
+			['valid' => true, 'credentials' => ['username' => 'anna', 'password' => 'correct']]
+		);
+		$this->securityService->method('checkLoginRateLimit')->willReturn(['allowed' => true]);
+		$this->userManager->expects($this->once())->method('checkPassword')->with('anna', 'correct')->willReturn($user);
+		$this->userService->method('buildUserDataArray')->willReturn(['uid' => 'anna']);
+
+		return $user;
+	}
+
+	/**
+	 * A password alone does not sign in a user with a second factor: no
+	 * session, no recorded success, and the answer says the factor is required.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-004
+	 */
+	public function testAPasswordAloneDoesNotPassASecondFactor(): void {
+		$this->validPassword();
+		$this->userSession->expects($this->never())->method('setUser');
+		$this->securityService->expects($this->never())->method('recordSuccessfulLogin');
+
+		$result = $this->controllerWithSecondFactor(['totp' => true, 'backup_codes' => false])->login();
+
+		$this->assertSame(401, $result->getStatus());
+		$this->assertSame('second_factor_required', $result->getData()['error']);
+		$this->assertFalse($result->getData()['session_created']);
+	}
+
+	/**
+	 * A user whose factors are all switched off signs in with the password,
+	 * checked through Nextcloud's user manager.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-002
+	 */
+	public function testWithoutAnEnabledFactorThePasswordSignsIn(): void {
+		$user = $this->validPassword();
+		$this->userSession->expects($this->once())->method('setUser')->with($user);
+
+		$result = $this->controllerWithSecondFactor(['totp' => false])->login();
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertTrue($result->getData()['session_created']);
+	}
+
+	/**
+	 * When the factor states cannot be read the login is refused, never let through.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableFactorRegistryRefusesTheLogin(): void {
+		$this->validPassword();
+		$this->userSession->expects($this->never())->method('setUser');
+
+		$result = $this->controllerWithSecondFactor(new \RuntimeException('db down'))->login();
+
+		$this->assertSame(401, $result->getStatus());
+		$this->assertSame('second_factor_required', $result->getData()['error']);
+	}
 }

@@ -33,9 +33,12 @@ use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Service\TextExtraction\ArchiveExtraction;
+use OCA\OpenRegister\Files\Service\TextExtraction\ArchiveTextExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\SourceText;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling;
 use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects;
@@ -127,6 +130,15 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private const RECURSIVE_CHARACTER = 'RECURSIVE_CHARACTER';
 
 	/**
+	 * How each archive member is chunked: as a single file is.
+	 *
+	 * @var array<string, int|string>
+	 */
+	private const ARCHIVE_CHUNKING = [
+		'chunk_size' => self::DEFAULT_CHUNK_SIZE, 'chunk_overlap' => self::DEFAULT_CHUNK_OVERLAP, 'strategy' => self::RECURSIVE_CHARACTER,
+	];
+
+	/**
 	 * Fixed size splitting strategy
 	 *
 	 * @var string
@@ -189,12 +201,85 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			return;
 		}
 
+		// A file above the ceiling is never opened: it keeps its metadata chunk,
+		// so it stays findable by name, and says why it holds no text.
+		$ceiling = $this->extractionCeiling();
+		if ($ceiling->admits(size: ($ncFile['size'] ?? null)) === false) {
+			$this->persistSkippedFile(fileId: $fileId, ncFile: $ncFile, ceiling: $ceiling);
+			return;
+		}
+
+		// An archive is indexed member by member (REQ-AMS-002), or reported
+		// when its type is not opened (REQ-AMS-003).
+		$mimeType = (string)($ncFile['mimetype'] ?? '');
+		if ($this->readers->archives !== null
+			&& (ArchiveTextExtractor::isZip(mimeType: $mimeType) === true || ArchiveTextExtractor::isUnsupportedArchive(mimeType: $mimeType) === true)
+		) {
+			$this->indexArchive(
+				source: new ExtractionSource(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, method: 'llphant'),
+				sourceTimestamp: $sourceTimestamp,
+				entityTypes: $options->entityTypes
+			);
+			return;
+		}
+
 		// Extract and sanitize the source text payload (includes language metadata).
 		$payload = $this->extractSourceText(
 			source: new ExtractionSource(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, method: 'llphant')
 		);
 		$this->indexFilePayload(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp), entityTypes: $options->entityTypes);
 	}//end extractFile()
+
+	/**
+	 * The extraction ceiling the file settings state; the default when they cannot be read.
+	 *
+	 * @return ExtractionCeiling
+	 */
+	private function extractionCeiling(): ExtractionCeiling {
+		try {
+			return ExtractionCeiling::fromSettings(fileSettings: $this->analysis->settingsService->getFileSettingsOnly());
+		} catch (Throwable $e) {
+			$this->analysis->logger->warning(
+				message: '[TextExtractionService] File settings unreadable, using the default extraction ceiling',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return new ExtractionCeiling(maxBytes: ExtractionCeiling::DEFAULT_BYTES);
+		}
+	}//end extractionCeiling()
+
+	/**
+	 * Store only the metadata chunk of a file above the ceiling, with the status and the ceiling that applied.
+	 *
+	 * @param int                  $fileId  The Nextcloud file id.
+	 * @param array<string, mixed> $ncFile  The file row.
+	 * @param ExtractionCeiling    $ceiling The ceiling that kept it closed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/large-file-handling/specs/file-actions/spec.md#requirement-text-extraction-has-a-stated-ceiling-and-a-file-above-it-stays-findable-req-lfh-001
+	 */
+	private function persistSkippedFile(int $fileId, array $ncFile, ExtractionCeiling $ceiling): void {
+		$payload = [
+			'source_type' => 'file',
+			'source_id' => $fileId,
+			'length' => 0,
+			'method' => 'llphant',
+			'owner' => $ncFile['owner'] ?? null,
+			'organisation' => $ncFile['organisation'] ?? null,
+			'extraction_status' => ExtractionCeiling::SKIPPED_TOO_LARGE,
+			'ceiling_bytes' => $ceiling->maxBytes,
+			'metadata' => [
+				'file_path' => $ncFile['path'] ?? null, 'file_name' => $ncFile['name'] ?? null,
+				'mime_type' => $ncFile['mimetype'] ?? null, 'file_size' => $ncFile['size'] ?? null,
+			],
+		];
+		$this->persistChunksForSource(text: new SourceText(payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time())), chunks: []);
+
+		$this->analysis->logger->info(
+			message: '[TextExtractionService] File above the extraction ceiling; stored its metadata only',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'size' => $ncFile['size'] ?? null, 'ceiling' => $ceiling->maxBytes]
+		);
+	}//end persistSkippedFile()
 
 	/**
 	 * Index text a caller already extracted as the content of a file.
@@ -257,6 +342,89 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'chunkCount' => count($chunks) + 1]
 		);
 	}//end indexFilePayload()
+
+	/**
+	 * Index an archive: each readable member chunked on its own, its chunks
+	 * stored under the archive file with `positionReference.member` set to the
+	 * member path, and the archive report kept on the metadata chunk.
+	 *
+	 * @param ExtractionSource $source          The archive file.
+	 * @param int              $sourceTimestamp The file's mtime.
+	 * @param array|null       $entityTypes     Entity types to detect, null for all.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-what-could-not-be-opened-is-reported-req-ams-003
+	 */
+	private function indexArchive(ExtractionSource $source, int $sourceTimestamp, ?array $entityTypes): void {
+		$ncFile = $source->sourceMeta;
+		$mimeType = (string)($ncFile['mimetype'] ?? '');
+		$extraction = new ArchiveExtraction(archiveType: $mimeType, supported: false);
+		if (ArchiveTextExtractor::isZip(mimeType: $mimeType) === true) {
+			$file = $this->resolveFileNode(fileId: $source->sourceId, owner: $this->homeStorageOwner(storageId: $ncFile['storage_id'] ?? null));
+			$extraction = $this->readers->archives->extractFile(file: $file);
+		}
+
+		$chunks = [];
+		$texts = [];
+		foreach ($extraction->texts() as $member) {
+			if ($this->sanitizeText(text: $member['text']) === '') {
+				continue;
+			}
+
+			$memberPayload = $this->payloadFromText(source: $source, rawText: $member['text']);
+			$texts[] = $memberPayload['text'];
+			foreach ($this->textToChunks(payload: $memberPayload, options: self::ARCHIVE_CHUNKING) as $chunk) {
+				$chunk['chunk_index'] = count($chunks);
+				$chunk['position_reference']['member'] = $member['path'];
+				$chunks[] = $chunk;
+			}
+		}
+
+		$payload = $this->archivePayload(source: $source, text: implode("\n\n", $texts));
+		$payload['archive'] = $extraction->report();
+		$this->persistChunksForSource(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp), chunks: $chunks);
+
+		$this->analysis->logger->debug(
+			message: '[TextExtractionService] Archive indexed',
+			context: [
+				'file' => __FILE__, 'line' => __LINE__, 'fileId' => $source->sourceId, 'status' => $extraction->status(),
+				'members' => count($extraction->texts()), 'unread' => count($extraction->unread()), 'chunkCount' => count($chunks),
+			]
+		);
+
+		if ($chunks !== []) {
+			$this->extractFileEntities(fileId: $source->sourceId, entityTypes: $entityTypes);
+		}
+	}//end indexArchive()
+
+	/**
+	 * The payload of an archive: its members' text joined, or an empty text
+	 * when no member could be read, so the metadata chunk still records it.
+	 *
+	 * @param ExtractionSource $source The archive file.
+	 * @param string           $text   The members' text joined.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function archivePayload(ExtractionSource $source, string $text): array {
+		if ($text !== '') {
+			return $this->payloadFromText(source: $source, rawText: $text);
+		}
+
+		$sourceMeta = $source->sourceMeta;
+		return [
+			'source_type' => $source->sourceType, 'source_id' => $source->sourceId, 'text' => '', 'length' => 0,
+			'checksum' => hash('sha256', ''), 'method' => $source->method, 'owner' => $sourceMeta['owner'] ?? null,
+			'organisation' => $sourceMeta['organisation'] ?? null, 'language' => null, 'language_level' => null,
+			'language_confidence' => null, 'detection_method' => null,
+			'metadata' => [
+				'file_path' => $sourceMeta['path'] ?? null, 'file_name' => $sourceMeta['name'] ?? null,
+				'mime_type' => $sourceMeta['mimetype'] ?? null, 'file_size' => $sourceMeta['size'] ?? null,
+			],
+		];
+	}//end archivePayload()
 
 	/**
 	 * Run entity recognition over a file's stored chunks when it is enabled, then update the
@@ -908,6 +1076,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			$reference['ocrWords'] = $payload['ocr_words'];
 		}
 
+		if (isset($payload['archive']) === true) {
+			// What an archive's extraction could not read (REQ-AMS-003).
+			$reference['archive'] = $payload['archive'];
+		}
+
 		return $reference;
 	}//end metadataPositionReference()
 
@@ -931,7 +1104,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * }
 	 */
 	private function summarizeMetadataPayload(array $payload): array {
-		return [
+		$summary = [
 			'source_type' => $payload['source_type'] ?? null,
 			'source_id' => $payload['source_id'] ?? null,
 			'chunk_checksum' => $payload['checksum'] ?? null,
@@ -944,7 +1117,13 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			// file, or what the caller named, such as `ocr` (#2033).
 			'extraction_method' => $payload['method'] ?? null,
 			'file_metadata' => $payload['metadata'] ?? [],
-		];
+		] + array_intersect_key($payload, array_flip(['extraction_status', 'ceiling_bytes']));
+		if (isset($payload['archive']) === true) {
+			// Member paths and what could not be read stay findable by metadata.
+			$summary['archive'] = $payload['archive'];
+		}
+
+		return $summary;
 	}//end summarizeMetadataPayload()
 
 	/**

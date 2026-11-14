@@ -13,6 +13,7 @@ jest.mock('./configuration/DeleteConfiguration.vue', () => ({ __esModule: true, 
 jest.mock('./configuration/EditConfiguration.vue', () => ({ __esModule: true, default: { name: 'EditConfiguration', template: '<i class="EditConfiguration" />' } }))
 jest.mock('./configuration/ExportConfiguration.vue', () => ({ __esModule: true, default: { name: 'ExportConfiguration', template: '<i class="ExportConfiguration" />' } }))
 jest.mock('./configuration/ImportConfiguration.vue', () => ({ __esModule: true, default: { name: 'ImportConfiguration', template: '<i class="ImportConfiguration" />' } }))
+jest.mock('./gitlab/PublishToGitlab.vue', () => ({ __esModule: true, default: { name: 'PublishToGitlab', template: '<i class="PublishToGitlab" />' } }))
 jest.mock('./configuration/PublishConfiguration.vue', () => ({ __esModule: true, default: { name: 'PublishConfiguration', template: '<i class="PublishConfiguration" />' } }))
 jest.mock('./configuration/ViewConfiguration.vue', () => ({ __esModule: true, default: { name: 'ViewConfiguration', template: '<i class="ViewConfiguration" />' } }))
 jest.mock('./deleted/PurgeMultiple.vue', () => ({ __esModule: true, default: { name: 'PurgeMultiple', template: '<i class="PurgeMultiple" />' } }))
@@ -63,6 +64,7 @@ const ALWAYS = [
 	'ImportConfiguration',
 	'ExportConfiguration',
 	'PublishConfiguration',
+	'PublishToGitlab',
 	'DeleteSchema',
 	'UploadSchema',
 	'DeleteSchemaProperty',

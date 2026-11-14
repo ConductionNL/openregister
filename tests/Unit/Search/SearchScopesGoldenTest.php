@@ -7,6 +7,12 @@
  * for a broad table of inputs before the class was split into smaller
  * methods, so the refactor can be shown to change no result.
  *
+ * Five rows were re-recorded on purpose by the content-search-index second
+ * pass, and only these: an `app:` scope now keeps the schemas that app claims
+ * (none of these rows is claimed, so 06, 07 and 17 keep nothing instead of
+ * everything), and a stored slug is compared in lower case like the token it
+ * is compared with (18 and 22 now also keep the `Person` row).
+ *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -59,8 +65,8 @@ class SearchScopesGoldenTest extends TestCase {
 			'input 03' => ['files', '{"apps":[],"registers":[],"schemas":[],"filesOnly":true,"unparsed":[]}', true, '[1,2,3,3,4]'],
 			'input 04' => ['FILES', '{"apps":[],"registers":[],"schemas":[],"filesOnly":true,"unparsed":[]}', true, '[1,2,3,3,4]'],
 			'input 05' => [' files , files ', '{"apps":[],"registers":[],"schemas":[],"filesOnly":true,"unparsed":[]}', true, '[1,2,3,3,4]'],
-			'input 06' => ['app:procest', '{"apps":["procest"],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[]}', true, '[1,2,3,3,4]'],
-			'input 07' => ['APP: Procest ', '{"apps":["procest"],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[]}', true, '[1,2,3,3,4]'],
+			'input 06' => ['app:procest', '{"apps":["procest"],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[]}', true, '[]'],
+			'input 07' => ['APP: Procest ', '{"apps":["procest"],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[]}', true, '[]'],
 			'input 08' => ['register:crm', '{"apps":[],"registers":["crm"],"schemas":[],"filesOnly":false,"unparsed":[]}', true, '[1,3]'],
 			'input 09' => ['schema:case', '{"apps":[],"registers":[],"schemas":["case"],"filesOnly":false,"unparsed":[]}', true, '[2]'],
 			'input 10' => ['schema:case,register:crm', '{"apps":[],"registers":["crm"],"schemas":["case"],"filesOnly":false,"unparsed":[]}', true, '[1,2,3]'],
@@ -70,12 +76,12 @@ class SearchScopesGoldenTest extends TestCase {
 			'input 14' => ['schema:', '{"apps":[],"registers":[],"schemas":[],"filesOnly":false,"unparsed":["schema:"]}', false, '[1,2,3,3,4]'],
 			'input 15' => ['schema: ', '{"apps":[],"registers":[],"schemas":[],"filesOnly":false,"unparsed":["schema:"]}', false, '[1,2,3,3,4]'],
 			'input 16' => [':x', '{"apps":[],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[":x"]}', false, '[1,2,3,3,4]'],
-			'input 17' => ['app:a:b', '{"apps":["a:b"],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[]}', true, '[1,2,3,3,4]'],
-			'input 18' => ['files,schema:person,colour:blue,app:x', '{"apps":["x"],"registers":[],"schemas":["person"],"filesOnly":true,"unparsed":["colour:blue"]}', true, '[1]'],
+			'input 17' => ['app:a:b', '{"apps":["a:b"],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[]}', true, '[]'],
+			'input 18' => ['files,schema:person,colour:blue,app:x', '{"apps":["x"],"registers":[],"schemas":["person"],"filesOnly":true,"unparsed":["colour:blue"]}', true, '[1,4]'],
 			'input 19' => [',,,', '{"apps":[],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[]}', false, '[1,2,3,3,4]'],
 			'input 20' => [' , ', '{"apps":[],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[]}', false, '[1,2,3,3,4]'],
 			'input 21' => ['register:zaken,schema:note', '{"apps":[],"registers":["zaken"],"schemas":["note"],"filesOnly":false,"unparsed":[]}', true, '[2,3]'],
-			'input 22' => ['schema:person,schema:PERSON', '{"apps":[],"registers":[],"schemas":["person"],"filesOnly":false,"unparsed":[]}', true, '[1]'],
+			'input 22' => ['schema:person,schema:PERSON', '{"apps":[],"registers":[],"schemas":["person"],"filesOnly":false,"unparsed":[]}', true, '[1,4]'],
 			'input 23' => [['schema:case', 'files', '  app:x  ', 5, ''], '{"apps":["x"],"registers":[],"schemas":["case"],"filesOnly":true,"unparsed":["5"]}', true, '[2]'],
 			'input 24' => [[], '{"apps":[],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[]}', false, '[1,2,3,3,4]'],
 			'input 25' => [42, '{"apps":[],"registers":[],"schemas":[],"filesOnly":false,"unparsed":[]}', false, '[1,2,3,3,4]'],

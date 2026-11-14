@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\Files\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
@@ -128,6 +129,22 @@ class FileSettingsControllerCoverageTest extends TestCase {
 
 		$this->assertSame(400, $result->getStatus());
 		$this->assertStringContainsString('xx', $result->getData()['error']);
+	}
+
+	/**
+	 * A refused mask form answers 400 naming the entity type (REQ-PIS-010).
+	 *
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md
+	 */
+	public function testAnUnknownMaskFormIsA400NamingTheType(): void {
+		$this->request->method('getParams')->willReturn(['anonymisation' => ['maskForms' => ['IBAN' => ['form' => 'middle']]]]);
+		$this->settingsService->method('updateFileSettingsOnly')
+			->willThrowException(new UnknownMaskFormException('anonymisation.maskForms.IBAN names an unknown mask form.'));
+
+		$result = $this->controller->updateFileSettings();
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertStringContainsString('IBAN', $result->getData()['error']);
 	}
 
 	public function testUpdateFileSettingsWithStringProviderPassesThrough(): void {

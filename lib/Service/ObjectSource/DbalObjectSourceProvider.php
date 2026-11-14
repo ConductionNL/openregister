@@ -37,6 +37,7 @@ use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -45,6 +46,8 @@ use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
+use OCA\OpenRegister\Service\Dbal\ReadOnlyQueryGuard;
+use OCA\OpenRegister\Service\Dbal\ReadOnlyReadScope;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -97,11 +100,27 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	private readonly DbalAggregator $aggregator;
 
 	/**
+	 * Runs a query-backed read read-only with a statement timeout (design D-2).
+	 *
+	 * @var ReadOnlyReadScope
+	 */
+	private readonly ReadOnlyReadScope $readScope;
+
+	/**
+	 * Refuses a query-backed schema's SQL that is not a single read (design D-1).
+	 *
+	 * @var ReadOnlyQueryGuard
+	 */
+	private readonly ReadOnlyQueryGuard $queryGuard;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SourceMapperInterface $sourceMapper Loads the backing database source.
 	 * @param DbalConnectionFactory $connectionFactory Opens the read-only DBAL connection.
 	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param ReadOnlyReadScope|null $readScope  Runs a query-backed read read-only with a statement timeout.
+	 * @param ReadOnlyQueryGuard|null $queryGuard Refuses a query-backed schema's SQL that is not a single read.
 	 *
 	 * @return void
 	 */
@@ -109,8 +128,12 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		private readonly SourceMapperInterface $sourceMapper,
 		private readonly DbalConnectionFactory $connectionFactory,
 		private readonly LoggerInterface $logger,
+		?ReadOnlyReadScope $readScope = null,
+		?ReadOnlyQueryGuard $queryGuard = null,
 	) {
 		$this->aggregator = new DbalAggregator(logger: $logger);
+		$this->readScope = ($readScope ?? new ReadOnlyReadScope());
+		$this->queryGuard = ($queryGuard ?? new ReadOnlyQueryGuard());
 	}//end __construct()
 
 	/**
@@ -261,7 +284,11 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			(new DbalStatement(qb: $qb, connection: $target->connection))->andEquals(pairs: $pairs);
 			$qb->setMaxResults(1);
 
-			return $qb->executeQuery()->fetchAssociative();
+			return $this->readOf(
+				connection: $target->connection,
+				config: $target->ref->config,
+				read: static fn (): array|false => $qb->executeQuery()->fetchAssociative()
+			);
 		} catch (DbalException $e) {
 			$this->logger->warning('[ObjectSource:dbal-source] query failed for find: ' . $e->getMessage());
 			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
@@ -361,7 +388,11 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			$qb->setMaxResults($limit);
 			$qb->setFirstResult($offset);
 
-			return $qb->executeQuery()->fetchAllAssociative();
+			return $this->readOf(
+				connection: $target->connection,
+				config: $target->ref->config,
+				read: static fn (): array => $qb->executeQuery()->fetchAllAssociative()
+			);
 		} catch (DbalException $e) {
 			$this->logger->warning('[ObjectSource:dbal-source] query failed for findAll: ' . $e->getMessage());
 			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
@@ -442,7 +473,11 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			$qb->select('COUNT(*)')->from($this->fromExpression(connection: $target->connection, config: $target->ref->config));
 			$this->listClauses(target: $target, qb: $qb)->filter(query: $query);
 
-			$total = $qb->executeQuery()->fetchOne();
+			$total = $this->readOf(
+				connection: $target->connection,
+				config: $target->ref->config,
+				read: static fn (): mixed => $qb->executeQuery()->fetchOne()
+			);
 		} catch (DbalException $e) {
 			$this->logger->warning('[ObjectSource:dbal-source] query failed for count: ' . $e->getMessage());
 			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
@@ -521,7 +556,11 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		$query = $this->aggregator->query(from: new DbalFromClause(connection: $connection, table: $table), aggregation: $aggregation);
 
-		return $this->aggregator->run(query: $query, shape: $request->shape);
+		return $this->readOf(
+			connection: $connection,
+			config: $ref->config,
+			read: fn (): ?array => $this->aggregator->run(query: $query, shape: $request->shape)
+		);
 	}//end aggregateMetric()
 
 	/**
@@ -838,6 +877,26 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	}//end isQueryBacked()
 
 	/**
+	 * Run a read; a query-backed schema's read runs read-only with a statement
+	 * timeout and is rolled back (design D-2).
+	 *
+	 * @param Connection           $connection The connection the read uses.
+	 * @param array<string, mixed> $config     The object-source config block.
+	 * @param callable             $read       The read.
+	 *
+	 * @return mixed What the read returned.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	private function readOf(Connection $connection, array $config, callable $read): mixed {
+		if ($this->isQueryBacked(config: $config) === false) {
+			return $read();
+		}
+
+		return $this->readScope->run(connection: $connection, read: $read);
+	}//end readOf()
+
+	/**
 	 * The FROM expression for a read query: a quoted base-table identifier, or a
 	 * `(<query>) src` derived table when the schema is query-backed.
 	 *
@@ -853,7 +912,14 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 */
 	private function fromExpression(Connection $connection, array $config): string {
 		if ($this->isQueryBacked(config: $config) === true) {
-			return '(' . trim((string)$config['query']) . ') ' . self::DERIVED_ALIAS;
+			$sql = trim((string)$config['query']);
+			try {
+				$this->queryGuard->assert(sql: $sql, platform: ReadOnlyReadScope::platformName(connection: $connection));
+			} catch (InvalidArgumentException $e) {
+				throw new DbalObjectSourceException('The query of this schema was refused: ' . $e->getMessage(), 422, $e);
+			}
+
+			return '(' . rtrim($sql, "; \t\n\r") . ') ' . self::DERIVED_ALIAS;
 		}
 
 		return $this->quote(connection: $connection, identifier: $this->table(config: $config));

@@ -82,6 +82,7 @@ exports[`ObjectDetails requests golden starts from the store pages, or the first
       "limit": 200,
     },
   },
+  "readMarkedFor": null,
   "relationsLoading": false,
 }
 `;

@@ -153,6 +153,13 @@ class CredentialBrokerService {
 	private const KIND_OAUTH2_SET = 'oauth2-token-set';
 
 	/**
+	 * Credential kind: the login of an outside vault. Never proxied, never resolved app-side.
+	 *
+	 * @var string
+	 */
+	private const KIND_OUTSIDE_VAULT = OutsideCustody::KIND;
+
+	/**
 	 * True only inside {@see requestForBackgroundUser()}: the guards then see no session.
 	 *
 	 * @var boolean
@@ -240,6 +247,12 @@ class CredentialBrokerService {
 
 		// Guard 3 + 4 — provider resolution, allow-rules, host-lock.
 		$provider = $this->resolveProvider(data: $data, credentialId: $credentialId);
+
+		// A vault connection's secret is the vault's own login: it serves outside
+		// credentials inside the broker and is never sent anywhere else.
+		if ($this->kindOf(provider: $provider) === self::KIND_OUTSIDE_VAULT) {
+			$this->deny(reason: 'an outside-vault connection is never proxied', credentialId: $credentialId);
+		}
 
 		// An inject-only provider carries no baseUrl/allowRules and MUST NEVER be proxied
 		// (an unbounded host is exactly what the constrained proxy exists to prevent). Its
@@ -470,8 +483,18 @@ class CredentialBrokerService {
 			return null;
 		}
 
+		if ($this->kindOf(provider: $provider) === self::KIND_OUTSIDE_VAULT) {
+			$this->deny(reason: 'an outside-vault connection is never resolved app-side', credentialId: $credentialId);
+		}
+
 		if ($this->isInjectOnly(provider: $provider) === false) {
 			return null;
+		}
+
+		// Both guards ran in resolveInjectableFor() before this point, so an app
+		// they refuse never makes the broker contact an outside vault.
+		if (OutsideCustody::isOutside(data: $data) === true) {
+			return $this->outsideSecret(data: $data, credentialId: $credentialId);
 		}
 
 		$secret = $this->sources->credentialStore->get($credentialId, $this->scopeOf(data: $data));
@@ -481,6 +504,28 @@ class CredentialBrokerService {
 
 		return (string)$secret;
 	}//end injectableSecret()
+
+	/**
+	 * The secret of an admitted outside credential, read from its vault now.
+	 *
+	 * @param array<string, mixed> $data         The admitted credential's data.
+	 * @param string               $credentialId The credential uuid.
+	 *
+	 * @return string The secret, held only for this call.
+	 *
+	 * @throws CredentialAccessDeniedException When no reader is available or the reference is not usable.
+	 * @throws CredentialUpstreamException When the vault cannot give the secret.
+	 *
+	 * @spec openspec/changes/credential-outside-vault-reference/specs/credential-broker/spec.md#requirement-authorization-is-decided-before-an-outside-secret-is-read
+	 */
+	private function outsideSecret(array $data, string $credentialId): string {
+		$custody = $this->outbound->outsideCustody;
+		if ($custody === null) {
+			$this->deny(reason: 'outside vault reader is unavailable', credentialId: $credentialId);
+		}
+
+		return $custody->secretFor(data: $data, credentialId: $credentialId);
+	}//end outsideSecret()
 
 	/**
 	 * Mint a credential: persist its metadata object and store its secret to the vault.
@@ -536,6 +581,16 @@ class CredentialBrokerService {
 		// to '', which the empty-secret branch below already treats as
 		// "metadata only, no vault write".
 		$secret = $this->trimmedSecret(secret: $options->secret());
+
+		// An outside credential holds no secret here, and must name a vault connection
+		// of its own organisation or owner (credential-outside-vault-reference 1.2).
+		if (OutsideCustody::isOutside(data: $data) === true) {
+			if ($this->outbound->outsideCustody === null) {
+				throw new InvalidArgumentException(message: 'Outside vault credentials are not available on this instance');
+			}
+
+			$this->outbound->outsideCustody->assertMintable(data: $data, secret: $secret);
+		}
 
 		// Persist the credential-metadata object in system context. Mint is a trusted,
 		// caller-authorized operation ("authorization is the caller's" — the controller
@@ -649,7 +704,22 @@ class CredentialBrokerService {
 	 */
 	public static function connectionMetadata(array $metadata): array {
 		$accepted = [];
-		$allowed = ['kind', 'status', 'scopes', 'account', 'expiresAt', 'lastRefreshedAt', 'lastError', 'clientId', 'clientCredentialRef'];
+		$allowed = [
+			'kind',
+			'status',
+			'scopes',
+			'account',
+			'expiresAt',
+			'lastRefreshedAt',
+			'lastError',
+			'clientId',
+			'clientCredentialRef',
+			'custody',
+			'vaultRef',
+			'vaultAuthMethod',
+			'vaultRoleId',
+			'vaultMount',
+		];
 		foreach ($allowed as $key) {
 			if (array_key_exists($key, $metadata) === true) {
 				$accepted[$key] = $metadata[$key];
@@ -1362,6 +1432,15 @@ class CredentialBrokerService {
 		string $scope,
 		?string $actingUserId,
 	): string {
+		if (OutsideCustody::isOutside(data: $data) === true) {
+			// Only a plain secret can live outside; a token set is rotated by the broker.
+			if ($this->kindOf(provider: $provider) !== self::KIND_SECRET) {
+				$this->deny(reason: 'only a secret-kind credential can be held in an outside vault', credentialId: $credentialId);
+			}
+
+			return $this->outsideSecret(data: $data, credentialId: $credentialId);
+		}
+
 		if ($this->kindOf(provider: $provider) !== self::KIND_OAUTH2_SET) {
 			$secret = $this->sources->credentialStore->get($credentialId, $scope);
 			if ($secret === null) {
@@ -1404,6 +1483,10 @@ class CredentialBrokerService {
 
 		if ($kind === self::KIND_OAUTH2_SET) {
 			return self::KIND_OAUTH2_SET;
+		}
+
+		if ($kind === self::KIND_OUTSIDE_VAULT) {
+			return self::KIND_OUTSIDE_VAULT;
 		}
 
 		return self::KIND_SECRET;
