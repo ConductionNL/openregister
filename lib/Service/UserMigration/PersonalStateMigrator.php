@@ -33,6 +33,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\UserMigration;
 
+use DateTimeInterface;
+use OCA\OpenRegister\Db\CalendarFeedToken;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
@@ -85,6 +88,27 @@ class PersonalStateMigrator implements IMigrator {
 	public const WATCHES = self::PATH . 'watches.json';
 
 	/**
+	 * The calendar feed tokens' metadata in an export; never their values.
+	 *
+	 * @var string
+	 */
+	public const FEED_TOKENS = self::PATH . 'feed-tokens.json';
+
+	/**
+	 * The user's own notes, as a readable archive.
+	 *
+	 * @var string
+	 */
+	public const NOTES = self::PATH . 'notes.json';
+
+	/**
+	 * The user's own timeline entries, as a readable archive.
+	 *
+	 * @var string
+	 */
+	public const TIMELINE = self::PATH . 'timeline.json';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param PersonalStateReader    $reader     Reads what the user holds.
@@ -117,15 +141,29 @@ class PersonalStateMigrator implements IMigrator {
 	 * @spec openspec/changes/platform-user-migrator/specs/platform-user-migration/spec.md#requirement-objects-are-not-exported-and-both-ends-say-so-req-pum-002
 	 */
 	public function export(IUser $user, IExportDestination $exportDestination, OutputInterface $output): void {
-		$output->writeln('Exporting OpenRegister saved views and watches…');
+		$output->writeln('Exporting OpenRegister saved views, watches, feed token details, notes and timeline entries…');
+		$uid = $user->getUID();
 
 		$views = array_map(fn (View $view): array => $this->portableView(view: $view), $this->reader->ownedViews(userId: $user->getUID()));
 		$watches = array_map(fn (Watcher $watch): array => $this->portableWatch(watch: $watch), $this->reader->watches(userId: $user->getUID()));
+		$tokens = array_map(fn (CalendarFeedToken $token): array => $this->portableFeedToken(token: $token), $this->reader->feedTokens(userId: $uid));
+		$notes = $this->reader->notes(userId: $uid);
+		$timeline = array_map(fn (TimelineEntry $entry): array => $this->archivedEntry(entry: $entry), $this->reader->timelineEntries(userId: $uid));
 
 		try {
 			$exportDestination->addFileContents(self::VIEWS, self::json(data: $views));
 			$exportDestination->addFileContents(self::WATCHES, self::json(data: $watches));
-			$exportDestination->addFileContents(self::MANIFEST, self::json(data: self::manifest(views: count($views), watches: count($watches))));
+			$exportDestination->addFileContents(self::FEED_TOKENS, self::json(data: $tokens));
+			$exportDestination->addFileContents(self::NOTES, self::json(data: $notes));
+			$exportDestination->addFileContents(self::TIMELINE, self::json(data: $timeline));
+			$manifest = self::manifest(
+				views: count($views),
+				watches: count($watches),
+				feedTokens: count($tokens),
+				notes: count($notes),
+				timelineEntries: count($timeline)
+			);
+			$exportDestination->addFileContents(self::MANIFEST, self::json(data: $manifest));
 		} catch (Throwable $e) {
 			throw new UserMigrationException('Could not export the OpenRegister personal state', 0, $e);
 		}
@@ -157,6 +195,21 @@ class PersonalStateMigrator implements IMigrator {
 
 		foreach (self::listIn(source: $importSource, path: self::WATCHES) as $watch) {
 			$this->restoreWatch(data: $watch, userId: $user->getUID(), report: $report);
+		}
+
+		foreach (self::listIn(source: $importSource, path: self::FEED_TOKENS) as $token) {
+			$report->skipped(
+				what: 'calendar feed token "' . self::reference(value: ($token['label'] ?? '')) . '"',
+				reason: 'a token is not migrated; create a new one on this instance'
+			);
+		}
+
+		$archived = (count(self::listIn(source: $importSource, path: self::NOTES)) + count(self::listIn(source: $importSource, path: self::TIMELINE)));
+		if ($archived > 0) {
+			$report->skipped(
+				what: $archived . ' notes and timeline entries',
+				reason: 'they are kept in the export as an archive; the objects they were written on are not in it'
+			);
 		}
 
 		foreach ($report->lines() as $line) {
@@ -200,18 +253,24 @@ class PersonalStateMigrator implements IMigrator {
 	/**
 	 * The manifest of an export.
 	 *
-	 * @param int $views   The number of views exported.
-	 * @param int $watches The number of watches exported.
+	 * @param int $views           The number of views exported.
+	 * @param int $watches         The number of watches exported.
+	 * @param int $feedTokens      The number of calendar feed tokens whose details were exported.
+	 * @param int $notes           The number of the user's notes in the archive.
+	 * @param int $timelineEntries The number of the user's timeline entries in the archive.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/platform-user-migrator/specs/platform-user-migration/spec.md#requirement-objects-are-not-exported-and-both-ends-say-so-req-pum-002
 	 */
-	public static function manifest(int $views, int $watches): array {
+	public static function manifest(int $views, int $watches, int $feedTokens=0, int $notes=0, int $timelineEntries=0): array {
 		return [
 			'contains' => [
 				'views' => $views,
 				'watches' => $watches,
+				'feedTokens' => $feedTokens,
+				'notes' => $notes,
+				'timelineEntries' => $timelineEntries,
 			],
 			'objectsIncluded' => false,
 			'secretsIncluded' => false,
@@ -220,6 +279,8 @@ class PersonalStateMigrator implements IMigrator {
 				'A watch names an object by its uuid; the object itself is not in this export.',
 				'Register and schema references are slugs; an import resolves them on the target and creates none.',
 				'Views are restored private.',
+				'Calendar feed tokens are listed by label, scope and dates; their values are not exported and an import creates none.',
+				'Your own notes and timeline entries are an archive to read; an import does not restore them.',
 			],
 		];
 	}//end manifest()
@@ -266,6 +327,65 @@ class PersonalStateMigrator implements IMigrator {
 			'notify' => $watch->getNotify(),
 		];
 	}//end portableWatch()
+
+	/**
+	 * A calendar feed token's details, without its value (D-4): what it was
+	 * called, what it showed and when it was made, used, expires or was revoked.
+	 *
+	 * @param CalendarFeedToken $token The token.
+	 *
+	 * @return array<string, string|null>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.3
+	 */
+	private function portableFeedToken(CalendarFeedToken $token): array {
+		$scopeId = $token->getScopeId();
+		if ($token->getScopeType() === CalendarFeedToken::SCOPE_SCHEMA && $scopeId !== null) {
+			$scopeId = $this->references->portable(kind: RegisterReferences::SCHEMA, reference: $scopeId);
+		}
+
+		return [
+			'label' => $token->getLabel(),
+			'scopeType' => $token->getScopeType(),
+			'scopeId' => $scopeId,
+			'createdAt' => self::moment(value: $token->getCreatedAt()),
+			'expiresAt' => self::moment(value: $token->getExpiresAt()),
+			'revokedAt' => self::moment(value: $token->getRevokedAt()),
+			'lastReadAt' => self::moment(value: $token->getLastReadAt()),
+		];
+	}//end portableFeedToken()
+
+	/**
+	 * A timeline entry the user wrote, as an archive line: what, where and when.
+	 *
+	 * @param TimelineEntry $entry The entry.
+	 *
+	 * @return array<string, string|null>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.4
+	 */
+	private function archivedEntry(TimelineEntry $entry): array {
+		return [
+			'objectUuid' => $entry->getObjectUuid(),
+			'register' => $this->references->portable(kind: RegisterReferences::REGISTER, reference: (string)$entry->getRegister()),
+			'schema' => $this->references->portable(kind: RegisterReferences::SCHEMA, reference: (string)$entry->getSchema()),
+			'kind' => $entry->getKind(),
+			'visibility' => $entry->getVisibility(),
+			'message' => $entry->getMessage(),
+			'createdAt' => self::moment(value: $entry->getCreated()),
+		];
+	}//end archivedEntry()
+
+	/**
+	 * A moment as an ISO 8601 string, or null.
+	 *
+	 * @param DateTimeInterface|null $value The moment.
+	 *
+	 * @return string|null
+	 */
+	private static function moment(?DateTimeInterface $value): ?string {
+		return $value?->format(DateTimeInterface::ATOM);
+	}//end moment()
 
 	/**
 	 * Restore one view, or report why not.
