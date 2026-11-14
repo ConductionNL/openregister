@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use Throwable;
 /**
  * Snapshot, diff, record and announce for Open Register's own settings.
  *
- * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 class OwnSettingsChangeRecorder {
 
@@ -79,6 +79,7 @@ class OwnSettingsChangeRecorder {
 		'@flow_run_retention_days',
 		'@flow_audit_enabled',
 		'@flow_kill_switch',
+		'@audit.readEventsVisibleTo',
 	];
 
 	/**
@@ -102,7 +103,7 @@ class OwnSettingsChangeRecorder {
 	 *
 	 * @return array{settings: array<string, mixed>, security: array<string, mixed>} The snapshot.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function snapshot(array $keys): array {
 		$security = [];
@@ -124,7 +125,7 @@ class OwnSettingsChangeRecorder {
 	 *
 	 * @return int How many audit rows were written.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function record(array $before, array $keys): int {
 		$written = 0;

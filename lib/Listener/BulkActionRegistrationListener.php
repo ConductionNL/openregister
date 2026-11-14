@@ -85,14 +85,19 @@ class BulkActionRegistrationListener implements IEventListener {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	private function builtIns(): array {
-		return [
-			$this->editing->setProperties,
-			$this->editing->assign,
-			$this->editing->applyRule,
-			$this->sets->exportWholeSet,
-			$this->sets->restore,
-			$this->sets->runAction,
-		];
+		return array_values(
+			array_filter(
+				[
+					$this->editing->setProperties,
+					$this->editing->assign,
+					$this->editing->applyRule,
+					$this->sets->exportWholeSet,
+					$this->sets->restore,
+					$this->sets->runAction,
+					$this->editing->transition,
+				]
+			)
+		);
 	}//end builtIns()
 
 	/**

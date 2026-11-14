@@ -174,6 +174,31 @@
             "out.warning Merge-operation register import skipped: importer down"
         ]
     },
+    "ImportRedactionPolicyRegister": {
+        "missing": [
+            "name Import OpenRegister redaction-policy register (term rules, detection patterns, redaction profiles)",
+            "appPath openregister",
+            "out.warning Redaction-policy register descriptor not found: <app>/lib/Settings/redaction_policy_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister redaction-policy register (term rules, detection patterns, redaction profiles)",
+            "appPath openregister",
+            "out.warning Redaction-policy register descriptor is not valid JSON: <app>/lib/Settings/redaction_policy_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister redaction-policy register (term rules, detection patterns, redaction profiles)",
+            "appPath openregister",
+            "import openregister.redaction-policy {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info Redaction-policy register imported (redaction-policy + termRule, detectionPattern, redactionProfile)"
+        ],
+        "failing": [
+            "name Import OpenRegister redaction-policy register (term rules, detection patterns, redaction profiles)",
+            "appPath openregister",
+            "import openregister.redaction-policy {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportRedactionPolicyRegister] import failed: importer down",
+            "out.warning Redaction-policy register import skipped: importer down"
+        ]
+    },
     "ImportSurveyRegister": {
         "missing": [
             "name Import OpenRegister survey register (surveys register + its four schemas)",
@@ -197,6 +222,31 @@
             "import openregister {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
             "log.warning [ImportSurveyRegister] import failed: importer down",
             "out.warning Survey register import skipped: importer down"
+        ]
+    },
+    "ImportTranslationGlossaryRegister": {
+        "missing": [
+            "name Import OpenRegister translation-glossary register (glossary terms and style guides for AI translation)",
+            "appPath openregister",
+            "out.warning Translation-glossary register descriptor not found: <app>/lib/Settings/translation_glossary_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister translation-glossary register (glossary terms and style guides for AI translation)",
+            "appPath openregister",
+            "out.warning Translation-glossary register descriptor is not valid JSON: <app>/lib/Settings/translation_glossary_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister translation-glossary register (glossary terms and style guides for AI translation)",
+            "appPath openregister",
+            "import openregister.translation-glossary {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info Translation-glossary register imported (translation-term + translation-style-guide)"
+        ],
+        "failing": [
+            "name Import OpenRegister translation-glossary register (glossary terms and style guides for AI translation)",
+            "appPath openregister",
+            "import openregister.translation-glossary {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportTranslationGlossaryRegister] import failed: importer down",
+            "out.warning Translation-glossary register import skipped: importer down"
         ]
     },
     "ImportTrustConfigurationRegister": {

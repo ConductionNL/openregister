@@ -136,7 +136,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 			properties: ['occurredAt' => ['type' => 'string', 'format' => 'date-time']]
 		);
 
-		$this->assertSame([['COALESCE("t"."occurred_at", "t"."_created")', 'DESC']], $result);
+		$this->assertSame([['COALESCE("t"."occurred_at", "t"."_created")', 'DESC'], ['t._id', 'ASC']], $result);
 	}//end testDateTimePropertyFallsBackToCreatedDescending()
 
 	public function testDatePropertyFallsBackToCreatedAscending(): void {
@@ -145,7 +145,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 			properties: ['dueDate' => ['type' => 'string', 'format' => 'date']]
 		);
 
-		$this->assertSame([['COALESCE("t"."due_date", "t"."_created")', 'ASC']], $result);
+		$this->assertSame([['COALESCE("t"."due_date", "t"."_created")', 'ASC'], ['t._id', 'ASC']], $result);
 	}//end testDatePropertyFallsBackToCreatedAscending()
 
 	public function testDatePropertyWithoutExplicitTypeStillFallsBack(): void {
@@ -156,7 +156,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 			properties: ['occurredAt' => ['format' => 'date-time']]
 		);
 
-		$this->assertSame([['COALESCE("t"."occurred_at", "t"."_created")', 'DESC']], $result);
+		$this->assertSame([['COALESCE("t"."occurred_at", "t"."_created")', 'DESC'], ['t._id', 'ASC']], $result);
 	}//end testDatePropertyWithoutExplicitTypeStillFallsBack()
 
 	public function testReservedWordDatePropertyIsQuoted(): void {
@@ -165,7 +165,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 			properties: ['order' => ['type' => 'string', 'format' => 'date']]
 		);
 
-		$this->assertSame([['COALESCE("t"."order", "t"."_created")', 'DESC']], $result);
+		$this->assertSame([['COALESCE("t"."order", "t"."_created")', 'DESC'], ['t._id', 'ASC']], $result);
 	}//end testReservedWordDatePropertyIsQuoted()
 
 	public function testNonDatePropertyKeepsBareColumn(): void {
@@ -178,7 +178,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 		);
 
 		// Text sorts lower-cased since 9 October 2026; a number keeps its column.
-		$this->assertSame([['LOWER("t"."title")', 'DESC'], ['t.priority', 'ASC']], $result);
+		$this->assertSame([['LOWER("t"."title")', 'DESC'], ['"t"."title"', 'DESC'], ['t.priority', 'ASC'], ['t._id', 'ASC']], $result);
 	}//end testNonDatePropertyKeepsBareColumn()
 
 	/**
@@ -211,7 +211,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 	public function testAPropertyEncryptedOnlyByFalseStillSorts(): void {
 		$result = $this->sort(order: ['title' => 'asc'], properties: ['title' => ['type' => 'string', 'x-openregister-encrypted' => false]]);
 
-		$this->assertSame([['LOWER("t"."title")', 'ASC']], $result);
+		$this->assertSame([['LOWER("t"."title")', 'ASC'], ['"t"."title"', 'ASC'], ['t._id', 'ASC']], $result);
 	}//end testAPropertyEncryptedOnlyByFalseStillSorts()
 
 	public function testMetadataSortsAreUnchanged(): void {
@@ -220,7 +220,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 			properties: []
 		);
 
-		$this->assertSame([['t._created', 'DESC'], ['t._updated', 'ASC']], $result);
+		$this->assertSame([['t._created', 'DESC'], ['t._updated', 'ASC'], ['t._id', 'ASC']], $result);
 	}//end testMetadataSortsAreUnchanged()
 
 	public function testDatePropertyOnTextColumnKeepsBareColumn(): void {
@@ -232,7 +232,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 			dateTimeColumns: ['_created', '_updated']
 		);
 
-		$this->assertSame([['t.occurred_at', 'DESC']], $result);
+		$this->assertSame([['t.occurred_at', 'DESC'], ['t._id', 'ASC']], $result);
 	}//end testDatePropertyOnTextColumnKeepsBareColumn()
 
 	public function testUnknownColumnTypesKeepBareColumn(): void {
@@ -243,7 +243,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 			dateTimeColumns: null
 		);
 
-		$this->assertSame([['t.occurred_at', 'DESC']], $result);
+		$this->assertSame([['t.occurred_at', 'DESC'], ['t._id', 'ASC']], $result);
 	}//end testUnknownColumnTypesKeepBareColumn()
 
 	public function testNonDatePropertyOnDateColumnKeepsBareColumn(): void {
@@ -254,7 +254,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 		);
 
 		// Not a date by the schema, so it sorts as text: lower-cased since 9 October 2026.
-		$this->assertSame([['LOWER("t"."occurred_at")', 'DESC']], $result);
+		$this->assertSame([['LOWER("t"."occurred_at")', 'DESC'], ['"t"."occurred_at"', 'DESC'], ['t._id', 'ASC']], $result);
 	}//end testNonDatePropertyOnDateColumnKeepsBareColumn()
 
 	public function testInvalidDirectionFallsBackToAscending(): void {
@@ -263,6 +263,6 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 			properties: ['occurredAt' => ['type' => 'string', 'format' => 'date-time']]
 		);
 
-		$this->assertSame([['COALESCE("t"."occurred_at", "t"."_created")', 'ASC']], $result);
+		$this->assertSame([['COALESCE("t"."occurred_at", "t"."_created")', 'ASC'], ['t._id', 'ASC']], $result);
 	}//end testInvalidDirectionFallsBackToAscending()
 }//end class

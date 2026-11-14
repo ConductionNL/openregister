@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * What {@see ViewObjectSourceProvider} reads or counts: which view-backed schema, through which view, with which caller query.
  *
- * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+ * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
  */
 final class ViewRowsRequest {
 	/**

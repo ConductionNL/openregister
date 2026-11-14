@@ -2,8 +2,8 @@
 
 ## 1. Owner and right
 
-- [ ] 1.1 Migration adding `owner` to `openregister_webhooks`; entity field and `WebhookMapper::findOwnedBy()`. Verify: `WebhookMapperTest` for owned and unowned rows.
-- [ ] 1.2 Seed `webhook.own: ["admin"]` with its `$why` in `lib/actions.seed.json` and register it through `addMissing()` from `flow-powerful-steps-need-a-right` so an existing matrix gains it. Verify: `tests/Unit/Service/ActionAuthEveryoneTest.php`, which reads the shipped seed file, asserts the entry and that it is not `@authenticated`; a repair test asserts an existing customised matrix gains `webhook.own` and keeps its other entries.
+- [x] 1.1 Migration adding `owner` to `openregister_webhooks`; entity field and `WebhookMapper::findOwnedBy()`. Verify: `WebhookMapperTest` for owned and unowned rows.
+- [x] 1.2 Seed `webhook.own: ["admin"]` with its `$why` in `lib/actions.seed.json` and register it through `addMissing()` from `flow-powerful-steps-need-a-right` so an existing matrix gains it. Verify: `tests/Unit/Service/ActionAuthEveryoneTest.php`, which reads the shipped seed file, asserts the entry and that it is not `@authenticated`; a repair test asserts an existing customised matrix gains `webhook.own` and keeps its other entries.
 
 ## 2. Controller
 
@@ -12,8 +12,8 @@
 
 ## 3. Delivery
 
-- [ ] 3.1 Pre-enqueue filter for owned hooks in `dispatchEvent()`. Verify: `WebhookServiceTest` asserts no job is added for an owned hook whose scope does not match.
-- [ ] 3.2 Owner view in `WebhookDeliveryJob`: owner and right check, re-read as the owner, dropped `oldObject`, identifiers only on delete, private targets refused. Verify: `WebhookDeliveryJobTest` with a property hidden from the owner, an unreadable object, a deleted object and a revoked right.
+- [x] 3.1 Pre-enqueue filter for owned hooks in `dispatchEvent()`. Verify: `WebhookServiceTest` asserts no job is added for an owned hook whose scope does not match.
+- [x] 3.2 Owner view in `WebhookDeliveryJob`: owner and right check, re-read as the owner, dropped `oldObject`, identifiers only on delete, private targets refused. Verify: `WebhookDeliveryJobTest` with a property hidden from the owner, an unreadable object, a deleted object and a revoked right.
 - [ ] 3.3 Listener disabling a deleted or disabled user's owned hooks. Verify: listener unit test.
 
 ## 4. Page, tests and docs

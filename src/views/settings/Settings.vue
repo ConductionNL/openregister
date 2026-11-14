@@ -52,6 +52,9 @@
 
 		<RetentionConfiguration />
 
+		<!-- Who sees who read a record: read entries on the audit trail -->
+		<ReadEventVisibilityConfiguration />
+
 		<!-- Audit hash-chain health: seal coverage + on-demand verification -->
 		<LogIntegrity />
 		<RegisterDescriptors />
@@ -93,6 +96,7 @@ import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import PermissionMatrix from './sections/PermissionMatrix.vue'
 import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
+import ReadEventVisibilityConfiguration from './sections/ReadEventVisibilityConfiguration.vue'
 import RegisterDescriptors from './sections/RegisterDescriptors.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
@@ -121,6 +125,7 @@ export default {
 		WorkingCalendars,
 		RegisterDescriptors,
 		RetentionConfiguration,
+		ReadEventVisibilityConfiguration,
 		LogIntegrity,
 		PushNotificationsConfiguration,
 		LlmConfiguration,

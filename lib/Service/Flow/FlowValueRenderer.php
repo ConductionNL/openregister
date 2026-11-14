@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -83,7 +83,7 @@ final class FlowValueRenderer {
 	 * @return array{value: mixed, unresolved: array<int, string>} The rendered
 	 *                                                             value, and the placeholder paths that rendered empty.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public static function renderTracked(mixed $value, array $json): array {
 		$rendered = self::renderValue(value: $value, json: $json);

@@ -866,6 +866,47 @@
         }
     ],
     "testTheOrganisationCalendarIsResolvedWhenTheTimerNamesNone ": [],
+    "testTheReleaseFormOfArmArmsTheSameTimer ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": "alice",
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-04T09:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 1,
+            "type": "armed",
+            "actor": "alice",
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-04T09:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 2,
+            "type": "armed",
+            "actor": "alice",
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-04T09:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
     "testTheRemainingBuildRefusalsAreNamed ": [
         {
             "timer": 0,

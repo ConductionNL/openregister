@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-003
+ * @spec openspec/specs/tag-preserving-redaction/spec.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use JsonSerializable;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-003
+ * @spec openspec/specs/tag-preserving-redaction/spec.md
  */
 final class StructurePreservation implements JsonSerializable {
 
@@ -107,7 +107,7 @@ final class StructurePreservation implements JsonSerializable {
 	 * @param int $tagCountAfter `/StructElem` count of the produced output.
 	 * @param string[] $lossReasons Machine-readable reasons, empty when $preserved is true.
 	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-003
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function __construct(
 		public readonly bool $requested,
@@ -123,7 +123,7 @@ final class StructurePreservation implements JsonSerializable {
 	 *
 	 * @return array{requested: bool, preserved: bool, tagCountBefore: int, tagCountAfter: int, lossReasons: string[]}
 	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-003
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

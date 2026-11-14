@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Export\ExportRequest;
 use OCA\OpenRegister\Service\Export\ExportTable;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Service\Export\RowsTable;
+use OCA\OpenRegister\Service\Export\XmlObjectWriter;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
@@ -45,6 +46,8 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
+use OCA\OpenRegister\Service\Export\DocumentStyleReader;
+use OCA\OpenRegister\Service\Export\Odt\OdtHouseStyle;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
@@ -158,6 +161,7 @@ class ExportService implements ObjectExporterInterface {
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
 	 * @param ProcessRevealAuditInterface|null $processAudit Records, once per export, that it revealed audited values.
+	 * @param DocumentStyleReader|null $documentStyle Reads the organisation's house style for PDF output, when thematiq offers one.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
@@ -170,6 +174,7 @@ class ExportService implements ObjectExporterInterface {
 		PropertyRbacHandler $propertyRbacHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,
 		private readonly ?ProcessRevealAuditInterface $processAudit = null,
+		private readonly ?DocumentStyleReader $documentStyle = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->groupManager = $groupManager;
@@ -281,6 +286,52 @@ class ExportService implements ObjectExporterInterface {
 	}//end csvFor()
 
 	/**
+	 * Export objects of a single schema to a TSV document.
+	 *
+	 * The same spreadsheet the CSV exporter builds, written with a tab
+	 * delimiter. A value holding a tab, a line break or a double quote is
+	 * quoted so any spreadsheet reads it back; the document carries a UTF-8
+	 * byte order mark, like the CSV.
+	 *
+	 * @param ObjectExportRequest $request The register context and the schema whose objects are exported (required).
+	 *
+	 * @return string TSV content
+	 *
+	 * @throws InvalidArgumentException If trying to export multiple schemas to TSV
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function exportToTsv(ObjectExportRequest $request): string {
+		return $this->tsvFor(request: ExportRequest::fromContract(request: $request));
+	}//end exportToTsv()
+
+	/**
+	 * Export one request to TSV; TSV holds one schema only.
+	 *
+	 * @param ExportRequest $request What to export and for whom.
+	 *
+	 * @return string TSV content
+	 *
+	 * @throws InvalidArgumentException If trying to export multiple schemas to TSV
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function tsvFor(ExportRequest $request): string {
+		if ($request->register !== null && $request->schema === null) {
+			throw new InvalidArgumentException('Cannot export multiple schemas to TSV format.');
+		}
+
+		$writer = new Csv(SpreadsheetCell::forCsv(spreadsheet: $this->spreadsheetFor(request: $request)));
+		$writer->setDelimiter("\t");
+		$writer->setEnclosure('"');
+		$writer->setUseBOM(true);
+
+		ob_start();
+		$writer->save('php://output');
+		return ob_get_clean();
+	}//end tsvFor()
+
+	/**
 	 * Export objects of a single schema to a JSON document
 	 *
 	 * Serialises every object (subject to the same RBAC + multi-tenancy + filter
@@ -325,6 +376,50 @@ class ExportService implements ObjectExporterInterface {
 
 		return json_encode($rows, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 	}//end jsonFor()
+
+	/**
+	 * Export objects of a single schema to an XML document.
+	 *
+	 * The same objects the JSON export holds, written by {@see XmlObjectWriter}:
+	 * a root `<objects>`, one `<object id="...">` per record, each property a child
+	 * element, lists as repeated children, nested objects as nested elements and
+	 * null as `xsi:nil="true"`.
+	 *
+	 * @param ObjectExportRequest $request The register context, the schema whose objects are exported (required) and the filters.
+	 *
+	 * @return string The XML document, UTF-8.
+	 *
+	 * @throws InvalidArgumentException When no schema is given (XML export is single-schema, like JSON)
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	public function exportToXml(ObjectExportRequest $request): string {
+		return $this->xmlFor(request: ExportRequest::fromContract(request: $request));
+	}//end exportToXml()
+
+	/**
+	 * Export one request's objects to an XML document; XML holds one schema only.
+	 *
+	 * @param ExportRequest $request What to export.
+	 *
+	 * @return string The XML document, UTF-8.
+	 *
+	 * @throws InvalidArgumentException When no schema is given (XML export is single-schema, like JSON)
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	public function xmlFor(ExportRequest $request): string {
+		if ($request->schema === null) {
+			throw new InvalidArgumentException('XML export requires a specific schema.');
+		}
+
+		$rows = array_map(
+			static fn (ObjectEntity $object): array => $object->jsonSerialize(),
+			$this->fetchObjectsForExport(request: $request)
+		);
+
+		return (new XmlObjectWriter())->write(rows: $rows);
+	}//end xmlFor()
 
 	/**
 	 * Export data to PDF format
@@ -375,14 +470,15 @@ class ExportService implements ObjectExporterInterface {
 		// Excel/CSV pipeline.
 		$this->contextRegister = $request->register;
 
+		$uid = $request->currentUser?->getUID();
 		if ($request->register !== null && $request->schema === null) {
-			return $this->renderPdfDocument(sections: $this->buildPdfSectionsForRegister(request: $request));
+			return $this->renderPdfDocument(sections: $this->buildPdfSectionsForRegister(request: $request), uid: $uid);
 		}
 
 		$objects = $this->fetchObjectsForExport(request: $request);
 		$this->guardPdfRowCap(rowCount: count($objects));
 
-		return $this->renderPdfDocument(sections: [$this->buildPdfSection(request: $request, objects: $objects)]);
+		return $this->renderPdfDocument(sections: [$this->buildPdfSection(request: $request, objects: $objects)], uid: $uid);
 	}//end pdfFor()
 
 	/**
@@ -408,7 +504,8 @@ class ExportService implements ObjectExporterInterface {
 
 		$this->guardPdfRowCap(rowCount: count($table->rows));
 
-		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(table: $table)]);
+		// No Nextcloud user asked for this table: the instance default house style applies.
+		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(table: $table)], uid: null);
 	}//end renderTableToPdf()
 
 	/**
@@ -464,6 +561,86 @@ class ExportService implements ObjectExporterInterface {
 	}//end guardPdfRowCap()
 
 	/**
+	 * The properties a PDF report breaks the objects down by, in order of preference.
+	 */
+	private const PDF_BREAKDOWN_PROPERTIES = ['status', 'state', 'lifecycle', 'statusCode'];
+
+	/**
+	 * The summary block of a PDF report: the applied filters, and the objects
+	 * broken down by their status with counts and percentages
+	 * (rapportage-bi-export, "Export to PDF as a formatted report").
+	 *
+	 * The breakdown uses the first of PDF_BREAKDOWN_PROPERTIES that is an
+	 * exported column, so a property the caller may not read, or a masked one,
+	 * is never summarised.
+	 *
+	 * @param ExportRequest $request What is exported.
+	 * @param ExportTable   $table   The exported columns and objects.
+	 *
+	 * @return string The HTML fragment, empty when there is nothing to summarise.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-export-in-csv-excel-pdf-and-ods-formats
+	 */
+	private function pdfSummary(ExportRequest $request, ExportTable $table): string {
+		$html = '';
+		$filters = [];
+		foreach ($request->filters as $key => $value) {
+			if (is_scalar($value) === true && str_starts_with((string)$key, '_') === false) {
+				$filters[] = $key . ' = ' . (string)$value;
+			}
+		}
+
+		if ($filters !== []) {
+			$html .= '<p class="meta">Filters: ' . htmlspecialchars(implode('; ', $filters), ENT_QUOTES, 'UTF-8') . '</p>';
+		}
+
+		$property = $this->pdfBreakdownProperty(headers: $table->headers);
+		if ($property === null || $table->objects === []) {
+			return $html;
+		}
+
+		$counts = [];
+		foreach ($table->objects as $object) {
+			$value = ($object->getObject()[$property] ?? null);
+			$label = '(none)';
+			if (is_scalar($value) === true && (string)$value !== '') {
+				$label = (string)$value;
+			}
+
+			$counts[$label] = (($counts[$label] ?? 0) + 1);
+		}
+
+		arsort($counts);
+		$total = count($table->objects);
+		$html .= '<table class="summary"><thead><tr><th>' . htmlspecialchars($property, ENT_QUOTES, 'UTF-8')
+			. '</th><th>Count</th><th>%</th></tr></thead><tbody>';
+		foreach ($counts as $label => $count) {
+			$html .= '<tr><td>' . htmlspecialchars((string)$label, ENT_QUOTES, 'UTF-8') . '</td><td>' . $count . '</td><td>'
+				. number_format((($count * 100) / $total), 1, '.', '') . '%</td></tr>';
+		}
+
+		return $html . '<tr><td>Total</td><td>' . $total . '</td><td>100.0%</td></tr></tbody></table>';
+	}//end pdfSummary()
+
+	/**
+	 * The property a PDF report breaks the objects down by: the first breakdown
+	 * property that is an exported, unmasked column.
+	 *
+	 * @param array<int|string, int|string> $headers The exported columns.
+	 *
+	 * @return string|null The property, or null when none is exported.
+	 */
+	private function pdfBreakdownProperty(array $headers): ?string {
+		foreach (self::PDF_BREAKDOWN_PROPERTIES as $property) {
+			if (in_array($property, $headers, true) === true && isset($this->maskedColumns[$property]) === false) {
+				return $property;
+			}
+		}
+
+		return null;
+	}//end pdfBreakdownProperty()
+
+	/**
 	 * Build the escaped HTML for a single schema's export section.
 	 *
 	 * @param ExportRequest  $request The export; its register and schema title the section, its user drives header visibility.
@@ -485,6 +662,7 @@ class ExportService implements ObjectExporterInterface {
 			. 'Exported: ' . htmlspecialchars($timestamp, ENT_QUOTES, 'UTF-8')
 			. ' &middot; Objects: ' . count($objects)
 			. '</p>';
+		$html .= $this->pdfSummary(request: $request, table: $table);
 		$html .= '<table><thead><tr>';
 
 		foreach ($table->headers as $header) {
@@ -593,18 +771,29 @@ class ExportService implements ObjectExporterInterface {
 	 * The sections are written as one ODT, each section on a new page, and the
 	 * office server converts it to PDF.
 	 *
-	 * @param string[] $sections Escaped HTML fragments, one per schema section.
+	 * The requesting user's house style, when thematiq offers one, colours the
+	 * table header and adds the footer lines; without one the layout is the
+	 * plain one, and a profile that cannot be read never fails the export.
+	 *
+	 * @param string[]    $sections Escaped HTML fragments, one per schema section.
+	 * @param string|null $uid      The requesting user, or null for the instance default house style.
 	 *
 	 * @return string Raw PDF bytes.
 	 *
 	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
 	 */
-	private function renderPdfDocument(array $sections): string {
+	private function renderPdfDocument(array $sections, ?string $uid): string {
 		if ($this->officeConverter === null) {
 			throw new OfficeServerRequiredException();
 		}
 
-		$odt = (new OdtWriter())->fromHtml(html: implode('', $sections), landscape: true);
+		$odt = (new OdtWriter())->fromHtml(
+			html: implode('', $sections),
+			landscape: true,
+			houseStyle: OdtHouseStyle::fromProfile(profile: $this->documentStyle?->forUser(uid: $uid))
+		);
 
 		return $this->officeConverter->odtToPdf(odtBytes: $odt);
 	}//end renderPdfDocument()

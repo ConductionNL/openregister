@@ -146,7 +146,7 @@ class ObjectActionList implements ObjectActionListInterface {
 	 *
 	 * @return array<string, bool> Action key => whether the caller may run it.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function canRun(ObjectEntity $object, Schema $schema): array {
 		$can = [];

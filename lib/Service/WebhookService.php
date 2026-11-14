@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use InvalidArgumentException;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
@@ -42,6 +43,7 @@ use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
+use OCP\EventDispatcher\Event;
 use OCP\IRequest;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventAttributes;
 use Psr\Http\Message\RequestInterface;
@@ -349,17 +351,57 @@ class WebhookService {
 	/**
 	 * Dispatch event to all matching webhooks
 	 *
-	 * @param string $eventName Event class name
-	 * @param array  $payload   Event payload data
+	 * Takes main's (eventName, payload), or the published (event, eventName, payload) whose event is
+	 * not read, by name or by position (an Event in the first slot).
+	 *
+	 * @param string|Event|null $eventName         Event class name; an Event here is the release's positional `$_event`.
+	 * @param array|string|null $payload           Event payload data; a string here is the release's positional `$eventName`.
+	 * @param array|null        $positionalPayload The release's positional `$payload`.
+	 * @param Event|null        $_event            The release's event; not read.
 	 *
 	 * @return void
+	 *
+	 * @throws InvalidArgumentException When no event name or payload is given.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_event is kept for the published contract.
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function dispatchEvent(string $eventName, array $payload): void {
+	public function dispatchEvent(
+		string|Event|null $eventName = null,
+		array|string|null $payload = null,
+		?array $positionalPayload = null,
+		?Event $_event = null,
+	): void {
+		if ($eventName instanceof Event) {
+			$eventName = $payload;
+			$payload   = $positionalPayload;
+		}
+
+		if (is_string($eventName) === false || is_array($payload) === false) {
+			throw new InvalidArgumentException('dispatchEvent() needs an event name and a payload.');
+		}
+
 		$this->dispatch(event: new WebhookEvent(name: $eventName, payload: $payload));
 	}//end dispatchEvent()
+
+	/**
+	 * Whether any webhook is subscribed to an event.
+	 *
+	 * Asked before the event's payload is built, so a write on an instance
+	 * with no webhook for that event pays no serialisation. A webhook table
+	 * that does not exist yet counts as no webhooks, as in dispatch().
+	 *
+	 * @param string $eventName Event class name.
+	 *
+	 * @return bool True when at least one webhook is subscribed.
+	 *
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md#requirement-trigger-flow-and-rule-resolution-must-filter-at-query-time
+	 */
+	public function hasWebhooksFor(string $eventName): bool {
+		return $this->webhooksForEvent(eventName: $eventName) !== [];
+	}//end hasWebhooksFor()
 
 	/**
 	 * Enqueue one delivery job per webhook subscribed to an event (value-object form of dispatchEvent()).
@@ -394,6 +436,13 @@ class WebhookService {
 		// latency a function of third-party uptime (async-webhook-delivery /
 		// ADR-009 Rule 5). WebhookDeliveryJob performs the same delivery + logging.
 		foreach ($webhooks as $webhook) {
+			// An owned webhook is filtered before a job is queued, so a busy
+			// instance does not queue one job per owned webhook per event only
+			// to drop it in the job (webhooks-for-owners D-5).
+			if ($this->ownedWebhookSkipsEvent(webhook: $webhook, eventName: $eventName, payload: $payload) === true) {
+				continue;
+			}
+
 			try {
 				$this->dispatch->jobList->add(
 					WebhookDeliveryJob::class,
@@ -424,6 +473,27 @@ class WebhookService {
 			}
 		}
 	}//end dispatch()
+
+	/**
+	 * Whether an owned webhook would refuse this event anyway: an event it never
+	 * delivers, or a payload outside its register and schema scope.
+	 *
+	 * @param Webhook              $webhook   The webhook.
+	 * @param string               $eventName The event class.
+	 * @param array<string, mixed> $payload   The event payload.
+	 *
+	 * @return bool True to queue no job; always false for an administrator's webhook.
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-delivers-only-what-its-owner-may-see
+	 */
+	private function ownedWebhookSkipsEvent(Webhook $webhook, string $eventName, array $payload): bool {
+		if (trim((string)$webhook->getOwner()) === '') {
+			return false;
+		}
+
+		return OwnedWebhookView::mayQueue(webhook: $webhook, eventName: $eventName) === false
+			|| $this->passesFilters(webhook: $webhook, payload: $payload) === false;
+	}//end ownedWebhookSkipsEvent()
 
 	/**
 	 * The webhooks subscribed to an event; none (logged) when there are none or the webhook
@@ -476,6 +546,11 @@ class WebhookService {
 			return false;
 		}
 
+		$delivery = $this->ownerView(delivery: $delivery);
+		if ($delivery === null) {
+			return false;
+		}
+
 		$webhookPayload = $this->buildPayload(delivery: $delivery);
 		$recorder = $this->deliveryRecorder();
 		$webhookLog = $recorder->startDeliveryLog(webhook: $webhook, webhookPayload: $webhookPayload);
@@ -492,6 +567,37 @@ class WebhookService {
 			return $recorder->recordUnexpectedFailure(delivery: $attempt, exception: $e);
 		}
 	}//end deliverWebhook()
+
+	/**
+	 * The delivery as an owned webhook may send it, or null when it sends nothing.
+	 *
+	 * An administrator's webhook passes unchanged. An owned one goes through
+	 * {@see OwnedWebhookView} on every attempt, retries and resends included;
+	 * without that view it delivers nothing rather than the full event.
+	 *
+	 * @param WebhookDelivery $delivery The delivery.
+	 *
+	 * @return WebhookDelivery|null The delivery to send, or null.
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-delivers-only-what-its-owner-may-see
+	 */
+	private function ownerView(WebhookDelivery $delivery): ?WebhookDelivery {
+		if (trim((string)$delivery->webhook->getOwner()) === '') {
+			return $delivery;
+		}
+
+		$event = $this->dispatch->ownedView?->view(webhook: $delivery->webhook, event: $delivery->event);
+		if ($event === null) {
+			return null;
+		}
+
+		return new WebhookDelivery(
+			webhook: $delivery->webhook,
+			event: $event,
+			attempt: $delivery->attempt,
+			timeoutCapSeconds: $delivery->timeoutCapSeconds
+		);
+	}//end ownerView()
 
 	/**
 	 * Why a delivery is skipped: the webhook is disabled or its filters do not match.
@@ -790,6 +896,11 @@ class WebhookService {
 		// local testing. Defaults to false (full SSRF blocking) when the key
 		// is absent. See configuration.allowPrivateTargets.
 		$allowPrivate = (bool)($webhook->getConfigurationArray()['allowPrivateTargets'] ?? false);
+		// An owned webhook never reaches the instance's own network, whatever
+		// its configuration says (webhooks-for-owners D-4/D-5).
+		if (trim((string)$webhook->getOwner()) !== '') {
+			$allowPrivate = false;
+		}
 
 		// SSRF guard: validate the webhook target before issuing the request.
 		// Redirects are re-validated by the per-request on_redirect callback set
@@ -1019,8 +1130,9 @@ class WebhookService {
 	private function matchesInterception(Webhook $webhook, string $eventType): bool {
 		$config = $webhook->getConfigurationArray();
 
-		// Check if webhook is configured for request interception.
-		if (($config['interceptRequests'] ?? false) !== true) {
+		// Check if webhook is configured for request interception. An owned
+		// webhook never intercepts: blocking writes stays an administrator's.
+		if (($config['interceptRequests'] ?? false) !== true || trim((string)$webhook->getOwner()) !== '') {
 			return false;
 		}
 

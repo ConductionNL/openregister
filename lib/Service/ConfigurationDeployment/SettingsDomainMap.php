@@ -130,7 +130,6 @@ final class SettingsDomainMap {
 			['key' => 'rbac', 'section' => 'rbac'],
 			['key' => 'multitenancy', 'section' => 'multitenancy'],
 			['key' => 'retention', 'section' => 'retention'],
-			['key' => 'solr', 'section' => 'solr'],
 			['key' => 'flow_run_retention_days', 'section' => 'flow', 'field' => 'retentionDays', 'cast' => 'string'],
 			['key' => 'flow_audit_enabled', 'section' => 'flow', 'field' => 'auditEnabled', 'cast' => 'boolean'],
 			['key' => 'flow_oversight_enabled', 'section' => 'flow', 'field' => 'oversightEnabled', 'cast' => 'boolean'],

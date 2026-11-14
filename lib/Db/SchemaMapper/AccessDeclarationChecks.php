@@ -22,7 +22,10 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
+use OCA\OpenRegister\Service\Rbac\ClassificationDeclarationValidator;
+use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use Psr\Log\LoggerInterface;
@@ -147,6 +150,75 @@ final class AccessDeclarationChecks {
 
 		$annotation->faults()->refuse(errors: $split['errors']);
 	}//end checkHierarchy()
+
+	/**
+	 * Refuse a broken `x-openregister-classification` declaration at save.
+	 *
+	 * THIS ONE THROWS: the block decides who reads which objects. A label
+	 * property the schema does not declare leaves every object unlabelled, and
+	 * an unlabelled object ranks most restrictive, so the whole schema would
+	 * vanish for everyone below the top level with no error anywhere.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the declaration cannot be honoured.
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-a-schema-declares-its-own-ordered-classification-vocabulary
+	 */
+	public function checkClassification(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: ClassificationScale::ANNOTATION);
+		if ($annotation->hasValue() === false) {
+			return;
+		}
+
+		$errors = (new ClassificationDeclarationValidator())->validate(
+			block: $annotation->value(),
+			properties: ($schema->getProperties() ?? [])
+		);
+		if ($errors !== []) {
+			throw new Exception(ClassificationScale::ANNOTATION . ': ' . implode('; ', $errors));
+		}
+	}//end checkClassification()
+
+	/**
+	 * Log a faulty `x-openregister-confidentiality` block at error level.
+	 *
+	 * The schema still saves, unlike checkClassification(): the block fails
+	 * closed instead (ConfidentialityRule), so a fault hides every object that
+	 * carries a tier until it is fixed. The error-level line names the schema
+	 * and each fault, because a warning reads as success to the author.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-a-malformed-confidentiality-annotation-must-fail-closed-not-silently-permit-access
+	 */
+	public function checkConfidentiality(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: ConfidentialityAnnotationValidator::ANNOTATION);
+		if ($annotation->hasValue() === false) {
+			return;
+		}
+
+		$errors = (new ConfidentialityAnnotationValidator())->validate(
+			block: $annotation->value(),
+			properties: ($schema->getProperties() ?? [])
+		);
+		if ($errors === []) {
+			return;
+		}
+
+		$this->logger->error(
+			sprintf(
+				'[OpenRegister.SchemaMapper] %s on schema "%s" is invalid and fails closed (objects with a tier are hidden until fixed): %s.',
+				ConfidentialityAnnotationValidator::ANNOTATION,
+				(string)($schema->getSlug() ?? ''),
+				implode('; ', $errors)
+			)
+		);
+	}//end checkConfidentiality()
 
 	/**
 	 * The hierarchy with the schema's identities, as the validator reads it.

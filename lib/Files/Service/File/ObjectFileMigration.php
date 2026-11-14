@@ -15,13 +15,14 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
+use OCA\OpenRegister\Service\File\DocumentStore;
 use OCP\Encryption\IManager as IEncryptionManager;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -54,16 +55,9 @@ use Throwable;
  * - Local storage only. On any other storage, or with server-side encryption
  *   on, it moves nothing and says why.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ObjectFileMigration {
-
-	/**
-	 * The managed root folder name.
-	 *
-	 * @var string
-	 */
-	public const ROOT_FOLDER = 'Open Registers';
 
 	/**
 	 * The app config key the refusal message is kept under, for the admin.
@@ -170,7 +164,7 @@ class ObjectFileMigration {
 	 *
 	 * @return array{foldersMoved: int, filesMoved: int, sharesReowned: int, foldersLeft: int, refused: bool}
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function run(): array {
 		$this->tally = ['foldersMoved' => 0, 'filesMoved' => 0, 'sharesReowned' => 0, 'foldersLeft' => 0, 'refused' => false];
@@ -225,7 +219,10 @@ class ObjectFileMigration {
 			return;
 		}
 
-		$target = $this->folderIn(parent: $systemHome, name: self::ROOT_FOLDER);
+		// A person's legacy tree was always made under the default root, so that
+		// is where it is looked for (below); it lands under the configured root.
+		$root = (new DocumentStore(appConfig: $this->appConfig, rootFolder: $this->rootFolder))->root();
+		$target = $this->folderIn(parent: $systemHome, name: $root);
 		$this->mergeInto(source: $source, target: $target);
 		$this->removeIfEmpty(folder: $source);
 	}//end moveHome()
@@ -240,11 +237,11 @@ class ObjectFileMigration {
 	private function managedTreeOf(string $uid): ?Folder {
 		try {
 			$home = $this->rootFolder->getUserFolder($uid);
-			if ($home->nodeExists(self::ROOT_FOLDER) === false) {
+			if ($home->nodeExists(DocumentStore::DEFAULT_ROOT) === false) {
 				return null;
 			}
 
-			$source = $home->get(self::ROOT_FOLDER);
+			$source = $home->get(DocumentStore::DEFAULT_ROOT);
 		} catch (Throwable $e) {
 			return null;
 		}

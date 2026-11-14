@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 /**
  * Answers which flow node performs a schedule's action.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 final class ScheduleActionNodes {
 	/**
@@ -55,7 +55,7 @@ final class ScheduleActionNodes {
 	 * @return array{type: string, config: array<string, string>}|null Null for an
 	 *         action off the map or a missing argument.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function flowNode(ScheduleDescriptor $schedule): ?array {
 		$node = (self::NODES[$schedule->action] ?? null);

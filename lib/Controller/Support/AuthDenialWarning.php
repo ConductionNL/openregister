@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 /**
  * The warning an authorisation lookup logs when it fails and so denies.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 final readonly class AuthDenialWarning {
 	/**
@@ -34,7 +34,7 @@ final readonly class AuthDenialWarning {
 	 * @param string               $message The warning message.
 	 * @param array<string, mixed> $context The subject keys logged with it.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(
 		public string $message,

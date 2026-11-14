@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Integration\LeafRendering;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -332,6 +333,90 @@ class LeafRegistryTest extends TestCase {
 	}//end testALeafThatHasNotSaidHowItLoadsIsNotRefused()
 
 	/**
+	 * A leaf that DECLARED it loads its own script is not reported as silent.
+	 *
+	 * It has said how it loads, so the "has not said how it loads" error would
+	 * be false: it registers and nothing is logged at error level.
+	 *
+	 * @return void
+	 */
+	public function testALeafThatLoadsItsOwnScriptIsNotReportedAsSilent(): void {
+		$this->assertNoErrorForDeclaredStrategy(strategy: LeafDescriptor::LOADS_VIA_OWN_SCRIPT);
+	}//end testALeafThatLoadsItsOwnScriptIsNotReportedAsSilent()
+
+	/**
+	 * A leaf that DECLARED it is already present is not reported as silent.
+	 *
+	 * @return void
+	 */
+	public function testALeafThatIsAlreadyPresentIsNotReportedAsSilent(): void {
+		$this->assertNoErrorForDeclaredStrategy(strategy: LeafDescriptor::LOADS_ALREADY_PRESENT);
+	}//end testALeafThatIsAlreadyPresentIsNotReportedAsSilent()
+
+	/**
+	 * A leaf whose load strategy is null still registers and the error is still logged.
+	 *
+	 * @return void
+	 */
+	public function testALeafThatHasNotSaidHowItLoadsIsStillReported(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('error')
+			->with($this->stringContains('has not said how it loads'));
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							availability: new LeafAvailability(requiredApp: 'acme'),
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath(),
+			$logger
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testALeafThatHasNotSaidHowItLoadsIsStillReported()
+
+	/**
+	 * Register a leaf that declares a strategy and assert it registers with no error logged.
+	 *
+	 * @param string $strategy The declared load strategy.
+	 *
+	 * @return void
+	 */
+	private function assertNoErrorForDeclaredStrategy(string $strategy): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('error');
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) use ($strategy) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							availability: new LeafAvailability(requiredApp: 'acme'),
+							rendering: new LeafRendering(loadStrategy: $strategy),
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath(),
+			$logger
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end assertNoErrorForDeclaredStrategy()
+
+	/**
 	 * An app manager that resolves a path with no leaf bundle in it.
 	 *
 	 * @return IAppManager The double.
@@ -415,6 +500,7 @@ class LeafRegistryTest extends TestCase {
 		array $listeners,
 		?IntegrationRegistry $integrationRegistry = null,
 		?IAppManager $appManager = null,
+		?LoggerInterface $logger = null,
 	): LeafRegistry {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(
@@ -436,7 +522,7 @@ class LeafRegistryTest extends TestCase {
 			eventDispatcher: $dispatcher,
 			integrationRegistry: ($integrationRegistry ?? new IntegrationRegistry(new NullLogger())),
 			appManager: $appManager,
-			logger: new NullLogger()
+			logger: ($logger ?? new NullLogger())
 		);
 	}//end makeRegistry()
 

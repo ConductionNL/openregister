@@ -96,7 +96,8 @@ class UrnServiceBehaviourTest extends TestCase {
 			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			$urls ?? $this->urls,
 			$config ?? $this->config,
-			$this->logger
+			$this->logger,
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class)
 		);
 	}
 

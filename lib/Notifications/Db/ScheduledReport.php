@@ -65,6 +65,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDeliveryFolder(?string $deliveryFolder)
  * @method string|null getDeliveryMode()
  * @method void setDeliveryMode(?string $deliveryMode)
+ * @method string|null getKind()
+ * @method void setKind(?string $kind)
+ * @method string|null getOptions()
+ * @method void setOptions(?string $options)
  * @method string|null getRecipients()
  * @method void setRecipients(?string $recipients)
  * @method bool|null getEnabled()
@@ -204,6 +208,23 @@ class ScheduledReport extends Entity implements JsonSerializable, ScheduledRepor
 	protected ?string $recipients = null;
 
 	/**
+	 * What the report holds: `export` (an object export of a register, the
+	 * original behaviour and the default) or `connection-health` (the daily
+	 * connection report, which needs no register or schema).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $kind = null;
+
+	/**
+	 * Opaque JSON-encoded options of the kind; for `connection-health`
+	 * `onlyWhenAttention` and `lookbackHours`.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $options = null;
+
+	/**
 	 * Whether this report is scheduled to run.
 	 *
 	 * @var boolean|null
@@ -263,6 +284,8 @@ class ScheduledReport extends Entity implements JsonSerializable, ScheduledRepor
 		$this->addType(fieldName: 'deliveryFolder', type: 'string');
 		$this->addType(fieldName: 'deliveryMode', type: 'string');
 		$this->addType(fieldName: 'recipients', type: 'string');
+		$this->addType(fieldName: 'kind', type: 'string');
+		$this->addType(fieldName: 'options', type: 'string');
 		$this->addType(fieldName: 'enabled', type: 'boolean');
 		$this->addType(fieldName: 'lastRunAt', type: 'datetime');
 		$this->addType(fieldName: 'lastStatus', type: 'string');
@@ -313,6 +336,41 @@ class ScheduledReport extends Entity implements JsonSerializable, ScheduledRepor
 	}//end getRecipientsArray()
 
 	/**
+	 * The report's kind, `export` when none is stored.
+	 *
+	 * @return string The kind.
+	 *
+	 * @spec openspec/changes/connections-daily-report-mail/specs/scheduled-report-jobs/spec.md#requirement-a-scheduled-report-can-be-a-daily-connection-health-report
+	 */
+	public function getKindOrDefault(): string {
+		if ($this->kind === null || $this->kind === '') {
+			return 'export';
+		}
+
+		return $this->kind;
+	}//end getKindOrDefault()
+
+	/**
+	 * The decoded options, or an empty array when none are stored.
+	 *
+	 * @return array<string, mixed> The options.
+	 *
+	 * @spec openspec/changes/connections-daily-report-mail/specs/scheduled-report-jobs/spec.md#requirement-a-scheduled-report-can-be-a-daily-connection-health-report
+	 */
+	public function getOptionsArray(): array {
+		if ($this->options === null || $this->options === '') {
+			return [];
+		}
+
+		$decoded = json_decode($this->options, true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		return $decoded;
+	}//end getOptionsArray()
+
+	/**
 	 * JSON serialization — the row is only ever exposed to its owner or an admin (controller-gated).
 	 *
 	 * @return array<string,mixed>
@@ -336,6 +394,8 @@ class ScheduledReport extends Entity implements JsonSerializable, ScheduledRepor
 			'deliveryFolder' => $this->deliveryFolder,
 			'deliveryMode' => ($this->deliveryMode ?? 'files'),
 			'recipients' => $this->getRecipientsArray(),
+			'kind' => $this->getKindOrDefault(),
+			'options' => $this->getOptionsArray(),
 			'enabled' => $this->enabled,
 			'lastRunAt' => $this->lastRunAt?->format(DateTime::ATOM),
 			'lastStatus' => $this->lastStatus,

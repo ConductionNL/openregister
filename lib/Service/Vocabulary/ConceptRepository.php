@@ -51,6 +51,13 @@ use Throwable;
 class ConceptRepository implements ConceptRepositoryInterface {
 
 	/**
+	 * A uuid, any version, any case.
+	 *
+	 * @var string
+	 */
+	private const UUID_SHAPE = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+
+	/**
 	 * Upper bound on concepts read for one scheme.
 	 *
 	 * Mirrors {@see \OCA\OpenRegister\Controller\VocabularyController}: a
@@ -212,13 +219,21 @@ class ConceptRepository implements ConceptRepositoryInterface {
 	}//end search()
 
 	/**
-	 * The scheme object identified by its durable uri, or null.
+	 * The scheme a property's binding names, or null: by uri, then slug, then uuid.
 	 *
-	 * @param string $schemeUri The scheme's uri.
+	 * The two spellings of the binding name a scheme differently: the
+	 * `x-openregister-concepts` annotation by its durable uri, the `conceptScheme`
+	 * modifier by its slug, as its published description says. Both reach every
+	 * reader (the value check, the options and the filter expansion) through
+	 * this one method, so resolving here keeps the three from disagreeing about
+	 * which scheme a property is bound to. The uri is tried first, so a slug that
+	 * happens to equal another scheme's uri cannot take its place.
+	 *
+	 * @param string $schemeUri The scheme's uri, slug or uuid.
 	 *
 	 * @return array<string,mixed>|null The scheme's decoded object data.
 	 *
-	 * @spec openspec/specs/skos-concept-registers/spec.md
+	 * @spec openspec/changes/property-code-list-from-concept-scheme/specs/skos-concept-registers/spec.md
 	 */
 	public function scheme(string $schemeUri): ?array {
 		if (array_key_exists($schemeUri, $this->schemeCache) === true) {
@@ -229,6 +244,10 @@ class ConceptRepository implements ConceptRepositoryInterface {
 
 		$data = $this->firstScheme(filters: ['uri' => $schemeUri], metadata: []);
 		if ($data === null) {
+			$data = $this->schemeBySlugOrUuid(reference: $schemeUri);
+		}
+
+		if ($data === null) {
 			return null;
 		}
 
@@ -236,6 +255,33 @@ class ConceptRepository implements ConceptRepositoryInterface {
 
 		return $data;
 	}//end scheme()
+
+	/**
+	 * The scheme whose slug, else whose uuid, is the reference, or null.
+	 *
+	 * A uuid lookup is only tried on a uuid-shaped reference: the metadata
+	 * column is typed, and a slug passed to it is a query error rather than a
+	 * miss.
+	 *
+	 * @param string $reference The scheme's slug or uuid.
+	 *
+	 * @return array<string,mixed>|null The scheme's decoded object data.
+	 *
+	 * @spec openspec/changes/property-code-list-from-concept-scheme/specs/skos-concept-registers/spec.md
+	 */
+	private function schemeBySlugOrUuid(string $reference): ?array {
+		$reference = trim($reference);
+		if ($reference === '') {
+			return null;
+		}
+
+		$data = $this->firstScheme(filters: [], metadata: ['slug' => $reference]);
+		if ($data !== null || preg_match(self::UUID_SHAPE, $reference) !== 1) {
+			return $data;
+		}
+
+		return $this->firstScheme(filters: [], metadata: ['uuid' => $reference]);
+	}//end schemeBySlugOrUuid()
 
 	/**
 	 * The scheme a uuid or slug reference points at, or null.

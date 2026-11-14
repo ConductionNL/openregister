@@ -9,19 +9,25 @@
 
 ## openregister — server descriptor + discovery + parity
 
-- [ ] Add a `renderMode` field to `LeafDescriptor` (`component` | `mount`,
+- [x] Add a `renderMode` field to `LeafDescriptor` (`component` | `mount`,
       default `component`); expose it via a getter and in `toArray()`.
-- [ ] Validate on registration: a render-surface leaf declaring `renderMode: 'mount'`
+- [x] Validate on registration: a render-surface leaf declaring `renderMode: 'mount'`
       is accepted with no bespoke tab/widget expectation; a `component` (or
       omitted) render-surface leaf keeps today's expectation.
-- [ ] Emit `renderMode` on the OCS capabilities discovery surface so a manifest
+- [x] Emit `renderMode` on the OCS capabilities discovery surface so a manifest
       app / admin UI can read how a render-surface leaf renders without loading
       its JS.
-- [ ] Extend the cross-layer parity correlation: for a render-surface leaf the
+- [x] Extend the cross-layer parity correlation: for a render-surface leaf the
       server descriptor `renderMode` MUST equal the JS registration `renderMode`
       under the shared id.
-- [ ] PHPUnit: renderMode default, mount-mode descriptor accepted, discovery
+      - Done: `LeafRenderModeParity` (`mismatches()` / `violations()`) compares the
+        registry's render-surface leaves with the JS render modes keyed by id;
+        an unstated JS mode is `component`. Wiring it into gate-24 is the
+        nextcloud-vue / hydra task below.
+- [x] PHPUnit: renderMode default, mount-mode descriptor accepted, discovery
       surface reports renderMode, render-mode mismatch flagged.
+      - Done: the first three were on main (`LeafDescriptorTest`,
+        `LeafRegistryTest`); the mismatch is `LeafRenderModeParityTest`.
 
 ## @conduction/nextcloud-vue — registry + host lifecycle (consuming change)
 

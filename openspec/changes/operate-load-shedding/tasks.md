@@ -2,12 +2,15 @@
 
 ## 1. Breaker core
 
-- [ ] 1.1 Add `lib/Service/Resilience/CircuitBreaker.php` and `BreakerRegistry.php`: closed, open and half-open states in 10 second buckets on a distributed `IMemcache`, local fallback, fail-open on cache errors, and thresholds from `IAppConfig` with defaults (design D-1, D-8). Verify: `tests/Unit/Service/Resilience/CircuitBreakerTest.php` with a clock fixture covers opening at 5 of 10, staying closed at 4 of 10, one half-open probe, doubling cool-down to 300 seconds, and a throwing cache letting calls through.
-- [ ] 1.2 Add `DependencyUnavailableException` and `lib/Middleware/LoadSheddingMiddleware.php` mapping it to 503 with `Retry-After` and a problem document naming only the dependency class; register it before `ObjectSourceErrorMiddleware`. Verify: `tests/Unit/Middleware/LoadSheddingMiddlewareTest.php` asserts status, header, `Content-Type` and that no host appears in the body.
+- [x] 1.1 Add `lib/Service/Resilience/CircuitBreaker.php` and `BreakerRegistry.php`: closed, open and half-open states in 10 second buckets on a distributed `IMemcache`, local fallback, fail-open on cache errors, and thresholds from `IAppConfig` with defaults (design D-1, D-8). Verify: `tests/Unit/Service/Resilience/CircuitBreakerTest.php` with a clock fixture covers opening at 5 of 10, staying closed at 4 of 10, one half-open probe, doubling cool-down to 300 seconds, and a throwing cache letting calls through.
+- [x] 1.2 Add `DependencyUnavailableException` and `lib/Middleware/LoadSheddingMiddleware.php` mapping it to 503 with `Retry-After` and a problem document naming only the dependency class; register it before `ObjectSourceErrorMiddleware`. Verify: `tests/Unit/Middleware/LoadSheddingMiddlewareTest.php` asserts status, header, `Content-Type` and that no host appears in the body.
+
+>
+> **2026-11-13 (partial build):** tasks 1.1 and 1.2 built — the breaker core (`CircuitBreaker`, `BreakerRegistry`, `BreakerThresholds`, `DependencyUnavailableException`) and `LoadSheddingMiddleware`, registered before `ObjectSourceErrorMiddleware`. No call site is guarded yet (tasks 2.x), the database-pressure meter and `#[Sheddable]` are not added (task 3), and there is no controller, console or docs (tasks 4, 5). Tests: `tests/Unit/Service/Resilience/CircuitBreakerTest.php` and `tests/Unit/Middleware/LoadSheddingMiddlewareTest.php`.
 
 ## 2. Guarded call sites
 
-- [ ] 2.1 Guard `OutboundHttpClient` per host, honouring the `openregister_dependency` request option and a 429's `Retry-After` (design D-2, D-3). Verify: `tests/Unit/Service/Outbound/OutboundHttpClientBreakerTest.php` asserts no request is sent while open and a 404 does not count as a failure.
+- [x] 2.1 Guard `OutboundHttpClient` per host, honouring the `openregister_dependency` request option and a 429's `Retry-After` (design D-2, D-3). Verify: `tests/Unit/Service/Outbound/OutboundHttpClientBreakerTest.php` asserts no request is sent while open and a 404 does not count as a failure.
 - [ ] 2.2 Guard `DbalObjectSourceProvider::connect()` per source, and make `find()` throw the 503 while the breaker is open instead of returning null. Verify: `tests/Unit/Service/ObjectSource/DbalObjectSourceBreakerTest.php` asserts the 503 on both `find()` and `findAll()` with no connect attempt.
 - [ ] 2.3 Guard the LLM chat and embedding calls under key `llm`. Verify: `tests/Unit/Service/Chat/ResponseGenerationBreakerTest.php` asserts an open breaker refuses before LLPhant is constructed.
 - [ ] 2.4 Guard webhook delivery per host: an open breaker schedules the delivery on `WebhookRetryJob` for after the cool-down without counting an attempt, and the interception webhook continues at once (design D-6). Verify: `tests/Unit/Service/WebhookServiceBreakerTest.php`.

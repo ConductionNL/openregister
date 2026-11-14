@@ -99,7 +99,7 @@ class PdfTextReplacer {
 	 *                                                       is created when omitted (test seam only —
 	 *                                                       production callers never pass this).
 	 *
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
@@ -129,7 +129,7 @@ class PdfTextReplacer {
 	 *                                   run when the output cannot be re-read.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function replaceInPdf(string $pdfBytes, RedactionPlan $plan): PdfRedaction {
 		if (count($plan->substitutions) === 0) {
@@ -571,13 +571,16 @@ class PdfTextReplacer {
 	 * @return string Text with adjacent identical placeholders collapsed.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-the-placeholder-carries-the-exception-ground-where-it-applies-req-pis-011
 	 */
 	public static function collapseAdjacentDuplicatePlaceholders(string $text): string {
 		// Match `[TYPE: id]` followed by ([ \t\n\r_-]+ + same `[TYPE: id]`) one or more times.
 		// The backreference \\1 forces the two placeholders to be identical.
 		// PHP_INT_MAX iterations is the natural fixed-point: collapses runs of
 		// 2, 3, 4, ... duplicates down to one.
-		$pattern = '/(\[[A-Z][A-Z_]*: [A-Za-z0-9_-]+\])(?:[ \t\n\r_\-]+\1)+/u';
+		// A placeholder carrying exception grounds (`[TYPE: id; 5.1.2e]`) is
+		// matched whole, so only identical grounds collapse (REQ-PIS-011).
+		$pattern = '/(\[[A-Z][A-Z_]*: [A-Za-z0-9_-]+(?:; [^\[\]\r\n]+)?\])(?:[ \t\n\r_\-]+\1)+/u';
 
 		$result = preg_replace(pattern: $pattern, replacement: '$1', subject: $text);
 

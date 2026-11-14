@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+ * @spec openspec/specs/flow-partial-run/spec.md
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
  * `startAt` and `pins`, and it is the one flow endpoint gated on
  * `flow.update` rather than on being allowed to see the flow.
  *
- * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+ * @spec openspec/specs/flow-partial-run/spec.md
  */
 class FlowTestRunController extends Controller {
 	use FlowLifecycleRefusalTrait;
@@ -142,7 +142,7 @@ class FlowTestRunController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 * @spec openspec/specs/flow-partial-run/spec.md
 	 */
 	#[NoAdminRequired]
 	public function test(): JSONResponse {

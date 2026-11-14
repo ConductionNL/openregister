@@ -82,6 +82,15 @@ interface WebhookLogMapperInterface {
 	public function findFailedForRetry(DateTime $before): array;
 
 	/**
+	 * How many failed deliveries are waiting for a retry that is not yet due.
+	 *
+	 * @param DateTime $now The clock instant.
+	 *
+	 * @return int The count.
+	 */
+	public function countPendingRetries(DateTime $now): int;
+
+	/**
 	 * Get statistics for a webhook
 	 *
 	 * @param int $webhookId Webhook ID (0 for all webhooks)

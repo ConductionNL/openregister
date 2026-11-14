@@ -52,6 +52,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Search, Filtering & Faceting | [search-and-faceting.md](search-and-faceting.md) | Core | Implemented | NL API Design Rules, PostgreSQL, Solr, Elasticsearch |
 | Access Control (RBAC) | [access-control.md](access-control.md) | Security | Implemented | OAuth2 scopes, ZGW Autorisaties, BIO |
 | Content Versioning & Audit Trail | [versioning-and-audit.md](versioning-and-audit.md) | Compliance | Implemented | Archiefwet, BIO, AVG |
+| Breaking Schema Change Notice | [schema-change-notice.md](schema-change-notice.md) | Core | Implemented | Nextcloud notifications, HTTP Link header |
 | Data Import & Export | [data-import-export.md](data-import-export.md) | Integration | Implemented | CSV, Excel, JSON, XML, OpenAPI |
 | Event-Driven Architecture | [event-driven-architecture.md](event-driven-architecture.md) | Integration | Implemented | CloudEvents v1.0, PSR-14 |
 | Webhooks & Notifications | [webhooks-and-notifications.md](webhooks-and-notifications.md) | Integration | Implemented | CloudEvents, HMAC, VNG Notificaties |
@@ -61,7 +62,9 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Generated Identifiers | [generated-identifier.md](generated-identifier.md) | Data Modelling | Implemented | Case numbers from a named sequence and a format, frozen after issue |
 | Object Slugs | [object-slugs.md](object-slugs.md) | Data Modelling | Implemented | Slug per object from a configured field, unique per register and schema, frozen once set, `occ openregister:backfill-slugs` |
 | Forms into their destination | [form-destination.md](form-destination.md) | Data Modelling | Implemented | A form is checked against its destination schema and submits into that object in one request |
-| Workflow Automation | [workflow-automation.md](workflow-automation.md) | Automation | Implemented | n8n, Windmill, BPMN |
+| Record Templates | [record-templates.md](record-templates.md) | Data Modelling | Implemented (API) | Named, shareable starting values for new records |
+| Flows (Workflow Automation) | [flows.md](flows.md) | Automation | Implemented | The built-in flow engine: triggers, steps, approvals, run history. External tools: see [workflow-automation.md](workflow-automation.md) |
+| Workflow Automation (external tools) | [workflow-automation.md](workflow-automation.md) | Integration | Implemented | Integration with external automation tools (n8n, Windmill), schema hooks. Built-in automation: see [flows.md](flows.md) |
 | Archiving & Records Management | [archiving.md](archiving.md) | Compliance | Implemented | Archiefwet, MDTO, NEN 15489, e-Depot |
 | OpenAPI & GraphQL APIs | [api-generation.md](api-generation.md) | Integration | Implemented | OpenAPI 3.1.0, GraphQL, NL API Design Rules |
 | AI & MCP Integration | [ai-and-mcp.md](ai-and-mcp.md) | AI | Implemented | MCP, JSON-RPC 2.0, SSE |
@@ -92,6 +95,7 @@ Fine-grained authorization at every level of the data hierarchy.
 Meeting Dutch government regulatory requirements.
 
 - [Content Versioning & Audit Trail](versioning-and-audit.md) — Immutable hash-chained audit log, semantic versioning, rollback
+- [Breaking Schema Change Notice](schema-change-notice.md) — Who a breaking schema change affects, the notice they get, following a schema, the change header
 - [Archiving & Records Management](archiving.md) — Retention schedules, destruction workflows, MDTO XML, e-Depot transfer (SIP)
 - [DSAR Deadline Escalation & DPIA Detection](dsar-escalation-and-dpia.md) — Temporal deadline-reminder/escalation/breach sweep + GDPR art-35 DPIA pattern detection, policy-pack-driven (ADR-047)
 
@@ -105,7 +109,9 @@ Connecting OpenRegister to external systems and workflows.
 - [Favourites & Recently Opened](favourites-and-recent.md) — Per-user star, view history, the `_favourite` and `_recent` lenses
 - [Access Links](access-links.md): share one record with somebody who has no account, revocably and on the audit trail
 - [Generated Identifiers](generated-identifier.md) — `x-openregister-generated`, a named counter, a format, and a value that cannot be edited
-- [Workflow Automation](workflow-automation.md) — Schema hooks, n8n/Windmill integration, import-time workflow triggers
+- [Record Templates](record-templates.md) — Named starting values per schema, shared like saved views, offered only to users who may create there
+- [Flows (Workflow Automation)](flows.md) — The built-in flow engine: canvas, triggers, steps, approvals, runs, kill switch, shipping flows
+- [Workflow Automation (external tools)](workflow-automation.md) — Schema hooks and integration with external tools (n8n, Windmill); for built-in automation see [Flows](flows.md)
 - [OpenAPI & GraphQL APIs](api-generation.md) — Auto-generated specs and GraphQL schema per register
 - [Real-Time Updates](realtime-updates.md) — SSE subscriptions, RBAC-filtered events, reconnection with replay
 - [Semantic Object Handoff](semantic-object-handoff.md) — Cross-app object conversion via canonical kinds (ns#Case, ns#Quote, …), declarative dialect, queue-mode deferral, provenance both ways (ADR-051)

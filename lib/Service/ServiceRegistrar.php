@@ -41,8 +41,8 @@ use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
+use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -164,13 +164,14 @@ final class ServiceRegistrar {
 			}
 		);
 
-		// Register the default no-op TranslationProvider. Operators replace
-		// this binding with a real provider (LibreTranslate / DeepL / etc.)
-		// by overriding it in their own app's registration.
+		// Bind the translation provider the admin settings select: Nextcloud
+		// Task Processing only when an administrator chose it and confirmed
+		// that record text may be sent; the no-op identity provider otherwise
+		// (ai-translation-with-a-glossary design D-6).
 		$context->registerService(
 			TranslationProviderInterface::class,
-			function () {
-				return new IdentityTranslationProvider();
+			static function (ContainerInterface $c) {
+				return $c->get(TranslationProviderResolver::class)->resolve();
 			}
 		);
 
@@ -330,7 +331,10 @@ final class ServiceRegistrar {
 				deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
 				// Reads a located task's subject from its own table instead
 				// of searching every magic table for it.
-				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class)
+				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
+				// The per-row `can` list (record-tasks-tab D-4), asked of the
+				// same authorization service every verb's endpoint asks.
+				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
 			);
 	}//end buildTaskInboxService()
 
@@ -381,7 +385,8 @@ final class ServiceRegistrar {
 				fileService: null,
 				// Not FileService itself (that would be the cycle this
 				// factory breaks), only the means to resolve it on first use.
-				container: $container
+				container: $container,
+				documentStore: $container->get(\OCA\OpenRegister\Service\File\DocumentStore::class)
 			);
 	}//end buildFolderManagementHandler()
 

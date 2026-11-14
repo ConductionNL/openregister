@@ -60,6 +60,12 @@ class DashboardControllerTest extends TestCase {
 		);
 	}
 
+	/**
+	 * The dashboard counts never cover more than the caller may read: a signed-in
+	 * non-admin is refused every count and chart, and nothing is aggregated for them.
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/built-in-dashboards/spec.md#REQ-ADS-002
+	 */
 	public function testAnalyticsEndpointsRejectNonAdmin(): void {
 		$bob = $this->createMock(IUser::class);
 		$bob->method('getUID')->willReturn('bob');
