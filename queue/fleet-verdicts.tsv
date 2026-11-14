@@ -9183,3 +9183,4 @@ humaniq	1129	5162c29635dd0edd98b93029de22176e215462ef	REVERIFY	worker-38	merged 
 decidiq	2162	1ab2ebcab91dfa59a84b19d991f8141707c35ee2	REVERIFY	worker-06	merged development in (clean now; l10n en/nl json valid, l10n js build up to date, check:l10n ok), unit 4257 green, phpcs/phpstan clean on touched lib, vitest+eslint touched ok; new head 75db4256adf95429053233069853075d1d759e3d, verify it
 learniq	2520	eb56a06d586ad0869e2703ec0267bc42bc0f7ea6	GREEN	worker-29	unit 6785 tests vs baseline 6754, 1 inherited failure (HigherEducationExampleSetTest), 0 new; js 1367, 9 inherited, 0 new
 learniq	2531	4185b758f553340c9a7c1e16ff9356f6d7f75653	GREEN	worker-29	unit 6785 tests vs baseline 6754, 1 inherited failure (HigherEducationExampleSetTest), 0 new; js 1367, 9 inherited, 0 new
+learniq	2532	2772c58e19949ae707acc898bd7fec7a06f7bd6a	CONFLICT	worker-29	conflicts with #2520 in lib/Settings/learniq_register.json (merges clean on development alone)
