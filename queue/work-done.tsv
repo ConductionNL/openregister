@@ -9850,5 +9850,6 @@ build:humaniq:leave-approval-steps-and-history:c2	partial: PR humaniq#1133 +2.3 
 build:humaniq:humaniq-boot-integrity:c2	done: PR #1153 (7.5 widget-key check runs bare: npm_package_* from package.json; measured cause was not ESM); left 4.2 archive-time and 5.5b live	session-20261114T141721-aeb4e068	2026-11-14T15:32:56Z
 merge:hermiq:1715:8d289116	stale	feeder	2026-11-14T15:25:05Z
 fix:learniq:2484:9c722d00	CONFLICT resolved (nl.json both kept), pushed 8e12588d; 1 inherited failure	session-20261114T144809-d686f759	2026-11-14T15:33:20Z
+build:humaniq:platform-integrations-catalogue:c2	done: PR #1130 now builds 2.1 (Integrations page, menu, Add integration handler, Access grants) and 2.2 (library formatters + 7 tests); 3.1 e2e/live left; head 408bb7b1	session-20261114T151928-232f046f	2026-11-14T15:33:32Z
 build:humaniq:reporting-full-list-export:c2	PR #1154: 0.1 met by locked 2.89.2, 1.1 allowExport on template+3 pages, DeploymentPlan exportable; 3.x e2e left	session-20261114T151938-8fa99f90	2026-11-14T15:33:27Z
 fix:integriq:3582:da7df603	merged development (clean), pushed a9dc2ceaab80f802c2b5a5cb9826ac241292c5ca, REVERIFY recorded; no new failures vs development	session-20261114T144749-57007b4b	2026-11-14T15:33:30Z
