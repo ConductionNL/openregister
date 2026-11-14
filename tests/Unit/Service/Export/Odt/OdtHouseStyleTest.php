@@ -90,4 +90,24 @@ class OdtHouseStyleTest extends TestCase {
 		$this->assertSame(OdtHouseStyle::MAX_LINE_LENGTH, mb_strlen($style->footerLines[0]));
 		$this->assertSame('Regel 6', $style->footerLines[5]);
 	}
+
+	public function testWithLogoAddsTheLogoAndKeepsTheRest(): void {
+		require_once __DIR__ . '/OdtLogoTest.php';
+		$logo = \OCA\OpenRegister\Service\Export\Odt\OdtLogo::fromBytes(OdtLogoTest::png(10, 10));
+		$style = new OdtHouseStyle(headBackground: '#112233', headText: '#ffffff', footerLines: ['Regel']);
+
+		$combined = OdtHouseStyle::withLogo($style, $logo);
+		$this->assertSame('#112233', $combined?->headBackground);
+		$this->assertSame('#ffffff', $combined->headText);
+		$this->assertSame(['Regel'], $combined->footerLines);
+		$this->assertSame($logo, $combined->logo);
+
+		$logoOnly = OdtHouseStyle::withLogo(null, $logo);
+		$this->assertSame($logo, $logoOnly?->logo);
+		$this->assertNull($logoOnly->headBackground);
+		$this->assertSame([], $logoOnly->footerLines);
+
+		$this->assertSame($style, OdtHouseStyle::withLogo($style, null));
+		$this->assertNull(OdtHouseStyle::withLogo(null, null));
+	}
 }//end class

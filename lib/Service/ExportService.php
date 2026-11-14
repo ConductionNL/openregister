@@ -772,8 +772,9 @@ class ExportService implements ObjectExporterInterface {
 	 * office server converts it to PDF.
 	 *
 	 * The requesting user's house style, when thematiq offers one, colours the
-	 * table header and adds the footer lines; without one the layout is the
-	 * plain one, and a profile that cannot be read never fails the export.
+	 * table header, adds the footer lines and puts the logo in the page header;
+	 * without one the layout is the plain one, and a profile that cannot be
+	 * read never fails the export.
 	 *
 	 * @param string[]    $sections Escaped HTML fragments, one per schema section.
 	 * @param string|null $uid      The requesting user, or null for the instance default house style.
@@ -789,10 +790,14 @@ class ExportService implements ObjectExporterInterface {
 			throw new OfficeServerRequiredException();
 		}
 
+		$profile = $this->documentStyle?->forUser(uid: $uid);
 		$odt = (new OdtWriter())->fromHtml(
 			html: implode('', $sections),
 			landscape: true,
-			houseStyle: OdtHouseStyle::fromProfile(profile: $this->documentStyle?->forUser(uid: $uid))
+			houseStyle: OdtHouseStyle::withLogo(
+				style: OdtHouseStyle::fromProfile(profile: $profile),
+				logo: $this->documentStyle?->logo(profile: $profile)
+			)
 		);
 
 		return $this->officeConverter->odtToPdf(odtBytes: $odt);

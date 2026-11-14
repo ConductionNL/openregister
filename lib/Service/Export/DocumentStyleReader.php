@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
+use OCA\OpenRegister\Service\Export\Odt\OdtLogo;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -50,6 +51,13 @@ class DocumentStyleReader {
 	 * @var string
 	 */
 	public const STYLE_SERVICE = 'OCA\\Thematiq\\Service\\DocumentStyleService';
+
+	/**
+	 * The service class thematiq keeps its uploaded document logo in.
+	 *
+	 * @var string
+	 */
+	public const ASSET_SERVICE = 'OCA\\Thematiq\\Service\\DocumentAssetService';
 
 	/**
 	 * Constructor.
@@ -99,4 +107,98 @@ class DocumentStyleReader {
 
 		return $profile;
 	}//end forUser()
+
+	/**
+	 * The profile's logo, read in-process and checked for embedding, or null.
+	 *
+	 * The uploaded document logo is read from thematiq's asset store; a token
+	 * set's bundled logo (a URL under thematiq's `img/`) is read from thematiq's
+	 * install folder. Nothing is fetched over HTTP. A logo that cannot be read
+	 * or does not pass {@see OdtLogo::fromBytes()} gives null. Never throws.
+	 *
+	 * @param array<string, mixed>|null $profile The profile {@see forUser()} returned, or null.
+	 *
+	 * @return OdtLogo|null The logo, or null.
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
+	 */
+	public function logo(?array $profile): ?OdtLogo {
+		$logo = ($profile['logo'] ?? null);
+		if (is_array($logo) === false || is_string($logo['url'] ?? null) === false) {
+			return null;
+		}
+
+		try {
+			$bytes = $this->uploadedLogo();
+			if ($bytes === null) {
+				$bytes = $this->bundledLogo(url: $logo['url']);
+			}
+		} catch (Throwable $e) {
+			$this->logger->debug('DocumentStyleReader: the document logo could not be read: ' . $e->getMessage());
+			return null;
+		}
+
+		if ($bytes === null) {
+			return null;
+		}
+
+		$checked = OdtLogo::fromBytes(bytes: $bytes);
+		if ($checked === null) {
+			$this->logger->debug('DocumentStyleReader: the document logo is too large or not a safe PNG, JPEG or SVG; the export has no logo.');
+		}
+
+		return $checked;
+	}//end logo()
+
+	/**
+	 * The uploaded document logo from thematiq's asset store, or null when there is none.
+	 *
+	 * @return string|null The bytes, or null.
+	 */
+	private function uploadedLogo(): ?string {
+		if (class_exists(self::ASSET_SERVICE) === false) {
+			return null;
+		}
+
+		$asset = $this->container->get(self::ASSET_SERVICE)->read('logo');
+		if (is_array($asset) === false || is_string($asset['bytes'] ?? null) === false) {
+			return null;
+		}
+
+		return $asset['bytes'];
+	}//end uploadedLogo()
+
+	/**
+	 * A token set's bundled logo, read from thematiq's `img/` folder, or null.
+	 *
+	 * The URL must point under thematiq's `img/`; the resolved file must stay
+	 * inside that folder and be no larger than {@see OdtLogo::MAX_BYTES}.
+	 *
+	 * @param string $url The profile's logo URL.
+	 *
+	 * @return string|null The bytes, or null.
+	 */
+	private function bundledLogo(string $url): ?string {
+		$path = (string) parse_url($url, PHP_URL_PATH);
+		$marker = '/' . self::THEMATIQ_APP . '/img/';
+		$position = strpos($path, $marker);
+		if ($position === false) {
+			return null;
+		}
+
+		$folder = realpath($this->appManager->getAppPath(self::THEMATIQ_APP) . '/img');
+		$file = realpath($folder . '/' . rawurldecode(substr($path, ($position + strlen($marker)))));
+		if ($folder === false || $file === false || str_starts_with($file, $folder . DIRECTORY_SEPARATOR) === false
+			|| is_file($file) === false || filesize($file) > OdtLogo::MAX_BYTES
+		) {
+			return null;
+		}
+
+		$bytes = file_get_contents($file);
+		if ($bytes === false) {
+			return null;
+		}
+
+		return $bytes;
+	}//end bundledLogo()
 }//end class

@@ -56,6 +56,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
  * @uses \OCA\OpenRegister\Service\Export\Odt\HtmlToOdt
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtTableBuilder
  * @uses \OCA\OpenRegister\Service\Export\Odt\VisibleText
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtLogo
  */
 class ExportServicePdfTest extends TestCase {
 
@@ -590,6 +591,34 @@ class ExportServicePdfTest extends TestCase {
 		$service->pdfFor(request: new ExportRequest(schema: $schema, currentUser: $user));
 
 		$this->assertStringContainsString('https://hilversum.nl/privacy', $this->convertedOdtPart(part: 'styles.xml'));
+	}
+
+	public function testTheProfilesLogoIsEmbeddedInThePageHeader(): void {
+		require_once __DIR__ . '/Export/Odt/OdtLogoTest.php';
+		$png = \OCA\OpenRegister\Tests\Unit\Service\Export\Odt\OdtLogoTest::png(width: 400, height: 100);
+		$profile = ['logo' => ['url' => '/apps/thematiq/document-style/asset/logo', 'mime' => 'image/png'], 'footer' => ['lines' => ['Gemeente Hilversum']]];
+		$reader = $this->createMock(DocumentStyleReader::class);
+		$reader->expects($this->once())->method('forUser')->with(null)->willReturn($profile);
+		$reader->expects($this->once())->method('logo')->with($profile)
+			->willReturn(\OCA\OpenRegister\Service\Export\Odt\OdtLogo::fromBytes(bytes: $png));
+		$service = new ExportService(
+			$this->registerMapper,
+			$this->userManager,
+			$this->groupManager,
+			$this->objectService,
+			$this->cacheHandler,
+			$this->propertyRbacHandler,
+			$this->converter,
+			null,
+			$reader
+		);
+
+		$service->renderTableToPdf(table: new RowsTable(title: 'Vergunningen', columns: ['naam' => 'Naam'], rows: [['naam' => 'A']]));
+
+		$this->assertSame($png, $this->convertedOdtPart(part: 'Pictures/logo.png'));
+		$styles = $this->convertedOdtPart(part: 'styles.xml');
+		$this->assertStringContainsString('<draw:image xlink:href="Pictures/logo.png"', $styles);
+		$this->assertStringContainsString('Gemeente Hilversum', $styles);
 	}
 
 	public function testWithoutAProfileTheExportKeepsThePlainLayout(): void {
