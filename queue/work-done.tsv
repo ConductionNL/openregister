@@ -8220,3 +8220,4 @@ verify:integriq:3564:96380a66	GREEN 3564,3567,3601; 3600 skipped (head moved to 
 fix:integriq:3593:331b9581	merged development (clean), pushed 24240782; conflict is with unlanded tree PRs	session-20261114T065626-0651b305	2026-11-14T08:23:12Z
 fix:integriq:3596:0a5a8f4f	no change: merges cleanly with current development (32e79141); conflict is only with earlier unmerged tree PRs, resolve after they land	session-20261114T075638-c30fc6de	2026-11-14T08:23:22Z
 build:launchpad:analytics-personal-opt-out	PR #1196: tasks 1-2 built (own opt-out route, Count my visits switch, 37 locales); task 3 is the archive step	session-20261114T065631-3903ed42	2026-11-14T08:23:29Z
+verify:integriq:3602:34c788e3	3602 GREEN; 0 new failures	session-20261114T065631-b4991134	2026-11-14T08:23:31Z
