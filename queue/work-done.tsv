@@ -11658,3 +11658,4 @@ fix:versioniq:695:93abbf9c	floor restored by splitting VERS/CSAF units; pushed 9
 fix:versioniq:727:b606104e	conflicts resolved keeping both sides, new head 745065b5, REVERIFY	session-20261114T221756-d9538cf9	2026-11-14T22:43:08Z
 fix:versioniq:706:679d4733	fixed floor: refactor to small units, floor passes; head fdbbbe0c	session-20261114T221801-9a21d394	2026-11-14T22:43:22Z
 fix:versioniq:722:1be4fab6	no change: branch already contains development; it conflicts only with unmerged #700/#709/#710, resolve after they land	session-20261114T221756-d9538cf9	2026-11-14T22:43:32Z
+verify:integriq:3589:908a815f	3589 GREEN, 3600 RED (catalogue golden digest)	session-20261114T214733-d4130db7	2026-11-14T22:43:32Z
