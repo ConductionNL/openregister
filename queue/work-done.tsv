@@ -11611,3 +11611,4 @@ verify:hermiq:1785:16f5b620	GREEN 1785	session-20261114T211810-b8f5dc24	2026-11-
 verify:stackiq:1918:93b9a246	5 GREEN (1918,1926,1937,1962,1964), 2 CONFLICT with tree (1933,1963); unit 3643 green, vitest 1 inherited failure	session-20261114T221801-9a21d394	2026-11-14T22:35:21Z
 fix:planninq:1179:837bd198	conflicts resolved, new head aa07467b; vitest 3433 pass, phpunit OK; REVERIFY recorded	session-20261114T221800-b231235b	2026-11-14T22:35:28Z
 fix:versioniq:728:937e9b58	conflict resolved, pushed 45cdec97, REVERIFY	session-20261114T221743-dbe5c07e	2026-11-14T22:35:38Z
+fix:hermiq:1751:5340b3de	strings moved off the tail, new head 803e144; a 3-line nl.json tail hunk vs #1739 remains (both carry the same unmerged fork strings), union resolution	session-20261114T204759-5dc9dba7	2026-11-14T22:35:52Z
