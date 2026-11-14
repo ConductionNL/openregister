@@ -4131,3 +4131,5 @@ Service/Archival/DestructionDryRun.php,,Service,,,,,Compliance
 Service/Translation/DetailedTranslationProviderInterface.php,,Service,,,,,Configuration
 Service/Translation/TranslationProviderResolver.php,,Service,,,,,Configuration
 Repair/ImportTranslationGlossaryRegister.php,,Repair,,,,,Platform
+Service/Task/ApprovalPositionForm.php,156,Service,Flows,Flows/Service/Task/ApprovalPositionForm.php,0,,Processes
+Service/Task/ApprovalPositionFormGuard.php,200,Service,Flows,Flows/Service/Task/ApprovalPositionFormGuard.php,0,,Processes
