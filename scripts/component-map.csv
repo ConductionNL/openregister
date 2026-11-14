@@ -4237,3 +4237,11 @@ Service/Import/RecordImport/RowRangeFilter.php,,Service,,,,,Core
 Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
+Db/FlowMoment.php,126,Db,Flows,Flows/Db/FlowMoment.php,0,,Processes
+Db/FlowMomentMapper.php,151,Db,Flows,Flows/Db/FlowMomentMapper.php,0,,Processes
+Service/Flow/FlowCalendarIndex.php,289,Service,Flows,Flows/Service/Flow/FlowCalendarIndex.php,0,,Processes
+Service/Flow/FlowCalendarService.php,286,Service,Flows,Flows/Service/Flow/FlowCalendarService.php,0,,Processes
+Service/Flow/FlowCalendarRecords.php,110,Service,Flows,Flows/Service/Flow/FlowCalendarRecords.php,0,,Processes
+Listener/FlowCalendarIndexListener.php,88,Listener,Flows,Flows/Listener/FlowCalendarIndexListener.php,0,,Processes
+BackgroundJob/FlowCalendarWorker.php,91,BackgroundJob,Flows,Flows/BackgroundJob/FlowCalendarWorker.php,0,,Processes
+Migration/Version1Date20261114170000.php,87,Migration,,,,,Platform

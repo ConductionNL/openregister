@@ -3,10 +3,10 @@
 ## 1. Calendar trigger
 
 - [x] 1.1 `TriggerCalendarNode` (`openregister.trigger-calendar`) registered through `RegisterFlowNodesEvent`, with config validation for register, schema, date property, offset, `workingCalendar` and `runAs`. Verify: unit tests for each refused config.
-- [ ] 1.2 A due-moment index per trigger and record, written on object create, update and delete, so a changed date moves the moment and a cleared date or a deleted record removes it. Verify: unit tests for move, clear and delete.
-- [ ] 1.3 A background job that queues a run for every moment that has come due, once per record and date value, through `FlowRunService::queue()`. Verify: clock-controlled test that a moment fires once and only once.
+- [x] 1.2 A due-moment index per trigger and record, written on object create, update and delete, so a changed date moves the moment and a cleared date or a deleted record removes it. Verify: unit tests for move, clear and delete. (built: `openregister_flow_moments` with `FlowCalendarIndex`, kept in step by `FlowCalendarIndexListener` on object create, update and delete; `FlowCalendarIndexTest`.)
+- [x] 1.3 A background job that queues a run for every moment that has come due, once per record and date value, through `FlowRunService::queue()`. Verify: clock-controlled test that a moment fires once and only once. (built: `FlowCalendarWorker` every five minutes through `FlowCalendarService::fireDue()`, which claims a moment with a conditional write before `FlowRunService::queueRun()`; a calendar run acts as its own node's `runAs` (`FlowRunAttribution`); `FlowCalendarServiceTest`, `FlowRunAttributionTest`.)
 - [x] 1.4 Offsets counted on the working calendar when one is named, through the flow-business-timers calculator. Verify: test across a weekend and a holiday.
-- [ ] 1.5 Enabling a trigger records the moment it was enabled; moments before it are skipped and counted on the flow. Verify: test with three past and one future record.
+- [x] 1.5 Enabling a trigger records the moment it was enabled; moments before it are skipped and counted on the flow. Verify: test with three past and one future record. (built: the first tick that sees the trigger enabled records the enabling save and places the existing records; earlier moments are skipped and counted, `FlowCalendarService::skippedBeforeEnabling()`; disabling forgets the enabling.)
 
 ## 2. Incoming-webhook trigger
 
