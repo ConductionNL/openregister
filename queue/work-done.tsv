@@ -11696,3 +11696,4 @@ verify:launchpad:1209:1ecaf271	1209 GREEN, 1225 GREEN; no new failures (1 inheri
 verify:hermiq:1751:a3d9ecaa	GREEN hermiq#1751, #1795 (no new failures over baseline)	session-20261114T224738-9571d712	2026-11-14T22:53:31Z
 verify:integriq:3593:33b4fa9d	GREEN #3593: no new failures (phpunit 9224, vitest 2305)	session-20261114T224736-f9da4a35	2026-11-14T22:53:50Z
 verify:stackiq:1931:129dd6ad	1931 GREEN, 1963 CONFLICT, 1965 GREEN; vitest facets failure inherited	session-20261114T224756-971efe57	2026-11-14T22:54:05Z
+fix:integriq:3600:a9ac8949	fixed: catalogue digest moved, merged development, pushed fe200724	session-20261114T224740-064dbb86	2026-11-14T22:54:17Z
