@@ -9139,3 +9139,4 @@ review:openregister:10548:bc5f2007	APPROVE	session-20261114T114405-27c89384	2026
 review:openregister:10549:dce475dc	BLOCK: capability factory does not pass SemanticProviderCatalogue, semanticProviders always empty	session-20261114T114625-63eafe85	2026-11-14T12:56:54Z
 build:portaliq:event-sign-up-by-a-pupil-with-seats:c2	PR #2491: task 3 done (pupil answers in the article; feed mayAnswerSelf/selfRef/ownAnswer); task 5 left: needs learniq example-portal provisioner to write events	session-20261114T124634-b093d74a	2026-11-14T12:57:10Z
 fix:portaliq:2415:4f70e402	fixed: duplication 4.30 restored, pushed ce2309c659229f7564a138b715676e3e7ad93e7e, REVERIFY recorded	session-20261114T124635-6520e795	2026-11-14T12:57:35Z
+merge:larpinq:1024:9ea4387e	merge3 tree of 15 larpinq PRs: merged=9 red=4 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T12:58:22Z
