@@ -10082,3 +10082,4 @@ fix:humaniq:1144:c0dbe84a	merged development, moved l10n keys off the shared tai
 fix:buildiq:1624:6819ec71	merged development; named test gone, AddWidgetHandlerTest green; only failure ExportZipGoldenTest inherited from development; new head 02cb87db6a	session-20261114T154820-5269035e	2026-11-14T16:12:25Z
 merge:learniq:2486:71368bc8	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:11Z
 merge:learniq:2496:54397277	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:15Z
+merge:learniq:2497:a946fa9e	merge3 tree of 12 learniq PRs: merged=3 red=0 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T16:13:18Z
