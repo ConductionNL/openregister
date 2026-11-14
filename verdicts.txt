@@ -3211,3 +3211,4 @@
 10426 4b6c76283786938c0e483b3cf5ae64019a0e8ff4 APPROVE integrator IL5: main merge on top of approved 6d5c8a8f: MagicMapper imports from both sides; MagicMapper tests (2065) and the PR's tests pass
 10436 eba1ecce0c71ab2aeae6da9fec8a4557cb84bed0 APPROVE integrator IL5: main merge on top of approved de6e0970: listener goldens follow the merged registrar (listener-order.json regenerated, order golden re-pinned); Listener tests and the PR's tests pass
 10438 ec8758f710199956af9ad9b619e8248bf1935177 APPROVE integrator IL5: main merge on top of approved 74b85fb1: listener goldens follow the merged registrar (listener-order.json regenerated, order golden re-pinned); Listener tests and the PR's tests pass
+10472 7af39527c14c4912d67533fe27d885724988f811 APPROVE Tests only: 3 new BackgroundJob test files (16 tests) pass; BackgroundJob 815 OK, Architecture 2364 OK, Rules 301 OK, Contract 69 OK; Controller errors reproduce on main.
