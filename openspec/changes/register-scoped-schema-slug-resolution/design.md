@@ -122,6 +122,7 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | `RelatedRowQueryApplier::findSchema()` (`_ref` target schema) | was (b), now scoped | The register the query runs in (`RelatedRowFilterTarget::$register`), via `SchemaRefInRegister::findInRegister()`; the refuse-when-ambiguous chain runs unchanged when the register lacks the slug. |
 | `TranslationController::resolveSchema()` (object completeness) | was (b), now scoped | The object's own register, read through an optional register reader on `TranslationMappers`; ids skip the object read. |
 | `FacetHandler::schemasMatching()` (facet discovery) | was (b), now scoped | The query's `@self.register` when it names one register, read through an optional register reader on `FacetLookups`; a list of registers scopes nothing. |
+| `AggregationRunner::resolveCrossTarget()` (cross-schema `from:`) | was (b), now scoped | `$run->register`: a `from:` slug it carries resolves there and aggregates on its table; one it lacks resolves globally and finds its own register as before. Joins and the no-register `findSchema()` stay (c). |
 
 ### Still class (b): open
 
@@ -132,7 +133,6 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | `SourceRecordResolver::lookupSchemaId()` (survivorship) | (b), open | Also memoised in a static keyed by the bare slug; the key needs the register first. |
 | `UtilityHandler::normalizeEntity()` (migration sides) | (b), open | Each side carries its register; the helper resolves one reference alone. |
 | `SearchQueryHandler::schemaOrNull()` | (b), open | `buildSearchQuery()` holds the register but passes only the schema down. |
-| `AggregationRunner::loadSchema()` | (b) for `resolveCrossTarget()`, (c) for joins and the no-register `findSchema()` | `$run->register` is held on the cross-schema path. |
 
 ### Class (a) and (c)
 
