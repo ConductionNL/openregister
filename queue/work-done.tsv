@@ -8464,3 +8464,4 @@ verify:launchpad:1212:58fa3834	GREEN 1212,1213,1215,1216 (phpunit 4068->4103 0 f
 fix:integriq:3599:4d149f50	l10n key relocated to avoid sibling append conflicts, js catalogues rebuilt, pushed 54b8f536, REVERIFY	session-20261114T062142-da017174	2026-11-14T08:54:02Z
 build:stackiq:operations-sync-status-and-progress	partial: PR #1940, tasks 1-4 (backend, endpoint, policy, last run, interval, repair step) built; suite 3446->3462 OK; task 5 page and 6 docs left	session-20261114T075643-acecaad6	2026-11-14T08:54:21Z
 build:stackiq:operations-technology-components	partial: PR #1938 (tasks 1,4 + util of 3; left 2,3 panel,5)	session-20261114T070333-41d2bfe8	2026-11-14T08:54:14Z
+fix:opencatalogi:2456:c1e5453b	fixed: spec loads in jest (auth mock), 35 tests pass; new head dc12f0da	session-20261114T082640-df1db926	2026-11-14T08:54:31Z
