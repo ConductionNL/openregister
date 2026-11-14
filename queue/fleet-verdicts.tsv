@@ -8064,3 +8064,4 @@ shillinq	2966	98c689a1a8d156869703974296aa7077bfc07589	GREEN	worker-50	phpunit-u
 shillinq	2976	321f6a25a84cc2f9292f8e9eb8461d8338ff88ff	CONFLICT	worker-50	clean on development, conflicts after #2966 in appinfo/info.xml, lib/Settings/register.d/add-shillinq-bookkeeping-foundation.json and tests/fixtures/register-versions.lock.json
 shillinq	2987	fcbfec9b8fb93ca9254c28a445a901b68a23103f	GREEN	worker-50	phpunit-unit 11088 tests OK on tree (baseline 11050 OK), no new failures; register fragment and docs for sales-webshop-orders as specified (note: docs/Integrations and docs/integrations both exist)
 shillinq	3053	12a3816720c16a2040f04fae4ac7afbf2efcbd1b	GREEN	worker-50	phpunit-unit 11088 tests OK on tree (baseline 11050 OK), no new failures; tests only
+shillinq	3054	1f22e39e9d5223c930cfcb06d34f43ee85d66591	GREEN	worker-50	phpunit-unit 11088 tests OK on tree (baseline 11050 OK), no new failures; tests only
