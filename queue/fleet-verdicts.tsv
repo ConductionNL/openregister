@@ -8818,3 +8818,4 @@ filinq	2118	258663ae84b1f755c0d4b0b263b365e3c9c3ffe3	CONFLICT	merge3	merges clea
 filinq	2119	8d9239c18eecd7aa3ec7a7c83b22c97e9c3529bd	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js src/views/settings/Settings.vue 
 filinq	2123	833c1b46da8690a20d99ec6b65f7be64b64ec4e2	CONFLICT	merge3	merges clean on development alone; files: l10n/de.js l10n/de.json l10n/es.js l10n/es.json l10n/fr.js l10n/fr.json l10n/it.js l10n/it.json 
 filinq	2124	803f8a8705729868e4adea70abd1b08d06332f61	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/views/settings/Settings.vue tests/jest/golden/settings-page.json 
+planninq	1158	70b326989e31ab89bfbbe17f8ca6a6457aabb644	GREEN	worker-38	tree dev+1158+1159+1162: phpunit 1046 OK, vitest 3269 pass, 0 failures (no baseline failures); builds plannedtimeentry-reads-humaniqs-hours, ObjectRows extraction is behaviour-identical
