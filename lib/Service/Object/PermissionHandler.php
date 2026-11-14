@@ -31,6 +31,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
+use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
+use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
+use OCA\OpenRegister\Service\Rbac\ClassificationScale;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
+use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectClassification;
 use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -909,11 +915,51 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
+		if ($this->classificationRefuses(ask: $ask) === true) {
+			$this->lastRefusalFinal = true;
+			return false;
+		}
+
 		$verdict = $this->grantVerdict(check: $check);
 		$this->lastRefusalFinal = false;
 
 		return $verdict;
 	}//end evaluatePermission()
+
+	/**
+	 * Whether the schema's classification block refuses this caller this object.
+	 *
+	 * Checked before any grant, so neither a schema rule, a per-object grant nor
+	 * an elevation re-opens it (the refusal is final). Only an ask about one
+	 * object is checked; the list path compiles the same comparison into its query.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
+	 */
+	private function classificationRefuses(PermissionAsk $ask): bool {
+		if ($ask->object === null
+			|| is_array((new SchemaAnnotation(schema: $ask->schema, key: ClassificationScale::ANNOTATION))->value()) === false
+		) {
+			return false;
+		}
+
+		$userId = $this->callerId(userId: $ask->userId);
+		$logger = $this->data->logger;
+		$gate   = new ClassificationReadGate(
+			classification: new ObjectClassification(logger: $logger),
+			clearances: new ClearanceResolver(logger: $logger),
+			logger: $logger
+		);
+
+		return $gate->refusal(
+			schema: $ask->schema,
+			object: $ask->object,
+			caller: new ClassificationCaller(userId: $userId, groups: $this->groupsOf(userId: $userId), action: $ask->action)
+		) !== null;
+	}//end classificationRefuses()
 
 	/**
 	 * The chain after the deny pass: the private scope, the caller, the administrator bypass, derived groups, custom verbs and the grants.

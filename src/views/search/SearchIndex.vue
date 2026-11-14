@@ -14,6 +14,7 @@ import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
+import FileDocumentPlusOutline from 'vue-material-design-icons/FileDocumentPlusOutline.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
@@ -81,6 +82,7 @@ export default {
 		CheckCircle,
 		ContentCopy,
 		DatabaseExport,
+		FileDocumentPlusOutline,
 		Merge,
 		Pencil,
 		TrashCanOutline,
@@ -579,6 +581,18 @@ export default {
 		},
 
 		/**
+		 * Open the save-as-template dialog for a row.
+		 *
+		 * @param {object} row The object row to keep as a template.
+		 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#scenario-a-caseworker-saves-a-melding-as-a-template
+		 * @return {void}
+		 */
+		handleSaveAsTemplateRow(row) {
+			objectStore.setObjectItem(row)
+			navigationStore.setDialog('saveRecordTemplate')
+		},
+
+		/**
 		 * Open the delete-object dialog for a row.
 		 *
 		 * @param {object} row The object row to delete.
@@ -910,6 +924,12 @@ export default {
 						</template>
 						{{ t('openregister', 'Copy') }}
 					</NcActionButton>
+					<NcActionButton closeAfterClick @click="handleSaveAsTemplateRow(row)">
+						<template #icon>
+							<FileDocumentPlusOutline :size="20" />
+						</template>
+						{{ t('openregister', 'Save as template') }}
+					</NcActionButton>
 					<NcActionButton closeAfterClick @click="handleDeleteRow(row)">
 						<template #icon>
 							<TrashCanOutline :size="20" />
@@ -980,6 +1000,12 @@ export default {
 								<ContentCopy :size="20" />
 							</template>
 							{{ t('openregister', 'Copy') }}
+						</NcActionButton>
+						<NcActionButton closeAfterClick @click="handleSaveAsTemplateRow(object)">
+							<template #icon>
+								<FileDocumentPlusOutline :size="20" />
+							</template>
+							{{ t('openregister', 'Save as template') }}
 						</NcActionButton>
 						<NcActionButton closeAfterClick @click="handleDeleteRow(object)">
 							<template #icon>
