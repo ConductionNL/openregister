@@ -9532,3 +9532,4 @@ verify:shillinq:2997:db45dc25	2997 CONFLICT, 3007 CONFLICT (both vs plain develo
 build:learniq:credentials-migrate-with-validity:c2	done: PR #2501 head d58497ec, code tasks 2.2 route+credential.migrate action, 2.3 signing refuses migrated/reissue skips, 3.1 verify migration facts, 4.1 upload dialog; 5.x live/archive left; unit 6721 (1 inherited fail), js 9 inherited fails	session-20261114T141724-6227a125	2026-11-14T14:39:14Z
 verify:learniq:2484:4c92f0b4	2484, 2521, 2523 GREEN (unit 6741, only the inherited failure); 2501 skipped (head moved); 2493, 2507, 2524 CONFLICT	session-20261114T124625-07e62ccf	2026-11-14T14:39:06Z
 fix:shillinq:3050:1bdb43ad	conflict resolved, merged development; new head b62151d4	session-20261114T141727-56b2bf78	2026-11-14T14:39:09Z
+fix:dossiq:6385:0de8a799	fixed BLOCK: caseType 1.49.0 for inspectionChecklist + digest; new head db74d1b0b, REVERIFY recorded	session-20261114T134643-47800317	2026-11-14T14:39:22Z
