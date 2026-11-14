@@ -160,9 +160,10 @@ final class SearchScopesCapabilityTest extends TestCase {
 				'app:dossiq', 'app:pipelinq', 'app:procest',
 				'register:archive', 'register:crm', 'register:zaken',
 				'schema:case', 'schema:contact',
+				'files',
 			],
 			self::ids($capabilities),
-			'the vault register, its schema and its app are not offered'
+			'the vault register, its schema and its app are not offered; files comes last, now that hits carry a kind'
 		);
 		self::assertSame([[1, 'read', 'alice'], [2, 'read', 'alice'], [3, 'read', 'alice'], [4, 'read', 'alice']], $asked);
 
