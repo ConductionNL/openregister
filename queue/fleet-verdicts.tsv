@@ -9029,3 +9029,4 @@ hermiq	1725	01ca65a04599b571aedc170ab54a9272114981c5	GREEN	worker-28	tree dev+17
 hermiq	1779	9a950cc0c157113aa8549ef005b47fe4169dfe7e	GREEN	worker-28	tree dev+1725+1779: unit 5080 tests, failures the same 190 names as on development (missing ../openregister stubs), no new failures; vitest 1482/1482
 hermiq	1757	c5c53ee833f45f7b3fe0a3bd183382bd7dc1ff9e	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/en.json
 hermiq	1762	6f2d6587c1d018f621bb2f38a1f18c3747790563	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/en.json
+shillinq	2991	f7e28a5d009e7d5734a90f35ab326a48cbef9b45	REVERIFY	worker-13	merged development; l10n keep-both (no duplicate keys); app version moved to 0.5.7-unstable.20261114170000 with the merged register map recorded; unit suite 11255 tests 0 failures; new head b7472331869926b992f4b40456836e022bf3c677, verify it
