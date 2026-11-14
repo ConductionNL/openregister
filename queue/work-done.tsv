@@ -8556,3 +8556,4 @@ build:thematiq:action-colour-token	already built: on development since 06c92322e
 build:thematiq:shell-tokens-endpoint	already done: built in #1250; only 5.3 (live call against a running instance) is open, which cannot be done here	session-20261114T062200-6a28e40c	2026-11-14T09:06:19Z
 fix:stackiq:1906:0659304c	development merged in clean; conflict only with open #1899; REVERIFY at 5acf605d	session-20261114T075648-394d8174	2026-11-14T09:06:13Z
 verify:stackiq:1941:58de287e	GREEN 1941; CONFLICT 1942 (info.xml, l10n with 1941)	session-20261114T065626-0651b305	2026-11-14T09:06:39Z
+verify:integriq:3599:3e690974	3599 GREEN	session-20261114T070352-19ea7dff	2026-11-14T09:06:45Z
