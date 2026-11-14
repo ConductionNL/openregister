@@ -8956,3 +8956,4 @@ fix:pipelinq:3752:939f173a	conflict resolved (l10n, both sides kept); new head d
 fix:pipelinq:3821:6c166057	conflict resolved (l10n, both sides kept); new head b58b2b29	session-20261114T114625-63eafe85	2026-11-14T11:51:04Z
 fix:pipelinq:3713:61678b39	conflict resolved (l10n, both sides kept); new head 75ce9bd5	session-20261114T114625-63eafe85	2026-11-14T11:51:45Z
 fix:pipelinq:3708:e4400e74	merged development, resolved l10n conflicts; new head 59d07177, REVERIFY recorded	session-20261114T114416-aa10a904	2026-11-14T11:51:56Z
+build:pipelinq:brp-monitor-moves-to-integriq:c3	failed: blocked, 2.1 and connection fields wait on integriq quality/build-brp-connection-monitor-from-pipelinq (handover listener not on integriq development); PR #3820 already merged	session-20261114T114647-2bec20c6	2026-11-14T11:52:56Z
