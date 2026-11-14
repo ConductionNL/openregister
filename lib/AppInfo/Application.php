@@ -267,6 +267,8 @@ class Application extends App implements IBootstrap {
 		// the host here lifts the block instance-wide for any app that
 		// proxies GitHub issues through OpenRegister.
 		$this->relaxCspForGithubAvatars(server: $server);
+		// The records map draws PDOK and OpenStreetMap tiles (geometry-on-a-map).
+		$this->relaxCspForMapTiles(server: $server);
 
 		// Allow registering the Web Push Service Worker (openregister-web-push-engine).
 		// Nextcloud's default CSP uses a nonce-based script-src, which a Service
@@ -300,6 +302,30 @@ class Application extends App implements IBootstrap {
 			// avatars). Stay silent rather than fail the boot.
 		}
 	}//end relaxCspForGithubAvatars()
+
+	/**
+	 * Allow the base map tiles the records map and the geometry editor draw:
+	 * `img-src` for PDOK (the Dutch government base maps) and OpenStreetMap,
+	 * pushed onto Nextcloud's default Content-Security-Policy like the
+	 * avatars above. Additive and idempotent.
+	 *
+	 * @param mixed $server Server container (passed in from boot()).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
+	 */
+	private function relaxCspForMapTiles($server): void {
+		try {
+			$cspManager = $server->get(IContentSecurityPolicyManager::class);
+			$policy = new ContentSecurityPolicy();
+			$policy->addAllowedImageDomain('https://service.pdok.nl');
+			$policy->addAllowedImageDomain('https://tile.openstreetmap.org');
+			$cspManager->addDefaultPolicy($policy);
+		} catch (\Throwable $e) {
+			// CSP manager unavailable (rare). The map still lists the records.
+		}
+	}//end relaxCspForMapTiles()
 
 	/**
 	 * Allow the same-origin Web Push Service Worker to register by adding
