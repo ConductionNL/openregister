@@ -10746,3 +10746,4 @@ merge:keepiq:1784:9cc4b3d4	merge3 tree of 4 keepiq PRs: merged=3 red=0 fail=0 sk
 merge:keepiq:1782:ab37f1a4	merge3 tree of 4 keepiq PRs: merged=3 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T19:59:19Z
 verify:learniq:2486:2e75f19c	GREEN learniq#2486 (6797 tests, 1 inherited failure, none new)	session-20261114T195420-f8b91a81	2026-11-14T19:59:38Z
 verify:filinq:2069:c655afc4	2069 GREEN, 2118 GREEN, 2070 CONFLICT, 2130 CONFLICT	session-20261114T194935-f789346b	2026-11-14T20:00:17Z
+fix:decidiq:2188:0f122fbc	merged development in clean, unit green; new head c7ab281d8d52931ec9804c3ca5e5ffc8c3ef9a86, REVERIFY recorded	session-20261114T194751-bb7578f8	2026-11-14T20:00:25Z
