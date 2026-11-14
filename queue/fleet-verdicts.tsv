@@ -10202,3 +10202,4 @@ decidiq	2178	37197bc0dc79c7ac6841b3162e6f177815309958	CONFLICT	merge3	merges cle
 decidiq	2188	b774355c5fc719de1a030868fd7ff83f485a10eb	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/Registrar/SaveGuardSubscriptions.php 
 decidiq	2189	d54fa2289e2eb3b59dd2fedbbfb0ec076afc3829	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/profiles/municipality.json 
 decidiq	2191	4d6f144bcc6304f052adc9d77f24d84379a9ec62	CONFLICT	merge3	merges clean on development alone; files: src/manifest.json tests/vitest/simpleDecisionPage.spec.js 
+shillinq	2997	a72f8f14785a52e47a6bfb8e23bdba79ee13ed09	REVERIFY	worker-32	merged origin/development in (clean; register lock valid); unit 11514 tests green; new head 7b59093090ba4d941bd21fbbd970d0e6af5b8f73, verify it
