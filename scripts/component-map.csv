@@ -1945,6 +1945,7 @@ Service/ComparableInstants.php,28,Service,Access,Access/Service/ComparableInstan
 Service/ConditionMatcher.php,222,Service,Access,Access/Service/ConditionMatcher.php,14,102,Core
 Service/Confidentiality/ConfidentialityAnnotationValidator.php,182,Service,Access,Access/Service/Confidentiality/ConfidentialityAnnotationValidator.php,0,,Core
 Service/Confidentiality/ConfidentialityRule.php,369,Service,Access,Access/Service/Confidentiality/ConfidentialityRule.php,0,,Core
+Service/Config/BrokerIdentity.php,22,Service,Integrations,Integrations/Service/Config/BrokerIdentity.php,0,,Configuration
 Service/Config/BundleCrossingGuard.php,36,Service,Configuration,Configuration/Service/Config/BundleCrossingGuard.php,0,,Configuration
 Service/Config/BundleSigner.php,94,Service,Integrations,Integrations/Service/Config/BundleSigner.php,0,,Configuration
 Service/Config/FederatedConfigAccess.php,41,Service,Configuration,Configuration/Service/Config/FederatedConfigAccess.php,0,,Configuration

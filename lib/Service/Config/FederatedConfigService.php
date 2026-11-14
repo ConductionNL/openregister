@@ -238,6 +238,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @param array $selection What to share.
 	 * @param ConfigPublishTarget $target Where to publish: repo, path, branch and visibility of a created repo.
 	 * @param string $credentialId The broker credential id custodying the GitHub token.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array `{published: true, path, status}`.
 	 *
@@ -245,8 +247,19 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function publish(string $typeId, array $selection, ConfigPublishTarget $target, string $credentialId): array {
-		$destination = new BrokeredPublishTarget(target: $target, credentialId: $credentialId);
+	public function publish(
+		string $typeId,
+		array $selection,
+		ConfigPublishTarget $target,
+		string $credentialId,
+		?string $appId = null,
+		?string $actingUserId = null
+	): array {
+		$destination = new BrokeredPublishTarget(
+			target: $target,
+			credentialId: $credentialId,
+			identity: BrokerIdentity::of(appId: $appId, actingUserId: $actingUserId)
+		);
 
 		return $this->publishBundle(request: new ConfigPublishRequest(typeId: $typeId, selection: $selection, destination: $destination));
 	}//end publish()
@@ -294,11 +307,12 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		$target = $request->destination->target;
 		$result = $this->transport->broker->request(
 			credentialId: $request->destination->credentialId,
-			appId: self::APP_ID,
+			appId: $request->destination->identity->appId,
 			method: 'PUT',
 			path: sprintf('/repos/%s/contents/%s', $target->repo, ltrim($target->path, '/')),
 			headers: ['Accept' => 'application/vnd.github+json'],
-			body: $this->contentsBody(request: $request, bundle: $bundle)
+			body: $this->contentsBody(request: $request, bundle: $bundle),
+			actingUserId: $request->destination->identity->actingUserId
 		);
 
 		$status = (int)($result['status'] ?? 0);
@@ -372,7 +386,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		try {
 			$existing = $this->transport->broker->request(
 				credentialId: $destination->credentialId,
-				appId: self::APP_ID,
+				appId: $destination->identity->appId,
+				actingUserId: $destination->identity->actingUserId,
 				method: 'GET',
 				path: sprintf('/repos/%s/%s', $owner, $name),
 				headers: ['Accept' => 'application/vnd.github+json']
@@ -420,7 +435,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		try {
 			$created = $this->transport->broker->request(
 				credentialId: $destination->credentialId,
-				appId: self::APP_ID,
+				appId: $destination->identity->appId,
+				actingUserId: $destination->identity->actingUserId,
 				method: 'POST',
 				path: $createPath,
 				headers: ['Accept' => 'application/vnd.github+json'],
@@ -459,7 +475,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		try {
 			$this->transport->broker->request(
 				credentialId: $credentialId,
-				appId: self::APP_ID,
+				appId: $destination->identity->appId,
+				actingUserId: $destination->identity->actingUserId,
 				method: 'PUT',
 				path: sprintf('/repos/%s/topics', $repo),
 				headers: ['Accept' => 'application/vnd.github+json'],
@@ -485,7 +502,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		try {
 			$answer = $this->transport->broker->request(
 				credentialId: $destination->credentialId,
-				appId: self::APP_ID,
+				appId: $destination->identity->appId,
+				actingUserId: $destination->identity->actingUserId,
 				method: 'GET',
 				path: sprintf('/repos/%s/topics', $destination->target->repo),
 				headers: ['Accept' => 'application/vnd.github+json']
@@ -535,13 +553,15 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 *
 	 * @param string $topic The discovery topic to search for.
 	 * @param string|null $credentialId Optional broker credential for an authenticated search.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array<int, array<string, mixed>> The discovered repositories as
 	 *                                          `{repo, name, description, url, stars, updated, topics}` cards.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function discover(string $topic, ?string $credentialId = null): array {
+	public function discover(string $topic, ?string $credentialId = null, ?string $appId = null, ?string $actingUserId = null): array {
 		$topic = trim($topic);
 		if ($topic === '') {
 			return [];
@@ -550,7 +570,11 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		$path = '/search/repositories?q=' . rawurlencode('topic:' . $topic) . '&sort=updated&per_page=50';
 
 		try {
-			$body = $this->githubGet(path: $path, credentialId: $credentialId);
+			$body = $this->githubGet(
+				path: $path,
+				credentialId: $credentialId,
+				identity: BrokerIdentity::of(appId: $appId, actingUserId: $actingUserId)
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FederatedConfigService] discovery failed for topic ' . $topic . ': ' . $e->getMessage(),
@@ -586,18 +610,20 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * GET a GitHub API path: through the broker with a credential, anonymously otherwise.
 	 *
 	 * @param string      $path         The API path (with query string).
-	 * @param string|null $credentialId The broker credential, or null/'' for anonymous.
+	 * @param string|null    $credentialId The broker credential, or null/'' for anonymous.
+	 * @param BrokerIdentity $identity     Who a brokered read is made for.
 	 *
 	 * @return string The response body.
 	 */
-	private function githubGet(string $path, ?string $credentialId): string {
+	private function githubGet(string $path, ?string $credentialId, BrokerIdentity $identity): string {
 		if ($credentialId !== null && $credentialId !== '') {
 			$result = $this->transport->broker->request(
 				credentialId: $credentialId,
-				appId: self::APP_ID,
+				appId: $identity->appId,
 				method: 'GET',
 				path: $path,
-				headers: ['Accept' => 'application/vnd.github+json']
+				headers: ['Accept' => 'application/vnd.github+json'],
+				actingUserId: $identity->actingUserId
 			);
 			return (string)($result['body'] ?? '');
 		}
@@ -655,6 +681,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @param string $repo The `owner/repo`.
 	 * @param string $path The bundle file path within the repo.
 	 * @param string|null $credentialId Optional broker credential for an authenticated read.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array The decoded bundle.
 	 *
@@ -662,9 +690,20 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function fetchBundle(string $repo, string $path, ?string $credentialId = null): array {
+	public function fetchBundle(
+		string $repo,
+		string $path,
+		?string $credentialId = null,
+		?string $appId = null,
+		?string $actingUserId = null
+	): array {
 		return $this->fetchPublishedBundle(
-			request: new BundleFetchRequest(repo: trim($repo), path: ltrim(trim($path), '/'), credentialId: $credentialId)
+			request: new BundleFetchRequest(
+				repo: trim($repo),
+				path: ltrim(trim($path), '/'),
+				credentialId: $credentialId,
+				brokerIdentity: BrokerIdentity::of(appId: $appId, actingUserId: $actingUserId)
+			)
 		);
 	}//end fetchBundle()
 
@@ -683,7 +722,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		}
 
 		try {
-			$body = $this->githubGet(path: $request->contentsPath(), credentialId: $request->credentialId);
+			$body = $this->githubGet(path: $request->contentsPath(), credentialId: $request->credentialId, identity: $request->identity());
 		} catch (Throwable $e) {
 			throw new RuntimeException(sprintf('Could not fetch %s from %s: %s', $request->path, $request->repo, $e->getMessage()));
 		}

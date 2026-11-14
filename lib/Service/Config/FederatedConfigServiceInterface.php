@@ -80,6 +80,8 @@ interface FederatedConfigServiceInterface {
 	 * @param array $selection What to share.
 	 * @param ConfigPublishTarget $target Where to publish: repo, path, branch and visibility of a created repo.
 	 * @param string $credentialId The broker credential id custodying the GitHub token.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array `{published: true, path, status}`.
 	 *
@@ -87,7 +89,14 @@ interface FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function publish(string $typeId, array $selection, ConfigPublishTarget $target, string $credentialId): array;
+	public function publish(
+		string $typeId,
+		array $selection,
+		ConfigPublishTarget $target,
+		string $credentialId,
+		?string $appId = null,
+		?string $actingUserId = null
+	): array;
 
 	/**
 	 * Discover published bundles across GitHub by their type's discovery topic.
@@ -99,13 +108,15 @@ interface FederatedConfigServiceInterface {
 	 *
 	 * @param string $topic The discovery topic to search for.
 	 * @param string|null $credentialId Optional broker credential for an authenticated search.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array<int, array<string, mixed>> The discovered repositories as
 	 *                                          `{repo, name, description, url, stars, updated, topics}` cards.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function discover(string $topic, ?string $credentialId = null): array;
+	public function discover(string $topic, ?string $credentialId = null, ?string $appId = null, ?string $actingUserId = null): array;
 
 	/**
 	 * Fetch a published bundle file from a GitHub repository.
@@ -118,6 +129,8 @@ interface FederatedConfigServiceInterface {
 	 * @param string $repo The `owner/repo`.
 	 * @param string $path The bundle file path within the repo.
 	 * @param string|null $credentialId Optional broker credential for an authenticated read.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array The decoded bundle.
 	 *
@@ -125,7 +138,13 @@ interface FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function fetchBundle(string $repo, string $path, ?string $credentialId = null): array;
+	public function fetchBundle(
+		string $repo,
+		string $path,
+		?string $credentialId = null,
+		?string $appId = null,
+		?string $actingUserId = null
+	): array;
 
 	/**
 	 * This instance's signing public key (base64) for others to trust.

@@ -46,14 +46,23 @@ final class BrokeredPublishTarget {
 	public readonly string $credentialId;
 
 	/**
+	 * Who the brokered calls are made for
+	 *
+	 * @var BrokerIdentity
+	 */
+	public readonly BrokerIdentity $identity;
+
+	/**
 	 * Constructor
 	 *
 	 * @param ConfigPublishTarget $target       Where to publish
 	 * @param string              $credentialId The broker credential id
+	 * @param BrokerIdentity|null $identity     Who the calls are made for; OpenRegister when null
 	 */
-	public function __construct(ConfigPublishTarget $target, string $credentialId) {
+	public function __construct(ConfigPublishTarget $target, string $credentialId, ?BrokerIdentity $identity = null) {
 		$this->target = $target;
 		$this->credentialId = $credentialId;
+		$this->identity = ($identity ?? BrokerIdentity::of());
 	}//end __construct()
 
 	/**
