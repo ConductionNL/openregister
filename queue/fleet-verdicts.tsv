@@ -7858,3 +7858,4 @@ learniq	2521	524f7f541ddebef4849d8b5286dfd1c7c37a5b01	CONFLICT	merge3	conflicts 
 learniq	2523	9fae0016dcb648153dc9bf9aa7954cff3641efa2	CONFLICT	merge3	conflicts with development; files: lib/Settings/learniq_register.json tests/Unit/Settings/OpenLearningMaterialRegisterTest.php 
 dossiq	6499	aa4d5781637e2d10a6b79d32982c92bf8c9abf3a	GREEN	worker-42	unit 16927 tests; baseline 16910 with 19 failures; new failures none; no JS code; builds social-domain-consent-and-safeguards per its specs
 dossiq	6385	5bf6b3afe181d49c4d0074fe33964d5518352a1f	REVERIFY	worker-22	merged development, resolved AdminSettings conflict (packageAdminTabs moved into dev's provideTabState); unit suite 16928 tests, 19 failures all inherited from development; new head 11c3b49f325b6970f5da78af20f2bd3177ec98dc, verify it
+shillinq	2966	f6af4cf874a8c3aa66b7ec9bc44254fbb9b15c47	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.99 -> 3.97; unit_interfacing: 2.92 -> 2.90
