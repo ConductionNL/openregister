@@ -8066,3 +8066,4 @@ verify:learniq:2504:f5f42d6b	2504 GREEN, 2511 GREEN; no new PHP or JS failures	s
 build:buildiq:case-page-layout-per-case-type	already done: every buildiq task built; open 3.2 is a nextcloud-vue sibling change and 8.5 a note to dossiq	session-20261114T062134-840bbeee	2026-11-14T07:59:27Z
 fix:humaniq:1139:51e1740c	l10n keys relocated, merges clean with dev and 1135, pushed d55d4144, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T07:59:24Z
 verify:portaliq:2423:8fd85626	2423/2430/2433 GREEN, 2442 CONFLICT (package.json); unit 5102 0 fail	session-20261114T065632-a1c920c5	2026-11-14T07:59:31Z
+fix:planninq:1153:b7626350	sbom regenerated after merging development, pushed a1ad44f2, REVERIFY recorded	session-20261114T062142-da017174	2026-11-14T08:00:06Z
