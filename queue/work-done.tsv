@@ -10293,3 +10293,4 @@ build4:openregister:external-register-view-leaf:c3	partial: PR #10509 brought up
 fix:planninq:1167:f3b3b20b	moved computed and openapi entries off sibling insertion points; clean with 1162/1166/1176/1177/1178; new head 28092815	session-20261114T154734-655bd0f3	2026-11-14T16:52:47Z
 merge:integriq:3549:6d83665f	merge3 tree of 4 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 1, lint 0, moved 2; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T16:53:17Z
 merge:integriq:3539:f1153790	merge3 tree of 4 integriq PRs: merged=1 red=0 fail=0 skip=0; conflict 1, lint 0, moved 2; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T16:53:20Z
+verify:shillinq:2976:1ec12c70	GREEN 2976 3059 3070; CONFLICT 3057 3067 (with tree, clean vs development)	session-20261114T161815-d54ad7b4	2026-11-14T16:53:42Z
