@@ -9640,3 +9640,4 @@ build:decidiq:objection-advisory-committee:c2	pushed to PR #2154: task 5 impleme
 fix:hermiq:1763:a68d1b9b	CONFLICT resolved (l10n both sides kept), pushed c379cfbf; no new failures	session-20261114T144809-d686f759	2026-11-14T14:57:30Z
 build:decidiq:insight-decisions-report-by-period-and-body:c2	PR #2148: tasks 2-5 code built (period picker, body page filter, By body chart, Show these decisions link, Newman collection, vitest 11); Newman/Playwright test tasks left (live); vitest 2735 pass (base 2724)	session-20261114T144748-3f042cbf	2026-11-14T14:57:41Z
 fix:filinq:2070:cc02ae12	conflict resolved, merged development; new head af678887; unit suite OK	session-20261114T144801-36995162	2026-11-14T14:58:00Z
+fix:hermiq:1739:53540a9a	conflict resolved: development merged in, tool counts set to the combined catalogue, test green; new head 693f7b98, REVERIFY recorded	session-20261114T131646-cdc565a4	2026-11-14T14:58:33Z
