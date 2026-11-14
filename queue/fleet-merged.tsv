@@ -2296,3 +2296,9 @@ stackiq	1887	a0e8fd6bc68da8982777177f6b76120a2abdcbf6	MERGED	merge3	GATE OK sbom
 stackiq	1891	79a7aa80a61fd1bf93099452dcc43189828e364f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 stackiq	1895	c3663e04a77c8e8941c73d169bda79a222e90379	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 larpinq	1030	5bab73d02ae1857746bf66732941e60cc8405379	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+versioniq	680	93f6dbc430c064cb383c28ebc95ac10143077fcc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+versioniq	681	b86d80234c194d6a44e19cc373ded5596c57de7a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+versioniq	682	209ba5950fc32490e94a9240f5bf305cb8559e30	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+versioniq	683	a69d0a432bfaad12c5613d95e170cff8135e3b76	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+versioniq	684	ca37f6c9de576b27d0091bc460f60d418be43b01	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+versioniq	685	0d04ca1a7a5372c23fcb6d9f990ef32e81ac5e47	RED	merge3	GATE RED floor: overall: 4.92 -> 4.87; duplication: 5.14 -> 5.09; unit_size: 4.73 -> 4.70; unit_complexity: 4.58 -> 4.49; unit_interfacing: 4.08 -> 3.88
