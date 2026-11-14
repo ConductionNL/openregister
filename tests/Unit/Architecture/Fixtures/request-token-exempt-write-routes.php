@@ -24,6 +24,7 @@ return [
 	'forms#submit' => 'public-token: public share-token or anonymous flow, rate limited',
 	'forms#upload' => 'public-token: public share-token or anonymous flow, rate limited',
 	'journeyRun#answer' => 'public-token: public share-token or anonymous flow, rate limited',
+	'journeyRun#save' => 'public-token: public share-token or anonymous flow, rate limited',
 	'journeyRun#start' => 'public-token: public share-token or anonymous flow, rate limited',
 	'graphQL#execute' => 'cors-api: Nextcloud CORS handling refuses a cookie session without the token',
 	'mcpServer#handle' => 'cors-api: Nextcloud CORS handling refuses a cookie session without the token',

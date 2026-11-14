@@ -15,15 +15,16 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\JourneyRunController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\Form\FormSubmission;
 use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
+use OCA\OpenRegister\Service\Form\FormSubmitter;
 use OCA\OpenRegister\Service\Form\JourneyRunService;
 use OCA\OpenRegister\Service\Form\LocalConditionEvaluator;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
@@ -49,6 +50,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Form\FormSubmission
  * @uses \OCA\OpenRegister\Service\Form\FormSubmitter
  * @uses \OCA\OpenRegister\Exception\FormSubmitRefusedException
+ * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
@@ -203,12 +205,12 @@ class JourneyRunControllerTest extends TestCase {
 	}//end whole()
 
 	/**
-	 * Start and answer are public, rate-limited and brute-force protected; save is for a signed-in filer.
+	 * Start, answer, save and resume are public, rate-limited and brute-force protected.
 	 *
 	 * @return void
 	 */
 	public function testEachRouteDeclaresItsPosture(): void {
-		foreach (['start', 'answer'] as $method) {
+		foreach (['start', 'answer', 'save', 'resume'] as $method) {
 			$this->assertSame(
 				[PublicPage::class, NoCSRFRequired::class, AnonRateLimit::class, UserRateLimit::class, BruteForceProtection::class],
 				$this->attributes(method: $method),
@@ -218,7 +220,6 @@ class JourneyRunControllerTest extends TestCase {
 			$this->assertSame(['action' => ThrottledSurfacesInterface::JOURNEY_RUN], $protection->getArguments());
 		}
 
-		$this->assertSame([NoAdminRequired::class, UserRateLimit::class], $this->attributes(method: 'save'));
 		$this->assertContains(ThrottledSurfacesInterface::JOURNEY_RUN, ThrottledSurfacesInterface::ALL);
 	}//end testEachRouteDeclaresItsPosture()
 
@@ -313,19 +314,135 @@ class JourneyRunControllerTest extends TestCase {
 	}//end testAnOutOfStepAnswerIsRefused()
 
 	/**
-	 * Saving is refused for an anonymous visitor by the submit path, and passed on as its status.
+	 * An anonymous first save is the token's draft, and answers the token once.
 	 *
 	 * @return void
 	 */
-	public function testSaveAnswersWithTheDraftOrTheRefusal(): void {
+	public function testAnAnonymousSaveAnswersItsResumeTokenOnce(): void {
 		$this->params = ['step' => 'about', 'answers' => ['name' => 'Ada']];
-		$this->submits->method('saveDraft')->willReturn(['id' => 'draft-1', 'status' => 'draft']);
+		$owners       = [];
+		$this->submits->method('saveDraft')->willReturnCallback(
+			function (FormSubmission $submission) use (&$owners): array {
+				$owners[] = $submission->owner?->value();
+				$this->assertNull($submission->subject);
 
-		$response = $this->controller->save(journeyId: 'open');
+				return ['id' => 'draft-1', 'status' => 'draft'];
+			}
+		);
+
+		$first = $this->controller->save(journeyId: 'open');
+
+		$this->assertSame(200, $first->getStatus());
+		$token = $first->getData()['token'];
+		$this->assertMatchesRegularExpression('/^[A-Za-z0-9_-]{43}$/', $token);
+		$this->assertSame(JourneyRunService::tokenOwner(token: $token)->value(), $owners[0]);
+		$this->assertStringNotContainsString($token, (string)$owners[0]);
+
+		$this->headers = ['X-Journey-Run-Token' => $token];
+		$this->params['_draft'] = 'draft-1';
+		$again = $this->controller->save(journeyId: 'open');
+
+		$this->assertSame(['id' => 'draft-1', 'status' => 'draft'], $again->getData());
+		$this->assertSame($owners[0], $owners[1]);
+	}//end testAnAnonymousSaveAnswersItsResumeTokenOnce()
+
+	/**
+	 * A signed-in save is the filer's own draft and mints no token.
+	 *
+	 * @return void
+	 */
+	public function testASignedInSaveMintsNoToken(): void {
+		$this->user   = $this->createMock(IUser::class);
+		$this->params = ['step' => 'about', 'answers' => ['name' => 'Ada']];
+		$this->submits->expects($this->once())->method('saveDraft')->willReturnCallback(
+			function (FormSubmission $submission): array {
+				$this->assertSame($this->user, $submission->subject);
+				$this->assertNull($submission->owner);
+
+				return ['id' => 'draft-2', 'status' => 'draft'];
+			}
+		);
+
+		$this->assertSame(['id' => 'draft-2', 'status' => 'draft'], $this->controller->save(journeyId: 'open')->getData());
+	}//end testASignedInSaveMintsNoToken()
+
+	/**
+	 * An anonymous filer resumes on a new device with the token: the reached step and the answers.
+	 *
+	 * @return void
+	 */
+	public function testAnAnonymousFilerResumesWithTheToken(): void {
+		$owner = JourneyRunService::tokenOwner(token: 'the-token')->value();
+		$this->submits->method('findDraft')->willReturnCallback(
+			fn (array $destination, FormSubmitter $submitter): ?array => match ($submitter->owner?->value()) {
+				$owner => ['id' => 'draft-1', 'status' => 'draft', 'data' => ['name' => 'Ada', '_owner' => $owner], 'updatedAt' => '2026-11-14T10:00:00+00:00'],
+				default => null,
+			}
+		);
+		$this->headers = ['X-Journey-Run-Token' => 'the-token'];
+
+		$response = $this->controller->resume(journeyId: 'open');
 
 		$this->assertSame(200, $response->getStatus());
-		$this->assertSame(['id' => 'draft-1', 'status' => 'draft'], $response->getData());
-	}//end testSaveAnswersWithTheDraftOrTheRefusal()
+		$this->assertSame(
+			['journey' => 'open', 'run' => 'draft-1', 'step' => 'send', 'fields' => ['email'], 'answers' => ['name' => 'Ada'], 'updatedAt' => '2026-11-14T10:00:00+00:00'],
+			$response->getData()
+		);
+		$this->assertSame([], $this->attempts);
+	}//end testAnAnonymousFilerResumesWithTheToken()
+
+	/**
+	 * A token for another run, an unknown run, no token and an unknown journey give one response.
+	 *
+	 * @return void
+	 */
+	public function testAMismatchedTokenAndAnUnknownRunLookIdentical(): void {
+		$this->submits->method('readDraft')->willThrowException(new FormSubmitRefusedException(message: 'This draft does not exist.', status: 404));
+		$this->submits->method('findDraft')->willReturn(null);
+
+		$this->headers = ['X-Journey-Run-Token' => 'token-of-run-a'];
+		$this->params  = ['run' => 'run-b'];
+		$mismatch      = $this->whole($this->controller->resume(journeyId: 'open'));
+		$this->params  = ['run' => 'no-such-run'];
+		$unknown       = $this->whole($this->controller->resume(journeyId: 'open'));
+		$this->params  = [];
+		$newest        = $this->whole($this->controller->resume(journeyId: 'open'));
+		$this->headers = [];
+		$tokenless     = $this->whole($this->controller->resume(journeyId: 'open'));
+		$nowhere       = $this->whole($this->controller->resume(journeyId: 'nope'));
+
+		$this->assertSame(404, $unknown[0]);
+		$this->assertSame($unknown, $mismatch);
+		$this->assertSame($unknown, $newest);
+		$this->assertSame($unknown, $tokenless);
+		$this->assertSame($unknown, $nowhere);
+		$this->assertCount(5, $this->attempts);
+	}//end testAMismatchedTokenAndAnUnknownRunLookIdentical()
+
+	/**
+	 * A signed-in filer resumes the run named, read as their own draft.
+	 *
+	 * @return void
+	 */
+	public function testASignedInFilerResumesTheNamedRun(): void {
+		$this->user   = $this->createMock(IUser::class);
+		$this->params = ['run' => 'draft-9'];
+		$this->submits->expects($this->once())->method('readDraft')->willReturnCallback(
+			function (array $destination, FormSubmitter $submitter): array {
+				$this->assertSame(['register' => 'crm', 'schema' => 'contact', 'mapping' => null], $destination);
+				$this->assertSame('draft-9', $submitter->draftId);
+				$this->assertSame($this->user, $submitter->subject);
+				$this->assertNull($submitter->owner);
+
+				return ['id' => 'draft-9', 'status' => 'draft', 'data' => ['name' => 'Ada', 'email' => 'ada@example.org'], 'updatedAt' => 'then'];
+			}
+		);
+
+		$data = $this->controller->resume(journeyId: 'open')->getData();
+
+		$this->assertSame('send', $data['step']);
+		$this->assertSame(['name' => 'Ada', 'email' => 'ada@example.org'], $data['answers']);
+	}//end testASignedInFilerResumesTheNamedRun()
 
 	/**
 	 * A failing throttler is logged, and the refusal still answers.

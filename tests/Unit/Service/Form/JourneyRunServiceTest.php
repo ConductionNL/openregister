@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Form\FormSubmission
  * @uses \OCA\OpenRegister\Service\Form\FormSubmitter
  * @uses \OCA\OpenRegister\Exception\FormSubmitRefusedException
+ * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
@@ -391,4 +392,106 @@ class JourneyRunServiceTest extends TestCase {
 
 		$this->assertSame(404, $refusal->getStatus());
 	}//end testAnUnknownStepIsA404()
+	/**
+	 * Resuming reads the draft's properties back to the fields that wrote them.
+	 *
+	 * @return void
+	 */
+	public function testResumeReadsTheAnswersBackThroughTheMapping(): void {
+		$owner = JourneyRunService::tokenOwner(token: 'tok')->value();
+		$this->submits->expects($this->once())->method('findDraft')->willReturnCallback(
+			function (array $destination, FormSubmitter $submitter) use ($owner): array {
+				$this->assertSame(self::ORGANISATION_WRITE, $destination);
+				$this->assertSame($owner, $submitter->owner?->value());
+				$this->assertSame('journey-1', $submitter->scope);
+
+				return ['id' => 'run-1', 'status' => 'draft', 'data' => ['name' => 'Acme', 'website' => 'x'], 'updatedAt' => 'now'];
+			}
+		);
+
+		$run = $this->service(body: $this->registration())->resume(journeyId: 'journey-1', runId: null, token: 'tok', submitter: new FormSubmitter());
+
+		$this->assertSame(['orgName' => 'Acme'], $run['answers']);
+		$this->assertSame('about', $run['step']);
+		$this->assertSame(['kind', 'reason'], $run['fields']);
+		$this->assertSame('run-1', $run['run']);
+	}//end testResumeReadsTheAnswersBackThroughTheMapping()
+
+	/**
+	 * The reached step follows the `next` rules over the recorded answers.
+	 *
+	 * @return void
+	 */
+	public function testResumeFollowsTheNextRulesToTheReachedStep(): void {
+		$body = $this->registration();
+		$body['steps'][1]['writes'] = [['register' => 'crm', 'schema' => 'lead', 'mapping' => null]];
+		$this->submits->method('findDraft')->willReturn(
+			['id' => 'run-2', 'status' => 'draft', 'data' => ['kind' => 'none', 'reason' => 'just looking', '_owner' => 'x', 'id' => 'run-2'], 'updatedAt' => 'now']
+		);
+
+		$branched = $this->service(body: $body)->resume(journeyId: 'journey-1', runId: null, token: 'tok', submitter: new FormSubmitter());
+
+		$this->assertSame(['kind' => 'none', 'reason' => 'just looking'], $branched['answers']);
+		$this->assertSame('done', $branched['step']);
+		$this->assertSame([], $branched['fields']);
+	}//end testResumeFollowsTheNextRulesToTheReachedStep()
+
+	/**
+	 * An authenticated journey still asks an anonymous caller to sign in; only not-found is folded into one 404.
+	 *
+	 * @return void
+	 */
+	public function testResumeKeepsTheSignInRefusal(): void {
+		$this->submits->expects($this->never())->method('findDraft');
+
+		$refusal = $this->refusal(
+			fn () => $this->service(body: $this->registration(access: 'authenticated'))->resume(journeyId: 'journey-1', runId: null, token: 'tok', submitter: new FormSubmitter())
+		);
+		$unknown = $this->refusal(
+			fn () => $this->service(body: null)->resume(journeyId: 'journey-1', runId: null, token: 'tok', submitter: new FormSubmitter())
+		);
+
+		$this->assertSame(401, $refusal->getStatus());
+		$this->assertSame(404, $unknown->getStatus());
+		$this->assertSame('This run does not exist.', $unknown->getMessage());
+	}//end testResumeKeepsTheSignInRefusal()
+
+	/**
+	 * The token owner is a hash of the token that fits the owner column, never the token.
+	 *
+	 * @return void
+	 */
+	public function testTheTokenOwnerIsAHashOfTheToken(): void {
+		$token = str_repeat('a', 43);
+		$owner = JourneyRunService::tokenOwner(token: $token)->value();
+
+		$this->assertStringStartsWith('journey-run:', $owner);
+		$this->assertStringNotContainsString($token, $owner);
+		$this->assertLessThanOrEqual(64, strlen($owner));
+		$this->assertSame($owner, JourneyRunService::tokenOwner(token: $token)->value());
+		$this->assertNotSame($owner, JourneyRunService::tokenOwner(token: str_repeat('b', 43))->value());
+	}//end testTheTokenOwnerIsAHashOfTheToken()
+
+	/**
+	 * An anonymous save of an anonymous journey is owned by its new token's hash; the token is answered once.
+	 *
+	 * @return void
+	 */
+	public function testAnAnonymousSaveIsOwnedByItsTokensHash(): void {
+		$seen = null;
+		$this->submits->method('saveDraft')->willReturnCallback(
+			function (FormSubmission $submission) use (&$seen): array {
+				$seen = $submission->owner?->value();
+
+				return ['id' => 'run-3', 'status' => 'draft'];
+			}
+		);
+		$service = $this->service(body: $this->registration());
+
+		$first  = $service->save(journeyId: 'journey-1', stepId: 'about', answers: ['kind' => 'company'], submitter: new FormSubmitter());
+		$second = $service->save(journeyId: 'journey-1', stepId: 'about', answers: ['kind' => 'company'], submitter: new FormSubmitter(draftId: 'run-3'), token: $first['token']);
+
+		$this->assertSame(JourneyRunService::tokenOwner(token: $first['token'])->value(), $seen);
+		$this->assertSame(['id' => 'run-3', 'status' => 'draft'], $second);
+	}//end testAnAnonymousSaveIsOwnedByItsTokensHash()
 }//end class
