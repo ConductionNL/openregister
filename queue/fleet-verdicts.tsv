@@ -8145,3 +8145,8 @@ filinq	2106	c30c20abfc50a4441295530effe659b59cc29496	CONFLICT	worker-23	clean on
 dossiq	6324	6c79a3f15aa5729947b5b4155512234dbb2839f5	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/DeadlineCaseCreatedListener.php 
 dossiq	6385	11c3b49f325b6970f5da78af20f2bd3177ec98dc	CONFLICT	merge3	conflicts with development; files: tests/vitest/simpleCasePage.spec.js 
 portaliq	2430	1d196c09c2bffe9dd3f80aca234321970942aa0d	REVERIFY	worker-11	merged development in (25 behind; l10n, register test and example-site test conflicted): both sides kept, this branch's register bump moved to 0.111.0, .js rebuilt; unit 5246 green, example-site 15/15; new head 3e55d961, verify it
+pipelinq	3713	75ce9bd5f1a83af10f2999487633edaba358213e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3752	51dd9688f600231124d25f1ed5abd75db9187eb1	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3818	dc2b36c5030a6ff3cb47f56b1f0c6e1556dbeed4	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3821	b58b2b29fba3708d93ac4ed7abdcf51e8d0f2fad	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3833	72e0bc34c8c45bcccb9cd5bf4c4f2c140ceb6584	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
