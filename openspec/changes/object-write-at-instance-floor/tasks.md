@@ -175,6 +175,18 @@ survives even where the priority moved.
       combinations. Apply visibility to the value returned from the map.
 
       Target: **57 → ≤ 5** schema reads per create.
+      > 2026-11-14 (partial): `SchemaMapper::find()` and `RegisterMapper::find()` now share
+      > one extracted `RequestIdentityMap`, keyed on identifier + multi-tenancy flag. The RBAC
+      > flag left the key: neither query reads it, so it never changed the row loaded, and
+      > a schema asked for under both flags was read twice. The multi-tenancy flag stays,
+      > because the organisation filter decides WHICH row a slug returns. `loadSchema()`, the
+      > per-`$ref` load during composition, now remembers its raw row for the request (a copy
+      > per hit; dropped by `clearFindCache()` and by every schema insert/update/delete), so a
+      > parent extended by N children is read once. Left: routing `findBySlug`,
+      > `findBySlugInIds` and `findAll` through the map, and serving a multi-tenancy lookup
+      > from an unscoped row with the visibility check applied in PHP (needs the organisation
+      > predicate reproduced exactly, including shared master data; not done blind).
+      > Pinned in `tests/Unit/Db/SchemaMapperIdentityMapTest` and `RequestIdentityMapTest`.
 
 - [ ] **Task 2 — make the miss path cheap.**
       - Drop `SELECT *` where only metadata is needed; `properties` is ~2 KB per
@@ -188,6 +200,9 @@ survives even where the priority moved.
 - [ ] **Task 3 — same treatment for `RegisterMapper`.** 24 reads per create of
       the identical query shape. Do not copy the map; extract the one the
       schemas use.
+      > 2026-11-14 (partial): `RegisterMapper` uses the same `RequestIdentityMap`; the RBAC
+      > flag is out of its key too. The golden test now asserts a cached register is served
+      > without a query under either RBAC flag. Same left-over as task 1.
 
 - [ ] **Task 4 — cross-request cache.** APCu keyed on `schema.id + schema.updated`
       so a cold worker does not repay everything. Invalidated by the existing

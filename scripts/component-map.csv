@@ -836,6 +836,7 @@ Db/RegisterMapperHelper.php,27,Db,Service,Service/Db/RegisterMapperHelper.php,0,
 Db/RegisterMapperInterface.php,26,Db,Service,Service/Db/RegisterMapperInterface.php,1,,Kernel
 Db/RegistrySubscription.php,62,Db,Service,Service/Db/RegistrySubscription.php,0,,Core
 Db/RegistrySubscriptionMapper.php,59,Db,Service,Service/Db/RegistrySubscriptionMapper.php,0,,Core
+Db/RequestIdentityMap.php,35,Db,Db,Db/RequestIdentityMap.php,0,,Core
 Db/RuleRun.php,45,Db,Flows,Flows/Db/RuleRun.php,0,399,Processes
 Db/RuleRunMapper.php,138,Db,Flows,Flows/Db/RuleRunMapper.php,0,205,Processes
 Db/RuleRunSummary.php,32,Db,Flows,Flows/Db/RuleRunSummary.php,0,,Processes
