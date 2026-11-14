@@ -6704,3 +6704,4 @@ learniq	2514	e9eecf6c6c4007f55ef454faa4b5511c8d62a16b	GREEN	worker-14	unit 6605 
 learniq	2515	207eea46bbe48d2813d6d49bae637126200a8a49	GREEN	worker-14	unit 6605 tests on 5-PR tree, baseline 6575 w/ 1 inherited failure (HigherEducationExampleSetTest), 0 new; no JS touched
 learniq	2516	c60e8cb810b5a83796da6b63e7575f0a60d53152	CONFLICT	worker-14	merge conflict with development + earlier tree PRs
 learniq	2517	b5af3de78c01869990b15c9f5dce6cf524e01072	GREEN	worker-14	unit 6605 tests on 5-PR tree, baseline 6575 w/ 1 inherited failure (HigherEducationExampleSetTest), 0 new; no JS touched
+learniq	2518	6f169224fb68e4b47062a891d6ea45001308f260	CONFLICT	worker-14	merge conflict with development + earlier tree PRs
