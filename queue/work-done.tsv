@@ -7677,3 +7677,4 @@ fix:portaliq:2430:bc693f18	controller + test conflict resolved, suite green, pus
 verify:pipelinq:3707:c69da37d	3707 GREEN; 3721,3742,3752 CONFLICT with #3707 (l10n tail)	session-20261114T062134-840bbeee	2026-11-14T06:57:03Z
 fix:dossiq:6324:07609287	aligned @uses with #6322, merged dev, pushed 657667ea, REVERIFY recorded	session-20261114T062142-da017174	2026-11-14T06:57:43Z
 fix:portaliq:2393:624f0fe2	CONFLICT resolved (tests kept both), suite green; new head 02d38ade	session-20261114T062200-6a28e40c	2026-11-14T06:57:53Z
+fix:pipelinq:3725:eec84aa0	conflict resolved: l10n key moved clear of #3713, development merged; new head 8b52d1d9	session-20261114T065633-3e3cb668	2026-11-14T06:57:59Z
