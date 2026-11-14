@@ -8015,3 +8015,4 @@ build:integriq:platform-connector-extension-kit	partial: PR #3589 tasks 1-3 + oc
 fix:hermiq:1719:fa2696b2	no change: head fa2696b2 still merges clean on development; its conflict is only with #1715, which is not on development yet; merge development in once #1715 lands	session-20261114T070333-41d2bfe8	2026-11-14T07:53:13Z
 build:integriq:outbound-sender-identity-and-deliverability	PR #3590: tasks 11.1, 11.2 built (review hold, release/withdraw, Held messages page); 10.1 is dossiq's half, left open	session-20261114T065631-3903ed42	2026-11-14T07:53:06Z
 verify:integriq:3563:021f39e8	GREEN 3563,3565,3566,3568-3571; RED 3564 (registration order + alias tests), 3567 (registration order test)	session-20261114T065626-0651b305	2026-11-14T07:53:23Z
+fix:decidiq:2158:fe421ef4	placed the new blocks in the simple structure; vitest green; new head fc0444d7d0cc5674a04b6de767668ef2d81e658c	session-20261114T065625-baa65a50	2026-11-14T07:53:35Z
