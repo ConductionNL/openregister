@@ -2992,6 +2992,7 @@ Service/Rbac/TokenGrant.php,109,Service,Access,Access/Service/Rbac/TokenGrant.ph
 Service/Rbac/TokenGrantNarrower.php,102,Service,Access,Access/Service/Rbac/TokenGrantNarrower.php,0,,Core
 Service/Rbac/TokenGrantSource.php,38,Service,Access,Access/Service/Rbac/TokenGrantSource.php,2,432,Core
 Service/Rbac/TokenGrantValidator.php,80,Service,Access,Access/Service/Rbac/TokenGrantValidator.php,0,,Core
+Service/Rbac/UndecidablePosture.php,30,Service,Access,Access/Service/Rbac/UndecidablePosture.php,0,,Core
 Service/Rbac/UnknownRuleKeyFindings.php,91,Service,Service,Service/Rbac/UnknownRuleKeyFindings.php,0,,Core
 Service/Rbac/ViewShareListValidator.php,68,Service,Access,Access/Service/Rbac/ViewShareListValidator.php,0,,Core
 Service/Rbac/ViewShareResolver.php,148,Service,Access,Access/Service/Rbac/ViewShareResolver.php,0,187,Core
