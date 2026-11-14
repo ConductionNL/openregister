@@ -2922,3 +2922,6 @@ decidiq	2204	265057396c1b6cd08ecf57cfbc2bdae6556b11dc	RED	merge3	GATE RED absolu
 integriq	3549	9b625281b04902c6392215f2c7126ec7f9bf1601	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
 integriq	3564	03eb30192224de47887a5deba8e5da8881ef07d2	RED	merge3	GATE RED floor: unit_complexity: 3.89 -> 3.85
 integriq	3630	0ab3bc4c8213ae20918665c8b15d0eb63d0379db	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+keepiq	1782	11f3b67861a974e68128f3a7d2eb237f21966b60	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1784	e19809e25a23b005ad3c609f1330575673cf82ca	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1797	d1b0d4c3d62db13e25030a10c5e1db262256f7af	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
