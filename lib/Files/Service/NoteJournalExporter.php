@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NoteJournalExporter — an object's notes as a Markdown journal sheet.
+ * NoteJournalExporter — an object's notes as a Markdown or PDF journal sheet.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -21,6 +21,8 @@
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service;
+
+use OCA\OpenRegister\Service\Export\RowsTable;
 
 /**
  * Writes the notes of one object, oldest first, with author, time and lock state.
@@ -69,6 +71,70 @@ class NoteJournalExporter {
 	}//end markdown()
 
 	/**
+	 * The journal of the notes as a table for the PDF journal sheet.
+	 *
+	 * One row per note, oldest first: when, by whom, its lock state and its
+	 * body. The body is printed whole, as the plain Markdown it is stored as;
+	 * the PDF section escapes every cell.
+	 *
+	 * @param string                           $title The object's title for the heading.
+	 * @param array<int, array<string, mixed>> $notes The notes as NoteService lists them.
+	 *
+	 * @return RowsTable The sheet's table.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-an-objects-notes-export-as-a-journal-sheet
+	 */
+	public function table(string $title, array $notes): RowsTable {
+		$rows = [];
+		foreach ($this->chronological(notes: $notes) as $note) {
+			$rows[] = [
+				'time'    => (string)($note['createdAt'] ?? ''),
+				'author'  => $this->plainAuthor(note: $note),
+				'lock'    => $this->lockState(note: $note),
+				'message' => rtrim((string)($note['message'] ?? '')),
+			];
+		}
+
+		return new RowsTable(
+			title: 'Journal: ' . trim($title),
+			columns: ['time' => 'Time', 'author' => 'Author', 'lock' => 'Lock', 'message' => 'Note'],
+			rows: $rows,
+			wholeCells: true
+		);
+	}//end table()
+
+	/**
+	 * Who locked a note and when, or an empty string for an open note.
+	 *
+	 * @param array<string, mixed> $note The note.
+	 *
+	 * @return string The lock state.
+	 */
+	private function lockState(array $note): string {
+		if (($note['locked'] ?? false) !== true) {
+			return '';
+		}
+
+		return 'Locked by ' . $this->locker(note: $note) . ' on ' . (string)($note['lockedAt'] ?? '');
+	}//end lockState()
+
+	/**
+	 * The author's display name, else the user id, unescaped.
+	 *
+	 * @param array<string, mixed> $note The note.
+	 *
+	 * @return string The name.
+	 */
+	private function plainAuthor(array $note): string {
+		$name = trim((string)($note['actorDisplayName'] ?? ''));
+		if ($name === '') {
+			$name = (string)($note['actorId'] ?? '');
+		}
+
+		return $name;
+	}//end plainAuthor()
+
+	/**
 	 * The notes oldest first; notes created at the same time keep their id order.
 	 *
 	 * @param array<int, array<string, mixed>> $notes The notes.
@@ -100,12 +166,7 @@ class NoteJournalExporter {
 	 * @return string
 	 */
 	private function author(array $note): string {
-		$name = trim((string)($note['actorDisplayName'] ?? ''));
-		if ($name === '') {
-			$name = (string)($note['actorId'] ?? '');
-		}
-
-		return $this->inline(value: $name);
+		return $this->inline(value: $this->plainAuthor(note: $note));
 	}//end author()
 
 	/**

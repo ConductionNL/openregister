@@ -40,6 +40,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\InvalidNoteParentException;
 use OCA\OpenRegister\Files\Service\NoteJournalExporter;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
+use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection;
@@ -142,7 +144,7 @@ class NotesController extends Controller {
 	}//end index()
 
 	/**
-	 * Download an object's notes as a Markdown journal sheet, oldest first.
+	 * Download an object's notes as a journal sheet, oldest first: Markdown, or PDF with `?format=pdf`.
 	 *
 	 * The sheet holds exactly the notes the caller may list: the same
 	 * visibility filter as {@see index()} applies, so a caller without
@@ -152,7 +154,7 @@ class NotesController extends Controller {
 	 * @param string $schema   The schema slug or identifier
 	 * @param string $id       The ID of the object
 	 *
-	 * @return DataDownloadResponse|JSONResponse The Markdown file, or the refusal
+	 * @return DataDownloadResponse|JSONResponse The Markdown or PDF file, or the refusal
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -168,6 +170,10 @@ class NotesController extends Controller {
 			$object = $this->validateObject(path: new NotePath(register: $register, schema: $schema, id: $id));
 			if ($object === null) {
 				return $this->notFound(what: 'Object');
+			}
+
+			if ($this->request->getParam('format') === 'pdf') {
+				return $this->pdfJournal(object: $object);
 			}
 
 			$markdown = (new NoteJournalExporter())->markdown(
@@ -186,6 +192,53 @@ class NotesController extends Controller {
 			contentType: 'text/markdown; charset=utf-8'
 		);
 	}//end journal()
+
+	/**
+	 * The journal sheet as a PDF, through the PDF export format.
+	 *
+	 * Refused with 501 when no office server converts to PDF (or none is
+	 * wired), and with the export's own refusal when there are too many notes.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The PDF file, or the refusal.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-an-objects-notes-export-as-a-journal-sheet
+	 */
+	private function pdfJournal(ObjectEntity $object): DataDownloadResponse|JSONResponse {
+		$export = $this->services->export;
+		if ($export === null || $export->isPdfAvailable() === false) {
+			$refusal = new OfficeServerRequiredException();
+			return new JSONResponse(data: $refusal->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
+		}
+
+		try {
+			$pdf = $export->renderTableToPdf(
+				table: (new NoteJournalExporter())->table(
+					title: $this->journalTitle(object: $object),
+					notes: $this->everyVisibleNote(object: $object)
+				)
+			);
+		} catch (OfficeServerRequiredException $e) {
+			return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
+		} catch (ExportTooLargeException $e) {
+			return new JSONResponse(
+				data: [
+					'error' => 'export_too_large',
+					'message' => $e->getMessage(),
+					'rowCount' => $e->getRowCount(),
+					'maxRows' => $e->getMaxRows(),
+				],
+				statusCode: ExportTooLargeException::HTTP_STATUS
+			);
+		}
+
+		return new DataDownloadResponse(
+			data: $pdf,
+			filename: 'journal-' . (string)$object->getUuid() . '.pdf',
+			contentType: 'application/pdf'
+		);
+	}//end pdfJournal()
 
 	/**
 	 * Every note on the object the caller may list, page by page up to a cap.

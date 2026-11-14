@@ -31,10 +31,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Files\Service;
 
 use OCA\OpenRegister\Files\Service\NoteJournalExporter;
+use OCA\OpenRegister\Service\Export\RowsTable;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(NoteJournalExporter::class)]
+#[UsesClass(RowsTable::class)]
 class NoteJournalExporterTest extends TestCase {
 
 	public function testThreeNotesAreListedOldestFirstWithTheSecondMarkedLocked(): void {
@@ -107,5 +110,57 @@ class NoteJournalExporterTest extends TestCase {
 
 	public function testAnObjectWithoutNotesSaysSo(): void {
 		$this->assertSame("# Journal: Leeg\n\n_No notes._\n", (new NoteJournalExporter())->markdown(title: 'Leeg', notes: []));
+	}
+
+	public function testTheSheetTableListsNotesOldestFirstWithTheLockerAndWholeBodies(): void {
+		$long = str_repeat('Lange notitie. ', 40);
+		$notes = [
+			['id' => 3, 'message' => 'Derde', 'actorId' => 'anna', 'actorDisplayName' => 'Anna de Vries', 'createdAt' => '2026-11-13T12:00:00+00:00'],
+			['id' => 1, 'message' => $long, 'actorId' => 'bram', 'actorDisplayName' => '', 'createdAt' => '2026-11-13T09:00:00+00:00'],
+			[
+				'id' => 2,
+				'message' => "## Afspraak\n",
+				'actorDisplayName' => 'Anna de Vries',
+				'createdAt' => '2026-11-13T10:00:00+00:00',
+				'locked' => true,
+				'lockedBy' => 'teamleider',
+				'lockedByDisplayName' => 'Tess Leider',
+				'lockedAt' => '2026-11-13T10:30:00+00:00',
+			],
+			'not a note',
+		];
+
+		$table = (new NoteJournalExporter())->table(title: ' Vergunning 42 ', notes: $notes);
+
+		$this->assertSame('Journal: Vergunning 42', $table->title);
+		$this->assertSame(['time' => 'Time', 'author' => 'Author', 'lock' => 'Lock', 'message' => 'Note'], $table->columns);
+		$this->assertTrue($table->wholeCells);
+		$this->assertSame(
+			[
+				['time' => '2026-11-13T09:00:00+00:00', 'author' => 'bram', 'lock' => '', 'message' => rtrim($long)],
+				['time' => '2026-11-13T10:00:00+00:00', 'author' => 'Anna de Vries', 'lock' => 'Locked by Tess Leider on 2026-11-13T10:30:00+00:00', 'message' => '## Afspraak'],
+				['time' => '2026-11-13T12:00:00+00:00', 'author' => 'Anna de Vries', 'lock' => '', 'message' => 'Derde'],
+			],
+			$table->rows
+		);
+	}
+
+	public function testTheSheetTableKeepsNamesAsWrittenAndFallsBackToTheLockerId(): void {
+		$notes = [
+			['id' => 1, 'message' => 'x', 'actorDisplayName' => 'Eve *vet*', 'createdAt' => '2026-11-13T09:00:00+00:00', 'locked' => true, 'lockedBy' => 'kees', 'lockedAt' => 'later'],
+		];
+
+		$rows = (new NoteJournalExporter())->table(title: 'X', notes: $notes)->rows;
+
+		// The PDF section escapes cells itself; Markdown escaping would print backslashes.
+		$this->assertSame('Eve *vet*', $rows[0]['author']);
+		$this->assertSame('Locked by kees on later', $rows[0]['lock']);
+	}
+
+	public function testAnObjectWithoutNotesHasAnEmptySheetTable(): void {
+		$table = (new NoteJournalExporter())->table(title: 'Leeg', notes: []);
+
+		$this->assertSame('Journal: Leeg', $table->title);
+		$this->assertSame([], $table->rows);
 	}
 }//end class
