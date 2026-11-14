@@ -11873,5 +11873,6 @@ cover:shillinq:05639debm9818:js450fec42	PR #3081: 14 tests (leaf loaders, regist
 cover:decidiq:a5f973bbmae46:be0dcca9	already done: lib/Mcp/*.php at 100% lines (490/490) from tests/Unit/Mcp under --strict-coverage; no PR	session-20261114T230933-0afdd896	2026-11-14T23:24:23Z
 cover:shillinq:05639debm9818:8ed5443b	nothing to cover: lib/Kernel/Contracts/*.php is 244 interfaces, 0 executable statements in the coverage report; no PR	session-20261114T231738-b43a6a63	2026-11-14T23:24:33Z
 cover:shillinq:05639debm9818:9d3a1784	already done: lib/BackgroundJob/*.php at 99.4% lines (1726/1736) on development 6e0f5bac8, target 95; earlier -1..-3 branches merged; suite 11463 tests OK	session-20261114T231755-998f7ff8	2026-11-14T23:24:42Z
+cover:pipelinq:7f9dc8e6m799d:34f5c300	PRs #3842 (risky metadata, 90.39->91.49%) and #3845 (6 classes, 67 tests, 90.39->91.67%); lib/Service/*.php ~92.8% combined, target 95 not yet reached	session-20261114T224740-064dbb86	2026-11-14T23:24:55Z
 verify:pipelinq:3842:1b0854c9	GREEN 3842 (tests-only coverage metadata; 8452 tests, 0 failures, risky cleared)	session-20261114T223333-658f3be1	2026-11-14T23:24:54Z
 cover:portaliq:b60f3b81m4ccb:e7fd1c43	PR #2517: 16 tests over DestinationSubmit and PortalFamilyMembers, Intake 98.12% -> 98.63% (pcov)	session-20261114T224754-e4a2fcab	2026-11-14T23:25:01Z
