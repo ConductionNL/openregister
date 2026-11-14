@@ -8142,3 +8142,5 @@ filinq	2090	923c98e033f7a781763895ce2a83eca95d902a0f	CONFLICT	worker-23	clean on
 filinq	2091	72c1df1540cdfb1054b2eb6bc498611efc0415ab	CONFLICT	worker-23	clean on development, conflicts with #2069 (earlier in tree order); merge development in once #2069 lands
 filinq	2100	3dd51da6ac1f0f392fce6fbc10edffc64376143d	CONFLICT	worker-23	conflicts with development in l10n catalogues
 filinq	2106	c30c20abfc50a4441295530effe659b59cc29496	CONFLICT	worker-23	clean on development, conflicts with #2069 (earlier in tree order); merge development in once #2069 lands
+dossiq	6324	6c79a3f15aa5729947b5b4155512234dbb2839f5	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/DeadlineCaseCreatedListener.php 
+dossiq	6385	11c3b49f325b6970f5da78af20f2bd3177ec98dc	CONFLICT	merge3	conflicts with development; files: tests/vitest/simpleCasePage.spec.js 
