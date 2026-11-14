@@ -10948,3 +10948,4 @@ verify:humaniq:1125:c3833d20	GREEN 1125, GREEN 1145; tree 4330 OK	session-202611
 review:filinq:2079:dc28f783	GREEN: spec-driven (two changes), ownership kept; phpunit 6817 OK	session-20261114T194745-243de12d	2026-11-14T20:36:46Z
 fix:integriq:3574:67ece58a	l10n insertion points moved, merges with every tree sibling; new head daca1f8965	session-20261114T194935-f789346b	2026-11-14T20:37:00Z
 review:filinq:2106:8bc70f64	GREEN: per-spec field checks, additive sign() param, suite 6722/vitest 763 green; conflicts with development (l10n, register)	session-20261114T201002-25be0d7f	2026-11-14T20:37:07Z
+review:openregister:10571:6c49b419	APPROVE	session-20261114T201750-64b6fe0f	2026-11-14T20:37:13Z
