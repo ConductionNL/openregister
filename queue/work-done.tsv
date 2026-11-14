@@ -11364,3 +11364,4 @@ merge:shillinq:2997:8ba6de91	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail
 fix:stackiq:1938:2b97ffe5	fixed CONFLICT: development merged in (register + l10n resolved), unit 3611 green, new head 55c1a384, REVERIFY recorded; 1933/1939 conflict with development on their own	session-20261114T211806-b9cd4119	2026-11-14T21:58:33Z
 fix:stackiq:1924:075129a2	failed: the conflict is in lib/Settings/softwarecatalogus_register.json; workers may not touch Softwarecatalogus, so this is left for a person or the local lane	session-20261114T194805-be886caa	2026-11-14T21:58:37Z
 merge:shillinq:3062:34fe98c2	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:58:43Z
+merge:shillinq:2995:aa4f9fce	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:58:59Z
