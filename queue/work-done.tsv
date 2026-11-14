@@ -8481,3 +8481,4 @@ fix:opencatalogi:2648:225f1e62	merged development cleanly, pushed 6784a196; tree
 fix:buildiq:1625:7f3a7207	l10n moved to branch anchor, header restored; l10n clean with all open PRs; source overlaps with 1602/1618/1630 remain; new head 26fd13852458473da9ae85f4014f9d16f6a297ec	session-20261114T075640-efa02b24	2026-11-14T08:56:12Z
 verify:keepiq:1791:dd8a5ba6	1791 GREEN, 1792 CONFLICT (same migration file as 1791)	session-20261114T070909-be4543e0	2026-11-14T08:56:22Z
 fix:buildiq:1629:1c21accd	fixed stale test after development moved the TaskProcessing lookup; new head 7ba3e45bb7a2694599cdb0e63113cb17fba78a23, REVERIFY recorded	session-20261114T073117-2bd2e050	2026-11-14T08:56:31Z
+build:versioniq:advisories-triage	partial: PR #694 builds section 1 (AdvisoryTriageStore + AdvisoryTriage::apply, 16 tests, 0 new failures); readers, routes and page left	session-20261114T062200-62a0b439	2026-11-14T08:56:43Z
