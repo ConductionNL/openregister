@@ -49,7 +49,18 @@ interface DestructionReviewServiceInterface {
 	public const ANSWER_TRANSFER = 'transfer';
 
 	/**
-	 * The three answers a reviewer may give, and no others.
+	 * Anonymise the record rather than destroy it: it stays, without what identifies a person.
+	 *
+	 * The same value as Appraisal::ANONYMISE, the archival action it answers with.
+	 * The entry is withheld from destruction; the anonymisation itself runs
+	 * through the schema's declared profile, never as a destruction.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
+	 */
+	public const ANSWER_ANONYMISE = 'anonymise';
+
+	/**
+	 * The four answers a reviewer may give, and no others.
 	 *
 	 * @var string[]
 	 */
@@ -57,6 +68,7 @@ interface DestructionReviewServiceInterface {
 		self::ANSWER_DESTROY,
 		self::ANSWER_RETAIN,
 		self::ANSWER_TRANSFER,
+		self::ANSWER_ANONYMISE,
 	];
 
 	/**

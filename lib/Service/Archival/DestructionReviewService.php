@@ -558,7 +558,7 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	}//end indexOf()
 
 	/**
-	 * Refuse an answer that is not one of the three, or that says nothing.
+	 * Refuse an answer that is not one of the four, or that says nothing.
 	 *
 	 * @param ReviewAnswer $given The answer, reason and new archiefactiedatum given.
 	 *
