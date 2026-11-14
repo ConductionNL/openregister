@@ -7960,3 +7960,4 @@ fix:filinq:2069:9a3aac40	no change: merges clean on current development; conflic
 build:integriq:outbound-call-log-investigation-window-page-and-allowlist	partial: PR #3579 (Task 5 allowlist + scan test; SupplierSourceCall stops persisting bodies; Task 6 UI left)	session-20261114T062222-96f530fc	2026-11-14T07:45:28Z
 measure:planninq:20261113h20	php 97.46% (pcov), js 93.99% at cec12484	session-20261114T070346-2d3b1362	2026-11-14T07:45:56Z
 verify:integriq:3541:e5959fe2	3541, 3549, 3556 GREEN; no new unit failures	session-20261114T070323-628c2f37	2026-11-14T07:46:11Z
+build:integriq:platform-bookkeeping-catalogue-items	PR #3580: 4 templates, bookkeeping categories + guard test, docs; live occ/docs build left; unit 8495, only the 4 inherited failures	session-20261114T065632-a1c920c5	2026-11-14T07:46:19Z
