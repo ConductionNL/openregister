@@ -8822,3 +8822,4 @@ learniq	2493	11d23894e30dfff6e101ae31cceb1eeb26476399	GREEN	worker-14	PHP unit 6
 planninq	1158	70b326989e31ab89bfbbe17f8ca6a6457aabb644	GREEN	worker-38	tree dev+1158+1159+1162: phpunit 1046 OK, vitest 3269 pass, 0 failures (no baseline failures); builds plannedtimeentry-reads-humaniqs-hours, ObjectRows extraction is behaviour-identical
 planninq	1159	b7c86685b93e00fd2a9068fee34ffeef20327226	GREEN	worker-38	tree dev+1158+1159+1162: phpunit 1046 OK, vitest 3269 pass, 0 failures (no baseline failures); builds tasks-dates, golden updates only add the date pickers
 planninq	1162	9ad30c89501f3dc502bdd902f8a88e0a0f4c102a	GREEN	worker-38	tree dev+1158+1159+1162: phpunit 1046 OK, vitest 3269 pass, 0 failures (no baseline failures); builds case-link-editing
+planninq	1169	1268ee2b3412634abc210fcf92b1706e31e75ab3	CONFLICT	worker-38	l10n catalogues of every locale conflict with #1158/#1159/#1162 in tree order
