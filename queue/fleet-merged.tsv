@@ -2773,3 +2773,8 @@ dossiq	6511	d782f294f3c27c4ada5c0c183475e6247257cbfe	MERGED	merge3	GATE OK sbom,
 dossiq	6512	4ed84928eb31b909c283c384b4f77ee7399b33a7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
 dossiq	6514	14c18fd5556b3b5a889782e9efb0cd6d28ded5bc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
 dossiq	6515	b18506bc26c46d8ee9ab7fc61aaa305aaae1c06d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+learniq	2488	7f1b19e05a34e38974f3122845c54a11d49140a0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2501	d58497ec9d6bf0ce6b45804a2d86c45928e53884	RED	merge3	GATE RED absolute floor: learniq maintainability 3.97 after merge is below its floor 3.99
+learniq	2515	91ac6bf3edc1791b8e60ddde86c2cbaa88b839c9	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2530	9b36fa91bff3b8df26408a3b3146d2d7a8074aac	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2531	5736628ccf1e083842816fd9b1764a34ca0d287c	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
