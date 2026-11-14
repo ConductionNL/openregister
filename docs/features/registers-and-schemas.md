@@ -31,6 +31,32 @@ A schema defines the structure and validation rules for objects. Key capabilitie
 - **Hooks** — lifecycle callbacks to workflow engines (see [Workflow Automation](workflow-automation.md))
 - **Archive configuration** — `archive.enabled`, `archive.defaultNominatie`, `archive.defaultBewaartermijn` for automatic archival metadata (see [Archiving](archiving.md))
 
+### Field types of their own
+
+Besides the JSON Schema types, a property can declare a type OpenRegister checks itself. Each one is offered in the schema editor's type list.
+
+| Type | Value | Refused when |
+|------|-------|--------------|
+| `color` | A colour, written as hex (default), `rgba` or `oklch` per the property's `format` | It does not match that notation |
+| `recurrence` | An RFC 5545 repeat rule, such as `FREQ=WEEKLY;BYDAY=TU` | The rule does not parse |
+| `calendar-range` | `{ "start": ..., "end": ... }`, a period kept as one value. `format: date` makes both `YYYY-MM-DD`; the default `date-time` takes a time too | `start` or `end` is missing, either breaks the format, or `end` is before `start` |
+| `image-url` | A URL, or `{ "url", "width", "height", "altText", "format" }`. A bare URL is stored as `{ "url": ... }`, so a read always returns the object | `url` is not a URL, `width`/`height` is not a positive whole number, or `format` is not one of `jpeg`, `png`, `webp`, `avif`, `svg` |
+
+A refused value fails the save with HTTP 422 and a message that names the property, for example `Property 'period': calendar-range 'end' (2026-05-01T09:00:00Z) must be >= 'start' (2026-05-01T17:00:00Z)`. Nothing is stored.
+
+```json
+{
+  "period": { "type": "calendar-range", "format": "date" },
+  "cover": { "type": "image-url" }
+}
+```
+
+In the generated OpenAPI document, every `calendar-range` property refers to one `CalendarRange` component and every `image-url` property to one `ImageUrl` component.
+
+The members of a `calendar-range` take the usual range operators, so `GET /api/objects/{register}/booking?period.start.gte=2026-05-01&period.end.lte=2026-05-31` finds the bookings that lie within May. The members are compared as text, which orders ISO dates and UTC date-times correctly; a bare date bound such as `2026-05-31` sorts before any time on that day, so use `period.end.lt=2026-06-01` to include the whole last day.
+
+A `calendar-range` cannot be converted from another type on a schema that already holds objects: migrate the records first.
+
 ### Schema Sources
 
 Schemas can be imported from:
@@ -43,6 +69,35 @@ Schemas can be imported from:
 | Custom JSON Schema | Upload or POST any valid JSON Schema document |
 | OAS Import | Import schema definitions from an existing OpenAPI 3.0+ specification |
 
+## Reading a register's model as a diagram
+
+The register page shows its schemas as cards by default. Choose **Diagram**
+above the cards to see the register's model instead: every schema is a box with
+its properties, and every link between two schemas is a line labelled with the
+property that makes it, `1` or `n` for one or many, and the inverse property
+when one is declared (`documenten (n) ↔ zaak`).
+
+The diagram is read from the schema definitions every time it opens, so it is
+never out of date. A link comes from a property's `$ref` (or `items.$ref` for a
+list) and from the schema's declared relations (`x-openregister-relations`).
+
+- **A box with a dashed border** is a schema in another register. When you may
+  not open that register it shows as *A schema you cannot open*, without its
+  name or properties.
+- **A broken link** (a reference to a schema that no longer exists) is drawn as
+  a dashed red box named after the reference, so it can be found and fixed
+  instead of silently disappearing.
+- **Click a box** (or focus it and press Enter) to open that schema. **Click a
+  line** to open the schema that holds the property.
+- **Drag a box** to move it. Where you put the boxes is remembered for you, per
+  register; other people keep their own layout.
+- **Download as SVG** saves the diagram as it is laid out, for documentation.
+- Below the diagram, **Links between schemas** lists the same links as a table,
+  for keyboard and screen-reader use.
+
+Above 50 schemas the boxes show their titles only, so a large register stays
+readable.
+
 ## API
 
 ### Registers
@@ -54,6 +109,7 @@ GET    /api/registers/{id}             Get a register by ID or slug
 PUT    /api/registers/{id}             Update a register
 DELETE /api/registers/{id}             Delete a register
 GET    /api/registers/{id}/export      Export register configuration as OpenAPI YAML
+GET    /api/registers/{id}/model       The register's schemas as nodes and their links as edges
 POST   /api/registers/import           Import register + schemas from OpenAPI YAML
 ```
 

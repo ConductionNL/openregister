@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
+use OCA\OpenRegister\Service\AutomationRecordWriter;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -40,12 +41,14 @@ final readonly class DeliveryLedger {
 	 * @param ?NotificationHistoryMapper     $historyMapper History mapper for delivery audit rows.
 	 * @param ?NotificationDispatchLogMapper $dispatchLogMapper Dispatch-log mapper for idempotency dedup.
 	 * @param ?RuleReachRecorder             $reachRecorder Notes rules that reached nobody; built from the logger when absent.
+	 * @param ?AutomationRecordWriter        $runRecords Writes one automation run record per evaluation.
 	 */
 	public function __construct(
 		public LoggerInterface $logger,
 		public ?NotificationHistoryMapper $historyMapper = null,
 		public ?NotificationDispatchLogMapper $dispatchLogMapper = null,
 		public ?RuleReachRecorder $reachRecorder = null,
+		public ?AutomationRecordWriter $runRecords = null,
 	) {
 	}//end __construct()
 }//end class

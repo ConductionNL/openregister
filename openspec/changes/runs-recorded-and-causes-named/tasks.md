@@ -4,7 +4,12 @@
 
 - [x] 1.1 A closed cause vocabulary on the audit entry, derived from the acting context.
 - [x] 1.2 A cause that is a run carries the run identity.
-- [ ] 1.3 The cause is forwarded into deferred listener jobs with the actor.
+- [x] 1.3 The cause is forwarded into deferred listener jobs with the actor.
+      `ListenerDeferralService` reads `WriteCause::current()` when an entry is deferred (the buffer flushes at
+      shutdown, after every frame is popped) and sends consecutive entries of one cause out as one job;
+      `DeferredListenerContext` carries `cause` and `causeRun` in the job argument (only for a cause other than
+      a person's, so a person's job argument is unchanged); `ActorForwardedJob` runs `runDeferred()` inside
+      `WriteCause::runAs()`, so no subclass changes.
 - [x] 1.4 The audit read and export filter on cause and on run.
 - [x] 1.5 A cause supplied by a client is ignored, and the attempt is recorded.
       The attempt is recorded on the entry itself: `AuditTrailMapper::buildAuditTrail()`
@@ -14,9 +19,17 @@
 
 - [ ] 2.1 A `qualityAudit` record: a named population query, a rule set, a tolerance, a schedule.
 - [ ] 2.2 A run evaluates the declared rules over the population with the existing scorer.
+      (built: `QualityAuditEvaluator::evaluate()` scores every member with `QualityScorer` and reports one
+      population score; a record fails a rule when the scorer, given that rule alone, scores it below 1, so no
+      second rule evaluator exists. NOT YET: the runner that executes the population query and starts a run
+      from a schedule; it needs the 2.1 record.)
 - [ ] 2.3 The run records the score, the tolerance it was judged against, the verdict and the failing records with the rules they failed.
+      (built: the run result carries the moment, who started it, the count evaluated, the score, the tolerance
+      as it stood, the verdict and the failing records with their rules. NOT YET: storing it, which needs 2.1/2.4.)
 - [ ] 2.4 Runs are kept, so a score is readable beside its predecessors.
 - [ ] 2.5 The failing records of a run are exportable.
+      (built: `QualityAuditEvaluator::failuresCsv()`, one row per record with the rules it failed. NOT YET:
+      the export endpoint over a stored run.)
 
 ## 3. The import run
 
@@ -29,7 +42,9 @@
 ## 4. Tests
 
 - [x] 4.1 Unit tests for the cause derivation, the cascade cause, the forwarded cause and the ignored client-supplied cause.
-- [ ] 4.2 Unit tests for the tolerance verdict, the stored tolerance and the failing-record list.
+- [x] 4.2 Unit tests for the tolerance verdict, the stored tolerance and the failing-record list.
+      (`tests/Unit/Service/Quality/QualityAuditEvaluatorTest.php`, against the real scorer; the definition
+      check of REQ-RCN-003 is covered there too.)
 - [ ] 4.3 Unit tests for the run record, the retry lineage and the prune that keeps the header.
 - [ ] 4.4 An e2e over an import run read back after it finished, with a failed row and its reason.
 - [ ] 4.5 Deduplication check (ADR-012) recorded in the PR body.
@@ -69,10 +84,9 @@ failure the existing `flow_run` comment already records.
 
 ## Not built here, and named rather than claimed
 
-- **1.3, the cause forwarded into deferred listener jobs.** `ActorForwardedJob`
-  re-establishes the actor and is the right place, but the frame has to be
-  captured at enqueue and restored per job, which touches every subclass. Its
-  own change.
+- **1.3, the cause forwarded into deferred listener jobs.** Built since: the
+  base `ActorForwardedJob` restores the frame around `runDeferred()`, so no
+  subclass needed to change (see the task line above).
 - **Section 2 entirely, the data quality audit.** A `qualityAudit` record, a
   population query, a rule set, a tolerance stored WITH the run, a schedule,
   kept runs and exportable failures. That is a record with a lifecycle, not a

@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Schema;
  *
  * Built by ConflictReport::build() and never leaves ConflictReport.
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+ * @spec openspec/specs/objects-crud/spec.md
  */
 final class ConflictRun {
 	/**

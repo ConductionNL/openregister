@@ -62,6 +62,9 @@ use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FetchedFile;
+use OCA\OpenRegister\Service\File\UrlFetchRefused;
+use OCA\OpenRegister\Service\File\UrlFileSource;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -219,6 +222,13 @@ class FilesController extends Controller {
 	private readonly ?FileRestrictionGuard $fileRestrictions;
 
 	/**
+	 * Fetches a file to create from a URL (files-create-from-url).
+	 *
+	 * @var ?UrlFileSource
+	 */
+	private readonly ?UrlFileSource $urlFileSource;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for file operations.
@@ -239,6 +249,7 @@ class FilesController extends Controller {
 		$this->userManager = $services->platform->userManager;
 		$this->eventDispatcher = $services->platform->eventDispatcher;
 		$this->fileMapper = $services->store->fileMapper;
+		$this->urlFileSource = $services->store->urlFileSource;
 		$this->fileAuditHandler = $services->guards->fileAuditHandler;
 		$this->userSession = $services->platform->userSession;
 		$this->l10n = $services->platform->l10n;
@@ -358,7 +369,7 @@ class FilesController extends Controller {
 	 *                           schema (so a slug is this schema's object, #4037); null for an
 	 *                           anonymous caller, who is gated on publication instead.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
+	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 *
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
@@ -623,7 +634,7 @@ class FilesController extends Controller {
 	 *
 	 * @return JSONResponse The error response.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function accessDenied(NotAuthorizedException $e): JSONResponse {
 		if ($e instanceof ObjectFileAccessDeniedException === true
@@ -712,6 +723,11 @@ class FilesController extends Controller {
 
 		if ($e instanceof ObjectStateWriteException) {
 			return $this->stateRefused(e: $e);
+		}
+
+		if ($e instanceof UrlFetchRefused) {
+			// REQ-FCU-002: a failed fetch names its reason, and nothing was created.
+			return new JSONResponse(data: ['error' => $e->getMessage(), 'reason' => $e->reason], statusCode: 422);
 		}
 
 		return null;
@@ -820,7 +836,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(string $register, string $schema, string $id): JSONResponse {
@@ -862,8 +878,52 @@ class FilesController extends Controller {
 			$files = $this->fileRestrictions->readableNodes(nodes: $files);
 		}
 
-		return $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
+		$page = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
+		if ($isAnonymous === true) {
+			return $page;
+		}
+
+		return $this->withOfficeUrls(route: $route, object: $object, page: $page);
 	}//end listedFiles()
+
+	/**
+	 * The page with `officeUrl` on every file Nextcloud Office opens: the page
+	 * that opens it, which runs its own read and update checks. A file of
+	 * another type, or every file when Office is not available, gets none.
+	 *
+	 * @param FileObjectRoute      $route  The object, as the route names it.
+	 * @param ObjectEntity|null    $object The object the access check resolved.
+	 * @param array<string, mixed> $page   The formatted page of files.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/tasks.md
+	 */
+	private function withOfficeUrls(FileObjectRoute $route, ?ObjectEntity $object, array $page): array {
+		if ($this->officeSessionService === null || is_array(($page['results'] ?? null)) === false) {
+			return $page;
+		}
+
+		$objectId = (string)($object?->getUuid() ?? $route->id);
+		foreach ($page['results'] as $index => $file) {
+			if (is_array($file) === false) {
+				continue;
+			}
+
+			$url = $this->officeSessionService->officePageUrl(
+				register: $route->register,
+				schema: $route->schema,
+				objectId: $objectId,
+				fileId: (int)($file['id'] ?? 0),
+				mimeType: (string)($file['type'] ?? '')
+			);
+			if ($url !== null) {
+				$page['results'][$index]['officeUrl'] = $url;
+			}
+		}
+
+		return $page;
+	}//end withOfficeUrls()
 
 	/**
 	 * Answer a failed listing; anything unforeseen answers 500 without its detail (SEC-CTRL-7).
@@ -1179,23 +1239,34 @@ class FilesController extends Controller {
 	}//end create()
 
 	/**
-	 * Add the file the request posts.
+	 * Add the file the request posts: its content, or the bytes fetched from its source URL.
 	 *
 	 * @param ObjectEntity $object The object.
 	 *
 	 * @return JSONResponse The added file.
 	 *
-	 * @throws FileActionRefusal With 400 when the name or the content is missing.
+	 * @throws FileActionRefusal With 400 when the name is missing, or not exactly one of content and source is sent.
+	 * @throws UrlFetchRefused   When the source URL produced no bytes; answered with 422.
+	 *
+	 * @spec openspec/changes/files-create-from-url/specs
 	 */
 	private function addPostedFile(ObjectEntity $object): JSONResponse {
 		$data = $this->request->getParams();
+		$fileName = $this->postedFileName(data: $data);
+		$share = $this->parseBool(value: $data['share'] ?? false);
+		$tags = $this->normalizeTags(tags: $data['tags'] ?? []);
+
+		if (array_key_exists('source', $data) === true) {
+			return $this->addFetchedFile(object: $object, fileName: $fileName, url: $this->postedSourceUrl(data: $data), share: $share, tags: $tags);
+		}
+
 		$file = $this->fileService->addFile(
 			target: new FileTarget(object: $object),
 			upload: new FileUpload(
-				fileName: $this->postedFileName(data: $data),
+				fileName: $fileName,
 				content: (string)$data['content'],
-				share: $this->parseBool(value: $data['share'] ?? false),
-				tags: $this->normalizeTags(tags: $data['tags'] ?? [])
+				share: $share,
+				tags: $tags
 			)
 		);
 
@@ -1203,13 +1274,89 @@ class FilesController extends Controller {
 	}//end addPostedFile()
 
 	/**
-	 * The name of a posted file, once the request holds a name and content.
+	 * Fetch the bytes at a URL and add them as a file, with where they came from.
+	 *
+	 * A failed fetch or a failed upload check throws before anything is written.
+	 *
+	 * @param ObjectEntity $object   The object.
+	 * @param string       $fileName The file name.
+	 * @param string       $url      The source URL.
+	 * @param bool         $share    Whether to share the file.
+	 * @param array        $tags     The tags.
+	 *
+	 * @return JSONResponse The added file, its provenance under `metadata`.
+	 *
+	 * @throws UrlFetchRefused When the URL produced no bytes.
+	 *
+	 * @spec openspec/changes/files-create-from-url/specs
+	 */
+	private function addFetchedFile(ObjectEntity $object, string $fileName, string $url, bool $share, array $tags): JSONResponse {
+		if ($this->urlFileSource === null) {
+			throw new FileActionRefusal(message: 'Creating a file from a URL is not available', code: 400);
+		}
+
+		$fetched = $this->urlFileSource->fetch(url: $url, fileName: $fileName);
+		$file = $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $fileName, content: $fetched->stream(), share: $share, tags: $tags)
+		);
+		$this->urlFileSource->remember(fileId: (int)$file->getId(), fetched: $fetched);
+		$this->fileAuditHandler?->logFileAction(object: $object, fileId: (int)$file->getId(), action: 'file.fetched', data: $fetched->metadata());
+
+		return new JSONResponse(data: $this->withProvenance(formatted: $this->fileService->formatFile($file), fetched: $fetched));
+	}//end addFetchedFile()
+
+	/**
+	 * A formatted file with the provenance of its fetch under `metadata`.
+	 *
+	 * @param array       $formatted The formatted file.
+	 * @param FetchedFile $fetched   What was fetched.
+	 *
+	 * @return array The file.
+	 */
+	private function withProvenance(array $formatted, FetchedFile $fetched): array {
+		$metadata = [];
+		if (is_array($formatted['metadata'] ?? null) === true) {
+			$metadata = $formatted['metadata'];
+		}
+
+		$formatted['metadata'] = array_merge($metadata, $fetched->metadata());
+		return $formatted;
+	}//end withProvenance()
+
+	/**
+	 * The URL of a posted `source`.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 *
+	 * @return string The URL.
+	 *
+	 * @throws FileActionRefusal With 400 when `source` holds no URL.
+	 */
+	private function postedSourceUrl(array $data): string {
+		$source = $data['source'];
+		$url = null;
+		if (is_array($source) === true) {
+			$url = $source['url'] ?? null;
+		}
+
+		if (is_string($url) === false || trim($url) === '') {
+			throw new FileActionRefusal(message: 'File source must hold a url', code: 400);
+		}
+
+		return trim($url);
+	}//end postedSourceUrl()
+
+	/**
+	 * The name of a posted file, once the request holds a name and exactly one of content and source.
 	 *
 	 * @param array<string, mixed> $data The request parameters.
 	 *
 	 * @return string The file name.
 	 *
-	 * @throws FileActionRefusal With 400 when the name or the content is missing.
+	 * @throws FileActionRefusal With 400 when the name is missing, or content and source are both or neither sent.
+	 *
+	 * @spec openspec/changes/files-create-from-url/specs
 	 */
 	private function postedFileName(array $data): string {
 		// Support both 'name' and 'filename' for compatibility.
@@ -1218,7 +1365,13 @@ class FilesController extends Controller {
 			throw new FileActionRefusal(message: 'File name is required (use "name" or "filename")', code: 400);
 		}
 
-		if (array_key_exists('content', $data) === false) {
+		$hasContent = array_key_exists('content', $data);
+		$hasSource = array_key_exists('source', $data);
+		if ($hasContent === true && $hasSource === true) {
+			throw new FileActionRefusal(message: 'Send either content or source, not both', code: 400);
+		}
+
+		if ($hasContent === false && $hasSource === false) {
 			throw new FileActionRefusal(message: 'File content is required', code: 400);
 		}
 
@@ -1926,7 +2079,7 @@ class FilesController extends Controller {
 	 *
 	 * @return bool True only when an object was found and its read rule allows the caller.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function mayReadObject(ObjectEntity $object): bool {
 		if ($this->objectFileAccess === null) {
@@ -2910,7 +3063,7 @@ class FilesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function office(string $register, string $schema, string $id, int $fileId): JSONResponse {
@@ -2941,7 +3094,7 @@ class FilesController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

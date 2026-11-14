@@ -67,6 +67,13 @@ class RegistersControllerTest extends TestCase {
 	private OasService&MockObject $oasService;
 	private IGroupManager&MockObject $groupManager;
 	private \Psr\Container\ContainerInterface&MockObject $container;
+
+	/**
+	 * The register model service the container hands out, when a test sets one.
+	 *
+	 * @var (\OCA\OpenRegister\Service\Schemas\RegisterModelService&MockObject)|null
+	 */
+	private ?\OCA\OpenRegister\Service\Schemas\RegisterModelService $modelService = null;
 	private \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder&MockObject $appImportJobRecorder;
 
 	/**
@@ -119,6 +126,9 @@ class RegistersControllerTest extends TestCase {
 			}
 			if ($id === \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class) {
 				return $this->appImportJobRecorder;
+			}
+			if ($id === \OCA\OpenRegister\Service\Schemas\RegisterModelService::class) {
+				return $this->modelService;
 			}
 			return null;
 		});
@@ -465,6 +475,56 @@ class RegistersControllerTest extends TestCase {
 		$this->assertSame(500, $result->getStatus());
 	}
 
+	/**
+	 * The model of a readable register is the service's nodes and edges.
+	 *
+	 * @spec openspec/changes/modelling-schema-diagram/specs/schema-diagram/spec.md
+	 */
+	public function testModelReturnsTheRegistersNodesAndEdges(): void {
+		$register = $this->createRealRegister(1, 'Zaken');
+		$this->registerService->expects($this->once())->method('find')->with('zaken')->willReturn($register);
+		$this->modelService = $this->createMock(\OCA\OpenRegister\Service\Schemas\RegisterModelService::class);
+		$model = ['nodes' => [['id' => '1', 'title' => 'Zaak']], 'edges' => []];
+		$this->modelService->expects($this->once())->method('model')->with($register)->willReturn($model);
+
+		$result = $this->controller->model('zaken');
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame($model, $result->getData());
+	}
+
+	/**
+	 * A register the caller cannot read is a 404, and no model is built.
+	 *
+	 * @spec openspec/changes/modelling-schema-diagram/specs/schema-diagram/spec.md
+	 */
+	public function testModelReturns404WhenRegisterNotFound(): void {
+		$this->registerService->method('find')->willThrowException(new DoesNotExistException('Not found'));
+		$this->modelService = $this->createMock(\OCA\OpenRegister\Service\Schemas\RegisterModelService::class);
+		$this->modelService->expects($this->never())->method('model');
+
+		$result = $this->controller->model(999);
+
+		$this->assertSame(404, $result->getStatus());
+		$this->assertSame(['error' => 'Register not found'], $result->getData());
+	}
+
+	/**
+	 * A failure is a 500 that does not repeat the cause.
+	 *
+	 * @spec openspec/changes/modelling-schema-diagram/specs/schema-diagram/spec.md
+	 */
+	public function testModelReturns500WithoutTheCause(): void {
+		$this->registerService->method('find')->willReturn($this->createRealRegister(1, 'Zaken'));
+		$this->modelService = $this->createMock(\OCA\OpenRegister\Service\Schemas\RegisterModelService::class);
+		$this->modelService->method('model')->willThrowException(new Exception('SQLSTATE secret detail'));
+
+		$result = $this->controller->model(1);
+
+		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'The register model could not be read'], $result->getData());
+	}
+
 	public function testUpdateReturnsErrorOnDBException(): void {
 		$this->request->method('getParams')->willReturn(['title' => 'Updated']);
 		$this->registerService->method('updateFromArray')
@@ -749,7 +809,13 @@ class RegistersControllerTest extends TestCase {
 
 	// ── Destroy with DatabaseConstraintException ──────────────────────
 
-	public function testDestroyReturns500OnDatabaseConstraintException(): void {
+	/**
+	 * A constraint failure on delete is a conflict, answered through the
+	 * exception-translation trait (apphost-settings-plane, task 3.2).
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
+	 */
+	public function testDestroyReturns409OnDatabaseConstraintException(): void {
 		$register = $this->createRealRegister(1, 'Test');
 		$this->registerService->method('find')->willReturn($register);
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
@@ -758,8 +824,27 @@ class RegistersControllerTest extends TestCase {
 
 		$result = $this->controller->destroy(1);
 
-		// DatabaseConstraintException extends Exception, so caught by generic catch -> 500
+		// A typed conflict keeps its status and its message.
+		$this->assertSame(409, $result->getStatus());
+		$this->assertSame('Foreign key constraint', $result->getData()['message']);
+	}
+
+	/**
+	 * An untyped failure on delete answers a generic 500 and leaks no detail.
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
+	 */
+	public function testDestroyHidesAnUntypedFailure(): void {
+		$register = $this->createRealRegister(1, 'Test');
+		$this->registerService->method('find')->willReturn($register);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+		$this->registerService->method('delete')
+			->willThrowException(new \RuntimeException('SQLSTATE[HY000] secret table detail'));
+
+		$result = $this->controller->destroy(1);
+
 		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
 	}
 
 	// ── Objects with pagination params ────────────────────────────────

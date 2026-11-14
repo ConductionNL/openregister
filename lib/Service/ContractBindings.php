@@ -890,6 +890,8 @@ final class ContractBindings {
 		FormLinkServiceInterface::class => FormLinkService::class,
 		FormSubmitServiceInterface::class => FormSubmitService::class,
 		FormUploadStoreInterface::class => FormUploadStore::class,
+		\OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageStoreInterface::class
+			=> \OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		\OCA\OpenRegister\Service\Configuration\GitHubGuardsInterface::class
 			=> \OCA\OpenRegister\Service\Configuration\GitHubGuards::class,
@@ -1068,6 +1070,9 @@ final class ContractBindings {
 		TenantLifecycleServiceInterface::class => TenantLifecycleService::class,
 		\OCA\OpenRegister\Service\History\StateHistoryRebuildInterface::class => \OCA\OpenRegister\Service\History\StateHistoryRebuild::class,
 		\OCA\OpenRegister\Service\Merge\MasterRecomputeInterface::class => \OCA\OpenRegister\Service\Merge\MasterRecomputeService::class,
+		// Merge relinking (mdm-merge-relinks-every-reference): the relation index finds each reference, the save path moves it.
+		\OCA\OpenRegister\Service\Merge\ReferenceFinderInterface::class => \OCA\OpenRegister\Service\Merge\RelationIndexReferenceFinder::class,
+		\OCA\OpenRegister\Service\Merge\ReferenceWriterInterface::class => \OCA\OpenRegister\Service\Merge\SavePathReferenceWriter::class,
 		\OCA\OpenRegister\Service\Schema\SchemaBatchMigratorInterface::class => \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
 		\OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface::class => \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
 		\OCA\OpenRegister\Service\Sync\SyncScheduleInterface::class => \OCA\OpenRegister\Service\Sync\SyncScheduleService::class,
@@ -1083,6 +1088,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectCacheInvalidationInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\MoveObjectInterface::class => \OCA\OpenRegister\Service\Object\MoveObject::class,
+		\OCA\OpenRegister\Service\Object\MovedObjectLookupInterface::class => \OCA\OpenRegister\Service\Object\MovedObjectLookup::class,
+		\OCA\OpenRegister\Service\Object\RelationAddressRewriteInterface::class => \OCA\OpenRegister\Service\Object\RelationAddressRewrite::class,
 		\OCA\OpenRegister\Service\Object\UpsertOnKeyHandlerInterface::class => \OCA\OpenRegister\Service\Object\UpsertOnKeyHandler::class,
 		ObjectSlugTargetInterface::class => ObjectSlugHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
@@ -1100,6 +1107,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectWriterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectRelatedUpdateGuardInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
+		\OCA\OpenRegister\Service\Object\SaveObjectUpdaterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Archival\ArchiveReferenceReaderInterface::class => \OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator::class,
 		\OCA\OpenRegister\Service\AuditSealInterface::class => \OCA\OpenRegister\Service\AuditHashService::class,
 		\OCA\OpenRegister\Service\AuditRechainInterface::class => \OCA\OpenRegister\Service\AuditHashService::class,
@@ -1145,6 +1153,8 @@ final class ContractBindings {
 		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
 		\OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode::class,
 		\OCA\OpenRegister\Service\Flow\FlowAccessInterface::class => \OCA\OpenRegister\Service\Flow\FlowAccess::class,
+		\OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface::class => \OCA\OpenRegister\Service\Flow\FlowNodeRightsGuard::class,
+		\OCA\OpenRegister\Service\ActionRightsCatalogueInterface::class => \OCA\OpenRegister\Service\ActionRightsCatalogue::class,
 		\OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface::class => \OCA\OpenRegister\Service\Flow\FlowDefinitionPin::class,
 		\OCA\OpenRegister\Service\Flow\FlowRunAdvancerInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunAdvancer::class,
 		\OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface::class => \OCA\OpenRegister\Service\Flow\FlowSemanticVersion::class,
@@ -1177,6 +1187,7 @@ final class ContractBindings {
 		...FeatureBindings::BINDINGS,
 		TrustTierResolverInterface::class => TrustTierResolver::class,
 		...MiscBindings::BINDINGS,
+		\OCA\OpenRegister\Service\RedactionPolicy\TermRuleSourceInterface::class => \OCA\OpenRegister\Service\RedactionPolicy\ObjectTermRuleSource::class,
 	];
 
 	/**

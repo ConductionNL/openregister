@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\Search;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration;
 use OCP\IURLGenerator;
 use OCP\Search\SearchResultEntry;
 
@@ -56,6 +57,8 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 * @param IURLGenerator $urlGenerator The URL generator service
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for URL resolution
 	 * @param ObjectPreviewFormatter $formatter Shared schema icon/name resolution service
+	 * @param SearchResultDeclarations|null $declarations What each schema declares a result shows;
+	 *     absent keeps the derived title and subline for every schema
 	 *
 	 * @return void
 	 *
@@ -65,6 +68,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 		private readonly IURLGenerator $urlGenerator,
 		private readonly DeepLinkRegistryService $deepLinkRegistry,
 		private readonly ObjectPreviewFormatter $formatter,
+		private readonly ?SearchResultDeclarations $declarations = null,
 	) {
 	}//end __construct()
 
@@ -88,10 +92,13 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 
 		[$thumbnailUrl, $icon, $rounded] = $this->resolveIcon(hit: $hit);
 
+		$declared = $this->declarations?->forSchema(schemaId: $hit->schemaId());
+		$card = $this->declarations?->cardFor(schemaId: $hit->schemaId());
+
 		return new SearchResultEntry(
 			$thumbnailUrl,
-			self::titleOf(hit: $hit),
-			$this->buildSubline(hit: $hit, term: $term),
+			($declared?->title(object: $hit->object()) ?? $card?->title(objectData: $hit->object()) ?? self::titleOf(hit: $hit)),
+			$this->buildSubline(hit: $hit, term: $term, declared: $declared, card: $card),
 			$objectUrl,
 			$icon,
 			$rounded
@@ -164,7 +171,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 *
 	 * @return string The link.
 	 *
-	 * @spec openspec/changes/search-deep-link-names-object-properties/specs/deep-link-registry/spec.md#requirement-a-search-hits-deep-link-can-name-the-objects-own-properties
+	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	private function resolveObjectUrl(ObjectSearchHit $hit): string {
 		// The object's own scalar properties come first, so a template can
@@ -209,7 +216,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 *
 	 * @return array<string,string> Property name to encoded value.
 	 *
-	 * @spec openspec/changes/search-deep-link-names-object-properties/specs/deep-link-registry/spec.md#requirement-a-search-hits-deep-link-can-name-the-objects-own-properties
+	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	private function ownLinkProperties(array $object): array {
 		$properties = [];
@@ -272,13 +279,29 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 *
 	 * @param ObjectSearchHit $hit  The search hit.
 	 * @param string|null     $term The search term, or null for filter-only.
+	 * @param SearchResultDeclaration|null  $declared What the hit's schema declares, or null.
+	 * @param ReferenceCardDeclaration|null $card     The reference card the hit's schema declares, or null.
 	 *
 	 * @return string The composed subline.
 	 *
 	 * @spec openspec/specs/unified-search-provider/spec.md
+	 * @spec openspec/changes/platform-reference-provider/specs/schema-scoped-reference-providers/spec.md#requirement-a-schema-declares-what-its-reference-card-shows-req-prp-002
 	 */
-	private function buildSubline(ObjectSearchHit $hit, ?string $term): string {
+	private function buildSubline(
+		ObjectSearchHit $hit,
+		?string $term,
+		?SearchResultDeclaration $declared = null,
+		?ReferenceCardDeclaration $card = null
+	): string {
 		$subline = implode(' · ', $this->sublineParts(hit: $hit));
+
+		// A declared subline takes the excerpt's place; the owner, register
+		// and schema in front of it stay, so the result still says whose it is.
+		// The search result's own declaration wins over the card's summary.
+		$declaredSubline = ($declared?->subline(object: $hit->object()) ?? self::cardSummary(card: $card, object: $hit->object()));
+		if ($declaredSubline !== null) {
+			return $subline . ' — ' . $declaredSubline;
+		}
 
 		$excerpt = $this->buildExcerpt(object: $hit->object(), term: (string)$term);
 		if ($excerpt !== '') {
@@ -287,6 +310,28 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 
 		return $subline;
 	}//end buildSubline()
+
+	/**
+	 * The card's summary as one line, `Label: value · Label: value`, or null when it shows none.
+	 *
+	 * The same rows the card of a pasted link shows, so the picker and the
+	 * card describe an object the same way.
+	 *
+	 * @param ReferenceCardDeclaration|null $card   The card, or null.
+	 * @param array<string, mixed>          $object The rendered object.
+	 *
+	 * @return string|null The summary.
+	 *
+	 * @spec openspec/changes/platform-reference-provider/specs/schema-scoped-reference-providers/spec.md#requirement-a-schema-declares-what-its-reference-card-shows-req-prp-002
+	 */
+	private static function cardSummary(?ReferenceCardDeclaration $card, array $object): ?string {
+		$rows = ($card?->summaryRows(objectData: $object) ?? []);
+		if ($rows === []) {
+			return null;
+		}
+
+		return implode(' · ', array_map(static fn (array $row): string => $row['label'] . ': ' . $row['value'], $rows));
+	}//end cardSummary()
 
 	/**
 	 * The owner, register and schema names a hit's subline names.

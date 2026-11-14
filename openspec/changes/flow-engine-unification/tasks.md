@@ -1,23 +1,24 @@
 # Tasks — flow-engine-unification
 
 ## Phase 1 — Native flow storage (OpenRegister)
-- [ ] 1.1 Migration: `oc_openregister_flows` (uuid, name, description, app, enabled, trigger, trigger_register, trigger_schema, cron, execution_mode, nodes, edges, limits, retention_days, owner, organisation, notes, created, updated) + indexes on (app), (trigger, enabled), (organisation), (uuid). (code exists, test missing: lib/Migration/Version1Date20260803000000.php)
-- [ ] 1.2 Migration: `oc_openregister_flow_run_steps` (run_uuid, flow_id, node_id, node_type, sequence, status, started, finished, duration_ms, output, error) + indexes on (run_uuid, sequence), (node_type, status), (flow_id).
+- [x] 1.1 Migration: `oc_openregister_flows` (uuid, name, description, app, enabled, trigger, trigger_register, trigger_schema, cron, execution_mode, nodes, edges, limits, retention_days, owner, organisation, notes, created, updated) + indexes on (app), (trigger, enabled), (organisation), (uuid). (verified: lib/Migration/Version1Date20260803000000.php, tests/Unit/Migration/Version1Date20260803000000Test.php)
+- [x] 1.2 Migration: `oc_openregister_flow_run_steps` (run_uuid, flow_id, node_id, node_type, sequence, status, started, finished, duration_ms, output, error) + indexes on (run_uuid, sequence), (node_type, status), (flow_id). (verified: lib/Migration/Version1Date20260803000100.php creates it as `openregister_flow_steps`, tests/Unit/Migration/Version1Date20260803000100Test.php)
 - [x] 1.3 `lib/Db/Flow.php` + `lib/Db/FlowMapper.php` — organisation-scoped queries, `app` filter, `findByTrigger`. (verified: lib/Db/FlowMapper.php, tests/Unit/Db/FlowMapperApplicationSlugTest.php)
-- [ ] 1.4 `lib/Db/FlowRunStep.php` + `lib/Db/FlowRunStepMapper.php` — `findByRun`, `findByNodeType`, `deleteOlderThan`.
+- [x] 1.4 `lib/Db/FlowRunStep.php` + `lib/Db/FlowRunStepMapper.php` — `findByRun`, `findByNodeType`, `deleteOlderThan`. (verified: lib/Db/FlowRunStepMapper.php, tests/Unit/Db/FlowRunStepMapperSequenceTest.php)
 - [x] 1.5 `lib/Service/Flow/FlowService.php` — the surface apps consume (find/findAll/save/delete/run), owner + organisation stamping, ownerless-flow dispatch refusal. (verified: lib/Service/Flow/FlowService.php, tests/Unit/Service/Flow/FlowOwnershipRequiredTest.php)
 - [x] 1.6 `FlowController` CRUD + `/api/flows/{id}/run`; per-flow guard on run/update/delete (do not repeat the `retry()` IDOR, or#2290). (verified: lib/Controller/FlowController.php, tests/Unit/Controller/FlowControllerTest.php)
 - [x] 1.7 Point `OpenRegisterFlowResolver` at `FlowMapper`; delete `IFlowResolver`, `FlowResolverRegistry`, `RegisterFlowResolversEvent`. (verified: lib/Service/Flow/FlowLocator.php, tests/Unit/Service/Flow/FlowLocatorTest.php)
-- [ ] 1.8 Enforce namespaced node ids end to end: an unresolvable node type fails its step visibly instead of being skipped.
+- [x] 1.8 Enforce namespaced node ids end to end: an unresolvable node type fails its step visibly instead of being skipped. (verified: lib/Service/Flow/FlowNodeRegistry.php, tests/Unit/Service/Flow/FlowUnresolvableNodeTypeTest.php)
 
 ## Phase 2 — Execution history + retention
 - [x] 2.1 `FlowEngine`/`FlowRunService` write a step row per node execution (output, error, timing, sequence); appended, not replaced, across a resume. (verified: lib/Service/Flow/FlowStepHistory.php, tests/Unit/Service/Flow/FlowStepHistoryTest.php)
 - [x] 2.2 `flow_run_retention_days` admin app setting, default 31; `retention_days` per-flow override honoured shorter **and** longer. (verified: lib/Service/Settings/ConfigurationSettingsHandler.php, tests/Unit/BackgroundJob/FlowRunRetentionJobTest.php)
 - [x] 2.3 `FlowRunRetentionJob` daily `TimedJob` sweeping runs + their step rows (model on `ExecutionHistoryCleanupJob`). (verified: lib/BackgroundJob/FlowRunRetentionJob.php, tests/Unit/BackgroundJob/FlowRunRetentionJobTest.php)
-- [ ] 2.4 Admin settings UI section for flow log retention (admin only — not personal settings). (code exists, test missing: src/views/settings/sections/FlowConfiguration.vue)
+- [x] 2.4 Admin settings UI section for flow log retention (admin only — not personal settings). (verified: src/views/settings/sections/FlowConfiguration.vue, src/views/settings/sections/FlowConfiguration.spec.js)
 
 ## Phase 3 — Remove the old engines
 - [ ] 3.1 Delete `FlowActionService`, `FlowActionListener`, `EventCatalogListener`'s dispatch into it, `WorkflowEngine/RunFlowOperation`.
+  `FlowActionService`, `FlowActionListener` and `EventCatalogListener` are gone from `lib/`. `WorkflowEngine/RunFlowOperation` remains: it now resolves a native flow by name and queues its run (`RunFlowOperationFlows`), so deleting it removes the Nextcloud Flow operation administrators can select; that is a product decision, not a cleanup.
 - [ ] 3.2 Delete `CnEditFlowsModal` + its OpenBuild wiring; ensure `CnFlowCanvas`/`CnFlowCanvasModal` on `codeberg/feat/vue-3` are not merged to `beta`.
 - [ ] 3.3 Delete hermiq `Service/Graph/GraphExecutor`, `Controller/GraphController`, `Flow/HermiqFlowResolver` + listener, `AgentFlow`/`AgentFlowRun` schemas. Keep `HermiqAgentNode`, `HermiqWorkloadNode`, `HermiqFlowNodeListener`.
 - [ ] 3.4 Port GraphExecutor's advances into the engine as ENGINE-WIDE but OPTIONAL behaviour (admin default + nullable per-flow override, mirroring retention):
@@ -25,7 +26,7 @@
   - [x] 3.4b `RegisterFlowOversightEvent` + `IFlowOversightCheck`: apps contribute checks the way they contribute nodes. The engine hardcodes none. (verified: lib/Service/Flow/FlowOversightRegistry.php, tests/Unit/Service/Flow/FlowOversightRegistryTest.php)
   - [x] 3.4c Oversight gate consulted before each hop. `flow_oversight_enabled` default **on** (a safety rail that defaults off protects only the flows someone configured). A veto STOPS the run with its reason; a check that throws refuses rather than failing open. (verified: lib/Service/Flow/FlowEngine.php, tests/Unit/Service/Flow/FlowEngineOversightTest.php)
   - [ ] 3.4d hermiq's kill-switch and budget become registered checks, not engine branches.
-  - [ ] 3.4e State-delta trace onto the step row's `output`.
+  - [x] 3.4e State-delta trace onto the step row's `output`.
 - [ ] 3.5 Retire the `visual-flow-builder` change and `flow_register.json` + `ImportFlowRegister`.
 
 ## Phase 4 — `x-openregister-flows` redefinition
@@ -40,7 +41,7 @@
 - [ ] 5.5 Run/trace panel reads step rows, so a past run is inspectable per node.
 
 ## Phase 6 — Consumers
-- [ ] 6.1 OpenRegister: `/flows` + `/flows/:id` pages, menu entry, no app filter.
+- [x] 6.1 OpenRegister: `/flows` + `/flows/:id` pages, menu entry, no app filter. (verified: `src/manifest.json` page `flows` is an index over the named source `flows` with no app filter and an `app` column, page `flowDetail` at `/flows/:id` is the shared `flow` page type, menu entry `Flows`)
 - [x] 6.2 OpenConnector: `/flows` + `/flows/:id` pages, menu entry, `app=openconnector`. Live-verified 2026-08-16: list + detail (shared CnFlowDetail canvas), real run against openwoo.zaaksysteme.net, hard-reload survives the router-history-mode conversion. Left the pre-existing openconnector-native `flow`/`steps[]` backend running unmigrated — see openconnector#1255.
 - [ ] 6.3 hermiq: `/graphs` → `/flows` on the shared components, `app=hermiq`, old route kept as alias.
 - [x] 6.4 OpenBuild: "Edit flows…" opens `CnFlowEditModal`. Live-verified 2026-08-16: button gated on an app selection, modal opens the shared canvas scoped to the selected app.

@@ -149,6 +149,21 @@ A frozen record (`POST /api/objects/{register}/{schema}/{id}/freeze`) refuses ev
 
 The refusal holds on every delete path: the single delete, the bulk delete and a cascade. A cascade that reaches a frozen record is refused as a whole. To delete the record, unfreeze it first (`DELETE /api/objects/{register}/{schema}/{id}/freeze`).
 
+### A lifecycle state can freeze the record on entry
+
+A state in the schema's lifecycle can declare that entering it freezes the record, so the data stops changing when the phase closes, without anybody clicking Freeze:
+
+```json
+"x-openregister-lifecycle": {
+  "field": "status",
+  "states": {
+    "vastgesteld": { "freezesObject": true }
+  }
+}
+```
+
+When a transition moves a record into `vastgesteld`, the record is frozen with `state` set to `vastgesteld`, `by` set to the user who made the move (or `system` for an automatic one), and a `freeze` entry on the audit trail. A record that is already frozen keeps its first freeze. `freezesObject` must be `true` or `false`; any other value is refused when the schema is saved. A state block with `"enabled": false` freezes nothing. Unfreezing works as for a manual freeze.
+
 ## e-Depot Transfer
 
 ### MDTO XML Generation
@@ -178,6 +193,59 @@ Each object selected for e-Depot transfer generates MDTO-compliant XML:
 ```
 
 The XML is validated against the MDTO XSD schema before inclusion in any SIP package.
+
+### Which MDTO elements the export carries
+
+The export writes MDTO-XML 1.0.1. The tables follow the order of the XSD. An
+optional element is written only when the record or its schema supplies a value;
+the export never writes an empty element.
+
+**`informatieobject`**
+
+| Element | In the export | Where the value comes from |
+|---|---|---|
+| `identificatie` | Always | The object's UUID, with the organisation as the source |
+| `naam` | Always | The object's name |
+| `aggregatieniveau` | When declared | `x-openregister-archival.aggregationLevel` (Archief, Serie, Dossier, Archiefstuk) |
+| `classificatie` | When known | The record's classification |
+| `trefwoord` | Left out | |
+| `omschrijving` | When known | The record's description |
+| `raadpleeglocatie` | Left out | |
+| `dekkingInTijd` | When declared and set on the record | `x-openregister-archival.temporalCoverage`, naming the properties that hold the start and end |
+| `dekkingInRuimte` | Left out | |
+| `taal` | Left out | |
+| `event` | When there is history | The record's events, with the responsible actor when it is known |
+| `waardering` | Always (required) | The archiefnominatie: Blijvend te bewaren, Tijdelijk te bewaren, or Nader te bepalen |
+| `bewaartermijn` | When known | The retention period and the disposal date |
+| `informatiecategorie` | When known | The selectielijst category |
+| `isOnderdeelVan` | Left out | Containment between records is not exported yet |
+| `bevatOnderdeel` | Left out | Containment between records is not exported yet |
+| `heeftRepresentatie` | One per file | The files packaged with the record |
+| `aanvullendeMetagegevens` | Left out | |
+| `gerelateerdInformatieobject` | Left out | |
+| `archiefvormer` | Always (required) | The organisation name in the OpenRegister settings |
+| `betrokkene` | When declared and set on the record | `x-openregister-archival.parties`, naming the properties that hold a party; the property name is the relation type |
+| `activiteit` | Left out | |
+| `beperkingGebruik` | Always (required) | The declared `useRestriction`, else an active legal hold (type Overig), else "Nader te bepalen" |
+
+**`bestand`** (one document per file)
+
+| Element | In the export | Where the value comes from |
+|---|---|---|
+| `identificatie` | Always | The file's id |
+| `naam` | Always | The file name |
+| `omvang` | Always | The size in bytes |
+| `bestandsformaat` | Always | The PRONOM format |
+| `checksum` | Always | Algorithm, value and the date it was computed |
+| `URLBestand` | Left out | Files travel inside the SIP package |
+| `isRepresentatieVan` | Always | The record the file belongs to |
+
+The export refuses a record without a UUID, a name, an appraisal or a
+retention period, and an instance without an organisation identifier. It writes
+no document with a missing required value. The one required element with a
+default is `beperkingGebruik`: when nothing is declared and no legal hold is
+active, it carries "Nader te bepalen" and the transfer logs a warning for that
+record, so an archivist can see which records still need a use restriction.
 
 ### SIP Package Assembly
 

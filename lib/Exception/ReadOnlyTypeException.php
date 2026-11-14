@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Exception;
  * well as update and delete. Extending AppendOnlyException means every
  * controller and the exception trait already answer it with 405.
  *
- * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 class ReadOnlyTypeException extends AppendOnlyException {
 
@@ -39,7 +39,7 @@ class ReadOnlyTypeException extends AppendOnlyException {
 	 * @param string $schemaIdentifier The schema slug or id.
 	 * @param string $operation        The refused operation (create, update, delete).
 	 *
-	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function __construct(string $schemaIdentifier, string $operation='create') {
 		parent::__construct(schemaIdentifier: $schemaIdentifier, operation: $operation);
@@ -55,7 +55,7 @@ class ReadOnlyTypeException extends AppendOnlyException {
 	 *
 	 * @return array{error: string, message: string, schema: string, operation: string}
 	 *
-	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function toResponseBody(): array {
 		return [

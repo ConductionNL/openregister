@@ -560,4 +560,56 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$this->assertSame(['read' => ['portaliq-medewerkers']], $result['definition']['authorization']);
 		$this->assertSame([ShippedConfigurationGuard::ACTION_DECIDED], $this->actions);
 	}//end testAnAuthorizationBlockTakenFromTheAppIsAudited()
+
+	/**
+	 * A guarded annotation the instance changed survives, one the app changed lands.
+	 *
+	 * @return void
+	 */
+	public function testAnAnnotationChangedLocallySurvivesAndOneChangedUpstreamLands(): void {
+		$baseline = ['properties' => [], 'configuration' => ['x-openregister-quota' => ['perOrganisation' => 5], 'x-openregister-list' => ['columns' => ['a']]]];
+		$live = ['properties' => [], 'configuration' => ['x-openregister-quota' => ['perOrganisation' => 9], 'x-openregister-list' => ['columns' => ['a']]]];
+		$incoming = ['properties' => [], 'configuration' => ['x-openregister-quota' => ['perOrganisation' => 5], 'x-openregister-list' => ['columns' => ['a', 'b']]]];
+
+		$result = $this->guard(baseline: $baseline)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')));
+
+		$this->assertTrue($result['guarded']);
+		$this->assertSame(9, $result['definition']['configuration']['x-openregister-quota']['perOrganisation'], 'the local quota is kept');
+		$this->assertSame(['a', 'b'], $result['definition']['configuration']['x-openregister-list']['columns'], 'the shipped columns land');
+	}//end testAnAnnotationChangedLocallySurvivesAndOneChangedUpstreamLands()
+
+	/**
+	 * 🔴 A baseline recorded before annotations were guarded does not freeze them.
+	 *
+	 * Without the seed, every annotation would read as a local addition and the
+	 * app's change as a conflict, so no annotation update would land again.
+	 *
+	 * @return void
+	 */
+	public function testABaselineWithoutAnnotationsLetsTheShippedAnnotationLand(): void {
+		$baseline = ['properties' => ['a' => ['type' => 'string']]];
+		$live = ['properties' => ['a' => ['type' => 'string']], 'configuration' => ['x-openregister-quota' => ['perOrganisation' => 5]]];
+		$incoming = ['properties' => ['a' => ['type' => 'string']], 'configuration' => ['x-openregister-quota' => ['perOrganisation' => 7]]];
+
+		$result = $this->guard(baseline: $baseline)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')));
+
+		$this->assertSame(7, $result['definition']['configuration']['x-openregister-quota']['perOrganisation']);
+		$this->assertSame([], $result['conflicts']);
+		$this->assertSame(['perOrganisation' => 7], $result['baseline']['configuration']['x-openregister-quota'], 'from now on the baseline is real');
+	}//end testABaselineWithoutAnnotationsLetsTheShippedAnnotationLand()
+
+	/**
+	 * The report and the reset preview read an old baseline the same way: nothing diverged.
+	 *
+	 * @return void
+	 */
+	public function testAnOldBaselineReportsNoAnnotationDivergenceAndRefusesTheirReset(): void {
+		$baseline = ['properties' => []];
+		$live = ['properties' => [], 'configuration' => ['x-openregister-quota' => ['perOrganisation' => 5]]];
+		$guard = $this->guard(baseline: $baseline);
+
+		$this->assertSame([], $guard->divergenceFor(slug: 'zaak', live: $live)['divergences']);
+		$preview = $guard->previewPartReset(request: new ResetRequest(slug: 'zaak', live: $live, path: 'configuration.x-openregister-quota.perOrganisation'));
+		$this->assertFalse($preview['applicable'], 'an annotation the instance never changed is not removed by a reset');
+	}//end testAnOldBaselineReportsNoAnnotationDivergenceAndRefusesTheirReset()
 }//end class

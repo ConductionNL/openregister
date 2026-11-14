@@ -29,7 +29,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 /**
  * The query a related-row filter narrows, the register its related rows live in, and the organisation scope of a related table.
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 final class RelatedRowFilterTarget {
 	/**

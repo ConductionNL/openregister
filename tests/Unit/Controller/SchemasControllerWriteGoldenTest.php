@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\Schema\IncomingDefinition;
+use OCA\OpenRegister\Db\SchemaChangelog;
+use OCA\OpenRegister\Service\Schema\SchemaChangeNoticeService;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -147,6 +149,14 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			'update acknowledged string' => ['call' => 'update', 'params' => $props, 'changes' => true, 'query' => ['acknowledgeBreaking' => 'true']],
 			'update acknowledged other' => ['call' => 'update', 'params' => $props, 'changes' => true, 'query' => ['acknowledgeBreaking' => '1']],
 			'update breaking refused' => ['call' => 'update', 'params' => $props, 'changes' => true, 'gate' => 'breaking'],
+			'update breaking acknowledged queues the notice' => [
+				'call' => 'update', 'params' => $props, 'changes' => true, 'breaking' => true,
+				'query' => ['acknowledgeBreaking' => true, 'changeNotice' => ' Field <b>toelichting</b> is removed, use omschrijving '],
+			],
+			'update breaking change notice too long' => [
+				'call' => 'update', 'params' => $props, 'changes' => true, 'breaking' => true,
+				'query' => ['acknowledgeBreaking' => true, 'changeNotice' => str_repeat('x', 501)],
+			],
 			'update external grant without end' => [
 				'call' => 'update',
 				'params' => ['authorization' => ['read' => [['group' => 'partners', 'external' => true]]]],
@@ -304,6 +314,10 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 				return $formCheck;
 			}
 
+			if ($id === SchemaChangeNoticeService::class) {
+				return $this->changeNotices();
+			}
+
 			return null;
 		});
 
@@ -459,6 +473,9 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 		}
 
 		$changeSet = new SchemaChangeSet($changes, 'minor', 'minor');
+		if (($case['breaking'] ?? false) === true) {
+			$changeSet = new SchemaChangeSet([['property' => 'name', 'kind' => 'removed']], 'breaking', 'major');
+		}
 
 		$versioning = $this->createMock(SchemaVersioningService::class);
 		$versioning->method('classify')->willReturnCallback(function (Schema $existing, IncomingDefinition $incoming) use ($changeSet) {
@@ -475,8 +492,15 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			$this->record(method: 'versioning.nextVersion', args: func_get_args());
 			return '2.0.0';
 		});
-		$versioning->method('recordChange')->willReturnCallback(function ($schemaId, SchemaChangeRecord $change) {
+		$versioning->method('recordChange')->willReturnCallback(function ($schemaId, SchemaChangeRecord $change) use ($case) {
 			$this->record(method: 'versioning.recordChangelog', args: [$schemaId, $change->version, $change->changeSet, $change->acknowledged, $change->origin]);
+			if (($case['breaking'] ?? false) !== true) {
+				return null;
+			}
+
+			$entry = new SchemaChangelog();
+			$entry->setId(77);
+			return $entry;
 		});
 
 		return $versioning;
@@ -530,6 +554,24 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 
 		return $schema;
 	}//end schema()
+
+	/**
+	 * A notice service whose reach is fixed and whose queue is recorded.
+	 *
+	 * @return SchemaChangeNoticeService
+	 */
+	private function changeNotices(): SchemaChangeNoticeService {
+		$notices = $this->createMock(SchemaChangeNoticeService::class);
+		$notices->method('reach')->willReturnCallback(function ($schema): array {
+			$this->record(method: 'changeNotices.reach', args: [$schema->getId()]);
+			return ['affectedCallers' => ['recorded' => true, 'count' => 2, 'top' => [['principal' => 'leverancier-a', 'calls' => 40, 'lastSeen' => '2026-10-01T08:00:00+00:00'], ['principal' => 'leverancier-b', 'calls' => 3, 'lastSeen' => '2026-10-20T08:00:00+00:00']]], 'followers' => 1];
+		});
+		$notices->method('queue')->willReturnCallback(function ($entry, $note): void {
+			$this->record(method: 'changeNotices.queue', args: [$entry->getId(), $note]);
+		});
+
+		return $notices;
+	}//end changeNotices()
 
 	/**
 	 * @param list<mixed> $args

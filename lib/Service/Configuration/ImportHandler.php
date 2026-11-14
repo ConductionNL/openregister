@@ -127,6 +127,9 @@ class ImportHandler {
 		// SCHEMA propagates: the registers declaring it are created without the
 		// link, so the damage surfaces layers away with nothing pointing back here.
 		'failed' => ['schemas' => [], 'objects' => []],
+		// The advisory annotations a schema save logged and ignored, one entry per
+		// family and schema; the schemas themselves were imported.
+		'warnings' => [],
 	];
 
 	/**
@@ -135,6 +138,20 @@ class ImportHandler {
 	 * @var SchemaMapperInterface The schema mapper instance.
 	 */
 	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Per schema slug, the advisory annotations its last save in this import ignored.
+	 *
+	 * @var array<string, list<array{family: string, schema: string, messages: list<string>}>>
+	 */
+	private array $discardedAnnotations = [];
+
+	/**
+	 * Per schema id, the uuid of every seed object this seed pass stored or found, by its slug.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	private array $seedObjectUuids = [];
 
 	/**
 	 * Register mapper instance for handling register operations.
@@ -1933,6 +1950,7 @@ class ImportHandler {
 		$eventsBefore = $this->schemaMapper->updateEventCount(schemaId: (int)$id);
 		$schema = $this->schemaMapper->updateFromArray(id: $id, object: $update->data);
 		$schema = $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
+		$this->noteDiscardedAnnotations(schema: $schema);
 		$this->installWhenNoEventFired(schema: $schema, eventsBefore: $eventsBefore);
 
 		return $schema;
@@ -2017,8 +2035,24 @@ class ImportHandler {
 		$schema = $this->schemaMapper->createFromArray($data);
 		$this->shippedBaseline->recordCreated(data: $data, options: $options);
 
-		return $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
+		$schema = $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
+		$this->noteDiscardedAnnotations(schema: $schema);
+
+		return $schema;
 	}//end createImportedSchema()
+
+	/**
+	 * Keep what the schema's last save ignored; a later save of the same schema replaces it.
+	 *
+	 * @param Schema $schema The schema just saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	private function noteDiscardedAnnotations(Schema $schema): void {
+		$this->discardedAnnotations[(string)$schema->getSlug()] = $this->schemaMapper->discardedAnnotations();
+	}//end noteDiscardedAnnotations()
 
 	/**
 	 * Set the import's owner and application on a schema, where given.
@@ -2379,6 +2413,7 @@ class ImportHandler {
 		$this->logForcedImport(run: $run);
 		$this->importComponents(run: $run);
 		$this->finishImport(run: $run);
+		$run->result['warnings'] = array_merge([], ...array_values($this->discardedAnnotations));
 
 		return $run->result;
 	}//end runImport()
@@ -2462,6 +2497,7 @@ class ImportHandler {
 		$this->registersMap = [];
 		$this->schemasMap = [];
 		$run->result = self::EMPTY_IMPORT_RESULT;
+		$this->discardedAnnotations = [];
 
 		// PER-REGISTER SLUG-UNIQUENESS (openspec/changes/per-register-schema-slug-uniqueness):
 		// computed ONCE, from the RAW (pre-mutation) `components.registers.*.schemas` slug
@@ -3200,16 +3236,17 @@ class ImportHandler {
 	}//end seedCandidates()
 
 	/**
-	 * The identity a seed object is de-duplicated by: its uuid, else register/schema/slug.
+	 * The identity a seed object is de-duplicated by: its uuid (or `id`), else register/schema/slug.
 	 *
 	 * @param array $seedSelf The object's `@self`.
 	 *
 	 * @return string The identity, '' when it has none.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
+	 * @spec openspec/changes/config-import-seed-objects
 	 */
 	private function seedIdentity(array $seedSelf): string {
-		$seedKey = (string)($seedSelf['uuid'] ?? '');
+		$seedKey = (string)($seedSelf['uuid'] ?? $seedSelf['id'] ?? '');
 		if ($seedKey === '') {
 			$seedKey = trim(($seedSelf['register'] ?? '') . '/' . ($seedSelf['schema'] ?? '') . '/' . ($seedSelf['slug'] ?? ''), '/');
 		}
@@ -3449,7 +3486,7 @@ class ImportHandler {
 	 *
 	 * @return ListedSeed|null
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function listedSeed(array $objectData, array $actor): ?ListedSeed {
 		$rawRegister = $objectData['@self']['register'] ?? null;
@@ -3484,7 +3521,7 @@ class ImportHandler {
 	 *
 	 * @return Register|null
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function listedRegister(mixed $rawRegister): ?Register {
 		$register = $this->registersMap[$rawRegister] ?? null;
@@ -3509,7 +3546,7 @@ class ImportHandler {
 	 *
 	 * @return Schema|null
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function listedSchema(mixed $rawSchema): ?Schema {
 		$schema = $this->schemasMap[$rawSchema] ?? null;
@@ -3549,7 +3586,7 @@ class ImportHandler {
 	 *
 	 * @return mixed The stored object (an array or ObjectEntity), or null.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function existingListedObject(ListedSeed $seed): mixed {
 		$registerId = $seed->register->getId();
@@ -3616,7 +3653,7 @@ class ImportHandler {
 	 *
 	 * @return ObjectEntity
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function saveListedObject(ListedSeed $seed, array $save): ObjectEntity {
 		return $this->objectService->saveObject(
@@ -3639,7 +3676,7 @@ class ImportHandler {
 	 *
 	 * @return ObjectEntity
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function createListedObject(ListedSeed $seed, array $listed): ObjectEntity {
 		$objectData = $listed['data'];
@@ -3668,7 +3705,7 @@ class ImportHandler {
 	 *
 	 * @return ObjectEntity|null The saved object, or null when it stays as it is.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function updateListedObject(ListedSeed $seed, array $listed): ?ObjectEntity {
 		$objectData = $listed['data'];
@@ -3707,7 +3744,7 @@ class ImportHandler {
 	 *
 	 * @return ObjectEntity|null The saved object, or null when it stays as it is.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function followShippedContent(ListedSeed $seed, array $listed): ?ObjectEntity {
 		$seedKey = $seed->seedKey();
@@ -5455,6 +5492,7 @@ class ImportHandler {
 	 */
 	private function importSeedDataObjects(SeedImport $seed, Configuration $configuration): void {
 		$seedData = $seed->configData['x-openregister']['seedData'] ?? null;
+		$this->seedObjectUuids = [];
 		$this->startSeedImport(seed: $seed);
 		$this->resolveSeedTargetRegister(seed: $seed, configuration: $configuration);
 
@@ -5886,6 +5924,7 @@ class ImportHandler {
 				]
 			);
 			$seed->result['objects'][] = $existingObject->getId();
+			$this->noteSeedObjectUuid(object: $object, uuid: (string)$existingObject->getUuid());
 			return;
 		}
 
@@ -5985,6 +6024,7 @@ class ImportHandler {
 	private function insertSeedObject(SeedImport $seed, SeedDataObject $object): void {
 		$createdObject = ($this->routingMapper ?? $this->objectEntityMapper)->insert($this->newSeedEntity(object: $object));
 		$seed->result['objects'][] = $createdObject->getId();
+		$this->noteSeedObjectUuid(object: $object, uuid: (string)$createdObject->getUuid());
 		$this->logger->debug(
 			message: '[ImportHandler] Seed object imported',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $seed->schemaSlug, 'object_id' => $createdObject->getId(), 'slug' => $object->slug]
@@ -6032,11 +6072,110 @@ class ImportHandler {
 		$objectEntity->setUuid($object->data['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122());
 		$objectEntity->setSchema($object->schema->getId());
 		$objectEntity->setRegister($object->registerId);
-		$objectEntity->setObject($this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema));
+		$objectEntity->setObject($this->withSeedReferencesResolved(object: $object, data: $this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema)));
 		$this->applySeedSlug(entity: $objectEntity, object: $object);
 		$now = new DateTime();
 		$objectEntity->setCreated($now);
 		$objectEntity->setUpdated($now);
 		return $objectEntity;
 	}//end newSeedEntity()
+
+	/**
+	 * The seed object with the slugs in its reference properties replaced by uuids.
+	 *
+	 * Objects stored or found earlier in this seed pass are looked up first, then the
+	 * register; a slug neither knows is kept as written, with a warning.
+	 *
+	 * @param SeedDataObject       $object The seed object.
+	 * @param array<string, mixed> $data   Its data as it will be stored.
+	 *
+	 * @return array<string, mixed> The data.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/tasks.md#6-adjacent-repair-a--seed-ref-resolution
+	 */
+	private function withSeedReferencesResolved(SeedDataObject $object, array $data): array {
+		$resolver = new SeedReferenceResolver(
+			lookup: fn (string $target, string $slug): ?string => $this->seedReferenceUuid(object: $object, target: $target, slug: $slug),
+			logger: $this->logger
+		);
+
+		return $resolver->resolve(data: $data, properties: ($object->schema?->getProperties() ?? []), schemaSlug: (string)$object->schema?->getSlug());
+	}//end withSeedReferencesResolved()
+
+	/**
+	 * The uuid of the object a seed reference names, or null when it cannot be found.
+	 *
+	 * @param SeedDataObject $object The seed object holding the reference.
+	 * @param string         $target The referenced schema, as its `$ref` names it.
+	 * @param string         $slug   The referenced object's slug.
+	 *
+	 * @return string|null The uuid.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/tasks.md#6-adjacent-repair-a--seed-ref-resolution
+	 */
+	private function seedReferenceUuid(SeedDataObject $object, string $target, string $slug): ?string {
+		$schema = $this->seedReferenceSchema(target: $target);
+		if ($schema === null) {
+			return null;
+		}
+
+		$known = ($this->seedObjectUuids[(string)$schema->getId()][$slug] ?? null);
+		if ($known !== null || $this->routingMapper === null || $object->register === null) {
+			return $known;
+		}
+
+		try {
+			$found = $this->routingMapper->find(
+				identifier: $slug,
+				register: $object->register,
+				schema: $schema,
+				includeDeleted: false,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		return (string)$found->getUuid();
+	}//end seedReferenceUuid()
+
+	/**
+	 * The schema a seed reference points to: one imported in this run first, else the stored one.
+	 *
+	 * @param string $target The schema slug, id or uuid the `$ref` names.
+	 *
+	 * @return Schema|null The schema, or null when there is none.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/tasks.md#6-adjacent-repair-a--seed-ref-resolution
+	 */
+	private function seedReferenceSchema(string $target): ?Schema {
+		if (($this->schemasMap[$target] ?? null) !== null) {
+			return $this->schemasMap[$target];
+		}
+
+		try {
+			return $this->schemaMapper->find(id: $target, _extend: [], _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end seedReferenceSchema()
+
+	/**
+	 * Remember the uuid of a seed object stored or found, for the references that name it.
+	 *
+	 * @param SeedDataObject $object The seed object.
+	 * @param string         $uuid   Its uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/tasks.md#6-adjacent-repair-a--seed-ref-resolution
+	 */
+	private function noteSeedObjectUuid(SeedDataObject $object, string $uuid): void {
+		if ($object->schema === null || $uuid === '' || is_scalar($object->slug) === false) {
+			return;
+		}
+
+		$this->seedObjectUuids[(string)$object->schema->getId()][(string)$object->slug] = $uuid;
+	}//end noteSeedObjectUuid()
 }//end class

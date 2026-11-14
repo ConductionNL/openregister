@@ -36,6 +36,14 @@ use DateTimeInterface;
  */
 interface GeneratedIdentifierDeclarationInterface {
 	/**
+	 * How many reserved values in a row an allocation skips before it gives up.
+	 *
+	 * A reserved pattern that matches every value would otherwise spin the
+	 * counter forever; past this many the issue is refused instead.
+	 */
+	public const MAX_RESERVED_SKIPS = 1000;
+
+	/**
 	 * The counter's name.
 	 *
 	 * Named rather than derived from the schema, because two schemas naming the
@@ -68,12 +76,20 @@ interface GeneratedIdentifierDeclarationInterface {
 	 *
 	 * @param int $sequenceValue The number taken from the counter.
 	 * @param DateTimeInterface $moment The moment the object is being created.
+	 * @param string|null $randomKey The permutation key; required for a random sequence.
 	 *
 	 * @return string The rendered identifier.
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
 	 */
-	public function render(int $sequenceValue, DateTimeInterface $moment): string;
+	public function render(int $sequenceValue, DateTimeInterface $moment, ?string $randomKey=null): string;
+
+	/**
+	 * Whether this identifier is drawn from a random sequence.
+	 *
+	 * @return bool
+	 */
+	public function isRandom(): bool;
 
 	/**
 	 * Read back the sequence number and period a value was rendered from.
@@ -93,4 +109,15 @@ interface GeneratedIdentifierDeclarationInterface {
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
 	public function parse(string $value): ?array;
+
+	/**
+	 * Whether no sequence may issue this value (a reserved value or a value matching a reserved pattern).
+	 *
+	 * @param string $value A rendered identifier.
+	 *
+	 * @return bool True when the value must be skipped.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-second-human-identifier-reserved-values-and-a-scheme-change-as-a-migration-req-gid-006
+	 */
+	public function isReserved(string $value): bool;
 }//end interface

@@ -46,8 +46,11 @@ interface TaskInboxServiceInterface {
 	 * One task as an API row, with its subject context resolved.
 	 *
 	 * @param TaskInterface $task The task.
+	 * @param string|null   $caller The reader's uid; when given the row carries `can` (record-tasks-tab D-4).
 	 *
 	 * @return array<string, mixed> The row.
+	 *
+	 * @spec openspec/changes/record-tasks-tab/specs/flow-tasks/spec.md
 	 */
-	public function enrich(TaskInterface $task): array;
+	public function enrich(TaskInterface $task, ?string $caller = null): array;
 }//end interface

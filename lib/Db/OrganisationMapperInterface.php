@@ -155,7 +155,7 @@ interface OrganisationMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
 	 *
-	 * @spec openspec/changes/organisation-as-federated-counterparty/specs/organisation-tenancy-scope/spec.md
+	 * @spec openspec/specs/organisation-tenancy-scope/spec.md
 	 */
 	public function findLocalTenants(int $limit = 50, int $offset = 0, ?array $filters = []): array;
 

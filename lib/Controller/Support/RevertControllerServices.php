@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\RevertHandlerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * The collaborators of RevertController, wired by DI autowiring.
@@ -34,10 +35,14 @@ final class RevertControllerServices {
 	 *
 	 * @param RevertHandlerInterface     $revertService The revert service
 	 * @param ?ObjectOperationsInterface $objectService Renders the reverted object as every object read does
+	 * @param ?LoggerInterface           $logger        Holds the text of a failed revert, under the request id the answer names
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		public readonly RevertHandlerInterface $revertService,
 		public readonly ?ObjectOperationsInterface $objectService = null,
+		public readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 }//end class

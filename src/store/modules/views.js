@@ -110,7 +110,14 @@ async function viewsRequest(path, init) {
 		},
 	}))
 	if (!response.ok) {
-		throw new Error(`HTTP error! status: ${response.status}`)
+		// Surface the server's own error body (it names the refused field, e.g.
+		// `kanban.groupByField`), so a caller can place the message under that
+		// picker rather than losing it to a bare status code.
+		const body = await response.json().catch(() => null)
+		const failure = new Error(body?.error || `HTTP error! status: ${response.status}`)
+		failure.status = response.status
+		failure.body = body
+		throw failure
 	}
 	return response
 }

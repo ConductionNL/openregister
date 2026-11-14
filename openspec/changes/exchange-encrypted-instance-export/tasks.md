@@ -3,11 +3,14 @@
 ## 1. Container
 
 - [ ] 1.1 Add `lib/Service/Exchange/EncryptedSetWriter.php` and `EncryptedSetReader.php` with the format in design D-1, the header as additional data, and `verify()` that reads to the final tag without writing (D-4); declare `ext-sodium` in `composer.json`. Verify: `tests/Unit/Service/Exchange/EncryptedSetRoundTripTest.php` round-trips 10 MiB, and refuses a flipped byte in a chunk, a changed header field, a missing final chunk and a wrong key, each with the same message.
+      **Built**: `EncryptedSetHeader`, `EncryptedSetWriter`, `EncryptedSetReader` (with `verify()`) and `EncryptedSetException`, tested by `EncryptedSetRoundTripTest` (14). **Open**: declaring `ext-sodium` in `composer.json`, which needs the lock file regenerated with it.
 
 ## 2. Keys
 
-- [ ] 2.1 Add `ExportKeyService`: passphrase stretching with Argon2id (minimum 12 characters), and export keys as organisation-scoped inject-only credentials under provider `openregister-export-key`, with create (showing the recovery string once), rotate, delete and audit rows. Verify: `tests/Unit/Service/Exchange/ExportKeyServiceTest.php` asserts the key never appears in a log context or an audit row and that another organisation's key is refused by the broker guard.
-- [ ] 2.2 Add the one-use job key (design D-3): derived at request time, stored as a one-use broker credential named for the job, deleted in a `finally`, and swept after 24 hours. Verify: `tests/Unit/Service/Exchange/OneUseJobKeyTest.php` asserts the job argument holds only the credential id and the credential is gone after success and after a thrown job.
+- [x] 2.1 Add `ExportKeyService`: passphrase stretching with Argon2id (minimum 12 characters), and export keys as organisation-scoped inject-only credentials under provider `openregister-export-key`, with create (showing the recovery string once), rotate, delete and audit rows. Verify: `tests/Unit/Service/Exchange/ExportKeyServiceTest.php` asserts the key never appears in a log context or an audit row and that another organisation's key is refused by the broker guard.
+      **Built**: `ExportKeyService` (`passphraseHeader()`/`passphraseKey()`, `create`, `rotate`, `delete`, `use`, each audited as `export.key-*` by fingerprint), on `BrokeredKeys`, which stores keys as organisation-scoped inject-only credentials for `openregister` alone and reads them back only through `resolveInjectable()` after checking the provider. Providers `openregister-export-key` and `openregister-job-key` added to `lib/Settings/credential-providers.json`. Tested by `ExportKeyServiceTest` (18). The administrator gate and the routes belong to the screens of task 4.1.
+- [x] 2.2 Add the one-use job key (design D-3): derived at request time, stored as a one-use broker credential named for the job, deleted in a `finally`, and swept after 24 hours. Verify: `tests/Unit/Service/Exchange/OneUseJobKeyTest.php` asserts the job argument holds only the credential id and the credential is gone after success and after a thrown job.
+      **Built**: `OneUseJobKey` (`store`, `withKey` deleting in a `finally`, `sweep`) and the hourly `OneUseJobKeySweepJob`, tested by `OneUseJobKeyTest` (8) and `OneUseJobKeySweepJobTest` (3). A credential that is not a job key, or that the broker refuses, is never deleted by `withKey`.
 
 ## 3. Wiring into the serialisation
 

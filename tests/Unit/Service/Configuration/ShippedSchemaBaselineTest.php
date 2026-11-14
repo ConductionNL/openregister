@@ -49,6 +49,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgradeOptions
  * @uses \OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\ShippedBaseline\GuardedAnnotations
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
  */
 class ShippedSchemaBaselineTest extends TestCase {
 
@@ -207,4 +212,66 @@ class ShippedSchemaBaselineTest extends TestCase {
 		$baseline->recordCreated(['properties' => []], $this->app());
 		$baseline->recordCreated(['slug' => 'case'], new SchemaImportOptions());
 	}//end testACreatedSchemaWithoutSlugOrAppRecordsNothing()
+
+	public function testAnnotationsAreGuardedOnlyWhenTheAppShipsThem(): void {
+		$existing = $this->existing();
+		$existing->setConfiguration(['objectNameField' => 'title', 'x-openregister-quota' => ['perOrganisation' => 9]]);
+		$this->guard->expects($this->once())->method('guardUpgrade')->with(
+			$this->callback(
+				function (SchemaUpgrade $upgrade): bool {
+					$this->assertSame(['x-openregister-quota' => ['perOrganisation' => 9]], $upgrade->live['configuration']);
+					$this->assertSame(['x-openregister-quota' => ['perOrganisation' => 5]], $upgrade->incoming->definition['configuration']);
+					return true;
+				}
+			)
+		)->willReturn(
+			[
+				'guarded' => true,
+				'baseline' => [],
+				'definition' => ['properties' => [], 'configuration' => ['x-openregister-quota' => ['perOrganisation' => 9]]],
+				'conflicts' => [],
+			]
+		);
+
+		$data    = ['slug' => 'case', 'properties' => [], 'x-openregister-quota' => ['perOrganisation' => 5], 'configuration' => ['objectNameField' => 'name']];
+		$pending = (new ShippedSchemaBaseline($this->guard, $this->logger))->resolve(new ImportedSchemaUpdate($data, $existing), $this->app());
+
+		$this->assertSame(
+			['slug' => 'case', 'properties' => [], 'configuration' => ['objectNameField' => 'name', 'x-openregister-quota' => ['perOrganisation' => 9]]],
+			$pending->data,
+			'the kept quota is written nested, and no top-level copy can fold the shipped one back in'
+		);
+	}//end testAnnotationsAreGuardedOnlyWhenTheAppShipsThem()
+
+	public function testAnAppShippingNoAnnotationsLeavesTheStoredOnesAlone(): void {
+		$existing = $this->existing();
+		$existing->setConfiguration(['x-openregister-quota' => ['perOrganisation' => 9]]);
+		$this->guard->expects($this->once())->method('guardUpgrade')->with(
+			$this->callback(
+				function (SchemaUpgrade $upgrade): bool {
+					$this->assertArrayNotHasKey('configuration', $upgrade->live);
+					$this->assertArrayNotHasKey('configuration', $upgrade->incoming->definition);
+					return true;
+				}
+			)
+		)->willReturn(['guarded' => true, 'baseline' => [], 'definition' => ['properties' => []], 'conflicts' => []]);
+
+		$pending = (new ShippedSchemaBaseline($this->guard, $this->logger))->resolve(new ImportedSchemaUpdate(['properties' => []], $existing), $this->app());
+
+		$this->assertSame(['properties' => []], $pending->data);
+	}//end testAnAppShippingNoAnnotationsLeavesTheStoredOnesAlone()
+
+	public function testACreatedSchemaRecordsItsAnnotations(): void {
+		$this->guard->expects($this->once())->method('recordShippedSchema')->with(
+			'case',
+			$this->callback(
+				static fn (ShippedDefinition $shipped): bool => $shipped->definition === ['properties' => [], 'configuration' => ['x-openregister-quota' => ['perOrganisation' => 2]]]
+			)
+		);
+
+		(new ShippedSchemaBaseline($this->guard, $this->logger))->recordCreated(
+			['slug' => 'case', 'properties' => [], 'x-openregister-quota' => ['perOrganisation' => 2]],
+			$this->app()
+		);
+	}//end testACreatedSchemaRecordsItsAnnotations()
 }//end class

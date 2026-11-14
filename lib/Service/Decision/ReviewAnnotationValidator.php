@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Decision;
  * step may create its groups after its schemas are imported, and a group that
  * does not exist grants nobody anything, so it cannot open the review.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 final class ReviewAnnotationValidator implements ReviewAnnotationValidatorInterface {
 
@@ -45,7 +45,7 @@ final class ReviewAnnotationValidator implements ReviewAnnotationValidatorInterf
 	 *
 	 * @return array<int, array{code: string, message: string}> The refusals.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function validate(array $configuration): array {
 		if (array_key_exists(ReviewPolicy::ANNOTATION, $configuration) === false) {

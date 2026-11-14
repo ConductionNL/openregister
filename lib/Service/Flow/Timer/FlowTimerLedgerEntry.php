@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use DateTimeInterface;
  * One history row of a timer, before it is written: what happened, who did
  * it, why and when, and how the fire moment moved.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 final class FlowTimerLedgerEntry {
 
@@ -69,7 +69,7 @@ final class FlowTimerLedgerEntry {
 	 * @param string            $reason The reason.
 	 * @param DateTimeInterface $moment The moment.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function __construct(
 		public readonly string $type,
@@ -88,7 +88,7 @@ final class FlowTimerLedgerEntry {
 	 *
 	 * @return self The copy.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function withFireMoments(?DateTime $prior, ?DateTime $next): self {
 		$copy = clone $this;
@@ -105,7 +105,7 @@ final class FlowTimerLedgerEntry {
 	 *
 	 * @return self The copy.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function withBasis(string $basis, ?float $impact = null): self {
 		$copy = clone $this;
@@ -119,7 +119,7 @@ final class FlowTimerLedgerEntry {
 	 *
 	 * @return DateTime|null The moment.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function priorFireAt(): ?DateTime {
 		return $this->priorFireAt;
@@ -130,7 +130,7 @@ final class FlowTimerLedgerEntry {
 	 *
 	 * @return DateTime|null The moment.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function newFireAt(): ?DateTime {
 		return $this->newFireAt;
@@ -141,7 +141,7 @@ final class FlowTimerLedgerEntry {
 	 *
 	 * @return string The basis; empty when none.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function basis(): string {
 		return $this->basis;
@@ -152,7 +152,7 @@ final class FlowTimerLedgerEntry {
 	 *
 	 * @return float|null The impact.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function impact(): ?float {
 		return $this->impact;

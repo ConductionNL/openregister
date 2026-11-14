@@ -76,6 +76,20 @@ final class ObjectUpdateRun {
 	public ?ObjectEntity $oldObject = null;
 
 	/**
+	 * Where the update comes from when it is not an edit (`revert`), recorded as the audit action.
+	 *
+	 * @var string|null
+	 */
+	public ?string $origin = null;
+
+	/**
+	 * Named markers the audit row records with the change.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public array $marks = [];
+
+	/**
 	 * The object as updated, once it is persisted.
 	 *
 	 * @var ObjectEntity|null

@@ -2,29 +2,40 @@
 
 ## 1. Declaration
 
-- [ ] 1.1 Add `x-openregister-classification` to
+- [x] 1.1 Add `x-openregister-classification` to
       `SchemaSlugMap::SCHEMA_ANNOTATION_KEYS` so the block is not dropped in
       silence on import.
-- [ ] 1.2 Validate the block at schema save: at least two levels, no
+- [x] 1.2 Validate the block at schema save: at least two levels, no
       duplicate, `property` declared on the schema, `clearances` entries
       naming a declared level, `default` a declared level.
-- [ ] 1.3 Validate `ceilings` entries and the `floor` reference.
+- [x] 1.3 Validate `ceilings` entries and the `floor` reference.
 
 ## 2. Resolution
 
-- [ ] 2.1 A comparator placing a label by its index, with an absent, empty or
+- [x] 2.1 A comparator placing a label by its index, with an absent, empty or
       unknown label at the most restrictive index, logged.
-- [ ] 2.2 A clearance resolver: highest mapped group, then `default`, then the
+- [x] 2.2 A clearance resolver: highest mapped group, then `default`, then the
       lowest level, with the administrator at the top, logged when
       unresolvable.
 
 ## 3. Enforcement
 
-- [ ] 3.1 `PermissionHandler` refuses a find above the caller's clearance.
+- [x] 3.1 `PermissionHandler` refuses a find above the caller's clearance.
+      > 2026-11-14: `Service/Rbac/ClassificationReadGate`, called from
+      > `PermissionHandler::evaluatePermission()` after the deny pass and before
+      > any grant, as a final refusal (no grant, schema rule or elevation
+      > re-opens it). Only an ask about one object; a schema without the block
+      > is never looked at further. Tests: `ClassificationReadGateTest`,
+      > `PermissionHandlerClassificationTest`.
 - [ ] 3.2 `MagicRbacHandler` compiles the comparison into the list and
       aggregation queries as an `IN` over the admitted labels.
 - [ ] 3.3 Ceilings refuse a scope ahead of every grant and schema rule.
-- [ ] 3.4 The floor is checked at save and a lowering write is refused naming
+      > 2026-11-14, find path only: an anonymous caller is the `public` scope,
+      > and a ceiling on it refuses every action on an object at or above its
+      > level, ahead of a public schema rule and the object's own public grant
+      > (`PermissionHandlerClassificationTest::testACeilingBeatsEveryGrantToItsScope`).
+      > The list path waits on 3.2; scopes other than `public` are not mapped yet.
+- [x] 3.4 The floor is checked at save and a lowering write is refused naming
       both levels.
 
 ## 4. The dead vocabulary

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
 use OCA\OpenRegister\Controller\Support\RegisterStatistics;
 use OCA\OpenRegister\Controller\Support\RegisterUpdate;
 use OCA\OpenRegister\Controller\Support\RequestListPage;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
+use OCA\OpenRegister\Service\Schemas\RegisterModelService;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\Configuration\ConfigurationCollaborators;
@@ -109,6 +111,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ImportMapping;
  * @spec openspec/specs/openapi-generation/spec.md
  */
 class RegistersController extends Controller {
+	use HandlesExceptionsTrait;
+
 
 	/**
 	 * The boolean import flags and their defaults.
@@ -469,12 +473,7 @@ class RegistersController extends Controller {
 			// falling through to Nextcloud's HTML error template.
 			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[RegistersController] Failed to retrieve register',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'register_id' => $id, 'error_message' => $e->getMessage()]
-			);
-
-			return new JSONResponse(data: ['error' => 'Failed to retrieve register: ' . $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Failed to retrieve register ' . $id);
 		}//end try
 	}//end show()
 
@@ -555,7 +554,7 @@ class RegistersController extends Controller {
 		} catch (AuthorizationBlockException | DBException | DatabaseConstraintException $e) {
 			return $this->writeRefusal(error: $e);
 		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Register creation failed');
 		}
 	}//end create()
 
@@ -788,8 +787,8 @@ class RegistersController extends Controller {
 			// Return 409 Conflict for cascade protection (objects still attached).
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
 		} catch (Exception $e) {
-			// Return 500 for other errors.
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			// Typed failures keep their status; anything else is a generic 500.
+			return $this->handleApiException(e: $e, context: 'Register deletion failed');
 		}//end try
 	}//end destroy()
 
@@ -924,9 +923,36 @@ class RegistersController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => 'Internal server error: ' . $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Register schemas read failed');
 		}//end try
 	}//end schemas()
+
+	/**
+	 * The register's model: its schemas as nodes and the links between them as edges
+	 *
+	 * Read with the same checks as `registers#schemas`, from schema definitions only.
+	 *
+	 * @param int|string $id The ID, UUID, or slug of the register
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse JSON response with nodes and edges, or an error
+	 *
+	 * @spec openspec/changes/modelling-schema-diagram/specs/schema-diagram/spec.md
+	 */
+	public function model(int|string $id): JSONResponse {
+		try {
+			$register = $this->registerService->find($id);
+			return new JSONResponse(data: $this->container->get(RegisterModelService::class)->model(register: $register));
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+		} catch (Exception $e) {
+			$this->logger->error(message: '[RegistersController] Register model failed', context: ['register' => $id, 'error' => $e->getMessage()]);
+			return new JSONResponse(data: ['error' => 'The register model could not be read'], statusCode: 500);
+		}//end try
+	}//end model()
 
 	/**
 	 * Export a register and its related data
@@ -1927,7 +1953,7 @@ class RegistersController extends Controller {
 			$report = $this->importService->softDeleteByImportJobId(importJobId: $importJobId);
 			return new JSONResponse(data: $report, statusCode: 200);
 		} catch (\Throwable $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Import soft delete failed');
 		}
 	}//end softDeleteImport()
 

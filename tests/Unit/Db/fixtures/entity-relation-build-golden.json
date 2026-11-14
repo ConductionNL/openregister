@@ -23,6 +23,8 @@
             },
             "skipAnonymization": false,
             "decision": null,
+            "page": null,
+            "box": null,
             "createdAt": "2026-01-02T03:04:05+00:00"
         },
         "updated": [
@@ -64,6 +66,8 @@
             "bases": null,
             "skipAnonymization": false,
             "decision": null,
+            "page": null,
+            "box": null,
             "createdAt": "now"
         },
         "updated": [
@@ -93,6 +97,8 @@
             "bases": null,
             "skipAnonymization": false,
             "decision": null,
+            "page": null,
+            "box": null,
             "createdAt": "now"
         },
         "updated": [
@@ -122,6 +128,8 @@
             "bases": null,
             "skipAnonymization": false,
             "decision": null,
+            "page": null,
+            "box": null,
             "createdAt": "now"
         },
         "updated": [
@@ -151,6 +159,8 @@
             "bases": null,
             "skipAnonymization": false,
             "decision": null,
+            "page": null,
+            "box": null,
             "createdAt": "now"
         },
         "updated": [
@@ -180,6 +190,8 @@
             "bases": null,
             "skipAnonymization": false,
             "decision": null,
+            "page": null,
+            "box": null,
             "createdAt": "now"
         },
         "updated": [
@@ -209,6 +221,8 @@
             "bases": null,
             "skipAnonymization": false,
             "decision": null,
+            "page": null,
+            "box": null,
             "createdAt": "now"
         },
         "updated": [

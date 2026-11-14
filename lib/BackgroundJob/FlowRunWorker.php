@@ -26,13 +26,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Service\Flow\FlowErrorPolicy;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\Support\AbandonedFlowClaim;
 use OCA\OpenRegister\BackgroundJob\Support\FlowReapRun;
@@ -55,7 +56,7 @@ use Throwable;
 /**
  * Executes queued runs, resumes due ones, and prunes old ones.
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  * @spec openspec/specs/flow-queue-fairness/spec.md
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The pass owns recovery for runs, claims and
@@ -260,7 +261,7 @@ class FlowRunWorker extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
 	protected function run($argument): void {
@@ -301,7 +302,7 @@ class FlowRunWorker extends TimedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+	 * @spec openspec/specs/flow-stale-runs/spec.md
 	 */
 	private function reapStale(DateTime $now): void {
 		$minutes = $this->intSetting(key: 'flow_run_stale_minutes', default: self::DEFAULT_STALE_MINUTES);
@@ -522,7 +523,7 @@ class FlowRunWorker extends TimedJob {
 
 		$step = (new FlowTokenRouter())->stepFor(flow: $flow, transitionName: $transition);
 
-		return ((string)($step['onError'] ?? 'stop')) === 'continue';
+		return FlowErrorPolicy::continues(step: $step);
 	}//end abandonedStepContinues()
 
 	/**
@@ -836,7 +837,7 @@ class FlowRunWorker extends TimedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function advance(FlowRun $run): void {
 		// Swallowing is deliberate here and NOT in the synchronous path: one
@@ -855,7 +856,7 @@ class FlowRunWorker extends TimedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	private function prune(DateTime $now): void {
 		$days = $this->intSetting(key: 'flow_run_retention_days', default: self::DEFAULT_RETENTION_DAYS);

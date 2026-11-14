@@ -334,6 +334,30 @@ class CredentialControllerOrganisationTest extends TestCase {
 	}
 
 	/**
+	 * Updating (PUT) an organisation credential is behind the same org-admin
+	 * gate as delete: a member who is not an organisation admin is refused
+	 * before any write.
+	 *
+	 * @return void
+	 */
+	public function testUpdateOrganisationCredentialRequiresAdmin(): void {
+		$entity = $this->credential(['scope' => 'organisation', 'organisation' => 'org-target'], 'admin-uid');
+		$entity->setUuid('cred-uuid');
+		$this->objectService->method('find')->willReturn($entity);
+
+		$this->orgService->method('isOrganisationAdmin')
+			->with('org-target', 'member-uid')->willReturn(false);
+
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$controller = $this->makeController(uid: 'member-uid', params: ['title' => 'Renamed']);
+
+		$response = $controller->update('cred-uuid');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}
+
+	/**
 	 * A real ObjectEntity carrying a property bag (magic accessors can't be stubbed).
 	 *
 	 * @param array<string, mixed> $data The credential property bag.

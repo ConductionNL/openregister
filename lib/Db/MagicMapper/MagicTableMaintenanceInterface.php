@@ -186,6 +186,18 @@ interface MagicTableMaintenanceInterface {
 	public function updateTableIndexes(string $tableName, Register $register, Schema $schema): void;
 
 	/**
+	 * Every index on a register+schema table, with the property flag that asked for each.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array<int, array{name: string, property: string|null, column: string|null, kind: string, flag: string|null}> The indexes.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-a-property-can-ask-for-an-index-without-being-a-facet
+	 */
+	public function tableIndexes(Register $register, Schema $schema): array;
+
+	/**
 	 * Drop table
 	 *
 	 * @param string $tableName The table name to drop

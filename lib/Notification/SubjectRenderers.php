@@ -84,6 +84,7 @@ class SubjectRenderers {
 			new WorkSubjectRenderer(urlGenerator: $this->urlGenerator),
 			new AccessSubjectRenderer(urlGenerator: $this->urlGenerator, names: $names),
 			new DelegationConsentRenderer(urlGenerator: $this->urlGenerator, names: $names),
+			new SchemaChangeSubjectRenderer(urlGenerator: $this->urlGenerator),
 		];
 	}//end all()
 }//end class

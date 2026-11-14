@@ -77,7 +77,7 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	 * @return bool TRUE after commit (TaskService), FALSE inside the
 	 *              transaction (TaskMapper).
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function isCommitted(): bool {
 		return $this->committed;
@@ -88,7 +88,7 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	 *
 	 * @return string The uuid.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function getTaskUuid(): string {
 		return (string)$this->getTask()->getUuid();
@@ -99,7 +99,7 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	 *
 	 * @return string One of Task::TERMINAL_STATES.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function getState(): string {
 		return (string)$this->getTask()->getState();
@@ -110,7 +110,7 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	 *
 	 * @return string|null The outcome.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function getOutcome(): ?string {
 		return $this->getTask()->getOutcome();

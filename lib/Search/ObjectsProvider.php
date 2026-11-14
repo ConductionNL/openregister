@@ -114,11 +114,20 @@ class ObjectsProvider implements IFilteringProvider {
 	private ?array $nonSearchableIds = null;
 
 	/**
+	 * The searchable schemas described the way a scope names them.
+	 *
+	 * @var SearchScopeCatalog
+	 */
+	private readonly SearchScopeCatalog $scopeCatalog;
+
+	/**
 	 * Constructor for the ObjectsProvider class
 	 *
 	 * @param ObjectOperationsInterface $objectService The object service for search operations
 	 * @param SchemaCatalogInterface    $catalog       Schemas for the searchable-schema opt-out, registers for resolving a register a search scope names
 	 * @param ObjectsProviderOutput     $output        The localization service, shared result formatter and logger
+	 * @param SearchScopeCatalog|null   $scopeCatalog  The searchable schemas described the way a scope names them;
+	 *                                                 null describes them without the apps that claim them
 	 *
 	 * @return void
 	 *
@@ -128,7 +137,9 @@ class ObjectsProvider implements IFilteringProvider {
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly SchemaCatalogInterface $catalog,
 		private readonly ObjectsProviderOutput $output,
+		?SearchScopeCatalog $scopeCatalog = null,
 	) {
+		$this->scopeCatalog = ($scopeCatalog ?? new SearchScopeCatalog(catalog: $catalog, logger: $output->logger));
 	}//end __construct()
 
 	/**
@@ -713,7 +724,10 @@ class ObjectsProvider implements IFilteringProvider {
 	/**
 	 * Order two result rows the way the pipeline orders a cross-schema page.
 	 *
-	 * Relevance descending, then uuid ascending as the stable tiebreaker.
+	 * Relevance descending, then the ordering date the row's schema declares
+	 * (newest first, a row without one after those with one), then uuid
+	 * ascending as the stable tiebreaker. A schema that declares no date
+	 * leaves its rows ordered exactly as before.
 	 *
 	 * @param mixed $a A rendered row (array) or an ObjectEntity.
 	 * @param mixed $b A rendered row (array) or an ObjectEntity.
@@ -729,8 +743,49 @@ class ObjectsProvider implements IFilteringProvider {
 			return $scoreB <=> $scoreA;
 		}
 
+		$dateA = $this->declaredOrderDate(row: $a);
+		$dateB = $this->declaredOrderDate(row: $b);
+		if ($dateA !== $dateB) {
+			return (($dateB ?? PHP_INT_MIN) <=> ($dateA ?? PHP_INT_MIN));
+		}
+
 		return strcmp($uuidA, $uuidB);
 	}//end compareRows()
+
+	/**
+	 * The ordering date a row's schema declares, as a timestamp, or null.
+	 *
+	 * @param mixed $row A rendered row (array) or an ObjectEntity.
+	 *
+	 * @return int|null The timestamp, or null when the schema declares none or the row has none.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-schema-declares-its-result-title-subline-and-ordering-date-req-psp-002
+	 */
+	private function declaredOrderDate(mixed $row): ?int {
+		if ($this->output->declarations === null) {
+			return null;
+		}
+
+		if ($row instanceof ObjectEntity) {
+			$row = $row->jsonSerialize();
+		}
+
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		$self = $row['@self'] ?? [];
+		if (is_array($self) === false) {
+			return null;
+		}
+
+		$schema = ($self['schema'] ?? null);
+		if (is_numeric($schema) === false) {
+			return null;
+		}
+
+		return $this->output->declarations->forSchema(schemaId: (int)$schema)?->orderDate(object: $row);
+	}//end declaredOrderDate()
 
 	/**
 	 * The (relevance, uuid) pair a row is ordered on.
@@ -787,54 +842,22 @@ class ObjectsProvider implements IFilteringProvider {
 	}//end getSearchableIds()
 
 	/**
-	 * The searchable schemas with the slugs a scope names them by.
+	 * The searchable schemas with the slugs and apps a scope names them by.
 	 *
-	 * 🔑 THE REGISTER SLUG COMES FROM THE REGISTER THAT OWNS THE SCHEMA, not
-	 * from the first register that happens to load. A schema belongs to exactly
-	 * one register, and pairing it with the wrong one makes `register:dossiq`
-	 * answer somebody else's rows — true-looking, and about the wrong data.
+	 * Described by {@see SearchScopeCatalog}, the same description the OCS
+	 * capability advertises the scopes from, so a chip offered there is read
+	 * the same way here. Fails soft to an empty list: the caller then narrows to
+	 * nothing and answers an empty page, and the catalog says so at ERROR level.
 	 *
-	 * Fails soft to an empty list, like {@see getSearchableIds()}: the caller
-	 * then narrows to nothing and answers an empty page, which is the same
-	 * outcome as a lookup that cannot run, and says so at ERROR level.
-	 *
-	 * @return array<int, array{id: int, slug: string, register: string}> The schemas.
+	 * @return array<int, array{
+	 *     id: int, slug: string, title: string, register: string, registerTitle: string,
+	 *     apps: array<int, string>, schema: \OCA\OpenRegister\Db\Schema
+	 * }> The schemas.
 	 *
 	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
 	 */
 	private function describeSearchableSchemas(): array {
-		try {
-			$searchable = array_flip($this->catalog->schemas()->findSearchableIds());
-			$owner = [];
-			foreach ($this->catalog->registers()->findAll() as $register) {
-				foreach (($register->getSchemas() ?? []) as $schemaId) {
-					$owner[(int)$schemaId] = (string)$register->getSlug();
-				}
-			}
-
-			$described = [];
-			foreach ($this->catalog->schemas()->findAll() as $schema) {
-				$id = (int)$schema->getId();
-				if (array_key_exists($id, $searchable) === false) {
-					continue;
-				}
-
-				$described[] = [
-					'id' => $id,
-					'slug' => (string)$schema->getSlug(),
-					'register' => ($owner[$id] ?? ''),
-				];
-			}
-
-			return $described;
-		} catch (\Throwable $e) {
-			$this->output->logger->error(
-				'[ObjectsProvider] Failed to describe searchable schemas for scoping: {error}',
-				['error' => $e->getMessage(), 'exception' => $e]
-			);
-
-			return [];
-		}//end try
+		return $this->scopeCatalog->describe();
 	}//end describeSearchableSchemas()
 
 	/**
