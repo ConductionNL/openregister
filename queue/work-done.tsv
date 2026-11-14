@@ -8285,6 +8285,7 @@ build:launchpad:scheduled-exports	partial: PR #1208 - schemas (task 1), Recurren
 measure:opencatalogi:20261113h22	php 96.55% (pcov, 17612 stmts), js 77.3% at 7a6b9706	session-20261114T073109-bb0ea608	2026-11-14T08:31:22Z
 build:opencatalogi:the-public-and-community-surface	failed: only open task 3.3 is blocked on open question Q-opencatalogi-1 (feed access check)	session-20261114T062202-3e33eeb3	2026-11-14T08:31:46Z
 fix:opencatalogi:2639:426466c7	floor restored (unit_interfacing 4.87), pushed bf46a41b	session-20261114T065631-b4991134	2026-11-14T08:31:50Z
+build:opencatalogi:prometheus-metrics	partial: PR opencatalogi#2661 federation reachable/unreachable gauges + docs; up/health/search-backend items are engine-owned (OpenRegister AppHost) or N/A	session-20261114T075640-efa02b24	2026-11-14T08:32:24Z
 build:launchpad:platform-dashboard-theme-and-css	partial: PR #1210 (tasks 1, 2, 5, 6 done; admin custom CSS 3/4/7 needs the css-parser composer dependency; 8 Playwright not run)	session-20261114T070344-897ffa0f	2026-11-14T08:32:11Z
 fix:buildiq:1596:41f4f3c3	no change: merges clean on current development; conflicts only with unmerged #1590 (tests/Unit/Service/RegisterFragmentMergeTest.php) and #1593 (l10n/nl.js, nl.json); resolve after those land	session-20261114T073105-752e50ad	2026-11-14T08:32:17Z
 build:opencatalogi:publications-merge-and-migrate	PR #2660: T08 done (spec tag, parity rows building); T07 e2e open	session-20261114T065626-0651b305	2026-11-14T08:32:04Z
@@ -8297,4 +8298,5 @@ build:opencatalogi:publications-selection-actions	already done: T01-T05 on devel
 fix:opencatalogi:2654:732c7bb8	merged development (docs table both rows), pushed 138d711b; no new failures	session-20261114T065631-3903ed42	2026-11-14T08:33:14Z
 gap:opencatalogi:complexity:0a8a1c53	already done: max CCN on development is 30 (scanTagAttrs), threshold 30	session-20261114T082640-198131b9	2026-11-14T08:33:36Z
 fix:opencatalogi:2652:a25a166f	fixed floor: constructors to 6 params via FeedConsumerAccounts; floor holds; new head 21cb083b	session-20261114T082642-0151cb21	2026-11-14T08:33:36Z
+fix:hermiq:1740:3d96250b	failed: merges clean on development; conflicts only with unmerged #1725 (and #1723), all bumping the register info.version/description line (1740 0.54.0, 1723 0.54.0, 1725 0.55.0). Resolve after one lands: the next takes a version above it and prepends its entry	session-20261114T062200-62a0b439	2026-11-14T08:33:47Z
 build:opencatalogi:publiccode-github-harvest	built already on development; PR #2662 ticks tasks 1.1-4.2 (5.x live, 6.x waiting left open); mapping/service tests red vs OpenRegister checkout (inherited: saveObject signature on OR main, run-history shape on OR development)	session-20261114T082640-d9af913e	2026-11-14T08:33:41Z
