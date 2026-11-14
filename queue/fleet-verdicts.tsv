@@ -10525,3 +10525,4 @@ larpinq	1050	a1b099f31feaa925e061aea60a5207d918045ed5	CONFLICT	worker-51	after 1
 larpinq	1056	54742da084a6bdab9db07d6499b6b42c07d2c17a	CONFLICT	worker-51	after 1039,1048,1049: all 37 l10n catalogues (.js/.json)
 larpinq	1059	33374bf7b3507394b31220c9b88c49aec8b5c979	CONFLICT	worker-51	after 1039..1052: CHANGELOG.md
 shillinq	3078	df173129af0fe4aac765ea154e8e227ed4cec83c	REVERIFY	worker-51	set info.xml version to 0.5.7-unstable.20261114214000 (same as #3062) so both merge cleanly in either order; branch already contained development; new head 9577c251b9ba7d792fed5e2ea8bff157a068d864, verify it
+keepiq	1790	dad455b4ae29c4c2307accf6c9267c1fc27d3108	GREEN	worker-27	phpunit-unit 5213 tests ok on dev and tree (no PHP changed); vitest 6640: 3 failures in HealthReportView.controls.spec.js inherited (fail on plain development, Pinia not active); no new failures; builds vault-duplicate-finder per its spec
