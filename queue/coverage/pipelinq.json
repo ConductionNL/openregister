@@ -1,12 +1,12 @@
 {
  "app": "pipelinq",
- "commit": "fcd583ff4a914bb9cdef4c9af7e096b4c963da30",
- "measured_at": "2026-11-13T22:37:03Z",
+ "commit": "845fda8cce128f50324da5930b7f1333049f98e1",
+ "measured_at": "2026-11-14T06:50:01Z",
  "php": {
   "tool": "pcov",
-  "pct": 88.35,
-  "statements": 61104,
-  "covered": 53985,
+  "pct": 88.91,
+  "statements": 61119,
+  "covered": 54343,
   "dirs": {
    "lib/Activity/": [
     66,
@@ -34,7 +34,7 @@
    ],
    "lib/Controller/": [
     8490,
-    7763
+    7771
    ],
    "lib/Dashboard/": [
     42,
@@ -66,7 +66,7 @@
    ],
    "lib/Lifecycle/": [
     272,
-    252
+    253
    ],
    "lib/Listener/": [
     1834,
@@ -105,8 +105,8 @@
     5
    ],
    "lib/Service/": [
-    31664,
-    26022
+    31679,
+    26354
    ],
    "lib/Service/Access/": [
     86,
@@ -218,7 +218,7 @@
    ],
    "lib/Service/Merge/": [
     73,
-    66
+    73
    ],
    "lib/Service/Messaging/": [
     9,
@@ -234,7 +234,7 @@
    ],
    "lib/Service/Portal/": [
     1440,
-    1430
+    1439
    ],
    "lib/Service/PosCart/": [
     67,
@@ -266,7 +266,7 @@
    ],
    "lib/Service/Social/": [
     877,
-    796
+    797
    ],
    "lib/Service/Store/": [
     86,
@@ -303,9 +303,9 @@
   }
  },
  "js": {
-  "pct": 93.17,
-  "statements": 17586,
-  "covered": 16385,
+  "pct": 94.91,
+  "statements": 17592,
+  "covered": 16696,
   "dirs": {
    "src/": [
     88,
@@ -313,7 +313,7 @@
    ],
    "src/components/": [
     1464,
-    1383
+    1425
    ],
    "src/components/CapabilityComparison/": [
     25,
@@ -321,7 +321,7 @@
    ],
    "src/components/admin/": [
     473,
-    416
+    463
    ],
    "src/components/billing/": [
     74,
@@ -345,7 +345,7 @@
    ],
    "src/components/marketing/": [
     480,
-    434
+    466
    ],
    "src/components/pos/": [
     412,
@@ -409,7 +409,7 @@
    ],
    "src/dialogs/": [
     1779,
-    1615
+    1711
    ],
    "src/manifest.d/": [
     53,
@@ -421,7 +421,7 @@
    ],
    "src/modals/": [
     1234,
-    1147
+    1188
    ],
    "src/portal/": [
     100,
@@ -529,7 +529,7 @@
    ],
    "src/views/pos/": [
     855,
-    783
+    798
    ],
    "src/views/prospects/": [
     97,
@@ -544,8 +544,8 @@
     175
    ],
    "src/views/settings/": [
-    1182,
-    1123
+    1188,
+    1161
    ],
    "src/views/social/": [
     164,
