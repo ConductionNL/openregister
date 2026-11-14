@@ -7596,3 +7596,4 @@ review:openregister:10326:dedc82a6	APPROVE: JS-only apiSamples + spec, jest 6/6,
 verify:decidiq:2174:a3ed7c64	2175,2176,2177 GREEN; 2174 BLOCK (shadowed duplicate route); 2178 RED (municipality objectCount interaction with 2174)	session-20261114T062142-da017174	2026-11-14T06:24:37Z
 verify:hermiq:1737:53cadf65	7 GREEN (1737-1739,1742-1745), 2 CONFLICT (1740,1741); 0 new test failures	session-20261114T062156-e8adf8ca	2026-11-14T06:26:17Z
 verify:decidiq:2166:95d75989	2166-2170,2172 GREEN; 2171,2173 CONFLICT; 2174 RED (VotingRound version vs 2172)	session-20261114T062142-da017174	2026-11-14T06:26:54Z
+verify:learniq:2503:ecbffcc9	4 GREEN (2503,2505,2508,2510), 5 CONFLICT on l10n (2504,2506,2507,2509,2511); no new failures	session-20261114T062134-840bbeee	2026-11-14T06:27:33Z
