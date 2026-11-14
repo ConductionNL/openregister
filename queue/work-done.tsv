@@ -9851,3 +9851,4 @@ build:humaniq:humaniq-boot-integrity:c2	done: PR #1153 (7.5 widget-key check run
 merge:hermiq:1715:8d289116	stale	feeder	2026-11-14T15:25:05Z
 fix:learniq:2484:9c722d00	CONFLICT resolved (nl.json both kept), pushed 8e12588d; 1 inherited failure	session-20261114T144809-d686f759	2026-11-14T15:33:20Z
 build:humaniq:reporting-full-list-export:c2	PR #1154: 0.1 met by locked 2.89.2, 1.1 allowExport on template+3 pages, DeploymentPlan exportable; 3.x e2e left	session-20261114T151938-8fa99f90	2026-11-14T15:33:27Z
+fix:integriq:3582:da7df603	merged development (clean), pushed a9dc2ceaab80f802c2b5a5cb9826ac241292c5ca, REVERIFY recorded; no new failures vs development	session-20261114T144749-57007b4b	2026-11-14T15:33:30Z
