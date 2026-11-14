@@ -8427,3 +8427,4 @@ fix:buildiq:1616:6cdd062c	conflict resolved: l10n keys moved mid-catalogue, tree
 fix:opencatalogi:2651:c5411594	no change: clean on development; tree-only src/manifest.json conflict, REVERIFY recorded	session-20261114T082640-d9af913e	2026-11-14T08:49:07Z
 fix:buildiq:1606:08b13ebd	l10n keys moved off the shared tail; clean with 1597/1602/1605; new head e22586b36080c66057524a8a5dfbd2e8c1dce2ac	session-20261114T075640-efa02b24	2026-11-14T08:49:16Z
 build:stackiq:capability-requirements-from-the-matrix	partial: PR #1923 builds Task 2 (contact conversion email from linked contact); Task 1 (wizard, e2e) and Task 3 (contract schema) left	session-20261114T082639-95045d35	2026-11-14T08:49:28Z
+review:stackiq:1704:3ca945de	GREEN: behaviour-preserving refactor, vitest 2486 pass	session-20261114T073117-2bd2e050	2026-11-14T08:49:26Z
