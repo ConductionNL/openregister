@@ -9658,3 +9658,4 @@ fix:learniq:2519:f19a370b	merged development, re-recorded portal golden; new hea
 review:hermiq:1492:c1a27c1a	GREEN: faithful refactor, no new unit failures, phpstan clean	session-20261114T144812-4140669d	2026-11-14T15:00:31Z
 fix:shillinq:3065:59e20f97	conflict with #3050 removed (l10n block moved), pushed 6cbead018f926712cd87a6a8a861b08b9b9e2161, REVERIFY	session-20261114T141720-f9e7a46b	2026-11-14T15:00:42Z
 build:decidiq:leaf-integrations:c2	PR #2197: task 4 form-response import (service + occ, pending, idempotent), 15 tests, suite 4174->4189; left: widget import button (needs nc-vue action slot), live/e2e/screenshot checks	session-20261114T141728-9a5d03fc	2026-11-14T15:00:47Z
+fix:shillinq:3057:2ba4b365	fixed CONFLICT: l10n key union + l10n:build; new head da7239cad, REVERIFY recorded	session-20261114T134643-47800317	2026-11-14T15:01:18Z
