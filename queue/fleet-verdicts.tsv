@@ -9855,3 +9855,4 @@ filinq	2079	5988e906c5a9ddfcbe0a166321cac165e44de8e0	GREEN	worker-55:review	Buil
 filinq	2123	46ec780d1114b255e4abb8cc3ea461aa54355846	REVERIFY	worker-04	merged development in; re-recorded tests/jest/golden/host-object-leaves.json for the sortable documents leaf (REQ-SCR-005), jest 532/vitest 770/phpunit 6808 green; new head dceb01e3a67a3703a57f910a99b57c731f5b5aee, verify it
 buildiq	1613	9a9eb9cb0bd5d71a6cf2dd6166cd8cb713ad5305	GREEN	worker-17	phpunit 3184 (baseline 3142, 1 inherited fail ExportZipGoldenTest), vitest 4677 pass, no new failures
 launchpad	1216	2d1a07b7315b0cc7951d46902a8085c457a831ba	REVERIFY	worker-33	merged current development in (clean; conflict was with #1209 in the tree), phpunit 4206 0 failures, vitest 2272; new head 6a89c7cdc8ffe73a1bcda615e6a06089086d9c44, verify it
+buildiq	1626	cac162dc488f54c56c692b9ae276f0558bc9fe53	CONFLICT	worker-17	conflicts in the tree after #1613 (l10n/nl.json)
