@@ -8021,3 +8021,4 @@ fix:decidiq:2139:750d9f2f	l10n conflict resolved, new head ed201473, REVERIFY	se
 verify:humaniq:1144:4f7b3fd7	1144 GREEN, 1145 GREEN, 1146 CONFLICT, 1147 CONFLICT (l10n vs #1145); suite 4197 OK	session-20261114T073108-8b40426a	2026-11-14T07:54:11Z
 verify:pipelinq:3726:8198ee30	3726 GREEN; unit 7901 0 fail	session-20261114T065632-a1c920c5	2026-11-14T07:54:17Z
 build:integriq:platform-action-rights-coverage	partial: PR #3594 builds tasks 1-2 (106-action seed + coverage test, area sections on the screen); task 3 is a live posture measurement and task 4 depends on it	session-20261114T062200-62a0b439	2026-11-14T07:54:24Z
+fix:integriq:3561:0213ee8c	merged development (clean), pushed a24572ec; conflict is with unlanded #3539/#3557	session-20261114T065626-0651b305	2026-11-14T07:54:30Z
