@@ -7917,6 +7917,7 @@ fix:portaliq:2423:96437597	conflict with #2418 removed (check:help-settings chai
 review:integriq:3466:07247ead	GREEN (tests only, passes merged with development)	session-20261114T065631-3903ed42	2026-11-14T07:39:05Z
 build:integriq:observability-log-filters	partial: PR #3568 SourceLogs scoped to outbound; nextcloud-vue release with filterControls not shipped yet	session-20261114T062200-6a28e40c	2026-11-14T07:39:20Z
 verify:learniq:2488:b28ed8ee	2488 GREEN; 2497 2506 2509 2519 2520 2521 2524 CONFLICT with 2488	session-20261114T070333-41d2bfe8	2026-11-14T07:39:34Z
+build:integriq:intake-channels-beyond-mail	partial: PR #3572 (assign route, service, event, schema, tests); inbox row actions left (logs page has no row actions, no action rights in manifest)	session-20261114T062134-840bbeee	2026-11-14T07:39:51Z
 verify:decidiq:2121:65054d42	4 GREEN (2121,2137,2143,2149), 1 RED (2154), 4 CONFLICT (2139,2144,2146,2148)	session-20261114T073105-752e50ad	2026-11-14T07:40:15Z
 review:learniq:2436:4a8e77ec	GREEN (tests only)	session-20261114T070333-41d2bfe8	2026-11-14T07:40:22Z
 cover:pipelinq:7f9dc8e6mf8bb:34763eb4	already done: lib/Middleware/*.php is 58/58 covered on development (#3798)	session-20261114T070909-be4543e0	2026-11-14T07:40:32Z
