@@ -155,10 +155,12 @@ class FederationShareService implements FederationShareServiceInterface {
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
 	 */
 	public function createOutgoingShare(array $params): FederatedShare {
-		$data = $this->outgoingShareData(params: $params);
-		$refusal = $this->grantor->refusal(share: (new FederatedShare())->hydrate(object: $data));
+		$data  = $this->outgoingShareData(params: $params);
+		$share = (new FederatedShare())->hydrate(object: $data);
+		$refusal = ($this->grantor->refusal(share: $share) ?? $this->grantor->federationRefusal(share: $share));
 		if ($refusal !== null) {
 			throw new NotAuthorizedException(message: $refusal);
 		}

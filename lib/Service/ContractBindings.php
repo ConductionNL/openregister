@@ -1073,6 +1073,9 @@ final class ContractBindings {
 		TenantLifecycleServiceInterface::class => TenantLifecycleService::class,
 		\OCA\OpenRegister\Service\History\StateHistoryRebuildInterface::class => \OCA\OpenRegister\Service\History\StateHistoryRebuild::class,
 		\OCA\OpenRegister\Service\Merge\MasterRecomputeInterface::class => \OCA\OpenRegister\Service\Merge\MasterRecomputeService::class,
+		// Merge relinking (mdm-merge-relinks-every-reference): the relation index finds each reference, the save path moves it.
+		\OCA\OpenRegister\Service\Merge\ReferenceFinderInterface::class => \OCA\OpenRegister\Service\Merge\RelationIndexReferenceFinder::class,
+		\OCA\OpenRegister\Service\Merge\ReferenceWriterInterface::class => \OCA\OpenRegister\Service\Merge\SavePathReferenceWriter::class,
 		\OCA\OpenRegister\Service\Schema\SchemaBatchMigratorInterface::class => \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
 		\OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface::class => \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
 		\OCA\OpenRegister\Service\Sync\SyncScheduleInterface::class => \OCA\OpenRegister\Service\Sync\SyncScheduleService::class,
@@ -1089,6 +1092,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\ObjectCacheInvalidationInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\MoveObjectInterface::class => \OCA\OpenRegister\Service\Object\MoveObject::class,
 		\OCA\OpenRegister\Service\Object\MovedObjectLookupInterface::class => \OCA\OpenRegister\Service\Object\MovedObjectLookup::class,
+		\OCA\OpenRegister\Service\Object\RelationAddressRewriteInterface::class => \OCA\OpenRegister\Service\Object\RelationAddressRewrite::class,
 		\OCA\OpenRegister\Service\Object\UpsertOnKeyHandlerInterface::class => \OCA\OpenRegister\Service\Object\UpsertOnKeyHandler::class,
 		ObjectSlugTargetInterface::class => ObjectSlugHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,

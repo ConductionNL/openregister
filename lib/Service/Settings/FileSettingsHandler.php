@@ -24,9 +24,13 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
+use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
+use OCA\OpenRegister\Files\Service\File\MaskForm;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
@@ -89,6 +93,13 @@ class FileSettingsHandler {
 	public const ANONYMISATION_KEY = 'anonymisation';
 
 	/**
+	 * The anonymisation settings key holding the mask form per entity type.
+	 *
+	 * @var string
+	 */
+	public const MASK_FORMS_KEY = 'maskForms';
+
+	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
 	 *
 	 * The enabled file types are LLPhant-friendly: native PHP support plus common
@@ -126,7 +137,11 @@ class FileSettingsHandler {
 		'openAnonymiserPasswordSet' => false,
 		'entityRecognitionEnabled' => false,
 		'entityRecognitionMethod' => 'auto',
-		self::ANONYMISATION_KEY => ['confidenceThreshold' => self::DEFAULT_CONFIDENCE_THRESHOLD],
+		self::ANONYMISATION_KEY => [
+			'confidenceThreshold' => self::DEFAULT_CONFIDENCE_THRESHOLD,
+			'capacityPolicy' => CapacityPolicy::DEFAULT,
+			'officialsSource' => null,
+		],
 		ArchiveBounds::SETTINGS_KEY => ArchiveBounds::DEFAULTS,
 	];
 
@@ -261,6 +276,9 @@ class FileSettingsHandler {
 		} catch (UnknownPatternSetException $e) {
 			// A refused value, answered as 400 naming the code: not a failure to store.
 			throw $e;
+		} catch (UnknownMaskFormException $e) {
+			// A refused mask form, answered as 400 naming the entity type.
+			throw $e;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
 		}//end try
@@ -359,8 +377,47 @@ class FileSettingsHandler {
 			$settings['confidenceThreshold'] = (float) $threshold;
 		}
 
+		$settings['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($settings['capacityPolicy'] ?? null))->rules();
+		$settings['officialsSource'] = OfficialsSource::normalise(value: ($settings['officialsSource'] ?? null));
+
 		return $settings;
 	}//end readableAnonymisation()
+
+	/**
+	 * The organisation's capacity policy (REQ-DKP-001): the stored one, else the shipped default.
+	 *
+	 * @return CapacityPolicy
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1-1
+	 */
+	public function capacityPolicy(): CapacityPolicy {
+		return CapacityPolicy::fromStored(stored: $this->storedAnonymisation()['capacityPolicy'] ?? null);
+	}//end capacityPolicy()
+
+	/**
+	 * Where the register of officials is read from, or null when none is configured (REQ-DKP-001).
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1-1
+	 */
+	public function officialsSource(): ?array {
+		return OfficialsSource::normalise(value: $this->storedAnonymisation()['officialsSource'] ?? null);
+	}//end officialsSource()
+
+	/**
+	 * The stored anonymisation settings, as stored.
+	 *
+	 * @return array<string, mixed> Empty when none are stored.
+	 */
+	private function storedAnonymisation(): array {
+		$settings = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		if (is_array($settings) === false || is_array($settings[self::ANONYMISATION_KEY] ?? null) === false) {
+			return [];
+		}
+
+		return $settings[self::ANONYMISATION_KEY];
+	}//end storedAnonymisation()
 
 	/**
 	 * The anonymisation settings to store from a save: the submitted ones, or the
@@ -371,18 +428,35 @@ class FileSettingsHandler {
 	 * @return array<string, mixed> The settings to store.
 	 *
 	 * @throws ConfidenceThresholdOutOfRangeException When the threshold is not a number between 0 and 1.
+	 * @throws UnknownMaskFormException                When a mask form is unknown or its n is below 1.
 	 *
 	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-a-detection-may-be-masked-in-part-with-the-form-set-per-entity-type-req-pis-010
 	 */
 	private function submittedAnonymisation(array $fileData): array {
 		$submitted = ($fileData[self::ANONYMISATION_KEY] ?? null);
 		if (is_array($submitted) === false) {
-			return ['confidenceThreshold' => $this->confidenceThreshold()];
+			$submitted = ['confidenceThreshold' => $this->confidenceThreshold()];
+		}
+
+		if (array_key_exists(self::MASK_FORMS_KEY, $submitted) === true) {
+			$submitted[self::MASK_FORMS_KEY] = MaskForm::normalise(maskForms: $submitted[self::MASK_FORMS_KEY]);
+		}
+
+		if (array_key_exists(self::MASK_FORMS_KEY, $submitted) === false) {
+			$submitted = $this->withStoredMaskForms(settings: $submitted);
 		}
 
 		if (array_key_exists('confidenceThreshold', $submitted) === false) {
 			$submitted['confidenceThreshold'] = $this->confidenceThreshold();
 		}
+
+		// A save that does not name the capacity policy or the officials
+		// source keeps the stored ones (REQ-DKP-001); what is kept is
+		// normalised, so an unknown capacity or decision never reaches a run.
+		$submitted += array_intersect_key($this->storedAnonymisation(), ['capacityPolicy' => true, 'officialsSource' => true]);
+		$submitted['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($submitted['capacityPolicy'] ?? null))->rules();
+		$submitted['officialsSource'] = OfficialsSource::normalise(value: ($submitted['officialsSource'] ?? null));
 
 		if (self::isThreshold(value: $submitted['confidenceThreshold']) === false) {
 			throw new ConfidenceThresholdOutOfRangeException(message: 'anonymisation.confidenceThreshold must be a number between 0 and 1');
@@ -392,6 +466,47 @@ class FileSettingsHandler {
 
 		return $submitted;
 	}//end submittedAnonymisation()
+
+	/**
+	 * The mask form per entity type, from the organisation's file settings.
+	 *
+	 * Read at anonymisation time, so a saved form applies to the next document.
+	 * A stored value that no longer validates masks nothing: the placeholder is
+	 * the form that reveals least.
+	 *
+	 * @return array<string, array{form: string, n?: int}> Entity type to form; empty when none is set.
+	 *
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-a-detection-may-be-masked-in-part-with-the-form-set-per-entity-type-req-pis-010
+	 */
+	public function maskForms(): array {
+		$settings = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		$stored = ($settings[self::ANONYMISATION_KEY][self::MASK_FORMS_KEY] ?? null);
+		if (is_array($stored) === false) {
+			return [];
+		}
+
+		try {
+			return MaskForm::normalise(maskForms: $stored);
+		} catch (UnknownMaskFormException) {
+			return [];
+		}
+	}//end maskForms()
+
+	/**
+	 * The anonymisation settings with the stored mask forms kept, when there are any.
+	 *
+	 * @param array<string, mixed> $settings The anonymisation settings being stored.
+	 *
+	 * @return array<string, mixed> The settings.
+	 */
+	private function withStoredMaskForms(array $settings): array {
+		$maskForms = $this->maskForms();
+		if ($maskForms !== []) {
+			$settings[self::MASK_FORMS_KEY] = $maskForms;
+		}
+
+		return $settings;
+	}//end withStoredMaskForms()
 
 	/**
 	 * Whether a value is a number between 0 and 1, bounds included.

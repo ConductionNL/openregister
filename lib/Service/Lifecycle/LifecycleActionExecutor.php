@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Lifecycle\LifecycleActionInvoker;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -127,8 +128,9 @@ class LifecycleActionExecutor implements LifecycleActionExecutorInterface {
 			return $payload;
 		}
 
-		$objectData = $this->registry->resolve($actionName)->execute(
-			new LifecycleActionContext(
+		$objectData = (new LifecycleActionInvoker())->execute(
+			action: $this->registry->resolve($actionName),
+			context: new LifecycleActionContext(
 				objectData: $payload->objectData,
 				previousData: $payload->previousData,
 				parameters: $this->parametersOf(envelope: $envelope),

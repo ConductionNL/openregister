@@ -19,9 +19,12 @@
 
 ## 4. The copy before destruction
 
-- [ ] 4.1 A configured location outside the application, written before any destruction (D-4).
-- [ ] 4.2 The recorded destruction names the copy.
-- [ ] 4.3 A destruction whose copy fails does not run, and the failure names the location.
+- [x] 4.1 A configured location outside the application, written before any destruction (D-4).
+  - The archival setting `destructionCopyLocation` (an absolute directory; null writes no copy, as before). `DestructionListRun::destroyObject()` has `DestructionCopyWriter` write `<location>/<list uuid>/<object uuid>.json` (the object, its register and schema) before the object is marked, audited or deleted. This is the archival destruction-list path; a GDPR erasure is not copied, since keeping a copy would undo the erasure.
+- [x] 4.2 The recorded destruction names the copy.
+  - The `archival.destroyed` audit entry's context carries `copy`, the path written.
+- [x] 4.3 A destruction whose copy fails does not run, and the failure names the location.
+  - The writer throws naming the location; the entry counts under `skippedErrors` and the object stays as it was (`DestructionListRunBehaviourTest::testNoCopyNoDestruction`, `DestructionCopyWriterTest`).
 
 ## 5. Instance serialisation
 
@@ -32,7 +35,7 @@
 ## 6. Tests
 
 - [x] 6.1 `tests/e2e/ci/import-preview.spec.ts`: map a file, preview it, see the counts, run it, see the rows.
-- [ ] 6.2 Unit tests: the four policies, the double match refusal, the changed-file refusal, the failed copy, the secret exclusion. PARTIAL: the policies, the double match and the changed file are covered; the failed copy and the secret exclusion belong to sections 4 and 5.
+- [ ] 6.2 Unit tests: the four policies, the double match refusal, the changed-file refusal, the failed copy, the secret exclusion. PARTIAL: the policies, the double match and the changed file are covered; the failed copy is now covered (`DestructionCopyWriterTest`, `DestructionListRunBehaviourTest::testNoCopyNoDestruction`); the secret exclusion belongs to section 5.
 - [x] 6.3 `openspec validate import-preview-and-conflict-policy --strict`.
 
 ## 7. Hand over

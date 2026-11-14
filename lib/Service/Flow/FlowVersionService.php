@@ -215,10 +215,14 @@ class FlowVersionService implements FlowVersionServiceInterface {
 	/**
 	 * Publish the flow's head, deprecating whatever was published before it, in one transaction.
 	 *
-	 * @param Flow               $flow    The flow whose head is being published.
-	 * @param FlowPublishOptions $options Who publishes (null: no acting user), and the bump asked for: `major` to
-	 *                                    raise the derived verdict, `minor` to assert there was no removal, which is
-	 *                                    REFUSED when the diff found one; null lets the diff decide.
+	 * Takes main's FlowPublishOptions, or the release's publishedBy and bump, by name or by position
+	 * (a string in the second slot); separate arguments, when given, win.
+	 *
+	 * @param Flow                           $flow        The flow whose head is being published.
+	 * @param FlowPublishOptions|string|null $options     Who publishes (null: no acting user) and the bump asked for; a string or null here is the
+	 *                                                    release's positional `$publishedBy`.
+	 * @param string|null                    $bump        `major` to bump the major version, else a minor bump.
+	 * @param string|null                    $publishedBy Who publishes; null for no acting user.
 	 *
 	 * @throws FlowLifecycleRefused When the head is not a draft, or has a dead end.
 	 * @throws Throwable            When the transaction could not be committed.
@@ -227,7 +231,21 @@ class FlowVersionService implements FlowVersionServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	public function publish(Flow $flow, FlowPublishOptions $options=new FlowPublishOptions()): FlowVersion {
+	public function publish(
+		Flow $flow,
+		FlowPublishOptions|string|null $options = new FlowPublishOptions(),
+		string|null $bump = null,
+		string|null $publishedBy = null,
+	): FlowVersion {
+		if (($options instanceof FlowPublishOptions) === false) {
+			$publishedBy ??= $options;
+			$options       = null;
+		}
+
+		if ($options === null || $bump !== null || $publishedBy !== null) {
+			$options = new FlowPublishOptions(publishedBy: $publishedBy, bump: $bump);
+		}
+
 		$run = new FlowPublishRun(flow: $flow, options: $options);
 		$run->graph = $this->graphOf(flow: $flow);
 		$run->hash = $this->pinPublishable(flow: $flow, graph: $run->graph);

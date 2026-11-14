@@ -7,12 +7,15 @@ adds a fourth cross-cutting loud-discard fix, folds in two adjacent silent-failu
 
 ## 1. Reproduce before fixing (aggregation cross-schema)
 
-- [ ] 1.1 Reproduce Meeting's actual `quorumPercentage`/`actionItemCount` aggregation spec as a PHPUnit fixture against the current `AggregationAnnotationValidator`, confirming the exact `aggregation-filter-field-unknown`/`aggregation-groupby-field-unknown` failure and which DSL shape (explicit `from` vs. an implicit relation-field reference) triggers it.
+- [x] 1.1 Reproduce Meeting's actual `quorumPercentage`/`actionItemCount` aggregation spec as a PHPUnit fixture against the current `AggregationAnnotationValidator`, confirming the exact `aggregation-filter-field-unknown`/`aggregation-groupby-field-unknown` failure and which DSL shape (explicit `from` vs. an implicit relation-field reference) triggers it.
+      > 2026-11-13: neither. Meeting (decidesk_register.json, copied verbatim into `tests/Unit/Search/Service/Aggregation/fixtures/decidesk-meeting-aggregations.json`) names the counted schema with a `schema` key (`"schema": "Participant"`), which neither the validator nor the runner read: the validator checked `governanceBody`, `attendanceStatus`, `meeting`, `taskStatus` against Meeting's own properties (`aggregation-filter-field-unknown`), and the runner would have counted Meetings. `CrossSchemaTargetTest::testMeetingsAggregationsWereRejectedForFieldsOfTheRelatedSchemas` pins the failure.
 
 ## 2. Fix 1 — cross-schema field resolution
 
-- [ ] 2.1 Extend `AggregationAnnotationValidator` field resolution so a filter/groupBy field addressing a related schema (via `from` or via the declaring schema's own relation/reference declarations) validates against the field's owning schema, not unconditionally against the declaring schema's `properties`.
-- [ ] 2.2 Ensure a field that is genuinely unknown on both the declaring schema and any related schema still produces `aggregation-filter-field-unknown`/`aggregation-groupby-field-unknown`.
+- [x] 2.1 Extend `AggregationAnnotationValidator` field resolution so a filter/groupBy field addressing a related schema (via `from` or via the declaring schema's own relation/reference declarations) validates against the field's owning schema, not unconditionally against the declaring schema's `properties`.
+      > 2026-11-13: `CrossSchemaTarget::resolve()` reads a `schema` key naming another schema as `from`, in the validator (with the slug and title `AdvisoryAnnotationChecks::checkAggregations()` now passes) and in `AggregationRunner::declaredSpec()`, so a spec validates as the schema it counts and is gated on that schema's read as `from` is. A `schema` key naming the declaring schema (shipped by `dataSubjectRequest`) stays intra-schema, unchanged.
+- [x] 2.2 Ensure a field that is genuinely unknown on both the declaring schema and any related schema still produces `aggregation-filter-field-unknown`/`aggregation-groupby-field-unknown`.
+      > 2026-11-13: an intra-schema spec, or one whose `schema` names this schema, is checked as before (`testAGenuinelyUnknownFieldIsStillRejected`, `testASchemaKeyNamingItselfKeepsTheIntraSchemaChecks`). A spec counting another schema skips the field check, as an explicit `from` always has: the target schema is not loaded at save time.
 
 ## 3. Fix 2 — operator aliases
 
@@ -51,8 +54,8 @@ adds a fourth cross-cutting loud-discard fix, folds in two adjacent silent-failu
 
 ## 9. Tests
 
-- [ ] 9.1 Add PHPUnit tests for Fixes 1-2 covering: a related-schema filter field is accepted, a genuinely unknown field is still rejected, an explicit `from` spec is unaffected, and `mul`/`add`/`sub`/`div` evaluate identically to `*`/`+`/`-`/`/` at both validation and evaluation.
-      > 2026-11-13 (partial): the Fix 2 half is in `ArithmeticAliasesTest`; the Fix 1 half waits for Fix 1.
+- [x] 9.1 Add PHPUnit tests for Fixes 1-2 covering: a related-schema filter field is accepted, a genuinely unknown field is still rejected, an explicit `from` spec is unaffected, and `mul`/`add`/`sub`/`div` evaluate identically to `*`/`+`/`-`/`/` at both validation and evaluation.
+      > 2026-11-13: Fix 2 in `ArithmeticAliasesTest`; Fix 1 in `CrossSchemaTargetTest`, `AdvisoryAnnotationChecksTest::testAnAggregationOverARelatedSchemaIsKeptAtSave` and the `schema-key-*` cases of `AggregationRunnerRunGoldenTest`.
 - [ ] 9.2 Add PHPUnit tests for Fixes 3-4 covering: a calculation name absent from `properties` is rejected and present-and-matching validates/persists; a discarded annotation appears in the save response `warnings` (and a clean schema's list is empty, multiple families each report separately, the log warning still fires).
       > 2026-11-13 (partial): the Fix 3 half is in `MaterialisedOutputPropertyTest`; the Fix 4 half waits for Fix 4.
 - [ ] 9.3 Add PHPUnit tests for Adjacent A-B covering: an in-run seed `$ref` slug resolves to a UUID and an unresolvable one is left as-authored with a warning; a valid nested array-of-objects `$ref` UUID validates and existing single-level `$ref` support is unaffected (regression guard).

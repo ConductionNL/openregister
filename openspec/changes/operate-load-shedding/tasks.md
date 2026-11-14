@@ -10,7 +10,7 @@
 
 ## 2. Guarded call sites
 
-- [ ] 2.1 Guard `OutboundHttpClient` per host, honouring the `openregister_dependency` request option and a 429's `Retry-After` (design D-2, D-3). Verify: `tests/Unit/Service/Outbound/OutboundHttpClientBreakerTest.php` asserts no request is sent while open and a 404 does not count as a failure.
+- [x] 2.1 Guard `OutboundHttpClient` per host, honouring the `openregister_dependency` request option and a 429's `Retry-After` (design D-2, D-3). Verify: `tests/Unit/Service/Outbound/OutboundHttpClientBreakerTest.php` asserts no request is sent while open and a 404 does not count as a failure.
 - [ ] 2.2 Guard `DbalObjectSourceProvider::connect()` per source, and make `find()` throw the 503 while the breaker is open instead of returning null. Verify: `tests/Unit/Service/ObjectSource/DbalObjectSourceBreakerTest.php` asserts the 503 on both `find()` and `findAll()` with no connect attempt.
 - [ ] 2.3 Guard the LLM chat and embedding calls under key `llm`. Verify: `tests/Unit/Service/Chat/ResponseGenerationBreakerTest.php` asserts an open breaker refuses before LLPhant is constructed.
 - [ ] 2.4 Guard webhook delivery per host: an open breaker schedules the delivery on `WebhookRetryJob` for after the cool-down without counting an attempt, and the interception webhook continues at once (design D-6). Verify: `tests/Unit/Service/WebhookServiceBreakerTest.php`.

@@ -9,11 +9,11 @@
 
 - [x] 2.1 `ObjectKeyResolver` over `ObjectService::findAll()` with `limit: 2`. Verify: unit tests for one match, none, two, and a missing value.
 - [~] 2.2 Four `by-key` routes before `objects#show` in `appinfo/routes.php`, each delegating to the existing controller method with the resolved uuid; 400, 404 and 409 answers. Verify: `tests/Api/ObjectByKeyTest` for GET, PATCH and DELETE, and a user without read access gets 404.
-- [ ] 2.3 Composite index over the identity columns in `MagicMapper::createTableIndexes()` and `MagicTableHandler::updateTableIndexes()`. Verify: `MagicMapperIdentityIndexTest` asserts the index on PostgreSQL and MariaDB.
+- [x] 2.3 Composite index over the identity columns in `MagicMapper::createTableIndexes()` and `MagicTableHandler::updateTableIndexes()`. Verify: `MagicMapperIdentityIndexTest` asserts the index on PostgreSQL and MariaDB.
 
 ## 3. Rendering and guard
 
-- [ ] 3.1 `@self.key` in `RenderObject` for a schema with an identity. Verify: render test.
+- [x] 3.1 `@self.key` in `RenderObject` for a schema with an identity. Verify: render test.
 - [x] 3.2 Save-path guard refusing a change to an identity property with 422 naming it. Verify: `PATCH` that changes `zaaknummer` answers 422.
 
 ## 4. Description and docs
@@ -40,3 +40,20 @@ Built in code with unit tests: 1.1 (`UniqueConstraintEvaluator::identity()` and
   3.1 (`@self.key` in the renderer; `UniqueConstraintEvaluator::keyOf()` builds
   the key already) and 4.1 (OpenAPI paths) are not built yet.
 - 4.3 is an e2e and needs a running stack.
+
+## Status, second pass
+
+- 3.1: `RecordAnnotations::attachKey()` runs with the render markers and sets the
+  transient `ObjectEntity::identityKey`, which `@self` shows as `key`. It is built
+  from the rendered values, after the read strip, so a reader who may not see an
+  identity property gets no key. Test: `RecordAnnotationsKeyTest`.
+- 2.3: `MagicTableIdentityIndex` makes one non-unique index over the identity
+  columns in declared order (legacy duplicates would refuse a unique one). It is
+  made from `MagicTableIndexer::create()`, which both `MagicMapper::createTableIndexes()`
+  and the sync `MagicMapper::updateTableIndexes()` reach. Its name carries a hash of
+  its columns, and the sync's `dropUnasked()` drops an identity index the schema no
+  longer asks for. Test: `MagicMapperIdentityIndexTest` (PostgreSQL and MariaDB
+  statements; not run against a live database).
+- Still open: 1.2 (breach count at schema save: a duplicate-count query on the
+  magic table and a warning channel in the schema save answer) and 4.1 (OpenAPI
+  paths). 2.2's API test and 4.3 need a running stack.

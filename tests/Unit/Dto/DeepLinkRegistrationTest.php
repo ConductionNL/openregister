@@ -157,4 +157,35 @@ class DeepLinkRegistrationTest extends TestCase {
 
 		$this->assertSame('/apps/procest/#/5/abc-123', $url);
 	}
+
+	// -------------------------------------------------------------------------
+	// Task route resolution (flow-task-search-provider, design D-3)
+	// -------------------------------------------------------------------------
+
+	public function testTaskUrlTemplateFillsTheTaskPlaceholdersEncoded(): void {
+		$reg = new DeepLinkRegistration(
+			appId: 'dossiq',
+			registerSlug: 'main',
+			schemaSlug: 'zaken',
+			urlTemplate: '/apps/dossiq/#/cases/{uuid}',
+			taskUrlTemplate: '/apps/dossiq/#/r/{register}/s/{schema}/cases/{objectUuid}/tasks/{taskUuid}?t={uuid}'
+		);
+
+		$url = $reg->resolveTaskUrl(taskData: ['uuid' => 'a b', 'objectUuid' => 'case/9', 'registerId' => 3, 'schemaId' => 12]);
+
+		$this->assertSame('/apps/dossiq/#/r/3/s/12/cases/case%2F9/tasks/a%20b?t=a%20b', $url);
+	}
+
+	public function testNoTaskUrlTemplateResolvesToNull(): void {
+		$reg = new DeepLinkRegistration('procest', 'main', 'zaken', '/apps/procest/#/cases/{uuid}');
+
+		$this->assertNull($reg->taskUrlTemplate);
+		$this->assertNull($reg->resolveTaskUrl(taskData: ['uuid' => 'task-1']));
+	}
+
+	public function testABlankTaskUrlTemplateResolvesToNull(): void {
+		$reg = new DeepLinkRegistration('procest', 'main', 'zaken', '/apps/procest/#/cases/{uuid}', taskUrlTemplate: '  ');
+
+		$this->assertNull($reg->resolveTaskUrl(taskData: ['uuid' => 'task-1']));
+	}
 }
