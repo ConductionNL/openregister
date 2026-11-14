@@ -207,6 +207,7 @@ Vrij en open source onder de EUPL-licentie.
 		-->
 		<job>OCA\OpenRegister\BackgroundJob\DraftExpiryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SeedDirectoryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\BagRefreshJob</job>
 	</background-jobs>
 
 	<repair-steps>
@@ -612,6 +613,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\ExampleSetListCommand</command>
 		<command>OCA\OpenRegister\Command\SeedImportCommand</command>
 		<command>OCA\OpenRegister\Command\RotateTenantKeyCommand</command>
+		<command>OCA\OpenRegister\Command\BagLoadCommand</command>
 	</commands>
 
 	<settings>

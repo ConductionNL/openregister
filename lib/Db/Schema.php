@@ -788,6 +788,16 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public const LIST_ANNOTATION = 'x-openregister-list';
 
 	/**
+	 * The composite-index annotation: lists of properties indexed together.
+	 *
+	 * `[["postcode", "huisnummer"]]` gives the magic table one index over both
+	 * columns, so an exact filter on the pair is one indexed query.
+	 *
+	 * @var string
+	 */
+	public const INDEXES_ANNOTATION = 'x-openregister-indexes';
+
+	/**
 	 * The geographic-inheritance annotation: which references carry map features.
 	 *
 	 * A record may show the point its address holds. Every inherited feature

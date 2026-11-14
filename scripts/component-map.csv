@@ -82,6 +82,7 @@ BackgroundJob/AuditTrailExportJob.php,77,BackgroundJob,Compliance,Compliance/Bac
 BackgroundJob/AutoTransitionJob.php,104,BackgroundJob,Flows,Flows/BackgroundJob/AutoTransitionJob.php,0,,Processes
 BackgroundJob/AvgRetentionJob.php,72,BackgroundJob,Compliance,Compliance/BackgroundJob/AvgRetentionJob.php,0,,Compliance
 BackgroundJob/BackfillCalendarLinksJob.php,125,BackgroundJob,Configuration,Configuration/BackgroundJob/BackfillCalendarLinksJob.php,0,,Configuration
+BackgroundJob/BagRefreshJob.php,42,BackgroundJob,Integrations,Integrations/BackgroundJob/BagRefreshJob.php,0,,Integrations
 BackgroundJob/BlobGroup.php,15,BackgroundJob,Compliance,Compliance/BackgroundJob/BlobGroup.php,0,,Compliance
 BackgroundJob/BlobMigrationJob.php,203,BackgroundJob,Configuration,Configuration/BackgroundJob/BlobMigrationJob.php,0,,Configuration
 BackgroundJob/BlobMigrationRun.php,37,BackgroundJob,Compliance,Compliance/BackgroundJob/BlobMigrationRun.php,0,,Compliance
@@ -175,6 +176,7 @@ Command/ApplicationIdRename.php,,Command,,,,,Configuration
 Command/BackfillObjectSlugsCommand.php,118,Command,Service,Service/Command/BackfillObjectSlugsCommand.php,0,,Core
 Command/BackfillSystemOwnerCommand.php,146,Command,Configuration,Configuration/Command/BackfillSystemOwnerCommand.php,0,,Configuration
 Command/BackfillTranslationSourceLanguageCommand.php,83,Command,Integrations,Integrations/Command/BackfillTranslationSourceLanguageCommand.php,0,,Integrations
+Command/BagLoadCommand.php,55,Command,Integrations,Integrations/Command/BagLoadCommand.php,0,,Integrations
 Command/DeclaredGroupsCommand.php,71,Command,Access,Access/Command/DeclaredGroupsCommand.php,0,,Core
 Command/DedupCollidedSchemasCommand.php,214,Command,Service,Service/Command/DedupCollidedSchemasCommand.php,0,,Core
 Command/DedupeConfigurationsCommand.php,118,Command,Configuration,Configuration/Command/DedupeConfigurationsCommand.php,0,,Configuration
@@ -228,6 +230,7 @@ Controller/ArchivalOverviewController.php,,Controller,,,,,Compliance
 Controller/AuditQueryController.php,109,Controller,Compliance,Compliance/Controller/AuditQueryController.php,0,,Compliance
 Controller/AuditSinkController.php,70,Controller,Compliance,Compliance/Controller/AuditSinkController.php,0,,Compliance
 Controller/AuditTrailController.php,557,Controller,Compliance,Compliance/Controller/AuditTrailController.php,0,,Compliance
+Controller/BagAddressController.php,55,Controller,Integrations,Integrations/Controller/BagAddressController.php,0,,Integrations
 Controller/BookmarkLinksController.php,138,Controller,Integrations,Integrations/Controller/BookmarkLinksController.php,0,,Integrations
 Controller/BulkController.php,536,Controller,Access,Access/Controller/BulkController.php,0,,Core
 Controller/BulkJobsController.php,329,Controller,Flows,Flows/Controller/BulkJobsController.php,0,,Processes
@@ -1870,6 +1873,10 @@ Service/AuthorizationAuditService.php,112,Service,Compliance,Compliance/Service/
 Service/AuthorizationService.php,198,Service,Integrations,Integrations/Service/AuthorizationService.php,8,,Integrations
 Service/AvgComplianceService.php,175,Service,Compliance,Compliance/Service/AvgComplianceService.php,0,,Compliance
 Service/AvgRetentionService.php,237,Service,Compliance,Compliance/Service/AvgRetentionService.php,0,,Compliance
+Service/Bag/BagAddressLookup.php,129,Service,Integrations,Integrations/Service/Bag/BagAddressLookup.php,0,,Integrations
+Service/Bag/BagBulkLoader.php,206,Service,Integrations,Integrations/Service/Bag/BagBulkLoader.php,0,,Integrations
+Service/Bag/BagExtractReader.php,142,Service,Integrations,Integrations/Service/Bag/BagExtractReader.php,0,,Integrations
+Service/Bag/BagExtractSource.php,46,Service,Integrations,Integrations/Service/Bag/BagExtractSource.php,0,,Integrations
 Service/BookmarkDraft.php,24,Service,Integrations,Integrations/Service/BookmarkDraft.php,0,,Integrations
 Service/BookmarkLinkService.php,293,Service,Integrations,Integrations/Service/BookmarkLinkService.php,0,,Integrations
 Service/BulkActionRegistry.php,75,Service,Flows,Flows/Service/BulkActionRegistry.php,0,328,Processes
