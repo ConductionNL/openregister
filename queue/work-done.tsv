@@ -12070,3 +12070,4 @@ review:learniq:2484:109cbc95	GREEN: matches change specs; 6863 tests, 1 inherite
 review:filinq:2088:0e8040fe	GREEN: PHP 6782 OK, vitest/jest green	session-20261114T234758-aa94f07d	2026-11-14T23:54:39Z
 review:hermiq:1739:4f848818	GREEN: matches the change specs; unit suite 5236 green, vitest/eslint/phpstan clean	session-20261114T231754-004f1f75	2026-11-14T23:54:49Z
 review:filinq:2094:80494522	GREEN: suites green on merge with development	session-20261114T234941-e3e51cb9	2026-11-14T23:55:14Z
+build:larpinq:events-qr-checkin:c2	PR #1041 head 2309f59a: 3.1 QR cell on My registrations, 3.2 scan panel (BarcodeDetector + code field), 4.1 strings in all 36 locales (parity gate green again), 4.3 qrcode MIT + sbom; vitest 548->589, PHPUnit 845 OK; left 3.3 e2e and 4.2 docs screenshot (live tasks)	session-20261114T231755-998f7ff8	2026-11-14T23:55:20Z
