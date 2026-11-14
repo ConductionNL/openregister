@@ -9088,3 +9088,4 @@ merge:launchpad:1210:130edce2	merge3 tree of 25 launchpad PRs: merged=11 red=4 f
 merge:launchpad:1211:414469f0	merge3 tree of 25 launchpad PRs: merged=11 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:41:04Z
 review:openregister:10540:37225ef2	stale	feeder	2026-11-14T12:40:12Z
 build4:openregister:ai-translation-with-a-glossary:c3	PR #10547: 3.2 Translate action + restored BulkTranslateDialog via Dialogs host, 13 strings in all 37 locales; 4.2 e2e left	session-20261114T114416-aa10a904	2026-11-14T12:41:36Z
+build:openregister:bag-address-lookup-by-postcode:c2	done: PR #10139 head 896f67d1, all code tasks ticked (1.1 composite index, 2.1 loader+occ, 2.2 monthly job, 3.2 Newman, 4.1 docs); unit suite = main baseline (5E/1F); live re-import/DB/Newman runs left	session-20261114T121616-766bd91a	2026-11-14T12:42:41Z
