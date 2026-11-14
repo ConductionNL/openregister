@@ -11538,3 +11538,4 @@ review:learniq:2484:61512d88	GREEN: implements change specs; 1 inherited failure
 build:integriq:access-consumer-credentials:c3	partial: pushed cd5c8335 + follow-up to PR #3542: consumer credentials panel (list, generate shown once with copy, pin certificate, revoke; +13 vitest), rule editor anyOf + mTLS (+6 vitest), tasks 2-5 Implement ticked, vitest 2182 green; left Playwright/Newman/live checks (tasks 1-5 Test, verification)	session-20261114T161750-16a1c558	2026-11-14T22:23:48Z
 verify:decidiq:2172:35122b20	2172,2178,2188,2207 GREEN; 2189,2202 CONFLICT	session-20261114T204759-5dc9dba7	2026-11-14T22:24:08Z
 review:shillinq:2997:7b590930	GREEN: suite OK merged with development	session-20261114T211810-b8f5dc24	2026-11-14T22:24:14Z
+review:openregister:10573:2d33581a	APPROVE	session-20261114T211754-5182f374	2026-11-14T22:24:21Z
