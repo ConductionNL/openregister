@@ -7598,3 +7598,4 @@ larpinq	1036	3e79d24a762bdf8bda043544729ab6dd94a473a4	GREEN	worker-35	phpunit un
 larpinq	1037	922d4ae2e112b0030387cae852ea958091a4b847	GREEN	worker-35	phpunit unit tree 812 OK (baseline 792 OK), vitest 511 passed (baseline 506), no new failures
 stackiq	1925	e0125f5f07ba45dd6d5cb54f6a950f72d99d5083	GREEN	worker-20	unit 3483 OK (baseline 3446 OK), vitest 2502 OK, no new failures
 stackiq	1926	47d3e2874a4a53ffc721bb94cb97530e5cb82b80	GREEN	worker-20	unit 3483 OK (baseline 3446 OK), vitest 2502 OK, no new failures
+stackiq	1927	ddb874d12865616721dcdc4de53f26b78dd2f23f	CONFLICT	worker-20	conflicts in tree with #1924 #1926 (l10n/en.json, l10n/nl.json, lib/Settings/softwarecatalogus_register.json), clean on plain development
