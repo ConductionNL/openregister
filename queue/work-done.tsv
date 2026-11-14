@@ -7996,3 +7996,4 @@ fix:learniq:2506:323a8144	failed: conflict is with unmerged #2488, not developme
 fix:learniq:2504:aaac75e9	merged development in cleanly; new head dfdefd471d3aafecc527fbbaf2ad610e6ea05d40, REVERIFY recorded	session-20261114T073108-67fbeb26	2026-11-14T07:50:29Z
 fix:learniq:2509:62c1c223	no change: head 62c1c223 merges cleanly with development 9dd9fe0d; the l10n/nl.json conflict is with open PR #2488, resolvable here only after #2488 lands	session-20261114T073108-8b40426a	2026-11-14T07:50:38Z
 fix:decidiq:2171:cacffb60	no change: merges clean on current development; conflict is only with earlier tree PRs, verify after they land	session-20261114T062156-16c77e6a	2026-11-14T07:51:00Z
+fix:pipelinq:3732:58e89f85	l10n keys moved off the tail; merges clean with dev and #3721; pushed 5b438a04c	session-20261114T065632-a1c920c5	2026-11-14T07:51:02Z
