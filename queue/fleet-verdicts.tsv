@@ -7775,3 +7775,4 @@ pipelinq	3821	6c16605793fca763cb09eef69e445ab3fd0994c9	CONFLICT	merge3	merges cl
 pipelinq	3830	eed4b55311a70a28dc7ecb87e59c02721d1f1cb5	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 pipelinq	3831	cd981132d7790e59379bd2a232b316a7c9858295	CONFLICT	merge3	merges clean on development alone; files: tests/vitest/structureProfile.spec.js 
 pipelinq	3830	eed4b55311a70a28dc7ecb87e59c02721d1f1cb5	REVERIFY	worker-14	merged development in, kept both sides' new l10n keys in en/nl js+json, test:l10n OK; new head c7d405c94f0918ad0cdb180933c763869803dcb5, verify it
+pipelinq	3742	64271ebc71a9c65e29c4af4c090796fa21d58ed2	REVERIFY	worker-33	merged development in, resolved l10n en/nl js+json conflicts keeping both sides' keys, l10n check + js build check green; new head 8cf62a44290f8c0631a93e453ad12798f931f6d3, verify it
