@@ -7600,3 +7600,4 @@ verify:learniq:2503:ecbffcc9	4 GREEN (2503,2505,2508,2510), 5 CONFLICT on l10n (
 verify:hermiq:1762:772f463c	1762 GREEN; 1763,1764 CONFLICT (l10n vs 1762)	session-20261114T062156-16c77e6a	2026-11-14T06:28:17Z
 verify:learniq:2511:7fd6a1ac	learniq: 5 GREEN (2512-2515,2517), 4 CONFLICT (2511,2516,2518,2519); 0 new failures	session-20261114T062200-62a0b439	2026-11-14T06:28:24Z
 verify:hermiq:1761:ab2e73fe	1761 RED: ToolInvocationLogTest::testTheDegradedLogListsTheSchedulesRuns	session-20261114T062156-16c77e6a	2026-11-14T06:29:14Z
+verify:hermiq:1745:e712ee4c	8 GREEN (1745-1750,1752,1753), 1 CONFLICT (1751); 0 new test failures	session-20261114T062156-e8adf8ca	2026-11-14T06:29:48Z
