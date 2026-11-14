@@ -9608,3 +9608,4 @@ build:decidiq:the-decision-as-a-walked-process:c2	partial: PR #2166 merged devel
 verify:shillinq:2972:e04cc355	2976 GREEN; 2972, 3003, 3004 CONFLICT	session-20261114T141737-e9e54940	2026-11-14T14:53:19Z
 fix:decidiq:2169:d6a0067e	stale: correction of the row above, nothing pushed; the branch moved to 5f13d30 (another lane's build commit) during the fix, REVERIFY row removed	session-20261114T141720-f9e7a46b	2026-11-14T14:53:23Z
 merge:shillinq:2991:f0267b0c	merge3 tree of 8 shillinq PRs: merged=3 red=1 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T14:53:52Z
+merge:shillinq:3059:8ef23700	merge3 tree of 8 shillinq PRs: merged=3 red=1 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T14:53:57Z
