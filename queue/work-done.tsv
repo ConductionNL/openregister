@@ -10557,3 +10557,4 @@ fix:launchpad:1212:314655c6	conflict resolved (migration renumbered to 002015); 
 build:launchpad:governance-rest-api-reference:c2	partial: PR #1224 built 5 (API docs page) and the route half of 4 (composer lint:openapi in check:strict; fixed unmarked /analytics/me); left 1-3 and 4's regenerate half (generator choice D1 needs a person), 6 release	session-20261114T171830-19af6b65	2026-11-14T18:04:09Z
 fix:integriq:3625:bd47bd4c	l10n conflict resolved (keep-both, deduped), pushed 9f95d1e6, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T18:04:20Z
 verify:hermiq:1793:f083d332	1793 GREEN (no new failures); 1794 skipped: head moved to 2758eae5 after the row was queued	session-20261114T171821-a80c28c5	2026-11-14T18:04:34Z
+fix:integriq:3564:c37760b6	l10n conflict resolved keep-both, pushed 03eb3019, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T18:04:55Z
