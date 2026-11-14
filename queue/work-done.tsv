@@ -9802,3 +9802,5 @@ fix:filinq:2074:228eb673	merged development (clean), unit OK; new head f1017b40c
 build:decidiq:urgent-decisions-register:c2	failed: blocked: needs urgent-decision-procedure, now built on quality/build-urgent-decision-procedure-c2 (UrgencyTriggerGuard, UrgentProcedureController, UrgentRatificationService) but not merged into development and with tasks 3-8 still unchecked; requeue once that lands	session-20261114T144812-7fefa6ba	2026-11-14T15:25:54Z
 fix:pipelinq:3835:39c04790	conflict resolved, pushed f9170d1a, REVERIFY recorded	session-20261114T151942-48d6369d	2026-11-14T15:25:57Z
 fix:decidiq:2173:d0e45f2d	merged development cleanly, new head 1ef930fb, REVERIFY recorded	session-20261114T141728-9a5d03fc	2026-11-14T15:26:10Z
+fix:shillinq:2975:b4abe00a	failed: inherent conflict with open #2972 (both bump appinfo version and register-versions.lock); branch merges clean on development; regenerate after #2972 lands	session-20261114T144816-cf37407b	2026-11-14T15:26:36Z
+verify:portaliq:2440:d1126e64	GREEN #2440 (unit 5278, baseline 5247, 0 new failures)	session-20261114T141721-aeb4e068	2026-11-14T15:26:48Z
