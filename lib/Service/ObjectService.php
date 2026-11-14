@@ -5646,7 +5646,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $result = $this->extendSearchResult(result: $result, query: $query);
         // `_snippet=true` adds `@self.snippet` to each row (search-dutch-language-quality
         // REQ-SDL-002); without it the result is returned untouched.
-        $result = (new SearchSnippetAttacher(schemas: $this->schemaMapper))->attach(result: $result, query: $query);
+        if (SearchSnippetAttacher::asked(query: $query) === true) {
+            $result = (new SearchSnippetAttacher(schemas: $this->schemaMapper))->attach(result: $result, query: $query);
+        }
 
         (new SearchTrailRecorder(
             searchQueryHandler: $this->searchQueryHandler,
