@@ -53,6 +53,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtWriter
+ * @uses \OCA\OpenRegister\Service\Export\RecordPdfRows
  * @uses \OCA\OpenRegister\Service\Export\Odt\HtmlToOdt
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtTableBuilder
  * @uses \OCA\OpenRegister\Service\Export\Odt\VisibleText
@@ -439,6 +440,57 @@ class ExportServicePdfTest extends TestCase {
 		$this->assertStringContainsString('public', $html);
 		$this->assertStringNotContainsString('restricted', $html);
 		$this->assertStringNotContainsString('nope', $html);
+	}
+
+	/**
+	 * One record exports with each readable field's label and value, and a field the user may not read stays out.
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-single-record-exports-as-a-pdf
+	 */
+	public function testARecordExportsItsReadableFieldsAndLeavesOutAHiddenOne(): void {
+		$schema = new Schema();
+		$schema->setSlug('zaak');
+		$schema->setProperties([
+			'omschrijving' => ['type' => 'string', 'title' => 'Omschrijving'],
+			'status' => ['type' => 'string', 'title' => 'Status'],
+			'bsn' => ['type' => 'string', 'title' => 'BSN'],
+			'intern' => ['type' => 'string', 'title' => 'Intern', 'visible' => false],
+		]);
+
+		$seen = [];
+		$this->propertyRbacHandler
+			->method('canReadProperty')
+			->willReturnCallback(static function (SchemaProperty $read, PropertyAccessRequest $request) use (&$seen): bool {
+				$seen[$read->name] = $request->object;
+				return $read->name !== 'bsn';
+			});
+
+		$object = $this->createObjectEntity('uuid-42', 'Z-2026-0042', ['omschrijving' => 'Bouwvergunning', 'status' => 'open', 'bsn' => '999999990', 'intern' => 'geheim']);
+
+		$pdf = $this->service->recordToPdf(object: $object, schema: $schema, currentUser: null);
+		$text = $this->convertedOdtText();
+
+		$this->assertSame('%PDF-1.7 converted', $pdf);
+		$this->assertStringContainsString('Z-2026-0042', $text);
+		$this->assertStringContainsString('Omschrijving', $text);
+		$this->assertStringContainsString('Bouwvergunning', $text);
+		$this->assertStringContainsString('Status', $text);
+		$this->assertStringContainsString('uuid-42', $text);
+		$this->assertStringNotContainsString('BSN', $text);
+		$this->assertStringNotContainsString('999999990', $text);
+		$this->assertStringNotContainsString('geheim', $text);
+		$this->assertSame('999999990', $seen['bsn']['bsn'], 'Conditional rules see the record itself.');
+	}
+
+	/**
+	 * Without an office server the record export is refused before anything renders.
+	 */
+	public function testARecordExportWithoutOfficeServerIsRefused(): void {
+		$this->converter->available = false;
+		$this->propertyRbacHandler->expects($this->never())->method('canReadProperty');
+
+		$this->expectException(OfficeServerRequiredException::class);
+		$this->service->recordToPdf(object: $this->createObjectEntity('u', 'n', []), schema: new Schema(), currentUser: null);
 	}
 
 	public function testBuildPdfSectionEscapesHtmlInCellValues(): void {

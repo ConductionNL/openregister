@@ -337,6 +337,7 @@ Controller/ProcessingLogController.php,185,Controller,Compliance,Compliance/Cont
 Controller/ProcessingPurposeController.php,225,Controller,Compliance,Compliance/Controller/ProcessingPurposeController.php,0,,Compliance
 Controller/PropertyVocabularyController.php,52,Controller,Service,Service/Controller/PropertyVocabularyController.php,0,,Core
 Controller/QualityController.php,61,Controller,Compliance,Compliance/Controller/QualityController.php,0,,Compliance
+Controller/RecordPdfController.php,72,Controller,Configuration,Configuration/Controller/RecordPdfController.php,0,,Configuration
 Controller/RecordTemplatesController.php,105,Controller,Configuration,Configuration/Controller/RecordTemplatesController.php,0,,Configuration
 Controller/RegisterDescriptorController.php,76,Controller,Configuration,Configuration/Controller/RegisterDescriptorController.php,0,,Configuration
 Controller/RegistersController.php,1125,Controller,Service,Service/Controller/RegistersController.php,1,,Core
@@ -2205,6 +2206,7 @@ Service/Export/Odt/OdtLogo.php,106,Service,Configuration,Configuration/Service/E
 Service/Export/Odt/OdtTableBuilder.php,93,Service,Configuration,Configuration/Service/Export/Odt/OdtTableBuilder.php,0,,Configuration
 Service/Export/Odt/OdtWriter.php,125,Service,Configuration,Configuration/Service/Export/Odt/OdtWriter.php,0,224,Configuration
 Service/Export/Odt/VisibleText.php,22,Service,Configuration,Configuration/Service/Export/Odt/VisibleText.php,0,,Configuration
+Service/Export/RecordPdfRows.php,30,Service,Configuration,Configuration/Service/Export/RecordPdfRows.php,0,,Configuration
 Service/Export/RowsPdfSection.php,60,Service,Configuration,Configuration/Service/Export/RowsPdfSection.php,0,,Configuration
 Service/Export/XmlObjectWriter.php,268,Service,Configuration,Configuration/Service/Export/XmlObjectWriter.php,0,,Configuration
 Service/ExportService.php,696,Service,Configuration,Configuration/Service/ExportService.php,1,,Configuration

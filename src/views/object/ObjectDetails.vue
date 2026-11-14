@@ -68,6 +68,15 @@
 							Open Folder
 						</NcActionButton>
 						<NcActionButton
+							closeAfterClick
+							data-testid="object-export-pdf"
+							@click="exportPdf">
+							<template #icon>
+								<FilePdfBox :size="20" />
+							</template>
+							{{ t('openregister', 'Export {name}', { name: 'PDF' }) }}
+						</NcActionButton>
+						<NcActionButton
 							v-if="followToggle"
 							closeAfterClick
 							@click="markUnread">
@@ -550,6 +559,7 @@ import EmailMarkAsUnread from 'vue-material-design-icons/EmailMarkAsUnread.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
@@ -570,6 +580,7 @@ import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
 import { followProps, recordAddress, sendReadState } from './recordFollow.js'
+import { downloadRecordPdf } from './recordPdf.js'
 
 /**
  * Register the live target's object type with the store, once.
@@ -666,6 +677,7 @@ export default {
 		LockOpenOutline,
 		FolderOutline,
 		FileOutline,
+		FilePdfBox,
 		ExclamationThick,
 		OpenInNew,
 		EmailsTab,
@@ -913,6 +925,25 @@ export default {
 			this.readMarkedFor = address.id
 			await this.$nextTick()
 			await sendReadState(address, 'PUT')
+		},
+
+		/**
+		 * "Export PDF": download the record's readable fields as a PDF in the
+		 * house style; a refusal is shown, not downloaded.
+		 *
+		 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-single-record-exports-as-a-pdf
+		 * @return {Promise<void>}
+		 */
+		async exportPdf() {
+			const address = recordAddress(objectStore?.objectItem)
+			if (address === null) {
+				return
+			}
+
+			const result = await downloadRecordPdf(address)
+			if (result.ok === false) {
+				showError(t('openregister', 'Export failed: {error}', { error: result.message }))
+			}
 		},
 
 		/**

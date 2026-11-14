@@ -34,6 +34,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\ExportRequest;
 use OCA\OpenRegister\Service\Export\ExportTable;
+use OCA\OpenRegister\Service\Export\RecordPdfRows;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Service\Export\RowsTable;
 use OCA\OpenRegister\Service\Export\XmlObjectWriter;
@@ -507,6 +508,46 @@ class ExportService implements ObjectExporterInterface {
 		// No Nextcloud user asked for this table: the instance default house style applies.
 		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(table: $table)], uid: null);
 	}//end renderTableToPdf()
+
+	/**
+	 * Render one record as a PDF: each field the user may read, with its label and value.
+	 *
+	 * The caller has already read the record with the user's rights; this
+	 * leaves out every field the user may not read (property-level RBAC, with
+	 * the record's own data for conditional rules) and every field marked not
+	 * visible, and masks explicit-reveal fields as the list export does. The
+	 * house style of the requesting user applies, as for a list export.
+	 *
+	 * @param ObjectEntity $object      The record, read with the user's rights.
+	 * @param Schema       $schema      Its schema.
+	 * @param IUser|null   $currentUser The requesting user, or null for the instance default house style.
+	 *
+	 * @return string The PDF bytes.
+	 *
+	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-single-record-exports-as-a-pdf
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
+	 */
+	public function recordToPdf(ObjectEntity $object, Schema $schema, ?IUser $currentUser): string {
+		$this->assertPdfAvailable();
+
+		$this->maskedColumns = array_fill_keys(ExplicitReveal::explicitProperties(schema: $schema), true);
+		$data = $object->getObject();
+		$table = (new RecordPdfRows())->table(
+			title: (string) ($object->getName() ?? $object->getUuid() ?? 'Record'),
+			uuid: $object->getUuid(),
+			properties: $schema->getProperties() ?? [],
+			readable: fn (string $name): bool => $this->propertyRbacHandler->canReadProperty(
+				property: new SchemaProperty(schema: $schema, name: $name),
+				request: new PropertyAccessRequest(object: $data)
+			),
+			value: fn (string $name): ?string => $this->getObjectValue(object: $object, header: $name)
+		);
+
+		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(table: $table)], uid: $currentUser?->getUID());
+	}//end recordToPdf()
 
 	/**
 	 * Build one PDF section per schema for a register-level export (no

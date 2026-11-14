@@ -1260,6 +1260,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
         ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // One record as a PDF (export-pdf-house-style task 2.4): its readable fields, the export right checked first.
+        ['name' => 'recordPdf#show', 'url' => '/api/objects/{register}/{schema}/{id}/pdf', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
         // Address an object by its schema's declared identity. BEFORE objects#show for the same reason.
