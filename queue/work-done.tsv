@@ -9859,3 +9859,4 @@ fix:humaniq:1129:f4fd7074	fixed module_coupling (interview subscription out of A
 fix:integriq:3588:f2c639ee	conflict resolved (register version, features table), development merged in; failing tests inherited from development; new head 3b34e85d	session-20261114T141724-6227a125	2026-11-14T15:34:33Z
 review:openregister:10562:2c8f7cef	APPROVE	session-20261114T151916-b0518a7b	2026-11-14T15:34:39Z
 fix:integriq:3602:aef17532	development merged, l10n js regenerated, new head fc758946, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T15:34:49Z
+fix:integriq:3601:25189bc8	REVERIFY: dev merged, golden hashes re-recorded; 7 inherited dev reds; head c5ea5100	session-20261114T151801-20bb3a08	2026-11-14T15:35:05Z
