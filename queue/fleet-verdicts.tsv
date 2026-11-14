@@ -8741,3 +8741,4 @@ portaliq	2498	99c5ac59f53c3df057d8ff13914fe5f04a886799	GREEN	worker-06	unit 5275
 humaniq	1125	01e772314bde6ea711fa19e6a2df1171ff44058a	GREEN	worker-38	unit 4212 tests on tree, baseline 4188 with 1 inherited failure (ListExportDeclarationTest), 0 new failures; test:js 199 pass; builds payroll-special-regimes as its specs ask
 humaniq	1139	181389a647ba547cc989314075d21fd374263a8b	CONFLICT	worker-38	conflicts with #1125 in tree order; merges cleanly onto development alone
 humaniq	1142	5bcc930d755704bf968a6a8c668e8e7636643a7c	CONFLICT	worker-38	conflicts with #1125 in tree order; merges cleanly onto development alone
+humaniq	1145	32c023d2d3483897ebd6cb62a0a62ffd97705fae	CONFLICT	worker-38	conflicts with #1125 in tree order; merges cleanly onto development alone
