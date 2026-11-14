@@ -134,6 +134,7 @@ use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
+use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -611,6 +612,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private readonly IAppConfig $appConfig;
 
 	/**
+	 * The text search configuration `_search` stems with; null on a mapper
+	 * assembled without its constructor, which then builds no stemmed-match index.
+	 *
+	 * @var TextSearchConfiguration|null
+	 */
+	private ?TextSearchConfiguration $textSearch = null;
+
+	/**
 	 * Event dispatcher for audit trail events.
 	 *
 	 * @var IEventDispatcher
@@ -650,6 +659,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$this->userManager     = $identity->userManager;
 		$this->config          = $runtime->config;
 		$this->appConfig       = $runtime->appConfig;
+		$this->textSearch      = new TextSearchConfiguration(db: $db, appConfig: $runtime->appConfig);
 		$this->eventDispatcher = $runtime->eventDispatcher;
 		$this->logger          = $runtime->logger;
 
@@ -772,9 +782,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * The search handler gets the request's language state, so a translatable
 	 * property sorts by the value the response shows
-	 * (order-filters-and-notification-links), and the request's reveal state:
+	 * (order-filters-and-notification-links), the request's reveal state:
 	 * filtering or sorting on an explicit-reveal property is refused unless the
-	 * code is trusted (property-explicit-reveal).
+	 * code is trusted (property-explicit-reveal), and the text search
+	 * configuration `_search` also stems with on PostgreSQL
+	 * (search-dutch-language-quality).
 	 *
 	 * @return void
 	 */
@@ -791,7 +803,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			relatedRows: $relatedRowApplier,
 			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageServiceInterface::class),
 			metadataColumns: $this->metadataColumnHealer,
-			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class)
+			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class),
+			textSearch: $this->textSearch
 		);
 	}//end initializeSearchHandler()
 
@@ -3082,7 +3095,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function createTableIndexes(string $tableName, Schema $schema): void {
 		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
-		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$indexer = new MagicTableIndexer(
+			db: $this->db,
+			logger: $this->logger,
+			trgm: $this->trgmProbe(),
+			textSearchConfig: $this->textSearch?->active()
+		);
 		$indexer->create(run: $run, schema: $schema);
 	}//end createTableIndexes()
 

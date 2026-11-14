@@ -4248,3 +4248,8 @@ Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Capabilities/SearchCapability.php,,Capabilities,,,,,Platform
+Service/Search/TextSearchConfiguration.php,,Service,,,,,Core
+Controller/Settings/SearchSettingsController.php,,Controller,,,,,Configuration
+Migration/Version1Date20261114120000.php,,Migration,,,,,Platform
+Service/Search/SearchSnippetAttacher.php,,Service,,,,,Core

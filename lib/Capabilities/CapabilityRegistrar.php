@@ -71,5 +71,8 @@ final class CapabilityRegistrar {
 		// SearchScopesCapability — the scopes the unified search provider
 		// accepts for the current user (content-search-index D-2).
 		$context->registerCapability(SearchScopesCapability::class);
+		// SearchCapability — whether `_search` stems, and with which text
+		// search configuration (search-dutch-language-quality).
+		$context->registerCapability(SearchCapability::class);
 	}//end register()
 }//end class
