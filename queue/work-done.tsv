@@ -8841,3 +8841,4 @@ review:openregister:10488:7ca184f6	APPROVE (list-path gating 3.2 still open, not
 review:openregister:10495:e2ea184b	APPROVE: tests-only, touched suites green	session-20261114T102637-6688951e	2026-11-14T10:36:12Z
 build4:openregister:api-nl-design-rules-conformance:c2	partial: PR openregister#10505 builds 2.3 (date-time, error, doc rules) and 2.4 (marker), +8 tests, 2 goldens re-recorded, OAS/Architecture suites green; 3.1-7.2 and 2.4 live check left	session-20261114T095639-051ba1e0	2026-11-14T10:36:32Z
 build4:openregister:notes-leaf-rich-text-lock-export:c2	partial: PR #10506, PDF journal sheet (3.1 done); 1.1/1.2 render+editor live in nextcloud-vue, 4.1 sanitising and 4.2 e2e left	session-20261114T092645-55582ebb	2026-11-14T10:37:11Z
+review:openregister:10504:97548855	BLOCK: property-path URL fetch gains an upload-size ceiling and empty/non-2xx refusals (task 1.1 says no behaviour change there)	session-20261114T065631-b4991134	2026-11-14T10:37:17Z
