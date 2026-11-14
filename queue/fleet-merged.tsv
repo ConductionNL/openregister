@@ -2423,3 +2423,7 @@ dossiq	6495	6952c6a486f2fa8531b023650c3f33b21ae848c2	SKIP	merge3	GATE UNMEASURED
 dossiq	6496	a6fc098e10be82f6226f109f68595d928ca13cf0	SKIP	merge3	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /home/rubenlinde/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd }, not the pinned 4.0.5
 dossiq	6498	72b3abf3f981f78e230f1f257c55ce31c4b6b8db	SKIP	merge3	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /home/rubenlinde/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd }, not the pinned 4.0.5
 dossiq	6500	fc50db36f904b216baebe0bdcbe804a7c921ac42	SKIP	merge3	GATE UNMEASURED floor_check exit 5: [maintainability-floor] TOOLING: estimator tooling unavailable: [gate-122] sig-maintainability: tooling: /home/rubenlinde/.cache/hydra-gates/tools/jscpd-4.0.5/node_modules/.bin/jscpd reports jscpd }, not the pinned 4.0.5
+filinq	2055	8dba7a692d422134ae7430b1e92ab6a242e273ac	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+filinq	2062	58dde4aead3833579b4fb98f59e8fb568f3e8bdd	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+filinq	2071	7810b3d113215176687ed3f528837cdb3f5eff4a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+filinq	2092	244f94ad62119ad6f16e4bc90caa9d79759117dc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
