@@ -2725,3 +2725,10 @@ dossiq	6495	6952c6a486f2fa8531b023650c3f33b21ae848c2	MERGED	merge3	GATE OK sbom,
 dossiq	6496	a6fc098e10be82f6226f109f68595d928ca13cf0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6498	72b3abf3f981f78e230f1f257c55ce31c4b6b8db	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	6500	fc50db36f904b216baebe0bdcbe804a7c921ac42	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2284	57d43340a4fa91fd0fcd0c14612984ab3856ca48	RED	merge3	GATE RED floor: module_coupling: 5.00 -> 4.98
+portaliq	2415	ce2309c659229f7564a138b715676e3e7ad93e7e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2427	4af909f6103fc2b83b5d96ee11ccf72109472386	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2432	a6c24c39fc1908d8f4c70237f40fc80fb626baa2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2434	456e79cc0621c6cdc315f3cedb5212ba0a53f7ee	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2490	b014d53eee9cf7763cf17639fccbb7cc0cc25bc4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2491	4a730b50894407e51be9582c5cb941bff78d7ad8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
