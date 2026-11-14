@@ -8543,3 +8543,5 @@ humaniq	1130	0e2113c2a209f2c086580e30bb2cad298fba07f1	REVERIFY	worker-52	merged 
 hermiq	1737	71841a9d96c979da82a17c63f88a02cb9703643a	GREEN	worker-54	unit 5083 on tree, baseline 5046 green (with ../openregister main), 0 new failures
 hermiq	1750	647eadd55e033188fdc6776f07e1c2cd3354a7f2	GREEN	worker-54	unit 5083 on tree, baseline 5046 green (with ../openregister main), 0 new failures
 filinq	2112	8e90e8285f083f093db175df59a8c5ae390f7ea5	REVERIFY	worker-08	merged development in keeping both sides (l10n, openapi paths, register schemas and demo objects; register bumped to 8.56.0 since both lines used 8.55.0); unit 6780 OK; new head 8902f50fa3f3de79d61585bae74ce093eda34156, verify it
+hermiq	1778	de0780faf65f1dc24ee54e042bec4408762d3877	GREEN	worker-13	PHP unit 5057 run, baseline 5044 (164E/26F inherited), no new failures; vitest 1478/1478; tests only
+hermiq	1779	c70ede4d3407eb3e1286a65e341da79d589d82b0	GREEN	worker-13	PHP unit 5057 run, baseline 5044 (164E/26F inherited), no new failures; vitest 1478/1478; builds agent-authored-marking task 3.1 (contact/calendar counts) as its spec asks
