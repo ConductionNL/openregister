@@ -2954,3 +2954,5 @@ planninq	1178	3c7b73e8ca14fd90976e83e402ec201379e56535	MERGED	merge3	GATE OK sbo
 integriq	3592	70be0200dd77aca2fac76f59d3fffc01f09bdc9e	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
 integriq	3595	7d624dc8ce92826b30bb0d6259d4fd40c1b894b7	RED	merge3	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
 integriq	3634	fc69f0f0a47b7ee97c1af2ffacbc711f5174bc23	RED	merge3	GATE RED floor: module_coupling: 5.03 -> 5.00
+keepiq	1801	b18c5187d1591f799825995df27dd774c3cad309	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1802	10522d79d5e9f9d37b695cc3f91541fff035304c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
