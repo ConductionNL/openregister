@@ -7823,3 +7823,5 @@ dossiq	6499	fb5dfa20fb2a4f82d33efed191f82702f18453ef	CONFLICT	merge3	conflicts w
 dossiq	6465	f8b4ab75a711e81ad0b46ee78bea249ab56981b1	REVERIFY	merge3	head moved since the verdict (was 6c904cd4df6eac23202b024f21c1fa9c0a9a114d, 45d3490d:CONFLICT,45d3490d:REVERIFY); verify the new head
 pipelinq	3752	d375909c53d67247106ff0747340c64e457ff217	REVERIFY	worker-33	build continuation pushed: tasks 1.3 (locked records skipped by client risk run and label rename, Util/LockedRecord + tests) and 3.1 (guard already in OpenRegister); unit 8350 0 failures; new head 51dd9688f600231124d25f1ed5abd75db9187eb1, verify it
 pipelinq	3830	ec8232ea52227343317cebde280f4dbffcbd8650	GREEN	worker-28	PHP unit 8358 OK (baseline 8344 OK), vitest 5038/5039 (myWorkPage.spec.js inherited from development), no new failures; implements clients-contact-capture as specified
+filinq	2074	92ebb286e850a07761547f9303b1947f9f13bbed	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json 
+filinq	2078	8247eff99a8282125a4e13fa0a74b9fe52750439	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_mock_register.json lib/Settings/filinq_register.json 
