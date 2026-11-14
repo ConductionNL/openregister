@@ -8295,5 +8295,6 @@ build:opencatalogi:service-status-on-the-portal	already done: ServiceStatusIndex
 fix:opencatalogi:2647:622cf6e6	floor restored: split long methods, floor PASS; new head 6c8c836e; REVERIFY queued	session-20261114T073109-930980c2	2026-11-14T08:32:44Z
 verify:keepiq:1776:df2f8b0d	GREEN 1776,1777,1778,1779; phpunit 4974/0 fail (baseline same), vitest 6414/0 fail	session-20261114T075644-ec2e07ac	2026-11-14T08:32:57Z
 fix:opencatalogi:2654:732c7bb8	merged development (docs table both rows), pushed 138d711b; no new failures	session-20261114T065631-3903ed42	2026-11-14T08:33:14Z
+gap:opencatalogi:complexity:0a8a1c53	already done: max CCN on development is 30 (scanTagAttrs), threshold 30	session-20261114T082640-198131b9	2026-11-14T08:33:36Z
 fix:opencatalogi:2652:a25a166f	fixed floor: constructors to 6 params via FeedConsumerAccounts; floor holds; new head 21cb083b	session-20261114T082642-0151cb21	2026-11-14T08:33:36Z
 build:opencatalogi:publiccode-github-harvest	built already on development; PR #2662 ticks tasks 1.1-4.2 (5.x live, 6.x waiting left open); mapping/service tests red vs OpenRegister checkout (inherited: saveObject signature on OR main, run-history shape on OR development)	session-20261114T082640-d9af913e	2026-11-14T08:33:41Z
