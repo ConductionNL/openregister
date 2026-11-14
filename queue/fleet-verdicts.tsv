@@ -7815,3 +7815,4 @@ decidiq	2176	26e67dc64895f61b5ddd15038a271411c25dabec	CONFLICT	merge3	merges cle
 decidiq	2177	7078a1ab11459f341e6d860c6f8efa696e2817e6	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/Registrar/SaveGuardSubscriptions.php 
 decidiq	2178	cb54bcf167945f8cb1c648f1e870e7a4872edbe9	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/RegisterAuthorizationTest.php 
 decidiq	2184	a4581421dc05275929ee6622f03df9f5331aa370	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/BodyProvenanceTest.php tests/Unit/Service/DelegationRequestTest.php tests/Unit/Service/MotionAmendmentServiceTest.php 
+pipelinq	3708	59d071777249d834da158fae80be283131e8463c	GREEN	worker-16:review	frontend-only, implements clients-bulk-edit-and-undo 1.x, 2.1, 2.3, 4.x through OpenRegister bulk-jobs as specced; vitest 5056/5057 (myWorkPage failure inherited from development), phpunit 8344 OK, eslint/manifest/l10n pass
