@@ -10554,3 +10554,4 @@ portaliq	2508	540d45228aae6c18dbd4fc5222aa787962ea7c14	CONFLICT	merge3	merges cl
 dossiq	6521	510cb1b3a27bdddbac83d4ce6e819f0e82fbc48f	GREEN	worker-26	17383 unit tests, baseline 13 failures (StubApiDrift), 0 new; tests only
 dossiq	6522	e59951e87e2392b5bdc3f635bfe72ee14c2bc6c0	CONFLICT	worker-26	add/add conflict with development in NeedsInputDispatcherTest, TransferRegisterGatewayTest, TransferShareBrokerTest
 dossiq	6523	ebc2a65d0499537ed8bb63328cf412df63077363	CONFLICT	worker-26	add/add conflict with development in RegisterFragmentMergerTest, SchemaAnnotationReconcilerTest
+filinq	2070	e3723880a96ae6e67ea9735ef087911b7b33f513	REVERIFY	worker-02	merged development in (clean, no conflict); unit 6786 OK, jest 570 OK; new head 88c644391052b203b8ac34670c5abca6b6b517ea, verify it
