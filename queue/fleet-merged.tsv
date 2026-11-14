@@ -3013,3 +3013,20 @@ launchpad	1210	b146f2c1b3547be5eb3d42f5cd6649c57c532a60	RED	merge3	GATE RED floo
 launchpad	1211	5c5da5e42947f24c2c9413ac040f7fb960746df2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.65
 launchpad	1225	47177d86534cba79d0aa9bb7bc70a053bc7bf137	RED	merge3	GATE RED floor: unit_interfacing: 3.44 -> 3.40
 launchpad	1228	99e6e308349f4e7556aade89819e1cb9e128ef44	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.65
+integriq	3539	d16ba0ab4b58c6f6f1d7208f4b1c160d4cd5e4f7	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+integriq	3546	38ea402acc796451c6b58b1b7c0525a6fb16de96	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+integriq	3574	daca1f896514025811d3ee2526ee24a753e1ee51	RED	merge3	GATE RED floor: duplication: 3.80 -> 3.78
+integriq	3584	161c9167d86dbca7fdd977c603fe5c86ff3d9eb0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3592	8a35a39acd0b2e2fec5ba98acc475f15fe8604dd	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3596	caba84625883bc4e9dbd94c3e8ae14b8626c784b	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3610	bb9e12bb5ebacd60c357a1aae28b97a475b661c9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3612	b5b2780e101251c6012d88963009cbbde107e72c	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3615	71e6a096933f8c3817a1037a7b80429df1a7b92c	RED	merge3	GATE RED floor: module_coupling: 5.03 -> 5.00
+integriq	3617	51d9a2baaebe30ec3caaa026d9f19f877e4e3590	RED	merge3	GATE RED floor: unit_complexity: 3.89 -> 3.87
+integriq	3622	85e683d9fd7b309720ab13edc52f7c966a75a7c3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3625	0afc45a25fcb42805df882818b65d4f64227f1f4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3628	3039ae5d46935b5d44c03c3757cee5df6f856b02	RED	merge3	GATE RED floor: unit_complexity: 3.89 -> 3.86
+integriq	3634	8688e02b4065bdc69ee6e2508eb49624b78e266f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3635	412d252c6ba3bdbe4b7db6b5b830323941a88cd0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+keepiq	1786	e7b22f0502010ba03a591b8a3d30d6a6a900522c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.59
+keepiq	1798	0dec26815b252fe4ee42dfc6d9ee9f1d2a5337fa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
