@@ -9045,3 +9045,4 @@ verify:dossiq:6465:525d2897	6465 GREEN (16921 tests, no new failures beyond 19 b
 merge:learniq:2505:b67d1688	merge3 tree of 23 learniq PRs: merged=11 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:27:32Z
 merge:learniq:2484:6aedf9bd	merge3 tree of 23 learniq PRs: merged=11 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:27:35Z
 merge:learniq:2436:0ff3ae4a	merge3 tree of 23 learniq PRs: merged=11 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:27:44Z
+merge:learniq:2504:f5f42d6b	merge3 tree of 23 learniq PRs: merged=11 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge3-20261113T213425-c36bcd5f	2026-11-14T12:27:48Z
