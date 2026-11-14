@@ -9199,3 +9199,4 @@ hermiq	1749	df82486d0dbc2ba96c2a96806b3855e4ad723788	REVERIFY	worker-32	merged o
 humaniq	1123	29c65f1917aa31296929e39f30d7c1fec9e278de	GREEN	worker-38	unit 4256 tests on dev+1123, 0 failures; builds payroll-period-edge-cases (period validation now accepts four-weekly and weekly ids per the administration's pay frequency; monthly unchanged)
 humaniq	1145	76bf5e509db8c7beb7c5f49ae11234648d7966a1	CONFLICT	worker-38	src/manifest.effective.json and the manifest baseline conflict with #1123 in tree order
 humaniq	1156	2729d0bd938d3565c4033eaeeae40b9759e1e91a	CONFLICT	worker-38	tests/fixtures/manifest-baseline/pages.json conflicts in tree order
+decidiq	2146	2fa34e42a108c5f404d4b7693b3ea3e80d0ff4fa	GREEN	worker-52	phpunit 4232 tests, baseline 4232 0 failures, new failures 0; vitest 2787 passed/4 skipped, 0 failed; builds interests-and-integrity tasks 5-6 as its specs ask (additive, display-only)
