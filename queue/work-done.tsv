@@ -10706,3 +10706,4 @@ verify:launchpad:1205:3ec114f6	5 GREEN (1205,1210,1215,1222,1224), 1212 CONFLICT
 review:shillinq:2991:805e708e	GREEN (phpunit 11332 OK merged with development, vitest 57 passed)	session-20261114T185843-7b9a6259	2026-11-14T19:44:53Z
 verify:planninq:1171:a9d6c6c0	GREEN 1171@84c03da1; unit 1071/0, vitest green	session-20261114T191744-b9573b83	2026-11-14T19:44:59Z
 fix:shillinq:2997:613c18e2	conflict resolved, new head 34673c89, REVERIFY recorded	session-20261114T185843-7b9a6259	2026-11-14T19:46:48Z
+fix:planninq:1167:28092815	merged development, l10n union; tests green; new head b566c981	session-20261114T191744-b9573b83	2026-11-14T19:46:55Z
