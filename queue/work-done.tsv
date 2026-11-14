@@ -10348,3 +10348,4 @@ fix:decidiq:2172:1d208e5b	fixed: merged development, l10n moved; new head 8177a0
 fix:buildiq:1644:0dfa21a6	CONFLICT resolved (l10n moved mid-catalogue), pushed 14839229	session-20261114T144809-d686f759	2026-11-14T17:08:44Z
 merge:dossiq:6513:12248002	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T17:09:00Z
 merge:dossiq:6518:b5f67994	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T17:09:03Z
+build4:openregister:records-tree-view:c3	PR #10532: 2.1 built (RecordsTreeView over CnTreeView, lazy one-level branches, remembered open branches, hidden-parent note, 4 new strings in all 36 locales), jest 8461 green; left: 2.2 arrow keys and 2.3 are nextcloud-vue changes, e2e live	session-20261114T151802-24eee21b	2026-11-14T17:09:38Z
