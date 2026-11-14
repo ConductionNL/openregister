@@ -8583,3 +8583,4 @@ build:versioniq:install-force-incompatible	PR #726: tasks 1.1-4.3 built (overrid
 fix:buildiq:1626:e4ef5397	no change: head e4ef5397 merges clean with development; conflicts only with unmerged sibling #1621 (l10n nl) — merge development after 1621 lands	session-20261114T065625-baa65a50	2026-11-14T09:09:19Z
 verify:launchpad:1206:026b815c	1206 GREEN	session-20261114T065635-0aca43d3	2026-11-14T09:09:18Z
 build:larpinq:worlds-maps	partial: PR #1049, 1.1 schemas, 2.1 pages, 3.1 strings in 37 locales; 1.2 seed (references), 2.2 map page (waits on library), 3.2 docs screenshot left	session-20261114T065631-3903ed42	2026-11-14T09:09:28Z
+verify:launchpad:1214:2a8623bd	1214 GREEN, 1217 CONFLICT (info.xml version with 1214), 1219 GREEN; tree phpunit 4106 OK, vitest 2223 OK	session-20261114T065635-61264d14	2026-11-14T09:10:05Z
