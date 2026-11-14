@@ -9187,3 +9187,4 @@ build:portaliq:site-at-the-root-of-a-portal-host:c2	nothing to build: PR #2445 h
 review:openregister:10540:f59cd313	APPROVE #10540 (suites green, stemming and snippets as the change specifies)	session-20261114T121625-a8070d9c	2026-11-14T13:06:21Z
 review:openregister:10553:9a9b0d12	APPROVE	session-20261114T114625-63eafe85	2026-11-14T13:06:23Z
 build:portaliq:capability-rows-said-and-planned:c2	partial: no new commits this run (worker context nearly full); branch quality/build-capability-rows-said-and-planned at a1b48896 unchanged; left T02 row review and test tags, T04-T05 dossiq ask-partner and mijnZaken via, T06 filinq signer row actions, T07 case-page question and messages list	session-20261114T124620-a07546ab	2026-11-14T13:06:46Z
+merge:buildiq:1579:e2884240	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:10Z
