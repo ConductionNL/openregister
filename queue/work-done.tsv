@@ -10251,3 +10251,4 @@ fix:shillinq:2976:e4c7b8aa	merged development, resolved l10n, app version and re
 fix:shillinq:3070:a2d99b13	unit-size split restores every maintainability property to development's; REVERIFY 7bb50b7e	session-20261114T151755-dc817df2	2026-11-14T16:42:06Z
 fix:hermiq:1735:62b18a24	merged development, resolved register and l10n; new head dfc8010c	session-20261114T141010-8dc8bd74	2026-11-14T16:42:17Z
 build:buildiq:logic-automation-run-log:c2	done: PR #1643 (T03 dispatch hooks, T05 modal, T06 page, T08 l10n; #1592 had merged); phpunit 3142 (1 inherited ExportZipGolden failure), vitest 4479 pass; left T09 e2e, T10 capabilities row after merge, T11 cross-repo	session-20261114T154757-c9bf237e	2026-11-14T16:42:34Z
+fix:shillinq:3067:3817c482	conflict resolved (version + register lock), suite green, pushed 0f4f123e, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T16:42:28Z
