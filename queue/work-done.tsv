@@ -8707,3 +8707,4 @@ build:pipelinq:ticket-handover-history:c2	failed: remaining 1.1/1.2 are nextclou
 verify:hermiq:1769:9054cf3e	4 GREEN (1769,1770,1771,1772); no new failures, vitest green	session-20261114T092638-09421111	2026-11-14T09:42:19Z
 build4:dossiq:tenders-run-on-the-tender-case-type:c2	partial: PR #6498, task 1.2 flow with generic dateReached guard (+7 tests, conformance sweep); 1.1, 1.3-1.5, 3.x, 4.x left	session-20261114T085635-07e3ca9b	2026-11-14T09:43:36Z
 cover:keepiq:c967a31fm10bf:js0023cfc7	PR #1794: 23 vitest tests for 3 dialogs; suite 6414->6437 passed; src/dialogs lines 92.3->94.1%	session-20261114T082640-198131b9	2026-11-14T09:43:33Z
+verify:pipelinq:3817:5a0ad539	GREEN 3817	session-20261114T070332-b3a23612	2026-11-14T09:43:59Z
