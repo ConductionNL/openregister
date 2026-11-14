@@ -10496,3 +10496,4 @@ larpinq	1054	41befe20ea4be5b4b3292ee9e35551d2b8d01bce	CONFLICT	worker-17	conflic
 larpinq	1041	4ea3e47661b3270916a9506fe9035edcbfc5bee7	GREEN	worker-17	phpunit 852 (baseline 832, 0 failures), vitest 548 passed, no new failures
 larpinq	1045	fc4e9f54d114969ef8a183ef3f7db479bfb71694	GREEN	worker-17	phpunit 852 (baseline 832, 0 failures), vitest 548 passed, no new failures
 integriq	3596	caba84625883bc4e9dbd94c3e8ae14b8626c784b	REVERIFY	worker-07	merged development in; floor_check compare and against-floor both PASS (unit_size 3.56, overall 3.92; the 3.55 came from the old merge base); unit failures all inherited from development; new head dd7babfc291d4cff70b2306f543bd2622f7505c7, verify it
+stackiq	1946	6132a993df6d692408e3aec3f18b74079a4a01a9	GREEN	worker-33	phpunit unit 3675 (baseline 3602, 0 failures), vitest 2589 (1 failure facets FACET_DIMENSIONS, inherited from development); no new failures
