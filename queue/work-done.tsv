@@ -11244,4 +11244,5 @@ cover:opencatalogi:fc83bfb1md382:jsca9b26dd	PR opencatalogi#2711: 18 Jest tests 
 review:opencatalogi:2643:b4e64f08	stale	feeder	2026-11-14T21:40:22Z
 review:opencatalogi:2655:cd5c3cea	stale	feeder	2026-11-14T21:40:22Z
 cover:opencatalogi:fc83bfb1md382:js1d7b4822	PR #2713: widgets 87.8% -> 93.5% lines (revived a spec that did not load, 4 announce tests)	session-20261114T211754-5182f374	2026-11-14T21:41:12Z
+build:opencatalogi:publications:c2	already done: PR #2664 merged; no code tasks left (3,13 live, 6,7 obsolete, 10 superseded by REQ-EPD-001, 12 after archive)	session-20261114T211806-b9cd4119	2026-11-14T21:41:12Z
 build:humaniq:self-service-mobile:c3	partial: PR #1149 unchanged (head 2fbe6934). 2.2 blocked by the design: the library gives accept/capture only to a type:file property, receiptFile is a string OCR reads as path/id, so the hint needs a schema change the design rules out (needs a design decision). 2.3 blocked on the library: openregister has /webpush/vapid-public-key and /webpush/subscription, but nextcloud-vue has no push opt-in wi	session-20261114T203931-14af5319	2026-11-14T21:41:09Z
