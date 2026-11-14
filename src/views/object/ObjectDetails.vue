@@ -247,6 +247,14 @@
 								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab :title="t('openregister', 'Files')">
+							<template #title>
+								{{ t('openregister', 'Files') }}
+								<NcCounterBubble
+									v-if="unreadBadges.files"
+									class="tab-unread">
+									{{ unreadBadges.files }}
+								</NcCounterBubble>
+							</template>
 							<NcButton
 								@click="openFolder(objectStore.objectItem.folder)">
 								<template #icon>
@@ -351,29 +359,69 @@
 							</div>
 						</AppTab>
 						<AppTab :title="t('openregister', 'Syncs')">
+							<template #title>
+								{{ t('openregister', 'Syncs') }}
+								<NcCounterBubble
+									v-if="unreadBadges.syncs"
+									class="tab-unread">
+									{{ unreadBadges.syncs }}
+								</NcCounterBubble>
+							</template>
 							<div class="tabPanel">
 								{{ t('openregister', 'No synchronizations found') }}
 							</div>
 						</AppTab>
 						<AppTab v-if="relationContext" title="Emails">
+							<template #title>
+								Emails
+								<NcCounterBubble
+									v-if="unreadBadges.emails"
+									class="tab-unread">
+									{{ unreadBadges.emails }}
+								</NcCounterBubble>
+							</template>
 							<EmailsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab v-if="relationContext" title="Events">
+							<template #title>
+								Events
+								<NcCounterBubble
+									v-if="unreadBadges.events"
+									class="tab-unread">
+									{{ unreadBadges.events }}
+								</NcCounterBubble>
+							</template>
 							<EventsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab v-if="relationContext" title="Contacts">
+							<template #title>
+								Contacts
+								<NcCounterBubble
+									v-if="unreadBadges.contacts"
+									class="tab-unread">
+									{{ unreadBadges.contacts }}
+								</NcCounterBubble>
+							</template>
 							<ContactsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab v-if="relationContext" title="Deck">
+							<template #title>
+								Deck
+								<NcCounterBubble
+									v-if="unreadBadges.deck"
+									class="tab-unread">
+									{{ unreadBadges.deck }}
+								</NcCounterBubble>
+							</template>
 							<DeckTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
@@ -594,7 +642,7 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
-import { followProps, recordAddress, sendReadState } from './recordFollow.js'
+import { followProps, recordAddress, sendReadState, unreadBadges } from './recordFollow.js'
 
 /**
  * Register the live target's object type with the store, once.
@@ -767,6 +815,17 @@ export default {
 		 */
 		followToggle() {
 			return followProps(objectStore?.objectItem)
+		},
+
+		/**
+		 * The unread count per tab from the record's `@self.unreadCounts`,
+		 * shown as a badge on the tab (task 2.3).
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/specs/object-read-state/spec.md#requirement-opening-a-records-page-marks-it-read-and-badges-its-tabs-req-ors-005
+		 * @return {{[key: string]: number}}
+		 */
+		unreadBadges() {
+			return unreadBadges(objectStore?.objectItem)
 		},
 
 		/**
@@ -1479,6 +1538,13 @@ h4 {
 </style>
 
 <style scoped>
+/* The unread badge beside a tab's label (record-star-follow-and-unread-on-screen 2.3). */
+.tab-unread {
+	display: inline-flex;
+	margin-inline-start: 6px;
+	vertical-align: middle;
+}
+
 .fileLabelsContainer {
 	display: inline-flex;
 	gap: 3px;

@@ -5,7 +5,7 @@
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */
-import { followProps, readStateUrl, recordAddress, sendReadState } from './recordFollow.js'
+import { followProps, readStateUrl, recordAddress, sendReadState, unreadBadges } from './recordFollow.js'
 
 describe('recordAddress', () => {
 	it('reads the address from @self, then from the record', () => {
@@ -69,5 +69,27 @@ describe('read state', () => {
 	it('reports a refusal and a network failure as false', async () => {
 		await expect(sendReadState(address, 'PUT', jest.fn().mockResolvedValue({ ok: false }))).resolves.toBe(false)
 		await expect(sendReadState(address, 'PUT', jest.fn().mockRejectedValue(new Error('offline')))).resolves.toBe(false)
+	})
+})
+
+describe('unreadBadges', () => {
+	it('gives each tab the unread count of its sub-resources', () => {
+		const item = { '@self': { unreadCounts: { files: 2, messages: 1, emails: 3, events: 0, deck: 4, syncs: 1, contacts: 5 } } }
+
+		expect(unreadBadges(item)).toEqual({ files: 2, syncs: 1, emails: 4, deck: 4, contacts: 5 })
+	})
+
+	it('shows no badge for a count that is not a positive whole number', () => {
+		const item = { '@self': { unreadCounts: { files: -1, emails: 1.5, events: '3', contacts: null, deck: 1 } } }
+
+		expect(unreadBadges(item)).toEqual({ deck: 1 })
+	})
+
+	it('shows no badges without counts', () => {
+		expect(unreadBadges(null)).toEqual({})
+		expect(unreadBadges({})).toEqual({})
+		expect(unreadBadges({ '@self': {} })).toEqual({})
+		expect(unreadBadges({ '@self': { unreadCounts: [2] } })).toEqual({})
+		expect(unreadBadges({ '@self': { unreadCounts: 'files' } })).toEqual({})
 	})
 })
