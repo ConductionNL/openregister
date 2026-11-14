@@ -80,6 +80,7 @@ use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
+use OCA\OpenRegister\Service\Schemas\IdentityBreachCounter;
 use OCA\OpenRegister\Service\Schemas\PropertyTitles;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
@@ -1626,7 +1627,12 @@ class SchemasController extends Controller {
 			return $invalid;
 		}
 
-		$update = ['id' => $id, 'data' => $data, 'oldAuthorization' => $existingSchema->getAuthorization()];
+		$update = [
+			'id' => $id,
+			'data' => $data,
+			'oldAuthorization' => $existingSchema->getAuthorization(),
+			'oldConfiguration' => $existingSchema->getConfiguration(),
+		];
 		return $this->classifyAndWriteUpdate(existing: $existingSchema, update: $update);
 	}//end applyUpdate()
 
@@ -1937,6 +1943,13 @@ class SchemasController extends Controller {
 			$extra['flowWarnings'] = $flowWarnings;
 		}
 
+		// A newly declared identity that existing objects break is a warning
+		// beside the saved schema, with the count (modelling-composite-identity 1.2).
+		$identityWarning = $this->identityBreachWarning(schema: $updatedSchema, oldConfiguration: ($update['oldConfiguration'] ?? null));
+		if ($identityWarning !== null) {
+			$extra['identityWarnings'] = [$identityWarning];
+		}
+
 		if ($update['forms'] !== null && $update['forms']['affected'] !== []) {
 			return new JSONResponse(
 				data: array_merge(
@@ -1953,6 +1966,34 @@ class SchemasController extends Controller {
 
 		return new JSONResponse(data: $updatedSchema);
 	}//end writeSchemaUpdate()
+
+	/**
+	 * How many existing objects break a newly declared identity; a failure never fails the save.
+	 *
+	 * @param Schema     $schema           The updated schema
+	 * @param array|null $oldConfiguration The configuration before the update
+	 *
+	 * @return array{identity: string, breaches: int, capped: bool, message: string}|null The warning, or null
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/tasks.md#task-1.2
+	 */
+	private function identityBreachWarning(Schema $schema, ?array $oldConfiguration): ?array {
+		try {
+			$counter = $this->container->get(IdentityBreachCounter::class);
+			if ($counter instanceof IdentityBreachCounter === false) {
+				return null;
+			}
+
+			return $counter->warningFor(schema: $schema, previousConfiguration: $oldConfiguration);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemasController] The new identity could not be checked against the existing objects',
+				context: ['schema_id' => $schema->getId(), 'error' => $e->getMessage()]
+			);
+
+			return null;
+		}
+	}//end identityBreachWarning()
 
 	/**
 	 * The published flow triggers a declared rename leaves watching the old name; a failure never fails the save.

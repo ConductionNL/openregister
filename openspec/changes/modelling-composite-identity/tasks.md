@@ -3,7 +3,7 @@
 ## 1. Declaration
 
 - [x] 1.1 `identity: true` on a `refuse` uniqueness constraint in `UniqueConstraintEvaluator`, with the save-time refusals for two identities or identity on `report`. Verify: `UniqueConstraintEvaluatorTest` cases for accept and both refusals.
-- [ ] 1.2 Schema save warns with the number of existing objects that break a newly declared identity. Verify: unit test with two duplicate objects reports 1 breach.
+- [x] 1.2 Schema save warns with the number of existing objects that break a newly declared identity. Verify: unit test with two duplicate objects reports 1 breach. `IdentityBreachCounter` counts, over every object of the schema (RBAC off: a duplicate the maintainer cannot read still breaks the key, up to 10,000 objects, then "at least"), the objects beyond the first per key, only for a newly declared identity or one over other properties; `PUT` on a schema answers it under `identityWarnings` beside the saved schema and never fails the save for it (`IdentityBreachCounterTest`).
 
 ## 2. Lookup
 
