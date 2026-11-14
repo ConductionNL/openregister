@@ -3004,3 +3004,8 @@ buildiq	1641	5816876bc47bfd396b174a9dc6006a7abf2a2716	RED	merge3	GATE RED absolu
 buildiq	1645	02d1e9adf306cf12d32ecef2f03bc4e004387fbf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 buildiq	1647	b8b6de45f92ab698fc59f9fc734b981d0bd5277e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 buildiq	1648	0d30354dd00b8a5b59870d598d2246b49455f09a	RED	merge3	GATE RED floor: unit_size: 3.69 -> 3.67; unit_complexity: 3.35 -> 3.33; unit_interfacing: 3.45 -> 3.42
+planninq	1160	eb03492ed8c54fcb8418b46e3a347d1de43fff1f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.72
+planninq	1167	d6c4dc18a6d114b7e0652ee500612c49357de6b0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.73
+planninq	1169	ad389bd3451b7bef7e6d236a84eb0baa7504d0a4	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; spdxheaders stars: 5 -> 4; score: 100 -> 97
+planninq	1171	1f740930b6cb8bfb7955a1e7a45720b927f497c3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.74
+planninq	1172	b335a2831202c9f19b633675ecfcdc873a3deee8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.76
