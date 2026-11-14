@@ -2907,3 +2907,8 @@ humaniq	1133	0e7cf4b632881b5454887acca9d29cc43f053255	RED	merge3	GATE RED checke
 humaniq	1135	120d0cde50170ce4df26a49d926269e6b816e43f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
 humaniq	1144	0a397e554d164235aefbc4465a72f533a664be44	RED	merge3	GATE RED floor: unit_interfacing: 3.62 -> 3.60
 humaniq	1145	b05d3c3dddeb423605be9200575ffaa3cef27bcf	RED	merge3	GATE RED floor: unit_interfacing: 3.62 -> 3.59
+shillinq	2959	4e16db47ed275d534b1511ae9ae1dce334aee453	RED	merge3	GATE RED floor: unit_interfacing: 2.91 -> 2.85
+shillinq	2991	b7472331869926b992f4b40456836e022bf3c677	RED	merge3	GATE RED floor: unit_interfacing: 2.90 -> 2.88
+shillinq	3057	aed2743be4c0140eca5cfc605f2ac0248e5a4279	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.14
+shillinq	3059	121845803d6706cf380cdfd4ec0135fe05ae71d3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.12
+shillinq	3070	7bb50b7e137bbf139d078b4602cbeae3d2ace29a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.12
