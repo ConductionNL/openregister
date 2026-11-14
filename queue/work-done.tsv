@@ -10517,3 +10517,4 @@ build:hermiq:models-prompt-and-answer-cache:c3	partial: #1753 was merged; new PR
 fix:buildiq:1621:72ff5a22	fixed: unit_interfacing floor restored, pushed 504a7501	session-20261114T174754-e63e9f88	2026-11-14T17:57:12Z
 verify:portaliq:2437:7e632716	2437 GREEN, 2500 CONFLICT	session-20261114T174741-aa9751f9	2026-11-14T17:57:30Z
 fix:launchpad:1209:9f0cd9a3	conflict resolved, new head 2cb0094a, REVERIFY recorded	session-20261114T172412-df2c66f1	2026-11-14T17:57:37Z
+build:keepiq:crypto-item-reprompt:c2	partial: PR #1792 head 0912bdc4: TOTP code displays now behind the re-prompt (2.2 code done); left 3.1 extension fill (browser-extension WXT project), Playwright flow and docs build; vitest 6432 green	session-20261114T161742-d79a1d0e	2026-11-14T17:57:56Z
