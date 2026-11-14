@@ -12,7 +12,8 @@
 
 ## 3. Pages
 
-- [ ] 3.1 Add the "Changes" tab to `src/views/schema/SchemaDetails.vue` and the "Changes" section to `src/views/register/RegisterDetail.vue`, both shown to administrators only, listing who, when, cause and each changed path with old and new values. Verify: `src/views/schema/SchemaDetails.spec.js` renders a fixture of three rows and hides the tab for a non-administrator.
+- [x] 3.1 Add the "Changes" tab to `src/views/schema/SchemaDetails.vue` and the "Changes" section to `src/views/register/RegisterDetail.vue`, both shown to administrators only, listing who, when, cause and each changed path with old and new values. Verify: `src/views/schema/SchemaDetails.spec.js` renders a fixture of three rows and hides the tab for a non-administrator.
+      > Built: `src/components/audit/EntityChangesList.vue` reads `GET /api/{schemas|registers}/{id}/changes` page by page and lists who, when, the cause, the verb and each changed path with its value before and after. `SchemaDetails.vue` gets a "Changes" tab and `RegisterDetail.vue` a "Changes" section, both only for an administrator (`getCurrentUser().isAdmin`). Tests: `EntityChangesList.spec.js` renders a fixture of three rows (who, cause, verb, paths with old and new values), paging, empty and error states; `SchemaDetails.spec.js` and `RegisterDetail.mount.spec.js` show the history to an administrator and hide it from anyone else. All strings are existing catalogue keys. Full jest suite: 584 suites, 8471 tests passing.
 
 ## 4. Docs and end-to-end test
 
