@@ -11622,3 +11622,4 @@ fix:hermiq:1795:a4cac7c2	moved strings mid-catalogue, clean with #1739; pushed 5
 build:stackiq:connections-diagram-and-graph-export:c2	partial: PR #1965 (first build #1914 merged): tasks 1, 3, 4, 5-text done; left task 2 diagram toggle (CnIndexPage has no whole-list view slot), Playwright cases, docs screenshot; PHP 3602->3606 green	session-20261114T211800-2a24a3a9	2026-11-14T22:36:47Z
 verify:versioniq:700:235b5da7	700,709,710 GREEN; 718,722 CONFLICT with tree; unit 1749/2 inherited, vitest 2962 pass	session-20261114T211012-c469e919	2026-11-14T22:37:10Z
 fix:learniq:2544:51f18170	fixed: incidental .pyc change reverted; new head c238e05c, REVERIFY recorded	session-20261114T221709-8b871792	2026-11-14T22:37:20Z
+fix:versioniq:685:0a9c1956	fixed: spec expects new osvApiBase field; vitest 2975 green; head 7f027ce2	session-20261114T221801-9a21d394	2026-11-14T22:37:31Z
