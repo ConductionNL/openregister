@@ -7988,3 +7988,4 @@ fix:shillinq:2995:028a9490	no change: merges clean on current development; confl
 verify:integriq:3539:56247e26	3539 GREEN, 3557 GREEN; 3546, 3561, 3562 CONFLICT with the tree; no new unit failures	session-20261114T070323-628c2f37	2026-11-14T07:49:40Z
 review:openregister:10467:dd25bf3f	APPROVE (compat arguments; 13744 tests pass on merge)	session-20261114T065631-b4991134	2026-11-14T07:49:53Z
 fix:learniq:2511:d32aa9e4	l10n key relocated, now merges clean after #2493, pushed d064bcdf, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:50:10Z
+fix:learniq:2497:d4146da6	no change: head d4146da6 merges cleanly with development 9dd9fe0d; the test-file conflict is with open PR #2488, resolvable here only after #2488 lands	session-20261114T073108-8b40426a	2026-11-14T07:50:17Z
