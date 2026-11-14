@@ -243,6 +243,8 @@ Vrij en open source onder de EUPL-licentie.
 			     (occ openregister:adopt-organisationless-rows with apply writes). -->
 			<step>OCA\OpenRegister\Repair\AdoptOrganisationlessRows</step>
 			<step>OCA\OpenRegister\Repair\GiveFederationSharesALifetime</step>
+			<!-- maxFileSizeMB (never read) becomes textExtraction.maxBytes (large-file-handling). -->
+			<step>OCA\OpenRegister\Repair\MigrateTextExtractionCeiling</step>
 			<step>OCA\OpenRegister\Repair\WithholdRevealValuesFromRelations</step>
 			<!-- The flows register must EXIST before any step reads flows.
 			     ImportFlowRegister was written, and named here zero times, so

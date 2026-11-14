@@ -31,6 +31,7 @@ use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\Files\Service\File\MaskForm;
+use OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
@@ -100,6 +101,20 @@ class FileSettingsHandler {
 	public const MASK_FORMS_KEY = 'maskForms';
 
 	/**
+	 * The file settings key holding the text extraction settings, among them the ceiling `maxBytes`.
+	 *
+	 * @var string
+	 */
+	public const TEXT_EXTRACTION_KEY = 'textExtraction';
+
+	/**
+	 * The two former ceiling keys, never read by anything and replaced by `textExtraction.maxBytes`.
+	 *
+	 * @var string[]
+	 */
+	public const LEGACY_CEILING_KEYS = ['maxFileSizeMB', 'maxFileSize'];
+
+	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
 	 *
 	 * The enabled file types are LLPhant-friendly: native PHP support plus common
@@ -122,11 +137,10 @@ class FileSettingsHandler {
 		'chunkOverlap' => 200,
 		'enabledFileTypes' => ['txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf', 'docx', 'doc', 'xlsx', 'xls'],
 		'ocrEnabled' => false,
-		'maxFileSizeMB' => 100,
+		self::TEXT_EXTRACTION_KEY => ['maxBytes' => ExtractionCeiling::DEFAULT_BYTES],
 		'extractionScope' => 'objects',
 		'textExtractor' => 'llphant',
 		'extractionMode' => 'background',
-		'maxFileSize' => 100,
 		'batchSize' => 10,
 		'dolphinApiEndpoint' => '',
 		'dolphinApiKey' => '',
@@ -215,6 +229,10 @@ class FileSettingsHandler {
 		// existed still states the bounds archives are opened under.
 		$fileSettings[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileSettings)->toArray();
 
+		// The extraction ceiling always reads as bytes, and an install the repair
+		// step has not reached yet states the ceiling its legacy key held.
+		$fileSettings = self::withCeiling(fileSettings: $fileSettings, source: $fileSettings);
+
 		unset($fileSettings[self::OPENANONYMISER_CREDENTIAL_FIELD]);
 		$fileSettings[self::ANONYMISATION_KEY] = $this->readableAnonymisation(stored: ($fileSettings[self::ANONYMISATION_KEY] ?? null));
 		$fileSettings['openAnonymiserUsername'] = (string) ($fileSettings['openAnonymiserUsername'] ?? '');
@@ -225,6 +243,35 @@ class FileSettingsHandler {
 
 		return $fileSettings;
 	}//end readableFileSettings()
+
+	/**
+	 * The settings with `textExtraction.maxBytes` stated and the legacy ceiling keys gone.
+	 *
+	 * The ceiling comes from the source: its `textExtraction.maxBytes`, else its
+	 * `maxFileSizeMB` read as mebibytes, else the default (ExtractionCeiling).
+	 * Other keys under `textExtraction` are kept.
+	 *
+	 * @param array<string, mixed> $fileSettings The settings to state the ceiling on.
+	 * @param array<string, mixed> $source       The settings the ceiling is read from.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/large-file-handling/tasks.md#task-1-1
+	 */
+	public static function withCeiling(array $fileSettings, array $source): array {
+		$textExtraction = ($fileSettings[self::TEXT_EXTRACTION_KEY] ?? []);
+		if (is_array($textExtraction) === false) {
+			$textExtraction = [];
+		}
+
+		$textExtraction['maxBytes'] = ExtractionCeiling::fromSettings(fileSettings: $source)->maxBytes;
+		$fileSettings[self::TEXT_EXTRACTION_KEY] = $textExtraction;
+		foreach (self::LEGACY_CEILING_KEYS as $legacyKey) {
+			unset($fileSettings[$legacyKey]);
+		}
+
+		return $fileSettings;
+	}//end withCeiling()
 
 	/**
 	 * A batch size between 1 and 500.
@@ -255,9 +302,9 @@ class FileSettingsHandler {
 	 *     chunkOverlap: 200|mixed,
 	 *     enabledFileTypes: list{'txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf',
 	 *     'docx', 'doc', 'xlsx', 'xls'}|mixed, ocrEnabled: false|mixed,
-	 *     maxFileSizeMB: 100|mixed, extractionScope: 'objects'|mixed,
+	 *     textExtraction: array{maxBytes: int}, extractionScope: 'objects'|mixed,
 	 *     textExtractor: 'llphant'|mixed, extractionMode: 'background'|mixed,
-	 *     maxFileSize: 100|mixed, batchSize: 10|mixed,
+	 *     batchSize: 10|mixed,
 	 *     dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
@@ -323,6 +370,7 @@ class FileSettingsHandler {
 		unset($fileConfig['openAnonymiserPasswordSet']);
 		$fileConfig['batchSize'] = $this->boundedBatchSize(batchSize: $fileConfig['batchSize']);
 		$fileConfig[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileConfig)->toArray();
+		$fileConfig = self::withCeiling(fileSettings: $fileConfig, source: $fileData);
 		$fileConfig['openAnonymiserUsername'] = trim((string) $fileConfig['openAnonymiserUsername']);
 		$fileConfig[ReviewPolicy::SETTINGS_KEY] = $this->reviewDefault(fileData: $fileData);
 		$fileConfig[self::ANONYMISATION_KEY] = $this->submittedAnonymisation(fileData: $fileData);
