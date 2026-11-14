@@ -36,9 +36,19 @@ interface TaskFormCompletionInterface {
 	/**
 	 * Complete a task, validating and writing its form payload.
 	 *
-	 * @param FormCompletionRequest $request The task uuid, the completion outcome, result and comment, and the
-	 *                                       declared field values (empty for a form-less completion).
-	 * @param string|null           $actor   The completing identity.
+	 * Takes a FormCompletionRequest (as `$request`, or positionally in place of `$uuid`, then the
+	 * actor), the answer form (`uuid:`, `answer:`, `data:`, `actor:`), or the separate arguments
+	 * of the published contract.
+	 *
+	 * @param string|FormCompletionRequest|null $uuid       The task uuid, or the completion request.
+	 * @param string|null                       $outcome    The completion outcome; the actor when `$uuid` is a request.
+	 * @param string|null                       $resultText Free-text result.
+	 * @param string|null                       $comment    Completion comment.
+	 * @param array<string, mixed>              $data       The declared field values; empty for a form-less completion.
+	 * @param string|null                       $actor      The completing identity.
+	 * @param TaskAnswer|null                   $answer     The completion outcome, result and comment.
+	 * @param FormCompletionRequest|null        $request    The task uuid, the completion outcome, result and comment, and the
+	 *                                                      declared field values (empty for a form-less completion).
 	 *
 	 * @return Task The completed task.
 	 *
@@ -46,5 +56,14 @@ interface TaskFormCompletionInterface {
 	 * @throws TaskSubjectWriteRefusedException When the subject's own validation or lifecycle refuses the write.
 	 * @throws TaskAccessDeniedException When the task verb or the object write is not authorized.
 	 */
-	public function complete(FormCompletionRequest $request, ?string $actor): Task;
+	public function complete(
+		string|FormCompletionRequest|null $uuid=null,
+		?string $outcome=null,
+		?string $resultText=null,
+		?string $comment=null,
+		array $data=[],
+		?string $actor=null,
+		?TaskAnswer $answer=null,
+		?FormCompletionRequest $request=null,
+	): Task;
 }//end interface

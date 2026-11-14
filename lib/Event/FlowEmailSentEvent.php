@@ -47,18 +47,90 @@ class FlowEmailSentEvent extends Event {
 	public const KIND_EXTERNAL = 'external';
 
 	/**
+	 * The item the email was about.
+	 *
+	 * @var FlowEmailItem
+	 */
+	private readonly FlowEmailItem $item;
+
+	/**
+	 * Who the email went to and what it said.
+	 *
+	 * @var FlowEmailMessage
+	 */
+	private readonly FlowEmailMessage $message;
+
+	/**
+	 * The flow, run and step that sent it, and the acting user.
+	 *
+	 * @var FlowEmailOrigin
+	 */
+	private readonly FlowEmailOrigin $origin;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowEmailItem $item The item the email was about.
-	 * @param FlowEmailMessage $message Who the email went to and what it said.
-	 * @param FlowEmailOrigin $origin The flow, run and step that sent it, and the acting user.
+	 * Takes the item, message and origin value objects (named, or positionally in the first three
+	 * slots) or the eleven separate values of the published contract; value objects win.
+	 *
+	 * @param string|FlowEmailItem|null    $register    The register of the item, or the item.
+	 * @param string|FlowEmailMessage|null $schema      The schema of the item, or the message.
+	 * @param string|FlowEmailOrigin|null  $objectUuid  The object the email was about, or the origin.
+	 * @param string|null                  $recipient   The user id or email address it went to.
+	 * @param string|null                  $channelKind One of the KIND_* constants.
+	 * @param string|null                  $subject     The subject line.
+	 * @param string|null                  $body        The body.
+	 * @param string|null                  $flowId      The flow that sent it.
+	 * @param string|null                  $runId       The run that sent it.
+	 * @param string|null                  $stepName    The step that sent it.
+	 * @param string|null                  $actingUser  The user the run acted as.
+	 * @param FlowEmailItem|null           $item        The item the email was about.
+	 * @param FlowEmailMessage|null        $message     Who the email went to and what it said.
+	 * @param FlowEmailOrigin|null         $origin      The flow, run and step that sent it, and the acting user.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The published contract's separate values plus the value objects.
 	 */
 	public function __construct(
-		private readonly FlowEmailItem $item,
-		private readonly FlowEmailMessage $message,
-		private readonly FlowEmailOrigin $origin,
+		string|FlowEmailItem|null $register = null,
+		string|FlowEmailMessage|null $schema = null,
+		string|FlowEmailOrigin|null $objectUuid = null,
+		?string $recipient = null,
+		?string $channelKind = null,
+		?string $subject = null,
+		?string $body = null,
+		?string $flowId = null,
+		?string $runId = null,
+		?string $stepName = null,
+		?string $actingUser = null,
+		?FlowEmailItem $item = null,
+		?FlowEmailMessage $message = null,
+		?FlowEmailOrigin $origin = null,
 	) {
 		parent::__construct();
+
+		if ($register instanceof FlowEmailItem) {
+			$item ??= $register;
+			$register = null;
+		}
+
+		if ($schema instanceof FlowEmailMessage) {
+			$message ??= $schema;
+			$schema = null;
+		}
+
+		if ($objectUuid instanceof FlowEmailOrigin) {
+			$origin ??= $objectUuid;
+			$objectUuid = null;
+		}
+
+		$this->item = ($item ?? new FlowEmailItem(register: $register, schema: $schema, objectUuid: $objectUuid));
+		$this->message = ($message ?? new FlowEmailMessage(
+			recipient: (string) $recipient,
+			channelKind: (string) $channelKind,
+			subject: (string) $subject,
+			body: (string) $body
+		));
+		$this->origin = ($origin ?? new FlowEmailOrigin(flowId: $flowId, runId: $runId, stepName: (string) $stepName, actingUser: (string) $actingUser));
 
 	}//end __construct()
 
