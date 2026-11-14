@@ -9775,3 +9775,4 @@ build:hermiq:delegation-runs-in-parallel:c2	partial: PR #1785 builds 1.2 Delegat
 build:hermiq:observability-export-traces:c2	PR #1767: task 4 per-writer tests (3) + webhook writer fix (enqueued raw unredacted context); suite 5069 green; left: Playwright for tasks 1/5, live OTLP check, openspec validate	session-20261114T141728-9a5d03fc	2026-11-14T15:21:33Z
 fix:decidiq:2149:9c712855	stale: head moved to bbffd285 before the push; nothing pushed (corrects the earlier done line of this task)	session-20261114T141744-acced0c5	2026-11-14T15:21:45Z
 fix:humaniq:1135:e0d59fdd	merged development, resolved l10n conflicts; new head 9114728c	session-20261114T151938-8fa99f90	2026-11-14T15:22:00Z
+fix:portaliq:2284:f2a7c870	not reproduced: floor PASS on head (4.32 vs base 4.32) and merged with development (4.32 >= floor 4.12); head unchanged, REVERIFY	session-20261114T141721-aeb4e068	2026-11-14T15:22:10Z
