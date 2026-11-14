@@ -9322,3 +9322,4 @@ build:filinq:signature-verification-portal:c2	partial: merged development into P
 build:filinq:mcp-generation-tools:c2	PR #2117: 1.2 done (validation verdict and generation/signing references in getDocumentStatus, FileRecordReferences, 5 new tests), unit 6695->6700 no failures; 2.2-2.5 live/docs/CLI left	session-20261114T131646-cdc565a4	2026-11-14T13:57:24Z
 fix:shillinq:3051:cd7bc21a	no change: head cd7bc21 merges cleanly onto development; conflict is only with unmerged #3050 (l10n en/nl js+json), resolve after 3050 lands	session-20261114T134701-ae8ce354	2026-11-14T13:57:28Z
 build:shillinq:receivables-sepa-direct-debit:c2	built 1.2-1.4, 2.1, 3.1 in PR #3059 (head 50043d179); 3.2 Playwright left (live); PHP 11072 green, vitest 1 inherited red	session-20261114T131646-6a405bc8	2026-11-14T13:57:36Z
+verify:shillinq:2975:cf276e74	2975 GREEN; 2977,2982,3003,3007,3062 CONFLICT; 2991,3052 skipped (head moved)	session-20261114T134703-00d8a302	2026-11-14T13:59:16Z
