@@ -10659,4 +10659,5 @@ build4:openregister:reply-threading-by-headers:c3	done: PR #10539 head 98d6d739 
 merge:shillinq:2991:7867c5cb	merge3 tree of 8 shillinq PRs: merged=3 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:24:02Z
 merge:shillinq:3057:2c57f181	merge3 tree of 8 shillinq PRs: merged=3 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:24:05Z
 merge:shillinq:3048:d2250188	merge3 tree of 8 shillinq PRs: merged=3 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:24:09Z
+merge:shillinq:2959:b72bc2f3	merge3 tree of 8 shillinq PRs: merged=3 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:24:12Z
 fix:planninq:1169:64a5c7ef	conflict resolved (routes.php, both sides kept); unit 1080/0, vitest green; new head b5cc9522	session-20261114T191744-b9573b83	2026-11-14T19:24:15Z
