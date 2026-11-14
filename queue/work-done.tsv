@@ -10724,3 +10724,4 @@ build:shillinq:receivables-payment-links:c4	partial: PR #3077 3.1 token path + 1
 fix:filinq:2069:4aa31305	merged development, unit 6783 OK; RED was a 2069+2123 registrar-count clash, not reproducible alone; REVERIFY at 34b4dc33	session-20261114T194744-563ce177	2026-11-14T19:52:33Z
 verify:learniq:2484:e7f1cf8b	GREEN 2484 2520; no new failures	session-20261114T191730-4ad9612d	2026-11-14T19:52:58Z
 verify:portaliq:2500:e5848aed	GREEN #2500: phpunit 5801 OK, node 4 inherited fails, no new failures	session-20261114T194745-243de12d	2026-11-14T19:53:15Z
+fix:filinq:2070:cd488491	merged development in cleanly, suites green; new head 5235768d	session-20261114T185853-1a2abc5d	2026-11-14T19:53:34Z
