@@ -25,15 +25,18 @@ namespace OCA\OpenRegister\Controller\Settings;
 use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
+use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
 /**
  * Reads and saves `search.textSearchConfig`.
  *
- * Administrator only, by carrying no `NoAdminRequired`. `stemming` is the
+ * Administrator only: no `NoAdminRequired`, and `AuthorizedAdminSetting`
+ * names the OpenRegister admin section it belongs to. `stemming` is the
  * configuration on PostgreSQL and `false` on MySQL and MariaDB; `available`
  * lists what `pg_ts_config` reports, the only values a save accepts.
  *
@@ -64,6 +67,7 @@ class SearchSettingsController extends Controller {
 	 *
 	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
 	 */
+	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function show(): JSONResponse {
 		return new JSONResponse(data: $this->settings());
 	}//end show()
@@ -77,6 +81,7 @@ class SearchSettingsController extends Controller {
 	 *
 	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
 	 */
+	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function update(string $textSearchConfig=''): JSONResponse {
 		try {
 			$this->textSearch->save(name: $textSearchConfig);
