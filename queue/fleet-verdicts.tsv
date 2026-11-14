@@ -9502,3 +9502,4 @@ integriq	3600	60d4c5945108a09111c4aa6eb475cd0b4b3f4a44	CONFLICT	merge3	conflicts
 integriq	3625	9f95d1e6f625a06fe1058100bae8181e6919c588	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json 
 integriq	3628	fb3c554133d3b392deb2e4974101d11db41f26d4	CONFLICT	merge3	conflicts with development; files: lib/Settings/integriq_register.json 
 shillinq	3065	7e8c6350577a04d792a11ef66d3e941d8dffba45	REVERIFY	worker-45	merged development (resolved BillableRateService onto the rated() split keeping rated() at 3 params, InvoiceGenerationService hourRate over timeEntryRate, openapi union), priced billable lines in forCustomer after the split; floor PASS vs 69d7adfb1c (unit_interfacing 2.78/2.78), phpunit 11323/0; new head e857eb2338958eebcba97fbfc59310343d8605ac, verify it
+planninq	1169	b5cc95224da0aaca56ffadc758517f3655d8a639	GREEN	worker-09	phpunit 1080 ok (baseline 1067 ok), vitest 3312 passed, no new failures
