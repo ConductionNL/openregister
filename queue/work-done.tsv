@@ -9637,3 +9637,4 @@ verify:learniq:2486:aee78849	GREEN 2486 2504; RED 2521 (js list-columns test); C
 build:decidiq:toezeggingen-ingekomen-stukken:c2	PR #2194: Task 7 commitment publish/withdraw/settle built + 14 vitest tests; Tasks 1-4 ticked; Task 6 and incoming half of 7 superseded by documents-as-agenda-items; Task 8 e2e left	session-20261114T144812-4140669d	2026-11-14T14:57:23Z
 build:decidiq:objection-advisory-committee:c2	pushed to PR #2154: task 5 implemented (term on the decision, page fields), 8 tests; left only tests/e2e/objection-route.spec.ts	session-20261114T141732-bb541f91	2026-11-14T14:57:33Z
 fix:hermiq:1763:a68d1b9b	CONFLICT resolved (l10n both sides kept), pushed c379cfbf; no new failures	session-20261114T144809-d686f759	2026-11-14T14:57:30Z
+fix:filinq:2070:cc02ae12	conflict resolved, merged development; new head af678887; unit suite OK	session-20261114T144801-36995162	2026-11-14T14:58:00Z
