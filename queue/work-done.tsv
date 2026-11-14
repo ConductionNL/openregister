@@ -10162,3 +10162,4 @@ merge:humaniq:1153:97c9fdd2	merge3 tree of 11 humaniq PRs: merged=7 red=2 fail=0
 fix:integriq:3542:723f0642	relocated l10n keys and openapi paths off the shared tail; merges clean with 3539; REVERIFY ee72f32b	session-20261114T151755-dc817df2	2026-11-14T16:24:25Z
 fix:shillinq:3074:714defc1	stale	session-20261114T151802-aefa9c5e	2026-11-14T16:24:36Z
 fix:planninq:1169:1268ee2b	conflict resolved: l10n keys relocated, merges cleanly after 1158/1159/1162; REVERIFY 64a5c7efa1b0c1dd8bebd0d6737a43309cad99c6	session-20261114T161806-530176c3	2026-11-14T16:24:48Z
+merge:hermiq:1736:920ff480	merge3 tree of 12 hermiq PRs: merged=5 red=1 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:25:14Z
