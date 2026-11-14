@@ -10165,3 +10165,5 @@ learniq	2523	ebf12671bf52d57c5a19f953253e0b07819f9647	REVERIFY	worker-17	merged 
 opencatalogi	2706	bad7090ef3f1f5575114bf2fef1705442078fdb1	REVERIFY	worker-02	no change needed: merges cleanly on development (up to date); the conflict is only with unmerged #2665/#2673 (l10n tails, DcatServiceTest), so verify it ahead of or without them; head unchanged bad7090e
 hermiq	1735	09766374a9ba9386facc8d120dcbb51db6a96b32	GREEN	worker-54	PHP unit 5244 on tree (baseline 5180, 0 failures), vitest 1539 passed, 0 new failures
 hermiq	1760	57830914d3c1fb8c0a78823edfcde6f75006e0e8	CONFLICT	worker-54	conflicts with #1735 in appinfo/info.xml and lib/Settings/hermiq_register.json
+hermiq	1781	65071efe64508005bed86210f84f94ddd400a388	CONFLICT	worker-54	conflicts with #1735 in l10n en/nl and lib/Settings/hermiq_register.json
+hermiq	1792	33071fc8103fd4d270cdcb4c55a4bcbd06b75ca3	GREEN	worker-54	PHP unit 5244 on tree (baseline 5180, 0 failures), vitest 1539 passed, 0 new failures
