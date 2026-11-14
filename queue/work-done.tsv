@@ -9672,3 +9672,4 @@ verify:learniq:2496:61bb1917	4 GREEN (2496,2506,2507,2535), 3 CONFLICT (2534,253
 verify:portaliq:2437:a7c54eab	GREEN #2437	session-20261114T141732-bb541f91	2026-11-14T15:02:58Z
 fix:shillinq:2975:12f8c569	conflicts resolved, merged development; new head b4abe00a	session-20261114T141727-56b2bf78	2026-11-14T15:03:09Z
 fix:shillinq:2991:44f9551b	conflict resolved, merged development; unit 11236 OK; new head 612f3175	session-20261114T144748-3f042cbf	2026-11-14T15:03:16Z
+fix:hermiq:1758:0dad551f	CONFLICT resolved (l10n both kept, register bump 0.55.0 added), pushed 693e2fb8; no new failures	session-20261114T144809-d686f759	2026-11-14T15:03:38Z
