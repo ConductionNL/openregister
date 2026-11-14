@@ -9333,3 +9333,4 @@ integriq	3626	0b6ea2adb278d723255596548d62d781abcc82c3	CONFLICT	merge3	conflicts
 integriq	3631	b0b558d83e2f38ea4f662bf52fc6714038987f6e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js lib/Service/EndpointService.php 
 hermiq	1735	61ad767f2f1d16530dfa278b6a27961e11c2f6d8	GREEN	worker-49	phpunit 5191 ok on tree (baseline development 5134 ok, both with ../openregister present), vitest 1496 passed; build of flows-hand-off-and-wait, changes to existing engine files additive
 keepiq	1784	e19809e25a23b005ad3c609f1330575673cf82ca	GREEN	worker-05	phpunit unit 4998 ok (baseline 4998, 0 fail), vitest 6513 pass; frontend-only build of vault-item-clone-preview-and-print as its specs ask
+keepiq	1786	cda0c18ea6a14d4d0771d0f43abcd608ca65692e	CONFLICT	worker-05	merges cleanly on development alone; conflicts with #1784 in l10n/en.js en.json nl.js nl.json
