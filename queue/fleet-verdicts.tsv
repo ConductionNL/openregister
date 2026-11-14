@@ -10351,3 +10351,4 @@ stackiq	1963	f4ee4fa554fce072bafd9599be961c7464bfbf0c	REVERIFY	worker-22	moved t
 buildiq	1596	28499a1813d70ce4216bf169b29a5b3c2711a25a	GREEN	worker-11	phpunit 3217 (baseline 3192, 1 inherited failure ExportZipGoldenTest); only l10n js touched, no vitest needed; no new failures
 stackiq	1930	6fc3f2b76ebadb3ff875efac5468a169afdf036c	GREEN	worker-01	unit 3620 OK on dev dbebfae7 + 1930 (baseline 3602 OK), vitest 2576/2577 with 1 inherited fail (facets.spec.js, red on development); build of contracts-expiry-and-owner
 stackiq	1931	9e5f25a4c32a8eb3fbcb48a7fca787dddb6a8fb6	CONFLICT	worker-01	conflicts after 1930 on development dbebfae7: lib/Settings/softwarecatalogus_register.json
+stackiq	1938	a321d1cf4c5061bf8bdcf2ddbaac19096addcbff	CONFLICT	worker-01	conflicts on the tree (dev + 1930): l10n/en|nl.js|json, lib/Settings/softwarecatalogus_register.json
