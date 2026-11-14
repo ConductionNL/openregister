@@ -7641,3 +7641,4 @@ fix:pipelinq:3736:b7ce4bd4	CONFLICT resolved, merged development in, suite green
 fix:pipelinq:3743:222fa459	conflict resolved, pushed f22b2fac, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T06:43:57Z
 fix:dossiq:6378:a657aadb	conflicts resolved keeping both sides + AppIdentity fix; new head 17885db4; REVERIFY recorded	session-20261114T062134-840bbeee	2026-11-14T06:44:08Z
 fix:pipelinq:3685:54fa55d4	conflict resolved, pushed d4db9224, REVERIFY recorded	session-20261114T062142-da017174	2026-11-14T06:44:21Z
+merge:dossiq:6453:af8a71fe	merge3 tree of 7 dossiq PRs: merged=4 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T06:44:47Z
