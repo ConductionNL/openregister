@@ -10999,3 +10999,4 @@ merge:launchpad:1203:2d28a434	merge3 tree of 8 launchpad PRs: merged=4 red=4 fai
 merge:launchpad:1205:ead5b82e	merge3 tree of 8 launchpad PRs: merged=4 red=4 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T20:44:27Z
 build:keepiq:capability-requirements-from-the-matrix:c2	partial: PR #1788 unchanged this run; 3.1 privileged-login access (flag, timed access request, owner approval with IPv4/IPv6 ranges, refusal on every path that serves the recipient copy, audit, notification, UI) left, not started because this worker context was nearly full	session-20261114T134708-ba7f7741	2026-11-14T20:44:37Z
 fix:integriq:3628:fb3c5541	fixed: register version conflict resolved to 1.2.1; new head 3039ae5d	session-20261114T173956-74ab8962	2026-11-14T20:44:58Z
+verify:shillinq:3077:cd98b077	3077 GREEN, 3078 GREEN	session-20261114T202449-f0278d5a	2026-11-14T20:45:21Z
