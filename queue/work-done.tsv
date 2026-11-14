@@ -10263,3 +10263,4 @@ build:buildiq:journey-designer:c2	PR #1644: steps/branch/writes editors, real-Cn
 fix:shillinq:3057:da7239ca	floor restored (overall equals base); new head 61e7233a	session-20261114T161744-497aae45	2026-11-14T16:45:24Z
 build:buildiq:lifecycle-import-app-and-cli:c2	PR #1645 (follow-up, #1598 merged): T02 records import, T04 dialog + preview route, T09, T10, T11, ops-cli tests; left T04 Playwright e2e (live); unit 3145 (1 inherited golden failure), vitest 4475 green	session-20261114T154807-4c2c3327	2026-11-14T16:45:33Z
 verify:hermiq:1725:7d6a5851	GREEN 1725 1779; CONFLICT 1757 1762 (tree only, l10n)	session-20261114T141010-8dc8bd74	2026-11-14T16:45:57Z
+fix:shillinq:2991:f7e28a5d	conflict resolved (l10n, version, register lock), suite green, pushed b7472331, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T16:46:04Z
