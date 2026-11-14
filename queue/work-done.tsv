@@ -8392,3 +8392,4 @@ build:opencatalogi:robust-first-run-setup	PR #2683: all 7 tasks with PHPUnit; co
 build:stackiq:applications-copy-with-links	partial: PR #1905 task 1 (copy.include, prop pass-through, nextcloud-vue 2.74.0); task 2 needs a library copy.overrides config, task 3 live	session-20261114T070352-19ea7dff	2026-11-14T08:44:50Z
 build:stackiq:portal-public-software-catalogue	already done: T1/T2 on development; T3 belongs to portaliq (site-software-catalogue-page)	session-20261114T075643-acecaad6	2026-11-14T08:44:59Z
 measure:stackiq:20261113h20	php 90.6% (pcov, 31808 stmts), js 94.17% (8835 stmts) at 02e576ed	session-20261114T065635-0aca43d3	2026-11-14T08:44:58Z
+build:stackiq:contracts-readable-by-owner-only	PR #1906: ambtenaar contract read org-scoped, portfolio report counts only owned contracts, system paths documented, register + report tests; 4.1 capability row/archive left (post-merge, contactPerson grants)	session-20261114T073108-8b40426a	2026-11-14T08:45:33Z
