@@ -7399,3 +7399,4 @@ buildiq	1619	2f7f5352352b0753cd07525a6f9e19cde1d0be75	CONFLICT	worker-50	merge c
 buildiq	1620	ad5dd7713bb3ecc04275549bddc4c5bc9618c195	CONFLICT	worker-50	merge conflict with development+1613+1614 in l10n/en,nl .js/.json
 buildiq	1621	8e4390d8accc7cd660ceedbee59d834f7993cf80	CONFLICT	worker-50	merge conflict with development+1613+1614 in l10n,lib/Service/CopilotService.php
 keepiq	1631	6ab64a41e365cfa698f9bc20d06d55f1913bc430	BLOCK	worker-07:review	Behaviour unchanged (same formatter outputs); vitest 6420/0 fail, phpunit 4975/0 fail on PR+development. Lint: new eslint error perfectionist/sort-imports in src/components/settings/SiemSection.vue:265 (dateTime.js import before mixins/busyRequest.js); development has none. Fix: eslint --fix that file.
+buildiq	1613	9a07faa20e3787d2b96b824c20bf5890a20829a9	GREEN	worker-50	phpunit 2967 (baseline 2965, 1 inherited failure ExportZipGoldenTest), vitest 4238 passed; no new failures; implements registration-form-builder
