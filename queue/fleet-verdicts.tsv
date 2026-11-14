@@ -10111,3 +10111,4 @@ launchpad	1226	2e6e68db372ff3c76d41b886f0a231d75da6d125	GREEN	worker-32	unit 432
 opencatalogi	2673	035193a4d37b4b72896ce59aad7f1154c2a65f80	GREEN	worker-45	unit 5634 tests, baseline 5599 w/ 2 failures (AppIdentityTest, WooControllerTest, inherited), no new failures; vitest 1083 pass
 opencatalogi	2674	98c76ef7d957f80d32f19fec14da6fd8e04b353e	CONFLICT	worker-45	conflicts in l10n/en.js,en.json,nl.js,nl.json with 2665+2673 in tree
 opencatalogi	2696	c991013b8c4f3f4ea5d26d8e0a4285eb6a914f11	CONFLICT	worker-45	conflicts in l10n/en.js,en.json,nl.js,nl.json and lib/Controller/FederationController.php with 2665+2673 in tree
+opencatalogi	2706	bad7090ef3f1f5575114bf2fef1705442078fdb1	CONFLICT	worker-45	conflicts in l10n/en.js,en.json,nl.js,nl.json and tests/Unit/Service/DcatServiceTest.php with 2665+2673 in tree
