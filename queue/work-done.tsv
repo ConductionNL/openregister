@@ -10563,3 +10563,4 @@ fix:launchpad:1215:01fd4612	conflict resolved (nl l10n), new head 507cc1f0	sessi
 fix:integriq:3622:45832696	docs README conflict resolved keep-both, pushed 85e683d9, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T18:05:38Z
 verify:integriq:3615:b6e29b95	stale	feeder	2026-11-14T18:05:22Z
 fix:integriq:3615:619d1906	stale	feeder	2026-11-14T18:05:22Z
+merge:portaliq:2498:5bf1f5f3	merge3 tree of 1 portaliq PRs: none; conflict 0, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T18:06:02Z
