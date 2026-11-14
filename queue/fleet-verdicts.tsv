@@ -7188,3 +7188,4 @@ portaliq	2423	ca8637ccdf7564a6025679c6d7f76dbd3518a80c	GREEN	worker-12	unit 5102
 portaliq	2430	fc437ac24686b9b36baa4a8441496e29b8cbda71	GREEN	worker-12	unit 5102 on tree (baseline 5092, 0 fail); form-unavailable + example-site node specs pass; build form-governance-availability-retention-and-routing per REQ-FGV-001
 portaliq	2433	ca20ec2f1d419a458a537ebbe99f0d73699c8bc4	GREEN	worker-12	unit 5102 on tree (baseline 5092, 0 fail); federated-search-sort-by-date spec 4 pass
 portaliq	2442	9a1924638a8447357161f7305c30651471f71ce3	CONFLICT	worker-12	conflicts with tree (dev+2423+2430+2433) in package.json
+learniq	2504	dfdefd471d3aafecc527fbbaf2ad610e6ea05d40	GREEN	worker-20	php unit 6577 tests (baseline 6575, 1F inherited), node unit 1348 (9 failures inherited from development), no new failures; builds school-year-setting (admin settings section)
