@@ -10728,3 +10728,5 @@ fix:filinq:2070:cd488491	merged development in cleanly, suites green; new head 5
 fix:filinq:2130:9f002cf9	merged development (clean), unit 6779 OK; REVERIFY at d2fab4b3	session-20261114T194744-563ce177	2026-11-14T19:53:43Z
 fix:planninq:1170:74dc7683	conflict resolved, pushed 610e91fd; REVERIFY recorded	session-20261114T194743-e736657e	2026-11-14T19:54:37Z
 verify:shillinq:3077:2e381051	GREEN 3077; no new failures	session-20261114T193415-4b507b08	2026-11-14T19:55:27Z
+verify:shillinq:3055:aedb4e55	stale	feeder	2026-11-14T19:55:21Z
+merge:shillinq:2991:54ec2e9c	stale	feeder	2026-11-14T19:55:21Z
