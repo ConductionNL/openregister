@@ -9422,3 +9422,5 @@ learniq	2484	953ce73f569e1ce4dd10737a2faf72a7e55ff73e	CONFLICT	merge3	merges cle
 learniq	2486	6ae0a045efcc4f4d21eb20acf158df24d661b800	CONFLICT	merge3	merges clean on development alone; files: 
 learniq	2507	4e19f9e610160a7af2b8e4777e3f3c3280ae3cdb	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
 learniq	2521	52cd66be6f16bb2c0d32073ed61fff8a400b378c	REVERIFY	merge3	head moved since the verdict (was 5a578a1e23b533ca4334d92b0008671ab2d47ef9, 5a578a1e:CONFLICT,5a578a1e:REVERIFY); verify the new head
+planninq	1171	6e9f4ac2e51d2e152758d6a09e48c2982a2742e4	RED	merge3:merge-gate	GATE RED floor: overall: 4.78 -> 4.75; duplication: 4.61 -> 4.55; unit_complexity: 4.83 -> 4.79; unit_interfacing: 4.71 -> 4.63; module_coupling: 3.82 -> 3.80
+planninq	1178	93ae38333c81b66f1230d253a2e16b8510e2247f	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.84 -> 4.82
