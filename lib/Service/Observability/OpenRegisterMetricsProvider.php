@@ -42,25 +42,27 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskMetricsProviderInterface $tasks    The overdue-task gauge.
-	 * @param WebhookRetryMetricsProvider  $webhooks The webhook retry queue gauge.
-	 * @param SearchMetricsProvider        $search   The search and embedding metrics.
+	 * @param TaskMetricsProviderInterface   $tasks     The overdue-task gauge.
+	 * @param WebhookRetryMetricsProvider    $webhooks  The webhook retry queue gauge.
+	 * @param SearchMetricsProvider          $search    The search and embedding metrics.
+	 * @param WebhookDurationMetricsProvider $durations The webhook delivery latency histogram.
 	 */
 	public function __construct(
 		private readonly TaskMetricsProviderInterface $tasks,
 		private readonly WebhookRetryMetricsProvider $webhooks,
 		private readonly SearchMetricsProvider $search,
+		private readonly WebhookDurationMetricsProvider $durations,
 	) {
 	}//end __construct()
 
 	/**
-	 * The samples of every joined provider: tasks, webhooks, then search.
+	 * The samples of every joined provider: tasks, webhook retries, search, then webhook durations.
 	 *
 	 * @return array<int, MetricSample>
 	 *
 	 * @spec openspec/changes/production-observability
 	 */
 	public function metrics(): array {
-		return [...$this->tasks->metrics(), ...$this->webhooks->metrics(), ...$this->search->metrics()];
+		return [...$this->tasks->metrics(), ...$this->webhooks->metrics(), ...$this->search->metrics(), ...$this->durations->metrics()];
 	}//end metrics()
 }//end class

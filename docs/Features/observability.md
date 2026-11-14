@@ -50,6 +50,7 @@ Returns Prometheus text-exposition format (Content-Type `text/plain; version=0.0
 | `openregister_search_requests_total{type}` | counter | Search requests served, by search type (`keyword`, `semantic`, `hybrid`). |
 | `openregister_search_duration_seconds{type}` | histogram | Search duration, buckets 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0 s; searches recorded without a duration count as requests only. |
 | `openregister_embeddings_generated_total{status}` | counter | Embedding generations by outcome (`success`, `failure`; every non-success status is a failure). |
+| `openregister_webhook_delivery_duration_seconds` | histogram | Webhook delivery request duration, buckets 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0 s; attempts logged before durations were recorded are left out. |
 
 ### Sample output
 

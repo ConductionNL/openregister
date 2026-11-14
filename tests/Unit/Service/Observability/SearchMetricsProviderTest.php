@@ -29,6 +29,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\Observability\SearchMetricsProvider
  * @uses   \OCA\OpenRegister\AppHost\Observability\MetricSample
+ * @uses   \OCA\OpenRegister\Service\Observability\HistogramPoints
  * @uses   \OCA\OpenRegister\AppHost\Observability\PrometheusRenderer
  */
 final class SearchMetricsProviderTest extends TestCase {

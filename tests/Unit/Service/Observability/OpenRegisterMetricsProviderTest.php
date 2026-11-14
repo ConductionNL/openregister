@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Search\Service\SearchMetricsReader;
 use OCA\OpenRegister\Service\Observability\OpenRegisterMetricsProvider;
 use OCA\OpenRegister\Service\Observability\SearchMetricsProvider;
+use OCA\OpenRegister\Service\Observability\WebhookDurationMetricsProvider;
 use OCA\OpenRegister\Service\Observability\WebhookRetryMetricsProvider;
 use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -34,12 +35,14 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Observability\OpenRegisterMetricsProvider
  * @uses   \OCA\OpenRegister\Service\Observability\WebhookRetryMetricsProvider
  * @uses   \OCA\OpenRegister\Service\Observability\SearchMetricsProvider
+ * @uses   \OCA\OpenRegister\Service\Observability\WebhookDurationMetricsProvider
+ * @uses   \OCA\OpenRegister\Service\Observability\HistogramPoints
  * @uses   \OCA\OpenRegister\AppHost\Observability\MetricSample
  */
 final class OpenRegisterMetricsProviderTest extends TestCase {
 
 	/**
-	 * Every joined family is published once: tasks, webhooks, then search.
+	 * Every joined family is published once: tasks, webhook retries, search, then webhook durations.
 	 *
 	 * @return void
 	 */
@@ -52,6 +55,7 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 		$time->method('getDateTime')->willReturn(new DateTime());
 		$logs = $this->createMock(WebhookLogMapperInterface::class);
 		$logs->expects($this->once())->method('countPendingRetries')->willReturn(5);
+		$logs->expects($this->once())->method('deliveryDurationStats')->willReturn(['timed' => 0, 'sumMs' => 0.0, 'buckets' => []]);
 
 		$reader = $this->createMock(SearchMetricsReader::class);
 		$reader->expects($this->once())->method('searchStats')->willReturn([]);
@@ -60,11 +64,12 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 		$metrics = (new OpenRegisterMetricsProvider(
 			tasks: $tasks,
 			webhooks: new WebhookRetryMetricsProvider(logs: $logs, time: $time),
-			search: new SearchMetricsProvider(reader: $reader, logger: $this->createMock(LoggerInterface::class))
+			search: new SearchMetricsProvider(reader: $reader, logger: $this->createMock(LoggerInterface::class)),
+			durations: new WebhookDurationMetricsProvider(logs: $logs, logger: $this->createMock(LoggerInterface::class))
 		))->metrics();
 
 		$this->assertSame(
-			['tasks_overdue_total', 'webhook_retry_queue_depth', 'search_requests_total', 'search_duration_seconds', 'embeddings_generated_total'],
+			['tasks_overdue_total', 'webhook_retry_queue_depth', 'search_requests_total', 'search_duration_seconds', 'embeddings_generated_total', 'webhook_delivery_duration_seconds'],
 			array_map(static fn (MetricSample $m): string => $m->name, $metrics)
 		);
 		$this->assertSame($overdue, $metrics[0]);

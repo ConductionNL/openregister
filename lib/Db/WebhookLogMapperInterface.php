@@ -91,6 +91,17 @@ interface WebhookLogMapperInterface {
 	public function countPendingRetries(DateTime $now): int;
 
 	/**
+	 * The delivery durations as cumulative buckets: how many timed attempts took at most each bound.
+	 *
+	 * @param array<int, int> $boundsMs The bucket upper bounds, in milliseconds.
+	 *
+	 * @return array{timed: int, sumMs: float, buckets: array<int, int>}
+	 *
+	 * @spec openspec/changes/production-observability
+	 */
+	public function deliveryDurationStats(array $boundsMs): array;
+
+	/**
 	 * Get statistics for a webhook
 	 *
 	 * @param int $webhookId Webhook ID (0 for all webhooks)

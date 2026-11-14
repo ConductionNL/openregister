@@ -155,6 +155,53 @@ class WebhookLogMapper extends QBMapper implements WebhookLogMapperInterface {
 	}//end countPendingRetries()
 
 	/**
+	 * The delivery durations as cumulative buckets, aggregated in one query.
+	 *
+	 * Only attempts with a recorded `duration_ms` count; rows written before
+	 * the column existed are left out. The bucket expressions are built from
+	 * the integer bounds, cast, never from text.
+	 *
+	 * @param array<int, int> $boundsMs The bucket upper bounds, in milliseconds.
+	 *
+	 * @return array{timed: int, sumMs: float, buckets: array<int, int>}
+	 *
+	 * @spec openspec/changes/production-observability
+	 */
+	public function deliveryDurationStats(array $boundsMs): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias($qb->createFunction('COUNT(duration_ms)'), 'timed')
+			->selectAlias($qb->createFunction('SUM(duration_ms)'), 'sum_ms');
+
+		foreach ($boundsMs as $bound) {
+			$qb->selectAlias(
+				$qb->createFunction('SUM(CASE WHEN duration_ms <= '.(int) $bound.' THEN 1 ELSE 0 END)'),
+				'le_'.(int) $bound
+			);
+		}
+
+		$qb->from($this->getTableName());
+
+		$result = $qb->executeQuery();
+		$row    = $result->fetch();
+		$result->closeCursor();
+
+		if (is_array($row) === false) {
+			$row = [];
+		}
+
+		$buckets = [];
+		foreach ($boundsMs as $bound) {
+			$buckets[(int) $bound] = (int) ($row['le_'.(int) $bound] ?? 0);
+		}
+
+		return [
+			'timed' => (int) ($row['timed'] ?? 0),
+			'sumMs' => (float) ($row['sum_ms'] ?? 0),
+			'buckets' => $buckets,
+		];
+	}//end deliveryDurationStats()
+
+	/**
 	 * Insert a new webhook log
 	 *
 	 * @param Entity $entity WebhookLog entity to insert

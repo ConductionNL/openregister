@@ -5,7 +5,7 @@
 - [ ] Implement: Register, Schema, and Object Count Metrics
 - [ ] Implement: CRUD Operation Counters
 - [x] Implement: Search Performance Metrics
-- [ ] Implement: Webhook Delivery Monitoring
+- [x] Implement: Webhook Delivery Monitoring
 - [ ] Implement: Health Check Endpoint
 - [x] Implement: Readiness Endpoint
 - [ ] Implement: Structured Logging
@@ -81,3 +81,13 @@ non-success status). `Search\Service\SearchMetricsReader` aggregates the
 not in the histogram. The renderer now emits `# TYPE … histogram` and the `_bucket` / `_sum`
 / `_count` series for a `histogram` family (a point names its series in an optional
 `suffix`); gauge and counter output is unchanged.
+
+**Fourth pass, continued: webhook delivery latency.** "Webhook Delivery Monitoring" is ticked:
+its counters and retry queue depth were already published, and
+`webhook_delivery_duration_seconds` is now a histogram with the 0.1 … 30 s bounds. Each
+delivery attempt stamps `duration_ms` on its webhook log row (a new nullable column,
+migration `Version1Date20261114190000`; the time is taken around the HTTP request, also when
+it throws). `WebhookLogMapper::deliveryDurationStats()` aggregates it in one query and
+`Service\Observability\WebhookDurationMetricsProvider` joins `OpenRegisterMetricsProvider`.
+Rows written before the column existed have no duration and are left out. The webhook log's
+JSON gains a trailing `durationMs` key.

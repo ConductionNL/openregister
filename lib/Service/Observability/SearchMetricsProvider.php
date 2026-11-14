@@ -114,17 +114,10 @@ final class SearchMetricsProvider implements IMetricsProvider {
 	private function durationHistogram(array $stats): MetricSample {
 		$points = [];
 		foreach ($stats as $type => $row) {
-			foreach ($row['buckets'] as $boundMs => $count) {
-				$points[] = [
-					'labels' => ['type' => $type, 'le' => $this->seconds(milliseconds: $boundMs)],
-					'value' => $count,
-					'suffix' => '_bucket',
-				];
-			}
-
-			$points[] = ['labels' => ['type' => $type, 'le' => '+Inf'], 'value' => $row['timed'], 'suffix' => '_bucket'];
-			$points[] = ['labels' => ['type' => $type], 'value' => $row['sumMs'] / 1000, 'suffix' => '_sum'];
-			$points[] = ['labels' => ['type' => $type], 'value' => $row['timed'], 'suffix' => '_count'];
+			$points = [
+				...$points,
+				...HistogramPoints::points(labels: ['type' => $type], buckets: $row['buckets'], count: $row['timed'], sumMs: $row['sumMs']),
+			];
 		}
 
 		return new MetricSample(
@@ -153,20 +146,4 @@ final class SearchMetricsProvider implements IMetricsProvider {
 			]
 		);
 	}//end embeddingCounter()
-
-	/**
-	 * A millisecond bound as a seconds `le` label: 50 → "0.05", 1000 → "1.0".
-	 *
-	 * @param int $milliseconds The bound.
-	 *
-	 * @return string
-	 */
-	private function seconds(int $milliseconds): string {
-		$label = rtrim(rtrim(number_format($milliseconds / 1000, 3, '.', ''), '0'), '.');
-		if (str_contains($label, '.') === false) {
-			$label .= '.0';
-		}
-
-		return $label;
-	}//end seconds()
 }//end class
