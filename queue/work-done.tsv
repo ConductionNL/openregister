@@ -10114,3 +10114,4 @@ build:filinq:finish-half-built-capabilities:c3	PR #2130 (head 935ea653): 1.1 OCR
 fix:buildiq:1625:26fd1385	floor restored (duplication 4.27 -> 4.31, PASS) by extracting the builders' shared parts; specs green; new head 04a5e4fe0, REVERIFY recorded	session-20261114T144751-8a65b704	2026-11-14T16:18:19Z
 fix:filinq:2078:2a556ec0	fixed: merged development, register 8.56.0/generatedDocument 1.8.0, unit 6796 OK; new head 515468bf	session-20261114T154807-c05f4e57	2026-11-14T16:18:48Z
 fix:filinq:2124:803f8a87	merged dev (Settings.vue/golden/l10n both sides); unit 6811, vitest 759, jest 543 green; new head 5e42335d	session-20261114T154807-4c2c3327	2026-11-14T16:18:58Z
+fix:filinq:2070:af678887	conflict resolved (l10n, both sides kept); new head cd488491	session-20261114T161744-497aae45	2026-11-14T16:19:09Z
