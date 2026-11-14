@@ -11221,3 +11221,4 @@ cover:opencatalogi:fc83bfb1md382:jse47a1b97	PR #2704: mounted FederationDirector
 verify:opencatalogi:2659:48a40960	4 GREEN (2659,2677,2683,2684), 5 CONFLICT (2685,2686,2687,2688,2695: l10n catalogues vs earlier tree PRs); phpunit 5652 with 2 baseline failures, vitest 1073 pass	session-20261114T211801-f16dd26d	2026-11-14T21:36:02Z
 review:opencatalogi:2654:89b4f055	GREEN	session-20261114T201755-10d43934	2026-11-14T21:36:10Z
 fix:opencatalogi:2648:6784a196	merged development, resolved CHANGELOG + l10n, new head 33597bb0316f211b0d85e6737e5b7ea75646f5e2	session-20261114T201752-7e06b161	2026-11-14T21:36:22Z
+build:opencatalogi:woo-compliance:c2	PR #2703: tasks 1,2.3,4,5,8,9 done (+12 tests, empty-index fix); left 10.1 spec sync (process step); suite 5599->5611, 2 inherited fails	session-20261114T204802-b2e553ef	2026-11-14T21:36:39Z
