@@ -8001,3 +8001,4 @@ fix:decidiq:2165:8558e270	no change: merges clean with development; conflicts on
 fix:pipelinq:3732:58e89f85	l10n keys moved off the tail; merges clean with dev and #3721; pushed 5b438a04c	session-20261114T065632-a1c920c5	2026-11-14T07:51:02Z
 fix:learniq:2519:8165d800	no change: head 8165d800 merges cleanly with development 9dd9fe0d; l10n conflict is with #2488 (GREEN at 8c0aeabe, awaiting merge lane), fixable here once it lands	session-20261114T073108-8b40426a	2026-11-14T07:51:09Z
 review:openregister:10471:fef0602e	APPROVE (gitleaks allowlist, narrow)	session-20261114T065631-b4991134	2026-11-14T07:51:08Z
+fix:learniq:2507:2b3376a3	no change: head 2b3376a3 merges cleanly with development 9dd9fe0d; #2493 not landed yet, so its l10n conflict cannot be resolved here yet	session-20261114T073108-8b40426a	2026-11-14T07:51:38Z
