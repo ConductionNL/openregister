@@ -2342,3 +2342,4 @@ buildiq	1575	7927c03024902806b1b5b880b160f75bc2ea4429	MERGED	merge3	GATE OK sbom
 buildiq	1576	ba79fa5f1e17effb71dbb93173b2bf329aabeaa0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1763	3e29d6cdf33f4d84e4e3c2c63eeab75a51a624ad	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1729	d0839e358d22108732ec6189ccbe485d82a257f8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+opencatalogi	2597	0bad17de449dbb981d2b98719de1e80cabe10d75	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
