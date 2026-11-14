@@ -10419,3 +10419,4 @@ verify:learniq:2520:7d8192ee	2520 GREEN, 2531 GREEN, 2532 CONFLICT (register jso
 fix:learniq:2515:b47ed90a	REVERIFY f8a88742	session-20261114T134708-ba7f7741	2026-11-14T17:33:08Z
 verify:decidiq:2195:cd81ac60	GREEN 2195; 4232 OK, vitest 2757 OK	session-20261114T154807-c05f4e57	2026-11-14T17:33:15Z
 build:learniq:learner-list-and-page-follow-the-boards:c3	partial: PR #2541 builds the pupil page endpoint (T3 header+next step, T4 people, T1 todayState there; 25 tests); left T1 list read model, T2 columns/views, T3/T4 manifest header and side column, T5 guardian conversation (no portaliq client), T6 strings and example data	session-20261114T171821-a80c28c5	2026-11-14T17:33:42Z
+fix:pipelinq:3818:44c090e1	merged development, resolved manifest/test conflict; new head 2161a99c, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T17:34:09Z
