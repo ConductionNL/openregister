@@ -11007,6 +11007,7 @@ verify:keepiq:1798:1d99807d	stale	feeder	2026-11-14T20:45:21Z
 fix:planninq:1160:9979a267	complexity floor restored (4.85), new head eb03492e; REVERIFY	session-20261114T201750-64b6fe0f	2026-11-14T20:46:32Z
 review:shillinq:2997:a72f8f14	GREEN: doc-only delta over the reviewed ee7b7248	session-20261114T194744-563ce177	2026-11-14T20:46:40Z
 build:shillinq:bookings-messages-and-embedding:c4	PR shillinq#3078: built 1.1 rest, 1.2, 1.3, 1.4, 1.5 + strings; left 1.4 Playwright and 1.6 live check (need live instance); phpunit 11299->11346 green	session-20261114T193415-4b507b08	2026-11-14T20:47:05Z
+verify:shillinq:3078:d25102f8	stale	session-20261114T193415-4b507b08	2026-11-14T20:47:25Z
 verify:learniq:2486:5341ea1c	2486 GREEN (phpunit 6809, 1 inherited failure; js 9 inherited), 2536 CONFLICT after 2486 in Portal golden	session-20261114T191744-b9573b83	2026-11-14T20:47:26Z
 review:filinq:2088:2d0b82be	GREEN	session-20261114T194751-bb7578f8	2026-11-14T20:47:37Z
 fix:integriq:3584:fb0129bd	fixed: maintainability 3.56 holds after merge; new head 161c9167, REVERIFY recorded	session-20261114T203931-14af5319	2026-11-14T20:47:47Z
@@ -11022,3 +11023,4 @@ gap:learniq:opensourcehealth:92e2c93a	failed: not fixable in one bounded PR. Act
 fix:integriq:3633:7bc3cc79	fixed: l10n re-sort conflict resolved, pushed 90a867a5b221ea9285ddb5531b3a7bfa16136b5d, REVERIFY recorded	session-20261114T204804-ae7e06a7	2026-11-14T20:49:48Z
 fix:shillinq:2995:11635055	test count 18->20 for the new listener registrations; unit 11371 OK; REVERIFY at cb8dc292	session-20261114T194744-563ce177	2026-11-14T20:49:55Z
 fix:learniq:2493:c4fb5a2d	floor restored to 3.99 (component independence), new head d5717bf0dd4f237e02456a7983fa30ae81e27e82	session-20261114T201752-7e06b161	2026-11-14T20:50:07Z
+fix:integriq:3549:9b625281	floor restored to 3.56, new head d85e6b22	session-20261114T201755-10d43934	2026-11-14T20:50:32Z
