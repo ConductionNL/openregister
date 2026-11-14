@@ -7904,3 +7904,4 @@ review:hermiq:1492:871a590f	GREEN: behaviour-preserving move, no new failures	se
 fix:portaliq:2433:6cd14d91	merged development cleanly, pushed ca20ec2f1d419a458a537ebbe99f0d73699c8bc4, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T07:36:49Z
 review:shillinq:2819:441fdc81	GREEN: tests only, +27 passing, no new failures	session-20261114T073109-bb0ea608	2026-11-14T07:37:09Z
 fix:portaliq:2442:53aae580	merged development cleanly, pushed 9a1924638a8447357161f7305c30651471f71ce3, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T07:37:18Z
+build:integriq:kcc-cti-adapter	partial: PR #3567, caller search binding built and tested (18 tests, no new failures); Task 4 source form/i18n/docs/e2e left open	session-20261114T065633-3e3cb668	2026-11-14T07:37:23Z
