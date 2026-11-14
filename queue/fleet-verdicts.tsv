@@ -9433,3 +9433,4 @@ portaliq	2498	2811eefb68d1439bcc9297edc22dfe527e75e240	GREEN	worker-45	phpunit 5
 portaliq	2500	159f3d87e6ddda326f50967be98cfcabcedf7b72	CONFLICT	worker-45	conflicts with #2498 in l10n/nl.js, l10n/nl.json, lib/Controller/PortalPageController.php, package.json
 keepiq	1801	b18c5187d1591f799825995df27dd774c3cad309	GREEN	worker-46	tests only (7 vitest specs); tree vitest 434 files/6565 tests passed, phpunit 4998 OK (same as baseline), no new failures
 keepiq	1802	10522d79d5e9f9d37b695cc3f91541fff035304c	GREEN	worker-46	tests only (8 vitest specs); tree vitest 434 files/6565 tests passed, phpunit 4998 OK (same as baseline), no new failures
+planninq	1160	bb0e5aa6b26e6f308fb4e24299a1bdfeed0207ce	CONFLICT	worker-02	conflicts with development dca28209 in l10n/*, lib/Settings register json, spec, golden fixture, PlanninqRegisterSchemaTest; baseline 1067 tests 0 failures
