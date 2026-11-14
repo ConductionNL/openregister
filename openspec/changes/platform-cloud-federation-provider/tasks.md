@@ -1,7 +1,20 @@
 # Tasks: platform-cloud-federation-provider
 
-- [ ] 1.1 Outbound send on the federation provider, beside the existing `shareReceived()` (D-4).
-- [ ] 1.2 Accept, decline and revoke on both sides, with far-side changes reflected here (D-3). — partial: a far-side accept or decline of a share sent from here, and a withdrawal of a share received here, are now reflected (`RemoteShareNotification`, called from `notificationReceived()`, authenticated by the share secret and the share id). Sending these notifications from this side waits on 1.1.
+- [x] 1.1 Outbound send on the federation provider, beside the existing `shareReceived()` (D-4).
+      `OcmShareSender::send()`: a share whose `sharedWith` is a federated cloud id is sent over OCM
+      as the `openregister` resource type when it is created, its secret the share token and its
+      protocol options exactly what `shareReceived()` reads (this instance's address, token, scope,
+      target, permissions, crosses). A sent share waits as `pending` (still served); a share the
+      other instance could not take is revoked and answered 502. A token share sends nothing.
+- [x] 1.2 Accept, decline and revoke on both sides, with far-side changes reflected here (D-3).
+      A far-side accept or decline of a share sent from here, and a withdrawal of a share received
+      here, are reflected (`RemoteShareNotification`, called from `notificationReceived()`,
+      authenticated by the share secret and the share id). This side now sends them too
+      (`OcmShareSender::notify()` from `FederationShareService::setStatus()`): revoking a sent share
+      withdraws it there (`SHARE_UNSHARED`), and a received share is answered with
+      `POST /api/federation/shares/{id}/accept` or `/decline` (`SHARE_ACCEPTED`, `SHARE_DECLINED`;
+      revoking a received share is a decline). A failed notification is logged and does not undo
+      the change here.
 - [ ] 1.3 A federated recipient evaluated by the permission layer as a principal (D-1).
 - [x] 1.4 A per-share declaration of what crosses, defaulting to the narrowest (D-2).
       `crosses` on the share (column added by `Version1Date20261114130000`), a subset of `data`,

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\Support\FederationControllerServices;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\FederatedShareNotDeliveredException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -230,6 +231,7 @@ class FederationController extends Controller {
 			'permissions' => $this->request->getParam('permissions', 'read'),
 			'sharedWith' => $this->request->getParam('sharedWith'),
 			'remoteInstanceUrl' => $this->request->getParam('remoteInstanceUrl'),
+			'crosses' => $this->request->getParam('crosses'),
 		];
 
 		try {
@@ -238,6 +240,8 @@ class FederationController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
+		} catch (FederatedShareNotDeliveredException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_GATEWAY);
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] create share failed: ' . $e->getMessage());
 			return new JSONResponse(data: ['error' => 'Could not create share'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -281,6 +285,68 @@ class FederationController extends Controller {
 
 		return new JSONResponse(data: $share);
 	}//end revokeShare()
+
+	/**
+	 * Accept a share another instance sent here, and tell its sender.
+	 *
+	 * @param int $id The share id.
+	 *
+	 * @return JSONResponse The accepted share, or an error.
+	 *
+	 * @no-admin-idor-exempt The id IS caller-supplied, and it is checked one layer down, as for
+	 *       {@see revokeShare()}: `FederationShareService::answerIncomingShare()` loads the row
+	 *       through `FederatedShareMapper::find()`, which applies the organisation filter, so
+	 *       another organisation's id is a 404, and the change goes through `setStatus()` with
+	 *       the same rights check as a revoke.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
+	 */
+	#[NoAdminRequired]
+	public function acceptShare(int $id): JSONResponse {
+		return $this->answerShare(id: $id, accept: true);
+	}//end acceptShare()
+
+	/**
+	 * Decline a share another instance sent here, and tell its sender.
+	 *
+	 * @param int $id The share id.
+	 *
+	 * @return JSONResponse The declined share, or an error.
+	 *
+	 * @no-admin-idor-exempt The id IS caller-supplied, and it is checked one layer down, as for
+	 *       {@see acceptShare()}.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
+	 */
+	#[NoAdminRequired]
+	public function declineShare(int $id): JSONResponse {
+		return $this->answerShare(id: $id, accept: false);
+	}//end declineShare()
+
+	/**
+	 * Answer an incoming share and map the outcome to a response.
+	 *
+	 * @param int  $id     The share id.
+	 * @param bool $accept True to accept, false to decline.
+	 *
+	 * @return JSONResponse
+	 */
+	private function answerShare(int $id, bool $accept): JSONResponse {
+		try {
+			$share = $this->shareService->answerIncomingShare(id: $id, accept: $accept);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_CONFLICT);
+		} catch (Throwable $e) {
+			$this->logger->error('[Federation] answering share failed: ' . $e->getMessage());
+			return new JSONResponse(data: ['error' => 'Could not answer share'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		return new JSONResponse(data: $share);
+	}//end answerShare()
 
 	/**
 	 * Give one of the caller's shares a new lifetime from now.

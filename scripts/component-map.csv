@@ -2214,7 +2214,9 @@ Service/ExportService.php,696,Service,Configuration,Configuration/Service/Export
 Service/ExternalLink/ExternalLinkAnnotationValidator.php,119,Service,Service,Service/ExternalLink/ExternalLinkAnnotationValidator.php,0,,Core
 Service/ExternalLink/ExternalLinkResolver.php,130,Service,Integrations,Integrations/Service/ExternalLink/ExternalLinkResolver.php,0,218,Core
 Service/Federation/RemoteShareNotification.php,50,Service,Access,Access/Service/Federation/RemoteShareNotification.php,0,,Core
+Service/Federation/OcmShareSender.php,,Service,,,,,Core
 Service/Federation/ShareGrantor.php,57,Service,Access,Access/Service/Federation/ShareGrantor.php,0,367,Core
+Service/Federation/ShareCrosses.php,,Service,,,,,Core
 Service/Federation/ShareTargets.php,60,Service,Access,Access/Service/Federation/ShareTargets.php,0,,Core
 Service/FederationShareService.php,116,Service,Integrations,Integrations/Service/FederationShareService.php,4,,Integrations
 Service/FieldEncryptionHandler.php,104,Service,Service,Service/FieldEncryptionHandler.php,0,,Core
@@ -4105,6 +4107,7 @@ Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
 Migration/Version1Date20261114130000.php,63,Migration,,,,,Platform
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
+Exception/FederatedShareNotDeliveredException.php,,Exception,,,,,Kernel
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core
 Service/Authorization/GrantedRight.php,,Service,,,,,Core
