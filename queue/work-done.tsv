@@ -10739,3 +10739,4 @@ fix:learniq:2541:6a283fab	reproduced 3.98, split units, now 3.99; new head b1472
 build4:openregister:confidentiality-classification-primitive:c4	PR #10569: built 2.2-2.5 (list + find enforcement, fail-closed, owner/admin bypass) and 4.2 (25 tests); left 5.1 full check:strict/hydra run, 5.2 openspec validate (no CLI)	session-20261114T191727-68650a56	2026-11-14T19:58:09Z
 fix:filinq:2079:6c42e26f	floor units refactored, development merged; new head 3c9733ab	session-20261114T185853-1a2abc5d	2026-11-14T19:58:16Z
 review:shillinq:2976:017e9a1a	GREEN: unit 11340 0 fail; vitest 1 inherited fail; note repair step not registered in info.xml	session-20261114T191749-15243d3c	2026-11-14T19:58:26Z
+verify:planninq:1170:c5746fc2	1170 GREEN, 1179 GREEN: unit 1082 (baseline 1067) 0 failures, vitest 3326 ok	session-20261114T194744-563ce177	2026-11-14T19:58:36Z
