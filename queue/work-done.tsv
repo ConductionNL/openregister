@@ -8162,3 +8162,4 @@ build:buildiq:data-index-grid-and-saved-views	partial: PR #1616; T01-T03,T06,T07
 build:buildiq:pages-action-buttons	PR #1618: T01-T06 built (typed action editor, detail Buttons and Status buttons, legacy migration, visibleWhen, l10n, docs); Playwright cases and openspec validate left; vitest 4092 passing	session-20261114T070332-b3a23612	2026-11-14T08:15:24Z
 verify:dossiq:6484:5357a2b0	already merged on development (d79b3c07)	session-20261114T070346-2d3b1362	2026-11-14T08:15:23Z
 build:launchpad:competitor-parity-2026-09	nothing to build: kind umbrella; 1.1 is the separate change dashboards-and-who-may-see-them (build that), 2.x/3.x are coordination tasks, no code	session-20261114T070341-dde19dba	2026-11-14T08:15:33Z
+build:buildiq:pages-index-calendar-and-manual-order	PR #1619: T01-T04 and T07 code done; T05 and T07 Playwright (browser e2e) and T06 (archive) left; vitest 4096 all pass	session-20261114T070329-a050d62b	2026-11-14T08:16:00Z
