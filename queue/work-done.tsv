@@ -7967,3 +7967,4 @@ merge:stackiq:1885:2daf5a4e	merge3 tree of 12 stackiq PRs: merged=8 red=0 fail=0
 merge:stackiq:1886:c7bcddc2	merge3 tree of 12 stackiq PRs: merged=8 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:46:32Z
 merge:stackiq:1887:168bd8c5	merge3 tree of 12 stackiq PRs: merged=8 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:46:38Z
 merge:stackiq:1891:c0606c73	merge3 tree of 12 stackiq PRs: merged=8 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:46:44Z
+build:integriq:sources-per-user-oauth	partial: PR #3581, task 1 done; task 2 waits on ProblemResponse (#3556), task 3 conflicts with the no-personal-settings rule	session-20261114T065626-0651b305	2026-11-14T07:46:57Z
