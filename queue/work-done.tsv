@@ -10438,3 +10438,4 @@ verify:learniq:2484:a66edf48	GREEN 2484 2507; CONFLICT 2486	session-20261114T134
 verify:decidiq:2146:78367c80	GREEN 2146 (phpunit 4232 = baseline, vitest 2787 pass)	session-20261114T172412-df2c66f1	2026-11-14T17:38:05Z
 fix:learniq:2532:2772c58e	failed: branch already contains development; conflict is only with unmerged #2520, nothing to resolve against the base	session-20261114T134708-ba7f7741	2026-11-14T17:38:16Z
 verify:learniq:2493:ba6bff8b	2493 GREEN; no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:38:17Z
+fix:decidiq:2169:5f13d30a	fixed: unit complexity restored (floor compare PASS); new head e056e57f	session-20261114T154807-c05f4e57	2026-11-14T17:38:40Z
