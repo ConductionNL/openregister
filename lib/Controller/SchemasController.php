@@ -3032,7 +3032,10 @@ class SchemasController extends Controller {
 	 * @no-admin-idor-exempt Read-only index names of a shared schema *definition*'s storage table,
 	 * the same posture as stats(); exposes no object contents and no per-user data. No IDOR vector.
 	 *
-	 * @return JSONResponse `{results: [{register, indexes: [{name, property, column, kind, flag}]}]}`, 404 for an unknown schema
+	 * `textSearchIndex` says whether this instance can build a text-search index
+	 * at all, so the property editor can explain a disabled switch.
+	 *
+	 * @return JSONResponse `{results: [{register, indexes: [{name, property, column, kind, flag}]}], textSearchIndex: bool}`, 404 for an unknown schema
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
@@ -3051,7 +3054,12 @@ class SchemasController extends Controller {
 				];
 			}
 
-			return new JSONResponse(data: ['results' => $results]);
+			return new JSONResponse(
+				data: [
+					'results' => $results,
+					'textSearchIndex' => $this->objectEntityMapper->canBuildTextSearchIndex(),
+				]
+			);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {

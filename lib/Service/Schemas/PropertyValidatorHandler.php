@@ -529,6 +529,10 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 			'value' => 'boolean',
 			'description' => 'Keep a database index on the field, so filtering and sorting on it stays fast without making it a facet.',
 		],
+		'searchable' => [
+			'value' => 'boolean',
+			'description' => 'Keep a text-search index on the field, so searching inside its value stays fast. PostgreSQL with pg_trgm only.',
+		],
 		'facetConfig' => ['value' => 'object', 'description' => 'How the filter buckets its values.'],
 		'matchType' => ['value' => 'string', 'description' => 'How search compares a term against this field: exact, prefix, range, fuzzy or fulltext.'],
 		'inputControl' => ['value' => 'string', 'description' => 'The control a list surface should render to filter on this field.'],

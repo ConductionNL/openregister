@@ -33,6 +33,7 @@ jest.mock('../schemas/SchemaWorkflowTab.vue', () => ({ name: 'SchemaWorkflowTab'
 jest.mock('./CalendarProviderTab.vue', () => ({ name: 'CalendarProviderTab', props: ['schema'], render: () => null }))
 jest.mock('./SchemaRulesTab.vue', () => ({ name: 'SchemaRulesTab', props: ['schema'], render: () => null }))
 jest.mock('./SchemaRightsTab.vue', () => ({ name: 'SchemaRightsTab', props: ['schema'], render: () => null }))
+jest.mock('./SchemaIndexesTab.vue', () => ({ name: 'SchemaIndexesTab', props: ['schema'], render: () => null }))
 jest.mock('../../store/store.js', () => ({
 	dashboardStore: { loading: false, error: null, chartData: {}, fetchAllChartData: jest.fn() },
 	navigationStore: { setModal: jest.fn(), setDialog: jest.fn() },
@@ -277,6 +278,11 @@ describe('SchemaDetails tabs', () => {
 		expect(wrapper.findComponent({ name: 'SchemaWorkflowTab' }).exists()).toBe(false)
 		expect(wrapper.findComponent({ name: 'SchemaRulesTab' }).props('schema')).toEqual(SCHEMA)
 		expect(wrapper.find('.dashboardContent').isVisible()).toBe(false)
+
+		await tab(wrapper, 'Indexes').trigger('click')
+		expect(wrapper.findComponent({ name: 'SchemaRulesTab' }).exists()).toBe(false)
+		expect(wrapper.findComponent({ name: 'SchemaIndexesTab' }).props('schema')).toEqual(SCHEMA)
+		expect(tab(wrapper, 'Indexes').classes()).toContain('active')
 	})
 })
 

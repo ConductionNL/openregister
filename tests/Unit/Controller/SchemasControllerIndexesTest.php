@@ -119,11 +119,34 @@ class SchemasControllerIndexesTest extends TestCase {
 			}
 		);
 
+		$this->magicMapper->method('canBuildTextSearchIndex')->willReturn(true);
+
 		$response = $this->controller->indexes(12);
 
-		self::assertSame(200, $response->getStatus());
-		self::assertSame(['results' => [['register' => 3, 'indexes' => [$sort]], ['register' => 5, 'indexes' => []]]], $response->getData());
+		self::assertSame(expected: 200, actual: $response->getStatus());
+		self::assertSame(
+			expected: ['results' => [['register' => 3, 'indexes' => [$sort]], ['register' => 5, 'indexes' => []]], 'textSearchIndex' => true],
+			actual: $response->getData()
+		);
 	}//end testTheIndexesOfEveryRegisterThatCarriesTheSchemaAreListed()
+
+	/**
+	 * An instance that cannot build a text-search index says so, so the editor can explain its disabled switch.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-the-property-editor-offers-both-index-kinds
+	 */
+	public function testTheListSaysWhenNoTextSearchIndexCanBeBuilt(): void {
+		$this->zaken();
+		$this->registerMapper->method('getAllRegisterIdsWithSchema')->willReturn([]);
+		$this->magicMapper->expects($this->once())->method('canBuildTextSearchIndex')->willReturn(false);
+
+		$response = $this->controller->indexes(12);
+
+		self::assertSame(expected: 200, actual: $response->getStatus());
+		self::assertSame(expected: ['results' => [], 'textSearchIndex' => false], actual: $response->getData());
+	}//end testTheListSaysWhenNoTextSearchIndexCanBeBuilt()
 
 	public function testAnUnknownSchemaIsNotFound(): void {
 		$this->schemaMapper->method('find')->willThrowException(new DoesNotExistException('gone'));
