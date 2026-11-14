@@ -10584,3 +10584,4 @@ versioniq	700	3c18ee39c94fb4fdb4346ae50dfee18563bf1405	GREEN	worker-58	tree dev+
 learniq	2484	61512d885a3e82da3f39f48e8e3bfb45231ca260	CONFLICT	merge3	merges clean on development alone; files: 
 learniq	2486	f0544ac9b797c7925644e7571820803aeeeb4235	CONFLICT	merge3	merges clean on development alone; files: 
 learniq	2513	2bcbcc6d2ccd517e7f04fc3684d4412403862fc2	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json 
+versioniq	733	12c4f99641c4c0ef361c42add879b5cc4b4412cc	GREEN	worker-58	tree dev+700+733: unit-only suite 1742 (baseline 1697, same 2 inherited golden failures; runner phpunit 10.5 from a cached vendor since vendor-bin/phpunit is not installed), vitest 2974 passed; new failures none; tests only (2 vitest specs)
