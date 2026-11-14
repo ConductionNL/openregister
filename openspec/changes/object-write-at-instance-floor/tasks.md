@@ -323,6 +323,13 @@ survives even where the priority moved.
       bounds. Make it fail on **wall minus floor > 50 ms**, and run it on changes
       to the write path. Report min/median/p95 — a single timing is not evidence
       when the observed spread was 13.6 s to 99.1 s on identical payloads.
+      > 2026-11-14: the gate half is done. `tests/perf/object-create.sh` now fails when
+      > p95 wall minus the same-run floor is not under `FLOOR_BUDGET_MS` (default 50), over
+      > 20 runs by default, with a nearest-rank p95; the absolute wall budget is reported
+      > always and gated only when `BUDGET_MS` is set. The verdict lives in
+      > `tests/perf/lib/summarise.awk`, pinned by `tests/perf/summarise.test.sh` (no instance
+      > needed). Still open: running it in CI on write-path changes needs a live Nextcloud
+      > with PostgreSQL in the job, so the box stays unticked.
 
 - [ ] **Task 15 — re-measure the full matrix.**
       create/update/delete × (no relations, typed relations, untyped references)
