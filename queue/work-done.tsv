@@ -12084,3 +12084,4 @@ build:thematiq:rows-without-a-requirement:c2	PR #1680: tasks 3.1-3.3 (approved f
 verify:larpinq:1051:aba6cb6d	1060 GREEN; 1051 skipped: head moved e02d02f9 -> 77585fbd	session-20261114T231755-998f7ff8	2026-11-14T23:57:06Z
 review:shillinq:2997:787ad8e7	BLOCK: weekly job not registered in info.xml; suite green	session-20261114T234948-b89aaae1	2026-11-14T23:57:33Z
 review:filinq:2085:432c7b61	GREEN: unit 6787 ok, vitest 772 ok	session-20261114T234953-2dec3184	2026-11-14T23:57:47Z
+review:decidiq:2149:08dbad8e	GREEN #2149: suite 4438 green, vitest 2851 pass	session-20261114T234932-1a68fd4b	2026-11-14T23:57:55Z
