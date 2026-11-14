@@ -7885,3 +7885,7 @@ versioniq	716	2a5ee6e0daa014e32dbfa18c41ead81dbcd30aea	CONFLICT	merge3	merges cl
 versioniq	725	bcf2a49601908906ff4c034cd2196467a8aaed2f	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml tests/unit/Service/Source/ForgeReleaseSourceTest.php 
 versioniq	726	7825fc291bdffb285bcf9c89bf4407c9fd791a85	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/Audit/AuditLogger.php lib/Service/Installer/InstallState.php lib/Service/InstallerService.php lib/Service/Source/AppStoreSource.php tests/un
 versioniq	729	af3a6bd81c6606902f041fea8e8e615f3388c972	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/BackgroundJob/AutoUpdateJob.php openapi.json 
+launchpad	1195	4762c768a403e025fa4716193da9e1e9253e4b66	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.76 -> 4.73
+launchpad	1203	dacfef709f63cb82356c67215ee5336bce6f1f34	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.76 -> 4.71
+launchpad	1205	3d06446c539eeb35634e4eb3db55e3357c050e63	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.45 -> 3.43
+launchpad	1208	592965c0777101e5defadb8660e58e36ecddceff	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.45 -> 3.41
