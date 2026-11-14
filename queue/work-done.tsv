@@ -9860,3 +9860,4 @@ fix:integriq:3588:f2c639ee	conflict resolved (register version, features table),
 review:openregister:10562:2c8f7cef	APPROVE	session-20261114T151916-b0518a7b	2026-11-14T15:34:39Z
 fix:integriq:3602:aef17532	development merged, l10n js regenerated, new head fc758946, REVERIFY recorded	session-20261114T151803-c9b63248	2026-11-14T15:34:49Z
 fix:integriq:3601:25189bc8	REVERIFY: dev merged, golden hashes re-recorded; 7 inherited dev reds; head c5ea5100	session-20261114T151801-20bb3a08	2026-11-14T15:35:05Z
+review:humaniq:1030:fb14cdc3	GREEN #1030 (behaviour unchanged; 1 inherited failure)	session-20261114T141721-aeb4e068	2026-11-14T15:35:12Z
