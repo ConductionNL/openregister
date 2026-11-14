@@ -11878,3 +11878,4 @@ cover:pipelinq:7f9dc8e6m799d:34f5c300	PRs #3842 (risky metadata, 90.39->91.49%) 
 verify:pipelinq:3842:1b0854c9	GREEN 3842 (tests-only coverage metadata; 8452 tests, 0 failures, risky cleared)	session-20261114T223333-658f3be1	2026-11-14T23:24:54Z
 cover:portaliq:b60f3b81m4ccb:e7fd1c43	PR #2517: 16 tests over DestinationSubmit and PortalFamilyMembers, Intake 98.12% -> 98.63% (pcov)	session-20261114T224754-e4a2fcab	2026-11-14T23:25:01Z
 cover:integriq:92114ab0m4b3f:60c2c265	already done: lib/Controller/*.php measured 95.20% (6350/6670 stmts, full suite, pcov) at development 531865634, above target 95.0; branches -1..-6 merged	session-20261114T224736-f9da4a35	2026-11-14T23:25:02Z
+cover:integriq:92114ab0m4b3f:efa2a923	PR #3641: 6 tests, lib/EventListener 91.08% -> 92.37%; remaining gap is two unregistered listeners	session-20261114T221759-cd5c5678	2026-11-14T23:25:30Z
