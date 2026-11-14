@@ -84,3 +84,11 @@ paths = [
   '''(^|/)tests/Unit/Service/TenantLogRedactorTest\.php$''',
   '''(^|/)tests/Unit/Service/SettingsServiceTest\.php$''',
 ]
+
+[[allowlists]]
+description = "API sample tests: the USERNAME:APP_PASSWORD placeholder the generated curl and fetch samples show instead of a real login."
+condition = "AND"
+targetRules = ["curl-auth-user"]
+regexTarget = "secret"
+regexes = ['''^['"]?USERNAME:APP_PASSWORD['"]?$''']
+paths = ['''(^|/)src/services/apiSamples\.spec\.js$''']
