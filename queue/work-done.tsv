@@ -10921,3 +10921,4 @@ verify:hermiq:1735:2451eb87	1735 1782 1793 GREEN; 1794 CONFLICT; 1791 skipped (h
 review:filinq:2085:c770444d	stale	feeder	2026-11-14T20:30:31Z
 review:filinq:2095:e5b5f27f	stale	feeder	2026-11-14T20:30:31Z
 verify:keepiq:1798:00a89489	stale	feeder	2026-11-14T20:30:31Z
+fix:shillinq:3077:7c48c1ce	merged development, resolved info.xml + register lock; unit 11394 OK; REVERIFY at 106e652e	session-20261114T194744-563ce177	2026-11-14T20:32:30Z
