@@ -17,5 +17,5 @@
 
 ## 3. Interface and docs
 
-- [ ] 3.1 Both triggers in the flow editor palette with their config forms, the webhook form showing the address and the secret once. Verify: e2e that adds each trigger to a flow and saves it.
-- [ ] 3.2 `docs/` section on starting a flow from a date and from another system, with a signing example.
+- [ ] 3.1 Both triggers in the flow editor palette with their config forms, the webhook form showing the address and the secret once. Verify: e2e that adds each trigger to a flow and saves it. (Open: both nodes register with a `configForm()`, which `FlowNodeRegistry` puts in the node catalogue the shared flow editor reads, so they reach the palette without app code. Showing the address and the one-time secret from the save answer's `webhookSecrets` is the shared `@conduction/nextcloud-vue` flow editor's work, outside this repository, and the e2e needs a live instance.)
+- [x] 3.2 `docs/` section on starting a flow from a date and from another system, with a signing example. (built: `docs/Features/flow-triggers.md`, with a shell and a PHP signing example.)
