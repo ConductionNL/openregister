@@ -9607,3 +9607,5 @@ build:decidiq:followup-implementation-progress:c2	tasks 3-5 implemented in decid
 build:decidiq:the-decision-as-a-walked-process:c2	partial: PR #2166 merged development, ticked 7.3 (verified reachable, tested); suite 4174 OK; left 1.1-1.3 (state mapping for skipped/returned has no spec), 2.2-2.3, 3.2-3.3, 4.2-4.4, 7.2 (stamp at taking, today at publication), groups 6, 8-11	session-20261114T141721-d7ad4da5	2026-11-14T14:53:11Z
 verify:shillinq:2972:e04cc355	2976 GREEN; 2972, 3003, 3004 CONFLICT	session-20261114T141737-e9e54940	2026-11-14T14:53:19Z
 fix:decidiq:2169:d6a0067e	stale: correction of the row above, nothing pushed; the branch moved to 5f13d30 (another lane's build commit) during the fix, REVERIFY row removed	session-20261114T141720-f9e7a46b	2026-11-14T14:53:23Z
+merge:shillinq:2991:f0267b0c	merge3 tree of 8 shillinq PRs: merged=3 red=1 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T14:53:52Z
+merge:shillinq:3059:8ef23700	merge3 tree of 8 shillinq PRs: merged=3 red=1 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T14:53:57Z
