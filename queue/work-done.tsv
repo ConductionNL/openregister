@@ -8615,4 +8615,5 @@ review:larpinq:1012:332ce14b	GREEN: tests only, 814 tests 0 failures	session-202
 build:thematiq:rows-without-a-requirement	partial: PR #1674 tasks 1-2 plus the missing spec deltas; font library (3) and matrix (4) left	session-20261114T062200-6a28e40c	2026-11-14T09:14:49Z
 verify:buildiq:1632:0713f492	GREEN; 0 new failures, vitest 4273 pass	session-20261114T073117-2bd2e050	2026-11-14T09:15:16Z
 verify:stackiq:1906:3b41acf8	6 GREEN (1906,1932-1936), 1937 and 1938 CONFLICT (l10n), 1939 RED (route-access test with 1934)	session-20261114T075648-394d8174	2026-11-14T09:15:55Z
+build:thematiq:house-style-font-size-and-weight	PR #1675: all 3 tasks (spec tag, overrides.css mapping test, typography list test); unit 2858->2860, same 1 inherited failure	session-20261114T075643-75a598ab	2026-11-14T09:16:17Z
 verify:larpinq:1040:5786f531	5 GREEN (1040 1041 1044 1046 1048), 4 CONFLICT (1042 1043 1045 1047, l10n tail vs #1041; 1047 also golden vs #1046); tree PHPUnit 821 OK, vitest 524 OK	session-20261114T082633-64525b24	2026-11-14T09:16:28Z
