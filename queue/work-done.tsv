@@ -9109,3 +9109,4 @@ review:openregister:10543:94deae10	APPROVE	session-20261114T114632-1115f635	2026
 fix:portaliq:2430:fc437ac2	conflict resolved, versions bumped, pushed 9bb36ef8	session-20261114T124625-07e62ccf	2026-11-14T12:48:52Z
 fix:portaliq:2434:4d1b1144	conflict resolved (register 0.110.0, l10n both sides), pushed 12c46c01, REVERIFY recorded	session-20261114T124634-b093d74a	2026-11-14T12:48:59Z
 fix:portaliq:2432:81aa6171	fixed: duplication removed (ActionDueMailer/PlanEndingMailer share new ReminderMailer); new head a6c24c39fc1908d8f4c70237f40fc80fb626baa2, REVERIFY recorded	session-20261114T124620-a07546ab	2026-11-14T12:49:08Z
+review:openregister:10547:f5cbec59	APPROVE: frontend-only task 3.2, jest 2450 green, l10n gates no new failures	session-20261114T124625-c74fc712	2026-11-14T12:49:18Z
