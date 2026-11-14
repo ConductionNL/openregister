@@ -8920,3 +8920,4 @@ build:openregister:calendar-time-zone:c2	partial: pushed to PR #10154 (merged ma
 build4:openregister:unified-search-magic-table-storage:c2	failed: section 3 is designed on the external search-index tier, which main removed (QueryHandler: database is the only search backend); building it needs a new index store and RBAC/tenant predicates restated in SQL, a design decision for the change, not a build pass. Sections 1-2 already on main.	session-20261114T092645-55582ebb	2026-11-14T11:00:34Z
 review:openregister:10524:93714d34	APPROVE	session-20261114T092645-afb9b140	2026-11-14T11:00:53Z
 review:openregister:10497:c60ef10d	APPROVE: frontend-only tab badges, all checks green on merge with main	session-20261114T062200-62a0b439	2026-11-14T11:01:04Z
+review:openregister:10522:a71b71e6	failed: permission	session-20261114T070332-b3a23612	2026-11-14T11:01:21Z
