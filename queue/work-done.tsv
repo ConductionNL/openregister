@@ -10198,3 +10198,4 @@ fix:buildiq:1582:3d48cc81	stale	feeder	2026-11-14T16:30:27Z
 verify:integriq:3542:1e5c37b6	2 GREEN (3542,3564), 1 CONFLICT (3630)	session-20261114T161744-497aae45	2026-11-14T16:31:21Z
 verify:integriq:3593:a0e336d4	GREEN 3593, 3631; 3630 skipped (head moved to 472a4c5e); 0 new failures	session-20261114T154751-59b4cd56	2026-11-14T16:31:38Z
 fix:integriq:3613:0ea6aa0c	no change needed: clean on development, conflict only with other open PRs	session-20261114T141010-8dc8bd74	2026-11-14T16:31:57Z
+build:buildiq:pages-custom-code:c2	partial: PR #1608 T01 admin toggle, T03 SandboxController (strict CSP, placeholder), T09 docs page; left T04/T05/T07 editors+fx+preview (frontend), T09 editor strings, T06 nextcloud-vue, T08 e2e, T10 openspec CLI	session-20261114T161013-497dba57	2026-11-14T16:32:07Z
