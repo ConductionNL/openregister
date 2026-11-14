@@ -10232,3 +10232,4 @@ opencatalogi	2650	c35040de1792c0ce11a2459a7a3cabe5c8a520be	REVERIFY	merge3	verdi
 opencatalogi	2674	7e238ef840807384ca86489c66c90ba8c7330067	REVERIFY	merge3	verdict sha is not the head: head is 98c76ef7d957f80d32f19fec14da6fd8e04b353e
 opencatalogi	2679	99be708e82abc72c0d8d3e32216b019f464c1cae	REVERIFY	merge3	verdict sha is not the head: head is 05c95cd667c32f08596012dd5cd1d60e33008e5d
 opencatalogi	2655	cd5c3cea4aee976cc1eeafd1e27ddffca23a56a3	REVERIFY	merge3	head moved since the verdict (was a38229836109726f1d907b831623d56380e65c2c, 36ec34ca:REVERIFY,a3822983:GREEN); verify the new head
+decidiq	2189	d54fa2289e2eb3b59dd2fedbbfb0ec076afc3829	REVERIFY	worker-51	merged origin/development in (clean; municipality.json objectCount + meeting appended, JSON valid); new head 9db1906ee298ab726374467d139771ee65803b76, verify it
