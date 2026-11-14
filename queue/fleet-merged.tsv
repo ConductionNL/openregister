@@ -2944,3 +2944,4 @@ learniq	2543	3d1489a43d1716ed249e8e3f0b8cd6031e308b8d	MERGED	merge3	GATE OK sbom
 shillinq	2959	fc4870f10022d2aff26959702df83b7b38843292	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.12
 shillinq	2976	017e9a1a04ec22c60d350c25153c644236ac7c21	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
 shillinq	3073	53ee9061ed715b5adc433197ecaaf01082d8f581	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+decidiq	2188	c7ab281d8d52931ec9804c3ca5e5ffc8c3ef9a86	RED	merge3	GATE RED floor: unit_complexity: 3.86 -> 3.84
