@@ -6811,3 +6811,4 @@ pipelinq	3708	d1e03085fcab9ad7df2b8309c2dca6ebfb9b94c2	REVERIFY	worker-33	merged
 dossiq	6287	470df60fac7081193bd581a5474974fad1eb1bf7	GREEN	worker-17:review	tests only (2 new files, 3 @uses lines), nothing removed; suite on PR+development 16855 tests, 25 inherited failures, 0 new
 dossiq	6462	8cc82b015ae15553de5132490b7ff13ebb9e3965	REVERIFY	worker-58	merged development; kept new contracts and branch wiring, ZgwJwtValidatorInterface now declares consumerFor() (validate() was removed on the branch, no interface callers); phpstan/phpcs clean, unit 16865 0 new failures; new head 995048fb495d03727eeef3ed38f2c6748d4856f9, verify it
 pipelinq	3713	ebf9d492052c519dc1f0755ca68bacc201348082	GREEN	worker-11	unit baseline 7592/0 fail; tree (3713 only) 7595 pass; vitest 4910 pass; new failures none
+pipelinq	3725	eec84aa023cf2eb42d944fe3887e1a637e7d30f3	CONFLICT	worker-11	merge conflict with development + 3713
