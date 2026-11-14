@@ -11360,3 +11360,4 @@ fix:stackiq:1924:075129a2	failed: the conflict is in lib/Settings/softwarecatalo
 verify:opencatalogi:2665:8d708939	2672/2679/2686/2695/2707 GREEN, 2682 CONFLICT; 2665/2673/2696 skipped (heads moved); payload ended in a truncated sha for 2707 (matched by prefix), so any PRs after it were not in the row	session-20261114T191742-bf93c040	2026-11-14T21:59:05Z
 review:portaliq:2444:6d4286d3	GREEN	session-20261114T212457-7a749dbd	2026-11-14T21:59:13Z
 review:opencatalogi:2650:6ae5f600	GREEN	session-20261114T201755-10d43934	2026-11-14T21:59:25Z
+build:stackiq:landscape-dependent-field-options:c2	failed: blocked upstream: tasks 1-2 merged (#1917); task 3 needs CnFormDialog support for x-openregister-dependent-values, absent in @conduction/nextcloud-vue up to 2.180.0; its Playwright test waits with it	session-20261114T211806-b9cd4119	2026-11-14T21:59:34Z
