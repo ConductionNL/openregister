@@ -9551,3 +9551,4 @@ build:learniq:site-external-assessor-portal-design:c2	done: pushed aa7888d13 to 
 fix:decidiq:2170:ccbaf2e8	conflicts resolved (l10n union, auth test both blocks), pushed 7cfa5d98, unit green	session-20261114T141746-50f5f9cc	2026-11-14T14:41:59Z
 fix:decidiq:2184:a4581421	obsolete: development (#2185) already covers the same three classes with equivalent tests; PR closed with a neutral comment	session-20261114T134654-82ca2be5	2026-11-14T14:42:04Z
 fix:decidiq:2178:cb54bcf1	conflict resolved (block count 51), development merged in, unit 4205 OK; new head b14461bc	session-20261114T141724-6227a125	2026-11-14T14:42:25Z
+fix:learniq:2524:593b6b37	failed: no conflict with development (branch at 593b6b37 already contains it); the conflicts are only with unmerged PRs #2484, #2521, #2523 in the verify tree, so merge development into #2524 again after they land	session-20261114T134647-508a6ed0	2026-11-14T14:42:44Z
