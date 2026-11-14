@@ -2792,3 +2792,12 @@ filinq	2100	ce0850d0b356833d079a2683b1e4efe1042c1f4f	MERGED	merge3	GATE OK sbom,
 learniq	2496	5dd6a73e82724a96e4d90d6b09558f0c276e9ad9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2504	30bff46d01a3c9d919fff7940ddc6a526d20a3fc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2535	bbf4909be9ea31c46eb8802627c4282d76c925f9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+humaniq	1030	fb14cdc3018545e229f8392854f2daed8405f81a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1123	a6b9adfa96fe7bfb9b6cb0183baa71a0f9d3de6e	RED	merge3	GATE RED floor: unit_interfacing: 3.62 -> 3.60
+humaniq	1129	5162c29635dd0edd98b93029de22176e215462ef	RED	merge3	GATE RED floor: unit_size: 4.49 -> 4.47; unit_interfacing: 3.62 -> 3.60
+humaniq	1130	408bb7b1d000fac59ab65c708f08a3b4452fec7a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1136	efb9056224954d6a5b4bf1b26bd9b8ea38106d33	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1137	b1c9fdb7bb91d1677052b6af170244fd116eed76	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1153	e82ee06e93038b1ab59a65eca6c387c20a9bfbbf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1154	2968cb9f20db895ff2d75f9b8a8efd8d5809c30d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1155	14bc8068203bb024a5d7274bd4ddfe8e1807315f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
