@@ -12005,3 +12005,4 @@ fix:versioniq:719:f21b6e25	no longer conflicts with #698/#707, new head 8d1c90cb
 fix:versioniq:699:6a44c2e6	conflicts resolved, pushed ccc8c628, REVERIFY	session-20261114T231756-01da210e	2026-11-14T23:42:33Z
 cover:stackiq:9ac19b3amad24:59f569b2	PR #1969: CronjobSettings last reachable gap covered (+2 tests, 3602 -> 3604 green); rest of lib/Service/Settings already 100% except 2 unreachable defensive lines	session-20261114T223937-a95b1403	2026-11-14T23:42:49Z
 fix:larpinq:1053:887c3dda	l10n conflict with #1041 removed; code conflict with #1045 remains until it lands; new head 6dc8ba7a4cde49a6db41130581984dad580b5f96	session-20261114T221759-cd5c5678	2026-11-14T23:42:50Z
+fix:shillinq:2997:7b590930	merged development in cleanly, suite OK; new head 787ad8e7, REVERIFY recorded	session-20261114T231738-b43a6a63	2026-11-14T23:43:07Z
