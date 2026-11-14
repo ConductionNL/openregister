@@ -9967,3 +9967,4 @@ verify:hermiq:1728:e9cc9f46	GREEN 1728 1753; CONFLICT 1740 1760 1763 (tree l10n/
 cover:integriq:92114ab0m6958:js3ad0f4bb	PR #3621: +1 test, buildAuthenticationConfiguration branches 100%; EditRule.vue left uncovered: orphaned, its imports (src/entities, src/services) do not exist so it cannot load	session-20261114T151936-6991f242	2026-11-14T15:55:02Z
 verify:integriq:3546:8ccaa2ce	6 GREEN (3546,3584,3607,3609,3611,3612), 3 CONFLICT (3557,3595,3610), 0 new failures	session-20261114T154751-59b4cd56	2026-11-14T15:55:20Z
 verify:learniq:2515:a4f93e00	GREEN learniq#2515; 6730 tests, 1 inherited failure, none new	session-20261114T154807-c05f4e57	2026-11-14T15:55:27Z
+fix:humaniq:1127:958d7ade	conflict resolved (l10n catalogues), new head 3d944fbe, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T15:55:41Z
