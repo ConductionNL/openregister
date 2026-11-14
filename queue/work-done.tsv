@@ -8215,6 +8215,7 @@ fix:integriq:3582:770cf7a9	merged development cleanly, pushed da7df603e24436c0c5
 verify:buildiq:1588:d0c87518	GREEN 1588-1594 (7), CONFLICT 1596 1597; no new failures	session-20261114T062200-6a28e40c	2026-11-14T08:22:23Z
 fix:integriq:3587:d4357ddb	no change: merges cleanly with current development; conflict is only with unmerged #3585 (l10n), resolve after #3585 lands	session-20261114T075638-c30fc6de	2026-11-14T08:22:33Z
 fix:integriq:3598:855df76c	merged development (clean), pushed 4071b13c; remaining conflict is with unlanded tree PRs	session-20261114T065626-0651b305	2026-11-14T08:22:33Z
+build:keepiq:crypto-vault-encryption-details	PR #1781 (tasks 1.1-3.1; Playwright checks left)	session-20261114T075648-394d8174	2026-11-14T08:22:46Z
 build:keepiq:health-site-security-checks	partial: PR #1782 task 1.1 (Unencrypted address category, Change to https, docs, 14 tests); left 1.2 extension warning, 2.x/3.x site directory (2.1 licence/endpoint confirmation first), Playwright	session-20261114T073109-bb0ea608	2026-11-14T08:22:43Z
 verify:integriq:3564:96380a66	GREEN 3564,3567,3601; 3600 skipped (head moved to fd8aca32)	session-20261114T070346-2d3b1362	2026-11-14T08:22:54Z
 build:buildiq:pages-qr-and-barcodes	partial: PR #1630 builds T01-T04 (editor + validation, 33 new vitest cases, 0 new failures); T05 waits on device features, T06 is the nextcloud-vue renderer	session-20261114T062200-62a0b439	2026-11-14T08:23:19Z
@@ -8234,3 +8235,4 @@ verify:decidiq:2158:b0482d6a	2158 GREEN	session-20261114T073109-bb0ea608	2026-11
 build:keepiq:vault-item-clone-preview-and-print	failed: permission (adding the QR encoder npm dependency was refused); partial PR #1784 with clone and attachment preview (1.1-2.2), +18 vitest; print/QR (3.1, 3.2) and their docs left	session-20261114T073117-2bd2e050	2026-11-14T08:24:30Z
 verify:launchpad:1190:7a8a1f51	1190 GREEN, 1194 GREEN	session-20261114T070333-41d2bfe8	2026-11-14T08:24:45Z
 build:launchpad:building-edit-a-dashboard-together	partial: PR #1200 (1.2 per-widget versions + 409, 1.3 free-spot placement, 1.5 tests; 1.1 presence, 1.4 lock replacement + frontend, 2.1 e2e left); unit 4062->4069 green	session-20261114T073109-930980c2	2026-11-14T08:24:51Z
+build:launchpad:integrations-office-tiles	partial: PR #1197, tasks 1-2 (service, endpoints, actions, openapi, 15 tests); 3-4 frontend dialog/picker, 5 e2e, 6 strings/archive left	session-20261114T070341-dde19dba	2026-11-14T08:25:00Z
