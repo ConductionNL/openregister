@@ -8486,3 +8486,4 @@ fix:buildiq:1625:7f3a7207	l10n moved to branch anchor, header restored; l10n cle
 verify:keepiq:1791:dd8a5ba6	1791 GREEN, 1792 CONFLICT (same migration file as 1791)	session-20261114T070909-be4543e0	2026-11-14T08:56:22Z
 fix:buildiq:1629:1c21accd	fixed stale test after development moved the TaskProcessing lookup; new head 7ba3e45bb7a2694599cdb0e63113cb17fba78a23, REVERIFY recorded	session-20261114T073117-2bd2e050	2026-11-14T08:56:31Z
 fix:buildiq:1610:65aa047e	conflict resolved: l10n keys moved mid-catalogue; tree with 1613/1614/1616 merges clean; new head efd9490e; REVERIFY queued	session-20261114T073109-930980c2	2026-11-14T08:56:56Z
+fix:launchpad:1217:1563c97c	migration class/version collision with #1212 fixed (renamed to Version002014Date20261114100000, version bumped), development merged in; new head edcbef17, REVERIFY recorded	session-20261114T075643-75a598ab	2026-11-14T08:57:30Z
