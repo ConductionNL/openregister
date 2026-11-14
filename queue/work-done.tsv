@@ -8263,3 +8263,4 @@ merge:buildiq:1561:8ae65843	merge3 tree of 15 buildiq PRs: merged=13 red=0 fail=
 build:launchpad:mcp-tool-surface	partial: PR #1204, tasks 1-5, 21, 22 and 4 of 14 read tools; write tools and the rest open	session-20261114T065626-0651b305	2026-11-14T08:28:31Z
 fix:integriq:3574:a352f502	fixed RED (test mock + golden for the new CSV fields), new head 48797432; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T08:28:36Z
 merge:buildiq:1572:82c8c64b	merge3 tree of 15 buildiq PRs: merged=13 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T08:28:53Z
+merge:buildiq:1571:67ddd2a7	merge3 tree of 15 buildiq PRs: merged=13 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T08:29:09Z
