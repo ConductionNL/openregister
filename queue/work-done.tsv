@@ -9188,3 +9188,4 @@ review:openregister:10540:f59cd313	APPROVE #10540 (suites green, stemming and sn
 review:openregister:10553:9a9b0d12	APPROVE	session-20261114T114625-63eafe85	2026-11-14T13:06:23Z
 build:portaliq:capability-rows-said-and-planned:c2	partial: no new commits this run (worker context nearly full); branch quality/build-capability-rows-said-and-planned at a1b48896 unchanged; left T02 row review and test tags, T04-T05 dossiq ask-partner and mijnZaken via, T06 filinq signer row actions, T07 case-page question and messages list	session-20261114T124620-a07546ab	2026-11-14T13:06:46Z
 merge:buildiq:1579:e2884240	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:10Z
+merge:buildiq:1587:a93e4a28	merge3 tree of 44 buildiq PRs: merged=29 red=4 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T13:07:13Z
