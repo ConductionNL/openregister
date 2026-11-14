@@ -7930,3 +7930,4 @@ build:integriq:nextcloud-event-hub-verification	partial: PR #3573, docs page for
 verify:pipelinq:3742:7851a5a8	3742 GREEN, 3752 GREEN; unit 7903 0 fail, vitest 4938 pass	session-20261114T065632-a1c920c5	2026-11-14T07:41:14Z
 review:integriq:3435:8f36c1e1	GREEN integriq#3435: tests only, 9 new tests pass, no new failures	session-20261114T073108-8b40426a	2026-11-14T07:41:24Z
 verify:pipelinq:3721:2e049327	3721 GREEN, 3732 CONFLICT (l10n vs 3721), 3812 GREEN, 3813 GREEN	session-20261114T070352-19ea7dff	2026-11-14T07:41:47Z
+build:integriq:mapping-formats-and-lookups	partial: PR #3574, task 1 and task 2 implementation done; 3-5 and e2e open; no new failures	session-20261114T065626-0651b305	2026-11-14T07:42:03Z
