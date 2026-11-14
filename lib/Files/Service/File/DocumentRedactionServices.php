@@ -26,6 +26,7 @@ use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 
 /**
  * The redaction collaborators of the document processing handler.
@@ -43,9 +44,12 @@ final class DocumentRedactionServices {
 	 * @param FileSettingsHandler|null     $fileSettings           The file settings, for the mask form per entity type; null masks nothing.
 	 * @param ImageRedactionService|null    $images                 The image seam that burns decided regions; without it an image
 	 *                                                              is refused, never sent down the text path.
+	 * @param AnonymisationBackendServiceInterface|null $detectors  The backend state, for the version record each run stores;
+	 *                                                              null stores none.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-every-detection-backend-reports-what-it-is-built-from-req-adi-001
 	 */
 	public function __construct(
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
@@ -53,6 +57,7 @@ final class DocumentRedactionServices {
 		public readonly ?AnonymisationLogMapper $anonymisationLogMapper = null,
 		public readonly ?FileSettingsHandler $fileSettings = null,
 		public readonly ?ImageRedactionService $images = null,
+		public readonly ?AnonymisationBackendServiceInterface $detectors = null,
 	) {
 	}//end __construct()
 }//end class

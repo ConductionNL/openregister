@@ -642,6 +642,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			configured: $this->isConfigured(method: $method, probe: $probe),
 			probe: $probe,
 			detector: $this->detectorFor(method: $method, probe: $probe),
+			statement: $this->statementFor(backend: $method),
 		);
 	}//end buildBackendInfo()
 
@@ -673,6 +674,32 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	}//end detectorFor()
 
 	/**
+	 * What a backend does with the text it is sent: the product's statement for
+	 * the pattern backend and the internal ExApp, else the administrator's, or
+	 * `unknown` until one is stored.
+	 *
+	 * @param string $backend The backend method.
+	 *
+	 * @return BackendStatement
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+	 */
+	private function statementFor(string $backend): BackendStatement {
+		$settings = $this->fileSettingsHandler->getFileSettingsOnly();
+		$anonymisation = ($settings[FileSettingsHandler::ANONYMISATION_KEY] ?? null);
+		$statements = [];
+		if (is_array($anonymisation) === true && is_array($anonymisation[BackendStatement::SETTINGS_KEY] ?? null) === true) {
+			$statements = $anonymisation[BackendStatement::SETTINGS_KEY];
+		}
+
+		return BackendStatement::forBackend(
+			backend: $backend,
+			openAnonymiserSource: (string) ($settings['openAnonymiserSource'] ?? 'internal'),
+			stored: ($statements[$backend] ?? null)
+		);
+	}//end statementFor()
+
+	/**
 	 * Build the hybrid BackendInfo from the composed atomic records.
 	 *
 	 * @param array<string, BackendInfo> $backends The already-built atomic records.
@@ -694,6 +721,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			configured: $configured,
 			probe: $probe,
 			detector: $this->detectorFor(method: BackendState::METHOD_HYBRID, probe: $probe),
+			statement: $this->statementFor(backend: BackendState::METHOD_HYBRID),
 		);
 	}//end buildHybridInfo()
 
