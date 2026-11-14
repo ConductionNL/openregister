@@ -8266,3 +8266,4 @@ fix:opencatalogi:2648:cd875eb3	floor restored: controller ctor 7->6 params via P
 fix:learniq:2486:fa92dc96	merged development, added missing l10n for 8 schema strings, pushed 60ddbc3e	session-20261114T065631-3903ed42	2026-11-14T08:29:32Z
 fix:opencatalogi:2641:5de18d58	merged development in, README conflict resolved (both rows kept); new head 3950bab0, REVERIFY recorded	session-20261114T075643-75a598ab	2026-11-14T08:29:47Z
 fix:buildiq:1526:2ab00cf5	conflict resolved: lib refactor already on development, PR now tests-only, 32 tests green; new head c3de131d	session-20261114T082640-d9af913e	2026-11-14T08:30:00Z
+build:opencatalogi:publications-name-their-responsible-organisation	failed: blocked; its tasks.md says start once diwoo-metadata-on-the-publication is merged, and that is still open on quality/build-diwoo-metadata-on-the-publication (no DiwooCompletenessListener on development)	session-20261114T065626-0651b305	2026-11-14T08:30:04Z
