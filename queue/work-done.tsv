@@ -10685,3 +10685,4 @@ fix:shillinq:2991:b7472331	fixed: narrowed InvoiceSendingService params for unit
 build4:openregister:widget-record-import:c3	partial: PR #10542 (build/widget-record-import-3) +3 commits: 2.1/2.2 dry run (streaming-save dryRun mode, persist off, no cascade/inverse writes, verdict classified; admin-only POST .../dry-run), 4.1 result view, 5.1 drop target + import dialog over services/recordImport.js, en+nl strings (nl at parity); +29 PHP tests, +36 jest; Architecture/Contract/Controller/Service/Object/Import suites green,	session-20261114T185851-49dbe102	2026-11-14T19:35:06Z
 fix:learniq:2520:eb56a06d	merged development, split 2 units; floor 3.99 holds on PR+development; new head 5d4702be; REVERIFY	session-20261114T191730-4ad9612d	2026-11-14T19:35:59Z
 verify:portaliq:2508:985e3bb1	2508 GREEN	session-20261114T185851-d4a7f75f	2026-11-14T19:36:09Z
+review:portaliq:2440:1f256935	GREEN recorded	session-20261114T190957-fe5a0159	2026-11-14T19:36:40Z
