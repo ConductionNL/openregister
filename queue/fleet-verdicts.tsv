@@ -8050,3 +8050,5 @@ portaliq	2430	90762148bdc47deb766bdc7c460935f8ca5fa882	RED	worker-41	php unit 52
 portaliq	2449	42cf28623328487cf68519facba74dd9f9e54c8a	CONFLICT	worker-57	conflicts with development plus 2437 on l10n en/nl js+json, portaliq_register.json, package.json, PortaliqRegisterConfigTest.php and example-site.spec.mjs
 portaliq	2450	aead78dde8b0da5abf176dc2b3911de1c851d105	CONFLICT	worker-57	conflicts with development plus 2437 on portaliq_register.json, package.json, PortaliqRegisterConfigTest.php and example-site.spec.mjs (register version)
 portaliq	2443	a46da4a31b0decf1a72797a182bdedf89ba179ed	CONFLICT	worker-41	conflicts with development: portaliq_register.json, PortaliqRegisterConfigTest.php, example-site.spec.mjs
+portaliq	2449	78c0a407c9218150914f6d9e16880e5a3df733c9	CONFLICT	worker-41	clean on development, conflicts with #2430 in tree
+portaliq	2452	21f98e99a6d2451808886c250136cce663198020	CONFLICT	worker-41	conflicts with development: l10n en/nl, Application.php, SubmissionReceiptService.php, package.json, PortaliqRegisterConfigTest.php
