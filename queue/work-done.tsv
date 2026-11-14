@@ -10382,3 +10382,4 @@ fix:decidiq:2193:03fef7f1	no change: clean against the tree after #2188's fix; h
 fix:shillinq:3048:a958ce7c	merged dev + #2991, version/lock sequenced after #2991; unit 11283 OK; new head a20ed1ed	session-20261114T154807-4c2c3327	2026-11-14T17:17:19Z
 merge:planninq:1158:89f3a911	merge3 tree of 8 planninq PRs: merged=3 red=3 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T17:18:02Z
 merge:planninq:1158:c200be19	merge3 tree of 8 planninq PRs: merged=3 red=3 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T17:18:06Z
+merge:planninq:1162:3918e010	merge3 tree of 8 planninq PRs: merged=3 red=3 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T17:18:17Z
