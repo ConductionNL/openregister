@@ -10587,3 +10587,4 @@ build:integriq:platform-integrations-as-code:c3	partial: PR #3634 lands the orph
 fix:integriq:3617:3448ba56	merged development, resolved l10n conflicts; new head 6ff0aa85, REVERIFY recorded	session-20261114T174753-100b2a07	2026-11-14T18:09:50Z
 fix:integriq:3626:0b6ea2ad	conflict resolved, pushed d61b9b39	session-20261114T174754-e63e9f88	2026-11-14T18:10:01Z
 fix:launchpad:1206:848f687d	conflict resolved (both enum pairs kept); new head 5b45315f, REVERIFY recorded	session-20261114T174741-aa9751f9	2026-11-14T18:10:11Z
+fix:integriq:3574:cfe173d8	conflict resolved: merged development, kept both l10n sides; new head 67ece58a, REVERIFY recorded	session-20261114T174653-7d064d94	2026-11-14T18:10:29Z
