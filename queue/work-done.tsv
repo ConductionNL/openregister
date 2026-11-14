@@ -8865,3 +8865,4 @@ build4:openregister:platform-provided-capabilities:c2	failed: remaining tasks ar
 build4:openregister:flow-calendar-and-webhook-triggers:c2	partial: PR #10513 (stacked on #10363) 1.4 working-time moment; 1.2/1.3/1.5 index+job, 2.x webhook, 3.x UI left	session-20261114T073117-2bd2e050	2026-11-14T10:40:12Z
 review:openregister:10493:4449539d	APPROVE	session-20261114T092638-09421111	2026-11-14T10:41:09Z
 review:openregister:10490:49eab21c	APPROVE	session-20261114T092645-afb9b140	2026-11-14T10:41:19Z
+review:openregister:10496:ef375e09	APPROVE (conflicts with main in component-map.csv and the listener-order golden; not a block)	session-20261114T092647-8b1e7e69	2026-11-14T10:41:43Z
