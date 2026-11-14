@@ -591,40 +591,28 @@ class ResponseGenerationHandler {
 	 * @throws Exception When the API call fails.
 	 * @throws DependencyUnavailableException While the `llm` breaker is open.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) BreakerRegistry::llmKey() is the one spelling of the key.
+	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
 	private function runChat(array $request): array {
-		$breaker = $this->breakers?->breaker();
-		if ($breaker === null) {
-			return $this->chatWith(request: $request);
-		}
+		$chatWith = function () use ($request): array {
+			$chat = match ($request['provider']) {
+				'ollama' => new OllamaChat($request['config']),
+				default => new OpenAIChat($request['config']),
+			};
 
-		return $breaker->call(
-			key: BreakerRegistry::llmKey(),
-			call: fn (): array => $this->chatWith(request: $request)
-		);
-	}//end runChat()
-
-	/**
-	 * Build the provider's chat client and invoke it.
-	 *
-	 * @param array $request Provider, config, message history, tools, functions and channel.
-	 *
-	 * @return array{response: string, chat: OpenAIChat|OllamaChat} The response and the chat client used.
-	 *
-	 * @throws Exception When the API call fails.
-	 *
-	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
-	 */
-	private function chatWith(array $request): array {
-		$chat = match ($request['provider']) {
-			'ollama' => new OllamaChat($request['config']),
-			default => new OpenAIChat($request['config']),
+			return ['response' => $this->invokeChatWithTools(chat: $chat, request: $request), 'chat' => $chat];
 		};
 
-		return ['response' => $this->invokeChatWithTools(chat: $chat, request: $request), 'chat' => $chat];
-	}//end chatWith()
+		$breaker = $this->breakers?->breaker();
+		if ($breaker === null) {
+			return $chatWith();
+		}
+
+		return $breaker->call(key: BreakerRegistry::llmKey(), call: $chatWith);
+	}//end runChat()
 
 	/**
 	 * Register the request's functions as tools on the chat client and invoke it.

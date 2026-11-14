@@ -35,6 +35,8 @@ use OCA\OpenRegister\Service\Resilience\CircuitBreaker;
  * `getEmbeddingLength()` is passed through unguarded: it is the vector size,
  * not an embedding, and callers ask it when building indexes.
  *
+ * @SuppressWarnings(PHPMD.StaticAccess) BreakerRegistry::llmKey() is the one spelling of the key.
+ *
  * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
  */
 final class BreakerGuardedEmbeddingGenerator implements EmbeddingGeneratorInterface {

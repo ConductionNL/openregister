@@ -43,6 +43,9 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One generator class per provider and model, plus the
+ *   breaker guard every generator is wrapped in; each type is load-bearing.
  */
 class EmbeddingGeneratorHandler {
 	/**
