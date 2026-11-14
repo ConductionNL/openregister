@@ -9114,3 +9114,7 @@ decidiq	2188	0f122fbca305e2f80da02503b1f20bedbee9ba0d	GREEN	worker-25	tree of 3:
 decidiq	2191	67af1137858ad5fdd572507fc274422d9b6d3447	GREEN	worker-25	tree of 3: PHP unit 4242 OK (baseline 4232 OK), vitest 2750 OK; builds per change, no removed checks (2191 raises a widget count for its block)
 learniq	2515	b47ed90a65416f33691c2fcf1c432bbcfe7a54c6	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 learniq	2521	34c33485a9bb30531e0afef5d1730ca32e358cd8	RED	merge3:merge-gate	GATE RED floor: overall: 4.35 -> 4.33; unit_size: 4.12 -> 4.10; unit_complexity: 4.36 -> 4.31; unit_interfacing: 3.13 -> 3.11
+learniq	2484	9e4298e4553ffba4c46a5a481a2234d71171dcd8	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2486	60407158d3ede6f98b19e1f9fba70fad2e689b85	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2493	11d23894e30dfff6e101ae31cceb1eeb26476399	CONFLICT	merge3	conflicts with development; files: l10n/en.js 
+learniq	2531	09479452a5afaed6b4d6bcb80083cd5bccc706c9	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/learniq_register.json 
