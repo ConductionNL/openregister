@@ -7745,3 +7745,4 @@ pipelinq	3819	8d6e5ca82ed74a763de50a6e0d2cf2ed2c884b4a	GREEN	worker-27	tree 3819
 pipelinq	3826	f843cb02c08fb3f6eb87abd8e14139c0cd12ce60	GREEN	worker-27	tree 3819+3826+3827: phpunit 7922 OK (baseline 7890 OK), vitest 656 files/4916 pass, 0 new failures; build data-portability-full-export
 pipelinq	3827	4f94733508a2f7385fa1ef53b1708903ab9bd910	GREEN	worker-27	tree 3819+3826+3827: phpunit 7922 OK (baseline 7890 OK), vitest 656 files/4916 pass, 0 new failures; build segment-groups-its-rules, structured where tree with full-read fallback
 pipelinq	3828	0f8c8cc2d68947f4db6edfcdf0660f948dbc125e	GREEN	worker-13	unit 7893 OK (baseline 7890 OK), no new failures; SLA sweep skips frozen records per platform-record-lock task 1.3
+pipelinq	3829	0fea8b0065eba2cf76d8aeb2523a0c5d0c5e98a4	CONFLICT	worker-13	conflicts with development itself in l10n/en.js en.json nl.js nl.json
