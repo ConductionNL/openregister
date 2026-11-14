@@ -9625,3 +9625,4 @@ hermiq	1787	d0f18c158e5d5a9587c64406005c9b1aaf3cd97f	REVERIFY	worker-08	merged d
 shillinq	3077	7c48c1ceec9aae0e672c65e2aa5557858a56b274	CONFLICT	worker-10	conflicts with #3065 in the tree (merges clean on development alone), files: appinfo/info.xml tests/fixtures/register-versions.lock.json
 keepiq	1789	e905bf117ffd7ee7a789d7531abc325c7ded5643	CONFLICT	worker-03	conflicts with development alone; files: l10n/nl.js l10n/nl.json
 keepiq	1790	2097db1d2ce845dfdf2c60a16fa527240f477157	CONFLICT	worker-03	conflicts with development alone; files: l10n/en.js l10n/en.json
+decidiq	2194	ea9b865865c4d1bdfbeae3149bef9a002366cd33	REVERIFY	worker-49	l10n: kept development's catalogue order, new keys placed after Commitments; merges clean on development+#2169,#2189,#2191; unit 4233 OK, vitest 2801 OK; new head 17b2a973b9f35b3c72147de709218728500595b1, verify it
