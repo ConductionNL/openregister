@@ -9421,3 +9421,4 @@ fix:pipelinq:3818:dc2b36c5	merged development, l10n conflicts resolved keeping b
 fix:filinq:2106:c30c20ab	no change: #2106 is clean on development; its conflict is with #2069, which has not landed (checked just now), so there is nothing to merge in yet	session-20261114T114435-d7b47cb4	2026-11-14T14:20:12Z
 fix:portaliq:2442:5eed4168	conflict resolved, new head d378be76	session-20261114T141737-e9e54940	2026-11-14T14:20:24Z
 verify:portaliq:2430:899a8de4	2 GREEN (2430,2433), 2 CONFLICT (2489,2494); suite 5246 ok, baseline 5228	session-20261114T141737-2ab246b3	2026-11-14T14:21:01Z
+fix:shillinq:2976:7513bd9c	l10n conflict with #2963 removed (keys moved to catalogue end); REVERIFY recorded, new head b29fc602b8b9b344cd3aee25345c2b45a7cf077d	session-20261114T131642-b20146b1	2026-11-14T14:21:08Z
