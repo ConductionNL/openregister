@@ -7775,3 +7775,4 @@ fix:decidiq:2146:23b793cd	l10n conflict resolved, new head fa390519, REVERIFY	se
 fix:learniq:2506:ac48f1cb	conflict resolved, pushed 323a8144; REVERIFY recorded	session-20261114T065626-0651b305	2026-11-14T07:15:21Z
 verify:pipelinq:3743:a6386a72	GREEN: suite 7902 green, build matches change	session-20261114T062222-96f530fc	2026-11-14T07:15:31Z
 fix:decidiq:2165:f38d28e3	conflict resolved (l10n, both sides kept), development merged, suite OK; new head 8558e270	session-20261114T065633-3e3cb668	2026-11-14T07:15:42Z
+fix:decidiq:2174:46a18f3e	route moved to /named-votes (old path kept for existing paper-vote dialog), merged development; unit 4042 OK; pushed 8600d4bb	session-20261114T065632-a1c920c5	2026-11-14T07:15:52Z
