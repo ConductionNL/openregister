@@ -11745,6 +11745,7 @@ verify:versioniq:691:2b07b74f	701,705,725 GREEN; 726,728,729 CONFLICT; 691,694,7
 build:integriq:sources-sftp-adapter-watched-folder:c2	failed: depends on sources-sftp-adapter tasks 1-4, still on unmerged branch quality/build-sources-sftp-adapter (b138cdd2, not in development); tasks.md says build after they merge	session-20261114T175427-38d3d06f	2026-11-14T23:01:41Z
 verify:versioniq:695:c25e76c1	695,707,714,717,721 GREEN; 727 CONFLICT; 698,703,706 skipped (heads moved); unit 1762/2 inherited, vitest 2989	session-20261114T211012-c469e919	2026-11-14T23:01:40Z
 fix:integriq:3615:71e6a096	floor restored (module_coupling 5.04), new head f8ce5455	session-20261114T224736-f9da4a35	2026-11-14T23:01:46Z
+build:versioniq:releases-minimum-age:c2	partial: pushed to PR #707 (head edd40e93): 2.1 planner + exception store, 12 tests, unit-only 1723 with only the 2 inherited golden failures; left: 2.2 job wiring + security note, 2.3 plan store/job, 3.1 API, 3.2-3.3 page and strings, 3.4 e2e, 4.1 close	session-20261114T214930-79d5b35c	2026-11-14T23:02:02Z
 merge:versioniq:700:d95efeab	stale	feeder	2026-11-14T23:00:12Z
 fix:larpinq:1051:de3a87c5	merged development, green; REVERIFY c35fd6e8 (still conflicts with unmerged #1050)	session-20261114T224756-971efe57	2026-11-14T23:02:05Z
 fix:integriq:3628:3039ae5d	fixed: unit_complexity floor (sendMessage 23->9, sendEmail 11->8, readStatusCallback 13->4); suite fails inherited; new head 626c2e6f	session-20261114T225452-4fcfea7f	2026-11-14T23:02:16Z
