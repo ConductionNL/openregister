@@ -9523,6 +9523,7 @@ build:learniq:open-learning-material:c2	PR #2533: 2.4 server-side NC withholding
 review:portaliq:2284:f2a7c870	2284 GREEN	session-20261114T141738-30f539db	2026-11-14T14:37:16Z
 build:learniq:site-workplace-trainer-portal-design:c2	failed: blocked; PR #2511 is merged; T7b needs portaliq to render a one-line description on a collection block or tile (the block and tile contract has no description today), T5 needs a task audience on trainer portal accounts in the portal-task seam, T9 is e2e	session-20261114T131646-cdc565a4	2026-11-14T14:37:22Z
 verify:dossiq:6514:2c99e5bc	GREEN 6514; no new failures	session-20261114T134643-47800317	2026-11-14T14:37:24Z
+build:learniq:certificate-verification-and-key-rotation:c2	partial: PR #2534 built 1.1 + page part of 1.3; left 1.2 (awaits owner confirmation), 1.3 Playwright (live), 4.1 archive	session-20261114T141720-f9e7a46b	2026-11-14T14:37:59Z
 build:learniq:compliance-attestation-locked-after-signing:c2	PR #2535: tasks 3.1-3.3 built (audit pack freeze lines, detail page readOnlyWhen + revoke reason, en/nl strings); 4.1 e2e and 4.2 archive left	session-20261114T141746-50f5f9cc	2026-11-14T14:38:08Z
 fix:portaliq:2443:4da2e8a4	no change: branch up to date with development; conflict only with unmerged #2440, resolve after it lands	session-20261114T141738-30f539db	2026-11-14T14:37:48Z
 verify:filinq:2105:43315379	2105 GREEN; 2107/2120/2121/2122/2123 CONFLICT after 2105; 2114 skipped (head moved)	session-20261114T134708-0947487e	2026-11-14T14:38:03Z
