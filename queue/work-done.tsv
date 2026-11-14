@@ -10247,3 +10247,4 @@ verify:hermiq:1736:96956b88	GREEN 1736; CONFLICT 1750 (register header after 173
 cover:buildiq:70b3e29em7beb:js4829b6aa	PR #1642: 19 tests for ExportJobsList, FeaturesRoadmap, WalkthroughDesignerHost, VersionHistory; src/views lines 95.01->96.16, branches 85.32->86.25; 4483 tests green	session-20261114T154740-5b01f6fa	2026-11-14T16:41:15Z
 merge:buildiq:1590:912d5915	stale	feeder	2026-11-14T16:40:35Z
 fix:shillinq:3059:2d5c2728	merged development, moved l10n strings; new head 12184580	session-20261114T161744-497aae45	2026-11-14T16:41:21Z
+fix:shillinq:2976:e4c7b8aa	merged development, resolved l10n, app version and register lock; head f5ba044b; REVERIFY recorded	session-20261114T144756-7c8966f2	2026-11-14T16:41:48Z
