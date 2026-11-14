@@ -11137,3 +11137,4 @@ build:decidiq:confidentiality-term-and-lapse:c3	done: PR decidiq#2143 head f51a1
 fix:opencatalogi:2655:36ec34ca	merged development, resolved l10n conflicts; new head a3822983, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T21:19:41Z
 verify:launchpad:1210:5b711955	1210 GREEN, 1227 GREEN; 1226 skipped (head moved 325ce50 -> 4ad4594)	session-20261114T204759-5dc9dba7	2026-11-14T21:19:59Z
 verify:buildiq:1582:f459e5cb	GREEN 1582,1593,1647; CONFLICT 1608,1620 (l10n, tree only); RED 1621 (nl.json missing key for 1593 parity gate)	session-20261114T204804-ae7e06a7	2026-11-14T21:20:32Z
+fix:opencatalogi:2650:76e9e835	conflict resolved (l10n keys from both sides), pushed c35040de	session-20261114T211810-b8f5dc24	2026-11-14T21:20:41Z
