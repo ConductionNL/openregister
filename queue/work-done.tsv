@@ -11672,3 +11672,4 @@ cover:versioniq:1b35eed9m52e0:js06645759	PR #733: 8 vitest tests (DiscoverPanel 
 build:versioniq:safety-withdrawn-and-revoked:c2	partial: no change this session (worker context nearly full before starting); PR #720 head f2142236 unchanged; left: 1.1 RevocationList, 2.1-2.3 recheck job/settings/badge, 3.1 card badge, 4.1 strings and matrix	session-20261114T202449-f0278d5a	2026-11-14T22:45:57Z
 merge:integriq:3542:c8b4da4d	merge3 tree of 23 integriq PRs: merged=6 red=9 fail=0 skip=0; conflict 5, lint 0, moved 3; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T22:45:59Z
 merge:integriq:3549:c3381a4b	merge3 tree of 23 integriq PRs: merged=6 red=9 fail=0 skip=0; conflict 5, lint 0, moved 3; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-14T22:46:02Z
+fix:versioniq:690:3691ac8a	floor restored (unit_complexity 4.58); new head 5a25cc95	session-20261114T214742-7aa14b57	2026-11-14T22:46:13Z
