@@ -9730,3 +9730,4 @@ integriq	3574	67ece58a674829e7418f3776edd552d1650d1869	REVERIFY	worker-49	moved 
 integriq	3592	70be0200dd77aca2fac76f59d3fffc01f09bdc9e	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
 integriq	3595	7d624dc8ce92826b30bb0d6259d4fd40c1b894b7	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
 integriq	3634	fc69f0f0a47b7ee97c1af2ffacbc711f5174bc23	RED	merge3:merge-gate	GATE RED floor: module_coupling: 5.03 -> 5.00
+decidiq	2188	c7ab281d8d52931ec9804c3ca5e5ffc8c3ef9a86	REVERIFY	worker-22	unit_complexity floor: split AgendaItemConfidentialityListener branchy methods into 1-2-branch helpers and isPaperPublic to one expression, same behaviour, PHP 4242 green, phpstan clean; new head b774355c5fc719de1a030868fd7ff83f485a10eb, verify it
