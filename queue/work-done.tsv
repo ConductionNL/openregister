@@ -10765,3 +10765,4 @@ fix:learniq:2507:4e19f9e6	conflict fixed: l10n strings moved off the catalogue e
 fix:decidiq:2194:29f06411	fixed: merged development in, clean; l10n no keys lost; vitest 2801 passed; new head ea9b865865c4d1bdfbeae3149bef9a002366cd33, REVERIFY recorded	session-20261114T191723-85c550b2	2026-11-14T20:04:51Z
 fix:decidiq:2205:f80ac253	merged development in cleanly, suites green; new head 9c878baf65	session-20261114T194935-f789346b	2026-11-14T20:05:09Z
 verify:shillinq:3051:d321e1d5	stale	feeder	2026-11-14T20:05:17Z
+build:shillinq:ledger-multi-administration:c3	partial: PR #2977 head 7f14a104 built 2.1 scoped index wrapper + generated list, 3.3 office templates in wizard, 4.2 strings; left 2.2 (nextcloud-vue issue, out of reach), 4.1 e2e (live); PHP 11075 OK, vitest 1 inherited failure	session-20261114T194740-7cca8afd	2026-11-14T20:05:52Z
