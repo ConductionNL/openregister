@@ -11835,3 +11835,4 @@ cover:portaliq:b60f3b81m4ccb:7a286478	already covered by PR #2516 (same lib/Serv
 cover:dossiq:069ee2d6mbd37:8b886c00	PR #6525: 39 tests over 7 People classes (RequesterProjection new); suite 17379->17418, 19 inherited failures unchanged	session-20261114T230933-0afdd896	2026-11-14T23:19:51Z
 cover:portaliq:b60f3b81m4ccb:60c2c265	app-wide gap 94.91->95.0 (0.09%) addressed by PR #2516; re-measure after it merges before adding controller tests	session-20261114T221804-88b39b17	2026-11-14T23:20:18Z
 cover:decidiq:a5f973bbmae46:8ed5443b	no PR: lib/Kernel/Contracts holds 124 interfaces only, no executable statements to cover	session-20261114T230933-0afdd896	2026-11-14T23:20:39Z
+cover:dossiq:069ee2d6mbd37:18076dfb	PR #6526: 6 classes, 74 tests; suite 17379->17453, same 19 inherited failures	session-20261114T224920-352ef0eb	2026-11-14T23:20:39Z
