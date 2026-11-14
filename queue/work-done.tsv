@@ -10749,3 +10749,4 @@ verify:filinq:2069:c655afc4	2069 GREEN, 2118 GREEN, 2070 CONFLICT, 2130 CONFLICT
 fix:decidiq:2188:0f122fbc	merged development in clean, unit green; new head c7ab281d8d52931ec9804c3ca5e5ffc8c3ef9a86, REVERIFY recorded	session-20261114T194751-bb7578f8	2026-11-14T20:00:25Z
 fix:decidiq:2189:4d141d0a	info.xml clash removed, development merged; objectCount clash with confidentiality-term-and-lapse unavoidable until one lands; new head d54fa228	session-20261114T185853-1a2abc5d	2026-11-14T20:00:42Z
 review:shillinq:2991:5579d98d	stale	feeder	2026-11-14T20:00:21Z
+fix:decidiq:2191:67af1137	fixed: merged development into the branch, clean; vitest 2787 passed; new head 4d6f144bcc6304f052adc9d77f24d84379a9ec62, REVERIFY recorded	session-20261114T191723-85c550b2	2026-11-14T20:01:01Z
