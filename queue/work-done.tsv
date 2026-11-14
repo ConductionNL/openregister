@@ -9012,3 +9012,4 @@ merge:dossiq:6495:7228b06a	merge3 tree of 31 dossiq PRs: replayed; conflict 4, l
 merge:dossiq:6491:d45e20dc	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:10:59Z
 merge:dossiq:6499:6b12feac	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:11:04Z
 build:pipelinq:segment-groups-its-rules:c3	done: no code task left; PR #3827 merged; open are 1.5 (follow-up, not this change), 4.2 Newman + 5.1/5.2 live, 6.1 spec sync after build	session-20261114T114634-73dcd983	2026-11-14T12:11:08Z
+merge:dossiq:6462:ef13eac4	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:11:08Z
