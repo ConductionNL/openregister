@@ -3312,7 +3312,9 @@
         "Object \"%1$s\" assigned to you": "Hlutur \"%1$s\" úthlutað þér",
         "Audit trail export ready": "Útflutningur endurskoðunarslóðar er tilbúinn",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Útflutningur endurskoðunarslóðar með %1$s færslum var vistaður í %2$s%3$s.",
-        "Open Files": "Opna Skrár"
+        "Open Files": "Opna Skrár",
+        "Its ancestor %1$s has appraisal %2$s": "Yfirfærða færslan %1$s hefur matið %2$s",
+        "Its ancestor %s could not be read": "Ekki tókst að lesa yfirfærðu færsluna %s"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

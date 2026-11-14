@@ -3312,7 +3312,9 @@
         "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" er tildelt dig",
         "Audit trail export ready": "Eksporten af revisionssporet er klar",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Din eksport af revisionssporet med %1$s poster er gemt i %2$s%3$s.",
-        "Open Files": "Åbn Filer"
+        "Open Files": "Åbn Filer",
+        "Its ancestor %1$s has appraisal %2$s": "Dens overordnede %1$s har vurderingen %2$s",
+        "Its ancestor %s could not be read": "Dens overordnede %s kunne ikke læses"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

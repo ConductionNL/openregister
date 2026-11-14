@@ -8,7 +8,7 @@
 
 ## 2. Visible hold-back (REQ-AIP-003)
 
-- [ ] 2.1 Add `occ openregister:retention:dry-run` (no such command exists today; register it in `appinfo/info.xml`) listing what the next run would put on a destruction list and what it holds back with reasons, and add the held-back section to the destruction list review view. Verify: `tests/Unit/Command/RetentionDryRunHeldBackTest.php`; `tests/e2e/ci/retention-held-back.spec.ts` opens the review view on a seeded hotspot and reads the subject's name.
+- [x] 2.1 Add `occ openregister:retention:dry-run` (no such command exists today; register it in `appinfo/info.xml`) listing what the next run would put on a destruction list and what it holds back with reasons, and add the held-back section to the destruction list review view. Verify: `tests/Unit/Command/RetentionDryRunHeldBackTest.php`; `tests/e2e/ci/retention-held-back.spec.ts` opens the review view on a seeded hotspot and reads the subject's name. Built: the command (`lib/Command/RetentionDryRunCommand.php`, `tests/Unit/Command/RetentionDryRunCommandTest.php`) in an earlier pass; the review view's held-back table reads `GET /api/archival/held-back` (`ArchivalHeldBackController`, `tests/Unit/Controller/ArchivalHeldBackControllerTest.php`) in the Destruction lists tab of `src/manifest.d/archival-overview-page.json`. The e2e spec is not written: it needs a seeded instance.
 
 ## 3. Hand-over
 

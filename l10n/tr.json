@@ -3312,7 +3312,9 @@
         "Object \"%1$s\" assigned to you": "Nesne \"%1$s\" size atandı",
         "Audit trail export ready": "Denetim izi dışa aktarımı hazır",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "%1$s kayıt içeren denetim izi dışa aktarımınız %2$s%3$s konumuna kaydedildi.",
-        "Open Files": "Dosyaları aç"
+        "Open Files": "Dosyaları aç",
+        "Its ancestor %1$s has appraisal %2$s": "Üst kaydı %1$s, %2$s değerlendirmesine sahip",
+        "Its ancestor %s could not be read": "Üst kaydı %s okunamadı"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
