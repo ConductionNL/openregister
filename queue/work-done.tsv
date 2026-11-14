@@ -8190,3 +8190,4 @@ build:buildiq:screen-overrides-as-a-patch-with-fall-through	partial: PR #1626 â€
 build:buildiq:pages-detail-related-items	PR #1625: Related items section (relatedCollections, relationLinks) + Files choice; vitest 4077->4096 all green; T04 e2e left	session-20261114T075638-c30fc6de	2026-11-14T08:18:45Z
 merge:keepiq:1759:8ec515a4	merge3 tree of 13 keepiq PRs: merged=11 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T08:19:01Z
 fix:integriq:3588:77446ed7	merged development (clean), pushed f2c639ee; conflict is with unlanded #3585	session-20261114T065626-0651b305	2026-11-14T08:19:02Z
+merge:keepiq:1760:b28e76fa	merge3 tree of 13 keepiq PRs: merged=11 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T08:19:11Z
