@@ -10253,3 +10253,4 @@ shillinq	3077	e22c24245b3f60a6851ae071b51c73683825a437	CONFLICT	worker-32	merges
 shillinq	3078	ccf88e69dd4a5fe4151b4934c541389199c7f9e8	CONFLICT	worker-32	merges clean on development alone, conflicts after 3055 in: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
 learniq	2507	b815725295bb7a86f6958c22d91916dfc723bbe2	GREEN	worker-54	PHP unit 6897 on tree (baseline 6835, only the 2 inherited failures), node unit-js no new failures
 decidiq	2172	c322af3724c9d55581041be7d0e9c161e3ead769	GREEN	worker-26	phpunit 4356 tests green (baseline 4248), vitest 2838 pass; build PR, test edits only count new entries
+decidiq	2178	24b4be0ce9783ae7473305f184d73174083bfad8	GREEN	worker-26	phpunit 4356 tests green (baseline 4248), vitest 2838 pass; build PR, test edits only count new entries
