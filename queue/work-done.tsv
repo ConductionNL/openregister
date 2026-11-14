@@ -11819,3 +11819,4 @@ build:larpinq:communication-help-desk:c2	PR #1045: 3.1 pages+dashboard+age cell,
 cover:pipelinq:7f9dc8e6m799d:a3bb9eeb	already done: lib/Service/Portal/*.php measures 99.93% (1447/1448 lines) on development, above the 95% target (earlier -1/-2 PRs merged); no PR	session-20261114T221801-9a21d394	2026-11-14T23:16:17Z
 verify:larpinq:1039:1dbc5fcc	GREEN 1039,1048,1052; RED 1049 (manifest golden); CONFLICT 1050,1056,1059	session-20261114T221759-c6bc4865	2026-11-14T23:16:19Z
 cover:pipelinq:7f9dc8e6m799d:ea81adeb	already done: lib/Service/Zgw/*.php measures 99.73% (730/732 lines) on development 0d8e11ea, above the 95% target; no PR	session-20261114T221801-9a21d394	2026-11-14T23:16:49Z
+cover:dossiq:069ee2d6mbd37:34f5c300	PR #6524: 18 tests for CaseDefinitionContents, CaseAttentionConditionService, CaseStageDatesService (no pcov, picked by missing tests); suite 17379->17397, same 19 inherited fails	session-20261114T221804-88b39b17	2026-11-14T23:16:25Z
