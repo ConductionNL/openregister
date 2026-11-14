@@ -9435,3 +9435,7 @@ keepiq	1801	b18c5187d1591f799825995df27dd774c3cad309	GREEN	worker-46	tests only 
 keepiq	1802	10522d79d5e9f9d37b695cc3f91541fff035304c	GREEN	worker-46	tests only (8 vitest specs); tree vitest 434 files/6565 tests passed, phpunit 4998 OK (same as baseline), no new failures
 planninq	1160	bb0e5aa6b26e6f308fb4e24299a1bdfeed0207ce	CONFLICT	worker-02	conflicts with development dca28209 in l10n/*, lib/Settings register json, spec, golden fixture, PlanninqRegisterSchemaTest; baseline 1067 tests 0 failures
 planninq	1169	64a5c7efa1b0c1dd8bebd0d6737a43309cad99c6	CONFLICT	worker-02	conflicts with development dca28209 in appinfo/routes.php; baseline 1067 tests 0 failures
+humaniq	1125	a44e6b58d61ba2f214250618d75d5232c8ec9580	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.49 -> 4.46; unit_complexity: 3.57 -> 3.53
+humaniq	1133	0e7cf4b632881b5454887acca9d29cc43f053255	RED	merge3:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
+humaniq	1144	0a397e554d164235aefbc4465a72f533a664be44	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.62 -> 3.60
+humaniq	1145	b05d3c3dddeb423605be9200575ffaa3cef27bcf	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.62 -> 3.59
