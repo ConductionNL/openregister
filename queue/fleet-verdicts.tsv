@@ -9885,6 +9885,7 @@ decidiq	2178	37197bc0dc79c7ac6841b3162e6f177815309958	GREEN	worker-07	php unit 4
 launchpad	1210	0fb948aad1a131f5b1765d92c3c71c0352ef1bab	GREEN	worker-26	phpunit 4251 tests on tree (baseline 4196, 1 inherited failure OpenApiStabilityTest), vitest 2272 pass; build PR matches change specs
 keepiq	1790	5c0dced9415c6f4243adb6bd0f6ecb83731e6bf9	GREEN	worker-22	PHP unit 5186 (baseline 5186), 0 failures; vitest 6620 pass, 3 inherited reds (HealthReportView.controls); JS-only vault-duplicate-finder build
 keepiq	1792	5b788ad39cb3ade53790b534fc83dce411a16007	CONFLICT	worker-22	conflicts with #1790 in all 37 l10n catalogues (.js and .json); merge development after #1790 lands
+buildiq	1582	3f74f59fbcf266b8ef63b825dbc65923eb1686a8	GREEN	worker-45	unit 3171 tests, baseline 3142 w/ 1 failure (ExportZipGoldenTest, inherited), no new failures; vitest 4657 pass
 opencatalogi	2655	36ec34cad1171179adb2e91cc8b37a265157d157	REVERIFY	worker-34	merged development in, resolved l10n en/nl json conflicts keeping both sides and regenerated .js; touched tests 41 pass; new head a38229836109726f1d907b831623d56380e65c2c, verify it
 opencatalogi	2650	76e9e835913e99db44603c4e13a59cd35a97fa35	REVERIFY	worker-52	merged development in, kept both sides' l10n keys (json), rebuilt js, check:l10n-js green; new head c35040de1792c0ce11a2459a7a3cabe5c8a520be, verify it
 launchpad	1227	b0d1c0efe31a3f9bc5070f7dff8e3c1d31fe0479	GREEN	worker-26	phpunit 4251 tests on tree (baseline 4196, 1 inherited failure OpenApiStabilityTest), vitest 2272 pass; build PR matches change specs
