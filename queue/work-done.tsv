@@ -8467,3 +8467,4 @@ fix:integriq:3599:4d149f50	l10n key relocated to avoid sibling append conflicts,
 build:stackiq:landscape-change-entry-type	partial: PR #1939, Task 1 done (service, controller, routes, openapi, 20 tests) + module.type visible; dialog/manifest (e2e) and docs left	session-20261114T082612-ca93c5ee	2026-11-14T08:54:23Z
 build:stackiq:operations-technology-components	partial: PR #1938 (tasks 1,4 + util of 3; left 2,3 panel,5)	session-20261114T070333-41d2bfe8	2026-11-14T08:54:14Z
 fix:opencatalogi:2456:c1e5453b	fixed: spec loads in jest (auth mock), 35 tests pass; new head dc12f0da	session-20261114T082640-df1db926	2026-11-14T08:54:31Z
+fix:buildiq:1626:c5e74b0e	merged development (clean), pushed e4ef5397; conflict is with unlanded tree PRs	session-20261114T065626-0651b305	2026-11-14T08:54:44Z
