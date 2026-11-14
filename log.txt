@@ -3390,3 +3390,4 @@
 2026-11-14T10:54:00Z integrator-20261111T115842-a749432d GREEN tree 5db8e48b9a on dev 6464d44ba4 prs 13 front=ok: Tests: 62082, Assertions: 216819, Errors: 3, Failures: 4, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 25.
 2026-11-14T10:54:24Z integrator-20261111T115842-a749432d MERGED-TREE 5db8e48b9a: 13 PRs in one push, main now 5db8e48b9a = tested tree
 2026-11-14T12:10:20Z session-20261114T114634-73dcd983 build:pipelinq:clients-reversible-merge:c3 correction: #3817 was already merged; the 3.2 work is in new PR pipelinq#3833 (head 72e0bc34)
+2026-11-14T13:41:17Z session-20261114T114630-192fc047 worker-28 stopped near full context; handed back build:filinq:document-waarmerk-certification:c2 unstarted
