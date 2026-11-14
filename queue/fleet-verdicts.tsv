@@ -7061,6 +7061,7 @@ hermiq	1758	0dad551fafb0efbec570b10bc2f0191732fff7d1	GREEN	worker-27	tree 1726+1
 hermiq	1492	871a590f1e53a7b52cf8f67ab2a6444a61bb5acd	GREEN	worker-20:review	moved cli methods compared body by body with development: same refusal messages, timeouts, guard order and personal-scope check; no public method removed; phpstan clean; unit suite on PR+development 4712 tests, no new failures
 hermiq	1728	71ac65736fee2a5805927d20321be3caef9ce772	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
 hermiq	1735	7510e23605d22504ee32d588d29250e4114d827a	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
+portaliq	2433	6cd14d914da71f008a5de2c654d654cd0c38fb74	REVERIFY	worker-58	merged current development cleanly (the package.json check:specs conflict was only against another tree PR); new head ca20ec2f1d419a458a537ebbe99f0d73699c8bc4, verify it after the other check:specs PR lands
 hermiq	1740	58e98963f853f2e60079021dedf1ca41dc089796	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
 hermiq	1751	d868cafb17b2ccdca63c099c352a143d3596b95c	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Settings/hermiq_register.json
 hermiq	1755	aba4ba32a59a4243f95c371d8581ccab26a17b71	CONFLICT	worker-27	clean on development, conflicts after #1726/#1758 in lib/Controller/ChatStreamController.php,lib/Settings/hermiq_register.json
