@@ -7620,3 +7620,4 @@ keepiq	1784	ee1c9e8ea153c0cec0dc079181ba82c84a1963d5	GREEN	worker-28	phpunit 497
 stackiq	1922	9a7623c70e702c706afdade5b1759cf91492b21c	CONFLICT	worker-42	clean on development, conflicts with earlier tree PRs in l10n/en.js l10n/en.json lib/Settings/softwarecatalogus_register.json src/manifest.d/usages.json
 stackiq	1923	832b22b3c204458e5adc02a70151f0da22f5d946	GREEN	worker-42	tree dev 8ca7c057 + 1916..1923: phpunit 3494 tests, baseline 3446 with 0 failures, 0 new; vitest 2532 passed; build capability-requirements-from-the-matrix matches its specs
 stackiq	1924	075129a287c8efdb121653780607b8f403135cf0	CONFLICT	worker-42	clean on development, conflicts with earlier tree PRs in lib/Settings/softwarecatalogus_register.json
+learniq	2490	fedc6da6d9fe6b8347e18d62326589f7e95494e1	GREEN	worker-51	unit 6641 tests, baseline 6640 with 1 failure (HigherEducationExampleSetTest), no new failures; no src JS touched; build of attendance-flag-report-actions as specified
