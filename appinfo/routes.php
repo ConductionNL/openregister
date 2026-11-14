@@ -1386,6 +1386,10 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // The connector's inbound update, one route per registry id.
         ['name' => 'registryUpdates#update', 'url' => '/api/registry/{registry}/updates', 'verb' => 'POST'],
         // Bulk Operations.
+        // Record import (administrators only): propose a column mapping for an uploaded
+        // file, then import it with the confirmed mapping through the streaming save.
+        ['name' => 'recordImport#mapping', 'url' => '/api/record-import/{register}/{schema}/mapping', 'verb' => 'POST'],
+        ['name' => 'recordImport#import', 'url' => '/api/record-import/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'bulk#save', 'url' => '/api/bulk/{register}/{schema}/save', 'verb' => 'POST'],
         ['name' => 'bulk#delete', 'url' => '/api/bulk/{register}/{schema}/delete', 'verb' => 'POST'],
         ['name' => 'bulk#deleteSchema', 'url' => '/api/bulk/{register}/{schema}/delete-schema', 'verb' => 'POST'],

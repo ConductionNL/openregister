@@ -33,12 +33,24 @@
     one object updates it; matching more than one refuses that row with its line;
     failures carry the file line. No route yet: the route that exposes it must be
     administrator-only, like `BulkController`'s `stream`.
+  - Route (14 Nov): `RecordImportController`, administrators only (no
+    `NoAdminRequired`, request token kept). `POST /api/record-import/{register}/{schema}/mapping`
+    takes the uploaded `file` and answers the proposed mapping with its unmatched
+    columns, writing nothing; `POST /api/record-import/{register}/{schema}` takes the
+    file, `decisions` (column => property, or null to ignore) and an optional
+    `identifier`, answers 422 while a column is undecided, and otherwise returns the
+    import status plus, when rows failed, `failedRows` (the 4.2 export as CSV).
 
 ## 4. Results
 
 - [ ] 4.1 Result view driven by the status object.
-- [ ] 4.2 Failed-row export in the input's column shape plus a reason column,
+- [x] 4.2 Failed-row export in the input's column shape plus a reason column,
       round-trippable back into the importer.
+  - Built (14 Nov): `FailedRowExport::export()` re-reads the imported file and keeps
+    the lines that failed, as CSV in the file's own columns plus `reason`
+    (`import_reason` when the file already has a `reason` column); two failures on
+    one line share the row, and a failure with no line is counted as `unplaced`.
+    Re-importing it lists the reason column as unmatched, to be ignored.
 
 ## 5. Widget
 
