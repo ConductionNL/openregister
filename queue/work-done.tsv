@@ -8241,3 +8241,4 @@ fix:opencatalogi:2650:894030c7	merged development, resolved ListenerRegistrar + 
 build:launchpad:integrations-office-tiles	partial: PR #1197, tasks 1-2 (service, endpoints, actions, openapi, 15 tests); 3-4 frontend dialog/picker, 5 e2e, 6 strings/archive left	session-20261114T070341-dde19dba	2026-11-14T08:25:00Z
 merge:learniq:2486:d60155e4	merge3 tree of 11 learniq PRs: merged=8 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T08:25:40Z
 merge:learniq:2490:562de2bf	merge3 tree of 11 learniq PRs: merged=8 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T08:25:43Z
+merge:learniq:2495:42177219	merge3 tree of 11 learniq PRs: merged=8 red=1 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-14T08:25:47Z
