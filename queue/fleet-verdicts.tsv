@@ -10072,3 +10072,14 @@ learniq	2513	672f590afff4f11e2231933befa01e2b402314f0	CONFLICT	merge3	merges cle
 learniq	2521	b2c3e036c640fdd0e9ec333888c6143c9724ef1a	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js tests/unit-js/structureProfile.test.mjs 
 learniq	2523	ebf12671bf52d57c5a19f953253e0b07819f9647	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js src/menu-layout.simple.json tests/unit-js/structureProfile.test.mjs 
 learniq	2536	0f638b8f14182933e5b9de080abe8982b3047fa2	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js tests/unit-js/structureProfile.test.mjs 
+shillinq	2977	7f14a1044197016bcb7417a55cf423eb7483ddbc	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Listener/Registration/FilteredObjectListenerSubscriptionTest.php tests/Unit/Listener/Registration/ListenerRegistrarTest.php 
+shillinq	2995	cb8dc29297b904f19125f6b4ed8d19d7b94fd91b	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/manifestActions.js tests/fixtures/register-versions.lock.json 
+shillinq	2997	a72f8f14785a52e47a6bfb8e23bdba79ee13ed09	CONFLICT	merge3	merges clean on development alone; files: tests/fixtures/register-versions.lock.json 
+shillinq	3000	5625ba516826756b8c73d83737a3f38cf44153da	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml lib/Service/InvoiceGenerationService.php tests/fixtures/register-versions.lock.json 
+shillinq	3048	10a5df9db0886965f9b5b0b71bb178d81cfd8c1a	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	3051	98b5bfe797b9f82b0d7a700cf5e7d03f724296b0	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+shillinq	3055	732d0b78a0a185bf1714e4c3bc2bfd6f2bced161	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	3062	cbb6114b17ca90b002664a679837bb11df103cd7	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	3065	e857eb2338958eebcba97fbfc59310343d8605ac	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml openapi.json tests/fixtures/register-versions.lock.json 
+shillinq	3077	106e652ef6b7c799e319e38d44ce92672fb8be42	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	3078	e4625f775fda7369e83028ba7aa6202f3e183614	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
