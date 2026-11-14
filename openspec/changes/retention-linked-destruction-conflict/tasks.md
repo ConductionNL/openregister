@@ -7,12 +7,14 @@
 ## 2. On the list
 
 - [x] 2.1 Call the finder in `RetentionService::createDestructionList()` and store `linkConflicts`, `linkConflictsTruncated` per entry and `linkConflictCount` per list. Verify: `tests/Unit/Service/RetentionServiceLinkConflictsTest.php`; a list with no conflicts carries empty arrays and a count of 0.
-- [ ] 2.2 Recompute conflicts for the returned entries in `GET /api/archival/destruction-lists/{id}` and `GET /api/archival/reviews/pending`, with `linkConflictsCheckedAt`, without saving. Verify: `tests/Unit/Controller/ArchivalControllerLinkConflictsTest.php` asserts a conflict that appeared after creation is shown and the stored list is unchanged.
+- [x] 2.2 Recompute conflicts for the returned entries in `GET /api/archival/destruction-lists/{id}` and `GET /api/archival/reviews/pending`, with `linkConflictsCheckedAt`, without saving. Verify: `tests/Unit/Controller/ArchivalControllerLinkConflictsTest.php` asserts a conflict that appeared after creation is shown and the stored list is unchanged.
+  > `DestructionListConflictRefresh` loads the entries' records and asks `DestructionListLinkConflicts` again; `getDestructionList()` returns the entries with `linkConflicts`, `linkConflictsTruncated`, `linkConflictsCheckedAt` and the recomputed `linkConflictCount`, `myPendingReviews()` adds the same three keys to each row. Nothing is saved. An entry whose record cannot be read or whose check fails is shown with no conflicts and `linkConflictsTruncated: true`, never as clean.
 
 ## 3. Decision and approval
 
-- [ ] 3.1 Add `DestructionReviewService::assertConflictsAcknowledged()` and `LinkConflictsNotAcknowledgedException`, called at the top of `ArchivalController::recordDecision()` before `outcomes->apply()`; record `overriddenConflicts` in the decision and its count in the `archival.review_decided` audit row. Verify: `tests/Unit/Service/Archival/DestructionReviewConflictTest.php` asserts 422 with the conflicts, that `apply()` is never called on a refusal, and that an acknowledged destroy records the conflicts.
-- [ ] 3.2 Add `destroyedOverConflict` to the approval `DestructionService::approveList()` records. Verify: `tests/Unit/Service/Archival/DestructionServiceApproveTest.php` counts two overridden entries.
+- [x] 3.1 Add `DestructionReviewService::assertConflictsAcknowledged()` and `LinkConflictsNotAcknowledgedException`, called at the top of `ArchivalController::recordDecision()` before `outcomes->apply()`; record `overriddenConflicts` in the decision and its count in the `archival.review_decided` audit row. Verify: `tests/Unit/Service/Archival/DestructionReviewConflictTest.php` asserts 422 with the conflicts, that `apply()` is never called on a refusal, and that an acknowledged destroy records the conflicts.
+  > The request field is `acknowledgeConflicts` (boolean, `"true"` from a form counts). An entry whose conflicts could not all be established (`linkConflictsTruncated: true`) needs the acknowledgement too, so a check that could not run never reads as nothing to override. The audit row carries `overriddenConflicts` (the count) on `destroy` answers; `retain` and `transfer` are not checked and their audit row is unchanged.
+- [x] 3.2 Add `destroyedOverConflict` to the approval `DestructionService::approveList()` records. Verify: `tests/Unit/Service/Archival/DestructionServiceApproveTest.php` counts two overridden entries.
 
 ## 4. Docs and end-to-end test
 
