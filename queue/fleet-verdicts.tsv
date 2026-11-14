@@ -10196,3 +10196,7 @@ decidiq	2143	f51a1774d8f40b7c7bd91a388ee530d9ba2e04e6	RED	merge3:merge-gate	GATE
 decidiq	2169	994902108e71373a71178554606541426e03c634	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
 decidiq	2172	148e74e7725f5549647398286241b07c976d9f51	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
 decidiq	2202	3a275a0425fce2a3464bf1ee3b6ed0600e02fadd	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
+decidiq	2178	37197bc0dc79c7ac6841b3162e6f177815309958	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/profiles/municipality.json openapi.json 
+decidiq	2188	b774355c5fc719de1a030868fd7ff83f485a10eb	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/Registrar/SaveGuardSubscriptions.php 
+decidiq	2189	d54fa2289e2eb3b59dd2fedbbfb0ec076afc3829	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/profiles/municipality.json 
+decidiq	2191	4d6f144bcc6304f052adc9d77f24d84379a9ec62	CONFLICT	merge3	merges clean on development alone; files: src/manifest.json tests/vitest/simpleDecisionPage.spec.js 
