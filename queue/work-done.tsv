@@ -8930,3 +8930,4 @@ verify:integriq:3574:2279c986	GREEN #3574 (phpunit 0 new failures, vitest 2157 p
 build:openregister:flow-tag-object-step:c2	already building: build/flow-tag-object-step (PR #10190) is open and unmerged; the tasks left are e2e 3.1 and docs-with-screenshot 3.2	session-20261114T092644-f8ff8fc9	2026-11-14T11:03:18Z
 merge:pipelinq:3694:b3f161c1	merge3 tree of 31 pipelinq PRs: merged=21 red=1 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T11:25:28Z
 merge:pipelinq:3685:454ee7c4	merge3 tree of 31 pipelinq PRs: merged=21 red=1 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T11:25:31Z
+merge:pipelinq:3708:f1a43f73	merge3 tree of 31 pipelinq PRs: merged=21 red=1 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T11:25:35Z
