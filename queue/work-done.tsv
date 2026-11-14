@@ -8541,3 +8541,4 @@ build:larpinq:larpinq-manifest-tier-4	partial: PR #1038, 2.2/3.1/3.2/4.1 done (d
 fix:opencatalogi:2678:c98dd334	merged development (clean), pushed d4e2c6f1; conflict is with unlanded tree PRs	session-20261114T065626-0651b305	2026-11-14T09:04:07Z
 verify:versioniq:690:28decbf9	690 GREEN; no new failures	session-20261114T075640-efa02b24	2026-11-14T09:04:14Z
 measure:pipelinq:20261114h08	php 90.04% (pcov), js 94.9% at 2045245	session-20261114T085638-f8a2ea52	2026-11-14T09:04:31Z
+build:larpinq:capability-rows-missing-requirements	partial: PR #1039 builds 3.1 (item price + purchase endpoint, 10 tests); other tasks left unchecked	session-20261114T082640-198131b9	2026-11-14T09:04:38Z
