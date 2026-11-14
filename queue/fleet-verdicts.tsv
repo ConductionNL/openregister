@@ -7552,3 +7552,4 @@ versioniq	700	c430025c921e916b855a42ffd51516cb8f164786	GREEN	worker-27	tree 693-
 versioniq	701	049f1d82c67458ce29b7b00bea4a814cb20f4aa4	GREEN	worker-27	tree 693-701 (without 699): unit-only 1725 tests, baseline 1643 (2 failures inherited), 0 new; vitest 64 files/2964 pass; build inventory-app-details-card, links limited to http(s)
 versioniq	699	35790f07ccf81ace851a4d24b297c9f6860b1a27	CONFLICT	worker-27	conflicts after #693-#698 in appinfo/info.xml, lib/Db/AuditEntry.php, tests/unit/Controller/ApiTest.php
 opencatalogi	2686	ffec5cc0714683b36962c2563936b00b89bd99aa	CONFLICT	worker-03	conflicts in the tree after #2684/#2685 in l10n/en.js en.json nl.js nl.json
+stackiq	1912	7bab8b71dad1cdfbce0c5773c2245f44c7978738	REVERIFY	worker-20	moved MCP provider registration off the end of register(); merges clean with dev and with #1908; suite 3453 OK
