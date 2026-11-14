@@ -33,7 +33,7 @@ use OCP\Migration\SimpleMigrationStep;
  * `mandate_evidence` on `openregister_tasks`, and `mandate_evidence` on
  * `openregister_task_audit`. All nullable, so existing rows are unaffected.
  */
-class Version1Date20261114100000 extends SimpleMigrationStep {
+class Version1Date20261114103700 extends SimpleMigrationStep {
 
 	public const TASKS = 'openregister_tasks';
 
