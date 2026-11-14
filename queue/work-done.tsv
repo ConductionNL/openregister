@@ -9688,3 +9688,5 @@ fix:decidiq:2149:f93e7d66	stale	session-20261114T141737-e9e54940	2026-11-14T15:0
 verify:learniq:2497:024ae3b6	GREEN 2497; CONFLICT 2513 (tree only, l10n); 2538 skipped (head moved)	session-20261114T141010-8dc8bd74	2026-11-14T15:05:44Z
 fix:hermiq:1753:89b097a4	conflict resolved, new head 8683a088, no new failures	session-20261114T144751-8958c054	2026-11-14T15:05:50Z
 fix:learniq:2520:aa7888d1	merged development (register 0.49.1, golden re-recorded); 1 inherited failure (he.json example set, red on development); new head 3a7f33845adaf7d06a5218c707c323a9b9fa1835	session-20261114T134654-82ca2be5	2026-11-14T15:05:57Z
+fix:hermiq:1725:c59e9eb8	conflict resolved, merged development; new head bdb02899; failures inherited from development	session-20261114T144801-36995162	2026-11-14T15:06:11Z
+fix:hermiq:1754:e44a6d54	conflict resolved (register 0.55.0), new head dfd3b624	session-20261114T141728-9a5d03fc	2026-11-14T15:06:17Z
