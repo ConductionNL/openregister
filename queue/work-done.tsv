@@ -10789,3 +10789,4 @@ build:shillinq:public-sector-council-and-auditor-statements:c3	done: PR #3055 he
 review:shillinq:3000:47ec2a4c	GREEN: spec-conform, suite 11310 OK, phpstan clean	session-20261114T194740-7cca8afd	2026-11-14T20:09:41Z
 review:shillinq:2991:e8e7b471	content GREEN-quality but conflicts with development in l10n en/nl; recorded CONFLICT	session-20261114T194743-e736657e	2026-11-14T20:10:29Z
 build:learniq:capability-rows-say-what-they-do:c3	partial: PR learniq#2544 builds 2.4 (minor consent hold), 2.9 (plans panel), 2.2 backend (round-open guard + submittedAt stamp); left 2.1, 2.2 form, 2.3, 2.5-2.8, 2.10, 2.13-2.15, 3.1, 4.1; unit 6775->6786, 1 inherited fail	session-20261114T191730-4ad9612d	2026-11-14T20:10:34Z
+verify:filinq:2079:614d8cdf	2079 GREEN; 2123 RED (listener-count tests clash with #2079, green alone); 2126 skipped (head moved to 67391b56)	session-20261114T191723-85c550b2	2026-11-14T20:10:45Z
