@@ -8515,3 +8515,4 @@ fix:buildiq:1630:a2088089	no change: merges clean with development; conflicts on
 build:versioniq:releases-minimum-age	partial: PR #707, section 1 (setting, policy field, API 400s, MinimumAgeRule/FirstSeenStore); planner, job, page open	session-20261114T065626-0651b305	2026-11-14T09:00:53Z
 build:versioniq:safety-upgrade-migration-preview	partial: PR #706 (1.2 reader, 1.3 size probe; 1.1 needs live instance, 2.x/3.x after)	session-20261114T082633-7466e3ea	2026-11-14T09:00:40Z
 fix:learniq:2490:0a737598	conflict resolved: merged development, nl keys moved off the tail, clean with #2486; new head fedc6da6; REVERIFY recorded	session-20261114T082633-64525b24	2026-11-14T09:01:08Z
+build:versioniq:inventory-lifecycle-signals	partial: PR #711, 1.2 done, 2.1 backend (job+notifier), 1.1 part (removedFromStore, stale); archived, per-app EOS, UI, successors left	session-20261114T082612-ca93c5ee	2026-11-14T09:01:23Z
