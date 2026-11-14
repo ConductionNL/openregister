@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use BadMethodCallException;
 use OCA\OpenRegister\Exception\NotImplementedException;
 
 /**
@@ -45,7 +46,8 @@ use OCA\OpenRegister\Exception\NotImplementedException;
  * read-path list(). They MAY add get/create/update/delete when their
  * storage strategy supports those operations, in either published form
  * (see IntegrationProvider); an operation a provider does not declare
- * answers NotImplementedException through IntegrationProviderInvoker.
+ * answers NotImplementedException, called directly or through
+ * IntegrationProviderInvoker.
  *
  * @SuppressWarnings(PHPMD.NumberOfChildren) ADR-019's pluggable integration
  *   registry is built around exactly this template-method base — each leaf
@@ -104,9 +106,35 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	}//end getOpenConnectorSource()
 
 	/**
+	 * Answer NotImplementedException for a linked-thing operation the provider does not declare.
+	 *
+	 * The operations are not declared here so that a subclass can declare
+	 * them in either published form; a declared method always wins over this.
+	 *
+	 * @param string      $name      The method called.
+	 * @param list<mixed> $arguments Its arguments.
+	 *
+	 * @return never
+	 *
+	 * @throws NotImplementedException For get, create, update, delete or list.
+	 * @throws BadMethodCallException  For any other undeclared method.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature of __call is fixed by PHP.
+	 */
+	public function __call(string $name, array $arguments): never {
+		if (in_array($name, ['list', 'get', 'create', 'update', 'delete'], true) === true) {
+			throw $this->unsupported(operation: $name);
+		}
+
+		throw new BadMethodCallException(sprintf('Call to undefined method %s::%s()', static::class, $name));
+	}//end __call()
+
+	/**
 	 * The NotImplementedException a provider answers for an operation it does not support.
 	 *
-	 * @param string $operation The operation, as the message names it: `get`, `create`, `update` or `delete`.
+	 * @param string $operation The operation, as the message names it: `list`, `get`, `create`, `update` or `delete`.
 	 *
 	 * @return NotImplementedException
 	 *

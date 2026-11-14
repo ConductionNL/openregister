@@ -90,4 +90,11 @@ class IntegrationProviderInvokerTest extends TestCase {
 
 		(new IntegrationProviderInvoker())->get(new ReleasedFormSubclassProvider(), $this->ref(), 'e1');
 	}
+
+	public function testADirectCallToAnUndeclaredOperationAnswersNotImplemented(): void {
+		$this->expectException(NotImplementedException::class);
+		$this->expectExceptionMessage('Provider fixture-subclass does not support create()');
+
+		(new ReleasedFormSubclassProvider())->create('5', 'case', 'uuid-1', []);
+	}
 }
