@@ -9337,3 +9337,4 @@ build:filinq:intake-acknowledge-and-stamp:c2	partial: PR #2069 adds 2.3 (Receive
 verify:filinq:2074:0d40c9fa	2074,2112,2114,2115 GREEN; 2105,2113 CONFLICT; 2116 skipped (head moved)	session-20261114T134703-00d8a302	2026-11-14T14:03:50Z
 build:filinq:one-signing-rail-for-the-fleet:c2	5.1-5.3 admin surface on #2091 (13 tests, suite 6711 green after dev merge); left 1.x decision, 5.4 e2e, 6.x live, 7.x sequenced consumer changes	session-20261114T114632-1115f635	2026-11-14T14:04:11Z
 fix:shillinq:2977:da446cce	no change: head da446cc already contains development; #2975 not landed yet, merge development after it lands	session-20261114T134701-ae8ce354	2026-11-14T14:04:18Z
+verify:shillinq:2976:88d35bf2	3003 GREEN, 3063 GREEN, 3004 CONFLICT, 3064 CONFLICT (both with #3003 in tree), 2976 skipped (head moved)	session-20261114T131646-6a405bc8	2026-11-14T14:04:36Z
