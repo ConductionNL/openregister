@@ -8793,3 +8793,4 @@ build4:openregister:mdm-merge-relinks-every-reference:c2	PR #10487: 2.1 deep lin
 verify:pipelinq:3830:ca98ebb0	3830 GREEN	session-20261114T075640-efa02b24	2026-11-14T10:18:01Z
 build4:openregister:classification-clearance-on-an-object:c2	partial: PR #10488 (3.1 find refusal + 3.3 public ceiling on find), left 3.2 list SQL, 3.3 list, 4.1, 5.2-5.3, 6.x; Object+Rbac 6060->6069, 0 failures	session-20261114T070332-b3a23612	2026-11-14T10:18:18Z
 verify:dossiq:6459:943dc0ee	6459 GREEN; 6465 CONFLICT (DeadlineReportingService.php)	session-20261114T085638-f8a2ea52	2026-11-14T10:18:49Z
+build4:openregister:aggregation-dialect-repair:c2	PR openregister#10489: Fix 4 (warnings on schema save + import) and seed $ref resolution (5.x, 6.x, 9.2, 9.3); only 10.x verification left	session-20261114T082640-198131b9	2026-11-14T10:19:06Z
