@@ -11665,4 +11665,5 @@ fix:versioniq:714:6d93c5ca	conflict resolved (InstallerService refusal chain, fi
 fix:versioniq:707:19102464	floor restored (PASS), new head f78fb56e; REVERIFY recorded	session-20261114T221800-b231235b	2026-11-14T22:44:34Z
 fix:versioniq:698:d0d1b4db	floor restored (complexity 4.60, interfacing 4.11), pushed 543a383c, REVERIFY recorded	session-20261114T221804-88b39b17	2026-11-14T22:44:51Z
 build:versioniq:install-one-click-updates:c2	no code tasks left on PR #717: 2.4 is an e2e spec and 3.1 is the close/archive step, both left for the live/release lanes	session-20261114T221804-88b39b17	2026-11-14T22:45:10Z
+build:stackiq:landscape-owner-attestation:c2	all code tasks done on PR #1931 (task 3 confirm/correct/overdue, task 4 pages+dialog, task 5 docs text); suite 3635 green; left Playwright and screenshot (live)	session-20261114T214719-cd72efa7	2026-11-14T22:45:20Z
 fix:launchpad:1225:47177d86	floor restored (unit_interfacing 3.46), pushed 92488c7c, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T22:45:22Z
