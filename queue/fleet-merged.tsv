@@ -2982,3 +2982,7 @@ decidiq	2194	17b2a973b9f35b3c72147de709218728500595b1	MERGED	merge3	GATE OK sbom
 decidiq	2202	3a275a0425fce2a3464bf1ee3b6ed0600e02fadd	RED	merge3	GATE RED absolute floor: decidiq maintainability 3.76 after merge is below its floor 3.78
 decidiq	2204	60f57522b5b0f51012bb8d94cc2b3cd0691033bc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
 decidiq	2206	782547635edbb3ce0984f3a61784832eee9913d6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
+humaniq	1125	9ef38fe583be2d2e69ab1a084539588f0057f11d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1133	5c864a84ca469623869034a2241fd0ca96d20adc	SKIP	merge3	GATE UNMEASURED head moved to 672afd47b2
+humaniq	1144	1aded0f35865e52ae3736c12d1342fe20c99ea2e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1145	0310b8ea98dbd5d1c1e5396abae95adf55ee59e5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47

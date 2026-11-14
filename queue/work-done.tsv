@@ -11351,9 +11351,15 @@ fix:stackiq:1906:5acf605d	merged development, resolved ContractApprovalService; 
 merge:shillinq:2977:f0e43f09	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:56:55Z
 fix:stackiq:1943:c815318d	conflict resolved by merging development (both sides kept, register 2.5.10); phpunit OK; pushed 1cd381e0809e07154322072db33ab570f7705ae6, REVERIFY	session-20261114T211815-849a5f5d	2026-11-14T21:57:05Z
 merge:shillinq:3048:55fd68fa	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:12Z
+merge:learniq:2507:2ad3488c	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:56:44Z
+merge:learniq:2544:ce07da0d	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:02Z
+fix:stackiq:1943:c815318d	conflict resolved by merging development (both sides kept, register 2.5.10); phpunit OK; pushed 1cd381e0809e07154322072db33ab570f7705ae6, REVERIFY	session-20261114T211815-849a5f5d	2026-11-14T21:57:05Z
+merge:learniq:2486:7e92d338	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:14Z
 verify:hermiq:1751:141d8763	1754 GREEN; 1751 CONFLICT; 1792 CONFLICT after 1754	session-20261114T214740-6d7e97c9	2026-11-14T21:57:12Z
+merge:learniq:2484:00bf849c	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:27Z
 fix:portaliq:2444:c94c7881	merged development, register version bumped past development; new head 6d4286d3	session-20261114T212457-7a749dbd	2026-11-14T21:57:28Z
 merge:shillinq:3000:706666b9	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:33Z
+merge:learniq:2493:2b3406da	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:40Z
 build:hermiq:delegation-runs-in-parallel:c3	done: PR #1785 now builds every code task (2.1 per-part chat steps, 3.1 spec tags), merged development (register 0.58.0), head 5ceb085f; PHP 5203 / vitest 1517 green	session-20261114T214736-dd784d82	2026-11-14T21:57:42Z
 fix:stackiq:1927:ddb874d1	merged development, conflicts resolved, unit OK; new head 3920fdf6	session-20261114T214742-7aa14b57	2026-11-14T21:57:38Z
 merge:shillinq:2991:3e5f5fa6	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:57:51Z
@@ -11366,6 +11372,14 @@ fix:stackiq:1938:2b97ffe5	fixed CONFLICT: development merged in (register + l10n
 fix:stackiq:1924:075129a2	failed: the conflict is in lib/Settings/softwarecatalogus_register.json; workers may not touch Softwarecatalogus, so this is left for a person or the local lane	session-20261114T194805-be886caa	2026-11-14T21:58:37Z
 merge:shillinq:3062:34fe98c2	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:58:43Z
 merge:shillinq:2995:aa4f9fce	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:58:59Z
+merge:learniq:2507:ddf2d0b6	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:58:04Z
+build:opencatalogi:publication-relations-place-and-source-ids:c2	partial: PR #2650 now also builds 1.3 (relations on show) and 4.1 (docs), plus the public strip half of 2.3; left: 1.4 frontend panel and form, the 2.3 sourceIdentifier filter (no ready route on development, needs a nested-entry filter in OpenRegister), 3.1 dossiq issue, group 5 gated	session-20261114T211754-5182f374	2026-11-14T21:58:02Z
+fix:stackiq:1941:e8635d30	conflict resolved; pushed 9651b6f8, REVERIFY recorded	session-20261114T203357-c555025b	2026-11-14T21:58:14Z
+merge:learniq:2521:877265d4	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:58:20Z
+fix:stackiq:1938:2b97ffe5	fixed CONFLICT: development merged in (register + l10n resolved), unit 3611 green, new head 55c1a384, REVERIFY recorded; 1933/1939 conflict with development on their own	session-20261114T211806-b9cd4119	2026-11-14T21:58:33Z
+fix:stackiq:1924:075129a2	failed: the conflict is in lib/Settings/softwarecatalogus_register.json; workers may not touch Softwarecatalogus, so this is left for a person or the local lane	session-20261114T194805-be886caa	2026-11-14T21:58:37Z
+merge:learniq:2513:54cdc769	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:58:43Z
+merge:learniq:2523:d0e66148	merge3 tree of 10 learniq PRs: merged=2 red=1 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-14T21:59:06Z
 verify:opencatalogi:2665:8d708939	2672/2679/2686/2695/2707 GREEN, 2682 CONFLICT; 2665/2673/2696 skipped (heads moved); payload ended in a truncated sha for 2707 (matched by prefix), so any PRs after it were not in the row	session-20261114T191742-bf93c040	2026-11-14T21:59:05Z
 review:portaliq:2444:6d4286d3	GREEN	session-20261114T212457-7a749dbd	2026-11-14T21:59:13Z
 merge:shillinq:3051:06363955	merge3 tree of 13 shillinq PRs: merged=1 red=1 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-14T21:59:18Z
