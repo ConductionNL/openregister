@@ -9613,3 +9613,10 @@ verify:dossiq:6459:943dc0ee	verify	dossiq	development	merge	prs=6459@6d6b896bd13
 verify:pipelinq:3830:ca98ebb0	verify	pipelinq	development	merge	prs=3830@eed4b55311a70a28dc7ecb87e59c02721d1f1cb5	2026-11-14T10:10:24Z
 merge:dossiq:6499:6b12feac	merge	dossiq	development	development	prs=6499@fb5dfa20fb2a4f82d33efed191f82702f18453ef,6500@fc50db36f904b216baebe0bdcbe804a7c921ac42	2026-11-14T10:10:24Z
 merge:pipelinq:3819:647b6b1b	merge	pipelinq	development	development	prs=3819@8d6e5ca82ed74a763de50a6e0d2cf2ed2c884b4a,3826@f843cb02c08fb3f6eb87abd8e14139c0cd12ce60,3827@4f94733508a2f7385fa1ef53b1708903ab9bd910,3828@0f8c8cc2d68947f4db6edfcdf0660f948dbc125e	2026-11-14T10:10:24Z
+review:openregister:10481:58937215	review	openregister	main	10481	sha=5893721526a9cdb94314eac13baf4aa67fd37d4d;last_approved=;title=feat(openregister): build archival-conformance	2026-11-14T10:15:12Z
+review:openregister:10482:bc1ff2f1	review	openregister	main	10482	sha=bc1ff2f1338ba5a684ab9b8443f26aa0924323a3;last_approved=;title=feat(openregister): build anonymisation-image-seam	2026-11-14T10:15:12Z
+review:openregister:10483:afa31a85	review	openregister	main	10483	sha=afa31a8529341bdb10f5b2ade435178ec747b1a6;last_approved=;title=feat(openregister): build appraisal-inherited-from-a-parent	2026-11-14T10:15:12Z
+review:openregister:10484:1aba9e77	review	openregister	main	10484	sha=1aba9e77d35922662024789f4db6edd87e8dcea0;last_approved=;title=feat(openregister): build confidentiality-classification-primitive	2026-11-14T10:15:12Z
+review:openregister:10485:76f96c23	review	openregister	main	10485	sha=76f96c2300ce14a17e9a4486af8606f4da250b08;last_approved=;title=feat(openregister): build connections-daily-report-mail	2026-11-14T10:15:12Z
+verify:pipelinq:3707:65fa614f	verify	pipelinq	development	merge	prs=3707@153dff0e7076d9a6976fbeec6a000b2c589dcb50,3743@871e47d54f19aad16fb7eeac1f4d38f79b61e6af,3829@920af96ce671d5df480fe408e9aa247e4d939157,3831@cd981132d7790e59379bd2a232b316a7c9858295	2026-11-14T10:15:12Z
+merge:dossiq:6462:ef13eac4	merge	dossiq	development	development	prs=6462@fd68cfadb0313e6418475bcefe0e65f1dde9409b	2026-11-14T10:15:12Z
