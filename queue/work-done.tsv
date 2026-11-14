@@ -11828,3 +11828,4 @@ build4:openregister:records-copy-with-links:c4	no code tasks left: PR #10525 (af
 fix:shillinq:3078:df173129	version line aligned with #3062; new head 9577c251, REVERIFY recorded	session-20261114T231738-f75034a1	2026-11-14T23:18:38Z
 cover:integriq:92114ab0m4b3f:6daf52ad	PR #3639: 16 tests, lib/Outbound scope 91.94% -> 97.26%	session-20261114T221759-cd5c5678	2026-11-14T23:19:08Z
 verify:keepiq:1790:995d9956	GREEN #1790 (php 5213 ok; vitest 3 inherited failures, none new)	session-20261114T223937-a95b1403	2026-11-14T23:19:10Z
+measure:dossiq:20261114h22	php 92.52% (pcov, 17379 tests, 19 failures), js 94.9% (vitest 7082, 2 failures)	session-20261114T224742-00d4fbcb	2026-11-14T23:19:38Z
