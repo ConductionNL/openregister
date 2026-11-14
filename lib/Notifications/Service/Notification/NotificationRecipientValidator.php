@@ -45,6 +45,7 @@ final class NotificationRecipientValidator {
 		'watchers',
 		'parties',
 		ReferencedAddressNotifierInterface::KIND,
+		ReferrersRecipientValidator::KIND,
 	];
 
 	/**
@@ -158,9 +159,39 @@ final class NotificationRecipientValidator {
 			'object-acl' => $this->aclRecipientErrors(entry: $entry),
 			'role' => $this->roleRecipientErrors(entry: $entry),
 			'expression' => $this->expressionRecipientErrors(entry: $entry),
+			ReferrersRecipientValidator::KIND => (new ReferrersRecipientValidator())->errors(
+				entry: $entry,
+				nested: fn (RecipientEntry $nested): array => $this->nestedRecipientErrors(entry: $nested)
+			),
 			default => [],
 		};
 	}//end kindCheckErrors()
+
+	/**
+	 * Errors for one entry nested in a `referrers` block.
+	 *
+	 * The same checks as a top-level entry, except that a `field` names a
+	 * property of the referring schema, not of this one, so only its presence
+	 * is checked here.
+	 *
+	 * @param RecipientEntry $entry The nested entry.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/specs/notificatie-engine/spec.md#requirement-a-rule-can-address-the-people-behind-referring-objects
+	 */
+	private function nestedRecipientErrors(RecipientEntry $entry): array {
+		if (is_array($entry->recipient) === true && ($entry->recipient['kind'] ?? null) === 'field') {
+			$field = $entry->value(key: 'field');
+			if (is_string($field) === true && $field !== '') {
+				return [];
+			}
+
+			return [$this->unknownFieldError(entry: $entry, field: '')];
+		}
+
+		return $this->validateRecipient(entry: $entry);
+	}//end nestedRecipientErrors()
 
 	/**
 	 * Errors for a `groups` or `users` entry that names nobody.

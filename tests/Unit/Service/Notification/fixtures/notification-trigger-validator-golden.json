@@ -2,19 +2,19 @@
     "null": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"rule-null\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"rule-null\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "int": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"rule-int\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"rule-int\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "empty-array": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"rule-empty-array\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"rule-empty-array\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "created": [],
@@ -23,13 +23,13 @@
     "bad-type": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"rule-bad-type\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"rule-bad-type\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "int-type": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"rule-int-type\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"rule-int-type\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "event-string-ok": [],

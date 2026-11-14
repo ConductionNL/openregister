@@ -32,7 +32,7 @@ final class NotificationTriggerValidator {
 	 *
 	 * @var array<int, string>
 	 */
-	private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold', 'calculatedChange'];
+	private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold', 'calculatedChange', 'noteAdded'];
 
 	/**
 	 * Comparison operators a `threshold` trigger may use.
@@ -191,6 +191,7 @@ final class NotificationTriggerValidator {
 			'scheduled' => $this->validateScheduledTrigger(name: $name, trigger: $trigger->spec),
 			'threshold' => $this->validateThresholdTrigger(name: $name, trigger: $trigger->spec),
 			'calculatedChange' => $this->validateCalculatedChangeTrigger(name: $name, trigger: $trigger->spec),
+			'noteAdded' => (new NoteAddedTriggerValidator())->validate(name: $name, trigger: $trigger->spec),
 			default => [],
 		};
 	}//end validateTriggerType()

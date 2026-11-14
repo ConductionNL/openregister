@@ -176,6 +176,10 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 			return $this->resolveRoleEntry(roleName: (string)($entry['role'] ?? ''), roleGroups: $source->roleGroups);
 		}
 
+		if ($kind === 'referrers') {
+			return $this->resolveReferrersEntry(entry: $entry, source: $source);
+		}
+
 		$uids = match ($kind) {
 			'watchers' => $this->resolveWatcherEntry(object: $source->object),
 			'users' => $this->existingUids(candidates: (array)($entry['users'] ?? [])),
@@ -188,6 +192,37 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 
 		return ['uids' => $uids, 'unresolved' => []];
 	}//end resolveEntry()
+
+	/**
+	 * The people behind the objects that refer to the triggering one, readers of it only.
+	 *
+	 * Fails closed: without the referrers resolver the entry reaches nobody
+	 * and says so.
+	 *
+	 * @param array<string, mixed> $entry  The `referrers` entry.
+	 * @param RecipientSource      $source The triggering object, its data and the trigger context.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/specs/notificatie-engine/spec.md#requirement-a-rule-can-address-the-people-behind-referring-objects
+	 */
+	private function resolveReferrersEntry(array $entry, RecipientSource $source): array {
+		try {
+			$referrers = $this->serverContainer?->get(ReferrerRecipients::class);
+		} catch (\Throwable $e) {
+			$referrers = null;
+		}
+
+		if (($referrers instanceof ReferrerRecipients) === false) {
+			return ['uids' => [], 'unresolved' => [['kind' => 'referrers', 'id' => (string)($entry['schema'] ?? ''), 'reason' => 'referrers lookup unavailable']]];
+		}
+
+		return $referrers->resolve(
+			entry: $entry,
+			source: $source,
+			nested: fn (array $recipients, RecipientSource $referrer): array => $this->resolveFrom(recipientsSpec: $recipients, source: $referrer)
+		);
+	}//end resolveReferrersEntry()
 
 	/**
 	 * The candidates that name an existing Nextcloud user.

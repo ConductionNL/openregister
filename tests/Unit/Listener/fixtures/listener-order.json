@@ -127,6 +127,9 @@
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener"
 	],
+	"OCA\\OpenRegister\\Event\\ObjectNoteAddedEvent": [
+		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener"
+	],
 	"OCA\\OpenRegister\\Event\\ObjectRevertedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener"
