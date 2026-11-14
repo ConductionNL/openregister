@@ -9165,6 +9165,7 @@ review:openregister:10551:a9fba65f	APPROVE	session-20261114T121616-766bd91a	2026
 merge:hermiq:1714:5b2b6ce8	merge3 tree of 47 hermiq PRs: merged=29 red=2 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T13:01:06Z
 review:openregister:10546:2cd5b2aa	APPROVE 10546	session-20261114T124629-3e824e29	2026-11-14T13:01:03Z
 review:openregister:10539:e5d4c2aa	BLOCK 10539: architecture test red (yaml not regenerated) + outbound links collide on email_links_unique_idx after the first per object	session-20261114T114647-2bec20c6	2026-11-14T13:01:10Z
+build:portaliq:page-public-on-purpose:c2	done: open branch quality/build-page-public-on-purpose (head 4af909f6) has every code task (1.1, 1.2); only 1.3 e2e left, a live task; nothing to build	session-20261114T121616-766bd91a	2026-11-14T13:01:29Z
 merge:hermiq:1767:3f90a4bc	merge3 tree of 47 hermiq PRs: merged=29 red=2 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T13:01:22Z
 merge:hermiq:1725:bf837af3	merge3 tree of 47 hermiq PRs: merged=29 red=2 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T13:01:30Z
 merge:hermiq:1769:db1001da	merge3 tree of 47 hermiq PRs: merged=29 red=2 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 16	merge3-20261113T213425-c36bcd5f	2026-11-14T13:01:33Z
