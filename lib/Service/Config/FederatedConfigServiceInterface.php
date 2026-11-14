@@ -119,6 +119,26 @@ interface FederatedConfigServiceInterface {
 	public function discover(string $topic, ?string $credentialId = null, ?string $appId = null, ?string $actingUserId = null): array;
 
 	/**
+	 * Discover published bundles and say how the search went.
+	 *
+	 * Like discover(), with a free-text term searched together with the topic,
+	 * and the outcome instead of an empty list on failure: `ok`, `rate_limited`
+	 * (GitHub answered 403 or 429) or `unreachable` (any other failure). A read
+	 * the broker refuses is retried anonymously; `brokerUsed` says which one
+	 * GitHub answered.
+	 *
+	 * @param string              $topic        The discovery topic to search for.
+	 * @param string              $term         A free-text term searched together with the topic; '' for none.
+	 * @param string|null         $credentialId Optional broker credential for an authenticated search.
+	 * @param BrokerIdentity|null $identity     The app and acting user the broker call is made for; OpenRegister when null.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>, brokerUsed: bool, rateLimited: bool, status: int}
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function discoverOutcome(string $topic, string $term = '', ?string $credentialId = null, ?BrokerIdentity $identity = null): array;
+
+	/**
 	 * Fetch a published bundle file from a GitHub repository.
 	 *
 	 * The bridge between discover() (which returns repo cards) and install()

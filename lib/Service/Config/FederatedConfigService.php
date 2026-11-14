@@ -86,6 +86,27 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	private const GITHUB_API = 'https://api.github.com';
 
 	/**
+	 * Outcome of discoverOutcome(): GitHub answered the search.
+	 *
+	 * @var string
+	 */
+	public const DISCOVERY_OK = 'ok';
+
+	/**
+	 * Outcome of discoverOutcome(): GitHub refused the search for its rate limit (403 or 429).
+	 *
+	 * @var string
+	 */
+	public const DISCOVERY_RATE_LIMITED = 'rate_limited';
+
+	/**
+	 * Outcome of discoverOutcome(): the search failed for any other reason.
+	 *
+	 * @var string
+	 */
+	public const DISCOVERY_UNREACHABLE = 'unreachable';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FederatedConfigTransport    $transport The credential, signing and HTTP collaborators federated config sharing talks through.
@@ -585,6 +606,153 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 
 		return $this->repoCards(body: $body);
 	}//end discover()
+
+	/**
+	 * Discover published bundles and say how the search went (see the interface).
+	 *
+	 * @param string              $topic        The discovery topic to search for.
+	 * @param string              $term         A free-text term searched together with the topic; '' for none.
+	 * @param string|null         $credentialId Optional broker credential for an authenticated search.
+	 * @param BrokerIdentity|null $identity     The app and acting user the broker call is made for; OpenRegister when null.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>, brokerUsed: bool, rateLimited: bool, status: int}
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function discoverOutcome(string $topic, string $term = '', ?string $credentialId = null, ?BrokerIdentity $identity = null): array {
+		$topic = trim($topic);
+		if ($topic === '') {
+			return $this->discoveryAnswer(read: self::readResult(status: 200, body: '', brokerUsed: false), cards: []);
+		}
+
+		$read = $this->githubRead(
+			path: self::discoveryPath(topic: $topic, term: trim($term)),
+			credentialId: $credentialId,
+			identity: ($identity ?? BrokerIdentity::of())
+		);
+		if ($read['ok'] === false) {
+			$this->logger->warning(
+				message: '[FederatedConfigService] discovery failed for topic ' . $topic . ' with HTTP ' . $read['status'],
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return $this->discoveryAnswer(read: $read, cards: []);
+		}
+
+		return $this->discoveryAnswer(read: $read, cards: $this->repoCards(body: $read['body']));
+	}//end discoverOutcome()
+
+	/**
+	 * The repository-search path for a topic, with the free-text term beside it.
+	 *
+	 * @param string $topic The discovery topic.
+	 * @param string $term  The trimmed term, '' for none.
+	 *
+	 * @return string
+	 */
+	private static function discoveryPath(string $topic, string $term): string {
+		$query = 'topic:' . $topic;
+		if ($term !== '') {
+			$query .= ' ' . $term;
+		}
+
+		return '/search/repositories?q=' . rawurlencode($query) . '&sort=updated&per_page=50';
+	}//end discoveryPath()
+
+	/**
+	 * The answer of discoverOutcome() for a read and the cards built from it.
+	 *
+	 * @param array{ok: bool, status: int, body: string, rateLimited: bool, brokerUsed: bool} $read  The read.
+	 * @param array<int, array<string, mixed>>                                               $cards The cards.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>, brokerUsed: bool, rateLimited: bool, status: int}
+	 */
+	private function discoveryAnswer(array $read, array $cards): array {
+		$outcome = self::DISCOVERY_OK;
+		if ($read['rateLimited'] === true) {
+			$outcome = self::DISCOVERY_RATE_LIMITED;
+		} else if ($read['ok'] === false) {
+			$outcome = self::DISCOVERY_UNREACHABLE;
+		}
+
+		return [
+			'outcome' => $outcome,
+			'cards' => $cards,
+			'brokerUsed' => $read['brokerUsed'],
+			'rateLimited' => $read['rateLimited'],
+			'status' => $read['status'],
+		];
+	}//end discoveryAnswer()
+
+	/**
+	 * GET a GitHub API path with its status: through the broker with a
+	 * credential, and anonymously without one or when the broker refuses.
+	 *
+	 * @param string         $path         The API path (with query string).
+	 * @param string|null    $credentialId The broker credential, or null/'' for anonymous.
+	 * @param BrokerIdentity $identity     Who a brokered read is made for.
+	 *
+	 * @return array{ok: bool, status: int, body: string, rateLimited: bool, brokerUsed: bool}
+	 */
+	private function githubRead(string $path, ?string $credentialId, BrokerIdentity $identity): array {
+		if ($credentialId !== null && $credentialId !== '') {
+			try {
+				$result = $this->transport->broker->request(
+					credentialId: $credentialId,
+					appId: $identity->appId,
+					method: 'GET',
+					path: $path,
+					headers: ['Accept' => 'application/vnd.github+json'],
+					actingUserId: $identity->actingUserId
+				);
+				return self::readResult(status: (int)($result['status'] ?? 0), body: (string)($result['body'] ?? ''), brokerUsed: true);
+			} catch (Throwable $e) {
+				$this->logger->debug(
+					message: '[FederatedConfigService] broker refused a read, retrying anonymously: ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+		}
+
+		return $this->anonymousRead(path: $path);
+	}//end githubRead()
+
+	/**
+	 * GET a GitHub API path anonymously, with its status; status 0 when the request failed.
+	 *
+	 * @param string $path The API path (with query string).
+	 *
+	 * @return array{ok: bool, status: int, body: string, rateLimited: bool, brokerUsed: bool}
+	 */
+	private function anonymousRead(string $path): array {
+		try {
+			$response = $this->transport->clientService->newClient()->get(
+				self::GITHUB_API . $path,
+				['headers' => ['Accept' => 'application/vnd.github+json'], 'http_errors' => false]
+			);
+			return self::readResult(status: $response->getStatusCode(), body: (string)$response->getBody(), brokerUsed: false);
+		} catch (Throwable $e) {
+			return self::readResult(status: 0, body: '', brokerUsed: false);
+		}
+	}//end anonymousRead()
+
+	/**
+	 * A read's result from its status and body.
+	 *
+	 * @param int    $status     The HTTP status, 0 when no answer came.
+	 * @param string $body       The response body.
+	 * @param bool   $brokerUsed Whether the broker carried the read.
+	 *
+	 * @return array{ok: bool, status: int, body: string, rateLimited: bool, brokerUsed: bool}
+	 */
+	private static function readResult(int $status, string $body, bool $brokerUsed): array {
+		return [
+			'ok' => ($status >= 200 && $status < 300),
+			'status' => $status,
+			'body' => $body,
+			'rateLimited' => ($status === 403 || $status === 429),
+			'brokerUsed' => $brokerUsed,
+		];
+	}//end readResult()
 
 	/**
 	 * The discovery cards of a repository-search response body; non-array items are skipped.
