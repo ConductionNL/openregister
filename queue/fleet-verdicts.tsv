@@ -10725,3 +10725,4 @@ shillinq	3000	7a353f6db98892174d742f18107dd9531c388f29	GREEN	worker-31:review	bu
 shillinq	2977	dcb021934e64d9e0cfbd89ae5afac7f3e66a8332	REVERIFY	worker-06	added SPDX headers to the two new vitest specs (spdxheaders floor); vitest 16/16, eslint clean; new head b5f66d62103f785d805f7d84af96ba98b262f306, verify it
 opencatalogi	2720	fc520f800d62af93f33af7a0d7c8573d1ee937c0	GREEN	worker-11	unit 5627 tests (baseline 5626, 2 inherited failures AppIdentityTest/WooControllerTest), no new failures; openapi+docs+parity test only, per api-says-what-it-filtered
 planninq	1181	1243a776d9002ffd07986e916ef42bdae5453647	GREEN	worker-15	tests only (2 vitest specs, 12 tests); vitest 3449 pass on the tree; unit 1177 OK baseline, no PHP changed
+dossiq	6523	2cc454b5ce121005624ff266194465ea0aff78c3	GREEN	worker-21	tests only; unit 17381 run, baseline 19 failures (inherited), 0 new failures
