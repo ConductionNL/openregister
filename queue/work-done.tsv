@@ -10341,3 +10341,4 @@ fix:decidiq:2177:667519c0	fixed: merged development, l10n moved; unit 4304 OK; n
 build4:openregister:incremental-sync-for-api-consumers:c3	built: PR #10490 now has tombstones (group 3), 1.4 Newman, docs 5.1, @spec 5.3; only 5.2 (post-ship parity row) left	session-20261114T161806-530176c3	2026-11-14T17:05:41Z
 fix:buildiq:1630:d47a3654	no change: dev already in, conflicts only with unmerged GREEN #1626 (nl l10n); REVERIFY after 1626 lands	session-20261114T161752-4c07cde6	2026-11-14T17:05:35Z
 build4:openregister:modelling-composite-identity:c3	pushed to PR #10503 (merged main): 1.2 identity breach warning on schema save (IdentityBreachCounter, 5 tests, identityWarnings in the PUT answer); Architecture/Contract/Rules/Controller/Schemas suites pass; left 4.3 e2e	session-20261114T134708-ba7f7741	2026-11-14T17:06:18Z
+verify:dossiq:6519:3a63c0b2	6519 GREEN	session-20261114T151932-05b02c14	2026-11-14T17:06:32Z
