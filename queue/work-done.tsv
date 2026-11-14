@@ -8097,3 +8097,4 @@ build:buildiq:github-app-repo-format	PR #1586: code already on development, 25 t
 build:buildiq:operate-debug-log-and-monitoring	PR #1587: T10 metrics (with server-derived failures field) and T11 docs; T04 e2e, T10 live check, T12 left	session-20261114T070352-19ea7dff	2026-11-14T08:05:16Z
 verify:planninq:1153:7ad9f986	GREEN 1153,1163,1165,1166; CONFLICT 1167,1168 (l10n/openapi vs earlier tree PRs)	session-20261114T070346-2d3b1362	2026-11-14T08:05:19Z
 build:integriq:connectors-digipoort-sbr-filing	PR #3601: tasks 1-4 implemented, 50 tests added, suite 8493->8543 no new failures; owed: preproduction delivery, Playwright page spec, openspec validate, shillinq event confirmation	session-20261114T073109-bb0ea608	2026-11-14T08:05:40Z
+build:buildiq:rules-evaluation-for-other-apps	partial: PR #1588, T01 schema + T02 resolveForApp (system read, callableBy check, tests); T03-T07 left	session-20261114T062202-3e33eeb3	2026-11-14T08:06:19Z
