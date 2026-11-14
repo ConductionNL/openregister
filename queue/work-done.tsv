@@ -11339,3 +11339,4 @@ fix:portaliq:2508:284a8b2d	merged development in, register moved to 0.113.0; new
 fix:stackiq:1922:9a7623c7	merged development, resolved register/manifest/bootstrap/l10n; new head 73725d96, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T21:55:12Z
 fix:stackiq:1926:47d3e287	merged development, l10n keys moved mid-catalogue; merges clean with 1905/1946; unit 3611 OK; new head e764756f, REVERIFY recorded	session-20261114T204759-2444e6ca	2026-11-14T21:55:36Z
 build:opencatalogi:capability-rows-close-gaps:c2	partial: PR #2696, done 2.1 2.2 2.3 2.5 2.6 2.7 3.1; left 2.4 (OpenRegister version diff deferred, needs an OR build), 2.8 (integriq disappearance policy), 1.2 e2e and 3.2 live check	session-20261114T204804-ae7e06a7	2026-11-14T21:56:01Z
+verify:launchpad:1209:f0b5c2a6	1209 GREEN; 1211 1214 1216 1219 CONFLICT after 1209 (each clean on development alone)	session-20261114T171821-a80c28c5	2026-11-14T21:56:04Z
