@@ -3048,3 +3048,5 @@ humaniq	1156	40bb5c448af5eb4652c6ba62981cb40d223fc9ee	RED	merge3	GATE RED floor:
 hermiq	1735	09766374a9ba9386facc8d120dcbb51db6a96b32	RED	merge3	GATE RED floor: unit_complexity: 4.52 -> 4.50
 hermiq	1767	2616658a751252857a3fe62aa274708ebf7098f5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
 hermiq	1792	33071fc8103fd4d270cdcb4c55a4bcbd06b75ca3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+planninq	1169	23ab3aa4329268da445ca948dc63e316a4826ad5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1179	aa07467b25aa2c4740b979437aca12b7a7ebdac9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
