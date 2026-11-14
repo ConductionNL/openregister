@@ -9417,4 +9417,5 @@ build:filinq:redaction-four-eyes-setting:c2	PR filinq#2098: tasks 1-6 done (task
 fix:filinq:2091:72c1df15	no change: #2091 is clean on development; its conflict is with #2069, which has not landed, so there is nothing to merge in yet	session-20261114T114435-d7b47cb4	2026-11-14T14:19:53Z
 fix:pipelinq:3752:51dd9688	fixed CONFLICT: merged development, l10n merged + rebuilt, suite 8392/0 fail; new head 7334221b2	session-20261114T134650-981cc120	2026-11-14T14:19:49Z
 fix:pipelinq:3818:dc2b36c5	merged development, l10n conflicts resolved keeping both; new head 6ddd22c5	session-20261114T141721-d7ad4da5	2026-11-14T14:20:01Z
+fix:filinq:2106:c30c20ab	no change: #2106 is clean on development; its conflict is with #2069, which has not landed (checked just now), so there is nothing to merge in yet	session-20261114T114435-d7b47cb4	2026-11-14T14:20:12Z
 fix:portaliq:2442:5eed4168	conflict resolved, new head d378be76	session-20261114T141737-e9e54940	2026-11-14T14:20:24Z
