@@ -10447,3 +10447,4 @@ build4:openregister:generated-identifier:c3	pushed to PR #10516 (build/generated
 fix:hermiq:1728:fa959665	merged development, resolved l10n + register version conflict (0.57.0); new head 4b9a20c3, REVERIFY queued	session-20261114T161752-4c07cde6	2026-11-14T17:41:02Z
 verify:learniq:2515:9ea58cce	GREEN 2515 2521; CONFLICT 2536 2541	session-20261114T134708-ba7f7741	2026-11-14T17:41:32Z
 verify:humaniq:1125:c6dc31b9	1125 GREEN, 1129 GREEN, 1134 CONFLICT (with 1125)	session-20261114T172412-df2c66f1	2026-11-14T17:41:49Z
+build:hermiq:schedules-onto-engine-triggers:c3	partial: no code this pass. 2.2 is built in hermiq (#1734, merged) but waits on openregister #10563 (trigger-schedule timezone key), not yet on main; 2.1/2.3/2.4 need ownerless timers, and FlowTimerService is internal (not in lib/Contract), so a new OpenRegister contract has to be designed first; 3.2/3.3 follow from those	session-20261114T161750-16a1c558	2026-11-14T17:41:57Z
