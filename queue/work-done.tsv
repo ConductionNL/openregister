@@ -10655,3 +10655,4 @@ merge:humaniq:1135:61370a4b	merge3 tree of 9 humaniq PRs: merged=4 red=4 fail=0 
 fix:planninq:1178:93ae3833	floor restored: bulkPatch split per action, unit_complexity 4.84; new head 3c7b73e8	session-20261114T191744-b9573b83	2026-11-14T19:22:32Z
 verify:learniq:2542:ae32d345	GREEN 2542; no new failures	session-20261114T191730-4ad9612d	2026-11-14T19:22:40Z
 merge:shillinq:2976:76af4434	merge3 tree of 8 shillinq PRs: merged=3 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:23:59Z
+build4:openregister:reply-threading-by-headers:c3	done: PR #10539 head 98d6d739 adds 4.5 Conversation Files-sidebar tab for .eml (MailThreadTab.vue + specs, 3 strings in 37 locales, fr cognate recorded); jest 8474/8474 green, l10n parity no worse. Left (live only): 4.5 e2e spec, 4.4/3.1 Newman; 2.2 n/a	session-20261114T191723-85c550b2	2026-11-14T19:24:04Z
