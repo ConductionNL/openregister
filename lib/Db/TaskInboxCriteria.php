@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use InvalidArgumentException;
 use DateTime;
 
 /**
@@ -263,7 +264,7 @@ final class TaskInboxCriteria {
 		}
 
 		if ($audience === null && $uid === null) {
-			throw new \InvalidArgumentException('TaskInboxCriteria needs a uid or a TaskInboxAudience.');
+			throw new InvalidArgumentException('TaskInboxCriteria needs a uid or a TaskInboxAudience.');
 		}
 
 		$audience ??= new TaskInboxAudience(uid: (string) $uid, groupIds: ($groupIds ?? []), isAdmin: $isAdmin, scope: $scope);

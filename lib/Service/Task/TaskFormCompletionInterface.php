@@ -36,34 +36,40 @@ interface TaskFormCompletionInterface {
 	/**
 	 * Complete a task, validating and writing its form payload.
 	 *
-	 * Takes a FormCompletionRequest (as `$request`, or positionally in place of `$uuid`, then the
-	 * actor), the answer form (`uuid:`, `answer:`, `data:`, `actor:`), or the separate arguments
-	 * of the published contract.
+	 * Takes a FormCompletionRequest in main's position (`(request, actor)`), the answer form
+	 * (`uuid:`, `answer:`, `data:`, `actor:`), or the separate arguments of the published contract,
+	 * by name or by position (a uuid string in the first slot). A request wins over an answer, an
+	 * answer over the outcome.
 	 *
-	 * @param string|FormCompletionRequest|null $uuid       The task uuid, or the completion request.
-	 * @param string|null                       $outcome    The completion outcome; the actor when `$uuid` is a request.
-	 * @param string|null                       $resultText Free-text result.
-	 * @param string|null                       $comment    Completion comment.
-	 * @param array<string, mixed>              $data       The declared field values; empty for a form-less completion.
-	 * @param string|null                       $actor      The completing identity.
-	 * @param TaskAnswer|null                   $answer     The completion outcome, result and comment.
-	 * @param FormCompletionRequest|null        $request    The task uuid, the completion outcome, result and comment, and the
-	 *                                                      declared field values (empty for a form-less completion).
+	 * @param FormCompletionRequest|string|null $request         The task uuid, answer and declared field values; a string here
+	 *                                                           is the release's positional `$uuid`.
+	 * @param string|null                       $actor           The completing identity; the release's positional `$outcome`
+	 *                                                           when the first slot is a uuid.
+	 * @param string|null                       $resultText      Free-text result.
+	 * @param string|null                       $comment         Completion comment.
+	 * @param array<string, mixed>              $data            The declared field values; empty for a form-less completion.
+	 * @param string|null                       $positionalActor The release's positional `$actor`.
+	 * @param TaskAnswer|null                   $answer          The completion outcome, result and comment.
+	 * @param string|null                       $uuid            The task uuid.
+	 * @param string|null                       $outcome         The completion outcome.
 	 *
 	 * @return Task The completed task.
 	 *
 	 * @throws TaskFormRefusedException When the payload violates the form.
 	 * @throws TaskSubjectWriteRefusedException When the subject's own validation or lifecycle refuses the write.
 	 * @throws TaskAccessDeniedException When the task verb or the object write is not authorized.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
 	public function complete(
-		string|FormCompletionRequest|null $uuid=null,
-		?string $outcome=null,
+		FormCompletionRequest|string|null $request=null,
+		?string $actor=null,
 		?string $resultText=null,
 		?string $comment=null,
 		array $data=[],
-		?string $actor=null,
+		?string $positionalActor=null,
 		?TaskAnswer $answer=null,
-		?FormCompletionRequest $request=null,
+		?string $uuid=null,
+		?string $outcome=null,
 	): Task;
 }//end interface

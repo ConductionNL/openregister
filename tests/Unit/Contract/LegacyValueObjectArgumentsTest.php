@@ -71,7 +71,7 @@ class LegacyValueObjectArgumentsTest extends TestCase {
 	 */
 	public static function publishedParameters(): array {
 		return [
-			'TaskFormCompletion::complete'     => [TaskFormCompletion::class, 'complete', ['uuid', 'outcome', 'resultText', 'comment', 'data', 'actor', 'answer', 'request']],
+			'TaskFormCompletion::complete'     => [TaskFormCompletion::class, 'complete', ['request', 'actor', 'resultText', 'comment', 'data', 'positionalActor', 'answer', 'uuid', 'outcome']],
 			'TaskInboxCriteria::__construct'   => [
 				TaskInboxCriteria::class,
 				'__construct',
@@ -85,7 +85,7 @@ class LegacyValueObjectArgumentsTest extends TestCase {
 				'__construct',
 				['register', 'schema', 'objectUuid', 'recipient', 'channelKind', 'subject', 'body', 'flowId', 'runId', 'stepName', 'actingUser', 'item', 'message', 'origin'],
 			],
-			'FormDestinationValidator::validate' => [FormDestinationValidator::class, 'validate', ['mapping', 'schema', 'options', 'destination']],
+			'FormDestinationValidator::validate' => [FormDestinationValidator::class, 'validate', ['mapping', 'destination', 'options', 'schema']],
 			'HookStoppedException::__construct'  => [HookStoppedException::class, '__construct', ['message', 'errors', 'code', 'previous']],
 			'FormDependent::__construct'         => [FormDependent::class, '__construct', ['id', 'app', 'title', 'author', 'mapping', 'unpublish', 'audience', 'form']],
 		];

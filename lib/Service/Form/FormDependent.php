@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Form;
 
+use InvalidArgumentException;
 use Closure;
 
 /**
@@ -95,7 +96,7 @@ final class FormDependent {
 		}
 
 		if ($form === null && ($id === null || $app === null || $title === null)) {
-			throw new \InvalidArgumentException('FormDependent needs an id, app and title, or a PublishedForm.');
+			throw new InvalidArgumentException('FormDependent needs an id, app and title, or a PublishedForm.');
 		}
 
 		$form ??= new PublishedForm(id: (string) $id, app: (string) $app, title: (string) $title, audience: $audience);

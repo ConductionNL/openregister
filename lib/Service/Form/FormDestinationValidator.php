@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Form;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
 use OCP\IL10N;
@@ -112,13 +113,14 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	/**
 	 * Every problem with a mapping into a destination schema.
 	 *
-	 * Takes a FormDestination (as `$destination`, or positionally in place of `$schema`) or the
-	 * schema and options of the published contract; a FormDestination wins.
+	 * Takes a FormDestination in main's position, or the schema and options of the published
+	 * contract, by name or by position (a Schema in the second slot); a FormDestination wins.
 	 *
 	 * @param array<string, mixed>        $mapping     The mapping: `fields` and `fixed`.
-	 * @param Schema|FormDestination|null $schema      The destination schema, or the destination.
+	 * @param FormDestination|Schema|null $destination The destination schema, and the audience when the form is not internal;
+	 *                                                 a Schema here is the release's positional `$schema`.
 	 * @param array<string, mixed>        $options     `audience`: the form's audience when it is not internal.
-	 * @param FormDestination|null        $destination The destination schema, and the audience when the form is not internal.
+	 * @param Schema|null                 $schema      The destination schema.
 	 *
 	 * @return array<int, array{field?: string, property: string, code: string, message: string}> The findings; empty when valid.
 	 *
@@ -128,20 +130,27 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	 */
 	public function validate(
 		array $mapping,
-		Schema|FormDestination|null $schema = null,
+		FormDestination|Schema|null $destination = null,
 		array $options = [],
-		?FormDestination $destination = null,
+		?Schema $schema = null,
 	): array {
-		if ($schema instanceof FormDestination) {
-			$destination ??= $schema;
-			$schema = null;
+		if ($destination instanceof Schema) {
+			$schema ??= $destination;
+			$destination = null;
 		}
 
 		if ($destination === null && $schema === null) {
-			throw new \InvalidArgumentException('validate() needs a schema or a FormDestination.');
+			throw new InvalidArgumentException('validate() needs a schema or a FormDestination.');
 		}
 
-		$destination ??= new FormDestination(schema: $schema, audience: $this->audienceOption(options: $options));
+		if ($destination === null) {
+			$audience = null;
+			if (isset($options['audience']) === true) {
+				$audience = (string) $options['audience'];
+			}
+
+			$destination = new FormDestination(schema: $schema, audience: $audience);
+		}
 		$schema = $destination->schema;
 		$fields = $this->fieldsOf(mapping: $mapping);
 		$fixed = $this->fixedOf(mapping: $mapping);
@@ -773,19 +782,4 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 
 		return (string)json_encode($value);
 	}//end scalarLabel()
-
-	/**
-	 * The audience a legacy `options` array names, or null when it names none.
-	 *
-	 * @param array<string, mixed> $options The options.
-	 *
-	 * @return string|null The audience.
-	 */
-	private function audienceOption(array $options): ?string {
-		if (isset($options['audience']) === false) {
-			return null;
-		}
-
-		return (string) $options['audience'];
-	}//end audienceOption()
 }//end class
