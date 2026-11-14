@@ -9741,3 +9741,4 @@ fix:learniq:2537:1f3f874a	no change: clean on development; tree-only l10n confli
 fix:learniq:2536:004355d0	no change: clean on development; tree-only register conflict; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T15:14:53Z
 fix:decidiq:2170:99fc9258	conflict with #2143 resolved by relocating l10n strings; new head 5a972e2e; REVERIFY recorded	session-20261114T144816-cf37407b	2026-11-14T15:15:15Z
 build:hermiq:verify-row-scenarios:c2	done: PR hermiq#1784 (1.1 Mark action + Misuse label; all tasks ticked; vitest 1463 pass)	session-20261114T144734-e99d406c	2026-11-14T15:15:20Z
+build:hermiq:oversight-switch-ai-off-per-department:c2	PR #1740 updated (head 95293ea1): 1.3 evidence download, 1.4 Per department list, 1.5 tests done; only 2.1 e2e left (needs live Nextcloud); unit no new failures, vitest 1443 pass	session-20261114T144801-36995162	2026-11-14T15:15:39Z
