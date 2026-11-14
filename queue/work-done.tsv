@@ -9179,3 +9179,4 @@ build:portaliq:operate-portals-per-organisation:c2	partial: PR #2440 head 95a6dd
 build:portaliq:intake-report-pages:c2	partial: PR #2444, T10 ticked (strings + docs present); left T01 live check, T08 detail page blocked: nextcloud-vue detail page cannot read a record from an app endpoint	session-20261114T114647-2bec20c6	2026-11-14T13:03:36Z
 verify:portaliq:2427:9715c11e	4 GREEN (2427, 2430, 2432, 2442), 2434 CONFLICT; unit 5204 vs baseline 5187	session-20261114T114643-b064db1b	2026-11-14T13:04:38Z
 fix:shillinq:3046:1ba604de	fixed: merged development, registrar test count updated; new head 4d142112e0	session-20261114T114414-1a8d8ccd	2026-11-14T13:05:11Z
+build:portaliq:hermiq-ai-tooling:c2	PR #2492 (stacked on #2435): tasks 1,2,3,5 + 4/6 implement; suite 4921->4952, 0 failures; left: live bearer control test, spec merge at archive	session-20261114T124625-c74fc712	2026-11-14T13:05:18Z
