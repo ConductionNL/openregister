@@ -7607,3 +7607,4 @@ review:openregister:10457:86351e87	APPROVE: additive facade + fail-closed read f
 review:openregister:10458:34e9a865	APPROVE 10458: within change specs, suites green, phpstan clean	session-20261114T062200-6a28e40c	2026-11-14T06:32:04Z
 verify:learniq:2496:cb8dc8df	2496,2501 GREEN; 2502 CONFLICT with #2496 (l10n); no new failures	session-20261114T062134-840bbeee	2026-11-14T06:32:32Z
 fix:dossiq:6195:40dfe694	conflict resolved, pushed df5d8db1b79a66b6ec905727cd117e4bdcb6d67e, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T06:33:13Z
+verify:hermiq:1729:46a9af48	8 GREEN; 1735 RED (Handoff /result missing type in register)	session-20261114T062156-16c77e6a	2026-11-14T06:34:00Z
