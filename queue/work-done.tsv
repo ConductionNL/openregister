@@ -8958,3 +8958,4 @@ fix:pipelinq:3713:61678b39	conflict resolved (l10n, both sides kept); new head 7
 fix:pipelinq:3708:e4400e74	merged development, resolved l10n conflicts; new head 59d07177, REVERIFY recorded	session-20261114T114416-aa10a904	2026-11-14T11:51:56Z
 build:pipelinq:brp-monitor-moves-to-integriq:c3	failed: blocked, 2.1 and connection fields wait on integriq quality/build-brp-connection-monitor-from-pipelinq (handover listener not on integriq development); PR #3820 already merged	session-20261114T114647-2bec20c6	2026-11-14T11:52:56Z
 fix:pipelinq:3826:f843cb02	fixed: API-Version header on GET /export/full 200 restores adrvalidator warn; new head a94cd12d	session-20261114T114630-192fc047	2026-11-14T11:52:54Z
+review:openregister:10523:5ee3e7c6	BLOCK: 2 architecture tests fail (concrete SlaCalculator/WorkingCalendar named in new files)	session-20261114T114405-27c89384	2026-11-14T11:54:51Z
