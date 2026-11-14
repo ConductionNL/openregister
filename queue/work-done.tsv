@@ -8204,3 +8204,4 @@ fix:decidiq:2158:fc0444d7	layout id + l10n overlap with #2139 removed; tree of 4
 build:launchpad:responsehelper-instance-api	failed: the change is marked BLOCKED, awaiting a human decision on proposal.md (spec amendment must land first); nothing may be built until it is approved	session-20261114T070332-b3a23612	2026-11-14T08:20:30Z
 verify:hermiq:1767:3f90a4bc	GREEN #1767: no new failures (phpunit 4714, vitest 1439)	session-20261114T075640-614c8df8	2026-11-14T08:20:32Z
 verify:integriq:3574:e6da0e29	3 GREEN (3594,3595,3597), 2 RED (3574 vitest mock/golden, 3599 drops a registered listener), 4 CONFLICT (3593,3596,3598,3600)	session-20261114T062156-e8adf8ca	2026-11-14T08:21:10Z
+verify:planninq:1162:3e3eed1b	1162 GREEN; 1167 CONFLICT with 1162 (l10n catalogues, ProjectSettingsSidebar.vue)	session-20261114T075638-c30fc6de	2026-11-14T08:21:27Z
