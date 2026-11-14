@@ -8440,4 +8440,5 @@ fix:buildiq:1619:2f7f5352	merged development in, kept both describe blocks; new 
 fix:buildiq:1615:48ea2bb2	l10n keys moved off the shared tail; clean on dev+1613+1614; new head e9c07802714b18a7f782432d8870f9f1eb5dd516	session-20261114T075640-efa02b24	2026-11-14T08:50:34Z
 fix:buildiq:1612:ad606b04	merged development in cleanly; new head 40bed07f1c09d081dfbd618cd1610ccb046181cf, REVERIFY recorded	session-20261114T073117-2bd2e050	2026-11-14T08:50:56Z
 fix:keepiq:1787:a1fbe07c	failed: merges cleanly with development; conflict is only with unmerged #1786 (both add adjacent l10n en/nl keys), resolvable only after #1786 lands, then merge development in	session-20261114T070909-be4543e0	2026-11-14T08:51:13Z
+build:stackiq:landscape-owner-attestation	partial: PR #1931 (tasks 1-2; 3 listener/job, 4 pages, 5 docs left)	session-20261114T082633-7466e3ea	2026-11-14T08:51:14Z
 fix:keepiq:1631:6ab64a41	import order fixed, dev merged, pushed f4de0e6f, REVERIFY recorded	session-20261114T080916-9b1d69d6	2026-11-14T08:51:11Z
