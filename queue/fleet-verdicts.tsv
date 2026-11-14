@@ -7491,3 +7491,4 @@ opencatalogi	2648	225f1e628870876832616b144915ef14e4a461f2	REVERIFY	worker-15	me
 buildiq	1630	a2088089094ea2f7d956fcc33307c7e65a004dd2	CONFLICT	worker-28	conflicts with development+1554+1629+1631 in tree order
 buildiq	1632	4b09bf4c18e88f9c4de0ad3fff6123eaa109968a	CONFLICT	worker-28	conflicts when merged in tree order
 buildiq	1618	95f5b703b67e561d3ce6424d89f1f1c7c80dcc5a	REVERIFY	worker-05	merged development (clean); php unit 2965 run, only failure ExportZipGoldenTest = development baseline. Remaining overlap with unmerged #1613/#1614 is l10n en/nl only: merge those first, then this needs another development merge; new head 08874393b34c1159158d28e01989613124330863, verify it
+learniq	2494	bcb53dec83c6e83cedeccebe7a426639834cca05	GREEN	worker-01	tree dev+2494: phpunit 6650 tests, 1 failure (HigherEducationExampleSetTest, also red on development baseline 6640/1); no new failures; implements bpv-hours-per-day (returned week names a day and a question)
