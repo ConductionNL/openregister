@@ -8580,6 +8580,7 @@ verify:buildiq:1606:f6bd1777	GREEN 1606 1612 1615 1625 1629; CONFLICT 1617 1618 
 verify:larpinq:1024:9ea4387e	GREEN (tests only), vitest 525 pass	session-20261114T073117-2bd2e050	2026-11-14T09:08:47Z
 build:larpinq:player-character-sheet-access	PR #1048: admin/GM/owner matrix, 403 without id disclosure, owner redaction, 8 tests; 2.6 e2e and 3.1 archive left; pdfTemplates visibility follow-up named	session-20261114T082612-ca93c5ee	2026-11-14T09:08:53Z
 verify:keepiq:1788:69f1ebe1	GREEN #1788	session-20261114T070344-897ffa0f	2026-11-14T09:08:58Z
+fix:buildiq:1619:e0722b68	no change: conflicting PR #1616 is not on development yet; #1619 merges clean on development	session-20261114T070333-41d2bfe8	2026-11-14T09:09:07Z
 fix:versioniq:692:002a332a	no conflict with development; only overlaps open #691 in lib/BackgroundJob/AutoUpdateJob.php, needs a development merge after #691 lands	session-20261114T070352-19ea7dff	2026-11-14T09:09:20Z
 build:versioniq:install-force-incompatible	PR #726: tasks 1.1-4.3 built (override store, force install/enable, hourly lift job, CLI flag, picker/card/dialog, en/nl); 4.4 e2e and 5.1 archive left; unit 1643->1697, same 2 inherited failures; vitest 2968 green	session-20261114T082640-d9af913e	2026-11-14T09:09:10Z
 fix:buildiq:1626:e4ef5397	no change: head e4ef5397 merges clean with development; conflicts only with unmerged sibling #1621 (l10n nl) — merge development after 1621 lands	session-20261114T065625-baa65a50	2026-11-14T09:09:19Z
