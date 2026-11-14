@@ -7622,3 +7622,4 @@ stackiq	1922	9a7623c70e702c706afdade5b1759cf91492b21c	CONFLICT	worker-42	clean o
 stackiq	1923	832b22b3c204458e5adc02a70151f0da22f5d946	GREEN	worker-42	tree dev 8ca7c057 + 1916..1923: phpunit 3494 tests, baseline 3446 with 0 failures, 0 new; vitest 2532 passed; build capability-requirements-from-the-matrix matches its specs
 stackiq	1924	075129a287c8efdb121653780607b8f403135cf0	CONFLICT	worker-42	clean on development, conflicts with earlier tree PRs in lib/Settings/softwarecatalogus_register.json
 larpinq	1039	726a2623a0ede8c3bb10b131c8fcbb3f95a174f8	GREEN	worker-35	phpunit unit tree 812 OK (baseline 792 OK), vitest 511 passed (baseline 506), no new failures
+launchpad	1210	256d3e094afd0d0ee8a28ef49771b7ddcad872f2	GREEN	worker-45	phpunit 4088 OK (baseline 4068 OK, 13 skipped both), vitest 2223 passed (baseline 2208), no new failures; implements platform-dashboard-theme-and-css specs
