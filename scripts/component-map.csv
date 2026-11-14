@@ -4241,3 +4241,4 @@ Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
 Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Core
+Service/Outbound/OutboundAllowlist.php,,Service,,,,,Integrations

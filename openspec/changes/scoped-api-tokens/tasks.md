@@ -108,7 +108,8 @@
         distributed memcache: nothing is counted or refused. Personal tokens
         follow once 1.1c gives them a grant. Tests:
         `tests/Unit/Service/Rbac/TokenGrantRateLimiterTest.php` (6).
-- [ ] C40.5 An administered outbound allowlist checked at save (D-C40-3).
+- [x] C40.5 An administered outbound allowlist checked at save (D-C40-3).
+      - Done for webhooks: `OutboundAllowlist` reads the app setting `outboundAllowlist` (a JSON array of hosts, or one per line or comma; `*.example.nl` admits subdomains only). `WebhooksController::create()` and `update()` (when `url` is sent) refuse a destination outside it with 422 naming the field, the host and the allowlist, before anything is saved. Unset or empty: every destination is admitted, as today. Set but unreadable: refused. Tests: `tests/Unit/Service/Outbound/OutboundAllowlistTest.php` (8), `tests/Unit/Controller/WebhooksControllerAllowlistTest.php` (5). Left: flow HTTP steps (automations) are not checked yet, and the setting has no admin page field yet (it is set with `occ config:app:set openregister outboundAllowlist`).
 - [ ] C40.6 Tests: the missing end date refusal, the expired token, the leaver who does not break the integration, the interactive sign-in refusal, the allowlist refusal at save. The leaver and the interactive sign-in tests belong to the service account, which moved with C40.3 to `scoped-api-tokens-machine-callers` (task W.4 there); they are written there, not here.
 - [ ] C40.7 Hand over to the dossiq and integriq lanes with candidate ids C-access-and-privacy-35, -42, -43, -44 and -70, noting that C-access-and-privacy-35 is already answered by `account-self-service`.
 - [x] C40.8 Reported, unfixed, in the PR body: `openspec validate --strict`
