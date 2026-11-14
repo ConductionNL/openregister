@@ -355,6 +355,7 @@ components:
     include:
       - ".*/lib/Activity/[^/]*"
       - ".*/lib/Activity/Setting/[^/]*"
+      - ".*/lib/BackgroundJob/(BackfillEmailLinkMessageIdJob)[.]php"
       - ".*/lib/Db/(FeedbackMapperInterface)[.]php"
       - ".*/lib/Listener/(NotificationsAnnotationInstallListener)[.]php"
       - ".*/lib/Notification/[^/]*"

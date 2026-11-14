@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
+use OCA\OpenRegister\Contract\ReplyThreadResolutionInterface;
+use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
@@ -135,6 +137,14 @@ final class ServiceRegistrar {
 			EmailLinkReaderInterface::class,
 			function ($c) {
 				return $c->get(EmailLinkService::class);
+			}
+		);
+
+		// The granted resolve of a reply's headers (ADR-099), for a mail intake.
+		$context->registerService(
+			ReplyThreadResolutionInterface::class,
+			function ($c) {
+				return $c->get(ReplyThreadService::class);
 			}
 		);
 	}//end registerRequestScoped()

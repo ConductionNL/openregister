@@ -38,11 +38,15 @@ final class MailContent {
 	 * @param string                    $subject     Email subject line.
 	 * @param string                    $body        Email body text.
 	 * @param array<string, mixed>|null $unsubscribe Unsubscribe material for the List-Unsubscribe headers; null for none.
+	 * @param MailObjectBinding|null    $object      The object the mail is sent from; the sent mail is linked to it. Null for none.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
 	public function __construct(
 		public readonly string $subject,
 		public readonly string $body,
 		public readonly ?array $unsubscribe = null,
+		public readonly ?MailObjectBinding $object = null,
 	) {
 	}//end __construct()
 }//end class
