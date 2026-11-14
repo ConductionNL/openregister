@@ -8967,3 +8967,4 @@ buildiq	1625	04a5e4fe063ed3c67d9deafe10a0ade754a65b26	GREEN	worker-26	phpunit 31
 buildiq	1631	d05a201d07b0e89f01bb7a6750d9ff8af8c65ade	GREEN	worker-26	phpunit 3132 tests on tree (base 3126), 1 failure same as development, 0 new; vitest 4551 pass; builds reuse-remote-store-section (the store now shows the remote catalogue as its spec asks; only the host is exposed)
 buildiq	1639	10b01657fa89d99803b76323b967f85b98027943	GREEN	worker-26	phpunit 3132 tests on tree (base 3126), 1 failure same as development, 0 new; vitest 4551 pass; builds data-external-database-sources
 filinq	2118	17b69a70e2add5d767380fa92f9b9085ad2f9d19	GREEN	worker-54	tree 2070+2118 on development 90ad1e68: phpunit 6773 ok (baseline 6754 ok, 6 skipped), vitest 758, jest 537, no new failures; build of signing-cancellation per its change
+filinq	2078	515468bfeec6aec2643ffc364f1823164c0642ac	CONFLICT	worker-54	conflicts on the tree (development+2070): lib/Settings/filinq_register.json
