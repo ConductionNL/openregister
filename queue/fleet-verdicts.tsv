@@ -7735,3 +7735,4 @@ decidiq	2184	a4581421dc05275929ee6622f03df9f5331aa370	GREEN	worker-20	tests only
 decidiq	2185	ca52b5c98bd3b5af11c8c55ac09cc9cbc3c46989	GREEN	worker-20	tests only; unit 4050 run (baseline 4027 OK), 0 new failures
 dossiq	6491	3405f4aa27cc404b0c835c414ad7890f6ba078d7	GREEN	worker-47	tests only; unit 16904 run, baseline 16850 with 13 failing (inherited), 0 new; vitest 6928, 1 inherited failure (capabilityComparison, red on development)
 dossiq	6492	ddb7d6a53264d7c6515e6f66d3e733a2a026bdef	GREEN	worker-47	tests only; unit 16904 run, baseline 16850 with 13 failing (inherited), 0 new; vitest 6928, 1 inherited failure (capabilityComparison, red on development)
+dossiq	6493	8fbb966c71a80e566b1d8b8ac2156519825efe7a	GREEN	worker-47	tests only; unit 16904 run, baseline 16850 with 13 failing (inherited), 0 new; vitest 6928, 1 inherited failure (capabilityComparison, red on development)
