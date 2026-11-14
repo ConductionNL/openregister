@@ -7797,3 +7797,4 @@ fix:hermiq:1719:42c3a70e	conflict with development resolved, pushed fa2696b2; RE
 fix:hermiq:1764:ac844442	merged development (l10n union, register -> 0.54.0); unit 4723 OK; pushed 6d0ab109	session-20261114T065632-a1c920c5	2026-11-14T07:19:05Z
 fix:hermiq:1763:015ce782	conflict resolved, new head a68d1b9b; REVERIFY recorded	session-20261114T070344-897ffa0f	2026-11-14T07:19:16Z
 merge:integriq:3557:5d03d280	merge3 tree of 1 integriq PRs: none; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T07:19:26Z
+fix:hermiq:1674:33bac907	conflict resolved (identical @uses additions, kept development's superset); no new failures; new head 72d6bf37	session-20261114T070332-b3a23612	2026-11-14T07:19:36Z
