@@ -8375,3 +8375,4 @@ decidiq	2176	825a0640eaffd22feb08b4e5e7554833640b72bd	GREEN	worker-39	tree dev+2
 decidiq	2188	f58a79f420aca1984d5431040e927cabddd7c1f4	GREEN	worker-39	tree dev+2175+2176+2188: unit 4200 OK (baseline 4174 OK), vitest 2736 passed, no new failures; build of agenda-item-confidential-papers
 learniq	2486	646bdf9b9d1e06489cea2a8473cabbf5d4679ed9	GREEN	worker-28	tree dev+2486+2504: unit 6725 tests, baseline 6703 with 1 failure (HigherEducationExampleSetTest); js-unit 9 failures as on development; no new failures
 learniq	2504	30bff46d01a3c9d919fff7940ddc6a526d20a3fc	GREEN	worker-28	tree dev+2486+2504: unit 6725 tests, baseline 6703 with 1 failure (HigherEducationExampleSetTest); js-unit 9 failures as on development; no new failures
+learniq	2509	ca90dcaa723f07d187ffcf5cc8df492605d782fd	CONFLICT	worker-28	merges clean on development alone, files: l10n/en.js l10n/nl.js
