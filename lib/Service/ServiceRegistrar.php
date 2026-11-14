@@ -334,7 +334,10 @@ final class ServiceRegistrar {
 				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
 				// The per-row `can` list (record-tasks-tab D-4), asked of the
 				// same authorization service every verb's endpoint asks.
-				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
+				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class),
+				// Whether a user assignee is away and until when
+				// (tasks-delegation-and-substitution D-6).
+				substitution: $container->get(\OCA\OpenRegister\Service\Task\TaskSubstitution::class)
 			);
 	}//end buildTaskInboxService()
 

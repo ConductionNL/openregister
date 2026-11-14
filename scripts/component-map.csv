@@ -4248,3 +4248,9 @@ Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Migration/Version1Date20261114103700.php,,Migration,,,,,Platform
+Exception/TaskMandateRefusedException.php,,Exception,Exception,Exception/TaskMandateRefusedException.php,0,,Kernel
+Service/Task/TaskMandateGuard.php,,Service,Work,Work/Service/Task/TaskMandateGuard.php,0,,Processes
+Service/Task/TaskSubstitution.php,,Service,Work,Work/Service/Task/TaskSubstitution.php,0,,Processes
+BackgroundJob/TaskSubstitutionJob.php,,BackgroundJob,Work,Work/BackgroundJob/TaskSubstitutionJob.php,0,,Processes
+Listener/TaskAbsenceListener.php,,Listener,Flows,Flows/Listener/TaskAbsenceListener.php,0,,Processes

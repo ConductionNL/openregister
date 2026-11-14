@@ -364,6 +364,12 @@
 	"OCP\\User\\Events\\BeforeUserDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\SharerViewsEndWithUserListener"
 	],
+	"OCP\\User\\Events\\OutOfOfficeEndedEvent": [
+		"OCA\\OpenRegister\\Listener\\TaskAbsenceListener"
+	],
+	"OCP\\User\\Events\\OutOfOfficeStartedEvent": [
+		"OCA\\OpenRegister\\Listener\\TaskAbsenceListener"
+	],
 	"OCP\\User\\Events\\UserCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
 	],
