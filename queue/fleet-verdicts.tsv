@@ -8591,3 +8591,4 @@ decidiq	2149	bbffd285698c4e70c42fc3b37f022660ce7a5ba8	CONFLICT	worker-45	conflic
 decidiq	2168	517bc1d0af236a9431179e4b1673a9f2221294fc	GREEN	worker-45	unit 4279 on tree (baseline 4174 OK), vitest 2789 passed, new failures 0; builds publication-theme-pages
 decidiq	2177	667519c052668bd27567d0c50cc8605307da91e6	GREEN	worker-45	unit 4279 on tree (baseline 4174 OK), vitest 2789 passed, new failures 0; builds governing-documents-register, new endpoints check the user and read rights
 decidiq	2181	90e427b0b4d5e2eb51bbaaf66f67d2a30b7f52e1	GREEN	worker-45	unit 4279 on tree (baseline 4174 OK), vitest 2789 passed, new failures 0; builds motion-change-recommendations, accept/reject guarded by chair-or-secretary
+decidiq	2198	73a76b6a61d31875348a9bf840f2f71d6e20919e	CONFLICT	worker-45	conflicts in tree with earlier PRs (l10n, src/manifest.json, menu-layout, registry.js, simpleDecisionPage.spec.js); clean on plain development
