@@ -8487,6 +8487,7 @@ verify:keepiq:1791:dd8a5ba6	1791 GREEN, 1792 CONFLICT (same migration file as 17
 fix:buildiq:1629:1c21accd	fixed stale test after development moved the TaskProcessing lookup; new head 7ba3e45bb7a2694599cdb0e63113cb17fba78a23, REVERIFY recorded	session-20261114T073117-2bd2e050	2026-11-14T08:56:31Z
 fix:buildiq:1610:65aa047e	conflict resolved: l10n keys moved mid-catalogue; tree with 1613/1614/1616 merges clean; new head efd9490e; REVERIFY queued	session-20261114T073109-930980c2	2026-11-14T08:56:56Z
 verify:keepiq:1789:af657537	1789 GREEN, 1790 CONFLICT (l10n/nl with 1789)	session-20261114T062202-3e33eeb3	2026-11-14T08:57:02Z
+fix:launchpad:1218:1286fcd0	no change: branch already contains development; conflicts are with open tree PRs #1212/#1213/#1215/#1216 only; merge development in after they land	session-20261114T073108-67fbeb26	2026-11-14T08:57:09Z
 build:versioniq:codeberg-is-no-release-source	PR #696: task 2.1 done (bind and trusted-pattern refuse codeberg with 400, stored entries keep working); suite 1643->1649, the same 2 inherited golden failures	session-20261114T070346-2d3b1362	2026-11-14T08:57:18Z
 fix:launchpad:1217:1563c97c	migration class/version collision with #1212 fixed (renamed to Version002014Date20261114100000, version bumped), development merged in; new head edcbef17, REVERIFY recorded	session-20261114T075643-75a598ab	2026-11-14T08:57:30Z
 build:versioniq:install-bulk-rollback	partial: PR #698 (1.1 snapshot store; planner service; job, controller, routes, UI, commands left)	session-20261114T075648-394d8174	2026-11-14T08:57:45Z
