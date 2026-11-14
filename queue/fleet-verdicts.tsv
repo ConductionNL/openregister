@@ -10400,3 +10400,4 @@ stackiq	1926	82508f901e277571edd0cac7a61b843cce7179c0	GREEN	worker-15	unit 3644 
 stackiq	1937	3a8099f95106c17a3b33f6aac7f8c847f6fbf9b8	CONFLICT	worker-15	conflicts after #1926 in l10n/en,nl .js/.json
 stackiq	1939	7a225714c5a8137d8913669f83d476fb722316c4	CONFLICT	worker-15	conflicts after #1926 in l10n/en,nl .js/.json
 stackiq	1941	c185640eef73805d5404c340e4f363e9e8e1409c	CONFLICT	worker-15	conflicts after #1926 in l10n/en,nl .js/.json
+stackiq	1961	db31535e95aed7756fd3e82856b0851e4f67e48c	GREEN	worker-15	unit 3644 tests 0 failures (baseline development 3602, 0 failures); vitest 2631, 1 failure facets.spec FACET_DIMENSIONS inherited from development; no new failures; implements adopt-integration-leaves per its specs (frontend)
