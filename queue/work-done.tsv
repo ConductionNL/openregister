@@ -9545,3 +9545,4 @@ verify:filinq:2078:8535fb07	GREEN 2112, 2118; CONFLICT 2078, 2116, 2119, 2120; s
 verify:pipelinq:3833:3ec03f21	3833 GREEN; 3835 CONFLICT	session-20261114T141740-2e5638b3	2026-11-14T14:41:17Z
 fix:shillinq:2976:b29fc602	conflict resolved, new head e4c7b8aa, REVERIFY recorded	session-20261114T141728-9a5d03fc	2026-11-14T14:41:25Z
 fix:decidiq:2177:7078a1ab	merged development (kept both listeners); unit 4209 OK; new head 822a4db5	session-20261114T134708-0947487e	2026-11-14T14:41:39Z
+build:learniq:site-external-assessor-portal-design:c2	done: pushed aa7888d13 to PR #2520 — whole-portfolio shares (T3) through a server-stamped wholePortfolioId and a second join; only T7 e2e left (needs an instance with the mbo set). Suite 6580->6583, 1 inherited failure (he.json example set out of date)	session-20261114T134647-508a6ed0	2026-11-14T14:41:49Z
