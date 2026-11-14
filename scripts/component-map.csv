@@ -3102,6 +3102,8 @@ Service/Schemas/SchemaCacheHandler.php,334,Service,Service,Service/Schemas/Schem
 Service/Schemas/ScopedPropertyDeclaration.php,60,Service,Service,Service/Schemas/ScopedPropertyDeclaration.php,0,351,Core
 Service/Schemas/ScopedPropertyException.php,5,Service,Service,Service/Schemas/ScopedPropertyException.php,0,,Core
 Service/Schemas/ScopedPropertyGovernance.php,158,Service,Service,Service/Schemas/ScopedPropertyGovernance.php,0,,Core
+Service/Schemas/SemanticReferenceDeclaration.php,36,Service,Service,Service/Schemas/SemanticReferenceDeclaration.php,0,,Core
+Service/Schemas/SemanticReferenceException.php,5,Service,Service,Service/Schemas/SemanticReferenceException.php,0,,Core
 Service/Schemas/SemanticRoleHandler.php,120,Service,Service,Service/Schemas/SemanticRoleHandler.php,0,238,Core
 Service/Schemas/UniqueConstraintEvaluator.php,131,Service,Service,Service/Schemas/UniqueConstraintEvaluator.php,0,217,Core
 Service/ScriptManifestLoader.php,48,Service,Flows,Flows/Service/ScriptManifestLoader.php,0,,Processes
