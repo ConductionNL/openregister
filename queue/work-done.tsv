@@ -7821,3 +7821,4 @@ build:humaniq:documents-employer-statement-from-the-contract	PR #1139: tasks 1.1
 fix:hermiq:1529:c0cafc44	merged development (contract + inbox move reconciled), pushed a597de38; REVERIFY recorded	session-20261114T070352-19ea7dff	2026-11-14T07:23:10Z
 fix:integriq:3466:5930a910	conflict resolved, pushed 07247ead, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T07:23:24Z
 fix:humaniq:1137:5e825cca	now merges clean after #1133, unit 4162 OK, pushed 80108332, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:23:31Z
+fix:hermiq:1761:40e7cd07	test updated + register bump to 0.54.0, new head 30c4d00a, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T07:23:41Z
