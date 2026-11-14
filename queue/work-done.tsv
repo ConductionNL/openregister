@@ -9006,3 +9006,4 @@ merge:dossiq:6204:f987c517	merge3 tree of 31 dossiq PRs: replayed; conflict 4, l
 merge:dossiq:6378:d5a27033	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:10:22Z
 merge:dossiq:6324:89bea779	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:10:25Z
 merge:dossiq:6487:e340fbb4	merge3 tree of 31 dossiq PRs: replayed; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T12:10:29Z
+review:openregister:10533:8e1b719c	APPROVE (component-map.csv conflicts with main)	session-20261114T114632-1115f635	2026-11-14T12:10:35Z
