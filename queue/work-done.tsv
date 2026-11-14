@@ -9413,3 +9413,4 @@ build:pipelinq:clients-bulk-edit-and-undo:c3	already done: all code tasks on dev
 fix:pipelinq:3713:75ce9bd5	merged development, l10n conflicts resolved keeping both; new head 4f82309f	session-20261114T141721-d7ad4da5	2026-11-14T14:18:37Z
 fix:shillinq:2963:e233feba	manifest budget fixed (fragment 3472->2187B, total 1259283B under 1259400B); REVERIFY recorded, new head fa86a71113bc295365d2849082a913866a2ef4bb	session-20261114T131642-b20146b1	2026-11-14T14:19:19Z
 build:filinq:redaction-four-eyes-setting:c2	PR filinq#2098: tasks 1-6 done (task 4 test, task 5 review-card hint + store refusal, task 6 in dossiq#6513); merged development; task 7 e2e and row left; filinq unit 6712/0, vitest 764/0; dossiq 19 inherited reds	session-20261114T114435-d7b47cb4	2026-11-14T14:19:26Z
+fix:pipelinq:3752:51dd9688	fixed CONFLICT: merged development, l10n merged + rebuilt, suite 8392/0 fail; new head 7334221b2	session-20261114T134650-981cc120	2026-11-14T14:19:49Z
