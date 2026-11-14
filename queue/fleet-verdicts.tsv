@@ -7903,3 +7903,13 @@ humaniq	1123	eeb3b525f554f86e3e947ef758ea6c7d4baa336f	RED	merge3:merge-gate	GATE
 humaniq	1129	f4fd707435852417eba7b5174d02634f0d76a47f	RED	merge3:merge-gate	GATE RED floor: module_coupling: 4.06 -> 4.03
 humaniq	1134	928fcce07435a8ce063a133e1bf8f3500f37e00c	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.62 -> 3.59
 humaniq	1136	66752b672af0e596e073d0783a45467aadabe3bc	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.49 -> 4.47; unit_complexity: 3.57 -> 3.53
+humaniq	1030	0a2fd47c5bbae2971f1d7f58f0009e377496d9d2	CONFLICT	merge3	merges clean on development alone; files: lib/Service/SettingsService.php 
+humaniq	1130	0e2113c2a209f2c086580e30bb2cad298fba07f1	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/PayrollGLPostServiceTest.php 
+humaniq	1133	ad80d02e79d92f10f2301a08101358b7b03fe047	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+humaniq	1135	e0d59fddfa85610c518b84e6375d0c9b8e720939	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+humaniq	1137	80108332bd9f45248a62f87e1ed34974d4c39687	RED	merge3	with #1126 merged, ListExportDeclarationTest::testEveryOtherSchemaIsExportable fails: hr-announcements.json Announcement is not exportable. Merge development and declare the export
+humaniq	1139	d55d41444850c9b69f230f4b6c5dc8c610b2b04c	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json 
+humaniq	1142	00f242d8ece14754dce53d024d410cc6bbd4896f	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+humaniq	1144	7dd68965c17893b318ec804648f506436b494f3f	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/register.d/hr-leave.json lib/Settings/register.d/hr-onboarding.json 
+humaniq	1145	098b771da3907cff295f001fb21c6febe8ea564a	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+humaniq	1148	0dbbf502a0f3f781d78b23d9870e3a7feea98817	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
