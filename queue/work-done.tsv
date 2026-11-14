@@ -11197,3 +11197,4 @@ build:opencatalogi:dashboard-consume-or-aggregations:c2	already done: PR #2640 m
 build:opencatalogi:attachments-are-files:c2	partial: PR #2695 with 7.2 and 7.4 built; left 7.1 file-metadata reason (needs a decision), 7.5 UI + e2e, 7.6/7.7 live	session-20261114T201755-10d43934	2026-11-14T21:30:20Z
 fix:buildiq:1621:1a2abcb6	fixed: nl {duration} ms added, parity OK with #1593; pushed 13e694a90f4a7bce5b72f1a154f9fc0e36ff625a, REVERIFY recorded	session-20261114T191742-bf93c040	2026-11-14T21:30:14Z
 verify:buildiq:1649:677f4451	stale	session-20261114T191742-bf93c040	2026-11-14T21:30:31Z
+fix:buildiq:1620:c5ef8423	nl strings moved off the catalogue tail; tree with 1582+1593 merges clean; new head 2a2fcb1c, REVERIFY recorded	session-20261114T174753-100b2a07	2026-11-14T21:30:48Z
