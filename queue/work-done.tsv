@@ -8577,6 +8577,7 @@ build:thematiq:token-set-licence-gate	already done: every code task ticked and o
 build:larpinq:communication-help-desk	partial: PR #1045 (1.1 schemas/rules/lifecycle/notifications, 1.2 seed, 2.1 thread listener, schema strings in 36 locales; 3.x pages/portal/e2e, 4.2 docs left); unit 792->799 green	session-20261114T073109-930980c2	2026-11-14T09:08:00Z
 verify:opencatalogi:2684:116c73a4	2684, 2685, 2689 GREEN; 2686, 2687, 2688 CONFLICT (l10n en/nl in the tree)	session-20261114T075638-c30fc6de	2026-11-14T09:07:57Z
 fix:keepiq:1790:121983bd	l10n strings relocated, merged dev, pushed 8cf69245, REVERIFY	session-20261114T062142-da017174	2026-11-14T09:08:04Z
+fix:buildiq:1623:e24b334f	failed: nothing to fix yet - head e24b334f merges clean with development 9bcdd36e3; its conflict is with #1621, which has not landed (re-queue after it lands)	session-20261114T075646-ed650af0	2026-11-14T09:08:13Z
 build:larpinq:larpinq-runsheet-scoped-cast-query	PR #1046 (cast read filtered on events, players by id; e2e 4.1 left)	session-20261114T082633-7466e3ea	2026-11-14T09:08:17Z
 build:larpinq:events-check-out-and-on-site-count	done: PR #1047 (3/3 tasks)	session-20261114T070333-41d2bfe8	2026-11-14T09:08:18Z
 build:versioniq:advisories-per-app-detail	PR #725: tasks 1.1-4.3 done + occ versioniq:advisories; e2e 4.4/5.1-e2e, 6.x left	session-20261114T080916-9b1d69d6	2026-11-14T09:08:14Z
