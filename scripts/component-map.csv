@@ -4128,6 +4128,9 @@ Service/Import/BaserowBaseReader.php,160,Service,Configuration,Configuration/Ser
 Service/Import/BaserowCells.php,41,Service,Configuration,Configuration/Service/Import/BaserowCells.php,0,,Configuration
 Service/Import/BaseSetReader.php,29,Service,Configuration,Configuration/Service/Import/BaseSetReader.php,0,,Configuration
 Service/Import/BaseSchemaProposer.php,134,Service,Configuration,Configuration/Service/Import/BaseSchemaProposer.php,0,,Configuration
+Service/Import/InstanceAppConfigReader.php,47,Service,Configuration,Configuration/Service/Import/InstanceAppConfigReader.php,0,,Configuration
+Service/Import/InstanceSecretFilter.php,56,Service,Configuration,Configuration/Service/Import/InstanceSecretFilter.php,0,,Configuration
+Service/Import/InstanceSetSerialiser.php,86,Service,Configuration,Configuration/Service/Import/InstanceSetSerialiser.php,0,,Configuration
 Service/AdminRecipientExpander.php,,Service,,,,,Notifications
 Service/Connection/ConnectionHealthReport.php,,Service,,,,,Integrations
 Service/Connection/ConnectionHealthReportBuilder.php,,Service,,,,,Integrations
