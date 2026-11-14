@@ -4253,3 +4253,5 @@ BackgroundJob/BackfillEmailLinkMessageIdJob.php,,BackgroundJob,,,,,Notifications
 Notifications/Service/EmailLinkMessageIdBackfill.php,,Notifications,,,,,Notifications
 Notifications/Service/Notification/MailObjectBinding.php,,Notifications,,,,,Notifications
 Notifications/Service/OutboundMailLinkWriter.php,,Notifications,,,,,Notifications
+Contract/ReplyThreadResolutionInterface.php,,Contract,,,,,Kernel
+Service/Mail/MailThreadService.php,,Service,,,,,Notifications

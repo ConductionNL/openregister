@@ -11,7 +11,7 @@
 
 ## 2. Resolve
 
-- [ ] 2.1 `EmailsController::resolve()` with the RBAC scoping and the granted
+- [x] 2.1 `EmailsController::resolve()` with the RBAC scoping and the granted
       system scope (ADR-099). **The HEADER ORDER and the refusals are built**
       in `ReplyThreadResolver`, and `POST /api/emails/resolve` with the user
       scope is built in `ReplyThreadService`; the granted system scope is not.
@@ -29,6 +29,7 @@
       is real, it arrived and a person has to see it; an empty result leaves
       it in a queue nobody reads while the system looks healthy. Only a
       `threaded` result may be filed without a human.
+      > 2026-11-14: the granted system scope is `ReplyThreadService::resolveAsSystem()`, published as `OCA\OpenRegister\Contract\ReplyThreadResolutionInterface` for an in-process intake. No route reaches it: `POST /api/emails/resolve` stays user-scoped, so an inbound request never resolves outside the caller's reach (ADR-099). The answer says `scope: system`; the header order and refusals are the same.
 - [ ] 2.2 `by-message` also matches by `rfcMessageId`.
 
 ## 3. Tests
@@ -44,7 +45,8 @@
 - [x] 4.1 Read `In-Reply-To` and `References` in `EmlParser::extractHeaders()` and carry them on `EmlStructure`, reusing `ReplyThreadResolver`'s header normalisation. Verify: `tests/Unit/Service/TextExtraction/EmlThreadHeadersTest.php::testInReplyToAndReferencesAreRead` (fails today: the keys do not exist), `testHeaderNamesAreCaseInsensitive`.
 - [x] 4.2 Migration and mapper for `openregister_mail_headers`; write the row from `TextExtractionService` when the source is an `.eml`, replace on re-extraction, delete beside `ChunkMapper::deleteBySource()`. Verify: `tests/Unit/Service/MailHeaderStoreTest.php::testExtractionStoresTheHeaderRow` through `extractFile()`.
 - [x] 4.3 `lib/Service/Mail/MailThreadAssembler.php`. Verify: `tests/Unit/Service/Mail/MailThreadAssemblerTest.php::testAReplyChainIsOneThread`, `testAnEditedSubjectStaysInTheThread`, `testAParentOutsideTheSetIsAGap`, `testEqualSubjectsWithoutHeadersStayApart`, `testADuplicateMessageIdIsOneNode`.
-- [ ] 4.4 `GET /api/files/{fileId}/thread` on `FileSidebarController` (`#[NoAdminRequired]`, read check per member in the method). Verify: `tests/Unit/Controller/MailThreadEndpointTest.php::testTheThreadIsReturnedInDateOrder`, `testAnUnreadableMemberIsAGapWithoutHeaders`; hydra gates route-auth and no-admin-idor pass; a Newman request in `tests/newman/` uploads three fixture `.eml` files to an object and reads the thread of the last.
+- [x] 4.4 `GET /api/files/{fileId}/thread` on `FileSidebarController` (`#[NoAdminRequired]`, read check per member in the method). Verify: `tests/Unit/Controller/MailThreadEndpointTest.php::testTheThreadIsReturnedInDateOrder`, `testAnUnreadableMemberIsAGapWithoutHeaders`; hydra gates route-auth and no-admin-idor pass; a Newman request in `tests/newman/` uploads three fixture `.eml` files to an object and reads the thread of the last.
+      > 2026-11-14: `FileSidebarController::getThread()` checks the asked file with the sidebar's file rule, then `MailThreadService` assembles over the `.eml` files in its folder, each member checked by the same rule; an unreadable one is left out, so a reply to it shows a gap naming only the id the reply carries. The header table holds no sender or subject: `from` is empty and `subject` is the file name. `tests/Unit/Controller/MailThreadEndpointTest.php` holds the two named tests plus 404 and no-headers. The Newman request is left for the live pass.
 - [ ] 4.5 "Conversation" section in the files sidebar for `.eml` files (`src/files-sidebar.js` tab). Verify: `tests/e2e/ci/mail-thread-reader.spec.ts` uploads the five-message fixture, opens the fourth in Files, sees five entries with the fourth marked and opens the first by clicking it.
 - [ ] 4.6 Contract for dossiq: response keys `thread[].fileId|messageId|parent|sentAt|from|subject|gap` and `position`. Verify: `tests/Contract/MailThreadContractTest.php`; `dossiq/woo-review-triage` carries the consumer test. dossiq requires OpenRegister; without dossiq the sidebar section is the reader.
 

@@ -125,6 +125,30 @@ class ReplyThreadServiceTest extends TestCase {
 		$this->assertEqualsCanonicalizing(['case-1', 'case-2'], $answer['candidates']);
 	}//end testAChainNamingTwoReadableObjectsResolvesNeither()
 
+	public function testTheSystemScopeResolvesAnObjectNoUserMayReadAndSaysSo(): void {
+		$answer = $this->service(['<a@x>' => ['secret']], ['secret' => null])->resolveAsSystem(headers: ['In-Reply-To' => '<a@x>']);
+
+		$this->assertSame('threaded', $answer['state']);
+		$this->assertSame('secret', $answer['objectUuid']);
+		$this->assertSame('system', $answer['scope']);
+		$this->assertSame([], $this->reads, 'the system scope reads no object');
+	}//end testTheSystemScopeResolvesAnObjectNoUserMayReadAndSaysSo()
+
+	public function testTheSystemScopeStillRefusesAChainNamingTwoObjects(): void {
+		$answer = $this->service(['<a1@x>' => ['case-1'], '<a2@x>' => ['case-2']], [])
+			->resolveAsSystem(headers: ['References' => '<a1@x> <a2@x>']);
+
+		$this->assertSame('ambiguous', $answer['state']);
+		$this->assertSame('', $answer['objectUuid']);
+		$this->assertSame('system', $answer['scope']);
+	}//end testTheSystemScopeStillRefusesAChainNamingTwoObjects()
+
+	public function testTheSystemScopeWithoutAMatchIsUnthreaded(): void {
+		$answer = $this->service([], [])->resolveAsSystem(headers: ['In-Reply-To' => '<none@x>']);
+
+		$this->assertSame(['unthreaded', 'system'], [$answer['state'], $answer['scope']]);
+	}//end testTheSystemScopeWithoutAMatchIsUnthreaded()
+
 	public function testNoMatchIsANamedAnswer(): void {
 		$answer = $this->service([], [])->resolve(headers: ['In-Reply-To' => '<a@x>']);
 
