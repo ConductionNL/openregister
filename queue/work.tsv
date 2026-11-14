@@ -9637,3 +9637,9 @@ review:openregister:10495:e2ea184b	review	openregister	main	10495	sha=e2ea184b0d
 verify:pipelinq:3713:fcf4b005	verify	pipelinq	development	merge	prs=3713@61678b3913763579be384e50794c927d6d38b2c3	2026-11-14T10:25:21Z
 merge:pipelinq:3707:789655b8	merge	pipelinq	development	development	prs=3707@153dff0e7076d9a6976fbeec6a000b2c589dcb50	2026-11-14T10:25:21Z
 merge:keepiq:1794:1e2c35ed	merge	keepiq	development	development	prs=1794@69bd0d786cea715865e932ad95c9a7f58936c50b	2026-11-14T10:25:21Z
+fix:pipelinq:3743:871e47d5	fix	pipelinq	development	3743	sha=871e47d54f19aad16fb7eeac1f4d38f79b61e6af;verdict=CONFLICT;branch=quality/build-requests-municipality-per-contact;reason=clean on development, conflicts with earlier tree PRs in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/manifest.json	2026-11-14T10:30:24Z
+fix:pipelinq:3829:920af96c	fix	pipelinq	development	3829	sha=920af96ce671d5df480fe408e9aa247e4d939157;verdict=CONFLICT;branch=quality/build-services-and-resources-at-a-glance;reason=clean on development, conflicts with earlier tree PRs in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json	2026-11-14T10:30:24Z
+review:openregister:10496:ef375e09	review	openregister	main	10496	sha=ef375e09d27091c1613400edc4aba7f49946c767;last_approved=;title=feat(openregister): build calendar-leaf-inbound	2026-11-14T10:30:24Z
+review:openregister:10497:c60ef10d	review	openregister	main	10497	sha=c60ef10d65f76fb79b4470c8655d0348f2a5d73e;last_approved=;title=feat(openregister): build record-star-follow-and-unread-on-screen	2026-11-14T10:30:24Z
+review:openregister:10498:1b4cd8a3	review	openregister	main	10498	sha=1b4cd8a39f930fe94f4207c6ffbc23f5c456a748;last_approved=;title=feat(openregister): build export-pdf-house-style	2026-11-14T10:30:24Z
+merge:pipelinq:3831:9172a813	merge	pipelinq	development	development	prs=3831@cd981132d7790e59379bd2a232b316a7c9858295	2026-11-14T10:30:24Z
