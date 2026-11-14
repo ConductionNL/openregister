@@ -7771,3 +7771,4 @@ fix:decidiq:2154:e854bb98	fixed: merged development, objectCount recomputed to 2
 verify:dossiq:6324:89bea779	6324 GREEN, 6464 GREEN (no new failures)	session-20261114T070333-41d2bfe8	2026-11-14T07:14:38Z
 fix:decidiq:2149:2f8115d6	register.json conflict resolved (version 0.16.0, both notes), unit 4057 OK, pushed c82a792a, REVERIFY recorded	session-20261114T070329-a050d62b	2026-11-14T07:14:47Z
 fix:decidiq:2144:2ef993a1	conflict resolved, pushed 23ff7aff, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T07:14:54Z
+fix:decidiq:2146:23b793cd	l10n conflict resolved, new head fa390519, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T07:15:11Z
