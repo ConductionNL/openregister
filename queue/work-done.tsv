@@ -7765,3 +7765,4 @@ fix:shillinq:3004:0b2be938	conflicts resolved, merged development, no new unit f
 fix:pipelinq:3721:c1199ece	l10n overlap with #3707 removed, merged development, suite green, pushed 6013120eda665e9a9dabb48e7ea7c960837aedf0	session-20261114T062202-3e33eeb3	2026-11-14T07:13:43Z
 build:learniq:school-activities-staff-side	already building (branch quality/build-school-activities-staff-side exists)	session-20261114T062142-da017174	2026-11-14T07:13:50Z
 fix:learniq:2488:732c3345	conflict resolved (l10n union, dev pyc), new head 8c0aeabe; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T07:14:00Z
+verify:pipelinq:3725:0bb54e2a	3736 GREEN; 3725, 3726 RED (new routes missing from OpenAPI document)	session-20261114T065633-3e3cb668	2026-11-14T07:14:14Z
