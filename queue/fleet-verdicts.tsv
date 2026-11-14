@@ -7889,3 +7889,13 @@ launchpad	1195	4762c768a403e025fa4716193da9e1e9253e4b66	RED	merge3:merge-gate	GA
 launchpad	1203	dacfef709f63cb82356c67215ee5336bce6f1f34	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.76 -> 4.71
 launchpad	1205	3d06446c539eeb35634e4eb3db55e3357c050e63	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.45 -> 3.43
 launchpad	1208	592965c0777101e5defadb8660e58e36ecddceff	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.45 -> 3.41
+launchpad	1197	e61de66ba0be6b45e3f163c0a914485dd61757d3	RED	merge3	new unit failure OpenApiStabilityTest::testEveryOperationIsPublicOrInternal: GET /office-tiles (OfficeTilesController) has no OpenAPI scope; mark it public or internal
+launchpad	1206	848f687db303f3048a337b65db85d3830a6414a4	CONFLICT	merge3	merges clean on development alone; files: lib/Db/AdminSettingKey.php 
+launchpad	1209	9f0cd9a34091cccf0e6db5c5509033ee86b60845	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Controller/AdminController.php lib/Db/AdminSettingKey.php lib/Service/AdminSettingsService.php tests/Unit/Controller/AdminControllerSettingsAliasTes
+launchpad	1210	256d3e094afd0d0ee8a28ef49771b7ddcad872f2	CONFLICT	merge3	merges clean on development alone; files: l10n/be.js l10n/bg.js l10n/bs.js l10n/ca.js l10n/cs.js l10n/da.js l10n/de.js l10n/el.js l10n/es.js l10n/et.js l10n/fi.js l10n/fr.js l10n/ga.js l10n/hr.js l10n/hu.js l10n/is.js l10n/it.js l10n/lb.js l1
+launchpad	1211	f611001555167b057e28fff35f27964a56e42bf9	CONFLICT	merge3	merges clean on development alone; files: lib/Controller/AdminController.php tests/Unit/Service/AdminSettingsServiceTest.php 
+launchpad	1212	314655c6b8cef9dfa576c4abdaca58fd043cc0c5	CONFLICT	merge3	merges clean on development alone; files: lib/Migration/Version002013Date20261114090000.php 
+launchpad	1214	8ef09a0ebc253e444158ba9facd84fca0b60362f	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml lib/Db/AdminSettingKey.php 
+launchpad	1215	01fd461291a47f95fbe1330a71e69e376ae4b8a9	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json 
+launchpad	1216	7193b918d23906f329ef4a4bcde83eaa3dc80f82	CONFLICT	merge3	merges clean on development alone; files: lib/Controller/AdminController.php lib/Db/AdminSettingKey.php lib/Service/AdminSettingsService.php tests/Unit/Controller/AdminControllerSettingsAliasTest.php 
+launchpad	1219	be8c001218b1e1c51f1d280faaccf718f58bfd2f	CONFLICT	merge3	merges clean on development alone; files: l10n/be.js l10n/be.json l10n/bg.js l10n/bg.json l10n/bs.js l10n/bs.json l10n/ca.js l10n/ca.json l10n/cs.js l10n/cs.json l10n/da.js l10n/da.json l10n/de.js l10n/de.json l10n/el.js l10n/el.json l10n/en.
