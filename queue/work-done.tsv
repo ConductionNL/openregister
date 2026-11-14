@@ -10056,3 +10056,4 @@ build:integriq:integriq-tenant-scoping:c2	partial: PR integriq#3629 gives 85 mor
 verify:integriq:3542:2a386390	GREEN 3612 3614 3615 3616 3617 3619; CONFLICT 3618 (tree, l10n); 3542 3613 skipped (head moved)	session-20261114T141010-8dc8bd74	2026-11-14T16:07:52Z
 verify:filinq:2079:a5825284	#2079 GREEN; #2112 and #2126 CONFLICT after #2079	session-20261114T141721-aeb4e068	2026-11-14T16:07:59Z
 verify:dossiq:6513:12248002	GREEN dossiq#6513; 17370 tests, 19 inherited, none new	session-20261114T154807-c05f4e57	2026-11-14T16:08:10Z
+cover:planninq:e1c9866dm4f63:js8a19c098	PR #1176: 9 vitest tests, src/store/*.js 80.9->86.7% (projects.js 77.8->84.0, store.js/objectStore.js 0->100)	session-20261114T144757-446bd6da	2026-11-14T16:08:35Z
