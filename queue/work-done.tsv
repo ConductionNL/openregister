@@ -10017,5 +10017,6 @@ fix:planninq:1169:ea298e62	l10n conflicts resolved (37 locales), new head 1268ee
 fix:hermiq:1760:adfddb8f	no change: already contains development; conflict is only with unmerged #1728/#1753, resolves when they land	session-20261114T154757-c9bf237e	2026-11-14T16:02:08Z
 fix:integriq:3592:295118e8	REVERIFY: restored l10n keys/openapi paths lost in an earlier merge; clean vs siblings; head 528681d8	session-20261114T151801-20bb3a08	2026-11-14T16:02:21Z
 review:openregister:10564:0cc44624	APPROVE	session-20261114T141738-30f539db	2026-11-14T16:02:27Z
+build:planninq:case-link-editing:c2	no code tasks left on PR #1162: 1.2/2.1 owe only live Playwright e2e, 3.2 openspec validate, 3.3 is an archive step	session-20261114T151803-c9b63248	2026-11-14T16:02:37Z
 fix:integriq:3588:3b34e85d	merged development; moved l10n keys off sibling append point, clean vs 3540 and 3546; new head eccc78b5	session-20261114T154734-655bd0f3	2026-11-14T16:02:34Z
 fix:hermiq:1785:82bc6704	merged development (clean); conflict is with unmerged #1782; new head 64469ed7	session-20261114T154757-c9bf237e	2026-11-14T16:02:42Z
