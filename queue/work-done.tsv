@@ -7756,3 +7756,4 @@ fix:learniq:2519:f2bafc43	merged development, pushed 8165d800; REVERIFY recorded
 verify:portaliq:2415:6920828c	GREEN 2415 2427 2432 2434; CONFLICT 2433 2442 2443; 0 new failures (5080 tests)	session-20261114T065625-baa65a50	2026-11-14T07:12:19Z
 fix:shillinq:2996:c8bf209f	restored unit_interfacing floor (2.93 -> 2.96) by reducing params; new head cd1abe2c; REVERIFY recorded	session-20261114T062134-840bbeee	2026-11-14T07:12:25Z
 fix:learniq:2507:1bb4eeaa	CONFLICT resolved (l10n both sides), pushed 2b3376a3; suite 1 inherited failure	session-20261114T065631-3903ed42	2026-11-14T07:12:32Z
+fix:shillinq:3010:d5daca53	fixed: AppIdentity import updated after merging development; new head 98cc2b0e; development itself has an inherited fatal in HoursSubjectAuditCommand (old trait namespace)	session-20261114T070332-b3a23612	2026-11-14T07:12:41Z
