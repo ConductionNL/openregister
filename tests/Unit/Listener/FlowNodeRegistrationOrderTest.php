@@ -148,6 +148,7 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 				$ns . 'TriggerScheduleNodeInterface',
 				$ns . 'TriggerManualNodeInterface',
 				$ns . 'TriggerCalendarNodeInterface',
+				$ns . 'TriggerWebhookNodeInterface',
 			],
 			$registered
 		);

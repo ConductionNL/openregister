@@ -10,10 +10,10 @@
 
 ## 2. Incoming-webhook trigger
 
-- [ ] 2.1 `TriggerWebhookNode` (`openregister.trigger-webhook`) with a random address token and a signing secret generated on save, the secret stored encrypted and returned once. Verify: unit test that a read of the flow never returns the secret.
-- [ ] 2.2 A public route `POST /api/flows/hooks/{token}` that checks the HMAC-SHA256 signature over the raw body before anything else, then queues a run with the body as input and answers 202 with the run id. Verify: API tests for a good call, a bad signature, an unknown token and a disabled flow.
-- [ ] 2.3 Idempotency on the `X-Delivery-Id` header for 24 hours, a body limit of 1 MB and Nextcloud's rate limiter on the route. Verify: API tests for a repeated delivery, an oversize body and a burst.
-- [ ] 2.4 Rotating the secret from the trigger's config. Verify: API test that the old secret is refused straight after rotation.
+- [x] 2.1 `TriggerWebhookNode` (`openregister.trigger-webhook`) with a random address token and a signing secret generated on save, the secret stored encrypted and returned once. Verify: unit test that a read of the flow never returns the secret. (built: `TriggerWebhookNode`; `FlowWebhookSecrets` stamps a random 32-hex token on save and keeps the secret encrypted in app config under it, never in the flow document; the save answer carries it once as `webhookSecrets`; `FlowWebhookSecretsTest`, `TriggerWebhookNodeTest`.)
+- [x] 2.2 A public route `POST /api/flows/hooks/{token}` that checks the HMAC-SHA256 signature over the raw body before anything else, then queues a run with the body as input and answers 202 with the run id. Verify: API tests for a good call, a bad signature, an unknown token and a disabled flow. (built: `FlowWebhookController::receive()`, `#[PublicPage]`; signature over the raw body checked before the body is parsed; bad signature, unknown token, disabled flow and refused run all answer the same 404. Verified by `FlowWebhookControllerTest`; the API run against a live instance is not done here.)
+- [x] 2.3 Idempotency on the `X-Delivery-Id` header for 24 hours, a body limit of 1 MB and Nextcloud's rate limiter on the route. Verify: API tests for a repeated delivery, an oversize body and a burst. (built: `X-Delivery-Id` remembered 24 hours in the distributed cache, 413 over 1 MB, `#[AnonRateLimit]` on the route. Verified by `FlowWebhookControllerTest` except the burst, which needs a live instance.)
+- [x] 2.4 Rotating the secret from the trigger's config. Verify: API test that the old secret is refused straight after rotation. (built: `rotateSecret: true` in the trigger's config on save replaces the stored secret, hands the new one out once and is taken off the document; `FlowWebhookSecretsTest`.)
 
 ## 3. Interface and docs
 
