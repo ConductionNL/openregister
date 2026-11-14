@@ -9628,3 +9628,4 @@ keepiq	1789	e905bf117ffd7ee7a789d7531abc325c7ded5643	CONFLICT	worker-03	conflict
 keepiq	1790	2097db1d2ce845dfdf2c60a16fa527240f477157	CONFLICT	worker-03	conflicts with development alone; files: l10n/en.js l10n/en.json
 decidiq	2194	ea9b865865c4d1bdfbeae3149bef9a002366cd33	REVERIFY	worker-49	l10n: kept development's catalogue order, new keys placed after Commitments; merges clean on development+#2169,#2189,#2191; unit 4233 OK, vitest 2801 OK; new head 17b2a973b9f35b3c72147de709218728500595b1, verify it
 shillinq	3048	10a5df9db0886965f9b5b0b71bb178d81cfd8c1a	GREEN	worker-09	phpunit 11485 ok (baseline 11299 ok), vitest 2769 ok + 1 inherited failure (dunningNextRun, red on development), no new failures; also carries #2991 (sales-invoice-sending)
+shillinq	3055	5be550bbb3e23d98cdb54d8a5d6ec032a3e380d0	CONFLICT	worker-09	does not merge on development+3048: appinfo/info.xml tests/fixtures/register-versions.lock.json
