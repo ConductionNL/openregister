@@ -2977,3 +2977,6 @@ planninq	1167	d6c4dc18a6d114b7e0652ee500612c49357de6b0	MERGED	merge3	GATE OK sbo
 planninq	1169	ad389bd3451b7bef7e6d236a84eb0baa7504d0a4	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; spdxheaders stars: 5 -> 4; score: 100 -> 97
 planninq	1171	1f740930b6cb8bfb7955a1e7a45720b927f497c3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.74
 planninq	1172	b335a2831202c9f19b633675ecfcdc873a3deee8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.76
+learniq	2493	d5717bf0dd4f237e02456a7983fa30ae81e27e82	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2541	b1472267b8b9596ae7a571f09291b972972d4ace	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+learniq	2544	eab2300dc8912a3ba19c32e619ccea540c2eab20	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
