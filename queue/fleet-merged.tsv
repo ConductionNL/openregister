@@ -2941,3 +2941,6 @@ learniq	2493	c4fb5a2dc034229417791a496c8619a6c0597ea5	RED	merge3	GATE RED absolu
 learniq	2520	5d4702be49b83567f8c6a5b8eeb17add5a27b914	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2542	e97530c8bb4f7320a82a41fe8b74a548e8270695	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2543	3d1489a43d1716ed249e8e3f0b8cd6031e308b8d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
+shillinq	2959	fc4870f10022d2aff26959702df83b7b38843292	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.12
+shillinq	2976	017e9a1a04ec22c60d350c25153c644236ac7c21	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+shillinq	3073	53ee9061ed715b5adc433197ecaaf01082d8f581	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
