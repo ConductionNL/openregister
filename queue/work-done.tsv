@@ -11058,3 +11058,4 @@ fix:keepiq:1786:884c2051	merged development (l10n union), updated EventRegistrar
 build:buildiq:capability-requirements-backfill:c3	partial: PR #1647 builds T02 (REQ-BQCV-002 scenario test, no gap); T01, T03-T04, T06-T20, T22-T30 left (context full), T31 needs the openspec CLI	session-20261114T173956-74ab8962	2026-11-14T20:57:16Z
 fix:integriq:3592:70be0200	floor restored: unit_size 3.557, pushed 8a35a39a, REVERIFY recorded	session-20261114T202449-f0278d5a	2026-11-14T20:57:19Z
 verify:filinq:2121:671a0dd3	2121 GREEN; 2123 RED (hostObjectLeaves golden, 6 tests)	session-20261114T194751-bb7578f8	2026-11-14T20:57:43Z
+verify:integriq:3610:d5a20c0c	3610 GREEN, 3628 GREEN, 3635 skipped (head moved to c30a2e24)	session-20261114T204802-b2e553ef	2026-11-14T20:57:57Z
