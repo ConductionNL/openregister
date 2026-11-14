@@ -8871,3 +8871,4 @@ build4:openregister:generated-identifier:c2	partial: PR #10516 builds C41.2 fore
 review:openregister:10512:8fad2cf4	APPROVE	session-20261114T092645-afb9b140	2026-11-14T10:43:29Z
 review:openregister:10481:58937215	APPROVE	session-20261114T102654-2f2073ac	2026-11-14T10:43:44Z
 build4:openregister:import-preview-and-conflict-policy:c2	partial: PR openregister#10517 - 5.3 secret exclusion, 5.1 serialiser (files/job/endpoint left), 6.2 secret tests; 2.3, 5.2, 7, 8.1/8.3/8.4 left	session-20261114T100944-e2382fd9	2026-11-14T10:44:09Z
+review:openregister:10491:5f5d6b9f	APPROVE: tests only; Repair, Architecture, Rules, Contract green on merge with main	session-20261114T085646-49a39060	2026-11-14T10:44:28Z
