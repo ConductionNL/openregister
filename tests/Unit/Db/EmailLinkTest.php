@@ -112,4 +112,32 @@ class EmailLinkTest extends TestCase {
 		$this->assertSame(2, $link->getMailAccountId());
 		$this->assertSame(99, $link->getMailMessageId());
 	}
+
+	/**
+	 * The column answers `details.direction` when the metadata names none, and stays off the top level.
+	 *
+	 * @return void
+	 */
+	public function testTheDirectionColumnFillsTheDetailWhenTheMetadataIsSilent(): void {
+		$link = new EmailLink();
+		$link->setDirection(EmailLink::DIRECTION_OUTBOUND);
+
+		$json = $link->jsonSerialize();
+
+		$this->assertSame('outbound', $json['details']['direction']);
+		$this->assertArrayNotHasKey('direction', $json);
+	}
+
+	/**
+	 * A direction the metadata names wins over the column: a mail linked from a Sent folder.
+	 *
+	 * @return void
+	 */
+	public function testTheMetadataDirectionWinsOverTheColumn(): void {
+		$link = new EmailLink();
+		$link->setDirection(EmailLink::DIRECTION_INBOUND);
+		$link->setMetadata(json_encode(['direction' => 'outbound']));
+
+		$this->assertSame('outbound', $link->details()['direction']);
+	}
 }

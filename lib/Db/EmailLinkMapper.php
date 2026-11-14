@@ -143,6 +143,51 @@ class EmailLinkMapper extends QBMapper implements EmailLinkMapperInterface {
 	}//end findByObject()
 
 	/**
+	 * Links from a Mail message that carry no RFC `Message-ID` yet, by id ascending after a cursor.
+	 *
+	 * @param int $afterId The last id of the previous page; 0 for the first.
+	 * @param int $limit   The page size.
+	 *
+	 * @return EmailLink[] The links.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	public function findWithoutRfcMessageId(int $afterId, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNull('rfc_message_id'))
+			->andWhere($qb->expr()->gt('mail_message_id', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findWithoutRfcMessageId()
+
+	/**
+	 * Record the RFC `Message-ID` of one link that has none yet.
+	 *
+	 * The `IS NULL` guard keeps a value written since the page was read.
+	 *
+	 * @param int    $linkId       The link id.
+	 * @param string $rfcMessageId The `Message-ID`, with its angle brackets.
+	 *
+	 * @return int The rows changed, 0 or 1.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	public function recordRfcMessageId(int $linkId, string $rfcMessageId): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('rfc_message_id', $qb->createNamedParameter($rfcMessageId))
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($linkId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNull('rfc_message_id'));
+
+		return $qb->executeStatement();
+	}//end recordRfcMessageId()
+
+	/**
 	 * Find email links by sender address.
 	 *
 	 * @param string $sender The sender email address.

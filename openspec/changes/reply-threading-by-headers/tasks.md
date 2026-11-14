@@ -2,13 +2,16 @@
 
 ## 1. Data
 
-- [ ] 1.1 Migration: `rfc_message_id` and `direction` on `openregister_email_links`, indexed on `rfc_message_id`. `rfc_message_id` is built; `direction` comes with 1.3.
-- [ ] 1.2 Read the header at link time (built, in `EmailService` and `EmailLinkService`); `BackfillEmailLinkMessageIdJob` one-shot with a kill switch.
-- [ ] 1.3 Outbound link written by the dispatch leaf's e-mail channel when `object` is bound.
+- [x] 1.1 Migration: `rfc_message_id` and `direction` on `openregister_email_links`, indexed on `rfc_message_id`. `rfc_message_id` is built; `direction` comes with 1.3.
+      > 2026-11-14: `Version1Date20261114100000` adds `direction`. A link made from a Mail message is `inbound`; `details.direction` reads the metadata first, then the column.
+- [x] 1.2 Read the header at link time (built, in `EmailService` and `EmailLinkService`); `BackfillEmailLinkMessageIdJob` one-shot with a kill switch.
+      > 2026-11-14: the migration queues `BackfillEmailLinkMessageIdJob` once; `EmailLinkMessageIdBackfill` walks the links without an id by id and reads `mail_messages.message_id`. App config `backfill_email_link_message_id = no` skips it.
+- [x] 1.3 Outbound link written by the dispatch leaf's e-mail channel when `object` is bound.
+      > 2026-11-14: `MailContent` takes an optional `MailObjectBinding`; `EmailSender` mints the `Message-ID` on a bound mail and, once it is sent, `OutboundMailLinkWriter` stores an `outbound` link with it (account and message ids 0, uid the `Message-ID`). The send-email flow step binds a mail to an external address to its item's object. A mailer without a mail object, or a failed link write, sends the mail unlinked.
 
 ## 2. Resolve
 
-- [ ] 2.1 `EmailsController::resolve()` with the RBAC scoping and the granted
+- [x] 2.1 `EmailsController::resolve()` with the RBAC scoping and the granted
       system scope (ADR-099). **The HEADER ORDER and the refusals are built**
       in `ReplyThreadResolver`, and `POST /api/emails/resolve` with the user
       scope is built in `ReplyThreadService`; the granted system scope is not.
@@ -26,6 +29,7 @@
       is real, it arrived and a person has to see it; an empty result leaves
       it in a queue nobody reads while the system looks healthy. Only a
       `threaded` result may be filed without a human.
+      > 2026-11-14: the granted system scope is `ReplyThreadService::resolveAsSystem()`, published as `OCA\OpenRegister\Contract\ReplyThreadResolutionInterface` for an in-process intake. No route reaches it: `POST /api/emails/resolve` stays user-scoped, so an inbound request never resolves outside the caller's reach (ADR-099). The answer says `scope: system`; the header order and refusals are the same.
 - [ ] 2.2 `by-message` also matches by `rfcMessageId`.
 
 ## 3. Tests
@@ -41,9 +45,11 @@
 - [x] 4.1 Read `In-Reply-To` and `References` in `EmlParser::extractHeaders()` and carry them on `EmlStructure`, reusing `ReplyThreadResolver`'s header normalisation. Verify: `tests/Unit/Service/TextExtraction/EmlThreadHeadersTest.php::testInReplyToAndReferencesAreRead` (fails today: the keys do not exist), `testHeaderNamesAreCaseInsensitive`.
 - [x] 4.2 Migration and mapper for `openregister_mail_headers`; write the row from `TextExtractionService` when the source is an `.eml`, replace on re-extraction, delete beside `ChunkMapper::deleteBySource()`. Verify: `tests/Unit/Service/MailHeaderStoreTest.php::testExtractionStoresTheHeaderRow` through `extractFile()`.
 - [x] 4.3 `lib/Service/Mail/MailThreadAssembler.php`. Verify: `tests/Unit/Service/Mail/MailThreadAssemblerTest.php::testAReplyChainIsOneThread`, `testAnEditedSubjectStaysInTheThread`, `testAParentOutsideTheSetIsAGap`, `testEqualSubjectsWithoutHeadersStayApart`, `testADuplicateMessageIdIsOneNode`.
-- [ ] 4.4 `GET /api/files/{fileId}/thread` on `FileSidebarController` (`#[NoAdminRequired]`, read check per member in the method). Verify: `tests/Unit/Controller/MailThreadEndpointTest.php::testTheThreadIsReturnedInDateOrder`, `testAnUnreadableMemberIsAGapWithoutHeaders`; hydra gates route-auth and no-admin-idor pass; a Newman request in `tests/newman/` uploads three fixture `.eml` files to an object and reads the thread of the last.
+- [x] 4.4 `GET /api/files/{fileId}/thread` on `FileSidebarController` (`#[NoAdminRequired]`, read check per member in the method). Verify: `tests/Unit/Controller/MailThreadEndpointTest.php::testTheThreadIsReturnedInDateOrder`, `testAnUnreadableMemberIsAGapWithoutHeaders`; hydra gates route-auth and no-admin-idor pass; a Newman request in `tests/newman/` uploads three fixture `.eml` files to an object and reads the thread of the last.
+      > 2026-11-14: `FileSidebarController::getThread()` checks the asked file with the sidebar's file rule, then `MailThreadService` assembles over the `.eml` files in its folder, each member checked by the same rule; an unreadable one is left out, so a reply to it shows a gap naming only the id the reply carries. The header table holds no sender or subject: `from` is empty and `subject` is the file name. `tests/Unit/Controller/MailThreadEndpointTest.php` holds the two named tests plus 404 and no-headers. The Newman request is left for the live pass.
 - [ ] 4.5 "Conversation" section in the files sidebar for `.eml` files (`src/files-sidebar.js` tab). Verify: `tests/e2e/ci/mail-thread-reader.spec.ts` uploads the five-message fixture, opens the fourth in Files, sees five entries with the fourth marked and opens the first by clicking it.
-- [ ] 4.6 Contract for dossiq: response keys `thread[].fileId|messageId|parent|sentAt|from|subject|gap` and `position`. Verify: `tests/Contract/MailThreadContractTest.php`; `dossiq/woo-review-triage` carries the consumer test. dossiq requires OpenRegister; without dossiq the sidebar section is the reader.
+- [x] 4.6 Contract for dossiq: response keys `thread[].fileId|messageId|parent|sentAt|from|subject|gap` and `position`. Verify: `tests/Contract/MailThreadContractTest.php`; `dossiq/woo-review-triage` carries the consumer test. dossiq requires OpenRegister; without dossiq the sidebar section is the reader.
+      > 2026-11-14: `tests/Unit/Contract/MailThreadContractTest.php` (in the unit suite beside the other contract tests, not `tests/Contract/`, whose directories each carry their own config): the route, the answer's two keys and each node's seven, and the signature of the granted `ReplyThreadResolutionInterface::resolveAsSystem()`. The dossiq consumer test is dossiq's.
 
 ## V. Verification and done
 

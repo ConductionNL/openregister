@@ -620,6 +620,7 @@ class FlowMessagingService {
 	 * @return void
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
 	private function mailAddress(FlowSend $send, FlowSendItem $item): void {
 		$unsubscribe = $this->optOut->decisionFor(decisions: $send->decisions, address: $item->recipient)['unsubscribe'];
@@ -628,7 +629,8 @@ class FlowMessagingService {
 			content: new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
 				subject: $item->title,
 				body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
-				unsubscribe: $unsubscribe
+				unsubscribe: $unsubscribe,
+				object: \OCA\OpenRegister\Notifications\Service\Notification\MailObjectBinding::fromObjectJson(json: $item->json, linkedBy: $send->actor)
 			)
 		);
 		if ($outcome === EmailSenderInterface::OUTCOME_DISPATCHED) {

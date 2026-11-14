@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service;
 
+use OCA\OpenRegister\Contract\ReplyThreadResolutionInterface;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
@@ -37,7 +38,7 @@ use Throwable;
  *
  * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
  */
-class ReplyThreadService {
+class ReplyThreadService implements ReplyThreadResolutionInterface {
 	/**
 	 * Constructor.
 	 *
@@ -69,6 +70,44 @@ class ReplyThreadService {
 
 		return array_merge($answer, ['scope' => 'user']);
 	}//end resolve()
+
+	/**
+	 * Resolve a reply's headers across every object, for a granted system caller.
+	 *
+	 * Reached only in-process, through {@see ReplyThreadResolutionInterface}:
+	 * no route leads here, so an inbound request never resolves outside the
+	 * caller's reach. The same header order and refusals apply.
+	 *
+	 * @param array<string, mixed> $headers The `In-Reply-To` and `References` headers.
+	 *
+	 * @return array<string, mixed> The resolver's answer, with `scope: system`.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	public function resolveAsSystem(array $headers): array {
+		$answer = $this->resolver->resolve(
+			headers: $headers,
+			lookup: fn (string $messageId): ?array => $this->anyLink(messageId: $messageId)
+		);
+
+		return array_merge($answer, ['scope' => 'system']);
+	}//end resolveAsSystem()
+
+	/**
+	 * Every object a message is linked to, read or not.
+	 *
+	 * @param string $messageId The `Message-ID`.
+	 *
+	 * @return array{objectUuids: string[]}|null The link, or null when none.
+	 */
+	private function anyLink(string $messageId): ?array {
+		$uuids = array_values($this->links->objectUuidsByRfcMessageId(rfcMessageId: $messageId));
+		if ($uuids === []) {
+			return null;
+		}
+
+		return ['objectUuids' => $uuids];
+	}//end anyLink()
 
 	/**
 	 * The objects a message is linked to that the caller may read.

@@ -33,7 +33,10 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCP\IUserManager;
 use OCP\Mail\IMailer;
+use OCP\Mail\IMessage;
+use OCA\OpenRegister\Notifications\Service\OutboundMailLinkWriter;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Composes and hands off a transactional email to a Nextcloud user.
@@ -61,12 +64,14 @@ class EmailSender implements EmailSenderInterface {
 	 * @param IMailer $mailer The mailer.
 	 * @param LoggerInterface $logger Logger for handoff diagnostics.
 	 * @param NotificationChannelPolicy|null $channelPolicy The subsystem's per-channel kill switches; null means enabled.
+	 * @param OutboundMailLinkWriter|null $outboundLinks Writes the outbound link of a mail bound to an object; null writes none.
 	 */
 	public function __construct(
 		private readonly IUserManager $userManager,
 		private readonly IMailer $mailer,
 		private readonly LoggerInterface $logger,
 		private readonly ?NotificationChannelPolicy $channelPolicy = null,
+		private readonly ?OutboundMailLinkWriter $outboundLinks = null,
 	) {
 	}//end __construct()
 
@@ -159,7 +164,7 @@ class EmailSender implements EmailSenderInterface {
 				return self::OUTCOME_NO_ADDRESS;
 			}
 
-			$this->deliver(to: $to, content: $content);
+			$messageId = $this->deliver(to: $to, content: $content);
 		} catch (\Throwable $e) {
 			// SMTP not configured is normal in dev containers; the caller
 			// decides whether this outcome escalates.
@@ -168,6 +173,8 @@ class EmailSender implements EmailSenderInterface {
 			);
 			return self::OUTCOME_FAILED;
 		}
+
+		$this->linkSent(content: $content, messageId: $messageId, recipient: (string) reset($to));
 
 		return self::OUTCOME_DISPATCHED;
 	}//end sendToUser()
@@ -207,7 +214,7 @@ class EmailSender implements EmailSenderInterface {
 		}
 
 		try {
-			$this->deliver(to: $to, content: $content);
+			$messageId = $this->deliver(to: $to, content: $content);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[EmailSender] email to the address of a party failed (%s)', $e->getMessage())
@@ -215,8 +222,86 @@ class EmailSender implements EmailSenderInterface {
 			return self::OUTCOME_FAILED;
 		}
 
+		$this->linkSent(content: $content, messageId: $messageId, recipient: (string) reset($to));
+
 		return self::OUTCOME_DISPATCHED;
 	}//end sendToParty()
+
+	/**
+	 * Record a sent mail bound to an object as its outbound link.
+	 *
+	 * The mail went out either way: a failed write is logged and the outcome
+	 * stays dispatched, and a reply to it reads as `unthreaded`.
+	 *
+	 * @param MailContent $content   What was sent.
+	 * @param string|null $messageId The minted `Message-ID`, or null when none was set.
+	 * @param string      $recipient The recipient's name or address.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	private function linkSent(MailContent $content, ?string $messageId, string $recipient): void {
+		if ($content->object === null || $messageId === null || $this->outboundLinks === null) {
+			return;
+		}
+
+		try {
+			$this->outboundLinks->record(object: $content->object, rfcMessageId: $messageId, subject: $content->subject, recipient: $recipient);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				sprintf('[EmailSender] the sent mail was not linked to its object (%s)', $e->getMessage())
+			);
+		}
+	}//end linkSent()
+
+	/**
+	 * Mint and set the `Message-ID` of a mail bound to an object.
+	 *
+	 * Only a mailer that exposes its mail object can carry it; without one
+	 * there is no id to record and the mail is sent unlinked.
+	 *
+	 * @param IMessage    $message The message.
+	 * @param MailContent $content What it says.
+	 *
+	 * @return string|null The id with its angle brackets, or null when none was set.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	private function mintMessageId(IMessage $message, MailContent $content): ?string {
+		if ($content->object === null || $this->outboundLinks === null || method_exists($message, 'getSymfonyEmail') === false) {
+			return null;
+		}
+
+		$id = bin2hex(random_bytes(16)).'@'.self::messageIdDomain();
+		try {
+			$headers = $message->getSymfonyEmail()->getHeaders();
+			if ($headers->has('Message-ID') === true) {
+				$headers->remove('Message-ID');
+			}
+
+			$headers->addIdHeader('Message-ID', $id);
+		} catch (Throwable $e) {
+			$this->logger->debug(sprintf('[EmailSender] could not set the Message-ID (%s)', $e->getMessage()));
+			return null;
+		}
+
+		return '<'.$id.'>';
+	}//end mintMessageId()
+
+	/**
+	 * The right-hand side of a minted `Message-ID`: this host's name.
+	 *
+	 * @return string The domain.
+	 */
+	private static function messageIdDomain(): string {
+		$host = strtolower((string) gethostname());
+		if (preg_match('/^[a-z0-9.-]+$/', $host) !== 1) {
+			return 'openregister.localhost';
+		}
+
+		return $host;
+	}//end messageIdDomain()
 
 	/**
 	 * Compose the message and hand it to the mailer.
@@ -224,11 +309,11 @@ class EmailSender implements EmailSenderInterface {
 	 * @param array<string, string> $to      The recipient address mapped to its display name.
 	 * @param MailContent           $content The subject, body and unsubscribe material.
 	 *
-	 * @return void
+	 * @return string|null The minted `Message-ID` of a mail bound to an object, else null.
 	 *
 	 * @throws \Throwable When the handoff fails.
 	 */
-	private function deliver(array $to, MailContent $content): void {
+	private function deliver(array $to, MailContent $content): ?string {
 		$msg = $this->mailer->createMessage();
 		$msg->setTo($to);
 		$msg->setSubject($content->subject);
@@ -239,7 +324,10 @@ class EmailSender implements EmailSenderInterface {
 			$this->unsubscribeHeaders()->apply(message: $msg, unsubscribe: $content->unsubscribe);
 		}
 
+		$messageId = $this->mintMessageId(message: $msg, content: $content);
 		$this->mailer->send($msg);
+
+		return $messageId;
 	}//end deliver()
 
 	/**

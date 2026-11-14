@@ -174,6 +174,7 @@ class EmailService implements EmailServiceInterface {
 		$link->setRegisterId($request->registerId);
 		$link->setMailAccountId($request->mailAccountId);
 		$link->setMailMessageId($request->mailMessageId);
+		$link->setDirection(EmailLink::DIRECTION_INBOUND);
 		$this->copyMessageHeaders(link: $link, messageData: $messageData);
 
 		return $link;
