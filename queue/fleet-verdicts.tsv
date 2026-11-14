@@ -9342,3 +9342,4 @@ buildiq	1624	cc9050a1cd7c4f61a7507c9a2154735e2fcc4832	GREEN	worker-47	phpunit 31
 learniq	2541	6a283faba384ab440427851957870c2890495d84	GREEN	worker-18	php 6779 tests, baseline 6754 with 1 inherited failure (HigherEducationExampleSetTest), 0 new; no JS touched; only change since last verify is a route moved within routes.php
 hermiq	1736	15f7baa1ea091939e2fb22679fa4ac103869afc9	CONFLICT	worker-49	merge conflict on development+1735
 hermiq	1739	bc2bf9931ae76d788c7443a802177f457d357cc6	CONFLICT	worker-49	merge conflict on development+1735
+hermiq	1782	f0562d6f013540c84154271800e3a6102ac05d3e	GREEN	worker-49	phpunit 5191 ok on tree (baseline development 5134 ok, both with ../openregister present), vitest 1496 passed; build of agent-acting-identity-picker, new read endpoint checks agent access first
