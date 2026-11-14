@@ -1,7 +1,36 @@
 {
     "empty": {
         "oas": [],
-        "issues": []
+        "issues": [
+            {
+                "path": "openapi",
+                "message": "Violates NLGov /core/doc-openapi: The document declares OpenAPI \"\", not 3.x.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/doc-openapi"
+            },
+            {
+                "path": "info.contact",
+                "message": "Violates NLGov /core/doc-openapi-contact: The contact details have no name, url, email.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/doc-openapi-contact"
+            },
+            {
+                "path": "info.version",
+                "message": "Violates NLGov /core/semver: \"\" is not a semantic version (MAJOR.MINOR.PATCH).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/semver"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Violates NLGov /core/publish-openapi: The document is served as JSON at /registers/{id}/oas and /registers/oas, not at /openapi.json.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/publish-openapi"
+            }
+        ]
     },
     "no paths": {
         "oas": {
@@ -18,6 +47,34 @@
                 "message": "Top-level tag \"lonely\" is declared but not referenced by any operation.",
                 "code": "unused_tag",
                 "severity": "warning"
+            },
+            {
+                "path": "openapi",
+                "message": "Violates NLGov /core/doc-openapi: The document declares OpenAPI \"\", not 3.x.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/doc-openapi"
+            },
+            {
+                "path": "info.contact",
+                "message": "Violates NLGov /core/doc-openapi-contact: The contact details have no name, url, email.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/doc-openapi-contact"
+            },
+            {
+                "path": "info.version",
+                "message": "Violates NLGov /core/semver: \"\" is not a semantic version (MAJOR.MINOR.PATCH).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/semver"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Violates NLGov /core/publish-openapi: The document is served as JSON at /registers/{id}/oas and /registers/oas, not at /openapi.json.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/publish-openapi"
             }
         ]
     },
@@ -296,6 +353,48 @@
                 "code": "nlgov_rule",
                 "severity": "warning",
                 "rule": "/core/uri-version"
+            },
+            {
+                "path": "paths./a.post.responses",
+                "message": "Violates NLGov /core/error-handling/invalid-input: 3 POST, PUT or PATCH operations declare no 400 response (paths./a.post.responses, paths./a.put.responses, paths./b.patch.responses).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/error-handling/invalid-input"
+            },
+            {
+                "path": "openapi",
+                "message": "Violates NLGov /core/doc-openapi: The document declares OpenAPI \"\", not 3.x.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/doc-openapi"
+            },
+            {
+                "path": "info.contact",
+                "message": "Violates NLGov /core/doc-openapi-contact: The contact details have no name, url, email.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/doc-openapi-contact"
+            },
+            {
+                "path": "info.version",
+                "message": "Violates NLGov /core/semver: \"\" is not a semantic version (MAJOR.MINOR.PATCH).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/semver"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Violates NLGov /core/publish-openapi: The document is served as JSON at /apps/openregister/api/registers/{id}/oas and /apps/openregister/api/registers/oas, not at /apps/openregister/api/openapi.json.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/publish-openapi"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Violates NLGov /core/transport/tls: The server URL \"/apps/openregister/api\" does not use TLS (https).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/transport/tls"
             },
             {
                 "path": "paths./a.get.responses.299",

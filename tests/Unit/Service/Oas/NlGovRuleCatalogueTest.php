@@ -123,4 +123,18 @@ class NlGovRuleCatalogueTest extends TestCase {
 		$this->assertSame(['get', 'post', 'put', 'patch', 'delete', 'head', 'options'], NlGovRuleCatalogue::ALLOWED_HTTP_METHODS);
 		$this->assertSame(['200', '201', '204', '400', '401', '403', '404', '422', '500', 'default'], NlGovRuleCatalogue::ALLOWED_STATUS_CODES);
 	}//end testTheMethodAndStatusCodeLists()
+
+	/**
+	 * The catalogue held as an object answers what its static methods answer.
+	 *
+	 * @return void
+	 */
+	public function testTheInstanceAnswersAsTheStaticMethods(): void {
+		$catalogue = new NlGovRuleCatalogue();
+
+		$this->assertSame(NlGovRuleCatalogue::rules(), $catalogue->all());
+		$this->assertSame(NlGovRuleCatalogue::deviation(ruleId: '/core/uri-version'), $catalogue->deviationOf(ruleId: '/core/uri-version'));
+		$this->assertNotNull($catalogue->deviationOf(ruleId: '/core/uri-version'));
+		$this->assertNull($catalogue->deviationOf(ruleId: '/core/semver'));
+	}//end testTheInstanceAnswersAsTheStaticMethods()
 }//end class
