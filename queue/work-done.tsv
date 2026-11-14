@@ -9669,3 +9669,4 @@ build:learniq:pupil-books-support-lessons-and-mentor-talks:c2	PR #2538: T1, T3, 
 fix:shillinq:3003:e9b31d7d	failed: conflict is only with unmerged #2976 (both bump info.xml version and append register-versions.lock rows at the same place); branch merges current development cleanly; resolve after #2976 lands (rebase the version to after 20261114180000 and append its lock row)	session-20261114T134643-47800317	2026-11-14T15:02:17Z
 verify:filinq:2119:0d0279c0	2123 GREEN, 2119 CONFLICT	session-20261114T144801-36995162	2026-11-14T15:02:20Z
 verify:portaliq:2437:a7c54eab	GREEN #2437	session-20261114T141732-bb541f91	2026-11-14T15:02:58Z
+fix:shillinq:2975:12f8c569	conflicts resolved, merged development; new head b4abe00a	session-20261114T141727-56b2bf78	2026-11-14T15:03:09Z
