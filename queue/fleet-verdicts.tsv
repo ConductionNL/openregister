@@ -8445,3 +8445,12 @@ pipelinq	3818	6ddd22c5a319ff5f8e825b8609014f848fdf1c88	CONFLICT	merge3	conflicts
 pipelinq	3833	8c3dcf192b242d4942ca7459dcc8eba883b52a5d	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 portaliq	2440	55c8203a5e8d73ccf77d33c862b98c5ec26e4c71	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/en_US.js l10n/en_US.json l10n/nl.js l10n/nl.json tests/Unit/Settings/PortaliqRegisterConfigTest.php 
 portaliq	2493	ee816fa99bd6b7ad11a4312d36238260a59062f0	CONFLICT	merge3	conflicts with development; files: package.json 
+decidiq	2143	1430cc3a06f1246370a93124179a171fbb021b48	GREEN	worker-03	tree dev+2143: unit 4204 OK (baseline 4174 OK), vitest 2727 pass (baseline 2727); builds confidentiality-term-and-lapse as its change asks, no access check weakened
+decidiq	2146	47325aadac703be8570abab1ae1d0c3fb47b6f81	CONFLICT	worker-03	conflicts with plain development: l10n/en.js en.json nl.js nl.json
+decidiq	2148	2bf0e3469827829fc4b3a0eb38c55057dcad1639	CONFLICT	worker-03	clean on development alone, conflicts after #2143: l10n en/nl js+json (and SaveGuardSubscriptions.php with #2154)
+decidiq	2154	10e369670ea31c82ef6b1e19329579d7ed6c8104	RED	worker-03	on top of #2143: RegisterJsonTest::testExampleSetsCountTheirOwnObjects (municipality.json objectCount 232, seeds 234: both PRs add seeds and bump the count); green alone on development
+decidiq	2168	59aba86fda1eb37214b0fccb954943d026a5b617	RED	worker-03	alone on development: vitest votingGroups.spec.js 'bump the app version so the register is read in again' and decisionPortfolioHolder.spec.js 'bumps the app version...' pin <version>1.2.6-unstable.20261020200000</version>, which this PR's info.xml bump replaces
+decidiq	2170	99fc9258e46418e215c54778a1c4bfed5ce6fd35	CONFLICT	worker-03	clean on development alone, conflicts after #2143: l10n en/nl js+json
+decidiq	2174	5c8c3d7d679af0b29a876067180194222aa2c1ea	CONFLICT	worker-03	clean on development alone, conflicts after #2143: l10n en/nl js+json, lib/Settings/profiles/municipality.json
+decidiq	2177	1d3a5285eaa776346a92fac1e822526d9f5fdf3d	CONFLICT	worker-03	clean on development alone, conflicts after #2143: l10n en/nl js+json, lib/Listener/Registrar/ObjectListenerRegistrar.php
+decidiq	2181	207ca46a911f312062ccebf1ede258fc787da832	CONFLICT	worker-03	clean on development alone, conflicts after #2143: l10n en/nl js+json
