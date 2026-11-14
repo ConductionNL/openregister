@@ -8661,3 +8661,4 @@ cover:decidiq:a5f973bbmae46:05630945	no PR: ApiPathAliases (6 tests + middleware
 cover:dossiq:069ee2d6mbd37:47ac7936	PR #6491: 11 tests over 8 listener registrars; suite 16850 -> 16861, same 19 inherited failures	session-20261114T082633-64525b24	2026-11-14T09:26:14Z
 cover:decidiq:a5f973bbmae46:34763eb4	no PR: the only class, ApiContractMiddleware, has 17 tests reaching every method and the branches readable in it (batch -1 merged); no coverage driver here to find residual lines	session-20261114T075644-ec2e07ac	2026-11-14T09:26:17Z
 verify:keepiq:1790:430d5d60	1790 GREEN, 1792 CONFLICT after 1790; phpunit 4975 OK, vitest 6440 passed	session-20261114T082640-198131b9	2026-11-14T09:26:29Z
+cover:pipelinq:7f9dc8e6m799d:js0be8c659	PR #3816: 8 tests for LetterFromTemplateModal fallbacks and PinLoginModal controls; vitest 4910->4918; src/modals statements 97.1%	session-20261114T075643-75a598ab	2026-11-14T09:26:56Z
