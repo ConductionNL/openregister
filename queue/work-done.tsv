@@ -7692,4 +7692,6 @@ fix:portaliq:2433:7c0c09e1	conflict resolved (check:specs union), pushed 6cd14d9
 fix:pipelinq:3726:b2988e37	conflict resolved: l10n keys moved clear of #3713, development merged; new head 9f496577	session-20261114T065633-3e3cb668	2026-11-14T07:00:16Z
 fix:portaliq:2434:bbc265ed	CONFLICT resolved, suite green; new head 4d1b1144	session-20261114T062200-6a28e40c	2026-11-14T07:00:30Z
 fix:portaliq:2431:71b86621	merged development, resolved import conflict in CitizenWritableSetResolver; new head a75a3e0e95e37bc31a3dec5c4b26a88282c648db	session-20261114T065625-baa65a50	2026-11-14T07:00:37Z
+fix:portaliq:2423:53e76322	stale	session-20261114T065625-baa65a50	2026-11-14T07:01:02Z
 review:portaliq:2312:bc6ff396	GREEN: behaviour-preserving refactor, 3 inherited node failures	session-20261114T062202-3e33eeb3	2026-11-14T07:01:02Z
+verify:humaniq:1132:deab1de5	GREEN 1132,1133,1134,1136; CONFLICT 1135 (l10n), 1137 (hr-leave-types.json)	session-20261114T065626-0651b305	2026-11-14T07:01:13Z
