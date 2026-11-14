@@ -652,6 +652,7 @@ class NoteService implements NoteServiceInterface {
 			'visibility' => $this->readVisibility(comment: $comment),
 			'locked' => $this->lockService->isLocked(comment: $comment),
 			'lockedBy' => $this->lockService->lockedBy(comment: $comment)['by'],
+			'lockedByDisplayName' => $this->displayNameOf(userId: $this->lockService->lockedBy(comment: $comment)['by']),
 			'lockedAt' => $this->lockService->lockedBy(comment: $comment)['at'],
 			// The defaults of a note nobody has edited. Every read that can
 			// afford the query replaces them through
@@ -663,5 +664,27 @@ class NoteService implements NoteServiceInterface {
 			'versionCount' => 0,
 		] + $this->replies()->fields(comment: $comment, knownIds: $knownIds);
 	}//end commentToArray()
+
+	/**
+	 * A user's display name, their id when the account is gone, or null for no user.
+	 *
+	 * @param string|null $userId The user id.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-an-objects-notes-export-as-a-journal-sheet
+	 */
+	private function displayNameOf(?string $userId): ?string {
+		if ($userId === null || $userId === '') {
+			return null;
+		}
+
+		$user = $this->accounts->userManager->get($userId);
+		if ($user === null) {
+			return $userId;
+		}
+
+		return $user->getDisplayName();
+	}//end displayNameOf()
 
 }//end class

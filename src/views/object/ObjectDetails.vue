@@ -7,6 +7,12 @@
 						{{ objectStore.objectItem.id }}
 					</h1>
 
+					<CnFollowToggle
+						v-if="followToggle"
+						v-bind="followToggle"
+						@error="onFollowError"
+						@notFound="onRecordGone" />
+
 					<NcActions
 						:primary="true"
 						:menuName="t('openregister', 'Actions')">
@@ -60,6 +66,15 @@
 								<FolderOutline :size="20" />
 							</template>
 							Open Folder
+						</NcActionButton>
+						<NcActionButton
+							v-if="followToggle"
+							closeAfterClick
+							@click="markUnread">
+							<template #icon>
+								<EmailMarkAsUnread :size="20" />
+							</template>
+							Mark as unread
 						</NcActionButton>
 					</NcActions>
 				</div>
@@ -533,6 +548,7 @@
 
 <script>
 import {
+	CnFollowToggle,
 	CnIntegrationWidget,
 	CnObjectAccessTab,
 	CnObjectMetadataWidget,
@@ -541,6 +557,7 @@ import {
 	useIntegrationRegistry,
 } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -554,6 +571,7 @@ import {
 } from '@nextcloud/vue'
 import { computed } from 'vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import EmailMarkAsUnread from 'vue-material-design-icons/EmailMarkAsUnread.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
@@ -576,6 +594,7 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
+import { followProps, recordAddress, sendReadState } from './recordFollow.js'
 
 /**
  * Register the live target's object type with the store, once.
@@ -660,9 +679,11 @@ export default {
 		NcLoadingIcon,
 		AppTabs,
 		AppTab,
+		CnFollowToggle,
 		CnPagination,
 		CnTasksTab,
 		DotsHorizontal,
+		EmailMarkAsUnread,
 		Pencil,
 		TrashCanOutline,
 		TimelineQuestionOutline,
@@ -730,12 +751,24 @@ export default {
 			activeAttachment: null,
 			fileLoading: false,
 			pagination: initialPagination(),
+			readMarkedFor: null,
 			// Open flow tasks on this record, for the Tasks tab badge; null until known.
 			openTaskCount: null,
 		}
 	},
 
 	computed: {
+		/**
+		 * The Follow toggle's props from the record's `@self`, or null when
+		 * the record has no address (design D-1, D-6).
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {object|null}
+		 */
+		followToggle() {
+			return followProps(objectStore?.objectItem)
+		},
+
 		/**
 		 * Build the (register, schema, id) triple used by the entity-relations
 		 * tabs (Emails, Events, Contacts, Deck, Relations). Returns null when
@@ -858,6 +891,7 @@ export default {
 			this.getFiles()
 			this.getAuditTrails()
 			this.getRelations()
+			this.markReadAfterRender()
 			this.countOpenTasks()
 		}
 		this.syncLiveSubscription()
@@ -877,6 +911,7 @@ export default {
 			this.getRelations()
 			this.countOpenTasks()
 			this.syncLiveSubscription()
+			this.markReadAfterRender()
 		}
 	},
 
@@ -891,6 +926,69 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Mark the shown record read once its data has rendered, once per
+		 * record (design D-3). A page without a record (a failed load) sends
+		 * nothing.
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async markReadAfterRender() {
+			const address = recordAddress(objectStore?.objectItem)
+			if (address === null || this.readMarkedFor === address.id) {
+				return
+			}
+
+			this.readMarkedFor = address.id
+			await this.$nextTick()
+			await sendReadState(address, 'PUT')
+		},
+
+		/**
+		 * "Mark as unread": send `DELETE .../read-state` and leave the page,
+		 * so the list the user returns to shows the record unread (design D-3).
+		 * When the server refuses, the user stays on the record.
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async markUnread() {
+			const address = recordAddress(objectStore?.objectItem)
+			if (address === null) {
+				return
+			}
+
+			// On a failure the user stays on the record, which is still read.
+			if (await sendReadState(address, 'DELETE') === false) {
+				return
+			}
+
+			objectStore.setObjectItem(null)
+		},
+
+		/**
+		 * Show the server's message when a Follow change failed; the toggle
+		 * has flipped itself back already (design D-2).
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @param {string} message The server's message
+		 * @return {void}
+		 */
+		onFollowError(message) {
+			showError(message)
+		},
+
+		/**
+		 * The record went away or access was withdrawn: reload the page (design D-2).
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {void}
+		 */
+		onRecordGone() {
+			window.location.reload()
+		},
+
 		/**
 		 * Count the open flow tasks on this record for the Tasks tab badge.
 		 *

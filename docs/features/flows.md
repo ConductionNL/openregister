@@ -205,6 +205,10 @@ Two keys **do** decide whether a run starts:
 Both keys are refused on any other event, and as an empty list or a list holding
 anything but names. Publishing a flow refuses a `changedFields` name that is not
 a property of the trigger's schema, because such a trigger would never start.
+Renaming a property later is not refused, but when the schema update declares
+the rename, the response lists every published trigger that still watches the
+old name under `flowWarnings` (flow, step, field and its new name), so the maker
+can update the trigger.
 
 **`openregister.trigger-schedule`** carries a five-field `cron` expression and
 `runAs`, the user the run acts as. `runAs` is required and must be an existing

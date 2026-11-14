@@ -1,8 +1,8 @@
 # Tasks: calendar-leaf-inbound
 
-- [ ] `CalendarLinkMapper::findByEventUid(eventUid, ?calendarUri)` — reverse lookup, scoped by calendar uri when given (REQ-CAL-INB-002).
-- [ ] `CalendarLinkService::getObjectsForEvent()` — service surface over the reverse lookup.
-- [ ] Idempotency in `CalendarLinkService::linkEvent` / `createAndLinkEvent` — return the existing row for a duplicate `(objectUuid, eventUid, calendarUri)` instead of inserting (REQ-CAL-INB-003).
+- [x] `CalendarLinkMapper::findByEventUid(eventUid, ?calendarUri)` — reverse lookup, scoped by calendar uri when given (REQ-CAL-INB-002). (Plus `findLink(objectUuid, eventUid, calendarUri)`, the oldest row of a triple or null; both on `CalendarLinkMapperInterface`; `CalendarLinkReverseLookupTest`.)
+- [x] `CalendarLinkService::getObjectsForEvent()` — service surface over the reverse lookup.
+- [x] Idempotency in `CalendarLinkService::linkEvent` / `createAndLinkEvent` — return the existing row for a duplicate `(objectUuid, eventUid, calendarUri)` instead of inserting (REQ-CAL-INB-003). (Now `linkLocatedEvent` / `createLinkedEvent`; the HTTP link route calls `linkLocatedEvent`, so it returns the existing row too; `CalendarLinkServiceIdempotencyTest`.)
 - [ ] Migration — deduplicate existing `openregister_calendar_links` rows (keep oldest) and add the unique index on `(object_uuid, event_uid, calendar_uri)`.
 - [ ] `lib/Listener/CalendarObjectChangedListener.php` — one listener class handling Created/Updated/Moved: parse the VObject from the event payload, match by `X-OPENREGISTER-*` or `findByEventUid`, upsert/refresh cached fields; swallow+log own failures, never abort the DAV operation (REQ-CAL-INB-001).
 - [ ] `lib/Listener/CalendarObjectDeletedListener.php` — delete matching link rows on VEVENT deletion.

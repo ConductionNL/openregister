@@ -24,6 +24,7 @@ use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -135,9 +136,11 @@ class DeletedControllerReadScopeTest extends TestCase {
 		$response = $this->controller->index();
 
 		$this->assertSame(200, $response->getStatus());
-		// limit, offset, _rbac, _multitenancy.
-		$this->assertSame([20, null, true, true], $listArgs->args, 'The listing must be asked for in the caller\'s read scope.');
-		$this->assertSame([true, true], $countArgs->args, 'The total must count only the caller\'s read scope.');
+		// limit, offset, _rbac, _multitenancy, then the (empty) sync filter.
+		$this->assertSame([20, null, true, true], array_slice($listArgs->args, 0, 4), 'The listing must be asked for in the caller\'s read scope.');
+		$this->assertSame([true, true], array_slice($countArgs->args, 0, 2), 'The total must count only the caller\'s read scope.');
+		$this->assertEquals(new DeletedFilter(), $listArgs->args[4]);
+		$this->assertSame($listArgs->args[4], $countArgs->args[2], 'The total must count what the listing lists.');
 	}//end testNonAdminListingIsNarrowedToTheCallersReadScope()
 
 	/**
@@ -150,8 +153,8 @@ class DeletedControllerReadScopeTest extends TestCase {
 		[$listArgs, $countArgs] = $this->captureScanArguments();
 
 		$this->assertSame(200, $this->controller->index()->getStatus());
-		$this->assertSame([20, null, false, false], $listArgs->args);
-		$this->assertSame([false, false], $countArgs->args);
+		$this->assertSame([20, null, false, false], array_slice($listArgs->args, 0, 4));
+		$this->assertSame([false, false], array_slice($countArgs->args, 0, 2));
 	}//end testAdminListingIsNotNarrowed()
 
 	/**
@@ -199,7 +202,7 @@ class DeletedControllerReadScopeTest extends TestCase {
 		$response = $this->controller->statistics();
 
 		$this->assertSame(200, $response->getStatus());
-		$this->assertSame([true, true], $countArgs->args, 'The deleted count must be the caller\'s own reach.');
+		$this->assertSame([true, true, null], $countArgs->args, 'The deleted count must be the caller\'s own reach, unfiltered.');
 	}//end testNonAdminStatisticsCountOnlyTheCallersReadScope()
 
 	/**

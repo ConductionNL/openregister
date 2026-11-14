@@ -6,7 +6,7 @@
 
 ## 2. Publish to GitLab
 
-- [ ] 2.1 Add `configuration#publishToGitLab` beside `configuration#publishToGitHub` (`appinfo/routes.php`, `lib/Controller/ConfigurationController.php`), using the GitLab handler that import already uses, and offer GitLab as a target in `src/modals/configuration/PublishConfiguration.vue`.
+- [x] 2.1 Add `configuration#publishToGitLab` beside `configuration#publishToGitHub` (`appinfo/routes.php`, `lib/Controller/ConfigurationController.php`), using the GitLab handler that import already uses, and offer GitLab as a target in `src/modals/configuration/PublishConfiguration.vue`.
       Backend DONE: `POST /api/configurations/{id}/publish/gitlab` (admin only, local configurations
       only) writes through `GitLabHandler::publishFile()` and records the GitLab file as the source URL
       in the form a GitLab import and the sync job read. OPEN: the GitLab target in
