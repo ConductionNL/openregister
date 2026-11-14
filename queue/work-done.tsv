@@ -11308,3 +11308,11 @@ verify:opencatalogi:2671:148b0046	GREEN 2701-2707; 2671 and 2696 skipped (heads 
 verify:hermiq:1750:9a4e68e8	CONFLICT: #1750 conflicts with development in ContextRetrievalHandler	session-20261114T214740-6d7e97c9	2026-11-14T21:50:47Z
 build:opencatalogi:woo-access-boundary-hardening:c2	failed: permission (a file-writing command was refused by a safety check mid-build; nothing pushed; section 4 design started: CapabilityRights + declaration/scope listeners on the real OR events)	session-20261114T211806-b9cd4119	2026-11-14T21:50:52Z
 verify:filinq:2132:a60290f8	GREEN 2132: 6771 tests, 0 new failures	session-20261114T214735-aacd1703	2026-11-14T21:51:00Z
+fix:shillinq:dummy	x	session-20261114T194805-be886caa	2026-11-14T21:51:11Z
+fix:opencatalogi:2701:493cd752	failed: interaction, not a defect here; #2697's test testAnUnknownCatalogueListsNothing expects the old empty list, catalogs CAT-002 (built in #2701) requires 404; branch merged with development green apart from inherited WooControllerTest	session-20261114T194805-be886caa	2026-11-14T21:51:14Z
+build:opencatalogi:woo-metadata-suggestions:c2	partial: PR #2674 ticks 2.1 (service + 7 tests pass); left 2.2 listener+job (needs schema slug, origin and catalogue organisation lookups and a metadata_suggestion_schema key in SettingsService), 3.1, 4.1, 5.1, 6.1 code; 4.2/6.2 e2e; 6.4/6.5 gated on D10	session-20261114T211750-05725ff5	2026-11-14T21:51:22Z
+fix:portaliq:2443:b5fa534f	merged development in, resolved l10n + register version conflicts; new head f562b574, REVERIFY	session-20261114T204750-c1efccdb	2026-11-14T21:51:22Z
+fix:portaliq:2498:694d2dce	merged development, conflicts resolved keeping both sides; new head b8d95863	session-20261114T212457-7a749dbd	2026-11-14T21:51:28Z
+verify:opencatalogi:2665:90e45c67	GREEN 2665,2677,2687,2688; RED 2668,2671; CONFLICT 2696; 2672,2682 skipped (head moved)	session-20261114T203357-c555025b	2026-11-14T21:51:38Z
+review:decidiq:2149:b733293a	GREEN: decidiq#2149 matches its change specs; unit 4294 OK, vitest 2813 pass, phpstan clean	session-20261114T214742-7aa14b57	2026-11-14T21:51:45Z
+verify:hermiq:1781:b8bda1f3	CONFLICT: #1781 conflicts with development in hermiq_register.json	session-20261114T214740-6d7e97c9	2026-11-14T21:52:03Z
