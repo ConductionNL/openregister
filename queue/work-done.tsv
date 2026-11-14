@@ -7732,3 +7732,4 @@ fix:filinq:2098:fc7ce3c4	conflict resolved (l10n, both sides kept), pushed cde3e
 fix:shillinq:2976:463e530e	conflict resolved + Kernel import moves, new head 03e24bcb, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T07:08:44Z
 fix:filinq:2085:25d925f4	conflict resolved, pushed cf785bbf; REVERIFY recorded	session-20261114T065626-0651b305	2026-11-14T07:08:51Z
 fix:learniq:2511:e2104080	conflict resolved (union of en/nl keys), new head d32aa9e4; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T07:09:05Z
+review:shillinq:2819:1c3c860b	stale	session-20261114T062156-16c77e6a	2026-11-14T07:09:16Z
