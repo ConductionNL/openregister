@@ -8781,3 +8781,4 @@ hermiq	1767	a6510da29fb1d66447143c9454f01db6753c50a2	GREEN	worker-12	phpunit 506
 hermiq	1784	7a0a5e933336b6c6d871b89e1e43aa2f5e0f11a7	GREEN	worker-12	phpunit 5069 OK (baseline 5046 OK), vitest 1463 passed, 0 new failures; frontend-only tool-call mark per verify-row-scenarios
 filinq	2112	297a10b4a7f3e87e642ee92ec28d7c0d11dc63d6	CONFLICT	worker-06	conflicts after #2079 in the tree
 filinq	2126	1432867fa2b70adece648f05173ba77f039fec2b	CONFLICT	worker-06	conflicts after #2079 in the tree
+planninq	1166	a5c5ee2d3e3dc39c10d3d63bcb83dbda79fed892	REVERIFY	worker-40	merged development in (clean now), PlanninqRegisterSchemaTest 52 tests OK; new head c4659443b18b31beefeca9132a5fd2fd1b322063, verify it
