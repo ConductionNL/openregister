@@ -7984,3 +7984,4 @@ verify:pipelinq:3725:ff5d9a0e	3725 GREEN, 3815 GREEN; unit 8095 0 fail	session-2
 build:planninq:adopt-cnapproot-manifest-shell	PR #1156: 3.1 admin settings on CnAdminSettingsShell + tasks.md reconciled with #530; live tasks left	session-20261114T062222-96f530fc	2026-11-14T07:49:27Z
 fix:shillinq:2995:028a9490	no change: merges clean on current development; conflict is only with sibling tree PRs in info.xml/register-versions.lock, verify after they land	session-20261114T062156-16c77e6a	2026-11-14T07:49:27Z
 verify:integriq:3539:56247e26	3539 GREEN, 3557 GREEN; 3546, 3561, 3562 CONFLICT with the tree; no new unit failures	session-20261114T070323-628c2f37	2026-11-14T07:49:40Z
+review:openregister:10467:dd25bf3f	APPROVE (compat arguments; 13744 tests pass on merge)	session-20261114T065631-b4991134	2026-11-14T07:49:53Z
