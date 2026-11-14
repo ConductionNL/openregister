@@ -9695,3 +9695,4 @@ fix:hermiq:1725:c59e9eb8	conflict resolved, merged development; new head bdb0289
 fix:hermiq:1754:e44a6d54	conflict resolved (register 0.55.0), new head dfd3b624	session-20261114T141728-9a5d03fc	2026-11-14T15:06:17Z
 fix:hermiq:1737:3a6db84b	conflict resolved, new head 2eeaf44a805772299fa2c4803fbf7284eff678a8, REVERIFY recorded	session-20261114T144757-446bd6da	2026-11-14T15:06:33Z
 fix:learniq:2509:ca90dcaa	no change: clean on development; tree-only conflict in generated l10n .js; REVERIFY recorded	session-20261114T134654-82ca2be5	2026-11-14T15:06:47Z
+build:hermiq:models-prompt-and-answer-cache:c2	partial: pushed to PR #1753 — merged development (l10n key union), task 3 OpenAI cached_tokens read (+1 test); left task 2, Runs.vue cache line (page shows no tokens yet), tasks 4-7 (answer cache)	session-20261114T134643-47800317	2026-11-14T15:06:52Z
