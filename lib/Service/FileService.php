@@ -1123,15 +1123,16 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * See https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share.
 	 *
-	 * Takes a ShareLinkRequest (as `$request`, or positionally in place of `$path`) or the separate
-	 * arguments of the published contract; a ShareLinkRequest wins.
+	 * Takes main's ShareLinkRequest, or the separate arguments of the published contract, by name
+	 * or by position (a path in the first slot); a ShareLinkRequest wins.
 	 *
-	 * @param string|ShareLinkRequest|null $path        The path from root, or the request.
+	 * @param ShareLinkRequest|string|null $request     The path (from root), the share type (0=user, 1=group, 3=public link, 4=email,
+	 *                                                  etc.) and the permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all);
+	 *                                                  a string here is the release's positional `$path`.
 	 * @param int|null                     $shareType   0=user, 1=group, 3=public link, 4=email, etc.
 	 * @param int|null                     $permissions 1=read, 2=update, 4=create, 8=delete, 16=share, 31=all;
 	 *                                                  null for read on a public link and all otherwise.
-	 * @param ShareLinkRequest|null        $request     The path (from root), the share type (0=user, 1=group, 3=public link, 4=email,
-	 *                                                  etc.) and the permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all).
+	 * @param string|null                  $path        The path from root.
 	 *
 	 * @throws Exception If creating the share link fails
 	 *
@@ -1140,14 +1141,14 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * @spec exclude Public share-link creation; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
 	 */
 	public function createShareLink(
-		string|ShareLinkRequest|null $path = null,
+		ShareLinkRequest|string|null $request = null,
 		?int $shareType = 3,
 		?int $permissions = null,
-		?ShareLinkRequest $request = null,
+		?string $path = null,
 	): string {
-		if ($path instanceof ShareLinkRequest) {
-			$request ??= $path;
-			$path = null;
+		if (is_string($request) === true) {
+			$path ??= $request;
+			$request = null;
 		}
 
 		if ($request === null && $path === null) {
@@ -1358,20 +1359,23 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * Delegates to CreateFileHandler for single-responsibility file creation operations.
 	 *
-	 * Takes a FileTarget and FileUpload (named, or positionally in the first two slots) or the
-	 * separate arguments of the published contract; value objects win. `$_schema` and
-	 * `$_register` are accepted for the published contract and not read, as before.
+	 * Takes main's FileTarget and FileUpload, or the separate arguments of the published contract,
+	 * by name or by position (an object or id and a file name in the first two slots); value
+	 * objects win. `$_schema` and `$_register` are accepted for the published contract and not
+	 * read, as before.
 	 *
-	 * @param ObjectEntity|string|FileTarget|null $objectEntity The object (or its id), or the target.
-	 * @param string|FileUpload|null              $fileName     The file name, or the upload.
+	 * @param FileTarget|ObjectEntity|string|null $target       The object (or its id) and, when the object does not name it, its
+	 *                                                          register; an object or id here is the release's positional `$objectEntity`.
+	 * @param FileUpload|string|null              $upload       The file name, content, share toggle and tags; a string here is the
+	 *                                                          release's positional `$fileName`.
 	 * @param mixed                               $content      The file content.
 	 * @param bool                                $share        Whether to share the file.
 	 * @param array                               $tags         Tags for the file.
 	 * @param int|string|Schema|null              $_schema      Not read.
 	 * @param int|string|Register|null            $_register    Not read.
 	 * @param int|string|null                     $registerId   The register, when the object does not name it.
-	 * @param FileTarget|null                     $target       The object (or its id) and, when the object does not name it, its register.
-	 * @param FileUpload|null                     $upload       The file name, content, share toggle and tags.
+	 * @param ObjectEntity|string|null            $objectEntity The object (or its id).
+	 * @param string|null                         $fileName     The file name.
 	 *
 	 * @return File The created file.
 	 *
@@ -1385,25 +1389,25 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
 	 */
 	public function addFile(
-		ObjectEntity|string|FileTarget|null $objectEntity = null,
-		string|FileUpload|null $fileName = null,
+		FileTarget|ObjectEntity|string|null $target = null,
+		FileUpload|string|null $upload = null,
 		mixed $content = null,
 		bool $share = false,
 		array $tags = [],
 		int|string|Schema|null $_schema = null,
 		int|string|Register|null $_register = null,
 		int|string|null $registerId = null,
-		?FileTarget $target = null,
-		?FileUpload $upload = null,
+		ObjectEntity|string|null $objectEntity = null,
+		?string $fileName = null,
 	): File {
-		if ($objectEntity instanceof FileTarget) {
-			$target ??= $objectEntity;
-			$objectEntity = null;
+		if ($target !== null && ($target instanceof FileTarget) === false) {
+			$objectEntity ??= $target;
+			$target = null;
 		}
 
-		if ($fileName instanceof FileUpload) {
-			$upload ??= $fileName;
-			$fileName = null;
+		if (is_string($upload) === true) {
+			$fileName ??= $upload;
+			$upload = null;
 		}
 
 		if (($target === null && $objectEntity === null) || ($upload === null && $fileName === null)) {
@@ -1421,15 +1425,16 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * Delegates to CreateFileHandler for single-responsibility upsert operations.
 	 *
-	 * Takes a FileUpload (as `$upload`, or positionally in place of `$fileName`) or the separate
-	 * arguments of the published contract; a FileUpload wins.
+	 * Takes main's FileUpload, or the separate arguments of the published contract, by name or by
+	 * position (a file name in the second slot); a FileUpload wins.
 	 *
 	 * @param ObjectEntity           $objectEntity The object entity to save the file to.
-	 * @param string|FileUpload|null $fileName     The file name, or the upload.
+	 * @param FileUpload|string|null $upload       The file name, content, share toggle (new files only) and tags; a string
+	 *                                             here is the release's positional `$fileName`.
 	 * @param mixed                  $content      The file content.
 	 * @param bool                   $share        Whether to share a new file.
 	 * @param array                  $tags         Tags for the file.
-	 * @param FileUpload|null        $upload       The file name, content, share toggle (new files only) and tags.
+	 * @param string|null            $fileName     The file name.
 	 *
 	 * @return File The saved file.
 	 *
@@ -1443,15 +1448,15 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 */
 	public function saveFile(
 		ObjectEntity $objectEntity,
-		string|FileUpload|null $fileName = null,
+		FileUpload|string|null $upload = null,
 		mixed $content = null,
 		bool $share = false,
 		array $tags = [],
-		?FileUpload $upload = null,
+		?string $fileName = null,
 	): File {
-		if ($fileName instanceof FileUpload) {
-			$upload ??= $fileName;
-			$fileName = null;
+		if (is_string($upload) === true) {
+			$fileName ??= $upload;
+			$upload = null;
 		}
 
 		if ($upload === null && $fileName === null) {
