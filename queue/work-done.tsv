@@ -10894,3 +10894,4 @@ fix:humaniq:1125:a44e6b58	floor refactor pushed, suite green; REVERIFY at 9ef38f
 fix:shillinq:2995:47788041	fixed conflict: merged development, both sides kept; new head 116350555	session-20261114T194747-cb37937d	2026-11-14T20:28:13Z
 verify:shillinq:3051:e173767e	stale	session-20261114T202449-f0278d5a	2026-11-14T20:28:34Z
 verify:hermiq:1715:3f8364d7	1715 GREEN, 1739 GREEN; 1726 1749 1785 1787 CONFLICT; unit 5175 0 failures with openregister present, vitest 1500 green	session-20261114T192501-803bcb19	2026-11-14T20:28:56Z
+merge:learniq:2536:57bab69d	merge3 tree of 7 learniq PRs: merged=3 red=1 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T20:29:07Z
