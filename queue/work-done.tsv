@@ -9491,3 +9491,4 @@ review:pipelinq:3713:4f82309f	GREEN: built as the change specs ask; unit 8398 gr
 fix:portaliq:2489:011ce34a	fixed: l10n keys moved off the shared tail, clean over tree with 2430/2433; new head 043e6c96, REVERIFY recorded	session-20261114T131654-c068f436	2026-11-14T14:31:33Z
 review:dossiq:6385:0de8a799	BLOCK: caseType schema version 1.48.0 collides with social-safeguards fragment on development; else clean	session-20261114T141727-56b2bf78	2026-11-14T14:31:53Z
 merge:pipelinq:3832:d968758f	stale	feeder	2026-11-14T14:30:22Z
+fix:portaliq:2442:d378be76	no change: branch already up to date with development; conflict is only with unmerged #2437 (l10n), resolve after whichever lands first	session-20261114T141738-30f539db	2026-11-14T14:32:06Z
