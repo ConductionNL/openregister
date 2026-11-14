@@ -8803,3 +8803,4 @@ build4:openregister:published-file-digest:c2	failed: not built this pass; the re
 build4:openregister:capability-rows-stated-requirements:c2	PR #10492: tasks 3.1 and 3.2 (FileChecksum on upload/replace + fixity check, +13 tests); no endpoint for the check yet	session-20261114T085635-07e3ca9b	2026-11-14T10:21:50Z
 build:pipelinq:marketing-campaign-on-client:c2	pushed 61678b39 to PR pipelinq#3713: 1.4 (on WebFormIntakeService via SubmissionTouchRecorder), 1.5 manifest widgets, 1.6 docs+l10n; phpunit 7893->7902 OK, vitest 4910 OK; e2e/docs build not run	session-20261114T095640-f8608005	2026-11-14T10:21:56Z
 build4:openregister:settings-change-audit:c2	nothing buildable: 3.2 done in #10411; 2.1 still blocked on the audit-log-page access question; 3.1 is e2e	session-20261114T085638-f8a2ea52	2026-11-14T10:22:13Z
+verify:keepiq:1794:1e2c35ed	1794 GREEN	session-20261114T095645-0268807e	2026-11-14T10:22:29Z
