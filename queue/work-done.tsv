@@ -9348,3 +9348,4 @@ build:filinq:templates-employer-statement:c2	partial: filinq#2090 updated: 1.2 E
 fix:shillinq:2982:b629fccb	no change: head b629fcc already contains development; #2975 not landed yet, merge development after it lands	session-20261114T134701-ae8ce354	2026-11-14T14:05:55Z
 verify:filinq:2067:a2ff11d8	GREEN 2086 2117; CONFLICT 2070 (development), 2089 2093 2103 2106 (with #2086); skipped 2067 2116 (head moved); unit 6731 OK, vitest 751 OK	session-20261114T134657-c7830c27	2026-11-14T14:06:09Z
 build4:dossiq:enforcement-intervention-from-the-case:c3	partial: PR #6509 — 3.4 (case's lhsRecommendation list on Decisions tab, stale settings menu id dropped) and 4.4 done; left 2.2 (forward would drop the LHS manager escalation check and change the prefill source), 4.1-4.3 e2e/Newman/live	session-20261114T134643-47800317	2026-11-14T14:06:16Z
+verify:pipelinq:3835:f7704553	stale	feeder	2026-11-14T14:05:28Z
