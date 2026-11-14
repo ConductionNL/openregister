@@ -2,8 +2,9 @@
 
 ## 1. E-mail channel
 
-- [ ] 1.1 Seeded `smtp-mail` OpenConnector source; `email` channel in `MessageDispatchProvider` with the source allow-list; `Message-ID` minted and returned.
+- [x] 1.1 Seeded `smtp-mail` OpenConnector source; `email` channel in `MessageDispatchProvider` with the source allow-list; `Message-ID` minted and returned.
       Built in OpenRegister (2026-11-14): `smtp-mail` on `MessageDispatchProvider::ALLOWED_SOURCES`; `POST /api/integrations/email/send` (`MessageDispatchController::emailSend()`) taking `{to, subject, text, html?, replyTo?}` (and `path`, `sendAt`, `object`), 400 for a missing or malformed field, 503 with `details.cause` for a degraded source; every message, sent now or scheduled, gets a Message-ID from `MessageIdMinter` (`<128 random bits@host>`), sent as its header and returned; the provider answers a sent message with the Message-ID it left with, and the sweep stores that one. Left: seeding the `smtp-mail` source itself, which is a register fragment in integriq (where `cmcom-sms` and the other sources are seeded), not OpenRegister.
+      The seed (2026-11-14): `lib/Settings/register.d/smtp-mail-source.json` in integriq (ConductionNL/integriq#3632), a mock-mode HTTP source like `cmcom-sms`, listed in the catalog under Messaging.
 
 ## 2. Scheduling
 
