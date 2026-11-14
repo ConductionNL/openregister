@@ -9688,3 +9688,4 @@ hermiq	1726	ef950b14c2e7b9a7de7bffe04ff5e40bca6a37e1	CONFLICT	worker-07	conflict
 hermiq	1739	efdf5808e8b0592d93d95fa5e869d549ef393851	GREEN	worker-07	unit 5175 on tree vs 5139 baseline (with ../openregister present), 0 failures both; vitest 1500 passed; builds spec-coverage-built-rows: createFile/moveFile run as the caller, confined to their own folder
 hermiq	1749	a51b87f192e6edb58f677a624658dcca38def5b4	CONFLICT	worker-07	conflicts after 1715+1739 in lib/Controller/SessionController.php (1715 also edits it); not tested
 hermiq	1785	0120299df303954953323ff4cf7a0e40dafa71df	CONFLICT	worker-07	conflicts after 1715+1739 in lib/Settings/hermiq_register.json; not tested
+hermiq	1787	806628bc6a899a520a563e35a7b525460ff7b643	CONFLICT	worker-07	conflicts after 1715+1739 in lib/Settings/hermiq_register.json; not tested
