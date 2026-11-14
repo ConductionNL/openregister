@@ -10415,3 +10415,4 @@ build:filinq:document-sanitization:c3	partial: built 3.4 sanitize flag on single
 fix:decidiq:2143:1430cc3a	fixed: unit interfacing restored (floor compare PASS); new head e788a8f9	session-20261114T154807-c05f4e57	2026-11-14T17:31:40Z
 fix:humaniq:1129:5162c296	floor restored (unit_size 4.49, unit_interfacing 3.61, PASS), suite OK, new head 3a589896, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T17:32:20Z
 fix:decidiq:2162:1ab2ebca	merged development in, clean; checks green; new head 75db4256adf95429053233069853075d1d759e3d, REVERIFY recorded	session-20261114T171756-4d62172c	2026-11-14T17:32:38Z
+verify:learniq:2520:7d8192ee	2520 GREEN, 2531 GREEN, 2532 CONFLICT (register json vs 2520), 2536 GREEN; no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:32:56Z
