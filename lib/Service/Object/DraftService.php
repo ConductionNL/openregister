@@ -299,6 +299,44 @@ class DraftService {
 	}//end merged()
 
 	/**
+	 * A copy of the live object carrying the merged data; never saved.
+	 *
+	 * @param ObjectEntity $object The live object.
+	 * @param DraftVersion $draft  The draft.
+	 *
+	 * @return ObjectEntity The copy.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function mergedCopy(ObjectEntity $object, DraftVersion $draft): ObjectEntity {
+		$copy = clone $object;
+		$copy->setObject($this->merged(object: $object, draft: $draft));
+
+		return $copy;
+	}//end mergedCopy()
+
+	/**
+	 * One draft by its own uuid, with no caller check.
+	 *
+	 * Only for a principal that already holds the draft by other means: a
+	 * preview link, minted by someone who could see the draft, is that principal.
+	 *
+	 * @param string $uuid The draft's uuid.
+	 *
+	 * @return DraftVersion|null The draft, or null when it is gone.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function heldByLink(string $uuid): ?DraftVersion {
+		$uuid = trim($uuid);
+		if ($uuid === '') {
+			return null;
+		}
+
+		return $this->drafts->findByUuid(uuid: $uuid);
+	}//end heldByLink()
+
+	/**
 	 * Whether the caller may see and change a draft: its creator, or a caller with `update` on the object.
 	 *
 	 * @param DraftVersion $draft  The draft.

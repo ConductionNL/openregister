@@ -28,12 +28,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\DraftVersion;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\PreviewUrlTemplate;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftConflictException;
@@ -45,6 +48,9 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Listener\ChangeGateListener;
 use OCA\OpenRegister\Service\Object\DraftPromoter;
 use OCA\OpenRegister\Service\Object\DraftService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -63,6 +69,13 @@ use Throwable;
 class VersionsController extends Controller {
 
 	/**
+	 * How long a preview link lives when the request names no expiry.
+	 *
+	 * @var string
+	 */
+	private const PREVIEW_LIFETIME = '+24 hours';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                  $request     The request.
@@ -72,6 +85,7 @@ class VersionsController extends Controller {
 	 * @param DraftService              $drafts      Owns the drafts and who may touch them.
 	 * @param IUserSession              $userSession The caller.
 	 * @param DraftPromoter             $promoter    Makes a draft the published version.
+	 * @param AccessLinkServiceInterface $links      Mints the preview link.
 	 */
 	public function __construct(
 		IRequest $request,
@@ -81,6 +95,7 @@ class VersionsController extends Controller {
 		private readonly DraftService $drafts,
 		private readonly IUserSession $userSession,
 		private readonly DraftPromoter $promoter,
+		private readonly AccessLinkServiceInterface $links,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -259,6 +274,60 @@ class VersionsController extends Controller {
 			}
 		);
 	}//end promote()
+
+	/**
+	 * Make a preview link for a draft: read-only, scoped to this draft, expiring (24 hours unless `expiresAt` says otherwise).
+	 *
+	 * The answer is the link, plus `previewUrl` filled from the schema's
+	 * template when the schema declares one, else null.
+	 *
+	 * @param string $register The register id or slug.
+	 * @param string $schema   The schema id or slug.
+	 * @param string $id       The object id.
+	 * @param string $key      The draft key.
+	 *
+	 * @return JSONResponse 201 with the link; 400 for an unusable expiry; 404 for a draft the caller may not see.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	#[NoAdminRequired]
+	public function preview(string $register, string $schema, string $id, string $key): JSONResponse {
+		return $this->withDraft(
+			route: [$register, $schema, $id, $key],
+			action: function (DraftVersion $draft, ObjectEntity $object, Schema $schemaEntity, string $caller): JSONResponse {
+				$expiresAt = trim((string)$this->request->getParam('expiresAt', ''));
+				if ($expiresAt === '') {
+					$expiresAt = (new DateTime(self::PREVIEW_LIFETIME))->format(DateTime::ATOM);
+				}
+
+				try {
+					$link = $this->links->mint(
+						new LinkMintRequest(
+							minter: $caller,
+							subjectType: AccessLink::SUBJECT_OBJECT_DRAFT,
+							subjectId: (string)$draft->getUuid(),
+							terms: new AccessLinkTerms(capabilities: [AccessLink::CAP_READ], expiresAt: $expiresAt, label: 'Preview ' . (string)$draft->getDraftKey())
+						)
+					);
+				} catch (InvalidArgumentException $e) {
+					return self::error(message: $e->getMessage(), status: Http::STATUS_BAD_REQUEST);
+				}
+
+				$link['previewUrl'] = null;
+				$template = $schemaEntity->getPreviewUrl();
+				if ($template !== null) {
+					$link['previewUrl'] = PreviewUrlTemplate::fill(
+						template: $template,
+						uuid: (string)$object->getUuid(),
+						version: (string)$draft->getDraftKey(),
+						token: (string)($link['anchor'] ?? '')
+					);
+				}
+
+				return new JSONResponse($link, Http::STATUS_CREATED);
+			}
+		);
+	}//end preview()
 
 	/**
 	 * The answer to a promotion a hook stopped: 202 when a change gate holds it for approval, 422 otherwise.

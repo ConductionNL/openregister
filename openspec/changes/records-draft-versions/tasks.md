@@ -24,7 +24,8 @@
 
 - [x] 4.1 `previewUrl` on the schema, validated as a URL template with known placeholders. Verify: schema save test.
       > Declared as `configuration.previewUrl`, checked by `Db/Schema/PreviewUrlTemplate` from `ConfigurationEntryRules`: an absolute http(s) URL using only `{uuid}`, `{version}`, `{token}`; a bad template is dropped and reported like any refused key, the rest of the configuration is kept. `Schema::getPreviewUrl()` reads it back. Unit: `PreviewUrlTemplateTest` (schema save included).
-- [ ] 4.2 Access link subject type `object-draft`, read only, expiry required; public route serves the merged draft. Verify: API test that the link reads the draft, and 404 after expiry or revocation.
+- [x] 4.2 Access link subject type `object-draft`, read only, expiry required; public route serves the merged draft. Verify: API test that the link reads the draft, and 404 after expiry or revocation.
+      > `AccessLink::SUBJECT_OBJECT_DRAFT` (subject id = the draft's uuid), minted only by `POST .../versions/{key}/preview` (`VersionsController::preview`, draft visibility first; read only; 24 h unless `expiresAt`; answers the link plus the filled `previewUrl`). The general mint route refuses the kind, `AccessLinkService` refuses a draft link with more than read, and `AccessLinkReader` serves the live object with the delta merged (plus `version: {key, name}`) through the same property filters; a promoted or discarded draft, an expired or revoked link all answer 404. Unit: `AccessLinkReaderTest`, `AccessLinkServiceTest`, `AccessLinkMintGuardTest`, `VersionsControllerTest`. The API test needs an instance and is not written.
 
 ## 5. Interface
 

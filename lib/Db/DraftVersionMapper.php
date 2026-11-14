@@ -101,6 +101,28 @@ class DraftVersionMapper extends QBMapper {
 	}//end findByKey()
 
 	/**
+	 * One draft by its own uuid, or null.
+	 *
+	 * @param string $uuid The draft's uuid.
+	 *
+	 * @return DraftVersion|null The draft.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function findByUuid(string $uuid): ?DraftVersion {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::TABLE)
+			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
+
+		try {
+			return $this->findEntity(query: $qb);
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end findByUuid()
+
+	/**
 	 * Every draft of the given objects, oldest first, in one read per chunk.
 	 *
 	 * @param array<int, string> $objectUuids The objects' uuids.
