@@ -11440,3 +11440,4 @@ build:hermiq:tools-agent-workspace-and-installed-tools:c3	partial: PR #1760 head
 verify:stackiq:1911:53ffbffc	GREEN 1911 1928; CONFLICT 1922 1927 1942 1944 1945 1946; no new failures	session-20261114T214742-7aa14b57	2026-11-14T22:11:36Z
 verify:opencatalogi:2665:26ad2d42	6 GREEN (#2671 #2688 #2716 #2717 #2718 #2719), #2684 CONFLICT after #2671 (ListenerRegistrar), #2665 skipped (head moved to 10095c6c)	session-20261114T211808-5e900938	2026-11-14T22:11:46Z
 fix:humaniq:1156:9ce437fa	stale	feeder	2026-11-14T22:10:14Z
+fix:learniq:2507:cea92f10	merged development, l10n js conflict resolved by regenerating en/nl; new head b8157252, REVERIFY recorded	session-20261114T214736-dd784d82	2026-11-14T22:12:03Z
