@@ -10568,3 +10568,4 @@ merge:portaliq:2498:5bf1f5f3	merge3 tree of 1 portaliq PRs: none; conflict 0, li
 fix:integriq:3539:306587cf	l10n conflict resolved keep-both, pushed d16ba0ab, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T18:06:11Z
 build:keepiq:portability-export-choice-and-restore-fidelity:c2	done: PR #1783 pushed b64dc90c; all code tasks ticked (export scope/fields UI, Export selected, wizard partial notice + created types/fallbacks, docs, en+nl strings); vitest 6495->6504 green; Playwright flows and docs build not run	session-20261114T174751-7b84989f	2026-11-14T18:06:27Z
 verify:launchpad:1197:bea19576	GREEN 1197@21a4f902	session-20261114T171830-19af6b65	2026-11-14T18:06:45Z
+fix:learniq:2521:5a578a1e	conflict resolved (dev merged, top register version left to merge order); new head 52cd66be	session-20261114T174740-5118fc4f	2026-11-14T18:06:57Z
