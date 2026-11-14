@@ -9457,3 +9457,12 @@ decidiq	2169	e056e57f206d90ae393635c3e4f1b81aba84c468	RED	merge3:merge-gate	GATE
 decidiq	2172	8177a02796428137fd3d3e3f76a2909c94d2f372	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.87 -> 3.83; unit_interfacing: 3.34 -> 3.32
 decidiq	2202	1c0744eb092b6b3a2eb82fca9bfcd7a865ccb039	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.87 -> 3.84
 decidiq	2204	265057396c1b6cd08ecf57cfbc2bdae6556b11dc	RED	merge3:merge-gate	GATE RED absolute floor: decidiq maintainability 3.77 after merge is below its floor 3.78
+decidiq	2170	cc4d481361c531c859dda39d84e15eb9727dc97e	CONFLICT	merge3	merges clean on development alone; files: openapi.json 
+decidiq	2171	9ab2c3d3800bb657cb755cad3ec0407fbe6f3467	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/profiles/municipality.json 
+decidiq	2177	b68a5de6405145b82edaa6f84e836b663ee0f311	CONFLICT	merge3	merges clean on development alone; files: src/manifest.json tests/vitest/simpleDecisionPage.spec.js 
+decidiq	2188	0f122fbca305e2f80da02503b1f20bedbee9ba0d	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/Registrar/SaveGuardSubscriptions.php 
+decidiq	2189	4d141d0abd26328d7aa22fa1405a434a7a283979	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml lib/Settings/profiles/municipality.json 
+decidiq	2191	67af1137858ad5fdd572507fc274422d9b6d3447	CONFLICT	merge3	merges clean on development alone; files: src/manifest.json tests/vitest/simpleDecisionPage.spec.js 
+decidiq	2194	29f064112169f161e7582dbfd6e615a03aad1723	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2195	9120311a2279733f2bc86f0b3704c7738c83ea2f	CONFLICT	merge3	merges clean on development alone; files: src/manifest.json tests/vitest/simpleDecisionPage.spec.js 
+decidiq	2205	f80ac25318129ebab69e1b3a3e9b8878d28897b0	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/profiles/municipality.json openapi.json src/manifest.json src/registry.js tests/vitest/simpleDecisionPage.spec.js 
