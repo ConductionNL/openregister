@@ -10451,3 +10451,4 @@ versioniq	695	9d0f302d0e26af22500b323ac6564d0d92d85885	GREEN	worker-23	unit-only
 versioniq	705	3bbf893845d4b94eecf52e5e7ac2e838cdaf7aa6	GREEN	worker-13	unit 1743 tests (baseline 1697, 2 inherited golden failures), vitest 2981 pass; no new failures
 versioniq	725	39c040322b4e66e5c71565d744990ab0b9435f1f	GREEN	worker-13	unit 1743 tests (baseline 1697, 2 inherited golden failures), vitest 2981 pass; no new failures
 versioniq	726	d1f35455cb6c3ef29edc3819589c85d9b3064795	CONFLICT	worker-13	conflicts on tree (l10n, InstallerService.php, InstallerServiceAppListTest.php)
+versioniq	728	45cdec97a22bcbfbe8994a82a14e49803a98bce7	CONFLICT	worker-13	conflicts on tree (l10n, AutoUpdateJob.php)
