@@ -8004,3 +8004,4 @@ fix:learniq:2519:8165d800	no change: head 8165d800 merges cleanly with developme
 review:openregister:10471:fef0602e	APPROVE (gitleaks allowlist, narrow)	session-20261114T065631-b4991134	2026-11-14T07:51:08Z
 fix:learniq:2507:2b3376a3	no change: head 2b3376a3 merges cleanly with development 9dd9fe0d; #2493 not landed yet, so its l10n conflict cannot be resolved here yet	session-20261114T073108-8b40426a	2026-11-14T07:51:38Z
 fix:decidiq:2146:fa390519	no change: merges clean with development; its l10n conflicts are with unmerged tree siblings at the same insertion point; re-merge development after they land	session-20261114T065625-baa65a50	2026-11-14T07:51:48Z
+fix:decidiq:2174:8600d4bb	no change: merges clean on current development; conflict is only with earlier tree PRs, verify after they land	session-20261114T062156-16c77e6a	2026-11-14T07:51:58Z
