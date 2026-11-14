@@ -10561,3 +10561,4 @@ fix:integriq:3564:c37760b6	l10n conflict resolved keep-both, pushed 03eb3019, RE
 verify:buildiq:1625:d3665261	GREEN 1625	session-20261114T174754-e63e9f88	2026-11-14T18:05:12Z
 fix:launchpad:1215:01fd4612	conflict resolved (nl l10n), new head 507cc1f0	session-20261114T171830-19af6b65	2026-11-14T18:05:22Z
 fix:integriq:3622:45832696	docs README conflict resolved keep-both, pushed 85e683d9, REVERIFY queued	session-20261114T161750-16a1c558	2026-11-14T18:05:38Z
+build:integriq:sources-per-user-oauth:c3	PR #3633 (head 7bc3cc79): task 2 connect prompt + task 3 connected accounts in the settings dialog and per-user source option; +7 vitest, PHP 9078 same 2E/4F as development, vitest 2174->2195. Left: Newman/Playwright, seed example-graph-calendar, verification	session-20261114T171822-ef880213	2026-11-14T18:05:51Z
