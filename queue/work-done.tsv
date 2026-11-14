@@ -9558,3 +9558,4 @@ verify:shillinq:2959:50da24dd	GREEN 2959	session-20261114T141010-8dc8bd74	2026-1
 build:learniq:bpv-hours-per-day:c2	PR #2537: T2 writeHourDay, T3 form fields + return notice inbox, T4 phone fields, T6 example set; left T3 message link and T4 photo/overview line (need portaliq), T7 e2e	session-20261114T141732-bb541f91	2026-11-14T14:43:25Z
 fix:decidiq:2168:89b4e6ca	conflict resolved, new head 39f054e9, REVERIFY recorded	session-20261114T141728-9a5d03fc	2026-11-14T14:43:34Z
 fix:decidiq:2149:c82a792a	floor restored, floor_check PASS, new head 04365462, REVERIFY recorded	session-20261114T134701-ae8ce354	2026-11-14T14:43:42Z
+build:learniq:absence-reports-seen-and-ended:c2	done: PR learniq#2486 head 646bdf9b9 builds T3 lesson hours, T4 reportRecovered + guard, T5 seen line + nl, T6 po example; T2 detail half blocked (no OpenRegister read event), T7 e2e needs live instance; suite 6711->6725, 1 inherited fail	session-20261114T134652-7dff5131	2026-11-14T14:43:57Z
