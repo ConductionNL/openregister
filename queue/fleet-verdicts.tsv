@@ -6799,3 +6799,4 @@ dossiq	6320	9dfb0cb9f172df30a8510e948a21300cda90ea94	GREEN	worker-17	tree of 8 p
 dossiq	6322	985aafe3c793b03cbbc51472c5847ba69522126c	GREEN	worker-17	tree of 8 phpunit 16930 tests, baseline 25 failures inherited, 0 new; vitest 6984 with 1 inherited failure (capabilityComparison, red on development)
 dossiq	6324	076092870dfe4f2a0a89ad4cdb9c8658c2498d86	CONFLICT	worker-17	conflicts with #6322 in DeadlineCaseCreatedListener*Test.php and WOODocumentAssessmentServiceTest.php (@uses alignment only)
 dossiq	6348	90471ed48f399afa0d1cceaf40f7e7125c9e2ecf	GREEN	worker-17	tree of 8 phpunit 16930 tests, baseline 25 failures inherited, 0 new; vitest 6984 with 1 inherited failure (capabilityComparison, red on development)
+dossiq	6349	d1c7c17249209c432f21fd7b70412f3a3f622bce	GREEN	worker-17	tree of 8 phpunit 16930 tests, baseline 25 failures inherited, 0 new; vitest 6984 with 1 inherited failure (capabilityComparison, red on development)
