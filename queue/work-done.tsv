@@ -9493,3 +9493,4 @@ review:dossiq:6385:0de8a799	BLOCK: caseType schema version 1.48.0 collides with 
 merge:pipelinq:3832:d968758f	stale	feeder	2026-11-14T14:30:22Z
 fix:portaliq:2442:d378be76	no change: branch already up to date with development; conflict is only with unmerged #2437 (l10n), resolve after whichever lands first	session-20261114T141738-30f539db	2026-11-14T14:32:06Z
 fix:filinq:2102:1a9333c7	no change: clean on development; conflicts only with unmerged #2098 (adjacent additions); REVERIFY recorded to verify alone or ahead of #2098	session-20261114T134654-82ca2be5	2026-11-14T14:32:35Z
+fix:portaliq:2494:01e731ef	no change: branch up to date with development; package.json conflict only with unmerged #2430/#2433, resolve after they land	session-20261114T141738-30f539db	2026-11-14T14:32:42Z
