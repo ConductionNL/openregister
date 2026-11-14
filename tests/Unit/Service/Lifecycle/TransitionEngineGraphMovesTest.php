@@ -68,6 +68,18 @@ class TransitionEngineGraphMovesTest extends TestCase {
 	private TransitionEngine $engine;
 
 	/**
+	 * The ambient frame that names the move in flight.
+	 */
+	private \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext $actions;
+
+	/**
+	 * The action declared for the case at each save.
+	 *
+	 * @var list<string|null>
+	 */
+	private array $declaredAtSave = [];
+
+	/**
 	 * The actions the caller holds; every other is refused.
 	 *
 	 * @var list<string>
@@ -104,6 +116,7 @@ class TransitionEngineGraphMovesTest extends TestCase {
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array|ObjectEntity $object): ObjectEntity {
 				$this->saves[] = $object;
+				$this->declaredAtSave[] = $this->actions->declaredFor(self::CASE);
 				$saved = new ObjectEntity();
 				$saved->setUuid(self::CASE);
 				$saved->setObject($object);
@@ -116,6 +129,7 @@ class TransitionEngineGraphMovesTest extends TestCase {
 			}
 		);
 
+		$this->actions = new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext();
 		$this->engine = new TransitionEngine(
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects(
 				$this->objectService,
@@ -127,7 +141,7 @@ class TransitionEngineGraphMovesTest extends TestCase {
 			),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch(
 				$this->dispatcher,
-				new \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()),
+				new \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary($this->actions),
 				$this->createMock(\OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry::class)
 			),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $appConfig, $this->createMock(LoggerInterface::class)),
@@ -386,6 +400,32 @@ class TransitionEngineGraphMovesTest extends TestCase {
 		$this->assertSame(self::S3, $this->events[0]->getFrom());
 		$this->assertSame(self::S1, $this->events[0]->getTo());
 	}//end testReopenMovesToTheFirstStatus()
+
+	/**
+	 * The reopen is named while it saves, so the audit row records a reopen, and released after.
+	 *
+	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md#requirement-a-declared-reopen-is-the-only-move-out-of-a-terminal-state
+	 */
+	public function testReopenIsDeclaredAsAReopenWhileItSaves(): void {
+		$this->wire(self::S3, ['reopen' => ['to' => 'first']]);
+
+		$this->engine->transition(self::CASE, 'reopen');
+
+		$this->assertSame(['reopen'], $this->declaredAtSave);
+		$this->assertNull($this->actions->declaredFor(self::CASE));
+	}//end testReopenIsDeclaredAsAReopenWhileItSaves()
+
+	/**
+	 * An ordinary graph move is named by its own action, never as a reopen.
+	 */
+	public function testAGraphMoveIsDeclaredByItsOwnAction(): void {
+		$this->wire(self::S1, []);
+
+		$this->engine->transition(self::CASE, 'move-to-' . self::S2);
+
+		$this->assertSame(['move-to-' . self::S2], $this->declaredAtSave);
+		$this->assertNull($this->actions->declaredFor(self::CASE));
+	}//end testAGraphMoveIsDeclaredByItsOwnAction()
 
 	public function testReopenToAFilterAndItsOwnRequirement(): void {
 		$this->grants = ['read', 'update', 'reopen-cases'];

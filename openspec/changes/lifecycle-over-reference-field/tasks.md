@@ -11,7 +11,7 @@
       with the move; audit entry lists them.
 - [x] 2.2 Side moves offered by the second field's state; graph moves
       refused while suspended.
-- [ ] 2.3 Reopen from a terminal state, guarded, audited.
+- [x] 2.3 Reopen from a terminal state, guarded, audited.
 - [x] 2.4 `availableActions()` carries each action's form.
 
 ## 3. Tests

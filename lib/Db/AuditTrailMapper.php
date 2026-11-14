@@ -1292,6 +1292,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @return array The changed fields with any markers.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md#requirement-a-declared-reopen-is-the-only-move-out-of-a-terminal-state
 	 */
 	private function markTransitionOrigin(array $changed, ObjectEntity $objectEntity): array {
 		$automaticAction = null;
@@ -1310,6 +1311,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$systemApp = $this->transitionSystemApp(uuid: (string)$objectEntity->getUuid());
 		if ($systemApp !== null) {
 			$changed['transitionAsSystem'] = ['app' => $systemApp];
+		}
+
+		// A declared reopen out of a terminal state is audited as a reopen, so
+		// an auditor can tell it from an ordinary forward move.
+		if ($this->transitionDeclaredFor(uuid: (string)$objectEntity->getUuid()) === \OCA\OpenRegister\Service\Lifecycle\GraphMoveCatalogue::REOPEN) {
+			$changed['transitionKind'] = \OCA\OpenRegister\Service\Lifecycle\GraphMoveCatalogue::REOPEN;
 		}
 
 		return $changed;
@@ -1436,6 +1443,31 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			return null;
 		}
 	}//end transitionSystemApp()
+
+	/**
+	 * The lifecycle action being applied to this object right now, if any.
+	 *
+	 * Read the same way as {@see transitionSystemApp()}: unavailable means
+	 * "no named transition in flight", never a failed audit row.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return string|null The declared action, or null for an ordinary write.
+	 *
+	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md#requirement-a-declared-reopen-is-the-only-move-out-of-a-terminal-state
+	 */
+	private function transitionDeclaredFor(string $uuid): ?string {
+		if ($uuid === '') {
+			return null;
+		}
+
+		try {
+			return AuditTrailCollaborators::lifecycleActionContextFrom(container: $this->container)
+				->declaredFor($uuid);
+		} catch (\Throwable $contextUnavailable) {
+			return null;
+		}
+	}//end transitionDeclaredFor()
 
 	/**
 	 * Stamp an audit row's expiry and retention source from the retention of
