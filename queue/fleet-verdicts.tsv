@@ -10317,3 +10317,5 @@ versioniq	705	93d382e6351dfdc05c5dea4794e5a20880eee4ed	REVERIFY	worker-43	floors
 stackiq	1926	430be9ea45572484dff44d7377819b0083253627	GREEN	worker-42	unit 3643 tests on the tree (baseline 3602), 0 new failures; vitest 2629, 1 inherited failure (facets.spec.js); implements architecture-views-editor (drawn views filtered per REQ-AVE-006)
 stackiq	1933	96e3bd2b7c6cb1d33b873cb9fa56294750efe779	CONFLICT	worker-42	clean on development, conflicts with the tree (1918/1926/1937) in l10n/en.js and l10n/en.json
 stackiq	1937	9599c3a02ef60db66d3062e965ee99dbc9b899be	GREEN	worker-42	unit 3643 tests on the tree (baseline 3602), 0 new failures; vitest 2629, 1 inherited failure (facets.spec.js); implements security-baseline-classification
+stackiq	1962	ac39f129dd18a2a16985e55485acc4d82b9b1ea4	GREEN	worker-42	unit 3643 tests on the tree (baseline 3602), 0 new failures; vitest 2629, 1 inherited failure (facets.spec.js); implements mcp-full-action-surface (register fragment + test)
+stackiq	1963	f4ee4fa554fce072bafd9599be961c7464bfbf0c	CONFLICT	worker-42	clean on development, conflicts with the tree (1926) in src/menu-layout.json
