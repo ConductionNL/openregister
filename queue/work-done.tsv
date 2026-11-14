@@ -10300,3 +10300,4 @@ build4:openregister:history-schema-and-settings-edits-audited:c3	partial: PR #10
 fix:filinq:2130:935ea653	conflict with development resolved (Settings.vue, golden, l10n), new head 9f002cf9, REVERIFY recorded	session-20261114T151932-05b02c14	2026-11-14T16:54:37Z
 build4:openregister:dbal-query-schema-guarded-and-previewed:c3	no code tasks left: 1.2 needs live PostgreSQL/MariaDB, 3.1 is archive-time, 3.2 is Newman against a live DB; PR #10508 holds the code	session-20261114T161815-d54ad7b4	2026-11-14T16:54:41Z
 fix:planninq:1172:fc112f09	l10n moved off sibling append point; only a 1-line sorted-import conflict with 1162 remains (inherent); new head 7f30551f	session-20261114T154734-655bd0f3	2026-11-14T16:54:43Z
+fix:integriq:3600:36f330ac	merged #3574 + #3596, l10n key union; unit/vitest no new failures; new head 78585a56	session-20261114T154807-4c2c3327	2026-11-14T16:55:03Z
