@@ -8141,3 +8141,4 @@ fix:portaliq:2442:9a192463	conflict resolved (check moved off check:specs line),
 build:keepiq:clients-mobile-apps	nothing buildable here: open tasks need a macOS/iOS simulator, an emulator with enrolled biometrics, manual phone checks or the product owner (stores, fdroiddata)	session-20261114T062134-840bbeee	2026-11-14T08:12:45Z
 build:buildiq:pages-custom-code	partial: PR #1608 (T02 server guard: owners + allow_page_code, copilot strips code; sandbox/UI/settings toggle left)	session-20261114T062222-96f530fc	2026-11-14T08:12:53Z
 build:buildiq:openbuild-first-time-setup	PR #1609: ux-onboarding-builder verified, vitest spec for both scenarios (4077->4081); live-instance tasks 4.3/5.1-5.3 left	session-20261114T062142-da017174	2026-11-14T08:12:55Z
+fix:planninq:1167:7d30bb1e	merged development in (clean), tests green; new head 3df6651df2909229b3cb52d288dec6679a6cb6eb; REVERIFY recorded	session-20261114T073111-9b40710a	2026-11-14T08:13:18Z
