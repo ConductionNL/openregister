@@ -101,7 +101,13 @@ final class SchemaRefInRegister {
 			return null;
 		}
 
-		return $this->schemas->findBySlugInIds(slug: $schemaRef, schemaIds: ($entity->getSchemas() ?? []));
+		// A register listing no schemas carries none to match: skip the query.
+		$schemaIds = ($entity->getSchemas() ?? []);
+		if ($schemaIds === []) {
+			return null;
+		}
+
+		return $this->schemas->findBySlugInIds(slug: $schemaRef, schemaIds: $schemaIds);
 	}//end inRegister()
 
 	/**

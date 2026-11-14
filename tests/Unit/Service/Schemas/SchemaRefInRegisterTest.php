@@ -145,4 +145,11 @@ final class SchemaRefInRegisterTest extends TestCase {
 
 		$this->assertSame(22, $found->getId());
 	}
+
+	public function testARegisterListingNoSchemasSkipsTheScopedQuery(): void {
+		$this->schemas->expects($this->never())->method('findBySlugInIds');
+		$this->schemas->expects($this->once())->method('find')->with('agent')->willReturn(self::schema(22));
+
+		$this->assertSame(22, (new SchemaRefInRegister(schemas: $this->schemas))->find(schemaRef: 'agent', register: self::register([]))->getId());
+	}
 }

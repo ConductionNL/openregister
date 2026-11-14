@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
@@ -1795,12 +1796,15 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function resolveConfigurationSlugs(array $config, string $where): array {
+		$register = null;
 		if (($config['register'] ?? null) !== null) {
+			$registerSlug = (string)$config['register'];
 			$config = $this->resolveConfigurationRegister(config: $config, where: $where);
+			$register = ($this->registersMap[$registerSlug] ?? null);
 		}
 
 		if (($config['schema'] ?? null) !== null) {
-			$config = $this->resolveConfigurationSchema(config: $config, where: $where);
+			$config = $this->resolveConfigurationSchema(config: $config, where: $where, register: $register);
 		}
 
 		return $config;
@@ -1854,12 +1858,15 @@ class ImportHandler {
 	 *
 	 * @param array  $config The objectConfiguration.
 	 * @param string $where  Where the configuration sits, for the log message.
+	 * @param Register|null $register The register the configuration names, when it resolved; a slug is
+	 *                                looked up among its schemas first.
 	 *
 	 * @return array The configuration.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	private function resolveConfigurationSchema(array $config, string $where): array {
+	private function resolveConfigurationSchema(array $config, string $where, ?Register $register = null): array {
 		$schemaSlug = (string)$config['schema'];
 		if ($schemaSlug === '') {
 			return $config;
@@ -1871,7 +1878,7 @@ class ImportHandler {
 		}
 
 		try {
-			$existingSchema = $this->schemaMapper->find($schemaSlug, _multitenancy: false);
+			$existingSchema = $this->schemaInRegister(schemaRef: $schemaSlug, register: $register, _rbac: true);
 			$config['schema'] = $existingSchema->getId();
 			$this->schemasMap[$schemaSlug] = $existingSchema;
 		} catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
@@ -3494,7 +3501,7 @@ class ImportHandler {
 		$slug = $objectData['@self']['slug'] ?? null;
 
 		$registerObject = $this->listedRegister(rawRegister: $rawRegister);
-		$schemaObject = $this->listedSchema(rawSchema: $rawSchema);
+		$schemaObject = $this->listedSchema(rawSchema: $rawSchema, register: $registerObject);
 		if ($registerObject === null || $schemaObject === null) {
 			$this->logger->warning(
 				message: '[ImportHandler] Skipping object import - register or schema not found in maps or DB',
@@ -3543,19 +3550,20 @@ class ImportHandler {
 	 * A listed object's schema, from this import's map or the database.
 	 *
 	 * @param mixed $rawSchema The `@self` schema slug.
+	 * @param Register|null $register The register in context; a slug is looked up among its schemas first.
 	 *
 	 * @return Schema|null
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function listedSchema(mixed $rawSchema): ?Schema {
+	private function listedSchema(mixed $rawSchema, ?Register $register = null): ?Schema {
 		$schema = $this->schemasMap[$rawSchema] ?? null;
 		if ($schema !== null || $this->isLookupSlug(raw: $rawSchema) === false) {
 			return $schema;
 		}
 
 		try {
-			$schema = $this->schemaMapper->find($rawSchema, _rbac: false, _multitenancy: false);
+			$schema = $this->schemaInRegister(schemaRef: $rawSchema, register: $register, _rbac: false);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -4076,7 +4084,7 @@ class ImportHandler {
 	 */
 	private function resolveImportRegisterSchema(array $objectData, ?string $appId = null): array {
 		$registerObject = $this->seedRegister(rawRegister: $objectData['@self']['register'] ?? null);
-		$schemaObject = $this->seedSchema(rawSchema: $objectData['@self']['schema'] ?? null);
+		$schemaObject = $this->seedSchema(rawSchema: $objectData['@self']['schema'] ?? null, register: $registerObject);
 
 		if ($registerObject !== null
 			&& $schemaObject !== null
@@ -4129,10 +4137,11 @@ class ImportHandler {
 	 * The schema a seed's `@self.schema` names: from the import map, else looked up.
 	 *
 	 * @param mixed $rawSchema The raw `@self.schema` value.
+	 * @param Register|null $register The register in context; a slug is looked up among its schemas first.
 	 *
 	 * @return Schema|null The schema, or null when it cannot be resolved.
 	 */
-	private function seedSchema(mixed $rawSchema): ?Schema {
+	private function seedSchema(mixed $rawSchema, ?Register $register = null): ?Schema {
 		$schemaObject = $this->schemasMap[$rawSchema] ?? null;
 		if ($schemaObject instanceof Schema) {
 			return $schemaObject;
@@ -4142,19 +4151,20 @@ class ImportHandler {
 			return null;
 		}
 
-		return $this->lookUpSeedSchema(rawSchema: $rawSchema);
+		return $this->lookUpSeedSchema(rawSchema: $rawSchema, register: $register);
 	}//end seedSchema()
 
 	/**
 	 * Look a seed's schema up (RBAC/multitenancy bypassed) and remember it in the import map.
 	 *
 	 * @param string $rawSchema The schema slug or id.
+	 * @param Register|null $register The register in context; a slug is looked up among its schemas first.
 	 *
 	 * @return Schema|null The schema, or null when the lookup fails.
 	 */
-	private function lookUpSeedSchema(string $rawSchema): ?Schema {
+	private function lookUpSeedSchema(string $rawSchema, ?Register $register = null): ?Schema {
 		try {
-			$schemaObject = $this->schemaMapper->find($rawSchema, _rbac: false, _multitenancy: false);
+			$schemaObject = $this->schemaInRegister(schemaRef: $rawSchema, register: $register, _rbac: false);
 			$this->schemasMap[$rawSchema] = $schemaObject;
 			return $schemaObject;
 		} catch (\Throwable $e) {
@@ -5678,7 +5688,7 @@ class ImportHandler {
 		}
 
 		try {
-			$schema = $this->schemaMapper->find(id: $schemaSlug, _extend: [], _rbac: false, _multitenancy: false);
+			$schema = $this->schemaInRegister(schemaRef: $schemaSlug, register: $seed->targetRegister, _rbac: false);
 			$this->logger->debug(
 				message: "[ImportHandler] Found schema '{$schemaSlug}' in database for seedData",
 				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'schemaApp' => $schema->getApplication()]
@@ -6114,7 +6124,7 @@ class ImportHandler {
 	 * @spec openspec/changes/aggregation-dialect-repair/tasks.md#6-adjacent-repair-a--seed-ref-resolution
 	 */
 	private function seedReferenceUuid(SeedDataObject $object, string $target, string $slug): ?string {
-		$schema = $this->seedReferenceSchema(target: $target);
+		$schema = $this->seedReferenceSchema(target: $target, register: $object->register);
 		if ($schema === null) {
 			return null;
 		}
@@ -6144,18 +6154,19 @@ class ImportHandler {
 	 * The schema a seed reference points to: one imported in this run first, else the stored one.
 	 *
 	 * @param string $target The schema slug, id or uuid the `$ref` names.
+	 * @param Register|null $register The register in context; a slug is looked up among its schemas first.
 	 *
 	 * @return Schema|null The schema, or null when there is none.
 	 *
 	 * @spec openspec/changes/aggregation-dialect-repair/tasks.md#6-adjacent-repair-a--seed-ref-resolution
 	 */
-	private function seedReferenceSchema(string $target): ?Schema {
+	private function seedReferenceSchema(string $target, ?Register $register = null): ?Schema {
 		if (($this->schemasMap[$target] ?? null) !== null) {
 			return $this->schemasMap[$target];
 		}
 
 		try {
-			return $this->schemaMapper->find(id: $target, _extend: [], _rbac: false, _multitenancy: false);
+			return $this->schemaInRegister(schemaRef: $target, register: $register, _rbac: false);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -6178,4 +6189,27 @@ class ImportHandler {
 
 		$this->seedObjectUuids[(string)$object->schema->getId()][(string)$object->slug] = $uuid;
 	}//end noteSeedObjectUuid()
+
+	/**
+	 * A schema an import names, looked up among the import register's schemas first.
+	 *
+	 * Slugs are unique within a register, so a slug another app also uses
+	 * resolves to the schema of the register being imported; ids, uuids and
+	 * slugs the register does not carry resolve globally, as before. Always
+	 * outside the tenant filter, as every import lookup here is.
+	 *
+	 * @param int|string    $schemaRef The schema's id, uuid or slug.
+	 * @param Register|null $register  The register in context.
+	 * @param bool          $_rbac     Whether RBAC applies to the global lookup.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no schema matches.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function schemaInRegister(int|string $schemaRef, ?Register $register, bool $_rbac): Schema {
+		return (new SchemaRefInRegister(schemas: $this->schemaMapper))
+			->find(schemaRef: $schemaRef, register: $register, _rbac: $_rbac, _multitenancy: false);
+	}//end schemaInRegister()
 }//end class
