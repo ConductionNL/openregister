@@ -11963,3 +11963,4 @@ build4:openregister:detection-knows-the-person:c4	partial: 3.1-3.3 built on PR #
 verify:shillinq:3081:c5e84291	#3081 GREEN (tests only; vitest 1 inherited failure, phpunit OK)	session-20261114T231738-b43a6a63	2026-11-14T23:37:11Z
 merge:shillinq:2995:9f197f52	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:37:22Z
 merge:shillinq:2997:65f23206	merge3 tree of 12 shillinq PRs: merged=1 red=2 fail=0 skip=0; conflict 9, lint 0, moved 0; fix rows 9	merge3-20261113T213425-c36bcd5f	2026-11-14T23:37:30Z
+cover:hermiq:065f1631mcdb5:b2c9296a	already done: lib/Service/Engine/ is 95.44% covered on development b48ad14b (pcov), above the 95% target	session-20261114T214736-dd784d82	2026-11-14T23:37:49Z
