@@ -2287,3 +2287,11 @@ opencatalogi	2649	806eed80ead25bad74845ffa39c853722126f12c	MERGED	merge3	GATE OK
 opencatalogi	2652	a25a166fb1d718d818a710af1262f30e089c9f47	RED	merge3	GATE RED floor: overall: 4.89 -> 4.87; unit_interfacing: 4.87 -> 4.75
 opencatalogi	2653	78f87c1910e9bee1b95217f80c836d406f2bcb84	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 filinq	2077	619ea4467fe6f296b93b02b38887434aa0ef3bbc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1882	0022e4efd96b4a25d3fb500cf85f051c1d9bde39	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1883	ee55afb308b5eca55912db6909cd13a498c5bbfe	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1884	d3b423439b45ae895ecae3b375edb36423201cfc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1885	398c4f7f6570f83c65114883cdd32f89381dceaf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1886	50850800c53a82b5e4012eae170f5488ee4b3769	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1887	a0e8fd6bc68da8982777177f6b76120a2abdcbf6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1891	79a7aa80a61fd1bf93099452dcc43189828e364f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+stackiq	1895	c3663e04a77c8e8941c73d169bda79a222e90379	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
