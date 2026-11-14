@@ -7955,3 +7955,19 @@ portaliq	2440	8db216bfa516428cf74b2df9eb898f78dbc71562	GREEN	worker-37	unit 5202
 portaliq	2489	9988356c0cce6d32c1860267f1bcf27175694f7e	GREEN	worker-37	unit 5202 OK on the 3-PR tree (baseline 5187 OK), 0 new failures; touched node specs 19/19; noscript notice, output escaped
 hermiq	1757	c0e6cda2ab5636133ef35d84060075d6457a5713	RED	merge3:merge-gate	GATE RED floor: unit_size: 3.79 -> 3.77; unit_complexity: 4.55 -> 4.50
 hermiq	1767	1ac66da7bc892597bb9b7d6d945d3611b429d394	RED	merge3:merge-gate	GATE RED floor: unit_size: 3.79 -> 3.77; unit_interfacing: 2.28 -> 2.26
+hermiq	1492	871a590f1e53a7b52cf8f67ab2a6444a61bb5acd	CONFLICT	merge3	merges clean on development alone; files: lib/Service/Llm/ProviderFactory.php 
+hermiq	1715	d9f59cc52c1e8e02d80b09a0d561a795fa1fd2a1	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1725	c59e9eb85eb063bc408cbc432a92f4e02ad40d16	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1736	871292e764479fab5fc8b7d29da7e3759b9e8bed	CONFLICT	merge3	conflicts with development; files: lib/Settings/hermiq_register.json 
+hermiq	1737	3a6db84b8da7148099112955eb1b0bf2ff0daaaa	CONFLICT	merge3	conflicts with development; files: l10n/nl.js l10n/nl.json 
+hermiq	1738	178cd95a5aeba03e3dc73ab808459cfecb10f84c	CONFLICT	merge3	conflicts with development; files: lib/Settings/hermiq_register.json 
+hermiq	1739	53540a9a012c9e9f2c1d956322ae45d955b1238a	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Mcp/HermiqToolProviderTest.php 
+hermiq	1749	2607da0acbd129a478b9c257045a390d06b4bae6	CONFLICT	merge3	conflicts with development; files: lib/Controller/SessionController.php 
+hermiq	1750	13938be580977e113cbddf513e2bee4b4b7f0c1a	CONFLICT	merge3	conflicts with development; files: lib/Service/Engine/ContextRetrievalHandler.php lib/Settings/hermiq_register.json 
+hermiq	1753	89b097a46bbf8372d6646d9b4c25cc85d8c97ea6	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1754	e44a6d54ddf90edcce713d2984d8b717a5f111b9	CONFLICT	merge3	conflicts with development; files: lib/Settings/hermiq_register.json 
+hermiq	1756	c0d20337b5b7a0616179af544375bac02803e3ff	RED	merge3	HermiqToolProviderTest (3 tests) hardcodes the tool count; #1732 (delegateMany) adds a tool too, so with both merged it is 44 vs 43. Merge development and bump the counts
+hermiq	1758	0dad551fafb0efbec570b10bc2f0191732fff7d1	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1762	dba1a0fedeea4f3ac9363fa097a93c29e307fb2e	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/actions.seed.json 
+hermiq	1763	a68d1b9b9b89683e3c7d20851d7dc875e37e72a8	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+hermiq	1774	8f94070461aba862012147c5fc77ee89537a2b88	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/DeliveryServiceConnectionReportTest.php 
