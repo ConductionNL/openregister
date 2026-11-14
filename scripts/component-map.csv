@@ -2440,6 +2440,12 @@ Service/Flow/Timer/WorkingCalendar.php,313,Service,Flows,Flows/Service/Flow/Time
 Service/Flow/Timer/WorkingCalendarService.php,56,Service,Flows,Flows/Service/Flow/Timer/WorkingCalendarService.php,8,362,Processes
 Service/Flow/Timer/WorkingCalendarWriteGuard.php,52,Service,Flows,Flows/Service/Flow/Timer/WorkingCalendarWriteGuard.php,0,,Processes
 Service/Flow/Timer/WorkingDayRoll.php,50,Service,Flows,Flows/Service/Flow/Timer/WorkingDayRoll.php,0,,Processes
+Service/Flow/Timer/ResolvedWorkingCalendar.php,24,Service,Flows,Flows/Service/Flow/Timer/ResolvedWorkingCalendar.php,0,,Processes
+Service/Flow/Timer/RecordTypeCalendars.php,35,Service,Flows,Flows/Service/Flow/Timer/RecordTypeCalendars.php,0,,Processes
+Service/Flow/Timer/RegisterWorkingPatternProvidersEvent.php,14,Service,Flows,Flows/Service/Flow/Timer/RegisterWorkingPatternProvidersEvent.php,0,,Processes
+Service/Flow/Timer/WorkingCalendarScope.php,40,Service,Flows,Flows/Service/Flow/Timer/WorkingCalendarScope.php,0,,Processes
+Service/Flow/Timer/WorkingPatternProviderInterface.php,7,Service,Flows,Flows/Service/Flow/Timer/WorkingPatternProviderInterface.php,0,,Processes
+Service/Flow/Timer/WorkingPatternProviders.php,114,Service,Flows,Flows/Service/Flow/Timer/WorkingPatternProviders.php,0,,Processes
 Service/FlowLinkService.php,174,Service,Flows,Flows/Service/FlowLinkService.php,0,151,Processes
 Service/Form/AppDataFolder.php,17,Service,Work,Work/Service/Form/AppDataFolder.php,0,,Processes
 Service/Form/FormDefinitionResolver.php,56,Service,Work,Work/Service/Form/FormDefinitionResolver.php,0,,Processes

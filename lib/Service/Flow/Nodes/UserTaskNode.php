@@ -637,7 +637,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 */
 	private function optionalTimerKeys(array $config): array {
 		$set = [];
-		foreach (['calendar', 'ladder', 'escalationRules', 'purpose', 'legalEffect', 'onExpiry', 'organisation'] as $key) {
+		foreach (['calendar', 'ladder', 'escalationRules', 'purpose', 'legalEffect', 'onExpiry', 'organisation', 'schema', 'person'] as $key) {
 			if (array_key_exists($key, $config) === true && $config[$key] !== null && $config[$key] !== '') {
 				$set[$key] = $config[$key];
 			}
