@@ -8136,3 +8136,4 @@ verify:integriq:3562:808c666a	GREEN 3562 3585 3591 3592; CONFLICT 3587 3588 3589
 build:buildiq:ai-smart-paste-into-forms	PR #1605: T01-T03,T07 built (validation, editor fieldset, preview, l10n, docs), +17 vitest; T04-T06,T08 left (sibling repos, e2e, openspec CLI)	session-20261114T073117-2bd2e050	2026-11-14T08:11:58Z
 build:integriq:observability-opentelemetry-export-errors-and-app-spans	PR #3602: tasks 6-9 built, 40 tests, suite no new failures; e2e left	session-20261114T070909-be4543e0	2026-11-14T08:12:02Z
 verify:buildiq:1579:5a78ba86	1579 GREEN (tasks.md only)	session-20261114T062134-840bbeee	2026-11-14T08:12:16Z
+build:buildiq:forms-designer-file-camera-children-and-assign	partial: PR #1606, T01-T06+T09 built with vitest (suite 4077->4122 green); T07 e2e and T08 archive left	session-20261114T075643-acecaad6	2026-11-14T08:12:40Z
