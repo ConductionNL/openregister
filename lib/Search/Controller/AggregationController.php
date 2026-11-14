@@ -265,7 +265,7 @@ class AggregationController extends Controller {
 	private function parseMetricsParam(): ?array {
 		$raw = $this->request->getParam('metrics');
 		if (is_array($raw) === false || count($raw) === 0) {
-			return null;
+			return $this->parseMetricCommaList();
 		}
 
 		$metrics = [];
@@ -283,6 +283,42 @@ class AggregationController extends Controller {
 
 		return $metrics;
 	}//end parseMetricsParam()
+
+	/**
+	 * The short multi-metric spelling `metric=count,sum,avg&field=amount`:
+	 * every listed metric but count takes the one `field` param. A single
+	 * metric (no comma) returns null and stays the legacy single pair, so
+	 * existing callers see the same query; a malformed entry is left to
+	 * {@see AggregationQuery::create()} to refuse with a 400.
+	 *
+	 * @return array<int, array{metric: string, field: mixed}>|null The list, or null for one metric.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-provide-a-general-purpose-aggregation-api
+	 */
+	private function parseMetricCommaList(): ?array {
+		$raw = $this->request->getParam('metric');
+		if (is_string($raw) === false || str_contains($raw, ',') === false) {
+			return null;
+		}
+
+		$names = array_values(array_filter(array_map('trim', explode(',', $raw)), static fn (string $name): bool => $name !== ''));
+		if (count($names) < 2) {
+			return null;
+		}
+
+		$field = $this->request->getParam('field');
+		$metrics = [];
+		foreach ($names as $name) {
+			$entryField = null;
+			if ($name !== AggregationQuery::METRIC_COUNT) {
+				$entryField = $field;
+			}
+
+			$metrics[] = $this->metricEntry(entry: ['metric' => $name, 'field' => $entryField]);
+		}
+
+		return $metrics;
+	}//end parseMetricCommaList()
 
 	/**
 	 * One `metrics[...]` entry as the query expects it; a blank field means none.
