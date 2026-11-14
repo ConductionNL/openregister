@@ -8708,3 +8708,5 @@ hermiq	1749	cbc79152e520ec1a9e65d61c7eb20e444fb8890d	REVERIFY	worker-11	merged d
 filinq	2112	8902f50fa3f3de79d61585bae74ce093eda34156	REVERIFY	worker-02	merged development in (clean); merges clean with 2100 and 2118; the only conflict left is with open sibling 2069 on the register info version/description line (both bump 8.55.0 to 8.56.0), inherent: whichever lands second re-bumps; unit 6780 OK (6 skipped); new head 297a10b4a7f3e87e642ee92ec28d7c0d11dc63d6, verify it
 hermiq	1782	97af97422f8bad61ecbb462400e46f2816e66524	GREEN	worker-12	phpunit 5058 tests OK (baseline 5046 OK), vitest 1468 passed, 0 new failures; implements agent-acting-identity-picker per spec
 hermiq	1783	453df0223b88be57153b07db271cee657e04e2c0	GREEN	worker-12	phpunit 5058 tests OK (baseline 5046 OK), vitest 1468 passed, 0 new failures; implements tools-deep-research-report REQ-RESEARCH-004
+hermiq	1784	59e4639166a495fb784f0164d828f8574cffa6ee	CONFLICT	worker-12	conflicts with #1782 in tree (l10n); clean vs development alone
+hermiq	1785	82bc67047302a564e0af6259f42a71e9e7189615	CONFLICT	worker-12	conflicts with #1782 in tree (l10n); clean vs development alone
