@@ -8553,3 +8553,7 @@ decidiq	2173	d0e45f2dc97f0f15f448fa010c5247e481d3aac0	REVERIFY	worker-42	merged 
 learniq	2501	d58497ec9d6bf0ce6b45804a2d86c45928e53884	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.97 after merge is below its floor 3.99
 learniq	2515	91ac6bf3edc1791b8e60ddde86c2cbaa88b839c9	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 learniq	2531	5736628ccf1e083842816fd9b1764a34ca0d287c	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2484	9c722d00825149b5a1661bb32a8852e6007edcfd	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2493	1d780890600e8c09b2d28e5da0f58df0b57ab3b1	CONFLICT	merge3	merges clean on development alone; files: l10n/en.json l10n/nl.json 
+learniq	2514	2e2444ab4454d26a110258855a257f891ba0768c	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2513	85ff6fe85ee1df16af4c6677e1dbe40a21dc11b7	REVERIFY	merge3	head moved since the verdict (was ef587d083a0753b2fd4bbdf748a8e2cf98f98a44, f46c90f8:REVERIFY,ef587d08:GREEN); verify the new head
