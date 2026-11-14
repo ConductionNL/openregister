@@ -8760,3 +8760,4 @@ verify:pipelinq:3824:ad7c903d	GREEN 3824, 3825 (phpunit 7890->7896 0 fail, vites
 build4:openregister:cross-app-semantic-references:c2	partial: PR #10477 settles 1.1/1.2; 4.1/4.3 need cached provider list; 5.x/6.x other repos	session-20261114T075644-ec2e07ac	2026-11-14T10:03:50Z
 build:pipelinq:services-and-resources-at-a-glance:c2	partial: PR #3829 tasks 2.1, 3.1-3.5 (+1.1 ticked); figures endpoints + service/resource side cards + match line; 4.1 example data left (static seed cannot hold current-week bookings)	session-20261114T092645-afb9b140	2026-11-14T10:03:44Z
 build:pipelinq:requests-web-chat-and-bot:c2	failed: still depends on InboundTicketService (requests-inbound-to-queue, pipelinq#3734) which is not on development yet; build after it lands	session-20261114T092645-afb9b140	2026-11-14T10:04:15Z
+verify:shillinq:3046:21c68f48	3046 3047 GREEN; php 10865 OK	session-20261114T092658-4bf01f0f	2026-11-14T10:04:42Z
