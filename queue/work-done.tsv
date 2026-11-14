@@ -9555,3 +9555,4 @@ fix:learniq:2524:593b6b37	failed: no conflict with development (branch at 593b6b
 verify:learniq:2486:de3c7fc8	GREEN 2486 2497 2530 2531; 2506 CONFLICT (tree, l10n); 2501 head moved, skipped	session-20261114T131642-b20146b1	2026-11-14T14:42:48Z
 fix:pipelinq:3821:dbc409a3	fixed: catalogue reorder undone, keys off the shared tail, clean over tree with 3818; new head 547ce3a3, REVERIFY recorded	session-20261114T131654-c068f436	2026-11-14T14:42:56Z
 verify:shillinq:2959:50da24dd	GREEN 2959	session-20261114T141010-8dc8bd74	2026-11-14T14:43:12Z
+build:learniq:bpv-hours-per-day:c2	PR #2537: T2 writeHourDay, T3 form fields + return notice inbox, T4 phone fields, T6 example set; left T3 message link and T4 photo/overview line (need portaliq), T7 e2e	session-20261114T141732-bb541f91	2026-11-14T14:43:25Z
