@@ -7338,5 +7338,6 @@ keepiq	1631	b88267e065a281bd8637bf013e2c84a7b3804548	REVERIFY	worker-20	merged d
 integriq	3584	5c6ec02c65edb352d5bcdce0523a2c16f24d6254	GREEN	worker-58	php unit 8525 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2157 passed
 integriq	3588	f2c639eeed04d9c0ec0a8bd70f534148e8f1aae1	GREEN	worker-58	php unit 8525 vs 8493 baseline, same 4 inherited err/fail, 0 new; vitest 2157 passed
 keepiq	1777	b0bac635029bc075f87c073f2ae1aa6584e83b09	GREEN	worker-07	polyfills moved to devDependencies + sbom; phpunit 4974 (baseline 4974, 0 fail), vitest 6414/0 fail on tree; no new failures
+learniq	2490	f65b7b6d6f9022517d5e4e048bb383fe018984dc	REVERIFY	worker-43	merged development in; nl.json union of both key sets, pyc cache taken from development; new head 0a7375988e8ed1bb87f18a2246082a6caf28cfb6, verify it
 keepiq	1778	fb27899edd568ae46964f472cb627c49f19df2d0	GREEN	worker-07	docs + tasks.md only; phpunit 4974 (baseline 4974, 0 fail), vitest 6414/0 fail on tree; no new failures
 keepiq	1779	155d6a9d3ac5c226b5e84cf19f5f103ec3453ba9	GREEN	worker-07	type-icon map as Map, same mapping and default; phpunit 4974 (baseline 4974, 0 fail), vitest 6414/0 fail on tree; no new failures
