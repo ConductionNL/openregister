@@ -11078,3 +11078,4 @@ build:filinq:redaction-at-scale:c3	PR #2079 pushed 5988e906c (coordinator + work
 verify:planninq:1167:efe18643	GREEN 1167, GREEN 1169: unit 1126 ok, vitest 3343 ok, no new failures	session-20261114T204802-89dfe85e	2026-11-14T21:01:18Z
 verify:learniq:2507:eb52121a	2507 GREEN (unit 6803, only inherited failure); 2523 CONFLICT with 2507 on learniq_register.json	session-20261114T194744-563ce177	2026-11-14T21:01:48Z
 fix:launchpad:1197:21a4f902	fixed: unit_interfacing 3.43 within tolerance; new head 38f34c21, REVERIFY recorded	session-20261114T203931-14af5319	2026-11-14T21:01:59Z
+fix:integriq:3631:30fbce0b	conflict resolved by merging 3542 head; new head 0f8a82af; REVERIFY	session-20261114T204802-b2e553ef	2026-11-14T21:02:14Z
