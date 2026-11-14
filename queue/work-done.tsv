@@ -11791,3 +11791,4 @@ fix:larpinq:1052:e1874075	fixed: unit_interfacing (award 4->2 params, moderate b
 verify:larpinq:1041:fd0b344e	1041 GREEN, 1045 GREEN, 1051/1053/1054 CONFLICT; phpunit 852 ok, vitest 548 ok	session-20261114T224742-00d4fbcb	2026-11-14T23:08:40Z
 fix:integriq:3596:caba8462	merged development, floor holds (unit_size 3.56), pushed dd7babfc, REVERIFY	session-20261114T214735-aacd1703	2026-11-14T23:08:49Z
 verify:stackiq:1946:c951cbb8	1946 GREEN; 1966 skipped (head moved to 0000ed25 after the queued sha)	session-20261114T224754-e4a2fcab	2026-11-14T23:09:06Z
+cover:pipelinq:7f9dc8e6m799d:e0a30dd2	already done: lib/Service/Payment/*.php 623/633 lines (98.4%, pcov, dir tests only) on development; rest are value-object constructors run via PosPaymentService and transport error edges; no PR	session-20261114T225452-4fcfea7f	2026-11-14T23:09:29Z
