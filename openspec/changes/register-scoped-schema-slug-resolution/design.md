@@ -120,6 +120,7 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | `ImportHandler` object configuration, listed objects, seed objects, seed passes, seed references | was (b), now scoped | The configuration's register, the object's `@self.register`, the pass's target register, the seed object's register. |
 | `ObjectsController::crossTablePairs()` (cross-table search) | was (b), now scoped | Each register pairs with its own schema for a shared slug. |
 | `RelatedRowQueryApplier::findSchema()` (`_ref` target schema) | was (b), now scoped | The register the query runs in (`RelatedRowFilterTarget::$register`), via `SchemaRefInRegister::findInRegister()`; the refuse-when-ambiguous chain runs unchanged when the register lacks the slug. |
+| `TranslationController::resolveSchema()` (object completeness) | was (b), now scoped | The object's own register, read through an optional register reader on `TranslationMappers`; ids skip the object read. |
 
 ### Still class (b): open
 
@@ -128,7 +129,6 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | `SchemaManageGate::mayManageNamed()` (mixed-schema bulk rights) and `SaveLookups::schemaIdBySlug()` (the save) | (b), open | Must change together: scoping the rights check alone would check a different schema than the save writes. A follow-up. |
 | `RegisterResolverService::findSchema()` (app-config pair) | (b), open | The scoped lookup bypasses the tenant filter, so the explicit-organisation check has to be carried over first. |
 | `SourceRecordResolver::lookupSchemaId()` (survivorship) | (b), open | Also memoised in a static keyed by the bare slug; the key needs the register first. |
-| `TranslationController::resolveSchema()` | (b), open | The object's register is one read away, but the controller has no register reader. |
 | `UtilityHandler::normalizeEntity()` (migration sides) | (b), open | Each side carries its register; the helper resolves one reference alone. |
 | `FacetHandler::schemasMatching()` | (b), open | The query's `@self.register` is there; no register reader is injected. |
 | `SearchQueryHandler::schemaOrNull()` | (b), open | `buildSearchQuery()` holds the register but passes only the schema down. |
