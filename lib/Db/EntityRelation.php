@@ -80,6 +80,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCapacityConfirmedBy(?string $capacityConfirmedBy)
  * @method DateTime|null getCapacityConfirmedAt()
  * @method void setCapacityConfirmedAt(?DateTime $capacityConfirmedAt)
+ * @method string|null getPersonMatch()
+ * @method void setPersonMatch(?string $personMatch)
+ * @method bool|null getUncertain()
+ * @method void setUncertain(?bool $uncertain)
  * @method string|null getDecisionUuid()
  * @method void setDecisionUuid(?string $decisionUuid)
  * @method DateTime getCreatedAt()
@@ -295,6 +299,20 @@ class EntityRelation extends Entity implements JsonSerializable {
 	 * @var DateTime|null
 	 */
 	protected ?DateTime $capacityConfirmedAt = null;
+
+	/**
+	 * The persons register a detected person matched (its label, never a record id); null when none matched (REQ-DKP-003).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $personMatch = null;
+
+	/**
+	 * Whether a detected person also reads as a street or place name (REQ-DKP-003); the occurrence is kept for the reviewer.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $uncertain = null;
 
 	/**
 	 * Created at timestamp.

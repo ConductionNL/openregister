@@ -30,6 +30,8 @@
             "capacityApplied": null,
             "capacityConfirmedBy": null,
             "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
             "createdAt": "2026-01-02T03:04:05+00:00"
         },
         "updated": [
@@ -78,6 +80,8 @@
             "capacityApplied": null,
             "capacityConfirmedBy": null,
             "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
             "createdAt": "now"
         },
         "updated": [
@@ -114,6 +118,8 @@
             "capacityApplied": null,
             "capacityConfirmedBy": null,
             "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
             "createdAt": "now"
         },
         "updated": [
@@ -150,6 +156,8 @@
             "capacityApplied": null,
             "capacityConfirmedBy": null,
             "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
             "createdAt": "now"
         },
         "updated": [
@@ -186,6 +194,8 @@
             "capacityApplied": null,
             "capacityConfirmedBy": null,
             "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
             "createdAt": "now"
         },
         "updated": [
@@ -222,6 +232,8 @@
             "capacityApplied": null,
             "capacityConfirmedBy": null,
             "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
             "createdAt": "now"
         },
         "updated": [
@@ -258,6 +270,8 @@
             "capacityApplied": null,
             "capacityConfirmedBy": null,
             "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
             "createdAt": "now"
         },
         "updated": [

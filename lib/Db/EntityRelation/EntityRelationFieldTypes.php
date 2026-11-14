@@ -61,6 +61,8 @@ final class EntityRelationFieldTypes {
 		'capacityApplied' => 'string',
 		'capacityConfirmedBy' => 'string',
 		'capacityConfirmedAt' => 'datetime',
+		'personMatch' => 'string',
+		'uncertain' => 'boolean',
 		'createdAt' => 'datetime',
 	];
 }//end class

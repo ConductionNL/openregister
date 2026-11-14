@@ -34,6 +34,8 @@ return array (
     'capacityApplied' => 'string',
     'capacityConfirmedBy' => 'string',
     'capacityConfirmedAt' => 'datetime',
+    'personMatch' => 'string',
+    'uncertain' => 'boolean',
     'createdAt' => 'datetime',
   ),
   'empty' => 
@@ -65,6 +67,8 @@ return array (
     'capacityApplied' => NULL,
     'capacityConfirmedBy' => NULL,
     'capacityConfirmedAt' => NULL,
+    'personMatch' => NULL,
+    'uncertain' => NULL,
     'createdAt' => NULL,
   ),
   'filled' => 
@@ -102,6 +106,8 @@ return array (
     'capacityApplied' => 'capacityApplied-v',
     'capacityConfirmedBy' => 'capacityConfirmedBy-v',
     'capacityConfirmedAt' => '2026-01-02T03:04:05+00:00',
+    'personMatch' => 'personMatch-v',
+    'uncertain' => true,
     'createdAt' => '2026-01-02T03:04:05+00:00',
   ),
   'filledUpdated' => 
@@ -133,7 +139,9 @@ return array (
     24 => 'capacityApplied',
     25 => 'capacityConfirmedBy',
     26 => 'capacityConfirmedAt',
-    27 => 'createdAt',
+    27 => 'personMatch',
+    28 => 'uncertain',
+    29 => 'createdAt',
   ),
   'refused' => 
   array (
