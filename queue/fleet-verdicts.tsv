@@ -7672,3 +7672,4 @@ versioniq	711	3a2d2efb02dd9c45b743d5ddf6a99e735c82a46a	CONFLICT	worker-29	confli
 versioniq	712	58bc9a3c0463797adcefdd7b9dfd4b0d2b745aa2	GREEN	worker-29	php 1748 tests (baseline 1643), 2 inherited golden fails, no new; vitest 2962 pass
 versioniq	713	1708838af70c9fde2f9acab78fe1e39f4ad57e09	GREEN	worker-29	php 1748 tests (baseline 1643), 2 inherited golden fails, no new; vitest 2962 pass
 versioniq	714	6d93c5ca2353275ec1d9c4291d2825048504d7cd	GREEN	worker-29	php 1748 tests (baseline 1643), 2 inherited golden fails, no new; vitest 2962 pass
+versioniq	715	43e281981c1176f250c817451b7fa0ddd6338d91	CONFLICT	worker-29	conflicts with the tree in l10n, SettingsController, InstanceSettingsFields, InstanceSettings, openapi.json, InstanceSettingsPanel
