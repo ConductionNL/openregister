@@ -10303,3 +10303,4 @@ build4:openregister:dbal-query-schema-guarded-and-previewed:c3	no code tasks lef
 fix:planninq:1172:fc112f09	l10n moved off sibling append point; only a 1-line sorted-import conflict with 1162 remains (inherent); new head 7f30551f	session-20261114T154734-655bd0f3	2026-11-14T16:54:43Z
 fix:integriq:3600:36f330ac	merged #3574 + #3596, l10n key union; unit/vitest no new failures; new head 78585a56	session-20261114T154807-4c2c3327	2026-11-14T16:55:03Z
 fix:decidiq:2155:932b251c	fixed: l10n key moved mid-catalogue, clean with #2149; new head 0645aee8	session-20261114T154807-c05f4e57	2026-11-14T16:55:52Z
+fix:pipelinq:3818:e0545685	merged development (l10n tails), head 44c090e1, REVERIFY	session-20261114T151802-24eee21b	2026-11-14T16:56:03Z
