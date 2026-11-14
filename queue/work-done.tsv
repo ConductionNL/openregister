@@ -11234,3 +11234,4 @@ build:decidiq:meeting-pack-board-book:c3	partial: task 1 built: filinq PR #2132 
 cover:opencatalogi:fc83bfb1md382:js8b29c4b9	PR #2707: uploadSteps.js, 9 jest tests; suite 1074 -> 1083, same inherited failures	session-20261114T201755-10d43934	2026-11-14T21:38:26Z
 verify:launchpad:1195:633e773b	GREEN 1195 1197 1203; RED 1214 (props golden); CONFLICT 1212 1223 1226 1227; 1216 skipped (head moved)	session-20261114T203931-14af5319	2026-11-14T21:38:47Z
 cover:opencatalogi:fc83bfb1md382:js3f3bfe56	PR #2708: main.js, settings.js, pinia.js, 10 tests; src/*.js lines 46.29->97.36%; vitest 1073->1083 green	session-20261114T174753-100b2a07	2026-11-14T21:39:47Z
+fix:decidiq:2190:be028a48	no change: conflict only with open #2187 (shared objectCount line); resolve after #2187 lands	session-20261114T203931-14af5319	2026-11-14T21:39:48Z
