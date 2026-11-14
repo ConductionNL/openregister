@@ -9827,3 +9827,4 @@ learniq	2536	b3147dbe91a2248209ddea90c02a5db6149753dd	REVERIFY	worker-26	merged 
 integriq	3549	d85e6b223c817a47d72f9e250d97948026d6ea10	GREEN	worker-15	unit 9178 run, baseline 9084 with 7 inherited failures, 0 new; vitest 2253 passed
 launchpad	1212	a6e6dc5183cc6b2ef48937286099782db8b8da43	REVERIFY	worker-41	merged development in (clean now that 1205 landed; Views.vue keeps both); unit 4221 tests, 1 failure inherited from development (OpenApiStabilityTest), vitest 504 pass, phpcs/phpstan/eslint clean; new head 57c5a6538dc81b3b71995cead31a18529fe4eb63, verify it
 integriq	3564	d712cf14bb47d721128efa245e719f37c2339375	GREEN	worker-15	unit 9178 run, baseline 9084 with 7 inherited failures, 0 new; vitest 2253 passed
+integriq	3584	161c9167d86dbca7fdd977c603fe5c86ff3d9eb0	GREEN	worker-15	unit 9178 run, baseline 9084 with 7 inherited failures, 0 new; vitest 2253 passed
