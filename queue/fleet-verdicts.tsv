@@ -8297,3 +8297,4 @@ filinq	2079	4296198b4749c66c7297b0abf9709e3e2afa55c2	GREEN	worker-22	unit 6780 o
 filinq	2083	917afeaa9dda2341ebe7ba85ab45f7c8ad29111c	CONFLICT	worker-22	clean on development; conflicts after #2079 in the tree: l10n en/nl (.json and .js) and filinq_register.json
 filinq	2114	e4621a50308ba264f85b082f4d5f320b7f10c08d	CONFLICT	worker-22	clean on development; conflicts after #2079 in the tree: l10n en/nl (.json and .js) and filinq_register.json
 filinq	2124	e55ecf9223b0780b31103e2917fa8eaa29855798	GREEN	worker-22	unit 6780 on tree (baseline 6695, 0 failures), vitest 752 passed, new failures none; builds document-waarmerk-certification (admin-only settings, owner/admin-scoped seals, rate-limited public verify)
+portaliq	2437	0bea6c571ae35fb473763215fcd3e32565d6c64a	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json package.json tests/Unit/Settings/PortaliqRegisterConfigTest.php tests/example-site.spec.mjs 
