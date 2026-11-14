@@ -11524,3 +11524,4 @@ fix:decidiq:2191:4d6f144b	clean on development; conflict is with a sibling PR; m
 fix:learniq:2536:a9efa896	failed: up to date with development; conflicts only with unmerged #2513 (routes, l10n, ContractBindings, portal goldens), resolve after #2513 lands	session-20261114T211800-2a24a3a9	2026-11-14T22:21:48Z
 verify:hermiq:1760:f27f6d1e	#1760 GREEN; #1795 skipped (head moved to a4cac7c2)	session-20261114T211808-5e900938	2026-11-14T22:21:49Z
 fix:buildiq:1613:9a9eb9cb	merged development, l10n conflicts resolved; new head 755c76ad, REVERIFY	session-20261114T221756-d9538cf9	2026-11-14T22:22:10Z
+fix:hermiq:1781:65071efe	failed: merges clean on development; the conflict is only with unmerged #1735 (both edit l10n and the register version), so it resolves by merging development in once #1735 lands (or verify #1781 in a tree without #1735)	session-20261114T211808-5e900938	2026-11-14T22:22:20Z
