@@ -58,6 +58,7 @@ class AnnotationNotifier implements INotifier {
 		'object_created' => 'Object "%1$s" created in register "%2$s"',
 		'object_updated' => 'Object "%1$s" updated in register "%2$s"',
 		'object_transitioned' => 'Object "%1$s" assigned to you in register "%2$s"',
+		'object_note_added' => 'New note on "%1$s" in register "%2$s"',
 	];
 
 	/**
@@ -72,6 +73,7 @@ class AnnotationNotifier implements INotifier {
 		'object_created' => 'Object "%1$s" created',
 		'object_updated' => 'Object "%1$s" updated',
 		'object_transitioned' => 'Object "%1$s" assigned to you',
+		'object_note_added' => 'New note on "%1$s"',
 	];
 
 	/**

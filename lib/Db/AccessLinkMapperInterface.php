@@ -70,6 +70,17 @@ interface AccessLinkMapperInterface {
 	public function findById(int $id): ?AccessLink;
 
 	/**
+	 * Find a link by its own uuid.
+	 *
+	 * @param string $uuid The link uuid.
+	 *
+	 * @return AccessLink|null The link row, or null when unknown.
+	 *
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/specs/notificatie-engine/spec.md#requirement-a-rule-can-fire-when-a-note-is-added
+	 */
+	public function findByUuid(string $uuid): ?AccessLink;
+
+	/**
 	 * Insert one row.
 	 *
 	 * @param Entity $entity The row to insert.
