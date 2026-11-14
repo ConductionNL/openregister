@@ -1938,7 +1938,6 @@ Service/Case/Nodes/CaseOpenNode.php,83,Service,Flows,Flows/Service/Case/Nodes/Ca
 Service/Case/UnarmedTimerMarkers.php,71,Service,Work,Work/Service/Case/UnarmedTimerMarkers.php,0,,Processes
 Service/Case/ZaaktypeCaseSkeletonMapper.php,317,Service,Work,Work/Service/Case/ZaaktypeCaseSkeletonMapper.php,0,,Processes
 Service/CaseTokenService.php,177,Service,Integrations,Integrations/Service/CaseTokenService.php,1,,Integrations
-Service/CaseTypeAuthorizationService.php,146,Service,Work,Work/Service/CaseTypeAuthorizationService.php,0,,Processes
 Service/Chat/ChatProxyHandler.php,143,Service,Platform,Platform/Service/Chat/ChatProxyHandler.php,0,,Platform
 Service/CollectiveLinkService.php,330,Service,Integrations,Integrations/Service/CollectiveLinkService.php,0,,Integrations
 Service/ComparableInstants.php,28,Service,Access,Access/Service/ComparableInstants.php,0,,Core
@@ -2959,6 +2958,7 @@ Service/Rbac/AuthorizationDenyValidator.php,123,Service,Service,Service/Rbac/Aut
 Service/Rbac/ClassificationCaller.php,43,Service,Access,Access/Service/Rbac/ClassificationCaller.php,0,,Core
 Service/Rbac/ClassificationDeclarationValidator.php,230,Service,Access,Access/Service/Rbac/ClassificationDeclarationValidator.php,0,,Core
 Service/Rbac/ClassificationLimits.php,126,Service,Access,Access/Service/Rbac/ClassificationLimits.php,0,,Core
+Service/Rbac/ClassificationListTerm.php,125,Service,Access,Access/Service/Rbac/ClassificationListTerm.php,0,,Core
 Service/Rbac/ClassificationReadGate.php,152,Service,Access,Access/Service/Rbac/ClassificationReadGate.php,0,,Core
 Service/Rbac/ClassificationScale.php,219,Service,Access,Access/Service/Rbac/ClassificationScale.php,0,,Core
 Service/Rbac/ClearanceResolver.php,97,Service,Access,Access/Service/Rbac/ClearanceResolver.php,0,,Core
@@ -4060,7 +4060,6 @@ Service/WritePhase.php,,Service,,,,,Core
 Service/XwikiLinkServiceInterface.php,,Service,,,,,Core
 Service/XwikiPageDraft.php,,Service,,,,,Integrations
 Service/XwikiPendingLink.php,,Service,,,,,Integrations
-Service/ZgwAutorisatieGrant.php,,Service,,,,,Core
 Command/FederationSharesExpiringCommand.php,,Command,,,,,Core
 Repair/GiveFederationSharesALifetime.php,,Repair,,,,,Platform
 BackgroundJob/SharerAccessSweepJob.php,,BackgroundJob,,,,,Compliance
