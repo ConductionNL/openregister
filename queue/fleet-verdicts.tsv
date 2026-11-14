@@ -9399,3 +9399,4 @@ portaliq	2437	4fe52aadf12e8d05af3b9c7ffcad928a6ef91e59	RED	merge3:merge-gate	GAT
 pipelinq	3829	53db97a2a57d9b2787f93d77e5619ebe0a00d334	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 pipelinq	3835	53c482bd863ceaf5d117d415362b24b587eea728	CONFLICT	merge3	merges clean on development alone; files: tests/vitest/structureProfile.spec.js 
 learniq	2536	c7133ae45238f5b3683031ca0f1cb403c886a1a5	GREEN	worker-08	phpunit 6782 tests (baseline 6754, 1 inherited failure HigherEducationExampleSetTest), js 1372 (9 inherited fails), no new failures; build of bpv-coach-today-and-placement-board, ownership checked on visit answer
+filinq	2126	ff1f07a22f724c52228553853290ed7893e14bfc	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.48 -> 4.45
