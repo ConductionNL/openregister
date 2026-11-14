@@ -1435,6 +1435,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
         ['name' => 'operationsMaintenance#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
         ['name' => 'operationsMaintenance#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
+        // Dependency breakers (operate-load-shedding D-7): administrator-only.
+        ['name' => 'operationsDependencies#index', 'url' => '/api/operations/dependencies', 'verb' => 'GET'],
+        ['name' => 'operationsDependencies#reset', 'url' => '/api/operations/dependencies/{key}/reset', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.

@@ -321,6 +321,7 @@ Controller/ObjectsController.php,3385,Controller,Service,Service/Controller/Obje
 Controller/OpenProjectLinksController.php,111,Controller,Integrations,Integrations/Controller/OpenProjectLinksController.php,0,,Integrations
 Controller/OperationsConsistencyController.php,78,Controller,Configuration,Configuration/Controller/OperationsConsistencyController.php,0,,Configuration
 Controller/OperationsConsoleController.php,155,Controller,Configuration,Configuration/Controller/OperationsConsoleController.php,0,,Configuration
+Controller/OperationsDependenciesController.php,40,Controller,Configuration,Configuration/Controller/OperationsDependenciesController.php,0,,Configuration
 Controller/OperationsMaintenanceController.php,52,Controller,Configuration,Configuration/Controller/OperationsMaintenanceController.php,0,,Configuration
 Controller/OrganisationController.php,844,Controller,Access,Access/Controller/OrganisationController.php,0,,Core
 Controller/OrganisationHaltController.php,35,Controller,Flows,Flows/Controller/OrganisationHaltController.php,0,,Processes
@@ -3066,6 +3067,7 @@ Service/Resilience/BreakerRegistry.php,237,Service,Platform,Platform/Service/Res
 Service/Resilience/BreakerThresholds.php,55,Service,Platform,Platform/Service/Resilience/BreakerThresholds.php,0,,Platform
 Service/Resilience/CircuitBreaker.php,399,Service,Platform,Platform/Service/Resilience/CircuitBreaker.php,0,,Platform
 Service/Resilience/DatabasePressureMeter.php,330,Service,Platform,Platform/Service/Resilience/DatabasePressureMeter.php,0,,Platform
+Service/Resilience/DependencyConsole.php,150,Service,Platform,Platform/Service/Resilience/DependencyConsole.php,0,,Platform
 Service/Resilience/DependencyUnavailableException.php,87,Service,Platform,Platform/Service/Resilience/DependencyUnavailableException.php,0,,Platform
 Service/Resilience/Sheddable.php,15,Service,Platform,Platform/Service/Resilience/Sheddable.php,0,,Platform
 Service/Resolver/Exception/MissingConfigException.php,27,Service,Service,Service/Resolver/Exception/MissingConfigException.php,20,,Core

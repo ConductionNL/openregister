@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Controller\OperationsConsistencyController;
 use OCA\OpenRegister\Controller\OperationsConsoleController;
+use OCA\OpenRegister\Controller\OperationsDependenciesController;
 use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 use OCA\OpenRegister\Controller\Support\IntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\MaintenanceReachableControllersInterface;
@@ -111,7 +112,7 @@ final class F09ControllerBoundaryTest extends TestCase {
 	 */
 	public function testTheOperationsConsoleStaysAlwaysReachable(): void {
 		$this->assertSame(
-			expected: [OperationsConsoleController::class, OperationsMaintenanceController::class, OperationsConsistencyController::class],
+			expected: [OperationsConsoleController::class, OperationsMaintenanceController::class, OperationsConsistencyController::class, OperationsDependenciesController::class],
 			actual: MaintenanceReachableControllersInterface::ALWAYS_REACHABLE
 		);
 	}//end testTheOperationsConsoleStaysAlwaysReachable()

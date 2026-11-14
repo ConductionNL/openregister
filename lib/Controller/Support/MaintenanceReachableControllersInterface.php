@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Controller\OperationsConsistencyController;
 use OCA\OpenRegister\Controller\OperationsConsoleController;
+use OCA\OpenRegister\Controller\OperationsDependenciesController;
 use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 
 /**
@@ -53,5 +54,8 @@ interface MaintenanceReachableControllersInterface {
 		// The consistency check and its repair plan, which an administrator
 		// runs while the instance is closed for exactly that repair.
 		OperationsConsistencyController::class,
+		// The dependency breakers: an administrator resets one while the
+		// instance is closed to fix the outage behind it.
+		OperationsDependenciesController::class,
 	];
 }//end interface
