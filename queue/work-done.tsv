@@ -7965,3 +7965,4 @@ verify:integriq:3541:e5959fe2	3541, 3549, 3556 GREEN; no new unit failures	sessi
 build:integriq:platform-bookkeeping-catalogue-items	PR #3580: 4 templates, bookkeeping categories + guard test, docs; live occ/docs build left; unit 8495, only the 4 inherited failures	session-20261114T065632-a1c920c5	2026-11-14T07:46:19Z
 merge:stackiq:1885:2daf5a4e	merge3 tree of 12 stackiq PRs: merged=8 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:46:25Z
 merge:stackiq:1886:c7bcddc2	merge3 tree of 12 stackiq PRs: merged=8 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:46:32Z
+merge:stackiq:1887:168bd8c5	merge3 tree of 12 stackiq PRs: merged=8 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:46:38Z
