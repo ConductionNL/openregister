@@ -147,10 +147,13 @@ BulkAction/AbstractPropertyWriteAction.php,73,BulkAction,Flows,Flows/BulkAction/
 BulkAction/ApplyRuleAction.php,121,BulkAction,Flows,Flows/BulkAction/ApplyRuleAction.php,0,,Processes
 BulkAction/AssignAction.php,45,BulkAction,Flows,Flows/BulkAction/AssignAction.php,0,,Processes
 BulkAction/BulkActionInterface.php,15,BulkAction,Flows,Flows/BulkAction/BulkActionInterface.php,16,489,Processes
+BulkAction/BulkActionInvoker.php,,BulkAction,,,,,Processes
 BulkAction/BulkActionResult.php,32,BulkAction,Flows,Flows/BulkAction/BulkActionResult.php,46,459,Processes
+BulkAction/LegacyBulkActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/ExportWholeSetAction.php,158,BulkAction,Configuration,Configuration/BulkAction/ExportWholeSetAction.php,0,173,Configuration
 BulkAction/RestorePriorValuesAction.php,163,BulkAction,Flows,Flows/BulkAction/RestorePriorValuesAction.php,0,,Processes
 BulkAction/ReversibleBulkActionInterface.php,10,BulkAction,Flows,Flows/BulkAction/ReversibleBulkActionInterface.php,0,,Processes
+BulkAction/StepBulkActionInterface.php,,BulkAction,,,,,Processes
 BulkAction/RunActionAction.php,83,BulkAction,Flows,Flows/BulkAction/RunActionAction.php,0,,Processes
 BulkAction/SetPropertiesAction.php,40,BulkAction,Flows,Flows/BulkAction/SetPropertiesAction.php,0,,Processes
 BulkAction/TransitionAction.php,102,BulkAction,Flows,Flows/BulkAction/TransitionAction.php,0,,Processes
