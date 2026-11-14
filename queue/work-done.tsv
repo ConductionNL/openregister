@@ -10305,3 +10305,4 @@ fix:integriq:3600:36f330ac	merged #3574 + #3596, l10n key union; unit/vitest no 
 fix:decidiq:2155:932b251c	fixed: l10n key moved mid-catalogue, clean with #2149; new head 0645aee8	session-20261114T154807-c05f4e57	2026-11-14T16:55:52Z
 fix:pipelinq:3818:e0545685	merged development (l10n tails), head 44c090e1, REVERIFY	session-20261114T151802-24eee21b	2026-11-14T16:56:03Z
 verify:buildiq:1626:95d820cc	GREEN 1626,1641,1642; CONFLICT 1630,1643,1644,1645 (nl l10n vs tree); no new failures	session-20261114T161752-4c07cde6	2026-11-14T16:56:15Z
+verify:shillinq:2991:97966908	GREEN 2991, CONFLICT 3048	session-20261114T161744-497aae45	2026-11-14T16:56:52Z
