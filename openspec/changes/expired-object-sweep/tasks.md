@@ -21,4 +21,4 @@ Kind: code. Size M. Row: portaliq `ops-submission-retention`.
 
 ## 5. Docs
 
-- [ ] 5.1 Document the schema key, the sweep and the dry run in `docs/features/expired-object-sweep.md`, and say how it differs from archival destruction. Verify: `npm run build` in `docs/` succeeds.
+- [x] 5.1 Document the schema key, the sweep and the dry run in `docs/features/expired-object-sweep.md`, and say how it differs from archival destruction. Verify: `npm run build` in `docs/` succeeds.
