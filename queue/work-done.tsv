@@ -9443,6 +9443,7 @@ build:shillinq:receivables-provider-payouts:c2	partial: PR #3003 now has 1.2,2.1
 fix:filinq:2089:f10c1eaa	failed: already contains development (head unchanged f10c1eaa); it conflicts only with open PR #2067 on the register-version, l10n and openapi lines. Re-run after #2067 lands	session-20261114T124625-07e62ccf	2026-11-14T14:24:11Z
 fix:learniq:2501:ece22c4c	complexity floor fixed: CredentialMigrationService max CC 10->5; new head 443a655bdb, REVERIFY recorded	session-20261114T141732-bb541f91	2026-11-14T14:24:15Z
 fix:learniq:2521:524f7f54	conflict resolved, merged development, pushed 7c3cb663; 1 inherited failure	session-20261114T141746-50f5f9cc	2026-11-14T14:24:29Z
+build4:dossiq:social-domain-consent-and-safeguards:c3	partial: PR #6514 (3.1 server side: gdprClassification on case + intake refusal), 5 tests, same 19 inherited failures; left 3.1 form/pill/log, 2.1, 4.1 manifest option, 3.2, 5.x	session-20261114T131653-0b89c22a	2026-11-14T14:24:35Z
 fix:filinq:2085:40b58a67	failed: already contains development (head unchanged 40b58a67); it conflicts only with open PR #2067 on the register-version and l10n lines. Re-run after #2067 lands	session-20261114T124625-07e62ccf	2026-11-14T14:24:35Z
 fix:learniq:2486:60ddbc3e	merged development in cleanly; only inherited red; REVERIFY recorded, new head 25f6a3dedd07d155f71eecef404654ed2fbe29a2	session-20261114T131642-b20146b1	2026-11-14T14:24:39Z
 verify:portaliq:2437:95e4aff3	1 GREEN (2437), 3 CONFLICT (2442,2444,2452); suite 5264 ok	session-20261114T141737-2ab246b3	2026-11-14T14:24:55Z
