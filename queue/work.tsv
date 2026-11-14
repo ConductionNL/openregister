@@ -9677,3 +9677,12 @@ review:openregister:10522:a71b71e6	review	openregister	main	10522	sha=a71b71e677
 review:openregister:10523:5ee3e7c6	review	openregister	main	10523	sha=5ee3e7c6d7e9b18d2dd429eb1fd3bb67a829e155;last_approved=;title=feat(openregister): build service-hours-and-repeating-reminders	2026-11-14T10:50:10Z
 review:openregister:10524:93714d34	review	openregister	main	10524	sha=93714d34ba1776a09731adb2812d091fe4616b2c;last_approved=;title=feat(openregister): build platform-user-migrator	2026-11-14T10:50:10Z
 review:openregister:10525:738620d7	review	openregister	main	10525	sha=738620d722c4751cfe237c902a9781cdf2fa2b21;last_approved=;title=feat(openregister): build records-copy-with-links	2026-11-14T10:50:10Z
+review:openregister:10526:70fb972d	review	openregister	main	10526	sha=70fb972d0850636e611fc7746ba45e7f2803a55d;last_approved=;title=feat(openregister): build large-file-handling	2026-11-14T10:55:18Z
+review:openregister:10527:160add2b	review	openregister	main	10527	sha=160add2b89e2c2f9e7f77bfd3f0842c2c5d1ca26;last_approved=;title=feat(openregister): build unit-test-coverage	2026-11-14T10:55:18Z
+review:openregister:10528:c6ba2a65	review	openregister	main	10528	sha=c6ba2a654571ad02666d41c6a52267c737139a32;last_approved=;title=feat(openregister): build query-filter-through-a-reference	2026-11-14T10:55:18Z
+review:openregister:10529:510a2d94	review	openregister	main	10529	sha=510a2d94c6d35ba1985cada0e2cb6cd6375261f2;last_approved=;title=feat(openregister): build rules-compose-read-transitions-and-time	2026-11-14T10:55:18Z
+review:openregister:10530:0d0b077d	review	openregister	main	10530	sha=0d0b077d21052a1c16968ffd148408bcdeddfaef;last_approved=;title=feat(openregister): build notifications-new-notes-and-referrers	2026-11-14T10:55:18Z
+review:openregister:10531:e2d28b31	review	openregister	main	10531	sha=e2d28b313ce72e92fdb10943f63161ea292ae20c;last_approved=;title=feat(openregister): build platform-cloud-federation-provider	2026-11-14T10:55:18Z
+review:openregister:10532:33a3ced6	review	openregister	main	10532	sha=33a3ced614f2c965ad7c29e9f746136f0f3685ac;last_approved=;title=feat(openregister): build records-tree-view	2026-11-14T10:55:18Z
+review:openregister:10533:8e1b719c	review	openregister	main	10533	sha=8e1b719c41812c392ed7341e32426ac29eef5210;last_approved=;title=feat(openregister): build records-draft-versions	2026-11-14T10:55:18Z
+merge:shillinq:3048:2d5783b7	merge	shillinq	development	development	prs=3048@dff36567da54f8cc5d74e9a0e810b61e3b0b0ccc	2026-11-14T10:55:18Z
