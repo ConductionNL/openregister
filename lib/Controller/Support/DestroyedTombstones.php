@@ -73,7 +73,7 @@ final class DestroyedTombstones {
 	 *
 	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
 	 */
-	public static function queryFor(DeletedFilter $filter, ?string $actor): ?DestructionQuery {
+	public function queryFor(DeletedFilter $filter, ?string $actor): ?DestructionQuery {
 		if ($filter->deletedSince === null) {
 			return null;
 		}

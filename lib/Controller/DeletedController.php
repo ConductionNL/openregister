@@ -398,7 +398,7 @@ class DeletedController extends Controller {
 			authorizer: $this->services->access->authorizer
 		);
 
-		$query = DestroyedTombstones::queryFor(filter: $filter, actor: $actor);
+		$query = $tombstones->queryFor(filter: $filter, actor: $actor);
 		if ($query === null) {
 			return ['results' => [], 'total' => 0, 'destroyedCoverageFrom' => null];
 		}

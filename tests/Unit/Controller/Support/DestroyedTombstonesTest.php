@@ -143,13 +143,14 @@ class DestroyedTombstonesTest extends TestCase {
 
 	public function testTheQueryOfAFilterKeepsItsBoundsAndTheActor(): void {
 		$since = new DateTimeImmutable('2026-10-02T00:00:00+00:00');
+		$tombstones = new DestroyedTombstones($this->mapper, $this->authorizer);
 
-		$query = DestroyedTombstones::queryFor(filter: new DeletedFilter(registerId: 4, schemaId: 12, deletedSince: $since), actor: 'alice');
+		$query = $tombstones->queryFor(filter: new DeletedFilter(registerId: 4, schemaId: 12, deletedSince: $since), actor: 'alice');
 
 		$this->assertSame($since, $query->since);
 		$this->assertSame(4, $query->registerId);
 		$this->assertSame(12, $query->schemaId);
 		$this->assertSame('alice', $query->actor);
-		$this->assertNull(DestroyedTombstones::queryFor(filter: new DeletedFilter(), actor: null));
+		$this->assertNull($tombstones->queryFor(filter: new DeletedFilter(), actor: null));
 	}
 }
