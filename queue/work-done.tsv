@@ -9033,3 +9033,4 @@ verify:pipelinq:3831:a03a0056	3831 GREEN (no new failures; phpunit 8344, vitest 
 review:dossiq:6322:b657de8f	GREEN: tests-only diff vs development, no new failures	session-20261114T121618-959073d3	2026-11-14T12:23:29Z
 review:openregister:10538:acea3b1d	APPROVE: register-scoped schema slug lookups per spec; suites green	session-20261114T114410-130907cc	2026-11-14T12:24:22Z
 merge:planninq:1156:e964a74e	merge3 tree of 14 planninq PRs: merged=5 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T12:24:44Z
+merge:planninq:1153:6d291fdf	merge3 tree of 14 planninq PRs: merged=5 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T12:24:48Z
