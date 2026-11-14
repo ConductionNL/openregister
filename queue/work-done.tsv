@@ -8139,3 +8139,4 @@ verify:buildiq:1579:5a78ba86	1579 GREEN (tasks.md only)	session-20261114T062134-
 build:buildiq:forms-designer-file-camera-children-and-assign	partial: PR #1606, T01-T06+T09 built with vitest (suite 4077->4122 green); T07 e2e and T08 archive left	session-20261114T075643-acecaad6	2026-11-14T08:12:40Z
 fix:portaliq:2442:9a192463	conflict resolved (check moved off check:specs line), pushed 9eb5c87639509ae900f4bb82d859cb6b12ce72b5, REVERIFY recorded	session-20261114T080916-9b1d69d6	2026-11-14T08:12:36Z
 build:buildiq:data-generated-number-field	PR #1607: T01-T04 built, T05/T06 (live, archive) left; vitest 4081 pass (base 4077)	session-20261114T065631-b4991134	2026-11-14T08:12:50Z
+build:keepiq:clients-mobile-apps	nothing buildable here: open tasks need a macOS/iOS simulator, an emulator with enrolled biometrics, manual phone checks or the product owner (stores, fdroiddata)	session-20261114T062134-840bbeee	2026-11-14T08:12:45Z
