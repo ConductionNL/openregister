@@ -221,6 +221,13 @@ class ImportHandler {
 	private ShippedSchemaBaseline $shippedBaseline;
 
 	/**
+	 * Records the register descriptor an app shipped.
+	 *
+	 * @var ShippedRegisterBaseline
+	 */
+	private ShippedRegisterBaseline $shippedRegisterBaseline;
+
+	/**
 	 * Creates and updates the Configuration of an app import.
 	 *
 	 * @var AppConfigurationRecord
@@ -410,6 +417,7 @@ class ImportHandler {
 		$this->relatedItems = new SeedRelatedItems(logger: $logger);
 		$this->duplicates = new ImportDuplicates(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, logger: $logger);
 		$this->shippedBaseline = new ShippedSchemaBaseline(guard: $schemaSteps->shippedGuard, logger: $logger);
+		$this->shippedRegisterBaseline = new ShippedRegisterBaseline(guard: $schemaSteps->shippedGuard);
 		$this->appConfigurations = new AppConfigurationRecord(configurationMapper: $this->configurationMapper, logger: $logger);
 		$this->schemaShape = new ImportedSchemaShape(validator: $schemaSteps->shapeValidator, logger: $logger);
 		$this->rejectedSchemas = new RejectedSchemaReport(logger: $logger);
@@ -873,7 +881,10 @@ class ImportHandler {
 
 			$existingRegister = $this->findRegisterForImport(data: $data, options: $options);
 			if ($existingRegister === null) {
-				return $this->createImportedRegister(data: $data, options: $options);
+				$created = $this->createImportedRegister(data: $data, options: $options);
+				$this->shippedRegisterBaseline->record(data: $data, options: $options);
+
+				return $created;
 			}
 
 			// A SKIPPED REGISTER UPDATE MUST STILL ADOPT THE SCHEMAS THIS
@@ -929,8 +940,10 @@ class ImportHandler {
 			$data = $this->withUnionedSchemaIds(register: $existingRegister, data: $data);
 			$existingRegister = $this->registerMapper->updateFromArray(id: $existingRegister->getId(), object: $data);
 			$this->stampImportProvenance(register: $existingRegister, options: $options);
+			$updated = $this->registerMapper->update($existingRegister);
+			$this->shippedRegisterBaseline->record(data: $data, options: $options);
 
-			return $this->registerMapper->update($existingRegister);
+			return $updated;
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[ImportHandler] Failed to import register: ' . $e->getMessage(),

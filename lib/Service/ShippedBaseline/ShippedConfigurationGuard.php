@@ -377,6 +377,20 @@ class ShippedConfigurationGuard {
 	}//end recordShippedSchema()
 
 	/**
+	 * Record what an app shipped for a register, with the release that shipped it.
+	 *
+	 * @param string            $slug    The register slug.
+	 * @param ShippedDefinition $shipped What the app ships, and which release.
+	 *
+	 * @return bool True when it was recorded.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function recordShippedRegister(string $slug, ShippedDefinition $shipped): bool {
+		return $this->baselines->recordRegister(slug: $slug, shipped: $shipped);
+	}//end recordShippedRegister()
+
+	/**
 	 * Where one schema differs from what was shipped.
 	 *
 	 * 🔑 IT DOES NOT NAME THE ACTOR YET, and says so rather than returning a

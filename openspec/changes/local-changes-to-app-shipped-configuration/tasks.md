@@ -10,9 +10,15 @@
       migration.
 - [x] 1.2a Schemas: recorded on create and moved on a guarded update, for
       `properties`, `required` and `authorization`.
-- [ ] 1.2b Registers and the declared configuration blocks. `KEY_REGISTER`
+- [x] 1.2b Registers and the declared configuration blocks. `KEY_REGISTER`
       exists and the store is subject-agnostic; the register import path is a
       second seam in the same 5,484-line handler and is its own task.
+      > second pass: `ShippedRegisterBaseline` records `title`, `description`,
+      > `authorization` and the declared `configuration` block of an app-shipped
+      > register at `register:<slug>` under `register.shippedBaseline`, after
+      > the row is written: on create and on an applied update, never on an
+      > import the version gate skipped. Recorded only; a guarded update of a
+      > register's parts and its divergence report are not built.
 - [x] 1.2c Annotations (`x-openregister-*`), as one more part,
       `configuration`, holding only keys of `AnnotationVocabulary::KEYS`
       (the keys that survive `setConfiguration()`), read from the top level
