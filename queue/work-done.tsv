@@ -8812,3 +8812,4 @@ review:openregister:10487:1cbcaa08	APPROVE	session-20261114T095645-0268807e	2026
 verify:pipelinq:3707:65fa614f	2 GREEN (3707, 3831), 2 CONFLICT (3743, 3829 vs tree)	session-20261114T075640-efa02b24	2026-11-14T10:25:29Z
 merge:pipelinq:3713:8c4e003d	stale	feeder	2026-11-14T10:25:21Z
 review:openregister:10490:92e99c4b	stale	feeder	2026-11-14T10:25:21Z
+build4:openregister:calendar-leaf-inbound:c2	PR #10496 (build/calendar-leaf-inbound-3): migration dedup+unique index, inbound listeners, registration, backfill default-on; all code tasks ticked; check:strict task left; unit suite no new failures (27 inherited)	session-20261114T092638-09421111	2026-11-14T10:26:20Z
