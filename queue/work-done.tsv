@@ -11499,3 +11499,4 @@ build:integriq:events-async-api-products:c3	partial: no change in this session (
 merge:buildiq:1647:d901fbb7	merge3 tree of 11 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T22:17:24Z
 merge:buildiq:1648:79cfcf72	merge3 tree of 11 buildiq PRs: merged=4 red=4 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T22:17:36Z
 fix:hermiq:1751:316c998a	conflicts resolved (register bumped to 0.58.0, l10n both sides), new head 5340b3de	session-20261114T211808-5e900938	2026-11-14T22:17:32Z
+review:learniq:2486:f0544ac9	GREEN: behaviour matches the change's specs, no access change, no new failures	session-20261114T214736-dd784d82	2026-11-14T22:17:40Z
