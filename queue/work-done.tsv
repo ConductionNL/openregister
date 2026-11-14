@@ -7754,3 +7754,4 @@ fix:learniq:2497:383a9f4e	conflict resolved, pushed d4146da6; REVERIFY recorded	
 cover:pipelinq:7f9dc8e6mf8bb:05630945	no PR: lib/Middleware/Support at 54/59 lines (91.5%) after earlier cover merge; remaining 5 lines loop over empty RENAMED/WITHOUT_SUCCESSOR constants, unreachable without production change	session-20261114T070329-a050d62b	2026-11-14T07:11:46Z
 fix:learniq:2519:f2bafc43	merged development, pushed 8165d800; REVERIFY recorded	session-20261114T070352-19ea7dff	2026-11-14T07:11:50Z
 verify:portaliq:2415:6920828c	GREEN 2415 2427 2432 2434; CONFLICT 2433 2442 2443; 0 new failures (5080 tests)	session-20261114T065625-baa65a50	2026-11-14T07:12:19Z
+fix:shillinq:2996:c8bf209f	restored unit_interfacing floor (2.93 -> 2.96) by reducing params; new head cd1abe2c; REVERIFY recorded	session-20261114T062134-840bbeee	2026-11-14T07:12:25Z
