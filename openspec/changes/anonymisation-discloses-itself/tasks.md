@@ -11,12 +11,12 @@
 
 - [x] 2.1 Ship `tests/Fixtures/anonymisation-eval/nl-woo-synthetic/` (version 1): synthetic Dutch texts with gold annotations for PERSON, EMAIL, PHONE, IBAN, BSN, ADDRESS, ORGANIZATION. No real personal data; the README says how it was generated. Verify: `tests/Unit/Service/Anonymisation/EvaluationCorpusTest.php` asserts every gold span lies inside its text and every BSN passes the elfproef with a reserved test range.
 - [x] 2.2 Add `DetectorEvaluationService` and `occ openregister:anonymisation:evaluate`, registered in `appinfo/info.xml`, storing precision, recall and support per type with corpus and detector version. Verify: `tests/Unit/Command/EvaluateDetectorCommandTest.php` runs the regex backend over a three-document corpus and asserts known figures; `testFiguresForAnotherDetectorVersionAreNotCurrent`.
-- [ ] 2.3 Show the current figures, or "not measured for this version", in `src/views/settings/sections/FileConfiguration.vue`. Verify: `src/views/settings/sections/FileConfiguration.spec.js` renders both states.
+- [x] 2.3 Show the current figures, or "not measured for this version", in `src/views/settings/sections/FileConfiguration.vue`. Verify: `src/views/settings/sections/FileConfiguration.spec.js` renders both states.
 
 ## 3. Statements (REQ-ADI-003)
 
 - [x] 3.1 Add `trainingUse` and `retention` per backend to `FileSettingsHandler`, product-declared and read-only for the internal ExApp and regex, `unknown` default for external ones; write changes through the settings audit writer. Verify: `tests/Unit/Service/Anonymisation/BackendStatementTest.php::testTheInternalExAppIsDeclaredExcluded`, `testAnExternalBackendDefaultsToUnknown`, `testAChangedStatementIsAudited`.
-- [ ] 3.2 Edit both statements on the file configuration page. Verify: `FileConfiguration.spec.js` case for the external backend form, and `tests/e2e/ci/anonymisation-disclosure.spec.ts` (created here) opens the page and covers the page scenarios of REQ-ADI-002 and REQ-ADI-003. `anonymisation-discloses-itself-pipeline` extends the same spec.
+- [ ] 3.2 Edit both statements on the file configuration page. Verify: `FileConfiguration.spec.js` case for the external backend form, and `tests/e2e/ci/anonymisation-disclosure.spec.ts` (created here) opens the page and covers the page scenarios of REQ-ADI-002 and REQ-ADI-003. `anonymisation-discloses-itself-pipeline` extends the same spec. Built: the per-backend training-use and retention form on the file configuration page and its `FileConfiguration.spec.js` cases; only the e2e spec, which needs a live instance, is left open.
 
 ## 6. Threshold setting (REQ-ADI-007)
 
