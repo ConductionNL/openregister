@@ -10559,3 +10559,4 @@ pipelinq	3842	7b79334bd2781517ac08fffba9afced73613bf43	GREEN	worker-46	unit 8452
 dossiq	6524	b53a3dfd52fc67a6386c727015ac6ed456d80bdb	GREEN	worker-26	tree 17510 unit tests, baseline 13 failures (StubApiDrift), 0 new; tests only
 dossiq	6525	f101fce0eb2fa13e53daada943f370cd0797e1e2	GREEN	worker-26	tree 17510 unit tests, baseline 13 failures (StubApiDrift), 0 new; tests only
 dossiq	6526	a9bc68c3df6f946582e4b22a62677121bfedcc9e	GREEN	worker-26	tree 17510 unit tests, baseline 13 failures (StubApiDrift), 0 new; tests only
+filinq	2072	0ae79239ae093a43a5c775406f857cbf6d9b7203	REVERIFY	worker-15	merged development in (clean); the tree conflict is sibling PRs each bumping filinq_register.json info.version, so it lands one at a time; suite 6784 OK; new head 347356f9d88b887653709146273f192f2a0c6aab, verify it
