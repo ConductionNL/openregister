@@ -10491,3 +10491,4 @@ larpinq	1056	fbe65f9aca1e5ad8d89fad525e63d9cb8bf2f29c	REVERIFY	worker-23	merged 
 larpinq	1048	c6276ffe5f6d09819449da01522854818e4f376d	REVERIFY	worker-51	CharactersController download split into two-parameter steps (usableTemplateId, authorisedCharacter, isOwner, sheetFor), same check order and goldens; floor vs merge base: overall 4.99=4.99, unit_complexity 4.87=4.87, unit_interfacing 4.69->4.70; unit 800 OK, phpcs/phpstan clean; new head 258a4b907098477295a89e6d2696b2967a4c6ca9, verify it
 larpinq	1051	c35fd6e8711febbc7bcac335e04f3c7afe037294	CONFLICT	worker-17	conflicts with the tree (development + 1041, 1045)
 larpinq	1053	887c3dda56b2a83c85fc5c1622592f3a8b29c9b9	CONFLICT	worker-17	conflicts with the tree (development + 1041, 1045)
+larpinq	1054	41befe20ea4be5b4b3292ee9e35551d2b8d01bce	CONFLICT	worker-17	conflicts with the tree (development + 1041, 1045)
