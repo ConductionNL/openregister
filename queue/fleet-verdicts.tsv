@@ -7173,3 +7173,4 @@ learniq	2521	0e48166e66cc2767e4b4860b37b68b28cc7b230e	REVERIFY	worker-08	merged 
 integriq	3561	0213ee8cdd6b8403ad063bccf6481518ed87c02a	REVERIFY	worker-53	merged development in (clean); the l10n en/nl json conflict is with #3539/#3557, which are not on development yet, so it will recur until they land; new head a24572ec8783f55290b104524696faf13e85dde8, verify it
 humaniq	1146	497b5f3cd401947b42db8e599a4df14793d79bdc	CONFLICT	worker-29	conflicts with #1145 in l10n/en.js,en.json,nl.js,nl.json; merges clean on development alone
 humaniq	1147	ab5b60925f7f5ba997b38f7b939c9001c712d74a	CONFLICT	worker-29	conflicts with #1145 in l10n/en.js,en.json,nl.js,nl.json; merges clean on development alone
+integriq	3546	42cf946367a3131b0ac64d7a02c518ca5e28546b	REVERIFY	worker-53	merged development in (clean); the l10n/openapi conflict is with #3539, not on development yet, so it recurs until that lands; new head 0b8d072db66354d32aa6feb59827d9617af24319, verify it
