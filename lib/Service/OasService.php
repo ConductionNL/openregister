@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCA\OpenRegister\Service\Oas\NlGovDocumentRules;
 use OCA\OpenRegister\Service\Oas\NlGovRuleCatalogue;
+use OCA\OpenRegister\Service\Oas\OasByKeyPaths;
 use OCA\OpenRegister\Service\Oas\OasExtendedTypes;
 use OCA\OpenRegister\Service\Oas\OasIssue;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -935,6 +936,12 @@ class OasService implements OasServiceInterface {
 			'patch' => $this->finishOperation(operation: $this->createPatchOperation(schema: $schema), groupsKey: 'updateGroups'),
 			'delete' => $this->finishOperation(operation: $this->createDeleteOperation(schema: $schema), groupsKey: 'deleteGroups'),
 		];
+
+		// A schema with an identity is also addressed by its key (modelling-composite-identity 4.1).
+		$byKey = OasByKeyPaths::pathItem(schema: $schema, itemPath: $this->oas['paths'][$basePath . '/{id}']);
+		if ($byKey !== null) {
+			$this->oas['paths'][$basePath . '/by-key'] = $byKey;
+		}
 	}//end addCrudPaths()
 
 	/**

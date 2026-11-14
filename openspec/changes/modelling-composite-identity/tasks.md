@@ -18,7 +18,7 @@
 
 ## 4. Description and docs
 
-- [ ] 4.1 `OasService` describes the by-key paths and their parameters for a schema with an identity. Verify: `OasServiceTest`.
+- [x] 4.1 `OasService` describes the by-key paths and their parameters for a schema with an identity. Verify: `OasServiceTest`.
 - [x] 4.2 `docs/` page on record identity with a municipality code and case number example.
 - [ ] 4.3 `tests/e2e/object-by-key.spec.ts`: declare an identity on a schema, create a record, fetch it by key through the API.
 

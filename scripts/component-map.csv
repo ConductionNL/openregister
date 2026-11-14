@@ -2659,6 +2659,7 @@ Service/Notification/NotificationTemplateRegistry.php,376,Service,Configuration,
 Service/Notification/NotificationsAnnotationInstaller.php,117,Service,Flows,Flows/Service/Notification/NotificationsAnnotationInstaller.php,0,,Configuration
 Service/Notification/ReferencedAddressNotifier.php,200,Service,Service,Service/Notification/ReferencedAddressNotifier.php,0,120,Configuration
 Service/NotificationService.php,96,Service,Configuration,Configuration/Service/NotificationService.php,1,,Configuration
+Service/Oas/OasByKeyPaths.php,149,Service,Service,Service/Oas/OasByKeyPaths.php,0,,Core
 Service/Oas/OasETagComputer.php,50,Service,Service,Service/Oas/OasETagComputer.php,0,,Core
 Service/Oas/OasExtendedTypes.php,60,Service,Service,Service/Oas/OasExtendedTypes.php,0,,Core
 Service/Oas/OasRbacAnnotator.php,118,Service,Service,Service/Oas/OasRbacAnnotator.php,0,,Core
