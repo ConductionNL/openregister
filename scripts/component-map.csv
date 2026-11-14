@@ -599,6 +599,7 @@ Controller/VerwerkingsactiviteitenController.php,333,Controller,Compliance,Compl
 Controller/VocabularyController.php,240,Controller,Service,Service/Controller/VocabularyController.php,0,,Core
 Controller/WebhooksController.php,909,Controller,Integrations,Integrations/Controller/WebhooksController.php,0,,Integrations
 Controller/WellKnownController.php,55,Controller,Integrations,Integrations/Controller/WellKnownController.php,0,,Integrations
+Controller/WhoamiController.php,95,Controller,Access,Access/Controller/WhoamiController.php,0,,Core
 Controller/WorkingCalendarController.php,79,Controller,Flows,Flows/Controller/WorkingCalendarController.php,0,,Processes
 Controller/XwikiLinksController.php,140,Controller,Integrations,Integrations/Controller/XwikiLinksController.php,0,,Integrations
 Dashboard/IntegrationDashboardWidget.php,40,Dashboard,Flows,Flows/Dashboard/IntegrationDashboardWidget.php,0,,Platform
@@ -778,6 +779,7 @@ Db/MagicMapper/MagicUnionArm.php,30,Db,Service,Service/Db/MagicMapper/MagicUnion
 Db/MagicMapper/MagicUpsertChunkRun.php,78,Db,Service,Service/Db/MagicMapper/MagicUpsertChunkRun.php,0,,Core
 Db/MagicMapper/MultiSchemaSearch.php,32,Db,Service,Service/Db/MagicMapper/MultiSchemaSearch.php,0,,Core
 Db/MagicMapper/NestedPathFilter.php,154,Db,Service,Service/Db/MagicMapper/NestedPathFilter.php,0,,Core
+Db/MagicMapper/ObjectEventDeferral.php,27,Db,Service,Service/Db/MagicMapper/ObjectEventDeferral.php,0,,Core
 Db/MagicMapper/ObjectFieldFilter.php,16,Db,Service,Service/Db/MagicMapper/ObjectFieldFilter.php,0,,Core
 Db/MagicMapper/OrganisationScopeCondition.php,40,Db,Service,Service/Db/MagicMapper/OrganisationScopeCondition.php,0,,Core
 Db/MagicMapper/OrganisationScopeMembership.php,19,Db,Service,Service/Db/MagicMapper/OrganisationScopeMembership.php,0,,Core
@@ -1125,6 +1127,8 @@ Files/Db/EntityRelationMapperInterface.php,28,Files,Files,Files/Db/EntityRelatio
 Files/Db/File.php,66,Files,Files,Files/Db/File.php,0,336,Files
 Files/Db/FileMapper.php,562,Files,Files,Files/Db/FileMapper.php,21,15,Files
 Files/Db/FileMapperInterface.php,34,Files,Files,Files/Db/FileMapperInterface.php,0,,Files
+Files/Db/MailHeader.php,60,Files,Files,Files/Db/MailHeader.php,0,,Files
+Files/Db/MailHeaderMapper.php,42,Files,Files,Files/Db/MailHeaderMapper.php,0,,Files
 Files/Db/NoteVersion.php,42,Files,Files,Files/Db/NoteVersion.php,0,,Files
 Files/Db/NoteVersionMapper.php,74,Files,Files,Files/Db/NoteVersionMapper.php,0,,Files
 Files/Db/RegisterFolderRecorder.php,37,Files,Files,Files/Db/RegisterFolderRecorder.php,0,,Files
@@ -1261,6 +1265,7 @@ Listener/AggregationCacheInvalidationListener.php,51,Listener,Flows,Flows/Listen
 Listener/AnnotationNotificationListener.php,116,Listener,Flows,Flows/Listener/AnnotationNotificationListener.php,0,,Processes
 Listener/ApprovalChainAdvanceListener.php,61,Listener,Flows,Flows/Listener/ApprovalChainAdvanceListener.php,0,,Processes
 Listener/ApprovalChainGateListener.php,213,Listener,Flows,Flows/Listener/ApprovalChainGateListener.php,0,,Processes
+Listener/ChangeGateListener.php,227,Listener,Flows,Flows/Listener/ChangeGateListener.php,0,,Processes
 Listener/ArchivalNominationListener.php,51,Listener,Compliance,Compliance/Listener/ArchivalNominationListener.php,0,374,Compliance
 Listener/AssigneeFollowListener.php,88,Listener,Flows,Flows/Listener/AssigneeFollowListener.php,0,,Processes
 Listener/AssigneeFollowRun.php,,Listener,,,,,Processes
@@ -1538,6 +1543,7 @@ Notifications/Service/Notification/NotificationPreferenceServiceInterface.php,8,
 Notifications/Service/Notification/NotificationRecipientResolver.php,327,Notifications,Notifications,Notifications/Service/Notification/NotificationRecipientResolver.php,0,65,Notifications
 Notifications/Service/Notification/NotificationRecipientResolverInterface.php,13,Notifications,Notifications,Notifications/Service/Notification/NotificationRecipientResolverInterface.php,0,,Notifications
 Notifications/Service/Notification/NotificationRecipientValidator.php,196,Notifications,Notifications,Notifications/Service/Notification/NotificationRecipientValidator.php,0,,Notifications
+Notifications/Service/Notification/NotificationReminderValidator.php,254,Notifications,Notifications,Notifications/Service/Notification/NotificationReminderValidator.php,0,,Notifications
 Notifications/Service/Notification/NotificationRuleContext.php,11,Notifications,Notifications,Notifications/Service/Notification/NotificationRuleContext.php,0,,Notifications
 Notifications/Service/Notification/NotificationRuleDispatcherInterface.php,9,Notifications,Notifications,Notifications/Service/Notification/NotificationRuleDispatcherInterface.php,0,,Notifications
 Notifications/Service/Notification/NotificationSchemaFacts.php,22,Notifications,Notifications,Notifications/Service/Notification/NotificationSchemaFacts.php,0,,Notifications
@@ -2222,6 +2228,7 @@ Service/File/CreateFileHandler.php,146,Service,Service,Service/File/CreateFileHa
 Service/File/DeleteFileHandler.php,71,Service,Service,Service/File/DeleteFileHandler.php,0,329,Core
 Service/File/ExecutableContentDetector.php,141,Service,Service,Service/File/ExecutableContentDetector.php,0,202,Core
 Service/File/FileBatchHandler.php,102,Service,Service,Service/File/FileBatchHandler.php,0,274,Core
+Service/File/FileChecksum.php,,Service,,,,,Core
 Service/File/FileFormattingHandler.php,346,Service,Service,Service/File/FileFormattingHandler.php,0,61,Core
 Service/File/FileLockHandler.php,162,Service,Service,Service/File/FileLockHandler.php,0,166,Core
 Service/File/FilePreviewHandler.php,39,Service,Service,Service/File/FilePreviewHandler.php,0,386,Core
@@ -2231,6 +2238,7 @@ Service/File/FileValidationHandler.php,183,Service,Service,Service/File/FileVali
 Service/File/FileVersioningHandler.php,139,Service,Service,Service/File/FileVersioningHandler.php,0,201,Core
 Service/File/FolderManagementHandler.php,636,Service,Service,Service/File/FolderManagementHandler.php,0,31,Core
 Service/File/MalwareScanGate.php,226,Service,Service,Service/File/MalwareScanGate.php,0,,Core
+Service/File/MalwareScanState.php,121,Service,Service,Service/File/MalwareScanState.php,0,,Core
 Service/File/MalwareScanRefusal.php,47,Service,Service,Service/File/MalwareScanRefusal.php,0,,Core
 Service/File/ManagedFileOwnerLookup.php,33,Service,Service,Service/File/ManagedFileOwnerLookup.php,0,434,Core
 Service/File/ObjectFileFinder.php,135,Service,Service,Service/File/ObjectFileFinder.php,0,,Core
@@ -2412,8 +2420,11 @@ Service/Flow/Principal/UserPrincipalResolver.php,18,Service,Flows,Flows/Service/
 Service/Flow/RegisterFlowNodesEvent.php,14,Service,Service,Service/Flow/RegisterFlowNodesEvent.php,62,,Processes
 Service/Flow/RegisterFlowOversightEvent.php,14,Service,Service,Service/Flow/RegisterFlowOversightEvent.php,7,,Processes
 Service/Flow/RegistryStepDispatcher.php,91,Service,Flows,Flows/Service/Flow/RegistryStepDispatcher.php,0,,Processes
+Service/Flow/Timer/CalendarBlackoutRefusal.php,22,Service,Flows,Flows/Service/Flow/Timer/CalendarBlackoutRefusal.php,0,,Processes
+Service/Flow/Timer/CalendarBlackouts.php,74,Service,Flows,Flows/Service/Flow/Timer/CalendarBlackouts.php,0,,Processes
 Service/Flow/Timer/CalendarDependency.php,35,Service,Work,Work/Service/Flow/Timer/CalendarDependency.php,0,,Processes
 Service/Flow/Timer/CalendarRecompute.php,126,Service,Work,Work/Service/Flow/Timer/CalendarRecompute.php,0,,Processes
+Service/Flow/Timer/CalendarWeekNumbering.php,57,Service,Flows,Flows/Service/Flow/Timer/CalendarWeekNumbering.php,0,,Processes
 Service/Flow/Timer/EscalationLadderService.php,275,Service,Flows,Flows/Service/Flow/Timer/EscalationLadderService.php,0,,Processes
 Service/Flow/Timer/FlowTimerDefinitionStore.php,101,Service,Flows,Flows/Service/Flow/Timer/FlowTimerDefinitionStore.php,0,,Processes
 Service/Flow/Timer/FlowTimerLedgerEntry.php,42,Service,Flows,Flows/Service/Flow/Timer/FlowTimerLedgerEntry.php,0,,Processes
@@ -2945,8 +2956,10 @@ Service/Rbac/AdminGate.php,31,Service,Access,Access/Service/Rbac/AdminGate.php,0
 Service/Rbac/AggregateVisibility.php,76,Service,Access,Access/Service/Rbac/AggregateVisibility.php,0,322,Core
 Service/Rbac/AnonymousEnvelope.php,39,Service,Platform,Platform/Service/Rbac/AnonymousEnvelope.php,0,,Core
 Service/Rbac/AuthorizationDenyValidator.php,123,Service,Service,Service/Rbac/AuthorizationDenyValidator.php,0,,Core
+Service/Rbac/ClassificationCaller.php,43,Service,Access,Access/Service/Rbac/ClassificationCaller.php,0,,Core
 Service/Rbac/ClassificationDeclarationValidator.php,230,Service,Access,Access/Service/Rbac/ClassificationDeclarationValidator.php,0,,Core
 Service/Rbac/ClassificationLimits.php,126,Service,Access,Access/Service/Rbac/ClassificationLimits.php,0,,Core
+Service/Rbac/ClassificationReadGate.php,152,Service,Access,Access/Service/Rbac/ClassificationReadGate.php,0,,Core
 Service/Rbac/ClassificationScale.php,219,Service,Access,Access/Service/Rbac/ClassificationScale.php,0,,Core
 Service/Rbac/ClearanceResolver.php,97,Service,Access,Access/Service/Rbac/ClearanceResolver.php,0,,Core
 Service/Rbac/CrossOrganisationMarkerChange.php,46,Service,Access,Access/Service/Rbac/CrossOrganisationMarkerChange.php,0,393,Core
@@ -3143,6 +3156,7 @@ Service/Schemas/SemanticReferenceException.php,5,Service,Service,Service/Schemas
 Service/Schemas/SemanticRoleHandler.php,120,Service,Service,Service/Schemas/SemanticRoleHandler.php,0,238,Core
 Service/Schemas/UniqueConstraintEvaluator.php,131,Service,Service,Service/Schemas/UniqueConstraintEvaluator.php,0,217,Core
 Service/ScriptManifestLoader.php,48,Service,Flows,Flows/Service/ScriptManifestLoader.php,0,,Processes
+Service/Search/ContentSnippetSource.php,14,Service,Service,Service/Search/ContentSnippetSource.php,0,,Core
 Service/Search/DictionaryExpansion.php,41,Service,Service,Service/Search/DictionaryExpansion.php,0,,Core
 Service/Search/HistoryNarrowing.php,48,Service,Service,Service/Search/HistoryNarrowing.php,0,,Core
 Service/Search/HistoryPredicate.php,115,Service,Service,Service/Search/HistoryPredicate.php,0,,Core
@@ -3154,6 +3168,9 @@ Service/Search/SearchDictionaryProvider.php,188,Service,Service,Service/Search/S
 Service/Search/SearchTermNode.php,86,Service,Service,Service/Search/SearchTermNode.php,0,,Core
 Service/Search/SearchTermParser.php,251,Service,Service,Service/Search/SearchTermParser.php,0,,Core
 Service/Search/SearchTermSqlCompiler.php,22,Service,Service,Service/Search/SearchTermSqlCompiler.php,0,,Core
+Service/Search/SnippetBuilder.php,107,Service,Service,Service/Search/SnippetBuilder.php,0,,Core
+Service/Search/VectorResultFilter.php,135,Service,Service,Service/Search/VectorResultFilter.php,0,,Core
+Service/Search/VectorSearchFacade.php,81,Service,Service,Service/Search/VectorSearchFacade.php,0,,Core
 Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchTrailService.php,0,38,Compliance
 Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Integrations
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
@@ -4091,6 +4108,7 @@ Db/MagicMapper/SearchFolding.php,234,Db,Service,Service/Db/MagicMapper/SearchFol
 Db/MagicMapper/MagicUnaccentProbe.php,160,Db,Service,Service/Db/MagicMapper/MagicUnaccentProbe.php,0,,Core
 Migration/Version1Date20261113140000.php,122,Migration,,,,,Platform
 Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
+Migration/Version1Date20261113200000.php,30,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Kernel
@@ -4159,6 +4177,7 @@ Service/File/ImageRegionDetectorRegistry.php,,Service,,,,,Core
 Service/File/ImageRegionNotBurnableException.php,,Service,,,,,Core
 Service/File/OcrWordLocator.php,,Service,,,,,Core
 Service/File/OcrWords.php,,Service,,,,,Core
+Service/File/OfficeMediaBurner.php,,Service,,,,,Core
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
 Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Configuration
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
@@ -4178,10 +4197,13 @@ Calendar/DeclaredDateCalendars.php,184,Calendar,Platform,Platform/Calendar/Decla
 Calendar/ObjectDateCalendar.php,54,Calendar,Platform,Platform/Calendar/ObjectDateCalendar.php,0,,Integrations
 Calendar/ObjectDateCalendarScope.php,14,Calendar,Platform,Platform/Calendar/ObjectDateCalendarScope.php,0,,Integrations
 Calendar/VeventSearchShape.php,202,Calendar,Platform,Platform/Calendar/VeventSearchShape.php,0,,Integrations
+Controller/ScheduledMessagesController.php,113,Controller,Integrations,Integrations/Controller/ScheduledMessagesController.php,0,,Integrations
 Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/ObjectDateEvents.php,0,,Processes
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
+Service/RedactionPolicy/ObjectTermRuleSource.php,,Service,,,,,Configuration
+Listener/RedactionPolicyCacheListener.php,,Listener,,,,,Configuration
 Exception/UnknownMaskFormException.php,30,Exception,Exception,Exception/UnknownMaskFormException.php,0,,Kernel
 Files/Service/File/MaskForm.php,208,Files,Files,Files/Service/File/MaskForm.php,0,,Files
 Files/Service/File/PlaceholderText.php,113,Files,Files,Files/Service/File/PlaceholderText.php,0,,Files
@@ -4214,3 +4236,17 @@ Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Core
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
 Migration/Version1Date20261114100000.php,,Migration,,,,,Platform
+Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Core
+Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core
+Service/Import/RecordImport/ConfirmedMapping.php,,Service,,,,,Core
+Service/Import/RecordImport/RecordFileReader.php,,Service,,,,,Core
+Service/Import/RecordImport/RecordImportRequest.php,,Service,,,,,Core
+Service/Import/RecordImport/RecordImportService.php,,Service,,,,,Core
+Service/Import/RecordImport/RowRangeFilter.php,,Service,,,,,Core
+Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
+Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
+Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
+Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Core
+Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
+Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
+Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration

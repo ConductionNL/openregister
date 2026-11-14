@@ -330,6 +330,26 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(201, $result->getStatus());
 	}//end testCreateReturnsCreatedSchema()
 
+	/**
+	 * A create answers with the schema and the advisory annotations its save ignored.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function testCreateListsTheDiscardedAnnotations(): void {
+		$schema = $this->createRealSchema(1, 'Meeting');
+		$discarded = [['family' => 'aggregations', 'schema' => 'meeting', 'messages' => ['Unknown filter field "x".']]];
+		$this->request->method('getParams')->willReturn(['title' => 'Meeting']);
+		$this->schemaMapper->method('createFromArray')->willReturn($schema);
+		$this->schemaMapper->method('discardedAnnotations')->willReturn($discarded);
+
+		$result = $this->controller->create();
+
+		$this->assertSame(201, $result->getStatus());
+		$this->assertSame($discarded, $result->getData()['warnings']);
+		$this->assertSame('Meeting', $result->getData()['title']);
+		$this->assertSame(1, $result->getData()['id']);
+	}//end testCreateListsTheDiscardedAnnotations()
+
 	public function testCreateRemovesInternalParams(): void {
 		$schema = $this->createRealSchema(1, 'Test');
 
@@ -843,9 +863,37 @@ class SchemasControllerTest extends TestCase {
 
 		$result = $this->controller->update(1);
 
+		// The schema's fields as before, beside an empty list of ignored annotations.
 		$this->assertSame(200, $result->getStatus());
-		$this->assertSame($schema, $result->getData());
+		$this->assertSame(array_merge($schema->jsonSerialize(), ['warnings' => []]), $result->getData());
 	}//end testAnUpdateWithoutFlowWarningsReturnsTheSchemaAsBefore()
+
+	/**
+	 * An update lists the advisory annotations its save ignored, read right after the save.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function testAnUpdateListsTheDiscardedAnnotations(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$discarded = [
+			['family' => 'calculations', 'schema' => 'ticket', 'messages' => ['Unknown op.']],
+			['family' => 'quality', 'schema' => 'ticket', 'messages' => ['Bad weight.']],
+		];
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->schemaMapper->method('discardedAnnotations')->willReturn($discarded);
+		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check->method('warningsFor')->willReturn([]);
+		$this->renameCheck = $check;
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame($discarded, $result->getData()['warnings']);
+		$this->assertSame('Ticket', $result->getData()['title']);
+	}//end testAnUpdateListsTheDiscardedAnnotations()
 
 	/**
 	 * A rename check that throws is logged and never fails the save.
