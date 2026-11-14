@@ -6745,3 +6745,4 @@ hermiq	1731	21f5a797a80a52df5d7fcaa6ddd83c69e0b73781	GREEN	worker-17	tree of 8 (
 hermiq	1732	cb8c59ea0c7e02a33013b1cf0abc20d0637dbf1d	GREEN	worker-17	tree of 8 (without 1735) phpunit 4710 OK with ../openregister present; baseline dev 4655 OK; 0 new failures; vitest 1439/1439
 hermiq	1733	236308cf8dd5a9ca11182aad00cf19d7ad0cbad7	GREEN	worker-17	tree of 8 (without 1735) phpunit 4710 OK with ../openregister present; baseline dev 4655 OK; 0 new failures; vitest 1439/1439
 hermiq	1734	3d72884bc4cebe195ede98a86ec9d80af3bb57d3	GREEN	worker-17	tree of 8 (without 1735) phpunit 4710 OK with ../openregister present; baseline dev 4655 OK; 0 new failures; vitest 1439/1439
+hermiq	1735	b024003fc55675fbe777202c54defaede7c4d3c9	RED	worker-17	new failure RegisterImportVocabularyTest::testEverySchemaPassesTheImportValidator (register): Handoff property /result has no type; also conflicts with 1736 in hermiq_register.json
