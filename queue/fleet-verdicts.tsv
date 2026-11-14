@@ -6683,3 +6683,4 @@ decidiq	2167	9cf33dc3ff5dc12df452df3cb753081e0cef9498	GREEN	worker-11	unit basel
 decidiq	2168	89b4e6ca5bc8febc7751d870e15e8d536fcd1038	GREEN	worker-11	unit baseline 4001/0 fail; tree w/o 2174: 4064 pass; vitest 2691 pass; new failures none
 decidiq	2169	d6a0067ec1d6b3f291bedc78cbadce8e9e01cad9	GREEN	worker-11	unit baseline 4001/0 fail; tree w/o 2174: 4064 pass; vitest 2691 pass; new failures none
 decidiq	2170	ccbaf2e81691d0056747f1677241295271df7fb2	GREEN	worker-11	unit baseline 4001/0 fail; tree w/o 2174: 4064 pass; vitest 2691 pass; new failures none
+decidiq	2171	18f7d38ab91f87a5cf12887109c930de10dad319	CONFLICT	worker-11	merge conflict with development + earlier tree PRs (2166-2170)
