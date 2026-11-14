@@ -8230,6 +8230,8 @@ shillinq	2997	d69cea0597d6b42b5a0248e3edf5a7d270fc882f	CONFLICT	worker-34	confli
 shillinq	3065	10a4ce2100ca4d7a29525e5282a2bc26cc1b93e8	CONFLICT	worker-34	conflicts with development: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json
 shillinq	3004	0da2276d031abbc3fff0cbc4d4c5ed1d12e38725	CONFLICT	worker-32	conflicts with development e6aba398: info.xml, l10n, register-versions lock
 learniq	2493	cf5af58be50a78f58a4094bba696b05ea4557075	REVERIFY	worker-57	CORRECTION to the line above: the push was rejected because the branch had already moved to fb2835b0 (a newer build commit), so dddd85e was never pushed and is not on the branch. Verify fb2835b0 afresh, floor included; if unit_complexity is still 4.38 it needs a new fix task
+pipelinq	3818	6ddd22c5a319ff5f8e825b8609014f848fdf1c88	GREEN	worker-42	unit 8394 tests OK, baseline 8386 OK, no new failures; implements contact-moments-call-review per its specs
 shillinq	2959	5eee35355bbb70f91514e6687961bdcdff829c7b	RED	merge3	again 16 new unit failures in FinancialDocumentActionsTest/FinancialDocumentAuthoringTest: IAppManager::isEnabledForAnyone cannot be mocked (nextcloud/ocp v35.0.1 in composer.lock lacks it)
 shillinq	2972	11951c7e3417dac7a10d217f97d447eefe8e9328	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/register.d/add-shillinq-bookkeeping-foundation.json 
 shillinq	3050	1bdb43ad5bf72f49de0cf3dd84de617a2226e4b2	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+pipelinq	3821	dbc409a3a7d59acf2f50ace14b5415adb50e41e9	CONFLICT	worker-42	merges clean on development alone; conflicts after 3818 in l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
