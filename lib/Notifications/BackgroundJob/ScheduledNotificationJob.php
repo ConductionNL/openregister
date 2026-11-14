@@ -220,7 +220,12 @@ final class ScheduledNotificationJob extends TimedJob {
 		foreach ($notifications as $name => $spec) {
 			$trigger = $this->scheduledTrigger(spec: $spec);
 			if ($trigger !== null) {
-				$this->fireIfDue(fire: new ScheduledFire(schema: $schema, name: (string)$name, trigger: $trigger, nowDt: $nowDt));
+				$fire = new ScheduledFire(schema: $schema, name: (string)$name, trigger: $trigger, nowDt: $nowDt);
+				if (is_array($spec['reminder'] ?? null) === true) {
+					$fire->reminder = $spec['reminder'];
+				}
+
+				$this->fireIfDue(fire: $fire);
 			}
 		}
 	}//end processSchema()
@@ -472,6 +477,12 @@ final class ScheduledNotificationJob extends TimedJob {
 		$objectData = (array)($object->getObject() ?? []);
 		$fire->objectUuid = (string)$object->getUuid();
 		if ($fire->objectUuid === '') {
+			return;
+		}
+
+		// A reminder counts from its anchor instead of deduplicating on a fingerprint.
+		if ($fire->reminder !== []) {
+			(new ScheduledReminders(sources: $this->sources, delivery: $this->delivery))->onMatch(fire: $fire, object: $object);
 			return;
 		}
 

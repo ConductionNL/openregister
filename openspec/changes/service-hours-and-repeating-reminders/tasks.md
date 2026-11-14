@@ -15,14 +15,18 @@
 
 ## 3. Reminders
 
-- [~] 3.1 A reminder declares its anchor property, an offset, a repeat interval and a maximum number of repeats.
+- [x] 3.1 A reminder declares its anchor property, an offset, a repeat interval and a maximum number of repeats.
       > 2026-11-13: the DECLARATION half is built: a rule's `reminder` block (`anchor`, `offset`, `repeat.interval`, `repeat.max`, `stopWhen`) is validated at schema save by `NotificationReminderValidator`, refusing with 422 an anchor that is not a declared date property (naming it), an unbounded repeat, an amount outside the timers' `{value, unit}` shape and a stop condition the scheduled filter grammar refuses (`NotificationReminderValidatorTest`). Arming and dispatching a reminder from its anchor is not built; it needs the repeat count and the stop reason in the dedupe state, which 3.2-3.4 add with it.
-- [ ] 3.2 A reminder declares a stop condition, evaluated before dispatch.
-- [ ] 3.3 A stopped reminder records why it stopped and does not re-arm.
-- [ ] 3.4 A moved anchor re-arms the reminder from the new date.
+      > 2026-11-14: the ARMING half is built. A scheduled rule with a `reminder` block is swept by `ScheduledReminders` instead of the fingerprint dedupe: `ReminderPlan` puts the first reminder at the anchor plus the offset and each repeat one interval later, counted by `SlaCalculator` (business days on the object's organisation calendar), up to `repeat.max` in all, one per sweep. The dispatch carries `reminderSequence`, and a reminder dispatch fires only the rule it names, while other scheduled rules never fire a reminder rule (`AnnotationNotificationDispatcher::reminderAllows`). State rides the rule's dedupe row: the fingerprint holds the anchor value, `reminder_sent` and `reminder_stopped` are new columns (`Version1Date20261114100000`). `ReminderPlanTest` (clock-driven: three sends seven days apart and no fourth), `ScheduledRemindersTest`.
+- [x] 3.2 A reminder declares a stop condition, evaluated before dispatch.
+      > 2026-11-14: `stopWhen` is evaluated by the scheduled filter evaluator immediately before the send; when it holds nothing is sent.
+- [x] 3.3 A stopped reminder records why it stopped and does not re-arm.
+      > 2026-11-14: the stop stores `stopWhen <condition>` in `reminder_stopped`; a stopped row stays stopped, also when the anchor moves.
+- [x] 3.4 A moved anchor re-arms the reminder from the new date.
+      > 2026-11-14: a different anchor value than the one the row was armed from starts the count over from the new date.
 
 ## 4. Tests
 
 - [x] 4.1 Unit tests for the Friday-afternoon term, the split day, the closed day, the undeclared calendar and the empty holiday list, all from the stored definition through `SlaCalculator`. The repeat count and the stop condition belong to section 3 and are not built.
 - [x] 4.2 `tests/e2e/ci/service-hours-admin.spec.ts`: an administrator types a split day, saves, and the stored object is read back. Tagged, not run in this phase. The recompute half waits on 1.2.
-- [ ] 4.3 Deduplication check (ADR-012) recorded in the PR body.
+- [x] 4.3 Deduplication check (ADR-012) recorded in the PR body.

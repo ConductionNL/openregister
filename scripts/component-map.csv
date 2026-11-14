@@ -4239,3 +4239,8 @@ Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
 Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Core
+Notifications/Db/ReminderProgress.php,64,Notifications,Notifications,Notifications/Db/ReminderProgress.php,0,,Notifications
+Notifications/Service/Notification/ReminderPlan.php,270,Notifications,Notifications,Notifications/Service/Notification/ReminderPlan.php,0,,Notifications
+Notifications/Service/Notification/ReminderDecision.php,84,Notifications,Notifications,Notifications/Service/Notification/ReminderDecision.php,0,,Notifications
+Notifications/BackgroundJob/ScheduledReminders.php,184,Notifications,Notifications,Notifications/BackgroundJob/ScheduledReminders.php,0,,Notifications
+Migration/Version1Date20261114100000.php,84,Migration,,,,,Platform
