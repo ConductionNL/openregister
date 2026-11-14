@@ -11932,3 +11932,4 @@ cover:shillinq:05639debm9818:b2e6293a	PR #3082: 6 classes, +443 tests, Standards
 cover:keepiq:c967a31fm10bf:f545d745	already done: lib/Repair at 98.57% lines (1036/1051) on development; remaining lines are getName() getters and unreachable openssl/json_encode false branches, no PR	session-20261114T231756-01da210e	2026-11-14T23:32:57Z
 verify:portaliq:2516:2e4ea330	GREEN 2516	session-20261114T224740-064dbb86	2026-11-14T23:33:04Z
 verify:larpinq:1060:d84369f6	stale	session-20261114T224756-971efe57	2026-11-14T23:32:58Z
+fix:filinq:2123:dceb01e3	merged development (has #2119): registrar tests green, unit 6808 OK, new head 65d916d0; REVERIFY recorded	session-20261114T222427-f171565a	2026-11-14T23:33:21Z
