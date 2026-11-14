@@ -12,7 +12,8 @@
 
 ## 2. Setting
 
-- [ ] 2.1 `accentInsensitive` on `GET` and `PATCH /api/settings/search-backend`, 400 when unavailable, `_accents=exact` on object search, `SearchConfiguration.vue` with texts in en and nl. Verify: `SettingsControllerTest` and a component test.
+- [x] 2.1 `accentInsensitive` on `GET` and `PATCH /api/settings/search-backend`, 400 when unavailable, `_accents=exact` on object search, `SearchConfiguration.vue` with texts in en and nl. Verify: `SettingsControllerTest` and a component test.
+  - `AccentFoldingSetting` holds the choice (app config `search_accent_insensitive`, on unless switched off); `SearchBackendHandler::accentInsensitive()` / `setAccentInsensitive()` report and switch it, refusing to enable it where `MagicUnaccentProbe` gives a reason; `SettingsController::updateSearchBackend()` on `PATCH /api/settings/search-backend` (400 on a refusal or a malformed value); `MagicSearchHandler::searchFolding()` follows the choice. `SearchConfiguration.vue` in the admin settings, with en and every shipped locale for its two new strings. Unit-tested in `SettingsControllerTest`, `SearchBackendHandlerTest`, `AccentFoldingSettingTest`, `MagicSearchHandlerAccentFoldingTest` and `SearchConfiguration.spec.js`.
 
 ## 3. Tests and docs
 
