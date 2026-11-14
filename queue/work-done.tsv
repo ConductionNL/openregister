@@ -10613,3 +10613,4 @@ merge:pipelinq:3818:4fc3dd45	merge3 tree of 3 pipelinq PRs: merged=1 red=0 fail=
 verify:learniq:2536:57bab69d	GREEN #2536; no new failures	session-20261114T185853-1a2abc5d	2026-11-14T19:06:28Z
 merge:filinq:2130:7f59ceba	merge3 tree of 3 filinq PRs: merged=1 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T19:07:12Z
 merge:filinq:2126:321f27ff	merge3 tree of 3 filinq PRs: merged=1 red=1 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T19:07:15Z
+merge:dossiq:6520:0171ff9c	merge3 tree of 2 dossiq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-14T19:09:13Z
