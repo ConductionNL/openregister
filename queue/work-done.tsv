@@ -9291,3 +9291,4 @@ review:openregister:10556:32382730	APPROVE 10556	session-20261114T114630-192fc04
 verify:portaliq:2444:b63f7ccd	2444 GREEN; 2449 skipped (head moved to 67b3b6ab, verified GREEN separately); 2492 CONFLICT (register version on top of 2444)	session-20261114T124625-07e62ccf	2026-11-14T13:39:39Z
 verify:hermiq:1777:f5cff830	GREEN 1777: no new failures	session-20261114T114630-192fc047	2026-11-14T13:40:51Z
 build:shillinq:ledger-multi-administration:c2	partial: PR #2977 merged development in (conflicts + fallout fixed, suite green), 3.2 save-as-template built with tests; left 2.1 scoped index wrapper, 2.2 nextcloud-vue issue (out of reach), 3.3 wizard template step, 4.1 e2e, 4.2 remaining strings	session-20261114T114410-8ce13f7f	2026-11-14T13:41:15Z
+fix:portaliq:2443:9ff7996a	development merged in, versions renumbered, pushed 50fdf0f8	session-20261114T124625-07e62ccf	2026-11-14T13:41:40Z
