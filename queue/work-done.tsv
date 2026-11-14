@@ -7807,3 +7807,4 @@ fix:hermiq:1725:ea008ff0	conflict resolved (register bumped to 0.54.0), new head
 fix:humaniq:1127:bcbc1be8	clean on development; conflict only with sibling tree PRs, REVERIFY queued unchanged	session-20261114T070341-dde19dba	2026-11-14T07:20:39Z
 fix:hermiq:1723:04460787	conflict resolved (register 0.54.0), pushed 147d1ec0, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T07:20:48Z
 fix:decidiq:2159:45ec0921	vitest red fixed: page knows cancelled state; new head 9b4e5dd8; REVERIFY recorded	session-20261114T062134-840bbeee	2026-11-14T07:21:01Z
+fix:shillinq:2972:baf79b9e	merged development, fixed moved AppIdentity import; no failures beyond baseline; new head a45e4b84	session-20261114T062200-6a28e40c	2026-11-14T07:21:08Z
