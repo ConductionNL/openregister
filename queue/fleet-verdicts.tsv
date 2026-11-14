@@ -7208,3 +7208,4 @@ planninq	1162	59563d43c658b073d396cf5bb5aeeb7df645530e	CONFLICT	worker-58	confli
 planninq	1159	3ba42b87867c837776ceaac13ca06a1cd4149d8d	GREEN	worker-58	php unit 1047 OK on tree (baseline 1034 OK), vitest 3236 passed, l10n parity OK; 0 new failures
 planninq	1160	67464e9d1417e21a9ca496d8a751d172e4884886	GREEN	worker-58	php unit 1047 OK on tree (baseline 1034 OK), vitest 3236 passed, l10n parity OK; 0 new failures
 planninq	1161	d560907b4d1b14f25929d5d5390f0277d0fcfc3d	GREEN	worker-58	php unit 1047 OK on tree (baseline 1034 OK), vitest 3236 passed, l10n parity OK; 0 new failures
+integriq	3574	a34a716411e22db7c1a7f0375dff3760241b5273	REVERIFY	worker-58	merged current development cleanly; the conflict is only against tree PRs 3571-3573, re-verify after they land; new head a352f502fc7261572b07d9d3308cb6545cae9c35
