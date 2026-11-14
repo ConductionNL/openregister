@@ -9481,7 +9481,9 @@ merge:shillinq:2959:cbd07419	merge3 tree of 10 shillinq PRs: merged=7 red=0 fail
 verify:pipelinq:3818:598de0ef	3818 GREEN, 3821 CONFLICT (l10n, after 3818)	session-20261114T141728-9a5d03fc	2026-11-14T14:30:25Z
 merge:shillinq:2972:3aeca5c8	merge3 tree of 10 shillinq PRs: merged=7 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T14:30:30Z
 merge:shillinq:2987:563fcc88	merge3 tree of 10 shillinq PRs: merged=7 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T14:30:33Z
+merge:shillinq:2966:4518b2b2	merge3 tree of 10 shillinq PRs: merged=7 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T14:30:36Z
 verify:dossiq:6511:3b8f4d94	3 GREEN (6511, 6512, 6513); 6513 l10n overlap resolved by the repo's l10n merge driver; no new failures	session-20261114T134643-47800317	2026-11-14T14:30:52Z
 build:filinq:office-template-authoring:c2	every code task built on PR filinq#2105 (1.2, 2.3-2.7, 3.1, 4.1-4.3, 5.3; unit 6726->6793 OK); left 5.1 coverage measurement, 5.2 e2e, 5.4 docs (live instance)	session-20261114T134708-0947487e	2026-11-14T14:31:01Z
 fix:decidiq:2143:c2d391b1	conflict resolved, new head 6a89bc03, REVERIFY recorded	session-20261114T134701-ae8ce354	2026-11-14T14:31:00Z
 build:learniq:compliance-assign-from-hr-roles:c2	partial: no new commits this pass (worker context nearly full). Left: 4.1, the outOfScopeSince column 'Niet meer in scope sinds' in the custom Compliance page enrolment list, plus the LearnerProfileDetail HR fields read-only with hrSource named; 5.1 integriq issue (workers may not open issues); 6.x live. PR #2488 head 7f1b19e0 is current with development	session-20261114T114435-d7b47cb4	2026-11-14T14:31:05Z
+review:pipelinq:3713:4f82309f	GREEN: built as the change specs ask; unit 8398 green, touched vitest green	session-20261114T134654-82ca2be5	2026-11-14T14:31:14Z
