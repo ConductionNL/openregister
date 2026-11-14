@@ -43,13 +43,17 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
 
 ## 2. The move (REQ-RDS-004)
 
-- [ ] 2.1 `lib/Service/File/DocumentReferenceMap.php`: every OpenRegister place that holds a Nextcloud file or folder
+- [x] 2.1 `lib/Service/File/DocumentReferenceMap.php`: every OpenRegister place that holds a Nextcloud file or folder
   id (register `folder`, object `folder`, file-typed object properties, `openregister_file_texts.file_id`,
   `openregister_chunks`, `openregister_anonymisation_log.file_id`, `openregister_entity_relations`, export runs,
   scheduled reports; confirm each against `lib/Migration/` and `lib/Db/`).
   - **fails today**: `tests/Unit/Service/File/DocumentReferenceMapTest.php::testEveryFileIdColumnIsMapped` reads the
     migrations for `file_id`, `fileid`, `folder` and `node_id` columns and fails on one that is neither mapped nor
     listed as not a file id with a reason.
+  - Built: eleven mapped columns (chunks only where `source_type` is `file`), six id-shaped columns that hold
+    flow graph node ids or a path listed with the reason, and the shapes a file-typed object property takes
+    (`objectFileIds()`, `rewriteObject()`). Export runs and scheduled reports were confirmed against the migrations:
+    export runs hold a file id; scheduled reports hold a delivery path, not an id.
 - [ ] 2.2 Migration and entity for `openregister_document_moves` (`register_id`, `old_id`, `new_id`, `kind` file or
   folder or version, `sha256`, `state` copied, verified, switched or refused, `reason`, `moved_at`), with its mapper.
   - unit `DocumentMoveMapperTest::testAMappingRoundTrips`; the migration runs in the CI PHPUnit job.
