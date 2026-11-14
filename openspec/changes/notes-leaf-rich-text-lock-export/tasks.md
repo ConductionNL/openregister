@@ -22,6 +22,7 @@
 ## 4. Tests
 
 - [ ] 4.1 Unit tests for sanitising, the lock guard and the export order.
-  - Export order: `NoteJournalExporterTest`, `NotesControllerJournalTest`, `NotesControllerJournalPdfTest`, `RowsPdfSectionTest`. The lock guard was covered with 2.x. Sanitising waits on 1.1.
+  - Export order: `NoteJournalExporterTest`, `NotesControllerJournalTest`, `NotesControllerJournalPdfTest`, `RowsPdfSectionTest`. The lock guard was covered with 2.x.
+  - Sanitising where this repository renders a note: `NoteJournalExporterTest::testAScriptInANoteIsEscapedOnThePdfJournalSheet` (a heading stays its text, a script tag is escaped). The leaf's own sanitised render waits on 1.1 in `@conduction/nextcloud-vue`.
 - [ ] 4.2 `tests/e2e/ci/notes-leaf-lock.spec.ts`: write a note with a
       heading, lock it, see the edit control gone and the lock badge.

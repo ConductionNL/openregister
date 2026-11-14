@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Files\Service;
 
 use OCA\OpenRegister\Files\Service\NoteJournalExporter;
+use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Service\Export\RowsTable;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -38,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(NoteJournalExporter::class)]
 #[UsesClass(RowsTable::class)]
+#[UsesClass(RowsPdfSection::class)]
 class NoteJournalExporterTest extends TestCase {
 
 	public function testThreeNotesAreListedOldestFirstWithTheSecondMarkedLocked(): void {
@@ -162,5 +164,23 @@ class NoteJournalExporterTest extends TestCase {
 
 		$this->assertSame('Journal: Leeg', $table->title);
 		$this->assertSame([], $table->rows);
+	}
+
+	/**
+	 * A note body is printed on the PDF journal sheet as the Markdown it is
+	 * stored as, with raw HTML escaped: the heading stays its text and a
+	 * script tag is text, never markup.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-notes-accept-a-bounded-markdown-subset-rendered-sanitised
+	 */
+	public function testAScriptInANoteIsEscapedOnThePdfJournalSheet(): void {
+		$notes = [
+			['id' => 1, 'message' => "# Contact\n<script>x()</script>", 'actorId' => 'anna', 'createdAt' => '2026-11-13T09:00:00+00:00', 'locked' => false],
+		];
+
+		$html = (new RowsPdfSection())->build((new NoteJournalExporter())->table(title: 'Zaak', notes: $notes));
+
+		$this->assertStringContainsString('<td># Contact' . "\n" . '&lt;script&gt;x()&lt;/script&gt;</td>', $html);
+		$this->assertStringNotContainsString('<script>', $html);
 	}
 }//end class
