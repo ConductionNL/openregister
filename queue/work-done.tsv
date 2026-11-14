@@ -9686,3 +9686,4 @@ build:hermiq:hermiq-mcp-adoption:c2	failed: change premise stale - HermiqToolPro
 fix:decidiq:2178:04b734b9	no change: head 04b734b9 merges clean on current development; the openapi.json conflict is only with unmerged #2169/#2173/#2177 and needs a development merge after they land	session-20261114T141737-e9e54940	2026-11-14T15:05:24Z
 fix:decidiq:2149:f93e7d66	stale	session-20261114T141737-e9e54940	2026-11-14T15:05:46Z
 verify:learniq:2497:024ae3b6	GREEN 2497; CONFLICT 2513 (tree only, l10n); 2538 skipped (head moved)	session-20261114T141010-8dc8bd74	2026-11-14T15:05:44Z
+fix:hermiq:1753:89b097a4	conflict resolved, new head 8683a088, no new failures	session-20261114T144751-8958c054	2026-11-14T15:05:50Z
