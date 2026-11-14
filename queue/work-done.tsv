@@ -9975,3 +9975,4 @@ fix:hermiq:1754:9319e878	failed: merges cleanly with development (head 9319e878 
 verify:pipelinq:3818:ed8a85ce	GREEN 3818,3835	session-20261114T151938-8fa99f90	2026-11-14T15:56:09Z
 fix:integriq:3572:4ceacefd	merged development (clean), pushed 35bfc428; openapi.json overlap only with #3546, order it after 3546	session-20261114T154751-59b4cd56	2026-11-14T15:56:29Z
 fix:integriq:3582:a9dc2cea	stale	feeder	2026-11-14T15:55:25Z
+build:shillinq:reporting-ifrs-calculations:c3	partial: PR #3075 1.2 IAS 19 approve-and-post built (suite 11214 green); left 1.1 dual GAAP derivation, 1.4 strings+live	session-20261114T151930-0feec10a	2026-11-14T15:56:51Z
