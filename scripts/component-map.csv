@@ -4213,3 +4213,5 @@ BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Core
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Core
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Controller/Support/DestroyedTombstones.php,66,Controller,Service,Service/Controller/Support/DestroyedTombstones.php,0,,Core
+Db/AuditTrail/DestructionQuery.php,25,Db,,,,,Compliance

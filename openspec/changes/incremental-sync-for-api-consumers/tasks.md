@@ -23,10 +23,14 @@
 
 ## 3. Tombstones for destroyed objects (REQ-SYNC-003, D-3)
 
-- [ ] 3.1 `lib/Db/AuditTrailMapper.php`: read destruction entries (`DestructionScope::DESTRUCTION_ACTION`) by register, schema and created-since, paginated.
-- [ ] 3.2 `DeletedController::index`: with `_includeDestroyed=true` and `deletedSince`, append tombstones `{id, register, schema, destroyedAt, tombstone: true}` passed through `readableDestructionRecords`; refuse `_includeDestroyed` without `deletedSince` with 400.
-- [ ] 3.3 Add `destroyedCoverageFrom` (oldest destruction entry held) to the envelope.
-- [ ] 3.4 Tests: a tombstone carries no object data; a tombstone outside the caller's scope is withheld; the refusal.
+- [x] 3.1 `lib/Db/AuditTrailMapper.php`: read destruction entries (`DestructionScope::DESTRUCTION_ACTION`) by register, schema and created-since, paginated.
+      > 2026-11-14: `findDestructions()` / `countDestructions()` over a `DestructionQuery` (since, register, schema, actor, page), oldest first on `created` then `id`; the moment is compared in UTC.
+- [x] 3.2 `DeletedController::index`: with `_includeDestroyed=true` and `deletedSince`, append tombstones `{id, register, schema, destroyedAt, tombstone: true}` passed through `readableDestructionRecords`; refuse `_includeDestroyed` without `deletedSince` with 400.
+      > 2026-11-14: `Controller\Support\DestroyedTombstones`. Tombstones follow the bin rows in one list (`total` counts both; a page is filled from the tombstones once the bin is used up). A non-admin's query is narrowed to the entries they wrote, the same line `userMayReadDestructionRecord` draws, so `total` is exact; the rows still pass `readableDestructionRecords`.
+- [x] 3.3 Add `destroyedCoverageFrom` (oldest destruction entry held) to the envelope.
+      > 2026-11-14: `AuditTrailMapper::oldestDestruction()`; present when `_includeDestroyed=true`, null when no destruction is held.
+- [x] 3.4 Tests: a tombstone carries no object data; a tombstone outside the caller's scope is withheld; the refusal.
+      > 2026-11-14: `DestroyedTombstonesTest`, `AuditTrailMapperDestructionsTest` (SQL on the migrated table), `DeletedControllerSyncFilterTest::testDestroyedTombstones*` / `::testAnAdministratorReadsEveryDestruction*`.
 
 ## 4. Watermark (REQ-SYNC-004, D-4)
 
