@@ -2228,6 +2228,7 @@ Service/File/CreateFileHandler.php,146,Service,Service,Service/File/CreateFileHa
 Service/File/DeleteFileHandler.php,71,Service,Service,Service/File/DeleteFileHandler.php,0,329,Core
 Service/File/ExecutableContentDetector.php,141,Service,Service,Service/File/ExecutableContentDetector.php,0,202,Core
 Service/File/FileBatchHandler.php,102,Service,Service,Service/File/FileBatchHandler.php,0,274,Core
+Service/File/FileChecksum.php,,Service,,,,,Core
 Service/File/FileFormattingHandler.php,346,Service,Service,Service/File/FileFormattingHandler.php,0,61,Core
 Service/File/FileLockHandler.php,162,Service,Service,Service/File/FileLockHandler.php,0,166,Core
 Service/File/FilePreviewHandler.php,39,Service,Service,Service/File/FilePreviewHandler.php,0,386,Core
