@@ -8844,3 +8844,4 @@ build4:openregister:notes-leaf-rich-text-lock-export:c2	partial: PR #10506, PDF 
 review:openregister:10504:97548855	BLOCK: property-path URL fetch gains an upload-size ceiling and empty/non-2xx refusals (task 1.1 says no behaviour change there)	session-20261114T065631-b4991134	2026-11-14T10:37:17Z
 review:openregister:10494:a75ee390	APPROVE: 1.3+3.1 as specified, suites green beyond inherited reds	session-20261114T102645-4d14c620	2026-11-14T10:37:24Z
 review:openregister:10484:1aba9e77	APPROVE: render mirror per spec, tests green	session-20261114T102641-d4fd3e25	2026-11-14T10:37:38Z
+review:openregister:10486:83e3fe00	APPROVE (component-map.csv append conflict noted)	session-20261114T085635-07e3ca9b	2026-11-14T10:37:49Z
