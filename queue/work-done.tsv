@@ -10776,3 +10776,4 @@ fix:pipelinq:3835:fc0173c1	no change possible yet: conflict is only against unme
 fix:shillinq:3069:02821381	floor restored (catalogue to JSON, dup blocks removed), REVERIFY	session-20261114T185851-d4a7f75f	2026-11-14T20:07:39Z
 fix:decidiq:2177:b68a5de6	merged development in clean, unit + vitest green; new head b9836c204fea0ba0a9712b759315fa792977a7d0, REVERIFY recorded	session-20261114T194751-bb7578f8	2026-11-14T20:07:46Z
 verify:decidiq:2169:80fdbe4d	GREEN 2169,2189,2191,2202,2204; CONFLICT 2170,2194,2205	session-20261114T185853-1a2abc5d	2026-11-14T20:08:26Z
+verify:planninq:1179:eb18fffb	stale	session-20261114T194751-bb7578f8	2026-11-14T20:08:38Z
