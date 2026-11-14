@@ -10327,3 +10327,4 @@ fix:buildiq:1608:c78047b8	merged development, l10n union, no new failures; new h
 fix:decidiq:2188:f58a79f4	fixed: merged development, hotspot lines moved; clean with the tree; new head 0f122fbc	session-20261114T154807-c05f4e57	2026-11-14T17:00:30Z
 build4:openregister:api-nl-design-rules-conformance:c3	failed: not started; this worker's session context was nearly full after 14 tasks, left for a fresh worker (3.1-7.1 still open, build continues from build/api-nl-design-rules-conformance-3 / #10505)	session-20261114T154734-655bd0f3	2026-11-14T17:00:34Z
 merge:pipelinq:3752:57d1a221	merge3 tree of 2 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T17:00:55Z
+merge:pipelinq:3818:ed8a85ce	merge3 tree of 2 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T17:00:58Z
