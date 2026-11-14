@@ -8667,3 +8667,4 @@ verify:larpinq:1048:0590bc1d	GREEN 1048,1050,1052; RED 1049 (manifest golden vit
 cover:dossiq:069ee2d6mbd37:094a3419	PR #6492: +8 tests, lib/Service/Email 97.98->99.01%	session-20261114T085635-07e3ca9b	2026-11-14T09:28:24Z
 cover:dossiq:069ee2d6mbd37:913a213e	done: PR #6493 (flow 91.8->97.8%, +27 tests)	session-20261114T070332-b3a23612	2026-11-14T09:28:39Z
 verify:portaliq:2487:8029c942	2 GREEN (2487, 2488), tests-only, suite 5115 OK	session-20261114T092645-afb9b140	2026-11-14T09:28:43Z
+cover:decidiq:a5f973bbmae46:34f5c300	PR #2184: 15 tests for MotionAmendmentService, DelegationRequest, BodyProvenance; suite 4027->4042, 0 failures	session-20261114T075644-ec2e07ac	2026-11-14T09:29:08Z
