@@ -11886,3 +11886,4 @@ verify:dossiq:6524:530fa8c5	6524, 6525, 6526 GREEN (tests only, no new failures)
 verify:larpinq:1045:0a88942d	1045 GREEN; 1060 skipped: head moved to d9a9b311	session-20261114T224756-971efe57	2026-11-14T23:25:57Z
 fix:filinq:2106:8bc70f64	conflict resolved (l10n union, register 8.56.0 keeping both), suites green, new head 3c54d4a0; REVERIFY recorded	session-20261114T222427-f171565a	2026-11-14T23:26:15Z
 fix:filinq:2072:0ae79239	merged development (clean; tree conflict is sibling register version bumps); suite 6784 OK; new head 347356f9	session-20261114T225452-4fcfea7f	2026-11-14T23:26:22Z
+cover:pipelinq:7f9dc8e6m799d:js0023cfc7	PR #3847: BulkUndoDialog spec (4 tests); src/dialogs/* lines 96.08% -> 96.60%; 1 failing test inherited from development (myWorkPage)	session-20261114T211012-c469e919	2026-11-14T23:26:43Z
