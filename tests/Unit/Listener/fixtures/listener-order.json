@@ -88,7 +88,8 @@
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
 		"OCA\\OpenRegister\\Listener\\SurveyWriteListener",
 		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
-		"OCA\\OpenRegister\\Listener\\ObjectQuotaListener"
+		"OCA\\OpenRegister\\Listener\\ObjectQuotaListener",
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
@@ -190,7 +191,8 @@
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
 		"OCA\\OpenRegister\\Listener\\SurveyWriteListener",
 		"OCA\\OpenRegister\\Listener\\UniqueConstraintListener",
-		"OCA\\OpenRegister\\Listener\\IdentityGuardListener"
+		"OCA\\OpenRegister\\Listener\\IdentityGuardListener",
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectsMergedEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyMergeListener"
