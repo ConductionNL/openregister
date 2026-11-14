@@ -8669,3 +8669,4 @@ integriq	3582	a9dc2ceaab80f802c2b5a5cb9826ac241292c5ca	CONFLICT	worker-21	confli
 integriq	3588	3b34e85d0c803f55ad8c7d9a415f63f3377a2d09	CONFLICT	worker-21	conflicts on tree after 3540+3546: l10n/en.js en.json nl.js nl.json; clean on development alone
 integriq	3601	c5ea5100e37dd277af4b06960281935bff5005b1	CONFLICT	worker-21	conflicts on tree after 3540+3546: l10n/en.js en.json nl.js nl.json; clean on development alone
 integriq	3602	fc758946098123a7c7094b18021be59bb2624053	CONFLICT	worker-21	conflicts on tree after 3540+3546: l10n/en.js en.json nl.js nl.json; clean on development alone
+humaniq	1145	6e47a4174a486aad84f9e7c048e487c529a34c11	REVERIFY	worker-48	merged current development (now clean: only .checker-floor.json came in), l10n json valid, js catalogue current, parity passes; new head 32c023d2d3483897ebd6cb62a0a62ffd97705fae, verify it
