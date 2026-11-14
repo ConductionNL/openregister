@@ -9626,3 +9626,4 @@ shillinq	3077	7c48c1ceec9aae0e672c65e2aa5557858a56b274	CONFLICT	worker-10	confli
 hermiq	1726	901a6f77bd6a03b55d31f666fa3248bbcd9465a8	REVERIFY	worker-45	merged development: register info kept at 0.58.0 with the description on top of development's 0.56.0 (memory-knowledge-bases) history; l10n merged clean; phpunit 5169/0 (with ../openregister main); new head ef950b14c2e7b9a7de7bffe04ff5e40bca6a37e1, verify it
 keepiq	1789	e905bf117ffd7ee7a789d7531abc325c7ded5643	CONFLICT	worker-03	conflicts with development alone; files: l10n/nl.js l10n/nl.json
 keepiq	1790	2097db1d2ce845dfdf2c60a16fa527240f477157	CONFLICT	worker-03	conflicts with development alone; files: l10n/en.js l10n/en.json
+shillinq	3048	10a5df9db0886965f9b5b0b71bb178d81cfd8c1a	GREEN	worker-09	phpunit 11485 ok (baseline 11299 ok), vitest 2769 ok + 1 inherited failure (dunningNextRun, red on development), no new failures; also carries #2991 (sales-invoice-sending)
