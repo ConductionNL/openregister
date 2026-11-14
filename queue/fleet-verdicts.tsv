@@ -9444,3 +9444,6 @@ planninq	1178	93ae38333c81b66f1230d253a2e16b8510e2247f	REVERIFY	worker-02	split 
 learniq	2542	e97530c8bb4f7320a82a41fe8b74a548e8270695	GREEN	worker-58	php unit 6775 tests, 1 failure = baseline (he.json generator); js 1371 tests, 9 failures = baseline 9, 4 new pass; manifest+l10n parity ok; frontend-only build of compliance-assign-from-hr-roles task 4.1
 shillinq	2959	4e16db47ed275d534b1511ae9ae1dce334aee453	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.91 -> 2.85
 shillinq	2991	b7472331869926b992f4b40456836e022bf3c677	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 2.90 -> 2.88
+shillinq	2976	f5ba044b66c1c431e6a9db5f3808c25164bd4b05	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+shillinq	2997	613c18e2f0db285a31f5b50cdcecf9bcbad5789d	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/fixtures/register-versions.lock.json 
+shillinq	3048	a20ed1ed2ac0a3cb13a6e81f5dc42a6ce727f35f	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
