@@ -10049,3 +10049,4 @@ stackiq	1946	f75d98b83bf5e3e748df4b02c563446204b07f97	REVERIFY	worker-07	merged 
 learniq	2544	eab2300dc8912a3ba19c32e619ccea540c2eab20	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
 stackiq	1945	8ff46c8f53e53ca22b1eb33dcffa598c2590b8a2	REVERIFY	worker-46	merged development in; l10n en/nl conflicts resolved keeping both sides keys, l10n check OK; new head 6fb762aa974dd423d2dbf7928f22680a6ea9174d, verify it
 launchpad	1209	2cb0094a83f1eb29f6a3492fdfa4233c73eea8c3	GREEN	worker-32	unit 4152 tests on the tree, baseline 4136 with 1 inherited failure (OpenApiStabilityTest), no new failures; vitest 2239 pass; build of engagement-communities
+stackiq	1706	dcde9ef24d8288b646227ea325ca8e985111d0b7	REVERIFY	worker-01	merged development in, resolved viewObjectPublishActions.spec.js (dev's bind-all loop covers the explicit binds), spec 16 OK; new head 59b724c4744af256e70361cc88b9480acd17f92c, verify it
