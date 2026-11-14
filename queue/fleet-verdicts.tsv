@@ -10142,3 +10142,4 @@ stackiq	1926	e764756fc6cdeac5f8def032d62915d838777825	GREEN	worker-08	unit 3634 
 stackiq	1930	bf2b3a8e776b7856e8e4973b247ef71865fd4934	GREEN	worker-08	unit 3634 OK (baseline 3602 OK), vitest 2586/2587 (facets FACET_DIMENSIONS red on plain development too), no new failures
 stackiq	1933	ecd2e6a0964a6efd4ed7de8a0a9c29b1a1ad1e9b	CONFLICT	worker-08	conflicts in tree after #1906-#1930 (l10n/en,nl .js/.json)
 stackiq	1938	55c1a3849afdb2b9b1f6d0a039525635e8b9326c	CONFLICT	worker-08	conflicts in tree (l10n/en,nl .js/.json, lib/Settings/softwarecatalogus_register.json)
+stackiq	1941	9651b6f8f141d6e8ddfa14e87f6671208271f858	CONFLICT	worker-08	conflicts in tree (l10n/en,nl .js/.json)
