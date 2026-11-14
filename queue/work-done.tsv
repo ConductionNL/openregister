@@ -10393,3 +10393,4 @@ build:openregister:calendar-time-zone:c3	partial: PR #10154 head 598afed8 adds 2
 verify:pipelinq:3829:5ab01d7b	GREEN 3829; no new failures (myWorkPage vitest red inherited)	session-20261114T161752-4c07cde6	2026-11-14T17:22:05Z
 fix:learniq:2531:09479452	merged development in clean; unit suite only inherited failure; new head 4185b758, REVERIFY	session-20261114T171821-a80c28c5	2026-11-14T17:22:18Z
 verify:pipelinq:3818:f40fe232	CONFLICT (src/manifest.json, tests/vitest/simpleTicketPage.spec.js)	session-20261114T171830-19af6b65	2026-11-14T17:22:29Z
+fix:learniq:2520:f857df28	merged dev, strings off the tail, clean vs #2484; unit only inherited failure; new head eb56a06d	session-20261114T154807-4c2c3327	2026-11-14T17:22:39Z
