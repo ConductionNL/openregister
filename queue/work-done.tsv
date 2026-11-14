@@ -11423,3 +11423,4 @@ fix:stackiq:1937:2057fef1	merged development, l10n keys moved mid-catalogue; mer
 fix:learniq:2486:f89dc1e3	merged development in (clean); new head f0544ac9, REVERIFY	session-20261114T204750-c1efccdb	2026-11-14T22:08:17Z
 fix:shillinq:2995:cb8dc292	merged development (clean), pushed 22173937	session-20261114T211810-b8f5dc24	2026-11-14T22:08:28Z
 fix:learniq:2523:ebf12671	merged development, conflicts resolved keeping both sides; new head 6236bc6d	session-20261114T212457-7a749dbd	2026-11-14T22:08:35Z
+fix:opencatalogi:2706:bad7090e	no change: up to date with development and merges cleanly; conflicts only with unmerged #2665/#2673 in the tree; REVERIFY recorded	session-20261114T211801-f16dd26d	2026-11-14T22:08:50Z
