@@ -9492,3 +9492,4 @@ fix:portaliq:2489:011ce34a	fixed: l10n keys moved off the shared tail, clean ove
 review:dossiq:6385:0de8a799	BLOCK: caseType schema version 1.48.0 collides with social-safeguards fragment on development; else clean	session-20261114T141727-56b2bf78	2026-11-14T14:31:53Z
 merge:pipelinq:3832:d968758f	stale	feeder	2026-11-14T14:30:22Z
 fix:portaliq:2442:d378be76	no change: branch already up to date with development; conflict is only with unmerged #2437 (l10n), resolve after whichever lands first	session-20261114T141738-30f539db	2026-11-14T14:32:06Z
+build:filinq:pdfua-verapdf-matterhorn:c2	PR #2083 head 917afeaa: built 3.1, 3.4, 4.1, 4.2, 6.1-6.4 + EN/NL strings + docs; left 1.2 (needs live veraPDF), 5.1 live, 5.2/6.5 e2e, 5.3 theme check, 5.4 screenshots, 5.5 validate, 6.4 live run; phpunit 6719->6770 ok, vitest 759 ok	session-20261114T134703-00d8a302	2026-11-14T14:32:37Z
