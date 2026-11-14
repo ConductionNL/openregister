@@ -187,5 +187,27 @@ class OasValidationReportTest extends TestCase
 		$this->assertSame('Generated OAS failed strict validation: 2 error(s)', $failure->getMessage());
 		$this->assertSame($report, $failure->getReport());
 	}
+
+	public function testAnNlGovFindingCarriesItsRuleAndTheSummaryKeepsItsKeys(): void {
+		$this->report->addWarning(
+			issue: new OasIssue(path: 'paths./a/', message: 'trailing slash', code: OasValidationReport::CODE_NLGOV_RULE, rule: '/core/no-trailing-slash')
+		);
+		$this->report->addWarning(
+			issue: new OasIssue(path: 'tags[0]', message: 'unused tag', code: OasValidationReport::CODE_UNUSED_TAG)
+		);
+
+		$issues = $this->report->getIssues();
+		$this->assertSame('nlgov_rule', OasValidationReport::CODE_NLGOV_RULE);
+		$this->assertSame('/core/no-trailing-slash', $issues[0]['rule']);
+		$this->assertSame('nlgov_rule', $issues[0]['code']);
+		$this->assertArrayNotHasKey('rule', $issues[1]);
+		$this->assertSame(['path', 'message', 'code', 'severity'], array_keys($issues[1]));
+
+		$summary = $this->report->toSummary();
+		$this->assertSame(['passed', 'errors', 'warnings', 'autoCorrected', 'issues'], array_keys($summary));
+		$this->assertTrue($summary['passed']);
+		$this->assertSame(2, $summary['warnings']);
+		$this->assertSame($issues, $summary['issues']);
+	}
 }
 //end class

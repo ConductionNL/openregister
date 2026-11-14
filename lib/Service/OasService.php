@@ -33,6 +33,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Service\Oas\NlGovDocumentRules;
+use OCA\OpenRegister\Service\Oas\NlGovRuleCatalogue;
 use OCA\OpenRegister\Service\Oas\OasExtendedTypes;
 use OCA\OpenRegister\Service\Oas\OasIssue;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -118,29 +120,11 @@ class OasService implements OasServiceInterface {
 	private OasValidationReport $report;
 
 	/**
-	 * Standard HTTP methods an operation may use (NLGov API Design Rules 2.2.1).
-	 * Old numbering: API-01 here meant /core/http-methods, API-03 meant /core/http-response-code.
-	 * The rule table names GET, POST, PUT, PATCH and DELETE; HEAD and OPTIONS
-	 * are standard RFC 9110 methods the rule's note allows, so documenting them
-	 * is not a violation.
-	 *
-	 * @var list<string>
-	 */
-	private const ALLOWED_HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'];
-
-	/**
 	 * Path item keys that are not operations (OpenAPI 3.x Path Item Object).
 	 *
 	 * @var list<string>
 	 */
 	private const PATH_ITEM_FIELDS = ['parameters', 'summary', 'description', 'servers', '$ref'];
-
-	/**
-	 * NLGov-permitted HTTP response status codes (/core/http-response-code).
-	 *
-	 * @var list<string>
-	 */
-	private const ALLOWED_STATUS_CODES = ['200', '201', '204', '400', '401', '403', '404', '422', '500', 'default'];
 
 	/**
 	 * Properties every object schema describes before its own.
@@ -1987,10 +1971,17 @@ class OasService implements OasServiceInterface {
 	 *   methods on documented operations: GET, POST, PUT, PATCH, DELETE, and
 	 *   the RFC 9110 methods HEAD and OPTIONS.
 	 * - /core/http-response-code: only standard HTTP status codes on responses.
+	 * - /core/no-trailing-slash, /core/path-segments-kebab-case,
+	 *   /core/query-keys-camel-case and /core/uri-version, through
+	 *   {@see NlGovDocumentRules}.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
 	 */
 	private function validateNlGovRules(): void {
+		(new NlGovDocumentRules(report: $this->report))->check(oas: $this->oas);
+
 		$paths = ($this->oas['paths'] ?? null);
 		if (is_array($paths) === false) {
 			return;
@@ -2034,7 +2025,7 @@ class OasService implements OasServiceInterface {
 		}
 
 		$path = 'paths.' . $pathName . '.' . $method;
-		if (isset(array_flip(self::ALLOWED_HTTP_METHODS)[$methodKey]) === false) {
+		if (isset(array_flip(NlGovRuleCatalogue::ALLOWED_HTTP_METHODS)[$methodKey]) === false) {
 			$reason = 'violates NLGov /core/http-methods (only GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS allowed).';
 			$message = sprintf('Non-standard HTTP method "%s" %s', (string)$method, $reason);
 			$this->report->addError(issue: new OasIssue(path: $path, message: $message, code: OasValidationReport::CODE_INVALID_HTTP_METHOD));
@@ -2057,7 +2048,7 @@ class OasService implements OasServiceInterface {
 			return;
 		}
 
-		$allowedCodes = array_flip(self::ALLOWED_STATUS_CODES);
+		$allowedCodes = array_flip(NlGovRuleCatalogue::ALLOWED_STATUS_CODES);
 		foreach (array_keys(($operation['responses'] ?? [])) as $statusCode) {
 			if (isset($allowedCodes[(string)$statusCode]) === false) {
 				$this->report->addWarning(
