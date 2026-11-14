@@ -11829,3 +11829,4 @@ fix:shillinq:3078:df173129	version line aligned with #3062; new head 9577c251, R
 cover:integriq:92114ab0m4b3f:6daf52ad	PR #3639: 16 tests, lib/Outbound scope 91.94% -> 97.26%	session-20261114T221759-cd5c5678	2026-11-14T23:19:08Z
 verify:keepiq:1790:995d9956	GREEN #1790 (php 5213 ok; vitest 3 inherited failures, none new)	session-20261114T223937-a95b1403	2026-11-14T23:19:10Z
 cover:portaliq:b60f3b81m4ccb:62d4ff69	PR #2516: ConfirmedAddressJoin refusal/lock/race tests (4 tests, 65 assertions); suite 5803->5807 OK	session-20261114T221804-88b39b17	2026-11-14T23:19:35Z
+verify:integriq:3596:c9f6ced5	GREEN #3596, GREEN #3638; no new failures	session-20261114T224736-f9da4a35	2026-11-14T23:19:38Z
