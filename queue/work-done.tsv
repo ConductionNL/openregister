@@ -8511,3 +8511,4 @@ build:versioniq:admin-mcp-assistant	PR #704: 1.1-1.3 and 2.2 built (provider, 5 
 fix:keepiq:1784:1518797d	merged development, new head ee1c9e8e; l10n overlap with #1780/#1781/#1783 remains until they land; REVERIFY recorded	session-20261114T070344-897ffa0f	2026-11-14T09:00:17Z
 build:versioniq:autoupdate-run-batching	partial: PR #705 — 1.1 planner, 2.1 group store, 3.1 countSince; 2.2-2.4, 3.2-3.3 and UI/e2e left; suite 1643/2F -> 1659/2F	session-20261114T065625-baa65a50	2026-11-14T09:00:23Z
 fix:larpinq:1024:b09265c2	merged development in, kept development copy of the duplicated spec; new head f126fa16a4df511b250c251fec19c2e1ee9d27b1, REVERIFY recorded	session-20261114T073108-67fbeb26	2026-11-14T09:00:25Z
+build:versioniq:safety-upgrade-migration-preview	partial: PR #706 (1.2 reader, 1.3 size probe; 1.1 needs live instance, 2.x/3.x after)	session-20261114T082633-7466e3ea	2026-11-14T09:00:40Z
