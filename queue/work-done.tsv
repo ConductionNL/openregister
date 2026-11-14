@@ -9757,3 +9757,4 @@ build:hermiq:store-through-federated-config:c2	partial: openregister#10562 build
 verify:shillinq:2972:061b1d37	3 GREEN (2972,3057,3063), 4 CONFLICT in tree (2975,2991,3004,3065; clean on plain development); 0 new failures	session-20261114T151004-fa188a10	2026-11-14T15:18:09Z
 verify:learniq:2532:c8d0a195	2532 GREEN, 2538 CONFLICT (register, after 2532)	session-20261114T134654-82ca2be5	2026-11-14T15:18:51Z
 build:hermiq:tools-agent-workspace-and-installed-tools:c2	partial: PR #1760 task 3 done (Files panel, list/download/save routes, register 0.55.0 after dev merge); left: 2/4/5 blocked on unbuilt tools-code-sandbox, 6 and 7 not started	session-20261114T144746-30bc6559	2026-11-14T15:18:57Z
+fix:decidiq:2171:c22e208d	merged development, conflicts resolved keeping both sides; new head d0195ef7; REVERIFY recorded	session-20261114T144816-cf37407b	2026-11-14T15:18:57Z
