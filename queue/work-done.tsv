@@ -9649,4 +9649,5 @@ fix:filinq:2074:3af25510	merged development, l10n conflict resolved keeping both
 verify:pipelinq:3835:af86091c	3835 CONFLICT (lib/Listener/ListenerRegistrar.php)	session-20261114T144757-446bd6da	2026-11-14T14:58:59Z
 fix:hermiq:1715:d9f59cc5	merged development, l10n both sides kept, register v0.55.0; head e1d609ec	session-20261114T144734-e99d406c	2026-11-14T14:59:09Z
 fix:shillinq:3059:50043d17	conflict resolved, merged development; new head 2d5c2728	session-20261114T141727-56b2bf78	2026-11-14T14:59:24Z
+build:decidiq:decision-outcome-reaches-the-subscriber:c2	done: decidiq PR #2196 (task 3, register 0.15.2) and openregister PR #10560 (task 2, webhook.urlField); left only the live end-to-end check	session-20261114T134654-82ca2be5	2026-11-14T14:59:31Z
 fix:hermiq:1757:c0e6cda2	floor restored (unit_size 3.79, unit_complexity 4.55, PASS); new head 6877198f5, REVERIFY recorded	session-20261114T134708-ba7f7741	2026-11-14T14:59:43Z
