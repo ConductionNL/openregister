@@ -9344,3 +9344,4 @@ hermiq	1736	15f7baa1ea091939e2fb22679fa4ac103869afc9	CONFLICT	worker-49	merge co
 hermiq	1739	bc2bf9931ae76d788c7443a802177f457d357cc6	CONFLICT	worker-49	merge conflict on development+1735
 hermiq	1782	f0562d6f013540c84154271800e3a6102ac05d3e	GREEN	worker-49	phpunit 5191 ok on tree (baseline development 5134 ok, both with ../openregister present), vitest 1496 passed; build of agent-acting-identity-picker, new read endpoint checks agent access first
 hermiq	1787	d0f18c158e5d5a9587c64406005c9b1aaf3cd97f	CONFLICT	worker-49	merge conflict on development+1735+1782
+hermiq	1792	0a6a9064a34afbbf34f615049567ff2ba25582ed	CONFLICT	worker-49	merge conflict on development+1735+1782
