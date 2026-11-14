@@ -193,7 +193,7 @@ class MappingRuntimeTest extends TestCase {
 
 		$this->mappingService->expects($this->once())
 			->method('executeMapping')
-			->with($mapping, $input, false)
+			->with($mapping, $input)
 			->willReturn($expected);
 
 		$result = $this->runtime->executeMapping($mapping, $input);
@@ -204,8 +204,8 @@ class MappingRuntimeTest extends TestCase {
 		$mapping = $this->createMock(Mapping::class);
 
 		$this->mappingService->expects($this->once())
-			->method('executeMapping')
-			->with($mapping, $this->anything(), true)
+			->method('executeListMapping')
+			->with($mapping, $this->anything())
 			->willReturn([]);
 
 		$this->runtime->executeMapping($mapping, [], true);
@@ -219,7 +219,7 @@ class MappingRuntimeTest extends TestCase {
 
 		$this->mappingService->expects($this->once())
 			->method('executeMapping')
-			->with($this->isInstanceOf(Mapping::class), $input, false)
+			->with($this->isInstanceOf(Mapping::class), $input)
 			->willReturn(['result' => 'ok']);
 
 		$result = $this->runtime->executeMapping($mappingArray, $input);
@@ -238,7 +238,7 @@ class MappingRuntimeTest extends TestCase {
 
 		$this->mappingService->expects($this->once())
 			->method('executeMapping')
-			->with($mapping, ['in' => 'data'], false)
+			->with($mapping, ['in' => 'data'])
 			->willReturn(['out' => 'data']);
 
 		$result = $this->runtime->executeMapping(42, ['in' => 'data']);
@@ -274,7 +274,7 @@ class MappingRuntimeTest extends TestCase {
 
 		$this->mappingService->expects($this->once())
 			->method('executeMapping')
-			->with($mapping, ['x' => 1], false)
+			->with($mapping, ['x' => 1])
 			->willReturn(['y' => 2]);
 
 		$result = $this->runtime->executeMapping('https://example.com/mapping/1', ['x' => 1]);

@@ -932,7 +932,7 @@ class ServicesIntegrationTest extends TestCase {
 			['name' => 'Second'],
 		];
 
-		$result = $service->executeMapping($mapping, $input, true);
+		$result = $service->executeListMapping($mapping, $input);
 
 		$this->assertCount(2, $result);
 		$this->assertEquals('First', $result[0]['mapped_name']);
@@ -1212,7 +1212,7 @@ class ServicesIntegrationTest extends TestCase {
 			'extraParam' => 'shared',
 		];
 
-		$result = $service->executeMapping($mapping, $input, true);
+		$result = $service->executeListMapping($mapping, $input);
 		$this->assertCount(2, $result);
 	}
 

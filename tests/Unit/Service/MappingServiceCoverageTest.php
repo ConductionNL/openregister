@@ -384,7 +384,7 @@ class MappingServiceCoverageTest extends TestCase {
 			['title' => 'Item 2'],
 		];
 
-		$result = $this->service->executeMapping($mapping, $input, true);
+		$result = $this->service->executeListMapping($mapping, $input);
 
 		$this->assertCount(2, $result);
 		$this->assertSame('Item 1', $result[0]['name']);
@@ -398,7 +398,7 @@ class MappingServiceCoverageTest extends TestCase {
 			'extra' => 'context',
 		];
 
-		$result = $this->service->executeMapping($mapping, $input, true);
+		$result = $this->service->executeListMapping($mapping, $input);
 
 		$this->assertCount(2, $result);
 	}
