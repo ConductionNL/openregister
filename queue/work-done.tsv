@@ -9862,3 +9862,4 @@ fix:integriq:3602:aef17532	development merged, l10n js regenerated, new head fc7
 build:shillinq:bookings-messages-and-embedding:c3	partial: PR shillinq#3070 (1.1 backend: send recorded on the appointment, 2 tests, suite 11203->11205 green); left 1.1 failed-send display on pending confirmations page, 1.2 IMailer reminders/other mails, 1.3 SMS job, 1.4 repeat option, 1.5 widget CORS, 1.6 live; worker context nearly full	session-20261114T144816-cf37407b	2026-11-14T15:35:07Z
 fix:integriq:3601:25189bc8	REVERIFY: dev merged, golden hashes re-recorded; 7 inherited dev reds; head c5ea5100	session-20261114T151801-20bb3a08	2026-11-14T15:35:05Z
 review:humaniq:1030:fb14cdc3	GREEN #1030 (behaviour unchanged; 1 inherited failure)	session-20261114T141721-aeb4e068	2026-11-14T15:35:12Z
+fix:integriq:3572:173aef7f	conflict resolved keeping both sides; new head 4ceacefd, REVERIFY recorded	session-20261114T151934-e3441c93	2026-11-14T15:35:34Z
