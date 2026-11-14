@@ -11420,3 +11420,4 @@ review:opencatalogi:2643:e9586088	GREEN: matches dcat-catalogue-completion spec;
 merge:humaniq:1125:c3833d20	merge3 tree of 5 humaniq PRs: merged=3 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:07:32Z
 merge:humaniq:1144:7d38728c	merge3 tree of 5 humaniq PRs: merged=3 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:07:41Z
 merge:humaniq:1133:fbe861bc	merge3 tree of 5 humaniq PRs: merged=3 red=0 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T22:07:50Z
+verify:opencatalogi:2668:7ed34598	8 GREEN (2668,2710-2716); 2684 skipped (head moved to 8f4a54a3f); no new failures	session-20261114T211801-f16dd26d	2026-11-14T22:07:57Z
