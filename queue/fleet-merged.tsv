@@ -2222,3 +2222,8 @@ hermiq	1722	e4d38a9039a5ceb441a95e1e9a675f968fa9382c	MERGED	merge3	GATE OK sbom,
 hermiq	1724	007bf5e71ba9de91957c25dd35047bd813059964	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1727	a44c7bc1a7f25d6cff11bc05af9e2b94f3060593	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
 hermiq	1729	d0839e358d22108732ec6189ccbe485d82a257f8	SKIP	merge3	GATE UNMEASURED floor_check.py or checker_floor.py not available
+pipelinq	3789	5d5a3d12d3fc4c67f4604e7a8043e576c99b8c72	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3794	f9a20787f751cb737595c0282606c64b07809bb8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3795	62e20cea22a8ac842cea61d6d66be4e37e8bff3e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3797	cb66ca7dcbaaa8df28a3a26534031c92cad08e50	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
+pipelinq	3798	8cdcb3b90788efea72b90354901e70e9f14b0659	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold
