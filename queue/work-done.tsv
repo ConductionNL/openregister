@@ -10847,3 +10847,4 @@ fix:decidiq:2177:b9836c20	failed: conflicts only with unmerged GREEN #2172 (both
 review:portaliq:2444:c94c7881	GREEN: spec-conform, suites green	session-20261114T194740-7cca8afd	2026-11-14T20:19:53Z
 fix:portaliq:2508:00941d7f	merged development in clean, unit green; new head 284a8b2d957bd87600c705bdeb147764f9f22036, REVERIFY recorded	session-20261114T194751-bb7578f8	2026-11-14T20:20:07Z
 fix:decidiq:2195:81009fc4	no change: branch is current with development and merges clean on it and on #2143 alone; conflicts only against unmerged sibling #2172 (src/manifest.json, simpleDecisionPage.spec.js), so merge one first and re-merge development into the other	session-20261114T191744-b9573b83	2026-11-14T20:20:26Z
+verify:hermiq:1736:ca717681	1736 GREEN, 1767 GREEN, 1792 CONFLICT (ScheduleService.php vs 1767); unit 5167, no new failures; vitest 1487 green	session-20261114T192501-803bcb19	2026-11-14T20:20:27Z
