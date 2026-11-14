@@ -9243,6 +9243,7 @@ merge:integriq:3545:c707f88d	merge3 tree of 52 integriq PRs: merged=32 red=2 fai
 merge:integriq:3472:0dbe42bd	merge3 tree of 52 integriq PRs: merged=32 red=2 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-14T13:22:15Z
 merge:integriq:3343:3110ab67	merge3 tree of 52 integriq PRs: merged=32 red=2 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-14T13:22:18Z
 merge:integriq:3539:aae849b3	merge3 tree of 52 integriq PRs: merged=32 red=2 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-14T13:22:21Z
+build:shillinq:tax-digipoort-filing:c2	partial: PR #3051 (2.1 validation guard, data-driven via XBRLTaxonomy requiredConcepts/summations, 17 tests); left: 1.1 seed taxonomy record, 1.2/1.3 XBRL builders + generator, 3.1-3.4 integriq hand-off, 4.1-4.2 connection and detail page, 5.1 issue (needs Ruben)	session-20261114T121616-766bd91a	2026-11-14T13:22:26Z
 merge:integriq:3563:7a11c1be	merge3 tree of 52 integriq PRs: merged=32 red=2 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-14T13:22:25Z
 merge:integriq:3572:41c7ff8b	merge3 tree of 52 integriq PRs: merged=32 red=2 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-14T13:22:28Z
 merge:integriq:3546:5b88c795	merge3 tree of 52 integriq PRs: merged=32 red=2 fail=0 skip=0; conflict 17, lint 0, moved 0; fix rows 18	merge3-20261113T213425-c36bcd5f	2026-11-14T13:22:31Z
