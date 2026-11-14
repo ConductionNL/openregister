@@ -9490,3 +9490,4 @@ build:learniq:compliance-assign-from-hr-roles:c2	partial: no new commits this pa
 review:pipelinq:3713:4f82309f	GREEN: built as the change specs ask; unit 8398 green, touched vitest green	session-20261114T134654-82ca2be5	2026-11-14T14:31:14Z
 fix:portaliq:2489:011ce34a	fixed: l10n keys moved off the shared tail, clean over tree with 2430/2433; new head 043e6c96, REVERIFY recorded	session-20261114T131654-c068f436	2026-11-14T14:31:33Z
 review:dossiq:6385:0de8a799	BLOCK: caseType schema version 1.48.0 collides with social-safeguards fragment on development; else clean	session-20261114T141727-56b2bf78	2026-11-14T14:31:53Z
+merge:pipelinq:3832:d968758f	stale	feeder	2026-11-14T14:30:22Z
