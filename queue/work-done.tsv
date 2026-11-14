@@ -12055,3 +12055,4 @@ fix:hermiq:1760:8be53b00	merged development in, resolved ScheduleService ctor co
 review:filinq:2069:2b2b094e	GREEN: spec-conformant, 6788 unit tests OK on merged tree	session-20261114T234952-566b7ef5	2026-11-14T23:51:48Z
 verify:decidiq:2209:11e69e4f	GREEN #2209: 4385 tests, 0 new failures	session-20261114T234932-1a68fd4b	2026-11-14T23:51:57Z
 review:openregister:10576:a257a4ba	APPROVE: test-only jest specs, 719 tests green on merge with main	session-20261114T234941-93e81b84	2026-11-14T23:52:04Z
+review:portaliq:2444:14f7dd01	GREEN: frontend/schema per change specs; unit 5840 green, node checks pass	session-20261114T234938-86f69098	2026-11-14T23:52:10Z
