@@ -8601,3 +8601,4 @@ verify:versioniq:685:30ec33d9	GREEN 702-708; RED 685 (InstanceSettingsPanel.fail
 verify:keepiq:1784:c0dc4a58	GREEN 1784	session-20261114T082639-95045d35	2026-11-14T09:12:53Z
 verify:opencatalogi:2678:eb671c7c	GREEN 2678	session-20261114T065626-0651b305	2026-11-14T09:13:09Z
 verify:stackiq:1916:4e2011b0	7 GREEN, 2 CONFLICT (1922, 1924 vs tree); no new failures	session-20261114T075640-efa02b24	2026-11-14T09:13:22Z
+verify:larpinq:1035:ae15fa03	5 GREEN (1035-1039); phpunit 812 OK, vitest 511 passed, no new failures	session-20261114T082640-198131b9	2026-11-14T09:13:39Z
