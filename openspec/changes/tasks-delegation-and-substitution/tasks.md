@@ -3,11 +3,11 @@
 ## 1. Mandate on the task
 
 - [x] 1.1 Migration adding `required_mandate` and `mandate_evidence` to `openregister_tasks` and `mandate_evidence` to `openregister_task_audit`; entity fields and serialisation. Verify: `tests/Unit/Db/TaskEntitiesTest.php` round-trips both fields.
-- [ ] 1.2 `TaskBuilder` reads `requiredMandate` and refuses a verb the catalogue does not know; `UserTaskNode` gains the config key. Verify: a new `tests/Unit/Service/Task/TaskBuilderTest.php` for a known verb, an unknown verb (400 message names it) and none.
+- [x] 1.2 `TaskBuilder` reads `requiredMandate` and refuses a verb the catalogue does not know; `UserTaskNode` gains the config key. Verify: a new `tests/Unit/Service/Task/TaskBuilderTest.php` for a known verb, an unknown verb (400 message names it) and none.
 
 ## 2. Delegation check
 
-- [ ] 2.1 `TaskMandateGuard::assertHolds()` with the three cases of D-2 and evidence from `ProvenanceResolver`. Verify: `tests/Unit/Service/Task/TaskMandateGuardTest.php` with a holder, a non-holder, a custom verb decided by a stubbed vote, a missing subject and a throwing check (all fail closed).
+- [x] 2.1 `TaskMandateGuard::assertHolds()` with the three cases of D-2 and evidence from `ProvenanceResolver`. Verify: `tests/Unit/Service/Task/TaskMandateGuardTest.php` with a holder, a non-holder, a custom verb decided by a stubbed vote, a missing subject and a throwing check (all fail closed).
 - [ ] 2.2 Call the guard in `TaskService::delegate()`, store the evidence, audit it; map `TaskMandateRefusedException` to 422 in `TaskController`. Verify: `TaskServiceTest` delegate cases; `POST /api/flow-tasks/{uuid}/delegate` to a non-holder answers 422 naming the verb.
 
 ## 3. Substitution
