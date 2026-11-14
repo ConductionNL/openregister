@@ -10171,5 +10171,6 @@ merge:hermiq:1735:f92bfd62	merge3 tree of 12 hermiq PRs: merged=5 red=1 fail=0 s
 fix:integriq:3564:8228369e	merged development, resolved openapi.json tags; new head c37760b6	session-20261114T141010-8dc8bd74	2026-11-14T16:25:35Z
 verify:integriq:3574:054d9b7e	5 GREEN (3589,3596,3622,3623,3624), 2 CONFLICT (3601,3613), 2 skipped head moved (3574,3593)	session-20261114T161744-497aae45	2026-11-14T16:26:14Z
 verify:portaliq:2437:97c82705	2437 CONFLICT with development	session-20261114T161806-530176c3	2026-11-14T16:26:22Z
+build4:openregister:appraisal-inherited-from-a-parent:c3	no code tasks left on PR #10483: 3.1 is a hand-over of the contract to the opencatalogi lane (not openregister code), V.1-V.5 are process checks	session-20261114T151803-c9b63248	2026-11-14T16:26:34Z
 build:filinq:generate-store-in-case-system:c3	PR #2131: 3.2 built (batched case-system badge endpoint + My Documents badge, two report stat widgets), docs page; left: Playwright/screenshot (live), 4.1 issues (not filed by workers), full check:strict, coverage figure	session-20261114T151802-24eee21b	2026-11-14T16:26:29Z
 verify:buildiq:1590:5c16e6ea	1590 1621 1624 GREEN	session-20261114T151916-b0518a7b	2026-11-14T16:26:41Z
