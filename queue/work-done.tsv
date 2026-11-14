@@ -11714,3 +11714,4 @@ build:versioniq:autoupdate-schedules:c2	PR #716: built 3.2 schedule form, 3.3 ov
 build:versioniq:audit-security-reports:c2	pushed to PR #699: 2.1 audit period/security filters, 2.2 History filters+export, 3.1 report service+controller+openapi, 3.2 report panel, 3.3 strings; +41 tests (PHP unit 1655->1677, 2 inherited golden failures; vitest 2950->2974); left: 3.4 e2e, 4.x CI legs and archive	session-20261114T214735-aacd1703	2026-11-14T22:56:35Z
 verify:shillinq:3062:6186575a	3062 GREEN, 3078 CONFLICT (info.xml version)	session-20261114T224745-bab17644	2026-11-14T22:56:43Z
 fix:integriq:3630:99809145	CONFLICT fixed: ModalHost entries moved mid-list, merged development; new head 320ac7f7	session-20261114T224738-9571d712	2026-11-14T22:56:49Z
+fix:integriq:3546:38ea402a	fixed: declared endpoint-workspace OpenAPI tag (adrvalidator pass->warn cause); new head 46dc8e54	session-20261114T225452-4fcfea7f	2026-11-14T22:56:59Z
