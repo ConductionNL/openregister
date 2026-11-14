@@ -35,6 +35,8 @@ use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\FlowNodeRegistrationListener;
+use OCA\OpenRegister\Listener\SourceFetcherRegistrationListener;
+use OCA\OpenRegister\Service\Sync\RegisterSourceFetchersEvent;
 use OCA\OpenRegister\Listener\FlowOversightRegistrationListener;
 use OCA\OpenRegister\Listener\FlowTriggerListener;
 use OCA\OpenRegister\Listener\FrozenNodeWriteListener;
@@ -107,6 +109,10 @@ final class FlowsListenerRegistrar {
 		// through the same event every consuming app uses, so the contribution
 		// path is exercised by its owner and cannot rot unnoticed.
 		$context->registerEventListener(\OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class, FlowNodeRegistrationListener::class);
+
+		// Harvest protocols. OpenRegister registers its own fetchers through the
+		// same event an app uses to add one (app-harvest-fetchers-and-flow-node).
+		$context->registerEventListener(RegisterSourceFetchersEvent::class, SourceFetcherRegistrationListener::class);
 
 		// Flow oversight. Apps contribute the checks that may STOP a run — a
 		// kill switch, a spend budget, a maintenance window — through the same

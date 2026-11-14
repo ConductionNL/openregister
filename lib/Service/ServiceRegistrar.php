@@ -427,9 +427,13 @@ final class ServiceRegistrar {
 	 * @return SourceFetcherRegistry
 	 */
 	private static function buildSourceFetcherRegistry(ContainerInterface $container): SourceFetcherRegistry {
-		$registry = new SourceFetcherRegistry();
-		$registry->register($container->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
-		return $registry;
+		// Every fetcher, OpenRegister's own included, arrives through
+		// RegisterSourceFetchersEvent on first use.
+		return new SourceFetcherRegistry(
+			fetchers: [],
+			dispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class),
+			logger: $container->get(\Psr\Log\LoggerInterface::class)
+		);
 	}//end buildSourceFetcherRegistry()
 
 	/**

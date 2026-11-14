@@ -63,7 +63,7 @@ export function closedForm() {
 		actionMessage: '',
 		error: false,
 		hasUpdated: false,
-		sourceItem: { id: '', title: '', description: '', databaseUrl: '' },
+		sourceItem: { id: '', title: '', description: '', databaseUrl: '', schedule: '', runAs: '' },
 		connection: connectionOf({}),
 	}
 }

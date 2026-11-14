@@ -302,6 +302,9 @@
 	"OCA\\OpenRegister\\Service\\Flow\\RegisterFlowOversightEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowOversightRegistrationListener"
 	],
+	"OCA\\OpenRegister\\Service\\Sync\\RegisterSourceFetchersEvent": [
+		"OCA\\OpenRegister\\Listener\\SourceFetcherRegistrationListener"
+	],
 	"OCP\\AppFramework\\Http\\Events\\BeforeTemplateRenderedEvent": [
 		"OCA\\OpenRegister\\Listener\\MailAppScriptListener",
 		"OCA\\OpenRegister\\Listener\\IntegrationGlobalScriptListener",

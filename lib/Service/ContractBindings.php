@@ -1167,6 +1167,7 @@ final class ContractBindings {
 		ReferencedByServiceInterface::class => ReferencedByService::class,
 		\OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode::class,
 		\OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode::class,
+		\OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNode::class,
 		\OCA\OpenRegister\Service\View\ViewObjectQueryInterface::class => \OCA\OpenRegister\Service\View\ViewObjectQuery::class,
 		HingeAnnotationValidatorInterface::class => HingeAnnotationValidator::class,
 		SurvivorshipAnnotationValidatorInterface::class => SurvivorshipAnnotationValidator::class,

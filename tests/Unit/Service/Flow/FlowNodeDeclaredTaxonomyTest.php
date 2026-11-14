@@ -124,6 +124,9 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'UnlockObjectNode' => ['serviceTask', 'objects'],
 			'LoopNode' => ['serviceTask', 'objects'],
 
+			// Integrations. Reading a source is a serviceTask.
+			'HarvestSourceNode' => ['serviceTask', 'integrations'],
+
 			// Logic. Branches and joins are gateways; reshaping is a scriptTask.
 			'SwitchNode' => ['gateway', 'logic'],
 			'RouterNode' => ['gateway', 'logic'],

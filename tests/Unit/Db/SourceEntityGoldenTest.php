@@ -61,6 +61,16 @@ class SourceEntityGoldenTest extends TestCase {
 				'conflictStrategy' => 'string',
 				'deleteStrategy' => 'string',
 				'batchSize' => 'integer',
+				'application' => 'string',
+				'config' => 'json',
+				'runAs' => 'string',
+				'schedule' => 'string',
+				'flowId' => 'string',
+				'identityProperty' => 'string',
+				'protectedFields' => 'json',
+				'provenance' => 'json',
+				'conflictRules' => 'json',
+				'maxItemsPerRun' => 'integer',
 				'updated' => 'datetime',
 				'created' => 'datetime',
 			],
@@ -80,6 +90,7 @@ class SourceEntityGoldenTest extends TestCase {
 		);
 		$expected['authConfigured'] = false;
 		$expected += array_fill_keys(['mappingId', 'targetRegister', 'targetSchema', 'conflictStrategy', 'deleteStrategy', 'batchSize', 'updated', 'created', 'managedByConfiguration'], null);
+		$expected += array_fill_keys(['application', 'config', 'runAs', 'schedule', 'flowId', 'identityProperty', 'protectedFields', 'provenance', 'conflictRules', 'maxItemsPerRun'], null);
 		$this->assertSame($expected, (new Source())->jsonSerialize());
 		$this->assertSame('Source', (string)(new Source()));
 	}//end testEmptySourceSerialises()
@@ -114,6 +125,16 @@ class SourceEntityGoldenTest extends TestCase {
 				'conflictStrategy' => 'skip',
 				'deleteStrategy' => 'keep',
 				'batchSize' => 50,
+				'application' => 'opencatalogi',
+				'config' => ['sourceUrl' => 'https://feed.example/catalog'],
+				'runAs' => 'harvest-bot',
+				'schedule' => '0 3 * * *',
+				'flowId' => 'u',
+				'identityProperty' => 'dct:identifier',
+				'protectedFields' => ['status'],
+				'provenance' => ['externalIdProperty' => 'dct:source'],
+				'conflictRules' => ['hitPolicy' => 'FIRST'],
+				'maxItemsPerRun' => 500,
 				'updated' => new DateTime('2026-01-01T00:00:00+00:00'),
 				'created' => new DateTime('2025-01-01T00:00:00+00:00'),
 				'unknown' => 'ignored',
@@ -148,6 +169,16 @@ class SourceEntityGoldenTest extends TestCase {
 				'updated' => '2026-01-01T00:00:00+00:00',
 				'created' => '2025-01-01T00:00:00+00:00',
 				'managedByConfiguration' => null,
+				'application' => 'opencatalogi',
+				'config' => ['sourceUrl' => 'https://feed.example/catalog'],
+				'runAs' => 'harvest-bot',
+				'schedule' => '0 3 * * *',
+				'flowId' => 'u',
+				'identityProperty' => 'dct:identifier',
+				'protectedFields' => ['status'],
+				'provenance' => ['externalIdProperty' => 'dct:source'],
+				'conflictRules' => ['hitPolicy' => 'FIRST'],
+				'maxItemsPerRun' => 500,
 			],
 			$source->jsonSerialize()
 		);

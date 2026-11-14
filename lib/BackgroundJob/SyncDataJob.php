@@ -117,7 +117,7 @@ class SyncDataJob extends TimedJob {
 		$this->logger->info(message: '[SyncDataJob] Starting data sync job');
 
 		try {
-			$sources = $this->sourceMapper->findBySyncEnabled();
+			$sources = $this->jobSources(sources: $this->sourceMapper->findBySyncEnabled());
 			$now = new DateTime();
 			$due = $this->scheduleService->selectDueSources(sources: $sources, now: $now);
 
@@ -132,6 +132,41 @@ class SyncDataJob extends TimedJob {
 			$this->logger->error(message: '[SyncDataJob] Data sync job failed: ' . $e->getMessage());
 		}
 	}//end run()
+
+	/**
+	 * The sources this job still schedules: those without a harvest flow.
+	 *
+	 * A source with a flowId is scheduled only by its flow's schedule trigger.
+	 * The rest are named in one warning per run, so the list of sources still
+	 * on this job (and so running with no acting identity) stays visible until
+	 * each is given a schedule and runAs.
+	 *
+	 * @param Source[] $sources The sync-enabled sources.
+	 *
+	 * @return Source[] Those without a flow.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	private function jobSources(array $sources): array {
+		$onJob = array_values(
+			array_filter(
+				$sources,
+				static fn (Source $source): bool => ($source->getFlowId() === null || $source->getFlowId() === '')
+			)
+		);
+
+		if ($onJob !== []) {
+			$this->logger->warning(
+				message: sprintf(
+					'[SyncDataJob] %d source(s) are still scheduled by this job rather than a harvest flow: %s',
+					count($onJob),
+					implode(', ', array_map(static fn (Source $source): string => (string)$source, $onJob))
+				)
+			);
+		}
+
+		return $onJob;
+	}//end jobSources()
 
 	/**
 	 * Sync a single source through the harvest pipeline.

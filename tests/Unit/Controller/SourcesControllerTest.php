@@ -974,6 +974,37 @@ class SourcesControllerTest extends TestCase {
 		$this->assertSame(404, $result->getStatus());
 	}
 
+	public function testTypesListsTheRegisteredTypesForAnAdmin(): void {
+		$types = [
+			['type' => 'rest-api', 'displayName' => 'REST API', 'application' => 'openregister', 'configSchema' => []],
+			['type' => 'opencatalogi.dcat-jsonld', 'displayName' => 'DCAT', 'application' => 'opencatalogi', 'configSchema' => ['type' => 'object']],
+		];
+		$registry = $this->createMock(SourceFetcherRegistry::class);
+		$registry->method('types')->willReturn($types);
+		$controller = $this->buildSyncController(
+			isAdmin: true,
+			fetcherRegistry: $registry,
+			pipeline: $this->createMock(HarvestPipelineService::class)
+		);
+
+		$result = $controller->types();
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(['results' => $types], $result->getData());
+	}
+
+	public function testTypesIsRefusedForANonAdmin(): void {
+		$registry = $this->createMock(SourceFetcherRegistry::class);
+		$registry->expects($this->never())->method('types');
+		$controller = $this->buildSyncController(
+			isAdmin: false,
+			fetcherRegistry: $registry,
+			pipeline: $this->createMock(HarvestPipelineService::class)
+		);
+
+		$this->assertSame(403, $controller->types()->getStatus());
+	}
+
 	// -------------------------------------------------------------------------
 	// queryPreview() — dbal-query-schema-guarded-and-previewed (design D-3)
 	// -------------------------------------------------------------------------

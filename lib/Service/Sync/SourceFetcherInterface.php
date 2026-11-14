@@ -72,4 +72,32 @@ interface SourceFetcherInterface {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function fetch(Source $source, string $externalId): array;
+
+	/**
+	 * The source type this fetcher serves: a bare name for OpenRegister's own
+	 * (`rest-api`), `<appid>.<protocol>` for an app's (`opencatalogi.dcat-jsonld`).
+	 *
+	 * @return string The type.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function getType(): string;
+
+	/**
+	 * The name shown in a source form's type list.
+	 *
+	 * @return string The display name.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function getDisplayName(): string;
+
+	/**
+	 * The JSON Schema a source's `config` must satisfy for this fetcher.
+	 *
+	 * @return array<string, mixed> The schema; `[]` when the fetcher takes no config.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function getConfigSchema(): array;
 }//end interface

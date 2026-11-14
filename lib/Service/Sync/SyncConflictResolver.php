@@ -25,6 +25,10 @@
 
 namespace OCA\OpenRegister\Service\Sync;
 
+use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
+use Throwable;
+
 /**
  * Resolves source-vs-local conflicts using a configurable strategy.
  *
@@ -53,6 +57,26 @@ final class SyncConflictResolver {
 	public const MANUAL = 'manual';
 
 	/**
+	 * The source item is refused: the local object stays untouched and is never linked.
+	 */
+	public const REJECT = 'reject';
+
+	/**
+	 * Collision reason: no sync record, but a local object already holds the external id.
+	 */
+	public const REASON_PRE_EXISTING_CLAIM = 'pre-existing-claim';
+
+	/**
+	 * Collision reason: the linked object was edited after the harvest last wrote it.
+	 */
+	public const REASON_LOCAL_EDITED = 'local-edited';
+
+	/**
+	 * Collision reason: the linked object was deleted locally.
+	 */
+	public const REASON_LOCAL_DELETED = 'local-deleted';
+
+	/**
 	 * Resolution outcome: apply the source data.
 	 */
 	public const APPLY_SOURCE = 'apply_source';
@@ -68,6 +92,21 @@ final class SyncConflictResolver {
 	public const DEFER = 'defer';
 
 	/**
+	 * Resolution outcome: refuse the source item (status rejected, payload cleared).
+	 */
+	public const REJECT_SOURCE = 'reject_source';
+
+	/**
+	 * Build the resolver.
+	 *
+	 * @param DecisionTableEvaluator $evaluator Evaluates a source's conflictRules per collision.
+	 */
+	public function __construct(
+		private readonly DecisionTableEvaluator $evaluator = new DecisionTableEvaluator(),
+	) {
+	}//end __construct()
+
+	/**
 	 * All recognised strategy values.
 	 *
 	 * @return list<string> The known strategies
@@ -75,7 +114,7 @@ final class SyncConflictResolver {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public static function strategies(): array {
-		return [self::SOURCE_WINS, self::LOCAL_WINS, self::NEWEST_WINS, self::MANUAL];
+		return [self::SOURCE_WINS, self::LOCAL_WINS, self::NEWEST_WINS, self::MANUAL, self::REJECT];
 	}//end strategies()
 
 	/**
@@ -118,6 +157,80 @@ final class SyncConflictResolver {
 	}//end resolve()
 
 	/**
+	 * The strategy one collision follows.
+	 *
+	 * A locally deleted object is always left to a person (manual), whatever
+	 * the source says: recreating what someone removed is not the harvest's
+	 * call. Otherwise the source's conflictRules decision table picks the
+	 * strategy from the reason, the external id and the mapped payload's
+	 * top-level fields; no table, no match, an evaluation error or an output
+	 * that is not a known strategy fall back to the source's conflictStrategy.
+	 *
+	 * @param Source               $source     The source.
+	 * @param string               $reason     The collision reason (one of the REASON_* constants).
+	 * @param string               $externalId The item's external id.
+	 * @param array<string, mixed> $mapped     The mapped payload.
+	 *
+	 * @return string One of the strategy constants.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md#requirement-a-collision-follows-the-sources-strategy-or-a-decision-table-req-haf-007
+	 */
+	public function strategyFor(Source $source, string $reason, string $externalId, array $mapped): string {
+		if ($reason === self::REASON_LOCAL_DELETED) {
+			return self::MANUAL;
+		}
+
+		$fallback = (string)($source->getConflictStrategy() ?? self::SOURCE_WINS);
+		$rules    = $source->getConflictRules();
+		if (is_array($rules) === false || $rules === []) {
+			return $fallback;
+		}
+
+		$picked = $this->ruleStrategy(rules: $rules, inputs: ['conflictReason' => $reason, 'externalId' => $externalId] + $mapped);
+		if ($picked === null || $this->isValidStrategy(strategy: $picked) === false) {
+			return $fallback;
+		}
+
+		return $picked;
+	}//end strategyFor()
+
+	/**
+	 * The `strategy` output of a conflictRules table for these inputs, or null.
+	 *
+	 * Only the inputs the table declares are handed in; a declared input the
+	 * item does not carry is null. A table that matches no row or cannot be
+	 * evaluated yields null, so the caller falls back to conflictStrategy.
+	 *
+	 * @param array<string, mixed> $rules  The decision table.
+	 * @param array<string, mixed> $inputs Every available input.
+	 *
+	 * @return string|null
+	 */
+	private function ruleStrategy(array $rules, array $inputs): ?string {
+		$declared = [];
+		foreach (($rules['inputs'] ?? []) as $input) {
+			if (is_array($input) === true && is_string($input['name'] ?? null) === true && $input['name'] !== '') {
+				$name = $input['name'];
+				$declared[$name] = ($inputs[$name] ?? null);
+			}
+		}
+
+		try {
+			$result = $this->evaluator->evaluate(decisionTable: $rules, inputs: $declared);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		$strategy = ($result['outputs']['strategy'] ?? null);
+		if (is_string($strategy) === true) {
+			// A FEEL string literal ("reject") names the same strategy as the bare word.
+			return trim($strategy, '"');
+		}
+
+		return null;
+	}//end ruleStrategy()
+
+	/**
 	 * The outcome of a real conflict under a known strategy.
 	 *
 	 * @param string       $strategy The configured strategy, known to be valid.
@@ -133,6 +246,8 @@ final class SyncConflictResolver {
 				return self::KEEP_LOCAL;
 			case self::NEWEST_WINS:
 				return $this->resolveNewest(conflict: $conflict);
+			case self::REJECT:
+				return self::REJECT_SOURCE;
 			case self::MANUAL:
 			default:
 				return self::DEFER;

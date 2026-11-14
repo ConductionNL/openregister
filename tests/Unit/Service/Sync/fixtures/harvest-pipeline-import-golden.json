@@ -7,6 +7,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 1,
             "status": "failed"
         },
@@ -59,6 +61,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -106,8 +110,10 @@
             "gathered": 1,
             "created": 0,
             "updated": 0,
-            "unchanged": 1,
+            "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 1,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -124,7 +130,7 @@
             [
                 "transition",
                 "a",
-                "unchanged",
+                "shadowed",
                 true,
                 "obj-1"
             ]
@@ -138,6 +144,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 1,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -168,6 +176,8 @@
             "updated": 1,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -218,11 +228,13 @@
             "executionId": "exec-1",
             "gathered": 1,
             "created": 0,
-            "updated": 1,
+            "updated": 0,
             "unchanged": 0,
             "conflicts": 0,
-            "errors": 0,
-            "status": "success"
+            "shadowed": 0,
+            "rejected": 0,
+            "errors": 1,
+            "status": "failed"
         },
         "calls": [
             [
@@ -235,34 +247,14 @@
                 "obj-1"
             ],
             [
-                "saveObject",
-                [
-                    {
-                        "title": "T a",
-                        "ext": "a"
-                    },
-                    [],
-                    "reg",
-                    "schema",
-                    "obj-1",
-                    true,
-                    true,
-                    false,
-                    true,
-                    null,
-                    null,
-                    false,
-                    false,
-                    false,
-                    null
-                ]
+                "failure",
+                "a",
+                "import_error",
+                "lookup failed"
             ],
             [
-                "transition",
-                "a",
-                "imported",
-                true,
-                "saved-uuid"
+                "warning",
+                "[HarvestPipeline] Import failed for a: lookup failed"
             ]
         ]
     },
@@ -271,9 +263,11 @@
             "executionId": "exec-1",
             "gathered": 1,
             "created": 0,
-            "updated": 1,
+            "updated": 0,
             "unchanged": 0,
-            "conflicts": 0,
+            "conflicts": 1,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -288,34 +282,11 @@
                 "obj-1"
             ],
             [
-                "saveObject",
-                [
-                    {
-                        "title": "T a",
-                        "ext": "a"
-                    },
-                    [],
-                    "reg",
-                    "schema",
-                    "obj-1",
-                    true,
-                    true,
-                    false,
-                    true,
-                    null,
-                    null,
-                    false,
-                    false,
-                    false,
-                    null
-                ]
-            ],
-            [
                 "transition",
                 "a",
-                "imported",
+                "conflict",
                 true,
-                "saved-uuid"
+                "obj-1"
             ]
         ]
     },
@@ -325,8 +296,10 @@
             "gathered": 1,
             "created": 0,
             "updated": 0,
-            "unchanged": 1,
+            "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 1,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -343,7 +316,7 @@
             [
                 "transition",
                 "a",
-                "unchanged",
+                "shadowed",
                 true,
                 "obj-1"
             ]
@@ -357,6 +330,8 @@
             "updated": 1,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -410,6 +385,8 @@
             "updated": 1,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -418,6 +395,10 @@
                 "findByExternalId",
                 1,
                 "a"
+            ],
+            [
+                "object.find",
+                "obj-1"
             ],
             [
                 "saveObject",
@@ -459,6 +440,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 1,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -489,6 +472,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 1,
             "status": "failed"
         },
@@ -544,6 +529,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -601,6 +588,8 @@
             "updated": 0,
             "unchanged": 1,
             "conflicts": 2,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -694,6 +683,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -743,6 +734,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 1,
             "status": "failed"
         },
@@ -792,6 +785,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -841,6 +836,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 1,
             "status": "partial"
         },
@@ -928,6 +925,8 @@
             "updated": 1,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -981,6 +980,8 @@
             "updated": 0,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -1030,6 +1031,8 @@
             "updated": 1,
             "unchanged": 0,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -1083,6 +1086,8 @@
             "updated": 0,
             "unchanged": 1,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
@@ -1109,6 +1114,8 @@
             "updated": 0,
             "unchanged": 1,
             "conflicts": 0,
+            "shadowed": 0,
+            "rejected": 0,
             "errors": 0,
             "status": "success"
         },
