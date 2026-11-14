@@ -124,6 +124,7 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | `FacetHandler::schemasMatching()` (facet discovery) | was (b), now scoped | The query's `@self.register` when it names one register, read through an optional register reader on `FacetLookups`; a list of registers scopes nothing. |
 | `AggregationRunner::resolveCrossTarget()` (cross-schema `from:`) | was (b), now scoped | `$run->register`: a `from:` slug it carries resolves there and aggregates on its table; one it lacks resolves globally and finds its own register as before. Joins and the no-register `findSchema()` stay (c). |
 | `UtilityHandler::normalizeEntity()` (object migration: `MigrationHandler::loadSides()`, `ObjectService::migrate()` target and source) | was (b), now scoped | Each side's own register, through a new optional last `register` argument; the rights check in `migrate()` and the move in `loadSides()` resolve the target schema the same way. Without the argument it resolves as before. |
+| `SourceRecordResolver::lookupSchemaId()` (survivorship reverse-FK, merge relink) | was (b), now scoped | The source register (`sourceRegister`, else the master's or the from-object's register); the static memo is keyed by register and slug, the bare slug only for an unscoped lookup. Reads it through an optional register reader. |
 
 ### Still class (b): open
 
@@ -131,7 +132,6 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | --- | --- | --- |
 | `SchemaManageGate::mayManageNamed()` (mixed-schema bulk rights) and `SaveLookups::schemaIdBySlug()` (the save) | (b), open | Must change together: scoping the rights check alone would check a different schema than the save writes. A follow-up. |
 | `RegisterResolverService::findSchema()` (app-config pair) | (b), open | The scoped lookup bypasses the tenant filter, so the explicit-organisation check has to be carried over first. |
-| `SourceRecordResolver::lookupSchemaId()` (survivorship) | (b), open | Also memoised in a static keyed by the bare slug; the key needs the register first. |
 | `SearchQueryHandler::schemaOrNull()` | (b), open | `buildSearchQuery()` holds the register but passes only the schema down. |
 
 ### Class (a) and (c)
