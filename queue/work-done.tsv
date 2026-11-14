@@ -11551,3 +11551,4 @@ build:stackiq:adopt-integration-leaves:c2	PR #1961: task 3.1 found all six detai
 fix:buildiq:1624:f4e7c1bd	inherited: 3.88 after merge is above development's own committed rating 3.85 (.maintainability-floor.json at 92c43771); the 3.91 floor is missed on plain development too	session-20261114T211808-5e900938	2026-11-14T22:25:44Z
 review:shillinq:2991:f2980f52	GREEN	session-20261114T214733-589f5bff	2026-11-14T22:25:45Z
 build:stackiq:landscape-completeness-score:c2	nothing left in code: PR #1942 already has tasks 1-4 implemented with unit tests and the docs page, branch current with development; left Playwright (2,3) and screenshot (5), need a live instance	session-20261114T214719-cd72efa7	2026-11-14T22:25:42Z
+fix:stackiq:1946:c75ea65b	no change: branch already contains development; conflict is only with unmerged siblings #1911/#1928 (l10n), reverify after they land	session-20261114T214719-cd72efa7	2026-11-14T22:26:10Z
