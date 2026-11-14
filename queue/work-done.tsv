@@ -10071,3 +10071,4 @@ review:openregister:10566:9fb975a0	APPROVE 10566	session-20261114T144809-d686f75
 build:pipelinq:kcc-agent-panel:c2	failed: not buildable: the change itself declares implementation out of scope (plan only, 'not to be built now'); needs a follow-up implementation change, and integriq kcc-cti-adapter CallEvent is still unbuilt	session-20261114T161013-497dba57	2026-11-14T16:10:49Z
 fix:buildiq:1590:ab70ca96	conflict removed (test moved to own file), pushed 44e1dfb1, REVERIFY recorded	session-20261114T151942-48d6369d	2026-11-14T16:10:49Z
 fix:planninq:1170:b025d50e	conflict resolved keeping both sides; new head c04b52d2, REVERIFY recorded	session-20261114T151934-e3441c93	2026-11-14T16:11:07Z
+verify:planninq:1158:524d7154	1158, 1159, 1162 GREEN; 1169 CONFLICT (l10n in tree order)	session-20261114T151932-05b02c14	2026-11-14T16:11:35Z
