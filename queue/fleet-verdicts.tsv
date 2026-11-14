@@ -8774,3 +8774,4 @@ hermiq	1757	52b33f1fdf0803bda6d22d9eecec3561d5c1da0d	REVERIFY	worker-25	moved th
 integriq	3619	432fff9022a282f769e85cd303cbb36c061f5871	GREEN	worker-06	unit 8930 on the tree (baseline 8920, 7 failures inherited from development), 0 new; vitest 2178 pass
 integriq	3620	f9fa080b61a7ef06f34810f456798c24dbb23ae2	GREEN	worker-06	unit 8930 on the tree (baseline 8920, 7 failures inherited from development), 0 new; vitest 2178 pass
 integriq	3621	1f6f968f349cac6b7912893275f81ef72a171138	GREEN	worker-06	unit 8930 on the tree (baseline 8920, 7 failures inherited from development), 0 new; vitest 2178 pass
+planninq	1159	3ba42b87867c837776ceaac13ca06a1cd4149d8d	REVERIFY	worker-40	merged development in: TaskDetail.vue keeps both sides (date handlers + linked files), l10n json 3-way merged, js regenerated; eslint clean, vitest 3248 pass, l10n parity OK; new head b7c86685b93e00fd2a9068fee34ffeef20327226, verify it
