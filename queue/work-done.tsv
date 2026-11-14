@@ -8425,3 +8425,4 @@ build:stackiq:insight-assistant-answers-and-action-trail	partial: PR #1920 task 
 review:stackiq:1693:71f027fc	GREEN: behaviour-preserving refactor; vitest 2486/2486	session-20261114T073105-27c9d15e	2026-11-14T08:48:32Z
 review:stackiq:1706:dcde9ef2	GREEN	session-20261114T065626-0651b305	2026-11-14T08:48:39Z
 fix:buildiq:1616:6cdd062c	conflict resolved: l10n keys moved mid-catalogue, tree with 1613+1614 merges clean; new head ccde40f3; REVERIFY queued	session-20261114T073109-930980c2	2026-11-14T08:48:50Z
+fix:opencatalogi:2651:c5411594	no change: clean on development; tree-only src/manifest.json conflict, REVERIFY recorded	session-20261114T082640-d9af913e	2026-11-14T08:49:07Z
