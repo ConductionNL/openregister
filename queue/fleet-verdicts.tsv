@@ -8511,3 +8511,4 @@ decidiq	2146	47325aadac703be8570abab1ae1d0c3fb47b6f81	REVERIFY	worker-33	merged 
 learniq	2538	b475848dd288a7586ff16d0863bc0d26adb78fa6	CONFLICT	worker-22	clean on development; conflicts after #2532 in the tree: lib/Settings/learniq_register.json
 decidiq	2168	59aba86fda1eb37214b0fccb954943d026a5b617	REVERIFY	worker-06	the two vitest specs pinned the exact info.xml version; they now check it is at least the bump (fail below it); vitest 2724 pass 0 fail; new head 517bc1d0af236a9431179e4b1673a9f2221294fc, verify it
 decidiq	2170	5a972e2e07eff781d04a099c4ca7cefedcbc8d24	GREEN	worker-14	unit 4242 OK on tree (baseline 4174 OK), vitest 2735 OK, no new failures; builds live-room-conference-system-link per its specs
+portaliq	2495	0563a50f0c9e7c60aea88f1816beaf5dc09c4ab8	GREEN	worker-47	unit 5247 tests OK (baseline 5247 OK, 0 failures); docs-only openspec spec/tasks change, 0 new failures
