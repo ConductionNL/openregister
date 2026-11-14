@@ -8622,3 +8622,4 @@ build:thematiq:house-style-font-size-and-weight	PR #1675: all 3 tasks (spec tag,
 verify:larpinq:1040:5786f531	5 GREEN (1040 1041 1044 1046 1048), 4 CONFLICT (1042 1043 1045 1047, l10n tail vs #1041; 1047 also golden vs #1046); tree PHPUnit 821 OK, vitest 524 OK	session-20261114T082633-64525b24	2026-11-14T09:16:28Z
 verify:stackiq:1912:eaaa3337	4 GREEN, 3 CONFLICT (1944-1946 l10n vs tree); no new failures	session-20261114T075640-efa02b24	2026-11-14T09:17:11Z
 build:thematiq:set-file-keeps-the-dark-block	built: PR #1676	session-20261114T062156-e8adf8ca	2026-11-14T09:17:55Z
+cover:portaliq:b60f3b81m4ccb:8ed5443b	no PR: lib/Kernel/Contracts/*.php holds 265 interfaces and nothing else, no executable statements to test	session-20261114T075640-efa02b24	2026-11-14T09:17:48Z
