@@ -12021,3 +12021,4 @@ fix:larpinq:1059:33374bf7	no change: branch already contains development; the CH
 fix:shillinq:3062:eafe1f44	merged development in, unit green, REVERIFY new head d70c391db9	session-20261114T224745-bab17644	2026-11-14T23:44:11Z
 fix:larpinq:1054:41befe20	no change: clean on development; tree-only conflicts with #1041/#1045, REVERIFY at same head	session-20261114T231756-01da210e	2026-11-14T23:44:31Z
 fix:thematiq:1677:ab35c3aa	merged development, l10n union resolved and rebuilt, l10n gates + vitest green; new head 5e934e94	session-20261114T223937-a95b1403	2026-11-14T23:45:01Z
+fix:larpinq:1049:ad99dd01	golden fixture updated for worlds-maps pages; vitest 548 green; new head 0b6c6360, REVERIFY recorded	session-20261114T231738-f75034a1	2026-11-14T23:45:09Z
