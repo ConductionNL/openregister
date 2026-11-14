@@ -11768,3 +11768,4 @@ fix:larpinq:1041:912b882a	conflict resolved, pushed 4ea3e476, REVERIFY	session-2
 fix:keepiq:1790:5c0dced9	merged development, l10n conflict kept both sides; new head dad455b4	session-20261114T224920-352ef0eb	2026-11-14T23:04:47Z
 review:integriq:3546:46dc8e54	GREEN: matches REQ-EWC-008, suite fails inherited	session-20261114T225452-4fcfea7f	2026-11-14T23:04:54Z
 build:versioniq:safety-rollback-backup-and-preflight:c2	partial: PR #714 (head 8da32088) now has 1.3 and 2.2 too; left 3.1-3.5 backup/restore and 4.1	session-20261114T221756-d9538cf9	2026-11-14T23:05:01Z
+verify:integriq:3593:656dec94	3593 GREEN, 3600 CONFLICT, 3636 GREEN; no new failures	session-20261114T224751-87da8a15	2026-11-14T23:05:07Z
