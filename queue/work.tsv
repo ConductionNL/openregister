@@ -9690,3 +9690,5 @@ review:openregister:10514:ade1dba8	review	openregister	main	10514	sha=ade1dba877
 review:openregister:10518:b334b861	review	openregister	main	10518	sha=b334b861ece2a1096b59c601aa317645dde4082e;last_approved=;title=feat(openregister): build register-document-store	2026-11-14T11:00:22Z
 review:openregister:10534:cf876483	review	openregister	main	10534	sha=cf8764833bb1ecde9ccb2204fa4f5a64707c7b10;last_approved=;title=feat(openregister): build send-at-on-the-messaging-leaf (sweep audit, e-mail channel)	2026-11-14T11:00:22Z
 review:openregister:10535:0f323923	review	openregister	main	10535	sha=0f323923943ea776e90668441b7e0bc5e7eead4e;last_approved=;title=feat(openregister): build grants-that-follow-a-slot-a-relation-or-a-reason (slot grants)	2026-11-14T11:00:22Z
+review:openregister:10518:c5435f7a	review	openregister	main	10518	sha=c5435f7ac606862d141760c55dcc0b5a92ec0d42;last_approved=;title=feat(openregister): build register-document-store	2026-11-14T11:05:22Z
+merge:integriq:3574:2279c986	merge	integriq	development	development	prs=3574@4879743207913454780555162b88ae2a71343b96	2026-11-14T11:05:22Z
