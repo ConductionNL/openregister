@@ -109,6 +109,20 @@ class SpreadsheetExtractor {
 	}//end assertLibraryAvailable()
 
 	/**
+	 * The text of spreadsheet bytes that do not come from a Nextcloud file, such
+	 * as a member of an archive.
+	 *
+	 * @param string $content The spreadsheet bytes.
+	 *
+	 * @return string The text of every sheet, or '' when no sheet holds a value.
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	public function readBytes(string $content): string {
+		return $this->readText(content: $content);
+	}//end readBytes()
+
+	/**
 	 * The text of every sheet in spreadsheet bytes, or '' when no sheet holds a value.
 	 *
 	 * Each sheet is a header line, a tab-separated line per non-empty row, and a blank line.

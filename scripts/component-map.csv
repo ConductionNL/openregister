@@ -4158,3 +4158,6 @@ Service/Anonymisation/DetectorVersionHistory.php,51,Service,Compliance,Complianc
 Service/Anonymisation/DetectorVersionReader.php,49,Service,Compliance,Compliance/Service/Anonymisation/DetectorVersionReader.php,0,,Compliance
 Service/Object/RelationAddressRewrite.php,42,Service,Service,Service/Object/RelationAddressRewrite.php,0,,Core
 Service/Object/RelationAddressRewriteInterface.php,6,Service,Service,Service/Object/RelationAddressRewriteInterface.php,0,,Core
+Files/Service/TextExtraction/ArchiveExtraction.php,146,Files,Files,Files/Service/TextExtraction/ArchiveExtraction.php,0,,Files
+Files/Service/TextExtraction/ArchiveTextExtractor.php,271,Files,Files,Files/Service/TextExtraction/ArchiveTextExtractor.php,0,,Files
+Files/Service/TextExtraction/ArchiveContainers.php,134,Files,Files,Files/Service/TextExtraction/ArchiveContainers.php,0,,Files

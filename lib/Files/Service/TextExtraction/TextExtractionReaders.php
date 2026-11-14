@@ -33,12 +33,14 @@ final class TextExtractionReaders {
 	 * @param SpreadsheetExtractor $spreadsheetExtractor Extractor for spreadsheet documents
 	 * @param PdfExtractor         $pdfExtractor         Extractor for PDF documents
 	 * @param WordExtractor        $wordExtractor        Extractor for Word documents
+	 * @param ArchiveTextExtractor|null $archives Reads zip members; null leaves archives unopened.
 	 */
 	public function __construct(
 		public readonly EmlParser $emlParser,
 		public readonly SpreadsheetExtractor $spreadsheetExtractor,
 		public readonly PdfExtractor $pdfExtractor,
 		public readonly WordExtractor $wordExtractor,
+		public readonly ?ArchiveTextExtractor $archives = null,
 	) {
 	}//end __construct()
 }//end class
