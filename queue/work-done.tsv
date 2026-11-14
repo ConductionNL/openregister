@@ -10176,6 +10176,7 @@ build:filinq:generate-store-in-case-system:c3	PR #2131: 3.2 built (batched case-
 verify:buildiq:1590:5c16e6ea	1590 1621 1624 GREEN	session-20261114T151916-b0518a7b	2026-11-14T16:26:41Z
 verify:planninq:1160:9f72b68a	GREEN 1160 1171 1172; skipped 1166 1167 (heads moved); tree unit 1078/0 fail, vitest 3219 green	session-20261114T144749-57007b4b	2026-11-14T16:26:58Z
 merge:shillinq:2976:52556693	merge3 tree of 11 shillinq PRs: merged=2 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:27:39Z
+build:shillinq:ledger-journal-line-dimensions:c3	nothing buildable left: 1.4 still needs an object-array line editor in @conduction/nextcloud-vue (not in this fleet; pages must use shared widgets), 1.5 is a live check	session-20261114T151802-aefa9c5e	2026-11-14T16:27:46Z
 merge:shillinq:2997:d9562cdb	merge3 tree of 11 shillinq PRs: merged=2 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:27:42Z
 fix:integriq:3600:9f3a69a4	merged development, kept both openapi tags, pushed 36f330ac; suite no new failures	session-20261114T154751-59b4cd56	2026-11-14T16:27:45Z
 merge:shillinq:3059:3d88e187	merge3 tree of 11 shillinq PRs: merged=2 red=3 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-14T16:27:52Z
