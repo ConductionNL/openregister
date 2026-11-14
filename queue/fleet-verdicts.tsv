@@ -7250,3 +7250,4 @@ integriq	3590	74a7e65f1a2a365af73112fa34e2894acebc6c5a	CONFLICT	worker-18	confli
 integriq	3591	d87e58bec57a3e2a6cec4aabec934037fdc2c0fc	GREEN	worker-18	unit 8568 tests on tree 3562+3585+3591+3592 vs baseline 8493, same 2E/3F inherited, no new failures; vitest 2177 pass; platform-integrations-as-code: new occ commands only
 integriq	3592	f5a90aa9d8521c0e3f027890fb707bcedff852a0	GREEN	worker-18	unit 8568 tests on tree 3562+3585+3591+3592 vs baseline 8493, same 2E/3F inherited, no new failures; vitest 2177 pass; platform-admin-defaults as specified (SQL rebase and its tests removed per REQ-ADEF-003, settings routes admin-only)
 integriq	3593	331b9581d2f6f19ebf938549d4413fdab28d9ba9	CONFLICT	worker-18	conflicts in tree with earlier members (l10n en/nl js+json); clean on plain development
+integriq	3596	0a5a8f4f94444e169890fd509e3c503f1dd52f32	CONFLICT	worker-58	conflicts with development+earlier tree PRs
