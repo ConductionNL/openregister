@@ -725,6 +725,18 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?string $identityKey = null;
 
 	/**
+	 * The object's resolved classification (`confidentiality-classification-primitive`):
+	 * tier, ground, releaseAt and released.
+	 *
+	 * Transient property populated by the render layer. Not persisted: the
+	 * classification is declared on the SCHEMA. Exposed in @self as
+	 * `confidentiality`, and omitted for a schema without the annotation.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $confidentiality = null;
+
+	/**
 	 * Whether the current user follows this object (`object-watchers`).
 	 *
 	 * Transient property populated by the render layer from
@@ -1068,6 +1080,32 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setIdentityKey(?string $key): void {
 		$this->identityKey = $key;
 	}//end setIdentityKey()
+
+	/**
+	 * Get the object's resolved classification, when set by the render layer.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md
+	 */
+	public function getConfidentiality(): ?array {
+		return $this->confidentiality;
+	}//end getConfidentiality()
+
+	/**
+	 * Write the object's resolved classification.
+	 *
+	 * Surfaced in the @self envelope as `confidentiality` by getObjectArray().
+	 *
+	 * @param array<string, mixed>|null $confidentiality The tier, ground, releaseAt and released.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md
+	 */
+	public function setConfidentiality(?array $confidentiality): void {
+		$this->confidentiality = $confidentiality;
+	}//end setConfidentiality()
 
 	/**
 	 * Write the current user's follow marker.
@@ -1691,6 +1729,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//   demands for this reader, absent when the schema declares none.
 		// - key: the identity values joined in declared order, absent when the
 		//   schema declares no identity (`modelling-composite-identity`).
+		// - confidentiality: the resolved tier, ground, releaseAt and released,
+		//   absent when the schema declares no confidentiality annotation
+		//   (`confidentiality-classification-primitive`).
 		// - watching, watcherCount: the reader's own follow state and the size
 		//   of the audience (`object-watchers`).
 		// - unread: whether the reader has seen this object since it last
@@ -1737,6 +1778,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'registry'                => $this->registryState,
 			'fieldRules'              => $this->fieldRules,
 			'key'                     => $this->identityKey,
+			'confidentiality'         => $this->confidentiality,
 		];
 	}//end renderedFields()
 

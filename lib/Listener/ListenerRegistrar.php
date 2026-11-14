@@ -753,6 +753,11 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
 
+		// The redaction policy index follows its termRule, detectionPattern and redactionProfile objects.
+		$context->registerEventListener(ObjectCreatedEvent::class, RedactionPolicyCacheListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, RedactionPolicyCacheListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, RedactionPolicyCacheListener::class);
+
 		// Facet freshness on every object write: bumps the counter for the written
 		// object's (register, schema) scope so the next facet read cannot serve a
 		// bucket list computed before the write (openregister#3560).

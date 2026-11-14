@@ -125,9 +125,19 @@ final class PipelineStepReportTest extends TestCase {
 		// The DOCX and ODT sanitisers, the PDF text replacer and the PDF metadata sanitiser.
 		$this->assertGreaterThanOrEqual(4, $found);
 
-		// The image seam's burner paints into pixels: it is a step too, for the standalone image types.
+		// The image seam's burner paints into pixels: it is a step too, for the standalone image types and the images inside DOCX and ODT.
 		$this->assertSame('image-burner', $steps->stepImplementedBy(class: \OCA\OpenRegister\Service\File\ImageBurner::class));
-		$this->assertSame(['image/png', 'image/jpeg', 'image/tiff', 'image/webp'], $steps->mimeTypes(step: 'image-burner'));
+		$this->assertSame(
+			[
+				'image/png',
+				'image/jpeg',
+				'image/tiff',
+				'image/webp',
+				'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+				'application/vnd.oasis.opendocument.text',
+			],
+			$steps->mimeTypes(step: 'image-burner')
+		);
 	}//end testEveryRegisteredStepHasAReportEntry()
 
 	/**
@@ -210,7 +220,7 @@ final class PipelineStepReportTest extends TestCase {
 				'pdf-metadata-sanitiser' => ['outcome' => 'not-applicable'],
 				'docx-sanitiser' => ['outcome' => 'ran'],
 				'odt-sanitiser' => ['outcome' => 'not-applicable'],
-				'image-burner' => ['outcome' => 'not-applicable'],
+				'image-burner' => ['outcome' => 'skipped', 'reason' => 'the step did not run for this file'],
 			],
 			$logged->getStepsArray()
 		);
