@@ -73,13 +73,13 @@ final class FileHitSearch {
 	 *
 	 * @param ChunkMapperInterface $chunks  The file-chunk table.
 	 * @param FileMapperInterface  $files   The file cache: a file's name and owning object.
-	 * @param MagicMapperInterface $objects The objects, read with RBAC and tenancy applied.
+	 * @param MagicMapperInterface $objectMapper The objects, read with RBAC and tenancy applied.
 	 * @param LoggerInterface      $logger  Where an unresolvable hit is noted.
 	 */
 	public function __construct(
 		private readonly ChunkMapperInterface $chunks,
 		private readonly FileMapperInterface $files,
-		private readonly MagicMapperInterface $objects,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -148,7 +148,7 @@ final class FileHitSearch {
 				return null;
 			}
 
-			$object = $this->objects->find(identifier: $uuid, _rbac: true, _multitenancy: true);
+			$object = $this->objectMapper->find(identifier: $uuid, _rbac: true, _multitenancy: true);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'[FileHitSearch] A matching file chunk was left out: its object could not be read: {error}',
