@@ -32,8 +32,10 @@ use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
 use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
+use OCA\OpenRegister\Service\Rbac\AuditRowWriter;
 use OCA\OpenRegister\Service\User\AccountPropertyChange;
 use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenAuditRow;
 use OCA\OpenRegister\Service\User\ApiTokenRequest;
 use OCA\OpenRegister\Service\User\AvatarUpload;
 use OCA\OpenRegister\Service\User\PasswordChange;
@@ -1504,6 +1506,7 @@ class UserService implements UserServiceInterface {
 			'expires' => $expires,
 		];
 		$this->storeTokens(userId: $userId, tokens: $tokens);
+		$this->auditToken(action: ApiTokenAuditRow::CREATED, token: $tokens[$tokenId], ownerId: $userId);
 
 		return ['id' => $tokenId, 'name' => $request->name, 'token' => $tokenValue, 'created' => $now, 'expires' => $expires];
 	}//end issueApiToken()
@@ -1621,14 +1624,36 @@ class UserService implements UserServiceInterface {
 			throw new RuntimeException('Token not found', 404);
 		}
 
+		$revoked = $tokens[$tokenId];
 		unset($tokens[$tokenId]);
 		$this->storeTokens(userId: $userId, tokens: $tokens);
+		$this->auditToken(action: ApiTokenAuditRow::REVOKED, token: $revoked, ownerId: $userId);
 
 		return [
 			'success' => true,
 			'message' => 'Token revoked',
 		];
 	}//end revokeApiToken()
+
+	/**
+	 * Put a minted or revoked token on the audit trail: its id and name, its
+	 * owner and the actor, never its value. A failed write is logged and never
+	 * fails the token change, which has already been stored.
+	 *
+	 * @param string               $action  ApiTokenAuditRow::CREATED or ::REVOKED.
+	 * @param array<string, mixed> $token   The stored token entry.
+	 * @param string               $ownerId The token's owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/capability-rows-verified-c/specs/enhanced-audit-trail/spec.md#requirement-changes-to-authorisation-rules-api-tokens-and-record-types-are-on-the-audit-trail
+	 */
+	private function auditToken(string $action, array $token, string $ownerId): void {
+		(new AuditRowWriter(mapper: $this->auditTrailMapper, logger: $this->logger))->write(
+			rows: [(new ApiTokenAuditRow())->row(action: $action, token: $token, ownerId: $ownerId, actor: $this->userSession->getUser())],
+			failure: '[UserService] Could not record an API token change; the token change itself was stored'
+		);
+	}//end auditToken()
 
 	/**
 	 * Request account deactivation

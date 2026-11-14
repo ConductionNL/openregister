@@ -54,6 +54,7 @@ use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\IntegrationProviderInvoker;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Support\FleetAppId;
 use Psr\Container\ContainerInterface;
@@ -300,7 +301,8 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 			// The OpenConnector source resolves `{ space, title }` to a new
 			// remote xWiki page and returns the normalised row.
 			$page = ['space' => $draft->space, 'title' => $draft->title];
-			$row  = $provider->create(
+			$row  = (new IntegrationProviderInvoker())->create(
+				$provider,
 				new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
 				$page
 			);
@@ -570,7 +572,8 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	private function resolveRemotePage(string $pageReference, LinkTarget $target): array {
 		$provider = $this->requireProvider();
 		try {
-			$row = $provider->get(
+			$row = (new IntegrationProviderInvoker())->get(
+				$provider,
 				new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
 				$pageReference
 			);
@@ -680,7 +683,11 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		$register = (string)(int)$link->getRegisterId();
 		$schema   = (string)(int)($link->getSchemaId() ?? 0);
 		try {
-			return $provider->get(new ObjectRef(register: $register, schema: $schema, id: (string)$link->getObjectUuid()), (string)$link->getPageReference());
+			return (new IntegrationProviderInvoker())->get(
+				$provider,
+				new ObjectRef(register: $register, schema: $schema, id: (string)$link->getObjectUuid()),
+				(string)$link->getPageReference()
+			);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('XwikiLinkService::refreshLink fetch failed: ' . $e->getMessage());
 			return null;

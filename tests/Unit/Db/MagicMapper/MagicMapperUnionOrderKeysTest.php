@@ -69,7 +69,10 @@ class MagicMapperUnionOrderKeysTest extends TestCase {
 	}//end testRelevanceWithoutASearchTermIsLeftOut()
 
 	public function testAnUnderscoreFieldStaysUnquoted(): void {
-		$this->assertSame(['row' => '_name', 'sql' => '_name', 'dir' => 'DESC'], $this->keys(['_order' => ['_name' => 'desc']])[0]);
+		// `_name` is text, so it orders lower-cased first (REQ-CIO-001); both keys keep the column unquoted.
+		$keys = $this->keys(['_order' => ['_name' => 'desc']]);
+		$this->assertSame(['row' => '_name', 'sql' => 'LOWER(CAST(_name AS TEXT))', 'dir' => 'DESC', 'fold' => true], $keys[0]);
+		$this->assertSame(['row' => '_name', 'sql' => '_name', 'dir' => 'DESC'], $keys[1]);
 	}//end testAnUnderscoreFieldStaysUnquoted()
 
 	public function testAPropertyFieldIsQuotedOnItsColumn(): void {
