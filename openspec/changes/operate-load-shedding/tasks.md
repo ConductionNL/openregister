@@ -11,7 +11,8 @@
 ## 2. Guarded call sites
 
 - [x] 2.1 Guard `OutboundHttpClient` per host, honouring the `openregister_dependency` request option and a 429's `Retry-After` (design D-2, D-3). Verify: `tests/Unit/Service/Outbound/OutboundHttpClientBreakerTest.php` asserts no request is sent while open and a 404 does not count as a failure.
-- [ ] 2.2 Guard `DbalObjectSourceProvider::connect()` per source, and make `find()` throw the 503 while the breaker is open instead of returning null. Verify: `tests/Unit/Service/ObjectSource/DbalObjectSourceBreakerTest.php` asserts the 503 on both `find()` and `findAll()` with no connect attempt.
+- [x] 2.2 Guard `DbalObjectSourceProvider::connect()` per source, and make `find()` throw the 503 while the breaker is open instead of returning null. Verify: `tests/Unit/Service/ObjectSource/DbalObjectSourceBreakerTest.php` asserts the 503 on both `find()` and `findAll()` with no connect attempt.
+  > 2026-11-14: `connect()` asks the `source:{id}` breaker before opening a connection and counts a connection error; each find, list and count query counts its outcome (a query error is a failure, a read a success). While open, `DependencyUnavailableException` leaves `find()` instead of the old `null`, so the middleware answers 503. `ObjectSourceWiring` now hands the provider the `BreakerRegistry` (wiring golden re-recorded for that one parameter). Aggregation queries are gated but their outcome is not counted.
 - [ ] 2.3 Guard the LLM chat and embedding calls under key `llm`. Verify: `tests/Unit/Service/Chat/ResponseGenerationBreakerTest.php` asserts an open breaker refuses before LLPhant is constructed.
 - [ ] 2.4 Guard webhook delivery per host: an open breaker schedules the delivery on `WebhookRetryJob` for after the cool-down without counting an attempt, and the interception webhook continues at once (design D-6). Verify: `tests/Unit/Service/WebhookServiceBreakerTest.php`.
 

@@ -48,6 +48,9 @@ use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\ReadOnlyQueryGuard;
 use OCA\OpenRegister\Service\Dbal\ReadOnlyReadScope;
+use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
+use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
+use WeakMap;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -114,6 +117,13 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	private readonly ReadOnlyQueryGuard $queryGuard;
 
 	/**
+	 * The breaker key of each connection this provider opened, so a query's outcome counts on its source.
+	 *
+	 * @var WeakMap<Connection, string>
+	 */
+	private WeakMap $breakerKeys;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SourceMapperInterface $sourceMapper Loads the backing database source.
@@ -121,6 +131,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 * @param ReadOnlyReadScope|null $readScope  Runs a query-backed read read-only with a statement timeout.
 	 * @param ReadOnlyQueryGuard|null $queryGuard Refuses a query-backed schema's SQL that is not a single read.
+	 * @param BreakerRegistry|null $breakers The dependency breakers; null leaves the sources unguarded.
 	 *
 	 * @return void
 	 */
@@ -130,7 +141,9 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		private readonly LoggerInterface $logger,
 		?ReadOnlyReadScope $readScope = null,
 		?ReadOnlyQueryGuard $queryGuard = null,
+		private readonly ?BreakerRegistry $breakers = null,
 	) {
+		$this->breakerKeys = new WeakMap();
 		$this->aggregator = new DbalAggregator(logger: $logger);
 		$this->readScope = ($readScope ?? new ReadOnlyReadScope());
 		$this->queryGuard = ($queryGuard ?? new ReadOnlyQueryGuard());
@@ -284,15 +297,19 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			(new DbalStatement(qb: $qb, connection: $target->connection))->andEquals(pairs: $pairs);
 			$qb->setMaxResults(1);
 
-			return $this->readOf(
+			$row = $this->readOf(
 				connection: $target->connection,
 				config: $target->ref->config,
 				read: static fn (): array|false => $qb->executeQuery()->fetchAssociative()
 			);
 		} catch (DbalException $e) {
+			$this->countOutcome(connection: $target->connection, failed: true);
 			$this->logger->warning('[ObjectSource:dbal-source] query failed for find: ' . $e->getMessage());
 			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
 		}
+
+		$this->countOutcome(connection: $target->connection, failed: false);
+		return $row;
 	}//end findRow()
 
 	/**
@@ -388,15 +405,19 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			$qb->setMaxResults($limit);
 			$qb->setFirstResult($offset);
 
-			return $this->readOf(
+			$rows = $this->readOf(
 				connection: $target->connection,
 				config: $target->ref->config,
 				read: static fn (): array => $qb->executeQuery()->fetchAllAssociative()
 			);
 		} catch (DbalException $e) {
+			$this->countOutcome(connection: $target->connection, failed: true);
 			$this->logger->warning('[ObjectSource:dbal-source] query failed for findAll: ' . $e->getMessage());
 			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
 		}//end try
+
+		$this->countOutcome(connection: $target->connection, failed: false);
+		return $rows;
 	}//end listRows()
 
 	/**
@@ -479,10 +500,12 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 				read: static fn (): mixed => $qb->executeQuery()->fetchOne()
 			);
 		} catch (DbalException $e) {
+			$this->countOutcome(connection: $target->connection, failed: true);
 			$this->logger->warning('[ObjectSource:dbal-source] query failed for count: ' . $e->getMessage());
 			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
 		}
 
+		$this->countOutcome(connection: $target->connection, failed: false);
 		return (int)$total;
 	}//end countRows()
 
@@ -682,19 +705,66 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	}//end isDatabaseSource()
 
 	/**
-	 * Open the read-only DBAL connection for a source.
+	 * Open the read-only DBAL connection for a source, through the source's breaker (`source:{id}`).
+	 *
+	 * While the breaker is open no connection is attempted: the refusal reaches
+	 * the caller as a 503, so a dead source never reads as a missing record on
+	 * the find path (design D-3). A connection error counts as a failure.
 	 *
 	 * @param Source $source The backing source.
 	 *
 	 * @return Connection The connection.
 	 *
 	 * @throws DbalConnectionException On any connection/credential error (fail closed).
+	 * @throws DependencyUnavailableException While the source's breaker is open.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
 	private function connect(Source $source): Connection {
-		return $this->connectionFactory->getConnection(source: $source);
+		$breaker = $this->breakers?->breaker();
+		if ($breaker === null) {
+			return $this->connectionFactory->getConnection(source: $source);
+		}
+
+		$key = 'source:' . (string)$source->getId();
+		$breaker->allow(key: $key);
+
+		try {
+			$connection = $this->connectionFactory->getConnection(source: $source);
+		} catch (DbalConnectionException $e) {
+			$breaker->recordFailure(key: $key);
+			throw $e;
+		}
+
+		$this->breakerKeys[$connection] = $key;
+		return $connection;
 	}//end connect()
+
+	/**
+	 * Count one query's outcome on the breaker of the source its connection reaches.
+	 *
+	 * @param Connection $connection The connection the query ran on.
+	 * @param bool       $failed     Whether the query failed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	private function countOutcome(Connection $connection, bool $failed): void {
+		$breaker = $this->breakers?->breaker();
+		$key = ($this->breakerKeys[$connection] ?? null);
+		if ($breaker === null || $key === null) {
+			return;
+		}
+
+		if ($failed === true) {
+			$breaker->recordFailure(key: $key);
+			return;
+		}
+
+		$breaker->recordSuccess(key: $key);
+	}//end countOutcome()
 
 	/**
 	 * Whether the source's configured driver extension is absent on this instance.
