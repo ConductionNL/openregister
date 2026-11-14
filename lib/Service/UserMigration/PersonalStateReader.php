@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\UserMigration;
 
+use OCA\OpenRegister\Db\CalendarFeedToken;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
@@ -46,6 +48,34 @@ class PersonalStateReader {
 	 * @var string
 	 */
 	public const VIEWS_TABLE = 'openregister_views';
+
+	/**
+	 * The table of calendar feed tokens.
+	 *
+	 * @var string
+	 */
+	public const FEED_TOKENS_TABLE = 'openregister_calendar_feeds';
+
+	/**
+	 * The table of timeline entries.
+	 *
+	 * @var string
+	 */
+	public const TIMELINE_TABLE = 'openregister_timeline_entries';
+
+	/**
+	 * Nextcloud's comments table, where OpenRegister notes live.
+	 *
+	 * @var string
+	 */
+	public const COMMENTS_TABLE = 'comments';
+
+	/**
+	 * The comments object type OpenRegister notes carry.
+	 *
+	 * @var string
+	 */
+	public const NOTES_OBJECT_TYPE = 'openregister';
 
 	/**
 	 * Constructor.
@@ -92,6 +122,94 @@ class PersonalStateReader {
 
 		return $watches;
 	}//end watches()
+
+	/**
+	 * The calendar feed tokens the user created, revoked ones included.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return list<CalendarFeedToken>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.3
+	 */
+	public function feedTokens(string $userId): array {
+		$tokens = [];
+		foreach ($this->rowsOf(table: self::FEED_TOKENS_TABLE, column: 'user_id', userId: $userId) as $row) {
+			$tokens[] = CalendarFeedToken::fromRow($row);
+		}
+
+		return $tokens;
+	}//end feedTokens()
+
+	/**
+	 * The timeline entries the user wrote.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return list<TimelineEntry>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.4
+	 */
+	public function timelineEntries(string $userId): array {
+		$entries = [];
+		foreach ($this->rowsOf(table: self::TIMELINE_TABLE, column: 'author', userId: $userId) as $row) {
+			$entries[] = TimelineEntry::fromRow($row);
+		}
+
+		return $entries;
+	}//end timelineEntries()
+
+	/**
+	 * The notes the user wrote on OpenRegister objects: their comments of the notes object type.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return list<array{objectUuid: string, message: string, createdAt: string|null}>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.4
+	 */
+	public function notes(string $userId): array {
+		if ($userId === '') {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('object_id', 'message', 'creation_timestamp')
+			->from(self::COMMENTS_TABLE)
+			->where($qb->expr()->eq('object_type', $qb->createNamedParameter(self::NOTES_OBJECT_TYPE, IQueryBuilder::PARAM_STR)))
+			->andWhere($qb->expr()->eq('actor_type', $qb->createNamedParameter('users', IQueryBuilder::PARAM_STR)))
+			->andWhere($qb->expr()->eq('actor_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)))
+			->orderBy('id', 'ASC');
+
+		$result = $qb->executeQuery();
+		$notes = [];
+		while (($row = $result->fetch()) !== false) {
+			$notes[] = [
+				'objectUuid' => (string)$row['object_id'],
+				'message' => (string)$row['message'],
+				'createdAt' => self::stringOrNull(value: ($row['creation_timestamp'] ?? null)),
+			];
+		}
+
+		$result->closeCursor();
+
+		return $notes;
+	}//end notes()
+
+	/**
+	 * A stored value as a string, or null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null
+	 */
+	private static function stringOrNull(mixed $value): ?string {
+		if ($value === null || $value === '') {
+			return null;
+		}
+
+		return (string)$value;
+	}//end stringOrNull()
 
 	/**
 	 * The rows of a table that belong to the user, by id.
