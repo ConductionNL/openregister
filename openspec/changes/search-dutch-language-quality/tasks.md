@@ -23,7 +23,8 @@
 
 ## 3. Cross-app
 
-- [ ] 3.1 Contract for opencatalogi and portaliq: request flag `_snippet=true`, row key `@self.snippet` `{source, property?, fileId?, text}`. Verify: `tests/Contract/SearchSnippetContractTest.php`. The consumers' changes carry their own tests; they all require OpenRegister.
+- [x] 3.1 Contract for opencatalogi and portaliq: request flag `_snippet=true`, row key `@self.snippet` `{source, property?, fileId?, text}`. Verify: `tests/Contract/SearchSnippetContractTest.php`. The consumers' changes carry their own tests; they all require OpenRegister.
+  - At `tests/Unit/Contract/SearchSnippetContractTest.php`, beside the other contract tests, so the unit suite runs it (`tests/Contract/` holds only fixture directories): the flag and the values it accepts, both row shapes, the 300-character bound with `<mark>` as the only markup, and the capability key.
 
 ## V. Verification and done
 
