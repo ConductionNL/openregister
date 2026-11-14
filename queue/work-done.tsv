@@ -8074,3 +8074,4 @@ build:buildiq:logic-script-step	failed: blocked on depends_on logic-automation-a
 fix:planninq:1153:b7626350	sbom regenerated after merging development, pushed a1ad44f2, REVERIFY recorded	session-20261114T062142-da017174	2026-11-14T08:00:06Z
 verify:integriq:3571:112129a5	8 GREEN (3571-3573, 3575-3579), 3574 CONFLICT (clean on development alone); no new failures	session-20261114T065631-3903ed42	2026-11-14T08:00:22Z
 fix:integriq:3562:e21a8c0f	conflict resolved: constructor parameter moved clear of #3557, development merged, no new failures; new head 08d195a7	session-20261114T065633-3e3cb668	2026-11-14T08:00:47Z
+build:buildiq:github-shop-catalogue	already done: GitHubCatalogService, ShopController + routes, GitHub tab in TemplateGallery, CloneTemplateDialog install, PHPUnit/vitest suites and docs/github-store.md exist on development; only tasks.md ticks are missing	session-20261114T062142-da017174	2026-11-14T08:00:59Z
