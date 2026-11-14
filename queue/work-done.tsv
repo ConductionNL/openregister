@@ -9069,3 +9069,4 @@ merge:versioniq:721:36048029	merge3 tree of 30 versioniq PRs: merged=8 red=13 fa
 build4:openregister:widget-record-import:c2	partial: PR #10542 adds 4.2 failed-row export + admin-only record-import route (mapping/import, +15 tests; suite green except 5 inherited ReservedColumnNamesTest errors); left: 2.1/2.2 dry run (needs validate-only save mode), 4.1 result view, 5.1/5.2 widget (frontend), V1-V6	session-20261114T114435-17b1115e	2026-11-14T12:35:20Z
 review:openregister:10540:109e26e4	stale	feeder	2026-11-14T12:35:23Z
 review:openregister:10542:f643bdb4	stale	feeder	2026-11-14T12:35:23Z
+build4:openregister:search-file-text-and-vector-facade:c2	partial: PR #10545 — 1.1 shape and 4.2 docs done; 3.2 (archive-time spec) and 4.1 (live Newman) left	session-20261114T121614-c059f6b1	2026-11-14T12:36:07Z
