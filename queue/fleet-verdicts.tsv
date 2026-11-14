@@ -7517,3 +7517,4 @@ keepiq	1784	1518797dcd13aa9851a90a008cfbf2ecc0678817	REVERIFY	worker-05	merged d
 stackiq	1909	a4d170ee8019773cf60f7d430b746c3d0e290073	GREEN	worker-18	unit 3485 tests on tree (8 PRs), no failures (baseline 3446, none); vitest 2496 pass; org export scope now the portfolio rule (member, admin, ambtenaar) exactly as REQ-CER-003 asks
 stackiq	1910	6f628ed346d30d7ff8234df78e7240369bddaf91	GREEN	worker-18	unit 3485 tests on tree (8 PRs), no failures (baseline 3446, none); vitest 2496 pass; additive ViewImageService
 stackiq	1911	3d9e84f8481be30f832638de74a190b397f65b8a	GREEN	worker-18	unit 3485 tests on tree (8 PRs), no failures (baseline 3446, none); vitest 2496 pass; additive portfolio overlap
+stackiq	1912	8ec0b91d406060dcfab23508f274dd6c180ba685	CONFLICT	worker-18	conflicts in tree with #1908 (lib/AppInfo/Application.php); clean on plain development
