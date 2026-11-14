@@ -7512,3 +7512,4 @@ opencatalogi	2675	75dd2782987c2335977997663a67a6b5ad06a6c0	GREEN	worker-15	tree 
 opencatalogi	2676	b4a5739bc4c42ac84137c36fd324bb24416a4fab	GREEN	worker-15	tree 5583 tests vs baseline 5485 (2 failures on development, none new); vitest 1034/1034
 opencatalogi	2677	fecc3eb0fdc7e2246258c94db533312f32d510fe	GREEN	worker-15	tree 5583 tests vs baseline 5485 (2 failures on development, none new); vitest 1034/1034
 opencatalogi	2678	c98dd334841a23d3e544c7ad36caba90080e3d7e	CONFLICT	worker-15	conflicts with development + 2670-2677 in tree order; clean on development alone
+keepiq	1784	1518797dcd13aa9851a90a008cfbf2ecc0678817	REVERIFY	worker-05	merged development (clean); php unit 4975 OK. Remaining overlap with unmerged #1780/#1781/#1783 is l10n en/nl only: merge those first, then this needs another development merge; new head ee1c9e8ea153c0cec0dc079181ba82c84a1963d5, verify it
