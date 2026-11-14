@@ -59,8 +59,9 @@ final class ArchivalAnnotationValidator implements ArchivalAnnotationValidatorIn
 	 * `categoryProperty` and `action` are read by ArchivalDeclarationReader and
 	 * ClassificationOverride, so calling them unknown was a false warning on
 	 * every import of a schema that declares them. `parties` names the
-	 * properties that keep a record's parties, for MDTO `betrokkene`
-	 * (archival-conformance D1).
+	 * properties that keep a record's parties, for MDTO `betrokkene`, and
+	 * `containment` the relation through which a record contains others, for
+	 * `bevatOnderdeel` and `isOnderdeelVan` (archival-conformance D1).
 	 *
 	 * @var array<int, string>
 	 */
@@ -73,6 +74,7 @@ final class ArchivalAnnotationValidator implements ArchivalAnnotationValidatorIn
 		'categoryProperty',
 		'action',
 		'parties',
+		'containment',
 	];
 
 	/**

@@ -1787,6 +1787,7 @@ Service/Archival/AnonymisationSweep.php,58,Service,Compliance,Compliance/Service
 Service/Archival/AnonymisationTarget.php,8,Service,Compliance,Compliance/Service/Archival/AnonymisationTarget.php,0,,Compliance
 Service/Archival/Appraisal.php,43,Service,Compliance,Compliance/Service/Archival/Appraisal.php,0,403,Compliance
 Service/Archival/ArchivalAnnotationValidator.php,202,Service,Service,Service/Archival/ArchivalAnnotationValidator.php,0,,Compliance
+Service/Archival/ArchivalContainment.php,54,Service,Compliance,Compliance/Service/Archival/ArchivalContainment.php,0,,Compliance
 Service/Archival/ArchivalDecisionResolver.php,249,Service,Service,Service/Archival/ArchivalDecisionResolver.php,0,,Compliance
 Service/Archival/ArchivalDeclarationReader.php,91,Service,Compliance,Compliance/Service/Archival/ArchivalDeclarationReader.php,0,,Compliance
 Service/Archival/ArchivalFactsValidator.php,125,Service,Service,Service/Archival/ArchivalFactsValidator.php,0,,Compliance
@@ -2097,6 +2098,7 @@ Service/DsarErasureRun.php,33,Service,Compliance,Compliance/Service/DsarErasureR
 Service/DsarService.php,284,Service,Compliance,Compliance/Service/DsarService.php,1,,Compliance
 Service/Edepot/EdepotTransferService.php,568,Service,Compliance,Compliance/Service/Edepot/EdepotTransferService.php,1,35,Compliance
 Service/Edepot/MdtoBestandGenerator.php,94,Service,Compliance,Compliance/Service/Edepot/MdtoBestandGenerator.php,0,,Compliance
+Service/Edepot/MdtoContainment.php,54,Service,Compliance,Compliance/Service/Edepot/MdtoContainment.php,0,,Compliance
 Service/Edepot/MdtoDocumentWriter.php,87,Service,Compliance,Compliance/Service/Edepot/MdtoDocumentWriter.php,0,,Compliance
 Service/Edepot/MdtoEventMapper.php,134,Service,Compliance,Compliance/Service/Edepot/MdtoEventMapper.php,0,,Compliance
 Service/Edepot/MdtoPreconditions.php,103,Service,Compliance,Compliance/Service/Edepot/MdtoPreconditions.php,0,,Compliance
