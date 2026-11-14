@@ -9439,3 +9439,4 @@ humaniq	1125	a44e6b58d61ba2f214250618d75d5232c8ec9580	RED	merge3:merge-gate	GATE
 humaniq	1133	0e7cf4b632881b5454887acca9d29cc43f053255	RED	merge3:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 humaniq	1144	0a397e554d164235aefbc4465a72f533a664be44	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.62 -> 3.60
 humaniq	1145	b05d3c3dddeb423605be9200575ffaa3cef27bcf	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.62 -> 3.59
+humaniq	1156	833152c1e985dc3a9eebbaa5eb2d957e8a98dbea	CONFLICT	merge3	merges clean on development alone; files: src/manifest.effective.json tests/fixtures/manifest-baseline/manifest-canonical.json tests/fixtures/manifest-baseline/pages.json 
