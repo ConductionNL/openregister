@@ -10372,3 +10372,12 @@ versioniq	714	6d93c5ca2353275ec1d9c4291d2825048504d7cd	REVERIFY	worker-04	merged
 versioniq	707	191024645b835d55581f0f771fa301a5a4ec1331	REVERIFY	worker-31	merged development; split Policy validation, payload minAgeDays reader and updateAutoUpdateSettings helpers (no behaviour change): floor PASS (unit_complexity 4.57->4.58, unit_interfacing 4.14->4.13); unit-only suite 1711 tests, 2 golden failures inherited from development; new head f78fb56e3ee24e701d8a8548caa1a49db7f8a0c0, verify it
 versioniq	698	d0d1b4db945a37fff5e4edb89e3a9dd4e96cbbc1	REVERIFY	worker-56	split the new snapshot units (meta-array constructor, small helpers): floor now unit_complexity 4.58->4.60, unit_interfacing 4.08->4.11, PASS; merged development; unit suite 1706, only the 2 golden failures inherited from development; new head 543a383cd7ba6320d4600a70c0dd3e09ce5c201c, verify it
 launchpad	1225	47177d86534cba79d0aa9bb7bc70a053bc7bf137	REVERIFY	worker-01	floor: JwtSigningService takes the clock from ITimeFactory and jwk() its id as one array, no 3-parameter units left; unit_interfacing 3.40 -> 3.46 (base 3.44), floor_check PASS; Embed tests 25 OK; new head 92488c7c6b729b611a1cb3c465cdd9235c26f8ac, verify it
+integriq	3539	d16ba0ab4b58c6f6f1d7208f4b1c160d4cd5e4f7	RED	merge3:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+integriq	3546	38ea402acc796451c6b58b1b7c0525a6fb16de96	RED	merge3:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+integriq	3574	daca1f896514025811d3ee2526ee24a753e1ee51	RED	merge3:merge-gate	GATE RED floor: duplication: 3.80 -> 3.78
+integriq	3592	8a35a39acd0b2e2fec5ba98acc475f15fe8604dd	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3596	caba84625883bc4e9dbd94c3e8ae14b8626c784b	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3612	b5b2780e101251c6012d88963009cbbde107e72c	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3615	71e6a096933f8c3817a1037a7b80429df1a7b92c	RED	merge3:merge-gate	GATE RED floor: module_coupling: 5.03 -> 5.00
+integriq	3617	51d9a2baaebe30ec3caaa026d9f19f877e4e3590	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.89 -> 3.87
+integriq	3628	3039ae5d46935b5d44c03c3757cee5df6f856b02	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.89 -> 3.86
