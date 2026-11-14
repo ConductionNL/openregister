@@ -7825,3 +7825,4 @@ fix:humaniq:1137:5e825cca	now merges clean after #1133, unit 4162 OK, pushed 801
 fix:hermiq:1761:40e7cd07	test updated + register bump to 0.54.0, new head 30c4d00a, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T07:23:41Z
 fix:integriq:3540:ef9737c9	conflict resolved: l10n json keys moved clear of #3539, development merged; new head cce40cda	session-20261114T065633-3e3cb668	2026-11-14T07:23:59Z
 build:integriq:decidesk-ris-import-go-investigation	nothing to build: all 8 tasks need investigation of a live GO RIS API, and the change's spec forbids committing a GO Source/Mapping/Sync before that; no PR	session-20261114T062156-16c77e6a	2026-11-14T07:24:14Z
+fix:hermiq:1673:a636a706	conflict resolved (refactor re-applied on development's version), no new failures, pushed b28c73b9	session-20261114T065635-61264d14	2026-11-14T07:24:15Z
