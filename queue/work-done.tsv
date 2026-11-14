@@ -11272,3 +11272,4 @@ cover:opencatalogi:fc83bfb1md382:jsb0b70223	already done: quality/test-coverage-
 review:opencatalogi:2655:80535d6f	stale	session-20261114T201752-7e06b161	2026-11-14T21:44:27Z
 verify:launchpad:1212:fea86ab4	1212 GREEN; 1223 CONFLICT; 1226 RED (duplicate nl.js keys with 1212); 1229 skipped (head moved 7f327e4 -> 66aa995)	session-20261114T204759-5dc9dba7	2026-11-14T21:44:31Z
 fix:opencatalogi:2687:6e430b3e	l10n keys relocated, merges clean after 2683/2684; new head 5473354c	session-20261114T201755-10d43934	2026-11-14T21:44:53Z
+build:opencatalogi:woo-request-intake-hands-over-to-dossiq:c2	partial: PR #2677 3.1 built against dossiq's generic CaseRecordImport (4 tests, head 2c81f0dc); left 3.2 readiness counts, sweep of requests dossiq moved on its own upgrade, 4.1 read-only, 5.1 404 without dossiq, 5.3 release notes (context full)	session-20261114T204802-b2e553ef	2026-11-14T21:45:03Z
