@@ -7942,3 +7942,5 @@ larpinq	1039	726a2623a0ede8c3bb10b131c8fcbb3f95a174f8	RED	merge3:merge-gate	GATE
 larpinq	1048	c6276ffe5f6d09819449da01522854818e4f376d	RED	merge3:merge-gate	GATE RED floor: overall: 4.99 -> 4.97; unit_complexity: 4.87 -> 4.85; unit_interfacing: 4.69 -> 4.55
 larpinq	1050	fcc12a2345d9652427d343a17b96511dabf794b2	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.69 -> 4.63
 larpinq	1052	e1874075304920e76562cf9db539ba91e8615caf	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.69 -> 4.59
+larpinq	1041	912b882a58e4592788d487f084542b45073830a2	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml 
+larpinq	1056	fbe65f9aca1e5ad8d89fad525e63d9cb8bf2f29c	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/SettingsLoadService.php 
