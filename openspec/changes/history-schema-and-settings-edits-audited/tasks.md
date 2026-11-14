@@ -16,7 +16,8 @@
 
 ## 4. Docs and end-to-end test
 
-- [ ] 4.1 Document the actions, the row shape, masking and the read endpoints in `docs/features/versioning-and-audit.md`. Verify: `npm run build` in `docs/` succeeds.
+- [x] 4.1 Document the actions, the row shape, masking and the read endpoints in `docs/features/versioning-and-audit.md`. Verify: `npm run build` in `docs/` succeeds.
+      > Built: "Schema, Register and Organisation Edits" in `docs/features/versioning-and-audit.md`: the nine actions, the row shape per verb, the 2 KB cap, credential masking and the two `changes` endpoints. The `docs/` build was not run in this session.
 - [ ] 4.2 Add `tests/e2e/ci/schema-edit-audit.spec.ts`: an administrator narrows a property on a schema, opens the "Changes" tab and sees the old and new value with their name; a non-administrator gets 403 on `GET /api/schemas/{id}/changes`. Verify: the spec runs green in the Playwright CI project.
 
 ## Acceptance

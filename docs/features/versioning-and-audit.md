@@ -132,6 +132,43 @@ Every create, update, and delete produces an audit trail entry containing:
 - Background jobs enforce the minimum retention period before any physical removal
 - Audit trail is included in e-Depot SIP packages for permanent archival
 
+## Schema, Register and Organisation Edits
+
+Every create, update and delete of a schema, a register or an organisation writes one sealed row on the same hash-chained audit trail, whichever door the write came through: the API, `updateFromArray`, a tool provider, a configuration import or a repair step. The row is written by a listener on the entity's own event, so a door added later is covered without changes.
+
+### Actions
+
+| Action | Written when |
+|-|-|
+| `schema.created`, `schema.updated`, `schema.deleted` | A schema is stored, changed or removed. |
+| `register.created`, `register.updated`, `register.deleted` | A register is stored, changed or removed. |
+| `organisation.created`, `organisation.updated`, `organisation.deleted` | An organisation is stored, changed or removed. |
+
+A save that changes nothing writes no row. Derived fields (`updated`, `created`, `facets`, `version`) never count as a change on their own.
+
+### Row shape
+
+Each row carries the actor (`user`, `userName`, or `system` without a session), the `organisationId` (the entity's organisation, or the organisation itself for `organisation.*`), the `cause` and `causeRun` of the write (`person`, `import`, `migration`, `scheduled`, ...) and a `changed` block:
+
+- **created**: `slug`, `title`, `version` and, for a schema, the property names.
+- **updated**: `slug`, for a schema or register `versionBefore` and `versionAfter`, and `fields`: one `{path, old, new}` per changed path, for example `properties.age.maxLength` or `authorization.read`.
+- **deleted**: `slug`, `title`, `version`, the property count and a `sha256` of the definition as it was; the definition itself is not kept.
+
+A value longer than 2 KB is stored as its hash and length instead of the value.
+
+### Masking
+
+A value under a key that names a credential (`password`, `secret`, `token`, `apiKey`, `clientSecret`, `privateKey`, in any case) is never stored: the row shows `********` for it, old and new. A changed credential is still visible as a changed path.
+
+### Reading the edits
+
+```
+GET /api/schemas/{id}/changes?_page=1&_limit=20
+GET /api/registers/{id}/changes?_page=1&_limit=20
+```
+
+Both are for administrators only (403 otherwise) and answer `{results, page, limit, hasMore}`, newest first. `_limit` defaults to 20 and is at most 100. Organisation edits are read from the audit trail list, `GET /api/audit-trails?action=organisation.updated`.
+
 ## Deletion Audit Trail
 
 The deletion audit trail documents the full lifecycle of every deletion:
