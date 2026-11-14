@@ -9461,3 +9461,4 @@ fix:learniq:2484:966fc211	merged development in clean; new head 9c722d00; REVERI
 fix:pipelinq:3833:72e0bc34	conflict resolved, new head 8c3dcf19, REVERIFY recorded	session-20261114T141728-9a5d03fc	2026-11-14T14:27:12Z
 fix:shillinq:3007:26655d6b	conflict resolved, pushed a5a3a09c; unit green; manifest budget over by 934B with development (noted)	session-20261114T131653-f4593056	2026-11-14T14:27:19Z
 verify:shillinq:2975:7e406acb	2975 GREEN; 2997, 3003 skipped (head moved)	session-20261114T141738-30f539db	2026-11-14T14:27:26Z
+fix:portaliq:2284:57d43340	restored module_coupling via BearerSessionResolverInterface (floor 5.01 PASS); new head f2a7c870, REVERIFY recorded	session-20261114T131646-6a405bc8	2026-11-14T14:27:33Z
