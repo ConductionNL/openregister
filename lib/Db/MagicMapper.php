@@ -134,6 +134,7 @@ use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
+use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -611,6 +612,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private readonly IAppConfig $appConfig;
 
 	/**
+	 * The text search configuration `_search` stems with; null on a mapper
+	 * assembled without its constructor, which then builds no stemmed-match index.
+	 *
+	 * @var TextSearchConfiguration|null
+	 */
+	private ?TextSearchConfiguration $textSearch = null;
+
+	/**
 	 * Event dispatcher for audit trail events.
 	 *
 	 * @var IEventDispatcher
@@ -650,6 +659,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$this->userManager     = $identity->userManager;
 		$this->config          = $runtime->config;
 		$this->appConfig       = $runtime->appConfig;
+		$this->textSearch      = new TextSearchConfiguration(db: $db, appConfig: $runtime->appConfig);
 		$this->eventDispatcher = $runtime->eventDispatcher;
 		$this->logger          = $runtime->logger;
 
@@ -3082,7 +3092,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function createTableIndexes(string $tableName, Schema $schema): void {
 		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
-		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$indexer = new MagicTableIndexer(
+			db: $this->db,
+			logger: $this->logger,
+			trgm: $this->trgmProbe(),
+			textSearchConfig: $this->textSearch?->active()
+		);
 		$indexer->create(run: $run, schema: $schema);
 	}//end createTableIndexes()
 

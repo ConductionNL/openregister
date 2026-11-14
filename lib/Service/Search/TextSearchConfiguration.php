@@ -245,6 +245,22 @@ class TextSearchConfiguration {
 	}//end metadataVector()
 
 	/**
+	 * The functional GIN index a magic table carries for the stemmed metadata match.
+	 *
+	 * @param string $config        The configuration name, an identifier from {@see self::active()}.
+	 * @param string $tableName     The table name without the prefix; the index is named after it.
+	 * @param string $fullTableName The table name with the prefix.
+	 *
+	 * @return string The `CREATE INDEX IF NOT EXISTS` statement.
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
+	 */
+	public static function metadataIndexSql(string $config, string $tableName, string $fullTableName): string {
+		return 'CREATE INDEX IF NOT EXISTS '.$tableName.'_tsv_idx ON '.$fullTableName
+			.' USING GIN ('.self::metadataVector(config: $config).')';
+	}//end metadataIndexSql()
+
+	/**
 	 * The query side of the match, with the term already quoted by the caller.
 	 *
 	 * @param string $config     The configuration name.

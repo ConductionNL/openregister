@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use Exception;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -65,11 +66,14 @@ final class MagicTableIndexer {
 	 * @param IDBConnection    $db     The connection.
 	 * @param LoggerInterface  $logger Receives the outcome.
 	 * @param MagicPgTrgmProbe $trgm   Says whether trigram indexes can be made.
+	 * @param string|null      $textSearchConfig The text search configuration `_search` stems with on
+	 *                                           PostgreSQL, or null for no stemmed-match index.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly MagicPgTrgmProbe $trgm,
+		private readonly ?string $textSearchConfig = null,
 	) {
 	}//end __construct()
 
@@ -208,7 +212,44 @@ final class MagicTableIndexer {
 		if ($this->trgm->available() === true) {
 			$this->createNameTrigramIndex(run: $run);
 		}
+
+		$this->createStemmedMetadataIndex(run: $run);
 	}//end createPostgresIndexes()
+
+	/**
+	 * Create the functional GIN index the stemmed `_search` arm reads on name, description and summary.
+	 *
+	 * Same expression as MagicSearchHandler writes, so the planner can use it.
+	 * A failure (an older table without one of the columns) never fails table creation.
+	 *
+	 * @param MagicTableIndexRun $run The index-creation pass.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) TextSearchConfiguration::metadataIndexSql() is a pure SQL builder.
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
+	 */
+	private function createStemmedMetadataIndex(MagicTableIndexRun $run): void {
+		if ($this->textSearchConfig === null) {
+			return;
+		}
+
+		try {
+			$this->db->executeStatement(
+				TextSearchConfiguration::metadataIndexSql(
+					config: $this->textSearchConfig,
+					tableName: $run->tableName,
+					fullTableName: $run->fullTableName
+				)
+			);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: '[MagicMapper] Skipped the stemmed metadata index',
+				context: ['tableName' => $run->tableName, 'error' => $e->getMessage()]
+			);
+		}
+	}//end createStemmedMetadataIndex()
 
 	/**
 	 * Create the baseline pg_trgm GIN index on the `_name` metadata column.
