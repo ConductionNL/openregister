@@ -11632,3 +11632,4 @@ review:integriq:3542:a633c1cf	3542 GREEN (conflict only in generated l10n js)	se
 fix:versioniq:712:58bc9a3c	floor restored (PASS, overall 4.93), tests green; new head 78651fb7, REVERIFY recorded	session-20261114T214736-dd784d82	2026-11-14T22:38:46Z
 build:stackiq:mcp-full-action-surface:c2	PR #1962: fragment, publication/sbom gates, 12 read + 15 write tools, tests (3602->3631 OK); membership tools deferred per 5.4; 1.4/7.2 live/archive	session-20261114T221804-88b39b17	2026-11-14T22:39:04Z
 verify:opencatalogi:2665:a0384d19	GREEN 2665	session-20261114T211810-b8f5dc24	2026-11-14T22:38:59Z
+fix:planninq:1169:ad389bd3	SPDX + openapi tag fixed, new head 23ab3aa4; REVERIFY recorded	session-20261114T221800-b231235b	2026-11-14T22:39:08Z
