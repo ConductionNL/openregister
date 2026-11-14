@@ -320,9 +320,13 @@ rendering: new LeafRendering(
 ),
 ```
 
-The JS registration under the same id must declare the same `renderMode`
-(correlating the two is the job of the integration parity gate in
-`@conduction/nextcloud-vue`; Open Register records only the server side). An unknown `renderMode` is rejected
+The JS registration under the same id must declare the same `renderMode`. The
+integration parity gate in `@conduction/nextcloud-vue` reads the JS side;
+`LeafRenderModeParity` compares it with the server side: given the JS render
+modes keyed by leaf id, `mismatches()` lists every render-surface leaf whose two
+values differ, and `violations()` gives one report line per mismatch. A JS
+registration that states no `renderMode` counts as `component`, and a leaf known
+to one layer only is left to the tab/widget half of parity. An unknown `renderMode` is rejected
 at registration and only that leaf is skipped. `renderMode` is reported per leaf
 on `openregister.integrations.leaves`, so a manifest app or admin UI can see how
 a leaf renders without loading its JS. A mount leaf is still render-and-read
