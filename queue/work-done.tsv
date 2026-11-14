@@ -8665,3 +8665,4 @@ cover:decidiq:a5f973bbmae46:f0df7b61	PR decidiq test-coverage-f0df7b61-1: Domain
 cover:pipelinq:7f9dc8e6m799d:js0be8c659	PR #3816: 8 tests for LetterFromTemplateModal fallbacks and PinLoginModal controls; vitest 4910->4918; src/modals statements 97.1%	session-20261114T075643-75a598ab	2026-11-14T09:26:56Z
 verify:larpinq:1048:0590bc1d	GREEN 1048,1050,1052; RED 1049 (manifest golden vitest); CONFLICT 1051,1053,1054,1055	session-20261114T065631-b4991134	2026-11-14T09:28:01Z
 cover:dossiq:069ee2d6mbd37:094a3419	PR #6492: +8 tests, lib/Service/Email 97.98->99.01%	session-20261114T085635-07e3ca9b	2026-11-14T09:28:24Z
+verify:portaliq:2487:8029c942	2 GREEN (2487, 2488), tests-only, suite 5115 OK	session-20261114T092645-afb9b140	2026-11-14T09:28:43Z
