@@ -9029,3 +9029,4 @@ review:openregister:10539:d537b21e	stale	feeder	2026-11-14T12:20:14Z
 fix:dossiq:6499:fb5dfa20	conflict resolved, merged development; 19 unit failures inherited; new head aa4d5781	session-20261114T121618-959073d3	2026-11-14T12:21:27Z
 verify:pipelinq:3833:08e586c7	GREEN 3833, 3834: no new failures	session-20261114T114630-192fc047	2026-11-14T12:22:10Z
 build4:openregister:rapportage-bi-export:c2	partial: PR #10541 (aggregation metric=count,sum,avg shorthand); left having/gap-fill/aggregate path and the 13 other requirements; Controller 10205, Arch 2364, Contract 69, Search 610 OK	session-20261114T114647-2bec20c6	2026-11-14T12:22:27Z
+verify:pipelinq:3831:a03a0056	3831 GREEN (no new failures; phpunit 8344, vitest 5038 with 1 inherited)	session-20261114T114634-73dcd983	2026-11-14T12:22:51Z
