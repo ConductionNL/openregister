@@ -11163,3 +11163,4 @@ build:opencatalogi:officer-flow-accessibility:c2	no code tasks left: PR #2653 me
 build:pipelinq:marketing-articles-move-to-portaliq:c3	partial: no new code; PR #3835 (head fc0173c1, open) holds every buildable task. Left: 4.2 schema-fragment drop waits for the repair step's zero-failure report on release instances, 5.1 check run, 5.2 live check	session-20261114T194744-563ce177	2026-11-14T21:24:44Z
 fix:launchpad:1223:bde0c65b	floor restored (unit_interfacing 3.46->3.48 PASS); new head 55bac55a, REVERIFY recorded	session-20261114T205512-b62019b2	2026-11-14T21:24:39Z
 fix:opencatalogi:2668:94f01dce	restored unit_interfacing floor (ctor 7->6 params); new head 1a7be937, REVERIFY	session-20261114T211750-05725ff5	2026-11-14T21:25:17Z
+review:opencatalogi:2650:c35040de	GREEN	session-20261114T211754-5182f374	2026-11-14T21:25:31Z
