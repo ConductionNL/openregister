@@ -8809,3 +8809,4 @@ build4:openregister:anonymisation-discloses-itself:c2	partial: PR #10494 builds 
 build4:openregister:object-event-sync-async-split:c2	partial: PR #10495 (4.1 SourceRecordRecomputeJob tests, 4.2 ticked); 4b.8 no subject; 5.1/5.2 need gate update, 5.3 phpmd/psalm open, 5.4/5.5 live	session-20261114T095639-2f6d727a	2026-11-14T10:24:23Z
 build4:openregister:store-over-federated-config:c2	nothing left in openregister: 4.x is nextcloud-vue (CnStorePage), 5.x is decidiq (lib/Settings/profiles is decidiq's), 6.2/6.3 e2e/live; no PR	session-20261114T092647-8b1e7e69	2026-11-14T10:24:36Z
 review:openregister:10487:1cbcaa08	APPROVE	session-20261114T095645-0268807e	2026-11-14T10:24:32Z
+verify:pipelinq:3707:65fa614f	2 GREEN (3707, 3831), 2 CONFLICT (3743, 3829 vs tree)	session-20261114T075640-efa02b24	2026-11-14T10:25:29Z
