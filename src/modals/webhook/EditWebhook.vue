@@ -152,6 +152,31 @@
 								)
 							"
 							@update:modelValue="updateEventProperty" />
+
+						<template v-if="ownerView">
+							<FormSelectField
+								:modelValue="selectedRegisterOption"
+								:title="t('openregister', 'Register') + ' *'"
+								:inputLabel="t('openregister', 'Register')"
+								:options="registerOptions"
+								label="label"
+								trackBy="value"
+								:labelOutside="true"
+								:placeholder="t('openregister', 'Select a register')"
+								@update:modelValue="updateScopeRegister" />
+
+							<FormSelectField
+								:modelValue="selectedSchemaOptions"
+								:title="t('openregister', 'Schemas') + ' *'"
+								:inputLabel="t('openregister', 'Schemas')"
+								:options="schemaOptions"
+								label="label"
+								trackBy="value"
+								:multiple="true"
+								:labelOutside="true"
+								:placeholder="t('openregister', 'Select one or more schemas')"
+								@update:modelValue="updateScopeSchemas" />
+						</template>
 					</div>
 				</AppTab>
 
@@ -176,6 +201,7 @@
 						</FormCheckboxField>
 
 						<FormCheckboxField
+							v-if="!ownerView"
 							:modelValue="configuration.waitForResponse === true"
 							:hint="
 								t(
@@ -188,6 +214,7 @@
 						</FormCheckboxField>
 
 						<FormCheckboxField
+							v-if="!ownerView"
 							:modelValue="configuration.allowPrivateTargets === true"
 							:hint="
 								t(
@@ -391,6 +418,7 @@
 </template>
 
 <script>
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
@@ -420,7 +448,7 @@ import {
 	storedSelections,
 	webhookPayload,
 } from '../../services/webhookForm.js'
-import { navigationStore, webhookStore } from '../../store/store.js'
+import { navigationStore, registerStore, schemaStore, webhookStore } from '../../store/store.js'
 import {
 	defaultWebhookConfiguration,
 	defaultWebhookItem,
@@ -430,6 +458,27 @@ import {
 	idleMappingPreview,
 	retryPolicyOptions,
 } from './webhookDefaults.js'
+
+/**
+ * The events a webhook owned by a person may subscribe to (webhooks-for-owners).
+ *
+ * @type {Array<string>}
+ */
+export const OWNED_WEBHOOK_EVENTS = [
+	'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
+	'OCA\\OpenRegister\\Event\\ObjectUpdatedEvent',
+	'OCA\\OpenRegister\\Event\\ObjectDeletedEvent',
+]
+
+/**
+ * The id of a register or schema, whether given as an id or as the entity.
+ *
+ * @param {string|number|object} item The id or the entity
+ * @return {string} The id as a string
+ */
+function scopeId(item) {
+	return String(item && typeof item === 'object' ? item.id : item)
+}
 
 export default {
 	name: 'EditWebhook',
@@ -477,10 +526,88 @@ export default {
 			return navigationStore
 		},
 
+		/**
+		 * Whether the caller is not an administrator, so the webhook is their own:
+		 * object events in one register and its schemas, and no interception or
+		 * private targets. An unknown user keeps the administrator's form; the
+		 * server decides either way.
+		 *
+		 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-is-limited-to-object-events-in-one-scope
+		 * @return {boolean}
+		 */
+		ownerView() {
+			return getCurrentUser()?.isAdmin === false
+		},
+
 		isValid() {
-			return Boolean(
+			const basics = Boolean(
 				this.webhookItem?.name?.trim() && this.webhookItem?.url?.trim(),
 			)
+			if (!this.ownerView) {
+				return basics
+			}
+
+			const filters = this.webhookItem?.filters || {}
+			const schemas = Array.isArray(filters.schema) ? filters.schema : []
+			return basics
+				&& (this.webhookItem?.events || []).length > 0
+				&& Boolean(filters.register)
+				&& schemas.length > 0
+		},
+
+		/**
+		 * The registers an owner may scope a webhook to.
+		 *
+		 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-is-limited-to-object-events-in-one-scope
+		 * @return {Array<{value: string, label: string}>}
+		 */
+		registerOptions() {
+			return (registerStore?.registerList || []).map((register) => ({
+				value: scopeId(register),
+				label: register.title || register.name || scopeId(register),
+			}))
+		},
+
+		/**
+		 * The schemas of the chosen register.
+		 *
+		 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-is-limited-to-object-events-in-one-scope
+		 * @return {Array<{value: string, label: string}>}
+		 */
+		schemaOptions() {
+			const registerId = this.webhookItem?.filters?.register
+			const register = (registerStore?.registerList || []).find(
+				(item) => scopeId(item) === String(registerId),
+			)
+			if (!register) {
+				return []
+			}
+
+			const inRegister = (register.schemas || []).map(scopeId)
+			return (schemaStore?.schemaList || [])
+				.filter((schema) => inRegister.includes(scopeId(schema)))
+				.map((schema) => ({
+					value: scopeId(schema),
+					label: schema.title || schema.name || scopeId(schema),
+				}))
+		},
+
+		/**
+		 * @spec exclude UI accessor — the chosen register as a select option.
+		 * @return {object|null}
+		 */
+		selectedRegisterOption() {
+			const registerId = this.webhookItem?.filters?.register
+			return this.registerOptions.find((option) => option.value === String(registerId)) || null
+		},
+
+		/**
+		 * @spec exclude UI accessor — the chosen schemas as select options.
+		 * @return {Array<object>}
+		 */
+		selectedSchemaOptions() {
+			const chosen = (this.webhookItem?.filters?.schema || []).map(String)
+			return this.schemaOptions.filter((option) => chosen.includes(option.value))
 		},
 
 		/**
@@ -573,7 +700,7 @@ export default {
 	 * @spec exclude Vue lifecycle hook — loads events and initializes the webhook form.
 	 */
 	async created() {
-		await Promise.all([this.loadAvailableEvents(), this.loadMappings()])
+		await Promise.all([this.loadAvailableEvents(), this.loadMappings(), this.loadScopeOptions()])
 		this.initializeWebhook()
 	},
 
@@ -872,6 +999,63 @@ export default {
 		},
 
 		/**
+		 * Load the registers and schemas an owner scopes a webhook to.
+		 *
+		 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-is-limited-to-object-events-in-one-scope
+		 * @return {Promise<void>}
+		 */
+		async loadScopeOptions() {
+			if (!this.ownerView) {
+				return
+			}
+
+			try {
+				await Promise.all([registerStore.refreshRegisterList(), schemaStore.refreshSchemaList()])
+			} catch {
+				// The pickers stay empty and saving stays disabled; the server checks the scope anyway.
+			}
+		},
+
+		/**
+		 * Scope the webhook to a register; its schemas are chosen again.
+		 *
+		 * @param {object|null} option The chosen register option
+		 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-is-limited-to-object-events-in-one-scope
+		 */
+		updateScopeRegister(option) {
+			if (!this.webhookItem) {
+				this.webhookItem = {}
+			}
+			const filters = { ...(this.webhookItem.filters || {}) }
+			const registerId = option ? String(option.value ?? option) : null
+			if (registerId === null) {
+				delete filters.register
+			} else {
+				filters.register = registerId
+			}
+			if (String(this.webhookItem.filters?.register ?? '') !== String(registerId ?? '')) {
+				filters.schema = []
+			}
+			this.webhookItem.filters = filters
+		},
+
+		/**
+		 * Scope the webhook to schemas of its register.
+		 *
+		 * @param {Array<object>|null} options The chosen schema options
+		 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-is-limited-to-object-events-in-one-scope
+		 */
+		updateScopeSchemas(options) {
+			if (!this.webhookItem) {
+				this.webhookItem = {}
+			}
+			this.webhookItem.filters = {
+				...(this.webhookItem.filters || {}),
+				schema: (options || []).map((option) => String(option.value ?? option)),
+			}
+		},
+
+		/**
 		 * @spec exclude Modal data-load plumbing — fetches subscribable webhook events.
 		 */
 		async loadAvailableEvents() {
@@ -882,8 +1066,11 @@ export default {
 				)
 
 				if (response.data.events) {
-					this.availableEvents = response.data.events
-					this.eventOptions = response.data.events.map((event) => ({
+					const events = this.ownerView
+						? response.data.events.filter((event) => OWNED_WEBHOOK_EVENTS.includes(event.class))
+						: response.data.events
+					this.availableEvents = events
+					this.eventOptions = events.map((event) => ({
 						value: event.class,
 						label: `${event.name} (${event.category})`,
 						description: event.description,

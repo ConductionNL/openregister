@@ -18,7 +18,7 @@
 
 ## 4. Page, tests and docs
 
-- [ ] 4.1 `WebhooksIndex.vue` for holders of `webhook.own`, menu visibility, texts in en and nl. Verify: component test for the owner view.
+- [x] 4.1 `WebhooksIndex.vue` for holders of `webhook.own`, menu visibility, texts in en and nl. Verify: component test for the owner view.
 - [ ] 4.2 Add `tests/e2e/ci/owned-webhooks.spec.ts`: grant the right to a group, create an owned hook as a member against a local receiver, write an object, assert the delivered body lacks a hidden property, and assert another member gets 404 on the hook.
 - [ ] 4.3 Update the webhooks page in `docs/features/` with owned webhooks, the right and the owner view, with a screenshot.
 
