@@ -10844,3 +10844,4 @@ fix:hermiq:1739:bc2bf993	REVERIFY: development merged in cleanly, suite green; r
 verify:decidiq:2206:d38c0d87	GREEN 2206@78254763; phpunit 4239/0, vitest green	session-20261114T191744-b9573b83	2026-11-14T20:19:35Z
 verify:keepiq:1786:6ec68029	CONFLICT 1786 (l10n en/nl); 2 EventRegistrarsTest failures noted	session-20261114T185843-7b9a6259	2026-11-14T20:19:46Z
 review:portaliq:2444:c94c7881	GREEN: spec-conform, suites green	session-20261114T194740-7cca8afd	2026-11-14T20:19:53Z
+build:filinq:intake-pdf-password-removal:c3	partial: PR #2070 pushed e3723880: built 2.2 intake row action (IntakePasswordRemoval: right checked before read, file->copy, lockedOriginal kept; route + openapi; IntakeIndex + PdfPasswordModal intakeUuid), docs section for 3.2; PHP 6781 green, jest 537 green; left only live work: Playwright runs and the 3.2 screenshot	session-20261114T194745-243de12d	2026-11-14T20:20:04Z
