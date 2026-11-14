@@ -8705,3 +8705,4 @@ build4:dossiq:linked-case-with-a-role:c2	nothing buildable now: 1.1-2.1 on devel
 build:pipelinq:product-service-catalogue-public:c2	partial: PR #3819 (4.1 UPL import + lookup picker), left 2.2 owner decision/live check, 2.3/5.1 archive	session-20261114T070332-b3a23612	2026-11-14T09:41:23Z
 build:pipelinq:ticket-handover-history:c2	failed: remaining 1.1/1.2 are nextcloud-vue changes (repo not in this worker's scope), 2.5 is a live pass; no pipelinq code task left	session-20261114T070332-b3a23612	2026-11-14T09:41:46Z
 verify:hermiq:1769:9054cf3e	4 GREEN (1769,1770,1771,1772); no new failures, vitest green	session-20261114T092638-09421111	2026-11-14T09:42:19Z
+cover:keepiq:c967a31fm10bf:js0023cfc7	PR #1794: 23 vitest tests for 3 dialogs; suite 6414->6437 passed; src/dialogs lines 92.3->94.1%	session-20261114T082640-198131b9	2026-11-14T09:43:33Z
