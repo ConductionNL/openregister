@@ -7631,3 +7631,4 @@ fix:dossiq:6323:910e407e	obsolete: all @uses already on development; PR closed	s
 review:openregister:10459:39c1dc03	APPROVE: tests-only, suites green	session-20261114T062202-3e33eeb3	2026-11-14T06:40:10Z
 fix:dossiq:6434:20c5660f	conflict resolved, pushed b7e5e4ed, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T06:40:20Z
 fix:dossiq:6237:bc1b5688	conflict resolved, pushed 53871137bb5bc5412984520a03852e060ebdfa41, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T06:40:48Z
+review:openregister:10460:55020ec3	APPROVE 10460: within change specs, suites green, phpstan clean	session-20261114T062200-6a28e40c	2026-11-14T06:41:21Z
