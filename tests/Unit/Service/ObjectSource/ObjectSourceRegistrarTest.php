@@ -61,6 +61,7 @@ class ObjectSourceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService',
 				'OCA\OpenRegister\Service\ObjectSource\TablesProviderParts',
 				'OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider',
+				'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
 			],
 			actual: $context->services
 		);
@@ -127,7 +128,7 @@ class ObjectSourceRegistrarTest extends TestCase {
 			}
 		);
 
-		$registry->expects($this->exactly(12))->method('addProvider')->with($provider);
+		$registry->expects($this->exactly(13))->method('addProvider')->with($provider);
 		$logger->expects($this->once())->method('warning')->with(
 			$this->stringContains(string: 'DeckObjectSourceProvider')
 		);
@@ -149,6 +150,7 @@ class ObjectSourceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider',
 				'OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider',
 				'OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider',
+				'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
 			],
 			actual: $asked
 		);
@@ -182,7 +184,7 @@ class ObjectSourceRegistrarTest extends TestCase {
 			}
 		);
 
-		$registry->expects($this->exactly(12))->method('addProvider')->with($provider);
+		$registry->expects($this->exactly(13))->method('addProvider')->with($provider);
 
 		ObjectSourceRegistrar::boot(server: $server);
 	}//end testBootSkipsAFailingProviderWithoutALogger()

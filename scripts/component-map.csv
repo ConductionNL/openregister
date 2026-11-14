@@ -2836,7 +2836,9 @@ Service/ObjectSource/DbalStatement.php,20,Service,Service,Service/ObjectSource/D
 Service/ObjectSource/DbalWriteException.php,32,Service,Service,Service/ObjectSource/DbalWriteException.php,0,437,Core
 Service/ObjectSource/DeckObjectSourceProvider.php,126,Service,Service,Service/ObjectSource/DeckObjectSourceProvider.php,0,,Core
 Service/ObjectSource/DefensiveGetters.php,24,Service,Service,Service/ObjectSource/DefensiveGetters.php,0,,Core
+Service/ObjectSource/ConfiguredSourceUpstream.php,125,Service,Service,Service/ObjectSource/ConfiguredSourceUpstream.php,0,,Core
 Service/ObjectSource/FederatedObjectSourceProvider.php,94,Service,Service,Service/ObjectSource/FederatedObjectSourceProvider.php,0,,Core
+Service/ObjectSource/OpenConnectorHttpProvider.php,290,Service,Service,Service/ObjectSource/OpenConnectorHttpProvider.php,0,,Core
 Service/ObjectSource/FilesObjectSourceProvider.php,115,Service,Service,Service/ObjectSource/FilesObjectSourceProvider.php,0,,Core
 Service/ObjectSource/GroupObjectSourceProvider.php,100,Service,Service,Service/ObjectSource/GroupObjectSourceProvider.php,0,,Core
 Service/ObjectSource/InstalledAppCheck.php,13,Service,Service,Service/ObjectSource/InstalledAppCheck.php,0,,Core
