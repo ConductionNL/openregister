@@ -8843,3 +8843,4 @@ integriq	3595	7df20bcae6a3c131101cfe25b69c6fb290d0fe51	GREEN	worker-28	tree dev+
 integriq	3610	558feb74bdbc26e6c7165854c18eb73c89630909	GREEN	worker-28	tree dev+3588+3592+3595+3610: unit 8972 tests, baseline 8920 with 7 failing names (incl. SynchronizationSynchronizeEntryGoldenTest), no new failures; vitest 2171/2171
 integriq	3564	8228369e8ebb889b555e5352c629d22af05debdd	CONFLICT	worker-28	conflicts with plain development (2f5d98237), files: openapi.json
 integriq	3600	9f3a69a4aea05afd8fb2bc734f05b503b9c26f57	CONFLICT	worker-28	conflicts with plain development (2f5d98237), files: openapi.json; with the tree also lib/Settings/integriq_register.json src/views/admin/AdminSettings.vue
+integriq	3602	d7d08f57901fafda6ce1fd2a9b77f112e8910a30	CONFLICT	worker-28	merges clean on development alone, files: lib/Service/SettingsService.php lib/Service/SettingsServiceInterface.php src/views/admin/AdminSettings.vue tests/Unit/Service/SettingsServiceTest.php (with 3592)
