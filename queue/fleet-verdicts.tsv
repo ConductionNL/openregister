@@ -8986,3 +8986,4 @@ pipelinq	3818	e0545685f93bb24461fbe107195f792c4b26ec23	CONFLICT	worker-28	confli
 pipelinq	3829	41a1c1f85f130fd4616901ba345e104d7f53b468	CONFLICT	worker-28	conflicts with plain development (3c364b6ee), files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json
 integriq	3574	cfe173d8254059423a2abd5ebe9c49d4321165f0	GREEN	worker-48	php 8970 tests (baseline 8920, inherited failures incl. SynchronizationSynchronizeEntryGoldenTest which fails on plain development), vitest 2174 pass; new failures 0; build matches mapping-formats-and-lookups, XML writer moved to a util
 integriq	3596	ccfce1461772a9284cc1ee537efca7f88937b959	GREEN	worker-48	php 8970 tests (baseline 8920, inherited failures incl. SynchronizationSynchronizeEntryGoldenTest which fails on plain development), vitest 2174 pass; new failures 0; build matches sources-outbound-rate-limit-pacing
+integriq	3600	36f330ac60dca71cff2d360f3f3912e6902c93cf	CONFLICT	worker-48	conflicts with development + 3574,3596
