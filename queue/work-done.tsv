@@ -8488,6 +8488,7 @@ fix:buildiq:1625:7f3a7207	l10n moved to branch anchor, header restored; l10n cle
 verify:keepiq:1791:dd8a5ba6	1791 GREEN, 1792 CONFLICT (same migration file as 1791)	session-20261114T070909-be4543e0	2026-11-14T08:56:22Z
 fix:buildiq:1629:1c21accd	fixed stale test after development moved the TaskProcessing lookup; new head 7ba3e45bb7a2694599cdb0e63113cb17fba78a23, REVERIFY recorded	session-20261114T073117-2bd2e050	2026-11-14T08:56:31Z
 fix:buildiq:1610:65aa047e	conflict resolved: l10n keys moved mid-catalogue; tree with 1613/1614/1616 merges clean; new head efd9490e; REVERIFY queued	session-20261114T073109-930980c2	2026-11-14T08:56:56Z
+verify:keepiq:1789:af657537	1789 GREEN, 1790 CONFLICT (l10n/nl with 1789)	session-20261114T062202-3e33eeb3	2026-11-14T08:57:02Z
 fix:launchpad:1218:1286fcd0	no change: branch already contains development; conflicts are with open tree PRs #1212/#1213/#1215/#1216 only; merge development in after they land	session-20261114T073108-67fbeb26	2026-11-14T08:57:09Z
 build:versioniq:codeberg-is-no-release-source	PR #696: task 2.1 done (bind and trusted-pattern refuse codeberg with 400, stored entries keep working); suite 1643->1649, the same 2 inherited golden failures	session-20261114T070346-2d3b1362	2026-11-14T08:57:18Z
 fix:launchpad:1217:1563c97c	migration class/version collision with #1212 fixed (renamed to Version002014Date20261114100000, version bumped), development merged in; new head edcbef17, REVERIFY recorded	session-20261114T075643-75a598ab	2026-11-14T08:57:30Z
@@ -8497,4 +8498,5 @@ fix:launchpad:1219:caea0c0b	conflict resolved: nl l10n block moved off the tail,
 build:versioniq:inventory-export-sbom-metrics	partial: PR #700, InventoryBuilder and SbomWriter (1.1, writer of 1.2); schema validation, export, archive, metrics open	session-20261114T065626-0651b305	2026-11-14T08:58:06Z
 build:stackiq:publish-and-lock-from-the-list	PR #1945: tasks 1-3 implemented (selection-strip publish/withdraw/lock via guarded endpoint, ModuleDetail publication action, ViewObject path removed); Playwright e2e left; vitest 2508/0 fail	session-20261114T075644-ec2e07ac	2026-11-14T08:58:06Z
 fix:launchpad:1214:2d22ae46	app version raised above #1212 (no downgrade on landing); fixture conflict additive, left for the second to land; new head 8ef09a0e, REVERIFY recorded	session-20261114T075643-75a598ab	2026-11-14T08:58:49Z
+build:versioniq:write-guards-and-advisory-alerts	PR #702 (2.1 password-guard reflection test; 3.1 archive after merge)	session-20261114T075648-394d8174	2026-11-14T08:59:09Z
 verify:stackiq:1908:cee96891	GREEN 1908 1909 1910 1911 1913 1914 1915 1916; CONFLICT 1912 (with 1908, clean on development)	session-20261114T073109-bb0ea608	2026-11-14T08:59:33Z
