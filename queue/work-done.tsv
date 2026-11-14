@@ -8213,6 +8213,7 @@ build:keepiq:extension-sign-up-password-suggestion	PR #1780: tasks 1.1 and 1.2 b
 fix:planninq:1171:bde0241a	no change: branch already contains development (ab6bd27e); conflict is only with unmerged #1170/#1169, resolve after #1170 lands	session-20261114T075638-c30fc6de	2026-11-14T08:22:00Z
 fix:integriq:3582:770cf7a9	merged development cleanly, pushed da7df603e24436c0c5855ccca85472a3c4167729, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T08:22:17Z
 verify:buildiq:1588:d0c87518	GREEN 1588-1594 (7), CONFLICT 1596 1597; no new failures	session-20261114T062200-6a28e40c	2026-11-14T08:22:23Z
+fix:integriq:3587:d4357ddb	no change: merges cleanly with current development; conflict is only with unmerged #3585 (l10n), resolve after #3585 lands	session-20261114T075638-c30fc6de	2026-11-14T08:22:33Z
 fix:integriq:3598:855df76c	merged development (clean), pushed 4071b13c; remaining conflict is with unlanded tree PRs	session-20261114T065626-0651b305	2026-11-14T08:22:33Z
 build:keepiq:health-site-security-checks	partial: PR #1782 task 1.1 (Unencrypted address category, Change to https, docs, 14 tests); left 1.2 extension warning, 2.x/3.x site directory (2.1 licence/endpoint confirmation first), Playwright	session-20261114T073109-bb0ea608	2026-11-14T08:22:43Z
 verify:integriq:3564:96380a66	GREEN 3564,3567,3601; 3600 skipped (head moved to fd8aca32)	session-20261114T070346-2d3b1362	2026-11-14T08:22:54Z
