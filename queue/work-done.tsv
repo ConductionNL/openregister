@@ -9785,3 +9785,4 @@ fix:humaniq:1148:0dbbf502	merged development, resolved l10n conflicts; new head 
 fix:hermiq:1756:1311e7fc	no change: clean on development; conflicts only with #1739 on tool counts; verify alone	session-20261114T141727-56b2bf78	2026-11-14T15:23:13Z
 fix:humaniq:1137:80108332	fixed: merged development, merged duplicate configuration blocks on 4 schemas (export + MCP); remaining ListExportDeclaration failure (DeploymentPlan) is inherited from development; new head b1c9fdb7	session-20261114T144727-6763e1fc	2026-11-14T15:23:19Z
 fix:portaliq:2493:ee816fa9	conflict resolved (package.json union), pushed 1cf3c736, REVERIFY recorded	session-20261114T151751-5fc6ef5c	2026-11-14T15:23:27Z
+fix:humaniq:1030:0a2fd47c	merged development, resolved SettingsService conflict; new head fb14cdc3	session-20261114T141010-8dc8bd74	2026-11-14T15:23:41Z
