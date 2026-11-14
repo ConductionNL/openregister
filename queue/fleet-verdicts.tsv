@@ -8688,3 +8688,4 @@ learniq	2538	77a7f7666e25b7907d46eacf3a700fe32d862c44	GREEN	worker-32	phpunit 67
 learniq	2493	25467d6a063d0e2374777c4699df09ac39a9fa5e	CONFLICT	worker-32	conflicts with tree after 2484 in l10n/en.json, l10n/nl.json; clean on development alone
 learniq	2521	34c33485a9bb30531e0afef5d1730ca32e358cd8	GREEN	worker-58	unit 6763 on tree (baseline 6718, 1 inherited failure HigherEducationExampleSetTest), 0 new; build of training-provider-course-days, endpoints guarded by course-day.plan or teacher check
 integriq	3564	a5801983df6db04f23c711efc67dcbd08cf02081	GREEN	worker-45	unit 9031 on tree (baseline 8920, 6 inherited failures/errors), new failures 0 (SynchronizationSynchronizeEntryGoldenTest is timing-flaky on plain development too); builds gateway-api-design-rules-check
+integriq	3569	420d375badd299779fc2db0af3f1db39b07b1b35	CONFLICT	worker-45	conflicts in tree after 3539/3564 (l10n en.json, nl.json); clean on plain development
