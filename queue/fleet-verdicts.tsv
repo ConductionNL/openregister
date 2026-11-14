@@ -10493,3 +10493,4 @@ larpinq	1048	c6276ffe5f6d09819449da01522854818e4f376d	REVERIFY	worker-51	Charact
 larpinq	1051	c35fd6e8711febbc7bcac335e04f3c7afe037294	CONFLICT	worker-17	conflicts with the tree (development + 1041, 1045)
 larpinq	1053	887c3dda56b2a83c85fc5c1622592f3a8b29c9b9	CONFLICT	worker-17	conflicts with the tree (development + 1041, 1045)
 larpinq	1054	41befe20ea4be5b4b3292ee9e35551d2b8d01bce	CONFLICT	worker-17	conflicts with the tree (development + 1041, 1045)
+larpinq	1041	4ea3e47661b3270916a9506fe9035edcbfc5bee7	GREEN	worker-17	phpunit 852 (baseline 832, 0 failures), vitest 548 passed, no new failures
