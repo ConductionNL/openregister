@@ -7732,6 +7732,7 @@ fix:filinq:2098:fc7ce3c4	conflict resolved (l10n, both sides kept), pushed cde3e
 fix:shillinq:2976:463e530e	conflict resolved + Kernel import moves, new head 03e24bcb, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T07:08:44Z
 fix:filinq:2085:25d925f4	conflict resolved, pushed cf785bbf; REVERIFY recorded	session-20261114T065626-0651b305	2026-11-14T07:08:51Z
 fix:learniq:2511:e2104080	conflict resolved (union of en/nl keys), new head d32aa9e4; REVERIFY recorded	session-20261114T070346-2d3b1362	2026-11-14T07:09:05Z
+review:shillinq:2819:1c3c860b	stale	session-20261114T062156-16c77e6a	2026-11-14T07:09:16Z
 fix:shillinq:2982:98b433dd	conflict resolved into registrar layout + namespace moves, no new failures, pushed 48c84db20f24e8cbf4c6e0ed5f6810697c37a6d8	session-20261114T062202-3e33eeb3	2026-11-14T07:09:18Z
 fix:learniq:2502:20eb3a98	no change: merges clean on development; conflict only with unmerged #2496 (l10n appends), resolve whichever lands second after the first merges	session-20261114T070346-2d3b1362	2026-11-14T07:09:33Z
 fix:learniq:2516:c60e8cb8	conflict resolved, new head 140091fc; REVERIFY recorded	session-20261114T070344-897ffa0f	2026-11-14T07:09:31Z
