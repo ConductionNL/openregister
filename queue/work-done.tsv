@@ -8635,3 +8635,4 @@ verify:stackiq:1912:eaaa3337	4 GREEN, 3 CONFLICT (1944-1946 l10n vs tree); no ne
 build:versioniq:pinning-ranges-and-skips	PR #727: 1.1, 1.2, 2.1, 2.2, 2.4 built; 2.3 picker done but badge Skip + Playwright left; 3.1 close step; unit 1643->1670 (2 inherited fails), vitest 2960->2972	session-20261114T073105-752e50ad	2026-11-14T09:17:48Z
 build:thematiq:set-file-keeps-the-dark-block	built: PR #1676	session-20261114T062156-e8adf8ca	2026-11-14T09:17:55Z
 cover:portaliq:b60f3b81m4ccb:8ed5443b	no PR: lib/Kernel/Contracts/*.php holds 265 interfaces and nothing else, no executable statements to test	session-20261114T075640-efa02b24	2026-11-14T09:17:48Z
+cover:dossiq:069ee2d6mbd37:8ed5443b	no PR: lib/Kernel/Contracts/*.php is 476 interfaces with no executable lines; nothing a unit test can cover	session-20261114T075644-ec2e07ac	2026-11-14T09:18:25Z
