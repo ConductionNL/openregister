@@ -9532,3 +9532,4 @@ fix:portaliq:2449:f817c353	no change: branch up to date with development; confli
 verify:shillinq:2997:db45dc25	2997 CONFLICT, 3007 CONFLICT (both vs plain development: info.xml, l10n, register lock; 2997 also routes.php); baseline unit 5057 green	session-20261114T131654-c068f436	2026-11-14T14:38:38Z
 verify:learniq:2484:4c92f0b4	2484, 2521, 2523 GREEN (unit 6741, only the inherited failure); 2501 skipped (head moved); 2493, 2507, 2524 CONFLICT	session-20261114T124625-07e62ccf	2026-11-14T14:39:06Z
 fix:shillinq:3050:1bdb43ad	conflict resolved, merged development; new head b62151d4	session-20261114T141727-56b2bf78	2026-11-14T14:39:09Z
+fix:dossiq:6385:0de8a799	fixed BLOCK: caseType 1.49.0 for inspectionChecklist + digest; new head db74d1b0b, REVERIFY recorded	session-20261114T134643-47800317	2026-11-14T14:39:22Z
