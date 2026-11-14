@@ -10489,3 +10489,4 @@ larpinq	1050	fcc12a2345d9652427d343a17b96511dabf794b2	REVERIFY	worker-27	merged 
 versioniq	716	73f4cacd9fc6d382f2b5596f7eec9948bdb8	CONFLICT	worker-42	clean on development, conflicts with the tree (692) in AutoUpdate job/settings store, ApiController, App.vue, AutoUpdateOverview and their tests
 larpinq	1056	fbe65f9aca1e5ad8d89fad525e63d9cb8bf2f29c	REVERIFY	worker-23	merged current development in (clean; the l10n/SettingsLoadService conflict is with sibling PRs in the tree); unit suite 854 tests 0 failures, l10n parity OK (check:l10n-js stale on development too, inherited); new head 54742da084a6bdab9db07d6499b6b42c07d2c17a, verify it
 larpinq	1051	c35fd6e8711febbc7bcac335e04f3c7afe037294	CONFLICT	worker-17	conflicts with the tree (development + 1041, 1045)
+larpinq	1053	887c3dda56b2a83c85fc5c1622592f3a8b29c9b9	CONFLICT	worker-17	conflicts with the tree (development + 1041, 1045)
