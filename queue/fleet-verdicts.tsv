@@ -8666,3 +8666,4 @@ hermiq	1735	62b18a2470884cdddc84aa07e80393bedeba062a	GREEN	worker-11	phpunit 509
 integriq	3546	726d7006dc3cbb2464bff104f24542315ba31465	GREEN	worker-21	unit 9008 tests on tree, baseline 8920 with 2E/5F inherited, no new failures; vitest 2174 passed; build of connectors-endpoint-workspace-adapters, admin-only endpoint, matches its specs
 integriq	3572	4ceacefd2513bbebc956b3c5d77e90c84c6e1051	CONFLICT	worker-21	conflicts on tree after 3540+3546: openapi.json; clean on development alone
 integriq	3582	a9dc2ceaab80f802c2b5a5cb9826ac241292c5ca	CONFLICT	worker-21	conflicts on tree after 3540+3546: openapi.json; clean on development alone
+integriq	3588	3b34e85d0c803f55ad8c7d9a415f63f3377a2d09	CONFLICT	worker-21	conflicts on tree after 3540+3546: l10n/en.js en.json nl.js nl.json; clean on development alone
