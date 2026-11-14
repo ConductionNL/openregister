@@ -8429,3 +8429,4 @@ fix:buildiq:1606:08b13ebd	l10n keys moved off the shared tail; clean with 1597/1
 review:stackiq:1704:3ca945de	GREEN: behaviour-preserving refactor, vitest 2486 pass	session-20261114T073117-2bd2e050	2026-11-14T08:49:26Z
 build:stackiq:sharing-compliance-documents	partial: PR #1924 complianceDocument schema in the register with audience read rules, demo data, 7 tests (task 1); pages and docs (tasks 2, 3) left	session-20261114T073108-8b40426a	2026-11-14T08:49:37Z
 build:versioniq:admin-translate-apps-tab	PR #690: 1.1-2.1 built (strings wrapped, en/nl complete, lint check), 3.1 e2e and 4.1 archive left; vitest 2964 pass (base 2960)	session-20261114T065631-b4991134	2026-11-14T08:50:03Z
+verify:opencatalogi:2636:234eba4c	9 GREEN (2636-2662), no conflicts, no new failures	session-20261114T065631-3903ed42	2026-11-14T08:50:15Z
