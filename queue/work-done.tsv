@@ -11305,3 +11305,4 @@ build:opencatalogi:woo-review-surface:c2	partial: nothing new built this run (wo
 review:opencatalogi:2643:bb55d371	RED: 3 CatalogModalForm snapshot tests fail (new hasDcat field, snapshots not updated); PHP suite clean beyond development's 2 failures; no access weakening	session-20261114T204747-26056883	2026-11-14T21:49:44Z
 fix:hermiq:1792:2d3f556e	conflict resolved, new head 11c3a878	session-20261114T214733-589f5bff	2026-11-14T21:49:58Z
 verify:opencatalogi:2671:148b0046	GREEN 2701-2707; 2671 and 2696 skipped (heads moved)	session-20261114T201752-7e06b161	2026-11-14T21:50:36Z
+verify:hermiq:1750:9a4e68e8	CONFLICT: #1750 conflicts with development in ContextRetrievalHandler	session-20261114T214740-6d7e97c9	2026-11-14T21:50:47Z
