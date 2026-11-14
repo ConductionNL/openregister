@@ -11268,3 +11268,4 @@ fix:opencatalogi:2680:5c8f25a1	failed: merges clean on current development; the 
 fix:opencatalogi:2688:d9b88d99	fixed CONFLICT: l10n keys moved off the shared tail, .js regenerated; tree with 2683/2684 merges clean; new head 36797f41, REVERIFY recorded	session-20261114T211806-b9cd4119	2026-11-14T21:43:28Z
 verify:opencatalogi:2671:3cf69208	GREEN 2695-2700; RED 2701 (breaks 2697's CatalogueSharedPublicationTest on the tree); CONFLICT 2682 (with development); 2671 skipped (head moved)	session-20261114T201752-7e06b161	2026-11-14T21:43:43Z
 review:opencatalogi:2648:33597bb0	GREEN: matches operations-publish-rights spec; suite 2 inherited failures	session-20261114T211810-b8f5dc24	2026-11-14T21:43:58Z
+cover:opencatalogi:fc83bfb1md382:jsb0b70223	already done: quality/test-coverage-js-b0b70223-1 merged; src/navigation/* at 96.4% stmts (jest), above the 90 target	session-20261114T211806-b9cd4119	2026-11-14T21:44:35Z
