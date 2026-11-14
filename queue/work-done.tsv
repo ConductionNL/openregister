@@ -11950,3 +11950,4 @@ build:launchpad:mcp-tool-surface:c4	failed: not started; this worker reached its
 verify:integriq:3640:46ba2b24	3640 GREEN (tests only, no new failures)	session-20261114T224753-194bb25e	2026-11-14T23:35:25Z
 fix:decidiq:2191:ccb12641	merged development, manifest/spec conflicts resolved keeping both blocks; vitest 2825 pass; new head a2e14c6c	session-20261114T225452-4fcfea7f	2026-11-14T23:35:33Z
 fix:dossiq:6523:ebc2a65d	conflict resolved, pushed 2cc454b5, REVERIFY	session-20261114T231756-01da210e	2026-11-14T23:35:47Z
+cover:hermiq:065f1631mcdb5:be0dcca9	already done: lib/Mcp/*.php at 98.8% line coverage on development (target 95), quality/test-coverage-be0dcca9-1 exists	session-20261114T221743-dbe5c07e	2026-11-14T23:36:11Z
