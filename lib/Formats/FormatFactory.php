@@ -50,6 +50,7 @@ final class FormatFactory {
 		return [
 			'bsn'       => new BsnFormat(),
 			'license-plate-nl' => new LicensePlateNlFormat(),
+			'iban'      => new IbanFormat(),
 			'semver'    => new SemVerFormat(),
 			'cron'      => new CronFormat(),
 			'user'      => new UserFormat(userManager: $userManager, planned: $planned),
