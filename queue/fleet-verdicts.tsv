@@ -8348,4 +8348,7 @@ filinq	2078	2a556ec0324013c8689cafa7bad4f72d3451c0fa	GREEN	worker-07	phpunit 673
 decidiq	2169	d6a0067ec1d6b3f291bedc78cbadce8e9e01cad9	REVERIFY	worker-03	narrowed runEffect/save to 2 params, floor_check PASS (unit_interfacing 3.34 -> 3.33); unit 4010 OK; new head f8b6638b00bea76e1b06e6f186584cccd183d047, verify it
 decidiq	2162	16f8a9d357f278a0cd906ac019eebd6da15d1502	GREEN	worker-11	phpunit 4194 tests (baseline 4174, 0 failures), vitest 2724 passed; 0 new failures
 decidiq	2172	72b05d7357e379e54c819d81d0519cf4b8d493df	GREEN	worker-11	phpunit 4194 tests (baseline 4174, 0 failures), vitest 2724 passed; 0 new failures
+decidiq	2148	a582926ba55b3db14694a35938aeed0c8462a8a7	GREEN	worker-54	unit 4205 on tree, baseline 4174 green, 0 new failures
 portaliq	2437	0bea6c571ae35fb473763215fcd3e32565d6c64a	REVERIFY	worker-44	merged development in; l10n/package.json/spec unions kept, register bumped to 0.112.0 (dev took 0.111.0); unit 5282 ok, check:specs only inherited notices fail; new head 0bea0f46a52d61994a5d40a2da96c0efa6169ba3, verify it
+decidiq	2168	39f054e92f5589ec002cfcf694d7277aedf9b3da	GREEN	worker-54	unit 4205 on tree, baseline 4174 green, 0 new failures
+decidiq	2170	7cfa5d98754d85d2e4818d97789354d78b38fcc5	GREEN	worker-54	unit 4205 on tree, baseline 4174 green, 0 new failures
