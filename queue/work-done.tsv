@@ -10496,3 +10496,4 @@ fix:planninq:1171:75d4a18f	fixed: merged development (l10n, store, TaskDetail); 
 fix:planninq:1159:b7c86685	floor restored (unit_complexity 4.84 PASS); new head fc0531dd, REVERIFY recorded	session-20261114T174741-aa9751f9	2026-11-14T17:52:22Z
 build:keepiq:portability-cxp-cross-provider-transfer:c2	partial: nothing buildable left in PR #1787: 1.1 needs the published CXP test vectors (external), 2.1's code is in and only its Playwright run is left, 3.2 archives after those	session-20261114T151932-05b02c14	2026-11-14T17:52:39Z
 fix:keepiq:1790:8cf69245	fixed: merged development, l10n conflict resolved keeping both sides; new head 2097db1d (test:l10n red inherited from development: 7 passkey keys)	session-20261114T173956-74ab8962	2026-11-14T17:52:56Z
+measure:integriq:20261114h16	php 94.71% (pcov), js 95.29% at 19aa4d64	session-20261114T171822-ef880213	2026-11-14T17:53:06Z
