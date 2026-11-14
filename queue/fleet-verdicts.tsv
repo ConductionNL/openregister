@@ -8971,3 +8971,4 @@ filinq	2078	515468bfeec6aec2643ffc364f1823164c0642ac	CONFLICT	worker-54	conflict
 filinq	2119	5a16fc08252fc625ac4f9c22f9dbe0366e055308	CONFLICT	worker-54	conflicts on the tree (development+2070+2118): l10n/en.js en.json nl.js nl.json
 filinq	2124	5e42335d1e29a3e766b0ba6f1598a6e09e960777	CONFLICT	worker-54	conflicts on the tree (development+2070+2118): src/views/signing/SigningRequestDetail.vue
 filinq	2126	9eb180737f1b58fba101f1f4813d6412b5432250	CONFLICT	worker-54	conflicts on the tree (development+2070+2118): lib/Settings/filinq_register.json
+filinq	2130	935ea653e762bff5eb36de5e5eae9be399d036bb	CONFLICT	worker-54	conflicts on the tree (development+2070+2118): l10n en/nl js+json, filinq_register.json, Settings.vue, settings-page golden
