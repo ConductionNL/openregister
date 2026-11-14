@@ -8955,3 +8955,4 @@ integriq	3628	2ecd4a27eb667bd41d831d082b090470f372ebdf	CONFLICT	worker-28	merges
 integriq	3564	c37760b6d64f16ccaf3e3d9a81ebbbb91bb379af	GREEN	worker-48	php 9035 tests (baseline 8920, 7 inherited failures), vitest 2163 pass; new failures 0; build matches gateway-api-design-rules-check, admin-only routes
 integriq	3630	472a4c5e4f9ba426a9ec5315bb5b7bd3ce3e0d69	CONFLICT	worker-48	conflicts with development + 3542,3564
 integriq	3593	13184c4fc0871a5d3ae0b0c9a84d1db8f24d4a85	GREEN	worker-09	phpunit unit 8985 tests on 2-PR tree, baseline 8920 with 7 inherited failures, new failures 0; vitest 165 files 2177 tests green
+integriq	3631	b0b558d83e2f38ea4f662bf52fc6714038987f6e	GREEN	worker-09	phpunit unit 8985 tests on 2-PR tree, baseline 8920 with 7 inherited failures, new failures 0; vitest 165 files 2177 tests green
