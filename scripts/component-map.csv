@@ -4248,3 +4248,5 @@ Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
+Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
