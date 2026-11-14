@@ -78,11 +78,14 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
   `refused` before any reference is rewritten.
   - **fails today**: `DocumentStoreMoveTest::testALinkShareKeepsItsToken`, `testAPasswordProtectedShareStopsTheRegister`,
     `testTagsAreCopied`.
-- [ ] 2.6 Refuse uploads into a register while it moves: a flag per register in app config set by the move and
+- [x] 2.6 Refuse uploads into a register while it moves: a flag per register in app config set by the move and
   checked by `FilesController::create()`, `save()`, `createMultipart()`, `update()` and `FilePropertyHandler`'s file
   write, answering 503 `{error: "document-store-move"}` and writing nothing; reads are not checked.
   - **fails today**: `tests/Unit/Controller/FilesControllerMoveGuardTest.php::testAnUploadDuringAMoveIs503`,
     `testAReadDuringAMoveStillWorks`, and `testEveryUploadPathChecksTheFlag` enumerating the write paths.
+  - Built: `DocumentStoreMoveGuard` (app config `document_store_moving_<register id>`), `DocumentStoreMoving`
+    (503 `document-store-move`). `create()`, `save()`, `createMultipart()` and `update()` take their object through
+    `writableObject()`; `FilePropertyHandler` checks before it adds a file. Also `FilePropertyMoveGuardTest`.
 - [ ] 2.7 Switch and purge: when every register is switched, set `document_store_root` to the target and rename the
   old root to `<root> (moved <YYYY-MM-DD>)`; `--purge-source` deletes the renamed tree only when every file in it has
   a `switched` mapping, else deletes nothing and names the files.

@@ -4238,3 +4238,5 @@ Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notificatio
 Db/DocumentMove.php,156,Db,,,,,Core
 Db/DocumentMoveMapper.php,119,Db,,,,,Core
 Migration/Version1Date20261114100000.php,89,Migration,,,,,Platform
+Service/File/DocumentStoreMoveGuard.php,132,Service,Service,Service/File/DocumentStoreMoveGuard.php,0,,Core
+Service/File/DocumentStoreMoving.php,54,Service,Service,Service/File/DocumentStoreMoving.php,0,,Core

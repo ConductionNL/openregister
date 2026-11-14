@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Files\Controller;
 use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\File\DocumentStoreMoveGuard;
+use OCA\OpenRegister\Service\File\DocumentStoreMoving;
 use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
@@ -215,6 +217,13 @@ class FilesController extends Controller {
 	private readonly ?FileWriteGuardInterface $fileWriteGuard;
 
 	/**
+	 * Holds uploads off a register whose documents are being moved; null when absent.
+	 *
+	 * @var DocumentStoreMoveGuard|null
+	 */
+	private readonly ?DocumentStoreMoveGuard $moveGuard;
+
+	/**
 	 * The file restrictions.
 	 *
 	 * @var ?FileRestrictionGuard
@@ -258,6 +267,7 @@ class FilesController extends Controller {
 		$this->attachNodeHandler = $services->editing->attachNodeHandler;
 		$this->fileWriteGuard = $services->guards->fileWriteGuard;
 		$this->fileRestrictions = $services->guards->fileRestrictions;
+		$this->moveGuard = $services->guards->moveGuard;
 
 		// Store dependencies for use in controller methods.
 		$this->fileService = $services->store->fileService;
@@ -713,6 +723,11 @@ class FilesController extends Controller {
 	 * @return JSONResponse|null The answer, or null for any other failure.
 	 */
 	private function refusalAnswer(Exception $e): ?JSONResponse {
+		if ($e instanceof DocumentStoreMoving) {
+			// REQ-RDS-004: the register's documents are moving; nothing was written.
+			return new JSONResponse(data: ['error' => DocumentStoreMoving::ERROR], statusCode: DocumentStoreMoving::STATUS);
+		}
+
 		if ($e instanceof FileActionRefusal) {
 			return new JSONResponse(data: ['error' => $this->translate(text: $e->getMessage())], statusCode: $e->getCode());
 		}
@@ -744,6 +759,26 @@ class FilesController extends Controller {
 	private function actionFailed(Exception $e, int $status = 400): JSONResponse {
 		return ($this->refusalAnswer(e: $e) ?? new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status));
 	}//end actionFailed()
+
+	/**
+	 * The routed object, refused while its register's documents are being moved.
+	 *
+	 * Every upload path takes its object here; a read takes routedObject() and
+	 * is never held off.
+	 *
+	 * @param string $id The object id from the route.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws DocumentStoreMoving When the object's register is being moved.
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function writableObject(string $id): ObjectEntity {
+		$object = $this->routedObject(id: $id);
+		$this->moveGuard?->assertNotMoving(registerId: $object->getRegister());
+		return $object;
+	}//end writableObject()
 
 	/**
 	 * Answer a failed action where a missing object answers 404, not its message.
@@ -1232,7 +1267,7 @@ class FilesController extends Controller {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before adding files.
 			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
-			return $this->addPostedFile(object: $this->routedObject(id: $id));
+			return $this->addPostedFile(object: $this->writableObject(id: $id));
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
 		}
@@ -1409,7 +1444,7 @@ class FilesController extends Controller {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before saving files.
 			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
-			return $this->savePostedFile(object: $this->routedObject(id: $id));
+			return $this->savePostedFile(object: $this->writableObject(id: $id));
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
 		}
@@ -1506,7 +1541,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before accepting uploads.
 			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
 			$this->setObjectContext(register: $register, schema: $schema);
-			return $this->storeUploads(object: $this->routedObject(id: $id));
+			return $this->storeUploads(object: $this->writableObject(id: $id));
 		} catch (Exception $e) {
 			return $this->actionFailed(e: $e);
 		}
@@ -1846,7 +1881,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			$this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
+			$this->routedFile(object: $this->writableObject(id: $id), fileId: $fileId);
 			return $this->updateFromRequest(fileId: $fileId);
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
