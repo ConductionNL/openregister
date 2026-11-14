@@ -8980,3 +8980,4 @@ verify:pipelinq:3832:d968758f	GREEN 3832	session-20261114T114647-2bec20c6	2026-1
 fix:pipelinq:3830:c7d405c9	l10n keys moved off the tail, clean with 3818; new head ec8232ea	session-20261114T114625-63eafe85	2026-11-14T12:04:57Z
 review:openregister:10528:c6ba2a65	APPROVE: list-reference _ref via JSON containment, access predicate unchanged; suites green	session-20261114T114410-130907cc	2026-11-14T12:05:10Z
 review:openregister:10526:70fb972d	APPROVE 10526	session-20261114T114629-c5ef9a76	2026-11-14T12:05:32Z
+review:openregister:10509:949c765a	APPROVE: per spec, all suites green on merge with main; generated yaml conflict only	session-20261114T114410-8ce13f7f	2026-11-14T12:05:42Z
