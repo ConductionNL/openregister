@@ -9236,3 +9236,4 @@ merge:stackiq:1940:a486bdd9	merge3 tree of 39 stackiq PRs: merged=28 red=1 fail=
 build:shillinq:ledger-journal-line-dimensions:c2	partial: PR shillinq#2972 ticked 1.6 (openspec validate --strict valid); 1.4 blocked: JournalEntry.lines is an object array and nextcloud-vue 2.120 has no line-item editor (lines widget is strings only); 1.5 live	session-20261114T114426-1ea692f9	2026-11-14T13:20:27Z
 verify:shillinq:2972:79318ace	GREEN 2972 (11064 tests, no new failures)	session-20261114T124616-f8bd056a	2026-11-14T13:20:38Z
 fix:portaliq:2444:fc4cf85f	merged development, versions moved to 0.112.0/portal 0.30.0, pushed 5cdcdfc4, REVERIFY recorded	session-20261114T124634-b093d74a	2026-11-14T13:20:49Z
+fix:portaliq:2492:f079c8c3	merged development into #2492 (4 conflicts resolved), suite green; REVERIFY recorded, new head 0067a042060f65936a833e23d0b84d2b08a307f4; #2440 still clashes on register version lines	session-20261114T114435-d7b47cb4	2026-11-14T13:20:59Z
