@@ -10264,3 +10264,4 @@ decidiq	2207	4431f53a0387b2e6fda4b7a74b5cdf819986a814	GREEN	worker-26	phpunit 43
 integriq	3564	e75c7913950e8ab8bb5f54ed4030ba4330d05e5e	GREEN	worker-55	phpunit 9143 tests on development+PR, baseline 9084 with 2 errors 5 failures inherited, no new failures; vitest 2258 passed; builds gateway-api-design-rules-check as its specs ask
 stackiq	1954	e74406a91d6e063eaaa8e4eb6fd01c14761f94b3	GREEN	worker-15	unit 3630 tests 0 failures (baseline development 3602, 1 failure CmdbExportImportServiceTest inherited); vitest 2578, 1 failure facets.spec FACET_DIMENSIONS inherited from development; no new failures; implements insight-exports-and-custom-reports per its specs
 stackiq	1956	5e21700ec3c47e32ad2e88f449a204df304de2ba	CONFLICT	worker-15	conflicts after #1937/#1954 in l10n/en,nl .js/.json
+hermiq	1751	5340b3de69728be69e06a0c7b9c343128e3af434	CONFLICT	worker-34	merges clean on development but conflicts with #1739 in this tree
