@@ -7836,3 +7836,4 @@ fix:humaniq:1031:f88eeb1e	SettingsService conflict resolved, pushed bfb119fa90df
 fix:integriq:3551:a7b3ae53	conflict resolved: openapi path + l10n keys moved clear of #3539, development merged; new head 677767dd	session-20261114T065633-3e3cb668	2026-11-14T07:25:22Z
 fix:integriq:3550:b2995130	no change: clean on development; tree-only l10n conflict with #3546, REVERIFY recorded	session-20261114T065635-0aca43d3	2026-11-14T07:25:39Z
 fix:integriq:3343:ebd21951	conflict resolved, pushed cd29b4de, REVERIFY recorded	session-20261114T062142-da017174	2026-11-14T07:25:48Z
+fix:integriq:3472:17ed9285	add/add test conflict resolved keeping both; new head 6fb9f63f; REVERIFY recorded	session-20261114T062134-840bbeee	2026-11-14T07:25:59Z
