@@ -10386,3 +10386,4 @@ build4:openregister:platform-share-provider:c3	failed: permission — openspec v
 review:openregister:10568:10437299	APPROVE: RBAC flag unused for row selection, tenancy never widened, arm order matches old preference; Architecture/Rules/Controller/Contract/SchemaMapper/migration tests pass, phpstan clean	session-20261114T134708-ba7f7741	2026-11-14T17:19:46Z
 fix:pipelinq:3835:f9170d1a	conflict resolved, new head 53c482bd, REVERIFY recorded	session-20261114T171830-19af6b65	2026-11-14T17:20:00Z
 fix:learniq:2493:11d23894	conflict resolved, merged development; new head b4d28b92	session-20261114T171822-ef880213	2026-11-14T17:20:12Z
+merge:decidiq:2149:6f1ca6f0	merge3 tree of 1 decidiq PRs: none; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T17:20:29Z
