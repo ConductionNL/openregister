@@ -8899,3 +8899,9 @@ shillinq	3057	da7239cadb5817492c2d87f42108964301251c23	RED	merge3:merge-gate	GAT
 shillinq	3070	a2d99b13b6ad18a085d5dad9d5c590433fa98bd8	RED	merge3:merge-gate	GATE RED absolute floor: shillinq maintainability 3.88 after merge is below its floor 3.89
 integriq	3542	723f064283b642c7bf77ef6147ba678800305f3d	REVERIFY	worker-35	moved this PR's 5 new l10n keys (en/nl js+json) and its 2 openapi paths off the shared tail; development+3539+3542 now merges clean in both orders, OpenApiDocumentTest and test:l10n green on the tree, suite has only development's failures; new head ee72f32bc9f17f90f07e70db7a490de89e280c93, verify it
 hermiq	1779	c70ede4d3407eb3e1286a65e341da79d589d82b0	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.53 -> 4.51
+hermiq	1725	bdb028996c67c48def971a28c90f6bbb46e6be20	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
+hermiq	1726	7e84fbb0591a49b40f24956cd5565a0a4521d154	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
+hermiq	1735	62b18a2470884cdddc84aa07e80393bedeba062a	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
+hermiq	1736	ff4bd9c2b2471dd65a362385a787af15ff3dee6b	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
+hermiq	1750	647eadd55e033188fdc6776f07e1c2cd3354a7f2	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
+hermiq	1762	0722e3ca9a2c3b629b43f8b13c13975af7ad3ffe	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js l10n/nl.json 
