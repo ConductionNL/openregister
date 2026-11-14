@@ -11683,3 +11683,4 @@ build:versioniq:install-multi-instance-promotion:c2	partial: PR #712 head a624f5
 fix:stackiq:1924:09c7c010	conflict resolved by merging development (l10n, registers), suite green, new head f6dc9dd2; REVERIFY recorded	session-20261114T214719-cd72efa7	2026-11-14T22:47:50Z
 fix:versioniq:718:c0066590	moved its l10n keys so it no longer conflicts with #710, new head 0258f8d1	session-20261114T214733-589f5bff	2026-11-14T22:48:18Z
 fix:integriq:3593:b76109f8	stale	session-20261114T224740-064dbb86	2026-11-14T22:48:55Z
+build:versioniq:inventory-pins-checks-and-pending:c2	PR #723 head 3731f972: 5.1 done (matrix rows built, deltas synced to specs, change archived, @spec tags moved); all code tasks ticked; unit-only 1703/2 inherited, vitest 2972 pass	session-20261114T211012-c469e919	2026-11-14T22:49:28Z
