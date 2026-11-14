@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\RequestListPage;
+use OCA\OpenRegister\Controller\Support\WebhookOwnership;
 use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
@@ -41,6 +42,7 @@ use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\OwnedWebhookView;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -49,6 +51,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -434,6 +437,13 @@ class WebhooksController extends Controller {
 	private ?IGroupManager $groupManager;
 
 	/**
+	 * Lets a holder of `webhook.own` manage their own webhooks; null: administrators only.
+	 *
+	 * @var WebhookOwnership|null
+	 */
+	private ?WebhookOwnership $ownership = null;
+
+	/**
 	 * Constructor
 	 *
 	 * @param string $appName Application name
@@ -452,6 +462,7 @@ class WebhooksController extends Controller {
 		$this->logger = $services->mappers->logger;
 		$this->userSession = $services->platform->userSession;
 		$this->groupManager = $services->platform->groupManager;
+		$this->ownership = $services->ownership;
 	}//end __construct()
 
 	/**
@@ -478,6 +489,127 @@ class WebhooksController extends Controller {
 
 		return $this->groupManager->isAdmin($user->getUID());
 	}//end isCurrentUserAdmin()
+
+	/**
+	 * The signed-in user, or null.
+	 *
+	 * @return IUser|null
+	 */
+	private function caller(): ?IUser {
+		if ($this->userSession === null) {
+			return null;
+		}
+
+		return $this->userSession->getUser();
+	}//end caller()
+
+	/**
+	 * Whether the caller holds `webhook.own`; fails closed.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	private function callerMayOwn(): bool {
+		$user = $this->caller();
+		if ($user === null || $this->ownership === null) {
+			return false;
+		}
+
+		try {
+			return $this->ownership->actionAuth->can(user: $user, action: OwnedWebhookView::RIGHT);
+		} catch (\Throwable $e) {
+			$this->logger->warning(message: '[WebhooksController] The action rights could not be read: ' . $e->getMessage());
+			return false;
+		}
+	}//end callerMayOwn()
+
+	/**
+	 * Whether the caller may manage this webhook.
+	 *
+	 * An administrator manages every webhook; anyone else only one they own,
+	 * and only while they hold `webhook.own`.
+	 *
+	 * @param Webhook $webhook The webhook.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	private function mayManage(Webhook $webhook): bool {
+		if ($this->isCurrentUserAdmin() === true) {
+			return true;
+		}
+
+		$user  = $this->caller();
+		$owner = trim((string)$webhook->getOwner());
+		if ($user === null || $owner === '' || $owner !== $user->getUID()) {
+			return false;
+		}
+
+		return $this->callerMayOwn();
+	}//end mayManage()
+
+	/**
+	 * Why the caller may not reach this webhook, or null when they may.
+	 *
+	 * An administrator always may. Anyone without `webhook.own` gets 403, as
+	 * before owned webhooks; a holder of the right gets 404 for a webhook
+	 * they do not own, so ids cannot be probed.
+	 *
+	 * @param int $id The webhook id.
+	 *
+	 * @return JSONResponse|null
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	private function ownedRefusal(int $id): ?JSONResponse {
+		if ($this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		if ($this->callerMayOwn() === false) {
+			return $this->forbiddenResponse();
+		}
+
+		try {
+			$webhook = $this->webhookMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return $this->webhookNotFound();
+		} catch (\Exception $e) {
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error retrieving webhook: ' . $e->getMessage(),
+				context: ['id' => $id],
+				data: ['error' => 'Failed to retrieve webhook']
+			);
+		}
+
+		if ($this->mayManage(webhook: $webhook) === false) {
+			return $this->webhookNotFound();
+		}
+
+		return null;
+	}//end ownedRefusal()
+
+	/**
+	 * Whether the caller is neither an administrator nor a holder of `webhook.own`.
+	 *
+	 * @return bool
+	 */
+	private function mayNotManageAny(): bool {
+		return $this->isCurrentUserAdmin() === false && $this->callerMayOwn() === false;
+	}//end mayNotManageAny()
+
+	/**
+	 * The 422 an owned webhook's subscription is refused with, naming the field.
+	 *
+	 * @param array{field: string, message: string} $refusal The refusal.
+	 *
+	 * @return JSONResponse
+	 */
+	private function ownedWebhookRefused(array $refusal): JSONResponse {
+		return new JSONResponse(data: ['error' => $refusal['message'], 'field' => $refusal['field']], statusCode: 422);
+	}//end ownedWebhookRefused()
 
 	/**
 	 * Build a 403 response for callers without admin rights.
@@ -547,9 +679,14 @@ class WebhooksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
-		// Webhook config listing is admin-only (matches the write endpoints).
+		// Webhook config listing is admin-only (matches the write endpoints);
+		// a holder of webhook.own lists their own.
 		if ($this->isCurrentUserAdmin() === false) {
-			return $this->forbiddenResponse();
+			if ($this->callerMayOwn() === false) {
+				return $this->forbiddenResponse();
+			}
+
+			return $this->ownedIndex();
 		}
 
 		try {
@@ -626,9 +763,11 @@ class WebhooksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(int $id): JSONResponse {
-		// Reading a webhook's config (target URL, org, filters) is admin-only.
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->forbiddenResponse();
+		// Reading a webhook's config (target URL, org, filters) is admin-only,
+		// or the owner's.
+		$refusal = $this->ownedRefusal(id: $id);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -663,8 +802,9 @@ class WebhooksController extends Controller {
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
 		// Webhooks let the holder direct outbound HTTP from the server,
-		// so write access is admin-only (wave-3 C10).
-		if ($this->isCurrentUserAdmin() === false) {
+		// so write access is admin-only (wave-3 C10), or a holder of webhook.own
+		// creating a webhook of their own.
+		if ($this->mayNotManageAny() === true) {
 			return $this->forbiddenResponse();
 		}
 
@@ -696,6 +836,10 @@ class WebhooksController extends Controller {
 					],
 					statusCode: 400
 				);
+			}
+
+			if ($this->isCurrentUserAdmin() === false) {
+				return $this->createOwned(data: $data);
 			}
 
 			$webhook = $this->webhookMapper->createFromArray($data);
@@ -739,9 +883,10 @@ class WebhooksController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function update(int $id): JSONResponse {
-		// Webhook reconfiguration is admin-only (wave-3 C10).
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->forbiddenResponse();
+		// Webhook reconfiguration is admin-only (wave-3 C10), or the owner's.
+		$refusal = $this->ownedRefusal(id: $id);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -749,6 +894,11 @@ class WebhooksController extends Controller {
 
 			// Remove ID from data if present.
 			unset($data['id']);
+
+			$data = $this->ownedUpdate(id: $id, data: $data);
+			if ($data instanceof JSONResponse) {
+				return $data;
+			}
 
 			$webhook = $this->webhookMapper->updateFromArray(id: $id, data: $data);
 
@@ -803,9 +953,10 @@ class WebhooksController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function destroy(int $id): JSONResponse {
-		// Webhook deletion is admin-only (wave-3 C10).
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->forbiddenResponse();
+		// Webhook deletion is admin-only (wave-3 C10), or the owner's.
+		$refusal = $this->ownedRefusal(id: $id);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -915,9 +1066,11 @@ class WebhooksController extends Controller {
 		// The /test endpoint actually fires an outbound HTTP request to the
 		// configured URL, so it triggers the same SSRF surface as a normal
 		// delivery. Gate it identically to the other write endpoints
-		// (wave-3 C10).
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->forbiddenResponse();
+		// (wave-3 C10). An owner may test their own; delivery refuses private
+		// targets for an owned webhook.
+		$refusal = $this->ownedRefusal(id: $id);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -1023,9 +1176,11 @@ class WebhooksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function logs(int $id): JSONResponse {
-		// Delivery logs carry unmasked request/response bodies — admin-only.
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->forbiddenResponse();
+		// Delivery logs carry unmasked request/response bodies — admin-only,
+		// or the owner's for their own webhook.
+		$refusal = $this->ownedRefusal(id: $id);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -1081,9 +1236,10 @@ class WebhooksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function logStats(int $id): JSONResponse {
-		// Delivery-log statistics are admin-only.
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->forbiddenResponse();
+		// Delivery-log statistics are admin-only, or the owner's.
+		$refusal = $this->ownedRefusal(id: $id);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -1093,7 +1249,13 @@ class WebhooksController extends Controller {
 
 			// Count pending retries.
 			$now = new DateTime();
-			$pendingRetries = count($this->webhookLogMapper->findFailedForRetry($now));
+			$pendingLogs = $this->webhookLogMapper->findFailedForRetry($now);
+			if ($this->isCurrentUserAdmin() === false) {
+				// An owner counts only their own webhook's retries.
+				$pendingLogs = array_filter($pendingLogs, fn ($log) => $log->getWebhook() === $id);
+			}
+
+			$pendingRetries = count($pendingLogs);
 
 			$stats['pendingRetries'] = $pendingRetries;
 
@@ -1130,12 +1292,16 @@ class WebhooksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function allLogs(): JSONResponse {
-		// Instance-wide delivery logs are admin-only.
-		if ($this->isCurrentUserAdmin() === false) {
+		// Instance-wide delivery logs are admin-only; an owner reads their own webhooks' logs.
+		if ($this->mayNotManageAny() === true) {
 			return $this->forbiddenResponse();
 		}
 
 		try {
+			if ($this->isCurrentUserAdmin() === false) {
+				return $this->ownedLogs(query: $this->readLogQuery());
+			}
+
 			return new JSONResponse(data: $this->logPage(query: $this->readLogQuery()), statusCode: 200);
 		} catch (\Exception $e) {
 			return $this->logsFailed(e: $e);
@@ -1166,6 +1332,154 @@ class WebhooksController extends Controller {
 
 		return $query;
 	}//end readLogQuery()
+
+	/**
+	 * The caller's own webhooks, paged as index() pages.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	private function ownedIndex(): JSONResponse {
+		try {
+			$listPage = new RequestListPage(params: $this->request->getParams());
+			$owned    = $this->webhookMapper->findOwnedBy(uid: (string)$this->caller()?->getUID());
+			$page     = array_slice($owned, ($listPage->offset() ?? 0), $listPage->limit());
+
+			return new JSONResponse(
+				data: [
+					'results' => array_map(fn ($webhook) => $webhook->jsonSerialize(), $page),
+					'total' => count($owned),
+				],
+				statusCode: 200
+			);
+		} catch (\Exception $e) {
+			return $this->loggedFailure(
+				logMessage: '[WebhooksController] Error listing owned webhooks: ' . $e->getMessage(),
+				context: ['trace' => $e->getTraceAsString()],
+				data: ['error' => 'Failed to list webhooks']
+			);
+		}
+	}//end ownedIndex()
+
+	/**
+	 * Create a webhook owned by the caller, after its subscription is checked.
+	 *
+	 * The owner is the caller, whatever the body says; the organisation is the
+	 * active one, set by the mapper.
+	 *
+	 * @param array<string, mixed> $data The webhook, without internal keys, id or organisation.
+	 *
+	 * @return JSONResponse 201, or 422 naming the refused field.
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-is-limited-to-object-events-in-one-scope
+	 */
+	private function createOwned(array $data): JSONResponse {
+		$uid = (string)$this->caller()?->getUID();
+		unset($data['owner']);
+		if ($this->ownership === null || $uid === '') {
+			return $this->forbiddenResponse();
+		}
+
+		$checked = $this->ownership->validator->check(data: $data, owner: $uid, creating: true);
+		if ($checked['refusal'] !== null) {
+			return $this->ownedWebhookRefused(refusal: $checked['refusal']);
+		}
+
+		$webhook = $this->webhookMapper->createOwnedFromArray(data: $checked['data'], owner: $uid);
+
+		$this->logger->info(
+			message: '[WebhooksController] Owned webhook created',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $webhook->getId(), 'owner' => $uid]
+		);
+
+		return new JSONResponse(data: $webhook, statusCode: 201);
+	}//end createOwned()
+
+	/**
+	 * The update data for an owned webhook, checked; for any other webhook as given.
+	 *
+	 * The owner and organisation never change through an update. The
+	 * subscription the webhook will have after the update is checked as the
+	 * owner's, whoever edits it.
+	 *
+	 * @param int                  $id   The webhook id.
+	 * @param array<string, mixed> $data The update.
+	 *
+	 * @return array<string, mixed>|JSONResponse The data to store, or the 422 refusing it.
+	 *
+	 * @throws DoesNotExistException When the webhook does not exist.
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-is-limited-to-object-events-in-one-scope
+	 */
+	private function ownedUpdate(int $id, array $data): array|JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			unset($data['organisation']);
+		}
+
+		unset($data['owner']);
+		if ($this->ownership === null) {
+			return $data;
+		}
+
+		$webhook = $this->webhookMapper->find($id);
+		$owner   = trim((string)$webhook->getOwner());
+		if ($owner === '') {
+			return $data;
+		}
+
+		$after = [
+			'events' => ($data['events'] ?? $webhook->getEventsArray()),
+			'filters' => ($data['filters'] ?? $webhook->getFiltersArray()),
+			'configuration' => ($data['configuration'] ?? $webhook->getConfigurationArray()),
+		];
+		$checked = $this->ownership->validator->check(data: $after, owner: $owner, creating: false);
+		if ($checked['refusal'] !== null) {
+			return $this->ownedWebhookRefused(refusal: $checked['refusal']);
+		}
+
+		$data['filters'] = $checked['data']['filters'];
+
+		return $data;
+	}//end ownedUpdate()
+
+	/**
+	 * The delivery logs of the caller's own webhooks, newest first.
+	 *
+	 * @param WebhookLogQuery $query The paging, webhook and outcome filters.
+	 *
+	 * @return JSONResponse 404 for a webhook id the caller does not own.
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	private function ownedLogs(WebhookLogQuery $query): JSONResponse {
+		$ownedIds = array_map(
+			fn ($webhook) => (int)$webhook->getId(),
+			$this->webhookMapper->findOwnedBy(uid: (string)$this->caller()?->getUID())
+		);
+		if ($query->webhookId !== null) {
+			if (in_array($query->webhookId, $ownedIds, true) === false) {
+				return $this->webhookNotFound();
+			}
+
+			return new JSONResponse(data: $this->logPage(query: $query), statusCode: 200);
+		}
+
+		$logs = [];
+		foreach ($ownedIds as $ownedId) {
+			$logs = array_merge($logs, $this->webhookLogMapper->findByWebhook(webhookId: $ownedId, page: ListQuery::unbounded()));
+		}
+
+		usort($logs, fn ($left, $right) => (int)$right->getId() <=> (int)$left->getId());
+		if ($query->success !== null) {
+			$logs = $this->withOutcome(logs: $logs, success: $query->success);
+		}
+
+		return new JSONResponse(
+			data: ['results' => array_slice($logs, $query->offset, $query->limit), 'total' => count($logs)],
+			statusCode: 200
+		);
+	}//end ownedLogs()
 
 	/**
 	 * One page of delivery logs and the total the filters match.
@@ -1248,13 +1562,15 @@ class WebhooksController extends Controller {
 	#[NoAdminRequired]
 	public function retry(int $logId): JSONResponse {
 		// The retry() endpoint re-fires an outbound webhook delivery, so it
-		// shares the outbound-HTTP surface of test(). Admin-only (wave-3 C10).
-		if ($this->isCurrentUserAdmin() === false) {
+		// shares the outbound-HTTP surface of test(). Admin-only (wave-3 C10),
+		// or the owner of the log's webhook.
+		$isAdmin = $this->isCurrentUserAdmin();
+		if ($isAdmin === false && $this->callerMayOwn() === false) {
 			return $this->forbiddenResponse();
 		}
 
 		try {
-			return $this->retryLog(logId: $logId);
+			return $this->retryLog(logId: $logId, isAdmin: $isAdmin);
 		} catch (DoesNotExistException $e) {
 			$this->logger->error(
 				message: '[WebhooksController] Webhook log not found for retry: ' . $e->getMessage(),
@@ -1275,14 +1591,22 @@ class WebhooksController extends Controller {
 	 *
 	 * The log entity's property is named `webhook`, so its id is read with getWebhook().
 	 *
-	 * @param int $logId Log entry ID
+	 * @param int  $logId   Log entry ID
+	 * @param bool $isAdmin Whether the caller is an administrator.
 	 *
 	 * @return JSONResponse The retry result, or 400 for a successful delivery
 	 *
 	 * @throws DoesNotExistException When no log entry has this id; retry() answers 404.
 	 */
-	private function retryLog(int $logId): JSONResponse {
+	private function retryLog(int $logId, bool $isAdmin=true): JSONResponse {
 		$log = $this->webhookLogMapper->find($logId);
+		if ($isAdmin === false
+			&& $this->mayManage(webhook: $this->webhookMapper->find($log->getWebhook())) === false
+		) {
+			// Checked before the log's outcome is told, so another person's logs cannot be probed.
+			return new JSONResponse(data: ['error' => 'Webhook log not found'], statusCode: 404);
+		}
+
 		if ($log->getSuccess() === true) {
 			return new JSONResponse(data: ['error' => 'Cannot retry a successful webhook delivery'], statusCode: 400);
 		}

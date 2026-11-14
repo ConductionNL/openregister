@@ -362,7 +362,11 @@
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
 	],
 	"OCP\\User\\Events\\BeforeUserDeletedEvent": [
-		"OCA\\OpenRegister\\Listener\\SharerViewsEndWithUserListener"
+		"OCA\\OpenRegister\\Listener\\SharerViewsEndWithUserListener",
+		"OCA\\OpenRegister\\Listener\\OwnedWebhooksEndWithOwnerListener"
+	],
+	"OCP\\User\\Events\\UserChangedEvent": [
+		"OCA\\OpenRegister\\Listener\\OwnedWebhooksEndWithOwnerListener"
 	],
 	"OCP\\User\\Events\\UserCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
