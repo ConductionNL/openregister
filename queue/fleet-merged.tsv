@@ -2884,3 +2884,7 @@ filinq	2126	ff1f07a22f724c52228553853290ed7893e14bfc	RED	merge3	GATE RED floor: 
 filinq	2131	a9bd216af9e77001df2a9597c77f97000029c100	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
 dossiq	6519	97d7941beb1b114b2c80805c90fac239008054a5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
 dossiq	6520	43744eee238160ba67ceb5ee0f6a1d632279c735	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+hermiq	1715	47d76c7cf8852efb3d4e181065c868036fa09e0a	RED	merge3	GATE RED floor: unit_complexity: 4.52 -> 4.46
+hermiq	1782	f0562d6f013540c84154271800e3a6102ac05d3e	RED	merge3	GATE RED floor: unit_interfacing: 2.45 -> 2.43
+hermiq	1790	5e82a5ebfcf2826bfe6ff14d7b9da29c257efa35	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
+hermiq	1793	fb17183cdd4dddbdb8756f87ad4fe8fb5eb3031d	RED	merge3	GATE RED floor: unit_complexity: 4.52 -> 4.50
