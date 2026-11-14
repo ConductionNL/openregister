@@ -10870,3 +10870,4 @@ fix:filinq:2126:67391b56	merged development in (clean, #2113 already on dev); un
 review:openregister:10570:c1866a93	APPROVE #10570: behaviour as specified, no access or contract change; review suites green apart from one inherited Flow error	session-20261114T191744-89a97153	2026-11-14T20:23:18Z
 fix:hermiq:1791:f0bebb66	merged development in cleanly, suite green; REVERIFY at 14c6b2c430e286e468eaf09b2db8ee1c5cf5076d	session-20261114T194740-7cca8afd	2026-11-14T20:23:36Z
 review:shillinq:2995:47788041	no defect found; CONFLICT with development (appinfo/info.xml openapi.json tests/Unit/Listener/Registration/FilteredObjectListenerSubscriptionTest.php tests/fixtures/register-versions.lock.json )	session-20261114T195420-f8b91a81	2026-11-14T20:23:43Z
+review:filinq:2103:14cf5ada	GREEN	session-20261114T201755-10d43934	2026-11-14T20:24:03Z
