@@ -11686,3 +11686,4 @@ fix:integriq:3593:b76109f8	stale	session-20261114T224740-064dbb86	2026-11-14T22:
 build:versioniq:inventory-pins-checks-and-pending:c2	PR #723 head 3731f972: 5.1 done (matrix rows built, deltas synced to specs, change archived, @spec tags moved); all code tasks ticked; unit-only 1703/2 inherited, vitest 2972 pass	session-20261114T211012-c469e919	2026-11-14T22:49:28Z
 fix:launchpad:1210:b146f2c1	fixed: maintainability floor PASS (complexity 4.71, interfacing 3.45); new head 041737d3, REVERIFY recorded	session-20261114T221709-8b871792	2026-11-14T22:49:45Z
 fix:versioniq:724:51a01f6b	floor restored (floor_check PASS vs merge base); pushed 56dbbd6b, REVERIFY recorded	session-20261114T220941-bdf809d3	2026-11-14T22:49:53Z
+verify:planninq:1169:ee486a62	GREEN planninq#1169 (phpunit 1177 OK, vitest 3392 OK)	session-20261114T224738-9571d712	2026-11-14T22:50:06Z
