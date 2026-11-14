@@ -11860,4 +11860,5 @@ merge:filinq:2079:32e6604b	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 s
 merge:filinq:2123:d7d9fff5	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:22:58Z
 cover:openregister:7350e3efmba30:js7af948c9	PR #10574: 6 DOM tests for the EditSchemaProperty computed-value section (1046->1052 pass); remaining gap in these dirs is mostly compiler helper output, 95% not reachable with behaviour tests	session-20261114T231738-b43a6a63	2026-11-14T23:23:16Z
 verify:dossiq:6521:26af6f5f	6521 GREEN; 6522, 6523 CONFLICT (add/add test files on development)	session-20261114T231754-82b5ae61	2026-11-14T23:23:15Z
+cover:openregister:7350e3efmba30:js0b5eefce	PR #10575: 17 tests (ViewObject record scope, selectedObjectsDialog); dir lines 92.21->92.40, branches 85.54->86.42; rest is compiler artifacts	session-20261114T231750-d1c755b0	2026-11-14T23:23:25Z
 cover:decidiq:a5f973bbmae46:81b1241f	already done: lib/Portal/*.php measures 246/246 (100%) on development with the whole unit suite	session-20261114T214733-589f5bff	2026-11-14T23:23:20Z
