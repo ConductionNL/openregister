@@ -7634,3 +7634,4 @@ fix:dossiq:6237:bc1b5688	conflict resolved, pushed 53871137bb5bc5412984520a03852
 review:openregister:10460:55020ec3	APPROVE 10460: within change specs, suites green, phpstan clean	session-20261114T062200-6a28e40c	2026-11-14T06:41:21Z
 fix:pipelinq:3725:77b357a7	conflict resolved (l10n, both sides kept), pushed eec84aa023cf2eb42d944fe3887e1a637e7d30f3, REVERIFY recorded	session-20261114T062202-3e33eeb3	2026-11-14T06:41:29Z
 fix:dossiq:6204:b8a99051	conflict resolved, new head d2fc826c, REVERIFY	session-20261114T062156-16c77e6a	2026-11-14T06:41:36Z
+fix:dossiq:6135:d3c81d9d	conflict resolved, pushed e8ff0590, REVERIFY recorded	session-20261114T062200-62a0b439	2026-11-14T06:41:51Z
