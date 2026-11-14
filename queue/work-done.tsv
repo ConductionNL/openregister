@@ -9027,3 +9027,4 @@ fix:dossiq:6322:985aafe3	conflict resolved: development already split the same u
 build4:openregister:production-observability:c2	partial: PR #10537 metrics scraper access (bearer token + IP ranges, admin-only default; +20 tests, unit suite 62102 green except 5 inherited ReservedColumnNamesTest errors); left: histograms, error counter, search-by-type/embedding metrics, search backend health, structured logging, alerting, APCu, db metrics, dashboard widget, admin field for the two keys	session-20261114T114435-17b1115e	2026-11-14T12:20:31Z
 review:openregister:10539:d537b21e	stale	feeder	2026-11-14T12:20:14Z
 fix:dossiq:6499:fb5dfa20	conflict resolved, merged development; 19 unit failures inherited; new head aa4d5781	session-20261114T121618-959073d3	2026-11-14T12:21:27Z
+verify:pipelinq:3833:08e586c7	GREEN 3833, 3834: no new failures	session-20261114T114630-192fc047	2026-11-14T12:22:10Z
