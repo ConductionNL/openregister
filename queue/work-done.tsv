@@ -10317,3 +10317,4 @@ fix:shillinq:3067:0f4f123e	no change: merges clean on development; conflicts onl
 fix:hermiq:1757:c5c53ee8	nothing to fix: branch already contains development and merges clean; conflict (l10n en.js/en.json) is only with another PR in the tree, re-verify after that lands	session-20261114T165414-28281f96	2026-11-14T16:58:54Z
 build:buildiq:forms-multi-product-request:c2	partial: PR buildiq#1646 T01 (designer + server checks for repeating writes, +11 tests); T02/T04 wait for JourneyWritesEditor.vue (journey-designer), T03 for the nextcloud-vue sub-objects widget, T05/T06 filing, T07-T09 after	session-20261114T151004-fa188a10	2026-11-14T16:58:48Z
 verify:buildiq:1582:db58e3ab	GREEN 1582 1620; CONFLICT 1590 1622 1632 (l10n, clean on development alone)	session-20261114T161742-d79a1d0e	2026-11-14T16:59:01Z
+verify:planninq:1167:46f52382	1167,1172,1178 GREEN (phpunit 1103 ok, vitest 3239 ok)	session-20261114T154734-655bd0f3	2026-11-14T16:59:29Z
