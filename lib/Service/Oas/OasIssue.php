@@ -36,11 +36,13 @@ final class OasIssue {
 	 * @param string $path    JSON Pointer path identifying the location.
 	 * @param string $message Human-readable description.
 	 * @param string $code    Stable machine code (one of the report's CODE_* constants).
+	 * @param string|null $rule The NLGov rule id the issue is a finding of, when it is one.
 	 */
 	public function __construct(
 		public readonly string $path,
 		public readonly string $message,
 		public readonly string $code,
+		public readonly ?string $rule = null,
 	) {
 	}//end __construct()
 }//end class

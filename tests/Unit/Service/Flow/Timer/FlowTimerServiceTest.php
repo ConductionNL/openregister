@@ -1118,4 +1118,19 @@ class FlowTimerServiceTest extends TestCase {
 			$this->assertInvariants($timer);
 		}
 	}//end testASubjectMayCarryThreeDeadlinesWithDifferentMomentsIndependently()
+
+	public function testTheReleaseFormOfArmArmsTheSameTimer(): void {
+		$sla  = ['sla' => ['value' => 33, 'unit' => 'calendarDays']];
+		$main = $this->service->arm(config: $this->config($sla), act: FlowTimerAct::of(actor: 'alice', now: $this->at('2026-09-01 09:00')));
+		$named = $this->service->arm(config: $this->config($sla), actor: 'alice', now: $this->at('2026-09-01 09:00'));
+		$positional = $this->service->arm($this->config($sla), 'alice', $this->at('2026-09-01 09:00'));
+
+		foreach ([$named, $positional] as $timer) {
+			self::assertSame($main->getFireAt()->format(DATE_ATOM), $timer->getFireAt()->format(DATE_ATOM));
+			self::assertSame($main->getAnchorAt()->format(DATE_ATOM), $timer->getAnchorAt()->format(DATE_ATOM));
+			self::assertSame($main->getState(), $timer->getState());
+		}
+
+		self::assertSame(['alice', 'alice', 'alice'], array_map(static fn ($event): ?string => $event->getActor(), $this->store->events));
+	}//end testTheReleaseFormOfArmArmsTheSameTimer()
 }//end class

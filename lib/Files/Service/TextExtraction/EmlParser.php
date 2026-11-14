@@ -132,6 +132,28 @@ class EmlParser {
 	}//end parse()
 
 	/**
+	 * Parse the bytes of a message that does not come from a Nextcloud file,
+	 * such as a member of an archive.
+	 *
+	 * @param string $bytes The message bytes.
+	 *
+	 * @return EmlStructure
+	 *
+	 * @throws EmlParseException On a parse failure; the message names the cause class only.
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	public function parseBytes(string $bytes): EmlStructure {
+		try {
+			$message = $this->getParser()->parse($bytes, true);
+		} catch (Throwable $error) {
+			throw new EmlParseException(message: 'EML parse failure (' . get_class($error) . ')');
+		}
+
+		return $this->parseMessage(message: $message);
+	}//end parseBytes()
+
+	/**
 	 * Parse an in-memory IMessage into `EmlStructure`.
 	 *
 	 * Used internally for recursive nested-EML extraction; also reusable

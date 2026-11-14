@@ -118,6 +118,9 @@ final class ListenerRegistrar {
 	 */
 	private static function registerAuditListeners(IRegistrationContext $context): void {
 		$context->registerEventListener(SchemaUpdatedEvent::class, SchemaAuthorizationAuditListener::class);
+		foreach (array_keys(RecordTypeAuditListener::ACTIONS) as $event) {
+			$context->registerEventListener($event, RecordTypeAuditListener::class);
+		}
 	}//end registerAuditListeners()
 
 	/**

@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Service\Object\MoveObject;
+use OCA\OpenRegister\Service\Object\RelationAddressRewriteInterface;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -95,6 +96,8 @@ final class MoveObjectTest extends TestCase {
 
 	private AuditTrailMapper&MockObject $audit;
 
+	private RelationAddressRewriteInterface&MockObject $relations;
+
 	/**
 	 * What the mapper was asked to do, in order.
 	 *
@@ -114,6 +117,7 @@ final class MoveObjectTest extends TestCase {
 		$this->objects = $this->createMock(MagicMapper::class);
 		$this->validator = $this->createMock(ValidateObject::class);
 		$this->audit = $this->createMock(AuditTrailMapper::class);
+		$this->relations = $this->createMock(RelationAddressRewriteInterface::class);
 		$this->audit->method('recordObjectEvent')->willReturn(new AuditTrail());
 
 		$this->objects->method('update')->willReturnCallback(
@@ -138,7 +142,7 @@ final class MoveObjectTest extends TestCase {
 	 * @return MoveObject The service.
 	 */
 	private function service(): MoveObject {
-		return new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator);
+		return new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator, $this->relations);
 	}
 
 	/**
@@ -244,7 +248,7 @@ final class MoveObjectTest extends TestCase {
 		);
 		$object = $this->object();
 
-		$outcome = (new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $events), $this->validator))->perform(
+		$outcome = (new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $events), $this->validator, $this->relations))->perform(
 			move: new ObjectMove(
 				object: $object,
 				source: new MoveAddress(register: $this->register(1), schema: $this->schema(10)),
@@ -275,7 +279,7 @@ final class MoveObjectTest extends TestCase {
 			}
 		);
 
-		$reason = (new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $events), $this->validator))
+		$reason = (new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $events), $this->validator, $this->relations))
 			->keptReason(object: $this->object());
 
 		self::assertSame('Other records still need this object where it is, so it was not moved.', $reason);
@@ -353,7 +357,7 @@ final class MoveObjectTest extends TestCase {
 			}
 		);
 
-		$outcome = (new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator))->perform(
+		$outcome = (new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator, $this->relations))->perform(
 			move: new ObjectMove(
 				object: $this->object(),
 				source: new MoveAddress(register: $this->register(1), schema: $this->schema(10)),
@@ -446,7 +450,7 @@ final class MoveObjectTest extends TestCase {
 			}
 		);
 
-		$outcome = (new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator))->perform(
+		$outcome = (new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator, $this->relations))->perform(
 			move: new ObjectMove(
 				object: $object,
 				source: new MoveAddress(register: $this->register(1), schema: $this->schema(10)),
@@ -485,6 +489,83 @@ final class MoveObjectTest extends TestCase {
 	}
 
 	/**
+	 * The relation rows are pointed at the new address, after the object is there.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-the-old-address-keeps-answering
+	 */
+	public function testTheRelationRowsArePointedAtTheNewAddressAfterTheMove(): void {
+		$this->relations->expects(self::once())->method('rewrite')
+			->with(self::UUID, 2, 20)
+			->willReturnCallback(
+				function (): int {
+					$this->calls[] = 'relations';
+					return 2;
+				}
+			);
+
+		$outcome = $this->service()->perform(
+			move: new ObjectMove(
+				object: $this->object(),
+				source: new MoveAddress(register: $this->register(1), schema: $this->schema(10)),
+				target: new MoveAddress(register: $this->register(2), schema: $this->schema(20)),
+				actor: 'anna'
+			)
+		);
+
+		self::assertTrue($outcome['moved']);
+		self::assertSame(['write', 'remove', 'relations'], $this->calls);
+	}
+
+	/**
+	 * A refused move leaves the relation rows naming the address the object still has.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-the-old-address-keeps-answering
+	 */
+	public function testARefusedMoveLeavesTheRelationRowsAlone(): void {
+		$this->relations->expects(self::never())->method('rewrite');
+
+		$outcome = $this->service()->perform(
+			move: new ObjectMove(
+				object: $this->object(),
+				source: new MoveAddress(register: $this->register(1), schema: $this->schema(10)),
+				target: new MoveAddress(register: $this->register(1), schema: $this->schema(10)),
+				actor: 'anna'
+			)
+		);
+
+		self::assertFalse($outcome['moved']);
+	}
+
+	/**
+	 * A rewrite that fails does not turn a completed move into a reported failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-the-old-address-keeps-answering
+	 */
+	public function testAFailedRelationRewriteStillReportsTheMove(): void {
+		$this->relations->method('rewrite')->willThrowException(new RuntimeException('relation table locked'));
+		$this->audit->expects(self::once())->method('recordObjectEvent');
+
+		$outcome = $this->service()->perform(
+			move: new ObjectMove(
+				object: $this->object(),
+				source: new MoveAddress(register: $this->register(1), schema: $this->schema(10)),
+				target: new MoveAddress(register: $this->register(2), schema: $this->schema(20)),
+				actor: 'anna'
+			)
+		);
+
+		self::assertTrue($outcome['moved']);
+		self::assertSame([], $outcome['errors']);
+		self::assertSame(['write', 'remove'], $this->calls);
+	}
+
+	/**
 	 * 🔴 A target the object does not fit refuses, and NOTHING is written.
 	 *
 	 * @return void
@@ -496,7 +577,7 @@ final class MoveObjectTest extends TestCase {
 		$validator->method('validateObject')->willThrowException(new RuntimeException('bouwjaar is required'));
 
 		$object = $this->object();
-		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $validator);
+		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $validator, $this->relations);
 
 		$outcome = $service->perform(
 			move: new ObjectMove(
@@ -529,7 +610,7 @@ final class MoveObjectTest extends TestCase {
 		$objects->expects(self::never())->method('deleteObjectEntity');
 
 		$object = $this->object();
-		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator);
+		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator, $this->relations);
 
 		$outcome = $service->perform(
 			move: new ObjectMove(
@@ -561,7 +642,7 @@ final class MoveObjectTest extends TestCase {
 		$objects->method('update')->willReturnArgument(0);
 		$objects->method('deleteObjectEntity')->willThrowException(new RuntimeException('source table is locked'));
 
-		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator);
+		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator, $this->relations);
 
 		$outcome = $service->perform(
 			move: new ObjectMove(
@@ -601,7 +682,7 @@ final class MoveObjectTest extends TestCase {
 			)
 			->willReturnArgument(0);
 
-		(new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator))->perform(
+		(new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator, $this->relations))->perform(
 			move: new ObjectMove(
 				object: $this->object(),
 				source: new MoveAddress(register: $this->register(1), schema: $this->schema(10)),
@@ -628,7 +709,7 @@ final class MoveObjectTest extends TestCase {
 			}
 		));
 
-		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator);
+		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator, $this->relations);
 		$service->perform(
 			move: new ObjectMove(
 				object: $this->object(),
@@ -706,7 +787,7 @@ final class MoveObjectTest extends TestCase {
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willThrowException(new RuntimeException('schema is unreadable'));
 
-		$verdict = (new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $validator))
+		$verdict = (new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $validator, $this->relations))
 			->fits(object: $this->object(), target: $this->schema(20));
 
 		self::assertFalse($verdict['fits']);
