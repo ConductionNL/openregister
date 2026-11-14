@@ -10021,3 +10021,4 @@ build:planninq:case-link-editing:c2	no code tasks left on PR #1162: 1.2/2.1 owe 
 fix:integriq:3588:3b34e85d	merged development; moved l10n keys off sibling append point, clean vs 3540 and 3546; new head eccc78b5	session-20261114T154734-655bd0f3	2026-11-14T16:02:34Z
 fix:hermiq:1785:82bc6704	merged development (clean); conflict is with unmerged #1782; new head 64469ed7	session-20261114T154757-c9bf237e	2026-11-14T16:02:42Z
 fix:hermiq:1755:c4172dcd	no change: already contains development; conflict is only with unmerged #1749 (verified GREEN), resolves once it lands	session-20261114T154757-c9bf237e	2026-11-14T16:03:05Z
+verify:shillinq:3072:f0411a42	3072 GREEN, 3073 GREEN (11218 OK); 3074 skipped: head moved to 714defc1	session-20261114T154733-94bb2e01	2026-11-14T16:03:06Z
