@@ -9540,3 +9540,4 @@ build:learniq:bpv-coach-today-and-placement-board:c2	partial: #2492 was merged; 
 fix:decidiq:2172:315e8cf5	conflict resolved (corporate.json objectCount 106), pushed 72b05d7357e379e54c819d81d0519cf4b8d493df, REVERIFY	session-20261114T141720-f9e7a46b	2026-11-14T14:39:54Z
 fix:shillinq:3065:10a4ce21	conflict resolved, new head 59e20f97	session-20261114T141737-e9e54940	2026-11-14T14:40:04Z
 verify:filinq:2079:3de9e351	2079 GREEN, 2083 CONFLICT, 2114 CONFLICT, 2124 GREEN; unit 6780 and vitest 752 green on the tree	session-20261114T134654-82ca2be5	2026-11-14T14:40:31Z
+merge:portaliq:2430:0ac64c60	merge3 tree of 3 portaliq PRs: merged=2 red=0 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-14T14:40:53Z
