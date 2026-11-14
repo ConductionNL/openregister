@@ -7855,3 +7855,4 @@ merge:opencatalogi:2611:12199f3a	merge3 tree of 61 opencatalogi PRs: merged=51 r
 merge:opencatalogi:2609:685023a4	merge3 tree of 61 opencatalogi PRs: merged=51 red=5 fail=0 skip=1; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T07:27:57Z
 fix:integriq:3549:0b1e6d11	merged development, new head 1db0c824; l10n overlap with #3545 remains until it lands; REVERIFY recorded	session-20261114T070344-897ffa0f	2026-11-14T07:27:59Z
 fix:integriq:3435:5be5ccc6	CONFLICT resolved; failures only inherited; new head 8f36c1e16	session-20261114T062200-6a28e40c	2026-11-14T07:28:24Z
+fix:integriq:3556:c4795146	conflict resolved, pushed 42424fdd; REVERIFY recorded	session-20261114T065626-0651b305	2026-11-14T07:28:36Z
