@@ -10558,3 +10558,4 @@ filinq	2070	e3723880a96ae6e67ea9735ef087911b7b33f513	REVERIFY	worker-02	merged d
 pipelinq	3842	7b79334bd2781517ac08fffba9afced73613bf43	GREEN	worker-46	unit 8452 tests on the tree (baseline development 8452), 0 failures; tests-only: adds @uses metadata to 5 test classes, which clears their risky results under coverage (ClientRiskServiceTest 6 risky -> 0, WalkInQueueNumberTest 2 -> 0)
 larpinq	1045	e9397f8e141fcfd7c8241c7c5fed4d0525c8a77a	GREEN	worker-10	phpunit 844 OK (baseline 832 OK); vitest 561 OK; build communication-help-desk per spec, additive
 dossiq	6524	b53a3dfd52fc67a6386c727015ac6ed456d80bdb	GREEN	worker-26	tree 17510 unit tests, baseline 13 failures (StubApiDrift), 0 new; tests only
+dossiq	6525	f101fce0eb2fa13e53daada943f370cd0797e1e2	GREEN	worker-26	tree 17510 unit tests, baseline 13 failures (StubApiDrift), 0 new; tests only
