@@ -9957,3 +9957,4 @@ build:shillinq:sales-webshop-orders:c3	partial: PR #3073 built 2.1 (listener + i
 verify:hermiq:1782:afc1387a	2 GREEN (1782,1783), 4 CONFLICT with 1782 (1784,1785,1787,1788)	session-20261114T154757-c9bf237e	2026-11-14T15:53:07Z
 verify:learniq:2521:315d275f	GREEN 2521; 6763 tests, 0 new failures	session-20261114T144809-d686f759	2026-11-14T15:53:22Z
 verify:shillinq:3069:d7d41c1b	GREEN 3069: 11303 tests OK, baseline 11203 OK	session-20261114T154733-94bb2e01	2026-11-14T15:53:30Z
+build:humaniq:record-history-on-every-detail-page:c2	partial: built 2.1 Audittrail section on PR humaniq#1128 (head 3d540460) with openregister#10566 adding the readable register filter; 4.1 excludes for 2 backend scenarios; left: record name in the sentence (entries carry none), 4 browser e2e and 4.2 live check. Unit 4184 (1 inherited fail), js 205/205	session-20261114T141010-8dc8bd74	2026-11-14T15:53:47Z
