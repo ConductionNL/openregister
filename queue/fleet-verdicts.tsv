@@ -7664,3 +7664,4 @@ versioniq	725	bcf2a49601908906ff4c034cd2196467a8aaed2f	CONFLICT	worker-21	clean 
 versioniq	725	bcf2a49601908906ff4c034cd2196467a8aaed2f	GREEN	worker-13	php unit 1726 on tree (baseline 1643, 2 inherited golden failures, no new); vitest 2985 OK; build advisories-per-app-detail per its specs
 versioniq	726	7825fc291bdffb285bcf9c89bf4407c9fd791a85	GREEN	worker-13	php unit 1726 on tree (baseline 1643, 2 inherited golden failures, no new); vitest 2985 OK; build install-force-incompatible per its specs, force-enable admin + password confirmed
 versioniq	727	b606104e1c39d0020212bea1aab24d11f2152f9b	CONFLICT	worker-13	conflicts with #725/#726 in l10n en/nl, ApiController.php, AuditLogger.php, InstallOptions.php, InstallState.php, App.vue
+versioniq	728	937e9b58a068214b6f9d436843a172d737187cf0	CONFLICT	worker-13	conflicts with #725/#726 in l10n en/nl and tests/unit/Notification/NotifierTest.php
