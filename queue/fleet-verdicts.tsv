@@ -8865,3 +8865,4 @@ integriq	3582	0274066366f26ec90097d62310d3597dcdec4b28	REVERIFY	worker-28	no cha
 planninq\t1170\tc04b52d211679dbe4d3a9ce6f465fe83eb10dbd7\tCONFLICT\tworker-53\tconflicts with the tree after 1165 in l10n/*.js and l10n/*.json (all 37 locales, both append keys)
 planninq\t1176\t409813992f586d6d9c9cfe6ba83f9ecf21cee7b9\tGREEN\tworker-53\tphpunit 1038 OK (baseline 1038 OK), vitest 3241 pass, no new failures; tests only
 planninq\t1177\t96585272998ac8a2eb3713dcf2c9ae945a4a7a86\tGREEN\tworker-53\tphpunit 1038 OK (baseline 1038 OK), vitest 3241 pass, no new failures; build of platform-baseline (stylelint rule + test)
+buildiq	1612	40bed07f1c09d081dfbd618cd1610ccb046181cf	REVERIFY	worker-41	merged development in, resolved 10 conflicts keeping both sides (chart form + connector widget, l10n, single getRuntimeRegistry, snapshot regenerated); vitest 476 files/4504 OK, eslint clean on touched; new head edf581e68152f1520b9aada5f888a92f6bd9a76f, verify it
