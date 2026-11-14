@@ -7900,3 +7900,4 @@ build:integriq:gateway-api-design-rules-check	partial: PR #3564 builds tasks 1-2
 build:integriq:integriq-tenant-scoping	partial: PR #3566 (ApprovalService scoped + task 4 reasons in 3 services; tasks 1-3 already built; ~100 task-4 sites left)	session-20261114T062200-6a28e40c	2026-11-14T07:36:29Z
 verify:hermiq:1726:955c8fc2	2 GREEN (1726,1758), 7 CONFLICT on hermiq_register.json; 0 new failures	session-20261114T073117-2bd2e050	2026-11-14T07:36:25Z
 review:hermiq:1492:871a590f	GREEN: behaviour-preserving move, no new failures	session-20261114T070323-628c2f37	2026-11-14T07:36:32Z
+fix:portaliq:2433:6cd14d91	merged development cleanly, pushed ca20ec2f1d419a458a537ebbe99f0d73699c8bc4, REVERIFY	session-20261114T062156-e8adf8ca	2026-11-14T07:36:49Z
