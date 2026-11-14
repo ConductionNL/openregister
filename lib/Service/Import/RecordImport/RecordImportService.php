@@ -38,6 +38,11 @@ use OCA\OpenRegister\Service\ObjectService;
  * it; a value that matches more than one is refused for that row, never
  * guessed. Without one, every row is created.
  *
+ * A dry run takes the same path with the streaming save's dry-run mode on:
+ * every row is prepared and checked by the save handler itself, and
+ * classified as it would be, but nothing is written. It reads the same
+ * identity matches, so it refuses the same ambiguous rows.
+ *
  * Like the streaming bulk save, each row goes straight to the save handler,
  * past the per-row checks of the default bulk path: a route that exposes this
  * MUST be restricted to administrators, as `BulkController` restricts `stream`.
@@ -63,21 +68,62 @@ class RecordImportService {
 	 *
 	 * @param RecordImportRequest $request The file, target and mapping.
 	 *
-	 * @return array{statement: string, createdCount: int, updatedCount: int, unchangedCount: int, failedCount: int,
-	 *     created: list<string>, updated: list<string>, unchanged: list<string>,
+	 * @return array{dryRun: bool, statement: string, createdCount: int, updatedCount: int, unchangedCount: int,
+	 *     failedCount: int, created: list<string>, updated: list<string>, unchanged: list<string>,
 	 *     failures: list<array{line: int|null, reason: string}>, referenceCacheHits: int, referenceCacheMisses: int,
 	 *     durationSeconds: float|null}
 	 *
 	 * @spec openspec/changes/widget-record-import/specs/widget-record-import/spec.md
 	 */
 	public function import(RecordImportRequest $request): array {
+		return $this->run(request: $request, dryRun: false);
+	}//end import()
+
+	/**
+	 * What importing a record file would do, writing nothing.
+	 *
+	 * The same report as `import()`, with the counts meaning "would be":
+	 * created, updated, unchanged and failed rows with each failure's line and
+	 * reason. `created` is empty, because an object that was not created has no
+	 * identifier yet; `updated` and `unchanged` name the existing objects.
+	 *
+	 * @param RecordImportRequest $request The file, target and mapping.
+	 *
+	 * @return array{dryRun: bool, statement: string, createdCount: int, updatedCount: int, unchangedCount: int,
+	 *     failedCount: int, created: list<string>, updated: list<string>, unchanged: list<string>,
+	 *     failures: list<array{line: int|null, reason: string}>, referenceCacheHits: int, referenceCacheMisses: int,
+	 *     durationSeconds: float|null}
+	 *
+	 * @spec openspec/changes/widget-record-import/specs/widget-record-import/spec.md
+	 */
+	public function dryRun(RecordImportRequest $request): array {
+		return $this->run(request: $request, dryRun: true);
+	}//end dryRun()
+
+	/**
+	 * Stream the file's rows through the save, for real or as a dry run, and report the outcome.
+	 *
+	 * @param RecordImportRequest $request The file, target and mapping.
+	 * @param bool                $dryRun  Whether nothing is written.
+	 *
+	 * @return array{dryRun: bool, statement: string, createdCount: int, updatedCount: int, unchangedCount: int,
+	 *     failedCount: int, created: list<string>, updated: list<string>, unchanged: list<string>,
+	 *     failures: list<array{line: int|null, reason: string}>, referenceCacheHits: int, referenceCacheMisses: int,
+	 *     durationSeconds: float|null}
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The two public entry points name the mode.
+	 *
+	 * @spec openspec/changes/widget-record-import/specs/widget-record-import/spec.md
+	 */
+	private function run(RecordImportRequest $request, bool $dryRun): array {
 		$lines = [];
 		$refused = [];
 		$status = $this->objects->saveObjectsStreaming(
 			save: new StreamingSave(
 				register: $request->register,
 				schema: $request->schema,
-				rows: $this->objectRows(request: $request, lines: $lines, refused: $refused)
+				rows: $this->objectRows(request: $request, lines: $lines, refused: $refused),
+				dryRun: $dryRun
 			)
 		);
 
@@ -88,13 +134,19 @@ class RecordImportService {
 
 		usort($failures, static fn (array $a, array $b): int => ($a['line'] ?? PHP_INT_MAX) <=> ($b['line'] ?? PHP_INT_MAX));
 
+		$created = $status->getCreated();
+		if ($dryRun === true) {
+			$created = [];
+		}
+
 		return [
+			'dryRun'               => $dryRun,
 			'statement'            => $request->mapping->statement(),
 			'createdCount'         => $status->getCreatedCount(),
 			'updatedCount'         => $status->getUpdatedCount(),
 			'unchangedCount'       => $status->getUnchangedCount(),
 			'failedCount'          => count($failures),
-			'created'              => $status->getCreated(),
+			'created'              => $created,
 			'updated'              => $status->getUpdated(),
 			'unchanged'            => $status->getUnchanged(),
 			'failures'             => $failures,
@@ -102,7 +154,7 @@ class RecordImportService {
 			'referenceCacheMisses' => $status->getReferenceCacheMisses(),
 			'durationSeconds'      => $status->getDurationSeconds(),
 		];
-	}//end import()
+	}//end run()
 
 	/**
 	 * The file's rows as object data, one at a time.

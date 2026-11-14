@@ -16,10 +16,21 @@
 
 ## 2. Dry run
 
-- [ ] 2.1 Classify each row as would-create / would-update / would-be-unchanged /
+- [x] 2.1 Classify each row as would-create / would-update / would-be-unchanged /
       would-fail, using the same validation the write path uses. A dry run that
       validates differently from the real run is worse than none.
-- [ ] 2.2 Report totals plus per-row reasons for the would-fail set.
+- [x] 2.2 Report totals plus per-row reasons for the would-fail set.
+  - Built (14 Nov): a dry-run mode on the streaming save (`StreamingSave::$dryRun`).
+    Each row goes through the same `saveObject()` with persisting off; while it
+    runs, the save still refuses a register or schema the organisation only
+    consumes, refuses a schema served from an external source (that write is
+    delegated and cannot be previewed), writes no cascaded or inversely related
+    object, and publishes the verdict the write would reach: `created`, or for an
+    update `unchanged` only when the prepared data is identical to the stored data.
+    `RecordImportService::dryRun()` and `POST /api/record-import/{register}/{schema}/dry-run`
+    (administrators only) answer the same report as the import with `dryRun: true`,
+    no created identifiers, and the would-fail rows as `failedRows` CSV. What a dry
+    run cannot see: a failure only the database raises at insert time.
 
 ## 3. Write
 

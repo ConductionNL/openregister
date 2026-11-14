@@ -148,6 +148,38 @@ class RecordImportControllerTest extends TestCase {
 		$this->assertArrayNotHasKey('failedRows', $response->getData());
 	}
 
+	public function testADryRunReportsWithTheSameMappingAndNeverImports(): void {
+		$path = $this->upload(self::CSV, 'people.csv');
+		$this->importer->expects($this->never())->method('import');
+		$this->importer->expects($this->once())->method('dryRun')
+			->with($this->callback(static fn (RecordImportRequest $request): bool => $request->path === $path
+				&& $request->mapping->ignored === ['postcode']
+				&& $request->mapping->identifier === 'reference'))
+			->willReturn(['dryRun' => true, 'createdCount' => 1, 'failedCount' => 1, 'failures' => [['line' => 3, 'reason' => 'invalid']]]);
+
+		$response = $this->controller($this->request(
+			file: $path,
+			params: ['decisions' => ['reference' => 'reference', 'name' => 'name', 'postcode' => null], 'identifier' => 'reference']
+		))->dryRun('5', '7');
+
+		$this->assertSame(200, $response->getStatus());
+		$data = $response->getData();
+		$this->assertTrue($data['dryRun']);
+		$this->assertSame("reference,name,postcode,reason\nA2,Beta,bad,invalid\n", $data['failedRows']);
+	}
+
+	public function testADryRunWithAnUndecidedColumnIsRefusedLikeTheImport(): void {
+		$this->importer->expects($this->never())->method('dryRun');
+
+		$response = $this->controller($this->request(
+			file: $this->upload(self::CSV, 'people.csv'),
+			params: ['decisions' => ['reference' => 'reference']]
+		))->dryRun('5', '7');
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertSame(['name', 'postcode'], $response->getData()['columns']);
+	}
+
 	public function testDecisionsThatAreNotAColumnMapAreRefused(): void {
 		$this->importer->expects($this->never())->method('import');
 
@@ -192,8 +224,8 @@ class RecordImportControllerTest extends TestCase {
 		$this->assertSame(404, $controller->import('9', '7')->getStatus());
 	}
 
-	public function testBothActionsAreForAdministratorsOnlyAndKeepTheRequestToken(): void {
-		foreach (['mapping', 'import'] as $action) {
+	public function testEveryActionIsForAdministratorsOnlyAndKeepsTheRequestToken(): void {
+		foreach (['mapping', 'import', 'dryRun'] as $action) {
 			$method = new ReflectionMethod(RecordImportController::class, $action);
 			$this->assertSame([], $method->getAttributes(NoAdminRequired::class), $action);
 			$this->assertSame([], $method->getAttributes(PublicPage::class), $action);

@@ -6408,7 +6408,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus
     {
         $target = new ObjectFindTarget(register: $save->register, schema: $save->schema);
-        return $this->preservingScope(operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $save->rows, target: $target));
+        return $this->preservingScope(
+            operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $save->rows, target: $target, dryRun: $save->dryRun)
+        );
     }//end saveObjectsStreaming()
 
     /**
@@ -6419,34 +6421,42 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @param iterable         $objects The rows to stream.
      * @param ObjectFindTarget $target  The register and schema the caller named.
+     * @param bool             $dryRun  Whether the rows are only checked and classified, not written.
      *
      * @return BatchOperationStatus The status of the streamed batch.
      *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Carries the streaming save's dry-run mode through.
+     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/widget-record-import/tasks.md
      */
-    private function streamIntoTarget(iterable $objects, ObjectFindTarget $target): BatchOperationStatus
+    private function streamIntoTarget(iterable $objects, ObjectFindTarget $target, bool $dryRun=false): BatchOperationStatus
     {
         $this->applyScope(register: $target->register, schema: $target->schema);
-        return $this->streamIntoContext(objects: $objects);
+        return $this->streamIntoContext(objects: $objects, dryRun: $dryRun);
     }//end streamIntoTarget()
 
     /**
      * Stream rows into the current register and schema.
      *
      * @param iterable $objects The rows to save.
+     * @param bool     $dryRun  Whether the rows are only checked and classified, not written.
      *
      * @return BatchOperationStatus The status of the run.
      *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Carries the streaming save's dry-run mode through.
+     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/widget-record-import/tasks.md
      */
-    private function streamIntoContext(iterable $objects): BatchOperationStatus
+    private function streamIntoContext(iterable $objects, bool $dryRun=false): BatchOperationStatus
     {
         // The reference cache is request-scoped and this call is a logical
         // boundary: verdicts from an earlier batch must not decide this one.
         $this->saveHandler->clearReferenceValidationCache();
 
         return $this->saveHandler->saveObjectsStreaming(
-            save: new StreamingSave(register: $this->currentRegister, schema: $this->currentSchema, rows: $objects)
+            save: new StreamingSave(register: $this->currentRegister, schema: $this->currentSchema, rows: $objects, dryRun: $dryRun)
         );
     }//end streamIntoContext()
 

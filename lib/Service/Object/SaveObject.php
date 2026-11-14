@@ -307,6 +307,21 @@ class SaveObject implements SaveObjectInterface {
 	private ?string $lastSaveOutcome = null;
 
 	/**
+	 * Whether the row being saved belongs to a dry-run streaming batch.
+	 *
+	 * Set by `saveStreamRow()` around exactly one row of a dry run and cleared
+	 * after it, whatever the row did. While it is set, the save runs with
+	 * `persist: false` and additionally: still refuses a register or schema this
+	 * organisation only consumes, refuses a schema served from an external
+	 * source (that write is delegated, so it cannot be previewed), writes no
+	 * cascaded or inversely related object, and publishes the verdict the real
+	 * write would have reached.
+	 *
+	 * @var boolean
+	 */
+	private bool $previewing = false;
+
+	/**
 	 * Permission mode of each save whose cascades are running, outermost first.
 	 *
 	 * @var list<bool>
@@ -2475,6 +2490,10 @@ class SaveObject implements SaveObjectInterface {
 		// in to write-through (dbal-virtual-registers-crud), which re-verifies
 		// its backing source's writable flag live and fails closed.
 		$objectSource = $call->schema->getObjectSource();
+		if ($this->previewing === true && $objectSource !== null) {
+			throw new Exception('A dry run cannot preview a write to a schema served from an external source.');
+		}
+
 		if ($call->flags->persist === true && $objectSource !== null) {
 			return $this->delegateObjectSourceWrite(call: $call, objectSource: $objectSource);
 		}
@@ -2506,7 +2525,8 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function guardSharedMasterData(ObjectSaveCall $call): void {
-		if ($call->flags->persist === true && OrganisationContext::multitenancy(requested: $call->flags->multitenancy) === true) {
+		$writes = ($call->flags->persist === true || $this->previewing === true);
+		if ($writes === true && OrganisationContext::multitenancy(requested: $call->flags->multitenancy) === true) {
 			$this->refuseSharedMasterDataWrite(
 				target: new ObjectWriteTarget(registerId: $call->registerId, schemaId: $call->schemaId, uuid: $call->uuid)
 			);
@@ -3366,6 +3386,10 @@ class SaveObject implements SaveObjectInterface {
 		// Not persisting: nothing reached storage, so for a batching caller the row changed nothing.
 		if ($call->flags->persist === false) {
 			$this->lastSaveOutcome = 'unchanged';
+			if ($this->previewing === true) {
+				$this->lastSaveOutcome = self::previewUpdateOutcome(prepared: $preparedObject->getObject(), stored: $oldObjectData);
+			}
+
 			return $preparedObject;
 		}
 
@@ -3480,12 +3504,29 @@ class SaveObject implements SaveObjectInterface {
 	 * @return string `unchanged` or `updated`.
 	 */
 	private static function updateOutcome(ObjectEntity $updated, ObjectEntity $old): string {
-		if ($updated->getObject() === $old->getObject()) {
+		return self::previewUpdateOutcome(prepared: $updated->getObject(), stored: $old->getObject());
+	}//end updateOutcome()
+
+	/**
+	 * The verdict of an update from the data it would store and the data stored now.
+	 *
+	 * Strict, like the persisted verdict: anything that is not identical,
+	 * including a reordered property, is `updated`, never `unchanged`.
+	 *
+	 * @param array<string, mixed>|null $prepared The data the update stores, or would store.
+	 * @param array<string, mixed>|null $stored   The data stored before it.
+	 *
+	 * @return string `unchanged` or `updated`.
+	 *
+	 * @spec openspec/changes/widget-record-import/tasks.md
+	 */
+	private static function previewUpdateOutcome(?array $prepared, ?array $stored): string {
+		if ($prepared === $stored) {
 			return 'unchanged';
 		}
 
 		return 'updated';
-	}//end updateOutcome()
+	}//end previewUpdateOutcome()
 
 	/**
 	 * Handle creation of new object.
@@ -3501,8 +3542,12 @@ class SaveObject implements SaveObjectInterface {
 	private function handleObjectCreation(ObjectSaveCall $call): ObjectEntity {
 		$preparedObject = $this->prepareNewObject(call: $call);
 
-		// If not persisting, return the prepared object.
+		// If not persisting, return the prepared object. A dry run says what the write would have been.
 		if ($call->flags->persist === false) {
+			if ($this->previewing === true) {
+				$this->lastSaveOutcome = 'created';
+			}
+
 			return $preparedObject;
 		}
 
@@ -4608,6 +4653,7 @@ class SaveObject implements SaveObjectInterface {
 		$run->register = $save->register;
 		$run->schema = $save->schema;
 		$run->status = $status;
+		$run->dryRun = $save->dryRun;
 
 		// Position in the submitted batch. A failed create has no UUID yet, so
 		// this is the only thing that lets a caller identify the row it lost
@@ -4645,7 +4691,7 @@ class SaveObject implements SaveObjectInterface {
 			// not be classified with the PREVIOUS row's verdict.
 			$this->lastSaveOutcome = null;
 			$target = new ObjectFindTarget(register: $run->register, schema: $run->schema);
-			$entity = $this->saveObject(data: $rowData, options: new ObjectSaveOptions(target: $target));
+			$entity = $this->saveStreamedObject(run: $run, data: $rowData, target: $target);
 			$this->recordStreamOutcome(run: $run, uuid: (string)$entity->getUuid());
 		} catch (Exception $e) {
 			$rowUuid = self::streamRowUuid(row: $run->row);
@@ -4665,6 +4711,29 @@ class SaveObject implements SaveObjectInterface {
 			);
 		}//end try
 	}//end saveStreamRow()
+
+	/**
+	 * Save one streamed row; in a dry run, prepare and check it without writing.
+	 *
+	 * The dry-run marker covers this one row only and is cleared however the
+	 * save ends, so a row that throws cannot leave the next save previewing.
+	 *
+	 * @param StreamRun            $run    The batch, on one row.
+	 * @param array<string, mixed> $data   The row's object data.
+	 * @param ObjectFindTarget     $target The register and schema of the batch.
+	 *
+	 * @return ObjectEntity The saved object, or in a dry run the prepared one.
+	 *
+	 * @spec openspec/changes/widget-record-import/tasks.md
+	 */
+	private function saveStreamedObject(StreamRun $run, array $data, ObjectFindTarget $target): ObjectEntity {
+		$this->previewing = $run->dryRun;
+		try {
+			return $this->saveObject(data: $data, options: new ObjectSaveOptions(target: $target), persist: $run->dryRun === false);
+		} finally {
+			$this->previewing = false;
+		}
+	}//end saveStreamedObject()
 
 	/**
 	 * Record a saved row as created, updated or unchanged, from the save path's own verdict.
@@ -4822,12 +4891,15 @@ class SaveObject implements SaveObjectInterface {
 		// Without this, cascaded sub-objects fall back to showing the raw UUID as the name.
 		$this->preCacheParentName(run: $run, schema: $schema);
 
-		// Apply cascading operations.
-		$data = $this->cascadeObjects(run: $run, schema: $schema);
-		$writeBack = new CascadeRun();
-		$writeBack->parent = $objectEntity;
-		$writeBack->data = $data;
-		$data = $this->inverseWriteBack()->write(run: $writeBack, schema: $schema);
+		// Apply cascading operations. Both write OTHER objects, so a dry run skips
+		// them and keeps the nested values as they were sent.
+		if ($this->previewing === false) {
+			$data = $this->cascadeObjects(run: $run, schema: $schema);
+			$writeBack = new CascadeRun();
+			$writeBack->parent = $objectEntity;
+			$writeBack->data = $data;
+			$data = $this->inverseWriteBack()->write(run: $writeBack, schema: $schema);
+		}
 
 		$data = $this->propertyDefaults()->forSave(
 			schema: $schema,

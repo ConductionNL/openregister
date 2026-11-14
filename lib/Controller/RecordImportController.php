@@ -45,7 +45,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
 /**
- * Administrator-only: there is no `#[NoAdminRequired]` on either action.
+ * Administrator-only: there is no `#[NoAdminRequired]` on any action.
  *
  * Each imported row goes straight to the save handler through the streaming
  * save, past the per-row checks of the default bulk path, so this surface is
@@ -139,6 +139,42 @@ class RecordImportController extends Controller {
 	 * @spec openspec/changes/widget-record-import/specs/widget-record-import/spec.md
 	 */
 	public function import(string $register, string $schema): JSONResponse {
+		return $this->run(register: $register, schema: $schema, dryRun: false);
+	}//end import()
+
+	/**
+	 * POST /api/record-import/{register}/{schema}/dry-run — what the import would do, writing nothing.
+	 *
+	 * The same request and the same report as the import, with `dryRun: true`
+	 * and the counts meaning "would be". The rows go through the same save
+	 * checks as a real import; the rows that would fail come back as CSV
+	 * (`failedRows`) to correct before importing.
+	 *
+	 * @param string $register The register id, uuid or slug.
+	 * @param string $schema   The schema id, uuid or slug.
+	 *
+	 * @return JSONResponse 200 with the report; 422 while a column is undecided; 400 or 404 otherwise.
+	 *
+	 * @spec openspec/changes/widget-record-import/specs/widget-record-import/spec.md
+	 */
+	public function dryRun(string $register, string $schema): JSONResponse {
+		return $this->run(register: $register, schema: $schema, dryRun: true);
+	}//end dryRun()
+
+	/**
+	 * Import, or dry-run, an uploaded file with the confirmed mapping.
+	 *
+	 * @param string $register The register id, uuid or slug.
+	 * @param string $schema   The schema id, uuid or slug.
+	 * @param bool   $dryRun   Whether nothing is written.
+	 *
+	 * @return JSONResponse The report, or the error.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The two actions name the mode.
+	 *
+	 * @spec openspec/changes/widget-record-import/specs/widget-record-import/spec.md
+	 */
+	private function run(string $register, string $schema, bool $dryRun): JSONResponse {
 		$target = $this->target(register: $register, schema: $schema);
 		if ($target instanceof JSONResponse) {
 			return $target;
@@ -169,15 +205,14 @@ class RecordImportController extends Controller {
 			);
 		}
 
-		$result = $this->importer->import(
-			request: new RecordImportRequest(
-				path: $file['path'],
-				format: $file['format'],
-				register: $target['register'],
-				schema: $target['schema'],
-				mapping: $mapping
-			)
+		$request = new RecordImportRequest(
+			path: $file['path'],
+			format: $file['format'],
+			register: $target['register'],
+			schema: $target['schema'],
+			mapping: $mapping
 		);
+		$result = $this->report(request: $request, dryRun: $dryRun);
 
 		if ($result['failedCount'] > 0) {
 			$export = $this->failures->export(path: $file['path'], format: $file['format'], failures: $result['failures']);
@@ -186,7 +221,25 @@ class RecordImportController extends Controller {
 		}
 
 		return new JSONResponse(data: $result);
-	}//end import()
+	}//end run()
+
+	/**
+	 * The import's report: a dry run's or a real one's.
+	 *
+	 * @param RecordImportRequest $request The import.
+	 * @param bool                $dryRun  Whether nothing is written.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The two actions name the mode.
+	 */
+	private function report(RecordImportRequest $request, bool $dryRun): array {
+		if ($dryRun === true) {
+			return $this->importer->dryRun(request: $request);
+		}
+
+		return $this->importer->import(request: $request);
+	}//end report()
 
 	/**
 	 * The register and schema, or a 404.
