@@ -10436,3 +10436,4 @@ verify:decidiq:2189:f986e58e	2 GREEN (2189, 2194); phpunit 4257/0 fail, vitest 2
 build:openregister:expired-object-sweep:c3	done: PR #10232 pushed 3ad5136, all code tasks ticked; 3.1 live Db test (7 tests green on local NC34+pg) found and fixed _expires never written by single-object saves and trashed rows re-swept	session-20261114T171008-ae51009d	2026-11-14T17:37:53Z
 verify:learniq:2484:a66edf48	GREEN 2484 2507; CONFLICT 2486	session-20261114T134708-ba7f7741	2026-11-14T17:37:51Z
 verify:decidiq:2146:78367c80	GREEN 2146 (phpunit 4232 = baseline, vitest 2787 pass)	session-20261114T172412-df2c66f1	2026-11-14T17:38:05Z
+verify:learniq:2493:ba6bff8b	2493 GREEN; no new failures	session-20261114T171822-35ca2aeb	2026-11-14T17:38:17Z
