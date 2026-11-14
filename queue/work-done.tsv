@@ -8163,4 +8163,5 @@ build:buildiq:pages-action-buttons	PR #1618: T01-T06 built (typed action editor,
 verify:dossiq:6484:5357a2b0	already merged on development (d79b3c07)	session-20261114T070346-2d3b1362	2026-11-14T08:15:23Z
 build:launchpad:competitor-parity-2026-09	nothing to build: kind umbrella; 1.1 is the separate change dashboards-and-who-may-see-them (build that), 2.x/3.x are coordination tasks, no code	session-20261114T070341-dde19dba	2026-11-14T08:15:33Z
 build:buildiq:pages-index-calendar-and-manual-order	PR #1619: T01-T04 and T07 code done; T05 and T07 Playwright (browser e2e) and T06 (archive) left; vitest 4096 all pass	session-20261114T070329-a050d62b	2026-11-14T08:16:00Z
+gap:launchpad:14:732b368d	already done: development 1cf1fd81 lifts dompurify to ^3.4.16 via override; lock has only 3.4.17	session-20261114T070341-dde19dba	2026-11-14T08:15:53Z
 verify:planninq:1169:b835558b	1169 RED (Jira CSV fixture gitignored, 2 test errors); 1170 GREEN; 1171 CONFLICT (l10n vs 1170)	session-20261114T073111-9b40710a	2026-11-14T08:15:56Z
