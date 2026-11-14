@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\Notification;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Notifications\Service\Notification\ClaimAttempt;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageAudit;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessagePolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageStoreInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageSweep;
@@ -235,5 +236,45 @@ class ScheduledMessageSweepTest extends TestCase {
 		$tally = (new ScheduledMessageSweep($this->store($rows), new ScheduledMessagePolicy(), $this->dispatcher(['status' => 'sent'])))->run($this->attempt());
 
 		$this->assertSame(ScheduledMessagePolicy::SWEEP_LIMIT, $tally['sent']);
+	}
+
+	/**
+	 * A sent message is recorded on its object with the Message-ID the
+	 * channel answered with, which wins over one stored with the message.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
+	 */
+	public function testASentMessageIsAuditedWithTheChannelsMessageId(): void {
+		$store = $this->store([self::row(['objectUuid' => 'case-1'])]);
+		$audit = $this->createMock(ScheduledMessageAudit::class);
+		$audit->expects($this->once())->method('sent')
+			->with($this->callback(static fn (array $m): bool => $m['id'] === '1' && $m['objectUuid'] === 'case-1' && $m['messageId'] === '<new@or>'));
+		$audit->expects($this->never())->method('failed');
+
+		(new ScheduledMessageSweep($store, new ScheduledMessagePolicy(), $this->dispatcher(['status' => 'sent', 'messageId' => '<new@or>']), $audit))->run($this->attempt());
+
+		$this->assertSame('<new@or>', $store->rows['1']['messageId']);
+	}
+
+	/**
+	 * A failed send is recorded on its object with what was written for it:
+	 * back to pending while attempts remain, parked on the last one.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
+	 */
+	public function testAFailedSendIsAuditedWithItsOutcome(): void {
+		$store = $this->store([self::row(['id' => '1', 'objectUuid' => 'case-1']), self::row(['id' => '2', 'objectUuid' => 'case-1', 'attempts' => 4])]);
+		$outcomes = [];
+		$audit = $this->createMock(ScheduledMessageAudit::class);
+		$audit->expects($this->never())->method('sent');
+		$audit->expects($this->exactly(2))->method('failed')->willReturnCallback(
+			static function (array $message, array $outcome) use (&$outcomes): void {
+				$outcomes[$message['id']] = [$message['attempts'], $outcome['state'], $outcome['lastError']];
+			}
+		);
+
+		(new ScheduledMessageSweep($store, new ScheduledMessagePolicy(), $this->dispatcher(['unavailable' => true, 'cause' => 'upstream_service_down']), $audit))->run($this->attempt());
+
+		$this->assertSame(['1' => [1, 'pending', 'upstream_service_down'], '2' => [5, 'parked', 'upstream_service_down']], $outcomes);
 	}
 }

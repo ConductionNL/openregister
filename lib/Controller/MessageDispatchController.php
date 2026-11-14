@@ -57,6 +57,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Controller\Support\ReadableObject;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageScheduler;
+use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
+use OCA\OpenRegister\Service\Integration\Providers\MessageIdMinter;
 use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCP\AppFramework\Controller;
@@ -137,6 +139,128 @@ class MessageDispatchController extends Controller {
 	}//end whatsappSend()
 
 	/**
+	 * Send one e-mail through the seeded `smtp-mail` source, now or at `sendAt`.
+	 *
+	 * Body params:
+	 *   - `to`      (required) — one address, or a list of addresses.
+	 *   - `subject` (required) — the subject line.
+	 *   - `text`    (required) — the plain-text body.
+	 *   - `html`    (optional) — an HTML alternative.
+	 *   - `replyTo` (optional) — the address replies go to.
+	 *   - `path`    (optional) — the send path on the source; its base URL when absent.
+	 *   - `sendAt`, `object` (optional) — schedule it, bound to an object, as the other channels do.
+	 *
+	 * Every message gets a freshly minted Message-ID, sent as its header and
+	 * returned, scheduled or not: it is the handle a reply is threaded back to
+	 * the object by.
+	 *
+	 * @return JSONResponse `{ status: 'sent', source, response, messageId }`, 202 with the scheduled
+	 *                      message and its `messageId`, 400 for a missing or malformed field, or 503
+	 *                      with `details.cause` when the source is unconfigured or down.
+	 *
+	 * @no-admin-idor-exempt No per-object resource on the send itself: it goes through the admin-owned source;
+	 *   a bound `object` is resolved with the caller's own read access, as on the other channels.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-e-mail-is-a-channel-of-the-dispatch-leaf
+	 */
+	#[NoAdminRequired]
+	public function emailSend(): JSONResponse {
+		$composed = $this->composedEmail();
+		if ($composed instanceof JSONResponse) {
+			return $composed;
+		}
+
+		$messageId = (new MessageIdMinter())->mint(host: $this->request->getServerHost());
+		$message   = new OutboundMessage(
+			path: trim((string)$this->request->getParam('path', '')),
+			body: $composed,
+			headers: [MessageIdMinter::HEADER => $messageId]
+		);
+		$source    = MessageDispatchProvider::EMAIL_SOURCE;
+
+		if (trim((string)$this->request->getParam('sendAt', '')) !== '') {
+			$response = $this->scheduleSend(channel: 'email', source: $source, path: $message->path, message: $message);
+			if ($response->getStatus() === 202) {
+				$response->setData(((array)$response->getData()) + ['messageId' => $messageId]);
+			}
+
+			return $response;
+		}
+
+		$result = $this->provider->dispatch(source: $source, message: $message);
+
+		return $this->relayResult(source: $source, result: $result);
+	}//end emailSend()
+
+	/**
+	 * The e-mail body the source receives, or the 400 naming what is wrong.
+	 *
+	 * @return array<string,mixed>|JSONResponse `{to: [...], subject, text, html?, replyTo?}`, or the refusal.
+	 *
+	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-e-mail-is-a-channel-of-the-dispatch-leaf
+	 */
+	private function composedEmail(): array|JSONResponse {
+		$to = $this->addresses(value: $this->request->getParam('to', null));
+		if ($to === null) {
+			return new JSONResponse(['error' => 'to must be an e-mail address or a list of them'], 400);
+		}
+
+		$body = ['to' => $to];
+		foreach (['subject', 'text'] as $field) {
+			$value = $this->request->getParam($field, null);
+			if (is_string($value) === false || trim($value) === '') {
+				return new JSONResponse(['error' => $field . ' is required'], 400);
+			}
+
+			$body[$field] = $value;
+		}
+
+		$html = $this->request->getParam('html', null);
+		if (is_string($html) === true && trim($html) !== '') {
+			$body['html'] = $html;
+		}
+
+		$replyTo = $this->request->getParam('replyTo', null);
+		if ($replyTo !== null && $replyTo !== '') {
+			if (is_string($replyTo) === false || filter_var(trim($replyTo), FILTER_VALIDATE_EMAIL) === false) {
+				return new JSONResponse(['error' => 'replyTo must be an e-mail address'], 400);
+			}
+
+			$body['replyTo'] = trim($replyTo);
+		}
+
+		return $body;
+	}//end composedEmail()
+
+	/**
+	 * One address or a list of them, each a valid address; null when any is not.
+	 *
+	 * @param mixed $value The `to` parameter.
+	 *
+	 * @return array<int,string>|null The addresses, or null.
+	 */
+	private function addresses(mixed $value): ?array {
+		if (is_string($value) === true) {
+			$value = [$value];
+		}
+
+		if (is_array($value) === false || $value === []) {
+			return null;
+		}
+
+		$addresses = [];
+		foreach ($value as $address) {
+			if (is_string($address) === false || filter_var(trim($address), FILTER_VALIDATE_EMAIL) === false) {
+				return null;
+			}
+
+			$addresses[] = trim($address);
+		}
+
+		return $addresses;
+	}//end addresses()
+
+	/**
 	 * Shared send relay — validates the request, gates the `source` to the
 	 * channel's allowed kinds, dispatches through the provider, and maps the
 	 * degraded descriptor to a 503-with-cause.
@@ -179,15 +303,16 @@ class MessageDispatchController extends Controller {
 	 * is a 404, and without the scheduler the send is refused with 503 rather
 	 * than sent now.
 	 *
-	 * @param string $channel The channel.
-	 * @param string $source  The messaging source.
-	 * @param string $path    The provider path.
+	 * @param string                    $channel The channel.
+	 * @param string                    $source  The messaging source.
+	 * @param string                    $path    The provider path.
+	 * @param OutboundMessage|null      $message The composed message; null reads `body` and `headers` from the request.
 	 *
 	 * @return JSONResponse The scheduled message, or the refusal.
 	 *
 	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-a-send-may-be-scheduled-and-bound-to-an-object
 	 */
-	private function scheduleSend(string $channel, string $source, string $path): JSONResponse {
+	private function scheduleSend(string $channel, string $source, string $path, ?OutboundMessage $message = null): JSONResponse {
 		if ($this->scheduler === null) {
 			return new JSONResponse(['error' => 'scheduled sending is not available'], 503);
 		}
@@ -203,8 +328,8 @@ class MessageDispatchController extends Controller {
 					'channel' => $channel,
 					'source' => $source,
 					'path' => $path,
-					'body' => $this->arrayParam(name: 'body'),
-					'headers' => $this->stringifyHeaders(headers: $this->arrayParam(name: 'headers')),
+					'body' => ($message->body ?? $this->arrayParam(name: 'body')),
+					'headers' => ($message->headers ?? $this->stringifyHeaders(headers: $this->arrayParam(name: 'headers'))),
 					'sendAt' => (string)$this->request->getParam('sendAt', ''),
 				],
 				object: $object,
