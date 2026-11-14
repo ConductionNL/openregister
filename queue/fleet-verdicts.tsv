@@ -7804,3 +7804,14 @@ portaliq	2433	ca20ec2f1d419a458a537ebbe99f0d73699c8bc4	CONFLICT	merge3	merges cl
 portaliq	2434	4d1b114444b3af9c190d895ef10d779fec265b3a	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Settings/PortaliqRegisterConfigTest.php tests/example-site.spec.mjs 
 portaliq	2442	9eb5c87639509ae900f4bb82d859cb6b12ce72b5	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 pipelinq	3713	75ce9bd5f1a83af10f2999487633edaba358213e	GREEN	worker-33:review	implements marketing-campaign-on-client as specced (first/last touch, touchpoints list, enquiry campaign values trimmed+capped, best effort after the stored submit); merged with development: unit 8356 0 failures, phpstan clean, touched vitest + manifest specs pass
+decidiq	2143	c2d391b1f03a1e7cffe532480698f87049834dff	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2155	91ee96826cd760fbd69a9d1a519c48b2ed7e1d5f	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2162	2dc5d2969c2668b5d7a870d274ee0e4ffe399402	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/Registrar/SaveGuardSubscriptions.php 
+decidiq	2165	8558e27092941ee5136b6878bf9c409815a07a00	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2168	89b4e6ca5bc8febc7751d870e15e8d536fcd1038	CONFLICT	merge3	merges clean on development alone; files: lib/Service/PublicationEligibilityService.php lib/Service/PublicationPayloadService.php 
+decidiq	2170	ccbaf2e81691d0056747f1677241295271df7fb2	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/RegisterAuthorizationTest.php 
+decidiq	2172	315e8cf527153074e7aaddae643061b9e2413abb	CONFLICT	merge3	conflicts with development; files: lib/Settings/profiles/corporate.json 
+decidiq	2176	26e67dc64895f61b5ddd15038a271411c25dabec	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2177	7078a1ab11459f341e6d860c6f8efa696e2817e6	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/Registrar/SaveGuardSubscriptions.php 
+decidiq	2178	cb54bcf167945f8cb1c648f1e870e7a4872edbe9	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/RegisterAuthorizationTest.php 
+decidiq	2184	a4581421dc05275929ee6622f03df9f5331aa370	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/BodyProvenanceTest.php tests/Unit/Service/DelegationRequestTest.php tests/Unit/Service/MotionAmendmentServiceTest.php 
