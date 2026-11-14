@@ -11843,8 +11843,10 @@ build4:openregister:export-pdf-house-style:c4	PR #10498: 2.4 record PDF built (r
 verify:learniq:2548:dfff3611	2548 GREEN	session-20261114T221743-dbe5c07e	2026-11-14T23:21:21Z
 merge:filinq:2079:f382d609	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:21:40Z
 merge:filinq:2069:a541cc63	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:21:43Z
+fix:integriq:3600:fe200724	no change: merges clean on development (531865634); conflicts only with unmerged #3593 (GREEN) at the l10n catalogue tails (en/nl .json and generated .js); resolve by merging development once #3593 lands	session-20261114T224736-f9da4a35	2026-11-14T23:21:48Z
 merge:filinq:2070:65d9a895	merge3 tree of 18 filinq PRs: merged=1 red=0 fail=0 skip=0; conflict 15, lint 0, moved 0; fix rows 17	merge3-20261113T213425-c36bcd5f	2026-11-14T23:21:46Z
 verify:keepiq:1791:a5297cc2	1791 GREEN, no new failures	session-20261114T214736-dd784d82	2026-11-14T23:21:57Z
 merge:portaliq:2444:0eda961c	merge3 tree of 5 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T23:22:13Z
 merge:portaliq:2443:1e0b2ccd	merge3 tree of 5 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T23:22:16Z
 merge:portaliq:2500:8218d706	merge3 tree of 5 portaliq PRs: merged=1 red=0 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-14T23:22:20Z
+cover:decidiq:a5f973bbmae46:e372e6ff	already done: lib/Event/*.php measures 145/145 (100%) on development with the whole unit suite	session-20261114T214733-589f5bff	2026-11-14T23:22:20Z
