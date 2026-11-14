@@ -9112,3 +9112,5 @@ buildiq	1644	0dfa21a6531c8ec372da83b2f6c45a263147f17d	REVERIFY	worker-58	branch 
 decidiq	2155	0645aee8729405883c82dcd37a0c2bc4852daac4	GREEN	worker-25	tree of 3: PHP unit 4242 OK (baseline 4232 OK), vitest 2750 OK; builds per change, no removed checks (2191 raises a widget count for its block)
 decidiq	2188	0f122fbca305e2f80da02503b1f20bedbee9ba0d	GREEN	worker-25	tree of 3: PHP unit 4242 OK (baseline 4232 OK), vitest 2750 OK; builds per change, no removed checks (2191 raises a widget count for its block)
 decidiq	2191	67af1137858ad5fdd572507fc274422d9b6d3447	GREEN	worker-25	tree of 3: PHP unit 4242 OK (baseline 4232 OK), vitest 2750 OK; builds per change, no removed checks (2191 raises a widget count for its block)
+learniq	2515	b47ed90a65416f33691c2fcf1c432bbcfe7a54c6	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2521	34c33485a9bb30531e0afef5d1730ca32e358cd8	RED	merge3:merge-gate	GATE RED floor: overall: 4.35 -> 4.33; unit_size: 4.12 -> 4.10; unit_complexity: 4.36 -> 4.31; unit_interfacing: 3.13 -> 3.11
