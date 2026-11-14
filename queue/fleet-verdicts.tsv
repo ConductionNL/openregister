@@ -6707,3 +6707,4 @@ learniq	2516	c60e8cb810b5a83796da6b63e7575f0a60d53152	CONFLICT	worker-14	merge c
 learniq	2517	b5af3de78c01869990b15c9f5dce6cf524e01072	GREEN	worker-14	unit 6605 tests on 5-PR tree, baseline 6575 w/ 1 inherited failure (HigherEducationExampleSetTest), 0 new; no JS touched
 learniq	2518	6f169224fb68e4b47062a891d6ea45001308f260	CONFLICT	worker-14	merge conflict with development + earlier tree PRs
 hermiq	1763	015ce782f4c687813bc4c90beb39c93efa7f34be	CONFLICT	worker-17	conflicts with #1762 in l10n/en.js en.json nl.js nl.json
+hermiq	1764	ac84444207631949e9399bab78705940ce89dcc3	CONFLICT	worker-17	conflicts with #1762 in l10n/en.js en.json nl.js nl.json
