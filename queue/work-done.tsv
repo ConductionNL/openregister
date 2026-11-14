@@ -9597,3 +9597,4 @@ review:openregister:10558:63e014bc	APPROVE: additive app-declared webhook events
 verify:filinq:2078:fb73f409	GREEN #2078: phpunit 6737 ok (base 6695), vitest 786 ok	session-20261114T144751-8958c054	2026-11-14T14:51:30Z
 verify:decidiq:2155:eec7ce8d	2155,2162,2172 GREEN; 2177 skipped (head moved to 5dde082)	session-20261114T144757-446bd6da	2026-11-14T14:51:42Z
 build:decidiq:delegatie-mandaatregister:c2	partial: PR #2190 — ondermandaat guard now runs on the renamed authority-delegation schema (it was only subscribed to the old slug); suite 4174->4176, 0 fail. Left: REQ-DMR-001 delegans/delegate save guard (OR anyOf cannot express it), task 4 geldig-op/per-party filters + search, task 5 publish/withdraw actions, task 6 Decision link; stopped early: context nearly full	session-20261114T134647-508a6ed0	2026-11-14T14:51:51Z
+fix:portaliq:2437:0bea6c57	conflict resolved, register 0.112.0, new head 0bea0f46	session-20261114T144746-30bc6559	2026-11-14T14:51:49Z
