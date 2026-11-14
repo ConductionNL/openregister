@@ -7953,3 +7953,5 @@ keepiq	1793	2ffa6e1a3a3095ab58e8f9408e29edaab100ee21	CONFLICT	merge3	merges clea
 portaliq	2433	a1b48896e4ec3511906813a3116e46adaac313be	GREEN	worker-37	unit 5202 OK on the 3-PR tree (baseline 5187 OK), 0 new failures; touched node specs 19/19; tests and check script only
 portaliq	2440	8db216bfa516428cf74b2df9eb898f78dbc71562	GREEN	worker-37	unit 5202 OK on the 3-PR tree (baseline 5187 OK), 0 new failures; touched node specs 19/19; per-portal admin scope as the change T11 asks, no fail-open
 portaliq	2489	9988356c0cce6d32c1860267f1bcf27175694f7e	GREEN	worker-37	unit 5202 OK on the 3-PR tree (baseline 5187 OK), 0 new failures; touched node specs 19/19; noscript notice, output escaped
+hermiq	1757	c0e6cda2ab5636133ef35d84060075d6457a5713	RED	merge3:merge-gate	GATE RED floor: unit_size: 3.79 -> 3.77; unit_complexity: 4.55 -> 4.50
+hermiq	1767	1ac66da7bc892597bb9b7d6d945d3611b429d394	RED	merge3:merge-gate	GATE RED floor: unit_size: 3.79 -> 3.77; unit_interfacing: 2.28 -> 2.26
