@@ -10046,3 +10046,4 @@ build:integriq:messaging-sms-providers-and-notifynl-mail:c2	done: PR #3628 (task
 fix:humaniq:1139:181389a6	failed: branch already contains development and merges cleanly on it; the conflict is only with unmerged #1125 earlier in the tree, nothing to resolve against the base until #1125 lands	session-20261114T134708-ba7f7741	2026-11-14T16:06:07Z
 verify:hermiq:1767:72e7b8b4	1767 GREEN, 1784 GREEN	session-20261114T154757-c9bf237e	2026-11-14T16:06:05Z
 build:planninq:tasks-dates:c2	failed: permission (npx openspec validate was refused); note: PR #1159 already has every code task built, only Playwright/mount checks and openspec validate remain	session-20261114T144749-57007b4b	2026-11-14T16:06:13Z
+review:openregister:10565:5956924a	APPROVE: additive performer-placeholder resolution; Architecture/Contract/Rules/Controller/Flow suites green, phpstan clean	session-20261114T144751-8a65b704	2026-11-14T16:06:36Z
