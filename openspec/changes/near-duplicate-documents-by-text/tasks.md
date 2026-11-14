@@ -3,7 +3,7 @@
 ## 1. Signatures (REQ-NDT-001)
 
 - [x] 1.1 `lib/Service/Quality/TextSignature.php` (normalise, shingle, MinHash with 128 fixed seeds) and `lib/Db/TextSignature.php`, mapper and migration (`file_id` unique, `signature` binary or JSON, `shingle_count`, `text_sha256`, `created`). Verify: `tests/Unit/Service/Quality/TextSignatureTest.php::testTheSameTextGivesTheSameSignature`, `testAShortTextIsNotSigned`, `testNearIdenticalTextsEstimateAboveNinety` (fails today: no class).
-- [ ] 1.2 Compute and store in `TextExtractionService::indexFilePayload()` (both `extractFile()` and `extractFromProvidedText()` reach it); delete beside `ChunkMapper::deleteBySource()`. Verify: `TextSignatureTest::testReExtractionReplacesTheSignature` through `extractFile()` with the real mapper against the test database.
+- [x] 1.2 Compute and store in `TextExtractionService::indexFilePayload()` (both `extractFile()` and `extractFromProvidedText()` reach it); delete beside `ChunkMapper::deleteBySource()`. Verify: `TextSignatureTest::testReExtractionReplacesTheSignature` through `extractFile()` with the real mapper against the test database. Built: `lib/Service/Quality/TextSignatureStore.php`, reached through `TextExtractionStorage::$signatures`; stored after the chunks in `indexFilePayload()` and `indexArchive()`, forgotten after `deleteBySource()` in `persistChunksForSource()`. The test is `tests/Unit/Service/Quality/TextSignatureExtractionTest.php::testReExtractionReplacesTheSignature` through `extractFile()`, over an in-memory mapper: no test database runs in the unit suite.
 
 ## 2. Grouping (REQ-NDT-002)
 
