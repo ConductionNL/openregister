@@ -2928,3 +2928,11 @@ keepiq	1797	d1b0d4c3d62db13e25030a10c5e1db262256f7af	MERGED	merge3	GATE OK sbom,
 portaliq	2440	1f256935ef1449ce9712adf1f1d0a9f1a4f91a82	RED	merge3	GATE RED floor: duplication: 4.31 -> 4.29; unit_complexity: 3.30 -> 3.28
 pipelinq	3829	6c4b0867a6957d37c64232981533d2022dbb3ef1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 pipelinq	3841	a9be79625769353f4e0dfba808d974538c7a3bcc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+buildiq	1582	1ce7e42cbf7905c88be148f2393c9c5f7279ba82	RED	merge3	GATE RED floor: overall: 4.28 -> 4.25; unit_complexity: 3.36 -> 3.34; unit_interfacing: 3.41 -> 3.35; module_coupling: 5.44 -> 5.26
+buildiq	1622	1a0a84e3388b842cfcfb20a493935cda75f61f2d	RED	merge3	GATE RED absolute floor: buildiq maintainability 3.90 after merge is below its floor 3.91
+buildiq	1624	cc9050a1cd7c4f61a7507c9a2154735e2fcc4832	RED	merge3	GATE RED absolute floor: buildiq maintainability 3.89 after merge is below its floor 3.91
+buildiq	1625	706c4494f87d8d9a98c9bd9666de56372f8ec7b9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.92
+buildiq	1641	2a563552d9b93b253ebbc5b378cf992d119e679c	RED	merge3	GATE RED absolute floor: buildiq maintainability 3.87 after merge is below its floor 3.91
+buildiq	1642	48b33fadebd1f22ddf57e6a3302827bd295ebf92	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.92
+buildiq	1644	14839229b70c8bfdd3f8f0a0e942eccfc5663bfa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.92
+buildiq	1646	26d7fd63d22d6bba9fc7f5d2ebb6139b9ec48af2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.92
