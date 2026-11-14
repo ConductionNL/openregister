@@ -6722,3 +6722,4 @@ hermiq	1753	89b097a46bbf8372d6646d9b4c25cc85d8c97ea6	GREEN	worker-58	php unit 47
 decidiq	2159	45ec0921c5b99c7dd8b7a2f4758a65c3fb3cc1cd	RED	worker-11	alone on development: vitest simpleMeetingPage.spec.js 3 failures (reads the server table it is compared with; names the state in the pill...; draws four steps...) - meeting lifecycle table now has 7 states vs 6 the page mirrors; PHP unit green
 decidiq	2160	bb45fef306e3e03fc24ced4d920ee8866b772d1a	CONFLICT	worker-11	merge conflict with development + earlier tree PRs
 decidiq	2161	78b178c981df173cc4eea8b38731781b28310d1c	GREEN	worker-11	unit baseline 4001/0 fail; tree w/o 2159: 4048 pass; vitest 2691 pass; new failures none
+decidiq	2162	2dc5d2969c2668b5d7a870d274ee0e4ffe399402	GREEN	worker-11	unit baseline 4001/0 fail; tree w/o 2159: 4048 pass; vitest 2691 pass; new failures none
