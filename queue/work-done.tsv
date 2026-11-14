@@ -10712,3 +10712,4 @@ verify:planninq:1165:e53d568e	GREEN 1165@69833fe6; unit 1067/0, vitest green	ses
 fix:shillinq:2976:f5ba044b	conflict resolved (l10n union), pushed 017e9a1a04ec22c60d350c25153c644236ac7c21, REVERIFY recorded	session-20261114T193415-4b507b08	2026-11-14T19:48:53Z
 merge:integriq:3628:0098dffb	merge3 tree of 6 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:49:18Z
 merge:integriq:3549:52b2b1ba	merge3 tree of 6 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:49:21Z
+merge:integriq:3600:ecb6cade	merge3 tree of 6 integriq PRs: merged=0 red=3 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-14T19:49:24Z
