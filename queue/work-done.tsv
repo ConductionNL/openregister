@@ -13180,3 +13180,496 @@ merge:launchpad:1231:7ad784e5	merge3 tree of 2 launchpad PRs: merged=2 red=0 fai
 cover:decidiq:a5f973bbm0262:1b97f731	PR #2217: 9 listener classes, 22 tests added, suite 4461 -> 4483 OK; lib/Listener lines 94.7% -> 99.6% (pcov)	session-20261115T142129-944012f5	2026-11-15T15:19:06Z
 build:learniq:training-provider-course-days:c4	partial: PR learniq#2521 head 189663c4: T5 done (trainer Today card CourseDayPartsWidget + partDue.js, 3 node tests, dashboard golden), JS 1381 with 8 inherited failures, no PHP touched. Left T6 planner Today, T7 list/page (proposal only, no spec requirement), T8 example set	session-20261115T142134-badaaf30	2026-11-15T15:19:08Z
 review:decidiq:2191:1b6af6dc	2191 GREEN: manifest/menu/l10n per change specs; vitest 2825 OK	session-20261115T145535-caebb5a3	2026-11-15T15:19:08Z
+build:hermiq:flows-hand-off-and-wait:c4	partial, unchanged: PR #1735 head 01675e5c. Only task 4 code is left and it is blocked: CustomToolInvoker (tools-custom-tools-without-code, branch quality/build-tools-custom-tools-without-code) is still not on development; the rest is Playwright, a live A2A peer and the live verification run	session-20261115T142134-badaaf30	2026-11-15T15:19:46Z
+build:decidiq:the-decision-as-a-walked-process:c5	partial: PR #2207 head 91c94c38a4: 11.2 confirmed and ticked (docs only). Left: 1.1-1.3, 2.2-2.3, 3.2-3.3, 4.2-4.4 (intake verdict wiring into ApprovalRouteService::record needs a route-close path for ended-at-intake and the ontvankelijkheid write on the decision), 8-10 deferred, 11.1, 11.3	session-20261115T142935-a9f3c36c	2026-11-15T15:20:09Z
+build:hermiq:tools-deep-research-report:c6	partial, blocked: earlier branches (-, -2, -3) all merged; Task 1 needs the Handoff schema from flows-hand-off-and-wait (PR #1735, itself waiting on tools-custom-tools-without-code), and Tasks 2, 5, 6 build on Task 1's runner; resume once #1735 lands	session-20261115T142134-badaaf30	2026-11-15T15:20:27Z
+review:decidiq:2187:2f3b8012	2187 GREEN; phpunit 4470 OK, vitest 2847 OK	session-20261115T145535-caebb5a3	2026-11-15T15:20:37Z
+fix:decidiq:2212:ca4e3856	fixed: complexity floor restored by extracting two helpers in OriImportService; new head b65d41d862	session-20261115T142150-6c965c2a	2026-11-15T15:20:45Z
+build4:openregister:object-write-at-instance-floor:c5	partial: PR #10520 (branch -3) new head d3750ec2 - task 2 disjunction split via shared IdentifierArms (Schema find/findInIds, Register find; register probe only on miss), goldens outcomes unchanged, Db/Architecture/Contract/Controller green. Left: LOWER(slug) index (live migration), 1/3 slug/list paths + MT-from-unscoped, 4 APCu, 6 transaction, 7 deferral update/delete, 9-10 index table, 11 pipeli	session-20261115T142201-ea23e682	2026-11-15T15:20:52Z
+review:openregister:10585:43cf2c12	APPROVE: tests only; Flow/Rules/Contract/Controller/Architecture green on merge with main	session-20261115T142934-6cab0c24	2026-11-15T15:21:18Z
+cover:integriq:92114ab0m6759:a4a15698	PR #3662: PdokGeocodingClientMock find/reverse covered, Pdok dir 338/343 -> 342/343 statements; suite 9460 -> 9462, no new failures	session-20261115T142153-990a3fbe	2026-11-15T15:21:31Z
+fix:shillinq:2997:70ee300e	fixed: regenerated scoped pages after merging development; new head 7b870224	session-20261115T142958-341f60db	2026-11-15T15:21:28Z
+build:hermiq:models-several-models-per-turn:c4	partial: PR #1781 head 00e5f205, task 5 fallback-chain editor (vitest 1518/1518, +7); task 6 ensemble setting and task 7 ensemble turn left; Playwright/Newman/live tasks left	session-20261114T073117-2bd2e050	2026-11-15T15:21:28Z
+review:learniq:2507:c404ad7d	GREEN: matches practical-exam-assessment specs; suite 6881 with only the inherited he.json failure; phpstan clean	session-20261115T145533-2db61682	2026-11-15T15:21:43Z
+merge:versioniq:690:182263a2	merge3 tree of 1 versioniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T15:22:06Z
+build:decidiq:live-room-conference-system-link:c4	done: PR #2170 head 730fcd40; task 7 built (RoomSystemClient/Feed/FeedListener, 10 tests) + demo seats; only Newman/Playwright test items left; suite 4263 green	session-20261115T151007-45079d32	2026-11-15T15:22:13Z
+fix:integriq:3615:a252d2b4	merged development into branch, l10n gate OK; new head 696541cd, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T15:22:39Z
+review:hermiq:1736:1c21a821	1736 GREEN (no new failures vs development)	session-20261115T142134-badaaf30	2026-11-15T15:22:53Z
+review:hermiq:1754:2c1453d5	stale	session-20261115T142134-badaaf30	2026-11-15T15:23:12Z
+build4:openregister:register-scoped-schema-slug-resolution:c5	partial: PR openregister#10538 (+2 commits, head de7fd2465): task 3.1 done - mixed-schema bulk rights check and save scoped together (RowSchemaRefsInRegister, +8 tests) and SaveLookups $ref resolver scoped for cascade/reference-existence/write-back (+5 tests, cascade golden gains cached register reads); suite green except inherited env failures; left: 1.3 needs live DB, 5.1 psalm not run, 5.3 huma	session-20261115T145530-38a74977	2026-11-15T15:23:44Z
+build4:openregister:scoped-api-tokens:c4	partial: pushed 70998a66 to PR #10514 (C40.2b notification half: TokenGrantLapseJob + renderer, 6 tests); C40.5 remainder N/A (flows have no HTTP step). Left: 1.1c, C40.2b recorded renewal, 3.1 grant editor + admin allowlist field, e2e/Newman	session-20261115T142958-eb01a230	2026-11-15T15:23:43Z
+fix:integriq:3596:dd7babfc	conflict resolved, golden hash recomputed; new head efb65024, REVERIFY recorded	session-20261115T142149-1d09fceb	2026-11-15T15:23:57Z
+review:decidiq:2149:6cf9ca71	GREEN	session-20261115T151007-45079d32	2026-11-15T15:24:04Z
+verify:learniq:2551:6a058249	2551 GREEN: phpunit 6868 (1 inherited), js 1390 (9 inherited), no new failures	session-20261115T145541-9d69768b	2026-11-15T15:24:14Z
+fix:integriq:3564:bd358537	conflict resolved by merging development; new head e13ad61e, REVERIFY recorded	session-20261115T142932-b9b408b7	2026-11-15T15:24:35Z
+cover:decidiq:a5f973bbm0262:34f5c300	PR #2218: 8 classes, 78 tests, lib/Service/*.php 90.11% -> 91.80%; suite 4461->4542, 0 failures	session-20261115T141023-b06d51da	2026-11-15T15:24:47Z
+review:decidiq:2178:9d356a3b	GREEN 2178: build within spec, suites green	session-20261115T142958-341f60db	2026-11-15T15:24:44Z
+build4:openregister:rapportage-bi-export:c5	partial: PR #10541 (branch build/rapportage-bi-export-3, head 63ec7ee6) now also has GET /api/reports/aggregate (cross-register totals per register and count series per register, RBAC per pair, unreadable registers left out silently; requirement ticked) and X-Cache HIT/MISS on aggregation responses, 13 new tests; Arch 2364, Contract 69, Controller 10236, Search 649 OK; whole unit suite 70 inherite	session-20261115T142951-2463b4c4	2026-11-15T15:24:49Z
+review:learniq:2513:37f5504f	GREEN: matches permission-slips specs; only inherited failures (he.json, 9 node tests on development); phpstan and eslint clean	session-20261115T145533-2db61682	2026-11-15T15:25:04Z
+build:hermiq:models-prompt-and-answer-cache:c6	partial: PR #1791 (head bf8747ef) builds Task 7: cache note + Ask the model again (bypass through stream/send/Engine), fromCache on messages, Clear cached answers action; PHP 5265 tests no new failures vs baseline (190 env reds same by name), vitest 1550 green except none new; left Task 6 similarity layer (OpenRegister vector facade not present yet) and live/e2e checks	session-20261115T142947-86d9b7fe	2026-11-15T15:25:13Z
+build:learniq:learner-list-and-page-follow-the-boards:c6	partial: PR #2549 (head 844e24a3) now builds T5 (GET/POST /api/pupils/{learnerId}/conversation through portaliq staff messaging, participants only; PupilGuardianConversation section over CnConversationThread; 20 PHP + 5 node tests; suite 6886, only the inherited HigherEducationExampleSetTest failure; js 9 baseline failures unchanged). Left: T6 example data (Noor Bakker vo story absent in vo.py; Ve	session-20261115T145555-b33410db	2026-11-15T15:25:15Z
+review:learniq:2521:189663c4	GREEN: matches change specs; no new PHP/JS failures	session-20261115T142934-6cab0c24	2026-11-15T15:25:31Z
+merge:hermiq:1736:d9056cac	stale	feeder	2026-11-15T15:25:17Z
+build:buildiq:forms-multi-product-request:c4	partial: PR buildiq#1650 head 154bc452 ticks T09 (openspec validate --strict passes). Left: T05 openregister journey run half (forEach/targetBy/targets/bundle, per-item commit and outcome, retry without duplicates), T06 nextcloud-vue sub-objects widget (not in this fleet's repos), T07 e2e; stopped for context	session-20261115T142947-86d9b7fe	2026-11-15T15:26:19Z
+build:hermiq:tools-browser-and-computer-use:c4	partial: PR #1754 head cdae7fb5; built task 6 (15-min machine-and-run pre-authorisation with fake-clock tests, approval card with machine, point, live screen and Approve for 15 minutes) and task 7 (computer actions on the Runs page); suite 5248->5266, vitest 1536 green. Left: tasks 1-3 (browser service, tools, password refusal) extend exapp/code-sandbox, only on the open build quality/build-tools-	session-20261115T145544-b059847e	2026-11-15T15:25:47Z
+fix:integriq:3612:776aff3e	failed: lane's absolute floor (3.55 vs 3.56) does not reproduce; fleet estimator (lizard 1.24.3, jscpd 4.0.5, five-star) gives the PR merged with development overall 3.94 = development 3.94, no property drops (floor_check compare PASS), committed floor 3.68; second worker to find this; the lane's measurement needs checking, no code change made	session-20261115T142958-eb01a230	2026-11-15T15:25:48Z
+verify:decidiq:2207:b2782902	3 GREEN (2207, 2212, 2217)	session-20261115T151007-45079d32	2026-11-15T15:26:40Z
+build:integriq:events-async-api-products:c4	done: PR #3617 pushed b0cf4ae6c, the AsyncAPI document validates against the vendored official AsyncAPI 3.0.0 schema (3 tests, with a refusal check); every code task in tasks.md ticked; suite unchanged (9 inherited failures)	session-20261115T142150-6c965c2a	2026-11-15T15:26:51Z
+build:integriq:zgw-catalogi-served:c4	partial: re-checked PR #3600 (head fe200724); no code task left. Task 5 Newman collection + Playwright spec need a live instance with an OR JWT consumer; process checklist (gates, CI, merge) belongs to the lanes	session-20261115T142958-eb01a230	2026-11-15T15:26:51Z
+fix:integriq:3595:7f9f7e76	CONFLICT resolved (golden hashes re-measured on merged tree); inherited reds only; new head b248545e; REVERIFY recorded	session-20261115T145535-caebb5a3	2026-11-15T15:26:51Z
+review:hermiq:1754:73c90c12	stale	session-20261115T152543-40aea993	2026-11-15T15:27:26Z
+build:integriq:connectors-job-board-multiposting:c4	partial: PR #3663 (from development; #3549 merged) built task 3 Indeed feed endpoint jobfeeds/indeed.xml (declarative endpoint+rules, .xml path answers as XML) and task 4 docs; left: task 2 werk.nl (no UWV posting API) and the Indeed source-call 'published in feed' answer (needs a non-calling path in SourceCallNode), Newman and docs-build checks (live); no new unit failures	session-20261115T142153-990a3fbe	2026-11-15T15:27:09Z
+build:integriq:access-consumer-credentials:c4	done: no code tasks left on PR #3542 (head 02664658); every Implement ticked and the PHPUnit halves exist (HashConsumerApiKeysTest incl. failure halfway, ConsumerCredentialsControllerTest no key in list, EndpointAuthenticationAnyOfTest, mTLS tests); open boxes are Newman, Playwright and live checks	session-20261115T145544-b059847e	2026-11-15T15:27:13Z
+build:humaniq:self-service-mobile:c4	partial: PR #1149 head 12627139 — built 2.3 (device-push opt-in widget registering with openregister web-push, 7 tests) and 3.1 (e2e excludes, @spec), merged development; left 2.2 (receiptFile is a string, capture needs a schema change the design rules out) and 3.2 live	session-20261115T142931-4c5be241	2026-11-15T15:27:31Z
+fix:launchpad:1212:84ba255f	merged development, resolved conflicts, openapi stability marks; suite green; pushed 838ac053; REVERIFY queued	session-20261115T145555-b33410db	2026-11-15T15:27:49Z
+review:humaniq:1149:2ace7fe7	stale	session-20261115T142931-4c5be241	2026-11-15T15:28:04Z
+fix:integriq:3593:c89e41d0	merged development, pushed ab56426a, REVERIFY; 6 inherited reds on development	session-20261115T141023-b06d51da	2026-11-15T15:28:04Z
+review:decidiq:2170:730fcd40	GREEN (openapi.json conflict with development noted)	session-20261115T151007-45079d32	2026-11-15T15:28:23Z
+build:integriq:platform-connector-extension-kit:c4	partial: no code tasks left; merged development into PR #3589 -> e374c8c4. Left: e2e specs of tasks 4 and 5 and live verification (browser/instance)	session-20261115T142958-341f60db	2026-11-15T15:28:44Z
+review:filinq:2088:a003bdfc	GREEN: unit 6792 OK, phpstan clean, vitest/parity pass	session-20261115T152554-949e9403	2026-11-15T15:28:55Z
+build4:openregister:scoped-api-tokens:c2	partial: PR #10514 adds actorVia on audit rows (2.2) and the per-token rate limit refusal (C40.4b); another lane on the same branch did 1.1d, 2.1c, C40.5, C40.2b warning; left 1.1c personal token store, 3.1 editor, C40.2b renewal, W.1 newman, e2e	session-20261114T102641-d4fd3e25	2026-11-15T15:29:04Z
+verify:decidiq:2218:915ed98f	GREEN	session-20261115T151007-45079d32	2026-11-15T15:29:24Z
+review:filinq:2114:5462db39	GREEN: spec-conformant; unit 6859/0 fail, vitest+jest green, phpstan clean	session-20261115T152552-0cb4306e	2026-11-15T15:29:32Z
+cover:integriq:92114ab0m6759:ff9d26ed	PR #3664: 8 tests, lib/Command/Integration 94.65->99.44%; suite failures unchanged (pre-existing)	session-20261115T142932-b9b408b7	2026-11-15T15:29:38Z
+fix:integriq:3649:236dc3f7	re-sorted en.js/nl.js replaced by development's order + 13 added keys; merged development; head f749c1d03c11688068a6c1de64e4a6c58dde7c24, REVERIFY	session-20261115T142134-badaaf30	2026-11-15T15:29:42Z
+verify:integriq:3638:e4fdb7a0	GREEN 3638; no new failures attributable to the PR	session-20261115T142951-2463b4c4	2026-11-15T15:29:49Z
+verify:integriq:3615:475e58f4	3615 GREEN, 3662 GREEN; no new failures (inherited reds only), vitest 2387 OK	session-20261115T145535-caebb5a3	2026-11-15T15:30:16Z
+measure:planninq:20261115h02	php 97.18% (pcov, 1222 tests), js 98.41% (vitest 3566 tests) at a8c9f994	session-20261115T142931-4c5be241	2026-11-15T15:30:26Z
+build:launchpad:launcher-tile-launch-types:c3	partial, no code left: PR #1226 (bf28a8ea) is merged; open are 6's axe check, 7 Playwright (live instance) and 8's spec fold at archive	session-20261115T142134-badaaf30	2026-11-15T15:30:20Z
+build:launchpad:engagement-announcements:c3	partial, no code left: PR #1214 (73daaaf8) merged; open are 12 Playwright (live) and 13's spec copy at archive (task 13 asks only nl+en strings, done)	session-20261115T142134-badaaf30	2026-11-15T15:30:41Z
+review:filinq:2072:7e876bbd	GREEN: unit 6796 OK, phpstan clean	session-20261115T152554-949e9403	2026-11-15T15:30:39Z
+review:hermiq:1781:00e5f205	GREEN: 5238 unit OK, vitest/phpstan/eslint clean	session-20261115T152543-40aea993	2026-11-15T15:30:33Z
+measure:openregister:20261115h02	php 94.26% (pcov, 14 directory parts merged; tests/Unit/Architecture excluded: >280s without coverage), js 92.56% (jest)	session-20261115T142132-f4234592	2026-11-15T15:31:07Z
+build:launchpad:launcher-app-catalogue:c3	partial, no code left: PR #1212 open at 838ac053; open items are live checks only (1 migration on PostgreSQL/MySQL, 7 axe, 10 Playwright) and 11's spec copy at archive	session-20261115T142134-badaaf30	2026-11-15T15:31:11Z
+fix:integriq:3542:02664658	obsolete: head 02664658 already contained in development; PR closed with a neutral comment. The adrvalidator drop was not from this PR (no OpenAPI spec changed; Spectral with the ADR ruleset finds nothing on openapi.json either side)	session-20261115T145544-b059847e	2026-11-15T15:31:22Z
+review:integriq:3564:e13ad61e	GREEN: build matches change, suite has only the inherited failures	session-20261115T142958-eb01a230	2026-11-15T15:31:21Z
+cover:integriq:92114ab0m6759:d3522ea6	PR #3665: OptOutLogEntry 3 tests (lib/Db now 100% lines); suite 9460->9463, same 6 inherited failures	session-20261115T145541-9d69768b	2026-11-15T15:31:38Z
+review:integriq:3596:efb65024	GREEN	session-20261115T142150-6c965c2a	2026-11-15T15:31:36Z
+build4:openregister:history-schema-and-settings-edits-audited:c5	PR #10515 head bdca5b31: built 5.2 (door test + Newman), 6.4 view (switch + store category), fixed listener-order goldens from 5.1; left live/e2e 1.3, 4.2, 6.4 spec, V.4 gates	session-20261115T142148-bdb54e0a	2026-11-15T15:31:49Z
+fix:integriq:3546:26a9245c	floor: ratchet findings 2->0 (11-param ctor split, dup removed), duplication +0.01; new head 994fb6f7, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T15:32:06Z
+review:shillinq:2997:7b870224	GREEN; phpunit 12273 OK, phpstan clean, vitest 1 inherited failure; note: backfill repair step not registered in info.xml	session-20261115T152558-f97be55f	2026-11-15T15:32:16Z
+cover:openregister:7350e3efm1efa:fa416b31	PR #10586: 3 new test files (15 tests) + metadata fixes on 6 risky tests; lib/Search/Service 92.3->97.5% (subset measure)	session-20261115T142934-de7c51d0	2026-11-15T15:32:38Z
+measure:opencatalogi:20261115h02	php 95.37% (pcov), js 85.91% at f7123cd0	session-20261115T145535-caebb5a3	2026-11-15T15:32:34Z
+build:integriq:gateway-api-design-rules-check:c4	done: pushed 4585a979 to PR #3564: task 5 seed (besluiten-api deprecated + open error + waived warning via components.objects), tests; all code tasks ticked, left Playwright/docs walk/validate	session-20261115T142149-1d09fceb	2026-11-15T15:32:42Z
+build:filinq:anonymization-review-workbench:c4	built 5.1-5.3 (+5.4 strings/docs) on PR #2114, head 473e8036: review rendition service+store, check bound to rendition sha256 on single+batch path, by-eye confirmation, certain_from vs OR floor, uncertain badge/filter/counter, decided list; PHPUnit 6816->6859, vitest 775->785, jest 580 green; left: 4.1 coverage+live e2e, 4.2, 4.5, 4.6 openspec validate, 5.4 e2e spec (live instance)	session-20261115T145535-3f9e5078	2026-11-15T15:33:02Z
+review:filinq:2114:3ca8b5a3	stale	session-20261115T152558-f97be55f	2026-11-15T15:32:56Z
+verify:learniq:2549:b52d084d	GREEN #2549: no new failures (php 6886/1 inherited, js 9 inherited)	session-20261115T152601-38767331	2026-11-15T15:33:01Z
+verify:hermiq:1791:9531c6a9	GREEN 1791: unit 5267 OK, vitest 1548 OK	session-20261115T152543-40aea993	2026-11-15T15:33:14Z
+fix:launchpad:1229:48687684	CONFLICT resolved (both sides kept in info.xml and Notifier.php), new head 4e62ac9c, REVERIFY recorded	session-20261115T142148-bdb54e0a	2026-11-15T15:33:34Z
+fix:integriq:3628:626c2e6f	fixed: merged development, deduplicated the enabled-source query; overall back to base 3.94, all properties at or above base; pushed b222d402, REVERIFY recorded	session-20261115T145533-2db61682	2026-11-15T15:33:42Z
+build:opencatalogi:dcat-catalogue-completion:c3	partial: PR #2643 head 876cac08 adds 6.3 Validate DCAT feed panel per catalogue (checked properties + DONL rejections), tests green beyond 2 inherited failures; left 1.x licence (EU/DONL lists still unreachable from the worker), 3.2 SPARQL (needs a new composer library, composer.lock not committable by workers), e2e/live tasks	session-20261114T102641-d4fd3e25	2026-11-15T15:33:50Z
+build:launchpad:widget-calculated-fields:c4	partial: PR #1233 (quality/build-widget-calculated-fields, from development) built the PHP evaluator, tasks 30, 31, 33, 38, and 14/16 via the 98-case shared suite (102 tests), 32 in part; suite 4359 -> 4461 OK. Left: store/UI 13, 17-20; schema/controller/OpenRegister 21-29 and 32's error log; format 34-36; PHPUnit 37, 39, 40; frontend 41-46; quality/docs 47-53. Stopped because the worker context i	session-20261115T142153-990a3fbe	2026-11-15T15:34:02Z
+fix:launchpad:1230:bbc5350f	failed: floor not restorable without weakening access: module_coupling 4.72->4.69 comes from the new EmbedTokenApiController's required #[AuthorizedAdminSetting(LaunchPadAdmin::class)] (LaunchPadAdmin fan-in 20->21 crosses the 20 band); unit_size 3.92->3.90 needs many new 16-30 line methods split (splitting report/refusalFor/originRefusal/hostOrigin only moved complexity 4.69->4.70). Also: branch 	session-20261115T142951-2463b4c4	2026-11-15T15:34:18Z
+cover:stackiq:9ac19b3amf894:34f5c300	PR #1981: SettingsServiceAutoConfigureAfterImportTest (3 tests) covers autoConfigureAfterImport + createRequiredUserGroups; lib/Service/*.php 86.36%->86.76%; suite 3626->3629 OK	session-20261115T142958-eb01a230	2026-11-15T15:34:47Z
+review:integriq:3589:e374c8c4	GREEN: additive extension seams; phpunit 9489 only inherited failures; phpstan clean	session-20261115T145541-9d69768b	2026-11-15T15:34:57Z
+review:humaniq:1149:12627139	GREEN; phpunit 4389 OK, phpstan clean, 1 inherited JS failure	session-20261115T152558-f97be55f	2026-11-15T15:35:04Z
+review:hermiq:1754:cdae7fb5	GREEN: unit 5266 OK, vitest 1536 OK	session-20261115T152543-40aea993	2026-11-15T15:35:40Z
+gap:launchpad:opensourcehealth:fa19a05f	PR #1234: npm audit fix on production tree, prod vulnerabilities 6 -> 0 (lockfile only); build + vitest 2578 green; freshness/activity stars not addressed (need major upgrades)	session-20261115T145555-b33410db	2026-11-15T15:35:44Z
+build:stackiq:architecture-shared-usage-on-views:c3	partial: PR #1953 unchanged (tasks 1, 2, 4 done); tasks 3 and 5 still wait for the architecture-views-editor view page, whose build branch is not on development yet	session-20261115T145541-9d69768b	2026-11-15T15:35:50Z
+build:opencatalogi:publication-plain-language-and-translation:c3	PR #2682 head 4bf71fcd: merged development (routes+DcatMappingServiceTest conflicts kept both), split new oversize units (PlainSummaryCheck::check cc10->5, drafter/controller/provenance/widget) no behaviour change; unit 5750 w/ 2 inherited fails; left 1.4/2.2 e2e, 4.1 gated D10	session-20261115T152552-0cb4306e	2026-11-15T15:36:02Z
+review:integriq:3593:ab56426a	GREEN 3593 (no new failures, access intact)	session-20261115T142201-ea23e682	2026-11-15T15:36:03Z
+cover:integriq:92114ab0m6759:59f49d26	PR #3666: 7 tests, lib/PropertySource fully covered, no new failures	session-20261115T152546-2c24b649	2026-11-15T15:36:26Z
+build:stackiq:connections-diagram-and-graph-export:c3	failed: only task 2 code left and still blocked; @conduction/nextcloud-vue up to 2.180.0 CnIndexPage has fixed viewModes and no scoped whole-list slot for a Diagram view; rest is Playwright/screenshot (PR #1965 unchanged)	session-20261115T152558-f97be55f	2026-11-15T15:36:22Z
+build4:openregister:object-write-sub-500ms:c5	partial: PR #10568 new head ae949c5c - task 3 register half: RegisterMapper::find() one-column arms, probe only on miss, idx_registers_lower_slug migration, 10 tests, suite no new failures; left: 2 (mt key, bulk reads), 3 SELECT* narrowing, 4 APCu (needs narrowing), 6 index table, 7 transaction (needs live PG run), 8 update/delete deferral (needs staging design), 10-13 live	session-20261115T142949-9c6a3945	2026-11-15T15:36:39Z
+fix:versioniq:723:c544853d	CONFLICT resolved (10 files, both sides kept, misplaced merge line fixed); inherited reds only; new head e74abf38; REVERIFY recorded	session-20261115T145535-caebb5a3	2026-11-15T15:36:41Z
+build:opencatalogi:woo-metadata-suggestions:c3	partial: PR #2674 head 8c2edb69 — built 2.2 (listener on ObjectCreatedEvent queues SuggestPublicationMetadata, store, 7 tests; suite 5616 with only 2 inherited failures); left 3.1 Hermiq client+endpoint, 4.1 accept/reject, 4.2 widget, 5.1 docs, 6.1/6.2 single lawful value; 6.4/6.5 gated on D10	session-20261115T142931-4c5be241	2026-11-15T15:36:58Z
+verify:integriq:3649:bc3064b6	3649, 3663, 3664 GREEN	session-20261115T142150-6c965c2a	2026-11-15T15:37:01Z
+review:integriq:3595:b248545e	GREEN: in-spec build, no new failures	session-20261115T142149-1d09fceb	2026-11-15T15:37:33Z
+build:opencatalogi:publications-unpublished-overview:c3	done: PR #2673 (head 61140718) every code task ticked: 3.2 scheduled example publication in the demo data (the seed, as the withdraw change decided) with a test that the overview lists it and not the withdrawn one, 3.3 dashboard docs; merged development; unit suite 5724 with the same 2 inherited failures (AppIdentityTest, WooControllerTest); left only the live e2e spec	session-20261115T142951-2463b4c4	2026-11-15T15:37:49Z
+build:opencatalogi:data-file-import-failure-alert:c3	partial: PR #2729 (1.1 notification rule + importedBy, 1.2 importing-first lifecycle with Throwable to failed, importTable()); left 1.3 import job, 1.4 re-import listener, 2.1 UI chip/Retry + e2e, 2.2 strings/check:strict, 2.3 live	session-20261115T142132-f4234592	2026-11-15T15:37:49Z
+review:integriq:3546:994fb6f7	GREEN 3546 (refactor behaviour-equivalent; no new failures)	session-20261115T142201-ea23e682	2026-11-15T15:37:45Z
+verify:opencatalogi:2699:e61b711a	stale	session-20261115T142951-2463b4c4	2026-11-15T15:38:23Z
+review:launchpad:1212:838ac053	GREEN #1212: phpunit 4384 OK, vitest 2598 OK, additive per spec	session-20261115T152601-38767331	2026-11-15T15:38:34Z
+build:opencatalogi:catalogs:c3	partial: no further code task buildable on PR #2701 (head 493cd752): getCatalogBySlug caches for anonymous callers only on purpose (an RBAC-filtered result must not be served from a shared cache), the @conduction/nextcloud-vue-only import rule conflicts with the repo's Nc imports from @nextcloud/vue (72 files), positional findObject args conflict with the named-args sniff, @self stripping conflict	session-20261115T142951-2463b4c4	2026-11-15T15:39:10Z
+build:integriq:portal-idp-broker-config:c5	partial: PR integriq#3638 (+2 commits, head 5a09bf5c3): task 6 done (OIDC RP adapter: PKCE/state/nonce/acr_values, private_key_jwt or client_secret_basic, ID token verified against issuer JWKS, single-use login store, registry builds it for ready oidc-rp, audience = client id; 25 tests vs stub issuer) and task 10 server side (admin-only registration list with readiness + Test action, 15 tests); su	session-20261115T145530-38a74977	2026-11-15T15:39:05Z
+build:buildiq:logic-automation-actions-that-run:c4	partial: PR buildiq#1648 head a6359df5: T05 rule-set condition (decision table + filter, RuleSetConditionNodes + tests), T08 page shows disabled reason, T09 Business rules action + ?app= rules page done; left T04 source picker, T06 composer + recompile on activation, T07 run route (waits on OpenRegister), T11 strings/docs (T10, T12 live). PHPUnit 3236 (1 inherited ExportZipGolden), vitest 4673 gre	session-20261115T142934-6cab0c24	2026-11-15T15:39:34Z
+build:opencatalogi:capability-rows-verify-scenarios:c4	done: PR #2722 head c7ed9350 adds 2.2 Add by case reference (CaseDocuments gathers the Woo request's files, unknown ref 409, createWooBatch override + includeFields); all code tasks ticked, only 1.1 e2e left; unit 2 failures inherited, jest failures same as baseline	session-20261114T102641-d4fd3e25	2026-11-15T15:39:34Z
+build:stackiq:operations-record-reconciliation:c3	partial: PR #1941 brought up to development (head 40710dd9, l10n conflicts unioned); PHP 3650 OK, vitest 2572/2573 (facets.spec.js DIMENSIONS read is red on development too). No code task left that can be built: /organisaties Find duplicates still blocked (nextcloud-vue 2.74 index headerActions have no per-user visibility); open items are Playwright tests and docs screenshots (need a running insta	session-20261115T145555-b33410db	2026-11-15T15:39:16Z
+merge:thematiq:1677:86d006c6	merge3 tree of 1 thematiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T15:39:52Z
+review:integriq:3564:4585a979	GREEN: in-spec, suite/vitest/eslint clean; notes on create-path guard	session-20261115T142149-1d09fceb	2026-11-15T15:40:54Z
+review:buildiq:1088:817518a2	RED: lockfile out of sync, npm ci fails (development clean)	session-20261114T102641-d4fd3e25	2026-11-15T15:41:01Z
+build:launchpad:drill-down-cross-widget-filter:c5	partial: PR #1235 (new; #1231 was merged) tasks 15 and 17 done (telemetry recorder in the filter bus + org-level switch); left 16 report endpoint, 7-13 (7 needs nextcloud-vue chart selection event), 30-34, e2e 22-29, profiling 10/35	session-20261115T142932-b9b408b7	2026-11-15T15:41:19Z
+verify:integriq:3628:0c587cb3	3 GREEN (3628, 3638, 3665); no new failures	session-20261115T152546-2c24b649	2026-11-15T15:41:16Z
+review:buildiq:1249:a5648e98	GREEN: dev-only phpstan bump, no new phpstan errors or test failures	session-20261115T142934-6cab0c24	2026-11-15T15:41:29Z
+cover:stackiq:9ac19b3amf894:js54731acf	PR #1982: ProcessStepFlow + ProcessStepUsages specs (8 tests, both were 0%); vitest 2603->2611, same 1 inherited failure	session-20261115T145541-9d69768b	2026-11-15T15:41:40Z
+review:filinq:2114:473e8036	GREEN: phpunit 6859 OK, jest 580, vitest 785	session-20261115T145555-b33410db	2026-11-15T15:41:43Z
+review:buildiq:1092:2ca8b28a	RED: lockfile out of sync, npm ci fails (development clean)	session-20261114T102641-d4fd3e25	2026-11-15T15:41:54Z
+review:opencatalogi:2643:876cac08	GREEN (conflicts with development in Settings.vue, PortalDetailSchemaTest; tested on PR head)	session-20261115T142951-2463b4c4	2026-11-15T15:42:03Z
+cover:opencatalogi:fc83bfb1m1045:jsd48eb217	PR #2730: catalog store fetch/attachments/clear, 12 tests; catalog.js 83.1->96.4%, dir 34.1->34.5% (search/navigation already covered on development; object.js is in open branch -2); suite 1111->1123 green	session-20261115T152552-0cb4306e	2026-11-15T15:42:25Z
+build:opencatalogi:integration-feed-consumer-credentials:c3	done: PR #2652 head dc289b2f — built 3.1 OOAPI read rule ($memberOf over feedConsumer + synced instance-list group; empty list keeps authenticated), repair step + settings hook, +16 PHPUnit; suite 5740, same 2 inherited failures; all code tasks ticked, live API/e2e checks left	session-20261115T152543-40aea993	2026-11-15T15:42:16Z
+build:opencatalogi:woo-review-surface:c3	partial: PR #2678 head 3f20c722 built 1.1 (lifecycle, chain, reject action, notification, status repair) and 1.2 (submit/publish via engine, approved-only publish); left 1.3, 1.4, 2.1, 2.2, 3.3, 4.1 and checks 5.x, 3.4 live	session-20261115T142148-bdb54e0a	2026-11-15T15:42:39Z
+review:buildiq:1095:c5896b0e	RED: gridstack 14 conflicts with nextcloud-vue peer range, npm ci fails	session-20261115T142149-1d09fceb	2026-11-15T15:42:35Z
+review:buildiq:1090:de7f28aa	RED: lockfile out of sync, npm ci fails	session-20261115T152546-2c24b649	2026-11-15T15:42:42Z
+verify:launchpad:1223:09e225ad	1223 CONFLICT (routes.php); 1229 GREEN; 1233 GREEN	session-20261115T152601-38767331	2026-11-15T15:43:31Z
+review:buildiq:1093:7c1a6bdd	BLOCK: npm ci fails, lockfile out of sync	session-20261115T142951-2463b4c4	2026-11-15T15:43:40Z
+cover:openregister:7350e3efm1efa:e98782c5	PR #10587: lib/Notifications/Service 95.11->97.28% (pcov); @uses fixes un-risk 16 tests (NotificationReminderValidator was hidden), +16 tests for GraphQL SubscriptionService and TimelineEntryService; HexIconService left (Imagick-only paths); suite no new failures; possible defect: event stream filter compares int ids with string schema/register	session-20261114T075643-acecaad6	2026-11-15T15:43:56Z
+review:buildiq:1114:1c8fce1e	GREEN: lock-only ocp patch bump; unit 3192, 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T15:43:57Z
+build:launchpad:dashboards-and-who-may-see-them:c3	partial: pushed to PR #1223 (branch quality/build-dashboards-and-who-may-see-them-2, head 8946cefa): sections 3 (status report object, prefill, keep with computed/written record), 5 (colleague activity widget + permission filter) and 8 (storage report per workspace/service, daily series, removable total, CSV, admin-only) built; 70 PHPUnit + 10 Vitest added, suite 4252 -> 4310 with the 1 inherited 	session-20261115T152539-8dadb15a	2026-11-15T15:44:13Z
+build:stackiq:landscape-move-between-organisations:c3	done (code): PR #1958 head 7a2b0cf1 adds the detail-page header action (registry launcher modal on 4 detail pages), +9 vitest, docs; left only live tasks: Playwright, screenshot, Newman	session-20261115T142201-ea23e682	2026-11-15T15:44:20Z
+review:buildiq:1277:e4d24801	BLOCK: depends on OpenRegister settings value objects not on OR main/development; would break admin settings at runtime; also conflicts with development	session-20261115T152552-0cb4306e	2026-11-15T15:44:15Z
+review:buildiq:1091:1fce7d65	RED: lockfile out of sync, npm ci fails at PR head	session-20261115T154258-dee2cc3d	2026-11-15T15:44:28Z
+review:buildiq:1256:a68cddc3	GREEN: lock-only hydra-gates bump; unit 3192, 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T15:44:55Z
+review:buildiq:1085:8d6197ad	BLOCK: phpmd 3.0 adds 38 unbaselined findings and deprecates the script's CLI form	session-20261115T142934-6cab0c24	2026-11-15T15:45:10Z
+review:buildiq:1502:dc3c310b	BLOCK: composer install fails (psalm 7.3 needs php >=8.3.16, platform pinned 8.3)	session-20261115T152552-0cb4306e	2026-11-15T15:45:24Z
+build:buildiq:pages-installable-offline-and-mobile:c5	done: PR #1654 pushed aaec7e14: T08 mobile app project export (MobileProjectWriter + job/dialog plumbing), T09 strings + docs; left T07 (nextcloud-vue, outside pipeline), T10 (openspec CLI unavailable), manual device checks; PHP 3230 (1 inherited golden fail), vitest 4716 ok	session-20261115T141023-b06d51da	2026-11-15T15:45:35Z
+review:buildiq:1261:901e0708	BLOCK: calls a searchObjectsBySlug(target:) form openregister main lacks	session-20261115T152546-2c24b649	2026-11-15T15:45:33Z
+review:decidiq:1467:26c28394	GREEN: dev-dep bump, vitest 2825 passed, coverage run ok	session-20261115T154300-03b63424	2026-11-15T15:45:44Z
+review:decidiq:1600:33021efc	BLOCK: obsolete lock downgrade (2.60.0 vs dev 2.135.0), conflicts; close as superseded	session-20261115T154316-34f0db35	2026-11-15T15:45:51Z
+review:buildiq:1094:85dea460	BLOCK: lockfile out of sync, npm ci fails	session-20261115T154314-8216dc98	2026-11-15T15:46:02Z
+review:buildiq:1262:c955fcfd	BLOCK: wrong LockRequest/UnlockRequest namespace, runtime class-not-found	session-20261115T142951-2463b4c4	2026-11-15T15:46:15Z
+review:decidiq:1767:3e9af0ff	GREEN: dev-only lock bump installs, unit 4461 OK unchanged	session-20261115T152552-0cb4306e	2026-11-15T15:46:33Z
+review:decidiq:1473:4549406a	GREEN: marked patch bump, lock+package only; vitest 2825 passed on the merged tree	session-20261114T075643-acecaad6	2026-11-15T15:46:39Z
+review:buildiq:1264:6e11da88	CONFLICT: 8 files conflict with development; diff is a correct contract adaptation	session-20261115T154258-dee2cc3d	2026-11-15T15:46:47Z
+review:buildiq:1263:59ed1278	BLOCK: wrong OpenRegister namespace for ObjectDeletion/ObjectFindTarget (fatal at runtime); conflicts with development	session-20261115T154254-3d07b219	2026-11-15T15:46:56Z
+build:stackiq:insight-exports-and-custom-reports:c3	done: PR #1954 head 7f13c4ef adds Task 2 (Export as ArchiMate on the organisation page + access probe), Task 6 (Custom reports page over OpenRegister export profiles), Task 7 docs text; left only live work: Playwright checks of 2/4/5/6, Task 7 screenshots, Task 5 upstream halves; PHP 3640 green, vitest 1 inherited facets failure	session-20261115T145533-2db61682	2026-11-15T15:47:02Z
+review:decidiq:1947:ae3bb0fe	BLOCK: wrong ObjectSaveOptions/ObjectFindTarget namespace	session-20261115T142951-2463b4c4	2026-11-15T15:47:07Z
+review:decidiq:1738:c12b8c5d	GREEN: dev-only phpmd bump; unit suite green; phpmd red before and after, net fewer findings	session-20261115T142934-6cab0c24	2026-11-15T15:47:19Z
+review:decidiq:1465:840ea3b6	GREEN: @nextcloud/vue bump, vitest 2825 passed 0 failed on merged tree	session-20261115T154316-34f0db35	2026-11-15T15:47:25Z
+review:buildiq:1276:c5ef6c3f	BLOCK: depends on StoreListing, absent on openregister main; stubs mask the runtime failure	session-20261115T154311-e8600d84	2026-11-15T15:47:32Z
+review:decidiq:1468:dabc7105	GREEN: vitest 2825 pass, webpack build ok	session-20261115T154255-e54527e9	2026-11-15T15:47:45Z
+review:buildiq:1248:82ce29ad	GREEN: dev-only hydra-gates bump; phpunit 3192, only inherited ExportZipGoldenTest failure	session-20261115T145541-9d69768b	2026-11-15T15:47:56Z
+review:decidiq:1949:654f0e4b	RED: composer install fails (psalm 7 needs php>=8.3.16, platform pinned 8.3)	session-20261115T154300-03b63424	2026-11-15T15:48:03Z
+review:decidiq:1692:afd2e246	GREEN: openspec-only sweep	session-20261115T142934-6cab0c24	2026-11-15T15:48:19Z
+review:buildiq:1086:c366210f	BLOCK: npm ci ERESOLVE (nextcloud-vue peerOptional stylelint ^17)	session-20261115T145555-b33410db	2026-11-15T15:48:29Z
+review:decidiq:1469:bee189d6	GREEN 1469 (vitest equal to baseline)	session-20261115T142201-ea23e682	2026-11-15T15:48:39Z
+review:decidiq:1950:76d89347	GREEN: unit 4461/0 fail, phpstan clean	session-20261115T154314-8216dc98	2026-11-15T15:48:50Z
+build:opencatalogi:capability-rows-close-gaps:c3	PR #2696 updated: built 2.4 (version-history widget on publication page) and 2.8 (depublish on source end, flag on keep); all code tasks done; left 1.2 e2e and 3.2 live check (need a live instance)	session-20261115T142934-de7c51d0	2026-11-15T15:49:02Z
+review:decidiq:1471:b6694064	GREEN: vite range bump only; lockfile conflicts, development already locks vite 8.3.8; vitest 2825 pass	session-20261115T154407-94bf5f8c	2026-11-15T15:49:02Z
+review:decidiq:1470:9e304842	GREEN: npm ci OK, vitest 2825 passed	session-20261115T142951-2463b4c4	2026-11-15T15:49:24Z
+review:decidiq:1941:4df452c6	GREEN: 4461 unit OK; psalm.xml conflict noted	session-20261115T154255-e54527e9	2026-11-15T15:49:31Z
+review:dossiq:3174:92484c5f	GREEN: docs-only spec line	session-20261115T152546-2c24b649	2026-11-15T15:49:41Z
+review:decidiq:1472:a40d36e1	GREEN: sass devdep bump, vitest 2825 passed	session-20261115T154329-16a67e2f	2026-11-15T15:49:54Z
+review:decidiq:1942:76931393	RED: conflicts with development; merged tree TypeErrors in DecidiqRequestDecisionNodeBranchesTest (5)	session-20261115T154316-34f0db35	2026-11-15T15:50:01Z
+review:decidiq:1474:bbce152d	GREEN: devDep bump, vitest 2825 passed, eslint 0 errors	session-20261115T154307-1fc2cc78	2026-11-15T15:50:07Z
+review:buildiq:1233:f1c8aa72	GREEN: copy rename, vitest green; trivial add/add conflict with development	session-20261114T102641-d4fd3e25	2026-11-15T15:50:18Z
+review:decidiq:1920:dfa5dba2	GREEN: copy-only rename Store -> Marketplace; PHPUnit, vitest and l10n checks green	session-20261115T145533-2db61682	2026-11-15T15:50:28Z
+review:decidiq:1737:43c02ff7	GREEN: phpstan 2.3.1 clean, unit suite 4461 OK same as development	session-20261115T152539-8dadb15a	2026-11-15T15:50:45Z
+review:buildiq:820:306021ea	GREEN: patch dev-dep bump, vitest 4667 pass	session-20261115T142149-1d09fceb	2026-11-15T15:50:59Z
+review:dossiq:3193:5b406bdb	GREEN: lock-only dev bump; 19 baseline failures, none new	session-20261115T154254-3d07b219	2026-11-15T15:51:10Z
+review:decidiq:1948:fbc94193	GREEN: unit 4461/0 fail, phpcs/phpmd unchanged vs development	session-20261115T154314-8216dc98	2026-11-15T15:51:21Z
+review:decidiq:1946:b7542a86	BLOCK: ObjectPatch/ObjectFindTarget imported from wrong namespace vs openregister main; psalm.xml conflict	session-20261115T154258-dee2cc3d	2026-11-15T15:51:32Z
+build:opencatalogi:publication-relations-place-and-source-ids:c3	partial: PR #2650 adds 1.4 code half (related grouped by relation, form pickers) and 2.3 public filter; OR piece openregister#10588 (contains operator). Left: 1.4 e2e, ready list route (not on development), 3.1 dossiq issue, group 5 (D10)	session-20261115T152554-949e9403	2026-11-15T15:51:47Z
+build:opencatalogi:instance-staging-mode:c3	done: PR #2699 head b0f3f779; 2.2 all sites gated, 2.3 grep test, 1.1 mode+audit, 1.2/2.4 code (banner, outside list, Dry runs page; e2e left), 4.1 docs, 5.x run; left 3.2 live + e2e specs; suite 5723, 2 inherited	session-20261115T151007-45079d32	2026-11-15T15:51:48Z
+review:dossiq:3957:89c80a54	CONFLICT: 15 files conflict with development (new Kernel contracts on renamed classes); recorded for fix	session-20261115T154307-1fc2cc78	2026-11-15T15:51:48Z
+review:buildiq:1265:5f5ede07	BLOCK: wrong namespace for the save option classes, every save fails at runtime	session-20261115T152543-40aea993	2026-11-15T15:51:59Z
+review:decidiq:1944:e682b8bc	CONFLICT: diff correct, unit 2851 OK on head; conflicts with development in ~25 files + new old-style calls there	session-20261115T154300-03b63424	2026-11-15T15:52:08Z
+build4:openregister:rules-compose-read-transitions-and-time:c5	partial: PR #10529 pushed 1.2b/1.5b/2.2b/2.3b/3.2b (named conditions at lifecycle, state and field-rule sites; prior-value check at save; deciding side in run log; $age calendar order and save check); left 3.3b sweep, 4.3b warnings channel, 5.4 e2e; suite no new failures (71 inherited)	session-20261115T145546-378b432a	2026-11-15T15:52:15Z
+review:dossiq:3198:c19a6d9c	GREEN (lock conflict with development)	session-20261115T142951-2463b4c4	2026-11-15T15:52:20Z
+review:dossiq:3954:d0d56e69	CONFLICT: renames only, touched tests green on head; conflicts with development in 9 files	session-20261115T142934-de7c51d0	2026-11-15T15:52:26Z
+review:decidiq:1691:6a147074	RED: conflicts with development; structureProfile page-count test fails on head (104 vs 103)	session-20261115T152552-0cb4306e	2026-11-15T15:52:33Z
+review:dossiq:3300:6bb977e0	CONFLICT with development; change itself fine	session-20261115T152546-2c24b649	2026-11-15T15:52:40Z
+review:decidiq:1615:16c70ed7	BLOCK 1615 (behaviour changes pending product decisions; heavy conflicts with development)	session-20261115T142201-ea23e682	2026-11-15T15:52:50Z
+review:dossiq:3298:85e60038	CONFLICT: AcController::update conflicts with development refactor; logic sound, needs merge	session-20261115T154254-3d07b219	2026-11-15T15:53:04Z
+review:dossiq:3936:d81910f6	CONFLICT: spec-conformant, head suite 8617/0 failures, conflicts with development in 15 files	session-20261115T154329-16a67e2f	2026-11-15T15:53:14Z
+build:launchpad:embedded-analytics:c4	partial: PR #1230 (head f043acfc) built tasks 6, 7, 9, 10, 14, 20-23, 26, 28, 30, 33, 34, 36; left 12, 13, 15-18, 27, 40 (admin UI), 19 dist + 24 (release), 37 i18n, 38/39 sign-offs, 35 e2e; phpunit 4269->4424 green, vitest 2600 green	session-20261115T142958-341f60db	2026-11-15T15:53:24Z
+review:dossiq:4882:13c8daa8	CONFLICT with development (9 files); diff clean, PR head unit green	session-20261115T154314-8216dc98	2026-11-15T15:53:25Z
+review:openregister:10586:dd1990e6	APPROVE (tests only, all green)	session-20261115T142949-9c6a3945	2026-11-15T15:53:38Z
+review:dossiq:3297:78031823	GREEN on its head (adds fail-closed case check); conflicts with development refactor, needs port	session-20261114T102641-d4fd3e25	2026-11-15T15:53:44Z
+review:dossiq:4149:9433f0b4	CONFLICT: 2 files conflict with development; behaviour notes recorded	session-20261115T142149-1d09fceb	2026-11-15T15:53:52Z
+review:decidiq:1945:f2b2f28e	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget (openregister main has them in Kernel\Contracts\Value, no alias); stubs hide it	session-20261114T075643-acecaad6	2026-11-15T15:54:06Z
+review:dossiq:3955:e447a743	BLOCK: stale base, merged tree breaks the WooPublicationServiceInterface binding	session-20261115T151007-45079d32	2026-11-15T15:54:15Z
+review:dossiq:5266:f306c815	CONFLICT: 6 files (l10n + menu layout) conflict with development; change itself sound	session-20261115T154254-3d07b219	2026-11-15T15:54:29Z
+review:dossiq:4886:5dd9fb5e	BLOCK: new declaration read can throw out of DeadlineCaseCreatedListener (outside its try); also conflicts with development	session-20261115T142934-de7c51d0	2026-11-15T15:54:35Z
+review:dossiq:3199:4b5da277	GREEN: dev-only sass bump; build OK, vitest only 2 inherited failures	session-20261115T145541-9d69768b	2026-11-15T15:54:46Z
+review:dossiq:4887:ca6b5835	BLOCK: settle does not tie the signer to the obligation's holder (only excludes the case's own subject)	session-20261114T075643-acecaad6	2026-11-15T15:54:59Z
+review:dossiq:5349:59ceb47d	BLOCK: imports ObjectDeletion from a namespace openregister does not have	session-20261115T152546-2c24b649	2026-11-15T15:55:16Z
+review:dossiq:3934:90d125eb	RED: conflicts + 4 new failures from development tests naming old class	session-20261115T154255-e54527e9	2026-11-15T15:55:33Z
+review:dossiq:3200:74d2bc80	BLOCK: obsolete, development already on dompurify 3.4.17	session-20261115T142949-9c6a3945	2026-11-15T15:55:43Z
+review:dossiq:3204:7d112fdf	GREEN: npm ci ok, eslint and vitest same as development	session-20261115T145555-b33410db	2026-11-15T15:55:50Z
+review:dossiq:5358:b179a791	BLOCK: wrong OpenRegister namespace for LockRequest/UnlockRequest; conflict in DrcController	session-20261115T154254-3d07b219	2026-11-15T15:56:03Z
+review:dossiq:2705:b7e00cc6	GREEN: dev-tool lock bump, no new failures	session-20261115T154258-dee2cc3d	2026-11-15T15:56:13Z
+review:dossiq:5353:15d28d9d	CONFLICT: 97 files conflict with development	session-20261115T142149-1d09fceb	2026-11-15T15:56:24Z
+review:dossiq:5556:cfd808c9	BLOCK: depends on StoreListing absent from openregister main; also conflicts	session-20261115T154314-8216dc98	2026-11-15T15:56:31Z
+review:dossiq:4870:ec90c58c	CONFLICT: development already carries a build of the same change; PR green alone (vitest 4526), behaviour per spec; needs merge of development or close as superseded	session-20261115T145533-2db61682	2026-11-15T15:56:41Z
+review:dossiq:5398:7c1b653e	RED: composer install fails (psalm 7.2.1 needs php ~8.3.16, platform pinned to 8.3)	session-20261115T145541-9d69768b	2026-11-15T15:56:49Z
+review:decidiq:1475:4c1b9a60	BLOCK: gridstack 14 outside the component library's peer range	session-20261115T142934-6cab0c24	2026-11-15T15:56:58Z
+build:stackiq:insight-assistant-answers-and-action-trail:c4	pushed to PR #1975: task 3 Assistant actions page (13 vitest) + task 5 docs; openregister PR #10589 adds tool/actionPrefix/toolPrefix audit filters it needs; task 4 left (library audit labels have no mcp.* wildcard or toolId token); e2e left; vitest 2625/2626 (facets failure inherited)	session-20261115T152558-f97be55f	2026-11-15T15:57:09Z
+review:dossiq:3201:6c926ab3	GREEN: dep bump, vitest 7178 passed, 2 inherited failures	session-20261115T154307-1fc2cc78	2026-11-15T15:57:15Z
+review:dossiq:2909:b86bc4d2	CONFLICT: 8 files; largely superseded by development except search declarations	session-20261115T154300-03b63424	2026-11-15T15:57:22Z
+review:filinq:1308:28b5e71e	GREEN: mammoth minor bump; vitest 763/763 pass	session-20261115T154254-3d07b219	2026-11-15T15:57:45Z
+review:dossiq:5365:b115fa9f	BLOCK 5365: depends on unmerged openregister #9103 signature; breaks against current openregister main	session-20261115T142958-341f60db	2026-11-15T15:57:53Z
+review:dossiq:5396:7493d64f	GREEN: dev-dep lock bump, no new failures	session-20261115T152546-2c24b649	2026-11-15T15:58:06Z
+review:dossiq:3299:779b4422	BLOCK (conflict): add/add conflict in the listener test against development; lib fix is sound	session-20261114T075643-acecaad6	2026-11-15T15:58:13Z
+review:filinq:1852:38008824	BLOCK: depends on openregister #9103 which is not on main; would break slug searches at runtime	session-20261115T154300-03b63424	2026-11-15T15:58:24Z
+review:dossiq:3953:1fa01764	CONFLICT: rename only, head suite 8654/0 failures, conflicts with development in 6 files	session-20261115T154329-16a67e2f	2026-11-15T15:58:32Z
+review:dossiq:5340:06631624	GREEN (conflicts with development)	session-20261115T142951-2463b4c4	2026-11-15T15:58:40Z
+review:filinq:1305:66e6aff4	BLOCK (sbom only): lock bump not reflected in sbom.cdx.json; suite green with twig 3.30.0	session-20261115T145533-2db61682	2026-11-15T15:58:50Z
+review:filinq:1758:cb890160	BLOCK: superseded by development b9c8e18ed; test-file conflict; close as obsolete	session-20261115T142934-6cab0c24	2026-11-15T15:59:07Z
+review:filinq:1309:ba8558cc	CONFLICT: package-lock.json vs development; PR alone npm ci + eslint clean	session-20261115T145555-b33410db	2026-11-15T15:59:26Z
+review:dossiq:3203:021d79cc	RED: @nextcloud/vue 9.13.1 needs newer @nextcloud/files; 36 vitest files fail vs 2 baseline; lock conflict	session-20261115T154316-34f0db35	2026-11-15T15:59:23Z
+review:filinq:1313:0908232d	CONFLICT: package-lock.json conflicts with development; bump itself harmless	session-20261115T154258-dee2cc3d	2026-11-15T15:59:35Z
+review:dossiq:3197:4bd6d2ba	GREEN: router minor bump; vitest 7178 pass, 2 inherited failures, 0 new	session-20261115T154407-94bf5f8c	2026-11-15T15:59:43Z
+review:dossiq:4112:d85d2c1c	GREEN	session-20261115T151007-45079d32	2026-11-15T15:59:55Z
+review:filinq:1304:4ad5da28	GREEN 1304 (vitest equal to baseline)	session-20261115T142201-ea23e682	2026-11-15T16:00:04Z
+review:filinq:1355:1c90e8ba	GREEN: phpmd 3 runs, unit suite green; note +3 coupling findings on unchanged code	session-20261115T154254-3d07b219	2026-11-15T16:00:12Z
+review:dossiq:5397:e528f075	GREEN: phpstan dev bump; suite and phpstan output unchanged vs development	session-20261115T142934-de7c51d0	2026-11-15T16:00:18Z
+review:filinq:1756:88533afc	GREEN: 6770 unit OK	session-20261115T154255-e54527e9	2026-11-15T16:00:27Z
+review:filinq:1962:e4994b11	GREEN 1962: patch bump, suite green	session-20261115T142958-341f60db	2026-11-15T16:00:39Z
+review:filinq:1086:be9ddbad	GREEN (lock-only dev tooling bump, suite OK)	session-20261115T142949-9c6a3945	2026-11-15T16:00:48Z
+review:dossiq:5357:5c357cd0	BLOCK: imports OpenRegister ObjectPatch at a namespace that exists on neither OR branch; patch path would fatal	session-20261115T152552-0cb4306e	2026-11-15T16:01:02Z
+review:filinq:1964:b0847184	RED: psalm 7.2.1 lock is unsatisfiable under config.platform php 8.3, so composer install fails	session-20261115T145533-2db61682	2026-11-15T16:01:12Z
+review:dossiq:5338:740a587a	RED: conflict + 4 dev-side test doubles need the TaskActorRef reassign signature	session-20261115T152554-949e9403	2026-11-15T16:01:35Z
+review:filinq:1310:fc7dd7c7	RED: npm ci ERESOLVE, gridstack 14 outside nextcloud-vue peer range ^12||^13	session-20261115T145541-9d69768b	2026-11-15T16:01:43Z
+review:hermiq:1323:787cee12	BLOCK: OpenRegister ObjectPatch at a namespace present on neither OR branch; backfill patch fails at runtime	session-20261115T152552-0cb4306e	2026-11-15T16:01:55Z
+review:filinq:1850:ab19bf6b	BLOCK: ObjectPatch/ObjectFindTarget imported from wrong namespace vs openregister main	session-20261115T154300-03b63424	2026-11-15T16:02:04Z
+review:filinq:1851:5759e36e	BLOCK: imports ObjectDeletion/ObjectFindTarget from a namespace OpenRegister does not have (real one is Kernel\Contracts\Value); stubs hide it	session-20261115T145533-2db61682	2026-11-15T16:02:17Z
+review:filinq:1409:0d0e948a	BLOCK: obsolete, superseded on development, 32-file conflict	session-20261115T154255-e54527e9	2026-11-15T16:02:23Z
+build4:openregister:register-scoped-schema-slug-resolution:c2	stale: session paused past the task lease; continuations c3-c5 completed task 3.1 in PR #10538, so this pass's overlapping local work was discarded unpushed	session-20261114T102637-6688951e	2026-11-15T16:02:36Z
+review:filinq:1102:7156c4b9	GREEN: jszip patch bump, vitest 763/763 on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:02:33Z
+review:filinq:1312:4c33817f	BLOCK: obsolete, development already has @nextcloud/vue 9.14.1; lock conflict	session-20261115T142934-6cab0c24	2026-11-15T16:02:40Z
+review:hermiq:1135:988cfbc8	GREEN: dev-only phpmd 3 bump; unit suite identical; notes on deprecated positional args and one new unused-param finding	session-20261114T075643-acecaad6	2026-11-15T16:02:49Z
+review:hermiq:1195:6284aad0	GREEN: eslint bump, vitest 1526 pass, lint identical to baseline	session-20261115T155913-70cee771	2026-11-15T16:02:56Z
+review:hermiq:1187:f2d30166	GREEN: playwright devDep bump, vitest 1526 passed	session-20261115T155903-abd003e3	2026-11-15T16:03:05Z
+review:filinq:1451:258e0913	BLOCK: duplicate of template already on development (#1457); suite 6765 OK	session-20261115T152558-f97be55f	2026-11-15T16:03:13Z
+build:launchpad:scheduled-exports:c4	partial: PR #1229 head 444ff743: tasks 12-16 and 19 built (export editor, list, run history, run detail with retry, preview, dashboard menu entry; 5 vitest specs), 32 and 34 ticked, 31 noted (change's PHP clean, repo-wide phpcs/psalm errors in announcement files). Vitest 2608 all pass after the dup nl 'Port' fix; PHP 4436 OK. Left: 27-30 Playwright, 31 repo-wide, 36 other locales (parity warns)	session-20261115T142134-badaaf30	2026-11-15T16:03:22Z
+review:dossiq:2902:791b50a4	GREEN (no behaviour change; conflicts with development, keep StepConfigCheck)	session-20261115T141023-b06d51da	2026-11-15T16:03:22Z
+review:dossiq:3202:d10800f6	BLOCK: gridstack 14 outside shared library peer range; conflicts with development	session-20261114T102641-d4fd3e25	2026-11-15T16:03:33Z
+review:hermiq:1324:c54cfec4	BLOCK: targets nonexistent OpenRegister SearchOptions API; unit suite fatals on merged tree	session-20261115T155902-d9805df0	2026-11-15T16:03:39Z
+review:hermiq:1189:9c7d6a51	GREEN: pinia 4 bump, vitest 1526 passed	session-20261115T154316-34f0db35	2026-11-15T16:03:52Z
+review:humaniq:434:dc6c275a	BLOCK: obsolete lock bump (development already newer), conflicts	session-20261115T155911-f0070087	2026-11-15T16:04:06Z
+review:humaniq:1095:b9247c40	RED: lock not installable under the repo's platform pin	session-20261115T151007-45079d32	2026-11-15T16:04:16Z
+build:keepiq:capability-requirements-from-the-matrix:c5	done: PR #1826 head 6a8875d0; 3.1 built (privileged mark, access requests, approve/deny, serve-time gate on detail/list/search/extension/offline, audit+notify, sidebar panel, extension reason); every task ticked; PHP 5298 OK, vitest 3 inherited HealthReportView fails	session-20261115T152547-c779ca49	2026-11-15T16:04:31Z
+review:filinq:1963:4c695442	GREEN: lock bump, suite green incl. PDF tests	session-20261115T154258-dee2cc3d	2026-11-15T16:04:26Z
+review:hermiq:1150:4fcdbcee	no verdict on behaviour: CONFLICT recorded, 1510 behind development, 15 conflicting files	session-20261115T145541-9d69768b	2026-11-15T16:04:35Z
+review:filinq:1965:49589d88	RED: phpstan 2.3.5 adds 1 error (TesseractCommand.php:69 dead catch)	session-20261115T142951-2463b4c4	2026-11-15T16:04:46Z
+review:humaniq:661:6367bef4	RED: npm ci ERESOLVE, @babel/preset-env 7 peers on @babel/core ^7	session-20261115T152558-f97be55f	2026-11-15T16:05:02Z
+review:filinq:1828:63118b3c	GREEN: suite OK, gate failures 10 -> 8	session-20261115T142149-1d09fceb	2026-11-15T16:05:22Z
+review:hermiq:1102:53901bab	BLOCK: obsolete, development already at nextcloud-vue 2.180.0 (PR would downgrade to 2.60.0)	session-20261115T155902-521936b1	2026-11-15T16:05:32Z
+review:hermiq:1293:14810487	RED: conflict in l10n/en.*; 2 AgentExportModal vitest assertions on old Store text fail	session-20261115T155913-70cee771	2026-11-15T16:05:43Z
+review:hermiq:1325:9fa10193	BLOCK: wrong namespace for ObjectSaveOptions/ObjectFindTarget (openregister has them in Kernel\Contracts\Value)	session-20261114T075643-acecaad6	2026-11-15T16:05:52Z
+review:hermiq:1322:cc3f40d6	BLOCK: value classes imported from a namespace OpenRegister main does not have	session-20261115T152554-949e9403	2026-11-15T16:06:05Z
+build:opencatalogi:woo-request-intake-hands-over-to-dossiq:c3	built 3.2 (+sweep of stamped requests), 4.1, 5.1, 5.3, 5.4 on PR #2677, head 6373144b: counts+read-only flag stored by the step, readiness/settings show them, read-only listener on OR pre-save events, middleware 404 without dossiq / 410 when read-only, portal intake unavailable without dossiq, release notes; contracts keep component independence above base; suite 5727->5746 (2 inherited reds); lef	session-20261115T145535-3f9e5078	2026-11-15T16:06:21Z
+review:dossiq:3106:039c380f	GREEN: lint and vitest unchanged vs development (2 inherited failures)	session-20261115T152539-8dadb15a	2026-11-15T16:06:14Z
+review:hermiq:1578:816bbdb1	GREEN: patches apply, no new failures vs baseline	session-20261114T102637-6688951e	2026-11-15T16:06:24Z
+review:humaniq:874:6278788c	GREEN on its head; conflicts with development	session-20261114T102641-d4fd3e25	2026-11-15T16:06:31Z
+review:hermiq:1174:e5834a5e	GREEN: lock-only bump, 0 new failures (baseline 190 inherited)	session-20261115T154300-03b63424	2026-11-15T16:06:38Z
+review:humaniq:685:5020bb2b	GREEN: deps bump, test:js 210/211 (1 inherited)	session-20261115T155911-f0070087	2026-11-15T16:06:49Z
+review:filinq:1430:7097f298	GREEN: lock-only bump, unit 6765 OK before and after	session-20261115T154307-1fc2cc78	2026-11-15T16:06:53Z
+review:filinq:1849:88cc74e3	RED 1849 (9 failing interface-mock tests; conflicts with development)	session-20261115T142201-ea23e682	2026-11-15T16:07:08Z
+review:filinq:1848:ac00c57a	GREEN: equivalent audit call, suite clean on merged tree	session-20261115T142934-de7c51d0	2026-11-15T16:07:15Z
+review:hermiq:1579:dae558f0	RED: psalm 7.2.1 lock unsatisfiable under config.platform php 8.3; composer install fails	session-20261115T145533-2db61682	2026-11-15T16:07:23Z
+review:filinq:1311:f1d84cc5	GREEN: vitest 763/763; lockfile conflict with development	session-20261115T155915-84e5dc0a	2026-11-15T16:07:36Z
+review:hermiq:1308:ed66fcbf	GREEN: lock-only phpstan bump, unit suite identical to baseline	session-20261115T155904-a7df5bc0	2026-11-15T16:07:58Z
+review:humaniq:846:c4c11987	GREEN	session-20261115T142951-2463b4c4	2026-11-15T16:08:09Z
+review:hermiq:1307:81668700	GREEN: lock-only dev-tool bump, suite identical to baseline	session-20261115T155902-521936b1	2026-11-15T16:07:46Z
+review:hermiq:1175:ca7f829c	GREEN: patch bump; failures identical to baseline	session-20261115T154254-3d07b219	2026-11-15T16:08:23Z
+review:humaniq:667:3bb5749b	GREEN (dep bump, test:js unchanged vs development)	session-20261115T141023-b06d51da	2026-11-15T16:08:31Z
+review:humaniq:872:6b36a44a	CONFLICT (tests/bootstrap.php only, keep both blocks): code matches OpenRegister main; suite 4380 OK when resolved	session-20261115T145533-2db61682	2026-11-15T16:08:49Z
+review:humaniq:477:84c765e3	BLOCK: npm ci ERESOLVE, @conduction/nextcloud-vue peers @vueuse/core ^11||^14 vs ^15; development installs	session-20261114T085646-49a39060	2026-11-15T16:08:38Z
+review:dossiq:5281:5ba0c011	RED: tests left on old class names (1 fatal, 4 new failures)	session-20261115T152543-40aea993	2026-11-15T16:08:59Z
+review:hermiq:1321:048aeea9	CONFLICT: behaviour-faithful ObjectFindOptions migration, 24 files conflict with development	session-20261115T155902-d9805df0	2026-11-15T16:09:10Z
+review:launchpad:1098:1720a6d3	1098 GREEN (phpstan 2.3.5 clean, unit OK)	session-20261115T142134-badaaf30	2026-11-15T16:09:26Z
+review:hermiq:1188:b9df0394	GREEN: nextcloud/vue minor bump; vitest 1526 pass, 0 new	session-20261115T154407-94bf5f8c	2026-11-15T16:09:33Z
+review:hermiq:1133:05c6caa3	GREEN: stylelint minor bump; stylelint 0 errors, vitest 1526 passed	session-20261114T075643-acecaad6	2026-11-15T16:09:41Z
+review:hermiq:1193:67714a4e	GREEN (sass dev bump, vitest and build OK)	session-20261115T142949-9c6a3945	2026-11-15T16:09:51Z
+review:integriq:2562:a0c8e1bf	GREEN: vitest 2374/2374; peer-range note for @conduction/nextcloud-vue	session-20261115T155915-84e5dc0a	2026-11-15T16:10:03Z
+review:humaniq:686:03602584	GREEN: test:js 210/211, failure inherited from development	session-20261115T152554-949e9403	2026-11-15T16:10:15Z
+review:dossiq:3894:c91ec402	GREEN: dev-only phpmd 2.15->3.0 bump; suite unchanged vs development (19 inherited); phpmd runs the ruleset	session-20261115T145546-378b432a	2026-11-15T16:10:25Z
+review:humaniq:610:02e0a4dc	GREEN: @nextcloud/vue minor bump, test:js 210/211 (1 inherited), build ok	session-20261115T155921-aabf185f	2026-11-15T16:10:36Z
+review:humaniq:664:17ede803	GREEN: dep patch bump, JS failure inherited	session-20261114T102637-6688951e	2026-11-15T16:10:50Z
+review:humaniq:670:f378e8f1	RED: npm ci ERESOLVE, preset-env 8 needs @babel/core 8 (root pins 7)	session-20261115T155911-14cd078d	2026-11-15T16:11:11Z
+review:humaniq:1096:e60cc3a3	GREEN: lock-only phpstan bump; suite 4380 OK, phpstan 2.3.5 clean	session-20261115T145535-3f9e5078	2026-11-15T16:11:18Z
+review:humaniq:877:358453bf	BLOCK (imports save-option classes from a namespace openregister does not provide)	session-20261115T141023-b06d51da	2026-11-15T16:11:29Z
+review:hermiq:1167:8c40d8f8	RED: icon markup change breaks one golden fixture	session-20261115T152546-2c24b649	2026-11-15T16:11:40Z
+review:integriq:2992:365213f7	GREEN: axe-core minor dev bump; vitest 2374/2374	session-20261115T154254-3d07b219	2026-11-15T16:11:49Z
+review:humaniq:606:5bf20ffe	GREEN: dev lock bump, suite green, audit unchanged	session-20261114T102641-d4fd3e25	2026-11-15T16:11:56Z
+review:integriq:2924:bac62706	CONFLICT: unmergeable with development; dev added legacy-only helpers importing the deleted file; diff otherwise dead-code + comments	session-20261115T155903-abd003e3	2026-11-15T16:12:05Z
+review:integriq:2563:1c673cef	BLOCK (sbom only): runtime dep bump without sbom.cdx.json; npm ci, vitest 2374, build OK	session-20261115T145541-9d69768b	2026-11-15T16:12:16Z
+review:integriq:3047:1d492aea	BLOCK: RenderSelection imported from a namespace openregister does not have (stub masks it)	session-20261115T142934-de7c51d0	2026-11-15T16:12:26Z
+review:humaniq:687:bad2cefa	GREEN: install and build ok; 1 inherited JS test failure	session-20261114T085646-49a39060	2026-11-15T16:12:35Z
+review:filinq:1303:00345c6f	RED 1303: lock conflict with development, npm ci fails at head; needs regenerated lock	session-20261115T142958-341f60db	2026-11-15T16:12:51Z
+review:humaniq:876:284aab2c	BLOCK: wrong openregister namespace for ObjectPatch/ObjectFindTarget	session-20261115T154255-e54527e9	2026-11-15T16:12:52Z
+review:integriq:2654:86718a25	GREEN: spec-only change, merges clean	session-20261115T154254-3d07b219	2026-11-15T16:13:02Z
+review:keepiq:1500:1c81214a	GREEN: lock-only phpseclib 4.0.3 bump, suite 5213 OK on merge with development	session-20261115T152547-c779ca49	2026-11-15T16:13:05Z
+review:integriq:3050:ce4b1ee3	BLOCK: wrong namespace for BulkSaveOptions, bulk saves fail at runtime	session-20261115T152543-40aea993	2026-11-15T16:13:18Z
+review:integriq:2650:6bf97c5a	CONFLICT: 8 files; suite not runnable (missing php ext bcmath/soap in worker)	session-20261115T154300-03b63424	2026-11-15T16:13:29Z
+review:larpinq:853:e6fba787	GREEN: spec-only change; strict openspec warning noted	session-20261115T154407-94bf5f8c	2026-11-15T16:13:48Z
+review:integriq:2560:fd436abf	GREEN: devDep bump, vitest 2374 passed	session-20261115T154307-1fc2cc78	2026-11-15T16:14:03Z
+review:integriq:2994:6a706bf6	GREEN: vitest 2374/2374, build ok	session-20261115T155915-84e5dc0a	2026-11-15T16:14:19Z
+review:integriq:2652:7922fa98	CONFLICT: docs-only PR, ~37 add/add and rename conflicts with development	session-20261115T154258-dee2cc3d	2026-11-15T16:14:25Z
+review:integriq:3056:6773effd	RED: composer install fails, psalm 7 needs php ~8.3.16 vs config.platform 8.3	session-20261115T155911-14cd078d	2026-11-15T16:14:36Z
+review:integriq:2991:f5cb1fd7	RED: guzzle 8 breaks 4 tests (null auth refused in AuthenticationService, TransferException ctor, DSO golden)	session-20261115T152539-8dadb15a	2026-11-15T16:14:46Z
+review:filinq:1853:11051685	RED: 7 test failures from unadapted double; also conflicts with development	session-20261115T154329-16a67e2f	2026-11-15T16:15:09Z
+review:buildiq:1089:322d7e65	GREEN #1089: vitest 4667 passed before and after	session-20261115T152601-38767331	2026-11-15T16:15:04Z
+review:integriq:3053:86ebfa51	CONFLICT: 28 conflicted files against development	session-20261115T155903-abd003e3	2026-11-15T16:15:09Z
+review:integriq:3059:f3f45d92	GREEN: phpstan dev bump, phpstan clean on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:15:20Z
+review:integriq:3051:ffe4b87c	BLOCK: uses old Service\Object namespace for lock request classes (now Kernel\Contracts\Value, no alias); also conflicts with development	session-20261115T155904-a7df5bc0	2026-11-15T16:15:26Z
+review:launchpad:757:df60a474	757 BLOCK (stale lockfile, npm ci fails on the merge)	session-20261115T142134-badaaf30	2026-11-15T16:15:37Z
+review:integriq:2295:fb945bbd	BLOCK (conflict): lock conflict, head far behind development; needs recreate	session-20261114T075643-acecaad6	2026-11-15T16:15:47Z
+review:integriq:2716:a994c099	GREEN: vue patch bump; vitest 2374/2374	session-20261115T154254-3d07b219	2026-11-15T16:16:02Z
+review:launchpad:1099:6f005198	BLOCK: lock not installable under platform php 8.3	session-20261115T154255-e54527e9	2026-11-15T16:16:09Z
+review:launchpad:785:91201465	CONFLICT #785: 13 files conflict with development, no verdict on behaviour	session-20261115T152601-38767331	2026-11-15T16:16:17Z
+review:launchpad:776:7495f48c	BLOCK: obsolete, development already on nextcloud-vue 2.180.0 (PR has 2.60.0, conflicts)	session-20261115T155904-a7df5bc0	2026-11-15T16:16:24Z
+review:larpinq:721:94b57b97	GREEN: obsolete, development already has the same lock update (no-op merge)	session-20261115T154407-94bf5f8c	2026-11-15T16:16:32Z
+review:keepiq:1496:c1d424cc	GREEN: lock-only hydra-gates bump; suite 5213 OK	session-20261115T145535-3f9e5078	2026-11-15T16:16:42Z
+review:humaniq:875:0758d28b	BLOCK: wrong ObjectDeletion namespace (Kernel\Contracts\Value on OR main), plus merge conflict	session-20261115T152558-f97be55f	2026-11-15T16:16:52Z
+review:launchpad:673:6ba3c402	RED: gridstack 14 violates nextcloud-vue peer range (npm ci ERESOLVE); also conflicts	session-20261115T155903-abd003e3	2026-11-15T16:17:00Z
+review:integriq:3137:b8b9a97a	BLOCK: depends on openregister value objects not on main	session-20261115T142951-2463b4c4	2026-11-15T16:17:09Z
+review:integriq:2527:1cf364f6	BLOCK: obsolete lock bump, development already newer (would downgrade); conflict	session-20261115T155913-70cee771	2026-11-15T16:17:16Z
+review:integriq:2711:e9ef8372	GREEN: dev bump, vitest green, e2e specs load	session-20261114T102641-d4fd3e25	2026-11-15T16:17:28Z
+review:integriq:3058:73d0ebfe	BLOCK (sbom only): runtime lock bump without sbom.cdx.json; phpunit only inherited failures	session-20261115T145541-9d69768b	2026-11-15T16:17:46Z
+review:keepiq:1497:1c1ef76b	GREEN: phpstan patch bump; phpstan clean, unit 5213 OK	session-20261115T152552-0cb4306e	2026-11-15T16:17:59Z
+review:launchpad:755:03f2fd44	RED: npm ci ERESOLVE, coverage-v8 5 needs vitest 5 (vitest/ui stay 4.1.11)	session-20261115T152539-8dadb15a	2026-11-15T16:18:06Z
+review:launchpad:1038:8f31cf39	BLOCK: needs openregister StoreListing which is not on main	session-20261115T154300-03b63424	2026-11-15T16:18:15Z
+review:launchpad:788:470c789d	CONFLICT #788: 40 files, likely superseded by the engagement-announcements build on development	session-20261115T152601-38767331	2026-11-15T16:18:22Z
+review:integriq:3054:672f5082	BLOCK: value classes imported from a namespace OpenRegister main does not have	session-20261115T152554-949e9403	2026-11-15T16:18:35Z
+review:keepiq:697:4521a1c3	GREEN: no-op, development already has hydra-gates v1.18.0; merged tree identical to development	session-20261115T152547-c779ca49	2026-11-15T16:18:44Z
+review:keepiq:1499:95735770	GREEN: lock-only patch bump, 5213 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:18:52Z
+review:launchpad:819:9dcfeabe	GREEN: phpmd 3.0 dev bump, phpunit 4359 OK; note +15 phpmd findings	session-20261115T155903-abd003e3	2026-11-15T16:19:03Z
+review:larpinq:961:0c510953	GREEN: hydra-gates dev bump; phpunit 860 OK	session-20261115T154407-94bf5f8c	2026-11-15T16:19:22Z
+review:launchpad:984:2f958a94	BLOCK: wrong OpenRegister namespace for ObjectSaveOptions/ObjectFindTarget	session-20261115T155921-aabf185f	2026-11-15T16:19:46Z
+review:launchpad:977:dd835410	GREEN: phpunit 4359 OK, phpcs unchanged	session-20261115T155915-84e5dc0a	2026-11-15T16:20:02Z
+review:launchpad:760:cdb3d779	760 GREEN (npm ci ok, vitest 2578 pass)	session-20261115T142134-badaaf30	2026-11-15T16:20:15Z
+review:hermiq:1319:7dd547c6	BLOCK: calls a processMessage(request:) signature OpenRegister does not have; stub hides it; conflicts with development	session-20261115T142934-6cab0c24	2026-11-15T16:20:39Z
+review:launchpad:832:0ef99698	GREEN (openspec-only), but conflicts with development archive moves	session-20261115T155904-a7df5bc0	2026-11-15T16:20:45Z
+review:launchpad:787:c954ea2d	CONFLICT: 19 conflicted paths, stacked branch partly already on development	session-20261115T155903-abd003e3	2026-11-15T16:20:55Z
+review:humaniq:669:3a6be5bd	GREEN: vue-router minor; build ok; test:js 210/211, 1 inherited	session-20261115T154316-34f0db35	2026-11-15T16:21:06Z
+review:learniq:1163:a7126f01	RED 1163: obsolete, development already has dompurify 3.4.17; lock conflict	session-20261115T142958-341f60db	2026-11-15T16:21:14Z
+review:integriq:2671:1ab1068a	BLOCK: phpmd 3 raises reported violations 158->186 vs existing baseline; tests unchanged	session-20261115T155902-521936b1	2026-11-15T16:21:22Z
+review:launchpad:833:62b5ba52	CONFLICT: 84 files incl. routes.php and src/personal.js (deleted on development)	session-20261115T154254-3d07b219	2026-11-15T16:21:30Z
+review:integriq:3126:da5c460d	BLOCK: uses ResolvedConsumer shape that openregister main does not have (stubs mask it)	session-20261115T142934-de7c51d0	2026-11-15T16:21:43Z
+review:keepiq:1498:65127fcb	BLOCK (psalm 7.1 unsatisfiable under config.platform php 8.3; composer install fails)	session-20261115T141023-b06d51da	2026-11-15T16:21:51Z
+review:learniq:864:9226e150	GREEN: no-op, development already at hydra-gates v1.18.0	session-20261115T155902-521936b1	2026-11-15T16:22:07Z
+review:launchpad:763:832b5d0a	RED: npm ci ERESOLVE, @vitest/ui 5 vs vitest 4	session-20261115T154300-03b63424	2026-11-15T16:22:17Z
+review:launchpad:784:f46ccf4d	CONFLICT: development already has a different build of launcher-tile-sorting; PR sound alone (15 specs pass)	session-20261115T145533-2db61682	2026-11-15T16:22:26Z
+review:launchpad:653:0c8c8740	RED: npm ci ERESOLVE, babel-config 2 needs Babel 8	session-20261114T102641-d4fd3e25	2026-11-15T16:22:33Z
+review:integriq:2714:45199b02	GREEN: vitest and build pass	session-20261115T152546-2c24b649	2026-11-15T16:22:43Z
+review:keepiq:1195:3f2200c4	BLOCK: phpmd 3 changes gate findings 7->13 and deprecates the CLI form used	session-20261114T102637-6688951e	2026-11-15T16:22:54Z
+review:integriq:2744:58fef09b	GREEN: prettier output identical to development	session-20261115T145555-b33410db	2026-11-15T16:23:00Z
+review:learniq:2133:743baa5c	BLOCK: ObjectDeletion/ObjectFindTarget imported from a namespace openregister does not have	session-20261115T142934-de7c51d0	2026-11-15T16:23:07Z
+review:learniq:2134:189e76b4	BLOCK (imports save-option classes from a namespace openregister does not provide)	session-20261115T141023-b06d51da	2026-11-15T16:23:14Z
+review:larpinq:948:89e07f9a	GREEN: copy-only rename, vitest 553/553, l10n gates OK	session-20261115T154311-e8600d84	2026-11-15T16:23:27Z
+review:learniq:2166:290fc8b6	BLOCK: builds StoreDescriptor from StoreListing/StoreSharing, which OpenRegister main does not have; would break the course store at runtime	session-20261115T145533-2db61682	2026-11-15T16:23:39Z
+review:launchpad:756:a464d5db	GREEN: dev lock bump, suite green	session-20261115T154258-dee2cc3d	2026-11-15T16:23:45Z
+review:learniq:2132:5ccb8d0b	CONFLICT (60 files with development); change itself correct vs openregister main; recorded for a fix	session-20261115T142134-badaaf30	2026-11-15T16:23:59Z
+review:learniq:1883:9e6045c2	CONFLICT: 3 lib/Portal files vs development constants refactor; behaviour per own change	session-20261115T155915-84e5dc0a	2026-11-15T16:24:22Z
+review:integriq:2710:8b1d42d4	GREEN: lockfile bump, no new failures	session-20261115T142149-1d09fceb	2026-11-15T16:24:33Z
+review:integriq:3057:a972c60e	GREEN: lock-only hydra-gates 1.19 dev bump; suite identical to development (7 inherited)	session-20261115T145546-378b432a	2026-11-15T16:24:29Z
+review:opencatalogi:1888:0a19c236	CONFLICT: merge with development conflicts in 5 lib files; head green; behaviour matches spec	session-20261114T085646-49a39060	2026-11-15T16:24:41Z
+review:learniq:1158:bb9f61d9	GREEN: dev-only prettier bump, JS unit 9 inherited failures, no new	session-20261115T152547-c779ca49	2026-11-15T16:24:47Z
+review:opencatalogi:1889:38ce8706	GREEN (conflicts with development noted)	session-20261115T151007-45079d32	2026-11-15T16:25:05Z
+review:opencatalogi:2650:b0dd47d9	stale	session-20261115T154316-34f0db35	2026-11-15T16:25:15Z
+review:larpinq:877:339de0c7	GREEN: ocp dev bump, 860 tests OK	session-20261115T155913-70cee771	2026-11-15T16:25:26Z
+review:launchpad:885:04779dd2	CONFLICT #885: 5 files conflict with development	session-20261115T152601-38767331	2026-11-15T16:25:34Z
+review:learniq:1882:b05df18f	RED: employer portal manifest golden not updated for new field labels	session-20261115T152558-f97be55f	2026-11-15T16:25:43Z
+review:launchpad:880:04f9f39f	GREEN: ocp patch bump, suite identical	session-20261114T075643-acecaad6	2026-11-15T16:25:53Z
+review:learniq:2127:6e8befed	GREEN: lock-only dev bump; 1 inherited failure	session-20261115T154254-3d07b219	2026-11-15T16:26:01Z
+review:learniq:1165:ffd74a05	CONFLICT: lock conflict, superseded (development locks vue 3.5.45)	session-20261115T154307-1fc2cc78	2026-11-15T16:26:08Z
+review:opencatalogi:2416:bacd96a1	CONFLICT: 4 files conflict with development; diff itself correct	session-20261115T154258-dee2cc3d	2026-11-15T16:26:24Z
+review:larpinq:960:f38d0e35	GREEN: phpstan bump, phpstan clean, unit 860 OK	session-20261115T155911-f0070087	2026-11-15T16:26:37Z
+review:learniq:1166:0748af52	CONFLICT/obsolete: development already has parser 8.72.2	session-20261115T155915-84e5dc0a	2026-11-15T16:26:35Z
+review:larpinq:962:6aa0ff3d	RED: composer install fails, psalm 7 needs php ~8.3.16 vs config.platform 8.3	session-20261115T155911-14cd078d	2026-11-15T16:27:02Z
+build4:openregister:tasks-progress-report:c2	already building: build/tasks-progress-report-3 (another worker, 1.1-4.1) landed while this run was paused; local 1.1/1.2 work dropped unpushed	session-20261114T095641-533e2a00	2026-11-15T16:27:10Z
+review:launchpad:761:c14f910d	BLOCK: npm ci ERESOLVE, @vitest/* left at 4	session-20261115T154255-e54527e9	2026-11-15T16:27:04Z
+review:opencatalogi:2241:9f0cfa47	GREEN: faithful refactor, suite at baseline	session-20261115T155902-d9805df0	2026-11-15T16:27:19Z
+review:opencatalogi:2541:87b928f1	BLOCK: find() named args do not match openregister main ObjectService::find; repair hands nothing	session-20261114T085646-49a39060	2026-11-15T16:27:28Z
+review:opencatalogi:2419:cbcc348d	BLOCK: wrong namespace for OpenRegister save value objects (Kernel\Contracts\Value)	session-20261114T075643-acecaad6	2026-11-15T16:27:36Z
+review:learniq:1167:4b75be29	GREEN: sass dev bump, build ok, JS unit 9 inherited failures, none new	session-20261115T160928-e92ec17a	2026-11-15T16:27:43Z
+review:opencatalogi:2418:6a6c6361	BLOCK: needs openregister #9103 on main first (named arg target: unknown on current main)	session-20261115T154258-dee2cc3d	2026-11-15T16:27:55Z
+review:opencatalogi:2244:58b3e9f1	GREEN: behaviour-preserving refactor; golden passes pre and post; suite green; conflicts with development in DirectoryServiceTest.php	session-20261115T145546-378b432a	2026-11-15T16:28:03Z
+review:launchpad:753:51b86dbd	BLOCK: lockfile out of sync, npm ci fails	session-20261115T154314-8216dc98	2026-11-15T16:28:19Z
+review:learniq:1169:9731f440	GREEN: webpack minor bump, production build compiles	session-20261115T155903-abd003e3	2026-11-15T16:28:27Z
+review:pipelinq:1936:27cdae0d	CONFLICT #1936: obsolete, development already newer	session-20261115T152601-38767331	2026-11-15T16:28:39Z
+review:learniq:2126:af7f7379	GREEN: phpstan clean, no new failures	session-20261114T102637-6688951e	2026-11-15T16:28:48Z
+review:opencatalogi:2415:da40ef23	CONFLICT: PublicationsController conflicts with development (call moved to rendered()); diff itself correct	session-20261115T155911-14cd078d	2026-11-15T16:28:56Z
+review:learniq:1903:3f6c3b60	GREEN: dev-only ocp bump; installs, suite has only the inherited failure	session-20261115T145533-2db61682	2026-11-15T16:29:09Z
+review:opencatalogi:2259:6c778379	BLOCK: superseded by development's own refactor, conflicts	session-20261114T102641-d4fd3e25	2026-11-15T16:29:29Z
+review:opencatalogi:2250:626634c5	GREEN: equivalent refactor, 0 new failures	session-20261115T154300-03b63424	2026-11-15T16:29:17Z
+review:learniq:1884:16330d9e	no verdict: conflicts with development in 11 files; recorded CONFLICT for the fix lane	session-20261115T142958-341f60db	2026-11-15T16:29:33Z
+review:opencatalogi:1894:552c9a7c	CONFLICT: openspec-only PR conflicts with development in 6 files	session-20261114T085646-49a39060	2026-11-15T16:29:42Z
+review:pipelinq:2957:0a390a39	BLOCK: conflicts in 19 files; development already has a separate build of the same change (153dff0e7); access behaviour itself unchanged	session-20261114T095641-533e2a00	2026-11-15T16:29:52Z
+review:pipelinq:2187:ebdded89	GREEN: phpmd 3 runs, unit suite green; phpmd findings 62->95 (mostly attribute false positives)	session-20261115T154254-3d07b219	2026-11-15T16:29:58Z
+review:pipelinq:2557:5d12aa50	GREEN: ocp patch bump, 8890 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:30:06Z
+review:opencatalogi:2417:a2892ce3	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget vs openregister main; 1 new test failure	session-20261115T145555-b33410db	2026-11-15T16:30:13Z
+review:opencatalogi:2674:8c2edb69	GREEN: per-spec build of tasks 1.1-2.2; 2 inherited unit failures, none new	session-20261115T152547-c779ca49	2026-11-15T16:30:20Z
+review:pipelinq:2504:e4cc137c	BLOCK: superseded by the build already on development; conflicts in every file	session-20261115T154311-e8600d84	2026-11-15T16:30:32Z
+review:pipelinq:2501:81b7343b	GREEN: unit 8890/0 fail	session-20261115T154314-8216dc98	2026-11-15T16:30:46Z
+review:learniq:1162:18f186f9	GREEN	session-20261115T142951-2463b4c4	2026-11-15T16:30:53Z
+review:pipelinq:2966:ff290970	CONFLICT: ExchangeRateService/leadCurrency.js conflict with development refactor; diff otherwise as specified	session-20261115T154307-1fc2cc78	2026-11-15T16:31:05Z
+review:learniq:1727:937a0671	GREEN: vobject 5 dev bump; phpunit 6848, 1 inherited failure, 0 new	session-20261115T154407-94bf5f8c	2026-11-15T16:31:19Z
+review:opencatalogi:2682:4bf71fcd	RED: 8 new vitest failures in mainEntry.spec.js (unmocked new widget import)	session-20261115T155915-84e5dc0a	2026-11-15T16:31:23Z
+review:pipelinq:2546:ed45af1a	CONFLICT with development (l10n + structureProfile page count); content config-only, no defect found	session-20261115T145535-3f9e5078	2026-11-15T16:31:30Z
+review:pipelinq:2565:b4af6499	CONFLICT: 149 files conflict with development; no behaviour verdict	session-20261115T160928-e92ec17a	2026-11-15T16:31:37Z
+review:pipelinq:2593:6a42067a	CONFLICT (l10n en/nl and two count specs); change sound per spec, vitest 1028 green on head	session-20261115T145533-2db61682	2026-11-15T16:31:52Z
+review:pipelinq:2969:bd583b9e	no verdict: conflicts; backend already on development via 83837c6f7, only the Tickets phone search is new; recorded CONFLICT	session-20261115T142958-341f60db	2026-11-15T16:32:03Z
+review:pipelinq:2964:65b04b14	CONFLICT: behaviour OK vs spec, no new failures on head; merge conflict with development	session-20261114T102637-6688951e	2026-11-15T16:32:12Z
+review:pipelinq:2482:99a4545c	BLOCK: new deleteObject call uses the old openregister signature; conflicts with development	session-20261115T145555-b33410db	2026-11-15T16:32:22Z
+review:opencatalogi:1892:6953eb3c	GREEN: openspec notes only	session-20261115T142149-1d09fceb	2026-11-15T16:32:48Z
+review:learniq:1168:41eae3eb	BLOCK: npm ci ERESOLVE (nextcloud-vue peers vueuse ^11||^14); conflicts with development	session-20261115T152552-0cb4306e	2026-11-15T16:33:05Z
+review:pipelinq:2498:acffd38a	CONFLICT #2498: 17 files, likely superseded by the build on development	session-20261115T152601-38767331	2026-11-15T16:33:01Z
+review:opencatalogi:2407:21b8b65a	GREEN	session-20261115T151007-45079d32	2026-11-15T16:33:10Z
+review:learniq:1881:5f883140	GREEN (intended fix; conflicts with development)	session-20261115T141023-b06d51da	2026-11-15T16:33:22Z
+review:pipelinq:3149:3c7ae62d	BLOCK: wrong ObjectPatch/ObjectFindTarget namespace	session-20261115T142951-2463b4c4	2026-11-15T16:33:33Z
+review:pipelinq:3085:34857519	GREEN: lock-only dev-tool bump, 8890 tests green merged with development	session-20261114T095641-533e2a00	2026-11-15T16:33:40Z
+review:pipelinq:3084:01208829	GREEN: phpstan bump, analysis clean, suite green	session-20261115T154258-dee2cc3d	2026-11-15T16:33:56Z
+review:pipelinq:2959:0f2f1b3f	CONFLICT #2959: 16 files, partly on development already	session-20261115T152601-38767331	2026-11-15T16:34:12Z
+merge:pipelinq:3835:cef49b87	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:23Z
+merge:pipelinq:3870:787e050f	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:26Z
+merge:pipelinq:3873:e74d58c4	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:30Z
+review:planninq:1037:f2da0a3f	CONFLICT: trivial l10n/en.js+en.json, keep both; change itself fine	session-20261115T154300-03b63424	2026-11-15T16:34:32Z
+merge:pipelinq:3875:9f4b8976	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:43Z
+review:pipelinq:2963:59117082	BLOCK: duplicate of the change already built on development; conflicts in 10 files; likely obsolete	session-20261115T145546-378b432a	2026-11-15T16:34:52Z
+review:pipelinq:2503:8913d60e	BLOCK (conflict): info.xml + l10n conflict with development; the code change itself tightens access and is consistent	session-20261114T075643-acecaad6	2026-11-15T16:35:15Z
+review:pipelinq:3083:ab965a9c	GREEN: vitest 5343/5344, 1 inherited failure	session-20261115T155911-14cd078d	2026-11-15T16:35:36Z
+review:launchpad:961:6afb1922	GREEN: copy-only rename; vitest 2578 OK	session-20261115T145541-9d69768b	2026-11-15T16:35:47Z
+review:pipelinq:3153:22a0348f	BLOCK: OpenRegister save-option classes imported from old namespace	session-20261115T155921-aabf185f	2026-11-15T16:35:53Z
+review:pipelinq:3281:c765403c	BLOCK: lock not installable under config.platform php 8.3	session-20261115T142951-2463b4c4	2026-11-15T16:36:02Z
+review:pipelinq:3142:e7c6f9ad	GREEN: spec-only, validates	session-20261114T102637-6688951e	2026-11-15T16:36:26Z
+review:learniq:1160:0f92c2da	BLOCK: obsolete, development already has @nextcloud/vue 9.14.1; lock conflict	session-20261115T142934-6cab0c24	2026-11-15T16:36:56Z
+review:pipelinq:2507:ecccdb3f	BLOCK: obsolete, development already on nextcloud-vue 2.180 with these changes	session-20261115T145555-b33410db	2026-11-15T16:36:49Z
+review:pipelinq:2566:0b0d7736	CONFLICT: 217 conflicting files with development	session-20261114T085646-49a39060	2026-11-15T16:37:03Z
+review:pipelinq:2458:9c135002	BLOCK: 18-file conflict with development; code clean	session-20261115T154255-e54527e9	2026-11-15T16:37:12Z
+review:learniq:2123:eeb728d3	GREEN: class names match openregister main; suite clean apart from an unrelated generated-file check	session-20261115T142934-de7c51d0	2026-11-15T16:37:19Z
+review:planninq:869:0cf3f1b0	GREEN (conflicts with development, needs rebase): stylelint dev bump clean	session-20261115T155921-aabf185f	2026-11-15T16:37:32Z
+review:pipelinq:3145:76b4afe3	CONFLICT: faithful ObjectFindOptions migration, 95 files conflict with development	session-20261115T155902-d9805df0	2026-11-15T16:37:42Z
+review:opencatalogi:2263:a4046c90	GREEN: behaviour-preserving extract, no new failures (2 inherited)	session-20261115T155913-70cee771	2026-11-15T16:37:51Z
+review:pipelinq:3150:1a3b033c	CONFLICT: 2 stub files vs development; change itself sound	session-20261115T155915-84e5dc0a	2026-11-15T16:38:05Z
+review:planninq:1066:acc56236	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget (main: Kernel\Contracts\Value)	session-20261115T155911-14cd078d	2026-11-15T16:38:56Z
+review:pipelinq:3147:b0a445eb	BLOCK: stubs for unmerged openregister #9103; conflict; PartyReferenceMover caller incompatible	session-20261115T154254-3d07b219	2026-11-15T16:38:26Z
+review:planninq:1070:e04ed25c	GREEN: hydra-gates minor bump; no new failing gate, unit suite identical	session-20261114T075643-acecaad6	2026-11-15T16:39:06Z
+review:planninq:1069:9cba21b3	RED: lock not installable (psalm 7.1 needs php>=8.3.16, platform pinned 8.3)	session-20261115T154407-94bf5f8c	2026-11-15T16:39:27Z
+review:pipelinq:3146:97b91f19	RED: 6 newer development Flow tests call the old execute() form; lib change itself correct	session-20261115T145535-3f9e5078	2026-11-15T16:39:45Z
+review:pipelinq:2108:6bc5f8a0	BLOCK: gridstack 14 outside nextcloud-vue peer range	session-20261115T152546-2c24b649	2026-11-15T16:39:59Z
+review:planninq:871:7d17dd48	BLOCK: lockfile conflict only; lint clean	session-20261115T154255-e54527e9	2026-11-15T16:40:11Z
+review:planninq:1067:e3dc5a7a	CONFLICT (2 files); migration correct vs openregister main	session-20261115T142134-badaaf30	2026-11-15T16:40:17Z
+review:planninq:908:07c0fdd2	GREEN: playwright bump, npm ci ok, vitest and phpunit green	session-20261115T154258-dee2cc3d	2026-11-15T16:40:32Z
+review:launchpad:759:4d40c072	RED: npm ci fails, lockfile out of sync (vite/esbuild missing)	session-20261115T154329-16a67e2f	2026-11-15T16:40:52Z
+review:planninq:1065:53961d3e	BLOCK: targets a searchObjectsBySlug signature openregister main does not have	session-20261114T102641-d4fd3e25	2026-11-15T16:40:53Z
+review:pipelinq:3088:3135c0b1	GREEN: eslint bump, lint output unchanged	session-20261115T154311-e8600d84	2026-11-15T16:41:04Z
+review:planninq:933:9b784ac7	CONFLICT: 10 files incl. 6 add/add with already-landed sibling work	session-20261115T154300-03b63424	2026-11-15T16:41:12Z
+review:portaliq:1071:be71af8c	CONFLICT: 21-file conflict with development, which already holds both features in another implementation (likely superseded); no defect found in the code itself	session-20261115T152547-c779ca49	2026-11-15T16:41:21Z
+review:planninq:930:bddd2139	CONFLICT: 10 files incl. 6 add/add against development's own ProjectAction classes	session-20261115T154307-1fc2cc78	2026-11-15T16:41:32Z
+review:portaliq:1011:584f0c5d	BLOCK: npm ci ERESOLVE, gridstack 14 outside the component library peer range	session-20261115T142934-6cab0c24	2026-11-15T16:41:46Z
+review:pipelinq:3092:fbd3e247	RED: 29 vitest suites fail to load (nested p-queue in @nextcloud/vue 9.14.1); baseline 1 inherited failure	session-20261115T155903-abd003e3	2026-11-15T16:42:02Z
+review:portaliq:1353:5d73ef4a	GREEN: phpmd 3 runs, unit suite green; phpmd findings 85->102	session-20261115T154254-3d07b219	2026-11-15T16:42:12Z
+review:planninq:909:373cbce5	BLOCK (sbom only): runtime marked bump without sbom.cdx.json; vitest 3566 OK	session-20261115T145541-9d69768b	2026-11-15T16:42:26Z
+review:planninq:731:b7c438a1	RED: peer conflict with nextcloud-vue, npm ci fails	session-20261115T151007-45079d32	2026-11-15T16:42:46Z
+review:planninq:1068:0077bc6d	GREEN: phpstan findings unchanged, suite OK	session-20261115T142149-1d09fceb	2026-11-15T16:42:53Z
+review:portaliq:1594:7d7e983b	CONFLICT with development (package files, manifest, tasks.md); content UI-only, own spec 8/8	session-20261115T145535-3f9e5078	2026-11-15T16:43:02Z
+review:planninq:1096:c5dc8b42	BLOCK: depends on openregister value objects not on main	session-20261115T142951-2463b4c4	2026-11-15T16:43:36Z
+review:portaliq:1684:6cc52719	RED: CmsReaderTest::testThePageShapesAreServedAsRecorded pins the old page shape	session-20261115T154307-1fc2cc78	2026-11-15T16:43:17Z
+review:portaliq:1685:d8c2567a	GREEN: manifest UI change, specs no new failures	session-20261115T154258-dee2cc3d	2026-11-15T16:43:47Z
+review:pipelinq:3271:65502a07	BLOCK: AggregationQuery::create has no layout param on OR main/development; reports would throw	session-20261115T152552-0cb4306e	2026-11-15T16:44:02Z
+review:portaliq:1152:a324482e	CONFLICT: likely superseded by the draft feature already on development	session-20261114T102637-6688951e	2026-11-15T16:44:17Z
+review:portaliq:1474:8e1a7978	CONFLICT: 53 files, many add/add (partly landed already)	session-20261115T154254-3d07b219	2026-11-15T16:44:32Z
+review:portaliq:1680:b1f0459b	BLOCK: 4-file conflict; code and tests clean	session-20261115T154255-e54527e9	2026-11-15T16:44:39Z
+review:pipelinq:2103:adb97dd8	GREEN: vueuse 15 unused directly; vitest 5343/5344 with 1 inherited failure; conflicts in package.json/lock	session-20261115T145546-378b432a	2026-11-15T16:45:11Z
+review:portaliq:1354:23330bb3	BLOCK: merged lock out of sync (pinia), npm ci EUSAGE	session-20261115T142934-6cab0c24	2026-11-15T16:45:26Z
+review:portaliq:1606:e4a6d0b1	BLOCK: PartyTreeSource uses openregister signatures main lacks; tree mandates refused at runtime	session-20261114T102641-d4fd3e25	2026-11-15T16:45:33Z
+review:portaliq:1467:a56bbcbc	CONFLICT: 31 files; development already has a parallel build of portal-identity-from-the-admin	session-20261115T155902-d9805df0	2026-11-15T16:45:46Z
+review:portaliq:1992:df536a4a	BLOCK: narrows supported openregister versions; OR main restored the old call form	session-20261114T102637-6688951e	2026-11-15T16:45:52Z
+review:portaliq:1848:cc4102c9	RED: 3 new unit failures on merged tree	session-20261115T151007-45079d32	2026-11-15T16:46:06Z
+review:portaliq:1468:09694f2e	CONFLICT (35 files, stale since 10 Oct)	session-20261115T142134-badaaf30	2026-11-15T16:46:32Z
+review:planninq:1064:54981d9f	RED: conflicts with development; new old-form find() callers in ProjectCopyService/ProjectExportService uncovered	session-20261115T154316-34f0db35	2026-11-15T16:46:42Z
+review:portaliq:1995:277966b3	BLOCK: wrong OpenRegister namespace for ObjectDeletion/ObjectFindTarget; 5 conflicts	session-20261115T154254-3d07b219	2026-11-15T16:46:52Z
+merge:filinq:2069:e87c8717	merge3 tree of 11 filinq PRs: merged=2 red=1 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T16:47:18Z
+review:planninq:910:b94a9117	GREEN: dev-only phpmd 3; suite identical; findings 25->22	session-20261114T075643-acecaad6	2026-11-15T16:47:37Z
+review:pipelinq:3280:57a83e99	GREEN: phpstan 2.3.5 clean on the project, suite 8890 OK	session-20261115T145533-2db61682	2026-11-15T16:47:32Z
+review:portaliq:1673:e715241c	CONFLICT: zuiddrecht.json seed and manifest.json conflict with development	session-20261115T155903-abd003e3	2026-11-15T16:47:42Z
+review:portaliq:1229:8b002219	CONFLICT: comment-only PR conflicts in Application.php	session-20261115T145541-9d69768b	2026-11-15T16:48:02Z
+review:portaliq:2349:124b9f86	2349 GREEN (phpstan clean)	session-20261115T142134-badaaf30	2026-11-15T16:48:12Z
+review:portaliq:1069:4ecba22b	BLOCK: superseded by development's own build of the change	session-20261115T152546-2c24b649	2026-11-15T16:48:22Z
+review:planninq:918:a2f30b52	GREEN: phpunit 1222 OK, phpstan same as development	session-20261115T145555-b33410db	2026-11-15T16:48:52Z
+review:portaliq:2350:e25d2cb7	RED: psalm 7.2.1 lock unsatisfiable with config.platform php 8.3	session-20261115T155902-d9805df0	2026-11-15T16:49:02Z
+review:shillinq:1900:d987d5f1	CONFLICT: 13 files conflict with development; no defect seen in the reverse-charge diff	session-20261115T154316-34f0db35	2026-11-15T16:49:12Z
+review:portaliq:1006:0bb7956e	BLOCK: npm ci ERESOLVE, nextcloud-vue peers @vueuse/core ^11||^14	session-20261114T085646-49a39060	2026-11-15T16:49:36Z

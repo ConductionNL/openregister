@@ -5,7 +5,7 @@ Composer: only `bash ~/q/bin/composer-cloud.sh <checkout>`, never plain composer
 
 LOOP (state commands run in ~/q after `source bin/state.sh; source bin/work.sh`):
 1. `git clone -q --single-branch --branch sig-pipeline/state https://github.com/ConductionNL/openregister ~/q`; `W=$(worker_slot)`; no slot: end.
-2. `row=$(task_claim $W "$LAST" "fix,review,measure,verify,gap,cover,build")` (LAST = app of your previous task, empty at first: same-app tasks reuse its vendor); exit 1 = empty queue: `lease_release $W`, end with your final message. Row (tabs): id type app base target payload created; payload is `k=v;k=v`.
+2. `row=$(task_claim $W "$LAST" "fix,verify,review,measure,gap")` (15 Nov, Ruben: merge the open PRs first; cover and build are paused until told otherwise) (LAST = app of your previous task, empty at first: same-app tasks reuse its vendor); exit 1 = empty queue: `lease_release $W`, end with your final message. Row (tabs): id type app base target payload created; payload is `k=v;k=v`.
 3. Work in a fresh ~/w/t-<n> per the type; delete it after (keep ~/w/vendor-* and ~/w/zips). Every ~90 min: `task_renew <id>; lease_renew $W 360`.
 4. `task_done <id> "<one-line result>"` (cannot finish: `failed: <why>`; head moved: `stale`), set LAST to its app, then step 2.
 Never wait, poll, sleep, subscribe to PR events or schedule check-ins.
