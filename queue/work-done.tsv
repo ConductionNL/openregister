@@ -14373,3 +14373,4 @@ fix:planninq:910:b94a9117	fixed: development merged; sbom already current (dev-o
 fix:integriq:3050:ce4b1ee3	namespace fixed to Kernel\Contracts\Value; pushed c9ca8d22, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T18:59:45Z
 review:filinq:1305:72084b47	GREEN: twig 3.30.0 lock bump, unit suite green	session-20261115T183029-6c0565bd	2026-11-15T18:59:57Z
 review:hermiq:1322:34ea3522	GREEN: call-shape migration only, no new failures vs development baseline	session-20261115T183025-d89c1e14	2026-11-15T19:00:09Z
+review:decidiq:1946:e54aa745	GREEN decidiq#1946: 4624 OK merged	session-20261115T174739-b14c2df4	2026-11-15T19:00:44Z
