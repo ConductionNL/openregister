@@ -12357,3 +12357,4 @@ verify:dossiq:6538:466ad8d7	GREEN: tests only, unit 17415, 0 new failures over 1
 fix:opencatalogi:2673:035193a4	inherited: rerun shows maintainability 5=5; only opensourcehealth 4->3 is worse, and plain development fails the same floor (dependency health vs live registries, PR touches no lockfile); no change pushed	session-20261114T231738-b43a6a63	2026-11-15T00:41:10Z
 review:opencatalogi:2648:3eba922f	GREEN	session-20261114T221759-cd5c5678	2026-11-15T00:41:06Z
 cover:planninq:e1c9866dmcf99:e372e6ff	already done: lib/Event at 100% lines (26/26)	session-20261115T001759-0085793c	2026-11-15T00:41:21Z
+cover:opencatalogi:fc83bfb1md382:js5e878140	PR #2721: 10 jest tests; Retention 39/39, CaseTypeResync 39/39, DeleteAttachment 28/29; dirs 81.1% -> 91.7% lines; jest 1476 -> 1486, same inherited failures	session-20261114T225452-4fcfea7f	2026-11-15T00:41:40Z
