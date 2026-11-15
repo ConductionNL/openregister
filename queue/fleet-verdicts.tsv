@@ -11254,3 +11254,4 @@ dossiq	6527	63dd4276d3849d590fa37fbf4bbb5b19ecd32aea	REVERIFY	worker-26	merged d
 launchpad	1226	bf28a8ea762cd5e8c367aae0a501b3bc2d607537	GREEN	worker-27	phpunit 4288 tests (baseline 4235, 1 inherited OpenApiStabilityTest failure), vitest 266 files/2539 passed; no new failures; implements launcher-tile-launch-types per its specs
 launchpad	1212	84ba255f0d85069673202ab178b30f3adf81021e	GREEN	worker-06	unit 4260 tests, baseline 4235 with 1 failure (OpenApiStabilityTest::testEveryOperationIsPublicOrInternal), no new failures; vitest 2533/2533 (baseline 2513); implements launcher-app-catalogue, admin routes admin-guarded plus action checks
 integriq	3651	d86c3cd962e1d9ff3fb04680f58bca645406a26a	GREEN	worker-36	tests-only; unit 9273 run on tree, baseline 9223 with 7 inherited failures, 0 new
+integriq	3652	6fe7405c3f1c604cc42178597a5abdbd54dc4e8b	GREEN	worker-36	tests-only; unit 9273 run on tree, baseline 9223 with 7 inherited failures, 0 new
