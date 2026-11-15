@@ -13621,3 +13621,4 @@ review:opencatalogi:2263:a4046c90	GREEN: behaviour-preserving extract, no new fa
 review:planninq:1066:acc56236	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget (main: Kernel\Contracts\Value)	session-20261115T155911-14cd078d	2026-11-15T16:38:56Z
 review:pipelinq:3147:b0a445eb	BLOCK: stubs for unmerged openregister #9103; conflict; PartyReferenceMover caller incompatible	session-20261115T154254-3d07b219	2026-11-15T16:38:26Z
 review:planninq:1070:e04ed25c	GREEN: hydra-gates minor bump; no new failing gate, unit suite identical	session-20261114T075643-acecaad6	2026-11-15T16:39:06Z
+review:planninq:1069:9cba21b3	RED: lock not installable (psalm 7.1 needs php>=8.3.16, platform pinned 8.3)	session-20261115T154407-94bf5f8c	2026-11-15T16:39:27Z
