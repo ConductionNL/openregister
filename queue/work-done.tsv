@@ -13691,3 +13691,4 @@ review:portaliq:1767:fc41a4fc	BLOCK: merged lock out of sync with development (n
 review:portaliq:1769:d443a45b	BLOCK: merged lock out of sync (pinia), npm ci EUSAGE	session-20261115T142934-6cab0c24	2026-11-15T16:53:20Z
 review:shillinq:2093:2cc2077c	CONFLICT: modify/delete on GRN detail component, spec and l10n conflicts	session-20261115T154258-dee2cc3d	2026-11-15T16:53:31Z
 review:portaliq:1843:0b799a1a	CONFLICT: parallel build of same change already partly on development	session-20261115T155915-84e5dc0a	2026-11-15T16:53:46Z
+review:portaliq:1657:489e5cbd	CONFLICT: manifest change sound but conflicts with development in src/manifest.json	session-20261115T152552-0cb4306e	2026-11-15T16:53:54Z
