@@ -12869,3 +12869,5 @@ cover:integriq:92114ab0m6759:075ad59c	already done: lib/Service/CaseSystem/ at 9
 verify:portaliq:2508:5c7cd01a	GREEN portaliq#2508: no new failures (php 5967, node 4 inherited)	session-20261115T021828-68c5f276	2026-11-15T02:26:19Z
 cover:openregister:7350e3efm1efa:053b65e7	PR #10581: lib/Db/MagicMapper 94.28% -> 95.5%; MagicTableIndexerCreateTest (6 tests) + @uses fixed in 18 risky tests; Db suite 5803->5809 OK	session-20261115T014829-0a32adc7	2026-11-15T02:26:24Z
 cover:openregister:7350e3efm1efa:b4a31049	PR #10582: JoinedColumnProjection + DeploymentOrigin, 7 tests; touched dirs 886->890 and 378->381, 0 failures	session-20261115T005141-9356bed0	2026-11-15T02:26:38Z
+cover:integriq:92114ab0m6759:fd3f82d2	PR #3656: 13 tests for GatewayDescriptor, InboundRouteReceipt, DigikoppelingBrokerResolver; no new failures	session-20261115T021830-aac3dc6e	2026-11-15T02:26:35Z
+cover:dossiq:069ee2d6madb6:67b29613	already done: lib/Service/Assistant/ at 98.9% lines (262/265) on development, above 95 target; no PR	session-20261115T015406-eecdf998	2026-11-15T02:26:42Z
