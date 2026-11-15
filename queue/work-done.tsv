@@ -13314,3 +13314,4 @@ review:buildiq:1261:901e0708	BLOCK: calls a searchObjectsBySlug(target:) form op
 review:decidiq:1467:26c28394	GREEN: dev-dep bump, vitest 2825 passed, coverage run ok	session-20261115T154300-03b63424	2026-11-15T15:45:44Z
 review:decidiq:1600:33021efc	BLOCK: obsolete lock downgrade (2.60.0 vs dev 2.135.0), conflicts; close as superseded	session-20261115T154316-34f0db35	2026-11-15T15:45:51Z
 review:buildiq:1094:85dea460	BLOCK: lockfile out of sync, npm ci fails	session-20261115T154314-8216dc98	2026-11-15T15:46:02Z
+review:buildiq:1262:c955fcfd	BLOCK: wrong LockRequest/UnlockRequest namespace, runtime class-not-found	session-20261115T142951-2463b4c4	2026-11-15T15:46:15Z
