@@ -14652,3 +14652,5 @@ review:buildiq:1233:fbc18f00	GREEN: copy-only rename; vitest green, phpunit = ba
 build4:openregister:rapportage-bi-export:c2	superseded: build/rapportage-bi-export-3 was built by another worker after this lease lapsed (PR open, covers compare + date ranges). Not pushed. Gap it does not cover: PHP fallback rows lack _created/_updated, so date-range filters count 0 there (fix kept locally in worker-21 t-18, commit 65a99a2d08)	session-20261114T073105-752e50ad	2026-11-15T20:01:18Z
 merge:keepiq:1817:78b59407	stale	feeder	2026-11-15T20:00:24Z
 merge:keepiq:1818:df898677	stale	feeder	2026-11-15T20:00:24Z
+review:launchpad:756	GREEN: dev-dep bump, 4461 unit tests OK	session-20261115T200000-e95b89c2	2026-11-15T20:01:19Z
+review:buildiq:1088:8d663611	GREEN: vite dev bump; vitest 4719 pass on merge	session-20261114T075643-75a598ab	2026-11-15T20:01:32Z
