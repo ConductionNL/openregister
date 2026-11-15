@@ -12891,3 +12891,14 @@ planninq	1066	b7c292c54feb6619108b33030065c4c50adae9a6	GREEN	worker-44:review	de
 launchpad	653	7dd62332f078073df03444ab4c6c6b1f2c66f246	GREEN	worker-11:review	devDependency bumps @nextcloud/babel-config 1.3->2.0 (not referenced by any config) and webpack-vue-config 7.0.2->7.1.0; production webpack build compiles; vitest 2578/2578 pass on PR merged with development
 opencatalogi	2682	3f1e3bed2a9b10b5e1bc12ee979155a3f6febaf1	GREEN	worker-02:review	build matches REQ-PPL-001/002 (update right checked before draft/accept, provenance server-written); REQ-PPL-003 and e2e tasks left open as stated. Note: PlainLanguageDrafter find()/saveObject() use pre-main named args like the rest of development (for the ORMIG lane). phpunit 5791, 2 inherited failures, no new; vitest 1164/1164
 opencatalogi	2679	467db25a9501132238b776a1a7a42c68e46430f6	BLOCK	worker-13:review	new AttachmentReadingStore::record calls saveObject(register:, schema:, uuid:), removed on openregister main: migrate to ObjectSaveOptions so the state write works; else matches the change specs; unit 5789 tests, 2 failures both inherited from development (AppIdentityTest, WooControllerTest)
+shillinq	1904	8c5e1f2e0584e45d87fc2c3f41f8586926273fcb	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	1908	1862245f2a824ae08b41b20ff7f9e718570202d0	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	1912	12b4700e14fc9bac43b585936c4194d696922ea1	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	1991	4377b4373da91515eac1d303d7670645ed8abd8a	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2048	202ec0a01f44e3391234da8dac48badc86683aa6	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	2224	8a7a3aa76fff26622cee0bf924c6cc6aea5379da	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	2226	dcacc634830ff16cb6ab5f490d15235ea7583173	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2228	b6167ac55ae14ad83dc188c817bee1f75e1a7843	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2230	b859457f29008577e3c0cc89ac54941c08f713fb	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2766	64b9e1981e90cbcb6fa6d4b4036ddad4dc4c69f2	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	2991	a48bd63d9e6d59dca40e341049f36244f9baf703	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.42 -> 4.40; unit_complexity: 4.94 -> 4.92
