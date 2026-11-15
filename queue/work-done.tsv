@@ -13718,3 +13718,4 @@ review:shillinq:2253:69b4e3e6	BLOCK: wrong ObjectDeletion namespace (Kernel\Cont
 review:shillinq:2767:c0cd6601	RED: psalm 7.2 lock uninstallable under config.platform php 8.3	session-20261115T155903-abd003e3	2026-11-15T16:57:46Z
 review:shillinq:2091:67b5afb6	BLOCK: superseded by development (same feature already merged); close as obsolete	session-20261115T142934-de7c51d0	2026-11-15T16:57:52Z
 review:shillinq:2048:202ec0a0	GREEN: ocp patch bump; phpunit 12214 OK	session-20261115T154407-94bf5f8c	2026-11-15T16:58:02Z
+review:learniq:1164:7f7606d0	BLOCK: gridstack 14 outside nextcloud-vue peer range; conflicts with development	session-20261115T152554-949e9403	2026-11-15T16:48:56Z
