@@ -14833,3 +14833,4 @@ review:portaliq:1235:aff4f032	GREEN: locale fix per spec; inherited errors only	
 review:dossiq:5397:7ff72b32	GREEN: no new phpstan errors or test failures	session-20261115T200011-d13b13ca	2026-11-15T20:37:33Z
 review:filinq:2094:cefdb934	GREEN: suite 6832 OK, jest 8/8	session-20261115T203029-7489abc7	2026-11-15T20:37:40Z
 review:shillinq:1991:29abf7fb	GREEN; vitest 1 inherited failure	session-20261115T202932-d1067ee4	2026-11-15T20:37:50Z
+review:shillinq:2230:62ff7961	GREEN: build ok, vitest only inherited failure	session-20261115T200026-9a5b8685	2026-11-15T20:38:01Z
