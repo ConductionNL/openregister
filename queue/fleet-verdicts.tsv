@@ -11112,3 +11112,4 @@ versioniq	705	deb4057728ad152adedf6baa4c37a2522386441f	REVERIFY	worker-25	merged
 portaliq	2498	23c4f3e4423582c61cda2e36c6fa3d550d39e5ad	GREEN	worker-18	unit 5906 on tree (2498+2520), baseline 5873 0 failures, 0 new; site-plain/site-head/example-site specs green; build of site-honest-without-javascript per its specs
 portaliq	2500	211dedaaa53ed03580d110ce2e01528d9a392676	CONFLICT	worker-18	conflicts with #2498 in lib/Controller/PortalPageController.php and package.json
 portaliq	2520	cde4940b3fd5015e737d165c929d2595cc5fd73d	GREEN	worker-18	unit 5906 on tree, baseline 5873 0 failures, 0 new; tests only
+versioniq	722	08999af9643bc843747154e5c0c888da5b53b180	REVERIFY	worker-33	moved the GitHub search switch specs to DiscoverPanel.githubSearch.spec.ts so they no longer collide with 718; tree 717+718+722 merges clean, vitest 3007 passed; new head 01366da8dfceb433e9d2f5ffec15fbd6c971b590, verify it
