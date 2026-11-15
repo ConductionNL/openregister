@@ -13525,3 +13525,5 @@ merge:shillinq:3100:051d682a	merge	shillinq	development	development	prs=3100@0ca
 fix:filinq:2103:65793b7d	fix	filinq	development	2103	sha=65793b7d285a3fd21a2852ddbcc7f357fe83f306;verdict=RED;branch=quality/build-signature-verification-portal;reason=vitest tests/unit/reachability.spec.js 'no hidden orphans' fails: src/views/verify/PublicSignatureVerification.vue (separate verify.js entry) is neither reachable nor allow-listed, development passes 763/763. PHPUnit 6815 OK, phpstan clean, jest veri	2026-11-15T14:25:24Z
 verify:shillinq:3088:02f09b2d	verify	shillinq	development	merge	prs=3088@d40d616087f24d4fd143f4d237148d504603b9d2,3097@e43d2b44cbd0c9ea6586f132a00df104ab10fbe2	2026-11-15T14:25:24Z
 merge:launchpad:1231:7ad784e5	merge	launchpad	development	development	prs=1231@b40121b708716f30bf6690a5bccfcea91bdbb600	2026-11-15T14:25:24Z
+verify:dossiq:6547:aa7b9580	verify	dossiq	development	merge	prs=6547@90799f7c228f18c21226f99f440cb474128ea888	2026-11-15T14:26:44Z
+merge:filinq:2069:e87c8717	merge	filinq	development	development	prs=2069@2a5b02d028e7769d99b9de42ebb7ffd09b5de958,2132@7921bf916a70e340e5db1bbd761a35ec90a0a4ce	2026-11-15T14:26:44Z
