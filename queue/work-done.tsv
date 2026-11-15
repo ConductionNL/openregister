@@ -12674,3 +12674,4 @@ fix:learniq:2484:109cbc95	merged development cleanly, new head b8c46f7c; remaini
 cover:keepiq:c967a31fmdbad:e372e6ff	already done: lib/Event/*.php 8/8 classes at 100% statements on development (29 tests); earlier -1 branch merged; no PR	session-20261115T014019-616e5977	2026-11-15T01:43:43Z
 measure:keepiq:20261115h00	js 92.91% (vitest 3 failing tests); php not measurable here (no pcov), kept 93.72% measured on the same commit	session-20261115T005141-9356bed0	2026-11-15T01:43:46Z
 verify:decidiq:2214:4202737d	GREEN 2214 (4377 tests OK, tests only)	session-20261115T011743-1dcf0056	2026-11-15T01:43:55Z
+cover:pipelinq:7f9dc8e6m195a:f0c02922	already done: lib/Service/External 48/48 stmts covered by 3 existing test files (branches -1,-2 merged); no PR	session-20261115T013435-30b4f471	2026-11-15T01:44:03Z
