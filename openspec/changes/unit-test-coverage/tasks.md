@@ -7,8 +7,10 @@
 - [ ] Implement: Use Data Providers for Parameterized Scenarios
 - [ ] Implement: Verify Side Effects with Mock Expectations
 - [ ] Implement: Test All Service Classes with Full Branch Coverage (~175 source files)
+  - Progress (not complete): direct tests for `DependentValuePairCheck`, `RuleFlag`, `ValidationVerdict`, `Dmn\RuleMatch`, `DeploymentOrigin`, `Flow\Nodes\DecisionTablePlan`, `ShippedBaseline\LeafReset` (27 tests, each break-checked).
 - [ ] Implement: Test All Controller Classes with CRUD and Error Handling (~46 root + 12 Settings)
 - [ ] Implement: Test All Db Entities and Mapper Handlers with Full Field Coverage (~65 source files)
+  - Progress (not complete): `MagicMapper\StatisticsPairFilter` (5 tests).
 - [ ] Implement: Test All Event Classes via DataProvider Grouping (~39 source files)
 - [ ] Implement: Test All BackgroundJob, Command, Cron, and Listener Classes
 - [ ] Implement: Test All Exception and Format Classes
