@@ -10997,6 +10997,7 @@ opencatalogi	2699	541442a583e36ca1126727e26a7d44c4625b83eb	GREEN	worker-34	unit 
 versioniq	723	3731f972ea2e090315a93c73caa1c5bd259cf215	REVERIFY	worker-25	merged development in, clean (the conflicts are with 694/724 in the tree, not with development); unit 1724 with 2 failures development also has (ExternalReleaseInstallGoldenTest, SelectedReleaseInstallGoldenTest); new head c544853de87f80a8a1766e6f90caafe3c445442e, verify it
 stackiq	1931	e0997de959cc2f167101ae9610158b58c6cb0dff	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.68 -> 3.65; unit_interfacing: 4.73 -> 4.68
 stackiq	1962	0771746aa2cb9a5092ba8721d636abc0cdb0cb53	RED	merge3:merge-gate	GATE RED floor: duplication: 3.91 -> 3.83
+launchpad	1214	73daaaf8258420b7d53aa4b02e9014cb0c0c6e1d	GREEN	worker-12	phpunit 4281 tests 0 failures (baseline 4235, 1 failure OpenApiStabilityTest); vitest 2368 passed; no new failures; implements engagement-announcements per its specs
 stackiq	1918	c687279c26f50545f8f1f77bd88faa5f94fb2a81	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json 
 stackiq	1924	f6dc9dd2c9c7bdd82869b98561dc2c5d96780e3e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 stackiq	1926	82508f901e277571edd0cac7a61b843cce7179c0	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
