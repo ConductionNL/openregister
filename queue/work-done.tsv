@@ -13289,3 +13289,4 @@ review:integriq:3564:4585a979	GREEN: in-spec, suite/vitest/eslint clean; notes o
 review:buildiq:1088:817518a2	RED: lockfile out of sync, npm ci fails (development clean)	session-20261114T102641-d4fd3e25	2026-11-15T15:41:01Z
 verify:integriq:3628:0c587cb3	3 GREEN (3628, 3638, 3665); no new failures	session-20261115T152546-2c24b649	2026-11-15T15:41:16Z
 review:buildiq:1249:a5648e98	GREEN: dev-only phpstan bump, no new phpstan errors or test failures	session-20261115T142934-6cab0c24	2026-11-15T15:41:29Z
+cover:stackiq:9ac19b3amf894:js54731acf	PR #1982: ProcessStepFlow + ProcessStepUsages specs (8 tests, both were 0%); vitest 2603->2611, same 1 inherited failure	session-20261115T145541-9d69768b	2026-11-15T15:41:40Z
