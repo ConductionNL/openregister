@@ -12103,3 +12103,4 @@ learniq	2507	c404ad7dc16db1231fecfb2506084e9106ff8a27	RED	merge3:merge-gate	GATE
 learniq	2521	189663c498d527ec45431cade7f27336e95a51a4	CONFLICT	merge3	merges clean on development alone; files: tests/unit-js/structureProfile.test.mjs 
 learniq	2549	844e24a38bea3cb58bc03bb3e03f1cf6a4c4ff63	CONFLICT	merge3	merges clean on development alone; files: src/registry.js tests/unit-js/structureProfile.test.mjs 
 learniq	2551	d07fdeb330a3742a15363c0cfa3807a8c023da32	CONFLICT	merge3	merges clean on development alone; files: src/registry.js 
+shillinq	3078	777f3b0bb59507803438d156bfe23c9189656a78	REVERIFY	worker-08	merged development in: kept both manifest actions in src/manifestActions.js and the later app version in appinfo/info.xml; eslint and 21 related vitest files green except the inherited dunningNextRun failure; new head 308c8c7e3b6c5b35df42720db1c958cf72157ee7, verify it
