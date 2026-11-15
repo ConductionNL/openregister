@@ -3237,3 +3237,11 @@ larpinq	1052	35cdf6d223397f7e9112f15be8e0abf024da03a4	SKIP	merge3	GATE UNMEASURE
 larpinq	1060	759898b3b319473aa0acb48bbf6e9a4189d7814a	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail; testcoderatio: warn -> fail; secretscanning stars: 5 -> 1; testcoderatio stars: 3 -> 2
 filinq	2070	88c644391052b203b8ac34670c5abca6b6b517ea	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; owaspsecurecoding: pass -> warn; adrvalidator stars: 5 -> 3; owaspsecurecoding stars: 5 -> 3; score: 100 -> 93
 filinq	2132	7921bf916a70e340e5db1bbd761a35ec90a0a4ce	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+planninq	1183	7d4bbd35da8f8529008fba9108727f3c762137fa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1186	12fe02445119ad0f2b6f95ebd0702dd97c701e06	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1187	cde8fd504f2d70be3ae958206aaf3d4a7a4d3094	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1188	c827e551a508d400e7154a3a180046026c27b86b	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+planninq	1189	4de6df93a510c2bd4073d33b5b40384aee4a0bf4	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+planninq	1190	40a075f6e4da72db51b3bd8190b41c1d919ea0d2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1191	662066c3616af40f181eb44242e849bcd46fef62	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1192	35a4f84d5b4c1dc7aefd43184e48ce6bd5adf089	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
