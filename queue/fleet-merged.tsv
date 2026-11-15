@@ -3378,3 +3378,5 @@ buildiq	1664	58703a597f277e4eae094dd57edff05555e8184d	MERGED	merge3	GATE OK sbom
 buildiq	1665	27b55e37e1c156d1b202bff9058ed728b2093628	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.91 holds at 3.91
 shillinq	2995	e209ceb0f28617ad1f604f53d672712b59679b94	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
 shillinq	3097	e43d2b44cbd0c9ea6586f132a00df104ab10fbe2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+humaniq	1149	126271395edda4591c00bd685227e5c789c14f3f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.47
+humaniq	1156	13c34f2d0b35f5c3211b533b3f33ecf953543db3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.48
