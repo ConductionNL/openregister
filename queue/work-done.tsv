@@ -13033,3 +13033,4 @@ verify:dossiq:6568:6b054a6d	GREEN 6568 (tests only, no new failures)	session-202
 fix:filinq:2113:45e6b64f	no change: up to date with development; conflicts only with sibling PRs	session-20261115T142127-97291b3d	2026-11-15T14:27:24Z
 cover:dossiq:069ee2d6madb6:4bcfe3d9	PR #6569: AdviceTimer 92.9->100% lines (+10 tests), Advice dir now 100%; suite failures unchanged (19 inherited)	session-20261115T142132-f4234592	2026-11-15T14:27:43Z
 cover:dossiq:069ee2d6madb6:8c6788f4	already done: lib/Service/Gdpr/ at 100% lines (240/240, 45 tests) after merged -1/-2 PRs; no PR	session-20261115T142134-badaaf30	2026-11-15T14:27:41Z
+review:shillinq:2991:e2225c58	GREEN: per-spec, tests pass; conflicts with development in info.xml/l10n/lock fixture	session-20261115T142129-944012f5	2026-11-15T14:28:13Z
