@@ -14655,3 +14655,4 @@ review:launchpad:756	GREEN: dev-dep bump, 4461 unit tests OK	session-20261115T20
 review:buildiq:1088:8d663611	GREEN: vite dev bump; vitest 4719 pass on merge	session-20261114T075643-75a598ab	2026-11-15T20:01:32Z
 review:buildiq:1249:0997f504	GREEN: dev-dep bump, sbom matches lock, reds inherited	session-20261115T195957-8e60ca53	2026-11-15T20:01:39Z
 review:buildiq:1114:9381ce97	GREEN: ocp dev bump, no code change; 1 inherited failure	session-20261115T195958-28cb0304	2026-11-15T20:01:46Z
+review:launchpad:880:3c071075	GREEN: lock+sbom only, 4461 unit tests pass on merge with development	session-20261115T200020-0f65b959	2026-11-15T20:02:04Z
