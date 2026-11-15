@@ -14855,3 +14855,4 @@ review:dossiq:3204:d7bb586b	GREEN: dev-dependency bump only, vitest 2 inherited 
 fix:learniq:1158:bb9f61d9	fixed: sbom regenerated after merging development, head 5ca84f75	session-20261115T202932-ab57353c	2026-11-15T20:40:59Z
 review:shillinq:1912:a7d98b52	GREEN: stylelint dev bump, identical lint output	session-20261115T202936-e956716f	2026-11-15T20:41:09Z
 review:shillinq:2766:4d51285b	GREEN: phpstan clean, unit 12225 ok	session-20261115T203016-ff00326d	2026-11-15T20:41:19Z
+fix:learniq:1169:9731f440	fixed: merged development, regenerated sbom; new head 6f8c6510, REVERIFY	session-20261115T202955-7451ede9	2026-11-15T20:41:30Z
