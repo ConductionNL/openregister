@@ -12730,3 +12730,4 @@ cover:integriq:92114ab0m4b3f:19badfa5	already done: lib/Outbound/Call/*.php meas
 cover:keepiq:c967a31fmba5a:6925f818	already done: lib/SetupCheck/*.php measures 100% (9 stmts) on development	session-20261114T234941-bc8686af	2026-11-15T01:54:18Z
 cover:pipelinq:7f9dc8e6m195a:jsd081840b	PR #3864: 31 mounted vitest tests (BulkChanges, ScorecardManager, ResourceDetail, ServiceDetail, PosTenderTypeManager); dirs 92.0->95.0%; vitest 5172->5203, same 1 inherited failure	session-20261115T005122-49ba1b99	2026-11-15T01:54:18Z
 cover:keepiq:c967a31fmba5a:ca1d90c4	already done: lib/Attribute/*.php 5/5 lines covered on development, no PR	session-20261115T005412-4a06d6f4	2026-11-15T01:54:31Z
+cover:pipelinq:7f9dc8e6m195a:6925f818	already done: lib/SetupCheck/*.php at 100% (27/27 stmts) on development 425d503	session-20261115T005122-49ba1b99	2026-11-15T01:54:50Z
