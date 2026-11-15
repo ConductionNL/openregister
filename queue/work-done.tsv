@@ -14145,3 +14145,4 @@ fix:portaliq:1681:1c5961b5	fixed: merged development, draft lookup on version 2;
 fix:portaliq:1769:d443a45b	lock regenerated on development, npm ci ok; new head 91f4b0df6c650ba48d9f0aaf4a3559074fd97b13	session-20261114T102637-6688951e	2026-11-15T18:24:28Z
 fix:portaliq:1657:489e5cbd	CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:24:38Z
 review:pipelinq:3148:37d49de1	GREEN 3148	session-20261115T154255-e54527e9	2026-11-15T18:24:46Z
+fix:portaliq:1659:3c90bf4d	conflict resolved (dup rowClass dropped), pushed 3bad2deb; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:24:54Z
