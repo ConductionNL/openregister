@@ -13923,7 +13923,9 @@ build:versioniq:releases-version-facts:c3	partial: PR #734 head 33d71ee4 — bui
 merge:shillinq:3055:d9bc6b70	merge3 tree of 10 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T17:28:45Z
 merge:shillinq:2995:dc9ec9ca	merge3 tree of 10 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T17:28:51Z
 merge:shillinq:3062:afc90e46	merge3 tree of 10 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T17:28:55Z
+merge:shillinq:3078:f83c9d71	merge3 tree of 10 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T17:28:59Z
 fix:versioniq:736:3596222f	floor restored, pushed 732e80c, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T17:29:01Z
+merge:shillinq:2997:27bbd61c	merge3 tree of 10 shillinq PRs: merged=2 red=0 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T17:29:11Z
 fix:buildiq:1652:b3c39fa0	merged development in, checks green (1 inherited failure); new head 023b900b9448723e6f9efa0bfaadf1c997a71ce1, REVERIFY	session-20261115T152552-0cb4306e	2026-11-15T17:29:09Z
 fix:buildiq:1649:c40e299a	merged development: CopilotService keeps the document reader and assist access check plus development's knowledge reader and run trace; tests rebuilt as development's file plus the branch block; l10n union (3 nl dups dropped); suite 3408, 1 inherited failure; new head 90cf9793, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T17:29:03Z
 build:versioniq:install-multi-instance-promotion:c4	PR #735 (+2 commits, head de63ae5): 4.1 Instances tab, connection and promote dialogs, rollback via last-known-good, 4.2 waiting-period field + settings API read/update, 4.3 en/nl strings; vitest 3026 pass (+23 new), PHP unit 1875 with 2 failures inherited from development; left: 4.4 e2e needs a live instance, 6.1 close after merge	session-20261114T102637-6688951e	2026-11-15T17:29:41Z
@@ -13943,3 +13945,147 @@ fix:shillinq:3080:555ec946	merged development; info.xml version moved above both
 fix:shillinq:3062:6c6743f0	conflict resolved (version + register lock), suite green; new head d337cccd5c0003792325208eed13a23de031d351	session-20261114T102637-6688951e	2026-11-15T17:35:06Z
 merge:humaniq:1149:597b94e4	merge3 tree of 2 humaniq PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T17:35:47Z
 fix:shillinq:3055:d0b8868b	fixed CONFLICT: merged development (l10n union, new app version + lock entry); unit 12261 OK; new head aa654dd7, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T17:35:50Z
+fix:shillinq:3088:d40d6160	conflict resolved, pushed 0dc86d0f; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T17:35:58Z
+fix:learniq:2521:189663c4	merged development, resolved test counts; new head 2a90e6d1, REVERIFY recorded	session-20261115T152558-f97be55f	2026-11-15T17:36:09Z
+review:versioniq:717:a769cc5a	GREEN: matches change spec, tests green	session-20261114T102637-6688951e	2026-11-15T17:36:24Z
+review:filinq:2070:5c49e6f2	GREEN 2070 (builds intake-pdf-password-removal; all suites green)	session-20261115T142201-ea23e682	2026-11-15T17:36:27Z
+merge:decidiq:2191:d3e70b50	merge3 tree of 11 decidiq PRs: merged=5 red=1 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-15T17:37:41Z
+merge:decidiq:2149:a684cca0	merge3 tree of 11 decidiq PRs: merged=5 red=1 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-15T17:37:44Z
+merge:decidiq:2170:d8b4f8ae	merge3 tree of 11 decidiq PRs: merged=5 red=1 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-15T17:37:49Z
+review:versioniq:711:1d4bc363	GREEN; phpunit 1876 (2 inherited)	session-20261115T152558-f97be55f	2026-11-15T17:37:58Z
+review:versioniq:691:c3a11b62	GREEN: matches change spec, no new failures	session-20261114T102637-6688951e	2026-11-15T17:38:10Z
+merge:stackiq:1967:662ac200	merge3 tree of 23 stackiq PRs: merged=16 red=1 fail=0 skip=0; conflict 4, lint 0, moved 2; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T17:39:04Z
+merge:stackiq:1973:cd31f294	merge3 tree of 23 stackiq PRs: merged=16 red=1 fail=0 skip=0; conflict 4, lint 0, moved 2; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T17:39:06Z
+merge:stackiq:1908:ffba9a28	merge3 tree of 23 stackiq PRs: merged=16 red=1 fail=0 skip=0; conflict 4, lint 0, moved 2; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T17:39:10Z
+merge:stackiq:1930:003887d5	merge3 tree of 23 stackiq PRs: merged=16 red=1 fail=0 skip=0; conflict 4, lint 0, moved 2; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T17:39:13Z
+merge:stackiq:1918:8f598ee5	merge3 tree of 23 stackiq PRs: merged=16 red=1 fail=0 skip=0; conflict 4, lint 0, moved 2; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T17:39:17Z
+merge:stackiq:1931:2bd688aa	merge3 tree of 23 stackiq PRs: merged=16 red=1 fail=0 skip=0; conflict 4, lint 0, moved 2; fix rows 4	merge3-20261113T213425-c36bcd5f	2026-11-15T17:39:20Z
+review:filinq:2122:57380f5f	GREEN 2122 (builds grondslagen-read-from-dossiq; all suites green)	session-20261115T142201-ea23e682	2026-11-15T17:38:55Z
+review:versioniq:721:d7956500	GREEN: GitLab forge added, existing forges unchanged, tests green	session-20261114T102637-6688951e	2026-11-15T17:39:38Z
+review:versioniq:709:f55ff85c	CONFLICT with development (12 files); head alone green apart from 2 inherited	session-20261115T152558-f97be55f	2026-11-15T17:39:45Z
+review:versioniq:695:9b2e45a1	GREEN: NCSC feed opt-in, existing path unchanged, tests green	session-20261114T102637-6688951e	2026-11-15T17:41:00Z
+fix:shillinq:2991:e2225c58	merged development, resolved version lock/l10n/imports, regenerated scoped pages; green (1 inherited vitest); new head a48bd63d, REVERIFY	session-20261115T152552-0cb4306e	2026-11-15T17:41:24Z
+review:versioniq:722:756a911d	GREEN; phpunit 1858 (2 inherited), vitest 3013/3013	session-20261115T152558-f97be55f	2026-11-15T17:42:03Z
+verify:shillinq:3080:efe3e14d	GREEN 3080: unit 12253 OK, vitest 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T17:42:14Z
+review:filinq:2088:08907be9	GREEN 2088 (builds template-library-leaf; all suites green)	session-20261115T142201-ea23e682	2026-11-15T17:42:08Z
+review:versioniq:725:039d4ea0	GREEN: additive advisory detail, tests green	session-20261114T102637-6688951e	2026-11-15T17:42:27Z
+review:shillinq:3062:d337cccd	GREEN: per-spec, merges clean, suites pass	session-20261115T142129-944012f5	2026-11-15T17:42:48Z
+verify:shillinq:3078:5115df9e	GREEN 3078	session-20261115T154255-e54527e9	2026-11-15T17:43:03Z
+review:versioniq:707:ec8c4c54	CONFLICT: planner/job conflict with development; head tests green	session-20261114T102637-6688951e	2026-11-15T17:43:10Z
+verify:versioniq:735:38d07b71	735 GREEN, 736 GREEN, 738 CONFLICT (l10n after 735+736); phpunit 1905 (2 inherited), vitest 3036	session-20261115T152558-f97be55f	2026-11-15T17:44:48Z
+review:filinq:2094:c8f19660	GREEN 2094 (builds zgw-document-bridge; all suites green)	session-20261115T142201-ea23e682	2026-11-15T17:44:44Z
+review:versioniq:718:756fab92	GREEN: alerts/webhooks admin-only and https-only, tests green	session-20261114T102637-6688951e	2026-11-15T17:45:04Z
+verify:shillinq:3088:edda4ee7	GREEN 3088: unit 12244 OK, vitest 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T17:46:15Z
+review:filinq:2123:9de4be6b	GREEN; phpunit 6837 OK, vitest 785, jest 562	session-20261115T152558-f97be55f	2026-11-15T17:47:22Z
+review:opencatalogi:2677:6373144b	GREEN: matches proposal, no new failures	session-20261114T102637-6688951e	2026-11-15T17:47:33Z
+review:shillinq:3055:aa654dd7	GREEN: spec-conformant, unit 12261 OK, vitest only inherited failure	session-20261115T152552-0cb4306e	2026-11-15T17:47:41Z
+review:filinq:2072:effbf58c	GREEN 2072 (builds multi-tenant-hardening; access only tightened; all suites green)	session-20261115T142201-ea23e682	2026-11-15T17:47:49Z
+review:opencatalogi:2670:27c8de92	GREEN: matches spec, no new failures	session-20261114T102637-6688951e	2026-11-15T17:49:08Z
+review:larpinq:1053:4113c48a	GREEN: unit 876 OK (baseline 860), phpstan clean	session-20261115T174750-744c606b	2026-11-15T17:49:17Z
+review:filinq:2103:6113c988	GREEN; phpunit 6822 OK, vitest 764, jest 576	session-20261115T152558-f97be55f	2026-11-15T17:49:36Z
+review:shillinq:2997:3374c3bc	GREEN: per-spec, merges clean, suites pass (independent review)	session-20261115T142129-944012f5	2026-11-15T17:49:51Z
+review:opencatalogi:2650:dacca957	GREEN: per change specs; unit 5743, 2 inherited failures; phpstan clean	session-20261115T174741-9deaa0be	2026-11-15T17:50:14Z
+review:shillinq:2991:a48bd63d	GREEN: unit 12290 OK, vitest 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T17:50:22Z
+review:larpinq:1041:59270c1d	GREEN: phpunit 873 ok, vitest 594 ok	session-20261115T174741-56eeaa2f	2026-11-15T17:50:28Z
+review:larpinq:1051:334c0ec3	GREEN: unit 973 OK (baseline 860), vitest 556 OK	session-20261115T174750-744c606b	2026-11-15T17:50:45Z
+review:buildiq:1620:64b6280e	GREEN: spec-conform, unit 3355 (1 inherited fail), vitest 49 pass	session-20261115T174808-50b8ceec	2026-11-15T17:51:09Z
+review:buildiq:1090:8b2df26a	GREEN: vitest 4692 pass, build ok	session-20261115T154255-e54527e9	2026-11-15T17:51:18Z
+verify:larpinq:1060:afb8181c	GREEN 1060: phpunit 899 ok, vitest 583 ok	session-20261115T174741-56eeaa2f	2026-11-15T17:51:39Z
+review:larpinq:1050:67a10904	GREEN: per-spec, merges clean, suites pass	session-20261115T142129-944012f5	2026-11-15T17:51:49Z
+review:filinq:2121:cb1efd91	GREEN: unit 6799 OK (baseline 6772), phpstan clean, vitest OK	session-20261115T174755-95dc8448	2026-11-15T17:52:03Z
+verify:portaliq:2527:a6de80af	GREEN 2527: unit 6168 OK, node specs 47/47	session-20261115T152543-40aea993	2026-11-15T17:52:11Z
+verify:opencatalogi:2696:27801f33	2696 RED (mainEntry.spec.js 8 failures: new widget not mocked), 2699 GREEN on its own	session-20261114T102637-6688951e	2026-11-15T17:52:33Z
+verify:stackiq:1954:60782265	1954 GREEN (phpunit 3729 OK, vitest 1 inherited); 1975 CONFLICT (l10n js, customComponents, menu-layout)	session-20261115T152558-f97be55f	2026-11-15T17:52:44Z
+review:buildiq:1608:b3506415	BLOCK: sandbox route does not enforce REQ-BQCC-003 isolation itself; unit green vs baseline	session-20261115T174808-50b8ceec	2026-11-15T17:52:54Z
+verify:launchpad:1230:9521447b	GREEN launchpad#1230: phpunit 4526 OK, vitest 2605 OK, no new failures	session-20261115T174739-b14c2df4	2026-11-15T17:53:02Z
+verify:pipelinq:3870:a7e60182	GREEN 3870: unit 8890 OK, baseline same	session-20261115T174750-744c606b	2026-11-15T17:53:21Z
+review:dossiq:3196:ccb57e36	GREEN: prettier devdep bump; vitest 7184/7186, 2 inherited failures	session-20261115T174757-8dfa7406	2026-11-15T17:53:29Z
+review:buildiq:1092:8fb29c55	GREEN: sass devDep bump, vitest 4692/4692 pass	session-20261115T174747-978963d5	2026-11-15T17:54:39Z
+verify:stackiq:1973:59a87a4f	1973 CONFLICT (customComponents.js), 1978 GREEN (phpunit 3736 OK, vitest 1 inherited)	session-20261115T152558-f97be55f	2026-11-15T17:55:32Z
+fix:dossiq:3300:6bb977e0	CONFLICT resolved, pushed 94f68357, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T17:56:18Z
+fix:dossiq:3298:85e60038	conflict resolved keeping both intents; tests green; new head 1caea4a0fee92aa7ba2ae09030a30a45da0295fa	session-20261114T102637-6688951e	2026-11-15T17:56:30Z
+verify:launchpad:1229:489ec46d	GREEN launchpad#1229: phpunit 4538 OK, vitest 2608 OK, no new failures	session-20261115T174739-b14c2df4	2026-11-15T17:56:43Z
+verify:dossiq:6577:2a668836	GREEN 6577: no new PHP or JS failures; per change specs	session-20261115T174741-9deaa0be	2026-11-15T17:57:43Z
+verify:dossiq:6547:c7500263	GREEN 6547; 18104 tests, 19 inherited failures, none new	session-20261115T174757-8dfa7406	2026-11-15T17:57:54Z
+verify:stackiq:1983:43f10173	1983 GREEN (tests only, vitest 1 inherited)	session-20261115T152558-f97be55f	2026-11-15T17:58:05Z
+review:buildiq:1622:b26786dc	GREEN 1622	session-20261115T154255-e54527e9	2026-11-15T17:58:18Z
+review:buildiq:1093:16b82bb9	GREEN: marked bump, vitest 4692/4692 pass	session-20261115T174833-88ac0233	2026-11-15T17:58:25Z
+review:buildiq:1091:c4dd3636	GREEN: 4692/4692 vitest pass on merge with development, coverage report OK	session-20261115T174819-9af28ef9	2026-11-15T17:58:36Z
+fix:dossiq:2909:b86bc4d2	CONFLICT resolved, pushed 23f03bf8; inherited red caseSearchDeclarations gdprClassification noted	session-20261115T174747-978963d5	2026-11-15T17:58:43Z
+review:pipelinq:3835:8a345d33	RED: articleDetailFormDialogEditor.spec.js imports the dialog the PR deletes; otherwise PHP green	session-20261115T152552-0cb4306e	2026-11-15T17:59:01Z
+fix:dossiq:5353:15d28d9d	failed: 295-file refactor conflicts in 97 files, beyond the 45 min cap; also imports OCA\OpenRegister\Service\Object\ObjectSaveOptions/ObjectFindTarget but openregister main has them in Kernel\Contracts\Value (no alias), so it needs regenerating on current development with the right namespace, not a merge	session-20261115T154255-e54527e9	2026-11-15T17:59:10Z
+fix:dossiq:3953:1fa01764	conflicts resolved, pushed 6ca6e023; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T17:59:09Z
+fix:dossiq:3936:d81910f6	conflict resolved, pushed 7ae9f014, REVERIFY recorded	session-20261115T174741-56eeaa2f	2026-11-15T17:59:23Z
+fix:pipelinq:2593:6a42067a	conflict resolved, pushed c5620371; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T17:59:30Z
+fix:dossiq:3200:74d2bc80	failed: permission (closing the superseded PR was refused; development already pins dompurify ^3.4.17, locked 3.4.17, so #3200 should be closed by hand)	session-20261115T142129-944012f5	2026-11-15T17:59:43Z
+review:filinq:1307:af2c6d19	CONFLICT: lock conflicts, development already on sass 1.108.2	session-20261115T174833-88ac0233	2026-11-15T17:59:56Z
+fix:pipelinq:2498:acffd38a	obsolete: development already has marketing-campaign-on-client (#3713, firstTouch/lastTouch on contact+client, tasks all ticked); closed PR with a neutral comment	session-20261115T152552-0cb4306e	2026-11-15T18:00:02Z
+review:openregister:10589:e253cb1a	APPROVE 10589 (additive audit filters; suites green)	session-20261115T142201-ea23e682	2026-11-15T18:00:04Z
+fix:pipelinq:2957:0a390a39	closed as superseded: development already has the full clients-history-summary-and-risk build (153dff0e7)	session-20261115T174750-744c606b	2026-11-15T18:00:26Z
+fix:dossiq:3299:779b4422	CONFLICT resolved, pushed 518945cf; REVERIFY recorded	session-20261115T174741-9deaa0be	2026-11-15T18:00:27Z
+fix:pipelinq:2507:ecccdb3f	obsolete: development is on nextcloud-vue ^2.180.0, PR pinned ^2.84.0; closed with a neutral comment	session-20261115T152552-0cb4306e	2026-11-15T18:00:37Z
+fix:pipelinq:1936:27cdae0d	closed as obsolete: development already locks nextcloud-vue 2.180.0	session-20261115T174833-88ac0233	2026-11-15T18:00:31Z
+fix:dossiq:3934:90d125eb	conflicts resolved, tests retargeted; new head c4912dc2f436f1bb46c4f748a89cc19a32f4b848, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:01:03Z
+fix:pipelinq:3147:b0a445eb	failed: still waiting on openregister #9103 (main 3800106b keeps searchObjects ids/uses/views and searchObjectsBySlug(registerSlug,schemaSlug)); stub change would disagree with main, left open	session-20261115T174833-88ac0233	2026-11-15T18:01:12Z
+fix:dossiq:4887:ca6b5835	fixed: settle bound to entry holderSubject (403 not_holder otherwise); suite 10129 OK; new head fc7097f8	session-20261115T174739-b14c2df4	2026-11-15T18:01:10Z
+verify:keepiq:1826:15d53d0e	GREEN 1826: unit 5298 OK, vitest 3 inherited failures	session-20261115T152543-40aea993	2026-11-15T18:01:17Z
+fix:pipelinq:2504:e4cc137c	closed as obsolete: lead rotation already on development (3bf987a7)	session-20261115T174833-88ac0233	2026-11-15T18:01:56Z
+verify:buildiq:1649:4e2bd7dd	1649 GREEN; 1651, 1652 CONFLICT with development	session-20261115T174808-50b8ceec	2026-11-15T18:02:08Z
+review:openregister:10588:fca1fc97	APPROVE: additive filter operator, suites green, phpstan clean	session-20261115T174755-95dc8448	2026-11-15T18:02:16Z
+fix:pipelinq:3150:1a3b033c	merged development (stub signatures: branch side, imports: both); unit 8890 OK; new head 03b03d45c12021bb1c6869ce4c4d4e106415245f, REVERIFY	session-20261115T152552-0cb4306e	2026-11-15T18:02:24Z
+fix:dossiq:5398:7c1b653e	failed: reproduced on the branch merged with development (development itself installs, psalm 5.26.1): psalm 7.2.1 needs php ~8.3.16 while config.platform.php is 8.3 and the runtime here is 8.3.6; a fix needs a platform decision and a regenerated composer.lock, which workers may not commit	session-20261115T152543-40aea993	2026-11-15T18:02:36Z
+fix:dossiq:4882:13c8daa8	conflict resolved, pushed 2a47c981, REVERIFY recorded	session-20261115T174741-56eeaa2f	2026-11-15T18:02:39Z
+fix:dossiq:5365:b115fa9f	failed: depends on openregister searchObjectsBySlug accepting a RegisterSchemaRef alongside the string slugs; main takes strings only and #9103 replaces the signature (published contract), so it cannot be fixed in dossiq	session-20261115T174757-8dfa7406	2026-11-15T18:02:43Z
+fix:dossiq:3954:d0d56e69	CONFLICT resolved, pushed bf91e1b8, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:02:55Z
+fix:dossiq:3202:d10800f6	failed: still waiting on the library: latest @conduction/nextcloud-vue 2.180.0 still declares peer gridstack ^12.0.0 || ^13.0.0, so gridstack 14 cannot be taken without legacy-peer-deps	session-20261115T152543-40aea993	2026-11-15T18:03:18Z
+fix:dossiq:5556:cfd808c9	failed: depends on openregister StoreDescriptor accepting a StoreListing; main has no StoreListing and takes appId/schema/defaultRegister (published contract), so it cannot be fixed in dossiq	session-20261115T174757-8dfa7406	2026-11-15T18:03:18Z
+fix:pipelinq:2963:59117082	obsolete: change already built on development (#3719, #3822, 10/10 tasks); closed PR with a neutral comment	session-20261115T152552-0cb4306e	2026-11-15T18:03:30Z
+fix:dossiq:5358:b179a791	imports moved to OpenRegister's Kernel\Contracts\Value (stubs moved too), merged development into its lock helpers; suite 18107 with the 19 development failures; new head c7b0b291, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T18:03:49Z
+fix:dossiq:4886:5dd9fb5e	fixed: merged development, pick read failure falls back to default term; new head 073e3804	session-20261115T174819-9af28ef9	2026-11-15T18:04:02Z
+review:buildiq:1088:419fccd1	GREEN: vite dev bump, vitest 4692/4692 before and after	session-20261115T174804-89f2739f	2026-11-15T18:04:23Z
+review:dossiq:3936:7ae9f014	GREEN	session-20261115T174741-56eeaa2f	2026-11-15T18:04:30Z
+fix:pipelinq:2482:99a4545c	failed: merge with development conflicts in 19 files (Application.php now split into registrars: port the CallEventListener registration + BackgroundServiceAccountCheck there; IncomingCallFinder refactored into steps: re-add the mirror branch; mock register, info.xml, 6 locales, tests/bootstrap, Settings.vue). Not a code defect: CallMirror deleteObject(uuid:,register:,schema:,permanent:) matches o	session-20261115T152552-0cb4306e	2026-11-15T18:04:36Z
+fix:dossiq:5281:5ba0c011	tests renamed, pushed c8b6cb2, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:04:45Z
+review:dossiq:3300:94f68357	GREEN: dead override removed, no callers; no new failures	session-20261115T174757-8dfa7406	2026-11-15T18:05:14Z
+fix:pipelinq:3281:c765403c	failed: every psalm 7.x requires php ~8.3.16 while config.platform.php is 8.3; fixing needs raising the project's declared PHP floor (and breaks platform-check on 8.3.0-8.3.15), a project decision, not a mechanical fix	session-20261115T174757-8dfa7406	2026-11-15T18:05:56Z
+review:dossiq:3953:6ca6e023	GREEN: behaviour-neutral rename; unit 0 new failures (19 inherited)	session-20261115T174808-50b8ceec	2026-11-15T18:05:57Z
+fix:pipelinq:2969:bd583b9e	conflict resolved toward development's build; pushed e12968a1; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:06:21Z
+fix:dossiq:5266:f306c815	conflict resolved (both sides kept), expired pill added; vitest 2 inherited failures only; new head db2ab4a5	session-20261115T174739-b14c2df4	2026-11-15T18:06:45Z
+fix:pipelinq:2108:6bc5f8a0	failed: not fixable in pipelinq; latest @conduction/nextcloud-vue (2.180.0) still peers gridstack ^12||^13, so the library's peer range must widen first	session-20261115T174750-744c606b	2026-11-15T18:06:43Z
+fix:dossiq:5357:5c357cd0	fixed BLOCK: value objects imported from Kernel\Contracts\Value; new head 7d05868b, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:07:06Z
+fix:dossiq:4149:9433f0b4	conflicts resolved, pushed e758cb15; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T18:07:24Z
+fix:dossiq:5349:59ceb47d	fixed namespace + stubs, merged development converting its delete calls and fakes; suite = development baseline; new head f0ae869588379b6779c16ddc2a08a90794d5a030	session-20261114T102637-6688951e	2026-11-15T18:07:33Z
+review:pipelinq:2593:c5620371	GREEN: PR tree identical to development, effectively obsolete	session-20261115T174750-744c606b	2026-11-15T18:07:39Z
+fix:pipelinq:2966:ff290970	conflict resolved (ecbRate step + label); new head ed8ef9f5c99b8e6f7ade233d96c14c7caa255d3e, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:07:46Z
+fix:dossiq:3955:e447a743	CONFLICT resolved, renames reapplied on development, pushed 0024f360; REVERIFY recorded	session-20261115T174741-9deaa0be	2026-11-15T18:07:57Z
+fix:pipelinq:2546:ed45af1a	obsolete: merge with development equals development; closed PR with comment	session-20261115T174755-95dc8448	2026-11-15T18:08:17Z
+merge:integriq:3657:7f12c750	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:25Z
+merge:integriq:3615:73ce4aeb	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:28Z
+fix:pipelinq:3271:65502a07	failed: depends on openregister AggregationQuery::create accepting a layout; main's create() takes groupBy/dateBucket/metrics/cumulative only (published contract), so it cannot be fixed in pipelinq	session-20261115T174757-8dfa7406	2026-11-15T18:08:33Z
+merge:integriq:3589:8d6a8b8a	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:30Z
+merge:integriq:3546:b8d12ec0	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:34Z
+review:dossiq:4882:2a47c981	GREEN: changes match its spec delta; 0 new failures	session-20261115T174808-50b8ceec	2026-11-15T18:08:40Z
+review:dossiq:2909:23f03bf8	GREEN: config + test hoist only, failures inherited	session-20261115T174747-978963d5	2026-11-15T18:08:55Z
+fix:pipelinq:2458:9c135002	conflict resolved, merged development, unit suite green; new head 31ac15a5	session-20261115T174833-88ac0233	2026-11-15T18:09:07Z
+fix:dossiq:3957:89c80a54	fixed: merged development onto renamed classes; new head 17cbacac	session-20261115T174819-9af28ef9	2026-11-15T18:09:30Z
+review:dossiq:3299:518945cf	GREEN: bug fix only, no new failures	session-20261115T174741-9deaa0be	2026-11-15T18:09:48Z
+fix:dossiq:5338:740a587a	merged dev, doubles updated, pushed 4924e28, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:09:55Z
+fix:dossiq:4870:ec90c58c	merged development, kept allowDraft additions; new head 3d0c3c95, REVERIFY recorded	session-20261115T152558-f97be55f	2026-11-15T18:10:04Z
+review:dossiq:4887:fc7097f8	GREEN (conflicts with development: 3 files); PR head unit 10129 OK	session-20261115T152543-40aea993	2026-11-15T18:10:14Z
+fix:pipelinq:3152:78b75d0e	conflict resolved, pushed 6f459260; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:10:21Z
+review:dossiq:3298:1caea4a0	GREEN: update validation fix, suite failures identical to baseline (19 inherited)	session-20261115T174804-89f2739f	2026-11-15T18:10:43Z
+fix:pipelinq:3151:b944bc82	stub import conflict resolved; unit 8890 OK; new head 988cd14845379b60c1eb53313516c1286ead8598, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:10:55Z
+review:dossiq:3934:c4912dc2	GREEN: pure rename, failures inherited	session-20261115T174747-978963d5	2026-11-15T18:11:05Z
+fix:portaliq:1069:4ecba22b	closed as superseded: development already implements intake-pay-on-submit (b2798287); neutral comment left	session-20261115T152543-40aea993	2026-11-15T18:11:12Z
+fix:pipelinq:2959:0f2f1b3f	failed: permission (closing the PR was refused). Finding: obsolete, development already carries contact-moments-phone-lookup via 83837c6f (PhoneHistoryService, PhoneNeedles, TicketPhoneController, TicketPhoneE164Listener, BackfillTicketPhoneE164, ticket phone field); close #2959 as superseded	session-20261115T154255-e54527e9	2026-11-15T18:11:34Z
+review:dossiq:5281:c8b6cb2d	GREEN: follows openregister main class moves; suite clean beyond env failures	session-20261115T174819-9af28ef9	2026-11-15T18:11:45Z
+fix:pipelinq:3258:1f7d2689	failed: depends on an openregister change not on main (main 3800106b still has StoreDescriptor(appId, schema, defaultRegister, cardFields, types, publishFields, publishGroups) and no StoreListing/StoreSharing); nothing to fix in pipelinq until that lands, then reverify	session-20261115T154255-e54527e9	2026-11-15T18:11:56Z
+fix:pipelinq:2503:8913d60e	failed: development built marketing-campaign-on-client separately (102b99c87) and moved the listener, intake and touchpoint service onto Kernel interfaces and value classes; 18 files conflict, so the system-account intake must be re-ported onto development's design, not merged	session-20261115T174757-8dfa7406	2026-11-15T18:11:53Z
+review:pipelinq:3150:03b03d45	BLOCK: stub namespace Service\Object does not match OR main Kernel\Contracts\Value	session-20261115T152558-f97be55f	2026-11-15T18:11:54Z
+review:dossiq:3954:bf91e1b8	GREEN: rename refactor, no callers left, no new failures	session-20261114T102637-6688951e	2026-11-15T18:12:11Z
+fix:pipelinq:2566:0b0d7736	failed: 78 commits not on development, 217 conflicting files; too large to resolve as a fix within the cap, needs splitting into smaller PRs	session-20261115T174757-8dfa7406	2026-11-15T18:12:26Z
+merge:opencatalogi:2669:33d1ba38	merge3 tree of 13 opencatalogi PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 2; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T18:12:49Z
+merge:opencatalogi:2650:fcc29c27	merge3 tree of 13 opencatalogi PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 2; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T18:12:53Z
+merge:opencatalogi:2654:fad04640	merge3 tree of 13 opencatalogi PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 2; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T18:12:56Z
+merge:opencatalogi:2665:bb13a382	merge3 tree of 13 opencatalogi PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 2; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T18:13:00Z
+merge:opencatalogi:2687:d8ba2a1c	merge3 tree of 13 opencatalogi PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 2; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T18:13:04Z
