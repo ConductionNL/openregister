@@ -1,12 +1,12 @@
 {
  "app": "decidiq",
- "commit": "75a7a65bd73809cf5c20648da9add7ec531830bb",
- "measured_at": "2026-11-13T20:28:36Z",
+ "commit": "dbda681281415dfaa38d4dc925274ec788c245ed",
+ "measured_at": "2026-11-15T01:28:27Z",
  "php": {
   "tool": "pcov",
-  "pct": 91.97,
-  "statements": 25854,
-  "covered": 23778,
+  "pct": 91.94,
+  "statements": 28583,
+  "covered": 26280,
   "dirs": {
    "lib/Activity/": [
     79,
@@ -21,12 +21,16 @@
     37
    ],
    "lib/BackgroundJob/": [
-    479,
-    478
+    636,
+    607
+   ],
+   "lib/Command/": [
+    106,
+    105
    ],
    "lib/Controller/": [
-    3181,
-    3038
+    3274,
+    3127
    ],
    "lib/Dashboard/": [
     65,
@@ -37,8 +41,8 @@
     145
    ],
    "lib/Exception/": [
-    16,
-    16
+    20,
+    18
    ],
    "lib/Flow/": [
     182,
@@ -53,16 +57,16 @@
     0
    ],
    "lib/Lifecycle/": [
-    259,
+    258,
     256
    ],
    "lib/Listener/": [
-    1208,
-    1176
+    1497,
+    1361
    ],
    "lib/Listener/Registrar/": [
-    103,
-    94
+    117,
+    117
    ],
    "lib/Mcp/": [
     534,
@@ -70,19 +74,19 @@
    ],
    "lib/Middleware/": [
     59,
-    58
+    59
    ],
    "lib/Middleware/Support/": [
     60,
-    55
+    57
    ],
    "lib/Notification/": [
     53,
     53
    ],
    "lib/Portal/": [
-    235,
-    235
+    246,
+    246
    ],
    "lib/Repair/": [
     803,
@@ -97,8 +101,20 @@
     5
    ],
    "lib/Service/": [
-    17703,
-    15886
+    19083,
+    17191
+   ],
+   "lib/Service/Feed/": [
+    31,
+    31
+   ],
+   "lib/Service/Forms/": [
+    74,
+    74
+   ],
+   "lib/Service/Ori/": [
+    571,
+    518
    ],
    "lib/Service/Records/": [
     379,
@@ -106,11 +122,11 @@
    ],
    "lib/Service/Registrar/": [
     26,
-    0
+    26
    ],
    "lib/Service/Settings/": [
     34,
-    32
+    33
    ],
    "lib/Settings/": [
     36,
@@ -123,9 +139,9 @@
   }
  },
  "js": {
-  "pct": 98.26,
-  "statements": 2932,
-  "covered": 2881,
+  "pct": 98.42,
+  "statements": 3291,
+  "covered": 3239,
   "dirs": {
    "src/": [
     95,
@@ -140,16 +156,16 @@
     77
    ],
    "src/components/tabs/": [
-    117,
-    113
+    123,
+    119
    ],
    "src/components/userSettings/": [
     67,
     55
    ],
    "src/components/widgets/": [
-    75,
-    67
+    100,
+    91
    ],
    "src/config/": [
     2,
@@ -168,8 +184,8 @@
     18
    ],
    "src/services/": [
-    317,
-    317
+    335,
+    335
    ],
    "src/store/": [
     10,
@@ -180,8 +196,8 @@
     72
    ],
    "src/utils/": [
-    1588,
-    1574
+    1898,
+    1884
    ],
    "src/views/dashboard/widgets/": [
     103,
