@@ -10984,3 +10984,4 @@ versioniq	685	7f027ce272fc47f60b584d2c78788216f5288533	REVERIFY	worker-07	floor 
 planninq	1186	12fe02445119ad0f2b6f95ebd0702dd97c701e06	GREEN	worker-58	unit 1198 run on tree, baseline 1177 OK (11 skipped), no new failures; tests only
 planninq	1187	cde8fd504f2d70be3ae958206aaf3d4a7a4d3094	GREEN	worker-58	unit 1198 run on tree, baseline 1177 OK (11 skipped), no new failures; tests only
 planninq	1188	c827e551a508d400e7154a3a180046026c27b86b	GREEN	worker-58	unit 1198 run on tree, baseline 1177 OK (11 skipped), no new failures; tests only
+larpinq	1050	ebb209691f38f2cdd3812275fbc828831dc90d7e	GREEN	worker-52	phpunit 845 (baseline 832, 0 fail), vitest 559 pass; build of rules-rulebook-and-spell-lists per REQ-RRS-002/005
