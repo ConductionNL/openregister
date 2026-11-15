@@ -3601,3 +3601,13 @@ learniq	1903	3f6c3b607560531cfd6b2df4567f44762b6caa7e	RED	merge3	GATE RED sbom: 
 learniq	2123	eeb728d3d4d1403ec465b4935a3381402d44801b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.99 holds at 3.99
 learniq	2126	af7f7379f6ac7a9316577188b001e88f886eccb9	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 learniq	2127	6e8befed2ebb8dcdf00d96b8412d1052c7454758	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+humaniq	606	5bf20ffed6898dc757d4a0da92195d542127b9dd	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+humaniq	610	02e0a4dceaa12d99873fcd2b20c45f1c876a95f1	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	662	5227edfc8beb46d9ce676a5e30180e85af26acc8	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+humaniq	664	17ede803edec04f09e647fd6990b952aaa42560f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.48
+humaniq	667	3bb5749bbf2522fed5849445b36691534531a438	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	669	3a6be5bd16678979d91795150f9ca59328e65daa	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	684	c6a338caab5f176f32336472bbeb0882937303ba	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+humaniq	686	03602584dfcf6650b23bb68d860374863c4bfba8	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	846	c4c11987b99ebd7260bde7a8d2842867ec34912d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.48
+humaniq	1096	e60cc3a3e6c3a870a5dddc3b804f7bd33cbef335	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
