@@ -14861,3 +14861,4 @@ fix:learniq:1167:4b75be29	fixed: merged development (clean) + sbom regen, head 6
 review:dossiq:3201	GREEN: marked minor bump, vitest no new failures	session-20261115T200000-e95b89c2	2026-11-15T20:42:04Z
 fix:learniq:1162:18f186f9	fixed: sbom regenerated; head 59935569; 9 js-unit failures inherited from development	session-20261115T200020-0f65b959	2026-11-15T20:42:12Z
 review:shillinq:3078:07b98195	BLOCK; new saveObject calls use removed OR named args	session-20261115T200045-d3bb5c75	2026-11-15T20:42:25Z
+review:shillinq:3062:92f7ebca	GREEN: builds its change, suites green	session-20261115T174747-978963d5	2026-11-15T20:42:19Z
