@@ -12830,3 +12830,4 @@ cover:dossiq:069ee2d6madb6:52aafbe5	already done: lib/Service/Vth/ measures 100%
 fix:dossiq:6556:6c2c0adc	resolved add/add conflict (took development's two test files, kept 3 new ones), suite no new failures, new head 17e8a42; REVERIFY recorded	session-20261115T005122-49ba1b99	2026-11-15T02:16:33Z
 cover:dossiq:069ee2d6madb6:afe29cfd	PR #6565: 7 refusal tests, Consultation 95.29% -> 98.69%	session-20261115T011758-953fbe72	2026-11-15T02:16:54Z
 cover:dossiq:069ee2d6madb6:d1bf7ebd	already done: lib/Service/Pause/ measures 99.7% (334/335) on development f4fac8d3	session-20261115T001758-161b0715	2026-11-15T02:16:50Z
+cover:dossiq:069ee2d6madb6:8f99c0f1	already done: lib/Woo/*.php at 98.7% lines (1663/1685) on development, above 95 target; no PR	session-20261115T015406-eecdf998	2026-11-15T02:17:02Z
