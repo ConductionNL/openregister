@@ -12931,3 +12931,4 @@ merge:shillinq:3088:682aff8d	merge3 tree of 19 shillinq PRs: merged=5 red=0 fail
 fix:shillinq:2991:25b1c43d	stale	feeder	2026-11-15T02:50:25Z
 fix:shillinq:3000:7a353f6d	stale	feeder	2026-11-15T02:50:25Z
 merge:decidiq:2208:92fbaf9f	merge3 tree of 14 decidiq PRs: merged=4 red=3 fail=0 skip=1; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T02:56:31Z
+merge:decidiq:2178:907ccc41	merge3 tree of 14 decidiq PRs: merged=4 red=3 fail=0 skip=1; conflict 6, lint 0, moved 0; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T02:56:34Z
