@@ -10928,3 +10928,4 @@ planninq	1182	8178aea5673364bfc2e776e74f54bba3e3b0256b	GREEN	worker-14	tests onl
 planninq	1183	7d4bbd35da8f8529008fba9108727f3c762137fa	GREEN	worker-14	tests only; unit 1201 OK on tree 1182-1185 (baseline 1177 OK), no new failures
 planninq	1184	07661072a659244c0eff2bce8b038fd9636a72b9	GREEN	worker-14	tests only; unit 1201 OK on tree 1182-1185 (baseline 1177 OK), no new failures
 planninq	1185	59875f39642c5496321832816aead58a23d994cb	GREEN	worker-14	tests only; unit 1201 OK on tree 1182-1185 (baseline 1177 OK), no new failures
+integriq	3564	e75c7913950e8ab8bb5f54ed4030ba4330d05e5e	REVERIFY	worker-07	merged origin/development in: SUMMARY.md keeps both entries, l10n en/nl js+json and openapi.json merged by key (20 branch keys added in development's layout, openapi tag api-design-check appended), no value clashes; test:l10n OK; unit only inherited reds (2E/4F); new head bd35853725e3c6fa13e070fe247e537c1f4efa3e, verify it
