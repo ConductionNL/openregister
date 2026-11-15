@@ -13345,3 +13345,4 @@ review:decidiq:1920:dfa5dba2	GREEN: copy-only rename Store -> Marketplace; PHPUn
 review:decidiq:1737:43c02ff7	GREEN: phpstan 2.3.1 clean, unit suite 4461 OK same as development	session-20261115T152539-8dadb15a	2026-11-15T15:50:45Z
 review:buildiq:820:306021ea	GREEN: patch dev-dep bump, vitest 4667 pass	session-20261115T142149-1d09fceb	2026-11-15T15:50:59Z
 review:dossiq:3193:5b406bdb	GREEN: lock-only dev bump; 19 baseline failures, none new	session-20261115T154254-3d07b219	2026-11-15T15:51:10Z
+verify:stackiq:1954:75830783	stale	feeder	2026-11-15T15:45:20Z
