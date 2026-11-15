@@ -15292,3 +15292,4 @@ fix:decidiq:1470:9e304842	dev merged + sbom; only clashes with stale #1471; new 
 review:opencatalogi:1893:c9845557	GREEN: openspec docs only	session-20261115T220032-9e5549d1	2026-11-15T22:14:56Z
 verify:buildiq:1651:130637a9	GREEN 1651	session-20261115T213122-46f7fafb	2026-11-15T22:15:09Z
 review:buildiq:1620:42a0d795	GREEN: per spec, no new failures	session-20261115T220021-7060b99c	2026-11-15T22:15:16Z
+review:stackiq:1931:ff2b9697	RED: new OR calls use named args removed on openregister main, 8 new test errors	session-20261115T220011-f1302da8	2026-11-15T22:15:24Z
