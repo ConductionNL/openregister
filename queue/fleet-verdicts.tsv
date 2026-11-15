@@ -10798,3 +10798,10 @@ shillinq	2997	97d3c56e405ad880702514c9f18e79e931b0a189	GREEN	worker-22:review	bu
 hermiq	1751	0aaa172675d73c1f73d0d4ce6033d6c617135299	GREEN	worker-45:review	build of models-provider-connections per its specs/design: openai-compatible provider with the private-address guard unless ownNetwork, sign-in tokens limited to their 443 hosts and refused at MCP; contract changes docblock-only; merged with development phpunit 5259 OK (baseline 5218 OK), vitest 1539 passed, phpstan and eslint clean
 shillinq	3086	ba9bec7f853a4f4407ba5ab83efcef6b52db64dc	GREEN	worker-29	unit 11483 tests on tree, baseline 11471 OK, no new failures; tests only
 hermiq	1750	4ea33cc67bbcbb4ef01257a6c4b250b777ae29e0	GREEN	worker-04:review	builds memory-retrieval-scope per its specs (file filters, validated tag admin-only, abstention without the model, scope record D5); on PR+development PHPUnit 5258 OK (baseline 5218 OK), vitest 1545 OK, phpstan clean on changed lib files
+stackiq	1967	2c9ca6eb845e6e38377bd32f8c9f9a455c59b869	GREEN	worker-02	unit 3639 tests on 6-PR tree, baseline 3602 green, 0 new failures; tests-only
+stackiq	1968	6a26dd94b5ba8f7db347d7b09d981ac0b2ad955b	GREEN	worker-02	unit 3639 tests on 6-PR tree, baseline 3602 green, 0 new failures; tests-only
+stackiq	1969	011ca233f5d5d39b9cfd01260abbeab76c78f305	GREEN	worker-02	unit 3639 tests on 6-PR tree, baseline 3602 green, 0 new failures; tests-only
+stackiq	1970	70ef7639e62084c64261183d843d615e84bf5302	GREEN	worker-02	unit 3639 tests on 6-PR tree, baseline 3602 green, 0 new failures; tests-only
+stackiq	1971	7210ea2634ed2e098d2511f914b31cbe7ea5762b	GREEN	worker-02	unit 3639 tests on 6-PR tree, baseline 3602 green, 0 new failures; tests-only
+stackiq	1972	be31ee682effcf01c302e044f86cd767a4940245	GREEN	worker-02	unit 3639 tests on 6-PR tree, baseline 3602 green, 0 new failures; tests-only
+decidiq	2203	0b06187d61d3f2366be0529666ea9304a79b5173	REVERIFY	worker-50	merged development in, kept both sides (guards, KPIs rows 14+15, l10n with one shared key deduped); unit 4385 green, vitest 2847 pass, manifest valid, l10n checks ok; new head 8d2d8f97607e3ddd8cf45de215ecf02a939337f5, verify it
