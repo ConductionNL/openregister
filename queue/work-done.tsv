@@ -13523,4 +13523,5 @@ review:humaniq:669:3a6be5bd	GREEN: vue-router minor; build ok; test:js 210/211, 
 review:learniq:1163:a7126f01	RED 1163: obsolete, development already has dompurify 3.4.17; lock conflict	session-20261115T142958-341f60db	2026-11-15T16:21:14Z
 review:integriq:2671:1ab1068a	BLOCK: phpmd 3 raises reported violations 158->186 vs existing baseline; tests unchanged	session-20261115T155902-521936b1	2026-11-15T16:21:22Z
 review:launchpad:833:62b5ba52	CONFLICT: 84 files incl. routes.php and src/personal.js (deleted on development)	session-20261115T154254-3d07b219	2026-11-15T16:21:30Z
+review:integriq:3126:da5c460d	BLOCK: uses ResolvedConsumer shape that openregister main does not have (stubs mask it)	session-20261115T142934-de7c51d0	2026-11-15T16:21:43Z
 review:keepiq:1498:65127fcb	BLOCK (psalm 7.1 unsatisfiable under config.platform php 8.3; composer install fails)	session-20261115T141023-b06d51da	2026-11-15T16:21:51Z
