@@ -1,12 +1,12 @@
 {
  "app": "planninq",
- "commit": "cec12484d37f5c5151fa610acee535625eb3fdd7",
- "measured_at": "2026-11-14T07:45:44Z",
+ "commit": "9232a4db68fa3fa378893a47dded10d27a054831",
+ "measured_at": "2026-11-15T00:23:18Z",
  "php": {
   "tool": "pcov",
-  "pct": 97.46,
-  "statements": 7323,
-  "covered": 7137,
+  "pct": 87.73,
+  "statements": 9016,
+  "covered": 7910,
   "dirs": {
    "lib/Activity/": [
     76,
@@ -17,23 +17,23 @@
     77
    ],
    "lib/BackgroundJob/": [
-    23,
-    23
+    170,
+    157
    ],
    "lib/Command/": [
-    32,
-    32
+    46,
+    0
    ],
    "lib/Controller/": [
-    857,
-    840
+    909,
+    839
    ],
    "lib/Event/": [
     26,
     26
    ],
    "lib/Exception/": [
-    8,
+    10,
     8
    ],
    "lib/Lifecycle/": [
@@ -41,8 +41,8 @@
     15
    ],
    "lib/Listener/": [
-    1409,
-    1397
+    1495,
+    1363
    ],
    "lib/Middleware/": [
     58,
@@ -53,20 +53,24 @@
     54
    ],
    "lib/Notification/": [
-    14,
-    14
+    47,
+    47
    ],
    "lib/Portal/": [
     7,
     7
    ],
    "lib/Repair/": [
-    318,
-    318
+    401,
+    332
    ],
    "lib/Service/": [
-    3874,
-    3745
+    4987,
+    4260
+   ],
+   "lib/Service/MailIntake/": [
+    163,
+    144
    ],
    "lib/Settings/": [
     0,
@@ -79,33 +83,41 @@
   }
  },
  "js": {
-  "pct": 93.99,
-  "statements": 2962,
-  "covered": 2784,
+  "pct": 93.93,
+  "statements": 3805,
+  "covered": 3574,
   "dirs": {
+   "src/": [
+    44,
+    0
+   ],
    "src/api/": [
-    73,
-    63
+    162,
+    128
+   ],
+   "src/assets/": [
+    0,
+    0
    ],
    "src/integrations/": [
     60,
     49
    ],
    "src/mixins/": [
-    47,
-    47
+    91,
+    74
    ],
    "src/store/": [
-    646,
-    522
+    768,
+    680
    ],
    "src/store/modules/": [
     76,
     73
    ],
    "src/utils/": [
-    2060,
-    2030
+    2604,
+    2570
    ]
   }
  }
