@@ -13545,3 +13545,4 @@ review:larpinq:877:339de0c7	GREEN: ocp dev bump, 860 tests OK	session-20261115T1
 review:launchpad:885:04779dd2	CONFLICT #885: 5 files conflict with development	session-20261115T152601-38767331	2026-11-15T16:25:34Z
 review:learniq:1882:b05df18f	RED: employer portal manifest golden not updated for new field labels	session-20261115T152558-f97be55f	2026-11-15T16:25:43Z
 review:launchpad:880:04f9f39f	GREEN: ocp patch bump, suite identical	session-20261114T075643-acecaad6	2026-11-15T16:25:53Z
+review:learniq:2127:6e8befed	GREEN: lock-only dev bump; 1 inherited failure	session-20261115T154254-3d07b219	2026-11-15T16:26:01Z
