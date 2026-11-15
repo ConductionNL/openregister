@@ -13553,3 +13553,4 @@ filinq	1828	0e6a9fe36beb9dff20cabb9042fa5302d1747a87	REVERIFY	worker-02	merged d
 hermiq	1195	6284aad0010c4862c53368ecadc2ad26fd61a8c0	REVERIFY	worker-22	merged development in (branch was 1494 behind), regenerated sbom.cdx.json with bin/regen-sbom.sh; new head 7d6678393fcb6f34e5686d5bae1b98fb9a9688de, verify it
 hermiq	1189	9c7d6a5148adf30950cdbe0e2dab9407e6f2e166	REVERIFY	worker-15	merged development, regenerated sbom.cdx.json (regen-sbom --check current, pinia 4.1.0); new head 25278c92c0002e624372022a6acede30b7ecdeb9, verify it
 hermiq	1188	b9df03949b5d5c00e88ea1d34a2d88167949cc32	REVERIFY	worker-07	merged development in and regenerated sbom.cdx.json (855 components); vitest 1526/1526 pass; new head 97593dc8ffffbb6783bfaaca2bcdb450ca9ff291, verify it
+thematiq	1126	b0b0a98c600b6a564f0c947ec254d82b273e49d2	REVERIFY	worker-30	merged development in (clean), npm ci ok, vitest 1559 passed; new head 5620b7cb2d7fa051b0dab741117d4c9133f10990, verify it
