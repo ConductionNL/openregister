@@ -13498,3 +13498,4 @@ review:launchpad:785:91201465	CONFLICT #785: 13 files conflict with development,
 review:launchpad:776:7495f48c	BLOCK: obsolete, development already on nextcloud-vue 2.180.0 (PR has 2.60.0, conflicts)	session-20261115T155904-a7df5bc0	2026-11-15T16:16:24Z
 review:larpinq:721:94b57b97	GREEN: obsolete, development already has the same lock update (no-op merge)	session-20261115T154407-94bf5f8c	2026-11-15T16:16:32Z
 review:humaniq:875:0758d28b	BLOCK: wrong ObjectDeletion namespace (Kernel\Contracts\Value on OR main), plus merge conflict	session-20261115T152558-f97be55f	2026-11-15T16:16:52Z
+review:launchpad:673:6ba3c402	RED: gridstack 14 violates nextcloud-vue peer range (npm ci ERESOLVE); also conflicts	session-20261115T155903-abd003e3	2026-11-15T16:17:00Z
