@@ -13394,6 +13394,7 @@ review:dossiq:3953:1fa01764	CONFLICT: rename only, head suite 8654/0 failures, c
 review:dossiq:5340:06631624	GREEN (conflicts with development)	session-20261115T142951-2463b4c4	2026-11-15T15:58:40Z
 review:filinq:1305:66e6aff4	BLOCK (sbom only): lock bump not reflected in sbom.cdx.json; suite green with twig 3.30.0	session-20261115T145533-2db61682	2026-11-15T15:58:50Z
 review:filinq:1758:cb890160	BLOCK: superseded by development b9c8e18ed; test-file conflict; close as obsolete	session-20261115T142934-6cab0c24	2026-11-15T15:59:07Z
+review:filinq:1309:ba8558cc	CONFLICT: package-lock.json vs development; PR alone npm ci + eslint clean	session-20261115T145555-b33410db	2026-11-15T15:59:26Z
 review:dossiq:3203:021d79cc	RED: @nextcloud/vue 9.13.1 needs newer @nextcloud/files; 36 vitest files fail vs 2 baseline; lock conflict	session-20261115T154316-34f0db35	2026-11-15T15:59:23Z
 review:filinq:1313:0908232d	CONFLICT: package-lock.json conflicts with development; bump itself harmless	session-20261115T154258-dee2cc3d	2026-11-15T15:59:35Z
 review:dossiq:3197:4bd6d2ba	GREEN: router minor bump; vitest 7178 pass, 2 inherited failures, 0 new	session-20261115T154407-94bf5f8c	2026-11-15T15:59:43Z
@@ -13417,6 +13418,7 @@ review:filinq:1102:7156c4b9	GREEN: jszip patch bump, vitest 763/763 on merged tr
 review:filinq:1312:4c33817f	BLOCK: obsolete, development already has @nextcloud/vue 9.14.1; lock conflict	session-20261115T142934-6cab0c24	2026-11-15T16:02:40Z
 review:hermiq:1135:988cfbc8	GREEN: dev-only phpmd 3 bump; unit suite identical; notes on deprecated positional args and one new unused-param finding	session-20261114T075643-acecaad6	2026-11-15T16:02:49Z
 review:hermiq:1195:6284aad0	GREEN: eslint bump, vitest 1526 pass, lint identical to baseline	session-20261115T155913-70cee771	2026-11-15T16:02:56Z
+review:hermiq:1187:f2d30166	GREEN: playwright devDep bump, vitest 1526 passed	session-20261115T155903-abd003e3	2026-11-15T16:03:05Z
 review:filinq:1451:258e0913	BLOCK: duplicate of template already on development (#1457); suite 6765 OK	session-20261115T152558-f97be55f	2026-11-15T16:03:13Z
 build:launchpad:scheduled-exports:c4	partial: PR #1229 head 444ff743: tasks 12-16 and 19 built (export editor, list, run history, run detail with retry, preview, dashboard menu entry; 5 vitest specs), 32 and 34 ticked, 31 noted (change's PHP clean, repo-wide phpcs/psalm errors in announcement files). Vitest 2608 all pass after the dup nl 'Port' fix; PHP 4436 OK. Left: 27-30 Playwright, 31 repo-wide, 36 other locales (parity warns)	session-20261115T142134-badaaf30	2026-11-15T16:03:22Z
 review:dossiq:2902:791b50a4	GREEN (no behaviour change; conflicts with development, keep StepConfigCheck)	session-20261115T141023-b06d51da	2026-11-15T16:03:22Z
@@ -13445,6 +13447,8 @@ review:filinq:1849:88cc74e3	RED 1849 (9 failing interface-mock tests; conflicts 
 review:filinq:1848:ac00c57a	GREEN: equivalent audit call, suite clean on merged tree	session-20261115T142934-de7c51d0	2026-11-15T16:07:15Z
 review:hermiq:1579:dae558f0	RED: psalm 7.2.1 lock unsatisfiable under config.platform php 8.3; composer install fails	session-20261115T145533-2db61682	2026-11-15T16:07:23Z
 review:filinq:1311:f1d84cc5	GREEN: vitest 763/763; lockfile conflict with development	session-20261115T155915-84e5dc0a	2026-11-15T16:07:36Z
+review:hermiq:1308:ed66fcbf	GREEN: lock-only phpstan bump, unit suite identical to baseline	session-20261115T155904-a7df5bc0	2026-11-15T16:07:58Z
+review:humaniq:846:c4c11987	GREEN	session-20261115T142951-2463b4c4	2026-11-15T16:08:09Z
 review:hermiq:1307:81668700	GREEN: lock-only dev-tool bump, suite identical to baseline	session-20261115T155902-521936b1	2026-11-15T16:07:46Z
 review:hermiq:1175:ca7f829c	GREEN: patch bump; failures identical to baseline	session-20261115T154254-3d07b219	2026-11-15T16:08:23Z
 review:humaniq:667:3bb5749b	GREEN (dep bump, test:js unchanged vs development)	session-20261115T141023-b06d51da	2026-11-15T16:08:31Z
@@ -13459,3 +13463,18 @@ review:hermiq:1193:67714a4e	GREEN (sass dev bump, vitest and build OK)	session-2
 review:integriq:2562:a0c8e1bf	GREEN: vitest 2374/2374; peer-range note for @conduction/nextcloud-vue	session-20261115T155915-84e5dc0a	2026-11-15T16:10:03Z
 review:humaniq:686:03602584	GREEN: test:js 210/211, failure inherited from development	session-20261115T152554-949e9403	2026-11-15T16:10:15Z
 review:dossiq:3894:c91ec402	GREEN: dev-only phpmd 2.15->3.0 bump; suite unchanged vs development (19 inherited); phpmd runs the ruleset	session-20261115T145546-378b432a	2026-11-15T16:10:25Z
+review:humaniq:610:02e0a4dc	GREEN: @nextcloud/vue minor bump, test:js 210/211 (1 inherited), build ok	session-20261115T155921-aabf185f	2026-11-15T16:10:36Z
+review:humaniq:664:17ede803	GREEN: dep patch bump, JS failure inherited	session-20261114T102637-6688951e	2026-11-15T16:10:50Z
+review:humaniq:670:f378e8f1	RED: npm ci ERESOLVE, preset-env 8 needs @babel/core 8 (root pins 7)	session-20261115T155911-14cd078d	2026-11-15T16:11:11Z
+review:humaniq:1096:e60cc3a3	GREEN: lock-only phpstan bump; suite 4380 OK, phpstan 2.3.5 clean	session-20261115T145535-3f9e5078	2026-11-15T16:11:18Z
+review:humaniq:877:358453bf	BLOCK (imports save-option classes from a namespace openregister does not provide)	session-20261115T141023-b06d51da	2026-11-15T16:11:29Z
+review:hermiq:1167:8c40d8f8	RED: icon markup change breaks one golden fixture	session-20261115T152546-2c24b649	2026-11-15T16:11:40Z
+review:integriq:2992:365213f7	GREEN: axe-core minor dev bump; vitest 2374/2374	session-20261115T154254-3d07b219	2026-11-15T16:11:49Z
+review:humaniq:606:5bf20ffe	GREEN: dev lock bump, suite green, audit unchanged	session-20261114T102641-d4fd3e25	2026-11-15T16:11:56Z
+review:integriq:2924:bac62706	CONFLICT: unmergeable with development; dev added legacy-only helpers importing the deleted file; diff otherwise dead-code + comments	session-20261115T155903-abd003e3	2026-11-15T16:12:05Z
+review:integriq:2563:1c673cef	BLOCK (sbom only): runtime dep bump without sbom.cdx.json; npm ci, vitest 2374, build OK	session-20261115T145541-9d69768b	2026-11-15T16:12:16Z
+review:integriq:3047:1d492aea	BLOCK: RenderSelection imported from a namespace openregister does not have (stub masks it)	session-20261115T142934-de7c51d0	2026-11-15T16:12:26Z
+review:humaniq:876:284aab2c	BLOCK: wrong openregister namespace for ObjectPatch/ObjectFindTarget	session-20261115T154255-e54527e9	2026-11-15T16:12:52Z
+review:integriq:2654:86718a25	GREEN: spec-only change, merges clean	session-20261115T154254-3d07b219	2026-11-15T16:13:02Z
+review:keepiq:1500:1c81214a	GREEN: lock-only phpseclib 4.0.3 bump, suite 5213 OK on merge with development	session-20261115T152547-c779ca49	2026-11-15T16:13:05Z
+review:integriq:2650:6bf97c5a	CONFLICT: 8 files; suite not runnable (missing php ext bcmath/soap in worker)	session-20261115T154300-03b63424	2026-11-15T16:13:29Z
