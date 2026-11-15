@@ -11190,3 +11190,6 @@ dossiq	6551	014b5318cc1c30cb33c4424451abb631a470b78d	GREEN	worker-47	phpunit 176
 larpinq	1051	77585fbdb9fdf364deecdbc77c920c61efc4ac82	RED	merge3:merge-gate	GATE RED floor: overall: 4.99 -> 4.91; duplication: 5.14 -> 5.08; unit_size: 4.74 -> 4.70; unit_complexity: 4.87 -> 4.79; unit_interfacing: 4.71 -> 4.24
 larpinq	1052	1b2b0ad356c9f3412103f96707507ed8a1869548	RED	merge3:merge-gate	GATE RED checker floor: spdxheaders stars: 5 -> 4
 larpinq	1060	31b8e3db2bea3650df17a3230e527846dd526951	RED	merge3:merge-gate	GATE RED floor: overall: 4.99 -> 4.97; unit_size: 4.74 -> 4.72; unit_complexity: 4.87 -> 4.79; unit_interfacing: 4.71 -> 4.64
+larpinq	1041	2309f59a66204117fc80f6b02df63768f8732982	CONFLICT	merge3	merges clean on development alone; files: l10n/be.js l10n/be.json l10n/bg.js l10n/bg.json l10n/bs.js l10n/bs.json l10n/ca.js l10n/ca.json l10n/cs.js l10n/cs.json l10n/da.js l10n/da.json l10n/de.js l10n/de.json l10n/el.js l10n/el.json l10n/en.
+larpinq	1053	e06c2e6d56a337b0f91019db10fe823a4fc44bea	CONFLICT	merge3	merges clean on development alone; files: docs/features/README.md 
+larpinq	1054	3498aefd75042d35969859d5a0b63542a4c7c62f	CONFLICT	merge3	merges clean on development alone; files: src/manifest.json tests/vitest/fixtures/effectiveManifest.golden.json 
