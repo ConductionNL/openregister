@@ -15168,3 +15168,5 @@ review:learniq:2507:59e5c491	RED: 5 new failures merged with development (old sa
 review:dossiq:6203:f6f40df6	RED: one new test expects the old find() argument list	session-20261115T213107-505dc338	2026-11-15T21:49:48Z
 review:decidiq:2191:58233c56	GREEN: manifest-only spec build, vitest and manifest validation green	session-20261115T213110-6b33145c	2026-11-15T21:49:55Z
 review:versioniq:507:63401e45	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:50:03Z
+review:versioniq:505:aeceef74	GREEN: test-utils patch bump, vitest 3012 OK	session-20261115T213156-1ffcf961	2026-11-15T21:50:21Z
+review:filinq:2122:e0f7a647	BLOCK: repair still uses dropped OR save args	session-20261115T203012-30a1abde	2026-11-15T21:50:32Z
