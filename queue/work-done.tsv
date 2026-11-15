@@ -15368,3 +15368,4 @@ fix:thematiq:1289:2557e0ba	no change needed: sbom already current (dev-only bump
 fix:thematiq:1293:09458d15	merged development, tests and build green, REVERIFY recorded	session-20261115T220025-8d429838	2026-11-15T22:27:01Z
 fix:thematiq:1290:f560b357	dev merged; conflict is with sibling dependabot PRs only	session-20261115T203012-30a1abde	2026-11-15T22:27:11Z
 fix:thematiq:1558:4e04b3da	sbom current (dev-only bump, recipe omits dev); merged development, head 756f3b85, REVERIFY	session-20261115T220134-9124a7d0	2026-11-15T22:27:22Z
+fix:learniq:2484:13aa1fe4	conflict resolved, pushed 32d62246, REVERIFY	session-20261115T220047-d6737933	2026-11-15T22:27:34Z
