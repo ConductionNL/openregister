@@ -14867,3 +14867,4 @@ review:shillinq:3055:faf02682	GREEN	session-20261115T202932-d1067ee4	2026-11-15T
 fix:humaniq:606:5bf20ffe	fixed: merged development + sbom regen, head 647da215	session-20261115T202932-ab57353c	2026-11-15T20:42:54Z
 review:dossiq:4887:5518d499	RED: 2 new failures (ListenerRegistrarTest order, ObligationDeclarationEdgesTest defaults need whenUnmet); code matches spec	session-20261115T203020-5a3aa6f4	2026-11-15T20:43:09Z
 fix:learniq:2127:6e8befed	sbom regenerated, pushed 68efea31, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:43:28Z
+review:shillinq:1904:cc11db13	GREEN: unit ok, phpmd findings 153->152 (gate already red on development)	session-20261115T200026-9a5b8685	2026-11-15T20:43:39Z
