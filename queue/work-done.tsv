@@ -15161,3 +15161,4 @@ review:decidiq:1942:8f1c4988	GREEN: flow node FlowNodeCall adaptation, tests gre
 review:versioniq:717:8419af1d	GREEN: frontend-only spec build, vitest 3041 OK	session-20261115T213110-6b33145c	2026-11-15T21:48:28Z
 review:decidiq:1691:d103222b	GREEN: spec-conform frontend feature, all JS/PHP/l10n checks pass	session-20261115T213122-e023a81e	2026-11-15T21:48:38Z
 review:stackiq:1930:4b692e5a	GREEN on head; conflicts with development	session-20261115T203012-30a1abde	2026-11-15T21:48:49Z
+review:versioniq:506:cf0ff5ad	GREEN: vue patch, vitest 3012/3012, build ok	session-20261115T211111-34885d99	2026-11-15T21:49:03Z
