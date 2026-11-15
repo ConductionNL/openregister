@@ -14020,3 +14020,4 @@ fix:dossiq:3200:74d2bc80	failed: permission (closing the superseded PR was refus
 review:filinq:1307:af2c6d19	CONFLICT: lock conflicts, development already on sass 1.108.2	session-20261115T174833-88ac0233	2026-11-15T17:59:56Z
 fix:pipelinq:2498:acffd38a	obsolete: development already has marketing-campaign-on-client (#3713, firstTouch/lastTouch on contact+client, tasks all ticked); closed PR with a neutral comment	session-20261115T152552-0cb4306e	2026-11-15T18:00:02Z
 review:openregister:10589:e253cb1a	APPROVE 10589 (additive audit filters; suites green)	session-20261115T142201-ea23e682	2026-11-15T18:00:04Z
+fix:pipelinq:2957:0a390a39	closed as superseded: development already has the full clients-history-summary-and-risk build (153dff0e7)	session-20261115T174750-744c606b	2026-11-15T18:00:26Z
