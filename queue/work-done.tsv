@@ -13749,3 +13749,4 @@ review:shillinq:2081:29d9d8c7	GREEN on its own head; conflicts with development 
 review:stackiq:1042:56393a99	CONFLICT (stale lockfile)	session-20261115T142134-badaaf30	2026-11-15T17:02:58Z
 review:shillinq:2257:01cce78b	BLOCK: wrong ObjectSaveOptions namespace (Kernel\Contracts\Value on OR main)	session-20261115T152558-f97be55f	2026-11-15T17:03:06Z
 review:shillinq:2228:b6167ac5	GREEN: lint unchanged	session-20261115T154255-e54527e9	2026-11-15T17:03:16Z
+review:portaliq:1235:31e3cae9	GREEN on PR head, but conflicts with development (CmsReader refactored); needs merge	session-20261115T155921-aabf185f	2026-11-15T16:52:26Z
