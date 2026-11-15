@@ -12868,3 +12868,4 @@ verify:dossiq:6563:607c71a0	6563 GREEN, 6564 GREEN	session-20261115T005412-4a06d
 cover:integriq:92114ab0m6759:075ad59c	already done: lib/Service/CaseSystem/ at 96.3% lines (421/437) on development, above 95 target; no PR	session-20261115T015406-eecdf998	2026-11-15T02:26:17Z
 verify:portaliq:2508:5c7cd01a	GREEN portaliq#2508: no new failures (php 5967, node 4 inherited)	session-20261115T021828-68c5f276	2026-11-15T02:26:19Z
 cover:openregister:7350e3efm1efa:053b65e7	PR #10581: lib/Db/MagicMapper 94.28% -> 95.5%; MagicTableIndexerCreateTest (6 tests) + @uses fixed in 18 risky tests; Db suite 5803->5809 OK	session-20261115T014829-0a32adc7	2026-11-15T02:26:24Z
+cover:openregister:7350e3efm1efa:b4a31049	PR #10582: JoinedColumnProjection + DeploymentOrigin, 7 tests; touched dirs 886->890 and 378->381, 0 failures	session-20261115T005141-9356bed0	2026-11-15T02:26:38Z
