@@ -13735,3 +13735,4 @@ review:shillinq:2766:64b9e198	GREEN: phpstan minor bump, analyse clean on both	s
 review:shillinq:2099:b77de1fd	CONFLICT: modify/delete of PipelinqIntegration.vue; 4 dev test files depend on it	session-20261115T155915-84e5dc0a	2026-11-15T17:00:08Z
 review:shillinq:1958:66501062	CONFLICT: lib and l10n conflicts with development refactors; diff additive	session-20261115T145555-b33410db	2026-11-15T17:00:22Z
 review:shillinq:2249:530fcbd0	CONFLICT (use-block only; resolved locally unit 12214 OK, otherwise GREEN)	session-20261115T154307-1fc2cc78	2026-11-15T17:00:33Z
+review:stackiq:1064:92f38c90	CONFLICT: package-lock.json	session-20261115T142149-1d09fceb	2026-11-15T17:00:53Z
