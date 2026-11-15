@@ -91,6 +91,31 @@ class EvidenceRoster implements IPrincipalResolver {
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode
  * @uses   \OCA\OpenRegister\Service\Flow\FlowRunAssignee
+ * @uses   \OCA\OpenRegister\Db\Task
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowAdvanceBudget
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowResumeState
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowSuspension
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowValueRenderer
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigCommon
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigReadingsTrait
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep
+ * @uses   \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
+ * @uses   \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry
+ * @uses   \OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent
+ * @uses   \OCA\OpenRegister\Service\Form\FormDestinationValidator
+ * @uses   \OCA\OpenRegister\Service\Task\TaskForm
+ * @uses   \OCA\OpenRegister\Service\Task\TaskFormFields
+ * @uses   \OCA\OpenRegister\Service\Task\TaskFormReader
+ * @uses   \OCA\OpenRegister\Service\Task\TaskFormSources
+ * @uses   \OCA\OpenRegister\Db\FlowRun
+ * @uses   \OCA\OpenRegister\Service\Flow\RunSignal
  */
 final class UserTaskResolutionEvidenceTest extends TestCase {
 
