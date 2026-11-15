@@ -15361,3 +15361,4 @@ fix:hermiq:1174:e5834a5e	fixed: sbom regenerated, pushed 296b7354	session-202611
 fix:hermiq:1193:67714a4e	sbom regenerated, development merged; new head 7d49a897 REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:26:00Z
 fix:dossiq:3197:4bd6d2ba	stale: PR already merged, branch deleted	session-20261115T213134-4b0d2823	2026-11-15T22:26:08Z
 fix:thematiq:1292:f21993f3	merged development, vitest green, pushed 1c6de772, REVERIFY	session-20261115T220021-7060b99c	2026-11-15T22:26:17Z
+fix:shillinq:3055:aa654dd7	stale	session-20261115T220050-f9da932e	2026-11-15T22:26:24Z
