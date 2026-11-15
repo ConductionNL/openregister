@@ -12233,3 +12233,4 @@ cover:buildiq:70b3e29em66d0:aae6d66c	already done: lib/Exception/*.php at 100% l
 cover:pipelinq:7f9dc8e6m799d:2cc09f74	PR #3852: 1 test, MailAccountTransport 100%; dir ~98% (4 lines unreachable in extractProviderId); suite 8452->8453 green	session-20261115T001746-8fbb2c9c	2026-11-15T00:24:20Z
 cover:portaliq:b60f3b81m4ccb:9d3a1784	PR #2519: 11 tests, lib/BackgroundJob 438/446 -> 448/449 stmts, suite 5840->5851 green	session-20261115T001748-75994f45	2026-11-15T00:24:20Z
 verify:integriq:3641:62b34a24	RED #3641: order-dependent new test (static selfSchemaIds cache not reset)	session-20261114T234948-b89aaae1	2026-11-15T00:24:15Z
+cover:buildiq:70b3e29em66d0:d33a91b0	already done: lib/Service/Copilot/ measures 99.51% lines (205/206) on development; no PR	session-20261114T231750-d1c755b0	2026-11-15T00:24:58Z
