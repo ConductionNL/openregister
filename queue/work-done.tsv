@@ -14705,3 +14705,4 @@ review:launchpad:786:d5210578	GREEN: additive features, suites pass	session-2026
 review:planninq:909:db6e11d8	GREEN: marked minor bump, vitest 3566 passed	session-20261115T195957-8e60ca53	2026-11-15T20:12:53Z
 review:planninq:930:de4742c6	GREEN: refactor + new guarded server actions; PHP 1226 OK, vitest 3564 pass	session-20261115T200020-0f65b959	2026-11-15T20:13:03Z
 review:launchpad:785:962d3592	RED: props golden fixture lacks new shortcuts prop; PHP 4476 OK	session-20261115T200043-78b85ca2	2026-11-15T20:13:15Z
+review:opencatalogi:2416:bce96302	RED: 2 development tests still mock the old find() shape (PlooiDeliveryEdgeCases, PublicationCatalogFiltersGolden); lib migration fine	session-20261115T182940-bfeb7e78	2026-11-15T20:13:33Z
