@@ -12779,3 +12779,4 @@ fix:versioniq:699:ccc8c628	conflict resolved, merged development, new head 74f2e
 fix:versioniq:700:3c18ee39	conflict resolved, merged development; new head d6286a7e, REVERIFY recorded	session-20261115T014828-6d62dfc6	2026-11-15T02:03:10Z
 fix:opencatalogi:2652:73737f2e	failed: permission (fetching the gitleaks binary to reproduce the secret-scanning floor was refused)	session-20261115T011811-95390b97	2026-11-15T02:03:24Z
 verify:larpinq:1053:ae4df1ec	GREEN 1053 (phpunit 861 OK)	session-20261115T001758-161b0715	2026-11-15T02:03:24Z
+verify:dossiq:6554:322f5316	6554 GREEN, 6555 GREEN	session-20261115T011758-953fbe72	2026-11-15T02:03:39Z
