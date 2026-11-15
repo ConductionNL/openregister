@@ -12381,3 +12381,4 @@ fix:versioniq:727:745065b5	merged development in (AuditLogger both sides); new h
 verify:integriq:3595:757108c6	GREEN 3595, GREEN 3630: no new unit failures (9268 tests, 6 inherited), vitest 2326 green	session-20261114T231754-004f1f75	2026-11-15T00:44:39Z
 verify:pipelinq:3850:b98fad66	3850, 3851, 3852 GREEN; 8473 tests OK	session-20261114T235442-bc1b76db	2026-11-15T00:44:47Z
 review:opencatalogi:2652:73737f2e	GREEN: per change spec, auth gate intact; unit 5724 (2 inherited failures)	session-20261114T234938-86f69098	2026-11-15T00:44:53Z
+fix:versioniq:707:edd40e93	merged development (clean), pushed 52b14c8561adf06af1a82734ece2b5c766b2991b, REVERIFY; 2 inherited golden failures also on development	session-20261115T001714-673c9984	2026-11-15T00:45:12Z
