@@ -13390,3 +13390,4 @@ review:filinq:1308:28b5e71e	GREEN: mammoth minor bump; vitest 763/763 pass	sessi
 review:dossiq:5365:b115fa9f	BLOCK 5365: depends on unmerged openregister #9103 signature; breaks against current openregister main	session-20261115T142958-341f60db	2026-11-15T15:57:53Z
 review:dossiq:5396:7493d64f	GREEN: dev-dep lock bump, no new failures	session-20261115T152546-2c24b649	2026-11-15T15:58:06Z
 review:dossiq:3299:779b4422	BLOCK (conflict): add/add conflict in the listener test against development; lib fix is sound	session-20261114T075643-acecaad6	2026-11-15T15:58:13Z
+review:filinq:1852:38008824	BLOCK: depends on openregister #9103 which is not on main; would break slug searches at runtime	session-20261115T154300-03b63424	2026-11-15T15:58:24Z
