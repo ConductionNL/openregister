@@ -14270,4 +14270,5 @@ review:portaliq:1765:756be697	stale	session-20261115T174741-9deaa0be	2026-11-15T
 fix:shillinq:2100:32dc7230	RED+CONFLICT fixed, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:44:32Z
 fix:dossiq:4886:63c08dd9	enum fixed + test, pushed 8a2f03f5, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:44:48Z
 fix:learniq:2507:c404ad7d	floor restored (unit_complexity 4.38->4.40), pushed 6eb2dbee, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T18:45:06Z
+fix:learniq:1163:a7126f01	obsolete: development already locks dompurify 3.4.17; PR closed with comment	session-20261115T183029-6c0565bd	2026-11-15T18:45:19Z
 fix:filinq:1305:66e6aff4	sbom regenerated after merging development; unit 6772 OK; new head 72084b47	session-20261115T174739-b14c2df4	2026-11-15T18:45:16Z
