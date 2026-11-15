@@ -13715,7 +13715,10 @@ review:shillinq:2070:036e98c2	CONFLICT: 11 files conflict with development	sessi
 review:pipelinq:3258:1f7d2689	BLOCK #3258: targets a StoreDescriptor signature openregister main lacks; also conflicts	session-20261115T152601-38767331	2026-11-15T16:57:02Z
 review:shillinq:2071:027f8107	BLOCK (conflict only): 5 files conflict with development's refactor 4133ba516; the change tightens access and should be carried over	session-20261114T095641-533e2a00	2026-11-15T16:57:11Z
 review:shillinq:2253:69b4e3e6	BLOCK: wrong ObjectDeletion namespace (Kernel\Contracts\Value on OR main), 9 conflicts	session-20261115T152558-f97be55f	2026-11-15T16:57:25Z
+review:learniq:2128:e26f8db2	BLOCK: lock not installable under the repo's platform php 8.3 (psalm 7 needs ~8.3.16)	session-20261115T155902-521936b1	2026-11-15T16:57:46Z
 review:shillinq:2767:c0cd6601	RED: psalm 7.2 lock uninstallable under config.platform php 8.3	session-20261115T155903-abd003e3	2026-11-15T16:57:46Z
 review:shillinq:2091:67b5afb6	BLOCK: superseded by development (same feature already merged); close as obsolete	session-20261115T142934-de7c51d0	2026-11-15T16:57:52Z
 review:shillinq:2048:202ec0a0	GREEN: ocp patch bump; phpunit 12214 OK	session-20261115T154407-94bf5f8c	2026-11-15T16:58:02Z
 review:learniq:1164:7f7606d0	BLOCK: gridstack 14 outside nextcloud-vue peer range; conflicts with development	session-20261115T152554-949e9403	2026-11-15T16:48:56Z
+review:shillinq:1959:9a607395	CONFLICT: 19 files conflict with development; needs merge-forward before review	session-20261115T154311-e8600d84	2026-11-15T16:58:28Z
+review:stackiq:1043:a1603162	BLOCK: obsolete, development already locks sass 1.108.2	session-20261115T155902-521936b1	2026-11-15T16:58:33Z
