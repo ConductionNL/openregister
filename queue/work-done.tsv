@@ -14745,3 +14745,4 @@ review:versioniq:503:2d7f74a1	GREEN: deps bump, vitest+build ok	session-20261115
 fix:portaliq:1682:505a7cd5	sbom regenerated, REVERIFY recorded; development red on RefIntegrationProvider stub	session-20261115T174747-978963d5	2026-11-15T20:20:13Z
 review:thematiq:1117:2427508a	GREEN: no behaviour change, phpmd 3 clean, no new failures	session-20261115T200011-d13b13ca	2026-11-15T20:20:29Z
 fix:dossiq:2705:b7e00cc6	fixed: development merged, sbom.cdx.json regenerated; new head 643da12e	session-20261115T182940-bfeb7e78	2026-11-15T20:20:40Z
+fix:dossiq:3297:78031823	conflict resolved, pushed 2d7e3f4a, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:20:53Z
