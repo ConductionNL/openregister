@@ -12881,3 +12881,4 @@ cover:dossiq:069ee2d6madb6:cd5286bf	already covered: 302/303 statements (99.7%, 
 cover:dossiq:069ee2d6madb6:9e8a978e	already covered: 280/280 statements (100%) across the eight dirs; no PR	session-20261115T011758-953fbe72	2026-11-15T02:28:25Z
 verify:versioniq:736:becc0e7d	736 GREEN	session-20261115T011811-95390b97	2026-11-15T02:28:36Z
 cover:dossiq:069ee2d6madb6:9cb3375b	already covered: 307/309 statements (99.4%, target 95); the two unhit lines are value-object constructors; no PR	session-20261115T011758-953fbe72	2026-11-15T02:28:40Z
+build4:openregister:working-calendar-admin:c4	PR openregister#10557 pushed 6f300272: C67.6 done (facet week buckets follow the declared first week via FacetWeekLabels/FacetWeekNumbering; schema workingCalendar key no longer dropped on save); 9 tests; Architecture, Service/Object, Db green, Flow only inherited isolation error; C67.8 is a handover, not code	session-20261115T005139-0d6ecf1d	2026-11-15T02:28:54Z
