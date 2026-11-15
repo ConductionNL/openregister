@@ -13726,3 +13726,4 @@ review:shillinq:2080:6a0ebf26	CONFLICT: access check OK, tests green on head; co
 review:shillinq:1965:6dd9752c	CONFLICT (version + lock fixture only); additive schema fragment	session-20261115T142134-badaaf30	2026-11-15T16:58:53Z
 review:shillinq:2259:f41c6ff8	CONFLICT: 2 files conflict with development; OR API present on main	session-20261115T154258-dee2cc3d	2026-11-15T16:59:06Z
 review:shillinq:2230:b859457f	GREEN: patch bump, build ok, 1 inherited vitest failure	session-20261114T102641-d4fd3e25	2026-11-15T16:59:14Z
+review:shillinq:2227:13c58709	BLOCK: @vueuse/core 15 outside the component library peer range	session-20261115T142934-6cab0c24	2026-11-15T16:59:27Z
