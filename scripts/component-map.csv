@@ -1686,6 +1686,7 @@ Search/SearchRegistrar.php,50,Search,Search,Search/SearchRegistrar.php,0,,Search
 Search/SearchScopes.php,94,Search,Platform,Platform/Search/SearchScopes.php,0,,Search
 Search/SearchScopeCatalog.php,,Search,,,,,Search
 Search/Service/ActivityWindow.php,11,Search,Search,Search/Service/ActivityWindow.php,0,,Search
+Search/Service/Aggregation/AggregateChartData.php,167,Search,Search,Search/Service/Aggregation/AggregateChartData.php,0,,Search
 Search/Service/Aggregation/AggregateReportEnvelope.php,143,Search,Search,Search/Service/Aggregation/AggregateReportEnvelope.php,0,,Search
 Search/Service/Aggregation/AggregateReportPeriods.php,180,Search,Search,Search/Service/Aggregation/AggregateReportPeriods.php,0,,Search
 Search/Service/Aggregation/AggregationAnnotationValidator.php,233,Search,Search,Search/Service/Aggregation/AggregationAnnotationValidator.php,0,91,Search

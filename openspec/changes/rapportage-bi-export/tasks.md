@@ -18,7 +18,13 @@
       PDF DONE: the report section carries the title, generation time, object count, the applied filters and a
       status breakdown with counts and percentages (only for a readable, unmasked status column), on A4 landscape with
       "Page n / N" in the footer; pinned in `ExportServicePdfTest::testBuildPdfSectionSummarisesTheStatusAndTheFilters`.
-- [ ] Implement: The system MUST provide chart data API endpoints for frontend visualization
+- [x] Implement: The system MUST provide chart data API endpoints for frontend visualization
+      DONE: `GET /api/objects/{register}/{schema}/chart?type=bar|line|area|pie|doughnut` takes every parameter of
+      `/aggregate` (groupBy, metric/field, metrics[...], interval with from/to, having, filters), runs that report
+      (so RBAC, multi-tenancy and the gap-filled buckets come with it) and answers `{type, labels, series: [{name,
+      data}]}`, or for pie/doughnut `{type, labels, series: [values], percentages}` (one decimal). `type` defaults
+      to bar; an unknown type is a 400 before anything is read; a refused report is answered as it is. The reshaping
+      is `AggregateChartData`; pinned in `AggregateChartDataTest` and `AggregationControllerChartTest`.
 - [ ] Implement: The system MUST support cross-register reporting
 - [x] Implement: The system MUST support date range filtering and period-over-period comparison
       DONE: `from`/`to` on `/api/objects/{register}/{schema}/aggregate` narrow a categorical report to `_created` in

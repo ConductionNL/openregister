@@ -48,6 +48,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregateChartData;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportEnvelope;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportPeriods;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
@@ -932,6 +933,54 @@ class AggregationController extends Controller {
 
 		return in_array(strtolower(trim((string)$value)), ['true', '1', 'yes', 'on'], true);
 	}//end isTrue()
+
+	/**
+	 * Chart data for one report: `GET /api/objects/{register}/{schema}/chart`.
+	 *
+	 * Takes every parameter of {@see report()} (`groupBy`, `metric`/`field`,
+	 * `metrics[...]`, `interval` with `from`/`to`, `having`, filters) plus
+	 * `type` (bar, line, area, pie or doughnut; bar when absent), runs the
+	 * report and answers `{labels, series: [{name, data}]}`, or for a pie or
+	 * doughnut `{labels, series: [values], percentages}`. A time series keeps
+	 * the report's gap-filled buckets, so a line chart is continuous. A
+	 * refused report (400, 403, 404) is answered as it is.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema   Schema reference.
+	 *
+	 * @return JSONResponse The chart data with the report's `X-OR-Cache` header; 400 for an unknown type.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-provide-chart-data-api-endpoints-for-frontend-visualization
+	 */
+	public function chart(string $register, string $schema): JSONResponse {
+		try {
+			$type = AggregateChartData::type(raw: $this->request->getParam('type'));
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		$report = $this->report(register: $register, schema: $schema);
+		if ($report->getStatus() !== Http::STATUS_OK) {
+			return $report;
+		}
+
+		$data = $report->getData();
+		$groupFields = $this->parseGroupByParam();
+		$entries = $this->reportEntries(metrics: $this->parseMetricsParam());
+		$chart = AggregateChartData::fromRows(
+			type: $type,
+			rows: ($data['results'] ?? []),
+			labelColumn: $groupFields[0],
+			metricColumns: array_values(AggregateReportEnvelope::metricNames(metrics: $entries))
+		);
+
+		$response = new JSONResponse(['type' => $type] + $chart);
+		$response->addHeader('X-OR-Cache', (string)($report->getHeaders()['X-OR-Cache'] ?? 'miss'));
+		return $response;
+	}//end chart()
 
 	/**
 	 * Period-over-period comparison: `GET /api/reports/compare`.
