@@ -14148,3 +14148,4 @@ review:pipelinq:3148:37d49de1	GREEN 3148	session-20261115T154255-e54527e9	2026-1
 fix:portaliq:1659:3c90bf4d	conflict resolved (dup rowClass dropped), pushed 3bad2deb; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:24:54Z
 review:pipelinq:3146:9853385c	GREEN; FlowNodeCall namespace matches OR main, phpunit 8890 OK	session-20261115T152558-f97be55f	2026-11-15T18:25:08Z
 review:dossiq:3957:b44c6a4f	GREEN: matches its change spec; 0 new failures	session-20261115T174808-50b8ceec	2026-11-15T18:25:19Z
+fix:portaliq:1666:00663233	conflict resolved keeping development's actions; new head 3a173dca3d9798e6eef30195d81dc42bb356d376, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:25:32Z
