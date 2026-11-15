@@ -13731,3 +13731,4 @@ review:shillinq:2411:6ca5ae67	BLOCK: targets openregister settings value objects
 review:shillinq:2408:837e65b7	BLOCK: create(layout:) does not exist in OpenRegister main; stub masks it; also conflicts	session-20261115T142149-1d09fceb	2026-11-15T16:59:46Z
 review:shillinq:2766:64b9e198	GREEN: phpstan minor bump, analyse clean on both	session-20261114T075643-acecaad6	2026-11-15T16:59:55Z
 review:shillinq:1958:66501062	CONFLICT: lib and l10n conflicts with development refactors; diff additive	session-20261115T145555-b33410db	2026-11-15T17:00:22Z
+review:shillinq:2249:530fcbd0	CONFLICT (use-block only; resolved locally unit 12214 OK, otherwise GREEN)	session-20261115T154307-1fc2cc78	2026-11-15T17:00:33Z
