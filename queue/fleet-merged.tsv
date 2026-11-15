@@ -3490,3 +3490,13 @@ portaliq	1982	19a536caaaf1ad5c295587c71af715d3b1b848df	RED	merge3	GATE RED sbom:
 portaliq	1989	4db47cae66c813180acfff62ae05b6b6f8fef5e3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
 portaliq	2349	124b9f8678c713f568fe461688af30b87afcac23	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 portaliq	2527	c2ba60d892059e085dd9814f3b900f52b3cca58c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+versioniq	501	e3e915e4f59e4ccc21a85ca0fe5ac8752ce4d9a0	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	502	f18aa2a5200164cdcd84ed3538688e661aaa1db8	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	504	7d37bf12dc018553872f5e4f93be2f98edbcd5ef	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	505	54c33622e858e7123c4dab56cf704523c8227c07	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	506	c6a1011e57d832780fac868efaeb62f5ae3dcfc4	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	691	c3a11b62492684743530f8243a331abf3c252683	RED	merge8	GATE RED floor: overall: 4.95 -> 4.89; duplication: 5.16 -> 5.13; unit_complexity: 4.59 -> 4.54; unit_interfacing: 4.16 -> 3.88
+versioniq	695	9b2e45a1faf604ffc76dabf7c39f39f517a44ce1	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.02
+versioniq	717	a769cc5a792379a2362cc9e383a67b9ca4552bc9	RED	merge8	GATE RED floor: unit_complexity: 4.59 -> 4.56
+versioniq	718	756fab921637923d9142088fbe77e8f2d64994c1	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.03
+versioniq	732	338949a6300653f262a2b4a291590337bdd6d55c	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
