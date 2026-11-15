@@ -13662,4 +13662,5 @@ review:portaliq:1468:09694f2e	CONFLICT (35 files, stale since 10 Oct)	session-20
 review:planninq:1064:54981d9f	RED: conflicts with development; new old-form find() callers in ProjectCopyService/ProjectExportService uncovered	session-20261115T154316-34f0db35	2026-11-15T16:46:42Z
 review:portaliq:1995:277966b3	BLOCK: wrong OpenRegister namespace for ObjectDeletion/ObjectFindTarget; 5 conflicts	session-20261115T154254-3d07b219	2026-11-15T16:46:52Z
 merge:filinq:2069:e87c8717	merge3 tree of 11 filinq PRs: merged=2 red=1 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T16:47:18Z
+review:pipelinq:3280:57a83e99	GREEN: phpstan 2.3.5 clean on the project, suite 8890 OK	session-20261115T145533-2db61682	2026-11-15T16:47:32Z
 review:portaliq:1673:e715241c	CONFLICT: zuiddrecht.json seed and manifest.json conflict with development	session-20261115T155903-abd003e3	2026-11-15T16:47:42Z
