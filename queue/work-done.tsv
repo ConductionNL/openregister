@@ -12771,3 +12771,4 @@ review:openregister:10578:f36ef580	APPROVE: test metadata only, suites green	ses
 build:opencatalogi:published-file-carries-its-facts:c3	PR #2725: 2.1 title writer, 2.2 batch publish wiring done (24 tests, suite 5708->5732, same 2 inherited failures); left 2.2b (openregister redaction-release-safeguards unmerged), 2.3 e2e+37-locale UI, 2.4 live, 3.x	session-20261115T011811-95390b97	2026-11-15T02:01:42Z
 fix:larpinq:1041:2309f59a	REVERIFY: merged development, l10n resolved mid-catalogue, test adjusted for added cell widget; new head 6545e1de	session-20261115T001758-161b0715	2026-11-15T02:01:58Z
 review:learniq:2513:fd13b215	GREEN: dev merge only since last GREEN, PHP 6868 (1 inherited), JS 9 inherited	session-20261114T234941-bc8686af	2026-11-15T02:02:16Z
+review:learniq:2521:91383eb4	GREEN: per spec, no new failures; noted dropped SPDX headers in 22 locale files from a merge	session-20261115T005138-c7bbb0f0	2026-11-15T02:02:27Z
