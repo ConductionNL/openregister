@@ -13192,3 +13192,4 @@ build:hermiq:models-several-models-per-turn:c4	partial: PR #1781 head 00e5f205, 
 review:learniq:2507:c404ad7d	GREEN: matches practical-exam-assessment specs; suite 6881 with only the inherited he.json failure; phpstan clean	session-20261115T145533-2db61682	2026-11-15T15:21:43Z
 merge:versioniq:690:182263a2	merge3 tree of 1 versioniq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T15:22:06Z
 build:decidiq:live-room-conference-system-link:c4	done: PR #2170 head 730fcd40; task 7 built (RoomSystemClient/Feed/FeedListener, 10 tests) + demo seats; only Newman/Playwright test items left; suite 4263 green	session-20261115T151007-45079d32	2026-11-15T15:22:13Z
+fix:integriq:3615:a252d2b4	merged development into branch, l10n gate OK; new head 696541cd, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T15:22:39Z
