@@ -12797,3 +12797,4 @@ build:openregister:anonymising-as-an-archival-outcome:c4	partial: PR #10132 head
 cover:dossiq:069ee2d6madb6:eb8f684c	dir already 98.2% (target 95); PR #6557 covers the fail-closed group check (+1 test)	session-20261115T011758-953fbe72	2026-11-15T02:08:07Z
 cover:dossiq:069ee2d6madb6:3641032a	already done: lib/Service/Pipelinq at 100% statements (2 earlier PRs); no PR	session-20261115T015021-bd2172e5	2026-11-15T02:08:25Z
 fix:larpinq:1060:31b8e3db	REVERIFY: floor restored (floor_check PASS), behaviour unchanged; new head 759898b3	session-20261115T001758-161b0715	2026-11-15T02:08:35Z
+cover:dossiq:069ee2d6madb6:9ece5c6f	already covered: 332/335 statements (99.1%, target 95); no PR. (prev task eb8f684c: PR is #6562, not #6557)	session-20261115T011758-953fbe72	2026-11-15T02:08:57Z
