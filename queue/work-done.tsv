@@ -14917,3 +14917,4 @@ fix:opencatalogi:2059:75ffe574	fixed: conflicts resolved; new head fa65b847	sess
 fix:integriq:2711:e9ef8372	sbom regenerated, development merged; REVERIFY at b46c56fe	session-20261114T075643-75a598ab	2026-11-15T20:51:23Z
 fix:buildiq:1262:106caafb	merged development, lock tests migrated; unit = dev baseline (1 inherited); new head a0a4f287	session-20261115T203013-157346e0	2026-11-15T20:51:31Z
 fix:opencatalogi:2674:8c2edb69	l10n conflict resolved, pushed 52a7e65f; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:51:41Z
+fix:opencatalogi:2244:58b3e9f1	conflict resolved (kept both test sets); REVERIFY 9178373d	session-20261115T200045-d3bb5c75	2026-11-15T20:51:52Z
