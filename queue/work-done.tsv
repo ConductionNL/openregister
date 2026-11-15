@@ -13290,3 +13290,4 @@ review:buildiq:1088:817518a2	RED: lockfile out of sync, npm ci fails (developmen
 verify:integriq:3628:0c587cb3	3 GREEN (3628, 3638, 3665); no new failures	session-20261115T152546-2c24b649	2026-11-15T15:41:16Z
 review:buildiq:1249:a5648e98	GREEN: dev-only phpstan bump, no new phpstan errors or test failures	session-20261115T142934-6cab0c24	2026-11-15T15:41:29Z
 cover:stackiq:9ac19b3amf894:js54731acf	PR #1982: ProcessStepFlow + ProcessStepUsages specs (8 tests, both were 0%); vitest 2603->2611, same 1 inherited failure	session-20261115T145541-9d69768b	2026-11-15T15:41:40Z
+review:filinq:2114:473e8036	GREEN: phpunit 6859 OK, jest 580, vitest 785	session-20261115T145555-b33410db	2026-11-15T15:41:43Z
