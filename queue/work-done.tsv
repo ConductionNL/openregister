@@ -14781,8 +14781,11 @@ fix:shillinq:2063:7f06f10a	fixed: pre-lock approved runs exportable, fail-closed
 review:portaliq:1682:08c494c0	GREEN: dev lock bump; 16 inherited errors identical to development	session-20261115T195958-28cb0304	2026-11-15T20:27:26Z
 fix:shillinq:2766	fixed: sbom regenerated; new head 4d51285b	session-20261115T200000-e95b89c2	2026-11-15T20:27:38Z
 merge:shillinq:1904:12d9835d	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:27:51Z
+merge:shillinq:2224:b504636f	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:27:54Z
 fix:pipelinq:2187:ebdded89	merged dev, SBOM current (dev-only dep, no SBOM change possible); REVERIFY fd65c00e86140ac77446493773e44549967c3fa3	session-20261115T195953-2618bb8a	2026-11-15T20:27:59Z
+merge:shillinq:3062:a1da7e07	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:28:04Z
 review:dossiq:2902:852fcee3	GREEN: no new failures (19 inherited)	session-20261115T195957-8e60ca53	2026-11-15T20:28:05Z
+merge:shillinq:2991:49981cf2	merge3 tree of 20 shillinq PRs: merged=2 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T20:28:15Z
 fix:shillinq:2083:bbd8bdb9	fixed: discard via ObjectDeletion, #2253 merged in; unit 12234 OK; new head fc181f39	session-20261115T200043-78b85ca2	2026-11-15T20:28:17Z
 review:dossiq:5396:861d4d0a	GREEN: dev lock bump, 18185 unit tests OK	session-20261115T200020-0f65b959	2026-11-15T20:28:28Z
 fix:shillinq:3080:44d2bdbe	merged development (clean); conflict is with another tree PR; REVERIFY at 5b6628be	session-20261115T195958-28cb0304	2026-11-15T20:28:41Z
