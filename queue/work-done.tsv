@@ -13030,3 +13030,4 @@ review:filinq:2069:2a5b02d0	GREEN: unit 6799 ok, phpstan/vitest/eslint clean	ses
 fix:filinq:2085:432c7b61	no change: up to date with development; conflicts only with sibling PRs #2088/#2103	session-20261115T142127-97291b3d	2026-11-15T14:26:24Z
 fix:filinq:2102:726c91bb	no change: up to date with development; conflicts only with siblings on register version bump	session-20261115T142127-97291b3d	2026-11-15T14:26:54Z
 verify:dossiq:6568:6b054a6d	GREEN 6568 (tests only, no new failures)	session-20261115T142201-ea23e682	2026-11-15T14:27:07Z
+fix:filinq:2113:45e6b64f	no change: up to date with development; conflicts only with sibling PRs	session-20261115T142127-97291b3d	2026-11-15T14:27:24Z
