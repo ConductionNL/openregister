@@ -15329,3 +15329,10 @@ fix:decidiq:1473:4549406a	fixed: sbom regenerated, pushed fbdc77e4	session-20261
 fix:filinq:2123:e76e9dab	fixed: conflict resolved, new OR calls on main API; new head 3f385b11	session-20261115T213100-e547b457	2026-11-15T22:21:10Z
 fix:hermiq:1308:ed66fcbf	failed: sbom gate cannot be met honestly - bump is dev-only (phpstan, omitted by --omit=dev); regen-sbom --check passes and a from-scratch regen is byte-identical, so sbom.cdx.json has nothing to change; gate needs to accept --check OK without a diff	session-20261115T220036-9d15b9ea	2026-11-15T22:21:16Z
 fix:stackiq:1168:2d1a29df	sbom regenerated, pushed 04f38d3ae4a4d17b142dbafb97d2a81126d6568c, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:21:19Z
+fix:decidiq:1767:3e9af0ff	sbom regenerated; new head ef20753c	session-20261115T203012-30a1abde	2026-11-15T22:21:28Z
+fix:decidiq:1941:4df452c6	obsolete: all commits already on development via quality/ormig-decidiq; closed with comment	session-20261115T213101-2fb56005	2026-11-15T22:21:35Z
+review:opencatalogi:1894:81ec0aeb	GREEN: openspec-only tick sweep, merges cleanly	session-20261115T220036-e665285d	2026-11-15T22:21:48Z
+fix:filinq:1828:0e6a9fe3	fixed: Server::get replaced by container logger; phpcs 0 errors, 6798 OK; head f7b90817	session-20261115T213156-1ffcf961	2026-11-15T22:22:06Z
+fix:learniq:2521:be3bc639	fixed: saveObject calls migrated to OR main API, tests aligned, pushed 25bda59e; REVERIFY recorded	session-20261115T213122-e023a81e	2026-11-15T22:22:15Z
+fix:hermiq:1195:6284aad0	sbom regenerated after merging development; new head 7d667839, REVERIFY queued	session-20261115T221310-15626e3a	2026-11-15T22:22:22Z
+fix:stackiq:1297:7bd31324	merged development, regenerated sbom, REVERIFY recorded	session-20261115T220025-8d429838	2026-11-15T22:22:31Z
