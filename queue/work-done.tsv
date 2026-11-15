@@ -12760,3 +12760,4 @@ review:learniq:2486:b690ac62	GREEN: PHP 6870 (1 inherited), phpstan clean	sessio
 verify:dossiq:6552:c5c28011	2 GREEN (6552, 6553): tests only, no new unit failures	session-20261115T005122-49ba1b99	2026-11-15T01:58:49Z
 merge:versioniq:700:b312ce04	merge3 tree of 6 versioniq PRs: merged=3 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T01:59:09Z
 merge:versioniq:694:5adeb269	merge3 tree of 6 versioniq PRs: merged=3 red=0 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T01:59:12Z
+measure:buildiq:20261115h00	php 90.88% (pcov, 19942/21944), js 95.85% (15333/15997) at 165fc0e3	session-20261115T010928-f0987802	2026-11-15T01:59:22Z
