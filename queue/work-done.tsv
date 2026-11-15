@@ -14596,3 +14596,7 @@ fix:versioniq:707:ec8c4c54	fixed: development merged, minimum-age planner rename
 merge:opencatalogi:2059:b149ceea	merge8 tree of 18 opencatalogi PRs: merged=6 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge8-20261115T170007-37538273	2026-11-15T19:35:21Z
 merge:opencatalogi:2650:43aed5a8	merge8 tree of 18 opencatalogi PRs: merged=6 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge8-20261115T170007-37538273	2026-11-15T19:35:25Z
 merge:opencatalogi:2699:18038549	merge8 tree of 18 opencatalogi PRs: merged=6 red=2 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 10	merge8-20261115T170007-37538273	2026-11-15T19:35:32Z
+merge:dossiq:5357:1023ce77	stale	feeder	2026-11-15T19:35:18Z
+review:portaliq:1996:ca20be18	stale	feeder	2026-11-15T19:35:18Z
+merge:portaliq:1995:88866ec8	stale	feeder	2026-11-15T19:35:18Z
+fix:dossiq:5340:06631624	stale	feeder	2026-11-15T19:35:18Z
