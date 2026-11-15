@@ -22,6 +22,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "check invalid": {
@@ -39,6 +40,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": [
             "Unknown health check type \"nope\" (allowed: database, filesystem, appEnabled, appConfig, orAvailable)."
         ]
@@ -58,6 +60,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": [
             "Health check #1 is not an object."
         ]
@@ -85,6 +88,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "checks keyed": {
@@ -110,6 +114,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "checks not an array": {
@@ -127,6 +132,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": [
             "observability.health.checks must be an array."
         ]
@@ -146,6 +152,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "empty block": {
@@ -163,6 +170,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "empty block, config registers": {
@@ -188,6 +196,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "everything wrong": {
@@ -205,6 +214,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": [
             "Invalid statusCodePolicy \"x\"; defaulting to adr006.",
             "Health check #0 is not an object.",
@@ -227,6 +237,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "metric invalid": {
@@ -257,6 +268,7 @@
         ],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": [
             "Metric \"name\" must be a valid Prometheus metric name."
         ]
@@ -289,6 +301,7 @@
         ],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": [
             "Metric #1 is not an object."
         ]
@@ -308,6 +321,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": [
             "observability.metrics must be an array."
         ]
@@ -340,6 +354,7 @@
         ],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "no block": {
@@ -357,6 +372,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "no block, registers": {
@@ -382,6 +398,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "policy array": {
@@ -399,6 +416,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": [
             "Invalid statusCodePolicy \"array\"; defaulting to adr006."
         ]
@@ -418,6 +436,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": [
             "Invalid statusCodePolicy \"418\"; defaulting to adr006."
         ]
@@ -437,6 +456,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "policy unknown string": {
@@ -454,6 +474,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": [
             "Invalid statusCodePolicy \"teapot\"; defaulting to adr006."
         ]
@@ -481,6 +502,7 @@
         "metrics": [],
         "statusCodePolicy": "adr006",
         "cors": false,
+        "upFollowsHealth": false,
         "diagnostics": []
     },
     "valid policy and cors": {
@@ -498,6 +520,7 @@
         "metrics": [],
         "statusCodePolicy": "always200",
         "cors": true,
+        "upFollowsHealth": false,
         "diagnostics": []
     }
 }

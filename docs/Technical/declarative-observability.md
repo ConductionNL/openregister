@@ -33,6 +33,7 @@ the ADR-035 provider-alias discovery pattern for the escape hatch.
     "statusCodePolicy": "adr006",   // "adr006" (default): 503 when any critical check fails, 200 otherwise
                                      // "always200": always HTTP 200, status field carries ok|degraded|error
     "cors": false,                  // true adds Access-Control-Allow-* headers (reverse-proxy probe contract)
+    "upFollowsHealth": false,       // true: the implicit {app}_up gauge is 0 whenever health is not "ok"
     "checks": [
       { "id": "database",     "type": "database" },
       { "id": "filesystem",   "type": "filesystem", "severity": "degraded" },

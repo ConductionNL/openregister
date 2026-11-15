@@ -49,6 +49,7 @@ class ObservabilityRegistrarTest extends TestCase {
 				'OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource',
 				'OCA\OpenRegister\AppHost\Observability\PrometheusRenderer',
 				'OCA\OpenRegister\AppHost\IMetricsProvider::openregister',
+				'OCA\OpenRegister\AppHost\IHealthCheckProvider::openregister',
 				'OCA\OpenRegister\AppHost\Observability\MetricsEngine',
 				'AppHost\Controller\GenericHealthController',
 				'AppHost\Controller\GenericMetricsController',

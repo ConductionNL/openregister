@@ -91,6 +91,17 @@ interface WebhookLogMapperInterface {
 	public function countPendingRetries(DateTime $now): int;
 
 	/**
+	 * The successful and failed delivery attempts logged since an instant.
+	 *
+	 * @param DateTime $since The earliest `created` counted.
+	 *
+	 * @return array{successful: int, failed: int}
+	 *
+	 * @spec openspec/changes/production-observability
+	 */
+	public function outcomesSince(DateTime $since): array;
+
+	/**
 	 * The delivery durations as cumulative buckets: how many timed attempts took at most each bound.
 	 *
 	 * @param array<int, int> $boundsMs The bucket upper bounds, in milliseconds.

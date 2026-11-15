@@ -35,6 +35,7 @@ use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
+use OCA\OpenRegister\Service\Observability\OpenRegisterHealthChecks;
 use OCA\OpenRegister\Service\Observability\OpenRegisterMetricsProvider;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -86,6 +87,16 @@ final class ObservabilityWiring {
 			\OCA\OpenRegister\AppHost\IMetricsProvider::class . '::' . $appId,
 			function (ContainerInterface $container) {
 				return $container->get(OpenRegisterMetricsProvider::class);
+			}
+		);
+
+		// OpenRegister's own IHealthCheckProvider, under the alias the health
+		// executor looks up for this app id: the search index, webhook
+		// delivery and database latency checks, all of degraded severity.
+		$context->registerService(
+			\OCA\OpenRegister\AppHost\IHealthCheckProvider::class . '::' . $appId,
+			function (ContainerInterface $container) {
+				return $container->get(OpenRegisterHealthChecks::class);
 			}
 		);
 
@@ -267,7 +278,8 @@ final class ObservabilityWiring {
 				cacheFactory: $container->get('OCP\ICacheFactory'),
 				config: $container->get('OCP\IConfig')
 			),
-			logger: $container->get('Psr\Log\LoggerInterface')
+			logger: $container->get('Psr\Log\LoggerInterface'),
+			health: $container->get(HealthCheckExecutor::class)
 		);
 	}//end metricsEngine()
 

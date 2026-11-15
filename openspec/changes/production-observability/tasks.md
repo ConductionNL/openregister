@@ -6,7 +6,7 @@
 - [ ] Implement: CRUD Operation Counters
 - [x] Implement: Search Performance Metrics
 - [x] Implement: Webhook Delivery Monitoring
-- [ ] Implement: Health Check Endpoint
+- [x] Implement: Health Check Endpoint
 - [x] Implement: Readiness Endpoint
 - [ ] Implement: Structured Logging
 - [ ] Implement: BIO2 Audit Logging Compliance
@@ -100,11 +100,34 @@ Connection Monitoring" stays unticked: the health endpoint does not yet report a
 database as degraded, and the query-duration histogram and slow-query counter need query
 instrumentation that is not built.
 
+**Fifth pass, 2026-11-15: health endpoint checks and a health-driven `up` gauge.** "Health
+Check Endpoint" is ticked. Beside the engine's `database` (critical) and `filesystem` checks,
+`/api/health` now runs OpenRegister's `IHealthCheckProvider`,
+`Service\Observability\OpenRegisterHealthChecks`, registered under OpenRegister's alias in
+`ObservabilityWiring`. It adds three checks, all of `degraded` severity, so a failure turns the
+status to `degraded` with HTTP 200 and never to a 503: `search_backend` (the database-backed
+search index, `openregister_chunks`, answers a one-row read; the external Solr and
+Elasticsearch backends no longer exist), `webhooks` (in the last 15 minutes not every delivery
+attempt failed, read in one aggregate query by the new `WebhookLogMapper::outcomesSince()`;
+a quiet window is healthy, an unreadable log fails) and `database_latency` (the
+`SELECT 1` round-trip of `DatabaseHealthMetricsProvider`, now public as `isHealthy()`, within
+5 seconds). A failing check reads `failed: <code>` (`unreachable`, `deliveries failing`,
+`slow or unavailable`), never an error message. This also gives scenario "Database
+connection health" its health-endpoint half: a slow database reports degraded.
+
+The implicit `up` gauge can now follow health: an app whose manifest sets
+`observability.health.upFollowsHealth: true` gets `up 0` whenever the health status is not
+`ok` (including health checks that throw); without it `up` stays a constant 1, so leaf apps
+are unchanged. OpenRegister's manifest opts in, which is scenario "Application health gauge
+reflects degraded state". The engine runs the health checks once per scrape for an app that
+opted in. "Standard Application Metrics" stays unticked: request counters, the request
+duration histogram and the error counter are still not built.
+
 **Left after the fourth pass, and why.** Request counters and the request-duration
 histogram, the error counter, the APCu counter path with its flush job, and the alerting
 thresholds all need a per-request recording path (middleware plus a durable or APCu store)
 that is a design decision of its own; structured logging needs a request-id carrier through
-every log call; the search-backend and webhook health checks need new engine check types;
+every log call (the search-backend and webhook health checks were built in the fifth pass);
 cache hit/miss and import progress need instrumentation in `CacheHandler` and the import
 jobs; the dashboard widget and serverinfo section are UI/integration work. BIO2 audit items
 were not re-verified in this pass.

@@ -77,17 +77,21 @@ final class DatabaseHealthMetricsProvider implements IMetricsProvider {
 				name: self::METRIC_NAME,
 				type: 'gauge',
 				help: 'Whether the database answered a round-trip within 5 seconds',
-				samples: [['labels' => [], 'value' => $this->healthy()]]
+				samples: [['labels' => [], 'value' => (int) $this->isHealthy()]]
 			),
 		];
 	}//end metrics()
 
 	/**
-	 * Run the round-trip and judge it.
+	 * Run the round-trip and judge it: true when it succeeded within the limit.
 	 *
-	 * @return int 1 or 0.
+	 * A failed or slow round-trip is logged at warning level.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/production-observability
 	 */
-	private function healthy(): int {
+	public function isHealthy(): bool {
 		$started = $this->seconds();
 		try {
 			$result = $this->db->executeQuery('SELECT 1');
@@ -95,17 +99,17 @@ final class DatabaseHealthMetricsProvider implements IMetricsProvider {
 			$result->closeCursor();
 		} catch (Throwable $e) {
 			$this->logger->warning('[Observability] database round-trip failed: '.$e->getMessage());
-			return 0;
+			return false;
 		}
 
 		$elapsed = $this->seconds() - $started;
 		if ($elapsed > self::MAX_SECONDS) {
 			$this->logger->warning('[Observability] database round-trip took '.(int) round($elapsed * 1000).' ms');
-			return 0;
+			return false;
 		}
 
-		return 1;
-	}//end healthy()
+		return true;
+	}//end isHealthy()
 
 	/**
 	 * The clock as fractional seconds.
