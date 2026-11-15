@@ -13108,3 +13108,4 @@ build4:openregister:production-observability:c5	partial: pushed to PR #10537 (he
 review:filinq:2121:38c2112f	GREEN: 6792 unit tests OK on PR+development, vitest ok	session-20261115T145555-b33410db	2026-11-15T15:01:08Z
 fix:learniq:2549:d0f3714b	no change needed: up to date with development; conflicts only with sibling #2521 on the same page-count line; REVERIFY at same head recorded	session-20261115T145541-9d69768b	2026-11-15T15:01:19Z
 fix:learniq:2521:91383eb4	reverted stray .pyc (binary conflict); head 01e853a6d10a5cf5d6ec5c79f45c80ebed5561ab, REVERIFY; structureProfile counts collide with sibling PRs only	session-20261115T142134-badaaf30	2026-11-15T15:01:37Z
+fix:learniq:2484:b8c46f7c	no change needed: up to date with development, no pairwise conflict with sibling PRs; REVERIFY at same head	session-20261115T145541-9d69768b	2026-11-15T15:01:55Z
