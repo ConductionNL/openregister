@@ -12841,3 +12841,4 @@ merge:dossiq:6523:582fa52e	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 
 merge:dossiq:6528:6afeec0a	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 skip=2; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T02:19:05Z
 merge:dossiq:6530:ce2d46a6	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 skip=2; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T02:19:08Z
 merge:dossiq:6529:162f0563	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 skip=2; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T02:19:12Z
+verify:portaliq:2527:17dbf00a	GREEN #2527 (build resident-identity-in-forms cosign; +43 tests, no failures)	session-20261115T012426-ca0c1432	2026-11-15T02:19:25Z
