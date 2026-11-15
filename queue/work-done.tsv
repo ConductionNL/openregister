@@ -14457,3 +14457,4 @@ review:versioniq:499:36c6819e	BLOCK: conflicts with development's exact vite 8.2
 fix:buildiq:1114:1c8fce1e	sbom regenerated, merged development, pushed 9381ce974; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T19:13:17Z
 fix:buildiq:1649:90cf9793	fixed CONFLICT: merged development, strings moved mid-catalogue; new head dae57dbf, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T19:13:26Z
 fix:buildiq:820:306021ea	fixed: development merged, sbom.cdx.json regenerated; new head a6bd63eb	session-20261115T182940-bfeb7e78	2026-11-15T19:13:40Z
+fix:buildiq:1089:322d7e65	no change needed: merges clean on development; conflict only with another lockfile PR in the tree; REVERIFY as one-PR tree recorded	session-20261115T183029-6c0565bd	2026-11-15T19:13:49Z
