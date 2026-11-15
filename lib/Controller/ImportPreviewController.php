@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Import\ImportCommit;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
 use OCA\OpenRegister\Db\ImportPreviewRowMapperInterface;
@@ -57,6 +58,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -74,6 +76,14 @@ use Throwable;
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
 class ImportPreviewController extends Controller {
+	use HandlesExceptionsTrait;
+
+	/**
+	 * Logger, read by HandlesExceptionsTrait to log the detail of a failure.
+	 *
+	 * @var LoggerInterface|null
+	 */
+	protected readonly ?LoggerInterface $logger;
 
 	/**
 	 * The largest page of rows one request returns.
@@ -157,6 +167,7 @@ class ImportPreviewController extends Controller {
 		$this->jobList = $services->platform->jobList;
 		$this->userSession = $services->platform->userSession;
 		$this->groupManager = $services->platform->groupManager;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -288,7 +299,7 @@ class ImportPreviewController extends Controller {
 	 *
 	 * @param array<string, mixed> $params The preview parameters.
 	 *
-	 * @return JSONResponse 201 with the preview, 202 for a queued one, or 400 / 500.
+	 * @return JSONResponse 201 with the preview, 202 for a queued one, or 400, a typed status, or a generic 500.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -306,7 +317,7 @@ class ImportPreviewController extends Controller {
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
 		} catch (Throwable $exception) {
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $exception, context: 'Failed to build an import preview');
 		}//end try
 	}//end runPreview()
 
@@ -392,7 +403,7 @@ class ImportPreviewController extends Controller {
 	 * @param ImportPreview $preview    The caller's own preview.
 	 * @param string|null   $sourceHash The source file's hash, or null when none was sent.
 	 *
-	 * @return JSONResponse 200 with the committed preview, 202 for a queued commit, or 409 / 400 / 500.
+	 * @return JSONResponse 200 with the committed preview, 202 for a queued commit, or 409 / 400, a typed status, or a generic 500.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -424,7 +435,7 @@ class ImportPreviewController extends Controller {
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
 		} catch (Throwable $exception) {
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $exception, context: 'Failed to commit an import preview');
 		}//end try
 	}//end runCommit()
 
