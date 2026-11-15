@@ -13159,3 +13159,4 @@ build:hermiq:store-through-federated-config:c7	partial: hermiq#1736 +1c21a821 ti
 review:openregister:10584:6dc48682	APPROVE: additive read-only mapper method, suites green	session-20261115T142931-4c5be241	2026-11-15T15:14:56Z
 fix:decidiq:2187:24c1e4c0	complexity floor restored by helper extraction (no behaviour change); new head 2f3b8012; REVERIFY recorded	session-20261115T145535-caebb5a3	2026-11-15T15:15:05Z
 review:learniq:2521:01e853a6	2521 GREEN (build per spec, gated by course-day.plan, no new failures)	session-20261115T142134-badaaf30	2026-11-15T15:15:40Z
+review:openregister:10505:c12ee85b	APPROVE	session-20261114T073117-2bd2e050	2026-11-15T15:15:49Z
