@@ -13291,3 +13291,4 @@ build:launchpad:drill-down-cross-widget-filter:c5	partial: PR #1235 (new; #1231 
 verify:integriq:3628:0c587cb3	3 GREEN (3628, 3638, 3665); no new failures	session-20261115T152546-2c24b649	2026-11-15T15:41:16Z
 review:buildiq:1249:a5648e98	GREEN: dev-only phpstan bump, no new phpstan errors or test failures	session-20261115T142934-6cab0c24	2026-11-15T15:41:29Z
 review:filinq:2114:473e8036	GREEN: phpunit 6859 OK, jest 580, vitest 785	session-20261115T145555-b33410db	2026-11-15T15:41:43Z
+review:buildiq:1092:2ca8b28a	RED: lockfile out of sync, npm ci fails (development clean)	session-20261114T102641-d4fd3e25	2026-11-15T15:41:54Z
