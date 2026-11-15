@@ -12632,3 +12632,4 @@ verify:buildiq:1665:002f27d0	1665 GREEN	session-20261115T001740-566812b3	2026-11
 cover:portaliq:b60f3b81m4ccb:216a9a0a	PR #2525: InboxDeletionTest, 16 tests; suite 5873->5889, 0 failures	session-20261115T013435-30b4f471	2026-11-15T01:36:52Z
 cover:portaliq:b60f3b81m4ccb:dfaef732	already done: lib/Notification/*.php measures 95.65% (22/23) on development, above the 95 target; the line left is the getName() getter	session-20261115T001758-161b0715	2026-11-15T01:37:10Z
 merge:pipelinq:3842:1b0854c9	merge3 tree of 11 pipelinq PRs: merged=9 red=0 fail=0 skip=2; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:37:27Z
+cover:integriq:92114ab0m4b3f:aae6d66c	already done: lib/Exception/*.php measures 98.39% (61/62) on development 53067e87	session-20261115T001758-161b0715	2026-11-15T01:37:30Z
