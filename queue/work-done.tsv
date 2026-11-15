@@ -13555,6 +13555,7 @@ review:learniq:1166:0748af52	CONFLICT/obsolete: development already has parser 8
 review:larpinq:962:6aa0ff3d	RED: composer install fails, psalm 7 needs php ~8.3.16 vs config.platform 8.3	session-20261115T155911-14cd078d	2026-11-15T16:27:02Z
 build4:openregister:tasks-progress-report:c2	already building: build/tasks-progress-report-3 (another worker, 1.1-4.1) landed while this run was paused; local 1.1/1.2 work dropped unpushed	session-20261114T095641-533e2a00	2026-11-15T16:27:10Z
 review:launchpad:761:c14f910d	BLOCK: npm ci ERESOLVE, @vitest/* left at 4	session-20261115T154255-e54527e9	2026-11-15T16:27:04Z
+review:opencatalogi:2241:9f0cfa47	GREEN: faithful refactor, suite at baseline	session-20261115T155902-d9805df0	2026-11-15T16:27:19Z
 review:opencatalogi:2541:87b928f1	BLOCK: find() named args do not match openregister main ObjectService::find; repair hands nothing	session-20261114T085646-49a39060	2026-11-15T16:27:28Z
 review:opencatalogi:2419:cbcc348d	BLOCK: wrong namespace for OpenRegister save value objects (Kernel\Contracts\Value)	session-20261114T075643-acecaad6	2026-11-15T16:27:36Z
 review:learniq:1167:4b75be29	GREEN: sass dev bump, build ok, JS unit 9 inherited failures, none new	session-20261115T160928-e92ec17a	2026-11-15T16:27:43Z
@@ -13569,6 +13570,7 @@ review:learniq:1903:3f6c3b60	GREEN: dev-only ocp bump; installs, suite has only 
 review:learniq:1884:16330d9e	no verdict: conflicts with development in 11 files; recorded CONFLICT for the fix lane	session-20261115T142958-341f60db	2026-11-15T16:29:33Z
 review:opencatalogi:1894:552c9a7c	CONFLICT: openspec-only PR conflicts with development in 6 files	session-20261114T085646-49a39060	2026-11-15T16:29:42Z
 review:pipelinq:2957:0a390a39	BLOCK: conflicts in 19 files; development already has a separate build of the same change (153dff0e7); access behaviour itself unchanged	session-20261114T095641-533e2a00	2026-11-15T16:29:52Z
+review:pipelinq:2187:ebdded89	GREEN: phpmd 3 runs, unit suite green; phpmd findings 62->95 (mostly attribute false positives)	session-20261115T154254-3d07b219	2026-11-15T16:29:58Z
 review:pipelinq:2557:5d12aa50	GREEN: ocp patch bump, 8890 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:30:06Z
 review:opencatalogi:2417:a2892ce3	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget vs openregister main; 1 new test failure	session-20261115T145555-b33410db	2026-11-15T16:30:13Z
 review:pipelinq:2504:e4cc137c	BLOCK: superseded by the build already on development; conflicts in every file	session-20261115T154311-e8600d84	2026-11-15T16:30:32Z
@@ -13578,3 +13580,7 @@ review:pipelinq:2966:ff290970	CONFLICT: ExchangeRateService/leadCurrency.js conf
 review:learniq:1727:937a0671	GREEN: vobject 5 dev bump; phpunit 6848, 1 inherited failure, 0 new	session-20261115T154407-94bf5f8c	2026-11-15T16:31:19Z
 review:opencatalogi:2682:4bf71fcd	RED: 8 new vitest failures in mainEntry.spec.js (unmocked new widget import)	session-20261115T155915-84e5dc0a	2026-11-15T16:31:23Z
 review:pipelinq:2546:ed45af1a	CONFLICT with development (l10n + structureProfile page count); content config-only, no defect found	session-20261115T145535-3f9e5078	2026-11-15T16:31:30Z
+review:pipelinq:2593:6a42067a	CONFLICT (l10n en/nl and two count specs); change sound per spec, vitest 1028 green on head	session-20261115T145533-2db61682	2026-11-15T16:31:52Z
+review:pipelinq:2969:bd583b9e	no verdict: conflicts; backend already on development via 83837c6f7, only the Tickets phone search is new; recorded CONFLICT	session-20261115T142958-341f60db	2026-11-15T16:32:03Z
+review:pipelinq:2964:65b04b14	CONFLICT: behaviour OK vs spec, no new failures on head; merge conflict with development	session-20261114T102637-6688951e	2026-11-15T16:32:12Z
+review:pipelinq:2482:99a4545c	BLOCK: new deleteObject call uses the old openregister signature; conflicts with development	session-20261115T145555-b33410db	2026-11-15T16:32:22Z
