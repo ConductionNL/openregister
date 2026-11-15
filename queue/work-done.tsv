@@ -13569,3 +13569,4 @@ review:learniq:1903:3f6c3b60	GREEN: dev-only ocp bump; installs, suite has only 
 review:learniq:1884:16330d9e	no verdict: conflicts with development in 11 files; recorded CONFLICT for the fix lane	session-20261115T142958-341f60db	2026-11-15T16:29:33Z
 review:opencatalogi:1894:552c9a7c	CONFLICT: openspec-only PR conflicts with development in 6 files	session-20261114T085646-49a39060	2026-11-15T16:29:42Z
 review:pipelinq:2957:0a390a39	BLOCK: conflicts in 19 files; development already has a separate build of the same change (153dff0e7); access behaviour itself unchanged	session-20261114T095641-533e2a00	2026-11-15T16:29:52Z
+review:pipelinq:2557:5d12aa50	GREEN: ocp patch bump, 8890 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:30:06Z
