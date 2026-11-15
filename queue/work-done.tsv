@@ -13750,6 +13750,7 @@ review:shillinq:2218:b60c1dcd	GREEN: copy-only label change; vitest 1 inherited 
 review:stackiq:1435:5be7461d	BLOCK: targets openregister search value objects absent from main; 4-file conflict	session-20261114T095641-533e2a00	2026-11-15T17:02:11Z
 review:shillinq:2098:38bdcce2	BLOCK: conflict; dev tests import deleted view; connections.json link to removed route	session-20261115T155911-f0070087	2026-11-15T17:02:21Z
 review:stackiq:1437:3de46f6b	GREEN: phpstan bump, analyse clean, unit suite OK	session-20261115T154311-e8600d84	2026-11-15T17:02:31Z
+review:portaliq:1659:3c90bf4d	CONFLICT: trivial manifest l10n tail; change fine, 0 new failures	session-20261115T154300-03b63424	2026-11-15T17:02:48Z
 review:shillinq:2081:29d9d8c7	GREEN on its own head; conflicts with development picker mixin refactor + l10n	session-20261115T155904-a7df5bc0	2026-11-15T17:02:50Z
 review:stackiq:1042:56393a99	CONFLICT (stale lockfile)	session-20261115T142134-badaaf30	2026-11-15T17:02:58Z
 review:shillinq:2257:01cce78b	BLOCK: wrong ObjectSaveOptions namespace (Kernel\Contracts\Value on OR main)	session-20261115T152558-f97be55f	2026-11-15T17:03:06Z
@@ -13767,6 +13768,7 @@ fix:pipelinq:3835:52a3cfb3	fixed: development merged, conflict resolved, suite g
 review:thematiq:1124:c6a62f1f	GREEN: devDep bump, vitest 1559 passed, lint clean	session-20261115T154307-1fc2cc78	2026-11-15T17:05:09Z
 review:stackiq:1439:ba500f7a	BLOCK: psalm 7.1 needs php >=8.3.16, platform pinned to 8.3; composer install fails	session-20261115T154311-e8600d84	2026-11-15T17:05:24Z
 review:shillinq:2254:29ae60be	BLOCK: stubs mirror a LockRequest namespace openregister main lacks	session-20261115T142951-2463b4c4	2026-11-15T17:05:45Z
+build:stackiq:sharing-compliance-documents:c3	partial, no change: both remaining code items are library gaps in @conduction/nextcloud-vue: the public-audience confirmation needs a create/confirm hook on the object-list widget (only CnFormDialog takes createOverride), and the 90-day filter needs a relative-date quick-filter value; rest is e2e/screenshot. PR #1924 unchanged at b3cd5b3a	session-20261114T102641-d4fd3e25	2026-11-15T17:05:59Z
 review:stackiq:1297:7bd31324	GREEN: dev-only phpmd 3.0; unit 3626 OK; phpmd gate red on development as well (89 vs 98 findings)	session-20261115T152547-c779ca49	2026-11-15T17:05:57Z
 review:versioniq:500:ccaf6046	CONFLICT: dev-only jsdom bump, lock conflicts; vitest 3001 OK when npm resolves it	session-20261115T145541-9d69768b	2026-11-15T17:06:02Z
 review:shillinq:2224:8a7a3aa7	GREEN: hydra-gates 1.19 changes no lint result; suite 12214 OK	session-20261115T145533-2db61682	2026-11-15T17:06:09Z
@@ -13775,6 +13777,7 @@ review:thematiq:1289:2557e0ba	GREEN: @vitest/ui patch bump, vitest 1559/1559	ses
 review:thematiq:1555:1e3652b9	BLOCK: psalm 7.1 needs php >=8.3.16 (platform 8.3) and a newer psalm/plugin-symfony; composer install fails	session-20261115T154311-e8600d84	2026-11-15T17:06:41Z
 verify:stackiq:1981:8d7fa4c7	GREEN 1981: 3629 OK, baseline 3626, no new failures	session-20261115T155903-abd003e3	2026-11-15T17:06:51Z
 review:thematiq:1293:09458d15	GREEN: webpack minor bump, vitest and build green	session-20261115T155902-d9805df0	2026-11-15T17:07:02Z
+review:planninq:614:1c61ac40	BLOCK (obsolete: already on development)	session-20261115T142949-9c6a3945	2026-11-15T17:07:22Z
 review:shillinq:2100:32dc7230	RED: conflicts with development; merged tree breaks 3 vitest files added on development (deleted Settings.vue import, mocks missing CnSettingsFieldsSection)	session-20261115T155931-0926aa8e	2026-11-15T17:07:31Z
 review:opencatalogi:2677:209e89ba	stale	session-20261115T155903-abd003e3	2026-11-15T17:07:11Z
 review:stackiq:1067:7132da67	CONFLICT: package-lock.json only	session-20261115T154254-3d07b219	2026-11-15T17:07:32Z
@@ -13804,3 +13807,17 @@ build:stackiq:architecture-views-to-office-documents:c4	partial: pushed 90d2828b
 verify:versioniq:732:cc08f5ca	GREEN: 732 (ocp patch bump), no new failures	session-20261115T155904-a7df5bc0	2026-11-15T17:11:26Z
 review:thematiq:1117:29c03f73	RED: phpmd 3 adds 3 violations, composer phpmd fails	session-20261115T154258-dee2cc3d	2026-11-15T17:11:40Z
 review:stackiq:1432:4c6faab0	RED (11 CmdbExportImportServiceTest failures from the delete double; conflicts with development)	session-20261115T141023-b06d51da	2026-11-15T17:11:53Z
+review:thematiq:1303:392c8254	BLOCK: generated-file conflicts; checks clean on head	session-20261115T154255-e54527e9	2026-11-15T17:12:22Z
+fix:portaliq:2527:ee0b0ee1	merged development, conflicts resolved (register 0.119.0), pushed c2ba60d8; REVERIFY queued	session-20261115T154300-03b63424	2026-11-15T17:12:42Z
+review:stackiq:1431:c3199284	RED: suite red until hydra-gates ships the new find contract; conflicts with development	session-20261115T152554-949e9403	2026-11-15T17:12:47Z
+review:versioniq:484:92a0a429	CONFLICT/obsolete: development already has hydra-gates 1.19.0	session-20261115T155911-14cd078d	2026-11-15T17:12:54Z
+fix:buildiq:1085:8d6197ad	failed: not fixable inside this bump. development is already red on composer phpmd (72 findings past the baseline under 2.15, inherited); phpmd 3.0 adds 33 more, mostly ExcessiveClassComplexity 4->22 and ExcessiveClassLength 1->8, from changed metrics against the shared hydra-gates ruleset. Needs the ruleset thresholds and the positional CLI form updated in conduction/hydra-gates for phpmd 3 first	session-20261115T154258-dee2cc3d	2026-11-15T17:13:10Z
+verify:launchpad:1223:70895889	CONFLICT: info.xml, routes.php, ImportLaunchpadRegister.php	session-20261115T160928-e92ec17a	2026-11-15T17:13:07Z
+review:thematiq:1291:3fac1aca	GREEN: npm ci, code-editor build and vitest 1559 pass	session-20261115T145555-b33410db	2026-11-15T17:13:19Z
+fix:buildiq:1095:c5896b0e	failed: not fixable in buildiq: latest @conduction/nextcloud-vue 2.180.0 still peers gridstack ^12||^13; needs the library to widen its peer range first	session-20261115T154300-03b63424	2026-11-15T17:13:36Z
+review:versioniq:508:f223efe6	GREEN: plugin-vue patch bump; vitest 3001/3001, build ok	session-20261115T154254-3d07b219	2026-11-15T17:13:36Z
+verify:opencatalogi:2696:5a4a11f8	2722 GREEN; 2696 and 2730 skipped (head moved past queued sha)	session-20261115T154316-34f0db35	2026-11-15T17:13:49Z
+build:stackiq:capability-requirements-from-the-matrix:c4	partial: PR #1973 head c345112a: merged development in; task 1 started (generic EntryWizardDialog + entryWizard.js config, Connections page Add opens it via actionsComponent, 11 vitest); left: module kind for Applications (reference components) and catalogService kind for Services (provider, type, applications) on the Modules/Diensten pages; vitest 1 inherited facets failure	session-20261115T152547-c779ca49	2026-11-15T17:14:09Z
+review:stackiq:1069:500f69e7	CONFLICT: package-lock.json conflicts with development	session-20261115T152539-8dadb15a	2026-11-15T17:13:58Z
+review:opencatalogi:2652:dc289b2f	GREEN: implements its change, no new failures	session-20261115T155902-521936b1	2026-11-15T17:14:06Z
+fix:filinq:2072:7e876bbd	merged development in cleanly, suite green; new head effbf58ca359564cb79a653edd72e91327697525	session-20261114T102637-6688951e	2026-11-15T17:14:24Z
