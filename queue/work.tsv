@@ -13530,3 +13530,10 @@ merge:filinq:2069:e87c8717	merge	filinq	development	development	prs=2069@2a5b02d
 verify:dossiq:6569:b2ccf7df	verify	dossiq	development	merge	prs=6569@268ea6fadbdf724c47fe0c6ba3374c04cde9a60e	2026-11-15T14:30:21Z
 merge:dossiq:6568:6b054a6d	merge	dossiq	development	development	prs=6568@1b831c16870048c156bb17a9dcae96855e213e1e	2026-11-15T14:30:21Z
 merge:shillinq:2991:d3ad556d	merge	shillinq	development	development	prs=2991@e2225c588642adba95017f48ccacc12225b07c99	2026-11-15T14:30:21Z
+review:shillinq:2997:f46b2633	review	shillinq	development	2997	sha=f46b2633c46a1603af13e1c8baa598ae1eca8ce8;branch=quality/build-tax-cbcr-and-pillar2-returns;title=feat(shillinq): build tax-cbcr-and-pillar2-returns	2026-11-15T14:35:29Z
+review:shillinq:3055:d0b8868b	review	shillinq	development	3055	sha=d0b8868b0a91d3d1b78b070b200028c8771376d5;branch=quality/build-public-sector-council-and-auditor-statements;title=feat(shillinq): build public-sector-council-and-auditor-statements	2026-11-15T14:35:29Z
+review:filinq:2121:5baa5123	review	filinq	development	2121	sha=5baa512371633a29773ce05c9d020c60e04d3fcc;branch=quality/build-intake-paper-archive-digitisation;title=feat(filinq): build intake-paper-archive-digitisation	2026-11-15T14:35:29Z
+review:filinq:2123:371aedd6	review	filinq	development	2123	sha=371aedd679b7d6aa119261b3dfafc62f3560f69c;branch=quality/build-specify-capability-rows;title=feat(filinq): build specify-capability-rows	2026-11-15T14:35:29Z
+verify:dossiq:6570:aa20b669	verify	dossiq	development	merge	prs=6570@219b3c10960cd0ad69580c80d1df30a94e6e41d2,6571@8b75028a47ad9f10092060fa4d938296a568a9aa,6572@3f7aa9415f9a7dca6b99a41d772d2b8faa119acb,6573@52f33ee6e515200544b666dbb54b5b9e84eb6287,6574@f59bd9e3e2210f77c5b87e1e2575427b3d7f2616	2026-11-15T14:35:29Z
+merge:dossiq:6547:1212c238	merge	dossiq	development	development	prs=6547@90799f7c228f18c21226f99f440cb474128ea888,6569@268ea6fadbdf724c47fe0c6ba3374c04cde9a60e	2026-11-15T14:35:29Z
+merge:shillinq:3000:166e22a0	merge	shillinq	development	development	prs=3000@2e77cb19b75246d0c9d5f648edeae7c45350ef9c	2026-11-15T14:35:29Z
