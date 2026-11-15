@@ -12711,3 +12711,4 @@ merge:opencatalogi:2720:aa902ddb	merge3 tree of 8 opencatalogi PRs: merged=6 red
 merge:opencatalogi:2698:f3802f45	merge3 tree of 8 opencatalogi PRs: merged=6 red=2 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:51:05Z
 merge:opencatalogi:2648:6e476b39	merge3 tree of 8 opencatalogi PRs: merged=6 red=2 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:51:08Z
 verify:dossiq:6549:fbd31ec9	6549 6550 6551 GREEN (tests only, no new failures)	session-20261115T011758-953fbe72	2026-11-15T01:51:22Z
+cover:integriq:92114ab0m4b3f:38e80a9f	already covered: every lib/Command/*.php statement is covered by the full unit suite (pcov; the Idp and placeholder commands are tested from tests/Unit/Auth and tests/Unit/Service/Security); no PR	session-20261115T010928-f0987802	2026-11-15T01:51:15Z
