@@ -12159,3 +12159,4 @@ fix:shillinq:3084:0dfa98ca	renamed colliding test files apart from 3082; new hea
 fix:hermiq:1751:803e1445	conflict resolved, pushed 0aaa172675d73c1f73d0d4ce6033d6c617135299, REVERIFY	session-20261114T234952-566b7ef5	2026-11-15T00:10:44Z
 verify:shillinq:3051:21e8f58a	GREEN 3051	session-20261114T234758-aa94f07d	2026-11-15T00:10:54Z
 cover:dossiq:069ee2d6mdd7c:c2349770	PR #6530: 8 registrar classes, 25 tests, Registrar dir 32%->92% stmts, no new failures	session-20261114T234953-2dec3184	2026-11-15T00:11:05Z
+build:learniq:capability-rows-say-what-they-do:c4	partial: PR learniq#2544 now also builds 2.1 (learner signs own attestation), 2.6 (rubric-complete mark release), 2.7 (what-if average), 2.8 (cohort skills gap), 2.13 (moved lesson notice); left 2.2 form, 2.3, 2.5, 2.10, 2.14, 2.15, 3.1, 4.1; unit 6786->6866, 1 inherited fail	session-20261114T234933-5c1be121	2026-11-15T00:11:21Z
