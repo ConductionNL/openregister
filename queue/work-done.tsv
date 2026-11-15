@@ -14058,3 +14058,4 @@ review:pipelinq:2593:c5620371	GREEN: PR tree identical to development, effective
 fix:pipelinq:2966:ff290970	conflict resolved (ecbRate step + label); new head ed8ef9f5c99b8e6f7ade233d96c14c7caa255d3e, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:07:46Z
 fix:dossiq:3955:e447a743	CONFLICT resolved, renames reapplied on development, pushed 0024f360; REVERIFY recorded	session-20261115T174741-9deaa0be	2026-11-15T18:07:57Z
 fix:pipelinq:2546:ed45af1a	obsolete: merge with development equals development; closed PR with comment	session-20261115T174755-95dc8448	2026-11-15T18:08:17Z
+merge:integriq:3657:7f12c750	merge3 tree of 13 integriq PRs: merged=8 red=2 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T18:08:25Z
