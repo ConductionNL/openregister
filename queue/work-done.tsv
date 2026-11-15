@@ -14788,3 +14788,4 @@ review:dossiq:5396:861d4d0a	GREEN: dev lock bump, 18185 unit tests OK	session-20
 fix:shillinq:3080:44d2bdbe	merged development (clean); conflict is with another tree PR; REVERIFY at 5b6628be	session-20261115T195958-28cb0304	2026-11-15T20:28:41Z
 fix:shillinq:2048	fixed: sbom regenerated; new head f88b17a7	session-20261115T200000-e95b89c2	2026-11-15T20:28:48Z
 review:dossiq:4886:19293aa0	GREEN: phpunit 0 new failures (19 inherited), l10n gates pass, additive resolution order	session-20261114T073105-752e50ad	2026-11-15T20:29:05Z
+review:dossiq:3196:bdbdd4b2	GREEN: dev-dep bump, no new failures	session-20261115T200011-d13b13ca	2026-11-15T20:29:12Z
