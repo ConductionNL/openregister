@@ -14178,3 +14178,4 @@ review:opencatalogi:2673:61140718	RED: 5 jest failures in WidgetData.spec.js	ses
 review:portaliq:1229:facf71a3	GREEN: comments only	session-20261115T174747-978963d5	2026-11-15T18:30:40Z
 review:portaliq:1768:5560c998	GREEN: dev-dep bump, builds compile	session-20261115T174741-9deaa0be	2026-11-15T18:31:04Z
 fix:portaliq:1856:d612dba3	conflict resolved, pushed 9258525b; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:31:21Z
+fix:portaliq:1767:fc41a4fc	fixed: lock rebuilt on development, npm ci + build OK; new head 886f4fa1, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:31:34Z
