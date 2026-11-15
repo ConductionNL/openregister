@@ -14075,3 +14075,4 @@ fix:pipelinq:3152:78b75d0e	conflict resolved, pushed 6f459260; REVERIFY recorded
 review:dossiq:3298:1caea4a0	GREEN: update validation fix, suite failures identical to baseline (19 inherited)	session-20261115T174804-89f2739f	2026-11-15T18:10:43Z
 fix:pipelinq:3151:b944bc82	stub import conflict resolved; unit 8890 OK; new head 988cd14845379b60c1eb53313516c1286ead8598, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:10:55Z
 review:dossiq:3934:c4912dc2	GREEN: pure rename, failures inherited	session-20261115T174747-978963d5	2026-11-15T18:11:05Z
+fix:portaliq:1069:4ecba22b	closed as superseded: development already implements intake-pay-on-submit (b2798287); neutral comment left	session-20261115T152543-40aea993	2026-11-15T18:11:12Z
