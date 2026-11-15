@@ -11299,3 +11299,7 @@ learniq	2484	b8c46f7c4c80c26cea26f138e57ec0afe11fc2ac	CONFLICT	merge3	merges cle
 learniq	2486	b690ac629e537fb1baf14e0d3c5874f3bcbcf77c	CONFLICT	merge3	merges clean on development alone; files: 
 learniq	2521	91383eb424b927e74a09a817f17ac0d07415945b	CONFLICT	merge3	merges clean on development alone; files: scripts/example-sets/__pycache__/example_set.cpython-311.pyc tests/unit-js/structureProfile.test.mjs 
 learniq	2549	d0f3714b7e647e2ee25aa967dec42478641c409c	CONFLICT	merge3	merges clean on development alone; files: tests/unit-js/structureProfile.test.mjs 
+larpinq	1041	6545e1defff3c1df86fa4fea90515c4c0b87731f	RED	merge3:merge-gate	GATE RED floor: overall: 4.99 -> 4.96; unit_size: 4.73 -> 4.70; unit_complexity: 4.88 -> 4.75; unit_interfacing: 4.72 -> 4.66
+larpinq	1050	ebb209691f38f2cdd3812275fbc828831dc90d7e	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.87 -> 4.85
+larpinq	1051	fa7cedb49eeaf2240d456f442c29bd3d8b2b8407	RED	merge3:merge-gate	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
+larpinq	1060	759898b3b319473aa0acb48bbf6e9a4189d7814a	RED	merge3:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; testcoderatio: warn -> fail; secretscanning stars: 5 -> 1; testcoderatio stars: 3 -> 2
