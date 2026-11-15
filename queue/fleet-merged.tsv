@@ -3626,3 +3626,20 @@ keepiq	1821	96ddd816629b1e22493309948039d33ed9f22a27	MERGED	merge8	GATE OK sbom,
 keepiq	1822	1457d399785751d29afb4edf2758211961deca8e	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
 keepiq	1823	9577cd76e00331cb3953e5c0e59224bf1a8249c5	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
 keepiq	1824	b2f2ab280dcbc261cd6547360a9a60e2dab093be	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+hermiq	1133	05c6caa389820feb2a7d7d4c545536821172090e	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1135	988cfbc828e24fb7d23ef274358be841685b87ed	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1174	e5834a5e458d33fe088abac8fd7421868c8d0331	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1175	ca7f829c8d4c34354b50fd4a55c4144ca5adddc6	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1187	f2d30166558e94ad42467397bc708d4043bd30e9	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1188	b9df03949b5d5c00e88ea1d34a2d88167949cc32	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1189	9c7d6a5148adf30950cdbe0e2dab9407e6f2e166	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1193	67714a4ea0cb1c2e732c134b5e5f7ac82962491f	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1195	6284aad0010c4862c53368ecadc2ad26fd61a8c0	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1307	8166870063dbb40916bba97f6e008e057c565270	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1308	ed66fcbfff8128ba1eb3325fb033dda743eb368e	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1578	816bbdb175209164a417de3b8949a03f0879ae47	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1796	23b36004314a88c2b9f0ca5612246da3ab1f6b67	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1797	19ec54aabf0d1f9a693924b8c872b7b436c1127f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1798	00eb3dc080e6e4dd3de66d509e5ad31c58f332a4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1799	966f19f18d0097d3d0081eda2520852548100149	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
+hermiq	1800	86ddafb4de7887c2b2dd1ac7019e343930e68235	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.77
