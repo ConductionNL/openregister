@@ -3626,3 +3626,16 @@ keepiq	1821	96ddd816629b1e22493309948039d33ed9f22a27	MERGED	merge8	GATE OK sbom,
 keepiq	1822	1457d399785751d29afb4edf2758211961deca8e	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
 keepiq	1823	9577cd76e00331cb3953e5c0e59224bf1a8249c5	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
 keepiq	1824	b2f2ab280dcbc261cd6547360a9a60e2dab093be	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+shillinq	1904	8c5e1f2e0584e45d87fc2c3f41f8586926273fcb	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	1908	1862245f2a824ae08b41b20ff7f9e718570202d0	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	1912	12b4700e14fc9bac43b585936c4194d696922ea1	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	1991	4377b4373da91515eac1d303d7670645ed8abd8a	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2048	202ec0a01f44e3391234da8dac48badc86683aa6	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	2094	1837090d95a425a177234e12dda4d0d16738bc19	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+shillinq	2218	b60c1dcd8b107c8a0b2808141a68bc2b102b1d5a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.05
+shillinq	2224	8a7a3aa76fff26622cee0bf924c6cc6aea5379da	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	2226	dcacc634830ff16cb6ab5f490d15235ea7583173	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2228	b6167ac55ae14ad83dc188c817bee1f75e1a7843	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2230	b859457f29008577e3c0cc89ac54941c08f713fb	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2766	64b9e1981e90cbcb6fa6d4b4036ddad4dc4c69f2	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+shillinq	2991	a48bd63d9e6d59dca40e341049f36244f9baf703	RED	merge3	GATE RED floor: unit_size: 4.42 -> 4.40; unit_complexity: 4.94 -> 4.92
