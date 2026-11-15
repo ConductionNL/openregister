@@ -12325,6 +12325,7 @@ build4:openregister:platform-cloud-federation-provider:c4	failed: permission (op
 fix:opencatalogi:2687:5473354c	merged development, l10n union + rebuild, unit fails inherited; new head 9e2ae324	session-20261114T225452-4fcfea7f	2026-11-15T00:35:20Z
 build4:dossiq:social-domain-consent-and-safeguards:c5	partial: PR #6529 builds 2.1, 3.1 and 4.1; left 3.2 (needs an OpenRegister RBAC narrowing that also binds admins, not built yet) and 5.x e2e/live	session-20261114T234941-93e81b84	2026-11-15T00:35:26Z
 cover:planninq:e1c9866dmcf99:301d44af	PR #1186: 6 tests, Service/MailIntake fully covered, suite 1177->1183 OK	session-20261115T002445-1522cadc	2026-11-15T00:35:27Z
+fix:dossiq:6529:57b8f131	stale	feeder	2026-11-15T00:35:14Z
 verify:stackiq:1973:cd31f294	GREEN 1973	session-20261114T234758-aa94f07d	2026-11-15T00:35:53Z
 fix:dossiq:6529:57b8f131	stale	session-20261114T234941-93e81b84	2026-11-15T00:36:09Z
 fix:opencatalogi:2678:7f540c6a	conflict resolved, both intents kept; new head 8bcc74cceb409aa3ec7ee746a08951ccd902e0a0	session-20261114T234933-5c1be121	2026-11-15T00:36:08Z
