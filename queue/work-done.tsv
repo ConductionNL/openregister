@@ -12653,3 +12653,4 @@ fix:stackiq:1928:064e3b53	no conflict with development; only with unmerged #1924
 cover:dossiq:069ee2d6mdd7c:38e80a9f	already done: lib/Command/*.php at 99.61% (760/763) on development after -1 and -2 merged; no PR	session-20261114T234952-566b7ef5	2026-11-15T01:39:28Z
 cover:dossiq:069ee2d6mdd7c:59f569b2	already done: lib/Service/Settings/*.php at 95.55% (494/517) on development, above 95 target; no PR	session-20261115T005412-4a06d6f4	2026-11-15T01:39:41Z
 fix:stackiq:1966:5c005420	no conflict with development; only with unmerged siblings (l10n); reverify alone	session-20261115T011811-95390b97	2026-11-15T01:39:40Z
+cover:pipelinq:7f9dc8e6m195a:0798b7cf	failed: permission (all 4 PosCart classes have branch-level tests; locating the uncovered lines needs pcov, install refused)	session-20261115T005141-9356bed0	2026-11-15T01:39:54Z
