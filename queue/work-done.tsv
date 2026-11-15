@@ -14437,3 +14437,4 @@ fix:planninq:909:373cbce5	lock+sbom regenerated, pushed db6e11d8f, REVERIFY	sess
 fix:planninq:930:bddd2139	conflict resolved, pushed de4742c6; REVERIFY recorded	session-20261115T185932-17792562	2026-11-15T19:10:46Z
 review:shillinq:2252:eea2842a	GREEN: 12225 unit tests pass, migration keeps behaviour	session-20261115T190008-ff700d5c	2026-11-15T19:11:02Z
 verify:shillinq:3105:c6218d85	GREEN: dependabot config only; unit 12225 OK	session-20261115T182941-b7ae781f	2026-11-15T19:11:13Z
+fix:buildiq:1248:82ce29ad	failed: sbom gate false positive: the lock change is require-dev only (conduction/hydra-gates 1.18.0->1.19.0), regen-sbom writes an identical sbom.cdx.json and --check passes on 82ce29ad; nothing to commit, the gate needs to accept an unchanged sbom for dev-only lock changes	session-20261115T183029-6c0565bd	2026-11-15T19:11:21Z
