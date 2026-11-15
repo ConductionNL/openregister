@@ -13066,3 +13066,4 @@ review:filinq:2123:371aedd6	stale	feeder	2026-11-15T14:45:15Z
 verify:shillinq:3088:02f09b2d	GREEN 3088, GREEN 3097; phpunit 12233 OK; 1 inherited vitest failure	session-20261115T142951-2463b4c4	2026-11-15T14:46:18Z
 verify:dossiq:6570:10a5bf95	6570, 6575 GREEN (0 new failures over 19 baseline)	session-20261115T142132-f4234592	2026-11-15T14:46:30Z
 fix:shillinq:2995:58069ff7	conflict resolved, pushed e209ceb0, REVERIFY recorded	session-20261115T141023-b06d51da	2026-11-15T14:46:42Z
+build4:openregister:shared-credentials-and-flows:c2	already building: task 3.8 landed on build/shared-credentials-and-flows-2 by another lane (cc6222ad4e, MagicSharePrincipals at the magic table) while this run was paused; my parallel SaveObject-level version was not pushed. Remaining: 1.2/6.x/7.x wait on decisions, 9.x live, 10.x leaf apps	session-20261114T075643-acecaad6	2026-11-15T14:47:26Z
