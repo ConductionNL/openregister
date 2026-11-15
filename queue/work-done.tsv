@@ -13532,3 +13532,4 @@ review:integriq:2714:45199b02	GREEN: vitest and build pass	session-20261115T1525
 review:keepiq:1195:3f2200c4	BLOCK: phpmd 3 changes gate findings 7->13 and deprecates the CLI form used	session-20261114T102637-6688951e	2026-11-15T16:22:54Z
 review:integriq:2744:58fef09b	GREEN: prettier output identical to development	session-20261115T145555-b33410db	2026-11-15T16:23:00Z
 review:learniq:2133:743baa5c	BLOCK: ObjectDeletion/ObjectFindTarget imported from a namespace openregister does not have	session-20261115T142934-de7c51d0	2026-11-15T16:23:07Z
+review:learniq:2134:189e76b4	BLOCK (imports save-option classes from a namespace openregister does not provide)	session-20261115T141023-b06d51da	2026-11-15T16:23:14Z
