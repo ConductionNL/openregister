@@ -15086,3 +15086,4 @@ review:humaniq:670:404bf31c	GREEN: babel 8 (overlaps #661), build + lint ok	sess
 review:integriq:3059:4bb36a6b	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:31:52Z
 review:integriq:2994:a1ae6e95	GREEN: sass bump, 2387/2387 vitest pass merged with development	session-20261115T213101-2fb56005	2026-11-15T21:32:59Z
 review:humaniq:669:88ae160d	GREEN: vue-router minor, build + lint ok	session-20261115T203012-30a1abde	2026-11-15T21:33:10Z
+review:integriq:2560:a80037a8	GREEN: dev-dep bump, vitest 2387/2387 pass	session-20261115T213112-78aba834	2026-11-15T21:33:22Z
