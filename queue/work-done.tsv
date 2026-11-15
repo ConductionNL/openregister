@@ -13430,3 +13430,4 @@ review:filinq:1965:49589d88	RED: phpstan 2.3.5 adds 1 error (TesseractCommand.ph
 review:humaniq:661:6367bef4	RED: npm ci ERESOLVE, @babel/preset-env 7 peers on @babel/core ^7	session-20261115T152558-f97be55f	2026-11-15T16:05:02Z
 review:filinq:1828:63118b3c	GREEN: suite OK, gate failures 10 -> 8	session-20261115T142149-1d09fceb	2026-11-15T16:05:22Z
 review:hermiq:1102:53901bab	BLOCK: obsolete, development already at nextcloud-vue 2.180.0 (PR would downgrade to 2.60.0)	session-20261115T155902-521936b1	2026-11-15T16:05:32Z
+review:hermiq:1293:14810487	RED: conflict in l10n/en.*; 2 AgentExportModal vitest assertions on old Store text fail	session-20261115T155913-70cee771	2026-11-15T16:05:43Z
