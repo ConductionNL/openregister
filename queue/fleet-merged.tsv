@@ -3193,3 +3193,11 @@ decidiq	2210	a0ff89523364d15e534809dee83424bb17dff5f3	SKIP	merge3	GATE UNMEASURE
 decidiq	2211	a07dc476699f40075c16dbe50897edb76977fdc7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
 decidiq	2212	ca4e385612be4e6d9e4f3cc8b1e584ba7ec7b56f	RED	merge3	GATE RED floor: unit_complexity: 3.90 -> 3.88
 decidiq	2213	1c0035016041b72394945a18503f0f180c7adb24	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
+integriq	3595	7f9f7e7636235d1c2c65274db22d2186c1875c89	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+integriq	3628	626c2e6f59943208459fd06bcbb64652dd68f1b6	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+integriq	3630	0af2622c5f1e53f08aba7febd449a19fcca3f0d3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3637	cfec360e12db5196fefbce1216d21ebd98db0b1f	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+integriq	3639	e46772691b83900efe3492faf4f968767c898fa1	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+integriq	3640	58f75cf1efb25b7cd184fdd1471af70336dc91cf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3642	14d64297c55e9e0be02ed0d6e9c59cd45db79134	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3643	0d836b5b429d856abbf0eae92189b381c0bf1f60	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
