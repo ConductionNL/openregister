@@ -3443,3 +3443,12 @@ launchpad	977	dd835410dc5adc1e3f7a756c55b1ec0c23ca0c63	RED	merge8	GATE RED sbom:
 launchpad	1098	1720a6d32297542976c2d048a6d2ff7084e2193d	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 launchpad	1229	444ff7437a3d1799b71fe7a73eda4109cc9b4db1	RED	merge8	GATE RED floor: unit_complexity: 4.73 -> 4.69; unit_interfacing: 3.57 -> 3.55
 launchpad	1234	d725a0f05e32e8677fad84090dc7925f03492fe2	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	544	ca9b9c3e86ccf53bfd6ea3f4480bf9da43f378f9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1353	5d73ef4a9609dbfa42d6c55ff9f4da916a196766	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	1582	9e21deeeb16e7bdfc274c0ee515cc3bdf497820f	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1682	505a7cd5fc3ec69bdf1f65a98d8079f5d62e2353	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	1685	d8c2567a0beb67554df51c52ae485b26dfeba74f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1982	19a536caaaf1ad5c295587c71af715d3b1b848df	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	1989	4db47cae66c813180acfff62ae05b6b6f8fef5e3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	2349	124b9f8678c713f568fe461688af30b87afcac23	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	2527	c2ba60d892059e085dd9814f3b900f52b3cca58c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
