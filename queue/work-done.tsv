@@ -13631,3 +13631,4 @@ review:planninq:871:7d17dd48	BLOCK: lockfile conflict only; lint clean	session-2
 review:planninq:908:07c0fdd2	GREEN: playwright bump, npm ci ok, vitest and phpunit green	session-20261115T154258-dee2cc3d	2026-11-15T16:40:32Z
 review:planninq:1065:53961d3e	BLOCK: targets a searchObjectsBySlug signature openregister main does not have	session-20261114T102641-d4fd3e25	2026-11-15T16:40:53Z
 review:pipelinq:3088:3135c0b1	GREEN: eslint bump, lint output unchanged	session-20261115T154311-e8600d84	2026-11-15T16:41:04Z
+review:planninq:933:9b784ac7	CONFLICT: 10 files incl. 6 add/add with already-landed sibling work	session-20261115T154300-03b63424	2026-11-15T16:41:12Z
