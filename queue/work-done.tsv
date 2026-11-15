@@ -14694,3 +14694,4 @@ review:planninq:1070:e52ec55b	GREEN: lock-only dev bump, 1222 unit tests pass on
 review:planninq:1068:40deb423	GREEN: phpstan bump, no new findings, 1222 tests OK	session-20261115T195957-8e60ca53	2026-11-15T20:11:04Z
 merge:keepiq:1822:ff134ec0	stale	feeder	2026-11-15T20:10:34Z
 merge:keepiq:1824:293432db	stale	feeder	2026-11-15T20:10:34Z
+review:buildiq:1093:9d8db577	GREEN: minor marked bump, sbom current, vitest green	session-20261115T182940-bfeb7e78	2026-11-15T20:11:26Z
