@@ -15176,3 +15176,15 @@ review:dossiq:6109:aa8d7473	GREEN: tests only, pass on merged tree	session-20261
 review:hermiq:1736:476d3761	GREEN: build matches change, no new failures	session-20261115T213112-78aba834	2026-11-15T21:51:07Z
 review:learniq:2484:13aa1fe4	CONFLICT: content fine, test file conflicts with development migration	session-20261115T213134-4b0d2823	2026-11-15T21:51:17Z
 review:decidiq:2178:5867902a	BLOCK: new find/saveObject calls use removed named-arg openregister API; tests green	session-20261115T213101-2fb56005	2026-11-15T21:51:41Z
+review:filinq:1086:926d1e45	GREEN: hydra-gates dev bump after dev merge	session-20261115T203012-30a1abde	2026-11-15T21:51:55Z
+review:decidiq:2170:a39ae47e	GREEN: spec build, unit 4655 OK, vitest OK; old OR call shape noted for ORMIG	session-20261115T213110-6b33145c	2026-11-15T21:52:03Z
+review:learniq:2521:be3bc639	RED: 9 new errors merged with development (old saveObject named args)	session-20261115T213144-ab42ee6a	2026-11-15T21:52:14Z
+review:filinq:2121:7021db61	RED: new code uses removed openregister named args; 8 own tests fail on main	session-20261115T202932-d1067ee4	2026-11-15T21:52:31Z
+review:hermiq:1735:ca8e4b6f	RED: new code uses removed OR named args, 25 new failures vs OR main	session-20261115T213112-78aba834	2026-11-15T21:52:38Z
+review:dossiq:3297:cecaeb85	GREEN: adds case guard, no new failures	session-20261115T211111-34885d99	2026-11-15T21:52:54Z
+review:dossiq:4887:e60cd452	RED: 2 new failures (ListenerRegistrarTest, ObligationDeclarationEdgesTest expectations)	session-20261115T213122-46f7fafb	2026-11-15T21:53:03Z
+review:filinq:2114:1694e39c	RED: same 6 failures (old OR args in new repositories)	session-20261115T203012-30a1abde	2026-11-15T21:53:10Z
+review:portaliq:1229:a2bd58a2	GREEN: comment-only, no new failures	session-20261115T213134-4b0d2823	2026-11-15T21:53:24Z
+review:filinq:2094:68947c99	RED: removed openregister named args; 7 own tests fail on main	session-20261115T202932-d1067ee4	2026-11-15T21:53:40Z
+review:hermiq:1754:90d73dbf	RED: new code uses removed OR named args, 7 new failures vs OR main	session-20261115T213112-78aba834	2026-11-15T21:53:50Z
+review:hermiq:1788:4b1ae86b	GREEN: spec-conform, guarded endpoints, no new failures	session-20261115T213122-e023a81e	2026-11-15T21:54:01Z
