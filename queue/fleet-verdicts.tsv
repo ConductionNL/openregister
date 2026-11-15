@@ -12802,3 +12802,5 @@ learniq	1727	937a06717963b48f8b8ebd2e0983d0d52759a4b5	RED	merge3:merge-gate	GATE
 learniq	1903	3f6c3b607560531cfd6b2df4567f44762b6caa7e	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 learniq	2126	af7f7379f6ac7a9316577188b001e88f886eccb9	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 learniq	2127	6e8befed2ebb8dcdf00d96b8412d1052c7454758	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+learniq	1167	4b75be29d7a26c61074f34bc31a545b5e1c784cf	CONFLICT	merge3	merges clean on development alone; files: package-lock.json package.json 
+learniq	1881	5f883140c649f695957f14b8bf6f7bc837b9e56b	CONFLICT	merge3	conflicts with development; files: appinfo/info.xml lib/Service/Portal/EmployerBookingProjection.php 
