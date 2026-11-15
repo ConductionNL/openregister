@@ -1,7 +1,7 @@
 {
  "app": "keepiq",
  "commit": "4b38ea0c4593801503c14320809e15a3a42a6bd9",
- "measured_at": "2026-11-14T23:33:09Z",
+ "measured_at": "2026-11-15T01:43:23Z",
  "php": {
   "tool": "pcov",
   "pct": 93.72,
@@ -131,13 +131,17 @@
   }
  },
  "js": {
-  "pct": 93.44,
-  "statements": 13174,
+  "pct": 92.91,
+  "statements": 13250,
   "covered": 12310,
   "dirs": {
    "src/": [
-    131,
+    170,
     90
+   ],
+   "src/assets/": [
+    0,
+    0
    ],
    "src/bootstrap/": [
     33,
@@ -162,6 +166,10 @@
    "src/components/application/": [
     92,
     80
+   ],
+   "src/components/dashboard/": [
+    17,
+    0
    ],
    "src/components/import/": [
     17,
@@ -200,7 +208,7 @@
     256
    ],
    "src/health/": [
-    130,
+    141,
     127
    ],
    "src/import/": [
@@ -210,6 +218,10 @@
    "src/import/parsers/": [
     275,
     266
+   ],
+   "src/manifest.d/": [
+    0,
+    0
    ],
    "src/migration/": [
     142,
@@ -272,7 +284,7 @@
     1
    ],
    "src/views/settings/": [
-    15,
+    24,
     15
    ]
   }
