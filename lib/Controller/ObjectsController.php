@@ -99,6 +99,9 @@ use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
 use OCA\OpenRegister\Service\Export\ExportRunFile;
 use OCA\OpenRegister\Service\Export\ExportRunOrigin;
+use OCA\OpenRegister\Service\Export\ExportPage;
+use OCA\OpenRegister\Service\Export\ExportRequest;
+use OCA\OpenRegister\Service\Export\PublicExportService;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
@@ -6175,6 +6178,8 @@ class ObjectsController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
+	 * @PublicPage
+	 *
 	 * @psalm-return DataDownloadResponse<200,
 	 *     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv'|'application/pdf',
 	 *     array<never, never>>|JSONResponse
@@ -6183,7 +6188,10 @@ class ObjectsController extends Controller {
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/specs/export-pdf-format/spec.md
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
+	#[AnonRateLimit(limit: 10, period: 60)]
 	public function export(string $register, string $schema, ObjectOperationsInterface $objectService): DataDownloadResponse|JSONResponse {
 		// Set the register and schema context.
 		$objectService->setRegister(register: $register);
@@ -6210,6 +6218,21 @@ class ObjectsController extends Controller {
 			// register a boundary: a fallback lookup would be a second, unscoped
 			// chance to find *a* schema with this slug, which is the whole defect.
 			return new JSONResponse(data: ['error' => 'Register or schema not found'], statusCode: 404);
+		}
+
+		// WITHOUT A SESSION the public principal exports, through its own path:
+		// the schema's grant must name `public`, only open formats are written,
+		// and one bounded page leaves per response (design D-2 to D-4).
+		if ($this->exportsAsThePublic() === true) {
+			return $this->publicExport(
+				export: new ObjectExport(
+					register: $registerEntity,
+					schema: $schemaEntity,
+					filters: $filters,
+					filenameBase: self::exportFilenameBase(register: $registerEntity, schema: $schemaEntity)
+				),
+				format: (string)$type
+			);
 		}
 
 		// THE EXPORT VERB, before a single row is read. Hiding the menu item is
@@ -6240,6 +6263,65 @@ class ObjectsController extends Controller {
 			default => $this->excelExport(export: $export),
 		};
 	}//end export()
+
+	/**
+	 * Whether this export runs as the public principal.
+	 *
+	 * Not an access check: it picks which of the two export paths applies, and
+	 * each path checks its own right (the public grant for a visitor, the
+	 * caller's export right for a signed-in user).
+	 *
+	 * @return bool True when there is no signed-in user.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	private function exportsAsThePublic(): bool {
+		return ($this->userSession->getUser() === null);
+	}//end exportsAsThePublic()
+
+	/**
+	 * Export for a caller without a session: one page in an open format, or the refusal.
+	 *
+	 * @param ObjectExport $export What to export.
+	 * @param string       $format The requested format.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The page with its paging headers, or the refusal.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	private function publicExport(ObjectExport $export, string $format): DataDownloadResponse|JSONResponse {
+		$service = null;
+		try {
+			$service = $this->container->get(PublicExportService::class);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[ObjectsController] Public export service unresolvable, refusing the export',
+				context: ['error' => $e->getMessage()]
+			);
+		}
+
+		// No service, no export: the grant check lives there.
+		if (($service instanceof PublicExportService) === false) {
+			return new JSONResponse(
+				data: ['error' => 'EXPORT_REFUSED', 'verb' => ExportRightService::ACTION, 'rule' => 'right-service-unavailable'],
+				statusCode: 503
+			);
+		}
+
+		$request = (new ExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters))
+			->withPage(page: ExportPage::publicFrom(requested: ($export->filters['_page'] ?? null)));
+		$result  = $service->export(request: $request, format: $format);
+		if ($result->content === null) {
+			return new JSONResponse(data: $result->refusalBody(), statusCode: $result->statusCode());
+		}
+
+		$response = $export->download(format: $format, content: $result->content);
+		foreach ($result->headers(requestUri: $this->request->getRequestUri()) as $name => $value) {
+			$response->addHeader($name, $value);
+		}
+
+		return $response;
+	}//end publicExport()
 
 	/**
 	 * The request parameters an export filters on.

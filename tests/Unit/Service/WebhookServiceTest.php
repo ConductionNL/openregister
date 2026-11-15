@@ -858,6 +858,36 @@ class WebhookServiceTest extends TestCase {
 		$this->assertFalse($resultNoMatch);
 	}
 
+	public function testPassesFiltersOnBothStatesMatchesOnlyTheChangingUpdate(): void {
+		$webhook = $this->createTestWebhook();
+		$webhook->setFilters(json_encode(['oldObject.status' => 'draft', 'newObject.status' => 'final']));
+
+		$payloads = [];
+		$service = $this->createMock(WebhookService::class);
+		$service->method('hasWebhooksFor')->willReturn(true);
+		$service->method('dispatchEvent')->willReturnCallback(
+			function (string $eventName, array $payload) use (&$payloads): void {
+				$payloads[] = $payload;
+			}
+		);
+		$listener = new \OCA\OpenRegister\Listener\WebhookEventListener($service, $this->createMock(\Psr\Log\LoggerInterface::class));
+		$states = [['status' => 'draft'], ['status' => 'draft'], ['status' => 'final'], ['status' => 'final']];
+		for ($i = 1; $i < count($states); $i++) {
+			$old = new \OCA\OpenRegister\Db\ObjectEntity();
+			$old->setObject($states[$i - 1]);
+			$new = new \OCA\OpenRegister\Db\ObjectEntity();
+			$new->setObject($states[$i]);
+			$listener->handle(new \OCA\OpenRegister\Event\ObjectUpdatedEvent($new, $old));
+		}
+
+		$passes = [];
+		foreach ($payloads as $payload) {
+			$passes[] = $this->invokePrivateMethod('passesFilters', ['webhook' => $webhook, 'payload' => $payload]);
+		}
+
+		$this->assertSame([false, true, false], $passes);
+	}
+
 	// ─── getNestedValue tests (via reflection) ───────────────────────
 
 	public function testGetNestedValueSimpleKey(): void {

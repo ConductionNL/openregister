@@ -6367,6 +6367,8 @@ class ObjectsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPdfExportIsRecordedWithItsRowCount(): void {
+		// A signed-in caller: without a session the export takes the public path.
+		$this->setupRegularUser();
 		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
 		$runs->expects($this->once())->method('record')->willReturnCallback(
 			function (...$args) {
@@ -6828,6 +6830,8 @@ class ObjectsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAJsonExportIsRecorded(): void {
+		// A signed-in caller: without a session the export takes the public path.
+		$this->setupRegularUser();
 		$this->arrangeRecordedExport(format: 'json');
 		$this->exportService->method('exportToJson')->willReturn('[]');
 
@@ -6841,6 +6845,8 @@ class ObjectsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnXmlExportIsRecordedWithItsRowCountAndNamedXml(): void {
+		// A signed-in caller: without a session the export takes the public path.
+		$this->setupRegularUser();
 		// The controller swallows a recorder failure (it costs the row, never the
 		// export), so an assertion inside the callback could never fail the test.
 		// Capture what was recorded and assert after the call.
@@ -6897,6 +6903,8 @@ class ObjectsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnExcelExportIsRecordedAndNamedXlsx(): void {
+		// A signed-in caller: without a session the export takes the public path.
+		$this->setupRegularUser();
 		$this->arrangeRecordedExport(format: 'excel');
 		$this->exportService->method('exportToExcel')->willReturn(new \PhpOffice\PhpSpreadsheet\Spreadsheet());
 
@@ -6930,11 +6938,119 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	/**
+	 * Arrange an anonymous export of `publicaties`/`besluit` with these parameters.
+	 *
+	 * @param array<string, mixed> $params  The request parameters.
+	 * @param mixed                $service What the container answers for the public export service.
+	 *
+	 * @return void
+	 */
+	private function arrangeAnonymousExport(array $params, mixed $service): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setSlug('publicaties');
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setSlug('besluit');
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($register);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);
+		$this->request->method('getParams')->willReturn($params + ['_route' => 'r']);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($params[$key] ?? $default)
+		);
+		$this->request->method('getRequestUri')->willReturn('/api/objects/publicaties/besluit/export?format=xml');
+		$this->container->method('get')->willReturnCallback(
+			static function (string $id) use ($service) {
+				if ($id === \OCA\OpenRegister\Service\Export\PublicExportService::class) {
+					return $service;
+				}
+
+				throw new \RuntimeException('not asked for: ' . $id);
+			}
+		);
+	}
+
+	/**
+	 * Without a session the export goes through the public export, page and format from the request,
+	 * and the file carries the paging headers; the signed-in right check is not consulted.
+	 *
+	 * @return void
+	 */
+	public function testAnAnonymousExportIsServedAsAPublicPage(): void {
+		$service = $this->createMock(\OCA\OpenRegister\Service\Export\PublicExportService::class);
+		$service->expects($this->once())->method('export')->with(
+			$this->callback(static fn (\OCA\OpenRegister\Service\Export\ExportRequest $request): bool => $request->currentUser === null
+				&& $request->page()?->number === 2
+				&& ($request->filters['thema'] ?? null) === 'milieu'
+				&& isset($request->filters['_route']) === false),
+			'xml'
+		)->willReturn(
+			new \OCA\OpenRegister\Service\Export\PublicExportResult(
+				refusal: null,
+				content: '<objects/>',
+				page: new \OCA\OpenRegister\Service\Export\ExportPage(number: 2),
+				total: 23500
+			)
+		);
+		$this->arrangeAnonymousExport(params: ['format' => 'xml', 'thema' => 'milieu', '_page' => '2'], service: $service);
+		$this->exportService->expects($this->never())->method('exportToXml');
+
+		$result = $this->controller->export('publicaties', 'besluit', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertSame('<objects/>', $result->render());
+		$headers = $result->getHeaders();
+		$this->assertSame('application/xml; charset=utf-8', $headers['Content-Type']);
+		$this->assertSame('23500', $headers['X-Total-Count']);
+		$this->assertSame('2', $headers['X-Page']);
+		$this->assertSame('3', $headers['X-Pages']);
+		$this->assertSame('</api/objects/publicaties/besluit/export?format=xml&_page=3>; rel="next"', $headers['Link']);
+	}
+
+	/**
+	 * An anonymous refusal is answered as JSON with its status.
+	 *
+	 * @return void
+	 */
+	public function testAnAnonymousRefusalIsAnsweredWithItsStatus(): void {
+		$service = $this->createMock(\OCA\OpenRegister\Service\Export\PublicExportService::class);
+		$service->method('export')->willReturn(
+			\OCA\OpenRegister\Service\Export\PublicExportResult::refused(
+				refusal: new \OCA\OpenRegister\Service\Export\ExportRefusedException(rule: 'format-not-open', reason: 'open formats only', statusCode: 406)
+			)
+		);
+		$this->arrangeAnonymousExport(params: ['format' => 'pdf'], service: $service);
+
+		$result = $this->controller->export('publicaties', 'besluit', $this->objectService);
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(406, $result->getStatus());
+		$this->assertSame('format-not-open', $result->getData()['rule']);
+	}
+
+	/**
+	 * No public export service, no export: 503, never an unchecked file.
+	 *
+	 * @return void
+	 */
+	public function testAnAnonymousExportWithoutTheServiceIsRefused(): void {
+		$this->arrangeAnonymousExport(params: ['format' => 'csv'], service: 'not-a-service');
+		$this->exportService->expects($this->never())->method('exportToCsv');
+
+		$result = $this->controller->export('publicaties', 'besluit', $this->objectService);
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(503, $result->getStatus());
+	}
+
+	/**
 	 * A JSON export drops the route from its filters and answers a named JSON file.
 	 *
 	 * @return void
 	 */
 	public function testExportJsonGolden(): void {
+		// A signed-in caller: without a session the export takes the public path.
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
 		$this->grantExport();
 		$registerEntity = new \OCA\OpenRegister\Db\Register();
 		$registerEntity->setSlug('my-register');
@@ -6947,7 +7063,7 @@ class ObjectsControllerTest extends TestCase {
 			static fn (string $key, $default = null) => ($key === 'type') ? 'json' : $default
 		);
 		$this->exportService->expects($this->once())->method('exportToJson')->with(
-			new ObjectExportRequest(register: $registerEntity, schema: $schemaEntity, filters: ['status' => 'open'])
+			new ObjectExportRequest(register: $registerEntity, schema: $schemaEntity, filters: ['status' => 'open'], currentUser: $user)
 		)->willReturn('{"results":[1,2]}');
 
 		$result = $this->controller->export('1', '2', $this->objectService);

@@ -166,11 +166,17 @@ class DestructionService implements DestructionServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
 	 */
 	public function approveList(array $destructionList, ApprovalRequest $request): array {
 		$choice = $request->choice;
 		$userId = $this->getCurrentUserId();
-		$destructionList['approvals'][] = ['userId' => $userId, 'approvedAt' => (new DateTime())->format('c'), 'action' => $choice->action];
+		$destructionList['approvals'][] = [
+			'userId' => $userId,
+			'approvedAt' => (new DateTime())->format('c'),
+			'action' => $choice->action,
+			'destroyedOverConflict' => self::destroyedOverConflict(destructionList: $destructionList),
+		];
 
 		if ($choice->excludesRecords() === true) {
 			$exclusion = new PartialExclusion(
@@ -189,6 +195,40 @@ class DestructionService implements DestructionServiceInterface {
 		$approval = new DestructionApproval(userId: $userId, action: $choice->action, listUuid: $request->listUuid);
 		return ($unfinished ?? $this->markApproved(destructionList: $destructionList, approval: $approval));
 	}//end approveList()
+
+	/**
+	 * How many entries a reviewer answered `destroy` over an acknowledged link conflict.
+	 *
+	 * Counted from the decision history: the decisions that carry
+	 * `overriddenConflicts`, once per entry. An approver who signs a list
+	 * signs this number, so it is recorded on the approval (design D-5).
+	 *
+	 * @param array<string, mixed> $destructionList The destruction list.
+	 *
+	 * @return int The number of entries.
+	 *
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
+	 */
+	private static function destroyedOverConflict(array $destructionList): int {
+		$history = ($destructionList['decisions'] ?? []);
+		if (is_array($history) === false) {
+			return 0;
+		}
+
+		$entries = [];
+		foreach ($history as $decision) {
+			if (is_array($decision) === false || ($decision['answer'] ?? null) !== 'destroy') {
+				continue;
+			}
+
+			$overridden = ($decision['overriddenConflicts'] ?? []);
+			if (is_array($overridden) === true && $overridden !== []) {
+				$entries[(string) ($decision['entry'] ?? '')] = true;
+			}
+		}
+
+		return count($entries);
+	}//end destroyedOverConflict()
 
 	/**
 	 * The choice an archivist makes when approving a list.

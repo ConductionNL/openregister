@@ -38,6 +38,10 @@ jest.mock('../modals/logs/ClearAuditTrails.vue', () => ({
 	name: 'ClearAuditTrails',
 	template: '<i class="ClearAuditTrails" />',
 }))
+jest.mock('./connections/ConnectionReportDialog.vue', () => ({
+	name: 'ConnectionReportDialog',
+	template: '<i class="ConnectionReportDialog" />',
+}))
 jest.mock('./i18n/BulkTranslateDialog.vue', () => ({
 	name: 'BulkTranslateDialog',
 	props: ['open', 'uuid', 'languages'],
@@ -67,6 +71,18 @@ describe('Dialogs', () => {
 		navigationStore.dialog = 'other'
 		await nextTick()
 		expect(wrapper.find('.DeleteApplication').exists()).toBe(false)
+	})
+
+	it('mounts the connection report dialog only while it is the active dialog', async () => {
+		navigationStore.dialog = null
+		const wrapper = mount(Dialogs)
+		expect(wrapper.find('.ConnectionReportDialog').exists()).toBe(false)
+		navigationStore.dialog = 'connectionReport'
+		await nextTick()
+		expect(wrapper.find('.ConnectionReportDialog').exists()).toBe(true)
+		navigationStore.dialog = 'deleteApplication'
+		await nextTick()
+		expect(wrapper.find('.ConnectionReportDialog').exists()).toBe(false)
 	})
 
 	it('mounts the Translate dialog with what the object page handed it, and passes the answer back', async () => {

@@ -41,6 +41,73 @@ OpenRegister provides a complete archival and destruction workflow for managing 
 - Rejection removes individual objects from a destruction list with reason tracking
 - Full audit trail via OpenRegister's standard audit logging
 
+### Linked-record conflicts
+
+Destroying a record can break a record that is kept. When a destruction list
+is made, every entry is compared with the records it links to and the records
+that link to it (at most 50 each way), leaving out records on the same list.
+A linked record is a conflict when:
+
+| kind | when |
+|------|------|
+| `linked-kept-permanently` | the linked record is nominated `bewaren` |
+| `linked-kept-longer` | its `archiefactiedatum` is later than the entry's |
+| `linked-date-unknown` | it has no `archiefactiedatum` yet |
+| `linked-on-hold` | it is under an active legal hold |
+| `linked-derives-date-from-this` | it derives its own archive date from the entry through a relation method |
+
+Each entry carries `linkConflicts`, `linkConflictsTruncated` (true when more
+links exist than were examined, or when the check could not run) and the list
+carries `linkConflictCount`. A conflict reads:
+
+```json
+{
+  "kind": "linked-kept-permanently",
+  "direction": "incoming",
+  "uuid": "b1f0…",
+  "title": "Besluit kapvergunning",
+  "schema": 14,
+  "archiefnominatie": "bewaren",
+  "archiefactiedatum": null
+}
+```
+
+`direction` is `incoming` when the linked record points at the entry (it would
+dangle after the destroy) and `outgoing` when the entry points at it. Incoming
+conflicts are listed first.
+
+**Refreshed at review.** `GET /api/archival/destruction-lists/{id}` and
+`GET /api/archival/reviews/pending` recompute the conflicts of the entries
+they return, because a date can move after the list was made. Each returned
+entry (or pending row) carries `linkConflictsCheckedAt`, the moment of that
+check; the list read also returns the recomputed `linkConflictCount` and a
+list-level `linkConflictsCheckedAt`. The recomputation is not saved: the
+stored list keeps the conflicts it was made with.
+
+**Destroying over a conflict is acknowledged.** A `destroy` answer to
+`POST /api/archival/destruction-lists/{id}/entries/{entryId}/decision` on an
+entry with conflicts, or whose conflicts could not all be established, is
+refused with **422** before anything is done to the record:
+
+```json
+{
+  "error": "This record has link conflicts; destroying it needs acknowledgeConflicts: true and a reason",
+  "linkConflicts": [ { "kind": "linked-kept-permanently", "...": "..." } ],
+  "linkConflictsTruncated": false
+}
+```
+
+Sending `"acknowledgeConflicts": true` with the answer and its reason records
+the destroy; the decision in the list's `decisions` history then carries
+`overriddenConflicts`, the conflicts as they stood at that moment, and the
+`archival.review_decided` audit row carries `overriddenConflicts` with their
+count. `retain` and `transfer` answers destroy nothing and need no
+acknowledgement.
+
+**The approval says what it approves.** Each approval recorded on a list
+carries `destroyedOverConflict`: the number of entries a reviewer destroyed
+over an acknowledged conflict.
+
 ## Architecture
 
 ### Backend Files

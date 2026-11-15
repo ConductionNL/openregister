@@ -13,6 +13,8 @@
 			:languages="bulkTranslate.languages"
 			@translated="onTranslated"
 			@close="closeBulkTranslate" />
+		<ConnectionReportDialog
+			v-if="navigationStore.dialog === 'connectionReport'" />
 	</div>
 </template>
 
@@ -23,6 +25,7 @@ import AuditTrailChanges from '../modals/logs/AuditTrailChanges.vue'
 import AuditTrailDetails from '../modals/logs/AuditTrailDetails.vue'
 import ClearAuditTrails from '../modals/logs/ClearAuditTrails.vue'
 import DeleteAuditTrail from '../modals/logs/DeleteAuditTrail.vue'
+import ConnectionReportDialog from './connections/ConnectionReportDialog.vue'
 import BulkTranslateDialog from './i18n/BulkTranslateDialog.vue'
 import { navigationStore } from '../store/store.js'
 

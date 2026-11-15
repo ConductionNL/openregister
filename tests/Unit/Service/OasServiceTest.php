@@ -1521,9 +1521,10 @@ class OasServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod('createCommonQueryParameters', [true, null]);
 
 		$names = array_column($result, 'name');
-		// Should have base params + _search, but no dynamic filters
+		// Should have base params + _search + _where, but no dynamic filters
 		$this->assertContains('_search', $names);
-		$this->assertCount(4, $result);
+		$this->assertContains('_where', $names);
+		$this->assertCount(5, $result);
 	}
 
 	// ========================================================================

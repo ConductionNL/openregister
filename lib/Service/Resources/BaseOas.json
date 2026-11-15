@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Nextcloud OpenRegister API",
-    "version": "1.0", 
+    "version": "1.0.0",
     "description": "RESTful API for managing registers, schemas, data sources, objects, and audit trails in a Nextcloud environment. This API provides full CRUD operations, advanced filtering, search capabilities, and extensible data management features.",
     "contact": {
       "name": "OpenRegister Development Team",

@@ -35,13 +35,19 @@ namespace OCA\OpenRegister\Service\Oas;
 final class NlGovDocumentRules {
 
 	/**
+	 * Where the findings go.
+	 *
+	 * @var NlGovFindings
+	 */
+	private readonly NlGovFindings $findings;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param OasValidationReport $report The report the findings go to.
 	 */
-	public function __construct(
-		private readonly OasValidationReport $report,
-	) {
+	public function __construct(OasValidationReport $report) {
+		$this->findings = new NlGovFindings(report: $report);
 	}//end __construct()
 
 	/**
@@ -84,7 +90,7 @@ final class NlGovDocumentRules {
 			return;
 		}
 
-		$this->finding(
+		$this->findings->add(
 			ruleId: '/core/uri-version',
 			path: 'servers.0.url',
 			message: sprintf('The server URL "%s" does not end in the major version (/v{major}).', $url)
@@ -102,7 +108,7 @@ final class NlGovDocumentRules {
 	 */
 	private function checkPathName(string $pathName): void {
 		if ($pathName !== '/' && str_ends_with($pathName, '/') === true) {
-			$this->finding(
+			$this->findings->add(
 				ruleId: '/core/no-trailing-slash',
 				path: 'paths.'.$pathName,
 				message: sprintf('The path "%s" ends in a slash.', $pathName)
@@ -115,7 +121,7 @@ final class NlGovDocumentRules {
 			}
 
 			if (preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $segment) !== 1) {
-				$this->finding(
+				$this->findings->add(
 					ruleId: '/core/path-segments-kebab-case',
 					path: 'paths.'.$pathName,
 					message: sprintf('The path segment "%s" of "%s" is not kebab-case.', $segment, $pathName)
@@ -178,11 +184,11 @@ final class NlGovDocumentRules {
 
 		$message = sprintf('The query key "%s" is not camelCase.', $name);
 		if (preg_match('/^_[a-z][a-zA-Z0-9]*$/', $base) === 1) {
-			$this->finding(ruleId: '/core/query-keys-camel-case', path: $path, message: $message);
+			$this->findings->add(ruleId: '/core/query-keys-camel-case', path: $path, message: $message);
 			return;
 		}
 
-		$this->finding(ruleId: '/core/query-keys-camel-case', path: $path, message: $message, deviates: false);
+		$this->findings->addViolation(ruleId: '/core/query-keys-camel-case', path: $path, message: $message);
 	}//end checkQueryKey()
 
 	/**
@@ -217,29 +223,4 @@ final class NlGovDocumentRules {
 
 		return $resolved;
 	}//end resolveParameter()
-
-	/**
-	 * Write one finding as a warning, naming the deviation when the rule declares one.
-	 *
-	 * @param string $ruleId The rule.
-	 * @param string $path Where in the document.
-	 * @param string $message What was found.
-	 * @param boolean $deviates Whether the rule's declared deviation covers this finding.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
-	 */
-	private function finding(string $ruleId, string $path, string $message, bool $deviates = true): void {
-		$reason = NlGovRuleCatalogue::deviation(ruleId: $ruleId);
-		if ($deviates === true && $reason !== null) {
-			$message = 'Declared deviation from NLGov '.$ruleId.': '.$message.' '.$reason;
-		} else {
-			$message = 'Violates NLGov '.$ruleId.': '.$message;
-		}
-
-		$this->report->addWarning(
-			issue: new OasIssue(path: $path, message: $message, code: OasValidationReport::CODE_NLGOV_RULE, rule: $ruleId)
-		);
-	}//end finding()
 }//end class
