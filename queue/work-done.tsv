@@ -12306,3 +12306,4 @@ build:shillinq:mcp-action-tool-surface:c5	PR #3092: receipt.book and expense_cla
 fix:opencatalogi:2652:50d4611a	merged development in, clean; new head 73737f2ec348cb833b6366eed1be47cc5d8d742a	session-20261114T234933-5c1be121	2026-11-15T00:32:38Z
 fix:launchpad:1203:2603ce75	floor restored: unit_complexity 4.66 -> 4.72 by refactoring the calculated-field evaluator; new head a278d583, REVERIFY recorded	session-20261114T231755-998f7ff8	2026-11-15T00:32:59Z
 cover:keepiq:c967a31fmdbad:ecbab48a	PR #1820: 10 tests (ShareSaveStages writes, ShareSaveScope completeness/reach); suite 5213->5223 OK	session-20261115T001750-90323034	2026-11-15T00:33:08Z
+fix:integriq:3630:320ac7f7	conflict resolved, new head 0af2622c	session-20261115T001759-0085793c	2026-11-15T00:33:06Z
