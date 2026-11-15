@@ -137,11 +137,18 @@ working). A slug the register does not list, a search over several registers, or
 without the register reader falls back to the global `find()`, as before. Covered by
 `tests/Unit/Service/Object/SearchQueryHandlerRegisterScopedSlugTest.php`.
 
-### Still class (b): open
-
-| Path | Disposition | Why it is not done here |
-| --- | --- | --- |
-| `SchemaManageGate::mayManageNamed()` (mixed-schema bulk rights) and `SaveLookups::schemaIdBySlug()` (the save) | (b), open | Must change together: scoping the rights check alone would check a different schema than the save writes. `SaveLookups::schemaId()` is also the shared reference resolver (`$ref` existence, filter guards, inverse write-back) behind one per-save slug cache, so the save's register has to be threaded into that cache first. A follow-up. |
+**Fixed in the sixth pass: the mixed-schema bulk save.** `BulkController::saveResolved()`
+now runs a mixed-schema batch's rows through `RowSchemaRefsInRegister` once, before the
+rights check: a row's `@self.schema` slug that the batch register carries is replaced by
+the id of that register's own schema. The rights check (`SchemaManageGate::mayManageNamed()`)
+and every save path behind it (checked, atomic and streamed, the last through
+`SaveLookups::schemaWithId()`) then resolve the same id, so they cannot read two different
+schemas for one slug. A row naming an id, a uuid, a slug the register lacks, or another
+register than the batch's is left as it is and resolves as before. The id lookup the gate
+and the save run afterwards keeps its RBAC and tenancy filter, so a schema the caller
+cannot see is still refused. Covered by `tests/Unit/Service/Schemas/RowSchemaRefsInRegisterTest.php`
+and `tests/Unit/Controller/BulkControllerMixedSchemaSlugScopeTest.php` (both directions:
+the register's schema admits where its namesake refuses, and refuses where its namesake admits).
 
 ### Class (a) and (c)
 
