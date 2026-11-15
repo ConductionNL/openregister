@@ -14649,3 +14649,4 @@ verify:hermiq:1804:7e6ee813	stale	feeder	2026-11-15T19:55:14Z
 review:buildiq:1094:224fef61	GREEN: prettier patch bump, sbom current	session-20261115T174747-978963d5	2026-11-15T19:55:57Z
 review:buildiq:1596:ba6566ea	CONFLICT (DashboardController ctor params); otherwise GREEN on local resolution	session-20261115T174747-978963d5	2026-11-15T19:57:24Z
 review:buildiq:1233:fbc18f00	GREEN: copy-only rename; vitest green, phpunit = baseline	session-20261115T182940-bfeb7e78	2026-11-15T19:58:14Z
+build4:openregister:rapportage-bi-export:c2	superseded: build/rapportage-bi-export-3 was built by another worker after this lease lapsed (PR open, covers compare + date ranges). Not pushed. Gap it does not cover: PHP fallback rows lack _created/_updated, so date-range filters count 0 there (fix kept locally in worker-21 t-18, commit 65a99a2d08)	session-20261114T073105-752e50ad	2026-11-15T20:01:18Z
