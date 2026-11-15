@@ -13488,6 +13488,7 @@ review:integriq:2994:6a706bf6	GREEN: vitest 2374/2374, build ok	session-20261115
 review:integriq:2652:7922fa98	CONFLICT: docs-only PR, ~37 add/add and rename conflicts with development	session-20261115T154258-dee2cc3d	2026-11-15T16:14:25Z
 review:integriq:3056:6773effd	RED: composer install fails, psalm 7 needs php ~8.3.16 vs config.platform 8.3	session-20261115T155911-14cd078d	2026-11-15T16:14:36Z
 review:integriq:2991:f5cb1fd7	RED: guzzle 8 breaks 4 tests (null auth refused in AuthenticationService, TransferException ctor, DSO golden)	session-20261115T152539-8dadb15a	2026-11-15T16:14:46Z
+review:filinq:1853:11051685	RED: 7 test failures from unadapted double; also conflicts with development	session-20261115T154329-16a67e2f	2026-11-15T16:15:09Z
 review:buildiq:1089:322d7e65	GREEN #1089: vitest 4667 passed before and after	session-20261115T152601-38767331	2026-11-15T16:15:04Z
 review:integriq:3053:86ebfa51	CONFLICT: 28 conflicted files against development	session-20261115T155903-abd003e3	2026-11-15T16:15:09Z
 review:integriq:3059:f3f45d92	GREEN: phpstan dev bump, phpstan clean on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:15:20Z
@@ -13578,6 +13579,7 @@ review:pipelinq:2957:0a390a39	BLOCK: conflicts in 19 files; development already 
 review:pipelinq:2187:ebdded89	GREEN: phpmd 3 runs, unit suite green; phpmd findings 62->95 (mostly attribute false positives)	session-20261115T154254-3d07b219	2026-11-15T16:29:58Z
 review:pipelinq:2557:5d12aa50	GREEN: ocp patch bump, 8890 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:30:06Z
 review:opencatalogi:2417:a2892ce3	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget vs openregister main; 1 new test failure	session-20261115T145555-b33410db	2026-11-15T16:30:13Z
+review:opencatalogi:2674:8c2edb69	GREEN: per-spec build of tasks 1.1-2.2; 2 inherited unit failures, none new	session-20261115T152547-c779ca49	2026-11-15T16:30:20Z
 review:pipelinq:2504:e4cc137c	BLOCK: superseded by the build already on development; conflicts in every file	session-20261115T154311-e8600d84	2026-11-15T16:30:32Z
 review:pipelinq:2501:81b7343b	GREEN: unit 8890/0 fail	session-20261115T154314-8216dc98	2026-11-15T16:30:46Z
 review:learniq:1162:18f186f9	GREEN	session-20261115T142951-2463b4c4	2026-11-15T16:30:53Z
@@ -13624,3 +13626,8 @@ review:planninq:1070:e04ed25c	GREEN: hydra-gates minor bump; no new failing gate
 review:planninq:1069:9cba21b3	RED: lock not installable (psalm 7.1 needs php>=8.3.16, platform pinned 8.3)	session-20261115T154407-94bf5f8c	2026-11-15T16:39:27Z
 review:learniq:1896:e4ec9b91	BLOCK: phpmd 3 adds 14 CouplingBetweenObjects findings (rating) and deprecates the script's CLI form; unit suite unchanged	session-20261115T155904-a7df5bc0	2026-11-15T16:39:43Z
 review:pipelinq:3146:97b91f19	RED: 6 newer development Flow tests call the old execute() form; lib change itself correct	session-20261115T145535-3f9e5078	2026-11-15T16:39:45Z
+review:pipelinq:2108:6bc5f8a0	BLOCK: gridstack 14 outside nextcloud-vue peer range	session-20261115T152546-2c24b649	2026-11-15T16:39:59Z
+review:planninq:871:7d17dd48	BLOCK: lockfile conflict only; lint clean	session-20261115T154255-e54527e9	2026-11-15T16:40:11Z
+review:planninq:908:07c0fdd2	GREEN: playwright bump, npm ci ok, vitest and phpunit green	session-20261115T154258-dee2cc3d	2026-11-15T16:40:32Z
+review:planninq:1065:53961d3e	BLOCK: targets a searchObjectsBySlug signature openregister main does not have	session-20261114T102641-d4fd3e25	2026-11-15T16:40:53Z
+review:pipelinq:3088:3135c0b1	GREEN: eslint bump, lint output unchanged	session-20261115T154311-e8600d84	2026-11-15T16:41:04Z
