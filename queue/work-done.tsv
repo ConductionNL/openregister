@@ -12628,3 +12628,4 @@ verify:dossiq:6545:b6d74418	6545 GREEN	session-20261115T005412-4a06d6f4	2026-11-
 cover:dossiq:069ee2d6mdd7c:f8ba5a90	PR #6548: 4 Task classes, 15 tests; suite 17403->17418, same 19 baseline failures	session-20261115T011806-2ba8b68f	2026-11-15T01:36:34Z
 cover:dossiq:069ee2d6mdd7c:3ee9dda7	already done: lib/Service/Custody/*.php measures 99.85% (658 stmts, 1 uncovered), above target 95	session-20261114T234941-bc8686af	2026-11-15T01:36:34Z
 verify:buildiq:1665:002f27d0	1665 GREEN	session-20261115T001740-566812b3	2026-11-15T01:36:37Z
+cover:portaliq:b60f3b81m4ccb:216a9a0a	PR #2525: InboxDeletionTest, 16 tests; suite 5873->5889, 0 failures	session-20261115T013435-30b4f471	2026-11-15T01:36:52Z
