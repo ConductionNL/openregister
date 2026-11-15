@@ -3152,3 +3152,6 @@ larpinq	1051	77585fbdb9fdf364deecdbc77c920c61efc4ac82	RED	merge3	GATE RED floor:
 larpinq	1052	1b2b0ad356c9f3412103f96707507ed8a1869548	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
 larpinq	1060	31b8e3db2bea3650df17a3230e527846dd526951	RED	merge3	GATE RED floor: overall: 4.99 -> 4.97; unit_size: 4.74 -> 4.72; unit_complexity: 4.87 -> 4.79; unit_interfacing: 4.71 -> 4.64
 larpinq	1061	ceb98cfdabbe3f5cfe9b5b35a557f1119da01ca1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
+launchpad	1203	a278d5830a7fe1371b61d67773695426eb2650d8	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.67
+launchpad	1206	c13e34be7837ccbc7cf299e72ef6a0346683b8ba	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+launchpad	1226	d96f04dad53098d2e7c3f6786804ab6fc0f69823	RED	merge3	GATE RED floor: unit_complexity: 4.73 -> 4.71
