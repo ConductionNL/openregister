@@ -14487,3 +14487,4 @@ fix:launchpad:784:f46ccf4d	failed: superseded, needs a manual close (closing PRs
 fix:launchpad:758:06d536b2	fixed: sbom regenerated after merging development; new head 96b93252	session-20261115T185930-76cdc846	2026-11-15T19:16:48Z
 fix:buildiq:1092:8fb29c55	sbom regenerated; pushed 996ef9e6, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T19:16:55Z
 fix:launchpad:832:0ef99698	openspec CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T19:17:09Z
+fix:launchpad:977:dd835410	sbom regenerated, pushed 4ec996d3, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:17:23Z
