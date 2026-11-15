@@ -13568,6 +13568,7 @@ review:pipelinq:1936:27cdae0d	CONFLICT #1936: obsolete, development already newe
 review:learniq:2126:af7f7379	GREEN: phpstan clean, no new failures	session-20261114T102637-6688951e	2026-11-15T16:28:48Z
 review:opencatalogi:2415:da40ef23	CONFLICT: PublicationsController conflicts with development (call moved to rendered()); diff itself correct	session-20261115T155911-14cd078d	2026-11-15T16:28:56Z
 review:learniq:1903:3f6c3b60	GREEN: dev-only ocp bump; installs, suite has only the inherited failure	session-20261115T145533-2db61682	2026-11-15T16:29:09Z
+review:opencatalogi:2250:626634c5	GREEN: equivalent refactor, 0 new failures	session-20261115T154300-03b63424	2026-11-15T16:29:17Z
 review:learniq:1884:16330d9e	no verdict: conflicts with development in 11 files; recorded CONFLICT for the fix lane	session-20261115T142958-341f60db	2026-11-15T16:29:33Z
 review:opencatalogi:1894:552c9a7c	CONFLICT: openspec-only PR conflicts with development in 6 files	session-20261114T085646-49a39060	2026-11-15T16:29:42Z
 review:pipelinq:2957:0a390a39	BLOCK: conflicts in 19 files; development already has a separate build of the same change (153dff0e7); access behaviour itself unchanged	session-20261114T095641-533e2a00	2026-11-15T16:29:52Z
@@ -13588,3 +13589,4 @@ review:pipelinq:2964:65b04b14	CONFLICT: behaviour OK vs spec, no new failures on
 review:pipelinq:2482:99a4545c	BLOCK: new deleteObject call uses the old openregister signature; conflicts with development	session-20261115T145555-b33410db	2026-11-15T16:32:22Z
 review:opencatalogi:1892:6953eb3c	GREEN: openspec notes only	session-20261115T142149-1d09fceb	2026-11-15T16:32:48Z
 review:pipelinq:2498:acffd38a	CONFLICT #2498: 17 files, likely superseded by the build on development	session-20261115T152601-38767331	2026-11-15T16:33:01Z
+review:opencatalogi:2407:21b8b65a	GREEN	session-20261115T151007-45079d32	2026-11-15T16:33:10Z
