@@ -12122,3 +12122,10 @@ decidiq	2207	91c94c38a4100641a257179058ed9aeb24dc2f5b	CONFLICT	merge3	merges cle
 versioniq	691	c3a11b62492684743530f8243a331abf3c252683	GREEN	worker-33:review	build of autoupdate-security-first as its spec asks (security level, patch policy with manual/next-window handling by severity, security fixes planned first, holds recorded); new patch-policy routes are admin-only, writes password-confirmed; with no stored patch policy existing levels plan as before; merged with development: PHP unit 1901 with the 2 installer golden failures inherited from development, vitest 3011/3011, eslint 0 errors, l10n complete
 versioniq	711	1d4bc36357fb30094327bc65dfd0d44470cc0c90	GREEN	worker-23:review	build matches inventory-lifecycle-signals; existing behaviour unchanged (shared request options keep allow_local_address, store-error text moved to a constant); merged with development: phpunit 1876, 2 failures inherited (External/SelectedReleaseInstallGoldenTest, fail on development too)
 stackiq	1959	760635d97eaf89816969c18a0330d2edcc6ae40a	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 4.72 -> 4.68
+stackiq	1924	b3cd5b3a77ee697519101b1b5c2f7bd1bc9c7945	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json 
+stackiq	1930	8b2f3e058d6d8f8495c4fa558c4a14969ab2d9b8	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json 
+stackiq	1931	2588041a504225cb78cf0baec8868f2861d7724d	CONFLICT	merge3	merges clean on development alone; files: docs/features/README.md 
+stackiq	1965	815d46e439648f1d0918c67ff4645a83e73ea963	CONFLICT	merge3	merges clean on development alone; files: lib/Service/ArchiMateExportService.php 
+stackiq	1973	f10db4686be1e35ee6e9a355fbc80da2c8b8937e	REVERIFY	merge3	verdict sha is not the head: head is c345112a5cbb92dd41ffada6c678cc40b53f1bb8
+stackiq	1978	d26ea92d7dd005f25a4a346ac8cb1ab28fc2715d	REVERIFY	merge3	verdict sha is not the head: head is 90d2828bd1192bd1fcd6702a87b638ea133bca93
+stackiq	1954	13a298e645454a10bad90fac8db18fe5b2abf253	REVERIFY	merge3	head moved since the verdict (was 8b717642825f15a77b91d0474b0a2b20a527c110, e74406a9:REVERIFY,8b717642:GREEN); verify the new head
