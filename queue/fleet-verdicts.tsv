@@ -10805,3 +10805,4 @@ stackiq	1970	70ef7639e62084c64261183d843d615e84bf5302	GREEN	worker-02	unit 3639 
 stackiq	1971	7210ea2634ed2e098d2511f914b31cbe7ea5762b	GREEN	worker-02	unit 3639 tests on 6-PR tree, baseline 3602 green, 0 new failures; tests-only
 stackiq	1972	be31ee682effcf01c302e044f86cd767a4940245	GREEN	worker-02	unit 3639 tests on 6-PR tree, baseline 3602 green, 0 new failures; tests-only
 decidiq	2203	0b06187d61d3f2366be0529666ea9304a79b5173	REVERIFY	worker-50	merged development in, kept both sides (guards, KPIs rows 14+15, l10n with one shared key deduped); unit 4385 green, vitest 2847 pass, manifest valid, l10n checks ok; new head 8d2d8f97607e3ddd8cf45de215ecf02a939337f5, verify it
+buildiq	1654	235b4ed9e2fe9c754d306d32d74b7b07f21207cc	GREEN	worker-25	PHP unit 3217 on the tree vs baseline 3192, only inherited ExportZipGoldenTest failure; JS vitest 4713/4713 pass; php -l clean; build PR judged against pages-installable-offline-and-mobile specs
