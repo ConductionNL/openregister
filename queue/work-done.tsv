@@ -14029,3 +14029,4 @@ fix:pipelinq:3147:b0a445eb	failed: still waiting on openregister #9103 (main 380
 fix:dossiq:4887:ca6b5835	fixed: settle bound to entry holderSubject (403 not_holder otherwise); suite 10129 OK; new head fc7097f8	session-20261115T174739-b14c2df4	2026-11-15T18:01:10Z
 verify:keepiq:1826:15d53d0e	GREEN 1826: unit 5298 OK, vitest 3 inherited failures	session-20261115T152543-40aea993	2026-11-15T18:01:17Z
 fix:pipelinq:2504:e4cc137c	closed as obsolete: lead rotation already on development (3bf987a7)	session-20261115T174833-88ac0233	2026-11-15T18:01:56Z
+verify:buildiq:1649:4e2bd7dd	1649 GREEN; 1651, 1652 CONFLICT with development	session-20261115T174808-50b8ceec	2026-11-15T18:02:08Z
