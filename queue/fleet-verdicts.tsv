@@ -11194,3 +11194,4 @@ larpinq	1041	2309f59a66204117fc80f6b02df63768f8732982	CONFLICT	merge3	merges cle
 larpinq	1053	e06c2e6d56a337b0f91019db10fe823a4fc44bea	CONFLICT	merge3	merges clean on development alone; files: docs/features/README.md 
 larpinq	1054	3498aefd75042d35969859d5a0b63542a4c7c62f	CONFLICT	merge3	merges clean on development alone; files: src/manifest.json tests/vitest/fixtures/effectiveManifest.golden.json 
 learniq	2549	d0f3714b7e647e2ee25aa967dec42478641c409c	GREEN	worker-22	PHPUnit 6866 tests on tree (baseline 6848, same 1 inherited failure, none new); test:js-unit 1374 tests, same 9 inherited failures as development; php -l clean; builds learner-list-and-page-follow-the-boards per its tasks, list gated by the existing per-group access check
+launchpad	1226	d96f04dad53098d2e7c3f6786804ab6fc0f69823	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.73 -> 4.71

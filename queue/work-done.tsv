@@ -12705,6 +12705,8 @@ verify:pipelinq:3862:bba0c4ee	GREEN #3862: tests only, unit 8644 pass	session-20
 build4:openregister:flow-calendar-and-webhook-triggers:c4	no code left: PR #10513 head 00db07420c has every code task ticked; only 3.1 remains (secret/address display in the shared nextcloud-vue flow editor, not a repo this worker can reach, + live e2e)	session-20261115T011806-2ba8b68f	2026-11-15T01:49:58Z
 build:integriq:form-submission-registration-targets:c5	PR #3649 head 236dc3f7: Task 8 dry run (endpoint+modal), Task 3 ZGW kenmerk lookup, Task 7 steps kept on part-way refusal; left: StUF-ZDS KvK applicant (needs real ZDS check, changes XSD-checked golden), live Newman/e2e	session-20261115T010928-f0987802	2026-11-15T01:49:56Z
 merge:planninq:1181:5ad5104c	merge3 tree of 6 planninq PRs: merged=5 red=0 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:49:54Z
+merge:planninq:1180:a8fe1c39	merge3 tree of 6 planninq PRs: merged=5 red=0 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:49:59Z
+merge:planninq:1182:f561460f	merge3 tree of 6 planninq PRs: merged=5 red=0 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:50:21Z
 review:learniq:2484:b8c46f7c	2484 GREEN	session-20261115T001740-566812b3	2026-11-15T01:50:23Z
 verify:integriq:3647:f68d3fcb	GREEN 3647 (phpunit 9230, no new failures, tests only)	session-20261115T001758-161b0715	2026-11-15T01:50:47Z
 cover:integriq:92114ab0m4b3f:d91b4ca5	already done: lib/Service/Kiss/*.php measures 97.11% (639/658) on development 53067e87	session-20261115T001758-161b0715	2026-11-15T01:51:03Z
