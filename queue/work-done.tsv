@@ -13287,3 +13287,4 @@ build:stackiq:operations-record-reconciliation:c3	partial: PR #1941 brought up t
 merge:thematiq:1677:86d006c6	merge3 tree of 1 thematiq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T15:39:52Z
 review:integriq:3564:4585a979	GREEN: in-spec, suite/vitest/eslint clean; notes on create-path guard	session-20261115T142149-1d09fceb	2026-11-15T15:40:54Z
 review:buildiq:1088:817518a2	RED: lockfile out of sync, npm ci fails (development clean)	session-20261114T102641-d4fd3e25	2026-11-15T15:41:01Z
+build:launchpad:drill-down-cross-widget-filter:c5	partial: PR #1235 (new; #1231 was merged) tasks 15 and 17 done (telemetry recorder in the filter bus + org-level switch); left 16 report endpoint, 7-13 (7 needs nextcloud-vue chart selection event), 30-34, e2e 22-29, profiling 10/35	session-20261115T142932-b9b408b7	2026-11-15T15:41:19Z
