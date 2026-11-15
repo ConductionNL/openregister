@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\TablesControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -44,6 +45,8 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress                                UnusedClass
  */
 class TablesController extends Controller {
+	use HandlesExceptionsTrait;
+
 	/**
 	 * Column changes in the sync report, keyed by report name, with the sync result key.
 	 *
@@ -299,6 +302,11 @@ class TablesController extends Controller {
 
 			return $this->syncAllReport(outcomes: $outcomes);
 		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[TablesController] Magic table sync of all registers failed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+
 			return $this->failure(error: 'Failed to sync magic tables', exception: $e);
 		}
 	}//end syncAll()
@@ -365,14 +373,25 @@ class TablesController extends Controller {
 	}//end syncAllReport()
 
 	/**
-	 * A 500 response carrying the failure and the exception message.
+	 * The answer to a failed sync.
+	 *
+	 * A typed failure (an unknown register, refused access, a conflict)
+	 * answers through handleApiException() with its own status. Anything else
+	 * is a 500 naming the failure; the caller logged the exception message,
+	 * which never reaches the response body.
 	 *
 	 * @param string    $error     The failure
 	 * @param Exception $exception The exception
 	 *
 	 * @return JSONResponse The error response
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
 	 */
 	private function failure(string $error, Exception $exception): JSONResponse {
-		return new JSONResponse(['error' => $error, 'message' => $exception->getMessage()], 500);
+		if ($this->exceptionStatus(e: $exception) !== null) {
+			return $this->handleApiException(e: $exception, context: $error);
+		}
+
+		return new JSONResponse(['error' => $error], 500);
 	}//end failure()
 }//end class
