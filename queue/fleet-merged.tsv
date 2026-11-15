@@ -3461,3 +3461,12 @@ pipelinq	3085	34857519bac429d0d2d4ee7845f73ae693827d33	RED	merge3	GATE RED sbom:
 pipelinq	3088	3135c0b1fd518352b7f25ce329aeedbf29528011	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 pipelinq	3142	e7c6f9ad9a7caa418171c6acb1f50e0afee7db6a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.36
 pipelinq	3870	c35c4e62752ab8075a172a38b679855d64daa9a1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.36
+portaliq	544	ca9b9c3e86ccf53bfd6ea3f4480bf9da43f378f9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1353	5d73ef4a9609dbfa42d6c55ff9f4da916a196766	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	1582	9e21deeeb16e7bdfc274c0ee515cc3bdf497820f	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1682	505a7cd5fc3ec69bdf1f65a98d8079f5d62e2353	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	1685	d8c2567a0beb67554df51c52ae485b26dfeba74f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1982	19a536caaaf1ad5c295587c71af715d3b1b848df	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	1989	4db47cae66c813180acfff62ae05b6b6f8fef5e3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	2349	124b9f8678c713f568fe461688af30b87afcac23	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	2527	c2ba60d892059e085dd9814f3b900f52b3cca58c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
