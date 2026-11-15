@@ -14319,3 +14319,4 @@ fix:hermiq:1325:9fa10193	failed: not fixable within the fix cap - the namespace 
 fix:decidiq:1947:ae3bb0fe	namespace fixed to main's Kernel\Contracts\Value, development merged, pushed 35c86213, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:51:54Z
 fix:planninq:908:07c0fdd2	fixed: sbom regenerated, development merged, new head 8cdb1910	session-20261115T174804-89f2739f	2026-11-15T18:52:04Z
 fix:decidiq:2170:730fcd40	conflict resolved, pushed ed3ea097; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T18:52:12Z
+fix:decidiq:2149:6cf9ca71	floor RED not reproducible with fleet estimator; deduplicated consent reader (dup back to base), unit 4441 OK; new head 3e3c6a58	session-20261115T174739-b14c2df4	2026-11-15T18:52:22Z
