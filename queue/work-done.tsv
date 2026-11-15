@@ -14446,3 +14446,4 @@ fix:launchpad:673:6ba3c402	failed: blocked upstream: @conduction/nextcloud-vue (
 review:shillinq:2083:bbd8bdb9	BLOCK: new discard uses old deleteObject API, fails with #2253	session-20261115T185923-898cd631	2026-11-15T19:11:55Z
 review:shillinq:2254:863e0786	GREEN: tests only, matches OR main contract, unit 12225 OK	session-20261115T174755-95dc8448	2026-11-15T19:12:09Z
 fix:planninq:1066:acc56236	fixed: main namespace for ObjectDeletion/ObjectFindTarget, merged development, unit green; new head b7c292c5	session-20261115T185930-76cdc846	2026-11-15T19:12:32Z
+fix:integriq:3595:b248545e	unit_size restored (3.57->3.59 vs dev 3.58), pushed 3b413349, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:12:36Z
