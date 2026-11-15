@@ -13096,3 +13096,4 @@ fix:portaliq:2508:0879b6c2	conflict resolved, merged development; new head 3b5b1
 fix:filinq:2079:eb1a5b1d	no change: up to date with development, merges clean alone; conflicts only with sibling PRs; queued REVERIFY	session-20261115T145555-b33410db	2026-11-15T14:58:16Z
 fix:filinq:2103:65793b7d	fixed: verify.js added as reachability root, vitest 764/764; new head a4238696c319e884bd9f56f6a77f388436c6c982	session-20261115T145535-3f9e5078	2026-11-15T14:58:58Z
 review:filinq:2123:1120d554	RED: 12 jest golden failures in hostObjectLeaves.golden.spec.js (golden not re-recorded); PHP/vitest green	session-20261115T145533-2db61682	2026-11-15T14:59:04Z
+build:filinq:zgw-document-bridge:c4	done: PR #2094 pushed 87b43b49, 4.1 ticked (161/161 stmts on new classes); left 2.5/4.2/4.4 need a live instance	session-20261115T141023-b06d51da	2026-11-15T14:59:16Z
