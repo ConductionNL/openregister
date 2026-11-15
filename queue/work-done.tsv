@@ -12826,3 +12826,4 @@ cover:dossiq:069ee2d6madb6:9951e799	already done: lib/Service/DecisionDocument/ 
 cover:dossiq:069ee2d6madb6:cdc59513	already done: lib/Service/Inspection 397/397 lines covered on development, no PR	session-20261115T005412-4a06d6f4	2026-11-15T02:16:08Z
 cover:integriq:92114ab0m6759:9ef3f55f	PR #3653: 2 tests, lib/Service/DocumentGeneration statements 99.32->100%	session-20261115T011811-95390b97	2026-11-15T02:16:08Z
 cover:dossiq:069ee2d6madb6:4c817077	already done: lib/Service/Notification/ measures 100% (376/376) on development f4fac8d3	session-20261115T001758-161b0715	2026-11-15T02:16:12Z
+cover:dossiq:069ee2d6madb6:52aafbe5	already done: lib/Service/Vth/ measures 100% (381/381) on development f4fac8d3	session-20261115T001758-161b0715	2026-11-15T02:16:33Z
