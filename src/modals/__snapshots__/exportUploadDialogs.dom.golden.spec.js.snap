@@ -105,7 +105,7 @@ exports[`import, export, upload and download dialogs (DOM golden) exportRegister
     <div class="formContainer">
       <p>t:Export "{schema}" objects from "{register}" {"schema":"Sch","register":"Reg"}</p>
       <div class="formGroup"><label>t:Export Format:</label>
-        <x-ncselect modelvalue="excel" inputlabel="Export Format" options="[object Object],[object Object]" optionlabel="label" optionvalue="value" reduce="[fn]"></x-ncselect>
+        <x-ncselect modelvalue="excel" inputlabel="Export Format" options="[object Object],[object Object],[object Object],[object Object],[object Object]" optionlabel="label" optionvalue="value" reduce="[fn]"></x-ncselect>
       </div>
     </div>
   </slot-default>
@@ -133,7 +133,7 @@ exports[`import, export, upload and download dialogs (DOM golden) exportRegister
     <div class="formContainer">
       <p>t:Export "{schema}" objects from "{register}" {"schema":"Sch","register":"Reg"}</p>
       <div class="formGroup"><label>t:Export Format:</label>
-        <x-ncselect modelvalue="excel" inputlabel="Export Format" options="[object Object],[object Object]" optionlabel="label" optionvalue="value" reduce="[fn]"></x-ncselect>
+        <x-ncselect modelvalue="excel" inputlabel="Export Format" options="[object Object],[object Object],[object Object],[object Object],[object Object]" optionlabel="label" optionvalue="value" reduce="[fn]"></x-ncselect>
       </div>
     </div>
   </slot-default>

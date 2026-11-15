@@ -141,7 +141,46 @@ class WebhookServiceTest extends TestCase {
 		);
 
 		$this->reflection = new \ReflectionClass($this->service);
+		$this->useOfflineResolver(service: $this->service);
 	}//end setUp()
+
+	/**
+	 * Give a service an address guard that resolves without the network.
+	 *
+	 * Delivery tests target public example hosts; resolving them for real makes
+	 * the suite pass or fail with the machine's DNS. Here `localhost` is
+	 * loopback, a `.invalid` host does not resolve, and any other name resolves
+	 * to one public address. Tests that need another answer use resolveHostTo().
+	 *
+	 * @param WebhookService $service The service under test.
+	 *
+	 * @return void
+	 */
+	private function useOfflineResolver(WebhookService $service): void {
+		$guard = new class extends OutboundAddressGuard {
+			/**
+			 * Fixed resolution: loopback for localhost, none for .invalid, else one public address.
+			 *
+			 * @param string $host The host.
+			 *
+			 * @return array<int, string> The addresses.
+			 */
+			protected function resolve(string $host): array {
+				if ($host === 'localhost') {
+					return ['127.0.0.1'];
+				}
+
+				if (str_ends_with($host, '.invalid') === true) {
+					return [];
+				}
+
+				return ['93.184.215.14'];
+			}//end resolve()
+		};
+
+		$property = new \ReflectionProperty(WebhookService::class, 'addressGuard');
+		$property->setValue($service, $guard);
+	}//end useOfflineResolver()
 
 	// ─── Helper methods ──────────────────────────────────────────────
 

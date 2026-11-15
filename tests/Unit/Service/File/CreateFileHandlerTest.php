@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileChecksum;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -124,6 +125,59 @@ class CreateFileHandlerTest extends TestCase {
 
 		return $file;
 	}//end wireNewFile()
+
+	// =========================================================================
+	// addFile - checksum of the uploaded content (capability-rows-stated-requirements 3.1)
+	// =========================================================================
+
+	public function testAnUploadedFileGetsItsChecksumRecordedAfterTheWrite(): void {
+		$file = $this->wireNewFile();
+		$order = [];
+		$file->method('putContent')->willReturnCallback(static function () use (&$order): void {
+			$order[] = 'write';
+		});
+		$checksum = $this->createMock(FileChecksum::class);
+		$checksum->expects($this->once())->method('record')->with($file)->willReturnCallback(static function () use (&$order): bool {
+			$order[] = 'checksum';
+			return true;
+		});
+		$handler = new CreateFileHandler(
+			new CreateFileSources($this->folderMgmtHandler, $this->objectEntityMapper, $this->logger),
+			$this->fileValidHandler,
+			$this->fileOwnershipHandler,
+			checksum: $checksum
+		);
+		$handler->setFileService($this->fileService);
+
+		$result = $handler->addFile(
+			target: new FileTarget(object: $this->createMock(ObjectEntity::class)),
+			upload: new FileUpload(fileName: 'doc.pdf', content: 'plain bytes', share: false)
+		);
+
+		$this->assertSame($file, $result);
+		$this->assertSame(['write', 'checksum'], $order);
+	}//end testAnUploadedFileGetsItsChecksumRecordedAfterTheWrite()
+
+	public function testABlockedUploadRecordsNoChecksum(): void {
+		$this->wireNewFile();
+		$this->fileValidHandler->method('blockExecutableFile')->willThrowException(new Exception('is an executable file'));
+		$checksum = $this->createMock(FileChecksum::class);
+		$checksum->expects($this->never())->method('record');
+		$handler = new CreateFileHandler(
+			new CreateFileSources($this->folderMgmtHandler, $this->objectEntityMapper, $this->logger),
+			$this->fileValidHandler,
+			$this->fileOwnershipHandler,
+			checksum: $checksum
+		);
+		$handler->setFileService($this->fileService);
+
+		$this->expectException(Exception::class);
+
+		$handler->addFile(
+			target: new FileTarget(object: $this->createMock(ObjectEntity::class)),
+			upload: new FileUpload(fileName: 'evil.pdf', content: "MZ\x90\x00", share: false)
+		);
+	}//end testABlockedUploadRecordsNoChecksum()
 
 	// =========================================================================
 	// addFile - streamed (resource) content path (stream-file-content #110)

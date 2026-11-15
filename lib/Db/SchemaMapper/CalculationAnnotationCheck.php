@@ -37,10 +37,12 @@ final class CalculationAnnotationCheck {
 	/**
 	 * Constructor.
 	 *
-	 * @param LoggerInterface $logger Receives the advisory faults.
+	 * @param LoggerInterface           $logger    Receives the advisory faults.
+	 * @param DiscardedAnnotations|null $discarded Collects the advisory faults for the save response.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
+		private readonly ?DiscardedAnnotations $discarded = null,
 	) {
 	}//end __construct()
 
@@ -83,6 +85,7 @@ final class CalculationAnnotationCheck {
 		}
 
 		$this->warn(annotation: $annotation, errors: $errors);
+		$this->discarded?->record(family: self::ANNOTATION, schema: $schema, errors: $errors);
 	}//end check()
 
 	/**

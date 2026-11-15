@@ -39,11 +39,13 @@ final class WebhookDispatchServices {
 	 * @param IJobList                               $jobList             Background job list for async delivery
 	 * @param CloudEventFormatterInterface|null      $cloudEventFormatter CloudEvent formatter (optional)
 	 * @param WebhookInterceptionCacheInterface|null $interceptionCache   Interception-flag cache (optional)
+	 * @param OwnedWebhookView|null                  $ownedView           What an owned webhook may deliver; without it an owned webhook delivers nothing
 	 */
 	public function __construct(
 		public readonly IJobList $jobList,
 		public readonly ?CloudEventFormatterInterface $cloudEventFormatter = null,
 		public readonly ?WebhookInterceptionCacheInterface $interceptionCache = null,
+		public readonly ?OwnedWebhookView $ownedView = null,
 	) {
 	}//end __construct()
 }//end class

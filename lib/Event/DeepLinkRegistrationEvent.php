@@ -71,6 +71,7 @@ class DeepLinkRegistrationEvent extends Event {
 	 * @param string $icon Optional icon identifier
 	 * @param string|null $displayName Optional human-readable label for the app's
 	 *                                 unified-search results (defaults to null → app id)
+	 * @param string|null $taskUrlTemplate Optional route of the app's own task view, e.g. "/apps/dossiq/#/tasks/{uuid}"
 	 *
 	 * @return void
 	 *
@@ -84,6 +85,7 @@ class DeepLinkRegistrationEvent extends Event {
 		string $urlTemplate,
 		string $icon = '',
 		?string $displayName = null,
+		?string $taskUrlTemplate = null,
 	): void {
 		$this->registry->add(
 			registration: new DeepLinkRegistration(
@@ -92,7 +94,8 @@ class DeepLinkRegistrationEvent extends Event {
 				schemaSlug: $schemaSlug,
 				urlTemplate: $urlTemplate,
 				icon: $icon,
-				displayName: $displayName
+				displayName: $displayName,
+				taskUrlTemplate: $taskUrlTemplate
 			)
 		);
 	}//end register()

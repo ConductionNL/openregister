@@ -244,6 +244,89 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	}//end isWorkingDay()
 
 	/**
+	 * The blackout period refusing this kind of booking at this moment, or null.
+	 *
+	 * Read in the calendar's own zone. A blackout never makes a day
+	 * non-working: {@see self::isWorkingDay()} does not consult it, so a term
+	 * runs through it as it would otherwise.
+	 *
+	 * @param DateTimeInterface $moment The booking's moment.
+	 * @param string            $kind   The kind of booking, e.g. `hearing`.
+	 *
+	 * @return array{name: string, from: string, to: string, refuses: array<int, string>}|null
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function blackoutRefusing(DateTimeInterface $moment, string $kind): ?array {
+		return $this->definition->getBlackouts()->refusing(moment: $this->inZone(moment: $moment), kind: $kind);
+	}//end blackoutRefusing()
+
+	/**
+	 * Refuse a booking of this kind at this moment when a blackout covers it.
+	 *
+	 * @param DateTimeInterface $moment The booking's moment.
+	 * @param string            $kind   The kind of booking.
+	 *
+	 * @return void
+	 *
+	 * @throws CalendarBlackoutRefusal Naming the period, when one refuses it.
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function assertBookable(DateTimeInterface $moment, string $kind): void {
+		$period = $this->blackoutRefusing(moment: $moment, kind: $kind);
+		if ($period !== null) {
+			throw new CalendarBlackoutRefusal(slug: $this->getSlug(), kind: trim($kind), period: $period);
+		}
+	}//end assertBookable()
+
+	/**
+	 * The declared blackout periods.
+	 *
+	 * @return array<int, array{name: string, from: string, to: string, refuses: array<int, string>}>
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function getBlackouts(): array {
+		return $this->definition->getBlackouts()->all();
+	}//end getBlackouts()
+
+	/**
+	 * The declared first week of the year: `iso`, `containsJanuary1` or `firstFullWeek`.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function getFirstWeekOfYear(): string {
+		return $this->definition->getWeekNumbering()->firstWeek;
+	}//end getFirstWeekOfYear()
+
+	/**
+	 * The week-year and week number of a moment, following the declared first week, in the calendar's zone.
+	 *
+	 * @param DateTimeInterface $moment The moment.
+	 *
+	 * @return array{year: int, week: int}
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
+	 */
+	public function weekOf(DateTimeInterface $moment): array {
+		return $this->definition->getWeekNumbering()->weekOf(moment: $this->inZone(moment: $moment));
+	}//end weekOf()
+
+	/**
+	 * The moment in the calendar's own zone, so the day is the organisation's day.
+	 *
+	 * @param DateTimeInterface $moment The moment.
+	 *
+	 * @return DateTimeImmutable
+	 */
+	private function inZone(DateTimeInterface $moment): DateTimeImmutable {
+		return DateTimeImmutable::createFromInterface($moment)->setTimezone(new DateTimeZone($this->getTimezone()));
+	}//end inZone()
+
+	/**
 	 * The non-working dates of a year, computed from the rules and memoised.
 	 *
 	 * @param int $year The year.

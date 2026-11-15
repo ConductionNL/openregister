@@ -88,6 +88,33 @@ function exportSlugs(register, schema) {
 }
 
 /**
+ * The formats the dialog offers, with the extension a download without a
+ * server file name gets (export-open-formats-and-public-download, task 3.1).
+ * Format names are product and file-type names, the same in every language.
+ *
+ * @spec openspec/changes/export-open-formats-and-public-download/tasks.md#3.1
+ */
+const EXPORT_FORMATS = [
+	{ label: 'Excel', value: 'excel', extension: 'xlsx' },
+	{ label: 'CSV', value: 'csv', extension: 'csv' },
+	{ label: 'TSV', value: 'tsv', extension: 'tsv' },
+	{ label: 'JSON', value: 'json', extension: 'json' },
+	{ label: 'XML', value: 'xml', extension: 'xml' },
+]
+
+/**
+ * The file extension of a format; Excel's when the format is unknown, as the
+ * server answers an unknown format with Excel.
+ *
+ * @param {string} format The export format
+ * @return {string} The extension
+ * @spec openspec/changes/export-open-formats-and-public-download/tasks.md#3.1
+ */
+export function exportExtension(format) {
+	return (EXPORT_FORMATS.find((entry) => entry.value === format) || EXPORT_FORMATS[0]).extension
+}
+
+/**
  * Download the objects of a register and schema in the given format.
  *
  * @param {Array<string>} slugs The register and schema slugs
@@ -142,10 +169,7 @@ export default {
 			loading: false,
 			error: null,
 			exportFormat: 'excel',
-			exportFormats: [
-				{ label: 'Excel', value: 'excel' },
-				{ label: 'CSV', value: 'csv' },
-			],
+			exportFormats: EXPORT_FORMATS.map(({ label, value }) => ({ label, value })),
 		}
 	},
 
@@ -251,7 +275,7 @@ export default {
 			if (contentDisposition) {
 				return contentDisposition.split('filename=')[1].replace(/"/g, '')
 			}
-			const extension = this.exportFormat === 'excel' ? 'xlsx' : 'csv'
+			const extension = exportExtension(this.exportFormat)
 			return `${slugs[0]}_${slugs[1]}_${new Date().toISOString().split('T')[0]}.${extension}`
 		},
 	},
