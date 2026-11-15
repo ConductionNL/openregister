@@ -13073,3 +13073,5 @@ build:dossiq:capability-rows-say-the-whole-capability:c7	partial: PR #6574 rows 
 build:filinq:intake-paper-archive-digitisation:c4	done: PR #2121 head 38c2112f +3.2 CSV box import, +4.1 project pages with per-box counts and print-per-box, +4.2 checking queue pass/reject, 5.1 strings/openapi/docs (screenshots open); suite 6774 -> 6792, 0 failures; left 5.1 screenshots, 5.2 coverage measurement, Playwright checks (need a running instance)	session-20261115T142153-990a3fbe	2026-11-15T14:49:09Z
 merge:dossiq:6542:07d928db	merge3 tree of 4 dossiq PRs: merged=4 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T14:50:10Z
 review:shillinq:2997:f46b2633	GREEN: phpunit 12265 OK, phpstan/eslint clean	session-20261115T142951-2463b4c4	2026-11-15T14:50:22Z
+review:filinq:2121:d8456bbd	stale	feeder	2026-11-15T14:50:35Z
+review:filinq:2123:de09b685	stale	feeder	2026-11-15T14:50:35Z
