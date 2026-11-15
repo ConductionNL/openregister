@@ -12362,3 +12362,4 @@ cover:opencatalogi:fc83bfb1md382:js5e878140	PR #2721: 10 jest tests; Retention 3
 verify:opencatalogi:2665:654a66e6	2665 RED (8 vitest failures in mainEntry.spec.js), 2672 GREEN, 2687 GREEN	session-20261114T235442-bc1b76db	2026-11-15T00:41:52Z
 fix:integriq:3564:e75c7913	conflict resolved keeping both sides; l10n gate OK; new head bd358537, REVERIFY	session-20261114T233346-3552728d	2026-11-15T00:42:00Z
 verify:buildiq:1658:f2f1c411	GREEN #1658	session-20261114T234948-b89aaae1	2026-11-15T00:42:11Z
+cover:planninq:e1c9866dmcf99:dfaef732	PR #1187: 14 tests for lib/Notification (3 resolvers + Notifier) and coverage metadata on the existing resolver test; suite 1177 -> 1191, no failures	session-20261115T001753-b8ad7615	2026-11-15T00:42:19Z
