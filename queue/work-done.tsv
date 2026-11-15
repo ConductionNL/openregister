@@ -13681,6 +13681,7 @@ build:openregister:anonymising-as-an-archival-outcome:c5	partial: PR #10132 head
 review:portaliq:1666:00663233	CONFLICT: manifest.json overlaps development's header actions	session-20261115T155911-14cd078d	2026-11-15T16:49:56Z
 review:portaliq:1602:583ee358	GREEN/superseded: development already implements residentsAt; PR conflicts, close it	session-20261115T154407-94bf5f8c	2026-11-15T16:50:12Z
 review:portaliq:1670:1c1e6b95	CONFLICT: manifest.json conflicts with development; code OK, docblock misplaced	session-20261115T154258-dee2cc3d	2026-11-15T16:50:21Z
+review:shillinq:2084:78c206ad	CONFLICT: 8 files conflict with development	session-20261114T085646-49a39060	2026-11-15T16:50:36Z
 review:portaliq:1681:1c5961b5	CONFLICT: seed-only change is clean; conflicts with development in 2 files	session-20261115T142934-de7c51d0	2026-11-15T16:50:52Z
 review:shillinq:2072:8b9e57e4	CONFLICT (3 files); tightening, role-name change noted	session-20261115T142134-badaaf30	2026-11-15T16:51:02Z
 review:portaliq:1849:cb2411d1	CONFLICT: overlaps build already on development (26 files); no defect in diff	session-20261115T154314-8216dc98	2026-11-15T16:51:12Z
@@ -13755,3 +13756,4 @@ review:stackiq:1436:9cff2a95	CONFLICT: 25 files	session-20261115T142149-1d09fceb
 review:shillinq:2251:cd6b2946	CONFLICT: content sound (aligns to OR find options), head phpunit 12214 OK, 7 files conflict	session-20261115T145541-9d69768b	2026-11-15T17:03:48Z
 review:shillinq:2086:572ee89c	CONFLICT: 6 files with development; no defect in diff	session-20261115T154314-8216dc98	2026-11-15T17:04:01Z
 review:shillinq:2256:f4d1ab9a	CONFLICT: stub interface conflicts with development; stub namespace differs from openregister main	session-20261115T155911-14cd078d	2026-11-15T17:04:10Z
+review:thematiq:1126:b0b0a98c	GREEN: jsdom patch bump, vitest 1559/1559	session-20261115T155902-d9805df0	2026-11-15T17:04:22Z
