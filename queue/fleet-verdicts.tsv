@@ -12756,3 +12756,7 @@ pipelinq	2103	adb97dd81572c9cb33184bd00d1a4894587be94a	CONFLICT	merge3	conflicts
 pipelinq	2501	81b7343b522507135c37a4ad5020c7ef7d6453b6	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
 pipelinq	3280	57a83e997e332e117468d2c0255de431bdf300f6	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
 humaniq	670	57c2b21ce3990d8b78ee1387de0559e358637e91	RED	worker-55:review	GATE RED sbom: @babel/core 8 and @babel/preset-env 8 are runtime dependencies and package-lock.json changed without sbom.cdx.json (regen-sbom --check stale; fix with bin/regen-sbom.sh). Otherwise fine: merged with development npm ci ok, production build ok (4 warnings), node test:js 230/231 with indexExport failure inherited from development
+larpinq	877	339de0c777d5a948ff8607a4b0d47a29160f148c	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+larpinq	960	f38d0e358dd8ca1d3f5d1460d238c37f45a478a7	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+larpinq	961	0c510953cb9674138fab05b781bc45ab5ee1efb2	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+larpinq	1053	4113c48af17f104b02dc2ed6c6d668bb199841db	RED	merge8:merge-gate	GATE RED floor: overall: 5.00 -> 4.98; unit_size: 4.73 -> 4.71; unit_complexity: 4.87 -> 4.84; unit_interfacing: 4.74 -> 4.70; module_coupling: 4.75 -> 4.72
