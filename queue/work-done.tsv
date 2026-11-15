@@ -12612,3 +12612,4 @@ cover:integriq:92114ab0m4b3f:2fbf11bd	already done: lib/Service/Objecten/*.php m
 build4:openregister:cross-app-semantic-references:c5	partial: no code task left in openregister or the fleet; PR #10549 (4.1) open, merges clean with main; 4.3 needs a live instance; 5.x lives in nextcloud-vue, outside this session's repositories	session-20261115T005138-c7bbb0f0	2026-11-15T01:34:25Z
 build4:openregister:classification-clearance-on-an-object:c5	blocked: #10548 still open (not merged); 6.1-6.2 must wait for it, 5.2 is e2e; no other code task	session-20261115T001740-566812b3	2026-11-15T01:34:21Z
 verify:stackiq:1918:1ec9c473	1918 1959 1962 1965 1977 GREEN, 1966 CONFLICT (l10n)	session-20261115T011758-953fbe72	2026-11-15T01:34:39Z
+build4:openregister:api-test-coverage:c5	no code task left: all 17 unchecked tasks are Newman/Postman suites needing a live instance	session-20261115T001740-566812b3	2026-11-15T01:35:02Z
