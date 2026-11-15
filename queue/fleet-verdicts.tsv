@@ -11081,3 +11081,4 @@ launchpad	1230	830dd12f47c386152d3120e0a42bd2d20f56dd58	REVERIFY	worker-22	moved
 stackiq	1930	8b2f3e058d6d8f8495c4fa558c4a14969ab2d9b8	GREEN	worker-47	phpunit 3644 ok (baseline 3626 ok), vitest 2607 with 1 inherited fail (facets.spec FACET_DIMENSIONS, red on development); no new failures; build matches contracts-expiry-and-owner specs
 stackiq	1946	1b85feb2985a5d99cc2765d65c141e2cc44e0d4d	CONFLICT	worker-47	conflicts after #1930: l10n/en.js en.json nl.js nl.json, lib/Service/RelativeDemoDates.php and its test (add/add)
 dossiq	6540	a1d99c78112653a1a90d81d7d39ad28daff7994a	GREEN	worker-18	unit 17424 tests on tree, baseline 29 failures (17383 tests), 0 new failures; tests only
+dossiq	6541	27cfda33c578b3c0f12b6d57186ec31b04e529ba	GREEN	worker-18	unit 17424 tests on tree, baseline 29 failures (17383 tests), 0 new failures; tests only
