@@ -14333,3 +14333,4 @@ merge:buildiq:1089:8e70db54	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0
 merge:buildiq:1654:74087526	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:53:21Z
 fix:hermiq:1322:cc3f40d6	namespace fixed, merged development, 0 new failures; new head 34ea3522	session-20261115T174833-88ac0233	2026-11-15T18:53:23Z
 fix:humaniq:876:284aab2c	namespace fixed; pushed 0c6ca9f0, REVERIFY	session-20261115T174808-50b8ceec	2026-11-15T18:53:35Z
+merge:buildiq:1090:7dfd3528	merge8 tree of 16 buildiq PRs: merged=1 red=9 fail=0 skip=0; conflict 6, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T18:53:45Z
