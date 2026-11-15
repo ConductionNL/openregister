@@ -12312,3 +12312,4 @@ cover:planninq:e1c9866dmcf99:9d3a1784	PR #1184: 5 tests, ExportProjectJob and Ex
 fix:opencatalogi:2665:936d474b	merged development (clean), l10n-js OK, unit fails inherited; new head 0a93cd29	session-20261114T225452-4fcfea7f	2026-11-15T00:33:28Z
 fix:integriq:3595:66f788bd	merged development (clean), pushed 7f9f7e7636235d1c2c65274db22d2186c1875c89; conflict is golden-hash overlap with #3549 (land one, recompute the other); REVERIFY recorded	session-20261115T001016-a8991554	2026-11-15T00:33:45Z
 cover:planninq:e1c9866dmcf99:1b97f731	PR #1185: lib/Listener 91.2% -> 97.9% (metadata fix on 8 tests + 5 new edge tests)	session-20261115T001755-2a5521bb	2026-11-15T00:34:02Z
+verify:portaliq:2500:4af9aca6	2500 GREEN, 2508 CONFLICT, 2518 GREEN, 2519 GREEN	session-20261114T234758-aa94f07d	2026-11-15T00:34:01Z
