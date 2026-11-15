@@ -14812,3 +14812,4 @@ merge:humaniq:877:6366aa87	stale	feeder	2026-11-15T20:30:45Z
 fix:humaniq:874:6278788c	stale	feeder	2026-11-15T20:30:45Z
 review:dossiq:3297:2d7e3f4a	GREEN: adds fail-closed case guard, no new failures	session-20261115T195957-8e60ca53	2026-11-15T20:33:26Z
 fix:filinq:2114:473e8036	fixed: 3 conflicts resolved, unit 6892 OK; head bb690f12	session-20261115T200020-0f65b959	2026-11-15T20:33:40Z
+fix:filinq:1828	fixed: sbom regenerated; new head 0e6a9fe3	session-20261115T200000-e95b89c2	2026-11-15T20:33:47Z
