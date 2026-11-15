@@ -14193,3 +14193,4 @@ fix:shillinq:2408:837e65b7	failed: would break a published contract — PR only 
 fix:shillinq:1965:6dd9752c	conflict resolved, pushed 3c0db1b5, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T18:33:45Z
 fix:learniq:1166:0748af52	closed as superseded: development locks @typescript-eslint/parser 8.72.2 (> 8.70.1)	session-20261114T102637-6688951e	2026-11-15T18:33:55Z
 review:dossiq:4886:63c08dd9	BLOCK: resolvedFrom 'caseTypePick' missing from the instance schema enum; suite at baseline	session-20261115T182948-465dcc8e	2026-11-15T18:34:11Z
+fix:learniq:1165:ffd74a05	closed as superseded: development locks vue 3.5.45 (> 3.5.43)	session-20261114T102637-6688951e	2026-11-15T18:34:23Z
