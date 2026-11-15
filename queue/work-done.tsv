@@ -14251,6 +14251,7 @@ fix:filinq:1852:38008824	failed: still premature, openregister main (3800106bd) 
 fix:filinq:1451:258e0913	obsolete: closed #1451, superseded by development's 20-pipelinq-letter-template.json (#1457)	session-20261115T174739-b14c2df4	2026-11-15T18:42:23Z
 fix:filinq:1964:b0847184	failed: psalm 7.2.1 needs php >=8.3.16 but config.platform pins php 8.3; fixing it means raising the platform pin and regenerating composer.lock, which workers may not commit. Needs a decision: raise the pin to 8.3.16 (and let dependabot rebase) or close/ignore psalm 7.2	session-20261115T182941-b7ae781f	2026-11-15T18:42:31Z
 review:shillinq:2095:bd295859	GREEN	session-20261115T182953-0722a05e	2026-11-15T18:42:32Z
+fix:filinq:1303:00345c6f	failed: the bump cannot install; with the lock regenerated on current development npm ci still fails ERESOLVE: @vue/vue3-jest 29.2.6 (latest) peers jest 29.x, so jest 30 needs the jest transformer replaced (or the jest suite moved to vitest) first; nothing pushed	session-20261115T154255-e54527e9	2026-11-15T18:42:48Z
 fix:filinq:1307:af2c6d19	obsolete: closed, development locks sass 1.108.2	session-20261115T174819-9af28ef9	2026-11-15T18:42:37Z
 fix:learniq:1164:7f7606d0	failed: not fixable in learniq; latest @conduction/nextcloud-vue (2.181.0) still peers gridstack ^12||^13, so the bump needs a library release first	session-20261115T182953-0722a05e	2026-11-15T18:43:02Z
 fix:shillinq:2253:69b4e3e6	fixed: ObjectDeletion/ObjectFindTarget from Kernel\Contracts\Value, merged development, unit green; new head 4f1aa3a0	session-20261115T182940-bfeb7e78	2026-11-15T18:43:04Z
@@ -14295,3 +14296,13 @@ fix:filinq:1850:ab19bf6b	namespace fixed to Kernel\Contracts\Value; pushed 538df
 fix:hermiq:1167:8c40d8f8	golden re-recorded, vitest green, pushed 9bf6ab11; REVERIFY recorded	session-20261115T183034-bba160e3	2026-11-15T18:48:23Z
 fix:hermiq:1579:dae558f0	failed: every psalm 7.x requires php ~8.3.16 while config.platform.php is 8.3; needs a decision to raise the declared PHP floor, not a mechanical fix (same as pipelinq #3281)	session-20261115T174757-8dfa7406	2026-11-15T18:48:34Z
 review:portaliq:1996:498473cc	stale	session-20261115T174755-95dc8448	2026-11-15T18:48:28Z
+fix:humaniq:434:dc6c275a	obsolete: development already locks hydra-gates v1.19.0; closed with comment	session-20261115T182951-bdf9d68e	2026-11-15T18:48:37Z
+fix:shillinq:2251:cd6b2946	conflict resolved, pushed 47c70252; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:48:49Z
+fix:planninq:731:b7c438a1	failed: not fixable in planninq: @conduction/nextcloud-vue peers @vueuse/core ^11||^14 up to its latest 2.181.0, so 15 cannot install until the library widens its range	session-20261115T174804-89f2739f	2026-11-15T18:48:57Z
+fix:decidiq:1945:f2b2f28e	fixed namespace + migrated 2 new callers; only inherited OpenCatalogiPublisherTest reds; new head ef05d63a	session-20261115T181015-497e81ce	2026-11-15T18:48:55Z
+fix:decidiq:1600:33021efc	failed: permission (closing PRs is refused for this worker). Obsolete per verdict: development locks @conduction/nextcloud-vue 2.135.0, PR downgrades to 2.60.0; close #1600 as superseded	session-20261115T154255-e54527e9	2026-11-15T18:49:07Z
+fix:learniq:1882:b05df18f	fixed: employer manifest golden re-recorded, development merged; HigherEducationExampleSetTest inherited (red on development); new head 7805a594	session-20261115T182940-bfeb7e78	2026-11-15T18:49:17Z
+fix:decidiq:2203:7a5f0d1f	l10n CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:49:28Z
+fix:filinq:1849:88cc74e3	fixed: merged development, tests on main's find contract; suite green; new head 399a0258	session-20261115T174819-9af28ef9	2026-11-15T18:49:46Z
+fix:decidiq:2207:91c94c38	fixed CONFLICT: merged development (l10n union); new head d7b1eef1, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:49:54Z
+fix:learniq:2166:290fc8b6	accepts both StoreDescriptor shapes; pushed 705ee505, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T18:50:06Z
