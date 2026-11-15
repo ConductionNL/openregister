@@ -13578,3 +13578,15 @@ verify:pipelinq:3875:9f4b8976	verify	pipelinq	development	merge	prs=3875@2e29f9d
 verify:portaliq:2527:96a26a46	verify	portaliq	development	merge	prs=2527@ee0b0ee1e6f8ea98f80d4f9add49e4d156dfeb8e	2026-11-15T15:05:19Z
 merge:shillinq:3062:afc90e46	merge	shillinq	development	development	prs=3062@6c6743f0df7f493f0c3b2b8566b2cf5d0aead9a6	2026-11-15T15:05:19Z
 merge:filinq:2121:e99e8b50	merge	filinq	development	development	prs=2121@38c2112f6823b3d1bc8fa994ddbba29f68e0cce7	2026-11-15T15:05:19Z
+review:openregister:10585:43cf2c12	review	openregister	main	10585	sha=43cf2c12b528384ae80c51f9bb9bdb4ae4e0b4a5;last_approved=;title=test(openregister): cover Flow service gaps and fix coverage metadata	2026-11-15T15:10:31Z
+review:learniq:2507:9d3b9344	review	learniq	development	2507	sha=9d3b934451ac047e149435cda10ff03e671383ca;branch=quality/build-practical-exam-assessment;title=feat(learniq): build practical-exam-assessment	2026-11-15T15:10:31Z
+review:filinq:2072:7e876bbd	review	filinq	development	2072	sha=7e876bbde9a093533f904000f37d762785fc3ee7;branch=quality/build-multi-tenant-hardening;title=feat(filinq): build multi-tenant-hardening	2026-11-15T15:10:31Z
+review:filinq:2088:a003bdfc	review	filinq	development	2088	sha=a003bdfc492f56fd5497c49c5e56775c4a2ef099;branch=quality/build-template-library-leaf;title=feat(filinq): build template-library-leaf	2026-11-15T15:10:31Z
+verify:learniq:2551:3feb46c3	verify	learniq	development	merge	prs=2551@2b86e523e4541fcf7f42edd5e14b7a2d85552ab7	2026-11-15T15:10:31Z
+verify:shillinq:3078:afa296d4	verify	shillinq	development	merge	prs=3078@777f3b0bb59507803438d156bfe23c9189656a78	2026-11-15T15:10:31Z
+verify:decidiq:2203:fcece964	verify	decidiq	development	merge	prs=2203@7a5f0d1f1763d42f5e43e92d0ad27f04cd1e625e	2026-11-15T15:10:31Z
+merge:dossiq:6574:ea302b80	merge	dossiq	development	development	prs=6574@3d82954c0abafc50cf80b6676222f5f62d793a69	2026-11-15T15:10:31Z
+merge:pipelinq:3873:e74d58c4	merge	pipelinq	development	development	prs=3873@353a0b8961af6a93b7ba81fec8bcf2958196094b	2026-11-15T15:10:31Z
+merge:hermiq:1736:d9056cac	merge	hermiq	development	development	prs=1736@9cd02fc99d347f1635715f3917bc3f74bc222bd9,1791@06d16bc250324da53e67a0ff128232efd8e3de48	2026-11-15T15:10:31Z
+merge:portaliq:2508:e096526c	merge	portaliq	development	development	prs=2508@5beb27c00920e7e0900a6571f5d5718f0f06db15,2527@ee0b0ee1e6f8ea98f80d4f9add49e4d156dfeb8e	2026-11-15T15:10:31Z
+merge:filinq:2070:2026c44d	merge	filinq	development	development	prs=2070@6f40e77a18f666e7969e3c926fef4a80b9b8f9e9,2094@87b43b49f7fdaf5171c4a9a8b96798dd6b53d7b3,2103@a4238696c319e884bd9f56f6a77f388436c6c982,2134@3e6351562361ff9a3664338f0cb20dc51bbc1625	2026-11-15T15:10:31Z
