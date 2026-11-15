@@ -14759,3 +14759,4 @@ fix:pipelinq:3088:3135c0b1	failed: lockfile change is dev-only (eslint); regen-s
 fix:dossiq:3199	fixed: merged development, sbom regenerated; new head dd09a728	session-20261115T200000-e95b89c2	2026-11-15T20:23:12Z
 review:thematiq:1365:39f057e7	GREEN: additive tokens; 1 inherited failure, vitest 1565 pass	session-20261115T195958-28cb0304	2026-11-15T20:23:19Z
 fix:dossiq:3193:5b406bdb	fixed: development merged, sbom.cdx.json regenerated; new head ac67d68f	session-20261115T182940-bfeb7e78	2026-11-15T20:23:31Z
+fix:opencatalogi:2416:bce96302	stale	feeder	2026-11-15T20:20:32Z
