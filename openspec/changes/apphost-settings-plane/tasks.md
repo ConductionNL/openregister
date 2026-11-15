@@ -13,6 +13,7 @@
 
 ## 3. Adoption proof
 - [ ] 3.1 Migrate OR's own SettingsController canonical surface onto the generic service (kitchen-sink extras stay in their own controllers)
+  - Started: `SettingsController` index, update, load, rebase, the search backend and the version information answer their generic failures through `handleApiException()` (generic 500, detail in the server log, typed failures keep their status). The admin diagnostics (search index status, database information) keep naming their error. Moving the settings data itself onto `GenericSettingsService` is still open: OR's settings are a structured multi-section document (`SettingsService::getSettings()`), while the generic service manages a flat list of app config keys, so the move changes the response the admin settings page reads and needs a shape decision first.
 - [x] 3.2 Adopt HandlesApiExceptionsTrait in OR controllers (wave 1: the 20 highest-traffic)
   - Started: `MappingsController` (show, create, update, destroy) answers through `handleApiException()`; typed failures keep their status and message, anything else is a generic 500 with the detail in the server log.
   - `RegistersController` (show, create, destroy, schemas, the import soft delete) answers its generic failures through `handleApiException()` too: the public `show` no longer returns the exception message, and a constraint failure on delete is a 409. Its 400 answers (export, import, template) are unchanged. The other 18 controllers of wave 1 remain.

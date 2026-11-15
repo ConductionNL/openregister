@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Controller\Support\DatabaseServerProfile;
 use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
@@ -129,6 +130,8 @@ use RuntimeException;
  *   dependencies that cannot be cohesively grouped without hiding the NC DI contract.
  */
 class SettingsController extends Controller {
+	use HandlesExceptionsTrait;
+
 
 	/*
 	 * There is no $objectService property: getObjectService() below assigned it
@@ -212,7 +215,7 @@ class SettingsController extends Controller {
 			$data = $this->settingsService->getSettings();
 			return new JSONResponse(data: $data);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Failed to read the settings');
 		}
 	}//end index()
 
@@ -229,7 +232,7 @@ class SettingsController extends Controller {
 			$result = $this->settingsService->updateSettings($data);
 			return new JSONResponse(data: $result);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Failed to update the settings');
 		}
 	}//end update()
 
@@ -247,7 +250,7 @@ class SettingsController extends Controller {
 			$result = $this->settingsService->getSettings();
 			return new JSONResponse(data: $result);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Failed to load the settings');
 		}
 	}//end load()
 
@@ -266,7 +269,7 @@ class SettingsController extends Controller {
 			$result = $this->settingsService->rebase();
 			return new JSONResponse(data: $result);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Failed to rebase objects and logs');
 		}
 	}//end rebase()
 
@@ -325,7 +328,7 @@ class SettingsController extends Controller {
 			$data = $this->settingsService->getSearchBackendConfig();
 			return new JSONResponse(data: $data);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Failed to read the search backend');
 		}
 	}//end getSearchBackend()
 
@@ -497,7 +500,7 @@ class SettingsController extends Controller {
 			$data = $this->settingsService->getVersionInfoOnly();
 			return new JSONResponse(data: $data);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Failed to read the version information');
 		}
 	}//end getVersionInfo()
 }//end class
