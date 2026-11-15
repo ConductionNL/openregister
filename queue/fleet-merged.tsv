@@ -3140,3 +3140,9 @@ opencatalogi	2698	eab92f085c5313ba601372372ef9558520ae2caf	MERGED	merge3	GATE OK
 opencatalogi	2702	bb5ec0bcbbed00808044003b279efaaf93757ad9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
 opencatalogi	2704	406651f3e601e00605d29c87b80a664f37c9af71	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
 opencatalogi	2720	fc520f800d62af93f33af7a0d7c8573d1ee937c0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.49
+planninq	1180	48921ef678134fbc208366e6827074901d7ed310	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1181	1243a776d9002ffd07986e916ef42bdae5453647	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1182	8178aea5673364bfc2e776e74f54bba3e3b0256b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1183	7d4bbd35da8f8529008fba9108727f3c762137fa	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+planninq	1184	07661072a659244c0eff2bce8b038fd9636a72b9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1185	59875f39642c5496321832816aead58a23d994cb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
