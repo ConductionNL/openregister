@@ -15387,3 +15387,4 @@ fix:thematiq:1556:ff5f73bc	merged development; sbom cannot change (dev-only dep)
 fix:filinq:1304:4ad5da28	stale	session-20261115T213112-78aba834	2026-11-15T22:31:11Z
 fix:filinq:1963:4c695442	stale	session-20261115T231107-e5524f86	2026-11-15T23:11:35Z
 fix:filinq:1828:63118b3c	stale	session-20261115T231107-e5524f86	2026-11-15T23:11:56Z
+fix:humaniq:670:57c2b21c	stale	session-20261115T231107-e5524f86	2026-11-15T23:12:13Z
