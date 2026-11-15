@@ -12548,3 +12548,4 @@ cover:keepiq:c967a31fmdbad:be0dcca9	already done: lib/Mcp/*.php measures 100% (1
 cover:buildiq:70b3e29em66d0:390adfb9	already covered: lib/*.php is Capabilities.php only, 11/11 lines covered (pcov); no PR	session-20261115T010928-f0987802	2026-11-15T01:23:36Z
 cover:keepiq:c967a31fmdbad:0d67c1f3	already done: lib/Service/Siem/ at 100% lines (193/193) on development 4b38ea0c4	session-20261114T231755-998f7ff8	2026-11-15T01:23:52Z
 fix:portaliq:2498:b177669a	conflict resolved (l10n union, .js rebuilt), pushed 23c4f3e4423582c61cda2e36c6fa3d550d39e5ad, REVERIFY recorded	session-20261115T005412-4a06d6f4	2026-11-15T01:24:09Z
+verify:stackiq:1954:7c7c6288	1954 GREEN; 1958,1975 CONFLICT (l10n)	session-20261115T011811-95390b97	2026-11-15T01:24:25Z
