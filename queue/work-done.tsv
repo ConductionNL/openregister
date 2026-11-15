@@ -13892,3 +13892,4 @@ review:opencatalogi:2059:75ffe574	GREEN 2059 (equivalent refactor; conflicts wit
 merge:buildiq:1621:22c93022	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:25:51Z
 merge:buildiq:1620:0d5e4a8e	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:25:55Z
 merge:buildiq:1649:fc552467	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:25:59Z
+merge:buildiq:1596:8b6efcf9	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:26:28Z
