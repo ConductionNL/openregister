@@ -64,6 +64,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\WebhookEvent
  * @uses \OCA\OpenRegister\Service\WebhookStores
  * @uses \OCA\OpenRegister\Twig\MappingTwigInstaller
+ * @uses   \OCA\OpenRegister\Db\HydrationKey
  */
 class WebhookMappingPreviewTest extends TestCase {
 

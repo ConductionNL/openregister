@@ -47,6 +47,13 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Controller\OrganisationController
  * @uses   \OCA\OpenRegister\Db\Organisation
+ * @uses   \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses   \OCA\OpenRegister\Controller\Support\OrganisationAuditing
+ * @uses   \OCA\OpenRegister\Controller\Support\OrganisationControllerServices
+ * @uses   \OCA\OpenRegister\Controller\Support\OrganisationDomain
+ * @uses   \OCA\OpenRegister\Controller\Support\OrganisationEdit
+ * @uses   \OCA\OpenRegister\Controller\Support\OrganisationMappers
+ * @uses   \OCA\OpenRegister\Service\Rbac\SpecialRightChange
  *
  * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
  */
