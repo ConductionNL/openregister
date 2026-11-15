@@ -12248,6 +12248,7 @@ cover:stackiq:9ac19b3amad24:34763eb4	already done: lib/Middleware/*.php measures
 merge:portaliq:2500:9eae5f98	stale	feeder	2026-11-15T00:25:25Z
 cover:stackiq:9ac19b3amad24:05630945	already covered: dir at 57/62; the 5 uncovered lines need non-empty RENAMED/WITHOUT_SUCCESSOR consts in a final class, unreachable from tests; no PR	session-20261115T001714-673c9984	2026-11-15T00:26:27Z
 cover:stackiq:9ac19b3amad24:81b1241f	already done: lib/Portal at 100% lines (23/23), -1 branch merged into development	session-20261115T001759-0085793c	2026-11-15T00:26:27Z
+build:launchpad:governance-rest-api-reference:c3	failed: permission (running nextcloud/openapi-extractor for task 1 was refused; nothing pushed, PR #1224 unchanged)	session-20261115T001748-75994f45	2026-11-15T00:26:39Z
 cover:stackiq:9ac19b3amad24:59826f43	already done: lib/Settings/*.php (StackiqAdmin) at 100% statements (11/11) on development; no PR	session-20261114T234932-1a68fd4b	2026-11-15T00:26:39Z
 cover:stackiq:9ac19b3amad24:2861e5ef	already covered: lib/Examples/ 93/93 lines (100%) at dbebfae7; no PR	session-20261115T001714-673c9984	2026-11-15T00:26:42Z
 cover:buildiq:70b3e29em66d0:34f5c300	PR #1655: 24 tests + 5 coverage-metadata fixes; lib/Service 88.06->90.22%; suite 3192->3216, 1 inherited failure	session-20261114T235442-bc1b76db	2026-11-15T00:26:50Z
