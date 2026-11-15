@@ -106,10 +106,22 @@
       counts.
 - [x] 3.2a Business units resolve through `SlaCalculator` and the calendar,
       never through arithmetic of this class's own.
-- [ ] 3.2b Which calendar resolves FOR A SCHEMA is the caller's to decide;
+- [x] 3.2b Which calendar resolves FOR A SCHEMA is the caller's to decide;
       this takes one and refuses without it. The record-type/unit/instance
       resolution order belongs to `working-calendar-admin` and is not
       re-implemented here.
+      (15 Nov, design questions 1 and 2 answered as proposed: a `$age` body
+      may name `calendar`; otherwise the object's organisation calendar;
+      otherwise the default — `WorkingCalendarService::resolve()`, the timers'
+      own order, with no record-type level invented. `RelativeTimeEvaluation`
+      evaluates `$age` inside `NamedConditionEvaluator` with `now` from
+      `ITimeFactory`, so it works in administered validations (which pass the
+      object's organisation) and in named conditions; a calendar that does not
+      resolve refuses, under negation too, and without the time evaluation a
+      `$age` node refuses rather than reaching the dialect.
+      `Db/SchemaMapper/RelativeTimeCalendarCheck` refuses at schema save a
+      `$age` that cannot be evaluated as written, naming the rule or named
+      condition and the calendar. `RelativeTimeEvaluationTest` (8).)
 - [x] 3.3a `compile()` returns `{property, operator, value}` — one instant,
       one comparison. The PHP verdict applies the SAME compiled comparison, and
       a test asserts the two agree across three dates, because a sweep selects

@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\AdministeredValidationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\NamedConditionCheck;
+use OCA\OpenRegister\Db\SchemaMapper\RelativeTimeCalendarCheck;
 use OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
@@ -80,6 +81,7 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Rules\RelativeTimeEvaluation;
 
 /**
  * SchemaMapper handles database operations for Schema entities
@@ -234,6 +236,13 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private readonly ObjectActionValidatorInterface|Closure|null $objectActions;
 
 	/**
+	 * Resolves the calendar a `$age` condition counts in, for the save-time check.
+	 *
+	 * @var RelativeTimeEvaluation|Closure|null
+	 */
+	private readonly RelativeTimeEvaluation|Closure|null $relativeTime;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes mapper with database connection and required dependencies
@@ -262,6 +271,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->validator          = $services->validator;
 		$this->logger             = $services->logger;
 		$this->objectActions      = $services->objectActions;
+		$this->relativeTime       = $services->relativeTime;
 
 		// Assign appConfig to trait's protected property.
 		$this->appConfig = $appConfig;
@@ -1257,6 +1267,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		(new ReferenceLoopCheck())->check(schema: $schema);
 		(new NamedConditionCheck())->check(schema: $schema);
 		(new AdministeredValidationCheck())->check(schema: $schema);
+		(new RelativeTimeCalendarCheck(time: $this->relativeTime))->check(schema: $schema);
 	}//end checkBehaviourDeclarations()
 
 	/**

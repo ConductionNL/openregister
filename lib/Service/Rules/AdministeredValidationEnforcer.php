@@ -150,7 +150,12 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 */
 	private function evaluate(ValidatedWrite $write, array $document): array {
 		$library = $this->checks->conditions->libraryFrom(annotation: ($write->configuration()[NamedConditionLibrary::ANNOTATION] ?? null));
-		$input   = new ValidationInput(document: $document, library: $library, language: $this->checks->l10n->getLanguageCode());
+		$input   = new ValidationInput(
+			document: $document,
+			library: $library,
+			language: $this->checks->l10n->getLanguageCode(),
+			organisation: $write->object->getOrganisation()
+		);
 
 		return $this->checks->validations->evaluate(annotation: $this->declaredOn(schema: $write->schema), input: $input);
 	}//end evaluate()

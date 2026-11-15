@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use Closure;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
+use OCA\OpenRegister\Service\Rules\RelativeTimeEvaluation;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -45,12 +46,15 @@ final readonly class SchemaMapperServices {
 	 * @param PropertyValidatorHandlerInterface           $validator       Schema property validator for validation.
 	 * @param LoggerInterface                             $logger          Structured logger (surfaces unknown annotation keys).
 	 * @param ObjectActionValidatorInterface|Closure|null $objectActions   Verifies declared actions; a Closure defers it to first use.
+	 * @param RelativeTimeEvaluation|Closure|null         $relativeTime    Resolves the calendar a `$age` condition counts in;
+	 *                                                                     a Closure defers it to first use.
 	 */
 	public function __construct(
 		public IEventDispatcher $eventDispatcher,
 		public PropertyValidatorHandlerInterface $validator,
 		public LoggerInterface $logger,
 		public ObjectActionValidatorInterface|Closure|null $objectActions = null,
+		public RelativeTimeEvaluation|Closure|null $relativeTime = null,
 	) {
 	}//end __construct()
 }//end class

@@ -4250,3 +4250,5 @@ Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configurat
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Service/Rules/NamedConditionScope.php,,Service,,,,,Processes
+Service/Rules/RelativeTimeEvaluation.php,,Service,,,,,Processes
+Db/SchemaMapper/RelativeTimeCalendarCheck.php,,Db,,,,,Core

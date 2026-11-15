@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Support\SecretAtRest;
+use OCA\OpenRegister\Service\Rules\RelativeTimeEvaluation;
 
 
 /**
@@ -88,7 +89,8 @@ final class MapperWiring {
 				eventDispatcher: $eventDispatcher,
 				validator: $validator,
 				logger: $container->get('Psr\Log\LoggerInterface'),
-				objectActions: static fn (): ObjectActionValidatorInterface => $container->get(ObjectActionValidatorInterface::class)
+				objectActions: static fn (): ObjectActionValidatorInterface => $container->get(ObjectActionValidatorInterface::class),
+				relativeTime: static fn (): RelativeTimeEvaluation => $container->get(RelativeTimeEvaluation::class)
 			)
 		);
 	}//end schemaMapper()

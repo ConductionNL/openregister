@@ -339,7 +339,12 @@ class AdministeredValidations {
 			$node     = ($declaration['condition'] ?? null);
 			$violated = $this->evaluator->holds(
 				node: $node,
-				evaluation: new ConditionEvaluation(document: $input->document, library: $input->library, depth: 0)
+				evaluation: new ConditionEvaluation(
+					document: $input->document,
+					library: $input->library,
+					depth: 0,
+					organisation: $input->organisation
+				)
 			);
 		} catch (ConditionRefusedException $refused) {
 			return $this->unevaluableEntry(declaration: $declaration, refused: $refused);
