@@ -795,6 +795,7 @@ Db/MagicMapper/TableStructureSync.php,14,Db,Service,Service/Db/MagicMapper/Table
 Db/MagicMapper/TableSyncColumns.php,62,Db,Service,Service/Db/MagicMapper/TableSyncColumns.php,0,,Core
 Db/MagicMapper/TableTermsFacet.php,36,Db,Service,Service/Db/MagicMapper/TableTermsFacet.php,0,,Core
 Db/MagicMapper/TermsFacetUnion.php,12,Db,Service,Service/Db/MagicMapper/TermsFacetUnion.php,0,,Core
+Db/MagicMapper/TokenCeiling.php,53,Db,Service,Service/Db/MagicMapper/TokenCeiling.php,0,,Core
 Db/MagicMapperInterface.php,170,Db,Service,Service/Db/MagicMapperInterface.php,0,,Core
 Db/MapLink.php,48,Db,Integrations,Integrations/Db/MapLink.php,0,,Integrations
 Db/MapLinkMapper.php,23,Db,Integrations,Integrations/Db/MapLinkMapper.php,0,,Integrations

@@ -971,6 +971,15 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
 	private function grantVerdict(PermissionCheck $check): bool {
+		// The token ceiling first: the private-scope admit, the caller verdict
+		// and the administrator bypass below all answer without the rules, and
+		// a grant the administrator escapes is not a ceiling (D-1, task 2.1b).
+		$ceiling = (new GroupRuleRequest(authorization: $check->authorization, action: $check->action))
+			->onObject(data: $check->objectData, organisation: $check->objectOrganisation);
+		if ($this->tokenCeilingRefuses(request: $ceiling) === true) {
+			return false;
+		}
+
 		$verdict = ($this->privateScopeVerdict(check: $check) ?? $this->callerVerdict(check: $check));
 		if ($verdict !== null) {
 			return $verdict;
@@ -2368,9 +2377,41 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function tokenCeilingRefuses(GroupRuleRequest $request): bool {
-		return ($this->grants->derived->tokenGrantNarrower !== null
-			&& $this->grants->derived->tokenGrantNarrower->markerPermits(authorization: $request->authorization, action: $request->action) === false);
+		$narrower = $this->grants->derived->tokenGrantNarrower;
+		if ($narrower === null) {
+			return false;
+		}
+
+		return $narrower->markerPermits(authorization: $request->authorization, action: $request->action) === false
+			|| $this->tokenRowConditionRefuses(match: $narrower->markerMatch(authorization: $request->authorization), request: $request);
 	}//end tokenCeilingRefuses()
+
+	/**
+	 * Whether the grant's row condition refuses the object the question is about.
+	 *
+	 * Part of the ceiling, so it too runs ahead of the admin and owner
+	 * bypasses: a supplier's token reads the supplier's rows whoever holds it.
+	 * A question about no object (the schema as a whole) is answered by the
+	 * verbs alone; the rows a list returns are narrowed in SQL by the same
+	 * condition. A condition naming metadata no record carries meets no row.
+	 *
+	 * @param array<string, mixed>|null $match   The grant's row condition, null for none.
+	 * @param GroupRuleRequest          $request The question.
+	 *
+	 * @return bool True when the object falls outside the grant's rows.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#1-1d
+	 */
+	private function tokenRowConditionRefuses(?array $match, GroupRuleRequest $request): bool {
+		if ($match === null || $request->objectData === null) {
+			return false;
+		}
+
+		$envelope = $request->matchEnvelope();
+
+		return $this->rules->conditionMatcher->namesUnknownMetadata(match: $match, object: $envelope) === true
+			|| $this->rules->conditionMatcher->objectMatchesConditions(object: $envelope, match: $match) === false;
+	}//end tokenRowConditionRefuses()
 
 	/**
 	 * Whether the caller passes without the block being read: the admin group, or the object's owner.

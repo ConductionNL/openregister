@@ -41,6 +41,7 @@
         "Psr\\Log\\LoggerInterface",
         "OCP\\ICacheFactory",
         "OCA\\OpenRegister\\Service\\ConditionMatcher",
+        "OCA\\OpenRegister\\Service\\Rbac\\TokenGrantSource",
         "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface",
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Service\\LanguageServiceInterface",

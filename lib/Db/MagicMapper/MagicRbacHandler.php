@@ -70,6 +70,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -832,6 +833,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	public function applyRbacFilters(RbacFilterCall $call): void {
 		$user = $this->identifyCaller(call: $call);
 
+		// The token ceiling binds every caller, the administrator included.
+		$ceiling = $this->tokenCeilingSqlFor(call: $call);
+		if ($ceiling !== null) {
+			$call->qb->andWhere($call->qb->createFunction($ceiling));
+		}
+
 		// Admin users bypass all RBAC checks, and so does the userless system.
 		if ($call->callerIsAdmin() === true || $this->isTrustedSystemCaller(user: $user) === true) {
 			return;
@@ -1518,6 +1525,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @return bool True if user has permission
 	 */
 	private function verdictOf(RbacPermissionCheck $check, ?string $objectOwner): bool {
+		if ($this->tokenCeilingRefuses(check: $check) === true) {
+			return false;
+		}
+
 		// Admin users have all permissions.
 		if ($check->callerIsAdmin() === true) {
 			return true;
@@ -2036,7 +2047,101 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function accessConditions(RbacAccessCall $call): array {
-		if ($this->sqlFilterBypassed(call: $call) === true) {
+		$bypassed = $this->sqlFilterBypassed(call: $call);
+		$ceiling  = $this->tokenCeilingSqlFor(call: $call);
+		$result   = $this->uncappedAccessConditions(call: $call, bypassed: $bypassed);
+		if ($ceiling === null) {
+			return $result;
+		}
+
+		return TokenCeiling::under(result: $result, ceiling: $ceiling);
+	}//end accessConditions()
+
+	/**
+	 * The predicate a bound token grant puts on every row of the call.
+	 *
+	 * Null without a bound grant, so a call with no token is untouched. With
+	 * one, the call's authorization is resolved (and so narrowed) here, also
+	 * for the administrator, whose filter is otherwise skipped before it is
+	 * read; an authorization that cannot be resolved reaches no row.
+	 *
+	 * @param RbacAccessCall $call The call, its caller identified.
+	 *
+	 * @return string|null The predicate, or null when no grant is bound.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#2-1c
+	 */
+	private function tokenCeilingSqlFor(RbacAccessCall $call): ?string {
+		if ($this->boundTokenGrant() === false) {
+			return null;
+		}
+
+		if ($this->unresolvableAuthorization(call: $call) !== null) {
+			return TokenCeiling::NONE;
+		}
+
+		return $this->tokenCeiling()->predicate(call: $call);
+	}//end tokenCeilingSqlFor()
+
+	/**
+	 * The ceiling of the request's token grant.
+	 *
+	 * @return TokenCeiling The ceiling.
+	 */
+	private function tokenCeiling(): TokenCeiling {
+		return new TokenCeiling(narrower: new TokenGrantNarrower(), compiler: $this->matchSql(), matcher: $this->conditionMatcher);
+	}//end tokenCeiling()
+
+	/**
+	 * Whether a bound token grant refuses a one-object check.
+	 *
+	 * Asked ahead of the administrator bypass, for the reason
+	 * {@see tokenCeilingSqlFor()} is; an authorization that cannot be resolved
+	 * with a grant bound is refused.
+	 *
+	 * @param RbacPermissionCheck $check The check.
+	 *
+	 * @return bool True when refused.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#1-1d
+	 */
+	private function tokenCeilingRefuses(RbacPermissionCheck $check): bool {
+		if ($this->boundTokenGrant() === false) {
+			return false;
+		}
+
+		if ($this->cascadeUnresolvable(check: $check) !== null) {
+			return true;
+		}
+
+		return $this->tokenCeiling()->refuses(authorization: $check->cascaded, action: $check->action, objectData: $check->objectData);
+	}//end tokenCeilingRefuses()
+
+	/**
+	 * Whether the request carries a token grant.
+	 *
+	 * Read from the request's one grant source, handed in through the
+	 * resolvers; a handler built without one serves no token, as it does for
+	 * every caller without one.
+	 *
+	 * @return bool True when a grant is bound.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#2-1c
+	 */
+	private function boundTokenGrant(): bool {
+		return $this->resolvers?->tokenGrantSource?->current() !== null;
+	}//end boundTokenGrant()
+
+	/**
+	 * The access conditions of a call before a token's ceiling is applied.
+	 *
+	 * @param RbacAccessCall $call     The call.
+	 * @param bool           $bypassed Whether the caller skips the SQL filter.
+	 *
+	 * @return array{bypass: bool, conditions: array<int, string>} The result.
+	 */
+	private function uncappedAccessConditions(RbacAccessCall $call, bool $bypassed): array {
+		if ($bypassed === true) {
 			return ['bypass' => true, 'conditions' => []];
 		}
 
@@ -2053,7 +2158,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		}
 
 		return ['bypass' => false, 'conditions' => $this->conditionsSql(call: $call)];
-	}//end accessConditions()
+	}//end uncappedAccessConditions()
 
 	/**
 	 * Identify the caller, and say whether the raw-SQL filter lets it through unfiltered.

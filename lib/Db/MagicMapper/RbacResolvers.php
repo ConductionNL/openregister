@@ -33,9 +33,12 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 
 /**
  * Immutable bundle of the shared RBAC resolvers used by MagicRbacHandler.
+ *
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 final class RbacResolvers {
 
@@ -46,11 +49,13 @@ final class RbacResolvers {
 	 *                                                      a fatal at existing construction sites.
 	 * @param ObjectGrantResolverInterface|null $objectGrantResolver Shared per-object grant resolver; nullable for the same reason.
 	 * @param DenyResolverInterface|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
+	 * @param TokenGrantSource|null $tokenGrantSource The request's token grant, for the token ceiling; nullable for the same reason.
 	 */
 	public function __construct(
 		public readonly ?ObjectScopeResolverInterface $objectScopeResolver = null,
 		public readonly ?ObjectGrantResolverInterface $objectGrantResolver = null,
 		public readonly ?DenyResolverInterface $denyResolver = null,
+		public readonly ?TokenGrantSource $tokenGrantSource = null,
 	) {
 	}//end __construct()
 }//end class

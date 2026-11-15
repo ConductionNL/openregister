@@ -84,6 +84,8 @@ use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
+use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
@@ -746,7 +748,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				conditionMatcher: $this->container->get(\OCA\OpenRegister\Service\ConditionMatcher::class),
 				container: $this->container,
 				logger: $this->logger
-			)
+			),
+			resolvers: new RbacResolvers(tokenGrantSource: $this->tokenGrantSource())
 		);
 
 		$this->organizationHandler = new MagicOrganizationHandler(
@@ -756,6 +759,30 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			logger: $this->logger
 		);
 	}//end initializeAccessHandlers()
+
+	/**
+	 * The request's token grant source, for the RBAC handler's token ceiling.
+	 *
+	 * The one shared instance the authorization layer binds the grant on; a
+	 * container that cannot supply it leaves the handler without a token.
+	 *
+	 * @return TokenGrantSource|null The source.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#2-1c
+	 */
+	private function tokenGrantSource(): ?TokenGrantSource {
+		try {
+			$source = $this->container->get(TokenGrantSource::class);
+		} catch (\Throwable) {
+			return null;
+		}
+
+		if ($source instanceof TokenGrantSource) {
+			return $source;
+		}
+
+		return null;
+	}//end tokenGrantSource()
 
 	/**
 	 * Build the table handler and the search handler with its related-row applier.

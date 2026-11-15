@@ -46,9 +46,19 @@
       OpenRegister row, so a grant on one needs either a table of our own keyed
       by token id or an upstream hook; the Consumer half is the one the row's
       supplier scenario is about and it is done.
-- [ ] 1.1d The `match` row condition is carried and returned but not yet
+- [x] 1.1d The `match` row condition is carried and returned but not yet
       evaluated: it belongs in the conditional-scope evaluator beside the other
       rules, which is task 2.1's SQL half.
+      - Done: `TokenGrantNarrower` writes the grant's `match` into the marker,
+        with `@self.tokenSubject` resolved to the token or Consumer id (a grant
+        without an id resolves it to a value no row carries); `markerMatch()`
+        reads it back, and an unreadable condition meets no row. It is part of
+        the CEILING, not of the rules: `PermissionHandler` checks it ahead of
+        the private-scope, owner and admin bypasses (in `grantVerdict()` and in
+        `hasGroupPermission()`), and `MagicRbacHandler::verdictOf()` ahead of
+        its admin bypass. A question about no object is answered by the verbs.
+        Tests: `tests/Unit/Service/Rbac/TokenGrantRowConditionTest.php` (7),
+        `tests/Unit/Service/Object/PermissionHandlerTokenRowConditionTest.php` (4).
 
 ## 2. Evaluation
 
@@ -61,10 +71,20 @@
       at all. Without that, the grant would narrow a supplier and not the
       administrator who issued the token, and would let any token write its
       holder's own objects.
-- [ ] 2.1c The SQL RBAC builder's own reading of the marker, and
+- [x] 2.1c The SQL RBAC builder's own reading of the marker, and
       `@self.tokenSubject`. The narrowed block reaches `MagicRbacHandler`
       through `resolveSchemaAuthorization()`, which delegates here, so a list
       is already filtered by the narrowed verbs; the row condition is 1.1d.
+      - Done: with a grant bound (`RbacResolvers::$tokenGrantSource`, handed
+        in by `MagicMapper`), `MagicRbacHandler` resolves the narrowed block
+        also for the administrator and AND-s `TokenCeiling::predicate()` onto
+        the list query (`applyRbacFilters()`) and onto every access condition
+        (`buildRbacConditionsSql()`, so the row predicate and alias predicate
+        too): a verb the grant lacks, a block without a marker or an
+        unresolvable block reaches no row; the row condition compiles through
+        the same `RbacMatchSql` as the rules. Without a grant nothing changes,
+        which the existing golden tests pin. Tests:
+        `tests/Unit/Db/MagicMapper/TokenCeilingTest.php` (9).
 - [x] 2.2 `actorVia` and `whoami`. `TokenGrant::toArray()` and `tokenId` are
       the data both need; the audit writer and the whoami endpoint are the
       two callers, and neither is written yet.
