@@ -13812,3 +13812,4 @@ review:stackiq:1431:c3199284	RED: suite red until hydra-gates ships the new find
 review:versioniq:484:92a0a429	CONFLICT/obsolete: development already has hydra-gates 1.19.0	session-20261115T155911-14cd078d	2026-11-15T17:12:54Z
 verify:launchpad:1223:70895889	CONFLICT: info.xml, routes.php, ImportLaunchpadRegister.php	session-20261115T160928-e92ec17a	2026-11-15T17:13:07Z
 review:thematiq:1291:3fac1aca	GREEN: npm ci, code-editor build and vitest 1559 pass	session-20261115T145555-b33410db	2026-11-15T17:13:19Z
+review:versioniq:508:f223efe6	GREEN: plugin-vue patch bump; vitest 3001/3001, build ok	session-20261115T154254-3d07b219	2026-11-15T17:13:36Z
