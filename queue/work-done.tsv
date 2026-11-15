@@ -12177,3 +12177,4 @@ cover:dossiq:069ee2d6mdd7c:39189253	already done: lib/Service/Transitions/*.php 
 cover:dossiq:069ee2d6mdd7c:js0023cfc7	PR #6532: ContactMomentDetailDialog + ReassignSelectionDialog, 14 vitest tests; src/dialogs lines 92.71% -> 93.16%; vitest 7082 -> 7096, same 2 inherited failures	session-20261114T224920-352ef0eb	2026-11-15T00:14:16Z
 cover:pipelinq:7f9dc8e6m799d:81b1241f	already done: lib/Portal/*.php 557/557 statements (100%, pcov, full unit suite) on development 0d8e11ea2; no PR	session-20261114T225452-4fcfea7f	2026-11-15T00:14:15Z
 verify:decidiq:2187:56cedac7	GREEN 2187, GREEN 2212: unit 4391, vitest 2847, 0 new failures	session-20261114T234932-1a68fd4b	2026-11-15T00:14:28Z
+review:shillinq:2977:b5f66d62	GREEN 2977	session-20261114T234758-aa94f07d	2026-11-15T00:14:44Z
