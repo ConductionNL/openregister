@@ -12792,3 +12792,4 @@ cover:keepiq:c967a31fmba5a:6f346b68	PR opened: SettingsSectionTest (4 tests, wit
 verify:dossiq:6556:2cd3fa49	6556 CONFLICT (add/add with development), 6557 GREEN, 6558 GREEN; no new failures	session-20261115T005138-c7bbb0f0	2026-11-15T02:06:53Z
 cover:dossiq:069ee2d6madb6:c97e6ec3	already done: lib/Service/Queue/Source 1 uncovered statement of ~390 (3 earlier PRs); no PR	session-20261115T015021-bd2172e5	2026-11-15T02:07:15Z
 cover:dossiq:069ee2d6madb6:28cccfd9	already done: lib/Repair/Support/ at 100% statements (earlier -1/-2 merged); remaining files are constant tables with no statements; no PR	session-20261115T012426-ca0c1432	2026-11-15T02:07:24Z
+cover:openregister:7350e3efm1efa:32df05fd	PR #10580: Files/Service 90.8->95.5% (risky metadata fixed in 17 tests, +ObjectFolderUploadsTest 5 tests), no new failures	session-20261115T011812-30428db5	2026-11-15T02:07:44Z
