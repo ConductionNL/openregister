@@ -13423,3 +13423,4 @@ review:dossiq:2902:791b50a4	GREEN (no behaviour change; conflicts with developme
 review:dossiq:3202:d10800f6	BLOCK: gridstack 14 outside shared library peer range; conflicts with development	session-20261114T102641-d4fd3e25	2026-11-15T16:03:33Z
 review:hermiq:1324:c54cfec4	BLOCK: targets nonexistent OpenRegister SearchOptions API; unit suite fatals on merged tree	session-20261115T155902-d9805df0	2026-11-15T16:03:39Z
 review:hermiq:1189:9c7d6a51	GREEN: pinia 4 bump, vitest 1526 passed	session-20261115T154316-34f0db35	2026-11-15T16:03:52Z
+review:humaniq:434:dc6c275a	BLOCK: obsolete lock bump (development already newer), conflicts	session-20261115T155911-f0070087	2026-11-15T16:04:06Z
