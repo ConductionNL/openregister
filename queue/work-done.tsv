@@ -12989,3 +12989,4 @@ merge:versioniq:736:becc0e7d	merge3 tree of 14 versioniq PRs: merged=3 red=2 fai
 review:shillinq:3000:d25b2b4f	stale	feeder	2026-11-15T04:40:20Z
 merge:dossiq:6540:6514cb23	merge3 tree of 31 dossiq PRs: merged=26 red=0 fail=0 skip=4; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T04:53:57Z
 merge:dossiq:6544:9e8b4773	merge3 tree of 31 dossiq PRs: merged=26 red=0 fail=0 skip=4; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T04:54:01Z
+merge:dossiq:6545:0c102e6c	merge3 tree of 31 dossiq PRs: merged=26 red=0 fail=0 skip=4; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T04:54:04Z
