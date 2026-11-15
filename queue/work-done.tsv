@@ -12385,6 +12385,7 @@ review:opencatalogi:2652:73737f2e	GREEN: per change spec, auth gate intact; unit
 fix:versioniq:707:edd40e93	merged development (clean), pushed 52b14c8561adf06af1a82734ece2b5c766b2991b, REVERIFY; 2 inherited golden failures also on development	session-20261115T001714-673c9984	2026-11-15T00:45:12Z
 fix:versioniq:728:890f0f0f	merged development in (clean); new head 0ec98de1ebfedcb10bcbaf8893cb8dd5fff0b76e	session-20261114T234933-5c1be121	2026-11-15T00:45:26Z
 fix:integriq:3612:b4580cdb	merged development, pushed 776aff3ea5da6b72b0b1340b066781c861d6cf6b; estimator shows no property below development (unit_size 3.57 both); REVERIFY recorded for the lane to re-measure	session-20261115T001016-a8991554	2026-11-15T00:45:36Z
+build:launchpad:embedded-analytics:c3	partial: PR #1230 built tasks 1, 2, 4, 11, 25, 29, 31, 32 (+admin token API), 28/30 service half; left 6, 7 wiring, 9, 10, 13, 26 (render route, needs embed frontend 14/23), frontend 12, 14-24, 27, 34, 37, 38, 40, and 35/36/39; suite 4235->4264, 1 inherited failure	session-20261115T001748-75994f45	2026-11-15T00:45:48Z
 fix:opencatalogi:2699:965fc473	module coupling restored to 5.45, pushed 541442a5, REVERIFY	session-20261114T234941-bc8686af	2026-11-15T00:45:42Z
 verify:keepiq:1819:38edb6e4	1819,1820,1821 GREEN (tests only; 0 new failures)	session-20261115T001746-8fbb2c9c	2026-11-15T00:45:52Z
 fix:versioniq:691:8386b5aa	conflict resolved, 2 inherited golden failures, new head 81048e6f	session-20261115T001759-0085793c	2026-11-15T00:45:59Z
