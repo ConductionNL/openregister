@@ -11161,3 +11161,4 @@ pipelinq	3859	b27b0c41a0b6d827c9671a81ea76723566bf7217	GREEN	worker-11	tests onl
 learniq	2549	f861a75f9da803969547b92865f21d9f266bdf14	REVERIFY	worker-56	merged development in (clean now); js unit 1374 tests, same 9 failures as development; new head d0f3714b7e647e2ee25aa967dec42478641c409c, verify it
 stackiq	1931	2588041a504225cb78cf0baec8868f2861d7724d	GREEN	worker-14	phpunit 3677 OK on tree 1931+1978 (baseline 3626 OK), 0 new failures; vitest 1 failure inherited (facets.spec)
 stackiq	1958	bc5aef60441bebaf37e30079dfb859c32d52cca1	CONFLICT	worker-14	conflicts in src/customComponents.js, src/dialogs/Dialogs.vue after #1931 in tree
+stackiq	1978	d26ea92d7dd005f25a4a346ac8cb1ab28fc2715d	GREEN	worker-14	phpunit 3677 OK on tree 1931+1978 (baseline 3626 OK), 0 new failures; vitest 1 failure inherited (facets.spec)
