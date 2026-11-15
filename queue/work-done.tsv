@@ -14970,3 +14970,4 @@ fix:opencatalogi:2670:27c8de92	floor restored (PASS), merged development; REVERI
 fix:opencatalogi:2650:dacca957	conflicts resolved, REVERIFY at e5e6d290	session-20261114T075643-75a598ab	2026-11-15T21:00:24Z
 fix:versioniq:725:039d4ea0	merged development, conflicts resolved (both advisory features kept); new head c2115872, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T21:00:33Z
 fix:opencatalogi:2643:876cac08	CONFLICT resolved (vue/test/l10n); new head 7bc24339, REVERIFY recorded	session-20261115T203018-dcff1ace	2026-11-15T21:00:42Z
+fix:stackiq:1965:9bf3626e	test updated for the connections switch; new head 67582d07, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T21:00:57Z
