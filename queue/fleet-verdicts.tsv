@@ -10846,3 +10846,4 @@ dossiq	6529	57b8f1311b594c77776dfb589c289ffbbdb4d863	RED	worker-21	vitest new fa
 dossiq	6530	f984ac99c11a4191d728f500d46b0c2a993a48a1	GREEN	worker-21	tests only; tree without 6529: phpunit 17409 run, baseline 19 failures, 0 new; vitest 7096 run, baseline 2 failures, 0 new
 dossiq	6531	b1ef8e573a63ec3b66ee2f53b02405b2932572d1	GREEN	worker-21	tests only; tree without 6529: phpunit 17409 run, baseline 19 failures, 0 new; vitest 7096 run, baseline 2 failures, 0 new
 dossiq	6532	d33da612ecd1d9ad7b65f3726979ab12b0fa097d	GREEN	worker-21	tests only; tree without 6529: phpunit 17409 run, baseline 19 failures, 0 new; vitest 7096 run, baseline 2 failures, 0 new
+launchpad	1210	041737d39be5fd9198590f6f2b57100ccaf4f53f	REVERIFY	worker-06	merged development in, Views.vue conflict resolved keeping both sides (look style + filter computeds, both unmount clean-ups); eslint clean, vitest 2377/2377; new head 7f9c64f6f96ecf0ea0e1babd72dde9da23d46c6e, verify it
