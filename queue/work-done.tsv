@@ -13767,3 +13767,4 @@ review:shillinq:2254:29ae60be	BLOCK: stubs mirror a LockRequest namespace openre
 review:stackiq:1297:7bd31324	GREEN: dev-only phpmd 3.0; unit 3626 OK; phpmd gate red on development as well (89 vs 98 findings)	session-20261115T152547-c779ca49	2026-11-15T17:05:57Z
 review:versioniq:500:ccaf6046	CONFLICT: dev-only jsdom bump, lock conflicts; vitest 3001 OK when npm resolves it	session-20261115T145541-9d69768b	2026-11-15T17:06:02Z
 review:shillinq:2224:8a7a3aa7	GREEN: hydra-gates 1.19 changes no lint result; suite 12214 OK	session-20261115T145533-2db61682	2026-11-15T17:06:09Z
+review:shillinq:2258:630de5d0	CONFLICT with development; migration itself compatible	session-20261115T152546-2c24b649	2026-11-15T17:06:19Z
