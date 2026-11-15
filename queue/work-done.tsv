@@ -13907,3 +13907,5 @@ merge:buildiq:1659:a5a6ff03	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=
 merge:buildiq:1661:79f97cb3	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:27:14Z
 merge:buildiq:1665:002f27d0	merge3 tree of 22 buildiq PRs: merged=14 red=1 fail=0 skip=0; conflict 6, lint 0, moved 1; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T17:27:16Z
 verify:integriq:3638:a1bf12bc	GREEN 3638: no new failures (9517 vs 9460, 7 inherited), phpstan clean, spec-conformant	session-20261115T152552-0cb4306e	2026-11-15T17:27:40Z
+review:openregister:10587:f566c322	APPROVE: tests only, touched and required suites pass	session-20261115T142129-944012f5	2026-11-15T17:28:01Z
+fix:buildiq:1608:3687676a	stale	session-20261115T152552-0cb4306e	2026-11-15T17:28:05Z
