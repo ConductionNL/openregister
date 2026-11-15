@@ -14802,3 +14802,4 @@ fix:filinq:1304	fixed: sbom regenerated; new head 0bd181f9	session-20261115T2000
 fix:shillinq:2228:b6167ac5	sbom regenerated after merging development; REVERIFY at ec4b69c7	session-20261115T195958-28cb0304	2026-11-15T20:31:54Z
 fix:filinq:1962:e4994b11	sbom regenerated, pushed be24b1cd; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:32:05Z
 fix:shillinq:2230:b859457f	sbom regenerated after merging development; new head 62ff7961, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:32:15Z
+fix:shillinq:1912:12b4700e	fixed: sbom regenerated, development merged; new head a7d98b523c8c9952e0731ec9f7dd99c883030cc8	session-20261115T200041-8ff5af37	2026-11-15T20:32:26Z
