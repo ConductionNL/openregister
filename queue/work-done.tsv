@@ -15327,3 +15327,4 @@ fix:decidiq:1472:a40d36e1	sbom regenerated after merging development; head 92d14
 verify:stackiq:1954:b7430a74	GREEN 1954,1973,1975; RED 1959 (3 LandscapeComparisonServiceTest errors); CONFLICT 1965,1978	session-20261115T221310-15626e3a	2026-11-15T22:20:52Z
 fix:decidiq:1473:4549406a	fixed: sbom regenerated, pushed fbdc77e4	session-20261115T213110-6b33145c	2026-11-15T22:20:59Z
 fix:filinq:2123:e76e9dab	fixed: conflict resolved, new OR calls on main API; new head 3f385b11	session-20261115T213100-e547b457	2026-11-15T22:21:10Z
+fix:hermiq:1308:ed66fcbf	failed: sbom gate cannot be met honestly - bump is dev-only (phpstan, omitted by --omit=dev); regen-sbom --check passes and a from-scratch regen is byte-identical, so sbom.cdx.json has nothing to change; gate needs to accept --check OK without a diff	session-20261115T220036-9d15b9ea	2026-11-15T22:21:16Z
