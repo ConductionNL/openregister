@@ -13347,3 +13347,4 @@ review:buildiq:820:306021ea	GREEN: patch dev-dep bump, vitest 4667 pass	session-
 review:dossiq:3193:5b406bdb	GREEN: lock-only dev bump; 19 baseline failures, none new	session-20261115T154254-3d07b219	2026-11-15T15:51:10Z
 verify:stackiq:1954:75830783	stale	feeder	2026-11-15T15:45:20Z
 review:decidiq:1948:fbc94193	GREEN: unit 4461/0 fail, phpcs/phpmd unchanged vs development	session-20261115T154314-8216dc98	2026-11-15T15:51:21Z
+review:decidiq:1946:b7542a86	BLOCK: ObjectPatch/ObjectFindTarget imported from wrong namespace vs openregister main; psalm.xml conflict	session-20261115T154258-dee2cc3d	2026-11-15T15:51:32Z
