@@ -15186,3 +15186,4 @@ review:dossiq:4887:e60cd452	RED: 2 new failures (ListenerRegistrarTest, Obligati
 review:filinq:2114:1694e39c	RED: same 6 failures (old OR args in new repositories)	session-20261115T203012-30a1abde	2026-11-15T21:53:10Z
 review:portaliq:1229:a2bd58a2	GREEN: comment-only, no new failures	session-20261115T213134-4b0d2823	2026-11-15T21:53:24Z
 review:filinq:2094:68947c99	RED: removed openregister named args; 7 own tests fail on main	session-20261115T202932-d1067ee4	2026-11-15T21:53:40Z
+review:hermiq:1754:90d73dbf	RED: new code uses removed OR named args, 7 new failures vs OR main	session-20261115T213112-78aba834	2026-11-15T21:53:50Z
