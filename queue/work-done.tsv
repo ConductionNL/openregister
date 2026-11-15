@@ -13842,3 +13842,4 @@ fix:filinq:2103:a4238696	merged development in (clean), suite 6822 OK, REVERIFY 
 fix:filinq:2094:87b43b49	merged development (clean), unit green, new head c8f196605b65; REVERIFY	session-20261114T085646-49a39060	2026-11-15T17:17:06Z
 fix:filinq:2088:a003bdfc	merged development in cleanly, suite green; new head 08907be906008fa2544f44f229ae355681507a6d	session-20261114T102637-6688951e	2026-11-15T17:17:13Z
 review:versioniq:506:c6a1011e	GREEN: vue patch bump, vitest 3001 pass, build ok	session-20261115T155911-f0070087	2026-11-15T17:17:28Z
+fix:versioniq:722:01366da8	merged development, openapi.json 3-way JSON merge; pushed 756a911d; REVERIFY queued	session-20261115T145555-b33410db	2026-11-15T17:17:59Z
