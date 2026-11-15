@@ -13015,4 +13015,5 @@ stackiq	1437	3de46f6b1075b4187f475822045ef6880bc42b92	RED	merge8:merge-gate	GATE
 stackiq	1438	23ea35dd424a254cba3cbaee76ab7e4fa58828da	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 stackiq	1954	7f13c4ef79c4d740e48a9309045acd64414f140c	RED	merge8:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
 stackiq	1978	90d2828bd1192bd1fcd6702a87b638ea133bca93	RED	merge8:merge-gate	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
+filinq	1430	7097f29846c96429872f8b25b9fe552612294bb7	REVERIFY	worker-17	merged development in, regenerated sbom.cdx.json (regen-sbom --check current; the content change follows development's package-lock, the ocp bump is dev-only); unit suite 6798 ok; new head 8f366f599b0c5ce29b3897701df854f8c9985483, verify it
 portaliq	1982	ebea533f0f3f8c061e63c23de231ae5193517228	GREEN	worker-44:review	dev-only conduction/hydra-gates 1.19.0 lock bump + sbom (--check current); no code change. Merged with development: PHPUnit 6168 tests, 16 errors, same set as development (inherited)
