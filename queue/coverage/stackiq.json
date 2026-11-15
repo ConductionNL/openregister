@@ -1,15 +1,15 @@
 {
  "app": "stackiq",
- "commit": "02e576edd9f36f6b6094c29c5b66298a8975cf00",
- "measured_at": "2026-11-14T08:44:10Z",
+ "commit": "dbebfae7e52672db46b125477170f2fbd35fb500",
+ "measured_at": "2026-11-15T00:25:13Z",
  "php": {
   "tool": "pcov",
-  "pct": 90.6,
-  "statements": 31808,
-  "covered": 28818,
+  "pct": 89.33,
+  "statements": 33342,
+  "covered": 29784,
   "dirs": {
    "lib/AppInfo/": [
-    46,
+    51,
     0
    ],
    "lib/BackgroundJob/": [
@@ -18,11 +18,11 @@
    ],
    "lib/Command/": [
     282,
-    282
+    223
    ],
    "lib/Controller/": [
-    3859,
-    3754
+    3976,
+    3864
    ],
    "lib/Controller/Settings/": [
     74,
@@ -33,8 +33,8 @@
     12
    ],
    "lib/EventListener/": [
-    999,
-    974
+    1027,
+    999
    ],
    "lib/Examples/": [
     93,
@@ -52,8 +52,12 @@
     0,
     0
    ],
+   "lib/Mcp/": [
+    79,
+    72
+   ],
    "lib/Middleware/": [
-    57,
+    58,
     57
    ],
    "lib/Middleware/Support/": [
@@ -65,16 +69,16 @@
     23
    ],
    "lib/Repair/": [
-    1234,
-    1234
+    1340,
+    1328
    ],
    "lib/Sections/": [
     6,
     6
    ],
    "lib/Service/": [
-    18395,
-    15696
+    19551,
+    16379
    ],
    "lib/Service/AangebodenGebruik/": [
     61,
@@ -100,17 +104,21 @@
     49,
     49
    ],
+   "lib/Service/Organisation/": [
+    10,
+    10
+   ],
    "lib/Service/Registration/": [
-    423,
-    423
+    425,
+    425
    ],
    "lib/Service/Settings/": [
     1273,
     1270
    ],
    "lib/Service/Stackiq/": [
-    2274,
-    2247
+    2304,
+    2276
    ],
    "lib/Settings/": [
     11,
@@ -119,9 +127,9 @@
   }
  },
  "js": {
-  "pct": 94.17,
-  "statements": 8835,
-  "covered": 8320,
+  "pct": 94.28,
+  "statements": 9018,
+  "covered": 8502,
   "dirs": {
    "src/": [
     91,
@@ -172,8 +180,8 @@
     22
    ],
    "src/components/sbom/": [
-    122,
-    119
+    128,
+    125
    ],
    "src/components/vulnerabilities/": [
     46,
@@ -196,8 +204,8 @@
     362
    ],
    "src/modals/object/": [
-    2074,
-    1731
+    2063,
+    1722
    ],
    "src/services/": [
     32,
@@ -220,12 +228,12 @@
     416
    ],
    "src/utils/": [
-    1099,
-    1095
+    1274,
+    1261
    ],
    "src/views/": [
-    456,
-    443
+    457,
+    444
    ],
    "src/views/cmdb/": [
     52,
@@ -240,8 +248,8 @@
     206
    ],
    "src/views/settings/sections/": [
-    1486,
-    1420
+    1498,
+    1438
    ],
    "src/views/widgets/": [
     26,
