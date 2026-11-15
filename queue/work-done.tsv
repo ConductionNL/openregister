@@ -12541,5 +12541,6 @@ cover:buildiq:70b3e29em66d0:b65a63c3	already covered: lib/Service/GitHub at 61/6
 cover:keepiq:c967a31fmdbad:38e80a9f	already done: lib/Command/*.php measures 100% (181/181) on development 4b38ea0c	session-20261115T001758-161b0715	2026-11-15T01:22:50Z
 cover:keepiq:c967a31fmdbad:f91e7417	already done: lib/Service/Connection/ measures 100% (150/150) on development 4b38ea0c	session-20261115T001758-161b0715	2026-11-15T01:23:04Z
 verify:dossiq:6540:11a9fe7d	3 GREEN (6540,6541,6542): tests only, 0 new failures vs baseline 29	session-20261115T011749-0a09092e	2026-11-15T01:23:05Z
+cover:stackiq:9ac19b3am9489:js0b5eefce	PR stackiq#1976: 11 vitest tests for ObjectModal helpers/watchers; dir lines 83.6->84.4%, suite 2603->2614 (1 inherited failure)	session-20261115T001740-566812b3	2026-11-15T01:23:29Z
 verify:dossiq:6543:b21dc64b	GREEN 6543: 17390 tests, 13 inherited, 0 new	session-20261115T011802-80d402d3	2026-11-15T01:23:31Z
 cover:buildiq:70b3e29em66d0:390adfb9	already covered: lib/*.php is Capabilities.php only, 11/11 lines covered (pcov); no PR	session-20261115T010928-f0987802	2026-11-15T01:23:36Z
