@@ -14714,3 +14714,4 @@ review:planninq:1064:849ed2f7	GREEN: unit 1222 ok, signatures match openregister
 review:opencatalogi:2682:3f1e3bed	GREEN: per spec, no new failures; note old OR API in drafter	session-20261115T200011-d13b13ca	2026-11-15T20:14:19Z
 verify:buildiq:1648:02309192	GREEN: 1648 verified	session-20261115T174747-978963d5	2026-11-15T20:14:28Z
 review:opencatalogi:2679	BLOCK: new code uses removed OR named-arg saveObject API; tests no new failures	session-20261115T200000-e95b89c2	2026-11-15T20:14:41Z
+review:portaliq:1602:cc086817	GREEN: docs and comment only	session-20261115T174747-978963d5	2026-11-15T20:14:51Z
