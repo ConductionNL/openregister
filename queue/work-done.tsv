@@ -14387,3 +14387,4 @@ review:decidiq:1947:35c86213	RED: lib correct, 126 test failures from old-shape 
 review:shillinq:2093:d0aa436a	GREEN: manifest refactor, vitest no new failures	session-20261115T185923-898cd631	2026-11-15T19:02:54Z
 review:decidiq:2203:d8307a7c	GREEN: per termijnagenda spec; PHP + vitest green	session-20261115T174808-50b8ceec	2026-11-15T19:03:03Z
 fix:planninq:1064:54981d9f	fixed: conflicts + development's old-shape find calls converted, suite green, new head 849ed2f7	session-20261115T174804-89f2739f	2026-11-15T19:03:23Z
+fix:learniq:2521:2a90e6d1	SPDX headers restored, pushed 60fa2998	session-20261115T174741-56eeaa2f	2026-11-15T19:03:43Z
