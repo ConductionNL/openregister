@@ -11335,3 +11335,8 @@ integriq	3542	026646583e748111aa50ad31c83af71449ec69e3	RED	merge3:merge-gate	GAT
 integriq	3546	26a9245cff2fd4a0b8b11a6b1f6f23d142d98559	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
 integriq	3612	776aff3ea5da6b72b0b1340b066781c861d6cf6b	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
 integriq	3628	626c2e6f59943208459fd06bcbb64652dd68f1b6	RED	merge3:merge-gate	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3564	bd35853725e3c6fa13e070fe247e537c1f4efa3e	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+integriq	3593	c89e41d0504cad06bb6158a0e2f2846eb46f05a5	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/ServiceBindingsFactoriesTest.php 
+integriq	3595	7f9f7e7636235d1c2c65274db22d2186c1875c89	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
+integriq	3615	a252d2b44f98561e497acb396bba4c4772da35be	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/nl.js 
+integriq	3649	236dc3f71d4ef5ec025d1064384d884bab03c55c	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
