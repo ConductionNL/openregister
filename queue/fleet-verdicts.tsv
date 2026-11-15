@@ -13008,3 +13008,10 @@ filinq	1304	4ad5da28f9413e6dcb28e2908b40bf2a2a17fa69	REVERIFY	worker-13	merged d
 shillinq\t1991\t4377b4373da91515eac1d303d7670645ed8abd8a\tREVERIFY\tworker-53\tmerged development in (branch was 2570 behind, no conflicts), regenerated sbom.cdx.json with bin/regen-sbom.sh (--check passes), npm ci clean; new head 29abf7fb303a9a25601637bfbbaecaeb9a1feae7, verify it
 filinq	1102	7156c4b9e8bfa0baca6577db1ab66ddbf3567799	REVERIFY	worker-36	merged development in, regenerated sbom.cdx.json (jszip 3.10.2; also picks up development's stale minimatch entries); new head 8f276d1884bf5d5a6e7c18aba88d00146f692303, verify it
 filinq	1308	28b5e71ec70bf489f48435aa86cfbda12346c87c	REVERIFY	worker-36	merged development in (clean), regenerated sbom.cdx.json (same content as #1102's); package.json/package-lock.json edit lines adjacent to #1102's jszip bump, so in one tree it may still conflict with #1102: verify after #1102 lands; new head f18e7d0d5173e22ae7da8233855042de22a06ff1, verify it
+stackiq	1063	5ec1a4e3057215ea0b5b8b2282257fb38c78a233	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+stackiq	1168	2d1a29df6b60a93b19f659b6385328cc7deb6a3d	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1297	7bd3132460fcc78f3d5b687a66de677bd39eafde	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1437	3de46f6b1075b4187f475822045ef6880bc42b92	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1438	23ea35dd424a254cba3cbaee76ab7e4fa58828da	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1954	7f13c4ef79c4d740e48a9309045acd64414f140c	RED	merge8:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+stackiq	1978	90d2828bd1192bd1fcd6702a87b638ea133bca93	RED	merge8:merge-gate	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
