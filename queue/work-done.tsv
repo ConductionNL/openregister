@@ -13827,5 +13827,6 @@ fix:filinq:2123:4b50c297	merged development in cleanly, checks green; new head 9
 fix:versioniq:735:42749671	merged development in, clean; 2 inherited golden-test failures; new head b2c8327cc03e1403db7055924e16e367a13c8a69	session-20261115T171048-b57c7caa	2026-11-15T17:15:10Z
 verify:launchpad:1234:8d24d0ba	GREEN #1234: audit clean, vitest 2578 passed	session-20261115T152601-38767331	2026-11-15T17:15:26Z
 fix:versioniq:691:81048e6f	merged development, ported security-first into AutoUpdatePlanner; unit + vitest green beyond baseline; REVERIFY at c3a11b62	session-20261115T155904-a7df5bc0	2026-11-15T17:15:42Z
+build:versioniq:autoupdate-proposed-updates:c3	blocked: PR #728 head 0ec98de1 unchanged; only code left is 3.3 next_window, which needs autoupdate-security-first (#691) on development (not there yet); rest is e2e (4.2 cli, 4.4, 4.5) and release (5.x)	session-20261115T151007-45079d32	2026-11-15T17:15:52Z
 review:thematiq:1556:ff5f73bc	GREEN; phpunit 2873 (1 inherited), phpstan clean	session-20261115T152558-f97be55f	2026-11-15T17:15:49Z
 review:thematiq:1292:f21993f3	GREEN: vitest 1559 pass, build ok	session-20261115T154314-8216dc98	2026-11-15T17:16:01Z
