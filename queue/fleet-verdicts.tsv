@@ -10735,3 +10735,4 @@ shillinq	3065	82dc0d10430e49f8f3db280c713550565fef1756	CONFLICT	worker-40	confli
 shillinq	3080	0a200ebaaf5bef27c4682bb9cbfff9047d944cf0	GREEN	worker-40	build sales-time-and-expense-billing per its specs (new read endpoint with session + administration access check); phpunit 11552 OK on tree (baseline 11471 OK); vitest 2753, 1 failure dunningNextRun.spec.js inherited; no new failures
 shillinq	3085	b0345e7bce971113539622706d075b82e46ee14f	GREEN	worker-40	tests only; phpunit 11552 OK on tree (baseline 11471 OK); vitest 2753, 1 failure dunningNextRun.spec.js inherited; no new failures
 shillinq	3082	d99431c677c3f23c53e48ad233d4b6c87101dd0a	GREEN	worker-29	unit 11917 tests on tree, baseline 11471 OK, no new failures; tests only
+versioniq	699	ccc8c62812a3cf71721e4bc4e5b8476d12fba54c	GREEN	worker-24	unit-only 1745 (baseline 1697, 2 inherited golden failures: External/SelectedReleaseInstallGoldenTest), vitest 2982 ok (baseline 2960), 0 new failures
