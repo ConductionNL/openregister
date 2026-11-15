@@ -12902,3 +12902,4 @@ shillinq	2228	b6167ac55ae14ad83dc188c817bee1f75e1a7843	RED	merge3:merge-gate	GAT
 shillinq	2230	b859457f29008577e3c0cc89ac54941c08f713fb	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 shillinq	2766	64b9e1981e90cbcb6fa6d4b4036ddad4dc4c69f2	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 shillinq	2991	a48bd63d9e6d59dca40e341049f36244f9baf703	RED	merge3:merge-gate	GATE RED floor: unit_size: 4.42 -> 4.40; unit_complexity: 4.94 -> 4.92
+portaliq	1602	cc086817652e7271d81cb13afe31bc673c56931f	GREEN	worker-05:review	against development only docs/operations/my-registered-details.md (how to turn the residents count on with configuration.residentCount on the BRP source) and one comment in RegisteredDetailsShape change; no code behaviour change, php -l clean. Note: this worker resolved the branch's merge, where development's own T07 implementation was kept
