@@ -4,7 +4,7 @@
             "openapi": "3.1.0",
             "info": {
                 "title": "Nextcloud OpenRegister API",
-                "version": "1.0",
+                "version": "1.0.0",
                 "description": "RESTful API for managing registers, schemas, data sources, objects, and audit trails in a Nextcloud environment. This API provides full CRUD operations, advanced filtering, search capabilities, and extensible data management features.",
                 "contact": {
                     "name": "OpenRegister Development Team",
@@ -2987,6 +2987,46 @@
                         }
                     }
                 }
+            },
+            "x-nl-api-design-rules": {
+                "version": "2.2.1",
+                "pass": [
+                    "/core/no-trailing-slash",
+                    "/core/path-segments-kebab-case",
+                    "/core/date-time/format",
+                    "/core/date-time/date-omit-time-portion",
+                    "/core/http-methods",
+                    "/core/doc-openapi",
+                    "/core/doc-openapi-contact",
+                    "/core/semver",
+                    "/core/transport/tls"
+                ],
+                "fail": [
+                    "/core/error-handling/problem-details",
+                    "/core/error-handling/invalid-input",
+                    "/core/publish-openapi"
+                ],
+                "deviation": [
+                    "/core/query-keys-camel-case",
+                    "/core/uri-version"
+                ],
+                "manual": [
+                    "/core/naming-resources",
+                    "/core/naming-collections",
+                    "/core/interface-language",
+                    "/core/hide-implementation",
+                    "/core/http-safety",
+                    "/core/http-response-code",
+                    "/core/stateless",
+                    "/core/nested-child",
+                    "/core/resource-operations",
+                    "/core/error-handling/all-errors",
+                    "/core/doc-language",
+                    "/core/deprecation-schedule",
+                    "/core/transition-period",
+                    "/core/transport/cors",
+                    "/core/transport/no-sensitive-uris"
+                ]
             }
         },
         "issues": [
@@ -3492,6 +3532,27 @@
                 "code": "nlgov_rule",
                 "severity": "warning",
                 "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.get.responses.400",
+                "message": "Violates NLGov /core/error-handling/problem-details: 54 error responses do not declare application/problem+json with the Error schema (paths./objects/zaken/zaak.get.responses.400, paths./objects/zaken/zaak.get.responses.403, paths./objects/zaken/zaak.post.responses.400, ...).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/error-handling/problem-details"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.put.responses",
+                "message": "Violates NLGov /core/error-handling/invalid-input: 8 POST, PUT or PATCH operations declare no 400 response (paths./objects/zaken/zaak/{id}.put.responses, paths./objects/zaken/zaak/{id}.patch.responses, paths./objects/zaken/klant/{id}.put.responses, ...).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/error-handling/invalid-input"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Violates NLGov /core/publish-openapi: The document is served as JSON at https://nc.example/apps/openregister/api/registers/{id}/oas and https://nc.example/apps/openregister/api/registers/oas, not at https://nc.example/apps/openregister/api/openapi.json.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/publish-openapi"
             }
         ]
     },
@@ -5143,6 +5204,46 @@
                         }
                     }
                 }
+            },
+            "x-nl-api-design-rules": {
+                "version": "2.2.1",
+                "pass": [
+                    "/core/no-trailing-slash",
+                    "/core/path-segments-kebab-case",
+                    "/core/date-time/format",
+                    "/core/date-time/date-omit-time-portion",
+                    "/core/http-methods",
+                    "/core/doc-openapi",
+                    "/core/doc-openapi-contact",
+                    "/core/transport/tls"
+                ],
+                "fail": [
+                    "/core/error-handling/problem-details",
+                    "/core/error-handling/invalid-input",
+                    "/core/publish-openapi",
+                    "/core/semver"
+                ],
+                "deviation": [
+                    "/core/query-keys-camel-case",
+                    "/core/uri-version"
+                ],
+                "manual": [
+                    "/core/naming-resources",
+                    "/core/naming-collections",
+                    "/core/interface-language",
+                    "/core/hide-implementation",
+                    "/core/http-safety",
+                    "/core/http-response-code",
+                    "/core/stateless",
+                    "/core/nested-child",
+                    "/core/resource-operations",
+                    "/core/error-handling/all-errors",
+                    "/core/doc-language",
+                    "/core/deprecation-schedule",
+                    "/core/transition-period",
+                    "/core/transport/cors",
+                    "/core/transport/no-sensitive-uris"
+                ]
             }
         },
         "issues": [
@@ -5388,6 +5489,34 @@
                 "code": "nlgov_rule",
                 "severity": "warning",
                 "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/zaken/zaak.get.responses.400",
+                "message": "Violates NLGov /core/error-handling/problem-details: 27 error responses do not declare application/problem+json with the Error schema (paths./objects/zaken/zaak.get.responses.400, paths./objects/zaken/zaak.get.responses.403, paths./objects/zaken/zaak.post.responses.400, ...).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/error-handling/problem-details"
+            },
+            {
+                "path": "paths./objects/zaken/zaak/{id}.put.responses",
+                "message": "Violates NLGov /core/error-handling/invalid-input: 4 POST, PUT or PATCH operations declare no 400 response (paths./objects/zaken/zaak/{id}.put.responses, paths./objects/zaken/zaak/{id}.patch.responses, paths./objects/zaken/klant/{id}.put.responses, ...).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/error-handling/invalid-input"
+            },
+            {
+                "path": "info.version",
+                "message": "Violates NLGov /core/semver: \"2.1\" is not a semantic version (MAJOR.MINOR.PATCH).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/semver"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Violates NLGov /core/publish-openapi: The document is served as JSON at https://nc.example/apps/openregister/api/registers/{id}/oas and https://nc.example/apps/openregister/api/registers/oas, not at https://nc.example/apps/openregister/api/openapi.json.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/publish-openapi"
             }
         ]
     },
@@ -6979,6 +7108,46 @@
                         }
                     }
                 }
+            },
+            "x-nl-api-design-rules": {
+                "version": "2.2.1",
+                "pass": [
+                    "/core/no-trailing-slash",
+                    "/core/path-segments-kebab-case",
+                    "/core/date-time/format",
+                    "/core/date-time/date-omit-time-portion",
+                    "/core/http-methods",
+                    "/core/doc-openapi",
+                    "/core/doc-openapi-contact",
+                    "/core/transport/tls"
+                ],
+                "fail": [
+                    "/core/error-handling/problem-details",
+                    "/core/error-handling/invalid-input",
+                    "/core/publish-openapi",
+                    "/core/semver"
+                ],
+                "deviation": [
+                    "/core/query-keys-camel-case",
+                    "/core/uri-version"
+                ],
+                "manual": [
+                    "/core/naming-resources",
+                    "/core/naming-collections",
+                    "/core/interface-language",
+                    "/core/hide-implementation",
+                    "/core/http-safety",
+                    "/core/http-response-code",
+                    "/core/stateless",
+                    "/core/nested-child",
+                    "/core/resource-operations",
+                    "/core/error-handling/all-errors",
+                    "/core/doc-language",
+                    "/core/deprecation-schedule",
+                    "/core/transition-period",
+                    "/core/transport/cors",
+                    "/core/transport/no-sensitive-uris"
+                ]
             }
         },
         "issues": [
@@ -7260,6 +7429,34 @@
                 "code": "nlgov_rule",
                 "severity": "warning",
                 "rule": "/core/query-keys-camel-case"
+            },
+            {
+                "path": "paths./objects/klanten/klant.get.responses.400",
+                "message": "Violates NLGov /core/error-handling/problem-details: 27 error responses do not declare application/problem+json with the Error schema (paths./objects/klanten/klant.get.responses.400, paths./objects/klanten/klant.get.responses.403, paths./objects/klanten/klant.post.responses.400, ...).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/error-handling/problem-details"
+            },
+            {
+                "path": "paths./objects/klanten/klant/{id}.put.responses",
+                "message": "Violates NLGov /core/error-handling/invalid-input: 4 POST, PUT or PATCH operations declare no 400 response (paths./objects/klanten/klant/{id}.put.responses, paths./objects/klanten/klant/{id}.patch.responses, paths./objects/klanten/untitled/{id}.put.responses, ...).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/error-handling/invalid-input"
+            },
+            {
+                "path": "info.version",
+                "message": "Violates NLGov /core/semver: \"1.0\" is not a semantic version (MAJOR.MINOR.PATCH).",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/semver"
+            },
+            {
+                "path": "servers.0.url",
+                "message": "Violates NLGov /core/publish-openapi: The document is served as JSON at https://nc.example/apps/openregister/api/registers/{id}/oas and https://nc.example/apps/openregister/api/registers/oas, not at https://nc.example/apps/openregister/api/openapi.json.",
+                "code": "nlgov_rule",
+                "severity": "warning",
+                "rule": "/core/publish-openapi"
             }
         ]
     },

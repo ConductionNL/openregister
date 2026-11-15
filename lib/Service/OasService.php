@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Service\Oas\NlGovDocumentRules;
+use OCA\OpenRegister\Service\Oas\NlGovConformance;
 use OCA\OpenRegister\Service\Oas\NlGovRuleCatalogue;
 use OCA\OpenRegister\Service\Oas\OasExtendedTypes;
 use OCA\OpenRegister\Service\Oas\OasIssue;
@@ -457,6 +457,7 @@ class OasService implements OasServiceInterface {
 		$this->oas = OasExtendedTypes::withUsedComponents(oas: $this->oas);
 
 		$this->assertOasValid(strict: $strict);
+		$this->oas['x-nl-api-design-rules'] = (new NlGovConformance())->marker(report: $this->report);
 
 		return $this->oas;
 	}//end createOas()
@@ -1973,14 +1974,16 @@ class OasService implements OasServiceInterface {
 	 * - /core/http-response-code: only standard HTTP status codes on responses.
 	 * - /core/no-trailing-slash, /core/path-segments-kebab-case,
 	 *   /core/query-keys-camel-case and /core/uri-version, through
-	 *   {@see NlGovDocumentRules}.
+	 *   {@see \OCA\OpenRegister\Service\Oas\NlGovDocumentRules}.
+	 * - the date and time, error handling and document rules; all of them run
+	 *   through {@see NlGovConformance}.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
 	 */
 	private function validateNlGovRules(): void {
-		(new NlGovDocumentRules(report: $this->report))->check(oas: $this->oas);
+		(new NlGovConformance())->check(report: $this->report, oas: $this->oas);
 
 		$paths = ($this->oas['paths'] ?? null);
 		if (is_array($paths) === false) {

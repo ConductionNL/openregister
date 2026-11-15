@@ -67,4 +67,20 @@ final class FormatFactory {
 	public static function extendedFieldTypes(): ExtendedFieldTypeValidatorInterface {
 		return new ExtendedFieldTypeValidator();
 	}//end extendedFieldTypes()
+
+	/**
+	 * Whether a value is a semantic version, by the same check the `semver` string format makes.
+	 *
+	 * An instance method, so a caller outside the Formats component asks the
+	 * factory rather than naming the format class or reaching it statically.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return boolean True for a semantic version.
+	 *
+	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
+	 */
+	public function isSemanticVersion(mixed $value): bool {
+		return (new SemVerFormat())->validate(data: $value);
+	}//end isSemanticVersion()
 }//end class
