@@ -13483,3 +13483,4 @@ review:integriq:2650:6bf97c5a	CONFLICT: 8 files; suite not runnable (missing php
 review:integriq:2560:fd436abf	GREEN: devDep bump, vitest 2374 passed	session-20261115T154307-1fc2cc78	2026-11-15T16:14:03Z
 review:integriq:2994:6a706bf6	GREEN: vitest 2374/2374, build ok	session-20261115T155915-84e5dc0a	2026-11-15T16:14:19Z
 review:integriq:2652:7922fa98	CONFLICT: docs-only PR, ~37 add/add and rename conflicts with development	session-20261115T154258-dee2cc3d	2026-11-15T16:14:25Z
+review:integriq:3056:6773effd	RED: composer install fails, psalm 7 needs php ~8.3.16 vs config.platform 8.3	session-20261115T155911-14cd078d	2026-11-15T16:14:36Z
