@@ -14642,3 +14642,72 @@ review:learniq:1883:fd136520	GREEN: matches change spec, access unchanged, 1 inh
 merge:filinq:2121:14462153	merge3 tree of 21 filinq PRs: merged=3 red=7 fail=0 skip=0; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:16Z
 merge:learniq:864:7c651a34	merge3 tree of 11 learniq PRs: merged=2 red=7 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:25Z
 merge:learniq:1162:17f0a437	merge3 tree of 11 learniq PRs: merged=2 red=7 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:30Z
+merge:learniq:2127:7dfc9a1c	merge3 tree of 11 learniq PRs: merged=2 red=7 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T19:52:34Z
+review:learniq:2521:60fa2998	GREEN: builds its change, failures inherited	session-20261115T174747-978963d5	2026-11-15T19:53:53Z
+review:buildiq:1092:996ef9e6	GREEN: sass dev bump; build ok, vitest 4719 pass	session-20261114T075643-75a598ab	2026-11-15T19:55:22Z
+merge:keepiq:1790:995d9956	stale	feeder	2026-11-15T19:55:14Z
+verify:pipelinq:3878:a47d0530	stale	feeder	2026-11-15T19:55:14Z
+verify:hermiq:1804:7e6ee813	stale	feeder	2026-11-15T19:55:14Z
+review:buildiq:1094:224fef61	GREEN: prettier patch bump, sbom current	session-20261115T174747-978963d5	2026-11-15T19:55:57Z
+review:buildiq:1596:ba6566ea	CONFLICT (DashboardController ctor params); otherwise GREEN on local resolution	session-20261115T174747-978963d5	2026-11-15T19:57:24Z
+review:buildiq:1233:fbc18f00	GREEN: copy-only rename; vitest green, phpunit = baseline	session-20261115T182940-bfeb7e78	2026-11-15T19:58:14Z
+build4:openregister:rapportage-bi-export:c2	superseded: build/rapportage-bi-export-3 was built by another worker after this lease lapsed (PR open, covers compare + date ranges). Not pushed. Gap it does not cover: PHP fallback rows lack _created/_updated, so date-range filters count 0 there (fix kept locally in worker-21 t-18, commit 65a99a2d08)	session-20261114T073105-752e50ad	2026-11-15T20:01:18Z
+merge:keepiq:1817:78b59407	stale	feeder	2026-11-15T20:00:24Z
+merge:keepiq:1818:df898677	stale	feeder	2026-11-15T20:00:24Z
+review:launchpad:756	GREEN: dev-dep bump, 4461 unit tests OK	session-20261115T200000-e95b89c2	2026-11-15T20:01:19Z
+review:buildiq:1088:8d663611	GREEN: vite dev bump; vitest 4719 pass on merge	session-20261114T075643-75a598ab	2026-11-15T20:01:32Z
+review:buildiq:1249:0997f504	GREEN: dev-dep bump, sbom matches lock, reds inherited	session-20261115T195957-8e60ca53	2026-11-15T20:01:39Z
+review:buildiq:1114:9381ce97	GREEN: ocp dev bump, no code change; 1 inherited failure	session-20261115T195958-28cb0304	2026-11-15T20:01:46Z
+review:launchpad:880:3c071075	GREEN: lock+sbom only, 4461 unit tests pass on merge with development	session-20261115T200020-0f65b959	2026-11-15T20:02:04Z
+review:launchpad:753:d16aabc3	GREEN: vue bump, vitest 2578/2578 pass	session-20261115T195953-2618bb8a	2026-11-15T20:03:04Z
+review:launchpad:1223:65b428f7	GREEN: unit 4575 ok (baseline 4461), vitest+phpstan clean	session-20261115T200026-9a5b8685	2026-11-15T20:03:12Z
+review:launchpad:977:4ec996d3	GREEN: dev-dep bump, unit 4461 OK, phpmd unchanged	session-20261115T200043-78b85ca2	2026-11-15T20:03:49Z
+review:buildiq:820:a6bd63eb	GREEN: plugin-vue patch bump, vitest green	session-20261115T174747-978963d5	2026-11-15T20:03:56Z
+review:launchpad:758:96b93252	GREEN: dev-dep bump only, vitest 2578/2578 passed	session-20261115T200011-d13b13ca	2026-11-15T20:04:09Z
+review:hermiq:1150:9f31a6df	GREEN; suite 5227 OK; conflicts with development (ContextAgentInteractionService)	session-20261115T200045-d3bb5c75	2026-11-15T20:04:22Z
+review:launchpad:759:3f179d5b	RED: lockfile out of sync, npm ci fails (vite@8.3.8, esbuild@0.28.2 missing); development installs clean	session-20261114T073105-752e50ad	2026-11-15T20:04:40Z
+review:buildiq:1608:08f7f4d3	GREEN: matches change specs, access gated, tests green except inherited golden	session-20261115T182940-bfeb7e78	2026-11-15T20:04:51Z
+review:launchpad:760:77add312	GREEN: vitest 2578/2578 pass on merged tree	session-20261115T200041-8ff5af37	2026-11-15T20:04:59Z
+review:buildiq:1262:106caafb	BLOCK: conflicts with development; lock helpers and interface stub need conversion, 36 tests red on merge	session-20261114T075643-75a598ab	2026-11-15T20:05:08Z
+review:opencatalogi:1894:4083bd1a	GREEN; openspec-only, clean merge	session-20261115T200045-d3bb5c75	2026-11-15T20:05:22Z
+review:launchpad:757	GREEN: dev-dep bump, vitest 2578 pass	session-20261115T200000-e95b89c2	2026-11-15T20:05:32Z
+merge:keepiq:1819:38edb6e4	stale	feeder	2026-11-15T20:05:34Z
+review:launchpad:1098:08b61447	GREEN: phpstan clean, phpunit 4461 pass	session-20261115T200041-8ff5af37	2026-11-15T20:06:26Z
+verify:buildiq:1649:696e8889	1649 GREEN; 1651/1652/1654 CONFLICT with 1649	session-20261114T075643-75a598ab	2026-11-15T20:06:49Z
+review:launchpad:761:ca2815b8	GREEN: vitest 2578 pass under v5	session-20261115T200026-9a5b8685	2026-11-15T20:07:00Z
+review:opencatalogi:2419:3035f661	GREEN; faithful ObjectSaveOptions migration, failures 398->248, none new	session-20261115T200045-d3bb5c75	2026-11-15T20:07:09Z
+verify:buildiq:1669:625818f5	1669 GREEN	session-20261114T075643-75a598ab	2026-11-15T20:07:28Z
+verify:launchpad:1230:07024c80	GREEN 1230,1234,1235; phpunit 4529 ok, vitest 2614 ok	session-20261115T195953-2618bb8a	2026-11-15T20:07:47Z
+review:buildiq:1091:d342b9dd	GREEN: dev-dep bump, vitest 4719 passed	session-20261115T195957-8e60ca53	2026-11-15T20:07:59Z
+merge:keepiq:697:25142faf	merge8 tree of 21 keepiq PRs: merged=10 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T20:08:26Z
+merge:keepiq:1826:15d53d0e	merge8 tree of 21 keepiq PRs: merged=10 red=5 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 6	merge8-20261115T170007-37538273	2026-11-15T20:08:29Z
+review:opencatalogi:2655:f9ef3261	RED; 10 new test failures vs OR main, repair uses removed saveObject named args	session-20261115T200045-d3bb5c75	2026-11-15T20:08:37Z
+review:launchpad:819:c5c80a07	GREEN: unit 4461 ok; phpmd v3 finding set differs (gate already red on development)	session-20261115T200026-9a5b8685	2026-11-15T20:08:50Z
+review:launchpad:832:99de3089	GREEN: openspec-only sweep, suite ok	session-20261115T195953-2618bb8a	2026-11-15T20:08:57Z
+review:planninq:910:59fb2d6b	GREEN: phpmd 3 works with existing rulesets, suite unchanged	session-20261114T075643-75a598ab	2026-11-15T20:09:20Z
+review:launchpad:755:7e918f87	GREEN: vitest 5 bump, 2578/2578 JS tests pass before and after	session-20261115T200020-0f65b959	2026-11-15T20:09:28Z
+review:launchpad:885:da197195	GREEN: vitest 2602 ok, phpunit 4461 ok, gates unchanged in the new Meer menu	session-20261114T073105-752e50ad	2026-11-15T20:09:36Z
+review:launchpad:787:d2dedbb4	BLOCK: internalUrl unvalidated on tile create (REQ-TIA-002), garbled TileUpdater docblock; suites green	session-20261115T200011-d13b13ca	2026-11-15T20:09:48Z
+review:planninq:1067:98afc66e	GREEN: mechanical ObjectSaveOptions migration, 1222 tests OK	session-20261115T195957-8e60ca53	2026-11-15T20:09:52Z
+review:buildiq:1090:8e11ea7a	GREEN: webpack dev bump; vitest 4719 pass, build ok	session-20261115T195958-28cb0304	2026-11-15T20:10:02Z
+review:opencatalogi:2541:55851e9d	GREEN; no new failures, OR main signatures match	session-20261115T200045-d3bb5c75	2026-11-15T20:10:16Z
+review:planninq:871:95bfabe1	GREEN: lint 0 errors under eslint 10.12	session-20261115T200026-9a5b8685	2026-11-15T20:10:32Z
+review:planninq:1070:e52ec55b	GREEN: lock-only dev bump, 1222 unit tests pass on merge with development	session-20261115T200020-0f65b959	2026-11-15T20:10:40Z
+review:planninq:1068:40deb423	GREEN: phpstan bump, no new findings, 1222 tests OK	session-20261115T195957-8e60ca53	2026-11-15T20:11:04Z
+merge:keepiq:1822:ff134ec0	stale	feeder	2026-11-15T20:10:34Z
+merge:keepiq:1824:293432db	stale	feeder	2026-11-15T20:10:34Z
+review:buildiq:1093:9d8db577	GREEN: minor marked bump, sbom current, vitest green	session-20261115T182940-bfeb7e78	2026-11-15T20:11:26Z
+review:opencatalogi:2417:cb054a7d	GREEN: signature matches openregister main, no new failures (2 inherited)	session-20261115T200011-d13b13ca	2026-11-15T20:11:49Z
+review:launchpad:763	GREEN: vitest 5 bump, 2578 pass, coverage OK	session-20261115T200000-e95b89c2	2026-11-15T20:11:56Z
+review:planninq:869:6ffcb32c	GREEN: stylelint 0 problems both sides, vitest 3566 ok	session-20261114T073105-752e50ad	2026-11-15T20:12:07Z
+review:planninq:918:90a6ddf0	GREEN: unit 1222 ok, phpstan unchanged vs development	session-20261115T200026-9a5b8685	2026-11-15T20:12:18Z
+review:opencatalogi:2687:9198190b	GREEN; no new failures, jest spec passes	session-20261115T200045-d3bb5c75	2026-11-15T20:12:26Z
+review:planninq:933:cb3692d7	GREEN: access checks first, refactor verbatim; phpunit 1231 OK, vitest 3565 pass	session-20261115T195958-28cb0304	2026-11-15T20:12:33Z
+review:launchpad:786:d5210578	GREEN: additive features, suites pass	session-20261115T195953-2618bb8a	2026-11-15T20:12:43Z
+review:planninq:909:db6e11d8	GREEN: marked minor bump, vitest 3566 passed	session-20261115T195957-8e60ca53	2026-11-15T20:12:53Z
+review:planninq:930:de4742c6	GREEN: refactor + new guarded server actions; PHP 1226 OK, vitest 3564 pass	session-20261115T200020-0f65b959	2026-11-15T20:13:03Z
+review:launchpad:785:962d3592	RED: props golden fixture lacks new shortcuts prop; PHP 4476 OK	session-20261115T200043-78b85ca2	2026-11-15T20:13:15Z
+review:opencatalogi:2416:bce96302	RED: 2 development tests still mock the old find() shape (PlooiDeliveryEdgeCases, PublicationCatalogFiltersGolden); lib migration fine	session-20261115T182940-bfeb7e78	2026-11-15T20:13:33Z
+review:launchpad:653:7dd62332	GREEN: build ok, vitest 2578 pass	session-20261115T200041-8ff5af37	2026-11-15T20:13:44Z
+review:planninq:1066:b7c292c5	GREEN: ObjectDeletion migration matches main; phpunit 1222 OK	session-20261115T195958-28cb0304	2026-11-15T20:13:54Z
+review:planninq:1064:849ed2f7	GREEN: unit 1222 ok, signatures match openregister main	session-20261115T200026-9a5b8685	2026-11-15T20:14:08Z
