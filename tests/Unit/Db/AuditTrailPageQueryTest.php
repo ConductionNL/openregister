@@ -83,7 +83,16 @@ class AuditTrailPageQueryTest extends TestCase {
 		$expr->method('in')->willReturnCallback(fn ($c, $p) => $add(static fn (array $r): bool => in_array((string)($r[$c] ?? ''), $param($p), true)));
 		$expr->method('like')->willReturnCallback(
 			fn ($c, $p) => $add(
-				static fn (array $r): bool => str_contains((string)($r[$c] ?? ''), trim(stripslashes((string)$param($p)), '%'))
+				static function (array $r) use ($c, $p, $param): bool {
+					$pattern = (string)$param($p);
+					$value = (string)($r[$c] ?? '');
+					// A pattern with a leading % matches anywhere; one without matches the start.
+					if (str_starts_with($pattern, '%') === false) {
+						return str_starts_with($value, stripslashes(substr($pattern, 0, -1)));
+					}
+
+					return str_contains($value, trim(stripslashes($pattern), '%'));
+				}
 			)
 		);
 		$qb->method('expr')->willReturn($expr);
@@ -142,6 +151,64 @@ class AuditTrailPageQueryTest extends TestCase {
 			['id' => 3, 'user' => 'bob', 'action' => 'update', 'register' => '5', 'schema' => '6', 'object_uuid' => 'o-2', 'changed' => '{"title":"Bezwaar"}', 'created' => '2026-10-09 08:00:00'],
 		];
 	}//end setUp()
+
+	/**
+	 * Add assistant tool calls of two apps, one with a tool id holding a LIKE wildcard.
+	 *
+	 * @return void
+	 */
+	private function addToolCalls(): void {
+		$this->table[] = ['id' => 4, 'user' => 'anna', 'action' => 'mcp.submitContractApproval', 'tool_id' => 'stackiq.submitContractApproval', 'register' => '1', 'schema' => '2', 'object_uuid' => 'o-1', 'changed' => '{}', 'created' => '2026-10-10 09:00:00'];
+		$this->table[] = ['id' => 5, 'user' => 'bob', 'action' => 'mcp.search', 'tool_id' => 'pipelinq.lead.search', 'register' => '5', 'schema' => '6', 'object_uuid' => 'o-2', 'changed' => '{}', 'created' => '2026-10-10 10:00:00'];
+		$this->table[] = ['id' => 6, 'user' => 'bob', 'action' => 'mcpx', 'tool_id' => 'stackiqXlist', 'register' => '5', 'schema' => '6', 'object_uuid' => 'o-2', 'changed' => '{}', 'created' => '2026-10-10 11:00:00'];
+		$this->table[] = ['id' => 7, 'user' => 'bob', 'action' => 'x.mcp.sync', 'tool_id' => 'pipelinq.stackiq.sync', 'register' => '5', 'schema' => '6', 'object_uuid' => 'o-2', 'changed' => '{}', 'created' => '2026-10-10 12:00:00'];
+	}//end addToolCalls()
+
+	/**
+	 * An action prefix keeps only the actions that start with it, literally:
+	 * `mcp.` matches neither `mcpx` nor `x.mcp.sync`, and the exact `action` filter is unchanged.
+	 *
+	 * @return void
+	 */
+	public function testActionPrefixKeepsOnlyActionsStartingWithIt(): void {
+		$this->addToolCalls();
+		$q = $this->query();
+		$ids = static fn (array $page): array => array_map(static fn ($e): int => (int)$e->getId(), $page['results']);
+
+		$this->assertSame([5, 4], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['actionPrefix' => 'mcp.'], null), 20))));
+		$this->assertSame([], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['action' => 'mcp.'], null), 20))));
+	}//end testActionPrefixKeepsOnlyActionsStartingWithIt()
+
+	/**
+	 * A tool prefix narrows to one app's tools (not a tool id that merely holds
+	 * the app's name), and combines with the action prefix and the actor.
+	 *
+	 * @return void
+	 */
+	public function testToolPrefixNarrowsToOneAppsTools(): void {
+		$this->addToolCalls();
+		$q = $this->query();
+		$ids = static fn (array $page): array => array_map(static fn ($e): int => (int)$e->getId(), $page['results']);
+
+		$this->assertSame([4], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['actionPrefix' => 'mcp.', 'toolPrefix' => 'stackiq.'], null), 20))));
+		$this->assertSame([4], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['toolPrefix' => 'stackiq.'], null), 20))));
+		$this->assertSame([], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['toolPrefix' => 'stackiq.', 'actor' => 'bob'], null), 20))));
+	}//end testToolPrefixNarrowsToOneAppsTools()
+
+	/**
+	 * `tool` is an exact tool id, and a blank or non-scalar prefix is no filter.
+	 *
+	 * @return void
+	 */
+	public function testToolIsExactAndABlankPrefixIsNoFilter(): void {
+		$this->addToolCalls();
+		$q = $this->query();
+		$ids = static fn (array $page): array => array_map(static fn ($e): int => (int)$e->getId(), $page['results']);
+
+		$this->assertSame([5], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['tool' => 'pipelinq.lead.search'], null), 20))));
+		$this->assertSame([], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['tool' => 'pipelinq.lead'], null), 20))));
+		$this->assertSame([7, 6, 5, 4, 3, 2, 1], $ids($q->page(new AuditPageRequest(new AuditTrailCriteria(['actionPrefix' => '  ', 'toolPrefix' => ['x']], null), 20))));
+	}//end testToolIsExactAndABlankPrefixIsNoFilter()
 
 	/**
 	 * Actor and period filter the list, newest first (spec scenario "an admin

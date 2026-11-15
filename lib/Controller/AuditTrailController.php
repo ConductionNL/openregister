@@ -368,7 +368,8 @@ class AuditTrailController extends Controller {
 	 * The audit page's filters, read from the request.
 	 *
 	 * Actor, period, action, register, schema and object. `user` is accepted
-	 * as a synonym of `actor`.
+	 * as a synonym of `actor`. `tool`, `actionPrefix` and `toolPrefix` narrow
+	 * the list to assistant tool calls (an exact tool id, or a prefix).
 	 *
 	 * @return array<string, mixed> The filters for AuditTrailPageQuery.
 	 *
@@ -381,7 +382,7 @@ class AuditTrailController extends Controller {
 			'from' => ($params['from'] ?? null),
 			'to' => ($params['to'] ?? null),
 		];
-		foreach (['action', 'register', 'schema', 'object'] as $key) {
+		foreach (['action', 'register', 'schema', 'object', 'tool', 'actionPrefix', 'toolPrefix'] as $key) {
 			$filters[$key] = ($params[$key] ?? null);
 		}
 
