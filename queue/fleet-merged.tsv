@@ -3050,3 +3050,8 @@ hermiq	1767	2616658a751252857a3fe62aa274708ebf7098f5	MERGED	merge3	GATE OK sbom,
 hermiq	1792	33071fc8103fd4d270cdcb4c55a4bcbd06b75ca3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.77 holds at 3.78
 planninq	1169	23ab3aa4329268da445ca948dc63e316a4826ad5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
 planninq	1179	aa07467b25aa2c4740b979437aca12b7a7ebdac9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+launchpad	1195	2983d95c98d89f05d4d8c02a1d786b2b8804c1fb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.66
+launchpad	1197	3fa7a96314591b645570b4cf354656131acdf5e4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.66
+launchpad	1203	2603ce75b0e653e9b985f45d94cf479c4ee22a0d	RED	merge3	GATE RED floor: unit_complexity: 4.72 -> 4.66
+launchpad	1225	92488c7c6b729b611a1cb3c465cdd9235c26f8ac	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.66
+launchpad	1229	2c22b4728a92594b04a9de35eb5690ecce52c16e	RED	merge3	GATE RED floor: overall: 4.50 -> 4.48; unit_complexity: 4.72 -> 4.67; unit_interfacing: 3.46 -> 3.34
