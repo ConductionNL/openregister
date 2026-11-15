@@ -12668,3 +12668,4 @@ cover:dossiq:069ee2d6mdd7c:330d99ea	already covered: 523/524 statements (99.8%, 
 cover:dossiq:069ee2d6mdd7c:34f5c300	PR #6551: +50 tests for 5 lib/Service classes; suite 17442->17492, 19 inherited failures; lib/Service/*.php 82.70->84.29%	session-20261115T012426-ca0c1432	2026-11-15T01:42:54Z
 cover:keepiq:c967a31fmdbad:05630945	no PR: lib/Middleware/Support at 54/59 lines (49 tests green); the 5 missed lines are loop bodies over empty constants WITHOUT_SUCCESSOR/RENAMED (self::), unreachable without production change	session-20261115T014019-616e5977	2026-11-15T01:43:04Z
 cover:pipelinq:7f9dc8e6m195a:568ec52a	PR #3862: Pos/Forecast access policy edge tests, 17 tests; suite 8627->8644, 0 failures	session-20261115T013435-30b4f471	2026-11-15T01:43:09Z
+cover:pipelinq:7f9dc8e6m195a:8c6788f4	already done: lib/Service/Gdpr at 100% (68/68) on development; no PR	session-20261114T234952-566b7ef5	2026-11-15T01:43:25Z
