@@ -14909,3 +14909,4 @@ fix:integriq:2560:fd436abf	merged development, regenerated sbom; REVERIFY a80037
 fix:launchpad:787:d2dedbb4	BLOCK fixed (create-path validation + docblock cleanup), REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:50:21Z
 fix:keepiq:1793:bb8eaec8	l10n conflicts resolved, pushed 651a3476, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:50:31Z
 fix:humaniq:686:03602584	fixed: merged development + sbom regen, head fe1cbc0a	session-20261115T202932-ab57353c	2026-11-15T20:50:40Z
+fix:keepiq:1500:1c81214a	sbom regenerated; new head 56b81f7c	session-20261115T203012-30a1abde	2026-11-15T20:50:47Z
