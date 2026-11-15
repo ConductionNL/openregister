@@ -12699,4 +12699,5 @@ cover:pipelinq:7f9dc8e6m195a:fdb25f89	already done: lib/Service/Access at 100% (
 fix:learniq:2513:0c700c9a	REVERIFY: merged development, resolved po.json, l10n keys off the tail; new head fd13b215	session-20261115T001758-161b0715	2026-11-15T01:48:22Z
 measure:portaliq:20261115h00	php 96.15% (pcov, 37129/38615); js: no unit runner	session-20261115T011806-2ba8b68f	2026-11-15T01:48:28Z
 cover:integriq:92114ab0m4b3f:2b49da71	PR #3648: 5 tests over 4 Slo classes, 9223->9228 tests, no new failures	session-20261115T011802-80d402d3	2026-11-15T01:48:44Z
+cover:dossiq:069ee2d6mdd7c:b5212816	PR #6553: +4 edge tests in lib/Service/ProcessMining (dir already ~99% lines); suite 17532->17536, 19 inherited failures	session-20261115T012426-ca0c1432	2026-11-15T01:49:15Z
 cover:portaliq:b60f3b81m4ccb:6f346b68	no PR: lib/Sections (one class) already at 100% (5/5 statements, pcov at 4b3074a)	session-20261115T011806-2ba8b68f	2026-11-15T01:49:18Z
