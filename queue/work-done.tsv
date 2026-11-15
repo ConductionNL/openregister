@@ -15214,3 +15214,4 @@ review:shillinq:1965:38aa9e98	GREEN: additive schema fields, unit 12225 OK	sessi
 review:shillinq:2072:794dec2a	GREEN: access check added, suite OK	session-20261115T213107-505dc338	2026-11-15T21:59:12Z
 review:portaliq:1680:1c24f617	GREEN: no new failures, phpstan clean	session-20261115T213122-46f7fafb	2026-11-15T21:59:24Z
 review:shillinq:2259:614a5c5a	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:59:32Z
+review:shillinq:2099:c2c844b8	BLOCK: token-only save would clear the stored Pipelinq endpoint	session-20261115T213122-e023a81e	2026-11-15T21:59:42Z
