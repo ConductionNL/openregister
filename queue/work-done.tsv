@@ -12229,3 +12229,4 @@ cover:pipelinq:7f9dc8e6m799d:568ec52a	PR #3850: LifecycleRegistrar 25/43 -> 43/4
 cover:buildiq:70b3e29em66d0:1106b038	already done: lib/Mcp/Handler/ at 99.64% on development (target 95)	session-20261114T221759-cd5c5678	2026-11-15T00:24:08Z
 cover:buildiq:70b3e29em66d0:aae6d66c	already done: lib/Exception/*.php at 100% lines (64/64) on development 165fc0e3c	session-20261114T231755-998f7ff8	2026-11-15T00:24:05Z
 cover:portaliq:b60f3b81m4ccb:9d3a1784	PR #2519: 11 tests, lib/BackgroundJob 438/446 -> 448/449 stmts, suite 5840->5851 green	session-20261115T001748-75994f45	2026-11-15T00:24:20Z
+verify:integriq:3641:62b34a24	RED #3641: order-dependent new test (static selfSchemaIds cache not reset)	session-20261114T234948-b89aaae1	2026-11-15T00:24:15Z
