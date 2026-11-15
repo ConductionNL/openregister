@@ -14479,3 +14479,4 @@ fix:buildiq:1093:16b82bb9	sbom regenerated, pushed 9d8db577, REVERIFY recorded	s
 fix:launchpad:784:f46ccf4d	failed: superseded, needs a manual close (closing PRs is refused by permission here): development landed its own build of launcher-tile-sorting (01fd4612, src/utils/tileSort.js) and the PR is a second implementation (sortContainerTiles.js); merging would mix the two. Only task 6 (archive, spec fold, parity rows) remains, best redone on development	session-20261115T182936-09049974	2026-11-15T19:16:50Z
 fix:launchpad:758:06d536b2	fixed: sbom regenerated after merging development; new head 96b93252	session-20261115T185930-76cdc846	2026-11-15T19:16:48Z
 fix:buildiq:1092:8fb29c55	sbom regenerated; pushed 996ef9e6, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T19:16:55Z
+fix:launchpad:832:0ef99698	openspec CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T19:17:09Z
