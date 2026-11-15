@@ -11217,3 +11217,4 @@ larpinq	1053	181ec51cd4e808def9d3795fed3b7a5de2e74239	GREEN	worker-17	phpunit 84
 portaliq	2508	5be02b6de427cf011e5eaf0c86e753a409b66604	CONFLICT	worker-25	does not merge onto development
 dossiq	6554	3c1e3931132605072512af4a2d14e3dad61109ac	GREEN	worker-47	phpunit 17569/19 fail = baseline 17562/19; vitest 7110 with 2 inherited fails (capabilityComparison, caseSearchDeclarations, red on development); adds the ask-partner action and dialog, no existing behaviour changed
 dossiq	6555	1a24473c0b6eccfe0946dfb1c317eef84fcf6465	GREEN	worker-47	phpunit 17569/19 fail = baseline; tests only
+versioniq	724	56dbbd6b3b35d00ed489e65964d8ea674c2ed709	REVERIFY	worker-44	merged development in, resolved InstallerService docblock conflict (both sides' types kept); php unit-only 1802 tests, 2 inherited golden failures (same on development); new head 8f1df7b96b46c46ab235c0234500625857a7fb35, verify it
