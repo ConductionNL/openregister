@@ -14391,3 +14391,4 @@ review:shillinq:2093:d0aa436a	GREEN: manifest refactor, vitest no new failures	s
 review:decidiq:2203:d8307a7c	GREEN: per termijnagenda spec; PHP + vitest green	session-20261115T174808-50b8ceec	2026-11-15T19:03:03Z
 fix:planninq:1064:54981d9f	fixed: conflicts + development's old-shape find calls converted, suite green, new head 849ed2f7	session-20261115T174804-89f2739f	2026-11-15T19:03:23Z
 fix:learniq:2521:2a90e6d1	SPDX headers restored, pushed 60fa2998	session-20261115T174741-56eeaa2f	2026-11-15T19:03:43Z
+review:filinq:1849:399a0258	GREEN: find() migrated to ObjectFindOptions, suite 6772 OK	session-20261115T185929-0fc862a6	2026-11-15T19:04:01Z
