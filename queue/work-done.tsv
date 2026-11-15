@@ -12526,3 +12526,4 @@ verify:pipelinq:3854:bbfe402a	3854 GREEN, 3855 GREEN; 8563->8567 OK	session-2026
 fix:launchpad:1230:830dd12f	conflict with #1214 removed by moving the new notification pieces; head bbc5350f, REVERIFY recorded	session-20261115T005138-c7bbb0f0	2026-11-15T01:20:29Z
 cover:buildiq:70b3e29em66d0:d528dcf0	PR opened: VirtualAppWidgetDefaultsTest (5 tests); suite 3192->3197, 1 inherited failure	session-20261115T010928-f0987802	2026-11-15T01:20:33Z
 cover:shillinq:05639debmb38d:jsea7197ec	PR #3094: 22 vitest tests, src/utils 95.66% -> 98.47%, no new failures	session-20261114T234952-566b7ef5	2026-11-15T01:20:44Z
+build:portaliq:intake-report-pages:c4	already done: PR #2444 merged into development, every code task ticked; only T01 (live instance check) left	session-20261115T005138-c7bbb0f0	2026-11-15T01:21:11Z
