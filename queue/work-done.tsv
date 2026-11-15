@@ -12649,3 +12649,4 @@ cover:stackiq:9ac19b3am9489:js5794e9fc	PR #1979: 14 tests, src/views/settings st
 cover:portaliq:b60f3b81m4ccb:59826f43	PR portaliq#2526: @covers on PortaliqAdminTest (its 4 tests' coverage was dropped); AdminSettings already covered; suite 5873 green	session-20261115T001740-566812b3	2026-11-15T01:38:28Z
 verify:pipelinq:3857:aabf2884	GREEN #3857 #3858 (tests only; vitest 1 inherited failure)	session-20261115T005141-9356bed0	2026-11-15T01:38:52Z
 merge:humaniq:1156:54c890d4	merge3 tree of 1 humaniq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:39:02Z
+fix:stackiq:1928:064e3b53	no conflict with development; only with unmerged #1924/#1926; reverify alone	session-20261115T011811-95390b97	2026-11-15T01:39:10Z
