@@ -13594,6 +13594,7 @@ review:pipelinq:2969:bd583b9e	no verdict: conflicts; backend already on developm
 review:pipelinq:2964:65b04b14	CONFLICT: behaviour OK vs spec, no new failures on head; merge conflict with development	session-20261114T102637-6688951e	2026-11-15T16:32:12Z
 review:pipelinq:2482:99a4545c	BLOCK: new deleteObject call uses the old openregister signature; conflicts with development	session-20261115T145555-b33410db	2026-11-15T16:32:22Z
 review:opencatalogi:1892:6953eb3c	GREEN: openspec notes only	session-20261115T142149-1d09fceb	2026-11-15T16:32:48Z
+review:learniq:1168:41eae3eb	BLOCK: npm ci ERESOLVE (nextcloud-vue peers vueuse ^11||^14); conflicts with development	session-20261115T152552-0cb4306e	2026-11-15T16:33:05Z
 review:pipelinq:2498:acffd38a	CONFLICT #2498: 17 files, likely superseded by the build on development	session-20261115T152601-38767331	2026-11-15T16:33:01Z
 review:opencatalogi:2407:21b8b65a	GREEN	session-20261115T151007-45079d32	2026-11-15T16:33:10Z
 review:learniq:1881:5f883140	GREEN (intended fix; conflicts with development)	session-20261115T141023-b06d51da	2026-11-15T16:33:22Z
@@ -13621,6 +13622,7 @@ review:learniq:2123:eeb728d3	GREEN: class names match openregister main; suite c
 review:planninq:869:0cf3f1b0	GREEN (conflicts with development, needs rebase): stylelint dev bump clean	session-20261115T155921-aabf185f	2026-11-15T16:37:32Z
 review:pipelinq:3145:76b4afe3	CONFLICT: faithful ObjectFindOptions migration, 95 files conflict with development	session-20261115T155902-d9805df0	2026-11-15T16:37:42Z
 review:opencatalogi:2263:a4046c90	GREEN: behaviour-preserving extract, no new failures (2 inherited)	session-20261115T155913-70cee771	2026-11-15T16:37:51Z
+review:pipelinq:3150:1a3b033c	CONFLICT: 2 stub files vs development; change itself sound	session-20261115T155915-84e5dc0a	2026-11-15T16:38:05Z
 review:planninq:1066:acc56236	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget (main: Kernel\Contracts\Value)	session-20261115T155911-14cd078d	2026-11-15T16:38:56Z
 review:pipelinq:3147:b0a445eb	BLOCK: stubs for unmerged openregister #9103; conflict; PartyReferenceMover caller incompatible	session-20261115T154254-3d07b219	2026-11-15T16:38:26Z
 review:planninq:1070:e04ed25c	GREEN: hydra-gates minor bump; no new failing gate, unit suite identical	session-20261114T075643-acecaad6	2026-11-15T16:39:06Z
@@ -13628,6 +13630,7 @@ review:planninq:1069:9cba21b3	RED: lock not installable (psalm 7.1 needs php>=8.
 review:pipelinq:3146:97b91f19	RED: 6 newer development Flow tests call the old execute() form; lib change itself correct	session-20261115T145535-3f9e5078	2026-11-15T16:39:45Z
 review:pipelinq:2108:6bc5f8a0	BLOCK: gridstack 14 outside nextcloud-vue peer range	session-20261115T152546-2c24b649	2026-11-15T16:39:59Z
 review:planninq:871:7d17dd48	BLOCK: lockfile conflict only; lint clean	session-20261115T154255-e54527e9	2026-11-15T16:40:11Z
+review:planninq:1067:e3dc5a7a	CONFLICT (2 files); migration correct vs openregister main	session-20261115T142134-badaaf30	2026-11-15T16:40:17Z
 review:planninq:908:07c0fdd2	GREEN: playwright bump, npm ci ok, vitest and phpunit green	session-20261115T154258-dee2cc3d	2026-11-15T16:40:32Z
 review:launchpad:759:4d40c072	RED: npm ci fails, lockfile out of sync (vite/esbuild missing)	session-20261115T154329-16a67e2f	2026-11-15T16:40:52Z
 review:planninq:1065:53961d3e	BLOCK: targets a searchObjectsBySlug signature openregister main does not have	session-20261114T102641-d4fd3e25	2026-11-15T16:40:53Z
@@ -13641,3 +13644,8 @@ review:portaliq:1353:5d73ef4a	GREEN: phpmd 3 runs, unit suite green; phpmd findi
 review:planninq:731:b7c438a1	RED: peer conflict with nextcloud-vue, npm ci fails	session-20261115T151007-45079d32	2026-11-15T16:42:46Z
 review:planninq:1068:0077bc6d	GREEN: phpstan findings unchanged, suite OK	session-20261115T142149-1d09fceb	2026-11-15T16:42:53Z
 review:portaliq:1594:7d7e983b	CONFLICT with development (package files, manifest, tasks.md); content UI-only, own spec 8/8	session-20261115T145535-3f9e5078	2026-11-15T16:43:02Z
+review:portaliq:1684:6cc52719	RED: CmsReaderTest::testThePageShapesAreServedAsRecorded pins the old page shape	session-20261115T154307-1fc2cc78	2026-11-15T16:43:17Z
+review:pipelinq:3271:65502a07	BLOCK: AggregationQuery::create has no layout param on OR main/development; reports would throw	session-20261115T152552-0cb4306e	2026-11-15T16:44:02Z
+review:portaliq:1152:a324482e	CONFLICT: likely superseded by the draft feature already on development	session-20261114T102637-6688951e	2026-11-15T16:44:17Z
+review:portaliq:1474:8e1a7978	CONFLICT: 53 files, many add/add (partly landed already)	session-20261115T154254-3d07b219	2026-11-15T16:44:32Z
+review:portaliq:1680:b1f0459b	BLOCK: 4-file conflict; code and tests clean	session-20261115T154255-e54527e9	2026-11-15T16:44:39Z
