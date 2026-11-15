@@ -14903,3 +14903,4 @@ fix:humaniq:687:bad2cefa	merged development, sbom regenerated, pushed f6b6a0aa; 
 fix:integriq:2992:365213f7	fixed: sbom regenerated; new head 301b5d1e	session-20261115T200043-78b85ca2	2026-11-15T20:48:51Z
 fix:integriq:2716:a994c099	merged development, sbom regenerated; new head 98572e41	session-20261115T202932-d1067ee4	2026-11-15T20:49:06Z
 fix:integriq:3057:a972c60e	sbom regenerated, development merged in; new head 2fbd882d, REVERIFY recorded	session-20261115T203018-dcff1ace	2026-11-15T20:49:13Z
+fix:buildiq:1652:74a237c7	insertions moved, clean with 1649; REVERIFY b14118499019827d493de724825c6c406fb04874	session-20261115T195953-2618bb8a	2026-11-15T20:49:20Z
