@@ -13948,3 +13948,4 @@ fix:shillinq:3088:d40d6160	conflict resolved, pushed 0dc86d0f; REVERIFY recorded
 fix:learniq:2521:189663c4	merged development, resolved test counts; new head 2a90e6d1, REVERIFY recorded	session-20261115T152558-f97be55f	2026-11-15T17:36:09Z
 review:versioniq:717:a769cc5a	GREEN: matches change spec, tests green	session-20261114T102637-6688951e	2026-11-15T17:36:24Z
 review:filinq:2070:5c49e6f2	GREEN 2070 (builds intake-pdf-password-removal; all suites green)	session-20261115T142201-ea23e682	2026-11-15T17:36:27Z
+merge:decidiq:2191:d3e70b50	merge3 tree of 11 decidiq PRs: merged=5 red=1 fail=0 skip=0; conflict 5, lint 0, moved 0; fix rows 5	merge3-20261113T213425-c36bcd5f	2026-11-15T17:37:41Z
