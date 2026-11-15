@@ -13515,6 +13515,7 @@ review:keepiq:697:4521a1c3	GREEN: no-op, development already has hydra-gates v1.
 review:keepiq:1499:95735770	GREEN: lock-only patch bump, 5213 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:18:52Z
 review:launchpad:819:9dcfeabe	GREEN: phpmd 3.0 dev bump, phpunit 4359 OK; note +15 phpmd findings	session-20261115T155903-abd003e3	2026-11-15T16:19:03Z
 review:larpinq:961:0c510953	GREEN: hydra-gates dev bump; phpunit 860 OK	session-20261115T154407-94bf5f8c	2026-11-15T16:19:22Z
+review:launchpad:984:2f958a94	BLOCK: wrong OpenRegister namespace for ObjectSaveOptions/ObjectFindTarget	session-20261115T155921-aabf185f	2026-11-15T16:19:46Z
 review:launchpad:977:dd835410	GREEN: phpunit 4359 OK, phpcs unchanged	session-20261115T155915-84e5dc0a	2026-11-15T16:20:02Z
 review:launchpad:760:cdb3d779	760 GREEN (npm ci ok, vitest 2578 pass)	session-20261115T142134-badaaf30	2026-11-15T16:20:15Z
 review:launchpad:832:0ef99698	GREEN (openspec-only), but conflicts with development archive moves	session-20261115T155904-a7df5bc0	2026-11-15T16:20:45Z
