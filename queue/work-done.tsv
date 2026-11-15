@@ -12978,3 +12978,4 @@ merge:launchpad:1214:6c4ae51e	merge3 tree of 6 launchpad PRs: merged=2 red=1 fai
 merge:launchpad:1229:6b2db34b	merge3 tree of 6 launchpad PRs: merged=2 red=1 fail=0 skip=1; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T04:12:44Z
 merge:launchpad:1230:835ef369	merge3 tree of 6 launchpad PRs: merged=2 red=1 fail=0 skip=1; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T04:12:47Z
 merge:launchpad:1206:811d12a6	merge3 tree of 6 launchpad PRs: merged=2 red=1 fail=0 skip=1; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T04:12:50Z
+merge:launchpad:1212:ce026b53	merge3 tree of 6 launchpad PRs: merged=2 red=1 fail=0 skip=1; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T04:12:53Z
