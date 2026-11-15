@@ -12240,3 +12240,15 @@ dossiq	3954	bf91e1b82b36690bae861fc634cff4afeb3dcf0f	GREEN	worker-33:review	rena
 humaniq	684	c6a338caab5f176f32336472bbeb0882937303ba	GREEN	worker-24:review	composer.lock only, dev dep nextcloud/ocp 35.0.0->35.0.2; unit 4405 tests OK (1 skipped) on development and on PR merged with development
 opencatalogi	2654	7fa3daaf34baedd7959384188ca1b434f164e969	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.88 -> 4.86; unit_interfacing: 4.85 -> 4.83
 opencatalogi	2679	233b25289fb41e7d6e2e591722d1947a5f7c51e8	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.88 -> 4.86; module_coupling: 5.45 -> 5.41
+opencatalogi	2655	a2523fc93ac7316dde9d293f803f3e47c1e4ae68	CONFLICT	merge3	conflicts with development; files: lib/Service/SitemapDocumentMapper.php lib/Service/SitemapService.php tests/fixtures/sitemap-document-golden.json 
+opencatalogi	2665	b06af5bf3a18d510028dfa0289a8104681f6d761	CONFLICT	merge3	conflicts with development; files: tests/Unit/Service/DcatMappingServiceTest.php 
+opencatalogi	2669	b357649e83f06dca0e0b9a3a95dd46857ed43805	CONFLICT	merge3	conflicts with development; files: CHANGELOG.md 
+opencatalogi	2670	fa50401a15521792f7dd65b4edf69110f0c6e06a	REVERIFY	merge3	verdict sha is not the head: head is 27c8de92310d0ff6a89d1ba8583620dd07df4543
+opencatalogi	2678	8bcc74cceb409aa3ec7ee746a08951ccd902e0a0	REVERIFY	merge3	verdict sha is not the head: head is 3f20c7220ea355a8b7b8af057251c536531d614d
+opencatalogi	2687	8336209f169415f332dc2bf399b4d1d81a1443f7	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+opencatalogi	2723	f92c3e0538a3feafa2d9794a621c4c7ba8815166	CONFLICT	merge3	conflicts with development; files: src/components/widgets/PublicationVisibilityWidget.vue src/services/publicationVisibility.js 
+opencatalogi	2725	0414a9a7d0b91ed4fda3725be6656f2198d544c6	CONFLICT	merge3	merges clean on development alone; files: lib/Service/Woo/BatchPublicationWriter.php 
+opencatalogi	2650	b0dd47d9ec97f54601cb58464c97bc02c1181052	REVERIFY	merge3	head moved since the verdict (was 533307629eeddd7dba1df397c1ccd557ab0b823a, 2f0dabac:REVERIFY,53330762:GREEN); verify the new head
+opencatalogi	2677	209e89ba66ddb23389168f67a9d80ccc1fbb6e84	REVERIFY	merge3	head moved since the verdict (was a53630d7d7c6379882519b9b6e6af29ce6a3bb52, 2c81f0dc:REVERIFY,a53630d7:GREEN); verify the new head
+opencatalogi	2699	1bb103b04ccd694b4c31418a7e55970aebd0ec53	REVERIFY	merge3	head moved since the verdict (was 541442a583e36ca1126727e26a7d44c4625b83eb, 541442a5:GREEN,541442a5:GREEN); verify the new head
+opencatalogi	2722	c7ed93500c68844a6410f58cc7ecd9cbc4e211e3	REVERIFY	merge3	head moved since the verdict (was c81e4bce03f651ab3aeecc44ca82fac2e1427dab, c81e4bce:GREEN); verify the new head
