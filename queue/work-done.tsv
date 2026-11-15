@@ -12655,3 +12655,4 @@ cover:integriq:92114ab0m4b3f:36cf9f12	PR #3647: 7 tests over 3 Exchange classes,
 cover:dossiq:069ee2d6mdd7c:59f569b2	already done: lib/Service/Settings/*.php at 95.55% (494/517) on development, above 95 target; no PR	session-20261115T005412-4a06d6f4	2026-11-15T01:39:41Z
 fix:stackiq:1966:5c005420	no conflict with development; only with unmerged siblings (l10n); reverify alone	session-20261115T011811-95390b97	2026-11-15T01:39:40Z
 cover:pipelinq:7f9dc8e6m195a:0798b7cf	failed: permission (all 4 PosCart classes have branch-level tests; locating the uncovered lines needs pcov, install refused)	session-20261115T005141-9356bed0	2026-11-15T01:39:54Z
+verify:integriq:3646:9e94aa28	GREEN 3646 (phpunit 9232, no new failures, tests only)	session-20261115T001758-161b0715	2026-11-15T01:40:08Z
