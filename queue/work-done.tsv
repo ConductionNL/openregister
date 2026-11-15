@@ -13755,3 +13755,4 @@ review:portaliq:1235:31e3cae9	GREEN on PR head, but conflicts with development (
 review:stackiq:1436:9cff2a95	CONFLICT: 25 files	session-20261115T142149-1d09fceb	2026-11-15T17:03:36Z
 review:shillinq:2251:cd6b2946	CONFLICT: content sound (aligns to OR find options), head phpunit 12214 OK, 7 files conflict	session-20261115T145541-9d69768b	2026-11-15T17:03:48Z
 review:shillinq:2086:572ee89c	CONFLICT: 6 files with development; no defect in diff	session-20261115T154314-8216dc98	2026-11-15T17:04:01Z
+review:shillinq:2256:f4d1ab9a	CONFLICT: stub interface conflicts with development; stub namespace differs from openregister main	session-20261115T155911-14cd078d	2026-11-15T17:04:10Z
