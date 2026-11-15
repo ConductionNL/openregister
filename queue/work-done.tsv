@@ -13682,3 +13682,4 @@ review:portaliq:1849:cb2411d1	CONFLICT: overlaps build already on development (2
 review:portaliq:1682:505a7cd5	GREEN: ocp 35.0.2 dev bump, 6120 unit tests OK	session-20261115T155903-abd003e3	2026-11-15T16:51:22Z
 review:portaliq:1994:6ba432f4	CONFLICT: 5 files conflict with development; 4 newer find() call sites still use register:/schema:	session-20261115T154311-e8600d84	2026-11-15T16:51:32Z
 review:portaliq:663:508c5fce	CONFLICT: register json + 2 tests; logic sound	session-20261115T154254-3d07b219	2026-11-15T16:51:52Z
+review:portaliq:2339:fd417084	BLOCK: rename/delete conflicts, development moved woo/ to build/woo/; no runtime code change	session-20261114T095641-533e2a00	2026-11-15T16:52:01Z
