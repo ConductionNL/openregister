@@ -13738,6 +13738,7 @@ review:shillinq:2099:b77de1fd	CONFLICT: modify/delete of PipelinqIntegration.vue
 review:shillinq:2095:0bdac976	CONFLICT: 7 files conflict with development (2748 commits behind)	session-20261115T152539-8dadb15a	2026-11-15T17:00:19Z
 review:shillinq:1958:66501062	CONFLICT: lib and l10n conflicts with development refactors; diff additive	session-20261115T145555-b33410db	2026-11-15T17:00:22Z
 review:shillinq:2249:530fcbd0	CONFLICT (use-block only; resolved locally unit 12214 OK, otherwise GREEN)	session-20261115T154307-1fc2cc78	2026-11-15T17:00:33Z
+review:shillinq:1908:1862245f	GREEN: test-utils patch bump; 1 inherited vitest failure	session-20261115T154254-3d07b219	2026-11-15T17:00:55Z
 review:stackiq:1064:92f38c90	CONFLICT: package-lock.json	session-20261115T142149-1d09fceb	2026-11-15T17:00:53Z
 review:stackiq:1433:1276a79b	RED: conflicts (trivial) + development's ReferencesAuditCommandFailuresTest fake uses old patchObject signature	session-20261115T155903-abd003e3	2026-11-15T17:01:08Z
 verify:stackiq:1954:75830783	stale	session-20261115T155903-abd003e3	2026-11-15T17:01:41Z
@@ -13765,5 +13766,19 @@ review:thematiq:1124:c6a62f1f	GREEN: devDep bump, vitest 1559 passed, lint clean
 review:stackiq:1439:ba500f7a	BLOCK: psalm 7.1 needs php >=8.3.16, platform pinned to 8.3; composer install fails	session-20261115T154311-e8600d84	2026-11-15T17:05:24Z
 review:shillinq:2254:29ae60be	BLOCK: stubs mirror a LockRequest namespace openregister main lacks	session-20261115T142951-2463b4c4	2026-11-15T17:05:45Z
 build:stackiq:sharing-compliance-documents:c3	partial, no change: both remaining code items are library gaps in @conduction/nextcloud-vue: the public-audience confirmation needs a create/confirm hook on the object-list widget (only CnFormDialog takes createOverride), and the 90-day filter needs a relative-date quick-filter value; rest is e2e/screenshot. PR #1924 unchanged at b3cd5b3a	session-20261114T102641-d4fd3e25	2026-11-15T17:05:59Z
+review:stackiq:1297:7bd31324	GREEN: dev-only phpmd 3.0; unit 3626 OK; phpmd gate red on development as well (89 vs 98 findings)	session-20261115T152547-c779ca49	2026-11-15T17:05:57Z
 review:versioniq:500:ccaf6046	CONFLICT: dev-only jsdom bump, lock conflicts; vitest 3001 OK when npm resolves it	session-20261115T145541-9d69768b	2026-11-15T17:06:02Z
 review:shillinq:2224:8a7a3aa7	GREEN: hydra-gates 1.19 changes no lint result; suite 12214 OK	session-20261115T145533-2db61682	2026-11-15T17:06:09Z
+review:shillinq:2258:630de5d0	CONFLICT with development; migration itself compatible	session-20261115T152546-2c24b649	2026-11-15T17:06:19Z
+review:thematiq:1289:2557e0ba	GREEN: @vitest/ui patch bump, vitest 1559/1559	session-20261115T155904-a7df5bc0	2026-11-15T17:06:30Z
+review:thematiq:1555:1e3652b9	BLOCK: psalm 7.1 needs php >=8.3.16 (platform 8.3) and a newer psalm/plugin-symfony; composer install fails	session-20261115T154311-e8600d84	2026-11-15T17:06:41Z
+verify:stackiq:1981:8d7fa4c7	GREEN 1981: 3629 OK, baseline 3626, no new failures	session-20261115T155903-abd003e3	2026-11-15T17:06:51Z
+review:thematiq:1293:09458d15	GREEN: webpack minor bump, vitest and build green	session-20261115T155902-d9805df0	2026-11-15T17:07:02Z
+review:stackiq:1067:7132da67	CONFLICT: package-lock.json only	session-20261115T154254-3d07b219	2026-11-15T17:07:32Z
+review:stackiq:1438:23ea35dd	GREEN: hydra-gates dev bump; phpunit 3626 OK	session-20261115T154407-94bf5f8c	2026-11-15T17:07:41Z
+review:stackiq:1063:5ec1a4e3	GREEN: router floor bump, lock already at 3.2.0; no new failures	session-20261115T142934-6cab0c24	2026-11-15T17:07:49Z
+review:stackiq:1044:b39f982b	GREEN: parser floor bump; lock conflict resolves to development; 1 inherited vitest failure	session-20261115T155913-70cee771	2026-11-15T17:08:03Z
+review:shillinq:2255:723f7700	BLOCK: test doubles model a search API openregister main does not have; conflicts	session-20261115T142934-de7c51d0	2026-11-15T17:08:10Z
+fix:thematiq:1680:31fb4f82	no change needed: branch up to date with development, conflict only against another PR's l10n in the tree; REVERIFY recorded	session-20261115T155904-a7df5bc0	2026-11-15T17:08:18Z
+review:versioniq:502:f18aa2a5	GREEN: parser bump; lint 0 errors, vitest 3001 OK	session-20261115T145533-2db61682	2026-11-15T17:08:29Z
+fix:pipelinq:3870:d2791727	fixed: development merged, 7 test conflicts resolved, suite green; new head c35c4e62	session-20261115T160928-e92ec17a	2026-11-15T17:08:39Z
