@@ -13177,6 +13177,7 @@ review:openregister:10581:4d41b702	APPROVE: tests only, all required suites gree
 fix:decidiq:2178:b9927684	merged development in (clean), unit 4503 OK; conflict only with sibling PRs; new head 9d356a3b39, REVERIFY	session-20261115T142935-a9f3c36c	2026-11-15T15:18:36Z
 merge:launchpad:1226:39c42839	merge3 tree of 2 launchpad PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T15:18:53Z
 merge:launchpad:1231:7ad784e5	merge3 tree of 2 launchpad PRs: merged=2 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T15:18:58Z
+cover:decidiq:a5f973bbm0262:1b97f731	PR #2217: 9 listener classes, 22 tests added, suite 4461 -> 4483 OK; lib/Listener lines 94.7% -> 99.6% (pcov)	session-20261115T142129-944012f5	2026-11-15T15:19:06Z
 build:learniq:training-provider-course-days:c4	partial: PR learniq#2521 head 189663c4: T5 done (trainer Today card CourseDayPartsWidget + partDue.js, 3 node tests, dashboard golden), JS 1381 with 8 inherited failures, no PHP touched. Left T6 planner Today, T7 list/page (proposal only, no spec requirement), T8 example set	session-20261115T142134-badaaf30	2026-11-15T15:19:08Z
 review:decidiq:2191:1b6af6dc	2191 GREEN: manifest/menu/l10n per change specs; vitest 2825 OK	session-20261115T145535-caebb5a3	2026-11-15T15:19:08Z
 build:hermiq:flows-hand-off-and-wait:c4	partial, unchanged: PR #1735 head 01675e5c. Only task 4 code is left and it is blocked: CustomToolInvoker (tools-custom-tools-without-code, branch quality/build-tools-custom-tools-without-code) is still not on development; the rest is Playwright, a live A2A peer and the live verification run	session-20261115T142134-badaaf30	2026-11-15T15:19:46Z
@@ -13676,6 +13677,7 @@ review:portaliq:2350:e25d2cb7	RED: psalm 7.2.1 lock unsatisfiable with config.pl
 review:shillinq:1900:d987d5f1	CONFLICT: 13 files conflict with development; no defect seen in the reverse-charge diff	session-20261115T154316-34f0db35	2026-11-15T16:49:12Z
 review:portaliq:1768:2c4e29aa	CONFLICT: merged lock out of sync (npm ci: missing pinia@4.1.0)	session-20261115T154307-1fc2cc78	2026-11-15T16:49:26Z
 review:portaliq:1006:0bb7956e	BLOCK: npm ci ERESOLVE, nextcloud-vue peers @vueuse/core ^11||^14	session-20261114T085646-49a39060	2026-11-15T16:49:36Z
+build:openregister:anonymising-as-an-archival-outcome:c5	partial: PR #10132 head ce226647, built 1.2, 3.3, 5.4, 5.5 (all tasks.md boxes ticked); left the job that anonymises records an approved list sets aside and the anonymised-record write target (no task names them; needs design on the object write path). Note: audit chain re-seal after diff redaction, act entry records the prior chain check	session-20261115T142129-944012f5	2026-11-15T16:50:20Z
 review:portaliq:1666:00663233	CONFLICT: manifest.json overlaps development's header actions	session-20261115T155911-14cd078d	2026-11-15T16:49:56Z
 review:portaliq:1602:583ee358	GREEN/superseded: development already implements residentsAt; PR conflicts, close it	session-20261115T154407-94bf5f8c	2026-11-15T16:50:12Z
 review:portaliq:1670:1c1e6b95	CONFLICT: manifest.json conflicts with development; code OK, docblock misplaced	session-20261115T154258-dee2cc3d	2026-11-15T16:50:21Z
@@ -13710,6 +13712,7 @@ review:shillinq:2083:cb3e6a42	CONFLICT: 8 files conflict with development; new e
 review:portaliq:1854:60bd5395	BLOCK: superseded by development's build of the change	session-20261115T152546-2c24b649	2026-11-15T16:56:07Z
 review:portaliq:1982:19a536ca	GREEN: dev tool bump, 6120 tests OK	session-20261115T155913-70cee771	2026-11-15T16:56:27Z
 review:shillinq:2226:dcacc634	GREEN: pinia minor bump, vitest identical to development (1 inherited)	session-20261115T155904-a7df5bc0	2026-11-15T16:56:26Z
+review:pipelinq:3148:71f5a4bf	BLOCK: wrong openregister namespace for ObjectDeletion/ObjectFindTarget (runtime class-not-found); also conflicts	session-20261115T160928-e92ec17a	2026-11-15T16:56:29Z
 review:shillinq:2092:e3baa4d4	CONFLICT: modify/delete with development; development specs import the deleted components	session-20261115T155911-14cd078d	2026-11-15T16:56:33Z
 review:shillinq:1899:c535cb99	CONFLICT: 11 files conflict with development	session-20261115T154258-dee2cc3d	2026-11-15T16:56:40Z
 review:shillinq:2070:036e98c2	CONFLICT: 11 files conflict with development	session-20261115T155903-abd003e3	2026-11-15T16:56:50Z
@@ -13725,8 +13728,25 @@ review:shillinq:1959:9a607395	CONFLICT: 19 files conflict with development; need
 review:stackiq:1043:a1603162	BLOCK: obsolete, development already locks sass 1.108.2	session-20261115T155902-521936b1	2026-11-15T16:58:33Z
 review:shillinq:2080:6a0ebf26	CONFLICT: access check OK, tests green on head; conflicts with development	session-20261114T102637-6688951e	2026-11-15T16:58:45Z
 review:shillinq:1965:6dd9752c	CONFLICT (version + lock fixture only); additive schema fragment	session-20261115T142134-badaaf30	2026-11-15T16:58:53Z
+review:shillinq:2259:f41c6ff8	CONFLICT: 2 files conflict with development; OR API present on main	session-20261115T154258-dee2cc3d	2026-11-15T16:59:06Z
 review:shillinq:2230:b859457f	GREEN: patch bump, build ok, 1 inherited vitest failure	session-20261114T102641-d4fd3e25	2026-11-15T16:59:14Z
 review:shillinq:2227:13c58709	BLOCK: @vueuse/core 15 outside the component library peer range	session-20261115T142934-6cab0c24	2026-11-15T16:59:27Z
 review:shillinq:2411:6ca5ae67	BLOCK: targets openregister settings value objects that exist only on an unmerged branch; would fail against openregister main	session-20261114T095641-533e2a00	2026-11-15T16:59:35Z
 review:shillinq:2408:837e65b7	BLOCK: create(layout:) does not exist in OpenRegister main; stub masks it; also conflicts	session-20261115T142149-1d09fceb	2026-11-15T16:59:46Z
 review:shillinq:2766:64b9e198	GREEN: phpstan minor bump, analyse clean on both	session-20261114T075643-acecaad6	2026-11-15T16:59:55Z
+review:shillinq:2095:0bdac976	CONFLICT: 7 files conflict with development (2748 commits behind)	session-20261115T152539-8dadb15a	2026-11-15T17:00:19Z
+review:shillinq:1958:66501062	CONFLICT: lib and l10n conflicts with development refactors; diff additive	session-20261115T145555-b33410db	2026-11-15T17:00:22Z
+review:shillinq:2249:530fcbd0	CONFLICT (use-block only; resolved locally unit 12214 OK, otherwise GREEN)	session-20261115T154307-1fc2cc78	2026-11-15T17:00:33Z
+review:stackiq:1064:92f38c90	CONFLICT: package-lock.json	session-20261115T142149-1d09fceb	2026-11-15T17:00:53Z
+review:stackiq:1433:1276a79b	RED: conflicts (trivial) + development's ReferencesAuditCommandFailuresTest fake uses old patchObject signature	session-20261115T155903-abd003e3	2026-11-15T17:01:08Z
+verify:stackiq:1954:75830783	stale	session-20261115T155903-abd003e3	2026-11-15T17:01:41Z
+review:stackiq:1065:7afbf58c	BLOCK (conflict): package.json/lock conflict with development; needs recreate	session-20261114T075643-acecaad6	2026-11-15T17:01:36Z
+review:stackiq:1434:b9dab81b	RED: 39 tests fail, hydra-gates contract stub still has old saveObjects signature	session-20261115T155902-521936b1	2026-11-15T17:01:46Z
+review:shillinq:2218:b60c1dcd	GREEN: copy-only label change; vitest 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T17:01:59Z
+review:stackiq:1435:5be7461d	BLOCK: targets openregister search value objects absent from main; 4-file conflict	session-20261114T095641-533e2a00	2026-11-15T17:02:11Z
+review:shillinq:2098:38bdcce2	BLOCK: conflict; dev tests import deleted view; connections.json link to removed route	session-20261115T155911-f0070087	2026-11-15T17:02:21Z
+review:stackiq:1437:3de46f6b	GREEN: phpstan bump, analyse clean, unit suite OK	session-20261115T154311-e8600d84	2026-11-15T17:02:31Z
+review:shillinq:2081:29d9d8c7	GREEN on its own head; conflicts with development picker mixin refactor + l10n	session-20261115T155904-a7df5bc0	2026-11-15T17:02:50Z
+review:stackiq:1042:56393a99	CONFLICT (stale lockfile)	session-20261115T142134-badaaf30	2026-11-15T17:02:58Z
+review:shillinq:2257:01cce78b	BLOCK: wrong ObjectSaveOptions namespace (Kernel\Contracts\Value on OR main)	session-20261115T152558-f97be55f	2026-11-15T17:03:06Z
+review:shillinq:2228:b6167ac5	GREEN: lint unchanged	session-20261115T154255-e54527e9	2026-11-15T17:03:16Z
