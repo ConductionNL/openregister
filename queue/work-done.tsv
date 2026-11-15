@@ -13546,3 +13546,4 @@ review:launchpad:885:04779dd2	CONFLICT #885: 5 files conflict with development	s
 review:learniq:1882:b05df18f	RED: employer portal manifest golden not updated for new field labels	session-20261115T152558-f97be55f	2026-11-15T16:25:43Z
 review:launchpad:880:04f9f39f	GREEN: ocp patch bump, suite identical	session-20261114T075643-acecaad6	2026-11-15T16:25:53Z
 review:learniq:2127:6e8befed	GREEN: lock-only dev bump; 1 inherited failure	session-20261115T154254-3d07b219	2026-11-15T16:26:01Z
+review:learniq:1165:ffd74a05	CONFLICT: lock conflict, superseded (development locks vue 3.5.45)	session-20261115T154307-1fc2cc78	2026-11-15T16:26:08Z
