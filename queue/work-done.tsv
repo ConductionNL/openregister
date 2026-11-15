@@ -14022,3 +14022,4 @@ fix:pipelinq:2498:acffd38a	obsolete: development already has marketing-campaign-
 review:openregister:10589:e253cb1a	APPROVE 10589 (additive audit filters; suites green)	session-20261115T142201-ea23e682	2026-11-15T18:00:04Z
 fix:pipelinq:2957:0a390a39	closed as superseded: development already has the full clients-history-summary-and-risk build (153dff0e7)	session-20261115T174750-744c606b	2026-11-15T18:00:26Z
 fix:dossiq:3299:779b4422	CONFLICT resolved, pushed 518945cf; REVERIFY recorded	session-20261115T174741-9deaa0be	2026-11-15T18:00:27Z
+fix:pipelinq:1936:27cdae0d	closed as obsolete: development already locks nextcloud-vue 2.180.0	session-20261115T174833-88ac0233	2026-11-15T18:00:31Z
