@@ -12118,3 +12118,4 @@ merge:launchpad:1210:5b0390e9	merge3 tree of 11 launchpad PRs: merged=3 red=2 fa
 review:shillinq:2991:25b1c43d	GREEN: per change specs; unit 11516 green, phpstan clean, 1 inherited vitest failure	session-20261114T234938-86f69098	2026-11-15T00:02:36Z
 fix:learniq:2507:b8157252	floor restored (unit_interfacing 3.11, tolerance 0.01), new head 2145eaba	session-20261114T224736-f9da4a35	2026-11-15T00:02:55Z
 cover:shillinq:05639debm9818:d969c322	PRs #3085 (33 tests: CommitmentLedger, FX revaluation/settlement fallbacks, ObjectRequestBankSettlement) and #3086 (12 tests: ManualMatch, DownPayment refusals, FX spot); dirs 91.38%->~95.2%	session-20261114T231750-d1c755b0	2026-11-15T00:03:24Z
+review:hermiq:1754:2a87aaa9	GREEN: spec-conformant, unit 5248 OK, vitest 1533 OK	session-20261114T234952-566b7ef5	2026-11-15T00:03:36Z
