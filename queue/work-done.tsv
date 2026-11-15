@@ -14764,3 +14764,4 @@ fix:dossiq:3193:5b406bdb	fixed: development merged, sbom.cdx.json regenerated; n
 fix:opencatalogi:2416:bce96302	stale	feeder	2026-11-15T20:20:32Z
 fix:pipelinq:3083:ab965a9c	merged development; sbom already current (dev-only dep); REVERIFY c1e2e782	session-20261115T200045-d3bb5c75	2026-11-15T20:23:58Z
 fix:dossiq:3204:7d112fdf	sbom regenerated after merging development; new head d7bb586b, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:24:12Z
+fix:pipelinq:2501:81b7343b	merged development in (clean); unit 8922 ok; REVERIFY at ca4bf396	session-20261115T200026-9a5b8685	2026-11-15T20:24:25Z
