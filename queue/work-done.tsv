@@ -13323,3 +13323,4 @@ build:stackiq:insight-exports-and-custom-reports:c3	done: PR #1954 head 7f13c4ef
 review:decidiq:1947:ae3bb0fe	BLOCK: wrong ObjectSaveOptions/ObjectFindTarget namespace	session-20261115T142951-2463b4c4	2026-11-15T15:47:07Z
 review:decidiq:1738:c12b8c5d	GREEN: dev-only phpmd bump; unit suite green; phpmd red before and after, net fewer findings	session-20261115T142934-6cab0c24	2026-11-15T15:47:19Z
 review:decidiq:1465:840ea3b6	GREEN: @nextcloud/vue bump, vitest 2825 passed 0 failed on merged tree	session-20261115T154316-34f0db35	2026-11-15T15:47:25Z
+review:buildiq:1276:c5ef6c3f	BLOCK: depends on StoreListing, absent on openregister main; stubs mask the runtime failure	session-20261115T154311-e8600d84	2026-11-15T15:47:32Z
