@@ -15353,3 +15353,4 @@ fix:hermiq:1750:70078246	updated dev test to the change's retrievalScope record;
 fix:hermiq:1175:ca7f829c	sbom regenerated; new head 42637555	session-20261115T203012-30a1abde	2026-11-15T22:24:45Z
 fix:filinq:2121:7021db61	fixed: migrated 3 classes to OR main options objects, suite green; head f6845146	session-20261115T213112-78aba834	2026-11-15T22:24:52Z
 fix:thematiq:1070:42206255	failed: sbom gate cannot be met honestly - only @conduction/nextcloud-vue (dev: true) moves in package-lock; regen-sbom output byte-identical, --check passes; needs a gate exemption for dev-only lockfile changes	session-20261115T220037-4fd37272	2026-11-15T22:24:58Z
+fix:thematiq:1126:b0b0a98c	merged development in cleanly, vitest green; new head 5620b7cb, REVERIFY	session-20261115T220036-e665285d	2026-11-15T22:25:00Z
