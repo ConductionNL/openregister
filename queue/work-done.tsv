@@ -14630,3 +14630,4 @@ review:integriq:3049:3154eb08	GREEN: deleteObject adapted to ObjectDeletion	sess
 review:integriq:3054:5b91fc9c	RED: conflicts in 9 files and unconverted saveObject calls from development	session-20261115T174747-978963d5	2026-11-15T19:47:26Z
 review:integriq:3050:c9ca8d22	GREEN: bulk-save contract adaptation, same flags; suite same failures as development	session-20261114T075643-75a598ab	2026-11-15T19:47:37Z
 review:integriq:3058:46cc2fb4	GREEN: patch bump, sbom current, tests = baseline	session-20261115T182940-bfeb7e78	2026-11-15T19:49:05Z
+review:learniq:2132:3655c155	GREEN: find() adapted, flags unchanged	session-20261115T174747-978963d5	2026-11-15T19:50:16Z
