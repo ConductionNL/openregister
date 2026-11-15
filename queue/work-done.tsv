@@ -13409,3 +13409,4 @@ review:dossiq:5338:740a587a	RED: conflict + 4 dev-side test doubles need the Tas
 review:filinq:1310:fc7dd7c7	RED: npm ci ERESOLVE, gridstack 14 outside nextcloud-vue peer range ^12||^13	session-20261115T145541-9d69768b	2026-11-15T16:01:43Z
 review:hermiq:1323:787cee12	BLOCK: OpenRegister ObjectPatch at a namespace present on neither OR branch; backfill patch fails at runtime	session-20261115T152552-0cb4306e	2026-11-15T16:01:55Z
 review:filinq:1850:ab19bf6b	BLOCK: ObjectPatch/ObjectFindTarget imported from wrong namespace vs openregister main	session-20261115T154300-03b63424	2026-11-15T16:02:04Z
+review:filinq:1851:5759e36e	BLOCK: imports ObjectDeletion/ObjectFindTarget from a namespace OpenRegister does not have (real one is Kernel\Contracts\Value); stubs hide it	session-20261115T145533-2db61682	2026-11-15T16:02:17Z
