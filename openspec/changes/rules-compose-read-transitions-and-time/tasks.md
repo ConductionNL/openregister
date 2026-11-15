@@ -65,11 +65,24 @@
       decoration and the first check reads a field nobody has to fill in
       truthfully. `$before` is ABSENT on a create, never null, because a null
       would make `$before.status == null` match every create.
-- [ ] 2.2b Calling it from the annotation validator, with 1.3b.
+- [x] 2.2b Calling it from the annotation validator, with 1.3b.
+      (15 Nov: the rules that read `$before` are the administered
+      validations, the only rules evaluated against `TransitionDocument`. A
+      validation runs on every save unless it declares `"on": "update"`;
+      `AdministeredValidations::refusalFor()`, which the schema save calls
+      through `AdministeredValidationCheck`, now refuses one that reads the
+      prior value without `requiresPrior`, one that declares it but runs on
+      creates, and an unknown `on`, naming the validation. An update-only
+      validation sits out a create. `AdministeredValidationTriggerTest` (6).
+      Flows keep their conditions on the flow and are not read, as in 1.3b.)
 - [x] 2.3a `decidedBy()` answers `transition`, `after` or `unchanged` — not
       "which operand was read" but which the verdict turned on, so a run log
       cannot send somebody looking for a move that never happened.
-- [ ] 2.3b Writing it to the run log, with 1.5b.
+- [x] 2.3b Writing it to the run log, with 1.5b.
+      (15 Nov: an administered validation's run row carries `decidedBy()` —
+      `transition`, `after` or `unchanged` — as the value of its operand; an
+      unevaluable check records none. The enforcer golden is re-recorded for
+      exactly those run-row values; the save response is unchanged.)
 
 ## 3. Relative time
 

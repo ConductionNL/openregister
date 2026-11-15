@@ -92,6 +92,20 @@ class AdministeredValidations {
 	public const FALLBACK_LANGUAGE = 'nl';
 
 	/**
+	 * The writes a validation runs on: every save, creates included (the default).
+	 *
+	 * @var string
+	 */
+	public const ON_SAVE = 'save';
+
+	/**
+	 * The writes a validation runs on: only updates, which have a value before the write.
+	 *
+	 * @var string
+	 */
+	public const ON_UPDATE = 'update';
+
+	/**
 	 * Constructor.
 	 *
 	 * Without an evaluator only the declaration checks work (the schema save
@@ -142,10 +156,70 @@ class AdministeredValidations {
 			if ($reason !== null) {
 				return sprintf('validation "%s" %s', $name, $reason);
 			}
+
+			$reason = $this->triggerRefusal(name: $name, declaration: $declaration);
+			if ($reason !== null) {
+				return $reason;
+			}
 		}
 
 		return null;
 	}//end refusalFor()
+
+	/**
+	 * Why a validation may not run on the writes it is attached to, or null.
+	 *
+	 * A validation runs on every save unless it declares `"on": "update"`. One
+	 * that reads the value before the write must declare `requiresPrior`, and
+	 * then may only run on updates: a create has no before, and the check would
+	 * silently never match (REQ-RCT-002, task 2.2b). The refusal names it.
+	 *
+	 * @param string               $name        The validation's name.
+	 * @param array<string, mixed> $declaration The validation.
+	 *
+	 * @return string|null The reason, naming the validation.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function triggerRefusal(string $name, array $declaration): ?string {
+		$on = ($declaration['on'] ?? self::ON_SAVE);
+		if (in_array($on, [self::ON_SAVE, self::ON_UPDATE], true) === false) {
+			return sprintf('validation "%s" declares "on": use "%s" or "%s"', $name, self::ON_SAVE, self::ON_UPDATE);
+		}
+
+		return (new TransitionDocument())->refusalFor(
+			attachment: new RuleAttachment(ruleName: $name, declaration: $declaration, trigger: self::triggerOf(declaration: $declaration)),
+			node: ($declaration['condition'] ?? null)
+		);
+	}//end triggerRefusal()
+
+	/**
+	 * The trigger a validation is attached to, as {@see TransitionDocument} reads it.
+	 *
+	 * @param array<string, mixed> $declaration The validation.
+	 *
+	 * @return string `update` for an update-only validation, else `create`: one that runs on every save runs on creates.
+	 */
+	private static function triggerOf(array $declaration): string {
+		if (($declaration['on'] ?? self::ON_SAVE) === self::ON_UPDATE) {
+			return self::ON_UPDATE;
+		}
+
+		return 'create';
+	}//end triggerOf()
+
+	/**
+	 * Whether a validation sits out this write: an update-only one on a create.
+	 *
+	 * @param array<string, mixed> $declaration The validation.
+	 * @param array<string, mixed> $document    The document; a create carries no `$before`.
+	 *
+	 * @return bool True when it does not run.
+	 */
+	private static function sitsOut(array $declaration, array $document): bool {
+		return self::triggerOf(declaration: $declaration) === self::ON_UPDATE
+			&& array_key_exists(TransitionDocument::BEFORE, $document) === false;
+	}//end sitsOut()
 
 	/**
 	 * Why a validation's condition or severity is refused, after its name.
@@ -233,6 +307,10 @@ class AdministeredValidations {
 	public function evaluate(?array $annotation, ValidationInput $input): array {
 		$outcome = ['refusals' => [], 'warnings' => []];
 		foreach ($this->declarationsFrom(annotation: $annotation) as $name => $declaration) {
+			if (self::sitsOut(declaration: $declaration, document: $input->document) === true) {
+				continue;
+			}
+
 			$entry = $this->entryFor(declaration: $declaration, input: $input);
 			if ($entry === null) {
 				continue;

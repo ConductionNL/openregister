@@ -95,7 +95,7 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 */
 	private function refusalOfWrite(ValidatedWrite $write, array $document): ?array {
 		$outcome = $this->evaluate(write: $write, document: $document);
-		$this->recordOutcome(write: $write, outcome: $outcome);
+		$this->recordOutcome(write: $write, outcome: $outcome, document: $document);
 		if ($outcome['refusals'] === []) {
 			return null;
 		}
@@ -160,10 +160,11 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 *
 	 * @param ValidatedWrite $write The object being saved and its schema.
 	 * @param array{refusals: array<int, array<string, mixed>>, warnings: array<int, array<string, mixed>>} $outcome The outcome.
+	 * @param array<string, mixed> $document The document the validations read, for which side decided.
 	 *
 	 * @return void
 	 */
-	private function recordOutcome(ValidatedWrite $write, array $outcome): void {
+	private function recordOutcome(ValidatedWrite $write, array $outcome, array $document): void {
 		foreach ($outcome['warnings'] as $warning) {
 			// 🔑 RECORDED, NOT RETURNED — and that is a gap, not a decision.
 			// The spec says a warning saves AND returns its message, and the
@@ -172,13 +173,38 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 			// the run log keeps the evaluation honest and visible while the
 			// channel is missing, and `tasks.md` names the missing half rather
 			// than letting a silent drop look like a feature.
-			$this->runLog->recordWarning(write: $write, entry: $warning);
+			$this->runLog->recordWarning(write: $write, entry: $warning, decidedBy: $this->decidedBy(write: $write, entry: $warning, document: $document));
 		}
 
 		if ($outcome['refusals'] !== []) {
-			$this->runLog->recordRefusal(write: $write, entry: $outcome['refusals'][0]);
+			$first = $outcome['refusals'][0];
+			$this->runLog->recordRefusal(write: $write, entry: $first, decidedBy: $this->decidedBy(write: $write, entry: $first, document: $document));
 		}
 	}//end recordOutcome()
+
+	/**
+	 * Which side of the write a recorded verdict turned on (task 2.3b).
+	 *
+	 * Null for a check that could not be evaluated: it turned on nothing.
+	 *
+	 * @param ValidatedWrite       $write    The write, whose schema declares the validation.
+	 * @param array<string, mixed> $entry    The recorded outcome, naming its validation.
+	 * @param array<string, mixed> $document The document it was evaluated against.
+	 *
+	 * @return string|null `transition`, `after` or `unchanged`; null when unevaluable.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function decidedBy(ValidatedWrite $write, array $entry, array $document): ?string {
+		if (($entry['unevaluable'] ?? false) === true) {
+			return null;
+		}
+
+		$declared  = ($this->declaredOn(schema: $write->schema) ?? []);
+		$condition = ($declared[(string)($entry['validation'] ?? '')]['condition'] ?? null);
+
+		return (new TransitionDocument())->decidedBy(node: $condition, document: $document);
+	}//end decidedBy()
 
 	/**
 	 * The refusal to put on the event, led by the first refusing validation.
