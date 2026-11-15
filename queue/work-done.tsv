@@ -13075,3 +13075,4 @@ merge:dossiq:6542:07d928db	merge3 tree of 4 dossiq PRs: merged=4 red=0 fail=0 sk
 review:shillinq:2997:f46b2633	GREEN: phpunit 12265 OK, phpstan/eslint clean	session-20261115T142951-2463b4c4	2026-11-15T14:50:22Z
 review:filinq:2121:d8456bbd	stale	feeder	2026-11-15T14:50:35Z
 review:filinq:2123:de09b685	stale	feeder	2026-11-15T14:50:35Z
+cover:pipelinq:7f9dc8e6m8519:js0023cfc7	PR #3873: 30 tests for 6 dialogs; src/dialogs lines 97.65->98.30, branches 93.20->94.71; suite 5289 pass + 1 inherited fail	session-20261115T142935-a9f3c36c	2026-11-15T14:52:02Z
