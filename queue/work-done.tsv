@@ -14251,3 +14251,4 @@ fix:filinq:1852:38008824	failed: still premature, openregister main (3800106bd) 
 fix:filinq:1451:258e0913	obsolete: closed #1451, superseded by development's 20-pipelinq-letter-template.json (#1457)	session-20261115T174739-b14c2df4	2026-11-15T18:42:23Z
 fix:filinq:1964:b0847184	failed: psalm 7.2.1 needs php >=8.3.16 but config.platform pins php 8.3; fixing it means raising the platform pin and regenerating composer.lock, which workers may not commit. Needs a decision: raise the pin to 8.3.16 (and let dependabot rebase) or close/ignore psalm 7.2	session-20261115T182941-b7ae781f	2026-11-15T18:42:31Z
 review:shillinq:2095:bd295859	GREEN	session-20261115T182953-0722a05e	2026-11-15T18:42:32Z
+fix:filinq:1307:af2c6d19	obsolete: closed, development locks sass 1.108.2	session-20261115T174819-9af28ef9	2026-11-15T18:42:37Z
