@@ -2,8 +2,9 @@
 
 ## 1. Data
 
-- [ ] 1.1 `timeZone` (required, `format: time-zone`) on the `working-calendar` schema; seed `nl-national` and `example-organisation` with `Europe/Amsterdam`.
+- [x] 1.1 `timeZone` (required, `format: time-zone`) on the `working-calendar` schema; seed `nl-national` and `example-organisation` with `Europe/Amsterdam`.
   > 14 Nov, partly: `working-calendar-admin` already ships the property as `timezone`, optional, default `UTC`. It now carries `format: time-zone` (schema 1.3.1, register 1.4.1), and `example-organisation` is seeded with `Europe/Amsterdam` (`nl-national` already was). Left for the owner: making it REQUIRED contradicts the merged UTC default, and needs 1.3 first; the key stays `timezone`, the name the code reads.
+  > 15 Nov, done: with 1.3 giving every stored calendar a zone, `timezone` is now in the schema's `required` list (schema 1.4.0, register 1.5.0); the key stays `timezone`. Schemas validate before defaults are filled in, so the admin form now has a Time zone field and sends the zone on every save (a new calendar starts in the administrator's own zone, a stored one keeps its own). The mock-register calendars carry `Europe/Amsterdam`. `time-zone` joins the property validator's format list, which refused the shipped schema since 1.2.
 - [x] 1.2 `lib/Formats/TimeZoneFormat.php` validating through `DateTimeZone` (ADR-008).
   > 14 Nov: accepts exactly `DateTimeZone::listIdentifiers()`, the rule `WorkingCalendarDefinition` applies when it reads a calendar, so an offset or an abbreviation is refused at save as it is at read. Registered as `time-zone` in `FormatFactory::customStringFormats()`. `TimeZoneFormatTest` (3).
 - [x] 1.3 Migration filling existing calendars from `default_timezone`, fallback `UTC` with a warning.

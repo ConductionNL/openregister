@@ -254,6 +254,8 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		'bsn',
 		// Dutch licence plate in one of the fourteen sidecodes. See LicensePlateNlFormat.
 		'license-plate-nl',
+		// IANA time zone name, as DateTimeZone lists it. See TimeZoneFormat.
+		'time-zone',
 		// Nextcloud user id, checked against the user backend. The referenced
 		// user must exist. See UserFormat.
 		'user',
