@@ -60,6 +60,15 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\SchemaCatalog
  * @uses   \OCA\OpenRegister\Service\Quality\TextSignature
  * @uses   \OCA\OpenRegister\Db\TextSignature
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  */
 final class TextGroupsTest extends TestCase {
 
