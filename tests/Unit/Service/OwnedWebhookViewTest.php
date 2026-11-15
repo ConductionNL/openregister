@@ -373,4 +373,34 @@ final class OwnedWebhookViewTest extends TestCase {
 
 		self::assertSame([9, 9, 8, 9], $queued);
 	}//end testNoJobIsQueuedForAnOwnedWebhookOutsideItsScope()
+
+	/**
+	 * A webhook that cannot be disabled is still not delivered, and the failure is logged.
+	 *
+	 * @return void
+	 */
+	public function testAWebhookThatCannotBeDisabledIsLoggedAndNotDelivered(): void {
+		$users = $this->createMock(IUserManager::class);
+		$users->method('get')->willReturn(null);
+		$webhooks = $this->createMock(WebhookMapper::class);
+		$webhooks->expects(self::once())->method('updateFromArray')->with(7, ['enabled' => false])
+			->willThrowException(new RuntimeException('db locked'));
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->expects(self::once())->method('error')->with(
+			'[OwnedWebhookView] The webhook could not be disabled',
+			['webhook_id' => 7, 'error' => 'db locked']
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->expects(self::never())->method('get');
+
+		$view = new OwnedWebhookView(
+			users: $users,
+			actionAuth: $this->createMock(OpenRegisterActionAuthService::class),
+			webhooks: $webhooks,
+			container: $container,
+			logger: $logger
+		);
+
+		self::assertNull($view->view(webhook: self::hook(), event: new WebhookEvent(name: ObjectCreatedEvent::class, payload: self::payload())));
+	}//end testAWebhookThatCannotBeDisabledIsLoggedAndNotDelivered()
 }//end class
