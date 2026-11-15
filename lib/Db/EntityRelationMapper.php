@@ -162,6 +162,32 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	}//end findByFileId()
 
 	/**
+	 * One page of the entity relations that carry bases, in id order.
+	 *
+	 * For callers that walk every recorded basis once, such as an upgrade
+	 * step that re-points stored grounds to new codes: they read page after
+	 * page with the last id they saw until a page comes back empty.
+	 *
+	 * @param int $afterId Only relations with an id above this one.
+	 * @param int $limit   The page size, 1 to 1000.
+	 *
+	 * @return EntityRelation[] The relations, lowest id first.
+	 *
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
+	 */
+	public function findWithBases(int $afterId=0, int $limit=500): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('bases'))
+			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults(max(1, min($limit, self::MAX_IN_LIST_SIZE)));
+
+		return $this->findEntities(query: $qb);
+	}//end findWithBases()
+
+	/**
 	 * Find entity relations by entity ID.
 	 *
 	 * @param int $entityId The entity ID.
