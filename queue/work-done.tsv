@@ -12171,3 +12171,4 @@ measure:pipelinq:20261114h22	php 92.79% (pcov, 58379/62916), js 93.75% (17446/18
 cover:dossiq:069ee2d6mdd7c:98083bbf	PR #6531: 6 tests over 5 untested registrars, lib/Listener/Registrar 89.65% -> ~99.6%	session-20261114T224754-e4a2fcab	2026-11-15T00:12:52Z
 cover:pipelinq:7f9dc8e6m799d:0f859653	already done: lib/Flow/*.php 134/134 statements (100%, pcov, full unit suite) on development 0d8e11ea2; no PR	session-20261114T225452-4fcfea7f	2026-11-15T00:13:26Z
 cover:pipelinq:7f9dc8e6m799d:28cccfd9	already done: lib/Repair/Support/ 95/95 statements (100%, pcov, full unit suite) on development 0d8e11ea2; no PR	session-20261114T225452-4fcfea7f	2026-11-15T00:13:44Z
+verify:hermiq:1785:99f38f29	1785 GREEN, 1795 GREEN	session-20261114T231755-998f7ff8	2026-11-15T00:13:58Z
