@@ -14203,3 +14203,4 @@ review:portaliq:663:7709e801	GREEN: opt-in, default unchanged; unit green	sessio
 fix:shillinq:2095:0bdac976	conflict resolved, merged development, pushed bd2958597; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T18:35:33Z
 fix:shillinq:2092:e3baa4d4	CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:35:42Z
 review:portaliq:1765:065fabf8	GREEN: lock-only bump, npm ci ok	session-20261115T174741-9deaa0be	2026-11-15T18:35:52Z
+fix:shillinq:2227:13c58709	closed #2227 (vueuse 15 outside library peer range, unused directly); opened #3105 holding the @vueuse/core major in dependabot config	session-20261115T174739-b14c2df4	2026-11-15T18:36:07Z
