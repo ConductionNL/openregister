@@ -12506,3 +12506,4 @@ fix:stackiq:1975:0a07161e	merged development cleanly, new head 31c8ee50	session-
 cover:buildiq:70b3e29em66d0:568ec52a	PR #1660: LifecycleRegistrarTest (3 tests); suite 3192->3195, 1 inherited failure	session-20261115T010928-f0987802	2026-11-15T01:13:36Z
 cover:pipelinq:7f9dc8e6m195a:bc26df70	PR #3855: 2 tests for LabelRenameService, lib/Service/Labels 93.8->99.1%; suite 8475->8477, 0 failures	session-20261115T005122-49ba1b99	2026-11-15T01:14:20Z
 cover:pipelinq:7f9dc8e6m195a:2ea9e4f7	already done: lib/Service/CallReview at 100% (159/159 stmts) on development; no PR	session-20261115T005133-04e59268	2026-11-15T01:14:28Z
+cover:pipelinq:7f9dc8e6m195a:6b792e82	already done: lib/Service/Merge/ at 99.2% (126/127 stmts) on development 425d503, above the 95 target	session-20261115T005122-49ba1b99	2026-11-15T01:14:37Z
