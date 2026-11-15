@@ -15117,3 +15117,4 @@ review:learniq:2134:908f17ac	GREEN: mechanical saveObject migration, args preser
 review:integriq:3593:f34b8147	GREEN: sftp adapter, no new failures	session-20261115T203012-30a1abde	2026-11-15T21:40:14Z
 review:buildiq:1262:a0a4f287	GREEN: lock API migrated to OR main, no new failures	session-20261115T213100-e547b457	2026-11-15T21:40:25Z
 review:opencatalogi:2059:fa65b847	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:40:35Z
+review:larpinq:877:0d04ecfc	GREEN: ocp 35.0.2 bump, phpstan clean, 986 unit tests OK	session-20261115T213156-1ffcf961	2026-11-15T21:40:47Z
