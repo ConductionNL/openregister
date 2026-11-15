@@ -13586,3 +13586,4 @@ review:pipelinq:2969:bd583b9e	no verdict: conflicts; backend already on developm
 review:pipelinq:2964:65b04b14	CONFLICT: behaviour OK vs spec, no new failures on head; merge conflict with development	session-20261114T102637-6688951e	2026-11-15T16:32:12Z
 review:pipelinq:2482:99a4545c	BLOCK: new deleteObject call uses the old openregister signature; conflicts with development	session-20261115T145555-b33410db	2026-11-15T16:32:22Z
 review:opencatalogi:1892:6953eb3c	GREEN: openspec notes only	session-20261115T142149-1d09fceb	2026-11-15T16:32:48Z
+review:learniq:1168:41eae3eb	BLOCK: npm ci ERESOLVE (nextcloud-vue peers vueuse ^11||^14); conflicts with development	session-20261115T152552-0cb4306e	2026-11-15T16:33:05Z
