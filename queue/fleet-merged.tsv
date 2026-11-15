@@ -3611,3 +3611,18 @@ humaniq	684	c6a338caab5f176f32336472bbeb0882937303ba	RED	merge3	GATE RED sbom: c
 humaniq	686	03602584dfcf6650b23bb68d860374863c4bfba8	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 humaniq	846	c4c11987b99ebd7260bde7a8d2842867ec34912d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.48
 humaniq	1096	e60cc3a3e6c3a870a5dddc3b804f7bd33cbef335	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	697	4521a1c381ec82a7dc1d2a7199aebeecc80dd75f	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1496	c1d424cc0b06e74dd8842a8cfe942c5e4f055bd0	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1497	1c1ef76bc10d70467127e9e81434a344d941a1d3	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1499	9573577039746d41e4ed0e689b8d3e24b03bcab8	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1500	1c81214a5de8682ffbb3463cce7d2f76d821212f	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+keepiq	1790	dad455b4ae29c4c2307accf6c9267c1fc27d3108	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1792	c41b6b80f325613dc679809230b9a78cea7ece2c	RED	merge8	GATE RED floor: duplication: 4.19 -> 4.15; module_coupling: 3.33 -> 3.31
+keepiq	1817	b275e06e47c75ca5ef430898156a07a4b09cbddd	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1818	61dd7f8306a320a62ca6386b30a8b9b779a8ec25	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1819	ac4cc540143005d8882959212b1d84ae9335c9a6	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1820	50877f8a4c0051acef67f06f5533224920db3f30	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1821	96ddd816629b1e22493309948039d33ed9f22a27	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1822	1457d399785751d29afb4edf2758211961deca8e	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1823	9577cd76e00331cb3953e5c0e59224bf1a8249c5	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
+keepiq	1824	b2f2ab280dcbc261cd6547360a9a60e2dab093be	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.58 holds at 3.58
