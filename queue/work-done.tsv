@@ -13242,4 +13242,5 @@ measure:openregister:20261115h02	php 94.26% (pcov, 14 directory parts merged; te
 build:launchpad:launcher-app-catalogue:c3	partial, no code left: PR #1212 open at 838ac053; open items are live checks only (1 migration on PostgreSQL/MySQL, 7 axe, 10 Playwright) and 11's spec copy at archive	session-20261115T142134-badaaf30	2026-11-15T15:31:11Z
 fix:integriq:3542:02664658	obsolete: head 02664658 already contained in development; PR closed with a neutral comment. The adrvalidator drop was not from this PR (no OpenAPI spec changed; Spectral with the ADR ruleset finds nothing on openapi.json either side)	session-20261115T145544-b059847e	2026-11-15T15:31:22Z
 review:integriq:3564:e13ad61e	GREEN: build matches change, suite has only the inherited failures	session-20261115T142958-eb01a230	2026-11-15T15:31:21Z
+cover:integriq:92114ab0m6759:d3522ea6	PR #3665: OptOutLogEntry 3 tests (lib/Db now 100% lines); suite 9460->9463, same 6 inherited failures	session-20261115T145541-9d69768b	2026-11-15T15:31:38Z
 review:integriq:3596:efb65024	GREEN	session-20261115T142150-6c965c2a	2026-11-15T15:31:36Z
