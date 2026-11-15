@@ -12390,3 +12390,4 @@ fix:opencatalogi:2699:965fc473	module coupling restored to 5.45, pushed 541442a5
 verify:keepiq:1819:38edb6e4	1819,1820,1821 GREEN (tests only; 0 new failures)	session-20261115T001746-8fbb2c9c	2026-11-15T00:45:52Z
 fix:versioniq:691:8386b5aa	conflict resolved, 2 inherited golden failures, new head 81048e6f	session-20261115T001759-0085793c	2026-11-15T00:45:59Z
 verify:learniq:2549:d77e4864	2549 GREEN: unit 6846->6864, only inherited failures (1 php, 9 js)	session-20261114T234944-ee1416bc	2026-11-15T00:46:09Z
+fix:opencatalogi:2686:f21a9790	unit_interfacing floor restored (FederationController ctor 7->6 params via container); new head 76735337	session-20261115T002445-1522cadc	2026-11-15T00:46:16Z
