@@ -13525,3 +13525,4 @@ review:launchpad:833:62b5ba52	CONFLICT: 84 files incl. routes.php and src/person
 review:integriq:3126:da5c460d	BLOCK: uses ResolvedConsumer shape that openregister main does not have (stubs mask it)	session-20261115T142934-de7c51d0	2026-11-15T16:21:43Z
 review:keepiq:1498:65127fcb	BLOCK (psalm 7.1 unsatisfiable under config.platform php 8.3; composer install fails)	session-20261115T141023-b06d51da	2026-11-15T16:21:51Z
 review:learniq:864:9226e150	GREEN: no-op, development already at hydra-gates v1.18.0	session-20261115T155902-521936b1	2026-11-15T16:22:07Z
+review:launchpad:763:832b5d0a	RED: npm ci ERESOLVE, @vitest/ui 5 vs vitest 4	session-20261115T154300-03b63424	2026-11-15T16:22:17Z
