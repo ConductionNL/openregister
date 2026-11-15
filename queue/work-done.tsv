@@ -12350,3 +12350,4 @@ fix:integriq:3615:f8ce5455	refactored for floor; new head 2553da56	session-20261
 verify:integriq:3642:b8db2fd4	GREEN 3642, 3643 (9241 tests, no failures beyond the 7 inherited)	session-20261115T001753-b8ad7615	2026-11-15T00:39:35Z
 verify:stackiq:1974:59c23c79	1974 RED (vitest GemmaPlate), 1975 CONFLICT	session-20261114T234758-aa94f07d	2026-11-15T00:39:51Z
 fix:integriq:3546:46dc8e54	merged development, floor holds (unit_size 3.57, overall 3.93), suite failures inherited; new head 26a9245c, REVERIFY	session-20261114T234938-86f69098	2026-11-15T00:40:02Z
+fix:integriq:3617:ff5e9b84	refactored for floor, no new failures, new head 3f945884	session-20261115T001759-0085793c	2026-11-15T00:40:20Z
