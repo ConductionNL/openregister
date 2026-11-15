@@ -14806,3 +14806,4 @@ fix:filinq:1962:e4994b11	sbom regenerated, pushed be24b1cd; REVERIFY recorded	se
 fix:shillinq:2230:b859457f	sbom regenerated after merging development; new head 62ff7961, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:32:15Z
 fix:shillinq:1912:12b4700e	fixed: sbom regenerated, development merged; new head a7d98b523c8c9952e0731ec9f7dd99c883030cc8	session-20261115T200041-8ff5af37	2026-11-15T20:32:26Z
 fix:filinq:1308:28b5e71e	merged development, sbom regenerated; new head f18e7d0d; adjacent-line overlap with #1102 noted	session-20261115T202932-d1067ee4	2026-11-15T20:32:32Z
+review:portaliq:1982:ebea533f	GREEN: dev lock bump; inherited errors only	session-20261115T195958-28cb0304	2026-11-15T20:32:45Z
