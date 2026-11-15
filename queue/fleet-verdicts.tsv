@@ -12817,3 +12817,11 @@ launchpad	880	3c07107533c5035ff96566d9aa97a6c5c78aa5e3	GREEN	worker-49:review	de
 launchpad	1223	65b428f7d63ef7022e4c3748dcb028f109cd18d7	GREEN	worker-10:review	builds dashboards-and-who-may-see-them per its specs; existing behaviour unchanged (resync now also prunes personal-layer entries, as spec asks); new endpoints auth-checked, report reads keep RBAC, visibility checks fail closed; unit 4461->4575 no failures, vitest 26 ok, phpstan ok
 launchpad	753	d16aabc36feeed32b92d557a943abd47e48c054a	GREEN	worker-17:review	deps only (vue 3.5.42->3.5.45 + babel parser in lock); no source changes; vitest on PR merged with development: 270 files, 2578 tests passed; no PHP touched
 launchpad	977	4ec996d31439daed99af546858b9614b2ca4a159	GREEN	worker-29:review	dev-only bump of hydra-gates 1.18.0->1.19.0 in composer.lock plus SBOM regenerated to match package-lock; no lib/src change; unit suite on merge with development 4461 tests OK (13 skipped); phpmd output identical to development
+humaniq	606	5bf20ffed6898dc757d4a0da92195d542127b9dd	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+humaniq	610	02e0a4dceaa12d99873fcd2b20c45f1c876a95f1	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	662	5227edfc8beb46d9ce676a5e30180e85af26acc8	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+humaniq	667	3bb5749bbf2522fed5849445b36691534531a438	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	669	3a6be5bd16678979d91795150f9ca59328e65daa	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	684	c6a338caab5f176f32336472bbeb0882937303ba	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+humaniq	686	03602584dfcf6650b23bb68d860374863c4bfba8	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+humaniq	1096	e60cc3a3e6c3a870a5dddc3b804f7bd33cbef335	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
