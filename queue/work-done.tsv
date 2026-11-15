@@ -12469,3 +12469,4 @@ cover:dossiq:069ee2d6mdd7c:d2a82d9f	already done: lib/Service/Termijn/*.php meas
 verify:versioniq:690:1e1787ea	failed: permission (versioniq vendor has no phpunit; fetching one was refused earlier this session)	session-20261115T005141-9356bed0	2026-11-15T01:04:15Z
 verify:opencatalogi:2699:7a30a369	5 GREEN (2699,2715,2721,2722,2723), 0 new failures	session-20261115T005132-ee7d19e4	2026-11-15T01:04:26Z
 cover:dossiq:069ee2d6mdd7c:23f6b1f1	PR dossiq#6542: 20 tests over ApprovalGate, CaseSplitPolicy, CaseAreaResolver; suite 17379->17399, same 19 inherited failures	session-20261115T001740-566812b3	2026-11-15T01:04:43Z
+measure:openregister:20261114h22	php 94.28% (229224 stmts, pcov, unit suite in 27 runs merged by line), js 92.56% (17151 stmts, jest)	session-20261114T224751-87da8a15	2026-11-15T01:04:41Z
