@@ -10740,3 +10740,4 @@ versioniq	714	bab85cc58909b719d21a5b6ee59c6f86345648bc	GREEN	worker-24	unit-only
 versioniq	719	8d1c90cb512dcb68587a300d1e9538574ef8bc4e	CONFLICT	worker-24	conflicts in openapi.json after 699+714
 versioniq	722	98541474495be6d0496d9e0bfcde1b0a7e6bcb33	CONFLICT	worker-24	conflicts in src/components/HistoryPanel.vue and HistoryPanel.spec.ts after 699+714
 shillinq	3083	6a01db375b066370087fcfa627d2cf9d1e2885b1	GREEN	worker-29	unit 11917 tests on tree, baseline 11471 OK, no new failures; tests only
+shillinq	3084	0dfa98cab21e8fc3165cbba36e46686c11d33a90	CONFLICT	worker-29	add/add conflict with 3082 on Standards/Checks NationalExtraTail/NationalReportingTail tests
