@@ -13518,6 +13518,7 @@ review:larpinq:961:0c510953	GREEN: hydra-gates dev bump; phpunit 860 OK	session-
 review:launchpad:984:2f958a94	BLOCK: wrong OpenRegister namespace for ObjectSaveOptions/ObjectFindTarget	session-20261115T155921-aabf185f	2026-11-15T16:19:46Z
 review:launchpad:977:dd835410	GREEN: phpunit 4359 OK, phpcs unchanged	session-20261115T155915-84e5dc0a	2026-11-15T16:20:02Z
 review:launchpad:760:cdb3d779	760 GREEN (npm ci ok, vitest 2578 pass)	session-20261115T142134-badaaf30	2026-11-15T16:20:15Z
+review:hermiq:1319:7dd547c6	BLOCK: calls a processMessage(request:) signature OpenRegister does not have; stub hides it; conflicts with development	session-20261115T142934-6cab0c24	2026-11-15T16:20:39Z
 review:launchpad:832:0ef99698	GREEN (openspec-only), but conflicts with development archive moves	session-20261115T155904-a7df5bc0	2026-11-15T16:20:45Z
 review:launchpad:787:c954ea2d	CONFLICT: 19 conflicted paths, stacked branch partly already on development	session-20261115T155903-abd003e3	2026-11-15T16:20:55Z
 review:humaniq:669:3a6be5bd	GREEN: vue-router minor; build ok; test:js 210/211, 1 inherited	session-20261115T154316-34f0db35	2026-11-15T16:21:06Z
@@ -13608,3 +13609,6 @@ review:pipelinq:3083:ab965a9c	GREEN: vitest 5343/5344, 1 inherited failure	sessi
 review:launchpad:961:6afb1922	GREEN: copy-only rename; vitest 2578 OK	session-20261115T145541-9d69768b	2026-11-15T16:35:47Z
 review:pipelinq:3153:22a0348f	BLOCK: OpenRegister save-option classes imported from old namespace	session-20261115T155921-aabf185f	2026-11-15T16:35:53Z
 review:pipelinq:3281:c765403c	BLOCK: lock not installable under config.platform php 8.3	session-20261115T142951-2463b4c4	2026-11-15T16:36:02Z
+review:pipelinq:3142:e7c6f9ad	GREEN: spec-only, validates	session-20261114T102637-6688951e	2026-11-15T16:36:26Z
+review:pipelinq:2507:ecccdb3f	BLOCK: obsolete, development already on nextcloud-vue 2.180 with these changes	session-20261115T145555-b33410db	2026-11-15T16:36:49Z
+review:pipelinq:2566:0b0d7736	CONFLICT: 217 conflicting files with development	session-20261114T085646-49a39060	2026-11-15T16:37:03Z
