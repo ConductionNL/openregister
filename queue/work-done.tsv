@@ -14243,3 +14243,4 @@ fix:shillinq:2096:7e23465b	both RED tests fixed, pushed d0e8491e; REVERIFY recor
 fix:shillinq:2072:8b9e57e4	conflict resolved keeping both checks, pushed dbfc135, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:41:24Z
 review:shillinq:2249:55e36ecc	GREEN shillinq#2249: equivalent controller namespace on OpenRegister main; 12225 OK	session-20261115T174739-b14c2df4	2026-11-15T18:41:35Z
 fix:shillinq:2252:1f1318e2	namespace fixed to Kernel\Contracts\Value, merged development, suite green; pushed eea2842a; REVERIFY recorded	session-20261115T182951-bdf9d68e	2026-11-15T18:41:58Z
+fix:filinq:1852:38008824	failed: still premature, openregister main (3800106bd) keeps searchObjectsBySlug(registerSlug, schemaSlug, ...); the PR's target: RegisterSchemaRef call needs openregister #9103 on main first	session-20261115T174819-9af28ef9	2026-11-15T18:42:03Z
