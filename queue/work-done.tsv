@@ -13794,3 +13794,5 @@ review:thematiq:1286:9f97aee6	GREEN: vitest 1559/1559	session-20261115T155915-84
 review:thematiq:1557:b3ab646d	GREEN: phpstan bump, analyse clean	session-20261115T154316-34f0db35	2026-11-15T17:10:08Z
 review:thematiq:1558:4e04b3da	GREEN: lock-only dev bump, gate results identical to development	session-20261114T085646-49a39060	2026-11-15T17:10:17Z
 review:versioniq:507:324d3f15	GREEN (lock conflict with development)	session-20261115T142951-2463b4c4	2026-11-15T17:10:26Z
+review:stackiq:1066:ce4b4efe	CONFLICT: lock-file only; green on head	session-20261114T102637-6688951e	2026-11-15T17:10:32Z
+review:versioniq:504:7d37bf12	GREEN: stylelint bump; stylelint clean, vitest 3001 OK	session-20261115T145533-2db61682	2026-11-15T17:10:44Z
