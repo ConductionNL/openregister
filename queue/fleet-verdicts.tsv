@@ -12755,3 +12755,4 @@ versioniq	736	732e80c828578b4ab4e77ffd4a57c0b71f05a936	CONFLICT	merge8	merges cl
 pipelinq	2103	adb97dd81572c9cb33184bd00d1a4894587be94a	CONFLICT	merge3	conflicts with development; files: package-lock.json package.json 
 pipelinq	2501	81b7343b522507135c37a4ad5020c7ef7d6453b6	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
 pipelinq	3280	57a83e997e332e117468d2c0255de431bdf300f6	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
+humaniq	670	57c2b21ce3990d8b78ee1387de0559e358637e91	RED	worker-55:review	GATE RED sbom: @babel/core 8 and @babel/preset-env 8 are runtime dependencies and package-lock.json changed without sbom.cdx.json (regen-sbom --check stale; fix with bin/regen-sbom.sh). Otherwise fine: merged with development npm ci ok, production build ok (4 warnings), node test:js 230/231 with indexExport failure inherited from development
