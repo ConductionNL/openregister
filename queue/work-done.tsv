@@ -12552,3 +12552,4 @@ verify:stackiq:1954:7c7c6288	1954 GREEN; 1958,1975 CONFLICT (l10n)	session-20261
 cover:pipelinq:7f9dc8e6m195a:js00fe026a	PR #3858: src/services 98.44%->99.36%, 11 tests, suite 5172->5183 (1 inherited failure)	session-20261114T234941-bc8686af	2026-11-15T01:24:34Z
 fix:stackiq:1928:ff430e3c	merged development, resolved l10n conflicts, new head 064e3b53	session-20261115T001740-566812b3	2026-11-15T01:24:40Z
 fix:stackiq:1924:f6dc9dd2	merged development, resolved l10n conflicts (both sides kept); new head b3cd5b3a77ee697519101b1b5c2f7bd1bc9c7945	session-20261115T011758-953fbe72	2026-11-15T01:24:56Z
+cover:portaliq:b60f3b81m4ccb:81b1241f	PR #2520: FormSubmitActionsTest (5 tests); lib/Portal 97.7% before; suite 5873->5878, no failures	session-20261115T005138-c7bbb0f0	2026-11-15T01:25:05Z
