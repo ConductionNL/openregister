@@ -13765,3 +13765,4 @@ review:thematiq:1124:c6a62f1f	GREEN: devDep bump, vitest 1559 passed, lint clean
 review:stackiq:1439:ba500f7a	BLOCK: psalm 7.1 needs php >=8.3.16, platform pinned to 8.3; composer install fails	session-20261115T154311-e8600d84	2026-11-15T17:05:24Z
 review:shillinq:2254:29ae60be	BLOCK: stubs mirror a LockRequest namespace openregister main lacks	session-20261115T142951-2463b4c4	2026-11-15T17:05:45Z
 review:versioniq:500:ccaf6046	CONFLICT: dev-only jsdom bump, lock conflicts; vitest 3001 OK when npm resolves it	session-20261115T145541-9d69768b	2026-11-15T17:06:02Z
+review:shillinq:2224:8a7a3aa7	GREEN: hydra-gates 1.19 changes no lint result; suite 12214 OK	session-20261115T145533-2db61682	2026-11-15T17:06:09Z
