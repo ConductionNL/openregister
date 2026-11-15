@@ -14809,3 +14809,4 @@ fix:filinq:1308:28b5e71e	merged development, sbom regenerated; new head f18e7d0d
 review:portaliq:1982:ebea533f	GREEN: dev lock bump; inherited errors only	session-20261115T195958-28cb0304	2026-11-15T20:32:45Z
 fix:filinq:1430:7097f298	merged dev, SBOM regenerated; REVERIFY 8f366f599b0c5ce29b3897701df854f8c9985483	session-20261115T195953-2618bb8a	2026-11-15T20:32:55Z
 fix:filinq:1311:f1d84cc5	conflict resolved; new head ae2749a3, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:33:03Z
+fix:dossiq:4887:fc7097f8	conflicts resolved, pushed 5518d499, suite at baseline, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:33:12Z
