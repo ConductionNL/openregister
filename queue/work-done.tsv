@@ -14883,6 +14883,7 @@ fix:humaniq:667:3bb5749b	sbom regenerated; new head c3822863, REVERIFY recorded	
 review:dossiq:3197:4fd9129c	GREEN: router bump, vitest at baseline, sbom current	session-20261115T201132-b8ddc5e5	2026-11-15T20:45:20Z
 review:dossiq:3199:dd09a728	GREEN: sass bump, tests/build ok, 2 inherited vitest fails	session-20261115T203012-30a1abde	2026-11-15T20:45:31Z
 fix:integriq:2714:45199b02	fixed: sbom regenerated; head ebda35bb	session-20261115T200020-0f65b959	2026-11-15T20:45:42Z
+fix:humaniq:874:6278788c	failed: permission (PR obsolete: dev #1162 already migrated every touched file to ObjectFindOptions; closing it was refused)	session-20261115T203016-ff00326d	2026-11-15T20:45:49Z
 fix:humaniq:684:c6a338ca	merged development, regenerated sbom; new head 036f7e9f, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T20:45:49Z
 review:shillinq:2226:e54eecaf	GREEN: pinia minor bump, vitest no new failures	session-20261115T200043-78b85ca2	2026-11-15T20:45:58Z
 fix:integriq:2562:a0c8e1bf	sbom regenerated, development merged; REVERIFY at 7e5a8712	session-20261114T075643-75a598ab	2026-11-15T20:46:09Z
@@ -14892,3 +14893,4 @@ review:pipelinq:2103:91e9bf9a	BLOCK: vueuse 15 violates @conduction/nextcloud-vu
 review:pipelinq:2187:fd65c00e	GREEN: phpmd 3 dev bump, unit OK; phpmd gate output shifts (noted)	session-20261115T203013-157346e0	2026-11-15T20:46:53Z
 fix:humaniq:670	fixed: sbom regenerated; new head 404bf31c	session-20261115T200000-e95b89c2	2026-11-15T20:47:02Z
 fix:decidiq:1945:ef05d63a	test fixed, suite 4625 ok; REVERIFY b9434899	session-20261115T195953-2618bb8a	2026-11-15T20:47:12Z
+fix:buildiq:1651:8f610194	development merged; nl strings moved off the catalogue end; remaining overlap is #1649 being behind development; new head fcb354f5	session-20261115T182940-bfeb7e78	2026-11-15T20:47:30Z
