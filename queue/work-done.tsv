@@ -14052,3 +14052,4 @@ fix:pipelinq:2969:bd583b9e	conflict resolved toward development's build; pushed 
 fix:dossiq:5266:f306c815	conflict resolved (both sides kept), expired pill added; vitest 2 inherited failures only; new head db2ab4a5	session-20261115T174739-b14c2df4	2026-11-15T18:06:45Z
 fix:pipelinq:2108:6bc5f8a0	failed: not fixable in pipelinq; latest @conduction/nextcloud-vue (2.180.0) still peers gridstack ^12||^13, so the library's peer range must widen first	session-20261115T174750-744c606b	2026-11-15T18:06:43Z
 fix:dossiq:5357:5c357cd0	fixed BLOCK: value objects imported from Kernel\Contracts\Value; new head 7d05868b, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:07:06Z
+fix:dossiq:4149:9433f0b4	conflicts resolved, pushed e758cb15; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T18:07:24Z
