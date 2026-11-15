@@ -5,8 +5,8 @@
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Translating a UI locale | OpenRegister</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" property="og:image" content="https://openregister.conduction.nl/nl/img/og-openregister.png"><meta data-rh="true" name="twitter:image" content="https://openregister.conduction.nl/nl/img/og-openregister.png"><meta data-rh="true" property="og:url" content="https://openregister.conduction.nl/nl/docs/l10n-ui-translation/"><meta data-rh="true" property="og:locale" content="nl"><meta data-rh="true" property="og:locale:alternate" content="en"><meta data-rh="true" name="docusaurus_locale" content="nl"><meta data-rh="true" name="docsearch:language" content="nl"><meta data-rh="true" name="twitter:site" content="@ConductionNL"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:type" content="website"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Translating a UI locale | OpenRegister"><meta data-rh="true" name="description" content="How to take one l10n/.js from partial to complete. Scope is frontend UI"><meta data-rh="true" property="og:description" content="How to take one l10n/.js from partial to complete. Scope is frontend UI"><link data-rh="true" rel="icon" href="/nl/img/favicon.svg"><link data-rh="true" rel="canonical" href="https://openregister.conduction.nl/nl/docs/l10n-ui-translation/"><link data-rh="true" rel="alternate" href="https://openregister.conduction.nl/docs/l10n-ui-translation/" hreflang="en"><link data-rh="true" rel="alternate" href="https://openregister.conduction.nl/nl/docs/l10n-ui-translation/" hreflang="nl"><link data-rh="true" rel="alternate" href="https://openregister.conduction.nl/docs/l10n-ui-translation/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Translating a UI locale","item":"https://openregister.conduction.nl/nl/docs/l10n-ui-translation"}]}</script><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","@id":"https://openregister.conduction.nl/nl/docs/l10n-ui-translation#article","mainEntityOfPage":"https://openregister.conduction.nl/nl/docs/l10n-ui-translation","headline":"Translating a UI locale","inLanguage":"en","publisher":{"@id":"https://www.conduction.nl/#org"},"description":"How to take one l10n/.js from partial to complete. Scope is frontend UI","author":{"@type":"Organization","name":"Conduction","@id":"https://www.conduction.nl/#org"}}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","@id":"https://www.conduction.nl/#org","name":"Conduction B.V.","alternateName":"Conduction","url":"https://www.conduction.nl/","logo":"https://www.conduction.nl/img/brand/avatar-conduction-gold-on-white.svg","foundingDate":"2019","description":"Dutch open-source software company building EUPL-1.2 apps for the Nextcloud workspace.","address":{"@type":"PostalAddress","streetAddress":"Lauriergracht 14h","postalCode":"1016 RR","addressLocality":"Amsterdam","addressCountry":"NL"},"email":"info@conduction.nl","telephone":"+31-85-303-6840","taxID":"NL860784241B01","vatID":"NL860784241B01","identifier":{"@type":"PropertyValue","propertyID":"KvK","value":"76741850"},"sameAs":["https://codeberg.org/Conduction","https://www.linkedin.com/company/conduction/"]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://openregister.conduction.nl/#website","url":"https://openregister.conduction.nl/","name":"OpenRegister","publisher":{"@id":"https://www.conduction.nl/#org"},"inLanguage":["en","nl"]}</script><link rel="stylesheet" href="/nl/assets/css/styles.354fb885.css">
-<script src="/nl/assets/js/runtime~main.2363c2d6.js" defer="defer"></script>
-<script src="/nl/assets/js/main.e243bb5f.js" defer="defer"></script>
+<script src="/nl/assets/js/runtime~main.f0d6ad00.js" defer="defer"></script>
+<script src="/nl/assets/js/main.afe5cb73.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -211,7 +211,7 @@ harvested. The failures are not typos — they are correct translations of a
 <p>Recurring offenders, all confirmed in this app:</p>
 <ul>
 <li class=""><strong><code>Right</code></strong> — a permissions-table header (<code>EditOrganisation.vue</code>, the &quot;Special
-Rights&quot; table listing <code>object_publish</code>). Sibling apps use the same English word
+Rights&quot; table listing <code>agent_use</code>). Sibling apps use the same English word
 for text alignment, so the harvest yields &quot;right-aligned&quot; (<code>ru</code> &quot;По правому
 краю&quot;, <code>nl</code> &quot;Rechts&quot;). Needs the <em>legal/permission</em> sense: <code>Recht</code>, <code>Право</code>,
 <code>Uprawnienie</code>, <code>Právo</code>.</li>
@@ -786,7 +786,7 @@ register: count capitalised-mid-sentence against lowercase per term. The two 1-o
 catalogues, one-sided like <code>lt</code>, <code>sk</code> and <code>sl</code>. That zero is what made the two register
 corrections unarguable rather than a judgement call — core never produces a 2sg present at
 all, so <code>имаш</code> and <code>сачуваш</code> in the <code>Select …</code> family had no defence. The split point matters
-though, and the bundle had already drawn it: instruction sentences take 2pl (<code>Изаберите које Својство…</code>), bare labels and dropdown placeholders take 2sg (<code>И забери све</code>, <code>Изабери грану</code>).
+though, and the bundle had already drawn it: instruction sentences take 2pl (<code>Изаберите које Својство…</code>), bare labels and dropdown placeholders take 2sg (<code>Изабери све</code>, <code>Изабери грану</code>).
 The corrections moved two long strings from the label side to the sentence side, which is
 where <code>sl</code> puts the same strings.</p>
 <p><strong>The trap that nearly produced a wrong correction.</strong> A third value in that same family,
@@ -1567,7 +1567,7 @@ the <strong>2pl</strong> once a value becomes a sentence — the <code>sq</code>
 the same place at ~40 characters. Core and the file agreed, so unlike <code>et</code> and <code>lv</code> there was
 nothing to overrule, and unlike <code>ga</code>/<code>mt</code>/<code>is</code> there is no structural story: the T-V
 distinction is live and ordinary, which makes this the plain <code>cs</code>-style case.</p>
-<p><strong><code>ВИ</code> is the Macedonian acronym for AI</strong> — вештач ка интелигенција — and a homograph of the
+<p><strong><code>ВИ</code> is the Macedonian acronym for AI</strong> — вештачка интелигенција — and a homograph of the
 formal dative clitic <code>ви</code>. <code>ВИ-агент</code> and <code>ВИ-функции</code> are real values in this bundle, so a
 detector that folds case scores the app&#x27;s AI vocabulary as deference. Case is the whole of the
 discriminator, since the acronym is always all-caps and the pronoun is <code>ви</code> or sentence-initial
@@ -1628,7 +1628,7 @@ single grep separates Belarusian from Russian with no knowledge of either langua
 glance: <strong>openbuild&#x27;s entire <code>be.json</code> is Russian</strong>, 426 of its lines carrying a letter
 Belarusian does not have. <code>harvest.js</code>&#x27;s byte-identity guard cannot see that, because the
 file is not byte-identical to openbuild&#x27;s <code>ru</code> — it is a <em>separate</em> Russian translation. Every
-one of its eight candidates (<code>Документация</code>, <code>Уведом ления</code>, <code>Открыть</code>, <code>Обязательно</code>,
+one of its eight candidates (<code>Документация</code>, <code>Уведомления</code>, <code>Открыть</code>, <code>Обязательно</code>,
 <code>Кратно</code>, <code>Жизненный цикл</code>, <code>объект</code>, <code>Открыть в OpenRegister</code>) had to be rejected by hand,
 while the other five sibling <code>be</code> catalogues came back clean at zero.</p>
 <p><strong>The generalisation is the useful part</strong>: where the target&#x27;s script omits a letter its
@@ -1645,7 +1645,7 @@ word-initial <code>ў</code> and 47 correct <code>у</code> with <strong>zero</s
 written during the pass scored 169 and 58 with zero. So the answer to the <code>lb</code> question is
 sometimes &quot;the rule exists and the locale is already right&quot; — which is a measurement, not a
 skip, and is only worth anything because it was run against <strong>both halves</strong> separately.</p>
-<p>Watch it interact with morphology: the genitive plural of <code>дастаўка</code> is <code>даставак</code>, not
+<p>Watch it interact with morphology: the genitive plural of <code>дастаўка</code> is <code>д аставак</code>, not
 <code>дастаўкаў</code>, and the <code>ў</code> becomes <code>в</code> because the epenthetic vowel puts it before a vowel.</p>
 <p><strong>Casing: flat lowercase, the <code>is</code>/<code>mk</code> outcome.</strong> Domain terms mid-sentence run 0 capitalised
 against 458 lowercase, and conditioning on the English key&#x27;s own casing changes <em>nothing</em>
@@ -1678,7 +1678,7 @@ replicate and <code>fold()</code> can lowercase freely. Worth recording as the m
 <li class="">Terminology settled against core: <code>Cancel</code> → <code>Скасаваць</code> (core in six catalogues, against
 the bundle&#x27;s <code>Адмяніць</code>, which stays for <em>cannot be undone</em>); <code>Share</code> → <code>Абагуліць</code>, which
 the bundle&#x27;s own noun <code>Абагульванні</code> already implied while its verb said <code>Падзяліцца</code>;
-<em>default</em> → <code> прадвызначан-</code>, not the Russian calque <code>па змаўчанні</code>. Collisions avoided:
+<em>default</em> → <code>прадвызначан-</code>, not the Russian calque <code>па змаўчанні</code>. Collisions avoided:
 <code>Bucket</code> → <code>Сегмент</code> (never <em>interval</em>, which is its own key), <code>redaction</code> → <code>зацямненне</code>
 (never <em>рэдагаванне</em>, this app&#x27;s <em>Edit</em> — the <code>lt</code> trap), <code>Totals</code> → <code>Разам</code> (it was
 byte-identical to <code>Results</code> on the dashboard sidebar).</li>
