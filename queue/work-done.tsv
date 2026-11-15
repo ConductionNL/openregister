@@ -13813,3 +13813,4 @@ review:versioniq:484:92a0a429	CONFLICT/obsolete: development already has hydra-g
 verify:launchpad:1223:70895889	CONFLICT: info.xml, routes.php, ImportLaunchpadRegister.php	session-20261115T160928-e92ec17a	2026-11-15T17:13:07Z
 review:thematiq:1291:3fac1aca	GREEN: npm ci, code-editor build and vitest 1559 pass	session-20261115T145555-b33410db	2026-11-15T17:13:19Z
 fix:buildiq:1095:c5896b0e	failed: not fixable in buildiq: latest @conduction/nextcloud-vue 2.180.0 still peers gridstack ^12||^13; needs the library to widen its peer range first	session-20261115T154300-03b63424	2026-11-15T17:13:36Z
+review:versioniq:508:f223efe6	GREEN: plugin-vue patch bump; vitest 3001/3001, build ok	session-20261115T154254-3d07b219	2026-11-15T17:13:36Z
