@@ -14299,3 +14299,4 @@ fix:humaniq:434:dc6c275a	obsolete: development already locks hydra-gates v1.19.0
 fix:shillinq:2251:cd6b2946	conflict resolved, pushed 47c70252; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:48:49Z
 fix:decidiq:1945:f2b2f28e	fixed namespace + migrated 2 new callers; only inherited OpenCatalogiPublisherTest reds; new head ef05d63a	session-20261115T181015-497e81ce	2026-11-15T18:48:55Z
 fix:decidiq:1600:33021efc	failed: permission (closing PRs is refused for this worker). Obsolete per verdict: development locks @conduction/nextcloud-vue 2.135.0, PR downgrades to 2.60.0; close #1600 as superseded	session-20261115T154255-e54527e9	2026-11-15T18:49:07Z
+fix:learniq:1882:b05df18f	fixed: employer manifest golden re-recorded, development merged; HigherEducationExampleSetTest inherited (red on development); new head 7805a594	session-20261115T182940-bfeb7e78	2026-11-15T18:49:17Z
