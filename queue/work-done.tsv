@@ -14928,3 +14928,4 @@ fix:versioniq:508:f223efe6	merged development, vitest 3012 green, build ok; new 
 fix:opencatalogi:2652:dc289b2f	l10n conflict resolved and js rebuilt; no new failures; REVERIFY at 2348aeca	session-20261115T200026-9a5b8685	2026-11-15T20:53:30Z
 fix:stackiq:1930:d6bf1559	fixed: saveObject moved to ObjectSaveOptions, head 4b692e5a	session-20261115T202932-ab57353c	2026-11-15T20:53:41Z
 fix:opencatalogi:2677:6373144b	CONFLICT resolved, REVERIFY recorded; development red (missing ObjectSaveOptions stub since #2733)	session-20261115T174747-978963d5	2026-11-15T20:53:49Z
+fix:buildiq:1596	fixed: conflict resolved; new head 33a8b51d	session-20261115T200000-e95b89c2	2026-11-15T20:53:58Z
