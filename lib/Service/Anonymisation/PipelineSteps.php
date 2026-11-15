@@ -89,7 +89,7 @@ final class PipelineSteps {
 		self::IMAGE_BURNER => [
 			'label' => 'Image region burner (decided regions painted into the pixels)',
 			'implementedBy' => ImageBurner::class,
-			'mimeTypes' => ImageRedactionService::STANDALONE_TYPES,
+			'mimeTypes' => [...ImageRedactionService::STANDALONE_TYPES, self::DOCX, self::ODT],
 		],
 	];
 

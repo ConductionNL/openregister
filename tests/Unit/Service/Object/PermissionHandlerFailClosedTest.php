@@ -66,6 +66,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\JsonArrayColumn
  * @uses \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerFailClosedTest extends TestCase {
 

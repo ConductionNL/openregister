@@ -45,6 +45,7 @@ use Throwable;
  * @uses \OCA\OpenRegister\Formats\FormattedProperty
  * @uses \OCA\OpenRegister\Formats\Iso8601DateTimeFormat
  * @uses \OCA\OpenRegister\Formats\SemVerFormat
+ * @uses \OCA\OpenRegister\Formats\FormatFactory
  * @uses \OCA\OpenRegister\Formats\UserFormat
  * @uses \OCA\OpenRegister\Service\Object\ExtendedFieldCheck
  * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler

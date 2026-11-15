@@ -47,6 +47,8 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
  */
 final class SaveObjectResolvedSaveGuardsTest extends TestCase {
 

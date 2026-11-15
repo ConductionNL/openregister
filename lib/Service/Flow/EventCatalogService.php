@@ -15,6 +15,11 @@
  * keep a `legacy` alias (`created`/`updated`/`deleted`) so flows authored before
  * the catalog existed continue to fire unchanged.
  *
+ * Other apps add their own triggers through {@see RegisterFlowTriggersEvent},
+ * collected once per request on the first read and listed after the entries
+ * above. A contribution with an empty field, or an id the catalog already has,
+ * is refused and logged.
+ *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -28,14 +33,22 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
+ * @spec openspec/changes/clients-vault-event-flow-triggers/specs/flow-triggers/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Event\RegisterFlowTriggersEvent;
+use OCP\EventDispatcher\IEventDispatcher;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
 /**
  * Declares the event catalog that backs flow triggers.
+ *
+ * @spec openspec/changes/clients-vault-event-flow-triggers/specs/flow-triggers/spec.md
  */
 class EventCatalogService implements EventCatalogServiceInterface {
 	/**
@@ -76,22 +89,50 @@ class EventCatalogService implements EventCatalogServiceInterface {
 	];
 
 	/**
+	 * The triggers other apps contributed, collected on the first read.
+	 *
+	 * @var list<array{id: string, label: string, group: string}>|null
+	 */
+	private ?array $contributed = null;
+
+	/**
+	 * Constructor.
+	 *
+	 * Both collaborators are optional so the catalog still answers its own
+	 * entries where nothing is wired, as in a bare unit test.
+	 *
+	 * @param IEventDispatcher|null $dispatcher Dispatches RegisterFlowTriggersEvent.
+	 * @param LoggerInterface|null  $logger     Records a refused or failed contribution.
+	 *
+	 * @spec openspec/changes/clients-vault-event-flow-triggers/specs/flow-triggers/spec.md
+	 */
+	public function __construct(
+		private readonly ?IEventDispatcher $dispatcher=null,
+		private readonly ?LoggerInterface $logger=null,
+	) {
+	}//end __construct()
+
+	/**
 	 * Return the catalog for the API/builder.
 	 *
 	 * @return array<int, array{id: string, label: string, group: string, legacy?: string}>
+	 *
+	 * @spec openspec/changes/clients-vault-event-flow-triggers/specs/flow-triggers/spec.md
 	 */
 	public function getCatalog(): array {
-		return self::CATALOG;
+		return array_merge(self::CATALOG, $this->contributed());
 	}//end getCatalog()
 
 	/**
 	 * Every trigger id a flow may legally store (catalog ids + legacy aliases).
 	 *
 	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/clients-vault-event-flow-triggers/specs/flow-triggers/spec.md
 	 */
 	public function knownTriggerIds(): array {
 		$ids = [];
-		foreach (self::CATALOG as $entry) {
+		foreach ($this->getCatalog() as $entry) {
 			$ids[] = $entry['id'];
 			if (isset($entry['legacy']) === true) {
 				$ids[] = $entry['legacy'];
@@ -127,4 +168,93 @@ class EventCatalogService implements EventCatalogServiceInterface {
 		// Unknown/custom trigger: match only itself (round-trips unknown ids).
 		return [$dispatched];
 	}//end aliasesFor()
+
+	/**
+	 * The contributed triggers, collected once per request.
+	 *
+	 * @return list<array{id: string, label: string, group: string}>
+	 *
+	 * @spec openspec/changes/clients-vault-event-flow-triggers/specs/flow-triggers/spec.md
+	 */
+	private function contributed(): array {
+		if ($this->contributed !== null) {
+			return $this->contributed;
+		}
+
+		// Set BEFORE dispatching: a listener that reads the catalog would
+		// otherwise re-enter and dispatch again.
+		$this->contributed = [];
+		if ($this->dispatcher === null) {
+			return [];
+		}
+
+		$this->contributed = $this->accepted(offered: $this->collect(dispatcher: $this->dispatcher));
+		return $this->contributed;
+	}//end contributed()
+
+	/**
+	 * Ask the listening apps for their triggers; a throwing listener keeps what came before it.
+	 *
+	 * @param IEventDispatcher $dispatcher The dispatcher.
+	 *
+	 * @return list<array{id: string, label: string, group: string}>
+	 *
+	 * @spec openspec/changes/clients-vault-event-flow-triggers/specs/flow-triggers/spec.md
+	 */
+	private function collect(IEventDispatcher $dispatcher): array {
+		$event = new RegisterFlowTriggersEvent();
+		try {
+			$dispatcher->dispatchTyped($event);
+		} catch (Throwable $exception) {
+			$this->logger?->warning(
+				'[EventCatalogService] A flow trigger contribution failed: {msg}',
+				['msg' => $exception->getMessage(), 'exception' => $exception]
+			);
+		}
+
+		return $event->getTriggers();
+	}//end collect()
+
+	/**
+	 * The offered triggers that are complete and new; the first offer of an id wins.
+	 *
+	 * @param list<array{id: string, label: string, group: string}> $offered The offered triggers.
+	 *
+	 * @return list<array{id: string, label: string, group: string}>
+	 *
+	 * @spec openspec/changes/clients-vault-event-flow-triggers/specs/flow-triggers/spec.md
+	 */
+	private function accepted(array $offered): array {
+		$taken    = array_fill_keys(self::ownIds(), true);
+		$accepted = [];
+		foreach ($offered as $entry) {
+			$entry = array_map('trim', $entry);
+			if (in_array('', $entry, true) === true || isset($taken[$entry['id']]) === true) {
+				$this->logger?->warning('[EventCatalogService] Refused flow trigger "{id}": empty field or id already in the catalog', ['id' => $entry['id']]);
+				continue;
+			}
+
+			$taken[$entry['id']] = true;
+			$accepted[]          = $entry;
+		}
+
+		return $accepted;
+	}//end accepted()
+
+	/**
+	 * The catalog's own ids and legacy aliases.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/clients-vault-event-flow-triggers/specs/flow-triggers/spec.md
+	 */
+	private static function ownIds(): array {
+		$ids = [];
+		foreach (self::CATALOG as $entry) {
+			$ids[] = $entry['id'];
+			$ids[] = $entry['legacy'] ?? $entry['id'];
+		}
+
+		return $ids;
+	}//end ownIds()
 }//end class

@@ -40,6 +40,7 @@ use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCA\OpenRegister\Search\Service\Quality\ReviewedPair;
 use OCA\OpenRegister\Search\Service\Quality\PairDismissal;
 use OCA\OpenRegister\Search\Service\Quality\DedupRun;
+use OCA\OpenRegister\Search\Service\Quality\NearDuplicateScope;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices;
 use OCP\AppFramework\Controller;
@@ -47,6 +48,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUser;
+use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
@@ -80,6 +82,13 @@ class DuplicateController extends Controller {
 	private readonly ControllerSession $session;
 
 	/**
+	 * The readable files of a near-duplicate scope; null when not wired.
+	 *
+	 * @var NearDuplicateScope|null
+	 */
+	private readonly ?NearDuplicateScope $nearDuplicates;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                    $request  The current request.
@@ -92,6 +101,7 @@ class DuplicateController extends Controller {
 		$this->dismissals    = $services->dismissals;
 		$this->objectService = $services->objectService;
 		$this->session       = $services->session;
+		$this->nearDuplicates = $services->nearDuplicates;
 	}//end __construct()
 
 	/**
@@ -515,4 +525,106 @@ class DuplicateController extends Controller {
 			rules: $this->duplicates->effectiveRules(register: $pair->registerSlug, schema: $pair->schemaSlug)
 		);
 	}//end fingerprintOf()
+
+	/**
+	 * Groups of near-identical files by their text, within one scope.
+	 *
+	 * Exactly one of `objectIds[]`, `folderId` or `fileIds[]` names the scope;
+	 * `threshold` optionally overrides `duplicates.textThreshold`. Every file the
+	 * caller may not read is dropped before anything is compared, so it appears
+	 * nowhere in the response. A scope above 5000 files is refused with 400.
+	 *
+	 * GET /api/files/near-duplicates
+	 *
+	 * @return JSONResponse `groups` and `notCompared`; 400 for a bad scope or threshold, 401 without a user.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-near-identical-documents-are-grouped-by-their-text-req-ndt-002
+	 */
+	public function nearDuplicates(): JSONResponse {
+		if ($this->session->userSession->getUser() === null) {
+			return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->nearDuplicates === null) {
+			return new JSONResponse(['error' => 'Near-duplicate detection is not available'], Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		try {
+			$fileIds = $this->nearDuplicates->readableFileIds(
+				objectIds: $this->listParam(key: 'objectIds', ints: false),
+				folderId: $this->folderIdParam(),
+				fileIds: $this->listParam(key: 'fileIds', ints: true)
+			);
+			$found   = $this->duplicates->findTextGroups(fileIds: $fileIds, threshold: $this->thresholdFromRequest(key: 'threshold'));
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse(['groups' => $found['groups'], 'notCompared' => $found['notCompared']]);
+	}//end nearDuplicates()
+
+	/**
+	 * A list request parameter, given as `key[]=a&key[]=b` or as `key=a,b`.
+	 *
+	 * @param string $key  The parameter.
+	 * @param bool   $ints Whether the values are file ids: a value that is not a positive integer is refused.
+	 *
+	 * @return ($ints is true ? list<int> : list<string>) The values, without empties.
+	 *
+	 * @throws InvalidArgumentException When a file id is not a positive integer.
+	 */
+	private function listParam(string $key, bool $ints): array {
+		$raw = $this->request->getParam($key, []);
+		if (is_string($raw) === true) {
+			$raw = explode(',', $raw);
+		}
+
+		if (is_array($raw) === false) {
+			throw new InvalidArgumentException($key.' must be a list');
+		}
+
+		$values = [];
+		foreach ($raw as $value) {
+			if (is_scalar($value) === false || trim((string)$value) === '') {
+				continue;
+			}
+
+			$value = trim((string)$value);
+			if ($ints === false) {
+				$values[] = $value;
+				continue;
+			}
+
+			if (ctype_digit($value) === false || (int)$value <= 0) {
+				throw new InvalidArgumentException($key.' must hold file ids');
+			}
+
+			$values[] = (int)$value;
+		}
+
+		return $values;
+	}//end listParam()
+
+	/**
+	 * The `folderId` request parameter, or null when it is absent.
+	 *
+	 * @return int|null The folder id.
+	 *
+	 * @throws InvalidArgumentException When it is not a positive integer.
+	 */
+	private function folderIdParam(): ?int {
+		$raw = $this->request->getParam('folderId');
+		if ($raw === null || (is_string($raw) === true && trim($raw) === '')) {
+			return null;
+		}
+
+		if (is_scalar($raw) === false || ctype_digit(trim((string)$raw)) === false || (int)$raw <= 0) {
+			throw new InvalidArgumentException('folderId must be a folder id');
+		}
+
+		return (int)$raw;
+	}//end folderIdParam()
 }//end class
