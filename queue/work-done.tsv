@@ -12414,3 +12414,4 @@ fix:opencatalogi:2677:2c81f0dc	maintainability restored to 5 stars, pushed a5363
 fix:versioniq:690:5a25cc95	l10n keys moved off the append point; new head e0abdb09, REVERIFY	session-20261114T235442-bc1b76db	2026-11-15T00:49:39Z
 fix:versioniq:685:7f027ce2	floor restored (PASS), suites green apart from inherited; new head aadbc252, REVERIFY	session-20261114T233346-3552728d	2026-11-15T00:50:09Z
 fix:versioniq:729:94184de7	merged development, openapi.json conflict resolved; new head a4722246, REVERIFY recorded	session-20261114T231755-998f7ff8	2026-11-15T00:50:17Z
+build4:openregister:records-draft-versions:c4	done: PR #10533 head 9cbaceec, built 5.1/5.2 Drafts tab (edit/compare/preview/promote/discard, 13 strings x37 locales), changedFields on list, ticked 1.1 and 6.1; all tasks ticked; e2e/API/real-DB tests need an instance; jest 8483 pass, PHP unit no failures beyond baseline	session-20261115T001759-2a831e2c	2026-11-15T00:50:49Z
