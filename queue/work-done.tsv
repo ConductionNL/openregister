@@ -15094,3 +15094,4 @@ review:shillinq:2096:132b339a	RED: merged with development, test double MainApiO
 review:learniq:1162:59935569	GREEN: marked patch bump, no new test failures	session-20261115T213134-4b0d2823	2026-11-15T21:34:25Z
 review:learniq:1158:5ca84f75	GREEN: prettier bump, js-unit 9 inherited fails, no new failures	session-20261115T213144-ab42ee6a	2026-11-15T21:34:32Z
 review:learniq:2127:68efea31	GREEN: dev-only hydra-gates bump, suite 6868 tests, 1 inherited failure	session-20261115T213110-6b33145c	2026-11-15T21:34:42Z
+review:larpinq:960:659b6749	GREEN: dev-only phpstan bump, phpstan clean, 986 unit tests OK	session-20261115T213156-1ffcf961	2026-11-15T21:35:11Z
