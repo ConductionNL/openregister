@@ -1,12 +1,12 @@
 {
  "app": "integriq",
- "commit": "19aa4d64aa37d56720a7729ce4b5bbb9dfe84127",
- "measured_at": "2026-11-14T17:52:42Z",
+ "commit": "53067e87f37a55a34be58bdd16478364884a94f5",
+ "measured_at": "2026-11-15T01:52:28Z",
  "php": {
   "tool": "pcov",
-  "pct": 94.71,
-  "statements": 67743,
-  "covered": 64157,
+  "pct": 94.76,
+  "statements": 68703,
+  "covered": 65101,
   "dirs": {
    "lib/Adapters/": [
     181,
@@ -73,12 +73,12 @@
     10
    ],
    "lib/Auth/Idp/": [
-    627,
-    617
+    797,
+    782
    ],
    "lib/BackgroundJob/": [
-    918,
-    912
+    1019,
+    1011
    ],
    "lib/BackgroundJob/ExchangeRate/": [
     144,
@@ -101,16 +101,16 @@
     901
    ],
    "lib/Command/Integration/": [
-    163,
-    155
+    355,
+    336
    ],
    "lib/Connectors/": [
     276,
     272
    ],
    "lib/Controller/": [
-    6600,
-    6280
+    6713,
+    6393
    ],
    "lib/Db/": [
     187,
@@ -121,16 +121,16 @@
     600
    ],
    "lib/Event/": [
-    478,
-    470
+    495,
+    487
    ],
    "lib/EventListener/": [
-    1432,
-    1295
+    1547,
+    1409
    ],
    "lib/Exception/": [
-    56,
-    55
+    62,
+    61
    ],
    "lib/Expression/": [
     115,
@@ -233,8 +233,8 @@
     7
    ],
    "lib/Service/": [
-    23529,
-    21409
+    23552,
+    21419
    ],
    "lib/Service/Adapter/": [
     48,
@@ -421,8 +421,8 @@
     116
    ],
    "lib/Service/Registration/": [
-    274,
-    249
+    337,
+    311
    ],
    "lib/Service/Registry/": [
     289,
@@ -431,6 +431,10 @@
    "lib/Service/Regression/": [
     32,
     32
+   ],
+   "lib/Service/Residency/": [
+    160,
+    155
    ],
    "lib/Service/Rod/": [
     182,
@@ -458,7 +462,7 @@
    ],
    "lib/Service/StufZkn/": [
     1950,
-    1910
+    1932
    ],
    "lib/Service/Subscriptions/": [
     82,
@@ -531,37 +535,41 @@
   }
  },
  "js": {
-  "pct": 95.29,
-  "statements": 6832,
-  "covered": 6510,
+  "pct": 93.74,
+  "statements": 7798,
+  "covered": 7310,
   "dirs": {
    "src/": [
-    44,
-    44
+    94,
+    93
    ],
    "src/components/": [
-    270,
-    249
+    304,
+    281
    ],
    "src/components/Approvals/": [
     36,
     31
    ],
    "src/components/callLog/": [
-    43,
-    36
+    62,
+    55
+   ],
+   "src/components/intake/": [
+    46,
+    31
    ],
    "src/components/mapping/": [
     240,
     237
    ],
    "src/dialogs/": [
-    522,
-    521
+    583,
+    578
    ],
    "src/handlers/": [
-    80,
-    80
+    111,
+    104
    ],
    "src/integration/": [
     51,
@@ -572,8 +580,8 @@
     263
    ],
    "src/modals/": [
-    91,
-    87
+    135,
+    111
    ],
    "src/modals/CallLog/": [
     187,
@@ -594,6 +602,10 @@
    "src/modals/EventSubscription/": [
     219,
     199
+   ],
+   "src/modals/Intake/": [
+    52,
+    27
    ],
    "src/modals/Migration/": [
     99,
@@ -616,8 +628,8 @@
     22
    ],
    "src/modals/v2/": [
-    1560,
-    1432
+    1908,
+    1695
    ],
    "src/store/": [
     31,
@@ -628,7 +640,11 @@
     124
    ],
    "src/views/Approvals/": [
-    75,
+    103,
+    95
+   ],
+   "src/views/EgressDestinations/": [
+    70,
     68
    ],
    "src/views/EventDelivery/": [
@@ -636,28 +652,32 @@
     36
    ],
    "src/views/ExecutionTrace/": [
-    19,
-    19
+    64,
+    63
    ],
    "src/views/Migration/": [
     42,
     40
+   ],
+   "src/views/NotificatiesAbonnement/": [
+    44,
+    43
    ],
    "src/views/Rule/": [
     445,
     435
    ],
    "src/views/Rule/actionForms/": [
-    421,
-    413
+    422,
+    414
    ],
    "src/views/Synchronization/": [
-    896,
-    875
+    937,
+    916
    ],
    "src/views/admin/": [
-    533,
-    511
+    585,
+    561
    ],
    "src/views/wrappers/": [
     219,
