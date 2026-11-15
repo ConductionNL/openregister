@@ -14017,3 +14017,4 @@ fix:dossiq:3953:1fa01764	conflicts resolved, pushed 6ca6e023; REVERIFY recorded	
 fix:dossiq:3936:d81910f6	conflict resolved, pushed 7ae9f014, REVERIFY recorded	session-20261115T174741-56eeaa2f	2026-11-15T17:59:23Z
 fix:pipelinq:2593:6a42067a	conflict resolved, pushed c5620371; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T17:59:30Z
 fix:dossiq:3200:74d2bc80	failed: permission (closing the superseded PR was refused; development already pins dompurify ^3.4.17, locked 3.4.17, so #3200 should be closed by hand)	session-20261115T142129-944012f5	2026-11-15T17:59:43Z
+review:filinq:1307:af2c6d19	CONFLICT: lock conflicts, development already on sass 1.108.2	session-20261115T174833-88ac0233	2026-11-15T17:59:56Z
