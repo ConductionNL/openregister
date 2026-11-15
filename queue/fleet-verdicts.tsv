@@ -13227,3 +13227,16 @@ hermiq	1195	6284aad0010c4862c53368ecadc2ad26fd61a8c0	RED	merge3:merge-gate	GATE 
 hermiq	1307	8166870063dbb40916bba97f6e008e057c565270	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 hermiq	1308	ed66fcbfff8128ba1eb3325fb033dda743eb368e	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 hermiq	1578	816bbdb175209164a417de3b8949a03f0879ae47	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1736	1c21a821a3b235b495c496ace8b04f051f418cfb	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
+hermiq	1739	4f8488180567a3239f739dc32e6378dfa30c2c7b	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json tests/Unit/Mcp/HermiqToolProviderTest.php 
+hermiq	1750	4ea33cc67bbcbb4ef01257a6c4b250b777ae29e0	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json src/views/AdminRoot.vue src/views/Chat.vue 
+hermiq	1751	0aaa172675d73c1f73d0d4ce6033d6c617135299	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/hermiq_register.json 
+hermiq	1754	cdae7fb580e53e1c3cf2f7aa6b443e5129cdc2ac	CONFLICT	merge3	merges clean on development alone; files: lib/Service/Engine/FacadeToolInvoker.php lib/Service/Engine/ResponseGenerationHandler.php lib/Service/Engine/ToolLoop.php lib/Service/Engine/ToolSurfaceRun.php lib/Settings/hermiq_register.json tests/
+hermiq	1760	c3344e5a1fb34418e7e57a48c8a2f60ab348c15e	CONFLICT	merge3	merges clean on development alone; files: appinfo/info.xml l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json 
+hermiq	1781	00e5f205c9caa99a0dddf6b0fb0046389b298d33	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json 
+hermiq	1785	9d543e2c7e5c588bcfa1bc58441fb2327aa09128	CONFLICT	merge3	conflicts with development; files: lib/Service/DelegationService.php lib/Settings/hermiq_register.json 
+hermiq	1791	bf8747effdeb0792cc88a45bdee1a3f75bbbdcc1	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Settings/hermiq_register.json 
+hermiq	1795	35b6e3d31853a392552799c77b66f13317dadb09	CONFLICT	merge3	merges clean on development alone; files: openapi.json 
+hermiq	1735	01675e5ccd4dbc3845a744e76bd025d5ab66c73e	RED	merge3	adds unit failure(s) with the PRs before it in the tree: HandoffDeliveryTest::testADoneHandoffRunsOneTurnAndNotifiesTheOwner HandoffDeliveryTest::testAFailingTurnSendsNoNotification HandoffDeliveryTest::testAGateKeepsTheResultAndRunsNoTurn HandoffDeliveryTe
+hermiq	1801	f7b7dbcc90f573ec7d130964111eae2b4ec9804a	RED	merge3	adds unit failure(s) with the PRs before it in the tree: ToolGrantWritesAccessRequestTest::testTheAgentsOwnRequestIsFound
+hermiq	1802	197aa128c42835e0e4e3fb2f6bbcab5571adfc9e	RED	merge3	adds unit failure(s) with the PRs before it in the tree: WorkspacePusherTest::testAPushSendsTheBranchWithTheCredentialInTheEnvironment WorkspacePusherTest::testARefusedPushCarriesNoTransportOutput WorkspacePusherTest::testAnEgressDenialStopsThePush
