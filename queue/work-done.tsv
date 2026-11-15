@@ -14527,3 +14527,4 @@ fix:launchpad:819:9dcfeabe	sbom regenerated after merging development, pushed; R
 fix:opencatalogi:2723:f92c3e05	CONFLICT resolved (both-sides additions), pushed 8d90b4a9; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:22:40Z
 fix:stackiq:1069:500f69e7	lock conflict resolved, new head e98fca28	session-20261115T185929-0fc862a6	2026-11-15T19:22:58Z
 fix:stackiq:1931:2588041a	fixed: merged development, README conflict resolved, registrar test updated; new head d2989729	session-20261115T185930-76cdc846	2026-11-15T19:23:14Z
+fix:opencatalogi:2682:4bf71fcd	RED fixed (mainEntry spec), vitest green, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T19:23:23Z
