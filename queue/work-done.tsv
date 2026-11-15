@@ -13351,3 +13351,4 @@ build:opencatalogi:publication-relations-place-and-source-ids:c3	partial: PR #26
 review:dossiq:3957:89c80a54	CONFLICT: 15 files conflict with development (new Kernel contracts on renamed classes); recorded for fix	session-20261115T154307-1fc2cc78	2026-11-15T15:51:48Z
 review:buildiq:1265:5f5ede07	BLOCK: wrong namespace for the save option classes, every save fails at runtime	session-20261115T152543-40aea993	2026-11-15T15:51:59Z
 review:decidiq:1944:e682b8bc	CONFLICT: diff correct, unit 2851 OK on head; conflicts with development in ~25 files + new old-style calls there	session-20261115T154300-03b63424	2026-11-15T15:52:08Z
+review:dossiq:3198:c19a6d9c	GREEN (lock conflict with development)	session-20261115T142951-2463b4c4	2026-11-15T15:52:20Z
