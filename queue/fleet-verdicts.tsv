@@ -12294,4 +12294,5 @@ planninq	910	b94a91172cb01e22709d8306fe1cc09332e70681	RED	merge8:merge-gate	GATE
 planninq	918	a2f30b5287b08459630446ba4878a1b31ad4273a	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 planninq	1068	0077bc6d09addfee7b801ca19af62ba4a1f7ba55	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 planninq	1070	e04ed25c6a38cd623b1359257033a777bd5bffbc	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+portaliq	1766	ff523eaecbc6414a56145392de09481916494d87	REVERIFY	worker-41	merged development in; lock regenerated from development's (only dexie 4.4.6->4.4.7 differs); npm ci ok, dexie-guard spec 4/4; new head 23513ec0a91d2cbac220fce53fd5a5e18f1e47ba, verify it
 planninq	869	0cf3f1b0528510021dd142db57574a87f622a75b	CONFLICT	merge8	conflicts with development; files: package-lock.json package.json 
