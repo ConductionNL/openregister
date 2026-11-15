@@ -15179,3 +15179,4 @@ review:decidiq:2178:5867902a	BLOCK: new find/saveObject calls use removed named-
 review:filinq:1086:926d1e45	GREEN: hydra-gates dev bump after dev merge	session-20261115T203012-30a1abde	2026-11-15T21:51:55Z
 review:decidiq:2170:a39ae47e	GREEN: spec build, unit 4655 OK, vitest OK; old OR call shape noted for ORMIG	session-20261115T213110-6b33145c	2026-11-15T21:52:03Z
 review:learniq:2521:be3bc639	RED: 9 new errors merged with development (old saveObject named args)	session-20261115T213144-ab42ee6a	2026-11-15T21:52:14Z
+review:filinq:2121:7021db61	RED: new code uses removed openregister named args; 8 own tests fail on main	session-20261115T202932-d1067ee4	2026-11-15T21:52:31Z
