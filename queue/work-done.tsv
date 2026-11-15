@@ -14847,3 +14847,4 @@ review:shillinq:2048:f88b17a7	GREEN: dev dep bump, sbom current, 12225 tests OK	
 review:dossiq:4112:f460035e	GREEN: lock+sbom only, unit 18185 tests 0 failures	session-20261115T202955-7451ede9	2026-11-15T20:39:30Z
 review:dossiq:3894:8ed2662d	GREEN: dev-tool bump, no new test failures	session-20261115T195957-8e60ca53	2026-11-15T20:39:37Z
 review:shillinq:2997:3be50195	BLOCK: saveObject(uuid:) x3 and patchObject(named args) use API removed on openregister main	session-20261115T202932-ab57353c	2026-11-15T20:39:58Z
+review:pipelinq:2557:74ee842a	GREEN: lock-only ocp bump, unit 8922 OK	session-20261115T203013-157346e0	2026-11-15T20:40:14Z
