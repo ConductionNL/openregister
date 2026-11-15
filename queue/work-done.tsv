@@ -13332,3 +13332,4 @@ review:buildiq:1086:c366210f	BLOCK: npm ci ERESOLVE (nextcloud-vue peerOptional 
 review:decidiq:1469:bee189d6	GREEN 1469 (vitest equal to baseline)	session-20261115T142201-ea23e682	2026-11-15T15:48:39Z
 review:decidiq:1950:76d89347	GREEN: unit 4461/0 fail, phpstan clean	session-20261115T154314-8216dc98	2026-11-15T15:48:50Z
 review:decidiq:1471:b6694064	GREEN: vite range bump only; lockfile conflicts, development already locks vite 8.3.8; vitest 2825 pass	session-20261115T154407-94bf5f8c	2026-11-15T15:49:02Z
+review:decidiq:1470:9e304842	GREEN: npm ci OK, vitest 2825 passed	session-20261115T142951-2463b4c4	2026-11-15T15:49:24Z
