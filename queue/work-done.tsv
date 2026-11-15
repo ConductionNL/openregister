@@ -13814,3 +13814,4 @@ verify:launchpad:1223:70895889	CONFLICT: info.xml, routes.php, ImportLaunchpadRe
 review:thematiq:1291:3fac1aca	GREEN: npm ci, code-editor build and vitest 1559 pass	session-20261115T145555-b33410db	2026-11-15T17:13:19Z
 review:versioniq:508:f223efe6	GREEN: plugin-vue patch bump; vitest 3001/3001, build ok	session-20261115T154254-3d07b219	2026-11-15T17:13:36Z
 verify:opencatalogi:2696:5a4a11f8	2722 GREEN; 2696 and 2730 skipped (head moved past queued sha)	session-20261115T154316-34f0db35	2026-11-15T17:13:49Z
+review:stackiq:1069:500f69e7	CONFLICT: package-lock.json conflicts with development	session-20261115T152539-8dadb15a	2026-11-15T17:13:58Z
