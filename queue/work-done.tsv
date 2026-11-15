@@ -15297,3 +15297,4 @@ fix:versioniq:723:2e4c0e66	fixed: failedAt kept apart from checkedAt; pushed 332
 fix:hermiq:1133:05c6caa3	sbom regenerated, development merged; new head 6fd08d09 REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:15:47Z
 fix:portaliq:1353:c8141de2	phpmd 3 findings cleared, new head dc6ca37d	session-20261115T202932-d1067ee4	2026-11-15T22:16:02Z
 review:planninq:1037:e8b53d51	GREEN: copy-only rename, all checks pass	session-20261115T213122-e023a81e	2026-11-15T22:16:10Z
+review:stackiq:1435:f9cb4c74	RED: bootstrap-unit autoload prefix order shadows Kernel\Contracts\Value stubs (1074 test errors/failures); fix = move new Kernel\ entry after the Value entry, then suite is green	session-20261115T221310-15626e3a	2026-11-15T22:16:17Z
