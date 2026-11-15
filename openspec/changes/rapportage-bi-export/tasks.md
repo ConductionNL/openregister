@@ -25,7 +25,16 @@
       data}]}`, or for pie/doughnut `{type, labels, series: [values], percentages}` (one decimal). `type` defaults
       to bar; an unknown type is a 400 before anything is read; a refused report is answered as it is. The reshaping
       is `AggregateChartData`; pinned in `AggregateChartDataTest` and `AggregationControllerChartTest`.
-- [ ] Implement: The system MUST support cross-register reporting
+- [x] Implement: The system MUST support cross-register reporting
+      DONE: `GET /api/reports/aggregate` (`CrossRegisterReportController`, `CrossRegisterReport`) discovers the
+      register/schema pairs through `getAllRegisterSchemaPairs()` and runs each one through the aggregation runner,
+      so RBAC and multi-tenancy apply per pair and a pair the caller may not read is left out without an error or a
+      name. Without `interval` it answers `{total, byRegister: [{register, count}], metric, field}` (count, sum, min,
+      max; avg is a 400 because an average of averages is not one); with `groupBy=@self.created&interval=month` a
+      count series `{labels, series: [{name: <register>, data}]}`, every bucket filled. `registers=a,b` narrows by
+      slug or id. Counted through the runner rather than `MagicStatisticsHandler::getStatistics()`, which reads
+      every table without the caller's RBAC. Pinned in `CrossRegisterReportTest` and
+      `CrossRegisterReportControllerTest`.
 - [x] Implement: The system MUST support date range filtering and period-over-period comparison
       DONE: `from`/`to` on `/api/objects/{register}/{schema}/aggregate` narrow a categorical report to `_created` in
       that range (a date-only `to` covers the whole day); `trend=true` on an `interval` series gives each bucket

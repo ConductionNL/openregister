@@ -1665,6 +1665,7 @@ Search/BackgroundJob/ReportRenderJob.php,251,Search,Search,Search/BackgroundJob/
 Search/BackgroundJob/SearchIndexRebuildJob.php,32,Search,Search,Search/BackgroundJob/SearchIndexRebuildJob.php,0,436,Search
 Search/Command/SearchIndexCommand.php,149,Search,Search,Search/Command/SearchIndexCommand.php,0,,Search
 Search/Controller/AggregationController.php,268,Search,Search,Search/Controller/AggregationController.php,0,,Search
+Search/Controller/CrossRegisterReportController.php,79,Search,Search,Search/Controller/CrossRegisterReportController.php,0,,Search
 Search/Controller/ContactSearchController.php,40,Search,Search,Search/Controller/ContactSearchController.php,0,,Search
 Search/Controller/DashboardController.php,217,Search,Search,Search/Controller/DashboardController.php,0,,Search
 Search/Controller/DuplicateController.php,209,Search,Search,Search/Controller/DuplicateController.php,0,,Search
@@ -1689,6 +1690,7 @@ Search/Service/ActivityWindow.php,11,Search,Search,Search/Service/ActivityWindow
 Search/Service/Aggregation/AggregateChartData.php,167,Search,Search,Search/Service/Aggregation/AggregateChartData.php,0,,Search
 Search/Service/Aggregation/AggregateReportEnvelope.php,143,Search,Search,Search/Service/Aggregation/AggregateReportEnvelope.php,0,,Search
 Search/Service/Aggregation/AggregateReportPeriods.php,180,Search,Search,Search/Service/Aggregation/AggregateReportPeriods.php,0,,Search
+Search/Service/Aggregation/CrossRegisterReport.php,111,Search,Search,Search/Service/Aggregation/CrossRegisterReport.php,0,,Search
 Search/Service/Aggregation/AggregationAnnotationValidator.php,233,Search,Search,Search/Service/Aggregation/AggregationAnnotationValidator.php,0,91,Search
 Search/Service/Aggregation/AggregationCache.php,156,Search,Search,Search/Service/Aggregation/AggregationCache.php,0,175,Search
 Search/Service/Aggregation/AggregationCacheInterface.php,12,Search,Search,Search/Service/Aggregation/AggregationCacheInterface.php,0,,Search
