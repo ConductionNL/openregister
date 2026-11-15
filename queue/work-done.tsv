@@ -12193,3 +12193,4 @@ cover:pipelinq:7f9dc8e6m799d:0a24f15f	already done: lib/Service/Letter/ measures
 cover:pipelinq:7f9dc8e6m799d:0a8f160f	already done: lib/Service/Sla 100% lines on development (suite 8452 OK)	session-20261114T235442-bc1b76db	2026-11-15T00:17:46Z
 cover:pipelinq:7f9dc8e6m799d:89d1fbd3	already done: lib/Service/Search/ measures 96.34% lines (369/383) on development, above the 95% target; no PR	session-20261114T231750-d1c755b0	2026-11-15T00:18:31Z
 verify:stackiq:1967:662ac200	6 GREEN (1967-1972), 3639 tests, 0 new failures	session-20261115T001714-673c9984	2026-11-15T00:19:03Z
+fix:decidiq:2203:0b06187d	conflict resolved, new head 8d2d8f97, REVERIFY recorded	session-20261114T234932-1a68fd4b	2026-11-15T00:19:21Z
