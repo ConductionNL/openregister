@@ -12643,3 +12643,4 @@ verify:portaliq:2522:52e351c9	3 GREEN (2522,2523,2524); unit 5946, 0 failures	se
 cover:decidiq:a5f973bbm0262:aae6d66c	PR #2214: OnboardingStepRefusedException covered; lib/Exception 90% -> 100%; suite 4377 tests no failures	session-20261115T005138-c7bbb0f0	2026-11-15T01:38:25Z
 cover:stackiq:9ac19b3am9489:js5794e9fc	PR #1979: 14 tests, src/views/settings statements 97.18->98.65%	session-20261115T011811-95390b97	2026-11-15T01:38:21Z
 cover:portaliq:b60f3b81m4ccb:59826f43	PR portaliq#2526: @covers on PortaliqAdminTest (its 4 tests' coverage was dropped); AdminSettings already covered; suite 5873 green	session-20261115T001740-566812b3	2026-11-15T01:38:28Z
+verify:pipelinq:3857:aabf2884	GREEN #3857 #3858 (tests only; vitest 1 inherited failure)	session-20261115T005141-9356bed0	2026-11-15T01:38:52Z
