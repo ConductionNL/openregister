@@ -13212,3 +13212,4 @@ larpinq	1053	4113c48af17f104b02dc2ed6c6d668bb199841db	REVERIFY	worker-18	merged 
 stackiq	1044	b39f982b4de7e1ce65f0614911d4507a14d33d9b	CONFLICT	merge8	conflicts with development; files: package-lock.json 
 stackiq	1417	d2903140e66974eba3485938584f867c242f93c7	CONFLICT	merge8	conflicts with development; files: l10n/en.js l10n/en.json src/manifest.json 
 stackiq	1941	40710dd9444256cb88f93476396f1bed4d338240	CONFLICT	merge8	conflicts with development; files: l10n/en.js l10n/en.json src/customComponents.js 
+decidiq	1950	76d893478e42eabaf95990a3484d454acf63283f	REVERIFY	worker-18	merged development in (clean), lock diff is only phpstan 2.2.13->2.3.5; regenerated sbom.cdx.json (development's was stale on the npm side; --check current). The composer.lock conflict is with #1737 (phpstan 2.3.1, same lines), which this PR supersedes: build the tree without #1737; new head e876f7cecae4332eb0a07df3b2effe4dd9b06afb, verify it
