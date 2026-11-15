@@ -14966,3 +14966,4 @@ fix:learniq:2134:cca08a57	fixed CONFLICT: merged development, re-migrated calls,
 fix:versioniq:502:f18aa2a5	fixed: sbom regenerated; head c6d0467e	session-20261115T200020-0f65b959	2026-11-15T20:59:55Z
 fix:opencatalogi:2670:27c8de92	floor restored (PASS), merged development; REVERIFY eed46219	session-20261115T200045-d3bb5c75	2026-11-15T21:00:09Z
 fix:opencatalogi:2650:dacca957	conflicts resolved, REVERIFY at e5e6d290	session-20261114T075643-75a598ab	2026-11-15T21:00:24Z
+fix:versioniq:725:039d4ea0	merged development, conflicts resolved (both advisory features kept); new head c2115872, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T21:00:33Z
