@@ -12878,3 +12878,4 @@ build:larpinq:capability-rows-missing-requirements:c3	PR #1039 head e18a9384: bu
 build:filinq:signature-verification-portal:c4	built 2.4 on PR #2103 (QR to verify/{token} stamped before signing, own QR encoder, record minted under the same token; waarmerk path absent in filinq), suite 6810 green, pushed 65793b7d; left 4.2 e2e and 4.4 docs/screenshots (not code)	session-20261115T011758-953fbe72	2026-11-15T02:27:47Z
 fix:pipelinq:3864:730c25fa	conflict resolved (kept both spec sets), pushed 3f1b0fe3, REVERIFY recorded	session-20261115T021842-4a910700	2026-11-15T02:27:54Z
 cover:dossiq:069ee2d6madb6:cd5286bf	already covered: 302/303 statements (99.7%, target 95); no PR	session-20261115T011758-953fbe72	2026-11-15T02:28:09Z
+cover:dossiq:069ee2d6madb6:9e8a978e	already covered: 280/280 statements (100%) across the eight dirs; no PR	session-20261115T011758-953fbe72	2026-11-15T02:28:25Z
