@@ -13374,3 +13374,4 @@ review:dossiq:4887:ca6b5835	BLOCK: settle does not tie the signer to the obligat
 review:dossiq:5349:59ceb47d	BLOCK: imports ObjectDeletion from a namespace openregister does not have	session-20261115T152546-2c24b649	2026-11-15T15:55:16Z
 review:dossiq:3934:90d125eb	RED: conflicts + 4 new failures from development tests naming old class	session-20261115T154255-e54527e9	2026-11-15T15:55:33Z
 review:dossiq:3200:74d2bc80	BLOCK: obsolete, development already on dompurify 3.4.17	session-20261115T142949-9c6a3945	2026-11-15T15:55:43Z
+review:dossiq:3204:7d112fdf	GREEN: npm ci ok, eslint and vitest same as development	session-20261115T145555-b33410db	2026-11-15T15:55:50Z
