@@ -12587,3 +12587,4 @@ cover:stackiq:9ac19b3am9489:34f5c300	PR #1977: unit bootstrap loads OpenRegister
 verify:portaliq:2498:35739cca	2498 GREEN, 2500 CONFLICT (with 2498), 2520 GREEN	session-20261115T011749-0a09092e	2026-11-15T01:29:40Z
 fix:stackiq:1975:31c8ee50	no conflict with development; only with unmerged #1954 l10n; reverify alone	session-20261115T011811-95390b97	2026-11-15T01:30:02Z
 fix:versioniq:722:08999af9	conflict with 718 removed (specs moved to own file), new head 01366da8dfceb433e9d2f5ffec15fbd6c971b590	session-20261115T011813-39aed99d	2026-11-15T01:30:09Z
+fix:stackiq:1918:c687279c	CONFLICT fixed: merged development, l10n union; new head 28f988e32e2088e48fe88c04ef9e552f206cb9ca	session-20261115T005141-9356bed0	2026-11-15T01:30:18Z
