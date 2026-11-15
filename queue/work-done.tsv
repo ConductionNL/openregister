@@ -13025,3 +13025,4 @@ verify:launchpad:1231:7ad784e5	launchpad#1231 GREEN (4306 tests, no new failures
 fix:shillinq:3097:3e1cfb0a	conflict resolved, pushed e43d2b44, REVERIFY recorded	session-20261115T141023-b06d51da	2026-11-15T14:24:18Z
 review:filinq:2103:65793b7d	RED: reachability.spec.js orphan PublicSignatureVerification.vue; PHP suite green	session-20261115T142127-97291b3d	2026-11-15T14:25:05Z
 fix:filinq:2088:0e8040fe	no change: up to date with development; conflict only with sibling #2103 register version bump	session-20261115T142127-97291b3d	2026-11-15T14:25:56Z
+fix:dossiq:6547:b29f1410	conflict resolved (kept development's registrar tests), pushed 90799f7c, REVERIFY recorded	session-20261115T142134-badaaf30	2026-11-15T14:26:06Z
