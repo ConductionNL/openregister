@@ -39,6 +39,7 @@ use OCP\IDBConnection;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Handles cryptographic hash chaining for audit trail entries.
@@ -320,7 +321,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *
 	 * @return array{started: bool, keyedFrom: int|null, unkeyedChain: array<string, mixed>|null}
 	 *
-	 * @throws \RuntimeException When the seal lock cannot be taken.
+	 * @throws RuntimeException When the seal lock cannot be taken.
 	 *
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
@@ -330,7 +331,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}
 
 		if ($this->acquireSealLock() === false) {
-			throw new \RuntimeException('The audit seal lock is unavailable; the keyed chain was not started.');
+			throw new RuntimeException('The audit seal lock is unavailable; the keyed chain was not started.');
 		}
 
 		try {

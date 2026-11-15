@@ -49,7 +49,7 @@
 
 ## 8. Quality
 
-- [ ] 8.1 Run `composer check:strict` and `npm run lint`, and fix any pre-existing findings touched by these files
+- [ ] 8.1 Run `composer check:strict` and `npm run lint`, and fix any pre-existing findings touched by these files (Partly done: the missing import in lib/Service/AuditHashService.php and the eslint warning in src/views/object/ObjectDetails.vue are fixed; phpcs, phpstan and eslint are clean on the change's files. Left: phpmd TooManyMethods on FlowRunController and AuditHashService and StaticAccess on AuditTrailMapper, which need a class split rather than a lint fix.)
 - [x] 8.2 Mutation-check the two guards that fail silently — the `finally` pop (2.3) and the pre-verify discrimination (5.2): disable each, confirm the suite goes red, restore, confirm the source is byte-identical (done 2026-11-14: removing the step pop in FlowEngine::dispatchSingleHop's finally reddens FlowEngineAttributionTest (5 of 8), removing the stream-hop pop (dispatchOnStream) reddens FlowEngineWalkGoldenTest (9 sets); stubbing the pre-verify hash comparison reddens 3 of RechainAuditTrailPreVerifyTest; each source restored and checked byte-identical by md5)
 
 **Acceptance criteria**

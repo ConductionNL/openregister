@@ -1201,7 +1201,7 @@ export default {
 		 * Reset the live state after a failed subscribe.
 		 *
 		 * @param {string} key The subscription key
-		 * @param {*} e The failure
+		 * @param {Error|object} e The failure
 		 * @spec openspec/specs/realtime-updates/spec.md
 		 */
 		liveFailed(key, e) {
