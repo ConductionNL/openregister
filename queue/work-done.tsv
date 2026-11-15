@@ -13943,3 +13943,4 @@ fix:shillinq:3080:555ec946	merged development; info.xml version moved above both
 fix:shillinq:3062:6c6743f0	conflict resolved (version + register lock), suite green; new head d337cccd5c0003792325208eed13a23de031d351	session-20261114T102637-6688951e	2026-11-15T17:35:06Z
 fix:shillinq:3055:d0b8868b	fixed CONFLICT: merged development (l10n union, new app version + lock entry); unit 12261 OK; new head aa654dd7, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T17:35:50Z
 fix:shillinq:3088:d40d6160	conflict resolved, pushed 0dc86d0f; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T17:35:58Z
+fix:learniq:2521:189663c4	merged development, resolved test counts; new head 2a90e6d1, REVERIFY recorded	session-20261115T152558-f97be55f	2026-11-15T17:36:09Z
