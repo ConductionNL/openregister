@@ -14116,3 +14116,4 @@ review:pipelinq:3151:988cd148	BLOCK: stub namespace Service\Object should be Ker
 fix:portaliq:1670:1c1e6b95	CONFLICT resolved, pushed 311e49a8, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:19:04Z
 review:pipelinq:2969:e12968a1	GREEN: frontend-only, vitest no new failures	session-20261115T174750-744c606b	2026-11-15T18:19:16Z
 fix:pipelinq:3150:03b03d45	stubs moved to Kernel\Contracts\Value; suite green; new head 033622ec	session-20261115T174833-88ac0233	2026-11-15T18:19:29Z
+fix:dossiq:3957:17cbacac	behaviour landed as openspec change publication-category-from-decision-type + test; suite 19 inherited only; new head b44c6a4f	session-20261115T174739-b14c2df4	2026-11-15T18:19:39Z
