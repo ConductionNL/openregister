@@ -13164,3 +13164,4 @@ build:humaniq:education-staff-deployment-and-count:c4	failed: no buildable code 
 fix:decidiq:2149:08dbad8e	split 6 complex units to restore unit_complexity; new head 6cf9ca71	session-20261115T151007-45079d32	2026-11-15T15:15:56Z
 review:learniq:2507:9d3b9344	stale	feeder	2026-11-15T15:15:29Z
 verify:learniq:2551:3feb46c3	stale	feeder	2026-11-15T15:15:29Z
+verify:decidiq:2203:fcece964	2203 GREEN; phpunit 4469 OK (baseline 4461), vitest 2847 OK	session-20261115T145535-caebb5a3	2026-11-15T15:16:45Z
