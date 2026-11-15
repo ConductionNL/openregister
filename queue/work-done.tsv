@@ -12590,5 +12590,6 @@ fix:versioniq:722:08999af9	conflict with 718 removed (specs moved to own file), 
 fix:stackiq:1918:c687279c	CONFLICT fixed: merged development, l10n union; new head 28f988e32e2088e48fe88c04ef9e552f206cb9ca	session-20261115T005141-9356bed0	2026-11-15T01:30:18Z
 verify:versioniq:735:0b72f207	735 GREEN: 1744 tests, baseline 2 failures, none new	session-20261115T011806-2ba8b68f	2026-11-15T01:30:30Z
 fix:stackiq:1946:1b85feb2	no change: conflict with unlanded 1930 is a duplicate RelativeDemoDates design; REVERIFY recorded with the resolution to apply after 1930 lands	session-20261114T231755-998f7ff8	2026-11-15T01:30:44Z
+cover:stackiq:9ac19b3am9489:38e80a9f	failed: permission (every Command class already tested, 0.7pt gap needs a line report; pcov install was refused)	session-20261115T005141-9356bed0	2026-11-15T01:31:06Z
 verify:stackiq:1924:ad1f0c7f	1924 GREEN, 1926 GREEN, 1928 CONFLICT (manifest.json), 1976 GREEN	session-20261115T011758-953fbe72	2026-11-15T01:31:14Z
 cover:pipelinq:7f9dc8e6m195a:f3231970	already done: lib/Service/ScheduledTask/ at 92/92 lines on development, 28 tests across the 3 classes; no PR	session-20261114T224751-87da8a15	2026-11-15T01:31:19Z
