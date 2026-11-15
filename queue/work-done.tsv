@@ -13559,3 +13559,4 @@ review:opencatalogi:2419:cbcc348d	BLOCK: wrong namespace for OpenRegister save v
 review:learniq:1167:4b75be29	GREEN: sass dev bump, build ok, JS unit 9 inherited failures, none new	session-20261115T160928-e92ec17a	2026-11-15T16:27:43Z
 review:opencatalogi:2244:58b3e9f1	GREEN: behaviour-preserving refactor; golden passes pre and post; suite green; conflicts with development in DirectoryServiceTest.php	session-20261115T145546-378b432a	2026-11-15T16:28:03Z
 review:launchpad:753:51b86dbd	BLOCK: lockfile out of sync, npm ci fails	session-20261115T154314-8216dc98	2026-11-15T16:28:19Z
+review:learniq:1169:9731f440	GREEN: webpack minor bump, production build compiles	session-20261115T155903-abd003e3	2026-11-15T16:28:27Z
