@@ -15144,3 +15144,4 @@ review:opencatalogi:2670:eed46219	GREEN: per spec, no new failures	session-20261
 review:opencatalogi:2407:15ee026e	GREEN: nextcloud-vue lock refresh, no new failures	session-20261115T203012-30a1abde	2026-11-15T21:45:40Z
 review:versioniq:722:a03bd1c7	GREEN: spec-conform, 0 new failures, touched PHP/vitest green	session-20261115T213110-6b33145c	2026-11-15T21:45:52Z
 review:learniq:2133:a86fbd92	stale	feeder	2026-11-15T21:45:35Z
+review:learniq:1901:07332d28	CONFLICT: import-only conflict with development; code GREEN per own spec, tests clean when resolved	session-20261115T213144-ab42ee6a	2026-11-15T21:46:11Z
