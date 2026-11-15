@@ -3582,3 +3582,13 @@ larpinq	961	0c510953cb9674138fab05b781bc45ab5ee1efb2	RED	merge8	GATE RED sbom: c
 larpinq	1041	59270c1d4a9122aa21ef8ac602cf566b75b374b0	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.08
 larpinq	1051	334c0ec3b1775371ff3762d74a4057cc4e453628	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.02
 larpinq	1053	4113c48af17f104b02dc2ed6c6d668bb199841db	RED	merge8	GATE RED floor: overall: 5.00 -> 4.98; unit_size: 4.73 -> 4.71; unit_complexity: 4.87 -> 4.84; unit_interfacing: 4.74 -> 4.70; module_coupling: 4.75 -> 4.72
+filinq	1086	be9ddbad52895e071cc85cd6b586bd36b4498786	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+filinq	1102	7156c4b9e8bfa0baca6577db1ab66ddbf3567799	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+filinq	1304	4ad5da28f9413e6dcb28e2908b40bf2a2a17fa69	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+filinq	1355	1c90e8ba1a5e48c7b1545ced7fa6fc333315ce84	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+filinq	1430	7097f29846c96429872f8b25b9fe552612294bb7	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+filinq	1756	88533afce9909eeabfe00796bca3678a4945b22e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+filinq	1848	ac00c57a86feb7e018e486715966d85e07591a82	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.10
+filinq	1962	e4994b11c3361b8e44cf9841e1c63f4084425419	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+filinq	1963	4c69544209aba34495684a1fbb6ce3a72979fe39	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
+filinq	2070	5c49e6f2da56cc0cc41d9a41091fe8eebdf7b01d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.09
