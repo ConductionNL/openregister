@@ -14753,3 +14753,4 @@ verify:stackiq:1959:949ed09f	GREEN 1959,1973,1975; RED 1965 (archiMateImportExpo
 fix:dossiq:3198:c19a6d9c	obsolete: development already has vite ^8.3.5; PR closed with comment	session-20261115T201132-b8ddc5e5	2026-11-15T20:21:57Z
 fix:portaliq:1353:5d73ef4a	sbom regenerated, REVERIFY recorded, phpmd +17 findings noted	session-20261115T174747-978963d5	2026-11-15T20:22:26Z
 verify:versioniq:738:50ada5e5	GREEN 738	session-20261115T200043-78b85ca2	2026-11-15T20:22:34Z
+fix:dossiq:3894:c91ec402	sbom regenerated after merging development; new head 8ed2662d, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:22:47Z
