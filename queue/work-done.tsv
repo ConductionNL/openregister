@@ -13699,3 +13699,5 @@ review:portaliq:1657:489e5cbd	CONFLICT: manifest change sound but conflicts with
 review:portaliq:1764:a896834e	RED: npm ci fails, lock out of sync (pinia@4.1.0 missing)	session-20261115T152543-40aea993	2026-11-15T16:54:08Z
 review:shillinq:1873:68200d2c	BLOCK: obsolete, would downgrade nextcloud-vue 2.173.0 -> 2.60.0	session-20261115T142951-2463b4c4	2026-11-15T16:54:22Z
 review:shillinq:1910:23e71609	BLOCK: gridstack 14 outside nextcloud-vue peer range	session-20261115T142149-1d09fceb	2026-11-15T16:55:07Z
+review:shillinq:1904:8c5e1f2e	GREEN: dev-only phpmd 3; suite identical	session-20261114T075643-acecaad6	2026-11-15T16:55:16Z
+review:shillinq:2094:1837090d	GREEN: card routes exist; vitest only inherited failure	session-20261115T145541-9d69768b	2026-11-15T16:55:24Z
