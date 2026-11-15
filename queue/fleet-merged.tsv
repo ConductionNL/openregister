@@ -3470,3 +3470,17 @@ portaliq	1982	19a536caaaf1ad5c295587c71af715d3b1b848df	RED	merge3	GATE RED sbom:
 portaliq	1989	4db47cae66c813180acfff62ae05b6b6f8fef5e3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
 portaliq	2349	124b9f8678c713f568fe461688af30b87afcac23	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
 portaliq	2527	c2ba60d892059e085dd9814f3b900f52b3cca58c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+integriq	2560	fd436abf73dfc563c7654b64509805ab299106e6	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2562	a0c8e1bf2805d047ad2521b10924e5d074419cc5	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2654	86718a25639525d39108bf663ebf02bdc86d5397	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	2710	8b1d42d4d95eebfce26ed94b9176e33444c71fa3	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+integriq	2711	e9ef8372b55003397a115e1d0a76c8f5645edf72	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2714	45199b02cb621d3933d803d2e32b8f25abf91ef2	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2744	58fef09baad2264ebde50cb3b62f405be155228a	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2746	cf8bdce8665a941749eb19521b6a3c86ed824c99	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	2992	365213f762f7b38b3f7d8308ae6b9920f49f9cda	RED	merge8	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+integriq	3057	a972c60e6bdd19ba8566072b526e2782162ee675	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+integriq	3059	f3f45d9279ba86359e4892bd0a61e9b486b32083	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
+integriq	3628	b222d402007b62773641b586f9bc370611953540	RED	merge8	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3665	b34e487a8e9ff83cbc15964b4d75b7a79e2c8eb0	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3666	e9eff1217247697c19bcacfb3d72b1adfb576794	MERGED	merge8	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
