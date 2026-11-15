@@ -14768,3 +14768,4 @@ fix:pipelinq:2501:81b7343b	merged development in (clean); unit 8922 ok; REVERIFY
 fix:dossiq:3197	fixed: sbom regenerated; new head 4fd9129c	session-20261115T200000-e95b89c2	2026-11-15T20:24:33Z
 fix:portaliq:1982:19a536ca	sbom regenerated after merging development; REVERIFY at ebea533f	session-20261115T195958-28cb0304	2026-11-15T20:24:48Z
 fix:dossiq:3936:7ae9f014	floor restored (3.24), pushed 916d1651, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:25:01Z
+fix:dossiq:3201:6c926ab3	fixed: merged development, regenerated sbom; new head 1fedc9a2, REVERIFY recorded	session-20261114T073105-752e50ad	2026-11-15T20:25:09Z
