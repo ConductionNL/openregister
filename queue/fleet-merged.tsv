@@ -3340,3 +3340,7 @@ launchpad	1231	b40121b708716f30bf6690a5bccfcea91bdbb600	MERGED	merge3	GATE OK sb
 versioniq	690	e0abdb0918ff2eabe4e6ef24ea319f38896787eb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.00
 thematiq	1677	5e934e94706006fbd51f109fcc53208443fdf956	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 portaliq	2508	5beb27c00920e7e0900a6571f5d5718f0f06db15	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+pipelinq	3871	78cc23f646a43b6982722764942a558965180b46	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.36
+pipelinq	3872	31e99222bb819c446e4194f0d449019595031a46	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.36
+pipelinq	3873	353a0b8961af6a93b7ba81fec8bcf2958196094b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.36
+pipelinq	3875	2e29f9d1c232dc7730975576dfddb1f115eb1e82	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.36
