@@ -13656,3 +13656,4 @@ review:portaliq:1354:23330bb3	BLOCK: merged lock out of sync (pinia), npm ci EUS
 review:portaliq:1606:e4a6d0b1	BLOCK: PartyTreeSource uses openregister signatures main lacks; tree mandates refused at runtime	session-20261114T102641-d4fd3e25	2026-11-15T16:45:33Z
 review:portaliq:1467:a56bbcbc	CONFLICT: 31 files; development already has a parallel build of portal-identity-from-the-admin	session-20261115T155902-d9805df0	2026-11-15T16:45:46Z
 review:portaliq:1992:df536a4a	BLOCK: narrows supported openregister versions; OR main restored the old call form	session-20261114T102637-6688951e	2026-11-15T16:45:52Z
+review:portaliq:1848:cc4102c9	RED: 3 new unit failures on merged tree	session-20261115T151007-45079d32	2026-11-15T16:46:06Z
