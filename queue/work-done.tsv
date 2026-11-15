@@ -12651,3 +12651,4 @@ verify:pipelinq:3857:aabf2884	GREEN #3857 #3858 (tests only; vitest 1 inherited 
 merge:humaniq:1156:54c890d4	merge3 tree of 1 humaniq PRs: merged=0 red=0 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:39:02Z
 fix:stackiq:1928:064e3b53	no conflict with development; only with unmerged #1924/#1926; reverify alone	session-20261115T011811-95390b97	2026-11-15T01:39:10Z
 cover:dossiq:069ee2d6mdd7c:38e80a9f	already done: lib/Command/*.php at 99.61% (760/763) on development after -1 and -2 merged; no PR	session-20261114T234952-566b7ef5	2026-11-15T01:39:28Z
+fix:stackiq:1966:5c005420	no conflict with development; only with unmerged siblings (l10n); reverify alone	session-20261115T011811-95390b97	2026-11-15T01:39:40Z
