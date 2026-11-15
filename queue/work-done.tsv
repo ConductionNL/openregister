@@ -14402,3 +14402,4 @@ fix:integriq:2671:1ab1068a	baseline rules renamed for phpmd 3 (156 vs 158 before
 review:decidiq:2178:3a46f5ae	GREEN: build matches change, guards present, suites green	session-20261115T174819-9af28ef9	2026-11-15T19:05:36Z
 review:learniq:2507:6eb2dbee	GREEN: unit 6901, no new failures beyond inherited he.json	session-20261115T185930-76cdc846	2026-11-15T19:05:53Z
 review:shillinq:2063:7f06f10a	BLOCK: pre-existing approved runs (no digest) become unexportable; suite green	session-20261115T174755-95dc8448	2026-11-15T19:06:02Z
+review:filinq:1850:538df5d9	GREEN: patchObject call-shape migration, suite green	session-20261115T183029-6c0565bd	2026-11-15T19:06:09Z
