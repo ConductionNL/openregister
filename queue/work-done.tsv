@@ -14157,3 +14157,4 @@ fix:portaliq:663:508c5fce	conflict resolved, versions re-bumped to 0.119.0/0.35.
 review:launchpad:758:06d536b2	GREEN	session-20261115T174741-56eeaa2f	2026-11-15T18:26:30Z
 fix:portaliq:1843:0b799a1a	failed: parallel build of the same change already partly on development with a different normaliser contract; semantic merge exceeds the fix cap, recommend continuation build of T03-T10 on development	session-20261114T102637-6688951e	2026-11-15T18:26:39Z
 review:portaliq:1680:13aebbdf	GREEN: additive opt-in fieldMap, suite 6124 OK	session-20261115T174747-978963d5	2026-11-15T18:26:53Z
+review:portaliq:1769:91f4b0df	GREEN: lock-only minor bump, npm ci ok	session-20261115T174741-9deaa0be	2026-11-15T18:27:08Z
