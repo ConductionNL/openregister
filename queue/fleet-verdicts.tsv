@@ -11017,3 +11017,5 @@ integriq	3564	bd35853725e3c6fa13e070fe247e537c1f4efa3e	GREEN	worker-46	unit 9380
 integriq	3593	c89e41d0504cad06bb6158a0e2f2846eb46f05a5	GREEN	worker-46	unit 9380 tests on tree, baseline 9223 with 7 failing (inherited); no new failures; vitest 2344 passed
 integriq	3612	776aff3ea5da6b72b0b1340b066781c861d6cf6b	GREEN	worker-46	unit 9380 tests on tree, baseline 9223 with 7 failing (inherited); no new failures; vitest 2344 passed
 integriq	3615	2553da5668c6b20884bed63924d4f65163e2defc	CONFLICT	worker-46	conflicts in l10n/en.js, l10n/nl.js with earlier PRs in this tree (clean on plain development)
+integriq	3617	3f94588447281d0ad2f89d3f98edf6bf90622eec	CONFLICT	worker-46	conflicts in src/views/ApiProducts/ApiProductDetail.vue with earlier PRs in this tree (clean on plain development)
+integriq	3631	abd95d078255d8eeb529260ef082443760cd936b	CONFLICT	worker-46	conflicts in l10n/en.js, l10n/nl.js with earlier PRs in this tree (clean on plain development)
