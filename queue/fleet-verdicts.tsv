@@ -12847,3 +12847,4 @@ opencatalogi	2419	3035f6614c83b0f9fe38a12d2939ef6312179cf1	GREEN	worker-15:revie
 buildiq	1669	af64f23a49cdaa33a32b421c3b38f7d7eb47a898	GREEN	worker-10	3333 tests, only failure ExportZipGoldenTest also red on development
 launchpad	1230	30aa8e54d3338f13eaba6b2b6fff71f023cb727a	GREEN	worker-17	phpunit 4529 tests ok (baseline 4461 ok, 13 skipped both), vitest 274 files/2614 tests ok; new failures: none; builds embedded-analytics per its specs, admin routes AuthorizedAdminSetting
 launchpad	1234	0bc43ee2d44d22dfe4fdc17735d6ae97b6aebf80	GREEN	worker-17	phpunit 4529 tests ok (baseline 4461 ok, 13 skipped both), vitest 274 files/2614 tests ok; new failures: none; lockfile+SBOM only
+launchpad	1235	5447328b2d80008ddcd0d674c30fc6e75df0bce5	GREEN	worker-17	phpunit 4529 tests ok (baseline 4461 ok, 13 skipped both), vitest 274 files/2614 tests ok; new failures: none; builds drill-down-cross-widget-filter telemetry opt-in per its specs
