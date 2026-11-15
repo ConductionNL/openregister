@@ -13042,3 +13042,4 @@ cover:dossiq:069ee2d6madb6:c7ef8f28	PR #6572: 4 test files, 21 tests for Listene
 cover:dossiq:069ee2d6madb6:7ed71db5	PR #6573: 3 tests, lib/Service/Setup 92.85% -> 97.8%, no new failures	session-20261115T142201-ea23e682	2026-11-15T14:32:05Z
 fix:shillinq:3055:7a38e15d	conflict resolved, pushed d0b8868b; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T14:32:05Z
 measure:shillinq:20261115h04	php 95.47 js 95.17	session-20261115T141023-b06d51da	2026-11-15T14:32:16Z
+cover:dossiq:069ee2d6madb6:d1fb07ad	already done: lib/Service/FrozenRecord 100% statements (174/174) from its own tests on development 7162ad68ad; earlier -1/-2 branches merged	session-20261115T142951-2463b4c4	2026-11-15T14:32:48Z
