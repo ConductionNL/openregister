@@ -12901,3 +12901,4 @@ cover:shillinq:05639debma41a:jsea7197ec	PR #3097: 29 vitest tests; src/utils lin
 cover:shillinq:05639debma41a:js9fbdf3ee	PR #3098: 10 tests, src/views/invoice 85.7% stmts (both views had no tests); suite 2750->2760, same 1 inherited failure	session-20261115T005133-04e59268	2026-11-15T02:33:47Z
 cover:shillinq:05639debma41a:js0be8c659	PR #3099: 31 tests for 8 modals, src/modals/* lines 93.6->95.7%, branches 87.3->90.7%	session-20261115T021842-4a910700	2026-11-15T02:34:57Z
 verify:integriq:3655:d4be6928	3655 GREEN	session-20261115T011811-95390b97	2026-11-15T02:35:17Z
+cover:pipelinq:7f9dc8e6m8519:0798b7cf	already done: lib/Service/PosCart/ at 100% statements on development (earlier -1/-2); no PR	session-20261115T012426-ca0c1432	2026-11-15T02:35:23Z
