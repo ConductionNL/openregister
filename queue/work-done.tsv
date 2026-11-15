@@ -14219,8 +14219,10 @@ fix:learniq:2549:844e24a3	merged development (both additions kept), JS tests = d
 merge:launchpad:758:b72148cb	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:48Z
 merge:launchpad:1234:8d24d0ba	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:53Z
 merge:launchpad:1235:cca194e7	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:57Z
+merge:launchpad:1230:9521447b	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:38:01Z
 review:learniq:2521:2a90e6d1	BLOCK: course day build fine, tests green beyond inherited; restore SPDX headers dropped from 24 l10n locale files	session-20261115T183023-a120e01a	2026-11-15T18:38:03Z
 fix:shillinq:2093:2cc2077c	conflict resolved, merged development, pushed d0aa436a4; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T18:38:11Z
+merge:launchpad:1229:489ec46d	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:38:14Z
 fix:shillinq:2098:38bdcce2	conflict resolved, pushed f23dc6e2, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:38:21Z
 review:pipelinq:3151:bc0319a8	GREEN: stubs match openregister main; unit 8890 OK	session-20261115T181015-497e81ce	2026-11-15T18:38:29Z
 review:portaliq:1670:8ef03e9f	GREEN: per its spec delta; no new failures	session-20261115T174808-50b8ceec	2026-11-15T18:38:47Z
