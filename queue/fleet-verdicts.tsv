@@ -10741,6 +10741,7 @@ versioniq	719	8d1c90cb512dcb68587a300d1e9538574ef8bc4e	CONFLICT	worker-24	confli
 versioniq	722	98541474495be6d0496d9e0bfcde1b0a7e6bcb33	CONFLICT	worker-24	conflicts in src/components/HistoryPanel.vue and HistoryPanel.spec.ts after 699+714
 shillinq	3083	6a01db375b066370087fcfa627d2cf9d1e2885b1	GREEN	worker-29	unit 11917 tests on tree, baseline 11471 OK, no new failures; tests only
 shillinq	3084	0dfa98cab21e8fc3165cbba36e46686c11d33a90	CONFLICT	worker-29	add/add conflict with 3082 on Standards/Checks NationalExtraTail/NationalReportingTail tests
+shillinq	2995	58069ff7bee36fef424f115faa2405112fae8945	GREEN	worker-14:review	matches tax-investment-deduction-claims specs; calculate endpoint checks post rights (masked 404); PHP unit 11482 OK (dev 11471 OK); vitest 2757/2758, the 1 failure dunningNextRun.spec.js is inherited from development; manifest budget pass
 launchpad	1203	2603ce75b0e653e9b985f45d94cf479c4ee22a0d	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.72 -> 4.66
 launchpad	1229	2c22b4728a92594b04a9de35eb5690ecce52c16e	RED	merge3:merge-gate	GATE RED floor: overall: 4.50 -> 4.48; unit_complexity: 4.72 -> 4.67; unit_interfacing: 3.46 -> 3.34
 learniq	2513	0c700c9ac0ac01939c55ecbc56b8c217cd758e97	GREEN	worker-25:review	implements permission-slips per its specs (guardian answers own child only, closed request refused, assurance recorded); PHP unit 6866 vs baseline 6846, 1 inherited failure (HigherEducationExampleSetTest), 0 new; JS 1381 vs 1374, same 9 inherited failures; phpstan clean
