@@ -13739,6 +13739,7 @@ review:shillinq:1958:66501062	CONFLICT: lib and l10n conflicts with development 
 review:shillinq:2249:530fcbd0	CONFLICT (use-block only; resolved locally unit 12214 OK, otherwise GREEN)	session-20261115T154307-1fc2cc78	2026-11-15T17:00:33Z
 review:stackiq:1064:92f38c90	CONFLICT: package-lock.json	session-20261115T142149-1d09fceb	2026-11-15T17:00:53Z
 review:stackiq:1433:1276a79b	RED: conflicts (trivial) + development's ReferencesAuditCommandFailuresTest fake uses old patchObject signature	session-20261115T155903-abd003e3	2026-11-15T17:01:08Z
+verify:stackiq:1954:75830783	stale	session-20261115T155903-abd003e3	2026-11-15T17:01:41Z
 review:stackiq:1065:7afbf58c	BLOCK (conflict): package.json/lock conflict with development; needs recreate	session-20261114T075643-acecaad6	2026-11-15T17:01:36Z
 review:stackiq:1434:b9dab81b	RED: 39 tests fail, hydra-gates contract stub still has old saveObjects signature	session-20261115T155902-521936b1	2026-11-15T17:01:46Z
 review:shillinq:2218:b60c1dcd	GREEN: copy-only label change; vitest 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T17:01:59Z
