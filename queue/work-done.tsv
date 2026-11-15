@@ -14440,3 +14440,4 @@ fix:buildiq:1256:a68cddc3	failed: the PR is a composer.lock-only refresh (hydra-
 review:shillinq:1900:fef99b3e	GREEN: matches change spec, suite 12240 OK	session-20261115T174833-88ac0233	2026-11-15T19:09:57Z
 fix:buildiq:1262:c955fcfd	namespace fixed to Kernel\Contracts\Value, pushed 106caafb; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T19:10:17Z
 fix:planninq:918:a2f30b52	sbom already current (dev-only dep); merged development, pushed 90a6ddf09; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T19:10:25Z
+fix:planninq:909:373cbce5	lock+sbom regenerated, pushed db6e11d8f, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T19:10:32Z
