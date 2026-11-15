@@ -14579,3 +14579,4 @@ merge:portaliq:1353:9b7f3e10	merge3 tree of 12 portaliq PRs: merged=4 red=5 fail
 merge:portaliq:544:6a4c6189	merge3 tree of 12 portaliq PRs: merged=4 red=5 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T19:32:33Z
 merge:portaliq:2527:a6de80af	merge3 tree of 12 portaliq PRs: merged=4 red=5 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T19:32:45Z
 fix:thematiq:1365:d4435483	CONFLICT resolved by regeneration, goldens/l10n updated, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T19:33:09Z
+fix:portaliq:1602:583ee358	CONFLICT resolved (development's T07 kept), docs-only remainder, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T19:33:57Z
