@@ -14002,3 +14002,4 @@ review:dossiq:3196:ccb57e36	GREEN: prettier devdep bump; vitest 7184/7186, 2 inh
 review:buildiq:1092:8fb29c55	GREEN: sass devDep bump, vitest 4692/4692 pass	session-20261115T174747-978963d5	2026-11-15T17:54:39Z
 verify:stackiq:1973:59a87a4f	1973 CONFLICT (customComponents.js), 1978 GREEN (phpunit 3736 OK, vitest 1 inherited)	session-20261115T152558-f97be55f	2026-11-15T17:55:32Z
 fix:dossiq:3300:6bb977e0	CONFLICT resolved, pushed 94f68357, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T17:56:18Z
+fix:dossiq:3298:85e60038	conflict resolved keeping both intents; tests green; new head 1caea4a0fee92aa7ba2ae09030a30a45da0295fa	session-20261114T102637-6688951e	2026-11-15T17:56:30Z
