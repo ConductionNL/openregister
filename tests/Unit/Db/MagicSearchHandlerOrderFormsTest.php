@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\RegisterSchema
  * @uses \OCA\OpenRegister\Db\Register\RegisterLanguages
  * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal
  */
 class MagicSearchHandlerOrderFormsTest extends TestCase {
 	/**
