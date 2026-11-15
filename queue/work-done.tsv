@@ -12802,3 +12802,4 @@ fix:opencatalogi:2687:9e2ae324	maintainability restored to 5 stars (4.51); opens
 fix:larpinq:1054:3498aefd	REVERIFY: merged development clean and green; remaining conflict is with a sibling PR on the generated manifest golden; new head 8a1a3523	session-20261115T001758-161b0715	2026-11-15T02:09:42Z
 fix:launchpad:1226:d96f04da	complexity floor restored (4.73), pushed bf28a8ea, REVERIFY	session-20261114T234941-bc8686af	2026-11-15T02:10:01Z
 fix:larpinq:1051:77585fbd	floor restored by refactor, pushed fa7cedb49eeaf2240d456f442c29bd3d8b2b8407, REVERIFY recorded	session-20261115T005412-4a06d6f4	2026-11-15T02:10:12Z
+cover:integriq:92114ab0m6759:a0b17cde	PR #3651: 6 tests, lib/Service/Synchronization statements 95.38->100%	session-20261115T011811-95390b97	2026-11-15T02:10:24Z
