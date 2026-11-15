@@ -1,7 +1,7 @@
 {
  "app": "shillinq",
  "commit": "4ce0e0f9b8b277b42c37b6ed22019d0758cf1ea5",
- "measured_at": "2026-11-15T00:12:07Z",
+ "measured_at": "2026-11-15T02:23:27Z",
  "php": {
   "tool": "pcov",
   "pct": 95.1,
@@ -387,17 +387,21 @@
   }
  },
  "js": {
-  "pct": 94.08,
-  "statements": 7731,
+  "pct": 83.31,
+  "statements": 8730,
   "covered": 7273,
   "dirs": {
    "src/": [
-    3,
+    109,
     3
    ],
    "src/api/": [
-    29,
+    37,
     24
+   ],
+   "src/assets/": [
+    0,
+    0
    ],
    "src/components/": [
     235,
@@ -408,11 +412,11 @@
     457
    ],
    "src/components/Dashboard/": [
-    45,
+    197,
     35
    ],
    "src/components/ar-invoice/": [
-    7,
+    65,
     7
    ],
    "src/components/banking-cashflow/": [
@@ -430,6 +434,10 @@
    "src/components/budget-charts/": [
     171,
     171
+   ],
+   "src/components/cashflow/": [
+    33,
+    0
    ],
    "src/components/cluster-overview/": [
     10,
@@ -455,6 +463,10 @@
     95,
     85
    ],
+   "src/components/ledger/": [
+    23,
+    0
+   ],
    "src/components/period-close/": [
     167,
     161
@@ -472,16 +484,24 @@
     24
    ],
    "src/components/reporting/": [
-    2,
+    199,
     2
    ],
    "src/components/sales/": [
     20,
     20
    ],
+   "src/components/settings/": [
+    6,
+    0
+   ],
    "src/components/spend-analytics/": [
     83,
     64
+   ],
+   "src/components/supplier-invoice/": [
+    98,
+    0
    ],
    "src/components/taxes/": [
     18,
@@ -494,6 +514,10 @@
    "src/components/vendor-performance/": [
     87,
     67
+   ],
+   "src/components/wbso/": [
+    11,
+    0
    ],
    "src/components/widget/": [
     178,
@@ -508,7 +532,7 @@
     387
    ],
    "src/manifest.d/": [
-    4,
+    270,
     4
    ],
    "src/modals/": [
@@ -551,12 +575,20 @@
     33,
     25
    ],
+   "src/views/flows/": [
+    1,
+    0
+   ],
    "src/views/import/": [
     122,
     122
    ],
+   "src/views/inventory/": [
+    22,
+    0
+   ],
    "src/views/invoice/": [
-    17,
+    35,
     2
    ],
    "src/views/settings/": [
