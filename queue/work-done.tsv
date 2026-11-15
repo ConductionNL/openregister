@@ -14498,6 +14498,7 @@ fix:launchpad:757:df60a474	lock resynced on development, npm ci + vitest green; 
 fix:launchpad:1234:d725a0f0	fixed RED sbom: regenerated sbom.cdx.json; new head 0bc43ee2, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T19:19:07Z
 fix:opencatalogi:1893:143da9ef	conflicts resolved, pushed e1cf5480, REVERIFY recorded	session-20261115T191034-1f4b55ee	2026-11-15T19:19:20Z
 fix:launchpad:785:91201465	conflict resolved (dev's tile-sorting kept, shortcuts wired via PageSettingsSources, openapi documented); phpunit+vitest green; new head 962d3592	session-20261115T185944-49ff6c32	2026-11-15T19:19:38Z
+fix:stackiq:1043:a1603162	closed as obsolete: development already locks sass 1.108.2	session-20261115T152543-40aea993	2026-11-15T19:19:49Z
 fix:opencatalogi:2259:6c778379	failed: superseded, needs a manual close (closing PRs is refused by permission here): development has the same splits (da9461cb2, 83b172e8a, 993043f63) and the branch conflicts with them	session-20261115T182936-09049974	2026-11-15T19:19:46Z
 fix:opencatalogi:2669:b357649e	conflict resolved (CHANGELOG, PublicationService); 2 inherited failures only; new head a67472fb	session-20261115T174739-b14c2df4	2026-11-15T19:19:49Z
 fix:stackiq:1031:c3ffd458	closed as obsolete: merge changes no file	session-20261115T174833-88ac0233	2026-11-15T19:20:05Z
@@ -14507,5 +14508,13 @@ fix:opencatalogi:2417:a2892ce3	fixed: main namespace, merged development, no new
 fix:opencatalogi:2415:da40ef23	fixed: merged development, rendered() uses RenderSelection; new head cf561973	session-20261115T174819-9af28ef9	2026-11-15T19:20:25Z
 fix:buildiq:1648:a6359df5	conflict resolved, pushed 30c0874a; ExportZipGoldenTest red inherited from development	session-20261115T185925-f99529ae	2026-11-15T19:20:38Z
 fix:opencatalogi:2655:a2523fc9	conflict resolved, pushed f9ef3261, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:20:48Z
+measure:opencatalogi:20261115h16	php 95.37% (pcov, 5750 tests, 2 failures), js 96.66% lines	session-20261115T182951-bdf9d68e	2026-11-15T19:20:58Z
 fix:buildiq:1091:c4dd3636	merged development, pushed d342b9dd	session-20261115T174741-56eeaa2f	2026-11-15T19:21:01Z
 fix:launchpad:753:51b86dbd	lockfile regenerated on development, npm ci + vitest green, pushed d16aabc3; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T19:21:11Z
+fix:opencatalogi:2696:53c089e7	spec fixed + development merged; pushed f7d699f3, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T19:21:27Z
+fix:opencatalogi:2541:87b928f1	fixed find() to ObjectFindOptions, pushed 55851e9d; REVERIFY recorded	session-20261115T185932-17792562	2026-11-15T19:21:38Z
+fix:stackiq:1433:1276a79b	fixed: conflicts resolved, test double migrated, suite green; REVERIFY	session-20261115T185923-898cd631	2026-11-15T19:21:53Z
+fix:opencatalogi:1888:0a19c236	conflict resolved, new head e9655f0d, 2 inherited failures	session-20261115T185929-0fc862a6	2026-11-15T19:22:02Z
+fix:opencatalogi:2725:0414a9a7	merged development clean; tree conflict is with a sibling PR; new head ef1e2d84	session-20261115T181015-497e81ce	2026-11-15T19:22:09Z
+fix:stackiq:1042:56393a99	lock regenerated on development, pushed; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:22:19Z
+fix:launchpad:819:9dcfeabe	sbom regenerated after merging development, pushed; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:22:31Z
