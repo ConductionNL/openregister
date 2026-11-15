@@ -14453,3 +14453,4 @@ fix:buildiq:1596:e5795e30	fixed floor: helper extraction, unit_complexity 3.32 (
 fix:buildiq:1249:a5648e98	sbom regenerated, merged development, pushed 0997f504; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:12:57Z
 fix:launchpad:1099:6f005198	failed: installing needs platform php 8.3.16 in composer.json AND in the lock (platform-overrides, content-hash); workers may not commit composer.lock. Raise config.platform.php to 8.3.16 on development, then let dependabot recreate the PR	session-20261115T174755-95dc8448	2026-11-15T19:13:12Z
 review:versioniq:499:36c6819e	BLOCK: conflicts with development's exact vite 8.2.4 pin; would loosen it to ^8.3.1, superseded	session-20261115T183023-a120e01a	2026-11-15T19:13:08Z
+fix:buildiq:1114:1c8fce1e	sbom regenerated, merged development, pushed 9381ce974; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T19:13:17Z
