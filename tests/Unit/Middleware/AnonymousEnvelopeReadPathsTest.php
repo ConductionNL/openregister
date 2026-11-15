@@ -98,6 +98,12 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses   \OCA\OpenRegister\Db\FederatedShare
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator
