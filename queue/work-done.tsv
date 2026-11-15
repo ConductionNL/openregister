@@ -13303,3 +13303,4 @@ review:buildiq:1093:7c1a6bdd	BLOCK: npm ci fails, lockfile out of sync	session-2
 review:buildiq:1114:1c8fce1e	GREEN: lock-only ocp patch bump; unit 3192, 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T15:43:57Z
 build:stackiq:landscape-move-between-organisations:c3	done (code): PR #1958 head 7a2b0cf1 adds the detail-page header action (registry launcher modal on 4 detail pages), +9 vitest, docs; left only live tasks: Playwright, screenshot, Newman	session-20261115T142201-ea23e682	2026-11-15T15:44:20Z
 review:buildiq:1277:e4d24801	BLOCK: depends on OpenRegister settings value objects not on OR main/development; would break admin settings at runtime; also conflicts with development	session-20261115T152552-0cb4306e	2026-11-15T15:44:15Z
+review:buildiq:1091:1fce7d65	RED: lockfile out of sync, npm ci fails at PR head	session-20261115T154258-dee2cc3d	2026-11-15T15:44:28Z
