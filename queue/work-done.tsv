@@ -15007,3 +15007,4 @@ merge:hermiq:1133:778a875e	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 
 merge:hermiq:1195:11b3aab8	merge3 tree of 30 hermiq PRs: merged=5 red=12 fail=0 skip=0; conflict 10, lint 0, moved 0; fix rows 13	merge3-20261113T213425-c36bcd5f	2026-11-15T21:08:41Z
 review:filinq:2072:6cc6d816	BLOCK: seam on user path + raw-SQL backfill vs spec; tests ok; conflicts with development	session-20261115T203012-30a1abde	2026-11-15T21:10:15Z
 merge:keepiq:1792:822f0810	stale	feeder	2026-11-15T21:10:13Z
+review:filinq:1086:7581c2a8	GREEN: hydra-gates dev bump, 6798 tests ok	session-20261115T203012-30a1abde	2026-11-15T21:11:28Z
