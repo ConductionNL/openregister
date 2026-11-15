@@ -12904,3 +12904,10 @@ opencatalogi	2725	ef1e2d8475f88d2aafc7c59528f9cd43f521d2db	GREEN	worker-15	tree 
 stackiq	1042	ad6e35bbb7d0f378391e35648c21d0f1ad9bb1b0	GREEN	worker-10:review	dev-only vite range ^8.2.2->^8.3.0; lock already resolves 8.3.8 so installed tree unchanged; vitest 2726/2727, the 1 failure (facets.spec FACET_DIMENSIONS) is inherited from development
 stackiq	1067	c6fb04828e3996d12f5a7b17a0bfb6919cda43d0	GREEN	worker-30:review	package.json range bump only; lockfile resolves vue 3.5.45 on both sides; vitest 2726/2727 on PR+development, 1 inherited failure (facets.spec.js FACET_DIMENSIONS) same on development; no PHP changed
 opencatalogi	2673	9b9531032c82409ec13b1844b2e8390e047c42df	GREEN	worker-13:review	implements publications-unpublished-overview per its spec; new GET endpoint logged-in only, OR search with RBAC on; unit 5765 tests, 2 failures inherited from development; jest widgets 56/56; eslint clean on touched files
+stackiq	1063	5ec1a4e3057215ea0b5b8b2282257fb38c78a233	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+stackiq	1168	2d1a29df6b60a93b19f659b6385328cc7deb6a3d	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1297	7bd3132460fcc78f3d5b687a66de677bd39eafde	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1437	3de46f6b1075b4187f475822045ef6880bc42b92	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1438	23ea35dd424a254cba3cbaee76ab7e4fa58828da	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+stackiq	1954	7f13c4ef79c4d740e48a9309045acd64414f140c	RED	merge8:merge-gate	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+stackiq	1978	90d2828bd1192bd1fcd6702a87b638ea133bca93	RED	merge8:merge-gate	GATE RED checker floor: adrvalidator: pass -> fail; adrvalidator stars: 5 -> 1; score: 100 -> 93
