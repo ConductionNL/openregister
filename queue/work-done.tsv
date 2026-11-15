@@ -13028,3 +13028,4 @@ fix:filinq:2088:0e8040fe	no change: up to date with development; conflict only w
 fix:dossiq:6547:b29f1410	conflict resolved (kept development's registrar tests), pushed 90799f7c, REVERIFY recorded	session-20261115T142134-badaaf30	2026-11-15T14:26:06Z
 review:filinq:2069:2a5b02d0	GREEN: unit 6799 ok, phpstan/vitest/eslint clean	session-20261115T142153-990a3fbe	2026-11-15T14:26:18Z
 fix:filinq:2085:432c7b61	no change: up to date with development; conflicts only with sibling PRs #2088/#2103	session-20261115T142127-97291b3d	2026-11-15T14:26:24Z
+fix:filinq:2102:726c91bb	no change: up to date with development; conflicts only with siblings on register version bump	session-20261115T142127-97291b3d	2026-11-15T14:26:54Z
