@@ -22,7 +22,7 @@ Acceptance criteria
 
 ## 3. Fix the class-(b) paths
 
-- [ ] 3.1 Route each class-(b) caller through `SchemaMapper::findBySlugInIds()` against the register's schema set, falling back to `find()` — the pattern `ObjectService::setSchema()` already establishes. Do NOT change `find()` itself or its signature. (In progress: 22 path groups are fixed through `SchemaRefInRegister`; 2 remain open, the mixed-schema bulk rights check with the save's reference lookup, and the search parameter parsing, each listed with its reason in design.md, "Still class (b): open".)
+- [ ] 3.1 Route each class-(b) caller through `SchemaMapper::findBySlugInIds()` against the register's schema set, falling back to `find()` — the pattern `ObjectService::setSchema()` already establishes. Do NOT change `find()` itself or its signature. (In progress: 23 path groups are fixed through `SchemaRefInRegister`, the search parameter parsing among them; 1 remains open, the mixed-schema bulk rights check with the save's reference lookup, listed with its reason in design.md, "Still class (b): open".)
 - [x] 3.2 Verify the `findCache` key composition includes the register context on the scoped path (or that the scoped path bypasses the cache). Task 1.2 is the check. (The scoped path bypasses the cache; see design.md.)
 - [x] 3.3 Confirm behaviour is unchanged for numeric ids and uuids — `findBySlugInIds()` returns null for those and must fall through cleanly. (`SchemaMapperScopedSlugTest` pins the null fall-through; `SchemasControllerShowRegisterScopeTest` pins numeric ids inside and outside a register.)
 

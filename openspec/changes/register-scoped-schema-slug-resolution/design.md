@@ -127,12 +127,21 @@ All of these go through `SchemaRefInRegister` (`lib/Service/Schemas`). It is the
 | `SourceRecordResolver::lookupSchemaId()` (survivorship reverse-FK, merge relink) | was (b), now scoped | The source register (`sourceRegister`, else the master's or the from-object's register); the static memo is keyed by register and slug, the bare slug only for an unscoped lookup. Reads it through an optional register reader. |
 | `RegisterResolverService::lookupPair()` (app-config register + schema pair) | was (b), now scoped | The pair's resolved register. The scoped match bypasses the tenant filter, so it is taken only when the tenancy rule admits it: with an explicit organisation, not owned by another; without, visible to the caller's tenant-filtered lookup by id. Otherwise the old lookup answers. `lookupSchema()` alone names no register and stays (c). |
 
+
+**Fixed in the fifth pass: `SearchQueryHandler::schemaOrNull()`.** `buildSearchQuery()` now
+passes its register down through the parameter parsing (`searchableParams()`,
+`restoreDottedParams()`, `liftBracketFilterUnlessDeclared()` and the two schema probes), and
+`schemaOrNull()` resolves a slug through `SchemaRefInRegister` with the handler's new optional
+`RegisterMapperInterface` (last constructor parameter, nullable, so positional callers keep
+working). A slug the register does not list, a search over several registers, or a handler
+without the register reader falls back to the global `find()`, as before. Covered by
+`tests/Unit/Service/Object/SearchQueryHandlerRegisterScopedSlugTest.php`.
+
 ### Still class (b): open
 
 | Path | Disposition | Why it is not done here |
 | --- | --- | --- |
 | `SchemaManageGate::mayManageNamed()` (mixed-schema bulk rights) and `SaveLookups::schemaIdBySlug()` (the save) | (b), open | Must change together: scoping the rights check alone would check a different schema than the save writes. `SaveLookups::schemaId()` is also the shared reference resolver (`$ref` existence, filter guards, inverse write-back) behind one per-save slug cache, so the save's register has to be threaded into that cache first. A follow-up. |
-| `SearchQueryHandler::schemaOrNull()` | (b), open | `buildSearchQuery()` holds the register but passes only the schema down, through four parsing helpers, and the handler has no register reader; the lookup only decides how parameters are parsed (object-source columns, a declared `filter` property). |
 
 ### Class (a) and (c)
 
