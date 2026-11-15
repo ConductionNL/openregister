@@ -12702,3 +12702,5 @@ cover:integriq:92114ab0m4b3f:2b49da71	PR #3648: 5 tests over 4 Slo classes, 9223
 cover:dossiq:069ee2d6mdd7c:b5212816	PR #6553: +4 edge tests in lib/Service/ProcessMining (dir already ~99% lines); suite 17532->17536, 19 inherited failures	session-20261115T012426-ca0c1432	2026-11-15T01:49:15Z
 cover:portaliq:b60f3b81m4ccb:6f346b68	no PR: lib/Sections (one class) already at 100% (5/5 statements, pcov at 4b3074a)	session-20261115T011806-2ba8b68f	2026-11-15T01:49:18Z
 verify:pipelinq:3862:bba0c4ee	GREEN #3862: tests only, unit 8644 pass	session-20261114T234941-bc8686af	2026-11-15T01:49:38Z
+build:integriq:form-submission-registration-targets:c5	PR #3649 head 236dc3f7: Task 8 dry run (endpoint+modal), Task 3 ZGW kenmerk lookup, Task 7 steps kept on part-way refusal; left: StUF-ZDS KvK applicant (needs real ZDS check, changes XSD-checked golden), live Newman/e2e	session-20261115T010928-f0987802	2026-11-15T01:49:56Z
+merge:planninq:1181:5ad5104c	merge3 tree of 6 planninq PRs: merged=5 red=0 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:49:54Z
