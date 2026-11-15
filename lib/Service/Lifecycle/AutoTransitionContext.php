@@ -57,15 +57,23 @@ final class AutoTransitionContext {
 	public readonly string $schemaSlug;
 
 	/**
+	 * The schema's named conditions an `autoWhen` may reference; empty refuses every reference.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $conditions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string               $field       The lifecycle field's name.
 	 * @param string               $current     The object's current lifecycle value.
 	 * @param array<mixed>         $transitions The annotation's transition map, in declaration order.
 	 * @param array<string, mixed> $write       The object after (`objectData`) and before (`previous`) the write,
-	 *                                          and the schema's slug (`schemaSlug`).
+	 *                                          the schema's slug (`schemaSlug`) and, optionally, the
+	 *                                          schema's named conditions (`conditions`).
 	 *
-	 * @phpstan-param array{objectData: array<string, mixed>, previous: array<string, mixed>, schemaSlug: string} $write
+	 * @phpstan-param array{objectData: array<string, mixed>, previous: array<string, mixed>, schemaSlug: string, conditions?: array<mixed>} $write
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -78,5 +86,6 @@ final class AutoTransitionContext {
 		$this->objectData = $write['objectData'];
 		$this->previous   = $write['previous'];
 		$this->schemaSlug = $write['schemaSlug'];
+		$this->conditions = ($write['conditions'] ?? []);
 	}//end __construct()
 }//end class

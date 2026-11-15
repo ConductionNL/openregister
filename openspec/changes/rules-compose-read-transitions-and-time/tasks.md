@@ -10,11 +10,21 @@
 - [x] 1.2a `{"$condition": "name"}` resolves anywhere `NamedConditionEvaluator`
       evaluates, including inside `and`, `or` and `not`. A reference inside a
       shape it cannot compose (`if`) REFUSES rather than guessing.
-- [ ] 1.2b The call sites: `LifecycleConditionEvaluator`, `StateConditionEvaluator`
+- [x] 1.2b The call sites: `LifecycleConditionEvaluator`, `StateConditionEvaluator`
       and the field-rule evaluator each pass `ConditionDialect` directly today.
       Routing them through the named evaluator is a one-line change per site
       plus a library lookup, and it is a separate PR because each site also
       has to decide where its library comes from (schema, register, or both).
+      (15 Nov: the library is the schema's own, the one 1.3b checks at save.
+      `LifecycleRuleCheck` (transition `condition` and `autoWhen`),
+      `StateConditionEvaluator` (entry/exit) and `StateFieldRuleResolver`
+      (field-rule `when` and block `condition`) evaluate through
+      `NamedConditionEvaluator`. The lifecycle listener hands the library in on
+      `TransitionAttempt::$conditions`; the state paths carry it beside the
+      annotation through `NamedConditionScope`, so no published signature
+      changed. An unresolvable name refuses the transition or the state move,
+      makes no automatic move, and keeps a field rule's restriction on.
+      `NamedConditionCallSitesTest` (8), `NamedConditionScopeTest` (3).)
 - [x] 1.3a `NamedConditionLibrary::refusalFor()` refuses an unknown name
       (naming both the name and what referenced it), a cycle (naming the path
       that closes it, self-reference included) and a chain deeper than
@@ -40,7 +50,10 @@
       fails OPEN one negation later: `{"not": {"$condition": "x"}}` with `x`
       missing would evaluate to TRUE and the rule would fire on everything.
       Both are tested.
-- [ ] 1.5b `RuleRunRecorder` writing it, which arrives with 1.2b.
+- [x] 1.5b `RuleRunRecorder` writing it, which arrives with 1.2b.
+      (15 Nov: the refusal carries `unresolved: {condition, reason}`; the
+      lifecycle and state listeners record it as `refused` with the operand
+      `$condition:<name>` and a message naming the condition and why.)
 
 ## 2. Before and after
 

@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
+use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
 
 /**
  * Evaluates a transition `condition` and produces the refusal, if any.
@@ -97,7 +98,7 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 * @param string $schemaSlug The schema's slug, for the log line.
 	 * @param string $field The lifecycle field's name.
 	 *
-	 * @return array{code: string, field: string, action: string, message: string}|null
+	 * @return array{code: string, field: string, action: string, message: string, unresolved?: array{condition: string, reason: string}}|null
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -126,14 +127,22 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 * @param array<string, mixed> $spec    The matched transition's spec.
 	 * @param TransitionAttempt    $attempt The write and the transition it attempts.
 	 *
-	 * @return array{code: string, field: string, action: string, message: string}|null
+	 * @return array{code: string, field: string, action: string, message: string, unresolved?: array{condition: string, reason: string}}|null
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function refusalOf(array $spec, TransitionAttempt $attempt): ?array {
 		$condition = $this->activeCondition(spec: $spec);
-		if ($condition === null || $this->holds(rule: $condition, attempt: $attempt) === true) {
+		if ($condition === null) {
 			return null;
+		}
+
+		try {
+			if ($this->judge(rule: $condition, attempt: $attempt) === true) {
+				return null;
+			}
+		} catch (ConditionRefusedException $refused) {
+			return $this->unresolvedRefusal(attempt: $attempt, refused: $refused);
 		}
 
 		$context = ['schema' => $attempt->write->schemaSlug, 'action' => $attempt->move->action, 'field' => $attempt->write->field];
@@ -215,6 +224,35 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function holds(mixed $rule, TransitionAttempt $attempt): bool {
+		try {
+			return $this->judge(rule: $rule, attempt: $attempt);
+		} catch (ConditionRefusedException $refused) {
+			// Never a pass: an `autoWhen` that names a condition nobody can
+			// resolve makes no move, and a `condition` refuses it.
+			$this->reporting->logger->warning(
+				'[LifecycleConditionEvaluator] A named condition could not be resolved; refusing.',
+				[
+					'schema' => $attempt->write->schemaSlug,
+					'action' => $attempt->move->action,
+					'condition' => $refused->getConditionName(),
+					'reason' => $refused->getWhy(),
+				]
+			);
+			return false;
+		}
+	}//end holds()
+
+	/**
+	 * Whether a lifecycle rule holds, letting an unresolvable named condition through as an exception.
+	 *
+	 * @param mixed             $rule    The rule to evaluate.
+	 * @param TransitionAttempt $attempt The write and the transition it attempts.
+	 *
+	 * @return bool True only when the rule is a non-empty rule object that evaluates true.
+	 *
+	 * @throws ConditionRefusedException When a named condition it references cannot be resolved.
+	 */
+	private function judge(mixed $rule, TransitionAttempt $attempt): bool {
 		$write = $attempt->write;
 		$move  = $attempt->move;
 		if (is_array($rule) === false || $rule === []) {
@@ -229,7 +267,42 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 		}
 
 		return $this->check->holds(rule: $rule, attempt: $attempt);
-	}//end holds()
+	}//end judge()
+
+	/**
+	 * The refusal of a transition whose condition names a condition that cannot be resolved.
+	 *
+	 * Not the author's `message`: that sentence says the condition is unmet,
+	 * and this one was never evaluated. The refusal names the condition and
+	 * why, under `unresolved`, so the run log can name it too (REQ-RCT-001).
+	 *
+	 * @param TransitionAttempt          $attempt The refused attempt.
+	 * @param ConditionRefusedException $refused The reference that could not be resolved.
+	 *
+	 * @return array{code: string, field: string, action: string, message: string, unresolved: array{condition: string, reason: string}}
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function unresolvedRefusal(TransitionAttempt $attempt, ConditionRefusedException $refused): array {
+		$this->reporting->logger->warning(
+			'[LifecycleConditionEvaluator] A named condition could not be resolved; refusing the transition.',
+			['schema' => $attempt->write->schemaSlug, 'action' => $attempt->move->action, 'condition' => $refused->getConditionName()]
+		);
+
+		return [
+			'code' => self::CODE_UNMET,
+			'field' => $attempt->write->field,
+			'action' => $attempt->move->action,
+			'message' => sprintf(
+				'The condition "%s" of "%s" could not be evaluated (%s), so "%s" cannot change.',
+				$refused->getConditionName(),
+				$attempt->move->action,
+				$refused->getWhy(),
+				$attempt->write->field
+			),
+			'unresolved' => ['condition' => $refused->getConditionName(), 'reason' => $refused->getWhy()],
+		];
+	}//end unresolvedRefusal()
 
 	/**
 	 * Build the refusal error for a transition.

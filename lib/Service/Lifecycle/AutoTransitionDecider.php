@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Rules\NamedConditionScope;
 
 /**
  * The deciding half of {@see AutoTransitionRunner}: re-read, then select.
@@ -144,6 +145,8 @@ final class AutoTransitionDecider {
 			return null;
 		}
 
-		return [$annotation, (string)($entity->getSlug() ?? '')];
+		// The schema's named conditions travel with the annotation, so an
+		// `autoWhen` naming one resolves against the library the save checked.
+		return [NamedConditionScope::withLibrary(annotation: $annotation, configuration: $entity->getConfiguration()), (string)($entity->getSlug() ?? '')];
 	}//end annotationFor()
 }//end class
