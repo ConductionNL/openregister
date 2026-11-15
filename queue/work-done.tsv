@@ -13550,3 +13550,4 @@ review:learniq:2127:6e8befed	GREEN: lock-only dev bump; 1 inherited failure	sess
 review:learniq:1165:ffd74a05	CONFLICT: lock conflict, superseded (development locks vue 3.5.45)	session-20261115T154307-1fc2cc78	2026-11-15T16:26:08Z
 review:opencatalogi:2416:bacd96a1	CONFLICT: 4 files conflict with development; diff itself correct	session-20261115T154258-dee2cc3d	2026-11-15T16:26:24Z
 review:learniq:1166:0748af52	CONFLICT/obsolete: development already has parser 8.72.2	session-20261115T155915-84e5dc0a	2026-11-15T16:26:35Z
+build4:openregister:tasks-progress-report:c2	already building: build/tasks-progress-report-3 (another worker, 1.1-4.1) landed while this run was paused; local 1.1/1.2 work dropped unpushed	session-20261114T095641-533e2a00	2026-11-15T16:27:10Z
