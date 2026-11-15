@@ -14024,3 +14024,4 @@ fix:pipelinq:2957:0a390a39	closed as superseded: development already has the ful
 fix:dossiq:3299:779b4422	CONFLICT resolved, pushed 518945cf; REVERIFY recorded	session-20261115T174741-9deaa0be	2026-11-15T18:00:27Z
 fix:pipelinq:2507:ecccdb3f	obsolete: development is on nextcloud-vue ^2.180.0, PR pinned ^2.84.0; closed with a neutral comment	session-20261115T152552-0cb4306e	2026-11-15T18:00:37Z
 fix:pipelinq:1936:27cdae0d	closed as obsolete: development already locks nextcloud-vue 2.180.0	session-20261115T174833-88ac0233	2026-11-15T18:00:31Z
+fix:dossiq:3934:90d125eb	conflicts resolved, tests retargeted; new head c4912dc2f436f1bb46c4f748a89cc19a32f4b848, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:01:03Z
