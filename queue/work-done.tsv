@@ -13938,3 +13938,4 @@ fix:buildiq:1651:75838f52	merged development, l10n union-resolved and rebuilt; c
 review:opencatalogi:2677:b988c22d	stale	feeder	2026-11-15T17:18:52Z
 verify:keepiq:1826:33eeb9d8	stale	feeder	2026-11-15T17:18:52Z
 verify:versioniq:735:df901ed5	stale	feeder	2026-11-15T17:31:48Z
+fix:shillinq:2997:7b870224	conflict resolved, pushed 3374c3b, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T17:33:21Z
