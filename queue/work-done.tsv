@@ -14419,3 +14419,4 @@ review:shillinq:2071:513cd9f5	GREEN: access tightened, no regressions; unit 1223
 verify:learniq:2549:09f248e7	GREEN 2549: no new PHP or JS failures	session-20261115T174741-9deaa0be	2026-11-15T19:07:39Z
 review:shillinq:2251:47c70252	GREEN: unit 12225 OK	session-20261115T174750-744c606b	2026-11-15T19:07:59Z
 review:stackiq:1941:40710dd9	GREEN (conflicts with development: 3 files); unit OK, vitest 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T19:08:16Z
+fix:planninq:1070:e04ed25c	sbom already current (dev-only dep); merged development, pushed e52ec55b0; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T19:08:27Z
