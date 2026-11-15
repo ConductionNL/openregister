@@ -12154,3 +12154,4 @@ fix:learniq:2521:33d6a10d	deduplicated course day row reads (PHP dup 5038->5005)
 cover:decidiq:a5f973bbmae46:d528dcf0	already done: lib/Dashboard/*.php (DecidiqDashboardWidget) 100% lines (65/65) on development dbda6812; no PR	session-20261114T234944-ee1416bc	2026-11-15T00:09:32Z
 cover:decidiq:a5f973bbmae46:c76ae287	already done: lib/Service/Forms/ 100% lines (74/74) on development dbda6812; no PR	session-20261114T234944-ee1416bc	2026-11-15T00:09:57Z
 review:hermiq:1760:c3344e5a	GREEN: per spec, phpunit 5307 OK, vitest 1537 passed	session-20261114T224736-f9da4a35	2026-11-15T00:10:10Z
+fix:decidiq:2187:f2114bea	fixed: layout row id 19->20; vitest green; new head 24c1e4c0, REVERIFY recorded	session-20261114T234932-1a68fd4b	2026-11-15T00:10:26Z
