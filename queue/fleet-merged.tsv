@@ -3229,3 +3229,9 @@ pipelinq	3862	780b1a7ec5607c9bc05198f0d6f7a034c2210443	MERGED	merge3	GATE OK sbo
 pipelinq	3863	82a98cede7a18ff1a170984f38420895a5fa6f1c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 pipelinq	3864	3f1b0fe32cccbe0226939925040165ae2e0046a3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 pipelinq	3865	868db80e7b21ca32e58fb793132b99160325b1c6	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+larpinq	1041	6545e1defff3c1df86fa4fea90515c4c0b87731f	RED	merge3	GATE RED floor: overall: 4.99 -> 4.96; unit_size: 4.73 -> 4.70; unit_complexity: 4.88 -> 4.75; unit_interfacing: 4.72 -> 4.66
+larpinq	1048	258a4b907098477295a89e6d2696b2967a4c6ca9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
+larpinq	1050	ebb209691f38f2cdd3812275fbc828831dc90d7e	RED	merge3	GATE RED floor: unit_complexity: 4.87 -> 4.85
+larpinq	1051	fa7cedb49eeaf2240d456f442c29bd3d8b2b8407	RED	merge3	GATE RED checker floor: testcoderatio: warn -> fail; testcoderatio stars: 3 -> 2
+larpinq	1052	35cdf6d223397f7e9112f15be8e0abf024da03a4	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+larpinq	1060	759898b3b319473aa0acb48bbf6e9a4189d7814a	RED	merge3	GATE RED checker floor: secretscanning: pass -> fail; testcoderatio: warn -> fail; secretscanning stars: 5 -> 1; testcoderatio stars: 3 -> 2
