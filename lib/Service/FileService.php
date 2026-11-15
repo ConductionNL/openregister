@@ -52,6 +52,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Files\Service\File\OpenLinkShare;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -736,7 +737,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 				$files,
 				function ($file) {
 					$shares = $this->findShares(file: $file);
-					return empty($shares) === false;
+					return array_filter($shares, [OpenLinkShare::class, 'admits']) !== [];
 				}
 			);
 		}

@@ -355,8 +355,8 @@ class FilesController extends Controller {
 	 * @param FileAccessCheck $check What the action needs from the object rule.
 	 *
 	 * @return ObjectEntity|null The object the route names, resolved within its register and
-	 *                           schema (so a slug is this schema's object, #4037); null for an
-	 *                           anonymous caller, who is gated on publication instead.
+	 *                           schema (so a slug is this schema's object, #4037); for an
+	 *                           anonymous caller only when it is readable anonymously.
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
 	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
@@ -373,7 +373,7 @@ class FilesController extends Controller {
 
 		if ($this->isAnonymousRequest() === true) {
 			$this->refuseAnonymous(check: $check);
-			return null;
+			return $this->objectReadableAnonymously(route: $check->route);
 		}
 
 		// The object rule is the only gate: an object's files live in the
@@ -384,6 +384,41 @@ class FilesController extends Controller {
 
 		return $this->objectUnderReadCheck(check: $check);
 	}//end ensureObjectAccess()
+
+	/**
+	 * The object, when an anonymous caller may read it.
+	 *
+	 * A published file is only served through an object the caller may read,
+	 * so the object rule (public read) decides before publication does.
+	 *
+	 * @param FileObjectRoute $route The object, as the route names it.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws DoesNotExistException When the object does not exist or is not readable anonymously.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function objectReadableAnonymously(FileObjectRoute $route): ObjectEntity {
+		try {
+			$object = WriteCause::asLookup(
+				fn () => $this->objectService->find(
+					id: $route->id,
+					options: new ObjectFindOptions(register: $route->register, schema: $route->schema, audit: false),
+					_rbac: true,
+					_multitenancy: true
+				)
+			);
+		} catch (NotAuthorizedException | \OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			throw new DoesNotExistException('Object not found');
+		}
+
+		if ($object instanceof ObjectEntity === false) {
+			throw new DoesNotExistException('Object not found');
+		}
+
+		return $object;
+	}//end objectReadableAnonymously()
 
 	/**
 	 * Refuse an anonymous caller, unless a published-file read lets them through.
@@ -849,12 +884,6 @@ class FilesController extends Controller {
 		// SECURITY (H6): anonymous callers see only published (shared) files.
 		$isAnonymous = $this->isAnonymousRequest();
 
-		// An anonymous caller has no read check to resolve the object; it is looked
-		// up within this register and schema all the same.
-		if ($object === null && $isAnonymous === true) {
-			$object = $this->objectInScope(route: $route);
-		}
-
 		// A slug names THIS schema's object (#4037). The raw identifier would be looked
 		// up across every table; only the legacy wiring without the access guard passes it.
 		$files = $this->fileService->getFiles(object: ($object ?? $route->id), sharedFilesOnly: $isAnonymous);
@@ -880,58 +909,6 @@ class FilesController extends Controller {
 			default => $this->errorResponse(e: $e),
 		};
 	}//end indexFailed()
-
-	/**
-	 * The object an identifier names within a register and schema, without a read check.
-	 *
-	 * For a caller who has no read check to resolve the object (anonymous): it only
-	 * picks the object, what the caller sees is decided by publication. A slug two
-	 * objects hold is answered as not found, the answer the files listing gives every
-	 * refused read (file-actions REQ-OFOA-002), and lists neither object's files.
-	 *
-	 * @param FileObjectRoute $route The object, as the route names it.
-	 *
-	 * @return ObjectEntity The object.
-	 *
-	 * @throws DoesNotExistException When no object, or more than one, holds the identifier there.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
-	 */
-	private function objectInScope(FileObjectRoute $route): ObjectEntity {
-		try {
-			$object = $this->objectWithoutChecks(route: $route);
-		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			throw new DoesNotExistException('Object not found');
-		}
-
-		if ($object instanceof ObjectEntity === false) {
-			throw new DoesNotExistException('Object not found');
-		}
-
-		return $object;
-	}//end objectInScope()
-
-	/**
-	 * Look an object up within its register and schema, without read, tenancy or audit.
-	 *
-	 * @param FileObjectRoute $route The object, as the route names it.
-	 *
-	 * @return mixed What the object service finds.
-	 *
-	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When two objects hold the identifier.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
-	 */
-	private function objectWithoutChecks(FileObjectRoute $route): mixed {
-		return WriteCause::asLookup(
-			fn () => $this->objectService->find(
-				id: $route->id,
-				options: new ObjectFindOptions(register: $route->register, schema: $route->schema, audit: false),
-				_rbac: false,
-				_multitenancy: false
-			)
-		);
-	}//end objectWithoutChecks()
 
 	/**
 	 * Get a specific file associated with an object
@@ -2674,7 +2651,13 @@ class FilesController extends Controller {
 
 		$response = new StreamResponse($preview->read());
 		$response->addHeader('Content-Type', $preview->getMimeType());
-		$response->addHeader('Cache-Control', 'max-age=3600, public');
+		// Only an anonymous caller's preview is of a published file; anyone else's may be private.
+		$cacheScope = 'private';
+		if ($this->isAnonymousRequest() === true) {
+			$cacheScope = 'public';
+		}
+
+		$response->addHeader('Cache-Control', 'max-age=3600, ' . $cacheScope);
 		$response->addHeader('Content-Length', (string)$preview->getSize());
 
 		return $response;

@@ -23,11 +23,14 @@ namespace OCA\OpenRegister\Files\Db;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Files\Service\File\OpenLinkShare;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\Share\Exceptions\ShareNotFound;
+use OCP\Share\IManager;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
@@ -139,12 +142,15 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param IDBConnection $db Database connection
-	 * @param ShareUrlBuilder $shareUrls Share and file link builder
+	 * @param IDBConnection   $db           Database connection
+	 * @param ShareUrlBuilder $shareUrls    Share and file link builder
+	 * @param IManager|null   $shareManager Nextcloud's share manager, which judges a link share's
+	 *                                      expiry; without it no file counts as published.
 	 */
 	public function __construct(
 		IDBConnection $db,
 		ShareUrlBuilder $shareUrls,
+		private readonly ?IManager $shareManager = null,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_files', entityClass: File::class);
 		$this->shareUrls = $shareUrls;
@@ -1004,22 +1010,68 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	}//end depublishFile()
 
 	/**
-	 * Check whether a file has at least one active public share (share_type=3).
+	 * Check whether a file has at least one open public link share.
 	 *
 	 * Used by anonymous-accessible endpoints (e.g. preview, download)
 	 * to gate access — only published files are exposed to unauthenticated
-	 * callers.
+	 * callers. Each link share is loaded through Nextcloud's share manager,
+	 * which refuses an expired share or one on an instance without link
+	 * sharing; a share with a password or with downloads hidden does not
+	 * count (see OpenLinkShare).
 	 *
 	 * @param int $fileId The file ID to check.
 	 *
-	 * @return bool True when a public share exists, false otherwise.
+	 * @return bool True when an open public link share exists, false otherwise.
 	 *
 	 * @phpstan-param  int $fileId
 	 * @phpstan-return bool
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function isFilePublished(int $fileId): bool {
-		return $this->getPublicShare(fileId: $fileId) !== null;
+		if ($this->shareManager === null) {
+			return false;
+		}
+
+		foreach ($this->publicShareTokens(fileId: $fileId) as $token) {
+			try {
+				$share = $this->shareManager->getShareByToken($token);
+			} catch (ShareNotFound $e) {
+				continue;
+			}
+
+			if (OpenLinkShare::admits(share: $share) === true) {
+				return true;
+			}
+		}
+
+		return false;
 	}//end isFilePublished()
+
+	/**
+	 * The tokens of every public link share on a file.
+	 *
+	 * @param int $fileId The file ID.
+	 *
+	 * @return array<int, string> The tokens.
+	 */
+	private function publicShareTokens(int $fileId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('token')
+			->from('share')
+			->where($qb->expr()->eq('file_source', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT)));
+
+		$result = $qb->executeQuery();
+		$tokens = [];
+		while (($row = $result->fetch()) !== false) {
+			$tokens[] = (string)$row['token'];
+		}
+
+		$result->closeCursor();
+
+		return $tokens;
+	}//end publicShareTokens()
 
 	/**
 	 * Get an existing public share for a file.

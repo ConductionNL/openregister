@@ -370,7 +370,8 @@ class FilesControllerFileActionsTest extends TestCase {
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame('image/png', $response->getHeaders()['Content-Type']);
-		$this->assertSame('max-age=3600, public', $response->getHeaders()['Cache-Control']);
+		// A signed-in caller's preview may be of an unpublished file, so shared caches must not keep it.
+		$this->assertSame('max-age=3600, private', $response->getHeaders()['Cache-Control']);
 		$this->assertSame('9', $response->getHeaders()['Content-Length']);
 		$this->assertSame($file, $asked[0]);
 		$this->assertEquals(new PreviewSize(100, 50), $asked[1]);
@@ -776,13 +777,14 @@ class FilesControllerFileActionsTest extends TestCase {
 	}//end testListVersionsDeniedForUnauthorizedUserReturns403()
 	/**
 	 * An anonymous files listing for a slug looks the object up within the route's
-	 * register and schema (#4037), not across every table.
+	 * register and schema (#4037), not across every table, and under the object's
+	 * read rule as an anonymous caller.
 	 */
 	public function testAnAnonymousListingResolvesTheObjectWithinTheRegisterAndSchema(): void {
 		$object = $this->createObjectMock();
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with(...FindCallShape::findArgs('hello-world', [], false, 'reg', 'sch', false, false, true, false))
+			->with(...FindCallShape::findArgs('hello-world', [], false, 'reg', 'sch', true, true, true, false))
 			->willReturn($object);
 		$this->fileService->expects($this->once())
 			->method('getFiles')
@@ -795,6 +797,21 @@ class FilesControllerFileActionsTest extends TestCase {
 
 		$this->assertSame(200, $response->getStatus());
 	}//end testAnAnonymousListingResolvesTheObjectWithinTheRegisterAndSchema()
+
+	/**
+	 * An object the anonymous caller may not read lists no file, published or not.
+	 */
+	public function testAnAnonymousListingOfAnObjectTheyMayNotReadIsNotFound(): void {
+		$this->objectService->expects($this->once())
+			->method('find')
+			->with(...FindCallShape::findArgs('secret', [], false, 'reg', 'sch', true, true, true, false))
+			->willReturn(null);
+		$this->fileService->expects($this->never())->method('getFiles');
+
+		$response = $this->anonymousController()->index('reg', 'sch', 'secret');
+
+		$this->assertSame(404, $response->getStatus());
+	}//end testAnAnonymousListingOfAnObjectTheyMayNotReadIsNotFound()
 
 	/**
 	 * A slug two objects hold answers an anonymous listing 404 and lists no file
