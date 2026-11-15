@@ -13741,3 +13741,4 @@ review:stackiq:1433:1276a79b	RED: conflicts (trivial) + development's References
 review:stackiq:1065:7afbf58c	BLOCK (conflict): package.json/lock conflict with development; needs recreate	session-20261114T075643-acecaad6	2026-11-15T17:01:36Z
 review:stackiq:1434:b9dab81b	RED: 39 tests fail, hydra-gates contract stub still has old saveObjects signature	session-20261115T155902-521936b1	2026-11-15T17:01:46Z
 review:shillinq:2218:b60c1dcd	GREEN: copy-only label change; vitest 1 inherited failure	session-20261115T152543-40aea993	2026-11-15T17:01:59Z
+review:stackiq:1435:5be7461d	BLOCK: targets openregister search value objects absent from main; 4-file conflict	session-20261114T095641-533e2a00	2026-11-15T17:02:11Z
