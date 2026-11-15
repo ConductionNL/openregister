@@ -14084,3 +14084,4 @@ review:pipelinq:3150:03b03d45	BLOCK: stub namespace Service\Object does not matc
 review:dossiq:3954:bf91e1b8	GREEN: rename refactor, no callers left, no new failures	session-20261114T102637-6688951e	2026-11-15T18:12:11Z
 fix:pipelinq:2566:0b0d7736	failed: 78 commits not on development, 217 conflicting files; too large to resolve as a fix within the cap, needs splitting into smaller PRs	session-20261115T174757-8dfa7406	2026-11-15T18:12:26Z
 merge:opencatalogi:2669:33d1ba38	merge3 tree of 13 opencatalogi PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 2; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T18:12:49Z
+merge:opencatalogi:2650:fcc29c27	merge3 tree of 13 opencatalogi PRs: merged=3 red=2 fail=0 skip=0; conflict 6, lint 0, moved 2; fix rows 6	merge3-20261113T213425-c36bcd5f	2026-11-15T18:12:53Z
