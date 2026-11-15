@@ -11100,3 +11100,4 @@ buildiq	1663	bc4988b2723cda0f99d6d6e44ef9291438106c76	GREEN	worker-09	3212 tests
 launchpad	1230	bbc5350fbdf157327ebb69841d679e408accd7d8	GREEN	worker-25	unit 4269 on the tree vs baseline 4235, 1 inherited failure (OpenApiStabilityTest), 0 new; php -l clean; no JS touched; build PR per embedded-analytics, every new route admin-only
 dossiq	6544	1e0fa1d7df0c83a4f9346c904b86a06202631255	GREEN	worker-58	unit 17389 run on tree, baseline 17385 with 19 inherited failures (same 19 names on tree), no new failures; tests only
 planninq	1191	662066c3616af40f181eb44242e849bcd46fef62	GREEN	worker-55	phpunit 1177 OK (baseline 1177 OK), vitest 143 files / 3463 tests pass; tests only
+stackiq	1966	0000ed2543b5718896e65d93fc195389c327cef6	REVERIFY	worker-56	merged development in, kept both sides' l10n keys (deduplicated one key added by both), regenerated en/nl .js (check:l10n-js and test:l10n clean); new head 5c005420f7d22e65846a41da08ffd1b7e7400423, verify it
