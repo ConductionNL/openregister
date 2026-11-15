@@ -15364,3 +15364,4 @@ fix:thematiq:1292:f21993f3	merged development, vitest green, pushed 1c6de772, RE
 fix:thematiq:1557:b3ab646d	failed: dev-only phpstan bump; regen-sbom.sh --check says sbom.cdx.json already current after merging development (phpstan omitted as dev), so the gate's lock-changed-without-sbom rule cannot be met by a real change; needs a gate exemption for unchanged SBOMs, nothing pushed	session-20261115T220036-e665285d	2026-11-15T22:26:25Z
 fix:thematiq:1291:3fac1aca	fixed: development merged in; REVERIFY at ac416a6a	session-20261115T213107-505dc338	2026-11-15T22:26:24Z
 fix:portaliq:1673:73721356	saveObject moved to ObjectSaveOptions; new head 06264bd1	session-20261115T202932-d1067ee4	2026-11-15T22:26:37Z
+fix:thematiq:1289:2557e0ba	no change needed: sbom already current (dev-only bump), regen --check passes	session-20261115T211111-34885d99	2026-11-15T22:26:46Z
