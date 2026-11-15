@@ -12657,3 +12657,4 @@ fix:stackiq:1966:5c005420	no conflict with development; only with unmerged sibli
 cover:pipelinq:7f9dc8e6m195a:0798b7cf	failed: permission (all 4 PosCart classes have branch-level tests; locating the uncovered lines needs pcov, install refused)	session-20261115T005141-9356bed0	2026-11-15T01:39:54Z
 verify:integriq:3646:9e94aa28	GREEN 3646 (phpunit 9232, no new failures, tests only)	session-20261115T001758-161b0715	2026-11-15T01:40:08Z
 merge:portaliq:2508:b7e3d098	stale	feeder	2026-11-15T01:40:32Z
+cover:dossiq:069ee2d6mdd7c:13d4699e	dir already at 99.7% (target 95); PR #6549 covers the default link expiry (+1 test); last line unreachable	session-20261115T011758-953fbe72	2026-11-15T01:41:21Z
