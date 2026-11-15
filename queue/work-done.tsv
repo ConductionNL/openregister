@@ -14731,3 +14731,4 @@ review:versioniq:707:9729dcff	GREEN: suite = baseline (2 inherited)	session-2026
 review:stackiq:1064:adce3cb4	GREEN; range-only devDependency bump	session-20261115T200045-d3bb5c75	2026-11-15T20:17:38Z
 review:opencatalogi:1893:e1cf5480	GREEN: openspec-only sweep, merges cleanly	session-20261115T182940-bfeb7e78	2026-11-15T20:17:46Z
 fix:dossiq:2902:791b50a4	conflict resolved, pushed 852fcee3, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:17:54Z
+review:opencatalogi:2665:cdc5db8f	RED: ViewObjectSaveLogic jest test now gets PATCH; PHP no new failures	session-20261115T200043-78b85ca2	2026-11-15T20:18:08Z
