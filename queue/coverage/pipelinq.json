@@ -1,12 +1,12 @@
 {
  "app": "pipelinq",
- "commit": "0d8e11ea2b1d22ff9194ea1eb6cc304302266ddd",
- "measured_at": "2026-11-15T00:12:32Z",
+ "commit": "b95089f952bbee39abb8cd61e0f86209bdb86a1a",
+ "measured_at": "2026-11-15T02:30:04Z",
  "php": {
   "tool": "pcov",
-  "pct": 92.79,
+  "pct": 94.36,
   "statements": 62916,
-  "covered": 58379,
+  "covered": 59365,
   "dirs": {
    "lib/Activity/": [
     66,
@@ -26,7 +26,7 @@
    ],
    "lib/BackgroundJob/": [
     1637,
-    1581
+    1635
    ],
    "lib/Command/": [
     423,
@@ -34,7 +34,7 @@
    ],
    "lib/Controller/": [
     8693,
-    7990
+    8155
    ],
    "lib/Dashboard/": [
     42,
@@ -66,7 +66,7 @@
    ],
    "lib/Lifecycle/": [
     271,
-    252
+    270
    ],
    "lib/Listener/": [
     1906,
@@ -94,7 +94,7 @@
    ],
    "lib/Repair/": [
     2661,
-    2461
+    2562
    ],
    "lib/Repair/Support/": [
     95,
@@ -106,7 +106,7 @@
    ],
    "lib/Service/": [
     32404,
-    29290
+    29937
    ],
    "lib/Service/Access/": [
     95,
@@ -206,7 +206,7 @@
    ],
    "lib/Service/Marketing/Transport/": [
     332,
-    327
+    328
    ],
    "lib/Service/Matomo/": [
     72,
@@ -307,17 +307,21 @@
   }
  },
  "js": {
-  "pct": 93.75,
-  "statements": 18610,
-  "covered": 17446,
+  "pct": 94.32,
+  "statements": 18562,
+  "covered": 17508,
   "dirs": {
    "src/": [
-    191,
+    118,
     115
    ],
    "src/components/": [
     1486,
     1447
+   ],
+   "src/components/CapabilityComparison/": [
+    25,
+    23
    ],
    "src/components/admin/": [
     479,
@@ -417,7 +421,7 @@
    ],
    "src/dialogs/": [
     1803,
-    1720
+    1731
    ],
    "src/manifest.d/": [
     59,
@@ -557,7 +561,7 @@
    ],
    "src/views/settings/": [
     1342,
-    1280
+    1308
    ],
    "src/views/social/": [
     164,
