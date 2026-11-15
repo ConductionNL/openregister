@@ -14873,3 +14873,4 @@ review:shillinq:1904:cc11db13	GREEN: unit ok, phpmd findings 153->152 (gate alre
 fix:humaniq:661:e498ba1f	sbom regenerated, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:43:47Z
 fix:humaniq:685:5020bb2b	merged development, sbom regenerated, pushed c73546cd; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:43:57Z
 review:shillinq:2063:d268a245	GREEN: hardening, suite ok	session-20261115T195953-2618bb8a	2026-11-15T20:44:08Z
+fix:learniq:2126:af7f7379	sbom regenerated after merging development; REVERIFY at 4e6551e4	session-20261115T195958-28cb0304	2026-11-15T20:44:17Z
