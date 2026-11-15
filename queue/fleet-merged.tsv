@@ -3201,3 +3201,4 @@ integriq	3639	e46772691b83900efe3492faf4f968767c898fa1	SKIP	merge3	GATE UNMEASUR
 integriq	3640	58f75cf1efb25b7cd184fdd1471af70336dc91cf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	3642	14d64297c55e9e0be02ed0d6e9c59cd45db79134	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	3643	0d836b5b429d856abbf0eae92189b381c0bf1f60	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+thematiq	1677	5e934e94706006fbd51f109fcc53208443fdf956	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
