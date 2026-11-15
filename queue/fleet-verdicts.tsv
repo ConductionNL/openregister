@@ -13209,3 +13209,6 @@ decidiq	1692	afd2e246ef457285042148e8bd1e5241a8a7bf06	CONFLICT	merge3	conflicts 
 decidiq	1941	4df452c6445be57346aa24b51cacc19bdf6a4dff	CONFLICT	merge3	conflicts with development; files: psalm.xml 
 decidiq	1950	76d893478e42eabaf95990a3484d454acf63283f	CONFLICT	merge3	merges clean on development alone; files: composer.lock 
 larpinq	1053	4113c48af17f104b02dc2ed6c6d668bb199841db	REVERIFY	worker-18	merged development in; split EventCareRecords copy/refresh/record and RegistrationService::afterWrite into small units; moved the register/schema lookup unchanged out of RegisterObjectFetcher into RegisterSchemaLookup (resolver test now reflects on it); listener order unchanged; floor PASS (overall 5.02->5.04, module_coupling 4.80->4.99); unit 1002 tests, failures 18 vs 20 on the pre-fix head, none new; new head fa6976fd13ab5e8f301a037ce834dd3d1d818f9f, verify it
+stackiq	1044	b39f982b4de7e1ce65f0614911d4507a14d33d9b	CONFLICT	merge8	conflicts with development; files: package-lock.json 
+stackiq	1417	d2903140e66974eba3485938584f867c242f93c7	CONFLICT	merge8	conflicts with development; files: l10n/en.js l10n/en.json src/manifest.json 
+stackiq	1941	40710dd9444256cb88f93476396f1bed4d338240	CONFLICT	merge8	conflicts with development; files: l10n/en.js l10n/en.json src/customComponents.js 
