@@ -11167,3 +11167,4 @@ decidiq	2214	6b3f73488e20fa0d7749352a6aef7e078b11cc40	GREEN	worker-42	phpunit-un
 dossiq	6547	b29f141032c472458e4c3aa303907a362bf91b05	GREEN	worker-02	tree of 2: 17552 tests, baseline 17532 with 19 failures, no new failures; tests only
 stackiq	1979	417f4045b045013e0912d3015ee3d2fafd7e9f46	GREEN	worker-14	tests only; phpunit 3626 OK (= baseline); vitest 2616 passed, 1 failure inherited (facets.spec), 0 new
 dossiq	6548	174ef17767dc32e862eaa2cc8b26ab3007d88e7b	GREEN	worker-02	tree of 2: 17552 tests, baseline 17532 with 19 failures, no new failures; tests only
+portaliq	2508	7a38ec9aab8d4b880bd348a7ab52b3e6ad084cc5	CONFLICT	worker-52	conflicts with development in lib/Settings/portaliq_register.json, tests/Unit/Settings/PortaliqRegisterConfigTest.php, tests/example-site.spec.mjs
