@@ -14080,3 +14080,4 @@ fix:pipelinq:2959:0f2f1b3f	failed: permission (closing the PR was refused). Find
 review:dossiq:5281:c8b6cb2d	GREEN: follows openregister main class moves; suite clean beyond env failures	session-20261115T174819-9af28ef9	2026-11-15T18:11:45Z
 fix:pipelinq:2503:8913d60e	failed: development built marketing-campaign-on-client separately (102b99c87) and moved the listener, intake and touchpoint service onto Kernel interfaces and value classes; 18 files conflict, so the system-account intake must be re-ported onto development's design, not merged	session-20261115T174757-8dfa7406	2026-11-15T18:11:53Z
 review:pipelinq:3150:03b03d45	BLOCK: stub namespace Service\Object does not match OR main Kernel\Contracts\Value	session-20261115T152558-f97be55f	2026-11-15T18:11:54Z
+review:dossiq:3954:bf91e1b8	GREEN: rename refactor, no callers left, no new failures	session-20261114T102637-6688951e	2026-11-15T18:12:11Z
