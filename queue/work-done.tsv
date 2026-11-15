@@ -15302,3 +15302,4 @@ review:launchpad:763:ac59f293	GREEN: vitest 5 group bump, 2578/2578 tests pass	s
 review:integriq:3628:858c7a5d	GREEN: implements change specs, no new failures	session-20261115T220134-9124a7d0	2026-11-15T22:16:39Z
 verify:larpinq:1060:d9ee27f2	1060 GREEN	session-20261115T213107-505dc338	2026-11-15T22:16:51Z
 fix:filinq:2088:7e328ebd	fixed: ObjectFindOptions in GenerationSourceObject; new head bd2b4649, REVERIFY recorded	session-20261115T211111-34885d99	2026-11-15T22:17:02Z
+fix:decidiq:1692:afd2e246	conflict resolved, pushed faa2a2eb, REVERIFY	session-20261115T220021-7060b99c	2026-11-15T22:17:09Z
