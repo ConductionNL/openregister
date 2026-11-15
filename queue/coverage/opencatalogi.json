@@ -1,12 +1,12 @@
 {
  "app": "opencatalogi",
- "commit": "f7123cd099a66674f817b59cba6fc6c32a11abeb",
- "measured_at": "2026-11-15T15:32:24Z",
+ "commit": "4c92027693e17ed9f0b59c8d2dccbf8ca22ace91",
+ "measured_at": "2026-11-15T19:20:14Z",
  "php": {
   "tool": "pcov",
   "pct": 95.37,
-  "statements": 18655,
-  "covered": 17791,
+  "statements": 18667,
+  "covered": 17802,
   "dirs": {
    "lib/BackgroundJob/": [
     91,
@@ -21,8 +21,8 @@
     10
    ],
    "lib/Controller/": [
-    3563,
-    3376
+    3570,
+    3383
    ],
    "lib/Controller/Setup/": [
     297,
@@ -45,8 +45,8 @@
     91
    ],
    "lib/Listener/": [
-    478,
-    469
+    466,
+    456
    ],
    "lib/Mcp/": [
     199,
@@ -77,8 +77,8 @@
     6
    ],
    "lib/Service/": [
-    8308,
-    7719
+    8311,
+    7722
    ],
    "lib/Service/Broadcast/": [
     2,
@@ -109,8 +109,8 @@
     1209
    ],
    "lib/Service/Table/": [
-    163,
-    161
+    177,
+    175
    ],
    "lib/Service/Term/": [
     4,
@@ -135,9 +135,9 @@
   }
  },
  "js": {
-  "pct": 85.91,
-  "statements": 2350,
-  "covered": 2019,
+  "pct": 96.22,
+  "statements": 2356,
+  "covered": 2267,
   "dirs": {
    "src/": [
     113,
@@ -204,12 +204,12 @@
     19
    ],
    "src/services/": [
-    626,
-    621
+    632,
+    627
    ],
    "src/store/modules/": [
     1151,
-    840
+    1082
    ],
    "src/views/settings/": [
     10,
