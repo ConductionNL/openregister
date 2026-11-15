@@ -12839,3 +12839,4 @@ merge:dossiq:6524:530fa8c5	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 
 merge:dossiq:6527:923af8af	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 skip=2; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T02:18:48Z
 merge:dossiq:6523:582fa52e	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 skip=2; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T02:19:01Z
 cover:integriq:92114ab0m6759:ee14dc38	PR #3654: 1 test, lib/Adapters/Berichtenbox statements 98.98->99.24% (rest unreachable defensive branches)	session-20261115T011811-95390b97	2026-11-15T02:19:07Z
+merge:dossiq:6528:6afeec0a	merge3 tree of 18 dossiq PRs: merged=15 red=0 fail=0 skip=2; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T02:19:05Z
