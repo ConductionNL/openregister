@@ -12564,3 +12564,9 @@ buildiq	1249	a5648e987487a374090e3b7ea665fbc82be11190	REVERIFY	worker-41	merged 
 buildiq	1596	e5795e30e93248e89a292588e86dd6e2a05d6dec	REVERIFY	worker-19	Moved the organisation-scope check into findVisibleAppBySlug/findVisibleApplication/uidOf helpers (same results); unit_complexity floor 3.31 -> 3.32 vs base 3.33, gate PASS; unit 3225, only inherited ExportZipGoldenTest red; new head ba6566ea615aabaf9824e0e59699ccfcd32d7891, verify it
 buildiq	1089	322d7e65afdedbd9fa7ab4e75317c93d0b5c41c4	REVERIFY	worker-09	no change: merges clean with current development (package.json vitest ^5.0.5 + lock); the conflict is with another lockfile PR in the same tree, verify it as a one-PR tree; head unchanged 322d7e65afdedbd9fa7ab4e75317c93d0b5c41c4
 buildiq	820	306021ea136ff1a86cd0c87615c936f65f3c1e52	REVERIFY	worker-55	merged development, regenerated sbom.cdx.json with bin/regen-sbom.sh (development's own SBOM was already missing @isaacs/nonrecursive-glob-match); new head a6bd63eb2f68837d7f3fe2f2263f6ae8dc5c7a9e, verify it
+pipelinq	2187	ebdded89e7974f71df19e999901872b308decead	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	2557	5d12aa50f9fac2057c026beb4b74d34aaed1b4f6	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	3083	ab965a9c0deeb660bf9b0b4d47c505a817ce9835	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+pipelinq	3084	012088294b81df9416cc16f60866771d7bac8622	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	3085	34857519bac429d0d2d4ee7845f73ae693827d33	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+pipelinq	3088	3135c0b1fd518352b7f25ce329aeedbf29528011	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
