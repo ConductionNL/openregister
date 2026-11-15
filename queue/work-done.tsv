@@ -12861,3 +12861,4 @@ verify:pipelinq:3865:2eed68ae	GREEN 3865 (tests only; vitest +27 green, inherite
 cover:dossiq:069ee2d6madb6:257914df	already done: the 9 lib/Service dirs at 96.1% (171/178 stmts) on development 058200d, above the 95 target	session-20261115T005122-49ba1b99	2026-11-15T02:24:23Z
 cover:dossiq:069ee2d6madb6:a07ceba0	already done: lib/Service/Dso/ at 99.0% (292/295 stmts) on development 058200d	session-20261115T005122-49ba1b99	2026-11-15T02:24:37Z
 cover:dossiq:069ee2d6madb6:bf05c668	already done: lib/BulkAction/*.php at 96.9% (218/225 stmts) on development 058200d, above the 95 target	session-20261115T005122-49ba1b99	2026-11-15T02:24:52Z
+cover:dossiq:069ee2d6madb6:ceb285b8	already done: lib/Service/Publication/ at 100% statements on development; no PR	session-20261115T012426-ca0c1432	2026-11-15T02:25:07Z
