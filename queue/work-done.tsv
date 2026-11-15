@@ -14501,3 +14501,4 @@ fix:opencatalogi:1894:552c9a7c	conflict resolved (openspec only), new head 4083b
 fix:opencatalogi:2687:8336209f	merged development (clean), pushed 9198190b, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T19:18:48Z
 fix:launchpad:757:df60a474	lock resynced on development, npm ci + vitest green; new head 674cfd98	session-20261115T174833-88ac0233	2026-11-15T19:18:59Z
 fix:launchpad:1234:d725a0f0	fixed RED sbom: regenerated sbom.cdx.json; new head 0bc43ee2, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T19:19:07Z
+fix:opencatalogi:1893:143da9ef	conflicts resolved, pushed e1cf5480, REVERIFY recorded	session-20261115T191034-1f4b55ee	2026-11-15T19:19:20Z
