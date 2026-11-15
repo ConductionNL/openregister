@@ -13638,3 +13638,20 @@ merge:hermiq:1781:5cf7b908	merge	hermiq	development	development	prs=1781@00e5f20
 merge:integriq:3615:73ce4aeb	merge	integriq	development	development	prs=3615@696541cd1840901e9756c325c532e80955f0f9c8,3638@80f3ed7527ba0857d0f959e1f699edfb302ab796,3662@3ca2c15af0945943557dba6a368b0b05a529216f	2026-11-15T15:30:35Z
 merge:decidiq:2170:d8b4f8ae	merge	decidiq	development	development	prs=2170@730fcd404659b88b0640433ce3176b73932df013,2207@91c94c38a4100641a257179058ed9aeb24dc2f5b,2212@b65d41d8624be71bf0f063131227a1f1f209e947,2217@5a7315b241831d515c20a94e39f2d2e852963e14,2218@b16364d215e56298139fbef52ecfb728dbb9edfa	2026-11-15T15:30:35Z
 merge:filinq:2088:d303bab8	merge	filinq	development	development	prs=2088@a003bdfc492f56fd5497c49c5e56775c4a2ef099	2026-11-15T15:30:35Z
+review:openregister:10586:dd1990e6	review	openregister	main	10586	sha=dd1990e6dbe5d973fb42b2a4e155b8055cde0143;last_approved=;title=test(openregister): cover search embedding and GraphQL context services	2026-11-15T15:35:08Z
+review:integriq:3546:994fb6f7	review	integriq	development	3546	sha=994fb6f7175b5ba3541d7fb2ac669572e4d32ac4;branch=quality/build-connectors-endpoint-workspace-adapters;title=feat(integriq): build connectors-endpoint-workspace-adapters	2026-11-15T15:35:08Z
+review:integriq:3564:4585a979	review	integriq	development	3564	sha=4585a979b4981704a0fedc24a4b143a0efb639be;branch=quality/build-gateway-api-design-rules-check;title=feat(integriq): build gateway-api-design-rules-check	2026-11-15T15:35:08Z
+review:filinq:2114:473e8036	review	filinq	development	2114	sha=473e80363f1c006e2d761aff68f67898e0509c5b;branch=quality/build-anonymization-review-workbench;title=feat(filinq): build anonymization-review-workbench	2026-11-15T15:35:08Z
+review:opencatalogi:2643:876cac08	review	opencatalogi	development	2643	sha=876cac08a833f610b7913261142945d7a1ddf2e0;branch=quality/build-dcat-catalogue-completion;title=feat(opencatalogi): build dcat-catalogue-completion	2026-11-15T15:35:08Z
+verify:stackiq:1981:8d7fa4c7	verify	stackiq	development	merge	prs=1981@c33d00731ac03f4bb05019be164dd92196d5601c	2026-11-15T15:35:08Z
+verify:buildiq:1648:ced8329b	verify	buildiq	development	merge	prs=1648@a6359df5aaf3675771f0c48b96802926adab1398	2026-11-15T15:35:08Z
+verify:integriq:3628:0c587cb3	verify	integriq	development	merge	prs=3628@b222d402007b62773641b586f9bc370611953540,3638@91347cf39d41908608835f3a9511c5bf38b0be87,3665@b34e487a8e9ff83cbc15964b4d75b7a79e2c8eb0	2026-11-15T15:35:08Z
+verify:launchpad:1223:09e225ad	verify	launchpad	development	merge	prs=1223@721729feb7ebd206a740663c27ce70dd07fcb4a0,1229@4e62ac9c3b8fce11393a03575b2eb04babf19d39,1233@b9dbac40a95962b0a5d8d5b149282c09b075f84a	2026-11-15T15:35:08Z
+verify:opencatalogi:2699:e61b711a	verify	opencatalogi	development	merge	prs=2699@f5ba374e0761206209d37446c854840491afc8a5	2026-11-15T15:35:08Z
+merge:learniq:2549:b52d084d	merge	learniq	development	development	prs=2549@844e24a38bea3cb58bc03bb3e03f1cf6a4c4ff63	2026-11-15T15:35:08Z
+merge:hermiq:1791:9531c6a9	merge	hermiq	development	development	prs=1791@bf8747effdeb0792cc88a45bdee1a3f75bbbdcc1	2026-11-15T15:35:08Z
+merge:integriq:3589:8d6a8b8a	merge	integriq	development	development	prs=3589@e374c8c4585d40120b3b362c67b84e1e21c233cb,3596@efb65024a9aaea41a427ba79d4af92b544f8f4ad	2026-11-15T15:35:08Z
+merge:humaniq:1149:597b94e4	merge	humaniq	development	development	prs=1149@126271395edda4591c00bd685227e5c789c14f3f,1156@13c34f2d0b35f5c3211b533b3f33ecf953543db3	2026-11-15T15:35:08Z
+merge:shillinq:2997:27bbd61c	merge	shillinq	development	development	prs=2997@7b870224d3c82b20836dd05a8bec62849b69d47c	2026-11-15T15:35:08Z
+merge:filinq:2072:a8ded971	merge	filinq	development	development	prs=2072@7e876bbde9a093533f904000f37d762785fc3ee7	2026-11-15T15:35:08Z
+cover:opencatalogi:fc83bfb1m1045:jsd48eb217	cover	opencatalogi	development	quality/test-coverage-js-d48eb217	lang=js;dirs=src/store/modules/;focus=uncovered;weight=933;coverage=85.91;target=90.0	2026-11-15T11:14:39Z
