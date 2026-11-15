@@ -13246,3 +13246,4 @@ cover:integriq:92114ab0m6759:d3522ea6	PR #3665: OptOutLogEntry 3 tests (lib/Db n
 review:integriq:3596:efb65024	GREEN	session-20261115T142150-6c965c2a	2026-11-15T15:31:36Z
 build4:openregister:history-schema-and-settings-edits-audited:c5	PR #10515 head bdca5b31: built 5.2 (door test + Newman), 6.4 view (switch + store category), fixed listener-order goldens from 5.1; left live/e2e 1.3, 4.2, 6.4 spec, V.4 gates	session-20261115T142148-bdb54e0a	2026-11-15T15:31:49Z
 fix:integriq:3546:26a9245c	floor: ratchet findings 2->0 (11-param ctor split, dup removed), duplication +0.01; new head 994fb6f7, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T15:32:06Z
+review:shillinq:2997:7b870224	GREEN; phpunit 12273 OK, phpstan clean, vitest 1 inherited failure; note: backfill repair step not registered in info.xml	session-20261115T152558-f97be55f	2026-11-15T15:32:16Z
