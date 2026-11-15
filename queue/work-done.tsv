@@ -13342,3 +13342,4 @@ review:decidiq:1474:bbce152d	GREEN: devDep bump, vitest 2825 passed, eslint 0 er
 review:buildiq:1233:f1c8aa72	GREEN: copy rename, vitest green; trivial add/add conflict with development	session-20261114T102641-d4fd3e25	2026-11-15T15:50:18Z
 review:decidiq:1920:dfa5dba2	GREEN: copy-only rename Store -> Marketplace; PHPUnit, vitest and l10n checks green	session-20261115T145533-2db61682	2026-11-15T15:50:28Z
 review:decidiq:1737:43c02ff7	GREEN: phpstan 2.3.1 clean, unit suite 4461 OK same as development	session-20261115T152539-8dadb15a	2026-11-15T15:50:45Z
+review:buildiq:820:306021ea	GREEN: patch dev-dep bump, vitest 4667 pass	session-20261115T142149-1d09fceb	2026-11-15T15:50:59Z
