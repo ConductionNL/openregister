@@ -13288,3 +13288,4 @@ merge:thematiq:1677:86d006c6	merge3 tree of 1 thematiq PRs: merged=0 red=0 fail=
 review:integriq:3564:4585a979	GREEN: in-spec, suite/vitest/eslint clean; notes on create-path guard	session-20261115T142149-1d09fceb	2026-11-15T15:40:54Z
 review:buildiq:1088:817518a2	RED: lockfile out of sync, npm ci fails (development clean)	session-20261114T102641-d4fd3e25	2026-11-15T15:41:01Z
 verify:integriq:3628:0c587cb3	3 GREEN (3628, 3638, 3665); no new failures	session-20261115T152546-2c24b649	2026-11-15T15:41:16Z
+review:buildiq:1249:a5648e98	GREEN: dev-only phpstan bump, no new phpstan errors or test failures	session-20261115T142934-6cab0c24	2026-11-15T15:41:29Z
