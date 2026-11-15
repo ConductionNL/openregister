@@ -10883,3 +10883,4 @@ integriq	3595	66f788bdd8e3f9a9c5273bf914f25fdc2a05bc86	REVERIFY	worker-10	merged
 filinq	2102	726c91bb383caf23ef38a11f6c9d72f6b685e684	GREEN	worker-25:review	implements woo-metadata-worklist per its specs (missing-field column and filter, bulk set with the same per-record mayAct check as single metadata, default publisher); PHP unit 6774 pass, 0 failures; vitest 763 and jest 569 pass; phpstan clean
 portaliq	2508	f1ef2828e3441d9758382dc6d1ebdfd33b147739	CONFLICT	worker-14	conflicts with development + 2500
 portaliq	2518	55bb8c128d4d27ed5631adef84cfd29f969a311e	GREEN	worker-14	unit 5947 OK on tree 2500+2518+2519 (baseline 5840 OK), no new failures; no JS unit script; tests only
+portaliq	2519	4badcac520ffdd4c8e0d9243d636a066286973ec	GREEN	worker-14	unit 5947 OK on tree 2500+2518+2519 (baseline 5840 OK), no new failures; no JS unit script; tests only
