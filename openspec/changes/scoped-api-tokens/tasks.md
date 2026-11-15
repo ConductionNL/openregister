@@ -113,6 +113,9 @@
 - [x] C40.2a `lapsesSoon()` answers who should be warned.
 - [ ] C40.2b The notification that carries the warning, and the recorded
       renewal.
+      - Done, the notification half: `TokenGrantLapseJob` (daily, registered in `appinfo/info.xml`) reads each Consumer's grant and, when `TokenGrantValidator::lapsesSoon()` holds, notifies the user the Consumer acts as with subject `token_grant_lapsing` (the token's name, the end date and the days left), replacing the previous warning for the same token rather than stacking one per day. A lapsed grant, one without an end date, a Consumer without a user or with a deleted user gets nothing. `AccessSubjectRenderer` renders the subject. Tests: `tests/Unit/BackgroundJob/TokenGrantLapseJobTest.php` (5), `NotifierTest::testPrepareTokenGrantLapsing`.
+      - Left: the recorded renewal (actor and new end date), which needs the grant editor (3.1) to carry a renewal act; personal tokens follow once 1.1c gives them a grant.
+      - Not applicable to C40.5's remainder: OpenRegister flows have no outbound HTTP step, so only webhooks carry an outbound destination here.
 - [x] C40.4a The limit is carried on the grant and validated as a positive
       number of calls per minute.
 - [x] C40.4b The counter and the refusal that names it, which needs a shared

@@ -138,6 +138,7 @@ BackgroundJob/TemporalCalculationSweepJob.php,63,BackgroundJob,Flows,Flows/Backg
 BackgroundJob/TenantDeprovisionJob.php,50,BackgroundJob,Access,Access/BackgroundJob/TenantDeprovisionJob.php,0,,Core
 BackgroundJob/TenantPurgeJob.php,85,BackgroundJob,Access,Access/BackgroundJob/TenantPurgeJob.php,0,,Core
 BackgroundJob/TenantUsageSyncJob.php,84,BackgroundJob,Access,Access/BackgroundJob/TenantUsageSyncJob.php,0,,Core
+BackgroundJob/TokenGrantLapseJob.php,58,BackgroundJob,Access,Access/BackgroundJob/TokenGrantLapseJob.php,0,,Core
 BackgroundJob/TransferCheckJob.php,78,BackgroundJob,Access,Access/BackgroundJob/TransferCheckJob.php,0,,Core
 BackgroundJob/TransferExecutionJob.php,143,BackgroundJob,Access,Access/BackgroundJob/TransferExecutionJob.php,0,,Core
 BackgroundJob/TranslationProjectionJob.php,51,BackgroundJob,Flows,Flows/BackgroundJob/TranslationProjectionJob.php,0,,Processes

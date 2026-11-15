@@ -56,6 +56,7 @@ class AccessSubjectRenderer extends SubjectRenderer {
 			'credential_relink_needed' => $this->credentialRelinkNeeded(notification: $notification, l: $l),
 			'audit_export_ready' => $this->auditExportReady(notification: $notification, l: $l),
 			'external_grant_lapsing' => $this->externalGrantLapsing(notification: $notification, l: $l),
+			'token_grant_lapsing' => $this->tokenGrantLapsing(notification: $notification, l: $l),
 			default => null,
 		};
 	}//end render()
@@ -269,4 +270,29 @@ class AccessSubjectRenderer extends SubjectRenderer {
 
 		return $this->withAppIcon(notification: $notification);
 	}//end externalGrantLapsing()
+
+	/**
+	 * Render "your token lapses soon", naming the token and the date.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param IL10N $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-carries-a-required-end-date-and-is-warned-before-it-lapses-req-sat-003
+	 */
+	private function tokenGrantLapsing(INotification $notification, IL10N $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$token      = (string)($parameters['token'] ?? '');
+
+		$notification->setParsedSubject($l->t('Your token "%1$s" ends in %2$s days', [$token, (string)($parameters['daysLeft'] ?? '')]));
+		$notification->setParsedMessage(
+			$l->t(
+				'The token "%1$s" stops working on %2$s. Renew it before then if the integration still needs it.',
+				[$token, (string)($parameters['endsAt'] ?? '')]
+			)
+		);
+
+		return $this->withAppIcon(notification: $notification);
+	}//end tokenGrantLapsing()
 }//end class
