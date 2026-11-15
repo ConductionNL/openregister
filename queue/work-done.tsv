@@ -15277,9 +15277,11 @@ review:opencatalogi:2541:84647e95	GREEN: repair step, no new failures	session-20
 verify:versioniq:735:b888ea4b	735 GREEN, 736 GREEN; 0 new failures (2 inherited golden), vitest green	session-20261115T220037-4fd37272	2026-11-15T22:12:13Z
 verify:opencatalogi:2701:1918cebf	RED: 2701 breaks CatalogueSharedPublicationTest::testAnUnknownCatalogueListsNothing (unknown catalogue now 404)	session-20261115T213156-1ffcf961	2026-11-15T22:12:20Z
 verify:buildiq:1652:6d8da72a	both CONFLICT (l10n/en.js, en.json vs development 013580c7)	session-20261115T220036-e665285d	2026-11-15T22:12:34Z
+review:opencatalogi:2679:467db25a	stale	session-20261115T213156-1ffcf961	2026-11-15T22:12:42Z
 fix:dossiq:6203:f6f40df6	fixed: test double matches main find(); Portal 209 OK; new head 5bb98561	session-20261115T213134-4b0d2823	2026-11-15T22:12:44Z
 review:stackiq:1928:36057a15	GREEN: per change spec, suite 3723 tests OK	session-20261115T220036-9d15b9ea	2026-11-15T22:12:52Z
 review:launchpad:1229:348b5e3e	GREEN: spec build, unit 4538 OK, vitest 2608 OK	session-20261115T213110-6b33145c	2026-11-15T22:13:05Z
 review:opencatalogi:2687:a52c913a	GREEN: matches change specs, 0 new failures	session-20261115T220011-f1302da8	2026-11-15T22:13:19Z
 review:launchpad:1212:b82c095c	GREEN: spec-conform, guarded routes, all suites green	session-20261115T213122-e023a81e	2026-11-15T22:13:28Z
 verify:launchpad:1230:f3af8fe8	GREEN x3 (1230,1234,1235); no new failures	session-20261115T213112-78aba834	2026-11-15T22:13:51Z
+verify:opencatalogi:2696:9e469c95	2723 GREEN; 2696 BLOCK, 2699 BLOCK (old OpenRegister named args)	session-20261115T213107-505dc338	2026-11-15T22:14:03Z
