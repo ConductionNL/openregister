@@ -13992,3 +13992,4 @@ review:buildiq:1090:8b2df26a	GREEN: vitest 4692 pass, build ok	session-20261115T
 verify:larpinq:1060:afb8181c	GREEN 1060: phpunit 899 ok, vitest 583 ok	session-20261115T174741-56eeaa2f	2026-11-15T17:51:39Z
 review:larpinq:1050:67a10904	GREEN: per-spec, merges clean, suites pass	session-20261115T142129-944012f5	2026-11-15T17:51:49Z
 review:filinq:2121:cb1efd91	GREEN: unit 6799 OK (baseline 6772), phpstan clean, vitest OK	session-20261115T174755-95dc8448	2026-11-15T17:52:03Z
+verify:portaliq:2527:a6de80af	GREEN 2527: unit 6168 OK, node specs 47/47	session-20261115T152543-40aea993	2026-11-15T17:52:11Z
