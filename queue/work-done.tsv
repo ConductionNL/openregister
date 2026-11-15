@@ -13382,3 +13382,4 @@ review:dossiq:5353:15d28d9d	CONFLICT: 97 files conflict with development	session
 review:dossiq:5556:cfd808c9	BLOCK: depends on StoreListing absent from openregister main; also conflicts	session-20261115T154314-8216dc98	2026-11-15T15:56:31Z
 review:dossiq:4870:ec90c58c	CONFLICT: development already carries a build of the same change; PR green alone (vitest 4526), behaviour per spec; needs merge of development or close as superseded	session-20261115T145533-2db61682	2026-11-15T15:56:41Z
 review:dossiq:5398:7c1b653e	RED: composer install fails (psalm 7.2.1 needs php ~8.3.16, platform pinned to 8.3)	session-20261115T145541-9d69768b	2026-11-15T15:56:49Z
+review:decidiq:1475:4c1b9a60	BLOCK: gridstack 14 outside the component library's peer range	session-20261115T142934-6cab0c24	2026-11-15T15:56:58Z
