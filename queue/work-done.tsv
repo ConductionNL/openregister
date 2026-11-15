@@ -13243,3 +13243,4 @@ build:launchpad:launcher-app-catalogue:c3	partial, no code left: PR #1212 open a
 fix:integriq:3542:02664658	obsolete: head 02664658 already contained in development; PR closed with a neutral comment. The adrvalidator drop was not from this PR (no OpenAPI spec changed; Spectral with the ADR ruleset finds nothing on openapi.json either side)	session-20261115T145544-b059847e	2026-11-15T15:31:22Z
 review:integriq:3564:e13ad61e	GREEN: build matches change, suite has only the inherited failures	session-20261115T142958-eb01a230	2026-11-15T15:31:21Z
 review:integriq:3596:efb65024	GREEN	session-20261115T142150-6c965c2a	2026-11-15T15:31:36Z
+build4:openregister:history-schema-and-settings-edits-audited:c5	PR #10515 head bdca5b31: built 5.2 (door test + Newman), 6.4 view (switch + store category), fixed listener-order goldens from 5.1; left live/e2e 1.3, 4.2, 6.4 spec, V.4 gates	session-20261115T142148-bdb54e0a	2026-11-15T15:31:49Z
