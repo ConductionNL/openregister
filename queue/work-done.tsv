@@ -14141,3 +14141,4 @@ review:pipelinq:3150:033622ec	GREEN; stub namespace fixed, phpunit 8890 OK	sessi
 merge:planninq:869:dc6b7d1c	merge8 tree of 7 planninq PRs: merged=0 red=6 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge8-20261115T170007-37538273	2026-11-15T18:23:42Z
 fix:portaliq:1766:ff523eae	lock regenerated, npm ci ok, pushed 23513ec0; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:23:45Z
 merge:planninq:908:5035230c	merge8 tree of 7 planninq PRs: merged=0 red=6 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge8-20261115T170007-37538273	2026-11-15T18:23:56Z
+fix:portaliq:1768:2c4e29aa	fixed: lock rebuilt on development, npm ci OK; new head 5560c998, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:23:53Z
