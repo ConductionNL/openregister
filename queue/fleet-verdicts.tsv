@@ -10952,3 +10952,4 @@ versioniq	707	edd40e938f3c78e315dac1b253c5b9bc11b7fd93	REVERIFY	worker-02	merged
 pipelinq	3850	e6de08f6f2d517f542e1175c92eab1d05d0ee3f4	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
 pipelinq	3851	ffb1ffc286675b021070f9523f319a4c87e9d0b1	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
 pipelinq	3852	eb8867aaf2cce3aaec16dbfed1264132c1c21014	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
+keepiq	1819	ac4cc540143005d8882959212b1d84ae9335c9a6	GREEN	worker-13	phpunit 5247 OK (baseline 5213 OK), vitest 6626 with 3 inherited HealthReportView.controls fails (red on development), new failures 0; tests only
