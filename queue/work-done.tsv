@@ -15171,3 +15171,4 @@ review:versioniq:507:63401e45	GREEN	session-20261115T202932-d1067ee4	2026-11-15T
 review:versioniq:505:aeceef74	GREEN: test-utils patch bump, vitest 3012 OK	session-20261115T213156-1ffcf961	2026-11-15T21:50:21Z
 review:filinq:2122:e0f7a647	BLOCK: repair still uses dropped OR save args	session-20261115T203012-30a1abde	2026-11-15T21:50:32Z
 review:decidiq:2203:14dc6807	GREEN: spec-conform build, all checks pass	session-20261115T213122-e023a81e	2026-11-15T21:50:40Z
+review:decidiq:2149:25a0bf97	BLOCK: 6 new openregister calls use removed named-arg API (find/saveObject register:/schema:); tests green	session-20261115T213101-2fb56005	2026-11-15T21:50:46Z
