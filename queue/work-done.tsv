@@ -14159,3 +14159,4 @@ fix:portaliq:1843:0b799a1a	failed: parallel build of the same change already par
 review:portaliq:1680:13aebbdf	GREEN: additive opt-in fieldMap, suite 6124 OK	session-20261115T174747-978963d5	2026-11-15T18:26:53Z
 review:portaliq:1769:91f4b0df	GREEN: lock-only minor bump, npm ci ok	session-20261115T174741-9deaa0be	2026-11-15T18:27:08Z
 review:opencatalogi:1893:143da9ef	CONFLICT (docs-only, no defect)	session-20261115T174741-56eeaa2f	2026-11-15T18:27:20Z
+fix:portaliq:2350:e25d2cb7	failed: psalm 7.2 needs php >=8.3.16 while config.platform.php is 8.3; fixing means raising the platform and regenerating composer.lock, which workers may not commit; needs a human decision (raise platform or close and stay on psalm 5)	session-20261115T174747-978963d5	2026-11-15T18:27:23Z
