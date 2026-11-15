@@ -14066,3 +14066,4 @@ merge:integriq:3546:b8d12ec0	merge3 tree of 13 integriq PRs: merged=8 red=2 fail
 review:dossiq:4882:2a47c981	GREEN: changes match its spec delta; 0 new failures	session-20261115T174808-50b8ceec	2026-11-15T18:08:40Z
 review:dossiq:2909:23f03bf8	GREEN: config + test hoist only, failures inherited	session-20261115T174747-978963d5	2026-11-15T18:08:55Z
 fix:pipelinq:2458:9c135002	conflict resolved, merged development, unit suite green; new head 31ac15a5	session-20261115T174833-88ac0233	2026-11-15T18:09:07Z
+fix:dossiq:3957:89c80a54	fixed: merged development onto renamed classes; new head 17cbacac	session-20261115T174819-9af28ef9	2026-11-15T18:09:30Z
