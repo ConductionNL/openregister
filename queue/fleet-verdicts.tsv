@@ -11064,3 +11064,5 @@ versioniq	701	ccfb01ba8e00eaa2d30b264aaa91448565430726	CONFLICT	worker-34	confli
 versioniq	705	deb4057728ad152adedf6baa4c37a2522386441f	CONFLICT	worker-34	conflicts with tree (development + earlier PRs)
 versioniq	707	52b14c8561adf06af1a82734ece2b5c766b2991b	CONFLICT	worker-34	conflicts with tree (development + earlier PRs)
 stackiq	1975	0a07161e12ea64b8492aeed816bcfda16f0547ff	REVERIFY	worker-37	merged development in (no conflict left on current development); unit green, l10n check OK; new head 31c8ee501c2e8bd8d38c510a7cad01d33d4118b2, verify it
+portaliq	2498	b177669a04c071a5569040a1c828ebede28c77fb	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+portaliq	2500	9048d1df63c73b58f7a7e369d5a04a4adb1cfe6e	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/portaliq_register.json tests/Unit/Settings/PortaliqRegisterConfigTest.php tests/example-site.spec.mjs 
