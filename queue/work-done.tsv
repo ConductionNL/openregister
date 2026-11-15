@@ -15330,3 +15330,4 @@ fix:filinq:2123:e76e9dab	fixed: conflict resolved, new OR calls on main API; new
 fix:stackiq:1168:2d1a29df	sbom regenerated, pushed 04f38d3ae4a4d17b142dbafb97d2a81126d6568c, REVERIFY	session-20261115T220011-f1302da8	2026-11-15T22:21:19Z
 fix:decidiq:1767:3e9af0ff	sbom regenerated; new head ef20753c	session-20261115T203012-30a1abde	2026-11-15T22:21:28Z
 fix:decidiq:1941:4df452c6	obsolete: all commits already on development via quality/ormig-decidiq; closed with comment	session-20261115T213101-2fb56005	2026-11-15T22:21:35Z
+review:opencatalogi:1894:81ec0aeb	GREEN: openspec-only tick sweep, merges cleanly	session-20261115T220036-e665285d	2026-11-15T22:21:48Z
