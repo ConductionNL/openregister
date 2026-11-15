@@ -15358,3 +15358,4 @@ fix:learniq:1901:07332d28	conflict resolved (imports), pushed 152da34c; REVERIFY
 fix:decidiq:2149:25a0bf97	migrated new calls to main's options API; head acad1376, REVERIFY	session-20261115T220134-9124a7d0	2026-11-15T22:25:25Z
 fix:hermiq:1754:90d73dbf	fixed: OR main API in ComputerTargetService; new head 69e02cc7	session-20261115T213100-e547b457	2026-11-15T22:25:43Z
 fix:hermiq:1174:e5834a5e	fixed: sbom regenerated, pushed 296b7354	session-20261115T213110-6b33145c	2026-11-15T22:25:50Z
+fix:hermiq:1193:67714a4e	sbom regenerated, development merged; new head 7d49a897 REVERIFY	session-20261115T220050-f9da932e	2026-11-15T22:26:00Z
