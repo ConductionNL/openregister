@@ -14094,3 +14094,4 @@ review:dossiq:5358:c7b0b291	GREEN dossiq#5358: matches OpenRegister main lock co
 fix:portaliq:1680:b1f0459b	fixed CONFLICT: merged development (4 files), unit 6124 OK; new head 13aebbdf, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:13:45Z
 fix:pipelinq:3835:8a345d33	RED fixed: dropped spec of the moved dialog, pushed 1dcc79c3; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:14:07Z
 review:integriq:3049:47b3a17d	BLOCK: value classes imported from a namespace absent on openregister main; delete paths would fatal	session-20261115T181015-497e81ce	2026-11-15T18:14:17Z
+review:pipelinq:3152:6f459260	GREEN: matches openregister main dispatch; unit 8890 OK	session-20261115T174757-8dfa7406	2026-11-15T18:14:24Z
