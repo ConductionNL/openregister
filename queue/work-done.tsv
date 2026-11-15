@@ -13425,3 +13425,4 @@ review:hermiq:1189:9c7d6a51	GREEN: pinia 4 bump, vitest 1526 passed	session-2026
 review:humaniq:434:dc6c275a	BLOCK: obsolete lock bump (development already newer), conflicts	session-20261115T155911-f0070087	2026-11-15T16:04:06Z
 review:filinq:1963:4c695442	GREEN: lock bump, suite green incl. PDF tests	session-20261115T154258-dee2cc3d	2026-11-15T16:04:26Z
 review:hermiq:1150:4fcdbcee	no verdict on behaviour: CONFLICT recorded, 1510 behind development, 15 conflicting files	session-20261115T145541-9d69768b	2026-11-15T16:04:35Z
+review:filinq:1965:49589d88	RED: phpstan 2.3.5 adds 1 error (TesseractCommand.php:69 dead catch)	session-20261115T142951-2463b4c4	2026-11-15T16:04:46Z
