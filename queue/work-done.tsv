@@ -14775,3 +14775,4 @@ fix:dossiq:4112:d85d2c1c	fixed: merged development, regenerated sbom; head f4600
 fix:portaliq:1235:31e3cae9	CONFLICT resolved by porting onto refactored CmsReader, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:26:12Z
 fix:pipelinq:3280:57a83e99	no change: clean on development, conflict only with a sibling lockfile PR in the tree; REVERIFY recorded	session-20261114T075643-75a598ab	2026-11-15T20:26:24Z
 fix:shillinq:3088:0dc86d0f	development merged in cleanly, unit 12244 OK; overlap is only with sibling PRs' version bumps; new head ad434f71	session-20261115T182940-bfeb7e78	2026-11-15T20:26:38Z
+review:dossiq:2705	GREEN: dev tooling lock bump, 19 failures = baseline	session-20261115T200000-e95b89c2	2026-11-15T20:26:45Z
