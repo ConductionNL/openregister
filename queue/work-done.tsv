@@ -13925,3 +13925,4 @@ merge:shillinq:3062:afc90e46	merge3 tree of 10 shillinq PRs: merged=2 red=0 fail
 fix:versioniq:736:3596222f	floor restored, pushed 732e80c, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T17:29:01Z
 fix:buildiq:1652:b3c39fa0	merged development in, checks green (1 inherited failure); new head 023b900b9448723e6f9efa0bfaadf1c997a71ce1, REVERIFY	session-20261115T152552-0cb4306e	2026-11-15T17:29:09Z
 fix:buildiq:1649:c40e299a	merged development: CopilotService keeps the document reader and assist access check plus development's knowledge reader and run trace; tests rebuilt as development's file plus the branch block; l10n union (3 nl dups dropped); suite 3408, 1 inherited failure; new head 90cf9793, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T17:29:03Z
+fix:buildiq:1622:02120619	development merged in cleanly, pushed b26786dc; REVERIFY recorded; ExportZipGoldenTest red on development itself	session-20261115T142129-944012f5	2026-11-15T17:29:34Z
