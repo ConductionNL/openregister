@@ -14770,3 +14770,4 @@ fix:portaliq:1982:19a536ca	sbom regenerated after merging development; REVERIFY 
 fix:dossiq:3936:7ae9f014	floor restored (3.24), pushed 916d1651, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:25:01Z
 fix:dossiq:3201:6c926ab3	fixed: merged development, regenerated sbom; new head 1fedc9a2, REVERIFY recorded	session-20261114T073105-752e50ad	2026-11-15T20:25:09Z
 fix:pipelinq:2103:adb97dd8	conflict resolved, pushed 91e9bf9a; REVERIFY	session-20261115T195953-2618bb8a	2026-11-15T20:25:15Z
+fix:pipelinq:2557:5d12aa50	merged development; sbom already current (dev-only dep); suite OK; REVERIFY 74ee842a	session-20261115T200045-d3bb5c75	2026-11-15T20:25:28Z
