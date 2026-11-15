@@ -13274,3 +13274,4 @@ fix:versioniq:723:c544853d	CONFLICT resolved (10 files, both sides kept, misplac
 build:opencatalogi:woo-metadata-suggestions:c3	partial: PR #2674 head 8c2edb69 — built 2.2 (listener on ObjectCreatedEvent queues SuggestPublicationMetadata, store, 7 tests; suite 5616 with only 2 inherited failures); left 3.1 Hermiq client+endpoint, 4.1 accept/reject, 4.2 widget, 5.1 docs, 6.1/6.2 single lawful value; 6.4/6.5 gated on D10	session-20261115T142931-4c5be241	2026-11-15T15:36:58Z
 verify:integriq:3649:bc3064b6	3649, 3663, 3664 GREEN	session-20261115T142150-6c965c2a	2026-11-15T15:37:01Z
 review:integriq:3595:b248545e	GREEN: in-spec build, no new failures	session-20261115T142149-1d09fceb	2026-11-15T15:37:33Z
+review:integriq:3546:994fb6f7	GREEN 3546 (refactor behaviour-equivalent; no new failures)	session-20261115T142201-ea23e682	2026-11-15T15:37:45Z
