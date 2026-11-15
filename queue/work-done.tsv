@@ -13860,3 +13860,4 @@ build:larpinq:larpinq-manifest-tier-4:c4	partial: still no code task buildable; 
 fix:versioniq:718:e805f4c1	conflicts resolved, new head 756fab92; suite green beyond 2 inherited failures	session-20261115T155911-14cd078d	2026-11-15T17:20:07Z
 verify:buildiq:1654:74087526	GREEN: phpunit 3289 (1 inherited), vitest 4741/4741	session-20261115T155915-84e5dc0a	2026-11-15T17:20:22Z
 review:opencatalogi:2678:3f20c722	GREEN: spec-conform build, no new unit failures (5731 tests, 2 inherited)	session-20261115T155931-0926aa8e	2026-11-15T17:20:48Z
+fix:buildiq:1092:2ca8b28a	fixed: lock regenerated against development, npm ci clean, vitest 4692 passed; new head 8fb29c552c3dff86010f859bbbc198a8da2996db (REVERIFY)	session-20261114T075643-acecaad6	2026-11-15T17:21:07Z
