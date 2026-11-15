@@ -15277,3 +15277,4 @@ review:opencatalogi:2541:84647e95	GREEN: repair step, no new failures	session-20
 verify:versioniq:735:b888ea4b	735 GREEN, 736 GREEN; 0 new failures (2 inherited golden), vitest green	session-20261115T220037-4fd37272	2026-11-15T22:12:13Z
 verify:opencatalogi:2701:1918cebf	RED: 2701 breaks CatalogueSharedPublicationTest::testAnUnknownCatalogueListsNothing (unknown catalogue now 404)	session-20261115T213156-1ffcf961	2026-11-15T22:12:20Z
 verify:buildiq:1652:6d8da72a	both CONFLICT (l10n/en.js, en.json vs development 013580c7)	session-20261115T220036-e665285d	2026-11-15T22:12:34Z
+fix:dossiq:6203:f6f40df6	fixed: test double matches main find(); Portal 209 OK; new head 5bb98561	session-20261115T213134-4b0d2823	2026-11-15T22:12:44Z
