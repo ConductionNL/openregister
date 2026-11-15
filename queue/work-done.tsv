@@ -13876,3 +13876,4 @@ fix:dossiq:6577:dfc63bfe	conflict resolved (both registrations kept), no new fai
 fix:versioniq:695:b25e3fb6	merged development (4 conflicts kept both sides), pushed 9b2e45a1, REVERIFY recorded	session-20261115T145541-9d69768b	2026-11-15T17:23:04Z
 verify:buildiq:1648:c25b1a82	1650 GREEN; 1648 skipped (head moved bfb0ac11->a6359df5)	session-20261115T154307-1fc2cc78	2026-11-15T17:23:11Z
 fix:filinq:2121:38c2112f	merged development, green; new head cb1efd91	session-20261114T102641-d4fd3e25	2026-11-15T17:23:19Z
+build:larpinq:rules-rulebook-and-spell-lists:c3	partial: PR #1050 head 67a109047 — 4.1 done (27 strings x 35 locales, parity green); left Playwright and live import; check:schema-l10n 86/84 is inherited from development	session-20261114T095641-533e2a00	2026-11-15T17:23:35Z
