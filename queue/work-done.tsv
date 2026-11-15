@@ -14746,3 +14746,4 @@ fix:dossiq:2705:b7e00cc6	fixed: development merged, sbom.cdx.json regenerated; n
 fix:dossiq:3297:78031823	conflict resolved, pushed 2d7e3f4a, REVERIFY recorded	session-20261115T201132-b8ddc5e5	2026-11-15T20:20:53Z
 fix:dossiq:5397	fixed: sbom regenerated; new head 7ff72b32	session-20261115T200000-e95b89c2	2026-11-15T20:21:01Z
 review:planninq:725:f5dce57c	GREEN: vitest 3566 pass, build compiles	session-20261114T075643-75a598ab	2026-11-15T20:21:17Z
+review:stackiq:1930:d6bf1559	BLOCK; new saveObject call uses removed OR named args	session-20261115T200045-d3bb5c75	2026-11-15T20:21:25Z
