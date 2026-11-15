@@ -3131,3 +3131,4 @@ pipelinq	3849	5ac26573b3b603f9deb787eae9f9575b6a38bbf0	SKIP	merge3	GATE UNMEASUR
 pipelinq	3850	e6de08f6f2d517f542e1175c92eab1d05d0ee3f4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
 pipelinq	3851	ffb1ffc286675b021070f9523f319a4c87e9d0b1	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 pipelinq	3852	eb8867aaf2cce3aaec16dbfed1264132c1c21014	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.16
+humaniq	1156	13c34f2d0b35f5c3211b533b3f33ecf953543db3	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
