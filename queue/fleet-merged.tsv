@@ -3158,3 +3158,20 @@ launchpad	1226	d96f04dad53098d2e7c3f6786804ab6fc0f69823	RED	merge3	GATE RED floo
 versioniq	694	69cc235c74aa72a728613e9eb195e65e55d029c5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 3.99
 versioniq	714	bab85cc58909b719d21a5b6ee59c6f86345648bc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 3.98
 versioniq	733	12c4f99641c4c0ef361c42add879b5cc4b4412cc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 3.98
+dossiq	6521	510cb1b3a27bdddbac83d4ce6e819f0e82fbc48f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6523	2cc454b5ce121005624ff266194465ea0aff78c3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6524	b53a3dfd52fc67a6386c727015ac6ed456d80bdb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6525	f101fce0eb2fa13e53daada943f370cd0797e1e2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6526	a9bc68c3df6f946582e4b22a62677121bfedcc9e	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6528	23e05d2849a447db3c259c5f466d95054b5e7beb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6529	13e09e6408803cb832832c146449848c14aa9648	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6530	f984ac99c11a4191d728f500d46b0c2a993a48a1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6531	b1ef8e573a63ec3b66ee2f53b02405b2932572d1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6532	d33da612ecd1d9ad7b65f3726979ab12b0fa097d	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+dossiq	6533	1e83cca7f677cbdc4314c3af506ad7fccd421350	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6534	9235c40c59544c57b9275f08b54c87eb83dc597d	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6535	34ebb454e4d91838f6db349ee5f632b4f99fab04	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6536	ccaa8669f7e04679029cf9e6a69b5622b3f88eb8	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+dossiq	6537	be95b62edc1336baa50a05013b6e20f282a39f9c	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6538	55b1b3fa6891a90b5774b25bea000da8cec136bb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
+dossiq	6539	2ac04ac8dda9b19099868184f8c345e51f388787	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.18
