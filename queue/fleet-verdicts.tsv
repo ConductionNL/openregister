@@ -13215,3 +13215,15 @@ stackiq	1941	40710dd9444256cb88f93476396f1bed4d338240	CONFLICT	merge8	conflicts 
 decidiq	1950	76d893478e42eabaf95990a3484d454acf63283f	REVERIFY	worker-18	merged development in (clean), lock diff is only phpstan 2.2.13->2.3.5; regenerated sbom.cdx.json (development's was stale on the npm side; --check current). The composer.lock conflict is with #1737 (phpstan 2.3.1, same lines), which this PR supersedes: build the tree without #1737; new head e876f7cecae4332eb0a07df3b2effe4dd9b06afb, verify it
 keepiq	1792	c41b6b80f325613dc679809230b9a78cea7ece2c	REVERIFY	worker-36	merged development in; removed the re-prompt's copy of the key-proof prompt (shared prompt slot, dialog mixin, shared dialog; KeyProof test ids/API kept) and shared Secret's holder serialisation fields; floor compare PASS (duplication 4.18, coupling 3.33); vitest 6149 and PHP unit 5266 OK; new head e3aa677111aaf8c23da9d9dcb6525872b4dce5b3, verify it
 decidiq	1947	0429ddc5488d3c9b074418104addcdc8ac787e45	GREEN	worker-18:review	99 lib files move saveObject to ObjectSaveOptions(ObjectFindTarget, uuid) matching openregister main; register/schema/uuid/object/_rbac/_multitenancy carried over 1:1 (155/73/60/2 each side), no other lib change, no old-shape calls left; phpmd coupling ceiling 14->16 documented; merged with development: unit 4624 tests 0 failures, phpstan clean on changed files
+hermiq	1133	05c6caa389820feb2a7d7d4c545536821172090e	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1135	988cfbc828e24fb7d23ef274358be841685b87ed	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1174	e5834a5e458d33fe088abac8fd7421868c8d0331	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1175	ca7f829c8d4c34354b50fd4a55c4144ca5adddc6	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1187	f2d30166558e94ad42467397bc708d4043bd30e9	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1188	b9df03949b5d5c00e88ea1d34a2d88167949cc32	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1189	9c7d6a5148adf30950cdbe0e2dab9407e6f2e166	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1193	67714a4ea0cb1c2e732c134b5e5f7ac82962491f	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1195	6284aad0010c4862c53368ecadc2ad26fd61a8c0	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+hermiq	1307	8166870063dbb40916bba97f6e008e057c565270	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1308	ed66fcbfff8128ba1eb3325fb033dda743eb368e	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+hermiq	1578	816bbdb175209164a417de3b8949a03f0879ae47	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
