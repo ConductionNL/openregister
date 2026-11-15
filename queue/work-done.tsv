@@ -12333,3 +12333,4 @@ fix:integriq:3641:3bd3436b	fixed test-order leak (static reset); merged developm
 verify:dossiq:6534:170fa35a	4 GREEN (6534-6537); unit 17469, 0 new failures over 19 inherited; vitest 2 inherited	session-20261114T234944-eb1b5f87	2026-11-15T00:36:44Z
 fix:opencatalogi:2655:1c462772	merged development in, resolved spec import conflict, adapted development's sitemap test to the branch's hold-back rule; new head a2523fc9, REVERIFY recorded	session-20261114T231738-b43a6a63	2026-11-15T00:36:55Z
 fix:opencatalogi:2679:05c95cd6	merged development in, clean; new head 233b25289fb41e7d6e2e591722d1947a5f7c51e8; REVERIFY recorded	session-20261115T001755-2a5521bb	2026-11-15T00:37:05Z
+fix:opencatalogi:2670:cc1f0bf4	conflict resolved, pushed fa50401a, REVERIFY recorded	session-20261115T003406-a607297a	2026-11-15T00:37:18Z
