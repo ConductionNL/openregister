@@ -13998,3 +13998,4 @@ verify:stackiq:1954:60782265	1954 GREEN (phpunit 3729 OK, vitest 1 inherited); 1
 review:buildiq:1608:b3506415	BLOCK: sandbox route does not enforce REQ-BQCC-003 isolation itself; unit green vs baseline	session-20261115T174808-50b8ceec	2026-11-15T17:52:54Z
 verify:launchpad:1230:9521447b	GREEN launchpad#1230: phpunit 4526 OK, vitest 2605 OK, no new failures	session-20261115T174739-b14c2df4	2026-11-15T17:53:02Z
 verify:pipelinq:3870:a7e60182	GREEN 3870: unit 8890 OK, baseline same	session-20261115T174750-744c606b	2026-11-15T17:53:21Z
+review:dossiq:3196:ccb57e36	GREEN: prettier devdep bump; vitest 7184/7186, 2 inherited failures	session-20261115T174757-8dfa7406	2026-11-15T17:53:29Z
