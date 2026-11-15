@@ -3722,3 +3722,22 @@ thematiq	1556	ff5f73bc8d0dc6f12bac429db068c7a3da6df24b	RED	merge8	GATE RED sbom:
 thematiq	1557	b3ab646d8fa634f7d71c5465a5553a97865a8929	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1558	4e04b3da12fdd1e8be1832f3eeed91751c1e1667	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1677	5e934e94706006fbd51f109fcc53208443fdf956	SKIP	merge8	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+portaliq	1071	334e76b17c5b60e8fa93190cbc5787e2a876d2c9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1229	facf71a31657fe456811aa8eb8ace13c12b9a2e5	SKIP	merge3	GATE UNMEASURED head moved to a2bd58a243
+portaliq	1235	aff4f0323becea2eca863956c0c3a5718447a3d3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1354	84f30a141f0eb4ba2c9fe1321745dc811282a1a5	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1582	e2748568105248cc316e9cee392cec7173a4d975	FAIL	merge3	{"message":"Base branch was modified. Review and try the merge again.","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Base branch was modified. Review and try the merge again. (HTTP 405)
+portaliq	1602	cc086817652e7271d81cb13afe31bc673c56931f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1657	8ce73cabc67ce23f8c427da03b01ae1656a50bdc	SKIP	merge3	GATE UNMEASURED head moved to 6705de8474
+portaliq	1659	3bad2debc6466ec914cda6c284e318d2b9a2c5f0	SKIP	merge3	GATE UNMEASURED head moved to 14ee493687
+portaliq	1666	3a173dca3d9798e6eef30195d81dc42bb356d376	SKIP	merge3	GATE UNMEASURED head moved to eb3191d2df
+portaliq	1680	13aebbdf36901659404b81b06e86cb0e86aa5bf3	SKIP	merge3	GATE UNMEASURED head moved to 1c24f617f1
+portaliq	1681	ea79ed8c4ca82a809983d01f904534cbf59cc207	SKIP	merge3	GATE UNMEASURED head moved to 4f75ff2065
+portaliq	1682	08c494c0611da4338298d2464c28186d7c9bb7e0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.11
+portaliq	1684	744eadeccc4952b67a03ecf678037016d49deca4	SKIP	merge3	GATE UNMEASURED head moved to d522fb219b
+portaliq	1764	b3d8a23ef94e8ac730c7ba0bb92bfdc95adc8c30	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1765	065fabf8c9c39cac3f4bb60b474eb3c6dcb5e96e	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1768	5560c998c1377d82b0b5fc84edd1eadcd8473571	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1769	91f4b0df6c650ba48d9f0aaf4a3559074fd97b13	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+portaliq	1848	5c463cd150b2a22e406ee18f7622b2b4ac79d672	SKIP	merge3	GATE UNMEASURED head moved to cd17579150
+portaliq	1982	ebea533f0f3f8c061e63c23de231ae5193517228	RED	merge3	GATE RED sbom: composer.lock changed without sbom.cdx.json
