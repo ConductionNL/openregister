@@ -13312,3 +13312,5 @@ review:buildiq:1085:8d6197ad	BLOCK: phpmd 3.0 adds 38 unbaselined findings and d
 review:buildiq:1502:dc3c310b	BLOCK: composer install fails (psalm 7.3 needs php >=8.3.16, platform pinned 8.3)	session-20261115T152552-0cb4306e	2026-11-15T15:45:24Z
 build:buildiq:pages-installable-offline-and-mobile:c5	done: PR #1654 pushed aaec7e14: T08 mobile app project export (MobileProjectWriter + job/dialog plumbing), T09 strings + docs; left T07 (nextcloud-vue, outside pipeline), T10 (openspec CLI unavailable), manual device checks; PHP 3230 (1 inherited golden fail), vitest 4716 ok	session-20261115T141023-b06d51da	2026-11-15T15:45:35Z
 review:buildiq:1261:901e0708	BLOCK: calls a searchObjectsBySlug(target:) form openregister main lacks	session-20261115T152546-2c24b649	2026-11-15T15:45:33Z
+review:decidiq:1467:26c28394	GREEN: dev-dep bump, vitest 2825 passed, coverage run ok	session-20261115T154300-03b63424	2026-11-15T15:45:44Z
+review:decidiq:1600:33021efc	BLOCK: obsolete lock downgrade (2.60.0 vs dev 2.135.0), conflicts; close as superseded	session-20261115T154316-34f0db35	2026-11-15T15:45:51Z
