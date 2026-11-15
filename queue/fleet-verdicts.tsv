@@ -12734,3 +12734,11 @@ opencatalogi	2674	8c2edb69bce2c2ed38508eea7da6ea02199004d2	CONFLICT	merge8	confl
 opencatalogi	2677	6373144bef4d028ba0ae8863d0def336a617055e	CONFLICT	merge8	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 opencatalogi	2678	3f20c7220ea355a8b7b8af057251c536531d614d	CONFLICT	merge8	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 opencatalogi	2699	b0f3f7798e1ac680df53b3909dd423d5727140bf	CONFLICT	merge8	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+versioniq	501	e3e915e4f59e4ccc21a85ca0fe5ac8752ce4d9a0	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	502	f18aa2a5200164cdcd84ed3538688e661aaa1db8	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	504	7d37bf12dc018553872f5e4f93be2f98edbcd5ef	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	505	54c33622e858e7123c4dab56cf704523c8227c07	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	506	c6a1011e57d832780fac868efaeb62f5ae3dcfc4	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+versioniq	691	c3a11b62492684743530f8243a331abf3c252683	RED	merge8:merge-gate	GATE RED floor: overall: 4.95 -> 4.89; duplication: 5.16 -> 5.13; unit_complexity: 4.59 -> 4.54; unit_interfacing: 4.16 -> 3.88
+versioniq	717	a769cc5a792379a2362cc9e383a67b9ca4552bc9	RED	merge8:merge-gate	GATE RED floor: unit_complexity: 4.59 -> 4.56
+versioniq	732	338949a6300653f262a2b4a291590337bdd6d55c	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
