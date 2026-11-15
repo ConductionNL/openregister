@@ -14958,3 +14958,4 @@ fix:versioniq:732:338949a6	SBOM regenerated; REVERIFY edb0233ba6169cf4419f02b6be
 fix:versioniq:723:e74abf38	conflicts resolved keeping both; REVERIFY at 2e4c0e66	session-20261115T195958-28cb0304	2026-11-15T20:57:57Z
 fix:versioniq:506:c6a1011e	fixed: sbom regenerated; new head cf0ff5ad	session-20261115T200043-78b85ca2	2026-11-15T20:58:06Z
 fix:versioniq:717:a769cc5a	floor restored (unit_complexity 4.60), REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T20:58:20Z
+fix:larpinq:1060:f17472dc	development merged clean, suite 1025 OK; new head 54265c8fe78dfcc4a40860fc95d955fa244ecd37	session-20261115T200041-8ff5af37	2026-11-15T20:58:37Z
