@@ -14476,6 +14476,7 @@ fix:planninq:725:6961dd1e	fixed: sbom regenerated; new head f5dce57c	session-202
 fix:launchpad:1223:8946cefa	conflict resolved (register 1.0.4), pushed 65b428f7, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:15:55Z
 fix:buildiq:1654:aaec7e14	fixed: conflicts resolved keeping both sides, new head fc4a934c	session-20261115T174804-89f2739f	2026-11-15T19:16:03Z
 fix:launchpad:984:2f958a94	namespace fixed, pushed 1ed02407, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:16:11Z
+fix:launchpad:788:470c789d	closed as obsolete: development carries its own engagement-announcements build (all code tasks ticked); stacked features are in #784-#787	session-20261115T190007-40e51d5a	2026-11-15T19:16:17Z
 fix:launchpad:880:04f9f39f	sbom regenerated after merging development, pushed; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:16:24Z
 fix:buildiq:1093:16b82bb9	sbom regenerated, pushed 9d8db577, REVERIFY recorded	session-20261115T191034-1f4b55ee	2026-11-15T19:16:38Z
 fix:launchpad:784:f46ccf4d	failed: superseded, needs a manual close (closing PRs is refused by permission here): development landed its own build of launcher-tile-sorting (01fd4612, src/utils/tileSort.js) and the PR is a second implementation (sortContainerTiles.js); merging would mix the two. Only task 6 (archive, spec fold, parity rows) remains, best redone on development	session-20261115T182936-09049974	2026-11-15T19:16:50Z
