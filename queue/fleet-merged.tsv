@@ -3213,3 +3213,4 @@ portaliq	2525	e38287cd011da774d12288b883903160fa1aeaef	MERGED	merge3	GATE OK sbo
 portaliq	2526	23381c38a9852d7fd881e488850456b14200a564	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.13
 portaliq	2527	3f10c6696fe4eda0dad28fb91c99d04a17c13772	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 learniq	2513	fd13b215eebf611a6e73fb75b234a8deddd0e6ee	RED	merge3	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+humaniq	1133	8311ae6076d2e8595a0b091401c0314a9733c0ce	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.47 holds at 3.48
