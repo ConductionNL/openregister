@@ -12641,3 +12641,4 @@ merge:pipelinq:3850:b98fad66	merge3 tree of 11 pipelinq PRs: merged=9 red=0 fail
 cover:openregister:7350e3efm1efa:34f5c300	PR #10577: 35 tests, 8 lib/Service classes (FormLinkService, ObjectServiceMapperAdapter, CaseTokenService, ...); Service suite 35859->35894, same 1 inherited failure	session-20261115T011803-3ec5f099	2026-11-15T01:37:54Z
 verify:portaliq:2522:52e351c9	3 GREEN (2522,2523,2524); unit 5946, 0 failures	session-20261115T013435-30b4f471	2026-11-15T01:38:07Z
 cover:stackiq:9ac19b3am9489:js5794e9fc	PR #1979: 14 tests, src/views/settings statements 97.18->98.65%	session-20261115T011811-95390b97	2026-11-15T01:38:21Z
+cover:portaliq:b60f3b81m4ccb:59826f43	PR portaliq#2526: @covers on PortaliqAdminTest (its 4 tests' coverage was dropped); AdminSettings already covered; suite 5873 green	session-20261115T001740-566812b3	2026-11-15T01:38:28Z
