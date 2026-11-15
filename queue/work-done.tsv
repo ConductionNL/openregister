@@ -14571,3 +14571,4 @@ merge:dossiq:2705:80cb7ab7	merge3 tree of 26 dossiq PRs: merged=8 red=11 fail=0 
 merge:dossiq:2902:b8f4f9ff	merge3 tree of 26 dossiq PRs: merged=8 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T19:31:23Z
 merge:dossiq:3196:91325f18	merge3 tree of 26 dossiq PRs: merged=8 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T19:31:46Z
 merge:dossiq:6547:14d10b77	merge3 tree of 26 dossiq PRs: merged=8 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T19:31:50Z
+merge:dossiq:3300:f9aecbf6	merge3 tree of 26 dossiq PRs: merged=8 red=11 fail=0 skip=0; conflict 7, lint 0, moved 0; fix rows 7	merge3-20261113T213425-c36bcd5f	2026-11-15T19:31:54Z
