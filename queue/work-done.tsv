@@ -14363,3 +14363,4 @@ review:learniq:2166:705ee505	GREEN	session-20261115T174741-56eeaa2f	2026-11-15T1
 review:learniq:1901:0bee8d6d	GREEN: per its change spec, no new failures	session-20261115T174741-9deaa0be	2026-11-15T18:58:28Z
 review:humaniq:872:deea55b1	GREEN: matches openregister main Gdpr request objects; unit 4405 OK	session-20261115T181015-497e81ce	2026-11-15T18:58:39Z
 review:decidiq:1945:ef05d63a	RED decidiq#1945: 5 new OpenCatalogiPublisherTest failures from the changed container key	session-20261115T174739-b14c2df4	2026-11-15T18:58:50Z
+review:decidiq:1944:19250e66	GREEN: call-shape adaptation, flags preserved; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:58:57Z
