@@ -14988,3 +14988,4 @@ merge:keepiq:1793:8d1e42ff	stale	feeder	2026-11-15T21:04:09Z
 review:filinq:1853:6bb7b9ed	stale	feeder	2026-11-15T21:04:09Z
 merge:stackiq:1978:dfbf6950	merge8 tree of 14 stackiq PRs: merged=4 red=7 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T21:05:19Z
 fix:keepiq:1792:c41b6b80	floor restored (dedup refactor), new head e3aa6771	session-20261115T202932-d1067ee4	2026-11-15T21:06:22Z
+review:decidiq:1947:0429ddc5	GREEN: call-shape migration only, 4624 tests ok	session-20261115T203012-30a1abde	2026-11-15T21:06:53Z
