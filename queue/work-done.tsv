@@ -14225,5 +14225,6 @@ fix:shillinq:2098:38bdcce2	conflict resolved, pushed f23dc6e2, REVERIFY recorded
 review:pipelinq:3151:bc0319a8	GREEN: stubs match openregister main; unit 8890 OK	session-20261115T181015-497e81ce	2026-11-15T18:38:29Z
 review:portaliq:1670:8ef03e9f	GREEN: per its spec delta; no new failures	session-20261115T174808-50b8ceec	2026-11-15T18:38:47Z
 fix:shillinq:2071:027f8107	conflict resolved, pushed 513cd9f5, REVERIFY recorded	session-20261115T174741-56eeaa2f	2026-11-15T18:39:03Z
+fix:shillinq:1959:9a607395	failed: not a conflict fix; branch deletes PurchaseOrderApprovalService/Controller (in-object approval engine) while development has since built on it (Kernel PurchaseOrderApprovalServiceInterface, McpPurchaseOrderTools decide, Lifecycle PurchaseOrderApprovalGuard, PurchaseOrderDecisionLockListener, ApprovalDecision, parity/golden tests); 19 conflicts need a redesign onto OpenRegister's approval c	session-20261115T182948-465dcc8e	2026-11-15T18:39:15Z
 review:shillinq:2086:28d36484	BLOCK: new service uses removed openregister named-arg API	session-20261115T181015-497e81ce	2026-11-15T18:39:19Z
 fix:shillinq:2259:f41c6ff8	fixed: merged development; new head 91b03c64	session-20261115T174819-9af28ef9	2026-11-15T18:39:34Z
