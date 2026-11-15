@@ -2410,6 +2410,7 @@ Service/Flow/Nodes/TriggerObjectNode.php,92,Service,Flows,Flows/Service/Flow/Nod
 Service/Flow/Nodes/TriggerScheduleNode.php,92,Service,Flows,Flows/Service/Flow/Nodes/TriggerScheduleNode.php,1,,Processes
 Service/Flow/Nodes/UnlockObjectNode.php,142,Service,Flows,Flows/Service/Flow/Nodes/UnlockObjectNode.php,0,,Processes
 Service/Flow/Nodes/UserTaskConfig.php,209,Service,Flows,Flows/Service/Flow/Nodes/UserTaskConfig.php,0,,Processes
+Service/Flow/Nodes/UserTaskItemPerformers.php,51,Service,Flows,Flows/Service/Flow/Nodes/UserTaskItemPerformers.php,0,,Processes
 Service/Flow/Nodes/UserTaskNode.php,451,Service,Flows,Flows/Service/Flow/Nodes/UserTaskNode.php,0,,Processes
 Service/Flow/Nodes/UserTaskPerformers.php,96,Service,Flows,Flows/Service/Flow/Nodes/UserTaskPerformers.php,0,,Processes
 Service/Flow/Nodes/WaitNode.php,100,Service,Flows,Flows/Service/Flow/Nodes/WaitNode.php,0,,Processes
