@@ -13647,3 +13647,4 @@ review:portaliq:1594:7d7e983b	CONFLICT with development (package files, manifest
 review:portaliq:1684:6cc52719	RED: CmsReaderTest::testThePageShapesAreServedAsRecorded pins the old page shape	session-20261115T154307-1fc2cc78	2026-11-15T16:43:17Z
 review:pipelinq:3271:65502a07	BLOCK: AggregationQuery::create has no layout param on OR main/development; reports would throw	session-20261115T152552-0cb4306e	2026-11-15T16:44:02Z
 review:portaliq:1152:a324482e	CONFLICT: likely superseded by the draft feature already on development	session-20261114T102637-6688951e	2026-11-15T16:44:17Z
+review:portaliq:1474:8e1a7978	CONFLICT: 53 files, many add/add (partly landed already)	session-20261115T154254-3d07b219	2026-11-15T16:44:32Z
