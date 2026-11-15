@@ -12689,3 +12689,4 @@ fix:opencatalogi:2671:6274e217	clean with development; conflicts only with unmer
 fix:opencatalogi:2686:6cda6a7f	clean with development; conflicts only with unmerged #2665; reverify alone	session-20261115T011811-95390b97	2026-11-15T01:46:26Z
 cover:portaliq:b60f3b81m4ccb:93ebc4b9	no PR: lib/Http has one class (PdfDownloadResponse) whose tests already reach every branch	session-20261115T011806-2ba8b68f	2026-11-15T01:46:31Z
 verify:pipelinq:3860:4c130a1d	2 GREEN (3860,3861); unit 8652, 0 failures	session-20261115T013435-30b4f471	2026-11-15T01:46:39Z
+cover:pipelinq:7f9dc8e6m195a:9d3a1784	already done: lib/BackgroundJob/*.php measures 99.88% (1637 stmts, 2 uncovered) on development, above target 95; branches -1..-5 exist	session-20261114T234941-bc8686af	2026-11-15T01:46:53Z
