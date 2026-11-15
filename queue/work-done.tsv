@@ -14709,3 +14709,4 @@ review:opencatalogi:2416:bce96302	RED: 2 development tests still mock the old fi
 review:launchpad:653:7dd62332	GREEN: build ok, vitest 2578 pass	session-20261115T200041-8ff5af37	2026-11-15T20:13:44Z
 review:planninq:1066:b7c292c5	GREEN: ObjectDeletion migration matches main; phpunit 1222 OK	session-20261115T195958-28cb0304	2026-11-15T20:13:54Z
 review:planninq:1064:849ed2f7	GREEN: unit 1222 ok, signatures match openregister main	session-20261115T200026-9a5b8685	2026-11-15T20:14:08Z
+review:opencatalogi:2682:3f1e3bed	GREEN: per spec, no new failures; note old OR API in drafter	session-20261115T200011-d13b13ca	2026-11-15T20:14:19Z
