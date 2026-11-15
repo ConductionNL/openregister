@@ -15226,3 +15226,4 @@ fix:pipelinq:2103:91e9bf9a	failed: not fixable on the branch; @vueuse/core is on
 review:shillinq:3078:5300990f	RED: new saves use pre-main saveObject named args; 13 new tests fail on PR+development	session-20261115T213156-1ffcf961	2026-11-15T22:02:26Z
 review:shillinq:2070:fbb82225	RED: PaymentBlockService uses old saveObject named args; 2 new test errors	session-20261115T211111-34885d99	2026-11-15T22:02:40Z
 review:shillinq:2249:b619f486	GREEN: main-API migration of one call, suite green	session-20261115T213112-78aba834	2026-11-15T22:02:51Z
+review:shillinq:2095:be509293	BLOCK: behaviour change + deleted tests in a refactor PR	session-20261115T203012-30a1abde	2026-11-15T22:03:02Z
