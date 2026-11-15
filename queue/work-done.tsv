@@ -14146,3 +14146,5 @@ fix:portaliq:1769:d443a45b	lock regenerated on development, npm ci ok; new head 
 fix:pipelinq:3153:22a0348f	failed: needs a redo on current development, not a fix: merging development gives 216 conflict hunks in 130 files (development refactored the save helpers, ~2000 commits ahead) and development still has 197 lib saveObject calls + ~300 test refs in the old named-arg form; stubs/ctors match OR main, only namespace must become OCA\OpenRegister\Kernel\Contracts\Value	session-20261115T174804-89f2739f	2026-11-15T18:24:43Z
 fix:portaliq:1657:489e5cbd	CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:24:38Z
 review:pipelinq:3148:37d49de1	GREEN 3148	session-20261115T154255-e54527e9	2026-11-15T18:24:46Z
+fix:portaliq:1659:3c90bf4d	conflict resolved (dup rowClass dropped), pushed 3bad2deb; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:24:54Z
+review:pipelinq:3146:9853385c	GREEN; FlowNodeCall namespace matches OR main, phpunit 8890 OK	session-20261115T152558-f97be55f	2026-11-15T18:25:08Z
