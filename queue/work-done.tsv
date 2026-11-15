@@ -13318,3 +13318,4 @@ review:buildiq:1262:c955fcfd	BLOCK: wrong LockRequest/UnlockRequest namespace, r
 review:decidiq:1767:3e9af0ff	GREEN: dev-only lock bump installs, unit 4461 OK unchanged	session-20261115T152552-0cb4306e	2026-11-15T15:46:33Z
 review:decidiq:1473:4549406a	GREEN: marked patch bump, lock+package only; vitest 2825 passed on the merged tree	session-20261114T075643-acecaad6	2026-11-15T15:46:39Z
 review:buildiq:1264:6e11da88	CONFLICT: 8 files conflict with development; diff is a correct contract adaptation	session-20261115T154258-dee2cc3d	2026-11-15T15:46:47Z
+review:buildiq:1263:59ed1278	BLOCK: wrong OpenRegister namespace for ObjectDeletion/ObjectFindTarget (fatal at runtime); conflicts with development	session-20261115T154254-3d07b219	2026-11-15T15:46:56Z
