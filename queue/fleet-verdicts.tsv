@@ -11157,3 +11157,4 @@ pipelinq	3858	21670b6fc2a7fff02af36fa257513e2d087dbbb6	GREEN	worker-52	tests onl
 stackiq	1928	064e3b5386f3adc05e29fbf76cf9d1df7a888e99	REVERIFY	worker-14	no conflict with development (already up to date); conflicts only with unmerged #1924/#1926 in src/manifest.json; verify alone or after they land; new head 064e3b5386f3adc05e29fbf76cf9d1df7a888e99, verify it
 stackiq	1966	5c005420f7d22e65846a41da08ffd1b7e7400423	REVERIFY	worker-14	no conflict with development (already up to date); l10n conflicts only with unmerged siblings in the tree; verify alone or after they land; new head 5c005420f7d22e65846a41da08ffd1b7e7400423, verify it
 integriq	3646	6bc14ed8b267f19d26345f032d28e2fb32b19a06	GREEN	worker-17	phpunit 9223->9232, same 6 known baseline fails, no new failures; tests only
+pipelinq	3859	b27b0c41a0b6d827c9671a81ea76723566bf7217	GREEN	worker-11	tests only; unit 8638 OK on the tree (baseline 8627 OK), no new failures
