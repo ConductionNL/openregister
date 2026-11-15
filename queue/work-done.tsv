@@ -12706,3 +12706,4 @@ build4:openregister:flow-calendar-and-webhook-triggers:c4	no code left: PR #1051
 build:integriq:form-submission-registration-targets:c5	PR #3649 head 236dc3f7: Task 8 dry run (endpoint+modal), Task 3 ZGW kenmerk lookup, Task 7 steps kept on part-way refusal; left: StUF-ZDS KvK applicant (needs real ZDS check, changes XSD-checked golden), live Newman/e2e	session-20261115T010928-f0987802	2026-11-15T01:49:56Z
 merge:planninq:1181:5ad5104c	merge3 tree of 6 planninq PRs: merged=5 red=0 fail=0 skip=1; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T01:49:54Z
 review:learniq:2484:b8c46f7c	2484 GREEN	session-20261115T001740-566812b3	2026-11-15T01:50:23Z
+verify:integriq:3647:f68d3fcb	GREEN 3647 (phpunit 9230, no new failures, tests only)	session-20261115T001758-161b0715	2026-11-15T01:50:47Z
