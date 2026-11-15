@@ -14676,3 +14676,4 @@ review:launchpad:761:ca2815b8	GREEN: vitest 2578 pass under v5	session-20261115T
 review:opencatalogi:2419:3035f661	GREEN; faithful ObjectSaveOptions migration, failures 398->248, none new	session-20261115T200045-d3bb5c75	2026-11-15T20:07:09Z
 verify:buildiq:1669:625818f5	1669 GREEN	session-20261114T075643-75a598ab	2026-11-15T20:07:28Z
 verify:launchpad:1230:07024c80	GREEN 1230,1234,1235; phpunit 4529 ok, vitest 2614 ok	session-20261115T195953-2618bb8a	2026-11-15T20:07:47Z
+review:buildiq:1091:d342b9dd	GREEN: dev-dep bump, vitest 4719 passed	session-20261115T195957-8e60ca53	2026-11-15T20:07:59Z
