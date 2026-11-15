@@ -12684,3 +12684,4 @@ cover:pipelinq:7f9dc8e6m195a:2cc09f74	already done: lib/Service/Marketing/Transp
 verify:portaliq:2508:2a6d9392	#2508 CONFLICT; #2525 #2526 GREEN (5889 tests, 0 failures)	session-20261115T005141-9356bed0	2026-11-15T01:45:32Z
 fix:learniq:2486:a242580e	merged development cleanly, new head b690ac62	session-20261115T001740-566812b3	2026-11-15T01:45:39Z
 cover:pipelinq:7f9dc8e6m195a:db675bd6	already done: lib/Activity/Setting/ 5/5 classes at 100% statements on development (dedicated tests in tests/Unit/Activity/Setting); no PR	session-20261115T014019-616e5977	2026-11-15T01:45:50Z
+fix:opencatalogi:2671:6274e217	clean with development; conflicts only with unmerged #2665; reverify alone	session-20261115T011811-95390b97	2026-11-15T01:45:55Z
