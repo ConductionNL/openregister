@@ -13452,3 +13452,11 @@ review:humaniq:667:3bb5749b	GREEN (dep bump, test:js unchanged vs development)	s
 review:humaniq:477:84c765e3	BLOCK: npm ci ERESOLVE, @conduction/nextcloud-vue peers @vueuse/core ^11||^14 vs ^15; development installs	session-20261114T085646-49a39060	2026-11-15T16:08:38Z
 review:dossiq:5281:5ba0c011	RED: tests left on old class names (1 fatal, 4 new failures)	session-20261115T152543-40aea993	2026-11-15T16:08:59Z
 review:hermiq:1321:048aeea9	CONFLICT: behaviour-faithful ObjectFindOptions migration, 24 files conflict with development	session-20261115T155902-d9805df0	2026-11-15T16:09:10Z
+review:launchpad:1098:1720a6d3	1098 GREEN (phpstan 2.3.5 clean, unit OK)	session-20261115T142134-badaaf30	2026-11-15T16:09:26Z
+review:hermiq:1188:b9df0394	GREEN: nextcloud/vue minor bump; vitest 1526 pass, 0 new	session-20261115T154407-94bf5f8c	2026-11-15T16:09:33Z
+review:hermiq:1133:05c6caa3	GREEN: stylelint minor bump; stylelint 0 errors, vitest 1526 passed	session-20261114T075643-acecaad6	2026-11-15T16:09:41Z
+review:hermiq:1193:67714a4e	GREEN (sass dev bump, vitest and build OK)	session-20261115T142949-9c6a3945	2026-11-15T16:09:51Z
+review:integriq:2562:a0c8e1bf	GREEN: vitest 2374/2374; peer-range note for @conduction/nextcloud-vue	session-20261115T155915-84e5dc0a	2026-11-15T16:10:03Z
+review:humaniq:686:03602584	GREEN: test:js 210/211, failure inherited from development	session-20261115T152554-949e9403	2026-11-15T16:10:15Z
+review:dossiq:3894:c91ec402	GREEN: dev-only phpmd 2.15->3.0 bump; suite unchanged vs development (19 inherited); phpmd runs the ruleset	session-20261115T145546-378b432a	2026-11-15T16:10:25Z
+review:humaniq:610:02e0a4dc	GREEN: @nextcloud/vue minor bump, test:js 210/211 (1 inherited), build ok	session-20261115T155921-aabf185f	2026-11-15T16:10:36Z
