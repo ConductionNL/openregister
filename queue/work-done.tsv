@@ -13653,3 +13653,11 @@ review:portaliq:1152:a324482e	CONFLICT: likely superseded by the draft feature a
 review:portaliq:1474:8e1a7978	CONFLICT: 53 files, many add/add (partly landed already)	session-20261115T154254-3d07b219	2026-11-15T16:44:32Z
 review:portaliq:1680:b1f0459b	BLOCK: 4-file conflict; code and tests clean	session-20261115T154255-e54527e9	2026-11-15T16:44:39Z
 review:pipelinq:2103:adb97dd8	GREEN: vueuse 15 unused directly; vitest 5343/5344 with 1 inherited failure; conflicts in package.json/lock	session-20261115T145546-378b432a	2026-11-15T16:45:11Z
+review:portaliq:1354:23330bb3	BLOCK: merged lock out of sync (pinia), npm ci EUSAGE	session-20261115T142934-6cab0c24	2026-11-15T16:45:26Z
+review:portaliq:1606:e4a6d0b1	BLOCK: PartyTreeSource uses openregister signatures main lacks; tree mandates refused at runtime	session-20261114T102641-d4fd3e25	2026-11-15T16:45:33Z
+review:portaliq:1467:a56bbcbc	CONFLICT: 31 files; development already has a parallel build of portal-identity-from-the-admin	session-20261115T155902-d9805df0	2026-11-15T16:45:46Z
+review:portaliq:1992:df536a4a	BLOCK: narrows supported openregister versions; OR main restored the old call form	session-20261114T102637-6688951e	2026-11-15T16:45:52Z
+review:portaliq:1848:cc4102c9	RED: 3 new unit failures on merged tree	session-20261115T151007-45079d32	2026-11-15T16:46:06Z
+review:portaliq:1468:09694f2e	CONFLICT (35 files, stale since 10 Oct)	session-20261115T142134-badaaf30	2026-11-15T16:46:32Z
+review:planninq:1064:54981d9f	RED: conflicts with development; new old-form find() callers in ProjectCopyService/ProjectExportService uncovered	session-20261115T154316-34f0db35	2026-11-15T16:46:42Z
+review:portaliq:1995:277966b3	BLOCK: wrong OpenRegister namespace for ObjectDeletion/ObjectFindTarget; 5 conflicts	session-20261115T154254-3d07b219	2026-11-15T16:46:52Z
