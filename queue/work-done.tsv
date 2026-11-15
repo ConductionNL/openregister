@@ -13234,3 +13234,4 @@ fix:integriq:3649:236dc3f7	re-sorted en.js/nl.js replaced by development's order
 verify:integriq:3638:e4fdb7a0	GREEN 3638; no new failures attributable to the PR	session-20261115T142951-2463b4c4	2026-11-15T15:29:49Z
 verify:integriq:3615:475e58f4	3615 GREEN, 3662 GREEN; no new failures (inherited reds only), vitest 2387 OK	session-20261115T145535-caebb5a3	2026-11-15T15:30:16Z
 measure:planninq:20261115h02	php 97.18% (pcov, 1222 tests), js 98.41% (vitest 3566 tests) at a8c9f994	session-20261115T142931-4c5be241	2026-11-15T15:30:26Z
+build:launchpad:launcher-tile-launch-types:c3	partial, no code left: PR #1226 (bf28a8ea) is merged; open are 6's axe check, 7 Playwright (live instance) and 8's spec fold at archive	session-20261115T142134-badaaf30	2026-11-15T15:30:20Z
