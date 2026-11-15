@@ -14163,3 +14163,4 @@ fix:portaliq:2350:e25d2cb7	failed: psalm 7.2 needs php >=8.3.16 while config.pla
 fix:portaliq:1849:cb2411d1	failed: T10/T11/T13 already on development in another form; T12 needs a rebuild on development's model (continuation build), beyond a conflict fix	session-20261114T102637-6688951e	2026-11-15T18:27:36Z
 fix:pipelinq:3151:988cd148	stubs moved to Kernel\Contracts\Value; new head bc0319a8, REVERIFY recorded	session-20261115T152558-f97be55f	2026-11-15T18:27:47Z
 review:portaliq:1354:84f30a14	GREEN: unused direct dep bump, merges clean	session-20261115T174833-88ac0233	2026-11-15T18:27:57Z
+review:portaliq:1684:744eadec	GREEN: specced helpText on page answer; unit 6121 OK	session-20261115T174757-8dfa7406	2026-11-15T18:28:05Z
