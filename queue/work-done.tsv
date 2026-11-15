@@ -13126,3 +13126,4 @@ cover:openregister:7350e3efm1efa:9b457b26	PR #10585: 7 classes, 25 new tests + @
 fix:shillinq:3078:babfb38d	regenerated scoped-pages index; new head 777f3b0b, REVERIFY recorded	session-20261115T142932-b9b408b7	2026-11-15T15:07:13Z
 review:filinq:2103:a4238696	GREEN: unit 6815 ok, phpstan clean, jest 14 ok	session-20261115T142153-990a3fbe	2026-11-15T15:07:20Z
 verify:portaliq:2527:96a26a46	2527 GREEN (6074 tests, 0 new failures)	session-20261115T142145-a288b021	2026-11-15T15:07:28Z
+review:openregister:10583:f9f81edd	APPROVE: tests only, all touched and required suites pass	session-20261115T142129-944012f5	2026-11-15T15:07:34Z
