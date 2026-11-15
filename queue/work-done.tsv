@@ -14050,3 +14050,4 @@ fix:pipelinq:3281:c765403c	failed: every psalm 7.x requires php ~8.3.16 while co
 review:dossiq:3953:6ca6e023	GREEN: behaviour-neutral rename; unit 0 new failures (19 inherited)	session-20261115T174808-50b8ceec	2026-11-15T18:05:57Z
 fix:pipelinq:2969:bd583b9e	conflict resolved toward development's build; pushed e12968a1; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:06:21Z
 fix:dossiq:5266:f306c815	conflict resolved (both sides kept), expired pill added; vitest 2 inherited failures only; new head db2ab4a5	session-20261115T174739-b14c2df4	2026-11-15T18:06:45Z
+fix:pipelinq:2108:6bc5f8a0	failed: not fixable in pipelinq; latest @conduction/nextcloud-vue (2.180.0) still peers gridstack ^12||^13, so the library's peer range must widen first	session-20261115T174750-744c606b	2026-11-15T18:06:43Z
