@@ -14145,3 +14145,66 @@ fix:portaliq:1768:2c4e29aa	fixed: lock rebuilt on development, npm ci OK; new he
 review:portaliq:1670:311e49a8	RED: validate-manifest gains 5 errors for widgets moved to band	session-20261115T174833-88ac0233	2026-11-15T18:23:59Z
 merge:planninq:725:0402f280	merge8 tree of 7 planninq PRs: merged=0 red=6 fail=0 skip=0; conflict 1, lint 0, moved 0; fix rows 1	merge8-20261115T170007-37538273	2026-11-15T18:24:06Z
 fix:portaliq:1681:1c5961b5	fixed: merged development, draft lookup on version 2; new head ea79ed8c	session-20261115T174819-9af28ef9	2026-11-15T18:24:11Z
+fix:portaliq:1769:d443a45b	lock regenerated on development, npm ci ok; new head 91f4b0df6c650ba48d9f0aaf4a3559074fd97b13	session-20261114T102637-6688951e	2026-11-15T18:24:28Z
+fix:pipelinq:3153:22a0348f	failed: needs a redo on current development, not a fix: merging development gives 216 conflict hunks in 130 files (development refactored the save helpers, ~2000 commits ahead) and development still has 197 lib saveObject calls + ~300 test refs in the old named-arg form; stubs/ctors match OR main, only namespace must become OCA\OpenRegister\Kernel\Contracts\Value	session-20261115T174804-89f2739f	2026-11-15T18:24:43Z
+fix:portaliq:1657:489e5cbd	CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:24:38Z
+review:pipelinq:3148:37d49de1	GREEN 3148	session-20261115T154255-e54527e9	2026-11-15T18:24:46Z
+fix:portaliq:1659:3c90bf4d	conflict resolved (dup rowClass dropped), pushed 3bad2deb; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:24:54Z
+review:pipelinq:3146:9853385c	GREEN; FlowNodeCall namespace matches OR main, phpunit 8890 OK	session-20261115T152558-f97be55f	2026-11-15T18:25:08Z
+review:dossiq:3957:b44c6a4f	GREEN: matches its change spec; 0 new failures	session-20261115T174808-50b8ceec	2026-11-15T18:25:19Z
+fix:portaliq:1666:00663233	conflict resolved keeping development's actions; new head 3a173dca3d9798e6eef30195d81dc42bb356d376, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:25:32Z
+fix:portaliq:1992:df536a4a	failed: obsolete - openregister main's aliasStoreController again accepts appId:/controllerNs: (and adoption:), so development's current call works and this PR only narrows compatibility; nothing to keep, closing PRs is refused to this worker, close #1992 by hand	session-20261115T174747-978963d5	2026-11-15T18:25:47Z
+fix:portaliq:2339:fd417084	failed: the archive pinned in scripts/woo-bundle.json (tilburg-woo-ui release portaliq-woo-2026-07-10) answers 404 to an unauthenticated download, so npm run build:woo cannot fetch it and dropping build/woo would ship without the /woo site; publish a reachable asset first, then rebase the paths onto build/woo (bundle tree is unchanged by the move)	session-20261115T174750-744c606b	2026-11-15T18:25:59Z
+fix:portaliq:1765:756be697	lock regenerated, npm ci + build ok, pushed 065fabf8; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:26:09Z
+fix:portaliq:663:508c5fce	conflict resolved, versions re-bumped to 0.119.0/0.35.0, suite green; new head 7709e801	session-20261115T174833-88ac0233	2026-11-15T18:26:19Z
+review:launchpad:758:06d536b2	GREEN	session-20261115T174741-56eeaa2f	2026-11-15T18:26:30Z
+fix:portaliq:1843:0b799a1a	failed: parallel build of the same change already partly on development with a different normaliser contract; semantic merge exceeds the fix cap, recommend continuation build of T03-T10 on development	session-20261114T102637-6688951e	2026-11-15T18:26:39Z
+review:portaliq:1680:13aebbdf	GREEN: additive opt-in fieldMap, suite 6124 OK	session-20261115T174747-978963d5	2026-11-15T18:26:53Z
+review:portaliq:1769:91f4b0df	GREEN: lock-only minor bump, npm ci ok	session-20261115T174741-9deaa0be	2026-11-15T18:27:08Z
+review:opencatalogi:1893:143da9ef	CONFLICT (docs-only, no defect)	session-20261115T174741-56eeaa2f	2026-11-15T18:27:20Z
+fix:portaliq:2350:e25d2cb7	failed: psalm 7.2 needs php >=8.3.16 while config.platform.php is 8.3; fixing means raising the platform and regenerating composer.lock, which workers may not commit; needs a human decision (raise platform or close and stay on psalm 5)	session-20261115T174747-978963d5	2026-11-15T18:27:23Z
+fix:portaliq:1849:cb2411d1	failed: T10/T11/T13 already on development in another form; T12 needs a rebuild on development's model (continuation build), beyond a conflict fix	session-20261114T102637-6688951e	2026-11-15T18:27:36Z
+fix:pipelinq:3151:988cd148	stubs moved to Kernel\Contracts\Value; new head bc0319a8, REVERIFY recorded	session-20261115T152558-f97be55f	2026-11-15T18:27:47Z
+review:portaliq:1354:84f30a14	GREEN: unused direct dep bump, merges clean	session-20261115T174833-88ac0233	2026-11-15T18:27:57Z
+review:portaliq:1684:744eadec	GREEN: specced helpText on page answer; unit 6121 OK	session-20261115T174757-8dfa7406	2026-11-15T18:28:05Z
+fix:portaliq:1764:a896834e	fixed RED: lock rebuilt on development, npm ci OK; new head b3d8a23e, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:28:15Z
+fix:portaliq:1997:a07869fb	fixed: namespace moved to Kernel\Contracts\Value, development merged, new head 3d645d7e	session-20261115T174804-89f2739f	2026-11-15T18:28:26Z
+review:portaliq:1681:ea79ed8c	GREEN: seed data + test, all example-set tests pass	session-20261114T102637-6688951e	2026-11-15T18:28:40Z
+fix:shillinq:2084:78c206ad	failed: not a conflict resolution: branch is from 21 Oct; development has since moved ExtractionRequestController/SupplierInvoiceImportController to interface deps and split helpers (and moved booking feedback, mcp-action-tool-surface today); the branch's receipt-edit owner/approver check, duplicate-invoice refusal and booking feedback need re-implementing on that structure (13 hunks in 3 PHP file	session-20261115T152558-f97be55f	2026-11-15T18:28:52Z
+review:dossiq:3203:cd98b031	GREEN dossiq#3203: vitest 2 inherited failures only, webpack build OK	session-20261115T174739-b14c2df4	2026-11-15T18:28:50Z
+review:portaliq:1994:cffe40a0	GREEN: find() adapted to ObjectFindOptions, suite 6120 OK	session-20261115T174747-978963d5	2026-11-15T18:29:13Z
+fix:portaliq:1071:be71af8c	conflict resolved, narrowed to challenge proof on site form; pushed 334e76b1, REVERIFY	session-20261115T174808-50b8ceec	2026-11-15T18:29:31Z
+fix:shillinq:1910:23e71609	failed: gridstack 14 still outside @conduction/nextcloud-vue peer range (latest 2.180.0 declares ^12 || ^13); needs a library release first, not fixable in shillinq	session-20261115T182936-09049974	2026-11-15T18:30:03Z
+review:portaliq:1766:23513ec0	GREEN: dexie patch bump	session-20261115T174757-8dfa7406	2026-11-15T18:29:59Z
+fix:shillinq:1873:68200d2c	closed as obsolete: development locks nextcloud-vue 2.173.0 vs PR 2.60.0	session-20261115T182940-bfeb7e78	2026-11-15T18:30:14Z
+fix:portaliq:1996:498473cc	fixed: Kernel\Contracts\Value namespace, merged development; new head 69333191	session-20261115T174819-9af28ef9	2026-11-15T18:30:09Z
+review:portaliq:1848:5c463cd1	GREEN: suite 6120 OK, spec 11/11	session-20261115T174833-88ac0233	2026-11-15T18:30:19Z
+review:opencatalogi:2673:61140718	RED: 5 jest failures in WidgetData.spec.js	session-20261115T174741-56eeaa2f	2026-11-15T18:30:29Z
+review:portaliq:1229:facf71a3	GREEN: comments only	session-20261115T174747-978963d5	2026-11-15T18:30:40Z
+review:portaliq:1768:5560c998	GREEN: dev-dep bump, builds compile	session-20261115T174741-9deaa0be	2026-11-15T18:31:04Z
+fix:portaliq:1856:d612dba3	conflict resolved, pushed 9258525b; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T18:31:21Z
+fix:portaliq:1767:fc41a4fc	fixed: lock rebuilt on development, npm ci + build OK; new head 886f4fa1, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:31:34Z
+review:portaliq:1657:8ce73cab	GREEN: manifest styling/text only	session-20261115T174757-8dfa7406	2026-11-15T18:32:07Z
+fix:portaliq:1606:2cc8c923	failed: branch replaces the tree resolver's design that development refactored; needs a rebuild of the reach feature on development, beyond a conflict fix	session-20261114T102637-6688951e	2026-11-15T18:32:16Z
+review:portaliq:1659:3bad2deb	GREEN: manifest copy change, node specs identical to baseline	session-20261115T174804-89f2739f	2026-11-15T18:32:25Z
+review:portaliq:1666:3a173dca	GREEN: manifest band layout	session-20261115T174747-978963d5	2026-11-15T18:32:43Z
+review:portaliq:1673:7d3109ad	GREEN: additive sort rank per its spec; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:33:02Z
+fix:portaliq:1670:311e49a8	RED fixed: lint counts band placements, pushed 8ef03e9f; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T18:33:10Z
+review:learniq:1901:d2b62a76	CONFLICT: additive and per its spec; 4 lib files conflict with development	session-20261114T102637-6688951e	2026-11-15T18:33:19Z
+fix:shillinq:2086:572ee89c	conflict resolved, merged development, pushed 28d36484; REVERIFY recorded	session-20261115T182951-bdf9d68e	2026-11-15T18:33:34Z
+fix:shillinq:2408:837e65b7	failed: would break a published contract — PR only exists to follow openregister#9818 (open, unmerged), which removes AggregationQuery::create()'s groupBy/dateBucket/metrics/cumulative params; development's create(groupBy:) call already matches openregister main, so there is nothing to fix in shillinq; PR left open for the owner to close with #9818	session-20261115T183025-d89c1e14	2026-11-15T18:33:44Z
+fix:shillinq:1965:6dd9752c	conflict resolved, pushed 3c0db1b5, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T18:33:45Z
+fix:learniq:1166:0748af52	closed as superseded: development locks @typescript-eslint/parser 8.72.2 (> 8.70.1)	session-20261114T102637-6688951e	2026-11-15T18:33:55Z
+review:dossiq:4886:63c08dd9	BLOCK: resolvedFrom 'caseTypePick' missing from the instance schema enum; suite at baseline	session-20261115T182948-465dcc8e	2026-11-15T18:34:11Z
+fix:learniq:1165:ffd74a05	closed as superseded: development locks vue 3.5.45 (> 3.5.43)	session-20261114T102637-6688951e	2026-11-15T18:34:23Z
+fix:dossiq:5357:7d05868b	conflict resolved, dev-added test doubles moved to ObjectPatch; 19 inherited only; new head 9bb3d18c	session-20261115T174739-b14c2df4	2026-11-15T18:34:37Z
+fix:learniq:1168:41eae3eb	failed: blocked upstream: @conduction/nextcloud-vue 2.180.0 (development) still peers @vueuse/core ^11 || ^14, so ^15 cannot install; needs the library to accept 15 first (PR left open)	session-20261114T102637-6688951e	2026-11-15T18:34:44Z
+fix:shillinq:2099:b77de1fd	modify/delete resolved, tests rewritten; new head 8bc4dce59f34930f42389ad0056fdcbc139062e7, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:34:44Z
+review:portaliq:1997:3d645d7e	GREEN: matches openregister main signatures, suite green	session-20261115T174741-9deaa0be	2026-11-15T18:34:58Z
+fix:shillinq:2249:530fcbd0	fixed: import conflict merged; new head 55e36ecc	session-20261115T174819-9af28ef9	2026-11-15T18:35:15Z
+review:portaliq:663:7709e801	GREEN: opt-in, default unchanged; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:35:23Z
+fix:shillinq:2095:0bdac976	conflict resolved, merged development, pushed bd2958597; REVERIFY recorded	session-20261115T182953-0722a05e	2026-11-15T18:35:33Z
+fix:shillinq:2092:e3baa4d4	CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:35:42Z
+review:portaliq:1765:065fabf8	GREEN: lock-only bump, npm ci ok	session-20261115T174741-9deaa0be	2026-11-15T18:35:52Z
+fix:shillinq:2227:13c58709	closed #2227 (vueuse 15 outside library peer range, unused directly); opened #3105 holding the @vueuse/core major in dependabot config	session-20261115T174739-b14c2df4	2026-11-15T18:36:07Z
+fix:pipelinq:3092:fbd3e247	fixed: lock @nextcloud/files 4.1.1, jsdom p-queue shim, spec mocks; vitest 1 inherited failure; new head f8d049f3	session-20261115T181015-497e81ce	2026-11-15T18:36:21Z
