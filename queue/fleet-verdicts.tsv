@@ -11317,3 +11317,4 @@ filinq	2106	3c54d4a072f28786fe76e05412cbfe63044f7408	CONFLICT	merge3	merges clea
 filinq	2113	45e6b64f8a2ce720ba101fcdd409f41779c0cc63	CONFLICT	merge3	merges clean on development alone; files: lib/Settings/filinq_register.json 
 filinq	2123	65d916d0072db231070fb22bd3e8b85db36e6eee	CONFLICT	merge3	merges clean on development alone; files: src/views/intake/IntakeIndex.vue src/views/myDocuments/MyDocumentsIndex.vue 
 filinq	2069	2a5b02d028e7769d99b9de42ebb7ffd09b5de958	REVERIFY	merge3	head moved since the verdict (was 2b2b094efbc6741520db0b5663097320ee7cfce3, 2b2b094e:GREEN,be103c8c:GREEN); verify the new head
+launchpad	1230	bbc5350fbdf157327ebb69841d679e408accd7d8	RED	merge3:merge-gate	GATE RED floor: unit_size: 3.84 -> 3.82; unit_complexity: 4.73 -> 4.69
