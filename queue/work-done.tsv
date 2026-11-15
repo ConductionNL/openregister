@@ -13458,3 +13458,4 @@ review:hermiq:1133:05c6caa3	GREEN: stylelint minor bump; stylelint 0 errors, vit
 review:hermiq:1193:67714a4e	GREEN (sass dev bump, vitest and build OK)	session-20261115T142949-9c6a3945	2026-11-15T16:09:51Z
 review:integriq:2562:a0c8e1bf	GREEN: vitest 2374/2374; peer-range note for @conduction/nextcloud-vue	session-20261115T155915-84e5dc0a	2026-11-15T16:10:03Z
 review:humaniq:686:03602584	GREEN: test:js 210/211, failure inherited from development	session-20261115T152554-949e9403	2026-11-15T16:10:15Z
+review:dossiq:3894:c91ec402	GREEN: dev-only phpmd 2.15->3.0 bump; suite unchanged vs development (19 inherited); phpmd runs the ruleset	session-20261115T145546-378b432a	2026-11-15T16:10:25Z
