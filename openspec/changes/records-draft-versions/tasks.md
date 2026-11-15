@@ -2,7 +2,8 @@
 
 ## 1. Draft store
 
-- [ ] 1.1 `ObjectDraft` entity, mapper and migration for `openregister_object_drafts` (key rules from the spec: `main` reserved, lowercase and hyphens). Verify: mapper test on PostgreSQL and MariaDB, and 422 for key `main`.
+- [x] 1.1 `ObjectDraft` entity, mapper and migration for `openregister_object_drafts` (key rules from the spec: `main` reserved, lowercase and hyphens). Verify: mapper test on PostgreSQL and MariaDB, and 422 for key `main`.
+      > Built as `Db/DraftVersion`, `Db/DraftVersionMapper` and `Migration/Version1Date20261113140200` (one row per object and key, unique); `DraftService::validKey()` refuses `main` and anything but lowercase letters, digits and hyphens, which `VersionsController::create()` answers with 422. Unit: `DraftVersionMapperTest` (queries and the migration's table and unique index), `VersionsControllerTest::testCreateAnswers422ForARefusedKeyAnd201Otherwise`. The run against real PostgreSQL and MariaDB needs an instance and is not written.
 - [x] 1.2 `DraftService` create, update (delta only), list, discard, with the spec's visibility rule. Verify: `DraftServiceTest` including a read-only user who cannot see another user's draft.
 
 ## 2. Reading and routes
@@ -29,12 +30,15 @@
 
 ## 5. Interface
 
-- [ ] 5.1 Drafts tab on `ObjectDetails.vue`: list, edit, compare, preview, promote, discard. Verify: `tests/e2e/record-drafts.spec.ts` creates a draft, checks the published object is unchanged, promotes it and sees the change.
-- [ ] 5.2 Preview button opening the filled `previewUrl`. Verify: same e2e asserts the opened URL carries the token.
+- [x] 5.1 Drafts tab on `ObjectDetails.vue`: list, edit, compare, preview, promote, discard. Verify: `tests/e2e/record-drafts.spec.ts` creates a draft, checks the published object is unchanged, promotes it and sees the change.
+      > `components/object-drafts/DraftsTab.vue` (calls in `draftsApi.js`) with `modals/object/DraftEditModal.vue` for a new draft and for adding changes (the changed fields as a JSON object). The list entries now carry `changedFields` (names only, no values). Compare reads the merged draft and shows each changed field's published and draft value; a promotion conflict lists the fields and offers force only to an administrator (the server refuses anyone else); discard asks first; a promotion hands the published object back to the page. Unit (jest): `DraftsTab.spec.js`, `draftsApi.spec.js`, `DraftEditModal.spec.js`; `VersionsControllerTest`. The e2e needs an instance and is not written.
+- [x] 5.2 Preview button opening the filled `previewUrl`. Verify: same e2e asserts the opened URL carries the token.
+      > Shown only when the schema's `configuration.previewUrl` is set; it calls `POST .../versions/{key}/preview` and opens the answer's filled `previewUrl` in a new tab. Unit: `DraftsTab.spec.js` (hidden without a template; opens the URL with its token). The e2e needs an instance and is not written.
 
 ## 6. Spec and docs
 
-- [ ] 6.1 Remove the "Status: deferred" notes from the two draft requirements in `openspec/specs/content-versioning/spec.md` when 1.1 to 3.2 have shipped.
+- [x] 6.1 Remove the "Status: deferred" notes from the two draft requirements in `openspec/specs/content-versioning/spec.md` when 1.1 to 3.2 have shipped.
+      > Removed from the lifecycle and promotion requirements, in this PR that ships 1.1 to 3.2.
 - [x] 6.2 `docs/` page on drafts, promotion and site preview.
       > `docs/features/draft-versions.md` (visibility, keys, routes, `?version`, `_drafts`, promotion and `force`, `previewUrl` and preview links), linked from `docs/features/README.md`; the stale lifecycle paragraph in `versioning-and-audit.md` now points to it.
 

@@ -418,7 +418,7 @@ class VersionsController extends Controller {
 	}//end changes()
 
 	/**
-	 * A draft as listed: no delta, only what identifies it.
+	 * A draft as listed: no delta, only what identifies it and the names of the fields it changes.
 	 *
 	 * @param DraftVersion $draft The draft.
 	 *
@@ -432,6 +432,7 @@ class VersionsController extends Controller {
 			'baseVersion' => $draft->getBaseVersion(),
 			'created' => $draft->getCreated()?->format('c'),
 			'updated' => $draft->getUpdated()?->format('c'),
+			'changedFields' => array_map('strval', array_keys($draft->getDelta() ?? [])),
 		];
 	}//end summary()
 

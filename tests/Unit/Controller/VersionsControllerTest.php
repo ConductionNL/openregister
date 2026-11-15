@@ -115,6 +115,7 @@ class VersionsControllerTest extends TestCase {
 		$draft->setBaseVersion('3');
 		$draft->setCreated(new DateTime('2026-11-13T10:00:00+00:00'));
 		$draft->setUpdated(new DateTime('2026-11-13T11:00:00+00:00'));
+		$draft->setDelta(['status' => 'in_behandeling', 'title' => 'Nieuw']);
 		return $draft;
 	}//end draft()
 
@@ -137,7 +138,7 @@ class VersionsControllerTest extends TestCase {
 	}//end testSignInAndReadAccessComeFirst()
 
 	/**
-	 * The list holds the drafts DraftService says the caller may see, without their deltas.
+	 * The list holds the drafts DraftService says the caller may see, with the names of the fields they change but not their values.
 	 *
 	 * @return void
 	 */
@@ -150,7 +151,7 @@ class VersionsControllerTest extends TestCase {
 		$response = $controller->index('r', 's', 'melding-1');
 
 		$this->assertSame(
-			['results' => [['key' => 'update-1', 'name' => 'Update 1', 'createdBy' => 'medewerker-1', 'baseVersion' => '3', 'created' => '2026-11-13T10:00:00+00:00', 'updated' => '2026-11-13T11:00:00+00:00']]],
+			['results' => [['key' => 'update-1', 'name' => 'Update 1', 'createdBy' => 'medewerker-1', 'baseVersion' => '3', 'created' => '2026-11-13T10:00:00+00:00', 'updated' => '2026-11-13T11:00:00+00:00', 'changedFields' => ['status', 'title']]]],
 			$response->getData()
 		);
 	}//end testIndexListsTheVisibleDrafts()

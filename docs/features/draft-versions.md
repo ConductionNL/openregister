@@ -140,6 +140,21 @@ A preview link can only be made through the draft's own route, after the check
 that you may see the draft; the general access link route refuses this kind of
 link.
 
+## The Drafts tab
+
+The object page has a **Drafts** tab beside the published data. It lists the
+drafts the user may see with their key, name, creator and changed fields
+(`changedFields` on each entry of `GET .../versions`), and per draft offers:
+
+- **Edit**: the changed fields as a JSON object; saving adds them to the draft
+  (`PUT .../versions/{key}`). **New draft** asks for a key, a name and the changes.
+- **Compare**: each changed field with its published and its draft value.
+- **Preview**: only when the schema declares `previewUrl`; makes a preview link
+  and opens the filled URL in a new tab.
+- **Promote**: publishes the draft. A conflict lists the fields changed since the
+  draft was made; only an administrator is offered **Promote anyway** (`force`).
+- **Discard**: after a confirmation; the published object stays as it is.
+
 ## Standards and decisions
 
 - Publication stays a matter of access rules; a draft is a working copy beside

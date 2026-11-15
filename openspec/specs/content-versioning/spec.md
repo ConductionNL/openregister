@@ -42,8 +42,6 @@ Each create or update operation on an object MUST increment the object's semanti
 
 Each object MUST have a published version (the current live data) and support one or more named draft versions for work-in-progress changes. Drafts MUST store only the delta (changed fields) relative to the published version to optimize storage. The published version MUST remain accessible and unmodified while drafts exist.
 
-> **Status: deferred** — No DraftService or draft version entity found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
-
 #### Scenario: Create a draft version
 - **GIVEN** a published object `melding-1` with title `Geluidsoverlast` and status `nieuw` at version `1.0.3`
 - **WHEN** the user creates a draft named `status-update`
@@ -78,8 +76,6 @@ Each object MUST have a published version (the current live data) and support on
 ### Requirement: Drafts MUST be promotable to published version
 
 A draft version MUST be mergeable into the published version, replacing the current live data with the draft changes. Promotion MUST create a new version entry in the audit trail and MUST increment the MINOR version number.
-
-> **Status: deferred** — Depends on draft/published lifecycle (see above). Not implemented as of 2026-04-30.
 
 #### Scenario: Promote a draft to published
 - **GIVEN** draft `status-update` for `melding-1` (published at `1.0.3`) with status changed to `in_behandeling`
