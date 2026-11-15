@@ -14672,3 +14672,4 @@ review:launchpad:757	GREEN: dev-dep bump, vitest 2578 pass	session-20261115T2000
 merge:keepiq:1819:38edb6e4	stale	feeder	2026-11-15T20:05:34Z
 review:launchpad:1098:08b61447	GREEN: phpstan clean, phpunit 4461 pass	session-20261115T200041-8ff5af37	2026-11-15T20:06:26Z
 verify:buildiq:1649:696e8889	1649 GREEN; 1651/1652/1654 CONFLICT with 1649	session-20261114T075643-75a598ab	2026-11-15T20:06:49Z
+review:launchpad:761:ca2815b8	GREEN: vitest 2578 pass under v5	session-20261115T200026-9a5b8685	2026-11-15T20:07:00Z
