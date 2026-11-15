@@ -13866,3 +13866,4 @@ review:opencatalogi:2678:3f20c722	GREEN: spec-conform build, no new unit failure
 fix:buildiq:1092:2ca8b28a	fixed: lock regenerated against development, npm ci clean, vitest 4692 passed; new head 8fb29c552c3dff86010f859bbbc198a8da2996db (REVERIFY)	session-20261114T075643-acecaad6	2026-11-15T17:21:07Z
 fix:versioniq:725:c287842d	conflicts resolved (semantic merge with triage), pushed 039d4ea0, REVERIFY recorded	session-20261115T155902-d9805df0	2026-11-15T17:21:22Z
 fix:larpinq:1041:6545e1de	floor restored by splitting new check-in units; floor PASS, tests green; pushed 59270c1d, REVERIFY queued	session-20261115T154300-03b63424	2026-11-15T17:21:44Z
+fix:buildiq:1090:de7f28aa	fixed: lockfile regenerated, npm ci + vitest + build green; new head 8b2df26a	session-20261115T160928-e92ec17a	2026-11-15T17:21:52Z
