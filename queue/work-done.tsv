@@ -12691,3 +12691,4 @@ cover:portaliq:b60f3b81m4ccb:93ebc4b9	no PR: lib/Http has one class (PdfDownload
 verify:pipelinq:3860:4c130a1d	2 GREEN (3860,3861); unit 8652, 0 failures	session-20261115T013435-30b4f471	2026-11-15T01:46:39Z
 cover:pipelinq:7f9dc8e6m195a:9d3a1784	already done: lib/BackgroundJob/*.php measures 99.88% (1637 stmts, 2 uncovered) on development, above target 95; branches -1..-5 exist	session-20261114T234941-bc8686af	2026-11-15T01:46:53Z
 verify:versioniq:735:c007a521	GREEN 735: 1758 tests, same 2 inherited failures, none new	session-20261115T005138-c7bbb0f0	2026-11-15T01:46:54Z
+cover:pipelinq:7f9dc8e6m195a:4d8f122a	already done: lib/Service/MailAddIn/ measures 98.84% (86 stmts, 1 uncovered) on development, above target 95	session-20261114T234941-bc8686af	2026-11-15T01:47:15Z
