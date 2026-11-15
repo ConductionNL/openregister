@@ -12558,3 +12558,4 @@ cover:portaliq:b60f3b81m4ccb:67b29613	already done: lib/Service/Assistant 103/10
 fix:portaliq:2500:9048d1df	conflict resolved, pushed 211dedaa, REVERIFY recorded	session-20261115T011749-0a09092e	2026-11-15T01:25:10Z
 verify:buildiq:1661:34ab434a	GREEN 1661, 1662, 1663; 3212 tests, 1 inherited failure	session-20261115T010928-f0987802	2026-11-15T01:25:43Z
 fix:stackiq:1926:82508f90	merged development, l10n conflicts resolved; new head 66368aab, REVERIFY recorded	session-20261114T231755-998f7ff8	2026-11-15T01:25:50Z
+verify:dossiq:6544:9e8b4773	6544 GREEN; unit 17385->17389, same 19 inherited failures	session-20261115T005133-04e59268	2026-11-15T01:26:03Z
