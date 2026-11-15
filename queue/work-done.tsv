@@ -12865,6 +12865,7 @@ cover:dossiq:069ee2d6madb6:ceb285b8	already done: lib/Service/Publication/ at 10
 build4:dossiq:method-decomposition:c6	partial: no change this pass (worker context nearly full after 25 tasks); all TASK-DECOMP-001..048 handler/validator extractions, slices 6-8 and verify/docs tasks remain unchecked on development 7b06ef6	session-20261115T005122-49ba1b99	2026-11-15T02:25:39Z
 verify:integriq:3653:f6d51267	3653,3654 GREEN	session-20261115T011811-95390b97	2026-11-15T02:25:55Z
 verify:dossiq:6563:607c71a0	6563 GREEN, 6564 GREEN	session-20261115T005412-4a06d6f4	2026-11-15T02:26:12Z
+cover:integriq:92114ab0m6759:65e30692	already done: lib/Service/Intake/ 331/336 stmts (98.5%) on development, above 95 target; no PR	session-20261115T021834-d9e45281	2026-11-15T02:26:18Z
 cover:integriq:92114ab0m6759:075ad59c	already done: lib/Service/CaseSystem/ at 96.3% lines (421/437) on development, above 95 target; no PR	session-20261115T015406-eecdf998	2026-11-15T02:26:17Z
 verify:portaliq:2508:5c7cd01a	GREEN portaliq#2508: no new failures (php 5967, node 4 inherited)	session-20261115T021828-68c5f276	2026-11-15T02:26:19Z
 cover:openregister:7350e3efm1efa:053b65e7	PR #10581: lib/Db/MagicMapper 94.28% -> 95.5%; MagicTableIndexerCreateTest (6 tests) + @uses fixed in 18 risky tests; Db suite 5803->5809 OK	session-20261115T014829-0a32adc7	2026-11-15T02:26:24Z
