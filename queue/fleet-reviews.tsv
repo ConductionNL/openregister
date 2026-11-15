@@ -1,1 +1,2 @@
 # app	pr	head	APPROVE|REQUEST_CHANGES	reviewer	summary
+buildiq	1092	996ef9e614476985eb35a9ad72d672a44732fbc6	APPROVE	cloudmerge-pilot	Quick; no blockers; dev-dependency bump sass ^1.107.1 (lock resolves 1.108.2), sbom regenerated; gate FAILs 66/102/109 inherited (files not in diff)
