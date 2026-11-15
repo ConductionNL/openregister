@@ -37,6 +37,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Federation\CreatorPropertyFilter;
+use OCA\OpenRegister\Service\Federation\RemoteRecipientGate;
 use OCA\OpenRegister\Service\Federation\ShareCrosses;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
@@ -162,6 +163,13 @@ class FederationController extends Controller {
 	private readonly CreatorPropertyFilter $creatorProperties;
 
 	/**
+	 * Judges the share's recipient by the deny rules, as one more principal (REQ-PCF-001).
+	 *
+	 * @var RemoteRecipientGate
+	 */
+	private readonly RemoteRecipientGate $remoteRecipients;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
@@ -181,6 +189,7 @@ class FederationController extends Controller {
 		$this->shareService = $services->shareService;
 		$this->throttler = $services->throttler;
 		$this->creatorProperties = $services->creatorProperties;
+		$this->remoteRecipients = $services->remoteRecipients;
 	}//end __construct()
 
 	/**
@@ -542,7 +551,7 @@ class FederationController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function updateObject(string $shareToken, string $id): JSONResponse {
-		$target = $this->writableTarget(shareToken: $shareToken, id: $id);
+		$target = $this->writableTarget(shareToken: $shareToken, id: $id, verb: 'update');
 		if ($target instanceof JSONResponse) {
 			return $target;
 		}
@@ -589,7 +598,7 @@ class FederationController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function deleteObject(string $shareToken, string $id): JSONResponse {
-		$target = $this->writableTarget(shareToken: $shareToken, id: $id);
+		$target = $this->writableTarget(shareToken: $shareToken, id: $id, verb: 'delete');
 		if ($target instanceof JSONResponse) {
 			return $target;
 		}
@@ -685,11 +694,12 @@ class FederationController extends Controller {
 	 *
 	 * @param string $shareToken The scoped bearer share token.
 	 * @param string $id         The object id/uuid taken from the URL.
+	 * @param string $verb       The write verb, judged against the recipient's deny rules.
 	 *
 	 * @return array{share: FederatedShare, uuid: string}|JSONResponse The share and the uuid of the
 	 *                                                                 object it may write, or a 403, 404 or 500 response.
 	 */
-	private function writableTarget(string $shareToken, string $id): array|JSONResponse {
+	private function writableTarget(string $shareToken, string $id, string $verb): array|JSONResponse {
 		$share = $this->resolveWritableShare(shareToken: $shareToken);
 		if ($share === null) {
 			return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
@@ -706,6 +716,11 @@ class FederationController extends Controller {
 		$uuid = (string) ($target?->getUuid() ?? '');
 		if ($uuid === '') {
 			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		// The recipient is a principal: a deny on the write verb refuses it, as it would refuse a local caller.
+		if ($target !== null && $this->remoteRecipients->refuses(share: $share, object: $target, verb: $verb) === true) {
+			return new JSONResponse(data: ['error' => 'Not permitted for this recipient'], statusCode: Http::STATUS_FORBIDDEN);
 		}
 
 		return ['share' => $share, 'uuid' => $uuid];
@@ -1078,6 +1093,12 @@ class FederationController extends Controller {
 		$visible = [];
 		foreach ($objects as $object) {
 			if ($object instanceof ObjectEntity === false || (string)$object->getOrganisation() !== $org) {
+				continue;
+			}
+
+			// The recipient is a principal: a deny that takes `read` from it
+			// keeps the object at home (REQ-PCF-001, design D-1).
+			if ($this->remoteRecipients->refuses(share: $share, object: $object, verb: 'read') === true) {
 				continue;
 			}
 

@@ -15,7 +15,18 @@
       `POST /api/federation/shares/{id}/accept` or `/decline` (`SHARE_ACCEPTED`, `SHARE_DECLINED`;
       revoking a received share is a decline). A failed notification is logged and does not undo
       the change here.
-- [ ] 1.3 A federated recipient evaluated by the permission layer as a principal (D-1).
+- [x] 1.3 A federated recipient evaluated by the permission layer as a principal (D-1).
+      The share is the grant, already bounded by its creator's rights (FSE-005). The recipient is
+      a principal the same evaluator binds: `PermissionHandler::remoteRecipientDenial()` resolves the
+      cascade (schema or register, then the object's own block) and runs the same deny pass, with the
+      recipient reached as `remote:<cloud id>` and every federated recipient as `remote:*` (a token
+      share only as `remote:*`), never as `public` or `authenticated`, and never exempt as an
+      administrator. The deny enforcement switch applies as for a local caller (`staging` records
+      and admits). `RemoteRecipientGate` asks it on every serve (`read`, in
+      `applyShareVisibility()`, so also before any write) and on update and delete (their verbs,
+      403). A schema that cannot be read, or a cascade that cannot be resolved, is not served.
+      Not covered: a create through a share is judged by the scope and the creator only, because
+      there is no object yet for an object-level deny.
 - [x] 1.4 A per-share declaration of what crosses, defaulting to the narrowest (D-2).
       `crosses` on the share (column added by `Version1Date20261114130000`), a subset of `data`,
       `files`, `timeline`, set from the `crosses` parameter of `POST /api/federation/shares`.
@@ -31,10 +42,12 @@
       schema in the register declares it (`ShareTargets::registerSchemas()`; a register or schema
       that does not resolve is refused too). Existing shares keep serving.
 - [ ] 2.1 `tests/e2e/ci/platform-federation.spec.ts`: share to a second instance, accept, open, revoke, fail to open.
-- [ ] 2.2 Unit tests: the payload for each declaration, the undeclared schema refusal, an unchanged inbound path. — partial:
+- [x] 2.2 Unit tests: the payload for each declaration, the undeclared schema refusal, an unchanged inbound path. —
       the undeclared schema refusal (`ShareGrantorTest`, `ShareCreationRightsChainTest`,
       `FederationShareServiceTest`); the payload for each declaration (`ShareCrossesTest`,
       `FederationControllerCrossesTest`, `FederationShareServiceTest`). The unchanged inbound
-      path waits on 1.1.
+      path: `shareReceived()` is untouched by this change and `CloudFederationShareReceivedGoldenTest`
+      still passes unmodified. The remote principal: `RemoteRecipientGateTest` (8, over the real
+      evaluator), `FederationControllerRemoteRecipientTest` (2).
 - [ ] 2.3 `openspec validate platform-cloud-federation-provider --strict`.
 - [ ] 3.1 Hand over to the dossiq lane: declare the federatable schemas and the default payload, register no provider.

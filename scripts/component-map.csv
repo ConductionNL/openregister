@@ -2217,6 +2217,7 @@ Service/Federation/RemoteShareNotification.php,50,Service,Access,Access/Service/
 Service/Federation/OcmShareSender.php,,Service,,,,,Core
 Service/Federation/ShareGrantor.php,57,Service,Access,Access/Service/Federation/ShareGrantor.php,0,367,Core
 Service/Federation/ShareCrosses.php,,Service,,,,,Core
+Service/Federation/RemoteRecipientGate.php,,Service,,,,,Core
 Service/Federation/ShareTargets.php,60,Service,Access,Access/Service/Federation/ShareTargets.php,0,,Core
 Service/FederationShareService.php,116,Service,Integrations,Integrations/Service/FederationShareService.php,4,,Integrations
 Service/FieldEncryptionHandler.php,104,Service,Service,Service/FieldEncryptionHandler.php,0,,Core
