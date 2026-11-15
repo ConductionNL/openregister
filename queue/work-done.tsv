@@ -15182,3 +15182,4 @@ review:learniq:2521:be3bc639	RED: 9 new errors merged with development (old save
 review:filinq:2121:7021db61	RED: new code uses removed openregister named args; 8 own tests fail on main	session-20261115T202932-d1067ee4	2026-11-15T21:52:31Z
 review:hermiq:1735:ca8e4b6f	RED: new code uses removed OR named args, 25 new failures vs OR main	session-20261115T213112-78aba834	2026-11-15T21:52:38Z
 review:dossiq:3297:cecaeb85	GREEN: adds case guard, no new failures	session-20261115T211111-34885d99	2026-11-15T21:52:54Z
+review:dossiq:4887:e60cd452	RED: 2 new failures (ListenerRegistrarTest, ObligationDeclarationEdgesTest expectations)	session-20261115T213122-46f7fafb	2026-11-15T21:53:03Z
