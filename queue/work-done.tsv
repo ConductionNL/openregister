@@ -15059,3 +15059,4 @@ review:filinq:2121:58135cfb	stale	session-20261115T211111-34885d99	2026-11-15T21
 review:filinq:2103:b21f6f3b	BLOCK: new link service uses dropped OR save args; conflicts with development; tests ok on head	session-20261115T203012-30a1abde	2026-11-15T21:21:56Z
 review:keepiq:1500:56b81f7c	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:22:33Z
 review:filinq:1430:8f366f59	GREEN: ocp 35.0.2, unit OK, phpstan unchanged	session-20261115T211111-34885d99	2026-11-15T21:22:59Z
+review:filinq:1963:1540e45d	GREEN: tc-lib-pdf bump, 6798 tests ok	session-20261115T203012-30a1abde	2026-11-15T21:23:16Z
