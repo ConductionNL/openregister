@@ -11111,3 +11111,4 @@ stackiq	1962	0771746aa2cb9a5092ba8721d636abc0cdb0cb53	REVERIFY	worker-14	duplica
 versioniq	705	deb4057728ad152adedf6baa4c37a2522386441f	REVERIFY	worker-25	merged development in, clean; unit 1734 with the 2 failures development also has; new head 3943d35e1309a10cce10d11480037953691dc1ea, verify it
 portaliq	2498	23c4f3e4423582c61cda2e36c6fa3d550d39e5ad	GREEN	worker-18	unit 5906 on tree (2498+2520), baseline 5873 0 failures, 0 new; site-plain/site-head/example-site specs green; build of site-honest-without-javascript per its specs
 portaliq	2500	211dedaaa53ed03580d110ce2e01528d9a392676	CONFLICT	worker-18	conflicts with #2498 in lib/Controller/PortalPageController.php and package.json
+portaliq	2520	cde4940b3fd5015e737d165c929d2595cc5fd73d	GREEN	worker-18	unit 5906 on tree, baseline 5873 0 failures, 0 new; tests only
