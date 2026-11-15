@@ -10950,3 +10950,4 @@ integriq	3630	0af2622c5f1e53f08aba7febd449a19fcca3f0d3	GREEN	worker-05	same tree
 portaliq	2508	f1ef2828e3441d9758382dc6d1ebdfd33b147739	REVERIFY	worker-53	merged GREEN #2500 (9048d1df) in, since both took register 0.116.0: #2500 keeps 0.116.0 (portal 0.33.0), this branch's messages provider/block moved to 0.117.0; unit 5934 OK, example-site spec 15/15; new head 20a298b2830c2e887b754be28457f410f4ca1839, verify it
 pipelinq	3850	e6de08f6f2d517f542e1175c92eab1d05d0ee3f4	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
 pipelinq	3851	ffb1ffc286675b021070f9523f319a4c87e9d0b1	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
+pipelinq	3852	eb8867aaf2cce3aaec16dbfed1264132c1c21014	GREEN	worker-29	unit 8473 tests on tree, baseline 8452 OK, no new failures; tests only
