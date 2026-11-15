@@ -11197,3 +11197,4 @@ learniq	2549	d0f3714b7e647e2ee25aa967dec42478641c409c	GREEN	worker-22	PHPUnit 68
 launchpad	1226	d96f04dad53098d2e7c3f6786804ab6fc0f69823	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 4.73 -> 4.71
 launchpad	1212	1f11f90f643de5db851308a889bb8e2156c74ed4	CONFLICT	merge3	merges clean on development alone; files: l10n/nl.js 
 integriq	3648	8bd307a0479ca1a9d1a6420ee60dd21b7408fcdf	GREEN	worker-17	phpunit tree 9290 (baseline 9223, same 6 known fails, no new failures); vitest 2332 pass; tests only
+integriq	3649	236dc3f71d4ef5ec025d1064384d884bab03c55c	GREEN	worker-17	phpunit tree 9290 (baseline 9223, same 6 known fails, no new failures); vitest 2332 pass; build form-submission-registration-targets within its specs (dry-run route admin-only)
