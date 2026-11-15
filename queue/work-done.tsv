@@ -15331,3 +15331,4 @@ fix:stackiq:1168:2d1a29df	sbom regenerated, pushed 04f38d3ae4a4d17b142dbafb97d2a
 fix:decidiq:1767:3e9af0ff	sbom regenerated; new head ef20753c	session-20261115T203012-30a1abde	2026-11-15T22:21:28Z
 fix:decidiq:1941:4df452c6	obsolete: all commits already on development via quality/ormig-decidiq; closed with comment	session-20261115T213101-2fb56005	2026-11-15T22:21:35Z
 review:opencatalogi:1894:81ec0aeb	GREEN: openspec-only tick sweep, merges cleanly	session-20261115T220036-e665285d	2026-11-15T22:21:48Z
+fix:filinq:1828:0e6a9fe3	fixed: Server::get replaced by container logger; phpcs 0 errors, 6798 OK; head f7b90817	session-20261115T213156-1ffcf961	2026-11-15T22:22:06Z
