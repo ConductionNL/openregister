@@ -13314,3 +13314,18 @@ build:buildiq:pages-installable-offline-and-mobile:c5	done: PR #1654 pushed aaec
 review:buildiq:1261:901e0708	BLOCK: calls a searchObjectsBySlug(target:) form openregister main lacks	session-20261115T152546-2c24b649	2026-11-15T15:45:33Z
 review:decidiq:1467:26c28394	GREEN: dev-dep bump, vitest 2825 passed, coverage run ok	session-20261115T154300-03b63424	2026-11-15T15:45:44Z
 review:decidiq:1600:33021efc	BLOCK: obsolete lock downgrade (2.60.0 vs dev 2.135.0), conflicts; close as superseded	session-20261115T154316-34f0db35	2026-11-15T15:45:51Z
+review:buildiq:1094:85dea460	BLOCK: lockfile out of sync, npm ci fails	session-20261115T154314-8216dc98	2026-11-15T15:46:02Z
+review:buildiq:1262:c955fcfd	BLOCK: wrong LockRequest/UnlockRequest namespace, runtime class-not-found	session-20261115T142951-2463b4c4	2026-11-15T15:46:15Z
+review:decidiq:1767:3e9af0ff	GREEN: dev-only lock bump installs, unit 4461 OK unchanged	session-20261115T152552-0cb4306e	2026-11-15T15:46:33Z
+review:decidiq:1473:4549406a	GREEN: marked patch bump, lock+package only; vitest 2825 passed on the merged tree	session-20261114T075643-acecaad6	2026-11-15T15:46:39Z
+review:buildiq:1264:6e11da88	CONFLICT: 8 files conflict with development; diff is a correct contract adaptation	session-20261115T154258-dee2cc3d	2026-11-15T15:46:47Z
+review:buildiq:1263:59ed1278	BLOCK: wrong OpenRegister namespace for ObjectDeletion/ObjectFindTarget (fatal at runtime); conflicts with development	session-20261115T154254-3d07b219	2026-11-15T15:46:56Z
+review:decidiq:1947:ae3bb0fe	BLOCK: wrong ObjectSaveOptions/ObjectFindTarget namespace	session-20261115T142951-2463b4c4	2026-11-15T15:47:07Z
+review:decidiq:1738:c12b8c5d	GREEN: dev-only phpmd bump; unit suite green; phpmd red before and after, net fewer findings	session-20261115T142934-6cab0c24	2026-11-15T15:47:19Z
+review:decidiq:1465:840ea3b6	GREEN: @nextcloud/vue bump, vitest 2825 passed 0 failed on merged tree	session-20261115T154316-34f0db35	2026-11-15T15:47:25Z
+review:buildiq:1276:c5ef6c3f	BLOCK: depends on StoreListing, absent on openregister main; stubs mask the runtime failure	session-20261115T154311-e8600d84	2026-11-15T15:47:32Z
+review:decidiq:1468:dabc7105	GREEN: vitest 2825 pass, webpack build ok	session-20261115T154255-e54527e9	2026-11-15T15:47:45Z
+review:buildiq:1248:82ce29ad	GREEN: dev-only hydra-gates bump; phpunit 3192, only inherited ExportZipGoldenTest failure	session-20261115T145541-9d69768b	2026-11-15T15:47:56Z
+review:decidiq:1949:654f0e4b	RED: composer install fails (psalm 7 needs php>=8.3.16, platform pinned 8.3)	session-20261115T154300-03b63424	2026-11-15T15:48:03Z
+review:decidiq:1692:afd2e246	GREEN: openspec-only sweep	session-20261115T142934-6cab0c24	2026-11-15T15:48:19Z
+review:buildiq:1086:c366210f	BLOCK: npm ci ERESOLVE (nextcloud-vue peerOptional stylelint ^17)	session-20261115T145555-b33410db	2026-11-15T15:48:29Z
