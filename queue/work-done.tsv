@@ -13478,3 +13478,4 @@ review:integriq:2654:86718a25	GREEN: spec-only change, merges clean	session-2026
 review:keepiq:1500:1c81214a	GREEN: lock-only phpseclib 4.0.3 bump, suite 5213 OK on merge with development	session-20261115T152547-c779ca49	2026-11-15T16:13:05Z
 review:integriq:3050:ce4b1ee3	BLOCK: wrong namespace for BulkSaveOptions, bulk saves fail at runtime	session-20261115T152543-40aea993	2026-11-15T16:13:18Z
 review:integriq:2650:6bf97c5a	CONFLICT: 8 files; suite not runnable (missing php ext bcmath/soap in worker)	session-20261115T154300-03b63424	2026-11-15T16:13:29Z
+review:integriq:2560:fd436abf	GREEN: devDep bump, vitest 2374 passed	session-20261115T154307-1fc2cc78	2026-11-15T16:14:03Z
