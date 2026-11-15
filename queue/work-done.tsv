@@ -13040,3 +13040,4 @@ cover:dossiq:069ee2d6madb6:c900fa11	PR dossiq#6571: FilterPipeline 8 tests, 96.9
 merge:pipelinq:3860:65cbe5b7	merge3 tree of 1 pipelinq PRs: merged=1 red=0 fail=0 skip=0; conflict 0, lint 0, moved 0; fix rows 0	merge3-20261113T213425-c36bcd5f	2026-11-15T14:31:48Z
 cover:dossiq:069ee2d6madb6:c7ef8f28	PR #6572: 4 test files, 21 tests for Listener/Support traits (all logic classes 100%); suite 17949->17970, 19 inherited failures unchanged	session-20261115T142149-1d09fceb	2026-11-15T14:31:52Z
 cover:dossiq:069ee2d6madb6:7ed71db5	PR #6573: 3 tests, lib/Service/Setup 92.85% -> 97.8%, no new failures	session-20261115T142201-ea23e682	2026-11-15T14:32:05Z
+fix:shillinq:3055:7a38e15d	conflict resolved, pushed d0b8868b; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T14:32:05Z
