@@ -11087,5 +11087,6 @@ dossiq	6543	92a7ddfc9df1a1daf824eebae809493f80aa91a2	GREEN	worker-49	17390 tests
 stackiq	1954	8b717642825f15a77b91d0474b0a2b20a527c110	GREEN	worker-14	phpunit 3638 OK (baseline 3626 OK, 0 new failures); vitest 1 failure inherited from development (facets.spec FACET_DIMENSIONS)
 portaliq	2498	b177669a04c071a5569040a1c828ebede28c77fb	REVERIFY	worker-56	merged development in, kept both sides' l10n keys, regenerated l10n/*.js (check:l10n-js clean; schema-l10n 29 uncovered same as development); new head 23c4f3e4423582c61cda2e36c6fa3d550d39e5ad, verify it
 pipelinq	3856	a2ea6c932a50bc0b9ddb5b117cdef8e5af075d80	GREEN	worker-52	phpunit-unit 8623 tests, 0 failures (baseline 8620, 0 failures); tests only
+stackiq	1928	ff430e3ce3f0e63cb8415b8ea4a2d159b568f9a3	REVERIFY	worker-37	merged development in; l10n en/nl js+json conflicts resolved keeping both sides' keys; unit 3631 green, l10n check OK; new head 064e3b5386f3adc05e29fbf76cf9d1df7a888e99, verify it
 stackiq	1958	e0a688ec806e3892718631caa54af403da2a7da6	CONFLICT	worker-14	conflicts in l10n/en.js,en.json,nl.js,nl.json after #1954 in tree
 stackiq	1975	31c8ee501c2e8bd8d38c510a7cad01d33d4118b2	CONFLICT	worker-14	conflicts in l10n/en.js,nl.js after #1954 in tree
