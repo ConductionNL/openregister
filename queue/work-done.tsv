@@ -12743,5 +12743,6 @@ merge:larpinq:1053:deb12e5f	merge3 tree of 9 larpinq PRs: merged=2 red=3 fail=0 
 merge:larpinq:1041:f6945690	merge3 tree of 9 larpinq PRs: merged=2 red=3 fail=0 skip=1; conflict 3, lint 0, moved 0; fix rows 3	merge3-20261113T213425-c36bcd5f	2026-11-15T01:55:43Z
 cover:pipelinq:7f9dc8e6m195a:be0dcca9	already done: lib/Mcp/*.php at 100% lines (26/26) on development b95089f (quality/test-coverage-be0dcca9-1 already merged); no PR	session-20261115T015406-eecdf998	2026-11-15T01:55:53Z
 fix:portaliq:2508:7a38ec9a	stale	feeder	2026-11-15T01:55:26Z
+cover:dossiq:069ee2d6madb6:47ac7936	PR #6556: 5 registrar tests, Listener/Registrar 89.65% -> 98.27%	session-20261115T011758-953fbe72	2026-11-15T01:56:28Z
 merge:launchpad:1203:a3f65a94	merge3 tree of 4 launchpad PRs: merged=1 red=1 fail=0 skip=1; conflict 1, lint 0, moved 0; fix rows 1	merge3-20261113T213425-c36bcd5f	2026-11-15T01:56:30Z
 verify:learniq:2549:075344e2	GREEN 2549: no new PHP or JS failures	session-20261115T005138-c7bbb0f0	2026-11-15T01:56:37Z
