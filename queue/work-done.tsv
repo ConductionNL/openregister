@@ -14687,3 +14687,4 @@ review:launchpad:755:7e918f87	GREEN: vitest 5 bump, 2578/2578 JS tests pass befo
 review:launchpad:885:da197195	GREEN: vitest 2602 ok, phpunit 4461 ok, gates unchanged in the new Meer menu	session-20261114T073105-752e50ad	2026-11-15T20:09:36Z
 review:launchpad:787:d2dedbb4	BLOCK: internalUrl unvalidated on tile create (REQ-TIA-002), garbled TileUpdater docblock; suites green	session-20261115T200011-d13b13ca	2026-11-15T20:09:48Z
 review:planninq:1067:98afc66e	GREEN: mechanical ObjectSaveOptions migration, 1222 tests OK	session-20261115T195957-8e60ca53	2026-11-15T20:09:52Z
+review:buildiq:1090:8e11ea7a	GREEN: webpack dev bump; vitest 4719 pass, build ok	session-20261115T195958-28cb0304	2026-11-15T20:10:02Z
