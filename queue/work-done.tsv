@@ -14907,3 +14907,4 @@ fix:buildiq:1652:74a237c7	insertions moved, clean with 1649; REVERIFY b141184990
 fix:buildiq:1654:fc4a934c	conflict with 1649 resolved in nl.json; new head a81c7ddf	session-20261115T203012-30a1abde	2026-11-15T20:49:30Z
 fix:keepiq:1789:2f3708d1	l10n conflict resolved keeping both; REVERIFY at 2b1b12ac	session-20261115T195958-28cb0304	2026-11-15T20:49:47Z
 fix:integriq:2746:cf8bdce8	fixed: sbom regenerated; head ff5f2df8	session-20261115T200020-0f65b959	2026-11-15T20:49:56Z
+fix:integriq:2560:fd436abf	merged development, regenerated sbom; REVERIFY a80037a8	session-20261115T200045-d3bb5c75	2026-11-15T20:50:10Z
