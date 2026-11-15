@@ -13407,3 +13407,4 @@ review:dossiq:5357:5c357cd0	BLOCK: imports OpenRegister ObjectPatch at a namespa
 review:filinq:1964:b0847184	RED: psalm 7.2.1 lock is unsatisfiable under config.platform php 8.3, so composer install fails	session-20261115T145533-2db61682	2026-11-15T16:01:12Z
 review:dossiq:5338:740a587a	RED: conflict + 4 dev-side test doubles need the TaskActorRef reassign signature	session-20261115T152554-949e9403	2026-11-15T16:01:35Z
 review:filinq:1310:fc7dd7c7	RED: npm ci ERESOLVE, gridstack 14 outside nextcloud-vue peer range ^12||^13	session-20261115T145541-9d69768b	2026-11-15T16:01:43Z
+review:hermiq:1323:787cee12	BLOCK: OpenRegister ObjectPatch at a namespace present on neither OR branch; backfill patch fails at runtime	session-20261115T152552-0cb4306e	2026-11-15T16:01:55Z
