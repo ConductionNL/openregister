@@ -13939,3 +13939,4 @@ review:opencatalogi:2677:b988c22d	stale	feeder	2026-11-15T17:18:52Z
 verify:keepiq:1826:33eeb9d8	stale	feeder	2026-11-15T17:18:52Z
 verify:versioniq:735:df901ed5	stale	feeder	2026-11-15T17:31:48Z
 fix:shillinq:2997:7b870224	conflict resolved, pushed 3374c3b, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T17:33:21Z
+fix:shillinq:3080:555ec946	merged development; info.xml version moved above both sides (0.5.7-unstable.20261115180000), lock keeps both recorded entries plus the merged register entry; suite 12253 OK; new head 44d2bdbe, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T17:33:43Z
