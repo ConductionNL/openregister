@@ -14917,3 +14917,4 @@ fix:buildiq:1262:106caafb	merged development, lock tests migrated; unit = dev ba
 fix:opencatalogi:2674:8c2edb69	l10n conflict resolved, pushed 52a7e65f; REVERIFY recorded	session-20261115T202936-e956716f	2026-11-15T20:51:41Z
 fix:opencatalogi:2244:58b3e9f1	conflict resolved (kept both test sets); REVERIFY 9178373d	session-20261115T200045-d3bb5c75	2026-11-15T20:51:52Z
 fix:keepiq:1791:8a173b56	fixed: development merged, l10n conflicts resolved keeping both sides; new head dc388493f621af327f8dd5bb35392a58c9201c69	session-20261115T200041-8ff5af37	2026-11-15T20:52:03Z
+fix:keepiq:1496:c1d424cc	lock cleaned, sbom current (dev-only); new head ab293916	session-20261115T203012-30a1abde	2026-11-15T20:52:18Z
