@@ -13707,6 +13707,7 @@ review:portaliq:1989:4db47cae	GREEN: reference rename only, unit 6120 OK	session
 review:shillinq:2252:1f1318e2	BLOCK: OpenRegister ObjectPatch at a namespace present on neither OR branch; 21 patch sites would fail	session-20261115T152552-0cb4306e	2026-11-15T16:55:50Z
 review:shillinq:2083:cb3e6a42	CONFLICT: 8 files conflict with development; new endpoint guarded correctly	session-20261115T154258-dee2cc3d	2026-11-15T16:55:56Z
 review:portaliq:1854:60bd5395	BLOCK: superseded by development's build of the change	session-20261115T152546-2c24b649	2026-11-15T16:56:07Z
+review:portaliq:1982:19a536ca	GREEN: dev tool bump, 6120 tests OK	session-20261115T155913-70cee771	2026-11-15T16:56:27Z
 review:shillinq:2226:dcacc634	GREEN: pinia minor bump, vitest identical to development (1 inherited)	session-20261115T155904-a7df5bc0	2026-11-15T16:56:26Z
 review:shillinq:2092:e3baa4d4	CONFLICT: modify/delete with development; development specs import the deleted components	session-20261115T155911-14cd078d	2026-11-15T16:56:33Z
 review:shillinq:1899:c535cb99	CONFLICT: 11 files conflict with development	session-20261115T154258-dee2cc3d	2026-11-15T16:56:40Z
@@ -13723,3 +13724,7 @@ review:shillinq:1959:9a607395	CONFLICT: 19 files conflict with development; need
 review:stackiq:1043:a1603162	BLOCK: obsolete, development already locks sass 1.108.2	session-20261115T155902-521936b1	2026-11-15T16:58:33Z
 review:shillinq:2080:6a0ebf26	CONFLICT: access check OK, tests green on head; conflicts with development	session-20261114T102637-6688951e	2026-11-15T16:58:45Z
 review:shillinq:1965:6dd9752c	CONFLICT (version + lock fixture only); additive schema fragment	session-20261115T142134-badaaf30	2026-11-15T16:58:53Z
+review:shillinq:2230:b859457f	GREEN: patch bump, build ok, 1 inherited vitest failure	session-20261114T102641-d4fd3e25	2026-11-15T16:59:14Z
+review:shillinq:2227:13c58709	BLOCK: @vueuse/core 15 outside the component library peer range	session-20261115T142934-6cab0c24	2026-11-15T16:59:27Z
+review:shillinq:2411:6ca5ae67	BLOCK: targets openregister settings value objects that exist only on an unmerged branch; would fail against openregister main	session-20261114T095641-533e2a00	2026-11-15T16:59:35Z
+review:shillinq:2408:837e65b7	BLOCK: create(layout:) does not exist in OpenRegister main; stub masks it; also conflicts	session-20261115T142149-1d09fceb	2026-11-15T16:59:46Z
