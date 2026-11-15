@@ -11284,3 +11284,9 @@ shillinq	3088	32682f0a9dbd14af75b76358b8eaa6c54f5cd0be	CONFLICT	merge3	merges cl
 decidiq	2149	08dbad8ecba3e4f877f1c762bdd8471d8942f800	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.88
 decidiq	2187	24c1e4c0a778727af137702b91764e5c9ed215b7	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.87
 decidiq	2212	ca4e385612be4e6d9e4f3cc8b1e584ba7ec7b56f	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.90 -> 3.88
+decidiq	2178	b99276847eb165367e4d5339802f4c3f894b3df2	CONFLICT	merge3	merges clean on development alone; files: src/manifest.json tests/Unit/RegisterAuthorizationTest.php 
+decidiq	2188	6507a1b94afa99131ae6def2cda418c66e8675e5	CONFLICT	merge3	merges clean on development alone; files: lib/Listener/Registrar/ObjectListenerRegistrar.php 
+decidiq	2191	a2e14c6cc04dd24595bb1dd1c84b1ea1ea0ec731	CONFLICT	merge3	merges clean on development alone; files: src/manifest.json tests/vitest/simpleDecisionPage.spec.js 
+decidiq	2199	68646faa2457838725c278873a7f023a7aa39dd6	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/manifest.json src/menu-layout.simple.json 
+decidiq	2203	8d2d8f97607e3ddd8cf45de215ecf02a939337f5	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+decidiq	2207	a418f794cd52c1b8939b52d67650af39cf7aebad	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
