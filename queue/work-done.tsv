@@ -13972,3 +13972,4 @@ review:shillinq:3062:d337cccd	GREEN: per-spec, merges clean, suites pass	session
 verify:shillinq:3078:5115df9e	GREEN 3078	session-20261115T154255-e54527e9	2026-11-15T17:43:03Z
 review:versioniq:707:ec8c4c54	CONFLICT: planner/job conflict with development; head tests green	session-20261114T102637-6688951e	2026-11-15T17:43:10Z
 verify:versioniq:735:38d07b71	735 GREEN, 736 GREEN, 738 CONFLICT (l10n after 735+736); phpunit 1905 (2 inherited), vitest 3036	session-20261115T152558-f97be55f	2026-11-15T17:44:48Z
+review:filinq:2094:c8f19660	GREEN 2094 (builds zgw-document-bridge; all suites green)	session-20261115T142201-ea23e682	2026-11-15T17:44:44Z
