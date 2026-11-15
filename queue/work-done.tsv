@@ -15064,3 +15064,4 @@ review:keepiq:1497:2b071054	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21
 review:humaniq:1096:5b9e37da	GREEN: phpstan 2.3.5, no errors, unit OK	session-20261115T211111-34885d99	2026-11-15T21:24:38Z
 review:humaniq:684:036f7e9f	GREEN: ocp dev bump, 4405 tests + phpstan ok	session-20261115T203012-30a1abde	2026-11-15T21:24:45Z
 review:humaniq:662:d7499aec	GREEN: phpmd 3 bump, unit 4405 OK, phpmd findings 172->164 (baseline red)	session-20261115T211111-34885d99	2026-11-15T21:26:16Z
+review:humaniq:661:f523f286	GREEN: babel 8 bump, build + lint ok	session-20261115T203012-30a1abde	2026-11-15T21:27:09Z
