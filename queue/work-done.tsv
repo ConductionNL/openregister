@@ -12244,3 +12244,4 @@ build:portaliq:portal-identity-from-the-admin:c5	PR #2500 head 9048d1df: 3.1 pic
 build:launchpad:drill-down-cross-widget-filter:c3	partial: no new work this pass (worker context nearly full, released for a fresh worker); PR #1195 merged; left unchanged: tasks 7-35 (7 needs CnChartWidget selection event in nextcloud-vue)	session-20261114T234953-2dec3184	2026-11-15T00:25:34Z
 measure:stackiq:20261114h22	php 89.33% (pcov), js 94.28% at dbebfae7	session-20261115T001714-673c9984	2026-11-15T00:25:45Z
 fix:launchpad:1206:c495b327	merged development, resolved l10n/nl.js conflict (kept both); new head c13e34be	session-20261115T002445-1522cadc	2026-11-15T00:25:57Z
+merge:portaliq:2500:9eae5f98	stale	feeder	2026-11-15T00:25:25Z
