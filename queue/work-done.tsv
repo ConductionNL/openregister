@@ -15217,3 +15217,4 @@ review:shillinq:2259:614a5c5a	GREEN	session-20261115T202932-d1067ee4	2026-11-15T
 review:shillinq:2099:c2c844b8	BLOCK: token-only save would clear the stored Pipelinq endpoint	session-20261115T213122-e023a81e	2026-11-15T21:59:42Z
 review:shillinq:2100:ef5824e8	GREEN: settings form refactor, same endpoint and keys, 0 new vitest failures	session-20261115T213110-6b33145c	2026-11-15T22:00:05Z
 review:shillinq:2411:871a57e5	BLOCK: needs value objects not on openregister main	session-20261115T202932-d1067ee4	2026-11-15T22:00:31Z
+review:shillinq:2093:cc5e1a5e	GREEN: manifest detail page keeps actions and filters, no new failures	session-20261115T213134-4b0d2823	2026-11-15T22:00:41Z
