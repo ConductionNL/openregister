@@ -15023,3 +15023,34 @@ review:filinq:1828:0e6a9fe3	RED: new phpcs sniff flags ObjectEventRegistrar.php:
 review:keepiq:1793:651a3476	GREEN	session-20261115T202932-d1067ee4	2026-11-15T21:19:30Z
 review:filinq:1308:f18e7d0d	GREEN: mammoth bump, vitest 763/763	session-20261115T211111-34885d99	2026-11-15T21:19:50Z
 review:filinq:1311:ae2749a3	GREEN: marked range bump, JS tests ok	session-20261115T203012-30a1abde	2026-11-15T21:20:00Z
+merge:shillinq:1965:b853469b	stale	feeder	2026-11-15T21:20:20Z
+merge:learniq:1882:5acae13e	stale	feeder	2026-11-15T21:20:20Z
+merge:decidiq:1691:531d89ef	stale	feeder	2026-11-15T21:20:20Z
+merge:learniq:2133:07a8282e	stale	feeder	2026-11-15T21:20:20Z
+merge:decidiq:2203:8430d523	stale	feeder	2026-11-15T21:20:20Z
+merge:shillinq:2252:ebff2fa6	stale	feeder	2026-11-15T21:20:20Z
+merge:learniq:2132:b0ed5912	stale	feeder	2026-11-15T21:20:20Z
+merge:learniq:1883:933b2fc1	stale	feeder	2026-11-15T21:20:20Z
+fix:dossiq:4887:5518d499	stale	feeder	2026-11-15T21:20:20Z
+fix:shillinq:2997:3be50195	stale	feeder	2026-11-15T21:20:20Z
+fix:shillinq:3078:07b98195	stale	feeder	2026-11-15T21:20:20Z
+fix:shillinq:3088:ad434f71	stale	feeder	2026-11-15T21:20:20Z
+review:shillinq:2081:27d1ddad	stale	feeder	2026-11-15T21:20:20Z
+review:shillinq:2991:e30b3b5b	stale	feeder	2026-11-15T21:20:20Z
+review:filinq:2121:58135cfb	stale	feeder	2026-11-15T21:20:20Z
+merge:integriq:3649:c8862b16	stale	feeder	2026-11-15T21:20:20Z
+merge:filinq:2094:3358ca30	stale	feeder	2026-11-15T21:20:20Z
+fix:stackiq:1044:b39f982b	stale	feeder	2026-11-15T21:20:20Z
+fix:stackiq:1063:5ec1a4e3	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1736:1c21a821	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1739:4f848818	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1750:4ea33cc6	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1751:0aaa1726	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1754:cdae7fb5	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1760:c3344e5a	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1781:00e5f205	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1791:bf8747ef	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1795:35b6e3d3	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1801:f7b7dbcc	stale	feeder	2026-11-15T21:20:20Z
+fix:hermiq:1802:197aa128	stale	feeder	2026-11-15T21:20:20Z
+fix:filinq:2114:bb690f12	stale	feeder	2026-11-15T21:20:20Z
