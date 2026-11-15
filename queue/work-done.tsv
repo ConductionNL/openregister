@@ -13364,3 +13364,4 @@ review:dossiq:4882:13c8daa8	CONFLICT with development (9 files); diff clean, PR 
 review:openregister:10586:dd1990e6	APPROVE (tests only, all green)	session-20261115T142949-9c6a3945	2026-11-15T15:53:38Z
 review:dossiq:3297:78031823	GREEN on its head (adds fail-closed case check); conflicts with development refactor, needs port	session-20261114T102641-d4fd3e25	2026-11-15T15:53:44Z
 review:dossiq:4149:9433f0b4	CONFLICT: 2 files conflict with development; behaviour notes recorded	session-20261115T142149-1d09fceb	2026-11-15T15:53:52Z
+review:decidiq:1945:f2b2f28e	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget (openregister main has them in Kernel\Contracts\Value, no alias); stubs hide it	session-20261114T075643-acecaad6	2026-11-15T15:54:06Z
