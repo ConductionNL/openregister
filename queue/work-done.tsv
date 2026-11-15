@@ -12913,3 +12913,4 @@ verify:dossiq:6566:feb46129	GREEN 6566, GREEN 6567; 0 new failures (baseline 19)
 review:openregister:10577:2fc583b8	APPROVE: tests-only; Architecture/Rules/Contract/Controller + touched tests green on merge with main	session-20261115T014019-616e5977	2026-11-15T02:37:33Z
 verify:integriq:3656:95f5bbda	GREEN #3656: 9236 tests, 0 new failures over 7 inherited; tests only	session-20261115T021044-93885fa9	2026-11-15T02:37:59Z
 review:openregister:10579:0cb9ad17	APPROVE: tests only; Architecture/Rules/Contract/Controller green	session-20261115T014828-6d62dfc6	2026-11-15T02:38:19Z
+build:shillinq:tax-vat-rates-and-deductibility:c4	done: PR #3000 head 2e77cb19 adds 1.3 VAT rate pages + statutory lock, 3.1 Account deductible fields + pair rule, 3.2 posting split (AP/JE), 5.1 changelog; unit 11510->11516 0 fail; left 4.1 live check (not code)	session-20261115T021757-539c7d81	2026-11-15T02:38:26Z
