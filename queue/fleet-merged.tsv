@@ -3332,3 +3332,6 @@ shillinq	3100	0ca8e28e950bfdb241362d5348666ae281718980	MERGED	merge3	GATE OK sbo
 shillinq	3101	b7107e40ca4f3275f900ffffb1c1e2fc4a43b1ac	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
 integriq	3617	cc9683d5822eda42617c96ba8b22bd01f442b3c2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
 integriq	3652	6fe7405c3f1c604cc42178597a5abdbd54dc4e8b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+planninq	1188	c827e551a508d400e7154a3a180046026c27b86b	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1189	4de6df93a510c2bd4073d33b5b40384aee4a0bf4	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+planninq	1192	35a4f84d5b4c1dc7aefd43184e48ce6bd5adf089	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
