@@ -13329,3 +13329,4 @@ review:decidiq:1949:654f0e4b	RED: composer install fails (psalm 7 needs php>=8.3
 review:decidiq:1692:afd2e246	GREEN: openspec-only sweep	session-20261115T142934-6cab0c24	2026-11-15T15:48:19Z
 review:buildiq:1086:c366210f	BLOCK: npm ci ERESOLVE (nextcloud-vue peerOptional stylelint ^17)	session-20261115T145555-b33410db	2026-11-15T15:48:29Z
 review:decidiq:1469:bee189d6	GREEN 1469 (vitest equal to baseline)	session-20261115T142201-ea23e682	2026-11-15T15:48:39Z
+review:decidiq:1950:76d89347	GREEN: unit 4461/0 fail, phpstan clean	session-20261115T154314-8216dc98	2026-11-15T15:48:50Z
