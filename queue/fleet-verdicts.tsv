@@ -11120,3 +11120,4 @@ stackiq	1946	1b85feb2985a5d99cc2765d65c141e2cc44e0d4d	REVERIFY	worker-04	no chan
 stackiq	1924	b3cd5b3a77ee697519101b1b5c2f7bd1bc9c7945	GREEN	worker-47	phpunit 3646 ok (baseline 3626 ok), vitest 2664 with 1 inherited fail (facets.spec, red on development); no new failures; build matches sharing-compliance-documents specs
 stackiq	1926	66368aab8e11ae5a1d64e5cb458a5eecb139b801	GREEN	worker-47	phpunit 3646 ok (baseline 3626 ok), vitest 2664 with 1 inherited fail (facets.spec, red on development); no new failures; build matches architecture-views-editor specs (drawn-view filters per design D9)
 stackiq	1928	064e3b5386f3adc05e29fbf76cf9d1df7a888e99	CONFLICT	worker-47	conflicts in src/manifest.json after #1924 #1926
+stackiq	1976	2fd15126eaabf872c37290fae257ef7a25cca357	GREEN	worker-47	phpunit 3646 ok (baseline 3626 ok), vitest 2664 with 1 inherited fail (facets.spec, red on development); no new failures; tests only (objectModalHelpers.spec.js)
