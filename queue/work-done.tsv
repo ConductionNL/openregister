@@ -14980,3 +14980,4 @@ fix:larpinq:1053:4113c48a	floor restored (overall 5.04, coupling 4.99); new head
 merge:keepiq:1792:1b9862e8	stale	feeder	2026-11-15T20:48:06Z
 merge:stackiq:1168:c0b345fa	merge8 tree of 14 stackiq PRs: merged=4 red=7 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T21:04:35Z
 merge:stackiq:1044:797bf41b	merge8 tree of 14 stackiq PRs: merged=4 red=7 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T21:04:40Z
+merge:stackiq:1954:1ec6dc7b	merge8 tree of 14 stackiq PRs: merged=4 red=7 fail=0 skip=0; conflict 3, lint 0, moved 0; fix rows 3	merge8-20261115T170007-37538273	2026-11-15T21:04:46Z
