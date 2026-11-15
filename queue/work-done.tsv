@@ -13940,3 +13940,4 @@ verify:keepiq:1826:33eeb9d8	stale	feeder	2026-11-15T17:18:52Z
 verify:versioniq:735:df901ed5	stale	feeder	2026-11-15T17:31:48Z
 fix:shillinq:2997:7b870224	conflict resolved, pushed 3374c3b, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T17:33:21Z
 fix:shillinq:3080:555ec946	merged development; info.xml version moved above both sides (0.5.7-unstable.20261115180000), lock keeps both recorded entries plus the merged register entry; suite 12253 OK; new head 44d2bdbe, REVERIFY	session-20261115T142201-ea23e682	2026-11-15T17:33:43Z
+fix:shillinq:3062:6c6743f0	conflict resolved (version + register lock), suite green; new head d337cccd5c0003792325208eed13a23de031d351	session-20261114T102637-6688951e	2026-11-15T17:35:06Z
