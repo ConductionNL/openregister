@@ -12403,3 +12403,4 @@ pipelinq	3083	ab965a9c0deeb660bf9b0b4d47c505a817ce9835	RED	merge3:merge-gate	GAT
 pipelinq	3084	012088294b81df9416cc16f60866771d7bac8622	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 pipelinq	3085	34857519bac429d0d2d4ee7845f73ae693827d33	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 pipelinq	3088	3135c0b1fd518352b7f25ce329aeedbf29528011	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+shillinq	2253	69b4e3e6166c5482f53d256e2bf5738e957ce0ae	REVERIFY	worker-55	imports moved to OpenRegister Kernel\Contracts\Value (stubs too), development merged in, its new deleteObject callers and doubles migrated; unit 12225 tests, 0 failures; new head 4f1aa3a06bf800282b7b68eea2f638d0ba1b0d22, verify it
