@@ -13391,3 +13391,4 @@ review:dossiq:5396:7493d64f	GREEN: dev-dep lock bump, no new failures	session-20
 review:dossiq:3299:779b4422	BLOCK (conflict): add/add conflict in the listener test against development; lib fix is sound	session-20261114T075643-acecaad6	2026-11-15T15:58:13Z
 review:filinq:1852:38008824	BLOCK: depends on openregister #9103 which is not on main; would break slug searches at runtime	session-20261115T154300-03b63424	2026-11-15T15:58:24Z
 review:dossiq:3953:1fa01764	CONFLICT: rename only, head suite 8654/0 failures, conflicts with development in 6 files	session-20261115T154329-16a67e2f	2026-11-15T15:58:32Z
+review:dossiq:5340:06631624	GREEN (conflicts with development)	session-20261115T142951-2463b4c4	2026-11-15T15:58:40Z
