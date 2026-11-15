@@ -14495,3 +14495,4 @@ fix:buildiq:1094:85dea460	lock rebuilt from development (prettier 3.9.10 only), 
 fix:launchpad:756:a464d5db	sbom regenerated, pushed e5da8a84; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:17:45Z
 fix:launchpad:760:cdb3d779	merged development, npm ci + vitest green, pushed 77add312; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:18:07Z
 fix:launchpad:755:03f2fd44	fixed: vitest+ui bumped to 5, npm ci ok, 2578 tests pass; REVERIFY	session-20261115T185923-898cd631	2026-11-15T19:18:13Z
+fix:buildiq:1088:419fccd1	sbom regenerated, vitest green, pushed 8d663611; REVERIFY recorded	session-20261115T183034-bba160e3	2026-11-15T19:18:31Z
