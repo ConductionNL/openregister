@@ -13402,3 +13402,4 @@ review:filinq:1304:4ad5da28	GREEN 1304 (vitest equal to baseline)	session-202611
 review:filinq:1355:1c90e8ba	GREEN: phpmd 3 runs, unit suite green; note +3 coupling findings on unchanged code	session-20261115T154254-3d07b219	2026-11-15T16:00:12Z
 review:dossiq:5397:e528f075	GREEN: phpstan dev bump; suite and phpstan output unchanged vs development	session-20261115T142934-de7c51d0	2026-11-15T16:00:18Z
 review:filinq:1756:88533afc	GREEN: 6770 unit OK	session-20261115T154255-e54527e9	2026-11-15T16:00:27Z
+review:filinq:1962:e4994b11	GREEN 1962: patch bump, suite green	session-20261115T142958-341f60db	2026-11-15T16:00:39Z
