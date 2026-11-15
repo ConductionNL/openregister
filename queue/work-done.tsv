@@ -14172,3 +14172,4 @@ review:dossiq:3203:cd98b031	GREEN dossiq#3203: vitest 2 inherited failures only,
 review:portaliq:1994:cffe40a0	GREEN: find() adapted to ObjectFindOptions, suite 6120 OK	session-20261115T174747-978963d5	2026-11-15T18:29:13Z
 fix:portaliq:1071:be71af8c	conflict resolved, narrowed to challenge proof on site form; pushed 334e76b1, REVERIFY	session-20261115T174808-50b8ceec	2026-11-15T18:29:31Z
 review:portaliq:1766:23513ec0	GREEN: dexie patch bump	session-20261115T174757-8dfa7406	2026-11-15T18:29:59Z
+fix:portaliq:1996:498473cc	fixed: Kernel\Contracts\Value namespace, merged development; new head 69333191	session-20261115T174819-9af28ef9	2026-11-15T18:30:09Z
