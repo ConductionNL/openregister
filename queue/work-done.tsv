@@ -12450,3 +12450,4 @@ cover:planninq:e1c9866dmcf99:js8a19c098	PR #1189: 19 tests, src/store 88.5%->98.
 verify:integriq:3564:4ebdf7ba	4 GREEN (3564,3593,3612,3641), 3 CONFLICT (3615,3617,3631); no new unit failures	session-20261115T005122-49ba1b99	2026-11-15T00:58:36Z
 cover:opencatalogi:fc83bfb1md2de:jsd48eb217	PR #2724: 37 vitest tests for the object store; src/store/modules lines 73.9%->94.0%, vitest 1093->1130 passed	session-20261115T005132-ee7d19e4	2026-11-15T00:59:05Z
 verify:versioniq:717:198f6fcc	GREEN 717 718 734; CONFLICT 719 722 725 727 728 729; PHP 1796 (2 inherited), vitest 2995	session-20261114T234941-bc8686af	2026-11-15T00:59:18Z
+review:integriq:3546:26a9245c	GREEN: no new failures (9237 vs 9223 baseline), matches change spec	session-20261115T005412-4a06d6f4	2026-11-15T00:59:32Z
