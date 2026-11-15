@@ -12136,3 +12136,4 @@ build:decidiq:ori-adoption:c4	done: PR #2212 builds 4.1 (example set council-inf
 verify:larpinq:1041:56b191fb	1041 GREEN; 1050 CONFLICT with 1041 (l10n)	session-20261114T221759-cd5c5678	2026-11-15T00:06:21Z
 fix:hermiq:1750:e1618265	conflict resolved, pushed 4ea33cc67bbcbb4ef01257a6c4b250b777ae29e0, REVERIFY	session-20261114T234952-566b7ef5	2026-11-15T00:06:31Z
 cover:decidiq:a5f973bbmae46:59826f43	already done: lib/Settings/*.php (AdminSettings) 34/36 lines with 9 behaviour tests; the 2 left are the missing/corrupt shipped audit json branches, reachable only by altering lib/; no PR	session-20261114T234944-ee1416bc	2026-11-15T00:06:38Z
+verify:thematiq:1680:804d3c7d	GREEN #1680: no new failures (2892 tests)	session-20261114T224736-f9da4a35	2026-11-15T00:06:38Z
