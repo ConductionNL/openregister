@@ -15312,3 +15312,4 @@ fix:filinq:2103:b21f6f3b	fixed: OR main save API + development merged; new head 
 fix:dossiq:3936:916d1651	fixed: test uses SigningConclusion, merged development (delete/modify resolved to deletion); pushed 692e66a3	session-20261115T213110-6b33145c	2026-11-15T22:18:28Z
 fix:decidiq:1467:26c28394	sbom regenerated, development merged in; new head dfb19ea0e2beff3a28cb376c7bc29ced93c70234	session-20261115T213101-2fb56005	2026-11-15T22:18:38Z
 fix:portaliq:1666:eb3191d2	validator counts band entries; new head ddf36df0	session-20261115T202932-d1067ee4	2026-11-15T22:18:49Z
+fix:filinq:2094:68947c99	fixed: BridgeService on main object API; suite green; pushed 4bb74d34, REVERIFY	session-20261115T220037-4fd37272	2026-11-15T22:18:59Z
