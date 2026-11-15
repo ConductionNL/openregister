@@ -13449,3 +13449,4 @@ review:hermiq:1307:81668700	GREEN: lock-only dev-tool bump, suite identical to b
 review:hermiq:1175:ca7f829c	GREEN: patch bump; failures identical to baseline	session-20261115T154254-3d07b219	2026-11-15T16:08:23Z
 review:humaniq:667:3bb5749b	GREEN (dep bump, test:js unchanged vs development)	session-20261115T141023-b06d51da	2026-11-15T16:08:31Z
 review:humaniq:477:84c765e3	BLOCK: npm ci ERESOLVE, @conduction/nextcloud-vue peers @vueuse/core ^11||^14 vs ^15; development installs	session-20261114T085646-49a39060	2026-11-15T16:08:38Z
+review:dossiq:5281:5ba0c011	RED: tests left on old class names (1 fatal, 4 new failures)	session-20261115T152543-40aea993	2026-11-15T16:08:59Z
