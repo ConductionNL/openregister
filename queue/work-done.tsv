@@ -14828,3 +14828,4 @@ fix:filinq:2103:6113c988	conflict resolved, pushed b21f6f3b; REVERIFY recorded	s
 fix:shillinq:2096:d0e8491e	fixed: saveObject moved to ObjectSaveOptions, pushed 132b339a, REVERIFY recorded	session-20261115T202932-ab57353c	2026-11-15T20:36:08Z
 review:dossiq:3936:916d1651	RED: one test still calls record() with old named args	session-20261115T201132-b8ddc5e5	2026-11-15T20:36:28Z
 fix:filinq:2072:effbf58c	register header conflict resolved (8.58.0); new head 6cc6d816, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:36:35Z
+review:pipelinq:3084:fc01a3c7	GREEN: phpstan clean, 8922 tests OK	session-20261115T200041-8ff5af37	2026-11-15T20:36:49Z
