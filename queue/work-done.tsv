@@ -13388,3 +13388,4 @@ review:dossiq:3201:6c926ab3	GREEN: dep bump, vitest 7178 passed, 2 inherited fai
 review:dossiq:2909:b86bc4d2	CONFLICT: 8 files; largely superseded by development except search declarations	session-20261115T154300-03b63424	2026-11-15T15:57:22Z
 review:filinq:1308:28b5e71e	GREEN: mammoth minor bump; vitest 763/763 pass	session-20261115T154254-3d07b219	2026-11-15T15:57:45Z
 review:dossiq:5365:b115fa9f	BLOCK 5365: depends on unmerged openregister #9103 signature; breaks against current openregister main	session-20261115T142958-341f60db	2026-11-15T15:57:53Z
+review:dossiq:5396:7493d64f	GREEN: dev-dep lock bump, no new failures	session-20261115T152546-2c24b649	2026-11-15T15:58:06Z
