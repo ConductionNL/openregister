@@ -13515,6 +13515,7 @@ review:keepiq:697:4521a1c3	GREEN: no-op, development already has hydra-gates v1.
 review:keepiq:1499:95735770	GREEN: lock-only patch bump, 5213 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:18:52Z
 review:launchpad:819:9dcfeabe	GREEN: phpmd 3.0 dev bump, phpunit 4359 OK; note +15 phpmd findings	session-20261115T155903-abd003e3	2026-11-15T16:19:03Z
 review:larpinq:961:0c510953	GREEN: hydra-gates dev bump; phpunit 860 OK	session-20261115T154407-94bf5f8c	2026-11-15T16:19:22Z
+review:launchpad:984:2f958a94	BLOCK: wrong OpenRegister namespace for ObjectSaveOptions/ObjectFindTarget	session-20261115T155921-aabf185f	2026-11-15T16:19:46Z
 review:launchpad:977:dd835410	GREEN: phpunit 4359 OK, phpcs unchanged	session-20261115T155915-84e5dc0a	2026-11-15T16:20:02Z
 review:launchpad:760:cdb3d779	760 GREEN (npm ci ok, vitest 2578 pass)	session-20261115T142134-badaaf30	2026-11-15T16:20:15Z
 review:launchpad:832:0ef99698	GREEN (openspec-only), but conflicts with development archive moves	session-20261115T155904-a7df5bc0	2026-11-15T16:20:45Z
@@ -13539,6 +13540,7 @@ review:learniq:2166:290fc8b6	BLOCK: builds StoreDescriptor from StoreListing/Sto
 review:launchpad:756:a464d5db	GREEN: dev lock bump, suite green	session-20261115T154258-dee2cc3d	2026-11-15T16:23:45Z
 review:learniq:2132:5ccb8d0b	CONFLICT (60 files with development); change itself correct vs openregister main; recorded for a fix	session-20261115T142134-badaaf30	2026-11-15T16:23:59Z
 review:learniq:1883:9e6045c2	CONFLICT: 3 lib/Portal files vs development constants refactor; behaviour per own change	session-20261115T155915-84e5dc0a	2026-11-15T16:24:22Z
+review:integriq:2710:8b1d42d4	GREEN: lockfile bump, no new failures	session-20261115T142149-1d09fceb	2026-11-15T16:24:33Z
 review:integriq:3057:a972c60e	GREEN: lock-only hydra-gates 1.19 dev bump; suite identical to development (7 inherited)	session-20261115T145546-378b432a	2026-11-15T16:24:29Z
 review:opencatalogi:1888:0a19c236	CONFLICT: merge with development conflicts in 5 lib files; head green; behaviour matches spec	session-20261114T085646-49a39060	2026-11-15T16:24:41Z
 review:learniq:1158:bb9f61d9	GREEN: dev-only prettier bump, JS unit 9 inherited failures, no new	session-20261115T152547-c779ca49	2026-11-15T16:24:47Z
@@ -13554,6 +13556,7 @@ review:learniq:1166:0748af52	CONFLICT/obsolete: development already has parser 8
 review:larpinq:962:6aa0ff3d	RED: composer install fails, psalm 7 needs php ~8.3.16 vs config.platform 8.3	session-20261115T155911-14cd078d	2026-11-15T16:27:02Z
 build4:openregister:tasks-progress-report:c2	already building: build/tasks-progress-report-3 (another worker, 1.1-4.1) landed while this run was paused; local 1.1/1.2 work dropped unpushed	session-20261114T095641-533e2a00	2026-11-15T16:27:10Z
 review:launchpad:761:c14f910d	BLOCK: npm ci ERESOLVE, @vitest/* left at 4	session-20261115T154255-e54527e9	2026-11-15T16:27:04Z
+review:opencatalogi:2241:9f0cfa47	GREEN: faithful refactor, suite at baseline	session-20261115T155902-d9805df0	2026-11-15T16:27:19Z
 review:opencatalogi:2541:87b928f1	BLOCK: find() named args do not match openregister main ObjectService::find; repair hands nothing	session-20261114T085646-49a39060	2026-11-15T16:27:28Z
 review:opencatalogi:2419:cbcc348d	BLOCK: wrong namespace for OpenRegister save value objects (Kernel\Contracts\Value)	session-20261114T075643-acecaad6	2026-11-15T16:27:36Z
 review:learniq:1167:4b75be29	GREEN: sass dev bump, build ok, JS unit 9 inherited failures, none new	session-20261115T160928-e92ec17a	2026-11-15T16:27:43Z
@@ -13568,6 +13571,20 @@ review:learniq:1903:3f6c3b60	GREEN: dev-only ocp bump; installs, suite has only 
 review:learniq:1884:16330d9e	no verdict: conflicts with development in 11 files; recorded CONFLICT for the fix lane	session-20261115T142958-341f60db	2026-11-15T16:29:33Z
 review:opencatalogi:1894:552c9a7c	CONFLICT: openspec-only PR conflicts with development in 6 files	session-20261114T085646-49a39060	2026-11-15T16:29:42Z
 review:pipelinq:2957:0a390a39	BLOCK: conflicts in 19 files; development already has a separate build of the same change (153dff0e7); access behaviour itself unchanged	session-20261114T095641-533e2a00	2026-11-15T16:29:52Z
+review:pipelinq:2187:ebdded89	GREEN: phpmd 3 runs, unit suite green; phpmd findings 62->95 (mostly attribute false positives)	session-20261115T154254-3d07b219	2026-11-15T16:29:58Z
 review:pipelinq:2557:5d12aa50	GREEN: ocp patch bump, 8890 unit tests 0 failures	session-20261115T160928-e92ec17a	2026-11-15T16:30:06Z
 review:opencatalogi:2417:a2892ce3	BLOCK: wrong namespace for ObjectDeletion/ObjectFindTarget vs openregister main; 1 new test failure	session-20261115T145555-b33410db	2026-11-15T16:30:13Z
 review:opencatalogi:2674:8c2edb69	GREEN: per-spec build of tasks 1.1-2.2; 2 inherited unit failures, none new	session-20261115T152547-c779ca49	2026-11-15T16:30:20Z
+review:pipelinq:2504:e4cc137c	BLOCK: superseded by the build already on development; conflicts in every file	session-20261115T154311-e8600d84	2026-11-15T16:30:32Z
+review:pipelinq:2501:81b7343b	GREEN: unit 8890/0 fail	session-20261115T154314-8216dc98	2026-11-15T16:30:46Z
+review:learniq:1162:18f186f9	GREEN	session-20261115T142951-2463b4c4	2026-11-15T16:30:53Z
+review:pipelinq:2966:ff290970	CONFLICT: ExchangeRateService/leadCurrency.js conflict with development refactor; diff otherwise as specified	session-20261115T154307-1fc2cc78	2026-11-15T16:31:05Z
+review:opencatalogi:2682:4bf71fcd	RED: 8 new vitest failures in mainEntry.spec.js (unmocked new widget import)	session-20261115T155915-84e5dc0a	2026-11-15T16:31:23Z
+review:pipelinq:2546:ed45af1a	CONFLICT with development (l10n + structureProfile page count); content config-only, no defect found	session-20261115T145535-3f9e5078	2026-11-15T16:31:30Z
+review:pipelinq:2565:b4af6499	CONFLICT: 149 files conflict with development; no behaviour verdict	session-20261115T160928-e92ec17a	2026-11-15T16:31:37Z
+review:pipelinq:2593:6a42067a	CONFLICT (l10n en/nl and two count specs); change sound per spec, vitest 1028 green on head	session-20261115T145533-2db61682	2026-11-15T16:31:52Z
+review:pipelinq:2969:bd583b9e	no verdict: conflicts; backend already on development via 83837c6f7, only the Tickets phone search is new; recorded CONFLICT	session-20261115T142958-341f60db	2026-11-15T16:32:03Z
+review:pipelinq:2964:65b04b14	CONFLICT: behaviour OK vs spec, no new failures on head; merge conflict with development	session-20261114T102637-6688951e	2026-11-15T16:32:12Z
+review:pipelinq:2482:99a4545c	BLOCK: new deleteObject call uses the old openregister signature; conflicts with development	session-20261115T145555-b33410db	2026-11-15T16:32:22Z
+review:opencatalogi:1892:6953eb3c	GREEN: openspec notes only	session-20261115T142149-1d09fceb	2026-11-15T16:32:48Z
+review:pipelinq:2498:acffd38a	CONFLICT #2498: 17 files, likely superseded by the build on development	session-20261115T152601-38767331	2026-11-15T16:33:01Z
