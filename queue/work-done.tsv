@@ -12440,3 +12440,4 @@ merge:stackiq:1930:4136dc8b	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0
 merge:stackiq:1926:76fa5068	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0 skip=4; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:57:17Z
 merge:stackiq:1924:83616798	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0 skip=4; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:57:21Z
 merge:stackiq:1946:26710579	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0 skip=4; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:57:24Z
+cover:portaliq:b60f3b81m4ccb:91b023b8	already done: lib/Service/Availability/ at 97.6% lines (240/246) on development 36f157973, target 95	session-20261114T231755-998f7ff8	2026-11-15T00:57:35Z
