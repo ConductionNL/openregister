@@ -13278,3 +13278,4 @@ build:opencatalogi:publications-unpublished-overview:c3	done: PR #2673 (head 611
 build:opencatalogi:data-file-import-failure-alert:c3	partial: PR #2729 (1.1 notification rule + importedBy, 1.2 importing-first lifecycle with Throwable to failed, importTable()); left 1.3 import job, 1.4 re-import listener, 2.1 UI chip/Retry + e2e, 2.2 strings/check:strict, 2.3 live	session-20261115T142132-f4234592	2026-11-15T15:37:49Z
 review:integriq:3546:994fb6f7	GREEN 3546 (refactor behaviour-equivalent; no new failures)	session-20261115T142201-ea23e682	2026-11-15T15:37:45Z
 verify:opencatalogi:2699:e61b711a	stale	session-20261115T142951-2463b4c4	2026-11-15T15:38:23Z
+review:launchpad:1212:838ac053	GREEN #1212: phpunit 4384 OK, vitest 2598 OK, additive per spec	session-20261115T152601-38767331	2026-11-15T15:38:34Z
