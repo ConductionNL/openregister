@@ -12177,3 +12177,4 @@ buildiq	1651	3e54ea1b46195cd345a239fbee6385d61a8622ba	CONFLICT	worker-02	conflic
 buildiq	1652	023b900b9448723e6f9efa0bfaadf1c997a71ce1	CONFLICT	worker-02	conflicts with development: lib/Service/ApplicationCreationService.php, tests/Unit/Service/ApplicationCreationServiceTest.php
 buildiq	1092	8fb29c552c3dff86010f859bbbc198a8da2996db	GREEN	worker-05:review	devDep sass 1.104->1.108.2 only (package.json+lock); no code change; vitest 500 files/4692 tests pass on PR merged with development; scss compiles
 stackiq	1973	c345112a5cbb92dd41ffada6c678cc40b53f1bb8	CONFLICT	worker-23	conflicts with development in src/customComponents.js
+stackiq	1978	90d2828bd1192bd1fcd6702a87b638ea133bca93	GREEN	worker-23	tree 1978 on development: phpunit 3736 OK, vitest 2738/2739 (facets FACET_DIMENSIONS failure inherited); build of architecture-views-to-office-documents, new endpoint reads the view with RBAC on like the existing one
