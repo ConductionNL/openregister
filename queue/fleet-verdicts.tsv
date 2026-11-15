@@ -11295,3 +11295,7 @@ integriq	3638	c6195be6e7152bf4a7e59f009a451f39a50033e7	CONFLICT	merge3	merges cl
 thematiq	1680	31fb4f82491973605e3b9fd0fb721096311bc020	CONFLICT	merge3	merges clean on development alone; files: l10n/be.js l10n/be.json l10n/bg.js l10n/bg.json l10n/bs.js l10n/bs.json l10n/ca.js l10n/ca.json l10n/cs.js l10n/cs.json l10n/da.js l10n/da.json l10n/de.js l10n/de.json l10n/el.js l10n/el.json l10n/en.
 portaliq	2508	0879b6c267d49fb8919aa5082a2da748aaa37e23	CONFLICT	merge3	merges clean on development alone; files: lib/Controller/PortalPageController.php package.json 
 learniq	2513	fd13b215eebf611a6e73fb75b234a8deddd0e6ee	RED	merge3:merge-gate	GATE RED absolute floor: learniq maintainability 3.98 after merge is below its floor 3.99
+learniq	2484	b8c46f7c4c80c26cea26f138e57ec0afe11fc2ac	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2486	b690ac629e537fb1baf14e0d3c5874f3bcbcf77c	CONFLICT	merge3	merges clean on development alone; files: 
+learniq	2521	91383eb424b927e74a09a817f17ac0d07415945b	CONFLICT	merge3	merges clean on development alone; files: scripts/example-sets/__pycache__/example_set.cpython-311.pyc tests/unit-js/structureProfile.test.mjs 
+learniq	2549	d0f3714b7e647e2ee25aa967dec42478641c409c	CONFLICT	merge3	merges clean on development alone; files: tests/unit-js/structureProfile.test.mjs 
