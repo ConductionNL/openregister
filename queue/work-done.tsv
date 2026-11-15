@@ -14613,3 +14613,4 @@ merge:pipelinq:2593:a8adda0e	merge3 tree of 12 pipelinq PRs: merged=3 red=6 fail
 review:humaniq:670:57c2b21c	RED: sbom.cdx.json not regenerated for the runtime babel bump; build and tests ok (1 inherited JS failure)	session-20261115T182940-bfeb7e78	2026-11-15T19:37:36Z
 merge:larpinq:721:9600c066	merge8 tree of 11 larpinq PRs: merged=5 red=4 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge8-20261115T170007-37538273	2026-11-15T19:38:44Z
 merge:larpinq:960:02614b27	merge8 tree of 11 larpinq PRs: merged=5 red=4 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge8-20261115T170007-37538273	2026-11-15T19:38:48Z
+merge:larpinq:1053:0a5fb14d	merge8 tree of 11 larpinq PRs: merged=5 red=4 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge8-20261115T170007-37538273	2026-11-15T19:38:52Z
