@@ -13568,6 +13568,8 @@ review:pipelinq:1936:27cdae0d	CONFLICT #1936: obsolete, development already newe
 review:learniq:2126:af7f7379	GREEN: phpstan clean, no new failures	session-20261114T102637-6688951e	2026-11-15T16:28:48Z
 review:opencatalogi:2415:da40ef23	CONFLICT: PublicationsController conflicts with development (call moved to rendered()); diff itself correct	session-20261115T155911-14cd078d	2026-11-15T16:28:56Z
 review:learniq:1903:3f6c3b60	GREEN: dev-only ocp bump; installs, suite has only the inherited failure	session-20261115T145533-2db61682	2026-11-15T16:29:09Z
+review:opencatalogi:2259:6c778379	BLOCK: superseded by development's own refactor, conflicts	session-20261114T102641-d4fd3e25	2026-11-15T16:29:29Z
+review:opencatalogi:2250:626634c5	GREEN: equivalent refactor, 0 new failures	session-20261115T154300-03b63424	2026-11-15T16:29:17Z
 review:learniq:1884:16330d9e	no verdict: conflicts with development in 11 files; recorded CONFLICT for the fix lane	session-20261115T142958-341f60db	2026-11-15T16:29:33Z
 review:opencatalogi:1894:552c9a7c	CONFLICT: openspec-only PR conflicts with development in 6 files	session-20261114T085646-49a39060	2026-11-15T16:29:42Z
 review:pipelinq:2957:0a390a39	BLOCK: conflicts in 19 files; development already has a separate build of the same change (153dff0e7); access behaviour itself unchanged	session-20261114T095641-533e2a00	2026-11-15T16:29:52Z
@@ -13578,6 +13580,7 @@ review:pipelinq:2504:e4cc137c	BLOCK: superseded by the build already on developm
 review:pipelinq:2501:81b7343b	GREEN: unit 8890/0 fail	session-20261115T154314-8216dc98	2026-11-15T16:30:46Z
 review:learniq:1162:18f186f9	GREEN	session-20261115T142951-2463b4c4	2026-11-15T16:30:53Z
 review:pipelinq:2966:ff290970	CONFLICT: ExchangeRateService/leadCurrency.js conflict with development refactor; diff otherwise as specified	session-20261115T154307-1fc2cc78	2026-11-15T16:31:05Z
+review:learniq:1727:937a0671	GREEN: vobject 5 dev bump; phpunit 6848, 1 inherited failure, 0 new	session-20261115T154407-94bf5f8c	2026-11-15T16:31:19Z
 review:opencatalogi:2682:4bf71fcd	RED: 8 new vitest failures in mainEntry.spec.js (unmocked new widget import)	session-20261115T155915-84e5dc0a	2026-11-15T16:31:23Z
 review:pipelinq:2546:ed45af1a	CONFLICT with development (l10n + structureProfile page count); content config-only, no defect found	session-20261115T145535-3f9e5078	2026-11-15T16:31:30Z
 review:pipelinq:2565:b4af6499	CONFLICT: 149 files conflict with development; no behaviour verdict	session-20261115T160928-e92ec17a	2026-11-15T16:31:37Z
@@ -13586,3 +13589,16 @@ review:pipelinq:2969:bd583b9e	no verdict: conflicts; backend already on developm
 review:pipelinq:2964:65b04b14	CONFLICT: behaviour OK vs spec, no new failures on head; merge conflict with development	session-20261114T102637-6688951e	2026-11-15T16:32:12Z
 review:pipelinq:2482:99a4545c	BLOCK: new deleteObject call uses the old openregister signature; conflicts with development	session-20261115T145555-b33410db	2026-11-15T16:32:22Z
 review:opencatalogi:1892:6953eb3c	GREEN: openspec notes only	session-20261115T142149-1d09fceb	2026-11-15T16:32:48Z
+review:pipelinq:2498:acffd38a	CONFLICT #2498: 17 files, likely superseded by the build on development	session-20261115T152601-38767331	2026-11-15T16:33:01Z
+review:opencatalogi:2407:21b8b65a	GREEN	session-20261115T151007-45079d32	2026-11-15T16:33:10Z
+review:learniq:1881:5f883140	GREEN (intended fix; conflicts with development)	session-20261115T141023-b06d51da	2026-11-15T16:33:22Z
+review:pipelinq:3149:3c7ae62d	BLOCK: wrong ObjectPatch/ObjectFindTarget namespace	session-20261115T142951-2463b4c4	2026-11-15T16:33:33Z
+review:pipelinq:3085:34857519	GREEN: lock-only dev-tool bump, 8890 tests green merged with development	session-20261114T095641-533e2a00	2026-11-15T16:33:40Z
+review:pipelinq:3084:01208829	GREEN: phpstan bump, analysis clean, suite green	session-20261115T154258-dee2cc3d	2026-11-15T16:33:56Z
+review:pipelinq:2959:0f2f1b3f	CONFLICT #2959: 16 files, partly on development already	session-20261115T152601-38767331	2026-11-15T16:34:12Z
+merge:pipelinq:3835:cef49b87	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:23Z
+merge:pipelinq:3870:787e050f	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:26Z
+merge:pipelinq:3873:e74d58c4	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:30Z
+review:planninq:1037:f2da0a3f	CONFLICT: trivial l10n/en.js+en.json, keep both; change itself fine	session-20261115T154300-03b63424	2026-11-15T16:34:32Z
+merge:pipelinq:3875:9f4b8976	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:43Z
+review:pipelinq:2963:59117082	BLOCK: duplicate of the change already built on development; conflicts in 10 files; likely obsolete	session-20261115T145546-378b432a	2026-11-15T16:34:52Z
