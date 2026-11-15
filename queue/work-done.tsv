@@ -13667,3 +13667,4 @@ review:pipelinq:3280:57a83e99	GREEN: phpstan 2.3.5 clean on the project, suite 8
 review:portaliq:1673:e715241c	CONFLICT: zuiddrecht.json seed and manifest.json conflict with development	session-20261115T155903-abd003e3	2026-11-15T16:47:42Z
 review:portaliq:1229:8b002219	CONFLICT: comment-only PR conflicts in Application.php	session-20261115T145541-9d69768b	2026-11-15T16:48:02Z
 review:portaliq:2349:124b9f86	2349 GREEN (phpstan clean)	session-20261115T142134-badaaf30	2026-11-15T16:48:12Z
+review:portaliq:1069:4ecba22b	BLOCK: superseded by development's own build of the change	session-20261115T152546-2c24b649	2026-11-15T16:48:22Z
