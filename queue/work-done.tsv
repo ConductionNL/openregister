@@ -13412,9 +13412,16 @@ review:hermiq:1323:787cee12	BLOCK: OpenRegister ObjectPatch at a namespace prese
 review:filinq:1850:ab19bf6b	BLOCK: ObjectPatch/ObjectFindTarget imported from wrong namespace vs openregister main	session-20261115T154300-03b63424	2026-11-15T16:02:04Z
 review:filinq:1851:5759e36e	BLOCK: imports ObjectDeletion/ObjectFindTarget from a namespace OpenRegister does not have (real one is Kernel\Contracts\Value); stubs hide it	session-20261115T145533-2db61682	2026-11-15T16:02:17Z
 review:filinq:1409:0d0e948a	BLOCK: obsolete, superseded on development, 32-file conflict	session-20261115T154255-e54527e9	2026-11-15T16:02:23Z
+build4:openregister:register-scoped-schema-slug-resolution:c2	stale: session paused past the task lease; continuations c3-c5 completed task 3.1 in PR #10538, so this pass's overlapping local work was discarded unpushed	session-20261114T102637-6688951e	2026-11-15T16:02:36Z
 review:filinq:1102:7156c4b9	GREEN: jszip patch bump, vitest 763/763 on merged tree	session-20261115T155921-aabf185f	2026-11-15T16:02:33Z
 review:filinq:1312:4c33817f	BLOCK: obsolete, development already has @nextcloud/vue 9.14.1; lock conflict	session-20261115T142934-6cab0c24	2026-11-15T16:02:40Z
 review:hermiq:1135:988cfbc8	GREEN: dev-only phpmd 3 bump; unit suite identical; notes on deprecated positional args and one new unused-param finding	session-20261114T075643-acecaad6	2026-11-15T16:02:49Z
 review:hermiq:1195:6284aad0	GREEN: eslint bump, vitest 1526 pass, lint identical to baseline	session-20261115T155913-70cee771	2026-11-15T16:02:56Z
 review:hermiq:1187:f2d30166	GREEN: playwright devDep bump, vitest 1526 passed	session-20261115T155903-abd003e3	2026-11-15T16:03:05Z
 review:filinq:1451:258e0913	BLOCK: duplicate of template already on development (#1457); suite 6765 OK	session-20261115T152558-f97be55f	2026-11-15T16:03:13Z
+review:dossiq:2902:791b50a4	GREEN (no behaviour change; conflicts with development, keep StepConfigCheck)	session-20261115T141023-b06d51da	2026-11-15T16:03:22Z
+review:dossiq:3202:d10800f6	BLOCK: gridstack 14 outside shared library peer range; conflicts with development	session-20261114T102641-d4fd3e25	2026-11-15T16:03:33Z
+review:hermiq:1324:c54cfec4	BLOCK: targets nonexistent OpenRegister SearchOptions API; unit suite fatals on merged tree	session-20261115T155902-d9805df0	2026-11-15T16:03:39Z
+review:hermiq:1189:9c7d6a51	GREEN: pinia 4 bump, vitest 1526 passed	session-20261115T154316-34f0db35	2026-11-15T16:03:52Z
+review:humaniq:434:dc6c275a	BLOCK: obsolete lock bump (development already newer), conflicts	session-20261115T155911-f0070087	2026-11-15T16:04:06Z
+review:filinq:1963:4c695442	GREEN: lock bump, suite green incl. PDF tests	session-20261115T154258-dee2cc3d	2026-11-15T16:04:26Z
