@@ -14519,6 +14519,7 @@ fix:opencatalogi:2725:0414a9a7	merged development clean; tree conflict is with a
 fix:stackiq:1066:ce4b4efe	obsolete: development already locks @vitest/coverage-v8 5.1.0; closed with comment	session-20261115T182951-bdf9d68e	2026-11-15T19:22:15Z
 fix:stackiq:1042:56393a99	lock regenerated on development, pushed; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:22:19Z
 fix:launchpad:819:9dcfeabe	sbom regenerated after merging development, pushed; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:22:31Z
+fix:stackiq:1068:8f972aa0	closed as obsolete: development already locks @nextcloud/vue 9.14.1	session-20261115T185944-49ff6c32	2026-11-15T19:22:46Z
 fix:opencatalogi:2723:f92c3e05	CONFLICT resolved (both-sides additions), pushed 8d90b4a9; REVERIFY	session-20261115T174741-9deaa0be	2026-11-15T19:22:40Z
 fix:stackiq:1069:500f69e7	lock conflict resolved, new head e98fca28	session-20261115T185929-0fc862a6	2026-11-15T19:22:58Z
 fix:stackiq:1065:7afbf58c	failed: @vueuse/core 15 violates the peer of @conduction/nextcloud-vue (^11||^14, also in latest 2.181.0); merge itself resolves (drop axe-core, keep 15) but the bump must wait for the library to accept 15. Nothing pushed.	session-20261115T181015-497e81ce	2026-11-15T19:23:09Z
