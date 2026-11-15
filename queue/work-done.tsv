@@ -14210,3 +14210,4 @@ fix:shillinq:2227:13c58709	closed #2227 (vueuse 15 outside library peer range, u
 fix:pipelinq:3092:fbd3e247	fixed: lock @nextcloud/files 4.1.1, jsdom p-queue shim, spec mocks; vitest 1 inherited failure; new head f8d049f3	session-20261115T181015-497e81ce	2026-11-15T18:36:21Z
 fix:shillinq:2063:20eb03d6	conflict resolved, pushed 7f06f10a; REVERIFY recorded; legacy no-digest approved runs still need a decision	session-20261115T182941-b7ae781f	2026-11-15T18:36:41Z
 merge:launchpad:1098:a73ecff3	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:08Z
+merge:launchpad:756:c88517ec	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:14Z
