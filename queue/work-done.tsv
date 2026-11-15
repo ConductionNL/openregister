@@ -14531,6 +14531,7 @@ fix:stackiq:1064:92f38c90	lockfile conflict resolved, pushed adce3cb4	session-20
 fix:opencatalogi:2673:61140718	RED fixed (dev widget tests moved to the overview), pushed 9b953103, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T19:23:45Z
 fix:stackiq:1924:b3cd5b3a	l10n conflict resolved, new head ae4e4f18	session-20261115T185929-0fc862a6	2026-11-15T19:24:14Z
 fix:thematiq:1555:1e3652b9	failed: fix needs a regenerated composer.lock (workers may not commit it) and config.platform.php raised app-wide; psalm 5->7 major also needs psalm/plugin-symfony replaced - left for a human/local lane	session-20261115T185925-f99529ae	2026-11-15T19:24:20Z
+fix:stackiq:1436:9cff2a95	failed: 25 conflicts resolve (dev side + ObjectSaveOptions imports, 5 newer dev saveObject calls converted, Kernel stub map kept), but 47 dev test classes (271 tests) use old saveObject(register:, schema:, uuid:) doubles; dev baseline 3715 OK. Needs a test migration (SaveCallShape) beyond the 45 min cap; nothing pushed	session-20261115T174755-95dc8448	2026-11-15T19:24:34Z
 fix:versioniq:500:ccaf6046	lock regenerated on development, pushed 890378b3; REVERIFY recorded	session-20261115T185932-17792562	2026-11-15T19:24:29Z
 fix:versioniq:484:92a0a429	obsolete: development has hydra-gates v1.19.0; closed #484 with a neutral comment	session-20261115T183023-a120e01a	2026-11-15T19:24:34Z
 fix:buildiq:1651:3e54ea1b	development merged in cleanly; new head 8f610194, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T19:24:37Z
