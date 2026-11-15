@@ -13575,3 +13575,4 @@ review:pipelinq:2504:e4cc137c	BLOCK: superseded by the build already on developm
 review:pipelinq:2501:81b7343b	GREEN: unit 8890/0 fail	session-20261115T154314-8216dc98	2026-11-15T16:30:46Z
 review:learniq:1162:18f186f9	GREEN	session-20261115T142951-2463b4c4	2026-11-15T16:30:53Z
 review:pipelinq:2966:ff290970	CONFLICT: ExchangeRateService/leadCurrency.js conflict with development refactor; diff otherwise as specified	session-20261115T154307-1fc2cc78	2026-11-15T16:31:05Z
+review:opencatalogi:2682:4bf71fcd	RED: 8 new vitest failures in mainEntry.spec.js (unmocked new widget import)	session-20261115T155915-84e5dc0a	2026-11-15T16:31:23Z
