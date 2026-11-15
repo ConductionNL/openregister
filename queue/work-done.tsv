@@ -14127,6 +14127,7 @@ review:dossiq:5357:7d05868b	CONFLICT: diff fine, conflicts with development in 4
 fix:portaliq:1006:0bb7956e	failed: not fixable in portaliq; latest @conduction/nextcloud-vue (2.180.0) still peers @vueuse/core ^11||^14, library must accept ^15 first	session-20261115T174750-744c606b	2026-11-15T18:20:56Z
 fix:portaliq:1994:6ba432f4	merged development, unit 6120 OK, pushed cffe40a0; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T18:21:13Z
 fix:portaliq:1229:8b002219	conflict resolved (stale suppression dropped), comment-only diff kept; new head facf71a31657fe456811aa8eb8ace13c12b9a2e5	session-20261114T102637-6688951e	2026-11-15T18:21:29Z
+fix:portaliq:1468:09694f2e	failed: permission (closing the superseded PR was refused; both changes are built on development separately, only suggester T08-T10 remains open there)	session-20261115T174741-9deaa0be	2026-11-15T18:21:48Z
 review:pipelinq:2458:31ac15a5	GREEN; phpunit 8944 OK, vitest 1 inherited; note old deleteObject form like rest of dev	session-20261115T152558-f97be55f	2026-11-15T18:21:46Z
 fix:portaliq:1848:cc4102c9	fixed editor stamp lost in development's refactor; suite 6120 OK; new head 5c463cd1	session-20261115T174833-88ac0233	2026-11-15T18:21:56Z
 fix:portaliq:1354:23330bb3	lock regenerated, npm ci OK, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T18:22:03Z
