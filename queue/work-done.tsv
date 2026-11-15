@@ -14482,3 +14482,4 @@ fix:buildiq:1092:8fb29c55	sbom regenerated; pushed 996ef9e6, REVERIFY recorded	s
 fix:launchpad:832:0ef99698	openspec CONFLICT resolved, REVERIFY recorded	session-20261115T174747-978963d5	2026-11-15T19:17:09Z
 fix:launchpad:977:dd835410	sbom regenerated, pushed 4ec996d3, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:17:23Z
 fix:buildiq:1094:85dea460	lock rebuilt from development (prettier 3.9.10 only), sbom regenerated; npm ci + vitest 4719 OK; new head 224fef61	session-20261115T174739-b14c2df4	2026-11-15T19:17:34Z
+fix:opencatalogi:2418:6a6c6361	failed: the PR only migrates calls to openregister #9103 API; main (3800106b) still has searchObjectsBySlug(registerSlug, schemaSlug), deleted on searchObjectsPaginated and no SearchOptions/ObjectSelection, so moving the calls to main API leaves nothing of the PR. Hold until #9103 is on main, or close	session-20261115T182936-09049974	2026-11-15T19:17:47Z
