@@ -12819,3 +12819,4 @@ verify:larpinq:1051:349a6e63	#1051 #1060 GREEN (903 tests, 0 failures; vitest 56
 verify:opencatalogi:2687:1fa87b59	2687 GREEN (no new failures; build matches its change)	session-20261115T015406-eecdf998	2026-11-15T02:13:33Z
 cover:dossiq:069ee2d6madb6:5ebe3eb6	already done: lib/Service/Mcp/ at 100% (248/248 stmts) on development 058200d	session-20261115T005122-49ba1b99	2026-11-15T02:13:55Z
 cover:dossiq:069ee2d6madb6:f545d745	PR #6564: 3 test files, 18 tests; lib/Repair 94.35% -> 95.03%; suite 17573->17591, same 19 inherited failures; found a sparing defect in RepairDemoDataSchemaFork (noted in PR)	session-20261115T005138-c7bbb0f0	2026-11-15T02:14:03Z
+cover:dossiq:069ee2d6madb6:67b69054	already done: lib/Service/Conversation/ at 99.7% (384/385 stmts) on development 058200d	session-20261115T005122-49ba1b99	2026-11-15T02:14:09Z
