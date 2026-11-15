@@ -3722,3 +3722,8 @@ thematiq	1556	ff5f73bc8d0dc6f12bac429db068c7a3da6df24b	RED	merge8	GATE RED sbom:
 thematiq	1557	b3ab646d8fa634f7d71c5465a5553a97865a8929	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1558	4e04b3da12fdd1e8be1832f3eeed91751c1e1667	RED	merge8	GATE RED sbom: composer.lock changed without sbom.cdx.json
 thematiq	1677	5e934e94706006fbd51f109fcc53208443fdf956	SKIP	merge8	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+dossiq	2705	643da12e92cbdb8ef9c84b25c937a907e2a8b5d2	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
+dossiq	2902	852fcee3164fff03aebf87e1d755d674143539b9	SKIP	merge3	GATE UNMEASURED head moved to 8a0f3ca6db
+dossiq	3196	bdbdd4b2343ec19de2c5d6e0a3681a4a8c517857	RED	merge3	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3197	4fd9129cae30320898c8905d5fc6d07581b354c7	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
+dossiq	3201	1fedc9a2fa5d72e4b1978d23676c5e05c25cd080	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.34
