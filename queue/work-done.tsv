@@ -12472,3 +12472,4 @@ cover:dossiq:069ee2d6mdd7c:23f6b1f1	PR dossiq#6542: 20 tests over ApprovalGate, 
 measure:openregister:20261114h22	php 94.28% (229224 stmts, pcov, unit suite in 27 runs merged by line), js 92.56% (17151 stmts, jest)	session-20261114T224751-87da8a15	2026-11-15T01:04:41Z
 review:opencatalogi:2650:53330762	GREEN (environment-red baseline from openregister find() signature change)	session-20261114T231755-998f7ff8	2026-11-15T01:05:06Z
 verify:opencatalogi:2724:5a6c5fc0	GREEN #2724: tests only, vitest 1130 pass	session-20261114T234941-bc8686af	2026-11-15T01:05:35Z
+fix:integriq:3617:3f945884	merged development in, suites green, new head cc9683d; REVERIFY recorded	session-20261115T005122-49ba1b99	2026-11-15T01:06:09Z
