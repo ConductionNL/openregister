@@ -13189,3 +13189,4 @@ review:openregister:10585:43cf2c12	APPROVE: tests only; Flow/Rules/Contract/Cont
 cover:integriq:92114ab0m6759:a4a15698	PR #3662: PdokGeocodingClientMock find/reverse covered, Pdok dir 338/343 -> 342/343 statements; suite 9460 -> 9462, no new failures	session-20261115T142153-990a3fbe	2026-11-15T15:21:31Z
 fix:shillinq:2997:70ee300e	fixed: regenerated scoped pages after merging development; new head 7b870224	session-20261115T142958-341f60db	2026-11-15T15:21:28Z
 build:hermiq:models-several-models-per-turn:c4	partial: PR #1781 head 00e5f205, task 5 fallback-chain editor (vitest 1518/1518, +7); task 6 ensemble setting and task 7 ensemble turn left; Playwright/Newman/live tasks left	session-20261114T073117-2bd2e050	2026-11-15T15:21:28Z
+review:learniq:2507:c404ad7d	GREEN: matches practical-exam-assessment specs; suite 6881 with only the inherited he.json failure; phpstan clean	session-20261115T145533-2db61682	2026-11-15T15:21:43Z
