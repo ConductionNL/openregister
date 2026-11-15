@@ -12447,4 +12447,5 @@ cover:portaliq:b60f3b81m4ccb:2820f177	already done: lib/Service/Mail/ at 99.1% l
 verify:shillinq:3092:6d27e720	GREEN 3092; no new failures	session-20261114T234952-566b7ef5	2026-11-15T00:57:57Z
 review:integriq:3549:2d954e73	GREEN: per-item references per spec, no new failures (9237 tests, 7 inherited), phpstan clean	session-20261115T005138-c7bbb0f0	2026-11-15T00:58:11Z
 cover:portaliq:b60f3b81m4ccb:f91e7417	already done: lib/Service/Connection/ at 100% lines (160/160) on development 36f157973	session-20261114T231755-998f7ff8	2026-11-15T00:58:16Z
+cover:planninq:e1c9866dmcf99:js8a19c098	PR #1189: 19 tests, src/store 88.5%->98.3% stmts; suite 3437->3456 pass	session-20261115T005133-04e59268	2026-11-15T00:58:16Z
 verify:integriq:3564:4ebdf7ba	4 GREEN (3564,3593,3612,3641), 3 CONFLICT (3615,3617,3631); no new unit failures	session-20261115T005122-49ba1b99	2026-11-15T00:58:36Z
