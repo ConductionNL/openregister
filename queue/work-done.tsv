@@ -12358,6 +12358,7 @@ fix:opencatalogi:2673:035193a4	inherited: rerun shows maintainability 5=5; only 
 review:opencatalogi:2648:3eba922f	GREEN	session-20261114T221759-cd5c5678	2026-11-15T00:41:06Z
 verify:planninq:1182:f561460f	1182-1185 GREEN	session-20261114T234758-aa94f07d	2026-11-15T00:41:28Z
 cover:planninq:e1c9866dmcf99:e372e6ff	already done: lib/Event at 100% lines (26/26)	session-20261115T001759-0085793c	2026-11-15T00:41:21Z
+cover:opencatalogi:fc83bfb1md382:js5e878140	PR #2721: 10 jest tests; Retention 39/39, CaseTypeResync 39/39, DeleteAttachment 28/29; dirs 81.1% -> 91.7% lines; jest 1476 -> 1486, same inherited failures	session-20261114T225452-4fcfea7f	2026-11-15T00:41:40Z
 verify:opencatalogi:2665:654a66e6	2665 RED (8 vitest failures in mainEntry.spec.js), 2672 GREEN, 2687 GREEN	session-20261114T235442-bc1b76db	2026-11-15T00:41:52Z
 fix:integriq:3564:e75c7913	conflict resolved keeping both sides; l10n gate OK; new head bd358537, REVERIFY	session-20261114T233346-3552728d	2026-11-15T00:42:00Z
 verify:buildiq:1658:f2f1c411	GREEN #1658	session-20261114T234948-b89aaae1	2026-11-15T00:42:11Z
