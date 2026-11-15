@@ -12824,3 +12824,4 @@ humaniq	669	3a6be5bd16678979d91795150f9ca59328e65daa	RED	merge3:merge-gate	GATE 
 humaniq	684	c6a338caab5f176f32336472bbeb0882937303ba	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 humaniq	686	03602584dfcf6650b23bb68d860374863c4bfba8	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 humaniq	1096	e60cc3a3e6c3a870a5dddc3b804f7bd33cbef335	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	820	a6bd63eb2f68837d7f3fe2f2263f6ae8dc5c7a9e	GREEN	worker-05:review	devDep @vitejs/plugin-vue 6.0.8->6.0.9 with lock and sbom.cdx.json (regen-sbom --check: current, 718 components); no code change; vitest 503 files / 4719 tests pass on PR merged with development
