@@ -13664,6 +13664,7 @@ review:portaliq:1848:cc4102c9	RED: 3 new unit failures on merged tree	session-20
 review:portaliq:1468:09694f2e	CONFLICT (35 files, stale since 10 Oct)	session-20261115T142134-badaaf30	2026-11-15T16:46:32Z
 review:planninq:1064:54981d9f	RED: conflicts with development; new old-form find() callers in ProjectCopyService/ProjectExportService uncovered	session-20261115T154316-34f0db35	2026-11-15T16:46:42Z
 review:portaliq:1995:277966b3	BLOCK: wrong OpenRegister namespace for ObjectDeletion/ObjectFindTarget; 5 conflicts	session-20261115T154254-3d07b219	2026-11-15T16:46:52Z
+review:portaliq:1856:d612dba3	CONFLICT: co-sign checks sound, its tests pass, conflicts with development in 15 files	session-20261115T154329-16a67e2f	2026-11-15T16:47:01Z
 merge:filinq:2069:e87c8717	merge3 tree of 11 filinq PRs: merged=2 red=1 fail=0 skip=0; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T16:47:18Z
 review:planninq:910:b94a9117	GREEN: dev-only phpmd 3; suite identical; findings 25->22	session-20261114T075643-acecaad6	2026-11-15T16:47:37Z
 review:pipelinq:3280:57a83e99	GREEN: phpstan 2.3.5 clean on the project, suite 8890 OK	session-20261115T145533-2db61682	2026-11-15T16:47:32Z
@@ -13804,6 +13805,7 @@ review:versioniq:504:7d37bf12	GREEN: stylelint bump; stylelint clean, vitest 300
 review:thematiq:1287:622c0c48	GREEN: dev-only playwright bump; vitest 1559 OK	session-20261115T145535-3f9e5078	2026-11-15T17:10:50Z
 review:shillinq:2096:7e23465b	RED: 2 new unit failures (openapi route undocumented; stored-lookup guard flags SuggestedMappingConfirmation)	session-20261115T152552-0cb4306e	2026-11-15T17:11:01Z
 verify:opencatalogi:2699:979a13f9	2730 GREEN (vitest 1123 OK, phpunit baseline 2 inherited); 2699 skipped: head moved	session-20261115T155903-abd003e3	2026-11-15T17:11:11Z
+build:stackiq:architecture-views-to-office-documents:c4	partial: pushed 90d2828b to PR #1978: Task 4 initial state view_document_export + Export menu module (viewExport.js, 12 vitest, 3 PHPUnit), Task 5 en/nl strings; left: mount menu in ArchitectureViewEditor.vue and docs section, both waiting on unmerged architecture-views-editor branch	session-20261115T142149-1d09fceb	2026-11-15T17:11:35Z
 verify:versioniq:732:cc08f5ca	GREEN: 732 (ocp patch bump), no new failures	session-20261115T155904-a7df5bc0	2026-11-15T17:11:26Z
 review:thematiq:1117:29c03f73	RED: phpmd 3 adds 3 violations, composer phpmd fails	session-20261115T154258-dee2cc3d	2026-11-15T17:11:40Z
 review:stackiq:1432:4c6faab0	RED (11 CmdbExportImportServiceTest failures from the delete double; conflicts with development)	session-20261115T141023-b06d51da	2026-11-15T17:11:53Z
@@ -13829,8 +13831,12 @@ verify:launchpad:1234:8d24d0ba	GREEN #1234: audit clean, vitest 2578 passed	sess
 fix:versioniq:691:81048e6f	merged development, ported security-first into AutoUpdatePlanner; unit + vitest green beyond baseline; REVERIFY at c3a11b62	session-20261115T155904-a7df5bc0	2026-11-15T17:15:42Z
 build:versioniq:autoupdate-proposed-updates:c3	blocked: PR #728 head 0ec98de1 unchanged; only code left is 3.3 next_window, which needs autoupdate-security-first (#691) on development (not there yet); rest is e2e (4.2 cli, 4.4, 4.5) and release (5.x)	session-20261115T151007-45079d32	2026-11-15T17:15:52Z
 review:thematiq:1556:ff5f73bc	GREEN; phpunit 2873 (1 inherited), phpstan clean	session-20261115T152558-f97be55f	2026-11-15T17:15:49Z
+review:thematiq:1292:f21993f3	GREEN: vitest 1559 pass, build ok	session-20261115T154314-8216dc98	2026-11-15T17:16:01Z
+build:versioniq:install-manual-upload:c3	partial: not started this run (worker context nearly full), PR #715 unchanged at 43e28198; left 1.2, 2.1, 2.2, 3.1, 3.2 (code) and 3.3, 4.1	session-20261115T151007-45079d32	2026-11-15T17:16:12Z
+build:versioniq:inventory-lifecycle-signals:c3	partial: PR #711 (branch quality/build-inventory-lifecycle-signals, head 1d4bc36): merged development again, Notifier.php conflict resolved keeping server_eol and advisory_assigned; unit-only suite 1876 with the 2 installer golden failures inherited from development. Left: 1.3 card badge UI, 2.1 Advisories date, 3.1 successor routes + Settings list, 3.2 replace route + ReplaceAppDialog, 4.1 l10n/m	session-20261115T152539-8dadb15a	2026-11-15T17:16:15Z
 fix:versioniq:699:74f2e1ef	failed: floor restore exceeds the 45-min fix cap. Reproduced on branch+development: overall 4.95->4.85, unit_complexity 4.59->4.34 (php McCabe>5 share 14.8->17.0%, ~257 LOC to shed), unit_interfacing 4.16->3.81 (php 3+ params 14.2->15.6%, 5+ 2.1->2.5%). Needs: split SecurityReportService::figures(19)/pairs/monthFigures, AdvisoryExposureTracker::track/activePairs, SecurityUpdateMatcher::fixedBy/mat	session-20261115T154254-3d07b219	2026-11-15T17:16:14Z
 verify:buildiq:1648:ced8329b	CONFLICT: 5 frontend/golden files conflict with development	session-20261115T154311-e8600d84	2026-11-15T17:16:14Z
+build:versioniq:autoupdate-run-batching:c3	partial: PR #705 head 9638e980 adds 3.2 (maxPerRun/maxPerWeek settings + API validation) and 3.3 (AutoUpdateLimiter: caps, waiting list, run order) with tests; left 2.2-2.4 groups in planner/job/notifier/API (and the group case of 3.3), 4.1-4.2 page and strings, 4.4 fixture app, e2e 4.3/4.5, 5.x; suite 1852 with 2 inherited installer golden failures	session-20261115T145533-2db61682	2026-11-15T17:16:29Z
 review:versioniq:497:bc42f75b	GREEN: build-tool bump; vendor-bin lock conflict needs recreate	session-20261115T155913-70cee771	2026-11-15T17:16:25Z
 review:versioniq:723:e74abf38	GREEN: build PR, no new failures	session-20261115T152546-2c24b649	2026-11-15T17:16:34Z
 fix:filinq:2070:6f40e77a	merged development, pushed 5c49e6f2, REVERIFY	session-20261115T141023-b06d51da	2026-11-15T17:16:41Z
@@ -13839,3 +13845,30 @@ fix:filinq:2094:87b43b49	merged development (clean), unit green, new head c8f196
 fix:filinq:2088:a003bdfc	merged development in cleanly, suite green; new head 08907be906008fa2544f44f229ae355681507a6d	session-20261114T102637-6688951e	2026-11-15T17:17:13Z
 review:stackiq:1068:8f972aa0	BLOCK: obsolete, development already locks @nextcloud/vue 9.14.1; lock conflict	session-20261114T095641-533e2a00	2026-11-15T17:17:19Z
 review:versioniq:506:c6a1011e	GREEN: vue patch bump, vitest 3001 pass, build ok	session-20261115T155911-f0070087	2026-11-15T17:17:28Z
+build:larpinq:events-casting-and-crew-roles:c3	already building: open branch quality/build-events-casting-and-crew-roles (PR #1054) has every code task; only 3.2 Playwright e2e left, needs a live instance	session-20261114T085646-49a39060	2026-11-15T17:17:45Z
+fix:versioniq:722:01366da8	merged development, openapi.json 3-way JSON merge; pushed 756a911d; REVERIFY queued	session-20261115T145555-b33410db	2026-11-15T17:17:59Z
+review:versioniq:501:e3e915e4	GREEN: eslint minor bump; lint unchanged (0 errors)	session-20261115T154407-94bf5f8c	2026-11-15T17:18:07Z
+verify:opencatalogi:2699:f8c393d1	2729 GREEN (5715, 2 inherited failures); 2699 skipped: head moved	session-20261115T155903-abd003e3	2026-11-15T17:18:18Z
+review:versioniq:505:54c33622	GREEN: dev dep bump, vitest 3001 OK	session-20261115T152543-40aea993	2026-11-15T17:18:25Z
+review:thematiq:1070:42206255	GREEN: shared lock refresh, vitest 1559 pass, phpunit 1 environmental failure	session-20261115T155921-aabf185f	2026-11-15T17:07:17Z
+verify:launchpad:1223:d1a9b4cd	1235 GREEN; 1223, 1230 skipped (head moved)	session-20261115T142934-de7c51d0	2026-11-15T17:19:05Z
+cover:stackiq:9ac19b3amf894:js0b5eefce	PR #1983: src/modals/object/ 83.5% -> 96.1% statements (61 tests in 4 specs); suite 2603 -> 2664, same 1 inherited facets failure; notes DownloadObject objectItem bug	session-20261115T142134-badaaf30	2026-11-15T17:19:28Z
+fix:filinq:2122:caf13011	merged development in cleanly, checks green; new head 57380f5f072e32897dbc5ebe6d646a2f735f7899	session-20261115T142949-9c6a3945	2026-11-15T17:19:21Z
+verify:integriq:3666:3a408d86	GREEN #3666: tests only, 9467 tests, no new failures	session-20261115T142934-6cab0c24	2026-11-15T17:19:29Z
+fix:larpinq:1060:759898b3	pushed f17472dc: secret-scan fixture renamed (gitleaks clean), +tests for staff views/invite states; ratio improved but may remain under floor	session-20261115T155902-521936b1	2026-11-15T17:19:39Z
+fix:larpinq:1053:181ec51c	merged development (clean), unit green; conflict was with another PR in the tree; REVERIFY at 4113c48a	session-20261115T155904-a7df5bc0	2026-11-15T17:19:50Z
+build:versioniq:inventory-verified-publisher:c3	PR #738: tasks 2.1, 2.2 built (PublisherMark on hits and cards, en/nl strings, 7 vitest cases); left 2.3 e2e (live instance) and 3.1 archive	session-20261115T152546-2c24b649	2026-11-15T17:19:59Z
+build:larpinq:larpinq-mcp-adoption:c3	done: no code tasks left on PR #1059 (head 33374bf7); McpAdoptionFragmentTest 5 ok and the fragment parses; left Task 1 live MCP test, Task 3 import/RBAC on a dev instance, verification: all need a live instance	session-20261115T141023-b06d51da	2026-11-15T17:19:58Z
+build:larpinq:registration-payments-through-shillinq:c3	partial: no code task buildable; 6.2 is in open PR #1055; 6.1 still blocked on shillinq sales-invoice-document (tasks 1.1-2.4 unbuilt, invoice PDF administration-scoped so a player gets 403); 4.2 e2e needs a live shillinq instance	session-20261115T142934-de7c51d0	2026-11-15T17:19:54Z
+build:opencatalogi:publication-detail-for-the-portal:c3	partial: PR #2670 merged with development (head 27c8de92, unit 5722 tests, only the 2 failures development also has); no task built this run (worker context nearly full); left 1.2, 2.1, 5.1, 5.2, 6.1, 7.x unchanged	session-20261115T145555-b33410db	2026-11-15T17:20:09Z
+build:larpinq:larpinq-manifest-tier-4:c4	partial: still no code task buildable; 2.1 needs CnAppRoot.mount(), absent in nextcloud-vue 2.180.0 (latest on npm); 4.2 strict issues predate the change; 4.3/4.4 live/visual	session-20261115T142934-6cab0c24	2026-11-15T17:20:04Z
+fix:versioniq:718:e805f4c1	conflicts resolved, new head 756fab92; suite green beyond 2 inherited failures	session-20261115T155911-14cd078d	2026-11-15T17:20:07Z
+verify:buildiq:1654:74087526	GREEN: phpunit 3289 (1 inherited), vitest 4741/4741	session-20261115T155915-84e5dc0a	2026-11-15T17:20:22Z
+review:opencatalogi:2678:3f20c722	GREEN: spec-conform build, no new unit failures (5731 tests, 2 inherited)	session-20261115T155931-0926aa8e	2026-11-15T17:20:48Z
+fix:buildiq:1092:2ca8b28a	fixed: lock regenerated against development, npm ci clean, vitest 4692 passed; new head 8fb29c552c3dff86010f859bbbc198a8da2996db (REVERIFY)	session-20261114T075643-acecaad6	2026-11-15T17:21:07Z
+fix:versioniq:725:c287842d	conflicts resolved (semantic merge with triage), pushed 039d4ea0, REVERIFY recorded	session-20261115T155902-d9805df0	2026-11-15T17:21:22Z
+fix:larpinq:1041:6545e1de	floor restored by splitting new check-in units; floor PASS, tests green; pushed 59270c1d, REVERIFY queued	session-20261115T154300-03b63424	2026-11-15T17:21:44Z
+fix:buildiq:1090:de7f28aa	fixed: lockfile regenerated, npm ci + vitest + build green; new head 8b2df26a	session-20261115T160928-e92ec17a	2026-11-15T17:21:52Z
+fix:buildiq:1091:1fce7d65	fixed: lock resynced, npm ci + vitest green; new head c4dd3636, REVERIFY	session-20261115T154258-dee2cc3d	2026-11-15T17:22:09Z
+fix:buildiq:1093:7c1a6bdd	lock regenerated (marked only), npm ci ok, vitest 4692 passed; new head 16b82bb9, REVERIFY	session-20261115T154316-34f0db35	2026-11-15T17:22:16Z
+fix:dossiq:6577:dfc63bfe	conflict resolved (both registrations kept), no new failures; new head cee8f2a5e99f891b27cccf7fda805d294eb5d330	session-20261115T145535-3f9e5078	2026-11-15T17:22:52Z
