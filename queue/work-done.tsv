@@ -13882,4 +13882,5 @@ build:larpinq:rules-rulebook-and-spell-lists:c3	partial: PR #1050 head 67a109047
 fix:buildiq:1088:817518a2	fixed: lock regenerated on development, npm ci clean, vitest green; new head 419fccd1	session-20261115T142958-341f60db	2026-11-15T17:23:51Z
 fix:larpinq:1051:fa7cedb4	fixed: +89 tests restore the test/code ratio above development; new head 334c0ec3, REVERIFY	session-20261115T152601-38767331	2026-11-15T17:23:59Z
 fix:dossiq:6547:90799f7c	merged development, 3 add/add test conflicts resolved; no new failures; new head 69fff5a5da676baa1fdc263bdf1709643feaffa1	session-20261115T171048-b57c7caa	2026-11-15T17:24:10Z
+build:versioniq:releases-channel-and-prereleases:c3	done: pushed f55ff85c to PR #709: 3.1 ChannelSelector (card + Settings default), 3.2 picker channel filter/switch/tags/no-lines notice + safe mode onChannel, 3.3 en/nl strings; vitest 2984 green. Left only live tasks 1.1, 3.4 e2e, 5.1 cli run, 6.1 archive	session-20261115T142149-1d09fceb	2026-11-15T17:24:31Z
 fix:larpinq:1050:ebb20969	floor restored (unit_complexity 4.88), pushed 6828c6f5, REVERIFY recorded	session-20261115T155913-70cee771	2026-11-15T17:24:23Z
