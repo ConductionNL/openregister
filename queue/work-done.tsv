@@ -14318,6 +14318,7 @@ fix:humaniq:1095:b9247c40	platform pin raised to 8.3.16, install and suite green
 fix:hermiq:1325:9fa10193	failed: not fixable within the fix cap - the namespace move (Service\Object -> Kernel\Contracts\Value, same constructors on openregister main), the 25 use-only merge conflicts and 7 saveObject calls development added are mechanical, but ~47 test files development added since use the old saveObject shape (6 anonymous ObjectService overrides, ~41 mock callbacks) and fatal the suite; needs a fresh mi	session-20261115T174747-978963d5	2026-11-15T18:51:46Z
 fix:decidiq:1947:ae3bb0fe	namespace fixed to main's Kernel\Contracts\Value, development merged, pushed 35c86213, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T18:51:54Z
 fix:planninq:908:07c0fdd2	fixed: sbom regenerated, development merged, new head 8cdb1910	session-20261115T174804-89f2739f	2026-11-15T18:52:04Z
+fix:integriq:2527:1cf364f6	obsolete: development already pins nextcloud-vue ^2.180.0; PR closed with comment	session-20261115T183034-bba160e3	2026-11-15T18:52:09Z
 fix:decidiq:2170:730fcd40	conflict resolved, pushed ed3ea097; REVERIFY recorded	session-20261115T183029-6c0565bd	2026-11-15T18:52:12Z
 fix:decidiq:2149:6cf9ca71	floor RED not reproducible with fleet estimator; deduplicated consent reader (dup back to base), unit 4441 OK; new head 3e3c6a58	session-20261115T174739-b14c2df4	2026-11-15T18:52:22Z
 fix:decidiq:1942:76931393	merged dev, tests moved to FlowNodeCall, pushed 62504df6e, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:52:29Z
