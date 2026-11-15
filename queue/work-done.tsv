@@ -12511,3 +12511,4 @@ cover:pipelinq:7f9dc8e6m195a:95a79563	already done: lib/Service/Lifecycle/ at 98
 merge:portaliq:2516:5c0fccb9	merge3 tree of 7 portaliq PRs: merged=4 red=0 fail=0 skip=1; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T01:15:22Z
 merge:portaliq:2444:f51616ed	merge3 tree of 7 portaliq PRs: merged=4 red=0 fail=0 skip=1; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T01:15:26Z
 cover:buildiq:70b3e29em66d0:6818da73	PR #1661: VersionRegisterSlugTest + WidgetDescriptorRolesTest (12 tests); suite 3192->3204, 1 inherited failure	session-20261115T010928-f0987802	2026-11-15T01:15:30Z
+merge:portaliq:2500:f0a26857	merge3 tree of 7 portaliq PRs: merged=4 red=0 fail=0 skip=1; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T01:15:29Z
