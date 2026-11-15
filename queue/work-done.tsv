@@ -14648,3 +14648,4 @@ verify:pipelinq:3878:a47d0530	stale	feeder	2026-11-15T19:55:14Z
 verify:hermiq:1804:7e6ee813	stale	feeder	2026-11-15T19:55:14Z
 review:buildiq:1094:224fef61	GREEN: prettier patch bump, sbom current	session-20261115T174747-978963d5	2026-11-15T19:55:57Z
 review:buildiq:1596:ba6566ea	CONFLICT (DashboardController ctor params); otherwise GREEN on local resolution	session-20261115T174747-978963d5	2026-11-15T19:57:24Z
+review:buildiq:1233:fbc18f00	GREEN: copy-only rename; vitest green, phpunit = baseline	session-20261115T182940-bfeb7e78	2026-11-15T19:58:14Z
