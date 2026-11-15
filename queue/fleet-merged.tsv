@@ -3338,3 +3338,4 @@ planninq	1192	35a4f84d5b4c1dc7aefd43184e48ce6bd5adf089	MERGED	merge3	GATE OK sbo
 launchpad	1226	bf28a8ea762cd5e8c367aae0a501b3bc2d607537	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.68
 launchpad	1231	b40121b708716f30bf6690a5bccfcea91bdbb600	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.65 holds at 3.68
 versioniq	690	e0abdb0918ff2eabe4e6ef24ea319f38896787eb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.97 holds at 4.00
+thematiq	1677	5e934e94706006fbd51f109fcc53208443fdf956	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
