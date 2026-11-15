@@ -12267,5 +12267,6 @@ cover:integriq:92114ab0m4b3f:f545d745	PR #3643: 6 tests over InitializeRegister/
 cover:keepiq:c967a31fmdbad:11ebfefd	already done: lib/Backup/*.php measures 99.58% (479/481) on development 36-tests-merged head; only openssl/fopen failure branches left	session-20261115T001758-161b0715	2026-11-15T00:28:01Z
 cover:buildiq:70b3e29em66d0:60c2c265	PR #1657: 3 tests, lib/Controller 94.66% -> 95.04%	session-20261114T221759-cd5c5678	2026-11-15T00:27:54Z
 merge:opencatalogi:2650:faf48f9d	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:28:06Z
+cover:stackiq:9ac19b3amad24:6f346b68	already done: lib/Sections at 100% lines (6/6)	session-20261115T001759-0085793c	2026-11-15T00:28:15Z
 cover:planninq:e1c9866dmcf99:befc51b3	already done: lib/Timetabling/*.php 99.78% lines on development (suite 1177 OK)	session-20261114T235442-bc1b76db	2026-11-15T00:28:05Z
 merge:opencatalogi:2643:c4bd8ef3	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:28:21Z
