@@ -13831,3 +13831,4 @@ build:versioniq:autoupdate-proposed-updates:c3	blocked: PR #728 head 0ec98de1 un
 review:thematiq:1556:ff5f73bc	GREEN; phpunit 2873 (1 inherited), phpstan clean	session-20261115T152558-f97be55f	2026-11-15T17:15:49Z
 verify:buildiq:1648:ced8329b	CONFLICT: 5 frontend/golden files conflict with development	session-20261115T154311-e8600d84	2026-11-15T17:16:14Z
 build:versioniq:autoupdate-run-batching:c3	partial: PR #705 head 9638e980 adds 3.2 (maxPerRun/maxPerWeek settings + API validation) and 3.3 (AutoUpdateLimiter: caps, waiting list, run order) with tests; left 2.2-2.4 groups in planner/job/notifier/API (and the group case of 3.3), 4.1-4.2 page and strings, 4.4 fixture app, e2e 4.3/4.5, 5.x; suite 1852 with 2 inherited installer golden failures	session-20261115T145533-2db61682	2026-11-15T17:16:29Z
+review:versioniq:497:bc42f75b	GREEN: build-tool bump; vendor-bin lock conflict needs recreate	session-20261115T155913-70cee771	2026-11-15T17:16:25Z
