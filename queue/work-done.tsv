@@ -13729,3 +13729,4 @@ review:stackiq:1043:a1603162	BLOCK: obsolete, development already locks sass 1.1
 review:shillinq:2080:6a0ebf26	CONFLICT: access check OK, tests green on head; conflicts with development	session-20261114T102637-6688951e	2026-11-15T16:58:45Z
 merge:dossiq:6574:ea302b80	merge3 tree of 10 dossiq PRs: merged=8 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:58:50Z
 review:shillinq:1965:6dd9752c	CONFLICT (version + lock fixture only); additive schema fragment	session-20261115T142134-badaaf30	2026-11-15T16:58:53Z
+merge:dossiq:6577:b1c71303	merge3 tree of 10 dossiq PRs: merged=8 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:59:13Z
