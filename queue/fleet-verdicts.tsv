@@ -12570,3 +12570,14 @@ launchpad	880	04f9f39fbccd98e0402f0f1b1dae8f1e06dce5fd	REVERIFY	worker-38	merged
 launchpad	832	0ef9969802bdc9fd481072094d4cc4ebd0418656	REVERIFY	worker-05	merged development in, openspec only: development's 12 Nov archive of adopt-connection-registry kept (branch's 10 Oct copy dropped, specs/app-connections from development), the five changes this branch archives carry development's new screens.md, branch's verification notes kept on the two conflicting tasks.md; no code touched; new head 99de3089fc0402fb8ef981069920ec8d1b2ae912, verify it
 launchpad	758	06d536b2468b7cf1106e97eb1720c556e70c40e7	REVERIFY	worker-34	merged development, regenerated sbom.cdx.json with bin/regen-sbom.sh (--check current); new head 96b9325253ca72dc817735695e63364ebf7a5a45, verify it
 launchpad	977	dd835410dc5adc1e3f7a756c55b1ec0c23ca0c63	REVERIFY	worker-28	merged development, regenerated sbom.cdx.json (bin/regen-sbom.sh) with the composer.lock change; unit suite OK; new head 4ec996d31439daed99af546858b9614b2ca4a159, verify it
+dossiq	2705	b7e00cc6d2e915e3e45024406ff314eaeb0b8261	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3106	039c380fedb12353a53ec92da1a704408b79bda5	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3193	5b406bdbc429a355937f63af91941233dad9dd9a	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3196	ccb57e36e4752179a48cfe9ff7fed618c792ced9	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3197	4bd6d2baf1aae132a44cc4669575a0971f9f50c1	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3201	6c926ab3c970388fceb715fe0c159482a69dec8f	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3204	7d112fdfd405043baef3446a983da988143f365a	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3894	c91ec40217844fa38f2ebad1fa9923f12f663237	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3936	7ae9f014600a53cfb86b3f44019641e681d302f2	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.25 -> 3.22
+dossiq	4112	d85d2c1ccf59ea4bacaedb5e1a381d8291c6ff75	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	5397	e528f07510fd9a509fbc5febad8dd7160c271a48	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
