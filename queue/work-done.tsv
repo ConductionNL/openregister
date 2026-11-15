@@ -14741,3 +14741,4 @@ review:versioniq:500:890378b3	GREEN: jsdom dev bump, vitest 3012 OK	session-2026
 review:stackiq:1931:d2989729	CONFLICT with development (2 JS files, keep both); code GREEN otherwise, PHP 3751 OK, vitest only inherited facets failure	session-20261115T200020-0f65b959	2026-11-15T20:19:59Z
 review:versioniq:503:2d7f74a1	GREEN: deps bump, vitest+build ok	session-20261115T195953-2618bb8a	2026-11-15T20:20:06Z
 fix:portaliq:1682:505a7cd5	sbom regenerated, REVERIFY recorded; development red on RefIntegrationProvider stub	session-20261115T174747-978963d5	2026-11-15T20:20:13Z
+review:thematiq:1117:2427508a	GREEN: no behaviour change, phpmd 3 clean, no new failures	session-20261115T200011-d13b13ca	2026-11-15T20:20:29Z
