@@ -530,9 +530,26 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 	}//end testASignedInAnswerIsNotRewritten()
 
 	/**
+	 * The export answers a file the middleware does not read, so it is public only
+	 * through its own path: rate limited for the anonymous caller, which writes
+	 * no `@self` block (PublicExportService, ExportService::documentRows()).
+	 *
+	 * @return void
+	 */
+	public function testTheExportIsPublicOnlyWithItsOwnLimit(): void {
+		$route = new ReflectionMethod(ObjectsController::class, 'export');
+
+		$this->assertStringContainsString(needle: '@PublicPage', haystack: (string)$route->getDocComment());
+		$limits = $route->getAttributes(\OCP\AppFramework\Http\Attribute\AnonRateLimit::class);
+		$this->assertCount(1, $limits);
+		$this->assertSame(['limit' => 10, 'period' => 60], $limits[0]->getArguments());
+	}//end testTheExportIsPublicOnlyWithItsOwnLimit()
+
+	/**
 	 * The routes that answer records in a form the middleware does not read stay behind a login.
 	 *
-	 * Export answers a file, and MCP's public discovery catalogue carries no records.
+	 * MCP's public discovery catalogue carries no records. The export is public by
+	 * design and checked above.
 	 *
 	 * @param class-string $controller The controller.
 	 * @param string       $method     The route's method.
@@ -557,7 +574,6 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 	 */
 	public static function signedInOnlyRoutes(): array {
 		return [
-			'export'         => [ObjectsController::class, 'export'],
 			'mcp capability' => [McpController::class, 'discoverCapability'],
 		];
 	}//end signedInOnlyRoutes()

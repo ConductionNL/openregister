@@ -4281,3 +4281,6 @@ Service/Quality/QualityAuditStores.php,,Service,,,,,Compliance
 Service/Quality/QualityAuditRefusedException.php,,Service,,,,,Compliance
 Controller/QualityAuditController.php,,Controller,,,,,Compliance
 BackgroundJob/QualityAuditScheduleJob.php,,BackgroundJob,,,,,Compliance
+Service/Export/ExportPage.php,,Service,,,,,Configuration
+Service/Export/PublicExportResult.php,,Service,,,,,Configuration
+Service/Export/PublicExportService.php,,Service,,,,,Configuration

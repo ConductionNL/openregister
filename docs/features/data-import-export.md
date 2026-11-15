@@ -21,10 +21,14 @@ OpenRegister provides a comprehensive import/export pipeline for bulk data opera
 | Format | Handler | Notes |
 |--------|---------|-------|
 | CSV | `ExportService.exportToCsv()` | RBAC-aware column selection |
+| TSV | `ExportService.exportToTsv()` | Tab-separated, UTF-8 with BOM; a value holding a tab, line break or quote is quoted |
 | Excel (XLSX) | `ExportService.exportToExcel()` | Multi-schema export as multiple sheets |
-| JSON | Planned | JSON array export |
-| XML | Planned | XML export with configurable root element |
+| JSON | `ExportService.exportToJson()` | JSON array export |
+| XML | `ExportService.exportToXml()` | Root `<objects>`, one `<object id="...">` per record; an invalid element name becomes `<property name="...">`, null is `xsi:nil="true"` |
+| PDF | `ExportService.exportToPdf()` | Rendered table, row-limited |
 | JSONL | Planned | Newline-delimited JSON for streaming |
+
+The export dialog on the register page offers Excel, CSV, TSV, JSON and XML.
 
 ### Configuration Export/Import
 
@@ -100,6 +104,53 @@ GET /api/objects/{register}/{schema}/export?format=xlsx&_search=actief
 ```
 
 Export respects all query parameters (filtering, sorting) — you export exactly what you see in the UI.
+
+### Public download
+
+The export route is reachable without an account. A visitor may export a
+schema only when its effective **export** grant names `public`: the schema's
+`export` list when it declares one, otherwise its `read` list.
+
+| Situation | Answer |
+|-----------|--------|
+| The export grant names `public` | 200 with the file |
+| It does not (for example `read: ["public"]` with `export: ["redactie"]`) | 401, rule `not-public` |
+| `format` is `pdf`, `excel` or `ods` | 406, naming `csv`, `tsv`, `json` and `xml` |
+
+An anonymous export holds only the rows and columns the public may read through
+the list endpoint, without the administration `@self` columns. Every anonymous
+export, served or refused, is written to the audit trail with actor `anonymous`,
+its format and its row count.
+
+**Paging.** An anonymous export returns at most 10,000 rows per response and
+honours `_page` (default 1). The response carries:
+
+| Header | Value |
+|--------|-------|
+| `X-Total-Count` | rows matching the export over all pages |
+| `X-Page` | this page |
+| `X-Pages` | the number of pages |
+| `Link` | `<...&_page=N+1>; rel="next"`, only while a later page exists |
+
+Anonymous callers are limited to 10 exports per minute per address. A signed-in
+export keeps its current behaviour: unpaged, no paging headers.
+
+```bash
+# A public schema as TSV, filtered on one field
+curl -OJ 'https://example.org/index.php/apps/openregister/api/objects/publicaties/besluit/export?format=tsv&thema=milieu'
+
+# The same as XML, second page
+curl -OJ 'https://example.org/index.php/apps/openregister/api/objects/publicaties/besluit/export?format=xml&_page=2'
+
+# Read the paging headers only
+curl -sD - -o /dev/null 'https://example.org/index.php/apps/openregister/api/objects/publicaties/besluit/export?format=csv'
+```
+
+> **Release note.** On an instance that ran the repair step granting `export`
+> wherever `read` was granted, every schema whose `read` included `public` now
+> has `public` in `export` too, and so becomes downloadable without an account.
+> To keep a schema out of the public download, remove `public` from its
+> `export` list.
 
 ### Configuration Export
 
