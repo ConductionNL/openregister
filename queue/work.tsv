@@ -13222,3 +13222,4 @@ cover:integriq:92114ab0m6759:ee14dc38	cover	integriq	development	quality/test-co
 cover:integriq:92114ab0m6759:fd3f82d2	cover	integriq	development	quality/test-coverage-fd3f82d2	lang=php;dirs=lib/Gateway/*.php;focus=thin;weight=1958;coverage=94.76;target=95.0	2026-10-16T01:28:41Z
 measure:pipelinq:20261115h02	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-15T02:15:11Z
 measure:shillinq:20261115h02	measure	shillinq	development	queue/coverage/shillinq.json	why=slices need per-directory coverage	2026-11-15T02:15:11Z
+fix:dossiq:6527:63dd4276	fix	dossiq	development	6527	sha=63dd4276d3849d590fa37fbf4bbb5b19ecd32aea;verdict=CONFLICT;branch=quality/test-coverage-b7fd3ec4-2;reason=merges clean on development alone, files: tests/Unit/Service/Beschikking/BezwaarTermijnSchedulerTriggerTest.php 	2026-11-15T01:08:17Z
