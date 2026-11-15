@@ -12074,3 +12074,12 @@ larpinq	1051	fa7cedb49eeaf2240d456f442c29bd3d8b2b8407	REVERIFY	worker-38	merged 
 larpinq	1050	ebb209691f38f2cdd3812275fbc828831dc90d7e	REVERIFY	worker-22	continuation build: merged development, 27 rulebook strings in the other 35 locales (test:l10n parity green for all 36), task 4.1 ticked; new head 67a109047a01b2a6439afb7c1dd152a52b8ac2cd, verify it
 opencatalogi	2059	75ffe574a0e4d10226d4cb6d68de813b1d6f61da	GREEN	worker-04:review	behaviour-equivalent refactor of the five Mass*Objects modals (same store calls, close handling, strings); PR head vitest 193/193, eslint 0 errors; conflicts with development in MassPublishObjects.vue and MassDepublishObjects.vue
 buildiq	1596	e5795e30e93248e89a292588e86dd6e2a05d6dec	RED	merge3:merge-gate	GATE RED floor: unit_complexity: 3.33 -> 3.31
+buildiq	1608	3687676a0f92ee29f44a635c7fc3fc95817e0f92	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js lib/Mcp/Handler/AbstractToolHandler.php 
+buildiq	1620	2a2fcb1c7efcf75cc52362ef9ee0c8ba109fa9c6	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1622	02120619a4fa7d92ab4784231bf2161730d92a03	CONFLICT	merge3	merges clean on development alone; files: lib/Controller/DashboardController.php 
+buildiq	1649	c40e299a711c6a4273efe6b52afa618ae3987745	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json lib/Service/CopilotService.php tests/Unit/Service/CopilotServiceTest.php 
+buildiq	1651	75838f5280a222a8d6b34382e4eed6e2ddd99a23	CONFLICT	merge3	conflicts with development; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+buildiq	1652	b3c39fa029023156b4b2bd60ad702de2bb6cbfdd	CONFLICT	merge3	merges clean on development alone; files: lib/Service/ApplicationCreationService.php tests/stubs/openregister-stubs.php 
+buildiq	1654	235b4ed9e2fe9c754d306d32d74b7b07f21207cc	REVERIFY	merge3	verdict sha is not the head: head is aaec7e14fa9bf9d85f61567a7cd9f1e3fb5b759f
+buildiq	1648	a6359df5aaf3675771f0c48b96802926adab1398	REVERIFY	merge3	head moved since the verdict (was 9ffd7d0a8e79d7e0b1b48c109c8e7b2f965776ad, 0d30354d:REVERIFY,9ffd7d0a:GREEN); verify the new head
+buildiq	1650	154bc45269d0c33f7f21b8235ff290281bc6ee23	REVERIFY	merge3	head moved since the verdict (was 49084ce87993ef2cbd078f82a58aea1f06501afd, 2ada49a1:REVERIFY,49084ce8:GREEN); verify the new head
