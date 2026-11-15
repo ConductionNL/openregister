@@ -14021,3 +14021,4 @@ review:filinq:1307:af2c6d19	CONFLICT: lock conflicts, development already on sas
 fix:pipelinq:2498:acffd38a	obsolete: development already has marketing-campaign-on-client (#3713, firstTouch/lastTouch on contact+client, tasks all ticked); closed PR with a neutral comment	session-20261115T152552-0cb4306e	2026-11-15T18:00:02Z
 review:openregister:10589:e253cb1a	APPROVE 10589 (additive audit filters; suites green)	session-20261115T142201-ea23e682	2026-11-15T18:00:04Z
 fix:dossiq:3299:779b4422	CONFLICT resolved, pushed 518945cf; REVERIFY recorded	session-20261115T174741-9deaa0be	2026-11-15T18:00:27Z
+fix:pipelinq:1936:27cdae0d	closed as obsolete: development already locks nextcloud-vue 2.180.0	session-20261115T174833-88ac0233	2026-11-15T18:00:31Z
