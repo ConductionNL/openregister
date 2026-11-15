@@ -127,7 +127,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @param ShareableConfigTypeRegistry $registry  The contributed types.
 	 * @param IAppConfig                  $appConfig Reads the org source allowlist.
 	 * @param LoggerInterface             $logger    The logger.
-	 * @param GitHubRepoReader|null       $repoReader Reads packages out of repositories; built from the transport when null.
+	 * @param GitHubRepoReader|null       $repoReader    Reads packages out of repositories; built from the transport when null.
+	 * @param GitHubTreeCommitter|null    $treeCommitter Commits many files at once; built from the transport when null.
 	 */
 	public function __construct(
 		private readonly FederatedConfigTransport $transport,
@@ -135,6 +136,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly ?GitHubRepoReader $repoReader = null,
+		private readonly ?GitHubTreeCommitter $treeCommitter = null,
 	) {
 	}//end __construct()
 
@@ -377,6 +379,67 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 			]
 		);
 	}//end contentsBody()
+
+	/**
+	 * Publish many files into a GitHub repository as ONE commit (G4).
+	 *
+	 * Unlike {@see publish()}, which writes one bundle file with the contents
+	 * API, this builds a Git Data commit on the branch tip's tree, so files
+	 * outside the package survive, an existing repository can be updated
+	 * (a republish, a bundle re-sync), and the new commit's sha comes back.
+	 * The repository is created when absent, with the target's visibility and
+	 * description; the request's topics are added to the repository's own.
+	 * A request made {@see RepoFilesPublish::onlyIntoANewRepository()} refuses a
+	 * repository that exists, and fails when it cannot create one, so it never
+	 * writes into a repository it did not create.
+	 *
+	 * @param RepoFilesPublish $request The files, the message, the target and the broker credential.
+	 *
+	 * @return array{published: true, repo: string, branch: string, commit: string, files: int}
+	 *
+	 * @throws RuntimeException When the repository exists for a new-only request, cannot be created
+	 *                          for one, no file is publishable, or a GitHub call fails.
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function publishFiles(RepoFilesPublish $request): array {
+		$destination = $request->destination();
+		$repo        = $destination->target->repo;
+		if ($request->requiresNewRepository() === true) {
+			if ($this->repoExists(destination: $destination) === true) {
+				throw new RuntimeException(sprintf('The repository %s already exists.', $repo));
+			}
+
+			if ($this->createRepo(destination: $destination) === false) {
+				throw new RuntimeException(sprintf('The repository %s could not be created.', $repo));
+			}
+		} else {
+			$this->ensureRepo(destination: $destination);
+		}
+
+		if ($request->topics !== []) {
+			$this->setTopics(destination: $destination, topics: $request->topics);
+		}
+
+		$written = $this->treeCommitter()->commit(destination: $destination, files: $request->files, message: $request->message);
+
+		return [
+			'published' => true,
+			'repo' => $repo,
+			'branch' => $destination->target->branch,
+			'commit' => $written['commit'],
+			'files' => $written['files'],
+		];
+	}//end publishFiles()
+
+	/**
+	 * The tree committer: the injected one, else one over this service's transport.
+	 *
+	 * @return GitHubTreeCommitter
+	 */
+	private function treeCommitter(): GitHubTreeCommitter {
+		return ($this->treeCommitter ?? new GitHubTreeCommitter(transport: $this->transport, logger: $this->logger));
+	}//end treeCommitter()
 
 	/**
 	 * Ensure a GitHub repository exists, creating it when absent.

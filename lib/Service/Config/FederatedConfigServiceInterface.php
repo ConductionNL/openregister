@@ -190,6 +190,19 @@ interface FederatedConfigServiceInterface {
 	): array;
 
 	/**
+	 * Publish many files into a GitHub repository as one Git Data commit on the
+	 * branch tip's tree, creating the repository when absent, and return the
+	 * commit sha. A request made only-into-a-new-repository refuses one that exists.
+	 *
+	 * @param RepoFilesPublish $request The files, the message, the target and the broker credential.
+	 *
+	 * @return array{published: true, repo: string, branch: string, commit: string, files: int}
+	 *
+	 * @throws RuntimeException When the publish cannot be made.
+	 */
+	public function publishFiles(RepoFilesPublish $request): array;
+
+	/**
 	 * This instance's signing public key (base64) for others to trust.
 	 *
 	 * @return string The base64 Ed25519 public key.

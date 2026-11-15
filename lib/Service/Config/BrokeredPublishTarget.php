@@ -77,13 +77,18 @@ final class BrokeredPublishTarget {
 	}//end ownerAndName()
 
 	/**
-	 * The JSON body of a repo-create call for this target.
+	 * The JSON body of a repo-create call for this target, with its description when it has one.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function createBody(): string {
-		return (string) json_encode(['name' => $this->ownerAndName()[1], 'private' => $this->target->private, 'auto_init' => true]);
+		$body = ['name' => $this->ownerAndName()[1], 'private' => $this->target->private, 'auto_init' => true];
+		if ($this->target->description() !== '') {
+			$body['description'] = $this->target->description();
+		}
+
+		return (string) json_encode($body);
 	}//end createBody()
 }//end class

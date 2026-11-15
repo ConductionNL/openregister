@@ -39,6 +39,13 @@ final class ConfigPublishTarget {
 	private bool $userNamespaceFallback = true;
 
 	/**
+	 * The description a repository created on demand gets; '' sets none.
+	 *
+	 * @var string
+	 */
+	private string $description = '';
+
+	/**
 	 * Name the target.
 	 *
 	 * @param string $repo    The `owner/repo` to publish into.
@@ -85,4 +92,33 @@ final class ConfigPublishTarget {
 	public function allowsUserNamespaceFallback(): bool {
 		return $this->userNamespaceFallback;
 	}//end allowsUserNamespaceFallback()
+
+	/**
+	 * This target with a description for a repository created on demand.
+	 *
+	 * An existing repository keeps its own description.
+	 *
+	 * @param string $description The repository description.
+	 *
+	 * @return self A copy of this target with the description.
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function withDescription(string $description): self {
+		$copy = clone $this;
+		$copy->description = trim($description);
+
+		return $copy;
+	}//end withDescription()
+
+	/**
+	 * The description a repository created on demand gets; '' for none.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function description(): string {
+		return $this->description;
+	}//end description()
 }//end class

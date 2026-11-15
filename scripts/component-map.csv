@@ -1953,8 +1953,10 @@ Service/Config/FederatedConfigService.php,318,Service,Integrations,Integrations/
 Service/Config/GitHubArchiveExtractor.php,126,Service,Integrations,Integrations/Service/Config/GitHubArchiveExtractor.php,0,,Configuration
 Service/Config/GitHubRepoRead.php,50,Service,Integrations,Integrations/Service/Config/GitHubRepoRead.php,0,,Configuration
 Service/Config/GitHubRepoReader.php,161,Service,Integrations,Integrations/Service/Config/GitHubRepoReader.php,0,,Configuration
+Service/Config/GitHubTreeCommitter.php,122,Service,Integrations,Integrations/Service/Config/GitHubTreeCommitter.php,0,,Configuration
 Service/Config/IShareableConfigType.php,10,Service,Configuration,Configuration/Service/Config/IShareableConfigType.php,5,,Configuration
 Service/Config/RegisterShareableConfigTypesEvent.php,13,Service,Service,Service/Config/RegisterShareableConfigTypesEvent.php,11,,Configuration
+Service/Config/RepoFilesPublish.php,26,Service,Integrations,Integrations/Service/Config/RepoFilesPublish.php,0,,Configuration
 Service/Config/SchemaShareableConfigScanner.php,77,Service,Configuration,Configuration/Service/Config/SchemaShareableConfigScanner.php,0,,Configuration
 Service/Config/ShareableConfigTypeRegistry.php,39,Service,Configuration,Configuration/Service/Config/ShareableConfigTypeRegistry.php,0,420,Configuration
 Service/Config/Types/ConfigSetShareableConfigType.php,60,Service,Configuration,Configuration/Service/Config/Types/ConfigSetShareableConfigType.php,0,,Configuration
