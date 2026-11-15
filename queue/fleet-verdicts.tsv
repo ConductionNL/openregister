@@ -12824,3 +12824,6 @@ humaniq	669	3a6be5bd16678979d91795150f9ca59328e65daa	RED	merge3:merge-gate	GATE 
 humaniq	684	c6a338caab5f176f32336472bbeb0882937303ba	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 humaniq	686	03602584dfcf6650b23bb68d860374863c4bfba8	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
 humaniq	1096	e60cc3a3e6c3a870a5dddc3b804f7bd33cbef335	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+humaniq	685	5020bb2bfb80345fdfed757f5725e4b63311edf7	CONFLICT	merge3	merges clean on development alone; files: package-lock.json package.json 
+humaniq	687	bad2cefae186746ff6c8ddcc1cc0658d145acb00	CONFLICT	merge3	merges clean on development alone; files: package-lock.json package.json 
+humaniq	874	6278788c7cb4d515c015e52bbde91961d238969c	CONFLICT	merge3	conflicts with development; files: lib/Service/OfferApplicationRepository.php tests/Unit/Controller/PayrollHandoffControllerTest.php tests/Unit/Controller/ThirdPartyReportControllerTest.php tests/Unit/Service/InterviewCalendarServiceTe
