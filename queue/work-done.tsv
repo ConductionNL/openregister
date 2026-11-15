@@ -13477,4 +13477,5 @@ review:integriq:3047:1d492aea	BLOCK: RenderSelection imported from a namespace o
 review:humaniq:876:284aab2c	BLOCK: wrong openregister namespace for ObjectPatch/ObjectFindTarget	session-20261115T154255-e54527e9	2026-11-15T16:12:52Z
 review:integriq:2654:86718a25	GREEN: spec-only change, merges clean	session-20261115T154254-3d07b219	2026-11-15T16:13:02Z
 review:keepiq:1500:1c81214a	GREEN: lock-only phpseclib 4.0.3 bump, suite 5213 OK on merge with development	session-20261115T152547-c779ca49	2026-11-15T16:13:05Z
+review:integriq:3050:ce4b1ee3	BLOCK: wrong namespace for BulkSaveOptions, bulk saves fail at runtime	session-20261115T152543-40aea993	2026-11-15T16:13:18Z
 review:integriq:2650:6bf97c5a	CONFLICT: 8 files; suite not runnable (missing php ext bcmath/soap in worker)	session-20261115T154300-03b63424	2026-11-15T16:13:29Z
