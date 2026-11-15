@@ -137,6 +137,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
  * @uses \OCA\OpenRegister\Service\PropertyWriteCheck
  * @uses \OCA\OpenRegister\Service\Quality\UniqueHintCandidate
  * @uses \OCA\OpenRegister\Service\Quality\UniqueHintScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
  */
 final class SaveObjectSaveCallTest extends TestCase {
 

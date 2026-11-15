@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  * @uses \OCA\OpenRegister\Service\Object\SearchScopeFilters
  * @uses \OCA\OpenRegister\Service\SearchPeriod
+ * @uses \OCA\OpenRegister\Service\Object\SearchLenses
  */
 class SearchQueryHandlerAnonymousOwnerTest extends TestCase {
 
