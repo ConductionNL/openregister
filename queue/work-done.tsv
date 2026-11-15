@@ -13320,3 +13320,4 @@ review:decidiq:1473:4549406a	GREEN: marked patch bump, lock+package only; vitest
 review:buildiq:1264:6e11da88	CONFLICT: 8 files conflict with development; diff is a correct contract adaptation	session-20261115T154258-dee2cc3d	2026-11-15T15:46:47Z
 review:buildiq:1263:59ed1278	BLOCK: wrong OpenRegister namespace for ObjectDeletion/ObjectFindTarget (fatal at runtime); conflicts with development	session-20261115T154254-3d07b219	2026-11-15T15:46:56Z
 review:decidiq:1947:ae3bb0fe	BLOCK: wrong ObjectSaveOptions/ObjectFindTarget namespace	session-20261115T142951-2463b4c4	2026-11-15T15:47:07Z
+review:decidiq:1738:c12b8c5d	GREEN: dev-only phpmd bump; unit suite green; phpmd red before and after, net fewer findings	session-20261115T142934-6cab0c24	2026-11-15T15:47:19Z
