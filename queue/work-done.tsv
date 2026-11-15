@@ -15197,3 +15197,4 @@ review:dossiq:2902:8a0f3ca6	GREEN: lazy validator, behaviour kept, no new failur
 review:hermiq:1534:b7a7d45b	GREEN: pure refactor, no new failures	session-20261115T213122-e023a81e	2026-11-15T21:55:28Z
 review:hermiq:1739:5cf3f827	GREEN: build per own change, suite green with openregister main	session-20261115T213144-ab42ee6a	2026-11-15T21:55:42Z
 review:portaliq:1848:cd175791	GREEN: plan action dialog per T04, no new failures	session-20261115T213134-4b0d2823	2026-11-15T21:55:53Z
+review:dossiq:4870:75e95061	GREEN: manifest-only, failures inherited	session-20261115T213107-505dc338	2026-11-15T21:56:00Z
