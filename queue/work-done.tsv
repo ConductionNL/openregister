@@ -14055,3 +14055,4 @@ fix:dossiq:5357:5c357cd0	fixed BLOCK: value objects imported from Kernel\Contrac
 fix:dossiq:4149:9433f0b4	conflicts resolved, pushed e758cb15; REVERIFY recorded	session-20261115T142129-944012f5	2026-11-15T18:07:24Z
 fix:dossiq:5349:59ceb47d	fixed namespace + stubs, merged development converting its delete calls and fakes; suite = development baseline; new head f0ae869588379b6779c16ddc2a08a90794d5a030	session-20261114T102637-6688951e	2026-11-15T18:07:33Z
 review:pipelinq:2593:c5620371	GREEN: PR tree identical to development, effectively obsolete	session-20261115T174750-744c606b	2026-11-15T18:07:39Z
+fix:pipelinq:2966:ff290970	conflict resolved (ecbRate step + label); new head ed8ef9f5c99b8e6f7ade233d96c14c7caa255d3e, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:07:46Z
