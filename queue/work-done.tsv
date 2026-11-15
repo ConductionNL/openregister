@@ -15345,3 +15345,4 @@ fix:dossiq:5397:e528f075	failed: nothing to fix: dev-only phpstan bump; regen-sb
 fix:hermiq:1188:b9df0394	sbom regenerated, development merged in; new head 97593dc8ffffbb6783bfaaca2bcdb450ca9ff291	session-20261115T213101-2fb56005	2026-11-15T22:23:26Z
 fix:decidiq:1469:bee189d6	fixed: sbom regenerated; pushed 09383bbc, REVERIFY	session-20261115T220037-4fd37272	2026-11-15T22:23:34Z
 review:versioniq:699:66927161	GREEN: no new failures (unit-only config), vitest green	session-20261115T213122-46f7fafb	2026-11-15T22:23:47Z
+fix:decidiq:1474:bbce152d	fixed: merged development, sbom regenerated; new head 08a18331	session-20261115T213134-4b0d2823	2026-11-15T22:24:02Z
