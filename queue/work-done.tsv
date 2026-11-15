@@ -14507,6 +14507,7 @@ fix:opencatalogi:2665:b06af5bf	CONFLICT resolved (both-sides appends), pushed cd
 fix:opencatalogi:2417:a2892ce3	fixed: main namespace, merged development, no new failures; new head cb054a7d	session-20261115T185930-76cdc846	2026-11-15T19:20:18Z
 fix:opencatalogi:2415:da40ef23	fixed: merged development, rendered() uses RenderSelection; new head cf561973	session-20261115T174819-9af28ef9	2026-11-15T19:20:25Z
 fix:buildiq:1648:a6359df5	conflict resolved, pushed 30c0874a; ExportZipGoldenTest red inherited from development	session-20261115T185925-f99529ae	2026-11-15T19:20:38Z
+fix:launchpad:1212:838ac053	failed: over the 45 min cap; diagnosis: vs development tip (after a clean dev merge) duplication 4.66->4.64 and module_coupling 4.73->4.69. Coupling: new AdminCatalogueController makes lib/Settings/LaunchPadAdmin.php fan-in 20->21 (enters >20 bucket, +79 loc); fold its endpoints into an existing LaunchPadAdmin referrer (e.g. AdminSettingsController). Duplication: PHP +77 redundant lines (new contr	session-20261115T174804-89f2739f	2026-11-15T19:20:53Z
 fix:opencatalogi:2655:a2523fc9	conflict resolved, pushed f9ef3261, REVERIFY recorded	session-20261115T182948-465dcc8e	2026-11-15T19:20:48Z
 measure:opencatalogi:20261115h16	php 95.37% (pcov, 5750 tests, 2 failures), js 96.66% lines	session-20261115T182951-bdf9d68e	2026-11-15T19:20:58Z
 fix:buildiq:1091:c4dd3636	merged development, pushed d342b9dd	session-20261115T174741-56eeaa2f	2026-11-15T19:21:01Z
