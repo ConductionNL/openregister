@@ -15124,3 +15124,4 @@ review:versioniq:497:39a7db06	GREEN: vendor-bin tool bump, suite equals baseline
 merge:thematiq:1124:35a2b68d	merge8 tree of 15 thematiq PRs: merged=0 red=9 fail=0 skip=1; conflict 5, lint 0, moved 0; fix rows 5	merge8-20261115T170007-37538273	2026-11-15T21:42:13Z
 merge:thematiq:1070:5c361623	merge8 tree of 15 thematiq PRs: merged=0 red=9 fail=0 skip=1; conflict 5, lint 0, moved 0; fix rows 5	merge8-20261115T170007-37538273	2026-11-15T21:42:17Z
 merge:thematiq:1293:39a733f4	merge8 tree of 15 thematiq PRs: merged=0 red=9 fail=0 skip=1; conflict 5, lint 0, moved 0; fix rows 5	merge8-20261115T170007-37538273	2026-11-15T21:42:22Z
+review:opencatalogi:2652:2348aeca	GREEN: feed consumer credentials per spec, no new failures	session-20261115T211111-34885d99	2026-11-15T21:42:30Z
