@@ -14683,3 +14683,4 @@ review:opencatalogi:2655:f9ef3261	RED; 10 new test failures vs OR main, repair u
 review:launchpad:819:c5c80a07	GREEN: unit 4461 ok; phpmd v3 finding set differs (gate already red on development)	session-20261115T200026-9a5b8685	2026-11-15T20:08:50Z
 review:launchpad:832:99de3089	GREEN: openspec-only sweep, suite ok	session-20261115T195953-2618bb8a	2026-11-15T20:08:57Z
 review:planninq:910:59fb2d6b	GREEN: phpmd 3 works with existing rulesets, suite unchanged	session-20261114T075643-75a598ab	2026-11-15T20:09:20Z
+review:launchpad:755:7e918f87	GREEN: vitest 5 bump, 2578/2578 JS tests pass before and after	session-20261115T200020-0f65b959	2026-11-15T20:09:28Z
