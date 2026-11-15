@@ -12576,6 +12576,17 @@ launchpad	832	0ef9969802bdc9fd481072094d4cc4ebd0418656	REVERIFY	worker-05	merged
 launchpad	758	06d536b2468b7cf1106e97eb1720c556e70c40e7	REVERIFY	worker-34	merged development, regenerated sbom.cdx.json with bin/regen-sbom.sh (--check current); new head 96b9325253ca72dc817735695e63364ebf7a5a45, verify it
 buildiq	1094	85dea46013c179ef123794893ebe49e88fc5b139	REVERIFY	worker-47	merged development, rebuilt package-lock.json from development's with only prettier 3.9.6->3.9.10 (restores the nested pinia/@noble/hashes entries), regenerated sbom.cdx.json (regen-sbom --check current); npm ci OK, vitest 4719/4719 passed; new head 224fef61bce09103aaac0549c181e49a425c8100, verify it
 launchpad	977	dd835410dc5adc1e3f7a756c55b1ec0c23ca0c63	REVERIFY	worker-28	merged development, regenerated sbom.cdx.json (bin/regen-sbom.sh) with the composer.lock change; unit suite OK; new head 4ec996d31439daed99af546858b9614b2ca4a159, verify it
+dossiq	2705	b7e00cc6d2e915e3e45024406ff314eaeb0b8261	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3106	039c380fedb12353a53ec92da1a704408b79bda5	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3193	5b406bdbc429a355937f63af91941233dad9dd9a	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3196	ccb57e36e4752179a48cfe9ff7fed618c792ced9	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3197	4bd6d2baf1aae132a44cc4669575a0971f9f50c1	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3201	6c926ab3c970388fceb715fe0c159482a69dec8f	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3204	7d112fdfd405043baef3446a983da988143f365a	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3894	c91ec40217844fa38f2ebad1fa9923f12f663237	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3936	7ae9f014600a53cfb86b3f44019641e681d302f2	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.25 -> 3.22
+dossiq	4112	d85d2c1ccf59ea4bacaedb5e1a381d8291c6ff75	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	5397	e528f07510fd9a509fbc5febad8dd7160c271a48	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 opencatalogi	2415	da40ef23c5d61e145abb6043464b76bda099546e	REVERIFY	worker-58	merged development: took development's rendered() helper and converted its renderEntity call to selection: new RenderSelection(extend, filter, fields, unset) as openregister main declares (depth argument gone there); phpstan+phpcs clean; unit 5750 tests, 2 failures both also failing on development (AppIdentityTest::testNoComponentImportsApplication, WooControllerTest::testInventarislijstRouteIsAGet); new head cf561973728159e76338c198bfb10b428a5360b1, verify it
 opencatalogi	1893	143da9eff1164bebf2edd434a6e1db6ef05b6b17	REVERIFY	worker-23	merged development, resolved 7 openspec conflicts (development's ticks kept, screens.md moved with archived changes, unarchived publiccode tasks.md dropped for the archived copy); openspec only; new head e1cf54808a959571d24b92ca0b928cdef0695d0c, verify it
 buildiq	1088	419fccd1b6a26e0fe37d8fbe07c0f01a88fd4126	REVERIFY	worker-22	merged development in; sbom.cdx.json regenerated (bin/regen-sbom.sh, --check current, 718 components); vitest 503 files / 4719 tests green; new head 8d663611b32cf39af50d7493d7cd7f1563760d0b, verify it
@@ -12644,6 +12655,17 @@ launchpad	653	0c8c8740e1ec1ad5647321cfccdcc57970ba3cf1	REVERIFY	worker-01	merged
 versioniq	709	f55ff85cc81f1c70a033289d2a608ce5b60b166e	REVERIFY	worker-41	merged development in, 12 conflicts: channel filter moved into AutoUpdatePlanner (development moved the job's per-app reading there), version entries carry downloads + publisher marks, ListVersions shows channel and release day (both tests kept), en/nl json unions with .js rebuilt, openapi.json 3-way merged (development + the PR's 4 channel paths), App.vue imports united; unit-only suite 2013, 2 inherited golden failures, 0 new; vitest 3036/3036; eslint 0 errors; new head fa10e6b8bcb41285c242a55b95e57317cc6e0c5b, verify it
 thematiq	1117	29c03f73120e7c72425cd29965107b9ba5614d98	REVERIFY	worker-37	merged development in; composer phpmd green on PHPMD 3.0: class-level CouplingBetweenObjects suppressions on DocumentStyleController/FontController (PHPMD 3 counts route attributes), hasDarkValueFor reads TokenRegistry::getTokens() into a local so its existing StaticAccess suppression applies; phpcs clean on touched files; sbom.cdx.json current; unit 2873 run, 1 failure (MigrateOverrideValueTypesTest unwritable dir, fails on development too as root); new head 2427508a3106eb9c72d567060d7d6beaeab72430, verify it
 thematiq	1303	392c8254ef922d084345ca2d7c459d89d61070e1	REVERIFY	worker-03	merged development, regenerated the conflicting generated epe files and shell catalogue; token-set-gate 425 phpunit + 467 vitest green; new head 35bcc3816fb112be7f13626a74f5e994971404be, verify it
+dossiq	2705	b7e00cc6d2e915e3e45024406ff314eaeb0b8261	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3106	039c380fedb12353a53ec92da1a704408b79bda5	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3193	5b406bdbc429a355937f63af91941233dad9dd9a	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3196	ccb57e36e4752179a48cfe9ff7fed618c792ced9	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3197	4bd6d2baf1aae132a44cc4669575a0971f9f50c1	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3201	6c926ab3c970388fceb715fe0c159482a69dec8f	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3204	7d112fdfd405043baef3446a983da988143f365a	RED	merge3:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+dossiq	3894	c91ec40217844fa38f2ebad1fa9923f12f663237	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	3936	7ae9f014600a53cfb86b3f44019641e681d302f2	RED	merge3:merge-gate	GATE RED floor: unit_interfacing: 3.25 -> 3.22
+dossiq	4112	d85d2c1ccf59ea4bacaedb5e1a381d8291c6ff75	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+dossiq	5397	e528f07510fd9a509fbc5febad8dd7160c271a48	RED	merge3:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
 integriq	2716	a994c099b9f332995b01b1c497c6816a40f1abf5	CONFLICT	merge8	merges clean on development alone; files: package-lock.json 
 integriq	2994	6a706bf6c0a83ab93ba638a04be7847a82ed59e6	CONFLICT	merge8	merges clean on development alone; files: package-lock.json package.json 
 integriq	3564	4585a979b4981704a0fedc24a4b143a0efb639be	CONFLICT	merge8	conflicts with development; files: l10n/en.js l10n/nl.js 
