@@ -15246,3 +15246,4 @@ review:keepiq:1716:5a6aebc1	GREEN: store specs only, no new failures	session-202
 review:thematiq:1303:550d277c	GREEN: data-only Epe set, suite green beyond 1 inherited failure	session-20261115T220134-9124a7d0	2026-11-15T22:06:20Z
 review:integriq:2924:81032a2e	GREEN: unreachable legacy modals removed, suites match baseline	session-20261115T220011-f1302da8	2026-11-15T22:06:27Z
 review:opencatalogi:2654:9a530c05	GREEN: changes-since endpoint per spec, no new failures	session-20261115T211111-34885d99	2026-11-15T22:06:41Z
+review:integriq:3049:5e51514f	GREEN: 9535 tests, 0 new failures over baseline (5 inherited)	session-20261115T220037-4fd37272	2026-11-15T22:06:56Z
