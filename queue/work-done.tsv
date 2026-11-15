@@ -14195,4 +14195,5 @@ fix:learniq:1166:0748af52	closed as superseded: development locks @typescript-es
 review:dossiq:4886:63c08dd9	BLOCK: resolvedFrom 'caseTypePick' missing from the instance schema enum; suite at baseline	session-20261115T182948-465dcc8e	2026-11-15T18:34:11Z
 fix:learniq:1165:ffd74a05	closed as superseded: development locks vue 3.5.45 (> 3.5.43)	session-20261114T102637-6688951e	2026-11-15T18:34:23Z
 fix:dossiq:5357:7d05868b	conflict resolved, dev-added test doubles moved to ObjectPatch; 19 inherited only; new head 9bb3d18c	session-20261115T174739-b14c2df4	2026-11-15T18:34:37Z
+fix:learniq:1168:41eae3eb	failed: blocked upstream: @conduction/nextcloud-vue 2.180.0 (development) still peers @vueuse/core ^11 || ^14, so ^15 cannot install; needs the library to accept 15 first (PR left open)	session-20261114T102637-6688951e	2026-11-15T18:34:44Z
 fix:shillinq:2099:b77de1fd	modify/delete resolved, tests rewritten; new head 8bc4dce59f34930f42389ad0056fdcbc139062e7, REVERIFY	session-20261115T174757-8dfa7406	2026-11-15T18:34:44Z
