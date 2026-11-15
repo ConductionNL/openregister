@@ -13707,3 +13707,4 @@ review:shillinq:2252:1f1318e2	BLOCK: OpenRegister ObjectPatch at a namespace pre
 review:shillinq:2083:cb3e6a42	CONFLICT: 8 files conflict with development; new endpoint guarded correctly	session-20261115T154258-dee2cc3d	2026-11-15T16:55:56Z
 review:portaliq:1854:60bd5395	BLOCK: superseded by development's build of the change	session-20261115T152546-2c24b649	2026-11-15T16:56:07Z
 review:shillinq:2226:dcacc634	GREEN: pinia minor bump, vitest identical to development (1 inherited)	session-20261115T155904-a7df5bc0	2026-11-15T16:56:26Z
+review:pipelinq:3148:71f5a4bf	BLOCK: wrong openregister namespace for ObjectDeletion/ObjectFindTarget (runtime class-not-found); also conflicts	session-20261115T160928-e92ec17a	2026-11-15T16:56:29Z
