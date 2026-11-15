@@ -10992,3 +10992,4 @@ opencatalogi	2677	a53630d7d7c6379882519b9b6e6af29ce6a3bb52	GREEN	worker-34	unit 
 opencatalogi	2678	8bcc74cceb409aa3ec7ee746a08951ccd902e0a0	GREEN	worker-34	unit 5712 tests on tree, baseline 5669 with 2 inherited failures (AppIdentityTest::testNoComponentImportsApplication, WooControllerTest::testInventarislijstRouteIsAGet), 0 new; build woo-review-surface per spec
 opencatalogi	2679	233b25289fb41e7d6e2e591722d1947a5f7c51e8	GREEN	worker-34	unit 5712 tests on tree, baseline 5669 with 2 inherited failures (AppIdentityTest::testNoComponentImportsApplication, WooControllerTest::testInventarislijstRouteIsAGet), 0 new; build scanned-attachments-become-searchable per spec
 opencatalogi	2683	9def1ff8ccf4c4e9d47eb4f96e34a557ec3f4b40	CONFLICT	worker-34	conflicts with tree (development + earlier PRs)
+opencatalogi	2686	7673533722c290e4262fb08ae58db760bd3c950c	CONFLICT	worker-34	conflicts with tree (development + earlier PRs)
