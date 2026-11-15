@@ -15159,3 +15159,4 @@ review:learniq:2166:a323b0c1	GREEN: backward-compatible StoreDescriptor build, n
 review:versioniq:723:2e4c0e66	BLOCK: failed sweep time reads as last-checked in CLI/MCP	session-20261115T213107-505dc338	2026-11-15T21:48:12Z
 review:decidiq:1942:8f1c4988	GREEN: flow node FlowNodeCall adaptation, tests green	session-20261115T213101-2fb56005	2026-11-15T21:48:19Z
 review:versioniq:717:8419af1d	GREEN: frontend-only spec build, vitest 3041 OK	session-20261115T213110-6b33145c	2026-11-15T21:48:28Z
+review:decidiq:1691:d103222b	GREEN: spec-conform frontend feature, all JS/PHP/l10n checks pass	session-20261115T213122-e023a81e	2026-11-15T21:48:38Z
