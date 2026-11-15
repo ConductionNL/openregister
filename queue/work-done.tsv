@@ -12436,3 +12436,4 @@ merge:stackiq:1958:4841f0aa	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0
 cover:dossiq:069ee2d6mdd7c:094a3419	failed: permission (installing pcov to find thin classes was refused)	session-20261115T005141-9356bed0	2026-11-15T00:57:12Z
 merge:stackiq:1911:92ba31f9	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0 skip=4; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:57:11Z
 merge:stackiq:1930:4136dc8b	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0 skip=4; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:57:14Z
+merge:stackiq:1926:76fa5068	merge3 tree of 25 stackiq PRs: merged=8 red=2 fail=0 skip=4; conflict 11, lint 0, moved 0; fix rows 11	merge3-20261113T213425-c36bcd5f	2026-11-15T00:57:17Z
