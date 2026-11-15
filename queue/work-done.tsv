@@ -14660,3 +14660,4 @@ review:launchpad:880:3c071075	GREEN: lock+sbom only, 4461 unit tests pass on mer
 review:launchpad:753:d16aabc3	GREEN: vue bump, vitest 2578/2578 pass	session-20261115T195953-2618bb8a	2026-11-15T20:03:04Z
 review:launchpad:1223:65b428f7	GREEN: unit 4575 ok (baseline 4461), vitest+phpstan clean	session-20261115T200026-9a5b8685	2026-11-15T20:03:12Z
 review:launchpad:977:4ec996d3	GREEN: dev-dep bump, unit 4461 OK, phpmd unchanged	session-20261115T200043-78b85ca2	2026-11-15T20:03:49Z
+review:buildiq:820:a6bd63eb	GREEN: plugin-vue patch bump, vitest green	session-20261115T174747-978963d5	2026-11-15T20:03:56Z
