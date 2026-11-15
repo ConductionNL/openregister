@@ -14922,3 +14922,4 @@ fix:integriq:2744:58fef09b	sbom regenerated, pushed 53deb98f, REVERIFY recorded	
 fix:opencatalogi:2678:3f20c722	CONFLICT resolved (l10n union + rebuild); new head 05397e9f, REVERIFY recorded	session-20261115T203018-dcff1ace	2026-11-15T20:52:38Z
 fix:opencatalogi:2407:21b8b65a	merged development, regenerated sbom; REVERIFY 15ee026e	session-20261115T200045-d3bb5c75	2026-11-15T20:52:49Z
 fix:integriq:2710:8b1d42d4	sbom regenerated; new head 4de6b79e, REVERIFY recorded	session-20261115T203016-ff00326d	2026-11-15T20:52:58Z
+fix:integriq:3593:28966ef1	migrated SourceHostKeyController to main's object API; new head f34b8147, REVERIFY recorded	session-20261115T203020-5a3aa6f4	2026-11-15T20:53:10Z
