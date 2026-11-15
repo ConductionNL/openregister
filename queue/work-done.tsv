@@ -14380,3 +14380,4 @@ review:learniq:2134:cca08a57	CONFLICT: ~70 files conflict with development; no m
 review:filinq:1851:48cc416c	GREEN: deleteObject call-shape migration, behaviour unchanged, suite green	session-20261115T183029-6c0565bd	2026-11-15T19:02:01Z
 review:decidiq:2191:2ada5ea6	GREEN: matches change specs; vitest 2847 and phpunit 4624 green, manifest valid	session-20261115T182940-bfeb7e78	2026-11-15T19:02:10Z
 review:integriq:2924:408ef7bf	GREEN 2924	session-20261115T154255-e54527e9	2026-11-15T19:02:17Z
+verify:decidiq:2207:39453593	CONFLICT (l10n en/nl), recorded	session-20261115T174747-978963d5	2026-11-15T19:02:28Z
