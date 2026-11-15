@@ -11182,3 +11182,4 @@ pipelinq	3862	780b1a7ec5607c9bc05198f0d6f7a034c2210443	GREEN	worker-25	tests onl
 learniq	2484	b8c46f7c4c80c26cea26f138e57ec0afe11fc2ac	GREEN	worker-37:review	implements its change: CohortTalkRoomProvisioner on cohort activation (fails soft), PeerFeedbackSummary read rule = Submission staff groups + own learner once reviewCount>=1 (previously no rule), reviewer identity dropped in every mode as the spec requires; unit 6865 with 1 failure HigherEducationExampleSetTest also red on development; touched tests 23 green
 opencatalogi	2652	73737f2ec348cb833b6366eed1be47cc5d8d742a	RED	merge3:merge-gate	GATE RED checker floor: secretscanning: pass -> fail; secretscanning stars: 5 -> 1
 opencatalogi	2687	9e2ae324dd8822de1226b7ea1d11a9da7a648230	RED	merge3:merge-gate	GATE RED checker floor: maintainability stars: 5 -> 4
+integriq	3647	3880aa40867f2f3c0c2c17718d5436a64e15bb6f	GREEN	worker-17	phpunit 9223->9230, same 6 known baseline fails, no new failures; tests only
