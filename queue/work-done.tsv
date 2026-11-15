@@ -14306,3 +14306,4 @@ fix:decidiq:2203:7a5f0d1f	l10n CONFLICT resolved, REVERIFY recorded	session-2026
 fix:filinq:1849:88cc74e3	fixed: merged development, tests on main's find contract; suite green; new head 399a0258	session-20261115T174819-9af28ef9	2026-11-15T18:49:46Z
 fix:decidiq:2207:91c94c38	fixed CONFLICT: merged development (l10n union); new head d7b1eef1, REVERIFY recorded	session-20261115T152543-40aea993	2026-11-15T18:49:54Z
 fix:learniq:2166:290fc8b6	accepts both StoreDescriptor shapes; pushed 705ee505, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T18:50:06Z
+fix:shillinq:2083:cb3e6a42	conflict resolved, pushed bbd8bdb9, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T18:50:24Z
