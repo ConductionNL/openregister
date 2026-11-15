@@ -14353,3 +14353,4 @@ review:humaniq:875:ab9a9b54	GREEN: behaviour kept, suite green	session-20261115T
 review:hermiq:1323:29cf1f48	GREEN: matches openregister main patchObject; no new failures	session-20261115T174819-9af28ef9	2026-11-15T18:56:31Z
 review:humaniq:1095:340163fd	GREEN: dev-only psalm 7 bump, unit 4405 OK; psalm not runnable locally (PHP 8.3.6)	session-20261115T181015-497e81ce	2026-11-15T18:56:18Z
 fix:integriq:3593:ab56426a	conflict resolved (ten providers); no new failures; new head 28966ef1	session-20261115T174739-b14c2df4	2026-11-15T18:56:42Z
+review:humaniq:876:0c6ca9f0	GREEN; noted leftover old-signature caller SetupAdministrations:242	session-20261115T174750-744c606b	2026-11-15T18:56:59Z
