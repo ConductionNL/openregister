@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache-lr4b3"
+         executionOrder="default"
+         defaultTestSuite="Unit Tests"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="true"
+         beStrictAboutOutputDuringTests="true"
+         failOnRisky="false"
+         failOnWarning="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         failOnDeprecation="false">
+    
+    <testsuites>
+<testsuite name="Unit Tests">
+<file>tests/Unit/Architecture/A07InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/A19InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C01ApiVersionInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C01OAuth2InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C02MigrationPacksInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C03AuditInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C03SharingInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C08GuardListenerInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/C09InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/ContractIsALeafTest.php</file>
+<file>tests/Unit/Architecture/D1InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/D7InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/E17InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/E18FileOwnershipInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F01GdprInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F02HingeGeoInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F04MasterRecomputeInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F05HistoryInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F06ConfigurationDeploymentInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F07AccessInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F07TaskInboxInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F09ConfigurationDeploymentInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F10IntegrationMcpInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F11InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/F12SchemaTeardownInterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/H02InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/H18InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/K03InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/K21InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/K29InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/M18InterfaceBindingsTest.php</file>
+<file>tests/Unit/Architecture/ReadableAuditRouteIsReachableTest.php</file>
+</testsuite>
+</testsuites>
+
+    <source>
+        <include>
+            <directory suffix=".php">lib/</directory>
+        </include>
+        <exclude>
+            <directory>lib/Migration/</directory>
+            <file>lib/AppInfo/Application.php</file>
+            <!--
+                Published contracts (ADR-084). Interfaces declare signatures and
+                have no executable body, so no test can ever cover them. Leaving
+                them in the denominator means every method added to a contract
+                is an unavoidable coverage drop, and the ratchet would be
+                punishing the act of publishing an interface rather than
+                measuring untested code.
+
+                This is a scope correction, not a way around the guard: the
+                implementations in lib/Db and lib/Service stay fully in scope.
+            -->
+            <directory>lib/Contract/</directory>
+        </exclude>
+    </source>
+
+    <coverage>
+        <report>
+            <clover outputFile="coverage/clover.xml"/>
+            <html outputDirectory="coverage/html"/>
+            <text outputFile="php://stdout" showUncoveredFiles="false"/>
+        </report>
+    </coverage>
+
+    <php>
+        <env name="PHPUNIT_RUN" value="1"/>
+        <!--
+            Hard memory cap for every PHPUnit run. The CLI php.ini on developer
+            machines sets memory_limit=-1, so a runaway test has nothing to stop
+            it: on 2026-09-08 one test recursed inside the DI container and took
+            19 GB of RAM plus 6 GB of swap before the machine ground to a halt.
+            The whole Unit suite (19,409 tests) peaks at 454 MB without
+            coverage; 2G leaves room for coverage runs and still fails a leak
+            within seconds. Raise it here, with the new measurement, never with
+            -d memory_limit on the command line.
+        -->
+        <ini name="memory_limit" value="2G"/>
+    </php>
+</phpunit>
