@@ -11290,3 +11290,5 @@ decidiq	2191	a2e14c6cc04dd24595bb1dd1c84b1ea1ea0ec731	CONFLICT	merge3	merges cle
 decidiq	2199	68646faa2457838725c278873a7f023a7aa39dd6	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json src/manifest.json src/menu-layout.simple.json 
 decidiq	2203	8d2d8f97607e3ddd8cf45de215ecf02a939337f5	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
 decidiq	2207	a418f794cd52c1b8939b52d67650af39cf7aebad	CONFLICT	merge3	merges clean on development alone; files: l10n/en.js l10n/en.json l10n/nl.js l10n/nl.json 
+integriq	3596	dd7babfc291d4cff70b2306f543bd2622f7505c7	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
+integriq	3638	c6195be6e7152bf4a7e59f009a451f39a50033e7	CONFLICT	merge3	merges clean on development alone; files: tests/Unit/Service/CatalogRegistrySeedGoldenTest.php 
