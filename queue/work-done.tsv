@@ -14127,3 +14127,4 @@ review:dossiq:5357:7d05868b	CONFLICT: diff fine, conflicts with development in 4
 fix:portaliq:1006:0bb7956e	failed: not fixable in portaliq; latest @conduction/nextcloud-vue (2.180.0) still peers @vueuse/core ^11||^14, library must accept ^15 first	session-20261115T174750-744c606b	2026-11-15T18:20:56Z
 fix:portaliq:1994:6ba432f4	merged development, unit 6120 OK, pushed cffe40a0; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T18:21:13Z
 fix:portaliq:1229:8b002219	conflict resolved (stale suppression dropped), comment-only diff kept; new head facf71a31657fe456811aa8eb8ace13c12b9a2e5	session-20261114T102637-6688951e	2026-11-15T18:21:29Z
+review:pipelinq:2458:31ac15a5	GREEN; phpunit 8944 OK, vitest 1 inherited; note old deleteObject form like rest of dev	session-20261115T152558-f97be55f	2026-11-15T18:21:46Z
