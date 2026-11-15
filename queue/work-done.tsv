@@ -12257,15 +12257,24 @@ cover:stackiq:9ac19b3amad24:81b1241f	already done: lib/Portal at 100% lines (23/
 build:launchpad:governance-rest-api-reference:c3	failed: permission (running nextcloud/openapi-extractor for task 1 was refused; nothing pushed, PR #1224 unchanged)	session-20261115T001748-75994f45	2026-11-15T00:26:39Z
 cover:stackiq:9ac19b3amad24:59826f43	already done: lib/Settings/*.php (StackiqAdmin) at 100% statements (11/11) on development; no PR	session-20261114T234932-1a68fd4b	2026-11-15T00:26:39Z
 cover:stackiq:9ac19b3amad24:2861e5ef	already covered: lib/Examples/ 93/93 lines (100%) at dbebfae7; no PR	session-20261115T001714-673c9984	2026-11-15T00:26:42Z
+merge:opencatalogi:2659:eaa2ad5b	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:26:56Z
 cover:stackiq:9ac19b3amad24:d528dcf0	already done: lib/Dashboard at 100% lines (12/12)	session-20261115T001759-0085793c	2026-11-15T00:27:05Z
 cover:integriq:92114ab0m4b3f:36cd350f	PR #3642: 12 tests for WsSecurityEncryptor refusals/header creation; class 158/192 -> 190/192; suite 9221->9233, inherited 2E/4F unchanged	session-20261114T233346-3552728d	2026-11-15T00:26:53Z
 cover:buildiq:70b3e29em66d0:34f5c300	PR #1655: 24 tests + 5 coverage-metadata fixes; lib/Service 88.06->90.22%; suite 3192->3216, 1 inherited failure	session-20261114T235442-bc1b76db	2026-11-15T00:26:50Z
 cover:buildiq:70b3e29em66d0:a215617b	PR #1656: lib/Integration 83%->98% (risky @uses fix for 5 tests + IntegrationRegistrarTest); suite 3193, 1 inherited failure	session-20261114T234944-eb1b5f87	2026-11-15T00:26:51Z
+merge:opencatalogi:2654:28bb3b3d	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:27:10Z
 verify:dossiq:6533:c7c62f15	GREEN 6533	session-20261114T234933-5c1be121	2026-11-15T00:27:11Z
+merge:opencatalogi:2648:480a0414	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:27:22Z
+merge:opencatalogi:2677:68c78b81	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:27:36Z
 cover:stackiq:9ac19b3amad24:aae6d66c	already done: lib/Exception/*.php at 100% statements (4/4; two classes have no statements) on development; no PR	session-20261114T234932-1a68fd4b	2026-11-15T00:27:40Z
 verify:dossiq:6529:520616fa	6529 RED (3 vitest failures); 6530,6531,6532 GREEN	session-20261114T234941-e3e51cb9	2026-11-15T00:27:43Z
+merge:opencatalogi:2672:ffe5b40a	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:27:50Z
 cover:integriq:92114ab0m4b3f:f545d745	PR #3643: 6 tests over InitializeRegister/MigrateLegacyStorage/RemoveMigratedSourceSecretFields; rest of lib/Repair gaps are getName or unreachable	session-20261115T001755-2a5521bb	2026-11-15T00:27:59Z
 cover:keepiq:c967a31fmdbad:11ebfefd	already done: lib/Backup/*.php measures 99.58% (479/481) on development 36-tests-merged head; only openssl/fopen failure branches left	session-20261115T001758-161b0715	2026-11-15T00:28:01Z
 cover:buildiq:70b3e29em66d0:60c2c265	PR #1657: 3 tests, lib/Controller 94.66% -> 95.04%	session-20261114T221759-cd5c5678	2026-11-15T00:27:54Z
+merge:opencatalogi:2650:faf48f9d	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:28:06Z
 cover:stackiq:9ac19b3amad24:6f346b68	already done: lib/Sections at 100% lines (6/6)	session-20261115T001759-0085793c	2026-11-15T00:28:15Z
 cover:planninq:e1c9866dmcf99:befc51b3	already done: lib/Timetabling/*.php 99.78% lines on development (suite 1177 OK)	session-20261114T235442-bc1b76db	2026-11-15T00:28:05Z
+merge:opencatalogi:2643:c4bd8ef3	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:28:21Z
+fix:launchpad:1210:041737d3	conflict resolved; new head 7f9c64f6	session-20261114T234948-b89aaae1	2026-11-15T00:28:34Z
+merge:opencatalogi:2655:5633e31b	merge3 tree of 43 opencatalogi PRs: merged=20 red=6 fail=0 skip=3; conflict 14, lint 0, moved 0; fix rows 14	merge3-20261113T213425-c36bcd5f	2026-11-15T00:28:39Z
