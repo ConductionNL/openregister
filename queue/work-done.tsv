@@ -14469,3 +14469,4 @@ fix:launchpad:1230:f043acfc	merged development (clean), suite green, pushed 30aa
 review:shillinq:2100:a13e62e9	GREEN	session-20261115T182951-bdf9d68e	2026-11-15T19:15:01Z
 fix:buildiq:1090:8b2df26a	sbom regenerated, new head 8e11ea7a	session-20261115T185929-0fc862a6	2026-11-15T19:14:59Z
 fix:buildiq:1608:b3506415	sandbox enforced by response CSP, headers restored, pushed 08f7f4d3; REVERIFY recorded	session-20261115T174750-744c606b	2026-11-15T19:15:11Z
+fix:launchpad:1098:1720a6d3	sbom regenerated after merging development, pushed 08b61447; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:15:30Z
