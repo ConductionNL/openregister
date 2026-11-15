@@ -13561,3 +13561,4 @@ review:opencatalogi:2418:6a6c6361	BLOCK: needs openregister #9103 on main first 
 review:opencatalogi:2244:58b3e9f1	GREEN: behaviour-preserving refactor; golden passes pre and post; suite green; conflicts with development in DirectoryServiceTest.php	session-20261115T145546-378b432a	2026-11-15T16:28:03Z
 review:launchpad:753:51b86dbd	BLOCK: lockfile out of sync, npm ci fails	session-20261115T154314-8216dc98	2026-11-15T16:28:19Z
 review:learniq:1169:9731f440	GREEN: webpack minor bump, production build compiles	session-20261115T155903-abd003e3	2026-11-15T16:28:27Z
+review:pipelinq:1936:27cdae0d	CONFLICT #1936: obsolete, development already newer	session-20261115T152601-38767331	2026-11-15T16:28:39Z
