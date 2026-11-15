@@ -12342,3 +12342,12 @@ portaliq	1670	311e49a8c652a3edf58728e1386d41c7bfe851b7	REVERIFY	worker-41	merged
 shillinq	2086	572ee89cf315badc7333ec964687841de1389a84	REVERIFY	worker-40	merged development in: kept dev dialog refactor + PR server-side schedule endpoint, dropped browser nextRunAt twin (covered by PHP calendar test), adapted 3 dialog specs, l10n union; vitest 24/24, PHP schedule tests 35 OK, phpcs/phpstan clean; new head 28d3648441c3baaadf7f32d261ec5867563976f3, verify it
 shillinq	1965	6dd9752c8d466876c81f71a1defbc9db5286129a	REVERIFY	worker-37	merged development in; info.xml moved to 0.5.7-unstable.20261115173000 and CustomerMaster 0.4.0 recorded in the register lock; unit suite 12225 tests green; new head 3c0db1b52299392308398644f07f29bef57461cc, verify it
 dossiq	4886	63c08dd9eaff0b90ff91ff610fa81813eb765399	BLOCK	worker-28:review	A picked term records resolvedFrom='caseTypePick' (TermResolution::PICKED), which is not in the termijnInstance resolvedFrom enum in register.d/60-termijnbewaking.json (organisation/service/priority/caseType); add it to the enum and bump the register version. Unit suite 18109 tests, 19 failures = development baseline; Term + listener tests green.
+buildiq	820	306021ea136ff1a86cd0c87615c936f65f3c1e52	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1088	419fccd1b6a26e0fe37d8fbe07c0f01a88fd4126	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1090	8b2df26aae4a757aa76b853ce2ae74bd85655daa	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1092	8fb29c552c3dff86010f859bbbc198a8da2996db	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1093	16b82bb91867244ecca9666282941f1f11c78e14	RED	merge8:merge-gate	GATE RED sbom: package-lock.json changed without sbom.cdx.json
+buildiq	1114	1c8fce1e297010eb75a6996830da4dc2adf928db	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	1248	82ce29adc92e8f6bfe0fd73c2061aa4c78f205ec	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	1249	a5648e987487a374090e3b7ea665fbc82be11190	RED	merge8:merge-gate	GATE RED sbom: composer.lock changed without sbom.cdx.json
+buildiq	1620	64b6280e87953fe682298d13d65bc3e6db7a28d1	RED	merge8:merge-gate	GATE RED absolute floor: buildiq maintainability 3.89 after merge is below its floor 3.91
