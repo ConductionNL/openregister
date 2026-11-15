@@ -14624,3 +14624,4 @@ review:humaniq:661:e498ba1f	RED: sbom.cdx.json not regenerated for runtime babel
 review:integriq:3051:1e76f3b5	GREEN: contract adaptation only, same outcomes; suite same failures as development	session-20261114T075643-75a598ab	2026-11-15T19:43:31Z
 review:integriq:3593:28966ef1	BLOCK: new SourceHostKeyController uses removed openregister find/saveObject named args; tests = baseline	session-20261115T182940-bfeb7e78	2026-11-15T19:44:27Z
 review:integriq:3596:960d8584	GREEN: builds its change, failures inherited	session-20261115T174747-978963d5	2026-11-15T19:44:42Z
+review:integriq:2563:fdcc21d8	GREEN: vue-codemirror6 minor bump, vitest 2387 pass on merge	session-20261114T075643-75a598ab	2026-11-15T19:45:18Z
