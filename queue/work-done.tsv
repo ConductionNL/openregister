@@ -14950,3 +14950,4 @@ fix:versioniq:711:1d4bc363	fixed: 4 conflicts resolved; 2 inherited golden failu
 fix:versioniq:505:54c33622	sbom regenerated, pushed aeceef74, REVERIFY recorded	session-20261115T195957-8e60ca53	2026-11-15T20:57:14Z
 fix:larpinq:960:f38d0e35	development merged in; sbom already current (dev-only bump), no sbom diff possible; new head 659b6749, REVERIFY recorded	session-20261115T203029-7489abc7	2026-11-15T20:57:31Z
 fix:opencatalogi:2723:8d90b4a9	merged development in (clean); no new failures; REVERIFY at 28b856d8	session-20261115T200026-9a5b8685	2026-11-15T20:57:40Z
+fix:versioniq:732:338949a6	SBOM regenerated; REVERIFY edb0233ba6169cf4419f02b6bed018d9f56875ee	session-20261115T195953-2618bb8a	2026-11-15T20:57:51Z
