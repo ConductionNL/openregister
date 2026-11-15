@@ -14721,3 +14721,4 @@ review:stackiq:1433:f9d52657	GREEN: patchObject ObjectPatch adaptation matches O
 review:opencatalogi:2415:cf561973	GREEN: matches openregister main, no new failures	session-20261115T200011-d13b13ca	2026-11-15T20:16:02Z
 review:opencatalogi:1888:e9655f0d	GREEN: suite = baseline (2 inherited failures)	session-20261115T195953-2618bb8a	2026-11-15T20:16:09Z
 review:stackiq:1067:c6fb0482	GREEN: range-only vue bump, vitest same as development (1 inherited failure)	session-20261115T201132-b8ddc5e5	2026-11-15T20:16:23Z
+review:stackiq:1042:ad6e35bb	GREEN: vitest 2726/2727, 1 inherited failure	session-20261115T200026-9a5b8685	2026-11-15T20:16:34Z
