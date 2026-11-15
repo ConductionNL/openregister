@@ -14756,3 +14756,4 @@ fix:dossiq:3198:c19a6d9c	obsolete: development already has vite ^8.3.5; PR close
 fix:portaliq:1353:5d73ef4a	sbom regenerated, REVERIFY recorded, phpmd +17 findings noted	session-20261115T174747-978963d5	2026-11-15T20:22:26Z
 verify:versioniq:738:50ada5e5	GREEN 738	session-20261115T200043-78b85ca2	2026-11-15T20:22:34Z
 fix:dossiq:3894:c91ec402	sbom regenerated after merging development; new head 8ed2662d, REVERIFY	session-20261115T200011-d13b13ca	2026-11-15T20:22:47Z
+fix:pipelinq:3084:01208829	merged development; sbom already current (dev-only dep); REVERIFY fc01a3c7	session-20261115T200045-d3bb5c75	2026-11-15T20:22:57Z
