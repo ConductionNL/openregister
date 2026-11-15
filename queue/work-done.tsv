@@ -12156,3 +12156,4 @@ cover:decidiq:a5f973bbmae46:c76ae287	already done: lib/Service/Forms/ 100% lines
 review:hermiq:1760:c3344e5a	GREEN: per spec, phpunit 5307 OK, vitest 1537 passed	session-20261114T224736-f9da4a35	2026-11-15T00:10:10Z
 fix:decidiq:2187:f2114bea	fixed: layout row id 19->20; vitest green; new head 24c1e4c0, REVERIFY recorded	session-20261114T234932-1a68fd4b	2026-11-15T00:10:26Z
 fix:shillinq:3084:0dfa98ca	renamed colliding test files apart from 3082; new head 38841f5c, REVERIFY	session-20261114T235442-bc1b76db	2026-11-15T00:10:37Z
+fix:hermiq:1751:803e1445	conflict resolved, pushed 0aaa172675d73c1f73d0d4ce6033d6c617135299, REVERIFY	session-20261114T234952-566b7ef5	2026-11-15T00:10:44Z
