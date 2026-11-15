@@ -12396,3 +12396,4 @@ fix:versioniq:719:8d1c90cb	development merged, new head 72e1e8b99; REVERIFY; con
 build:opencatalogi:capability-rows-verify-scenarios:c3	partial: PR #2722 (head c81e4bce): 2.1 done (records stamped with the rule wooCategory), 1.2 and 1.4 tests done, 2.2 open-batch refusal done; left: 2.2 Add-by-case-reference gathering delivered documents (no source for a case's documents in this app), 1.1 e2e	session-20261115T001755-2a5521bb	2026-11-15T00:46:53Z
 fix:versioniq:698:562f8c6e	conflict resolved, new head bbaa7d8c1d3ec8b3f7f81832f96b6d556c523878	session-20261114T234758-aa94f07d	2026-11-15T00:46:51Z
 fix:versioniq:701:a39b4f2b	merged development cleanly (ccfb01ba); no new failures; REVERIFY recorded	session-20261115T001750-90323034	2026-11-15T00:47:00Z
+fix:versioniq:705:3bbf8938	floor restored: unit_interfacing 4.14 (planCandidate 3->2 params); pushed deb4057728ad152adedf6baa4c37a2522386441f	session-20261114T234941-93e81b84	2026-11-15T00:47:07Z
