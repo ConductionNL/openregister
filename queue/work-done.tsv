@@ -13085,3 +13085,4 @@ verify:shillinq:3080:66640968	stale	session-20261115T141023-b06d51da	2026-11-15T
 fix:filinq:2072:347356f9	no-op: branch up to date with development; conflict only with sibling PR in tree	session-20261115T141023-b06d51da	2026-11-15T14:55:14Z
 cover:openregister:7350e3efm1efa:25c949a6	PR #10583: fixed coverage metadata in 13 tests (43 were risky) and added 21 tests (BreakerRegistry, GraphQL relations, Handoff drain); target dirs 93%->97.4% on dir tests	session-20261115T142958-eb01a230	2026-11-15T14:55:46Z
 review:shillinq:2995:e209ceb0	GREEN: per-spec, merges clean, all suites pass	session-20261115T142129-944012f5	2026-11-15T14:56:07Z
+build4:openregister:cross-app-semantic-references:c6	partial: re-checked, nothing to build here; PR #10549 (4.1, 6.x ticked) still open, 4.3 needs a live instance, 5.x lives in nextcloud-vue (outside this session's repositories)	session-20261115T142958-eb01a230	2026-11-15T14:56:30Z
