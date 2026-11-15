@@ -12887,3 +12887,4 @@ build4:openregister:rapportage-bi-export:c4	partial: PR #10541 (branch build/rap
 cover:dossiq:069ee2d6madb6:1b97f731	PR #6566: +9 tests, CasePriorityDerivationListener 39/44->44/44; suite 17662->17671, 19 inherited failures; lib/Listener/*.php 96.93->97.05%	session-20261115T012426-ca0c1432	2026-11-15T02:29:54Z
 review:filinq:2069:be103c8c	GREEN: change-conform, suite 6799 OK	session-20261115T011813-39aed99d	2026-11-15T02:30:03Z
 cover:dossiq:069ee2d6madb6:730450c1	PR #6567: 2 tests, lib/Service/Complaint 11 uncovered stmts -> 0; suite 17662->17664, same 19 inherited failures	session-20261115T011803-3ec5f099	2026-11-15T02:30:16Z
+measure:pipelinq:20261115h02	php 94.36% (8627 tests), js 94.32% (1 inherited vitest failure: myWorkPage.spec.js)	session-20261115T021836-00213ecd	2026-11-15T02:30:16Z
