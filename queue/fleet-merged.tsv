@@ -3297,3 +3297,24 @@ shillinq	3093	89aa79a7ad6b71c3407d72e9b77476bcef5d9256	MERGED	merge3	GATE OK sbo
 shillinq	3094	edddf400d7d971b73af7492b543a54ea016d12aa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
 decidiq	2210	a0ff89523364d15e534809dee83424bb17dff5f3	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
 decidiq	2214	6b3f73488e20fa0d7749352a6aef7e078b11cc40	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.78 holds at 3.78
+integriq	3542	026646583e748111aa50ad31c83af71449ec69e3	RED	merge3	GATE RED checker floor: adrvalidator: pass -> warn; adrvalidator stars: 5 -> 3; score: 100 -> 97
+integriq	3546	26a9245cff2fd4a0b8b11a6b1f6f23d142d98559	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3549	2d954e73fd4b485886eedbdf9e58ceff77cb4fff	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3612	776aff3ea5da6b72b0b1340b066781c861d6cf6b	RED	merge3	GATE RED absolute floor: integriq maintainability 3.55 after merge is below its floor 3.56
+integriq	3617	cc9683d5822eda42617c96ba8b22bd01f442b3c2	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+integriq	3628	626c2e6f59943208459fd06bcbb64652dd68f1b6	RED	merge3	GATE RED absolute floor: integriq maintainability 3.54 after merge is below its floor 3.56
+integriq	3637	cfec360e12db5196fefbce1216d21ebd98db0b1f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3639	e46772691b83900efe3492faf4f968767c898fa1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3641	5244f99b9c0fdadeac22f263bfd9acd1f0c37ebe	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3644	c98b37bea5e34aa1967e95c600c4eae2e6bf3778	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3645	fbba9d2fdd3063daeef89f01ea85485852ccba12	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3646	6bc14ed8b267f19d26345f032d28e2fb32b19a06	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3647	3880aa40867f2f3c0c2c17718d5436a64e15bb6f	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3648	8bd307a0479ca1a9d1a6420ee60dd21b7408fcdf	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3650	25b454cb2e1d4a0ada16c39ca1ee5c7493aa1da5	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3651	d86c3cd962e1d9ff3fb04680f58bca645406a26a	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3652	6fe7405c3f1c604cc42178597a5abdbd54dc4e8b	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+integriq	3653	63e46ef3206c88c2d4638f008c79a3310bb1c8c1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3654	0136bbaf0bacff01ccac461459065eae6ec1bafa	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3655	b843977cbfa68e34bdc135f9478429c36d197ccc	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
+integriq	3656	4fe6ccafeb3024c284b08e2b85d52ba7b8f3aab0	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.56 holds at 3.56
