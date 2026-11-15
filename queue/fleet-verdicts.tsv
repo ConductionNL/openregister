@@ -11258,3 +11258,4 @@ pipelinq	3865	868db80e7b21ca32e58fb793132b99160325b1c6	GREEN	worker-24	tests-onl
 integriq	3652	6fe7405c3f1c604cc42178597a5abdbd54dc4e8b	GREEN	worker-36	tests-only; unit 9273 run on tree, baseline 9223 with 7 inherited failures, 0 new
 integriq	3653	63e46ef3206c88c2d4638f008c79a3310bb1c8c1	GREEN	worker-14	tests only; tree 3653+3654 phpunit 9226 (baseline 9223), same inherited 2 errors/4 failures/2 risky, 0 new
 integriq	3654	0136bbaf0bacff01ccac461459065eae6ec1bafa	GREEN	worker-14	tests only; tree 3653+3654 phpunit 9226 (baseline 9223), same inherited 2 errors/4 failures/2 risky, 0 new
+dossiq	6563	8800ca93aa9919e94c5f82efdd728bc3f809873c	GREEN	worker-56	builds capability-rows-say-the-whole-capability (case grants via OpenRegister sharing endpoints, access decided server-side); PHP 17649 vs 17631 baseline, same 19 inherited failures; vitest 7132, same 2 failures as development
