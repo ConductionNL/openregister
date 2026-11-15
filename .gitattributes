@@ -12,3 +12,4 @@ queue/work.tsv merge=union
 queue/work-done.tsv merge=union
 queue/fleet-merged.tsv merge=union
 queue/fleet-verdicts.tsv merge=union
+queue/fleet-reviews.tsv merge=union
