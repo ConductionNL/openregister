@@ -15254,3 +15254,4 @@ review:launchpad:757:674cfd98	GREEN: dev-dep bump, vitest 2578/2578, lint same a
 review:buildiq:1256:342dece0	GREEN: hydra-gates lock bump, no new gate failures	session-20261115T213144-ab42ee6a	2026-11-15T22:07:43Z
 review:launchpad:885:2efbf863	GREEN: LpVandaag start page, all tests green	session-20261115T213101-2fb56005	2026-11-15T22:07:57Z
 review:integriq:3051:80f07d8c	GREEN: lock request migration, no new failures	session-20261115T203012-30a1abde	2026-11-15T22:08:08Z
+review:integriq:3047:261ea2e5	GREEN: RenderSelection migration matches OR main, no new failures	session-20261115T220025-8d429838	2026-11-15T22:08:20Z
