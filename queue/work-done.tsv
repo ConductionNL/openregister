@@ -12981,3 +12981,4 @@ merge:launchpad:1206:811d12a6	merge3 tree of 6 launchpad PRs: merged=2 red=1 fai
 merge:launchpad:1212:ce026b53	merge3 tree of 6 launchpad PRs: merged=2 red=1 fail=0 skip=1; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T04:12:53Z
 merge:versioniq:717:6294d6a1	merge3 tree of 14 versioniq PRs: merged=3 red=2 fail=0 skip=1; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T04:15:24Z
 merge:versioniq:690:229472bb	merge3 tree of 14 versioniq PRs: merged=3 red=2 fail=0 skip=1; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T04:15:27Z
+merge:versioniq:725:936b5bc1	merge3 tree of 14 versioniq PRs: merged=3 red=2 fail=0 skip=1; conflict 8, lint 0, moved 0; fix rows 8	merge3-20261113T213425-c36bcd5f	2026-11-15T04:15:30Z
