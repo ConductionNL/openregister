@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionCopyWriter;
-use OCA\OpenRegister\Service\Archival\Appraisal;
+use OCA\OpenRegister\Service\Archival\AppraisalInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
@@ -328,7 +328,7 @@ final class DestructionListRun {
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-is-an-archival-action-a-result-type-can-choose-req-aao-001
 	 */
 	private static function isNominatedToAnonymise(array $objRef): bool {
-		return ($objRef['action'] ?? null) === Appraisal::ANONYMISE
+		return ($objRef['action'] ?? null) === AppraisalInterface::ANONYMISE
 			&& ($objRef['decision'] ?? null) !== DestructionReviewServiceInterface::ANSWER_DESTROY;
 	}//end isNominatedToAnonymise()
 
