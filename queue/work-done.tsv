@@ -13595,3 +13595,4 @@ review:learniq:1881:5f883140	GREEN (intended fix; conflicts with development)	se
 review:pipelinq:3149:3c7ae62d	BLOCK: wrong ObjectPatch/ObjectFindTarget namespace	session-20261115T142951-2463b4c4	2026-11-15T16:33:33Z
 review:pipelinq:3085:34857519	GREEN: lock-only dev-tool bump, 8890 tests green merged with development	session-20261114T095641-533e2a00	2026-11-15T16:33:40Z
 review:pipelinq:3084:01208829	GREEN: phpstan bump, analysis clean, suite green	session-20261115T154258-dee2cc3d	2026-11-15T16:33:56Z
+review:pipelinq:2959:0f2f1b3f	CONFLICT #2959: 16 files, partly on development already	session-20261115T152601-38767331	2026-11-15T16:34:12Z
