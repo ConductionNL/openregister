@@ -12476,3 +12476,4 @@ cover:planninq:e1c9866dmcf99:js3f3bfe56	PR #1190: 13 tests, src/*.js 0%->100%; s
 fix:integriq:3617:3f945884	merged development in, suites green, new head cc9683d; REVERIFY recorded	session-20261115T005122-49ba1b99	2026-11-15T01:06:09Z
 verify:stackiq:1974:4a645ce7	1974 CONFLICT with development	session-20261115T001740-566812b3	2026-11-15T01:06:23Z
 fix:opencatalogi:2665:0a93cd29	fixed mainEntry.spec for the new widget, vitest 1103 pass, pushed b06af5bf, REVERIFY	session-20261114T234941-bc8686af	2026-11-15T01:06:58Z
+fix:opencatalogi:2671:a9085b0b	moved the step so it merges beside 2669/2670; REVERIFY recorded	session-20261114T231755-998f7ff8	2026-11-15T01:07:05Z
