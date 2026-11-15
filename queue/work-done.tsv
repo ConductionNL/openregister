@@ -13600,3 +13600,4 @@ merge:pipelinq:3835:cef49b87	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=
 merge:pipelinq:3870:787e050f	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:26Z
 merge:pipelinq:3873:e74d58c4	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:30Z
 review:planninq:1037:f2da0a3f	CONFLICT: trivial l10n/en.js+en.json, keep both; change itself fine	session-20261115T154300-03b63424	2026-11-15T16:34:32Z
+merge:pipelinq:3875:9f4b8976	merge3 tree of 6 pipelinq PRs: merged=4 red=0 fail=0 skip=0; conflict 2, lint 0, moved 0; fix rows 2	merge3-20261113T213425-c36bcd5f	2026-11-15T16:34:43Z
