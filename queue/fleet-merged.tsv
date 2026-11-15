@@ -3146,3 +3146,9 @@ planninq	1182	8178aea5673364bfc2e776e74f54bba3e3b0256b	MERGED	merge3	GATE OK sbo
 planninq	1183	7d4bbd35da8f8529008fba9108727f3c762137fa	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
 planninq	1184	07661072a659244c0eff2bce8b038fd9636a72b9	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
 planninq	1185	59875f39642c5496321832816aead58a23d994cb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 3.66 holds at 3.78
+larpinq	1039	5450f7dd0d57af5964fa47ef2757ae0306cb45cb	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
+larpinq	1048	258a4b907098477295a89e6d2696b2967a4c6ca9	SKIP	merge3	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator; this is not a pass
+larpinq	1051	77585fbdb9fdf364deecdbc77c920c61efc4ac82	RED	merge3	GATE RED floor: overall: 4.99 -> 4.91; duplication: 5.14 -> 5.08; unit_size: 4.74 -> 4.70; unit_complexity: 4.87 -> 4.79; unit_interfacing: 4.71 -> 4.24
+larpinq	1052	1b2b0ad356c9f3412103f96707507ed8a1869548	RED	merge3	GATE RED checker floor: spdxheaders stars: 5 -> 4
+larpinq	1060	31b8e3db2bea3650df17a3230e527846dd526951	RED	merge3	GATE RED floor: overall: 4.99 -> 4.97; unit_size: 4.74 -> 4.72; unit_complexity: 4.87 -> 4.79; unit_interfacing: 4.71 -> 4.64
+larpinq	1061	ceb98cfdabbe3f5cfe9b5b35a557f1119da01ca1	MERGED	merge3	GATE OK sbom, checker floor and maintainability floor hold; absolute floor 4.00 holds at 4.07
