@@ -13293,3 +13293,4 @@ cover:stackiq:9ac19b3amf894:js54731acf	PR #1982: ProcessStepFlow + ProcessStepUs
 review:filinq:2114:473e8036	GREEN: phpunit 6859 OK, jest 580, vitest 785	session-20261115T145555-b33410db	2026-11-15T15:41:43Z
 review:buildiq:1092:2ca8b28a	RED: lockfile out of sync, npm ci fails (development clean)	session-20261114T102641-d4fd3e25	2026-11-15T15:41:54Z
 review:opencatalogi:2643:876cac08	GREEN (conflicts with development in Settings.vue, PortalDetailSchemaTest; tested on PR head)	session-20261115T142951-2463b4c4	2026-11-15T15:42:03Z
+build:opencatalogi:integration-feed-consumer-credentials:c3	done: PR #2652 head dc289b2f — built 3.1 OOAPI read rule ($memberOf over feedConsumer + synced instance-list group; empty list keeps authenticated), repair step + settings hook, +16 PHPUnit; suite 5740, same 2 inherited failures; all code tasks ticked, live API/e2e checks left	session-20261115T152543-40aea993	2026-11-15T15:42:16Z
