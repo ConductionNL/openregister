@@ -14233,8 +14233,10 @@ fix:shillinq:1958:66501062	fixed: conflicts resolved onto development refactor, 
 fix:shillinq:2411:6ca5ae67	failed: PR only adapts to openregister branch cloud/vox-generic-settings (SettingsPlacement/AdminFormServices/SectionAppearance), not on main; development already matches main's GenericAdminSettings constructor. Hold until that openregister change lands.	session-20261115T181015-497e81ce	2026-11-15T18:39:53Z
 review:portaliq:1764:b3d8a23e	GREEN: lint unchanged vs development	session-20261115T174741-9deaa0be	2026-11-15T18:40:15Z
 review:portaliq:1071:334e76b1	GREEN: challenge proof only; specs green (self-made fix, noted)	session-20261115T174808-50b8ceec	2026-11-15T18:40:22Z
+fix:shillinq:2767:c0cd6601	failed: raising composer.json config.platform.php to 8.3.16 is not enough; composer install takes the platform from composer.lock platform-overrides (php 8.3), so the lock must be regenerated and workers may not commit composer.lock. Raise config.platform.php on development, then have dependabot recreate the PR (runner PHP here is 8.3.6, below psalm 7.2's floor, so it cannot be verified locally ei	session-20261115T182948-465dcc8e	2026-11-15T18:40:27Z
 fix:shillinq:2258:630de5d0	conflict resolved + 7 new dev actions migrated to context, pushed 812b1f9e, REVERIFY recorded	session-20261115T182936-09049974	2026-11-15T18:40:32Z
 review:shillinq:1965:3c0db1b5	GREEN: additive schema fragment, suite 12225 OK	session-20261115T174747-978963d5	2026-11-15T18:40:40Z
 review:shillinq:2099:8bc4dce5	GREEN	session-20261115T174741-56eeaa2f	2026-11-15T18:40:56Z
 fix:filinq:1310:fc7dd7c7	failed: gridstack 14 is outside @conduction/nextcloud-vue's peer range (^12||^13) in every published version (latest 2.181.0); needs a library release that supports gridstack 14 first	session-20261115T174808-50b8ceec	2026-11-15T18:41:03Z
 fix:shillinq:2096:7e23465b	both RED tests fixed, pushed d0e8491e; REVERIFY recorded	session-20261115T182941-b7ae781f	2026-11-15T18:41:03Z
+fix:shillinq:2072:8b9e57e4	conflict resolved keeping both checks, pushed dbfc135, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:41:24Z
