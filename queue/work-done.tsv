@@ -14243,6 +14243,7 @@ fix:filinq:1310:fc7dd7c7	failed: gridstack 14 is outside @conduction/nextcloud-v
 fix:shillinq:2096:7e23465b	both RED tests fixed, pushed d0e8491e; REVERIFY recorded	session-20261115T182941-b7ae781f	2026-11-15T18:41:03Z
 fix:shillinq:2072:8b9e57e4	conflict resolved keeping both checks, pushed dbfc135, REVERIFY	session-20261115T154255-e54527e9	2026-11-15T18:41:24Z
 review:shillinq:2249:55e36ecc	GREEN shillinq#2249: equivalent controller namespace on OpenRegister main; 12225 OK	session-20261115T174739-b14c2df4	2026-11-15T18:41:35Z
+fix:filinq:1758:cb890160	obsolete: development has the fix (b9c8e18e); closed PR with a comment	session-20261115T182941-b7ae781f	2026-11-15T18:41:51Z
 fix:shillinq:2254:29ae60be	stubs moved to Kernel\Contracts\Value, development merged, suite 12225 OK, pushed 863e0786; REVERIFY recorded	session-20261115T183025-d89c1e14	2026-11-15T18:41:51Z
 fix:filinq:1409:0d0e948a	failed: permission (closing PRs is refused for this worker). Obsolete: development already carries this work; close #1409 as superseded	session-20261115T154255-e54527e9	2026-11-15T18:41:49Z
 fix:shillinq:2252:1f1318e2	namespace fixed to Kernel\Contracts\Value, merged development, suite green; pushed eea2842a; REVERIFY recorded	session-20261115T182951-bdf9d68e	2026-11-15T18:41:58Z
