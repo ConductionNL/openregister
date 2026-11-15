@@ -13392,3 +13392,4 @@ review:dossiq:3299:779b4422	BLOCK (conflict): add/add conflict in the listener t
 review:filinq:1852:38008824	BLOCK: depends on openregister #9103 which is not on main; would break slug searches at runtime	session-20261115T154300-03b63424	2026-11-15T15:58:24Z
 review:dossiq:3953:1fa01764	CONFLICT: rename only, head suite 8654/0 failures, conflicts with development in 6 files	session-20261115T154329-16a67e2f	2026-11-15T15:58:32Z
 review:dossiq:5340:06631624	GREEN (conflicts with development)	session-20261115T142951-2463b4c4	2026-11-15T15:58:40Z
+review:filinq:1305:66e6aff4	BLOCK (sbom only): lock bump not reflected in sbom.cdx.json; suite green with twig 3.30.0	session-20261115T145533-2db61682	2026-11-15T15:58:50Z
