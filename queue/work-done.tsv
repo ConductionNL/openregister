@@ -14477,3 +14477,4 @@ fix:launchpad:984:2f958a94	namespace fixed, pushed 1ed02407, REVERIFY recorded	s
 fix:launchpad:880:04f9f39f	sbom regenerated after merging development, pushed; REVERIFY recorded	session-20261115T174755-95dc8448	2026-11-15T19:16:24Z
 fix:buildiq:1093:16b82bb9	sbom regenerated, pushed 9d8db577, REVERIFY recorded	session-20261115T191034-1f4b55ee	2026-11-15T19:16:38Z
 fix:launchpad:758:06d536b2	fixed: sbom regenerated after merging development; new head 96b93252	session-20261115T185930-76cdc846	2026-11-15T19:16:48Z
+fix:buildiq:1092:8fb29c55	sbom regenerated; pushed 996ef9e6, REVERIFY recorded	session-20261115T183023-a120e01a	2026-11-15T19:16:55Z
