@@ -12328,3 +12328,4 @@ fix:dossiq:6529:57b8f131	stale	feeder	2026-11-15T00:35:14Z
 verify:stackiq:1973:cd31f294	GREEN 1973	session-20261114T234758-aa94f07d	2026-11-15T00:35:53Z
 fix:dossiq:6529:57b8f131	stale	session-20261114T234941-93e81b84	2026-11-15T00:36:09Z
 fix:opencatalogi:2678:7f540c6a	conflict resolved, both intents kept; new head 8bcc74cceb409aa3ec7ee746a08951ccd902e0a0	session-20261114T234933-5c1be121	2026-11-15T00:36:08Z
+fix:integriq:3641:3bd3436b	fixed test-order leak (static reset); merged development; new head 5244f99b, REVERIFY	session-20261114T233346-3552728d	2026-11-15T00:36:22Z
