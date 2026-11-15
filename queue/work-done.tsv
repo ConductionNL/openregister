@@ -15244,3 +15244,4 @@ review:launchpad:1224:c152df9e	GREEN: tooling/docs only, lint and suite green	se
 fix:shillinq:2096:132b339a	fixed: conflict resolved, test double dropped; REVERIFY at 8af31d73	session-20261115T213107-505dc338	2026-11-15T22:06:01Z
 review:keepiq:1716:5a6aebc1	GREEN: store specs only, no new failures	session-20261115T213100-e547b457	2026-11-15T22:06:12Z
 review:thematiq:1303:550d277c	GREEN: data-only Epe set, suite green beyond 1 inherited failure	session-20261115T220134-9124a7d0	2026-11-15T22:06:20Z
+review:integriq:2924:81032a2e	GREEN: unreachable legacy modals removed, suites match baseline	session-20261115T220011-f1302da8	2026-11-15T22:06:27Z
