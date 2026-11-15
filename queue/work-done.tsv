@@ -13681,6 +13681,7 @@ build:openregister:anonymising-as-an-archival-outcome:c5	partial: PR #10132 head
 review:portaliq:1666:00663233	CONFLICT: manifest.json overlaps development's header actions	session-20261115T155911-14cd078d	2026-11-15T16:49:56Z
 review:portaliq:1602:583ee358	GREEN/superseded: development already implements residentsAt; PR conflicts, close it	session-20261115T154407-94bf5f8c	2026-11-15T16:50:12Z
 review:portaliq:1670:1c1e6b95	CONFLICT: manifest.json conflicts with development; code OK, docblock misplaced	session-20261115T154258-dee2cc3d	2026-11-15T16:50:21Z
+review:shillinq:2084:78c206ad	CONFLICT: 8 files conflict with development	session-20261114T085646-49a39060	2026-11-15T16:50:36Z
 review:portaliq:1681:1c5961b5	CONFLICT: seed-only change is clean; conflicts with development in 2 files	session-20261115T142934-de7c51d0	2026-11-15T16:50:52Z
 review:shillinq:2072:8b9e57e4	CONFLICT (3 files); tightening, role-name change noted	session-20261115T142134-badaaf30	2026-11-15T16:51:02Z
 review:portaliq:1849:cb2411d1	CONFLICT: overlaps build already on development (26 files); no defect in diff	session-20261115T154314-8216dc98	2026-11-15T16:51:12Z
@@ -13733,6 +13734,7 @@ review:shillinq:2227:13c58709	BLOCK: @vueuse/core 15 outside the component libra
 review:shillinq:2411:6ca5ae67	BLOCK: targets openregister settings value objects that exist only on an unmerged branch; would fail against openregister main	session-20261114T095641-533e2a00	2026-11-15T16:59:35Z
 review:shillinq:2408:837e65b7	BLOCK: create(layout:) does not exist in OpenRegister main; stub masks it; also conflicts	session-20261115T142149-1d09fceb	2026-11-15T16:59:46Z
 review:shillinq:2766:64b9e198	GREEN: phpstan minor bump, analyse clean on both	session-20261114T075643-acecaad6	2026-11-15T16:59:55Z
+review:shillinq:2099:b77de1fd	CONFLICT: modify/delete of PipelinqIntegration.vue; 4 dev test files depend on it	session-20261115T155915-84e5dc0a	2026-11-15T17:00:08Z
 review:shillinq:2095:0bdac976	CONFLICT: 7 files conflict with development (2748 commits behind)	session-20261115T152539-8dadb15a	2026-11-15T17:00:19Z
 review:shillinq:1958:66501062	CONFLICT: lib and l10n conflicts with development refactors; diff additive	session-20261115T145555-b33410db	2026-11-15T17:00:22Z
 review:shillinq:2249:530fcbd0	CONFLICT (use-block only; resolved locally unit 12214 OK, otherwise GREEN)	session-20261115T154307-1fc2cc78	2026-11-15T17:00:33Z
@@ -13747,3 +13749,17 @@ review:shillinq:2098:38bdcce2	BLOCK: conflict; dev tests import deleted view; co
 review:stackiq:1437:3de46f6b	GREEN: phpstan bump, analyse clean, unit suite OK	session-20261115T154311-e8600d84	2026-11-15T17:02:31Z
 review:portaliq:1659:3c90bf4d	CONFLICT: trivial manifest l10n tail; change fine, 0 new failures	session-20261115T154300-03b63424	2026-11-15T17:02:48Z
 review:shillinq:2081:29d9d8c7	GREEN on its own head; conflicts with development picker mixin refactor + l10n	session-20261115T155904-a7df5bc0	2026-11-15T17:02:50Z
+review:stackiq:1042:56393a99	CONFLICT (stale lockfile)	session-20261115T142134-badaaf30	2026-11-15T17:02:58Z
+review:shillinq:2257:01cce78b	BLOCK: wrong ObjectSaveOptions namespace (Kernel\Contracts\Value on OR main)	session-20261115T152558-f97be55f	2026-11-15T17:03:06Z
+review:shillinq:2228:b6167ac5	GREEN: lint unchanged	session-20261115T154255-e54527e9	2026-11-15T17:03:16Z
+review:portaliq:1235:31e3cae9	GREEN on PR head, but conflicts with development (CmsReader refactored); needs merge	session-20261115T155921-aabf185f	2026-11-15T16:52:26Z
+review:stackiq:1436:9cff2a95	CONFLICT: 25 files	session-20261115T142149-1d09fceb	2026-11-15T17:03:36Z
+review:shillinq:2251:cd6b2946	CONFLICT: content sound (aligns to OR find options), head phpunit 12214 OK, 7 files conflict	session-20261115T145541-9d69768b	2026-11-15T17:03:48Z
+review:shillinq:2086:572ee89c	CONFLICT: 6 files with development; no defect in diff	session-20261115T154314-8216dc98	2026-11-15T17:04:01Z
+review:shillinq:2256:f4d1ab9a	CONFLICT: stub interface conflicts with development; stub namespace differs from openregister main	session-20261115T155911-14cd078d	2026-11-15T17:04:10Z
+cover:stackiq:9ac19b3amf894:38e80a9f	already done: lib/Command classes with logic at 100% line coverage from tests/Unit/Command (40 tests, none risky); GemmaLinkBackfill and ReferenceAuditRun have no executable lines	session-20261115T142149-1d09fceb	2026-11-15T17:04:20Z
+review:thematiq:1126:b0b0a98c	GREEN: jsdom patch bump, vitest 1559/1559	session-20261115T155902-d9805df0	2026-11-15T17:04:22Z
+review:stackiq:1168:2d1a29df	GREEN: twig lock bump, unit 3626 OK	session-20261115T154316-34f0db35	2026-11-15T17:04:33Z
+review:stackiq:1417:d2903140	GREEN: copy rename; add/add l10n conflict with development	session-20261114T102641-d4fd3e25	2026-11-15T17:04:43Z
+fix:pipelinq:3835:52a3cfb3	fixed: development merged, conflict resolved, suite green; new head 8a345d33	session-20261115T160928-e92ec17a	2026-11-15T17:04:54Z
+review:thematiq:1124:c6a62f1f	GREEN: devDep bump, vitest 1559 passed, lint clean	session-20261115T154307-1fc2cc78	2026-11-15T17:05:09Z
