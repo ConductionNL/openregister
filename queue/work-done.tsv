@@ -13347,6 +13347,7 @@ review:buildiq:820:306021ea	GREEN: patch dev-dep bump, vitest 4667 pass	session-
 review:dossiq:3193:5b406bdb	GREEN: lock-only dev bump; 19 baseline failures, none new	session-20261115T154254-3d07b219	2026-11-15T15:51:10Z
 review:decidiq:1948:fbc94193	GREEN: unit 4461/0 fail, phpcs/phpmd unchanged vs development	session-20261115T154314-8216dc98	2026-11-15T15:51:21Z
 review:decidiq:1946:b7542a86	BLOCK: ObjectPatch/ObjectFindTarget imported from wrong namespace vs openregister main; psalm.xml conflict	session-20261115T154258-dee2cc3d	2026-11-15T15:51:32Z
+build:opencatalogi:publication-relations-place-and-source-ids:c3	partial: PR #2650 adds 1.4 code half (related grouped by relation, form pickers) and 2.3 public filter; OR piece openregister#10588 (contains operator). Left: 1.4 e2e, ready list route (not on development), 3.1 dossiq issue, group 5 (D10)	session-20261115T152554-949e9403	2026-11-15T15:51:47Z
 build:opencatalogi:instance-staging-mode:c3	done: PR #2699 head b0f3f779; 2.2 all sites gated, 2.3 grep test, 1.1 mode+audit, 1.2/2.4 code (banner, outside list, Dry runs page; e2e left), 4.1 docs, 5.x run; left 3.2 live + e2e specs; suite 5723, 2 inherited	session-20261115T151007-45079d32	2026-11-15T15:51:48Z
 review:dossiq:3957:89c80a54	CONFLICT: 15 files conflict with development (new Kernel contracts on renamed classes); recorded for fix	session-20261115T154307-1fc2cc78	2026-11-15T15:51:48Z
 review:buildiq:1265:5f5ede07	BLOCK: wrong namespace for the save option classes, every save fails at runtime	session-20261115T152543-40aea993	2026-11-15T15:51:59Z
@@ -13356,3 +13357,4 @@ review:dossiq:3954:d0d56e69	CONFLICT: renames only, touched tests green on head;
 review:decidiq:1691:6a147074	RED: conflicts with development; structureProfile page-count test fails on head (104 vs 103)	session-20261115T152552-0cb4306e	2026-11-15T15:52:33Z
 review:dossiq:3300:6bb977e0	CONFLICT with development; change itself fine	session-20261115T152546-2c24b649	2026-11-15T15:52:40Z
 review:decidiq:1615:16c70ed7	BLOCK 1615 (behaviour changes pending product decisions; heavy conflicts with development)	session-20261115T142201-ea23e682	2026-11-15T15:52:50Z
+review:dossiq:3298:85e60038	CONFLICT: AcController::update conflicts with development refactor; logic sound, needs merge	session-20261115T154254-3d07b219	2026-11-15T15:53:04Z
