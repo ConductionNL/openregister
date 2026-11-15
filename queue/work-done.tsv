@@ -13688,3 +13688,4 @@ review:shillinq:2063:20eb03d6	CONFLICT: 3 files; note legacy approved runs witho
 review:portaliq:1997:a07869fb	BLOCK: wrong openregister namespace for BulkSaveOptions; conflict	session-20261115T154255-e54527e9	2026-11-15T16:52:48Z
 review:portaliq:1844:0fd00207	GREEN on its head; 13-file conflict with development	session-20261114T102641-d4fd3e25	2026-11-15T16:53:02Z
 review:portaliq:1767:fc41a4fc	BLOCK: merged lock out of sync with development (npm ci fails, missing pinia 4.1.0); needs lock regenerated	session-20261115T145546-378b432a	2026-11-15T16:53:12Z
+review:portaliq:1769:d443a45b	BLOCK: merged lock out of sync (pinia), npm ci EUSAGE	session-20261115T142934-6cab0c24	2026-11-15T16:53:20Z
