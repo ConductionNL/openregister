@@ -13035,3 +13035,4 @@ cover:dossiq:069ee2d6madb6:4bcfe3d9	PR #6569: AdviceTimer 92.9->100% lines (+10 
 cover:dossiq:069ee2d6madb6:8c6788f4	already done: lib/Service/Gdpr/ at 100% lines (240/240, 45 tests) after merged -1/-2 PRs; no PR	session-20261115T142134-badaaf30	2026-11-15T14:27:41Z
 review:shillinq:2991:e2225c58	GREEN: per-spec, tests pass; conflicts with development in info.xml/l10n/lock fixture	session-20261115T142129-944012f5	2026-11-15T14:28:13Z
 verify:dossiq:6547:aa7b9580	6547 GREEN (tests only, no new failures)	session-20261115T142134-badaaf30	2026-11-15T14:31:10Z
+review:shillinq:3000:2e77cb19	GREEN: matches change specs, suite OK on head; conflicts with development (l10n, register lock)	session-20261115T142148-bdb54e0a	2026-11-15T14:31:17Z
