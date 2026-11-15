@@ -13642,3 +13642,4 @@ review:portaliq:1353:5d73ef4a	GREEN: phpmd 3 runs, unit suite green; phpmd findi
 review:planninq:731:b7c438a1	RED: peer conflict with nextcloud-vue, npm ci fails	session-20261115T151007-45079d32	2026-11-15T16:42:46Z
 review:planninq:1068:0077bc6d	GREEN: phpstan findings unchanged, suite OK	session-20261115T142149-1d09fceb	2026-11-15T16:42:53Z
 review:portaliq:1594:7d7e983b	CONFLICT with development (package files, manifest, tasks.md); content UI-only, own spec 8/8	session-20261115T145535-3f9e5078	2026-11-15T16:43:02Z
+review:portaliq:1684:6cc52719	RED: CmsReaderTest::testThePageShapesAreServedAsRecorded pins the old page shape	session-20261115T154307-1fc2cc78	2026-11-15T16:43:17Z
