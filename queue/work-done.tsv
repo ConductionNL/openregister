@@ -13229,5 +13229,6 @@ review:filinq:2088:a003bdfc	GREEN: unit 6792 OK, phpstan clean, vitest/parity pa
 build4:openregister:scoped-api-tokens:c2	partial: PR #10514 adds actorVia on audit rows (2.2) and the per-token rate limit refusal (C40.4b); another lane on the same branch did 1.1d, 2.1c, C40.5, C40.2b warning; left 1.1c personal token store, 3.1 editor, C40.2b renewal, W.1 newman, e2e	session-20261114T102641-d4fd3e25	2026-11-15T15:29:04Z
 verify:decidiq:2218:915ed98f	GREEN	session-20261115T151007-45079d32	2026-11-15T15:29:24Z
 review:filinq:2114:5462db39	GREEN: spec-conformant; unit 6859/0 fail, vitest+jest green, phpstan clean	session-20261115T152552-0cb4306e	2026-11-15T15:29:32Z
+cover:integriq:92114ab0m6759:ff9d26ed	PR #3664: 8 tests, lib/Command/Integration 94.65->99.44%; suite failures unchanged (pre-existing)	session-20261115T142932-b9b408b7	2026-11-15T15:29:38Z
 fix:integriq:3649:236dc3f7	re-sorted en.js/nl.js replaced by development's order + 13 added keys; merged development; head f749c1d03c11688068a6c1de64e4a6c58dde7c24, REVERIFY	session-20261115T142134-badaaf30	2026-11-15T15:29:42Z
 verify:integriq:3638:e4fdb7a0	GREEN 3638; no new failures attributable to the PR	session-20261115T142951-2463b4c4	2026-11-15T15:29:49Z
