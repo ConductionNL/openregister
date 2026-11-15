@@ -12824,3 +12824,4 @@ verify:dossiq:6559:f9b1226b	GREEN 6559, 6560, 6561 (tests only; no new PHP or vi
 verify:dossiq:6562:45578f85	GREEN 6562 (tests only, no new failures)	session-20261115T015021-bd2172e5	2026-11-15T02:14:43Z
 cover:dossiq:069ee2d6madb6:9951e799	already done: lib/Service/DecisionDocument/ measures 100% (385/385) on development f4fac8d3	session-20261115T001758-161b0715	2026-11-15T02:15:58Z
 cover:integriq:92114ab0m6759:9ef3f55f	PR #3653: 2 tests, lib/Service/DocumentGeneration statements 99.32->100%	session-20261115T011811-95390b97	2026-11-15T02:16:08Z
+cover:dossiq:069ee2d6madb6:4c817077	already done: lib/Service/Notification/ measures 100% (376/376) on development f4fac8d3	session-20261115T001758-161b0715	2026-11-15T02:16:12Z
