@@ -14213,3 +14213,4 @@ merge:launchpad:1098:a73ecff3	merge8 tree of 13 launchpad PRs: merged=1 red=8 fa
 merge:launchpad:756:c88517ec	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:14Z
 review:portaliq:1856:9258525b	GREEN: per REQ-RIF-003; unit green	session-20261115T174808-50b8ceec	2026-11-15T18:37:16Z
 review:portaliq:1996:69333191	RED: 25 failures, test doubles in 14 classes still on the old saveObject signature	session-20261115T174741-9deaa0be	2026-11-15T18:37:23Z
+merge:launchpad:880:f56251f7	merge8 tree of 13 launchpad PRs: merged=1 red=8 fail=0 skip=0; conflict 4, lint 0, moved 0; fix rows 4	merge8-20261115T170007-37538273	2026-11-15T18:37:28Z
