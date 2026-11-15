@@ -15228,3 +15228,4 @@ review:shillinq:2070:fbb82225	RED: PaymentBlockService uses old saveObject named
 review:shillinq:2249:b619f486	GREEN: main-API migration of one call, suite green	session-20261115T213112-78aba834	2026-11-15T22:02:51Z
 review:shillinq:2095:be509293	BLOCK: behaviour change + deleted tests in a refactor PR	session-20261115T203012-30a1abde	2026-11-15T22:03:02Z
 verify:keepiq:1815:8fc09f92	GREEN 1815: tests only, +44 tests, no failures	session-20261115T213100-e547b457	2026-11-15T22:03:12Z
+review:shillinq:2081:5c4b6e15	GREEN: frontend scoping tightened, vitest no new failures	session-20261115T220047-d6737933	2026-11-15T22:03:28Z
